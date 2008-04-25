@@ -43,7 +43,11 @@
 
 require 5.008;
 
-use lib "/home/aecoope/perl";
+BEGIN
+{
+    use constant LIB_PATH => "/home/aecoope/perl";
+}
+use lib LIB_PATH;
 use strict;
 
 # ***** REQUIRED PACKAGES *****
@@ -51,26 +55,28 @@ use strict;
 # Standard Perl and CPAN modules.
 
 use File::Basename;
+use File::Temp;
 use Glib qw(FALSE TRUE);
 use Gnome2;
 use Gnome2::VFS -init;
 use Gtk2 -init;
-set_locale Gtk2;
-init Gtk2;
 use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
+use IO::File;
 use IPC::Open3;
-use Monotone::AutomateStdio;
-use POSIX qw(:errno_h :sys_wait_h);
-use POSIX qw(strftime);
+use POSIX qw(:errno_h :sys_wait_h strftime);
 use Symbol qw(gensym);
 use Text::Tabs;
 
 # Temporary debug stuff.
 
 use Data::Dumper;
+
+# Monotone AutomateStdio module.
+
+use Monotone::AutomateStdio;
 
 # Modules specific to this application.
 
@@ -104,19 +110,28 @@ my $window_type = "main_window";
 
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
+sub close_toolbutton_clicked_cb($$);
 sub directory_up_button_clicked_cb($$);
 sub file_change_history_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
+sub help_toolbutton_clicked_cb($$);
 sub main_window_delete_event_cb($$$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
+sub monotone_viz_button_clicked_cb($$);
 sub mtn_error_handler($$);
+sub new_toolbutton_clicked_cb($$);
+sub open_toolbutton_clicked_cb($$);
+sub preferences_toolbutton_clicked_cb($$);
+sub properties_toolbutton_clicked_cb($$);
 sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
+sub save_as_button_clicked_cb($$);
 sub search_text_button_clicked_cb($$);
 sub setup_sigchld_handler($);
 sub sigchld_handler();
 sub update_browser_state($$);
+sub view_button_clicked_cb($$);
 #
 ##############################################################################
 #
@@ -133,18 +148,79 @@ sub update_browser_state($$);
 
 {
 
-    # Initialise the libraries and generate the interface.
+    my($branch,
+       $browser,
+       $mtn,
+       $revision_id);
 
+    # Initialise stuff.
+
+    set_locale Gtk2;
     Gnome2::Program->init("mtn-browse", 0.1);
+    setup_sigchld_handler(\&sigchld_handler);
+    $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
+    $tooltips = Gtk2::Tooltips->new();
+    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
+
+    # Create the temporary working directory.
+
+    eval
+    {
+	$tmp_dir = File::Temp::tempdir("mtn-browse_XXXXXXXXXX",
+				       TMPDIR => 1,
+				       CLEANUP => 1);
+    };
+    if ($@ ne "")
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    (undef,
+	     ["modal"],
+	     "error",
+	     "close",
+	     sprintf("%s\nThis is fatal, I am going to exit.", $@));
+	$dialog->run();
+	$dialog->destroy();
+	exit(1);
+    }
+
+    # Attempt to create an mtn handle, if it fails then assume that we are not
+    # inside a workspace. However if it does work then pre-load the browser
+    # with the relevant branch and revision.
+
+    eval
+    {
+	$mtn = Monotone::AutomateStdio->new();
+	$mtn->get_option(\$branch, "branch");
+	$mtn->get_base_revision_id(\$revision_id);
+    };
+
+    # Set up the error handlers for the Monotone library.
+
     Monotone::AutomateStdio->register_error_handler("both",
 						    \&mtn_error_handler);
-    setup_sigchld_handler(\&sigchld_handler);
-    $tooltips = Gtk2::Tooltips->new();
-    $app_icon = Gtk2::Gdk::Pixbuf->new_from_file("../mtn-browse.png");
-    $line_image = Gtk2::Gdk::Pixbuf->new_from_file("../line.png");
-    get_browser_window(Monotone::AutomateStdio->new());
-    # get_browser_window();
-    # get_browser_window();
+
+    # Create the browser window and display it. Please note that updating the
+    # browser to reflect the current workspace is done in an idle handler so
+    # that control can be handed over to Gtk2 before updating the display.
+
+    $browser = get_browser_window($mtn);
+    if (defined($mtn))
+    {
+	Glib::Idle->add
+	    (sub {
+		 my $browser = $_[0];
+
+		 $browser->{branch_combo_details}->{preset} = 1;
+		 $browser->{branch_combo_details}->{value} = $branch;
+		 $browser->{revision_combo_details}->{preset} = 1;
+		 $browser->{revision_combo_details}->{value} = $revision_id;
+		 $browser->{tagged_tick}->set_active(FALSE);
+		 &{$browser->{update_handler}}($browser, ALL_CHANGED);
+
+		 return FALSE;
+	     },
+	     $browser);
+    }
 
     # Hand control over to Gtk2.
 
@@ -161,6 +237,277 @@ sub update_browser_state($$);
     $SIG{CHLD} = "IGNORE";
 
     exit(0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - new_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  new toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub new_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    # Simply get a new/unused browser window and display it.
+
+    get_browser_window();
+
+}
+#
+##############################################################################
+#
+#   Routine      - open_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  open toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub open_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($chooser_dialog,
+       $done);
+
+    $chooser_dialog = Gtk2::FileChooserDialog->new("Open Database",
+						   $browser->{window},
+						   "open",
+						   "gtk-cancel" => "cancel",
+						   "gtk-open" => "ok");
+
+    do
+    {
+	if ($chooser_dialog->run() eq "ok")
+	{
+
+	    my ($err,
+		$fh,
+		$file_name,
+		$mtn);
+
+	    $file_name = $chooser_dialog->get_filename();
+
+	    # The user has selected a file. First make sure we can open it for
+	    # reading (I know I could use the -r test but this takes care of
+	    # any other unforeseen access problems as well).
+
+	    if (! defined($fh = IO::File->new($file_name, "r")))
+	    {
+		my $dialog = Gtk2::MessageDialog->new
+		    ($browser->{window},
+		     ["modal"],
+		     "warning",
+		     "close",
+		     $!);
+		$dialog->run();
+		$dialog->destroy();
+	    }
+	    else
+	    {
+
+		$fh->close();
+		$fh = undef;
+
+		# Ok it is a readable file, try and open it but deal with any
+		# errors in a nicer way than normal.
+
+		Monotone::AutomateStdio->register_error_handler("both");
+		eval
+		{
+		    $mtn = Monotone::AutomateStdio->new($file_name);
+		};
+		$err = $@;
+		Monotone::AutomateStdio->register_error_handler
+		    ("both", \&mtn_error_handler);
+		if ($err ne "")
+		{
+		    my $dialog = Gtk2::MessageDialog->new
+			($browser->{window},
+			 ["modal"],
+			 "warning",
+			 "close",
+			 "Not a valid Monotone database");
+		    $dialog->run();
+		    $dialog->destroy();
+		}
+		else
+		{
+
+		    # Seems to be ok so update the browser with the new
+		    # database.
+
+		    $browser->{mtn} = $mtn;
+		    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+		    $done = 1;
+
+		}
+
+	    }
+
+	}
+	else
+	{
+	    $done = 1;
+	}
+    }
+    while (! $done);
+
+    $chooser_dialog->destroy();
+
+}
+#
+##############################################################################
+#
+#   Routine      - close_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  close toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub close_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    # Simply reset the browser's Monotone instance and update its display.
+
+    $browser->{mtn} = undef;
+    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+
+}
+#
+##############################################################################
+#
+#   Routine      - properties_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  properties toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub properties_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my $dialog = Gtk2::MessageDialog->new($browser->{window},
+					  ["modal"],
+					  "info",
+					  "close",
+					  "Not implemented");
+    $dialog->run();
+    $dialog->destroy();
+
+}
+#
+##############################################################################
+#
+#   Routine      - preferences_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  preferences toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub preferences_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my $dialog = Gtk2::MessageDialog->new($browser->{window},
+					  ["modal"],
+					  "info",
+					  "close",
+					  "Not implemented");
+    $dialog->run();
+    $dialog->destroy();
+
+}
+#
+##############################################################################
+#
+#   Routine      - help_toolbutton_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  help toolbutton in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub help_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my $dialog = Gtk2::MessageDialog->new($browser->{window},
+					  ["modal"],
+					  "info",
+					  "close",
+					  "Not implemented");
+    $dialog->run();
+    $dialog->destroy();
 
 }
 #
@@ -228,7 +575,7 @@ sub advanced_find_button_clicked_cb($$)
 
 	$preset_branch = 1;
 	$state = BRANCH_CHANGED;
-	if ($browser->{branch_combo_details}->{completed})
+	if ($browser->{branch_combo_details}->{complete})
 	{
 	    foreach my $name (@branches)
 	    {
@@ -329,6 +676,56 @@ sub revision_change_log_button_clicked_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - monotone_viz_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  monotone-viz button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub monotone_viz_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($cmd,
+       $db_name);
+
+    # Build up the monotone-viz command, we need the database name and then
+    # optionally the branch and revision ids.
+
+    $cmd = "monotone-viz ";
+    if (! defined($db_name = $browser->{mtn}->get_db_name()))
+    {
+	$browser->{mtn}->get_option(\$db_name, "database");
+    }
+    $cmd .= $db_name;
+    if ($browser->{branch_combo_details}->{complete})
+    {
+	$cmd .= " " . $browser->{branch_combo_details}->{value};
+	if ($browser->{revision_combo_details}->{complete})
+	{
+	    $cmd .= " " . $browser->{revision_combo_details}->{value};
+	}
+    }
+
+    # Launch Monotone-Viz.
+
+    system($cmd . " &");
+
+}
+#
+##############################################################################
+#
 #   Routine      - directory_up_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the up
@@ -364,7 +761,7 @@ sub directory_up_button_clicked_cb($$)
 	$value = dirname($value);
 	$value = "" if ($value eq ".");
 	$browser->{directory_combo_details}->{value} = $value;
-	$browser->{directory_combo_details}->{completed} = 1;
+	$browser->{directory_combo_details}->{complete} = 1;
 	$len = length($value);
 	if ($len < $old_len)
 	{
@@ -406,6 +803,189 @@ sub search_text_button_clicked_cb($$)
     local $browser->{in_cb} = 1;
 
     find_text($browser->{window}, $browser->{file_view_sv});
+
+}
+#
+##############################################################################
+#
+#   Routine      - save_as_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the save as
+#                  button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub save_as_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($chooser_dialog,
+       $continue,
+       $done);
+
+    $chooser_dialog = Gtk2::FileChooserDialog->new("Save As",
+						   $browser->{window},
+						   "save",
+						   "gtk-cancel" => "cancel",
+						   "gtk-save" => "ok");
+    $chooser_dialog->set_current_name
+	($browser->{file_being_viewed}->{short_name});
+
+    do
+    {
+	if ($chooser_dialog->run() eq "ok")
+	{
+
+	    my ($data,
+		$fh,
+		$file_name);
+
+	    $continue = 1;
+	    $file_name = $chooser_dialog->get_filename();
+
+	    # See if the file exists, if so then get a confirmation from the
+	    # user.
+
+	    if (-e $file_name)
+	    {
+		my $dialog = Gtk2::MessageDialog->new
+		    ($browser->{window},
+		     ["modal"],
+		     "question",
+		     "yes-no",
+		     "File already exists.\nDo you want to replace it?");
+		$dialog->set_title("Confirm");
+		$continue = 0 if ($dialog->run() ne "yes");
+		$dialog->destroy();
+	    }
+
+	    if ($continue)
+	    {
+
+		# Attempt to save the contents to the file.
+
+		if (! defined($fh = IO::File->new($file_name, "w")))
+		{
+		    my $dialog = Gtk2::MessageDialog->new
+			($browser->{window},
+			 ["modal"],
+			 "warning",
+			 "close",
+			 $!);
+		    $dialog->run();
+		    $dialog->destroy();
+		}
+		else
+		{
+		    $browser->{mtn}->get_file(\$data,
+					      $browser->{file_being_viewed}->
+						  {manifest_entry}->{file_id});
+		    $fh->print($data);
+		    $fh->close();
+		    $done = 1;
+		}
+
+	    }
+
+	}
+	else
+	{
+	    $done = 1;
+	}
+    }
+    while (! $done);
+
+    $chooser_dialog->destroy();
+
+}
+#
+##############################################################################
+#
+#   Routine      - view_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the view
+#                  button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub view_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my($data,
+       $editor,
+       $fh,
+       $file_name);
+
+    if (! ($file_name =
+	   generate_tmp_path($browser->{file_being_viewed}->{short_name})))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "Cannot generate temporary file name",
+	     $!);
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Attempt to save the contents to the file.
+
+    if (! defined($fh = IO::File->new($file_name, "w")))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     $!);
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+    $browser->{mtn}->get_file(\$data,
+			      $browser->{file_being_viewed}->
+			          {manifest_entry}->{file_id});
+    $fh->print($data);
+    $fh->close();
+    $fh = undef;
+
+    # Load into an editor.
+
+    if (exists($ENV{EDITOR})
+	&& ($ENV{EDITOR} eq "emacs"
+	    || $ENV{EDITOR} eq "xemacs"
+	    || $ENV{EDITOR} eq "gvim"))
+    {
+	$editor = $ENV{EDITOR};
+    }
+    else
+    {
+	$editor = "xterm -e vi";
+    }
+    system($editor . " " . $file_name . " &");
 
 }
 #
@@ -569,7 +1149,7 @@ sub manifest_browser_treeview_row_activated_cb($$$$)
     if (defined($manifest_entry) && $manifest_entry->{type} eq "directory")
     {
 	$browser->{directory_combo_details}->{value} = $manifest_entry->{name};
-	$browser->{directory_combo_details}->{completed} = 1;
+	$browser->{directory_combo_details}->{complete} = 1;
 	$browser->{directory_combo}->child()->
 	    set_text($manifest_entry->{name});
 	$browser->{appbar}->clear_stack();
@@ -697,8 +1277,7 @@ sub get_browser_window(;$$$$$)
 	$browser = {};
 	$browser->{type} = $window_type;
 	$browser->{mtn} = $mtn;
-	$browser->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+	$browser->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -715,9 +1294,12 @@ sub get_browser_window(;$$$$$)
 	# Get the widgets that we are interested in.
 
 	$browser->{window} = $browser->{glade}->get_widget($window_type);
-	$browser->{window}->set_icon($app_icon);
 	$browser->{appbar} = $browser->{glade}->get_widget("appbar");
 	$browser->{main_vbox} = $browser->{glade}->get_widget("main_vbox");
+	$browser->{close_toolbutton} =
+	    $browser->{glade}->get_widget("close_toolbutton");
+	$browser->{properties_toolbutton} =
+	    $browser->{glade}->get_widget("properties_toolbutton");
 	$browser->{branch_combo} =
 	    $browser->{glade}->get_widget("branch_comboboxentry");
 	$browser->{revision_combo} =
@@ -942,6 +1524,12 @@ sub get_browser_window(;$$$$$)
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
     }
 
+    # Make sure that the branch comboboxentry has the focus and not the bonobo
+    # dock.
+
+    $browser->{branch_combo}->child()->grab_focus();
+    $browser->{branch_combo}->child()->set_position(-1);
+
     return $browser;
 
 }
@@ -974,10 +1562,14 @@ sub update_browser_state($$)
 
     if (! defined($browser->{mtn}))
     {
+	$browser->{close_toolbutton}->set_sensitive(FALSE);
+	$browser->{properties_toolbutton}->set_sensitive(FALSE);
 	$browser->{main_vbox}->set_sensitive(FALSE);
     }
     else
     {
+	$browser->{close_toolbutton}->set_sensitive(TRUE);
+	$browser->{properties_toolbutton}->set_sensitive(TRUE);
 	$browser->{main_vbox}->set_sensitive(TRUE);
     }
 
@@ -993,12 +1585,12 @@ sub update_browser_state($$)
 	$browser->{branch_combo_details}->{completion} = undef;
 	if ($browser->{branch_combo_details}->{preset})
 	{
-	    $browser->{branch_combo_details}->{completed} = 1;
+	    $browser->{branch_combo_details}->{complete} = 1;
 	    $browser->{branch_combo_details}->{preset} = 0;
 	}
 	else
 	{
-	    $browser->{branch_combo_details}->{completed} = 0;
+	    $browser->{branch_combo_details}->{complete} = 0;
 	    $browser->{branch_combo_details}->{value} = "";
 	}
 	if (! defined($browser->{mtn}))
@@ -1055,18 +1647,18 @@ sub update_browser_state($$)
 	$browser->{revision_combo_details}->{completion} = undef;
 	if ($browser->{revision_combo_details}->{preset})
 	{
-	    $browser->{revision_combo_details}->{completed} = 1;
+	    $browser->{revision_combo_details}->{complete} = 1;
 	    $browser->{revision_combo_details}->{preset} = 0;
 	}
 	else
 	{
-	    $browser->{revision_combo_details}->{completed} = 0;
+	    $browser->{revision_combo_details}->{complete} = 0;
 	    $browser->{revision_combo_details}->{value} = "";
 	}
 
 	# Get the new list of revisions.
 
-	if ($browser->{branch_combo_details}->{completed})
+	if ($browser->{branch_combo_details}->{complete})
 	{
 	    $browser->{appbar}->set_status("Fetching revision list");
 	    gtk2_update();
@@ -1144,12 +1736,12 @@ sub update_browser_state($$)
 	$browser->{directory_combo_details}->{completion} = undef;
 	if ($browser->{directory_combo_details}->{preset})
 	{
-	    $browser->{directory_combo_details}->{completed} = 1;
+	    $browser->{directory_combo_details}->{complete} = 1;
 	    $browser->{revision_combo_details}->{preset} = 0;
 	}
 	else
 	{
-	    $browser->{directory_combo_details}->{completed} = 0;
+	    $browser->{directory_combo_details}->{complete} = 0;
 	    $browser->{directory_combo_details}->{value} = "";
 	}
 	set_label_value($browser->{revision_id_label}, "");
@@ -1164,7 +1756,7 @@ sub update_browser_state($$)
 
 	$browser->{appbar}->set_status("Fetching manifest");
 	gtk2_update();
-	if ($browser->{revision_combo_details}->{completed})
+	if ($browser->{revision_combo_details}->{complete})
 	{
 	    my @revision_ids;
 	    get_revision_ids($browser, \@revision_ids);
@@ -1186,7 +1778,7 @@ sub update_browser_state($$)
 		    ($browser->{window}, ["modal"], "info", "close", $message);
 		$dialog->run();
 		$dialog->destroy();
-		$browser->{revision_combo_details}->{completed} = 0;
+		$browser->{revision_combo_details}->{complete} = 0;
 		$browser->{revision_combo_details}->{value} = "";
 		$browser->{revision_combo}->child()->set_text("");
 	    }
@@ -1251,7 +1843,7 @@ sub update_browser_state($$)
 	foreach my $widget (@{$browser->{revision_sensitive_group}})
 	{
 	    $widget->
-		set_sensitive($browser->{revision_combo_details}->{completed});
+		set_sensitive($browser->{revision_combo_details}->{complete});
 	}
 	gtk2_update();
 
@@ -1277,7 +1869,7 @@ sub update_browser_state($$)
 
 	# Get the contents of the new directory.
 
-	if ($browser->{directory_combo_details}->{completed}
+	if ($browser->{directory_combo_details}->{complete}
 	    || $browser->{directory_combo_details}->{value} eq "")
 	{
 	    get_dir_contents($browser->{directory_combo_details}->{value},
@@ -1721,7 +2313,7 @@ sub sigchld_handler()
 
 	    foreach my $window (@windows)
 	    {
-		if (exists($window->{mtn})
+		if (exists($window->{mtn}) && defined($window->{mtn})
 		    && $window->{mtn}->get_pid() == $pid)
 		{
 		    $window->{mtn}->closedown();

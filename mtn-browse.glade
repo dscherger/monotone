@@ -15,6 +15,7 @@
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
@@ -24,17 +25,17 @@
   <signal name="delete_event" handler="main_window_delete_event_cb" last_modification_time="Sat, 12 Apr 2008 11:07:39 GMT"/>
 
   <child internal-child="dock">
-    <widget class="BonoboDock" id="bonobodock1">
+    <widget class="BonoboDock" id="bonobodock">
       <property name="visible">True</property>
       <property name="allow_floating">True</property>
 
       <child>
-	<widget class="BonoboDockItem" id="bonobodockitem1">
+	<widget class="BonoboDockItem" id="menubar_bonobodockitem">
 	  <property name="visible">True</property>
 	  <property name="shadow_type">GTK_SHADOW_NONE</property>
 
 	  <child>
-	    <widget class="GtkMenuBar" id="menubar1">
+	    <widget class="GtkMenuBar" id="menubar">
 	      <property name="visible">True</property>
 
 	      <child>
@@ -208,17 +209,17 @@
 	  <property name="band">0</property>
 	  <property name="position">0</property>
 	  <property name="offset">0</property>
-	  <property name="behavior">BONOBO_DOCK_ITEM_BEH_EXCLUSIVE|BONOBO_DOCK_ITEM_BEH_NEVER_VERTICAL|BONOBO_DOCK_ITEM_BEH_LOCKED</property>
+	  <property name="behavior">BONOBO_DOCK_ITEM_BEH_EXCLUSIVE|BONOBO_DOCK_ITEM_BEH_NEVER_FLOATING|BONOBO_DOCK_ITEM_BEH_NEVER_VERTICAL|BONOBO_DOCK_ITEM_BEH_LOCKED</property>
 	</packing>
       </child>
 
       <child>
-	<widget class="BonoboDockItem" id="bonobodockitem2">
+	<widget class="BonoboDockItem" id="toolbar_bonobodockitem">
 	  <property name="visible">True</property>
 	  <property name="shadow_type">GTK_SHADOW_OUT</property>
 
 	  <child>
-	    <widget class="GtkToolbar" id="toolbar1">
+	    <widget class="GtkToolbar" id="toolbar">
 	      <property name="visible">True</property>
 	      <property name="orientation">GTK_ORIENTATION_HORIZONTAL</property>
 	      <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
@@ -226,13 +227,14 @@
 	      <property name="show_arrow">True</property>
 
 	      <child>
-		<widget class="GtkToolButton" id="toolbutton1">
+		<widget class="GtkToolButton" id="new_toolbutton">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">New workspace</property>
+		  <property name="tooltip" translatable="yes">New browser</property>
 		  <property name="stock_id">gtk-new</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="new_toolbutton_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:32:02 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -241,54 +243,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkToolButton" id="toolbutton2">
-		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Open database</property>
-		  <property name="stock_id">gtk-open</property>
-		  <property name="visible_horizontal">True</property>
-		  <property name="visible_vertical">True</property>
-		  <property name="is_important">False</property>
-		</widget>
-		<packing>
-		  <property name="expand">False</property>
-		  <property name="homogeneous">False</property>
-		</packing>
-	      </child>
-
-	      <child>
-		<widget class="GtkToolButton" id="toolbutton3">
-		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Reload database</property>
-		  <property name="label" translatable="yes">_Reload</property>
-		  <property name="use_underline">True</property>
-		  <property name="stock_id">gtk-refresh</property>
-		  <property name="visible_horizontal">True</property>
-		  <property name="visible_vertical">True</property>
-		  <property name="is_important">False</property>
-		</widget>
-		<packing>
-		  <property name="expand">False</property>
-		  <property name="homogeneous">False</property>
-		</packing>
-	      </child>
-
-	      <child>
-		<widget class="GtkToolButton" id="toolbutton6">
-		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Database properties</property>
-		  <property name="stock_id">gtk-properties</property>
-		  <property name="visible_horizontal">True</property>
-		  <property name="visible_vertical">True</property>
-		  <property name="is_important">False</property>
-		</widget>
-		<packing>
-		  <property name="expand">False</property>
-		  <property name="homogeneous">False</property>
-		</packing>
-	      </child>
-
-	      <child>
-		<widget class="GtkSeparatorToolItem" id="separatortoolitem1">
+		<widget class="GtkSeparatorToolItem" id="separatortoolitem_1">
 		  <property name="visible">True</property>
 		  <property name="draw">True</property>
 		  <property name="visible_horizontal">True</property>
@@ -301,13 +256,14 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkToolButton" id="toolbutton7">
+		<widget class="GtkToolButton" id="open_toolbutton">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">User preferences</property>
-		  <property name="stock_id">gtk-preferences</property>
+		  <property name="tooltip" translatable="yes">Open a database</property>
+		  <property name="stock_id">gtk-open</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="open_toolbutton_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:32:10 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -316,13 +272,88 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkToolButton" id="toolbutton8">
+		<widget class="GtkToolButton" id="close_toolbutton">
+		  <property name="visible">True</property>
+		  <property name="tooltip" translatable="yes">Close the current database</property>
+		  <property name="stock_id">gtk-close</property>
+		  <property name="visible_horizontal">True</property>
+		  <property name="visible_vertical">True</property>
+		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="close_toolbutton_clicked_cb" last_modification_time="Thu, 24 Apr 2008 08:40:40 GMT"/>
+		</widget>
+		<packing>
+		  <property name="expand">False</property>
+		  <property name="homogeneous">True</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkSeparatorToolItem" id="separatortoolitem_2">
+		  <property name="visible">True</property>
+		  <property name="draw">True</property>
+		  <property name="visible_horizontal">True</property>
+		  <property name="visible_vertical">True</property>
+		</widget>
+		<packing>
+		  <property name="expand">False</property>
+		  <property name="homogeneous">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkToolButton" id="properties_toolbutton">
+		  <property name="visible">True</property>
+		  <property name="tooltip" translatable="yes">Display current database properties</property>
+		  <property name="stock_id">gtk-properties</property>
+		  <property name="visible_horizontal">True</property>
+		  <property name="visible_vertical">True</property>
+		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="properties_toolbutton_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:32:22 GMT"/>
+		</widget>
+		<packing>
+		  <property name="expand">False</property>
+		  <property name="homogeneous">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkSeparatorToolItem" id="separatortoolitem_3">
+		  <property name="visible">True</property>
+		  <property name="draw">True</property>
+		  <property name="visible_horizontal">True</property>
+		  <property name="visible_vertical">True</property>
+		</widget>
+		<packing>
+		  <property name="expand">False</property>
+		  <property name="homogeneous">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkToolButton" id="preferences_toolbutton">
+		  <property name="visible">True</property>
+		  <property name="tooltip" translatable="yes">User preferences</property>
+		  <property name="stock_id">gtk-preferences</property>
+		  <property name="visible_horizontal">True</property>
+		  <property name="visible_vertical">True</property>
+		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="preferences_toolbutton_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:32:39 GMT"/>
+		</widget>
+		<packing>
+		  <property name="expand">False</property>
+		  <property name="homogeneous">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkToolButton" id="help_toolbutton">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Help</property>
 		  <property name="stock_id">gtk-help</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+		  <signal name="clicked" handler="help_toolbutton_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:32:49 GMT"/>
 		</widget>
 		<packing>
 		  <property name="expand">False</property>
@@ -532,6 +563,34 @@ criteria for selecting a revision</property>
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-find</property>
 			      <property name="icon_size">4</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
+			</widget>
+			<packing>
+			  <property name="padding">0</property>
+			  <property name="expand">False</property>
+			  <property name="fill">False</property>
+			</packing>
+		      </child>
+
+		      <child>
+			<widget class="GtkButton" id="monotone_viz_button">
+			  <property name="visible">True</property>
+			  <property name="tooltip" translatable="yes">View revision history
+in Monotone-Viz</property>
+			  <property name="can_focus">True</property>
+			  <property name="relief">GTK_RELIEF_NORMAL</property>
+			  <property name="focus_on_click">True</property>
+			  <signal name="clicked" handler="monotone_viz_button_clicked_cb" last_modification_time="Thu, 24 Apr 2008 15:10:30 GMT"/>
+
+			  <child>
+			    <widget class="GtkImage" id="image33">
+			      <property name="visible">True</property>
+			      <property name="pixbuf">monotone-viz.png</property>
 			      <property name="xalign">0.5</property>
 			      <property name="yalign">0.5</property>
 			      <property name="xpad">0</property>
@@ -1345,6 +1404,7 @@ last updated with respect to this revision</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NORMAL</property>
 				      <property name="focus_on_click">True</property>
+				      <signal name="clicked" handler="save_as_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:27 GMT"/>
 
 				      <child>
 					<widget class="GtkImage" id="image4">
@@ -1373,11 +1433,12 @@ into a viewer</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NORMAL</property>
 				      <property name="focus_on_click">True</property>
+				      <signal name="clicked" handler="view_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:42 GMT"/>
 
 				      <child>
-					<widget class="GtkImage" id="image10">
+					<widget class="GtkImage" id="image32">
 					  <property name="visible">True</property>
-					  <property name="stock">gtk-open</property>
+					  <property name="stock">gnome-stock-book-open</property>
 					  <property name="icon_size">4</property>
 					  <property name="xalign">0.5</property>
 					  <property name="yalign">0.5</property>
@@ -1995,6 +2056,7 @@ into a viewer</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">True</property>
   <property name="skip_pager_hint">False</property>
@@ -3152,6 +3214,7 @@ Tag</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
@@ -3244,6 +3307,7 @@ Tag</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
@@ -3841,6 +3905,7 @@ file version that is to be compared</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
@@ -4098,6 +4163,7 @@ that had the green highlighted text</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
@@ -4213,6 +4279,7 @@ that had the green highlighted text</property>
   <property name="modal">False</property>
   <property name="resizable">False</property>
   <property name="destroy_with_parent">False</property>
+  <property name="icon">mtn-browse.png</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">True</property>
   <property name="skip_pager_hint">False</property>

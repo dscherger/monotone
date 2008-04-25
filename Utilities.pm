@@ -50,6 +50,7 @@ use strict;
 
 sub create_format_tags($);
 sub generate_revision_report($$$$;$);
+sub generate_tmp_path($);
 sub get_dir_contents($$$);
 sub get_revision_ids($$);
 sub glade_signal_autoconnect($$);
@@ -256,6 +257,53 @@ sub generate_revision_report($$$$;$)
 					       $normal);
 
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - generate_tmp_path
+#
+#   Description  - Generate a unique and temporary path for the specified file
+#                  name. The file name is included in the result and will be
+#                  unchanged.
+#
+#   Data         - $file_name   : The file name component that is to be used.
+#                  Return Value : The full, unique, temporary path on success,
+#                                 otherwise undef on failure.
+#
+##############################################################################
+
+
+
+sub generate_tmp_path($)
+{
+
+    my $file_name = $_[0];
+
+    my($path,
+       $i);
+
+    # Loop through looking for a temporary subdirectory not containing the
+    # specified file.
+
+    for ($i = 0; ; ++ $i)
+    {
+	if (-d ($tmp_dir . "/" . $i))
+	{
+	    if (! -e ($path = $tmp_dir . "/" . $i . "/" . $file_name))
+	    {
+		return $path;
+	    }
+	}
+	else
+	{
+	    return unless mkdir($tmp_dir . "/" . $i);
+	    return $tmp_dir . "/" . $i . "/" . $file_name;
+	}
+    }
+
+    return;
 
 }
 #
@@ -485,7 +533,7 @@ sub get_revision_ids($$)
     my($instance, $revision_ids) = @_;
 
     @$revision_ids=();
-    return unless ($instance->{revision_combo_details}->{completed});
+    return unless ($instance->{revision_combo_details}->{complete});
     if ($instance->{tagged_tick}->get_active())
     {
 	$instance->{mtn}->

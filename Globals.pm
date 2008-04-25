@@ -81,6 +81,30 @@ use constant REVISION_CHANGED          => (DIRECTORY | REVISION_LIST
 					   | DISPLAY_OF_FILE);
 use constant SELECTED_REVISION_CHANGED => (REVISION_DETAILS);
 
+# Location of the Glade UI XML file for mtn-browse.
+
+our $glade_file;
+
+# Location of the temporary working directory.
+
+our $tmp_dir;
+
+# List of window instances.
+
+our @windows;
+
+# Assorted pixmaps.
+
+our $line_image;
+
+# The busy cursor to use for the mouse.
+
+our $busy_cursor;
+
+# The tooltips widget.
+
+our $tooltips;
+
 # Text viewable application mime types.
 
 our @text_viewable_app_mime_types =
@@ -101,7 +125,7 @@ our @text_viewable_app_mime_types =
        x-troff
        xhtml+xml);
 
-# Supported text mime types (used for syntax highlighting.
+# Supported text mime types (used for syntax highlighting).
 
 our @text_mime_types =
     (
@@ -131,23 +155,6 @@ our @text_mime_types =
      }
     );
 
-# List of window instances.
-
-our @windows;
-
-# Assorted pixmaps.
-
-our($app_icon,
-    $line_image);
-
-# The busy cursor to use for the mouse.
-
-our $busy_cursor;
-
-# The tooltips widget.
-
-our $tooltips;
-
 # ***** PACKAGE INFORMATION *****
 
 use base qw(Exporter);
@@ -169,12 +176,13 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     REVISION_DETAILS
 				     REVISION_LIST
 				     SELECTED_REVISION_CHANGED)],
-		    variables => [qw($app_icon
-				     $busy_cursor
+		    variables => [qw($busy_cursor
+				     $glade_file
 				     $line_image
-				     $tooltips
 				     @text_mime_types
 				     @text_viewable_app_mime_types
+				     $tmp_dir
+				     $tooltips
 				     @windows)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(constants variables));

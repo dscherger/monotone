@@ -239,8 +239,7 @@ sub get_find_text_window($$)
 	$new = 1;
 	$instance = {};
 	$instance->{type} = $window_type;
-	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -253,7 +252,6 @@ sub get_find_text_window($$)
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{window}->set_icon($app_icon);
 	$instance->{main_vbox} = $instance->{glade}->get_widget("main_vbox");
 	$instance->{find_combo} =
 	    $instance->{glade}->get_widget("find_comboboxentry");

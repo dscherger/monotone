@@ -94,9 +94,8 @@ sub advanced_find($$$)
     my($browser, $revision_id, $branches) = @_;
 
     my($advanced_find,
-       $height,
        $new,
-       $width);
+       $ret_val);
 
     # Look for an unused window first.
 
@@ -127,6 +126,10 @@ sub advanced_find($$$)
     # Update the window's internal state.
 
     {
+
+	my($height,
+	   $width);
+
 	local $advanced_find->{in_cb} = 1;
 
 	$advanced_find->{selected} = 0;
@@ -160,14 +163,14 @@ sub advanced_find($$$)
 	# Now actually update it with any preset values.
 
 	$advanced_find->{branch_combo_details}->{preset} = 1;
-	$advanced_find->{branch_combo_details}->{completed} =
-	    $browser->{branch_combo_details}->{completed};
+	$advanced_find->{branch_combo_details}->{complete} =
+	    $browser->{branch_combo_details}->{complete};
 	$advanced_find->{branch_combo_details}->{value} =
 	    $browser->{branch_combo_details}->{value};
 
 	$advanced_find->{revision_combo_details}->{preset} = 1;
-	$advanced_find->{revision_combo_details}->{completed} =
-	    $browser->{revision_combo_details}->{completed};
+	$advanced_find->{revision_combo_details}->{complete} =
+	    $browser->{revision_combo_details}->{complete};
 	$advanced_find->{revision_combo_details}->{value} =
 	    $browser->{revision_combo_details}->{value};
 
@@ -175,6 +178,7 @@ sub advanced_find($$$)
 	    set_active($browser->{tagged_tick}->get_active());
 
 	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
+
     }
 
     # Handle all events until the dialog is dismissed.
@@ -223,12 +227,12 @@ sub advanced_find($$$)
 	    if ($found);
 	push(@$branches, "") if (scalar(@$branches) == 0);
 
-	return 1;
+	$ret_val = 1;
     }
-    else
-    {
-	return;
-    }
+
+    $advanced_find->{mtn} = undef;
+
+    return $ret_val;
 
 }
 #
@@ -256,8 +260,7 @@ sub create_advanced_find_window()
 
     $instance = {};
     $instance->{type} = $window_type;
-    $instance->{glade} =
-	Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+    $instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
     # Flag to stop recursive calling of callbacks.
 
@@ -274,7 +277,6 @@ sub create_advanced_find_window()
     # Get the widgets that we are interested in.
 
     $instance->{window} = $instance->{glade}->get_widget($window_type);
-    $instance->{window}->set_icon($app_icon);
     $instance->{appbar} = $instance->{glade}->get_widget("appbar");
     $instance->{simple_query_radiobutton} =
 	$instance->{glade}->get_widget("simple_query_radiobutton");
@@ -734,7 +736,7 @@ sub update_advanced_find_state($$)
 	}
 	else
 	{
-	    $advanced_find->{branch_combo_details}->{completed} = 0;
+	    $advanced_find->{branch_combo_details}->{complete} = 0;
 	    $advanced_find->{branch_combo_details}->{value} = "";
 	}
 
@@ -783,13 +785,13 @@ sub update_advanced_find_state($$)
 	}
 	else
 	{
-	    $advanced_find->{revision_combo_details}->{completed} = 0;
+	    $advanced_find->{revision_combo_details}->{complete} = 0;
 	    $advanced_find->{revision_combo_details}->{value} = "";
 	}
 
 	# Get the new list of revisions.
 
-	if ($advanced_find->{branch_combo_details}->{completed})
+	if ($advanced_find->{branch_combo_details}->{complete})
 	{
 	    $advanced_find->{appbar}->set_status("Fetching revision list");
 	    gtk2_update();
@@ -876,14 +878,15 @@ sub update_advanced_find_state($$)
 	gtk2_update();
 	if ($advanced_find->{simple_query_radiobutton}->get_active())
 	{
-	    if ($advanced_find->{revision_combo_details}->{completed})
+	    if ($advanced_find->{revision_combo_details}->{complete})
 	    {
 		get_revision_ids($advanced_find, \@revision_ids);
 	    }
 	}
 	else
 	{
-	    my $query;
+	    my($err,
+	       $query);
 	    $query = $advanced_find->{search_term_combo}->child()->get_text();
 
 	    # Remember the user can type in any old rubbish with advanced
@@ -909,10 +912,13 @@ sub update_advanced_find_state($$)
 	    {
 		$advanced_find->{mtn}->select(\@revision_ids, $query);
 	    };
+	    $err = $@;
+	    Monotone::AutomateStdio->register_error_handler
+		("both", \&mtn_error_handler);
 
 	    # If the query was valid the store it in the history.
 
-	    if (! $@)
+	    if ($err eq "")
 	    {
 		my $found;
 		if (scalar(@revision_ids) == 0)
@@ -951,8 +957,6 @@ sub update_advanced_find_state($$)
 		    }
 		}
 	    }
-	    Monotone::AutomateStdio->register_error_handler
-		("both", \&mtn_error_handler);
 
 	}
 	$advanced_find->{mtn}->toposort(\@revision_ids, @revision_ids);
@@ -1010,6 +1014,9 @@ sub update_advanced_find_state($$)
 
 		# Scroll back up to the top left.
 
+		$advanced_find->{details_buffer}->
+		    place_cursor($advanced_find->{details_buffer}->
+				 get_start_iter());
 		if ($advanced_find->{details_scrolledwindow}->realized())
 		{
 		    $advanced_find->{details_scrolledwindow}->

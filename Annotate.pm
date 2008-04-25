@@ -176,6 +176,8 @@ sub display_annotation($$$)
 
     # Make sure we are at the top.
 
+    $instance->{annotation_buffer}->
+	place_cursor($instance->{annotation_buffer}->get_start_iter());
     $instance->{annotation_scrolledwindow}->get_vadjustment()->set_value(0);
     $instance->{annotation_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
@@ -227,8 +229,7 @@ sub get_annotation_window()
     {
 	$instance = {};
 	$instance->{type} = $window_type;
-	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -241,7 +242,6 @@ sub get_annotation_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{window}->set_icon($app_icon);
 	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
 	$instance->{annotation_textview} =
 	    $instance->{glade}->get_widget("annotation_textview");

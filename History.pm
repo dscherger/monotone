@@ -256,6 +256,8 @@ sub display_revision_change_history($$)
 
     # Make sure we are at the top.
 
+    $instance->{history_buffer}->
+	place_cursor($instance->{history_buffer}->get_start_iter());
     $instance->{history_scrolledwindow}->get_vadjustment()->set_value(0);
     $instance->{history_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
@@ -445,6 +447,8 @@ sub display_file_change_history($$$)
 
     # Make sure we are at the top.
 
+    $instance->{history_buffer}->
+	place_cursor($instance->{history_buffer}->get_start_iter());
     $instance->{history_scrolledwindow}->get_vadjustment()->set_value(0);
     $instance->{history_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
@@ -628,460 +632,6 @@ sub compare_button_clicked_cb($$)
 		      $revision_ids[0],
 		      $revision_ids[1],
 		      $instance->{file_name});
-
-}
-#
-##############################################################################
-#
-#   Routine      - file_comparison_combobox_changed_cb
-#
-#   Description  - Callback routine called when the user changes the value of
-#                  the file combobox by selecting an entry from its pulldown
-#                  list in a revision comparison window.
-#
-#   Data         - $widget   : The widget object that received the signal.
-#                  $instance : The window instance that is associated with
-#                              this widget.
-#
-##############################################################################
-
-
-
-sub file_comparison_combobox_changed_cb($$)
-{
-
-    my($widget, $instance) = @_;
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
-
-    my($iter,
-       $line_nr);
-
-    # Get the line number related to the selected file and then jump to it.
-
-    $line_nr = $instance->{file_combo}->get_model()->get
-	($instance->{file_combo}->get_active_iter(), CLS_LINE_NR_COLUMN);
-    $iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
-    $instance->{comparison_textview}->scroll_to_iter($iter, 0, TRUE, 0, 0);
-
-}
-#
-##############################################################################
-#
-#   Routine      - coloured_revision_change_log_button_clicked_cb
-#
-#   Description  - Callback routine called when the user clicks on either of
-#                  the two coloured revision change log buttons in a revision
-#                  comparison window.
-#
-#   Data         - $widget  : The widget object that received the signal.
-#                  $details : A reference to an anonymous hash containing the
-#                             window instance, revision and action that is
-#                             associated with this widget.
-#
-##############################################################################
-
-
-
-sub coloured_revision_change_log_button_clicked_cb($$)
-{
-
-    my($widget, $instance) = @_;
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
-
-    my($colour,
-       $revision_id);
-
-    # Work out what revision id to use.
-
-    if ($widget == $instance->{red_revision_button})
-    {
-	$revision_id = $instance->{red_revision_id};
-	$colour = "red";
-    }
-    else
-    {
-	$revision_id = $instance->{green_revision_id};
-	$colour = "green";
-    }
-
-    # Display the full revision change log.
-
-    display_change_log($instance->{mtn}, $revision_id, $colour);
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_history_window
-#
-#   Description  - Creates or prepares an existing history window for use.
-#
-#   Data         - Return Value : A reference to the newly created or unused
-#                                 history instance record.
-#
-##############################################################################
-
-
-
-sub get_history_window()
-{
-
-    my($font,
-       $height,
-       $instance,
-       $width,
-       $window_type);
-
-    $window_type = "history_window";
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
-    # Create a new file history window if an unused one wasn't found, otherwise
-    # reuse an existing unused one.
-
-    if (! defined($instance))
-    {
-	$instance = {};
-	$instance->{type} = $window_type;
-	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
-
-	# Flag to stop recursive calling of callbacks.
-
-	$instance->{in_cb} = 0;
-
-	# Connect Glade registered signal handlers.
-
-	glade_signal_autoconnect($instance->{glade}, $instance);
-
-	# Get the widgets that we are interested in.
-
-	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{window}->set_icon($app_icon);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{history_label} =
-	    $instance->{glade}->get_widget("history_label");
-	$instance->{history_textview} =
-	    $instance->{glade}->get_widget("history_textview");
-	$instance->{history_scrolledwindow} =
-	    $instance->{glade}->get_widget("history_scrolledwindow");
-	$instance->{stop_button} =
-	    $instance->{glade}->get_widget("stop_button");
-	$instance->{compare_button} =
-	    $instance->{glade}->get_widget("compare_button");
-	$instance->{numbers_label} =
-	    $instance->{glade}->get_widget("numbers_value_label");
-	$instance->{revision_id_1_label} =
-	    $instance->{glade}->get_widget("revision_id_1_value_label");
-	$instance->{revision_id_2_label} =
-	    $instance->{glade}->get_widget("revision_id_2_value_label");
-
-	# Setup the file history callbacks.
-
-	$instance->{window}->signal_connect
-	    ("delete_event",
-	     sub {
-		 my($widget, $event, $instance) = @_;
-		 return TRUE if ($instance->{in_cb});
-		 local $instance->{in_cb} = 1;
-		 $widget->hide();
-		 $instance->{history_buffer}->set_text("");
-		 return TRUE;
-	     },
-	     $instance);
-	$instance->{stop_button}->signal_connect
-	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
-
-	# Setup the file history viewer.
-
-	$instance->{history_buffer} =
-	    $instance->{history_textview}->get_buffer();
-	create_format_tags($instance->{history_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{history_textview}->modify_font($font) if (defined($font));
-
-	# Make the stop button the grab widget when busy, this is so the user
-	# can interrupt the history gathering process.
-
-	$instance->{grab_widget} = $instance->{stop_button};
-
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{history_textview}->get_window("text"));
-
-	push(@windows, $instance);
-    }
-    else
-    {
-	$instance->{in_cb} = 0;
-	($width, $height) = $instance->{window}->get_default_size();
-	$instance->{window}->resize($width, $height);
-	$instance->{stop_button}->set_sensitive(FALSE);
-	$instance->{compare_button}->set_sensitive(FALSE);
-	set_label_value($instance->{numbers_label}, "");
-	set_label_value($instance->{revision_id_1_label}, "");
-	set_label_value($instance->{revision_id_2_label}, "");
-    }
-
-    $instance->{stop} = 0;
-
-    # Empty out the contents.
-
-    $instance->{history_buffer}->set_text("");
-
-    return $instance;
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_file_history_helper
-#
-#   Description  - Recursive routine for getting the revisions in a file's
-#                  change history.
-#
-#   Data         - $instance    : The file history window instance.
-#                  $hash        : A reference to a hash that is to contain the
-#                                 list of revision ids.
-#                  $revision_id : The revision id from where the search is to
-#                                 commence.
-#
-##############################################################################
-
-
-
-sub get_file_history_helper($$$)
-{
-
-    my($instance, $hash, $revision_id) = @_;
-
-    return if ($instance->{stop});
-
-    my(@change_parents,
-       @parents);
-
-    $instance->{mtn}->get_content_changed(\@change_parents,
-					  $revision_id,
-					  $instance->{file_name});
-    foreach my $revision (@change_parents)
-    {
-	if (! exists($hash->{$revision}))
-	{
-	    $hash->{$revision} = 1;
-	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
-	    gtk2_update();
-	    @parents = ();
-	    $instance->{mtn}->parents(\@parents, $revision);
-	    foreach my $parent (@parents)
-	    {
-		get_file_history_helper($instance, $hash, $parent);
-	    }
-	}
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_revision_history_helper
-#
-#   Description  - Recursive routine for getting the revisions in a revision's
-#                  change history.
-#
-#   Data         - $instance    : The revision history window instance.
-#                  $hash        : A reference to a hash that is to contain the
-#                                 list of revision ids.
-#                  $revision_id : The revision id from where the search is to
-#                                 commence.
-#
-##############################################################################
-
-
-
-sub get_revision_history_helper($$$)
-{
-
-    my($instance, $hash, $revision_id) = @_;
-
-    return if ($instance->{stop});
-
-    my @parents;
-
-    $instance->{mtn}->parents(\@parents, $revision_id);
-    foreach my $parent (@parents)
-    {
-	if (! exists($hash->{$parent}))
-	{
-	    $hash->{$parent} = 1;
-	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
-	    gtk2_update();
-	    get_revision_history_helper($instance, $hash, $parent);
-	}
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_revision_comparison_window
-#
-#   Description  - Creates or prepares an existing revision comparison window
-#                  for use.
-#
-#   Data         - Return Value : A reference to the newly created or unused
-#                                 change log instance record.
-#
-##############################################################################
-
-
-
-sub get_revision_comparison_window()
-{
-
-    my($font,
-       $height,
-       $instance,
-       $renderer,
-       $width,
-       $window_type);
-
-    $window_type = "revision_comparison_window";
-
-    # Look for an unused window first.
-
-    foreach my $window (@windows)
-    {
-	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
-	{
-	    $instance = $window;
-	    last;
-	}
-    }
-
-    # Create a new revision comparison window if an unused one wasn't found,
-    # otherwise reuse an existing unused one.
-
-    if (! defined($instance))
-    {
-	$instance = {};
-	$instance->{type} = $window_type;
-	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
-
-	# Flag to stop recursive calling of callbacks.
-
-	$instance->{in_cb} = 0;
-
-	# Connect Glade registered signal handlers.
-
-	$instance->{glade}->signal_autoconnect
-	    (sub {
-		 my($callback_name, $widget, $signal_name, $signal_data,
-		    $connect_object, $after, $user_data) = @_;
-		 my $func = $after ? "signal_connect_after" : "signal_connect";
-		 $widget->$func($signal_name,
-				$callback_name,
-				$connect_object ?
-				    $connect_object : $user_data); },
-	     $instance);
-
-	# Get the widgets that we are interested in.
-
-	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{window}->set_icon($app_icon);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{comparison_label} =
-	    $instance->{glade}->get_widget("comparison_label");
-	$instance->{file_combo} =
-	    $instance->{glade}->get_widget("file_comparison_combobox");
-	$instance->{comparison_textview} =
-	    $instance->{glade}->get_widget("comparison_textview");
-	$instance->{comparison_scrolledwindow} =
-	    $instance->{glade}->get_widget("comparison_scrolledwindow");
-	$instance->{red_revision_button} =
-	    $instance->{glade}->get_widget("red_revision_change_log_button");
-	$instance->{green_revision_button} =
-	    $instance->{glade}->get_widget("green_revision_change_log_button");
-
-	# Setup the file history callbacks.
-
-	$instance->{window}->signal_connect
-	    ("delete_event",
-	     sub {
-		 my($widget, $event, $instance) = @_;
-		 return TRUE if ($instance->{in_cb});
-		 local $instance->{in_cb} = 1;
-		 $widget->hide();
-		 $instance->{file_combo}->get_model()->clear();
-		 $instance->{comparison_buffer}->set_text("");
-		 return TRUE;
-	     },
-	     $instance);
-
-	# Setup the file combobox.
-
-	$instance->{file_combo}->
-	    set_model(Gtk2::ListStore->new("Glib::String", "Glib::Int"));
-	$renderer = Gtk2::CellRendererText->new();
-	$instance->{file_combo}->pack_start($renderer, TRUE);
-	$instance->{file_combo}->add_attribute($renderer, "text" => 0);
-	$instance->{file_combo}->get_model()->set
-	    ($instance->{file_combo}->get_model()->append(),
-	     CLS_NAME_COLUMN, " ",
-	     CLS_LINE_NR_COLUMN, 0);
-
-	# Setup the revision comparison viewer.
-
-	$instance->{comparison_buffer} =
-	    $instance->{comparison_textview}->get_buffer();
-	create_format_tags($instance->{comparison_buffer});
-	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
-	$instance->{comparison_textview}->modify_font($font)
-	    if (defined($font));
-
-	# Setup the list of windows that can be made busy for this application
-	# window.
-
-	$instance->{busy_windows} = [];
-	push(@{$instance->{busy_windows}}, $instance->{window}->window());
-	push(@{$instance->{busy_windows}},
-	     $instance->{comparison_textview}->get_window("text"));
-
-	push(@windows, $instance);
-    }
-    else
-    {
-	$instance->{in_cb} = 0;
-	local $instance->{in_cb} = 1;
-	($width, $height) = $instance->{window}->get_default_size();
-	$instance->{window}->resize($width, $height);
-	$instance->{file_combo}->get_model()->clear();
-	$instance->{appbar}->set_progress_percentage(0);
-	$instance->{appbar}->clear_stack();
-    }
-
-    # Empty out the contents.
-
-    $instance->{comparison_buffer}->set_text("");
-
-    return $instance;
 
 }
 #
@@ -1343,11 +893,465 @@ sub compare_revisions($$$;$)
 
     # Make sure we are at the top.
 
+    $instance->{comparison_buffer}->
+	place_cursor($instance->{comparison_buffer}->get_start_iter());
     $instance->{comparison_scrolledwindow}->get_vadjustment()->set_value(0);
     $instance->{comparison_scrolledwindow}->get_hadjustment()->set_value(0);
 
     $instance->{appbar}->pop();
     make_busy($instance, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_comparison_combobox_changed_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the file combobox by selecting an entry from its pulldown
+#                  list in a revision comparison window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub file_comparison_combobox_changed_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($iter,
+       $line_nr);
+
+    # Get the line number related to the selected file and then jump to it.
+
+    $line_nr = $instance->{file_combo}->get_model()->get
+	($instance->{file_combo}->get_active_iter(), CLS_LINE_NR_COLUMN);
+    $iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
+    $instance->{comparison_textview}->scroll_to_iter($iter, 0, TRUE, 0, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - coloured_revision_change_log_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on either of
+#                  the two coloured revision change log buttons in a revision
+#                  comparison window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, revision and action that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub coloured_revision_change_log_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($colour,
+       $revision_id);
+
+    # Work out what revision id to use.
+
+    if ($widget == $instance->{red_revision_button})
+    {
+	$revision_id = $instance->{red_revision_id};
+	$colour = "red";
+    }
+    else
+    {
+	$revision_id = $instance->{green_revision_id};
+	$colour = "green";
+    }
+
+    # Display the full revision change log.
+
+    display_change_log($instance->{mtn}, $revision_id, $colour);
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_history_window
+#
+#   Description  - Creates or prepares an existing history window for use.
+#
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 history instance record.
+#
+##############################################################################
+
+
+
+sub get_history_window()
+{
+
+    my($font,
+       $height,
+       $instance,
+       $width,
+       $window_type);
+
+    $window_type = "history_window";
+
+    # Look for an unused window first.
+
+    foreach my $window (@windows)
+    {
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
+	{
+	    $instance = $window;
+	    last;
+	}
+    }
+
+    # Create a new file history window if an unused one wasn't found, otherwise
+    # reuse an existing unused one.
+
+    if (! defined($instance))
+    {
+	$instance = {};
+	$instance->{type} = $window_type;
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	glade_signal_autoconnect($instance->{glade}, $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{history_label} =
+	    $instance->{glade}->get_widget("history_label");
+	$instance->{history_textview} =
+	    $instance->{glade}->get_widget("history_textview");
+	$instance->{history_scrolledwindow} =
+	    $instance->{glade}->get_widget("history_scrolledwindow");
+	$instance->{stop_button} =
+	    $instance->{glade}->get_widget("stop_button");
+	$instance->{compare_button} =
+	    $instance->{glade}->get_widget("compare_button");
+	$instance->{numbers_label} =
+	    $instance->{glade}->get_widget("numbers_value_label");
+	$instance->{revision_id_1_label} =
+	    $instance->{glade}->get_widget("revision_id_1_value_label");
+	$instance->{revision_id_2_label} =
+	    $instance->{glade}->get_widget("revision_id_2_value_label");
+
+	# Setup the file history callbacks.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{history_buffer}->set_text("");
+		 $instance->{mtn} = undef;
+		 return TRUE;
+	     },
+	     $instance);
+	$instance->{stop_button}->signal_connect
+	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
+
+	# Setup the file history viewer.
+
+	$instance->{history_buffer} =
+	    $instance->{history_textview}->get_buffer();
+	create_format_tags($instance->{history_buffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$instance->{history_textview}->modify_font($font) if (defined($font));
+
+	# Make the stop button the grab widget when busy, this is so the user
+	# can interrupt the history gathering process.
+
+	$instance->{grab_widget} = $instance->{stop_button};
+
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$instance->{busy_windows} = [];
+	push(@{$instance->{busy_windows}}, $instance->{window}->window());
+	push(@{$instance->{busy_windows}},
+	     $instance->{history_textview}->get_window("text"));
+
+	push(@windows, $instance);
+    }
+    else
+    {
+	$instance->{in_cb} = 0;
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{stop_button}->set_sensitive(FALSE);
+	$instance->{compare_button}->set_sensitive(FALSE);
+	set_label_value($instance->{numbers_label}, "");
+	set_label_value($instance->{revision_id_1_label}, "");
+	set_label_value($instance->{revision_id_2_label}, "");
+    }
+
+    $instance->{stop} = 0;
+
+    # Empty out the contents.
+
+    $instance->{history_buffer}->set_text("");
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_file_history_helper
+#
+#   Description  - Recursive routine for getting the revisions in a file's
+#                  change history.
+#
+#   Data         - $instance    : The file history window instance.
+#                  $hash        : A reference to a hash that is to contain the
+#                                 list of revision ids.
+#                  $revision_id : The revision id from where the search is to
+#                                 commence.
+#
+##############################################################################
+
+
+
+sub get_file_history_helper($$$)
+{
+
+    my($instance, $hash, $revision_id) = @_;
+
+    return if ($instance->{stop});
+
+    my(@change_parents,
+       @parents);
+
+    $instance->{mtn}->get_content_changed(\@change_parents,
+					  $revision_id,
+					  $instance->{file_name});
+    foreach my $revision (@change_parents)
+    {
+	if (! exists($hash->{$revision}))
+	{
+	    $hash->{$revision} = 1;
+	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
+	    gtk2_update();
+	    @parents = ();
+	    $instance->{mtn}->parents(\@parents, $revision);
+	    foreach my $parent (@parents)
+	    {
+		get_file_history_helper($instance, $hash, $parent);
+	    }
+	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_revision_history_helper
+#
+#   Description  - Recursive routine for getting the revisions in a revision's
+#                  change history.
+#
+#   Data         - $instance    : The revision history window instance.
+#                  $hash        : A reference to a hash that is to contain the
+#                                 list of revision ids.
+#                  $revision_id : The revision id from where the search is to
+#                                 commence.
+#
+##############################################################################
+
+
+
+sub get_revision_history_helper($$$)
+{
+
+    my($instance, $hash, $revision_id) = @_;
+
+    return if ($instance->{stop});
+
+    my @parents;
+
+    $instance->{mtn}->parents(\@parents, $revision_id);
+    foreach my $parent (@parents)
+    {
+	if (! exists($hash->{$parent}))
+	{
+	    $hash->{$parent} = 1;
+	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
+	    gtk2_update();
+	    get_revision_history_helper($instance, $hash, $parent);
+	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_revision_comparison_window
+#
+#   Description  - Creates or prepares an existing revision comparison window
+#                  for use.
+#
+#   Data         - Return Value : A reference to the newly created or unused
+#                                 change log instance record.
+#
+##############################################################################
+
+
+
+sub get_revision_comparison_window()
+{
+
+    my($font,
+       $height,
+       $instance,
+       $renderer,
+       $width,
+       $window_type);
+
+    $window_type = "revision_comparison_window";
+
+    # Look for an unused window first.
+
+    foreach my $window (@windows)
+    {
+	if ($window->{type} eq $window_type && ! $window->{window}->mapped())
+	{
+	    $instance = $window;
+	    last;
+	}
+    }
+
+    # Create a new revision comparison window if an unused one wasn't found,
+    # otherwise reuse an existing unused one.
+
+    if (! defined($instance))
+    {
+	$instance = {};
+	$instance->{type} = $window_type;
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	$instance->{glade}->signal_autoconnect
+	    (sub {
+		 my($callback_name, $widget, $signal_name, $signal_data,
+		    $connect_object, $after, $user_data) = @_;
+		 my $func = $after ? "signal_connect_after" : "signal_connect";
+		 $widget->$func($signal_name,
+				$callback_name,
+				$connect_object ?
+				    $connect_object : $user_data); },
+	     $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{comparison_label} =
+	    $instance->{glade}->get_widget("comparison_label");
+	$instance->{file_combo} =
+	    $instance->{glade}->get_widget("file_comparison_combobox");
+	$instance->{comparison_textview} =
+	    $instance->{glade}->get_widget("comparison_textview");
+	$instance->{comparison_scrolledwindow} =
+	    $instance->{glade}->get_widget("comparison_scrolledwindow");
+	$instance->{red_revision_button} =
+	    $instance->{glade}->get_widget("red_revision_change_log_button");
+	$instance->{green_revision_button} =
+	    $instance->{glade}->get_widget("green_revision_change_log_button");
+
+	# Setup the file history callbacks.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub {
+		 my($widget, $event, $instance) = @_;
+		 return TRUE if ($instance->{in_cb});
+		 local $instance->{in_cb} = 1;
+		 $widget->hide();
+		 $instance->{file_combo}->get_model()->clear();
+		 $instance->{comparison_buffer}->set_text("");
+		 $instance->{mtn} = undef;
+		 return TRUE;
+	     },
+	     $instance);
+
+	# Setup the file combobox.
+
+	$instance->{file_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String", "Glib::Int"));
+	$renderer = Gtk2::CellRendererText->new();
+	$instance->{file_combo}->pack_start($renderer, TRUE);
+	$instance->{file_combo}->add_attribute($renderer, "text" => 0);
+	$instance->{file_combo}->get_model()->set
+	    ($instance->{file_combo}->get_model()->append(),
+	     CLS_NAME_COLUMN, " ",
+	     CLS_LINE_NR_COLUMN, 0);
+
+	# Setup the revision comparison viewer.
+
+	$instance->{comparison_buffer} =
+	    $instance->{comparison_textview}->get_buffer();
+	create_format_tags($instance->{comparison_buffer});
+	$font = Gtk2::Pango::FontDescription->from_string("monospace 10");
+	$instance->{comparison_textview}->modify_font($font)
+	    if (defined($font));
+
+	# Setup the list of windows that can be made busy for this application
+	# window.
+
+	$instance->{busy_windows} = [];
+	push(@{$instance->{busy_windows}}, $instance->{window}->window());
+	push(@{$instance->{busy_windows}},
+	     $instance->{comparison_textview}->get_window("text"));
+
+	push(@windows, $instance);
+    }
+    else
+    {
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{file_combo}->get_model()->clear();
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
+    }
+
+    # Empty out the contents.
+
+    $instance->{comparison_buffer}->set_text("");
+
+    return $instance;
 
 }
 #

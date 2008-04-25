@@ -114,7 +114,7 @@ sub combo_changed_cb($$)
 	if ($value eq $item)
 	{
 	    $combo_details->{value} = $value;
-	    $combo_details->{completed} = 1;
+	    $combo_details->{complete} = 1;
 	    $instance->{appbar}->clear_stack();
 	    &{$instance->{update_handler}}($instance, $change_state);
 	    last;
@@ -156,12 +156,12 @@ sub combo_key_release_event_cb($$$)
     my($change_state,
        $combo,
        $combo_details,
-       $completed,
+       $complete,
        $completion,
        $item,
        $len,
        $name,
-       $old_completed,
+       $old_complete,
        $old_value,
        $value);
 
@@ -194,8 +194,8 @@ sub combo_key_release_event_cb($$$)
     # The user has typed something in then validate it and auto-complete it if
     # necessary.
 
-    $completed = 0;
-    $old_completed = $combo_details->{completed};
+    $complete = 0;
+    $old_complete = $combo_details->{complete};
     $old_value = $combo_details->{value};
     $value = $widget->get_text();
     if ($value ne $old_value)
@@ -219,7 +219,7 @@ sub combo_key_release_event_cb($$$)
 
 	    if ($combo_details->{completion}->get_completion($value,
 							     \$completion,
-							     \$completed))
+							     \$complete))
 	    {
 		$instance->{appbar}->clear_stack();
 	    }
@@ -235,7 +235,7 @@ sub combo_key_release_event_cb($$$)
 
 	}
 	$combo_details->{value} = $value;
-	$combo_details->{completed} = $completed;
+	$combo_details->{complete} = $complete;
 
 	# Update the pulldown choices.
 
@@ -243,14 +243,13 @@ sub combo_key_release_event_cb($$$)
 	foreach $item (@{$combo_details->{list}})
 	{
 	    $combo->append_text($item) if ($value eq substr($item, 0, $len));
-	    $combo_details->{completed} = 1
-		if (! $completed && $value eq $item);
+	    $combo_details->{complete} = 1 if (! $complete && $value eq $item);
 	}
 
 	# Update the window state on a significant change.
 
 	&{$instance->{update_handler}}($instance, $change_state)
-	    if ($combo_details->{completed} != $old_completed
+	    if ($combo_details->{complete} != $old_complete
 		|| $combo_details->{value} ne $old_value);
 
     }

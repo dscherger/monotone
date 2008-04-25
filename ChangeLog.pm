@@ -94,6 +94,8 @@ sub display_change_log($$;$$)
 			     \@certs_list,
 			     $text_colour ? $text_colour : "",
 			     \@revision_details);
+    $instance->{changelog_buffer}->
+	place_cursor($instance->{changelog_buffer}->get_start_iter());
     if ($instance->{changelog_scrolledwindow}->realized())
     {
 	$instance->{changelog_scrolledwindow}->get_vadjustment()->set_value(0);
@@ -143,8 +145,7 @@ sub get_change_log_window()
     {
 	$instance = {};
 	$instance->{type} = $window_type;
-	$instance->{glade} =
-	    Gtk2::GladeXML->new("../mtn-browse.glade", $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -157,7 +158,6 @@ sub get_change_log_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{window}->set_icon($app_icon);
 	$instance->{changelog_textview} =
 	    $instance->{glade}->get_widget("changelog_textview");
 	$instance->{changelog_scrolledwindow} =
