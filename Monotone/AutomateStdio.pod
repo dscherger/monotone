@@ -151,7 +151,10 @@ Get a list of children for the specified revision.
 
 =item B<$mtn-E<gt>closedown()>
 
-If started then stop the mtn subprocess.
+If started then stop the mtn subprocess. Please note that the mtn subprocess is
+automatically stopped when the related object is destroyed. This method is
+provided so that application developers can conveniently control when the
+subprocess is active.
 
 =item B<$mtn-E<gt>common_ancestors(\@list, $revision_id ...)>
 
