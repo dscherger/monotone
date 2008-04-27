@@ -163,7 +163,7 @@ sub view_button_clicked_cb($$);
     # Initialise stuff.
 
     set_locale Gtk2;
-    Gnome2::Program->init("mtn-browse", 0.1);
+    Gnome2::Program->init("mtn-browse", 0.3);
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
@@ -321,7 +321,7 @@ sub about_activate_cb($$)
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
-	 "0.1b",
+	 "0.3b",
 	 "Copyright \xa9 2007-2009 Anthony Cooper",
 	 "A graphical front-end browser for Monotone VCS databases",
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
