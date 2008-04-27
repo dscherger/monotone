@@ -806,7 +806,7 @@ in Monotone-Viz</property>
 		  </child>
 		</widget>
 		<packing>
-		  <property name="shrink">True</property>
+		  <property name="shrink">False</property>
 		  <property name="resize">True</property>
 		</packing>
 	      </child>
@@ -871,7 +871,7 @@ in Monotone-Viz</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkEventBox" id="file_name_value_eventbox">
+					    <widget class="GtkEventBox" id="file_name_value_label_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
@@ -933,7 +933,7 @@ in Monotone-Viz</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkEventBox" id="last_update_value_eventbox">
+					    <widget class="GtkEventBox" id="last_update_value_label_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
@@ -1078,7 +1078,7 @@ updated with respect to this revision</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkEventBox" id="file_id_value_eventbox">
+					    <widget class="GtkEventBox" id="file_id_value_label_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
@@ -1141,7 +1141,7 @@ file was last changed</property>
 					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
-					    <widget class="GtkEventBox" id="file_revision_id_value_eventbox">
+					    <widget class="GtkEventBox" id="file_revision_id_value_label_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
@@ -1476,7 +1476,7 @@ into a viewer</property>
 		  </child>
 		</widget>
 		<packing>
-		  <property name="shrink">True</property>
+		  <property name="shrink">False</property>
 		  <property name="resize">True</property>
 		</packing>
 	      </child>
@@ -1541,7 +1541,7 @@ into a viewer</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="database_name_value_eventbox">
+				    <widget class="GtkEventBox" id="database_name_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -1602,7 +1602,7 @@ into a viewer</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="author_value_eventbox">
+				    <widget class="GtkEventBox" id="author_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -1745,7 +1745,7 @@ into a viewer</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="revision_id_value_eventbox">
+				    <widget class="GtkEventBox" id="revision_id_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -1806,7 +1806,7 @@ into a viewer</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="change_log_value_eventbox">
+				    <widget class="GtkEventBox" id="change_log_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -2198,7 +2198,7 @@ specify very specific selection critia</property>
 			  <property name="above_child">False</property>
 
 			  <child>
-			    <widget class="GtkLabel" id="label2">
+			    <widget class="GtkLabel" id="revision_label">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes"> Revision:</property>
 			      <property name="use_underline">False</property>
@@ -2842,7 +2842,7 @@ Tag</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="selected_branch_value_eventbox">
+				    <widget class="GtkEventBox" id="selected_branch_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -2944,7 +2944,7 @@ Tag</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="selected_revision_value_eventbox">
+				    <widget class="GtkEventBox" id="selected_revision_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -3350,7 +3350,7 @@ Tag</property>
 				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
-					<widget class="GtkEventBox" id="numbers_value_eventbox">
+					<widget class="GtkEventBox" id="numbers_value_label_eventbox">
 					  <property name="width_request">0</property>
 					  <property name="height_request">0</property>
 					  <property name="visible">True</property>
@@ -3394,7 +3394,7 @@ Tag</property>
 			      </child>
 
 			      <child>
-				<widget class="GtkEventBox" id="numbers_eventbox">
+				<widget class="GtkEventBox" id="numbers_label_eventbox">
 				  <property name="visible">True</property>
 				  <property name="tooltip" translatable="yes">Number of revisions listed</property>
 				  <property name="visible_window">True</property>
@@ -3541,7 +3541,7 @@ Tag</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="revision_id_1_value_eventbox">
+				    <widget class="GtkEventBox" id="revision_id_1_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -3603,7 +3603,7 @@ Tag</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="revision_id_2_value_eventbox">
+				    <widget class="GtkEventBox" id="revision_id_2_value_label_eventbox">
 				      <property name="width_request">0</property>
 				      <property name="height_request">0</property>
 				      <property name="visible">True</property>
@@ -3648,7 +3648,7 @@ Tag</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkEventBox" id="revision_id_1_eventbox">
+			    <widget class="GtkEventBox" id="revision_id_1_label_eventbox">
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Revision id of the first selected
 file version that is to be compared</property>
@@ -3682,7 +3682,7 @@ file version that is to be compared</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkEventBox" id="revision_id_2_eventbox">
+			    <widget class="GtkEventBox" id="revision_id_2_label_eventbox">
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Revision id of the second selected
 file version that is to be compared</property>
@@ -3880,7 +3880,7 @@ file version that is to be compared</property>
 		      <property name="spacing">5</property>
 
 		      <child>
-			<widget class="GtkEventBox" id="file_comparison_eventbox">
+			<widget class="GtkEventBox" id="file_comparison_label_eventbox">
 			  <property name="visible">True</property>
 			  <property name="tooltip" translatable="yes">Jump to the selected file</property>
 			  <property name="visible_window">True</property>
@@ -4275,7 +4275,7 @@ that had the green highlighted text</property>
 	      <property name="spacing">5</property>
 
 	      <child>
-		<widget class="GtkEventBox" id="find_eventbox">
+		<widget class="GtkEventBox" id="find_label_eventbox">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Enter the text that is
 to be searched for</property>

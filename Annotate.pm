@@ -206,9 +206,7 @@ sub display_annotation($$$)
 sub get_annotation_window()
 {
 
-    my($height,
-       $instance,
-       $width);
+    my $instance;
     my $window_type = "annotation_window";
     my $wm = WindowManager->instance();
 
@@ -267,9 +265,14 @@ sub get_annotation_window()
     }
     else
     {
+	my($height,
+	   $width);
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
     }
 
     # Empty out the contents.

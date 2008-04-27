@@ -93,7 +93,7 @@ use WindowManager;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# Constants for the columns within the manifest ListStore widget.
+# Constants for the columns within the manifest liststore widget.
 
 use constant MLS_ICON_COLUMN           => 0;
 use constant MLS_NAME_COLUMN           => 1;
@@ -169,6 +169,14 @@ sub view_button_clicked_cb($$);
     $tooltips = Gtk2::Tooltips->new();
     $mono_font = Gtk2::Pango::FontDescription->from_string("monospace 10");
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
+
+# my $mtype = Gnome2::VFS::Mime::Type->new("image/jpeg");
+# print $mtype->get_default_application();
+
+# $mtype->get_default_application()->launch("file:///home/aecoope/me.jpg");
+
+# print Gnome2::VFS->get_mime_type("file:///home/aecoope/test");
+# print Gnome2::VFS->get_mime_type("file:///home/aecoope/perl/mtn-browse.svg");
 
     # Create the temporary working directory.
 
@@ -407,7 +415,7 @@ sub open_toolbutton_clicked_cb($$)
 		     ["modal"],
 		     "warning",
 		     "close",
-		     $!);
+		     $! . ".");
 		$dialog->run();
 		$dialog->destroy();
 	    }
@@ -435,7 +443,7 @@ sub open_toolbutton_clicked_cb($$)
 			 ["modal"],
 			 "warning",
 			 "close",
-			 "Not a valid Monotone database");
+			 "Not a valid Monotone database.");
 		    $dialog->run();
 		    $dialog->destroy();
 		}
@@ -522,7 +530,7 @@ sub properties_toolbutton_clicked_cb($$)
 					  ["modal"],
 					  "info",
 					  "close",
-					  "Not implemented");
+					  "Not implemented.");
     $dialog->run();
     $dialog->destroy();
 
@@ -555,7 +563,7 @@ sub preferences_toolbutton_clicked_cb($$)
 					  ["modal"],
 					  "info",
 					  "close",
-					  "Not implemented");
+					  "Not implemented.");
     $dialog->run();
     $dialog->destroy();
 
@@ -588,7 +596,7 @@ sub help_toolbutton_clicked_cb($$)
 					  ["modal"],
 					  "info",
 					  "close",
-					  "Not implemented");
+					  "Not implemented.");
     $dialog->run();
     $dialog->destroy();
 
@@ -964,7 +972,7 @@ sub save_as_button_clicked_cb($$)
 			 ["modal"],
 			 "warning",
 			 "close",
-			 $!);
+			 $! . ".");
 		    $dialog->run();
 		    $dialog->destroy();
 		}
@@ -1015,10 +1023,12 @@ sub view_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my($data,
-       $editor,
+    my($app,
+       $data,
        $fh,
-       $file_name);
+       $file_name,
+       $mime,
+       $mime_type);
 
     if (! defined($file_name =
 		  generate_tmp_path($browser->{file_being_viewed}->
@@ -1028,8 +1038,8 @@ sub view_button_clicked_cb($$)
 	    ($browser->{window},
 	     ["modal"],
 	     "warning",
-	     "Cannot generate temporary file name",
-	     $!);
+	     "Cannot generate temporary file name: ",
+	     $! . ".");
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -1044,7 +1054,7 @@ sub view_button_clicked_cb($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     $!);
+	     $! . ".");
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -1056,20 +1066,40 @@ sub view_button_clicked_cb($$)
     $fh->close();
     $fh = undef;
 
-    # Load into an editor.
+    # Load into the appropriate application for this type of file, defaulting
+    # to Vi if necessary.
 
-    if (exists($ENV{EDITOR})
-	&& ($ENV{EDITOR} eq "emacs"
-	    || $ENV{EDITOR} eq "xemacs"
-	    || $ENV{EDITOR} eq "gvim"))
+    if (! defined($mime_type =
+		  Gnome2::VFS->get_mime_type("file://" . $file_name)))
     {
-	$editor = $ENV{EDITOR};
+	my $dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     "Unknown file type, not viewing.");
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+    $app = $mime->get_default_application()
+	if (defined($mime = Gnome2::VFS::Mime::Type->new($mime_type)));
+    if (defined($app))
+    {
+	$app->launch("file://" . $file_name);
     }
     else
     {
-	$editor = "xterm -e vi";
+	my $dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "info",
+	     "close",
+	     sprintf("No application is associated with\n"
+		         . "Mime type `%s',\nusing Vi instead.",
+		     $mime_type));
+	system("xterm -e vi " . $file_name . " &");
     }
-    system($editor . " " . $file_name . " &");
 
 }
 #
@@ -1528,6 +1558,7 @@ sub get_browser_window(;$$$$$)
 	    add($browser->{file_view_sv});
 	$browser->{file_view_sv}->show_all();
 
+	local $browser->{in_cb} = 1;
 	$browser->{window}->show_all();
 
 	# Register the window for management.
@@ -1560,6 +1591,13 @@ sub get_browser_window(;$$$$$)
 	$browser->{window}->resize($width, $height);
 	$browser->{glade}->get_widget("browser_hpaned")->set_position(300);
 	$browser->{tagged_tick}->set_active(FALSE);
+	$browser->{appbar}->set_progress_percentage(0);
+	$browser->{appbar}->clear_stack();
+	$browser->{branch_combo_details}->{preset} = 0;
+	$browser->{revision_combo_details}->{preset} = 0;
+	$browser->{directory_combo_details}->{preset} = 0;
+	$browser->{file_being_viewed_preset_value} = "";
+	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 	$browser->{window}->show_all();
 
 	# Now update with the details of the specified database.
@@ -2416,7 +2454,7 @@ sub sigchld_handler()
 			      "close",
 			      sprintf("The mtn subprocess just unexpectedly\n"
 				          . "exited (%s).\n"
-				          . "This shouldn't happen.\n"
+				          . "This should not be happening!\n"
 				          . "It will be restarted when "
 				          .  "needed.",
 				      WIFSIGNALED($status) ?

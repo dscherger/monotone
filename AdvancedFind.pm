@@ -44,12 +44,6 @@ require 5.008;
 
 use strict;
 
-# ***** GLOBAL DATA DECLARATIONS *****
-
-# The type of window that is going to be managed by this module.
-
-my $window_type = "advanced_find_window";
-
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Public routines.
@@ -58,8 +52,8 @@ sub advanced_find($$$);
 
 # Private routines.
 
-sub create_advanced_find_window();
 sub execute_button_clicked_cb($$);
+sub get_advanced_find_window($);
 sub populate_button_clicked_cb($$);
 sub revisions_treeview_cursor_changed_cb($$);
 sub revisions_treeview_row_activated_cb($$$$);
@@ -94,61 +88,17 @@ sub advanced_find($$$)
     my($browser, $revision_id, $branches) = @_;
 
     my($advanced_find,
-       $new,
        $ret_val);
-    my $wm = WindowManager->instance();
 
-    # Create a new advanced find window if an unused one wasn't found,
-    # otherwise reuse the existing unused one.
-
-    if (defined($advanced_find = $wm->find_unused($window_type)))
-    {
-	$new = 0;
-    }
-    else
-    {
-	$advanced_find = create_advanced_find_window();
-	$new = 1;
-    }
-
-    $advanced_find->{mtn} = $browser->{mtn};
+    $advanced_find = get_advanced_find_window($browser);
 
     # Update the window's internal state.
 
     {
 
-	my($height,
-	   $width);
-
 	local $advanced_find->{in_cb} = 1;
 
-	$advanced_find->{selected} = 0;
-
-	# Reset the window contents, then show it.
-
-	$advanced_find->{window}->set_transient_for($browser->{window});
-	$advanced_find->{branch_combo_details}->{preset} = 0;
-	$advanced_find->{revision_combo_details}->{preset} = 0;
-	$advanced_find->{appbar}->set_progress_percentage(0);
-	$advanced_find->{appbar}->clear_stack();
-	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
-	($width, $height) = $advanced_find->{window}->get_default_size();
-	$advanced_find->{window}->resize($width, $height);
-	$advanced_find->{window}->show_all();
-
-	# If necessary, register the window for management and setup the list
-	# of additional windows that can be made busy for this application
-	# window.
-
-	if ($new)
-	{
-	    $wm->manage($advanced_find, $window_type);
-	    $wm->add_busy_widgets($advanced_find,
-				  $advanced_find->{details_textview}->
-				      get_window("text"));
-	}
-
-	# Now actually update it with any preset values.
+	# Update it with any preset values.
 
 	$advanced_find->{branch_combo_details}->{preset} = 1;
 	$advanced_find->{branch_combo_details}->{complete} =
@@ -226,130 +176,200 @@ sub advanced_find($$$)
 #
 ##############################################################################
 #
-#   Routine      - create_advanced_find_window
+#   Routine      - get_advanced_find_window
 #
-#   Description  - Creates the advanced find dialog window.
+#   Description  - Creates or prepares an existing advanced find dialog window
+#                  for use.
 #
-#   Data         - Return Value : A reference to the newly created advanced
-#                                 find instance record.
+#   Data         - $browser     : The browser instance that started the
+#                                 advanced find.
+#                  Return Value : A reference to the newly created or unused
+#                                 advanced find instance record.
 #
 ##############################################################################
 
 
 
-sub create_advanced_find_window()
+sub get_advanced_find_window($)
 {
 
-    my(@branch_list,
-       $instance,
-       $renderer,
-       $tv_column);
+    my $browser = $_[0];
 
-    $instance = {};
-    $instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+    my $instance;
+    my $window_type = "advanced_find_window";
+    my $wm = WindowManager->instance();
 
-    # Flag to stop recursive calling of callbacks.
+    # Create a new advanced find dialog window if an unused one wasn't found,
+    # otherwise reuse an existing unused one.
 
-    $instance->{in_cb} = 0;
+    if (! defined($instance = $wm->find_unused($window_type)))
+    {
 
-    # Connect Glade registered signal handlers.
+	my($renderer,
+	   $tv_column);
 
-    glade_signal_autoconnect($instance->{glade}, $instance);
+	$instance = {};
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{mtn} = $browser->{mtn};
 
-    # Link in the update handler for the advanced find window.
+	# Flag to stop recursive calling of callbacks.
 
-    $instance->{update_handler} = \&update_advanced_find_state;
+	$instance->{in_cb} = 0;
 
-    # Get the widgets that we are interested in.
+	# Connect Glade registered signal handlers.
 
-    $instance->{window} = $instance->{glade}->get_widget($window_type);
-    $instance->{appbar} = $instance->{glade}->get_widget("appbar");
-    $instance->{simple_query_radiobutton} =
-	$instance->{glade}->get_widget("simple_query_radiobutton");
-    $instance->{simple_frame} = $instance->{glade}->get_widget("simple_frame");
-    $instance->{advanced_frame} =
-	$instance->{glade}->get_widget("advanced_frame");
-    $instance->{branch_combo} =
-	$instance->{glade}->get_widget("branch_comboboxentry");
-    $instance->{revision_combo} =
-	$instance->{glade}->get_widget("revision_comboboxentry");
-    $instance->{tagged_tick} =
-	$instance->{glade}->get_widget("tagged_checkbutton");
-    $instance->{search_term_combo} =
-	$instance->{glade}->get_widget("search_term_comboboxentry");
-    $instance->{term_combo} = $instance->{glade}->get_widget("term_combobox");
-    $instance->{argument_entry} =
-	$instance->{glade}->get_widget("argument_entry");
-    $instance->{date_dateedit} =
-	$instance->{glade}->get_widget("date_dateedit");
-    $instance->{revisions_treeview} =
-	$instance->{glade}->get_widget("revisions_treeview");
-    $instance->{details_textview} =
-	$instance->{glade}->get_widget("details_textview");
-    $instance->{details_scrolledwindow} =
-	$instance->{glade}->get_widget("details_scrolledwindow");
-    $instance->{selected_branch_label} =
-	$instance->{glade}->get_widget("selected_branch_value_label");
-    $instance->{selected_revision_label} =
-	$instance->{glade}->get_widget("selected_revision_value_label");
-    $instance->{ok_button} = $instance->{glade}->get_widget("ok_button");
+	glade_signal_autoconnect($instance->{glade}, $instance);
 
-    # Setup the advanced find window deletion handlers.
+	# Link in the update handler for the advanced find window.
 
-    $instance->{window}->signal_connect
-	("delete_event",
-	 sub { $_[2]->{done} = 1 unless ($_[2]->{in_cb}); return TRUE; },
-         $instance);
-    $instance->{glade}->get_widget("cancel_button")->signal_connect
-	("clicked", sub { $_[1]->{done} = 1; }, $instance);
-    $instance->{glade}->get_widget("ok_button")->signal_connect
-	("clicked", sub { $_[1]->{done} = $_[1]->{selected} = 1; }, $instance);
+	$instance->{update_handler} = \&update_advanced_find_state;
 
-    # Setup the comboboxentry key release signal handlers.
+	# Get the widgets that we are interested in.
 
-    $instance->{branch_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $instance);
-    $instance->{revision_combo}->child()->
-	signal_connect("key_release_event",
-		       \&combo_key_release_event_cb,
-		       $instance);
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
+	$instance->{simple_query_radiobutton} =
+	    $instance->{glade}->get_widget("simple_query_radiobutton");
+	$instance->{simple_frame} =
+	    $instance->{glade}->get_widget("simple_frame");
+	$instance->{advanced_frame} =
+	    $instance->{glade}->get_widget("advanced_frame");
+	$instance->{branch_combo} =
+	    $instance->{glade}->get_widget("branch_comboboxentry");
+	$instance->{revision_combo} =
+	    $instance->{glade}->get_widget("revision_comboboxentry");
+	$instance->{tagged_tick} =
+	    $instance->{glade}->get_widget("tagged_checkbutton");
+	$instance->{search_term_combo} =
+	    $instance->{glade}->get_widget("search_term_comboboxentry");
+	$instance->{term_combo} =
+	    $instance->{glade}->get_widget("term_combobox");
+	$instance->{argument_entry} =
+	    $instance->{glade}->get_widget("argument_entry");
+	$instance->{date_dateedit} =
+	    $instance->{glade}->get_widget("date_dateedit");
+	$instance->{revisions_treeview} =
+	    $instance->{glade}->get_widget("revisions_treeview");
+	$instance->{details_textview} =
+	    $instance->{glade}->get_widget("details_textview");
+	$instance->{details_scrolledwindow} =
+	    $instance->{glade}->get_widget("details_scrolledwindow");
+	$instance->{selected_branch_label} =
+	    $instance->{glade}->get_widget("selected_branch_value_label");
+	$instance->{selected_revision_label} =
+	    $instance->{glade}->get_widget("selected_revision_value_label");
+	$instance->{ok_button} = $instance->{glade}->get_widget("ok_button");
 
-    # Setup the comboboxes.
+	# Setup the advanced find window deletion handlers.
 
-    $instance->{branch_combo}->set_model(Gtk2::ListStore->new("Glib::String"));
-    $instance->{branch_combo}->set_text_column(0);
-    $instance->{branch_combo}->set_wrap_width(2);
-    $instance->{revision_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $instance->{revision_combo}->set_text_column(0);
-    $instance->{revision_combo}->set_wrap_width(2);
-    $instance->{search_term_combo}->
-	set_model(Gtk2::ListStore->new("Glib::String"));
-    $instance->{search_term_combo}->set_text_column(0);
-    $instance->{query_history} = [];
-    $instance->{term_combo}->set_active(0);
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub { $_[2]->{done} = 1 unless ($_[2]->{in_cb}); return TRUE; },
+	     $instance);
+	$instance->{glade}->get_widget("cancel_button")->signal_connect
+	    ("clicked",
+	     sub { $_[1]->{done} = 1 unless ($_[1]->{in_cb}); },
+	     $instance);
+	$instance->{glade}->get_widget("ok_button")->signal_connect
+	    ("clicked",
+	     sub { $_[1]->{done} = $_[1]->{selected} = 1
+		       unless ($_[1]->{in_cb}); },
+	     $instance);
 
-    # Setup the revisions list browser.
+	# Setup the comboboxentry key release signal handlers.
 
-    $instance->{revisions_liststore} = Gtk2::ListStore->new("Glib::String");
-    $instance->{revisions_treeview}->
-	set_model($instance->{revisions_liststore});
-    $tv_column = Gtk2::TreeViewColumn->new();
-    $tv_column->set_title("Matching Revision Ids");
-    $tv_column->set_sort_column_id(0);
-    $renderer = Gtk2::CellRendererText->new();
-    $tv_column->pack_start($renderer, FALSE);
-    $tv_column->set_attributes($renderer, "text" => 0);
-    $instance->{revisions_treeview}->append_column($tv_column);
-    $instance->{revisions_treeview}->set_search_column(0);
+	$instance->{branch_combo}->child()->
+	    signal_connect("key_release_event",
+			   \&combo_key_release_event_cb,
+			   $instance);
+	$instance->{revision_combo}->child()->
+	    signal_connect("key_release_event",
+			   \&combo_key_release_event_cb,
+			   $instance);
 
-    # Setup the revision details viewer.
+	# Setup the comboboxes.
 
-    $instance->{details_buffer} = $instance->{details_textview}->get_buffer();
-    create_format_tags($instance->{details_textview}->get_buffer());
-    $instance->{details_textview}->modify_font($mono_font);
+	$instance->{branch_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{branch_combo}->set_text_column(0);
+	$instance->{branch_combo}->set_wrap_width(2);
+	$instance->{revision_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{revision_combo}->set_text_column(0);
+	$instance->{revision_combo}->set_wrap_width(2);
+	$instance->{search_term_combo}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{search_term_combo}->set_text_column(0);
+	$instance->{query_history} = [];
+	$instance->{term_combo}->set_active(0);
+
+	# Setup the revisions list browser.
+
+	$instance->{revisions_liststore} =
+	    Gtk2::ListStore->new("Glib::String");
+	$instance->{revisions_treeview}->
+	    set_model($instance->{revisions_liststore});
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title("Matching Revision Ids");
+	$tv_column->set_sort_column_id(0);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => 0);
+	$instance->{revisions_treeview}->append_column($tv_column);
+	$instance->{revisions_treeview}->set_search_column(0);
+
+	# Setup the revision details viewer.
+
+	$instance->{details_buffer} =
+	    $instance->{details_textview}->get_buffer();
+	create_format_tags($instance->{details_textview}->get_buffer());
+	$instance->{details_textview}->modify_font($mono_font);
+
+	# Update the advanced find dialog's state.
+
+	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{branch_combo_details}->{preset} = 0;
+	$instance->{revision_combo_details}->{preset} = 0;
+	&{$instance->{update_handler}}($instance, NEW_FIND);
+
+	local $instance->{in_cb} = 1;
+	$instance->{window}->show_all();
+
+	# Register the window for management.
+
+	$wm->manage($instance, $window_type);
+	$wm->add_busy_widgets($instance,
+			      $instance->{details_textview}->
+			          get_window("text"));
+
+    }
+    else
+    {
+
+	my($height,
+	   $width);
+
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+
+	# Reset the advanced find dialog's state.
+
+	$instance->{mtn} = $browser->{mtn};
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{glade}->get_widget("revisions_hpaned")->set_position(300);
+	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{branch_combo_details}->{preset} = 0;
+	$instance->{revision_combo_details}->{preset} = 0;
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
+	&{$instance->{update_handler}}($instance, NEW_FIND);
+	$instance->{window}->show_all();
+
+    }
+
+    $instance->{done} = 0;
+    $instance->{selected} = 0;
 
     return $instance;
 
@@ -915,7 +935,7 @@ sub update_advanced_find_state($$)
 			 ["modal"],
 			 "info",
 			 "close",
-			 "No revisions matched your query");
+			 "No revisions matched your query.");
 		     $dialog->run();
 		     $dialog->destroy();
 		}

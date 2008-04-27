@@ -1005,9 +1005,7 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 sub get_history_window()
 {
 
-    my($height,
-       $instance,
-       $width);
+    my $instance;
     my $window_type = "history_window";
     my $wm = WindowManager->instance();
 
@@ -1063,7 +1061,9 @@ sub get_history_window()
 	     },
 	     $instance);
 	$instance->{stop_button}->signal_connect
-	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
+	    ("clicked",
+	     sub { $_[1]->{stop} = 1 unless ($_[1]->{in_cb}); },
+	     $instance);
 
 	# Setup the file history viewer.
 
@@ -1081,7 +1081,10 @@ sub get_history_window()
     }
     else
     {
+	my($height,
+	   $width);
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
 	$instance->{stop_button}->set_sensitive(FALSE);
@@ -1089,6 +1092,8 @@ sub get_history_window()
 	set_label_value($instance->{numbers_label}, "");
 	set_label_value($instance->{revision_id_1_label}, "");
 	set_label_value($instance->{revision_id_2_label}, "");
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
     }
 
     $instance->{stop} = 0;
@@ -1227,16 +1232,7 @@ sub get_revision_comparison_window()
 
 	# Connect Glade registered signal handlers.
 
-	$instance->{glade}->signal_autoconnect
-	    (sub {
-		 my($callback_name, $widget, $signal_name, $signal_data,
-		    $connect_object, $after, $user_data) = @_;
-		 my $func = $after ? "signal_connect_after" : "signal_connect";
-		 $widget->$func($signal_name,
-				$callback_name,
-				$connect_object ?
-				    $connect_object : $user_data); },
-	     $instance);
+	glade_signal_autoconnect($instance->{glade}, $instance);
 
 	# Get the widgets that we are interested in.
 

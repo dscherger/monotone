@@ -210,7 +210,7 @@ sub find_button_clicked_cb($$)
 	     ["modal"],
 	     "info",
 	     "close",
-	     "Enter some text to\nsearch for first");
+	     "Enter some text to\nsearch for first.");
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -385,7 +385,7 @@ sub find_button_clicked_cb($$)
 	     ["modal"],
 	     "info",
 	     "close",
-	     sprintf("Could not find\n`%s'", $search_term));
+	     sprintf("Could not find\n`%s'.", $search_term));
 	$dialog->run();
 	$dialog->destroy();
     }

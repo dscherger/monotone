@@ -442,7 +442,7 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("The %s subprocess was terminated by signal %d",
+	     sprintf("The %s subprocess was terminated by signal %d.",
 		     Glib::Markup::escape_text($args[0]),
 		     WTERMSIG($status)));
 	$dialog->run();
