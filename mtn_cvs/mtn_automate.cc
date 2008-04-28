@@ -4,6 +4,7 @@
 // licensed to the public under the terms of the GNU GPL (>= 2)
 // see the file COPYING for details
 
+#include "../base.hh"
 #include "mtn_automate.hh"
 #include <sanity.hh>
 #include <basic_io.hh>
@@ -166,7 +167,9 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::add_file, i->first);
-      st.push_hex_pair(syms::content, i->second.inner());
+      hexenc<id> hex;
+      encode_hexenc(i->second.inner(), hex);
+      st.push_hex_pair(syms::content, hex);
       printer.print_stanza(st);
     }
 
@@ -175,8 +178,11 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::patch, i->first);
-      st.push_hex_pair(syms::from, i->second.first.inner());
-      st.push_hex_pair(syms::to, i->second.second.inner());
+      hexenc<id> hex;
+      encode_hexenc(i->second.first.inner(), hex);
+      st.push_hex_pair(syms::from, hex);
+      encode_hexenc(i->second.second.inner(), hex);
+      st.push_hex_pair(syms::to, hex);
       printer.print_stanza(st);
     }
 
@@ -212,7 +218,9 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
 
 // changeset stanza  
   basic_io::stanza st;
-  st.push_hex_pair(syms::old_revision, parent.inner());
+  hexenc<id> hex;
+  encode_hexenc(parent.inner(), hex);
+  st.push_hex_pair(syms::old_revision, hex);
   printer.print_stanza(st);
   print_cset(printer, changes);
   std::vector<std::string> args(1,printer.buf);
@@ -498,10 +506,12 @@ mtn_automate::revision_t mtn_automate::get_revision(revision_id const& rid)
   return result;
 }
 
+#if 0
 template <> void
 dump(file_path const& fp, string & out)
 { out=fp.as_internal();
 }
+#endif
 
 static std::string print_sync_info(mtn_automate::sync_map_t const& data)
 { basic_io::printer printer;
