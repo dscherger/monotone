@@ -18,9 +18,7 @@
 #include <time.h>
 
 #include "lexical_cast.hh"
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/bind.hpp>
 
 #include "lua_hooks.hh"
 #include "key_store.hh"
@@ -29,10 +27,12 @@
 #include "cert.hh"
 #include "constants.hh"
 #include "enumerator.hh"
+#include "gsync.hh"
 #include "keys.hh"
 #include "lua.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
+#include "net_common.hh"
 #include "netio.hh"
 #include "numeric_vocab.hh"
 #include "refiner.hh"
@@ -47,6 +47,7 @@
 #include "globish.hh"
 #include "uri.hh"
 #include "options.hh"
+#include "vocab.hh"
 
 #include "botan/botan.h"
 
@@ -2366,41 +2367,6 @@ bool session::process(transaction_guard & guard)
 }
 
 
-static shared_ptr<Netxx::StreamBase>
-build_stream_to_server(options & opts, lua_hooks & lua,
-                       netsync_connection_info info,
-                       Netxx::port_type default_port,
-                       Netxx::Timeout timeout)
-{
-  shared_ptr<Netxx::StreamBase> server;
-
-  if (info.client.use_argv)
-    {
-      I(info.client.argv.size() > 0);
-      string cmd = info.client.argv[0];
-      info.client.argv.erase(info.client.argv.begin());
-      return shared_ptr<Netxx::StreamBase>
-        (new Netxx::PipeStream(cmd, info.client.argv));
-    }
-  else
-    {
-#ifdef USE_IPV6
-      bool use_ipv6=true;
-#else
-      bool use_ipv6=false;
-#endif
-      string host(info.client.u.host);
-      if (host.empty())
-        host = info.client.unparsed();
-      if (!info.client.u.port.empty())
-        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
-      Netxx::Address addr(info.client.unparsed().c_str(),
-                          default_port, use_ipv6);
-      return shared_ptr<Netxx::StreamBase>
-        (new Netxx::Stream(addr, timeout));
-    }
-}
-
 static void
 call_server(options & opts,
             lua_hooks & lua,
@@ -2797,31 +2763,7 @@ serve_connections(options & opts,
           try_again = false;
 
           Netxx::Address addr(use_ipv6);
-
-          if (addresses.empty())
-            addr.add_all_addresses(default_port);
-          else
-            {
-              for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
-                {
-                  const utf8 & address = *it;
-                  if (!address().empty())
-                    {
-                      size_t l_colon = address().find(':');
-                      size_t r_colon = address().rfind(':');
-
-                      if (l_colon == r_colon && l_colon == 0)
-                        {
-                          // can't be an IPv6 address as there is only one colon
-                          // must be a : followed by a port
-                          string port_str = address().substr(1);
-                          addr.add_all_addresses(std::atoi(port_str.c_str()));
-                        }
-                      else
-                        addr.add_address(address().c_str(), default_port);
-                    }
-                }
-            }
+          add_address_names(addr, addresses, default_port);
 
           // If se use IPv6 and the initialisation of server fails, we want
           // to try again with IPv4.  The reason is that someone may have
@@ -2996,29 +2938,19 @@ serve_connections(options & opts,
                 }
             }
         }
-      // This exception is thrown when bind() fails somewhere in Netxx.
+      // Possibly loop around if we get exceptions from Netxx and we're
+      // attempting to use ipv6, or have some other reason to try again.
       catch (Netxx::NetworkException &)
         {
-          // If we tried with IPv6 and failed, we want to try again using IPv4.
           if (try_again)
-            {
-              use_ipv6 = false;
-            }
-          // In all other cases, just rethrow the exception.
+            use_ipv6 = false;
           else
             throw;
         }
-      // This exception is thrown when there is no support for the type of
-      // connection we want to do in the kernel, for example when a socket()
-      // call fails somewhere in Netxx.
       catch (Netxx::Exception &)
         {
-          // If we tried with IPv6 and failed, we want to try again using IPv4.
           if (try_again)
-            {
               use_ipv6 = false;
-            }
-          // In all other cases, just rethrow the exception.
           else
             throw;
         }
