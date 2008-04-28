@@ -17,6 +17,7 @@
 #include "globish.hh"
 #include "cmd.hh"
 #include "work.hh"
+#include "transforms.hh"
 
 #include <algorithm>
 #include <boost/tokenizer.hpp>
@@ -48,7 +49,8 @@ enum selector_type
 typedef vector<pair<selector_type, string> > selector_list;
 
 static void
-decode_selector(options const & opts,
+decode_selector(project_t & project,
+                options const & opts,
                 lua_hooks & lua,
                 string const & orig_sel,
                 selector_type & type,
@@ -140,7 +142,7 @@ decode_selector(options const & opts,
             tmp += "T00:00:00";
           N(tmp.size()==19 || sel_date==type, 
             F("selector '%s' is not a valid date (%s)") % sel % tmp);
-            
+
           if (sel != tmp)
             {
               P (F ("expanded date '%s' -> '%s'\n") % sel % tmp);
@@ -170,13 +172,37 @@ decode_selector(options const & opts,
             F("the cert selector c: may not be empty"));
           break;
 
+        case sel_parent:
+          if (sel.empty())
+            {
+              workspace work(opts, lua, F("the empty parent selector p: refers to "
+                                          "the base revision of the workspace"));
+
+              parent_map parents;
+              set<revision_id> parent_ids;
+
+              work.get_parent_rosters(project.db, parents);
+
+              for (parent_map::const_iterator i = parents.begin();
+                i != parents.end(); ++i)
+                {
+                  parent_ids.insert(i->first);
+                }
+
+              diagnose_ambiguous_expansion(project, "p:", parent_ids);
+              sel = (* parent_ids.begin()).inner()();
+            }
+          else
+            sel = decode_hexenc(sel);
+          break;
         default: break;
         }
     }
 }
 
 static void 
-parse_selector(options const & opts,
+parse_selector(project_t & project,
+               options const & opts,
                lua_hooks & lua,
                string const & str, selector_list & sels)
 {
@@ -204,7 +230,7 @@ parse_selector(options const & opts,
           string sel;
           selector_type type = sel_unknown;
 
-          decode_selector(opts, lua, *i, type, sel);
+          decode_selector(project, opts, lua, *i, type, sel);
           sels.push_back(make_pair(type, sel));
         }
     }
@@ -222,6 +248,7 @@ complete_one_selector(project_t & project,
       break;
 
     case sel_parent:
+      I(!value.empty());
       project.db.select_parent(value, completions);
       break;
         
@@ -338,14 +365,14 @@ complete(options const & opts, lua_hooks & lua,
          set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(opts, lua, str, sels);
+  parse_selector(project, opts, lua, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(sels[0].second));
+      completions.insert(revision_id(decode_hexenc(sels[0].second)));
       N(project.db.revision_exists(*completions.begin()),
         F("no such revision '%s'") % *completions.begin());
       return;
@@ -393,14 +420,14 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(opts, lua, str, sels);
+  parse_selector(project, opts, lua, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(sels[0].second));
+      completions.insert(revision_id(decode_hexenc(sels[0].second)));
       return;
     }
 

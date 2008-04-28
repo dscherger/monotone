@@ -33,6 +33,7 @@
 #include "app_state.hh"
 #include "database.hh"
 #include "roster.hh"
+#include "transforms.hh"
 
 using std::deque;
 using std::exception;
@@ -179,6 +180,14 @@ workspace::workspace(app_state & app, i18n_format const & explanation,
     set_ws_options(app.opts, false);
 }
 
+workspace::workspace(options const & opts, lua_hooks & lua,
+                     i18n_format const & explanation, bool writeback_options)
+  : lua(lua)
+{
+  require_workspace(explanation);
+  if (writeback_options)
+    set_ws_options(opts, false);
+}
 
 // routines for manipulating the bookkeeping directory
 
@@ -451,6 +460,7 @@ workspace::get_ws_options(options & opts)
   if (!opts.key_dir_given && !opts.conf_dir_given)
     {
       opts.key_dir = keydir_option;
+      opts.key_dir_given = true;
     }
 
   if (opts.branchname().empty() && !branch_option().empty())
@@ -499,9 +509,15 @@ workspace::set_ws_options(options const & opts, bool branch_is_sticky)
     read_options_file(o_path,
                       database_option, branch_option, key_option, keydir_option);
 
-  if (!opts.dbname.as_internal().empty())
+    // FIXME: we should do more checks here, f.e. if this is a valid sqlite
+    // file and if it contains the correct identifier, but these checks would
+    // duplicate those in database.cc. At the time it is checked there, however,
+    // the options file for the workspace is already written out...
+  if (!opts.dbname.as_internal().empty() &&
+      get_path_status(opts.dbname.as_internal()) == path::file)
     database_option = opts.dbname;
-  if (!opts.key_dir.as_internal().empty())
+  if (!opts.key_dir.as_internal().empty() &&
+      get_path_status(opts.key_dir.as_internal()) == path::directory)
     keydir_option = opts.key_dir;
   if ((branch_is_sticky || workspace::branch_is_sticky)
       && !opts.branchname().empty())
@@ -1059,9 +1075,8 @@ editable_working_tree::apply_delta(file_path const & pth,
   require_path_is_file(pth,
                        F("file '%s' does not exist") % pth,
                        F("file '%s' is a directory") % pth);
-  hexenc<id> curr_id_raw;
-  calculate_ident(pth, curr_id_raw);
-  file_id curr_id(curr_id_raw);
+  file_id curr_id;
+  calculate_ident(pth, curr_id);
   E(curr_id == old_id,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("modifying %s") % pth);
@@ -1561,8 +1576,8 @@ workspace::perform_rename(database & db,
           // touch foo
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
-	        N(get_path_status(parent) == path::directory,
-	          F("destination path's parent directory %s/ doesn't exist") % parent);
+            N(get_path_status(parent) == path::directory,
+              F("destination path's parent directory %s/ doesn't exist") % parent);
         }
 
       renames.insert(make_pair(src, dpath));
