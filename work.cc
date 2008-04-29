@@ -364,6 +364,7 @@ static void
 read_options_file(any_path const & optspath,
                   system_path & database_option,
                   branch_name & branch_option,
+                  branch_name & newbranch_option,
                   rsa_keypair_id & key_option,
                   system_path & keydir_option)
 {
@@ -392,6 +393,8 @@ read_options_file(any_path const & optspath,
         database_option = system_path(val);
       else if (opt == "branch")
         branch_option = branch_name(val);
+      else if (opt == "newbranch")
+        newbranch_option = branch_name(val);
       else if (opt == "key")
         internalize_rsa_keypair_id(utf8(val), key_option);
       else if (opt == "keydir")
@@ -406,6 +409,7 @@ static void
 write_options_file(bookkeeping_path const & optspath,
                    system_path const & database_option,
                    branch_name const & branch_option,
+                   branch_name const & newbranch_option,
                    rsa_keypair_id const & key_option,
                    system_path const & keydir_option)
 {
@@ -414,6 +418,8 @@ write_options_file(bookkeeping_path const & optspath,
     st.push_str_pair(symbol("database"), database_option.as_internal());
   if (!branch_option().empty())
     st.push_str_pair(symbol("branch"), branch_option());
+  if (!newbranch_option().empty() && newbranch_option != branch_option)
+    st.push_str_pair(symbol("newbranch"), newbranch_option());
   if (!key_option().empty())
     {
       utf8 key;
@@ -443,13 +449,15 @@ workspace::get_ws_options(options & opts)
 
   system_path database_option;
   branch_name branch_option;
+  branch_name newbranch_option;
   rsa_keypair_id key_option;
   system_path keydir_option;
 
   bookkeeping_path o_path;
   get_options_path(o_path);
   read_options_file(o_path,
-                    database_option, branch_option, key_option, keydir_option);
+                    database_option, branch_option, newbranch_option,
+                    key_option, keydir_option);
 
   // Workspace options are not to override the command line.
   if (!opts.dbname_given)
@@ -469,6 +477,11 @@ workspace::get_ws_options(options & opts)
       branch_is_sticky = true;
     }
 
+  if (opts.newbranchname().empty() && !newbranch_option().empty())
+    {
+      opts.newbranchname = newbranch_option;
+    }
+
   L(FL("branch name is '%s'") % opts.branchname);
 
   if (!opts.key_given)
@@ -480,6 +493,7 @@ workspace::get_database_option(system_path const & workspace,
                                system_path & database_option)
 {
   branch_name branch_option;
+  branch_name newbranch_option;
   rsa_keypair_id key_option;
   system_path keydir_option;
 
@@ -487,7 +501,8 @@ workspace::get_database_option(system_path const & workspace,
                         / bookkeeping_root_component
                         / options_file_name);
   read_options_file(o_path,
-                    database_option, branch_option, key_option, keydir_option);
+                    database_option, branch_option, newbranch_option,
+                    key_option, keydir_option);
 }
 
 void
@@ -502,12 +517,14 @@ workspace::set_ws_options(options const & opts, bool branch_is_sticky)
   // as is in _MTN/options, not write out an empty option.
   system_path database_option;
   branch_name branch_option;
+  branch_name newbranch_option;
   rsa_keypair_id key_option;
   system_path keydir_option;
 
   if (file_exists(o_path))
     read_options_file(o_path,
-                      database_option, branch_option, key_option, keydir_option);
+                      database_option, branch_option, newbranch_option,
+                      key_option, keydir_option);
 
     // FIXME: we should do more checks here, f.e. if this is a valid sqlite
     // file and if it contains the correct identifier, but these checks would
@@ -522,11 +539,14 @@ workspace::set_ws_options(options const & opts, bool branch_is_sticky)
   if ((branch_is_sticky || workspace::branch_is_sticky)
       && !opts.branchname().empty())
     branch_option = opts.branchname;
+  if (!opts.newbranchname().empty())
+    newbranch_option = opts.newbranchname;
   if (opts.key_given)
     key_option = opts.signing_key;
 
   write_options_file(o_path,
-                     database_option, branch_option, key_option, keydir_option);
+                     database_option, branch_option, newbranch_option,
+                     key_option, keydir_option);
 }
 
 void
@@ -539,15 +559,19 @@ workspace::print_ws_option(utf8 const & opt, std::ostream & output)
 
   system_path database_option;
   branch_name branch_option;
+  branch_name newbranch_option;
   rsa_keypair_id key_option;
   system_path keydir_option;
   read_options_file(o_path,
-                    database_option, branch_option, key_option, keydir_option);
+                    database_option, branch_option, newbranch_option,
+                    key_option, keydir_option);
 
   if (opt() == "database")
     output << database_option << '\n';
   else if (opt() == "branch")
     output << branch_option << '\n';
+  else if (opt() == "newbranch")
+    output << newbranch_option << '\n';
   else if (opt() == "key")
     output << key_option << '\n';
   else if (opt() == "keydir")

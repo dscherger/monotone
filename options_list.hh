@@ -117,6 +117,12 @@ OPTION(branch, branch, true, "branch,b",
 }
 #endif
 
+// This is a hidden option, only meant to be used internally by the branch
+// and commit commands.  The important thing is that it also ends up in the
+// workspace options file.                              -- Richard Levitte
+OPTVAR(branch, branch_name, newbranchname, )
+
+
 OPT(brief, "brief", bool, false,
      gettext_noop("print a brief version of the normal output"))
 #ifdef option_bodies
