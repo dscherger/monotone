@@ -1,3 +1,7 @@
+#ifdef option_bodies
+#include "../transforms.hh"
+#endif
+
 #define OPT(name, string, type, default_, description)			\
   OPTVAR(name, type, name, default_)					\
   OPTION(name, name, has_arg<type>(), string, description)
@@ -50,7 +54,7 @@ OPTION(revision, revision, true, "revision,r",
       N_("select revision id(s) for operation"))
 #ifdef option_bodies
 {
-  revisions.push_back(revision_id(arg));
+  revisions.push_back(revision_id(decode_hexenc(arg)));
 }
 #endif
 
