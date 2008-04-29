@@ -105,7 +105,7 @@ std::string debug_manifest(const cvs_manifest &mf)
   { result+= i->first + " " + i->second->cvs_version;
     if (!i->second->keyword_substitution.empty()) 
       result+="/"+i->second->keyword_substitution;
-    result+=" " + std::string(i->second->dead?"dead ":"") + i->second->sha1sum.inner()() + "\n";
+    result+=" " + std::string(i->second->dead?"dead ":"") + encode_hexenc(i->second->sha1sum.inner()()) + "\n";
   }
   return result;
 }
@@ -118,7 +118,7 @@ static dump(cvs_sync::file_state const& fs, std::string& result)
     if (fs.dead) result+= "dead";
     else if (fs.size) result+= boost::lexical_cast<string>(fs.size);
     else if (fs.patchsize) result+= "p" + boost::lexical_cast<string>(fs.patchsize);
-    else if (!fs.sha1sum.inner()().empty()) result+= fs.sha1sum.inner()().substr(0,4) + fs.keyword_substitution;
+    else if (!fs.sha1sum.inner()().empty()) result+= encode_hexenc(fs.sha1sum.inner()()).substr(0,4) + fs.keyword_substitution;
     result+=" "+fs.log_msg.substr(0,20)+"\n";
 }
 
@@ -185,7 +185,7 @@ template <> void
 static dump(cvs_sync::cvs_edge const& e, std::string& result)
 { result= "[" + cvs_repository::time_t2human(e.time);
     if (e.time!=e.time2) result+= "+" + boost::lexical_cast<string>(e.time2-e.time);
-    if (!e.revision.inner()().empty()) result+= "," + e.revision.inner()().substr(0,4);
+    if (!e.revision.inner()().empty()) result+= "," + encode_hexenc(e.revision.inner()()).substr(0,4);
     if (!e.xfiles.empty()) 
       result+= "," + boost::lexical_cast<string>(e.xfiles.size()) 
          + (e.delta_base.inner()().empty()?"files":"deltas");
