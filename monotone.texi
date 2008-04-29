@@ -4713,18 +4713,10 @@ to the workspace if it is not already versioned.
 
 @item mtn branch [@var{branchname}]
 
-This command displays the branch name of the current workspace or changes the 
-branch name of your current workspace. It does the latter by overwriting any 
-previous branch setting in @file{_MTN/options} so that its guaranteed that the 
-next commit gets this new branch as cert attached.
-
-Please note that you can't set a branch name which already exists in your
-database. To rebase your workspace to a different branch, please use the 
-@command{update} command:
-
-@smallexample
-$ mtn update --revision h:other-branch
-@end smallexample
+With an argument, the given branch is stored as a future branch to
+be used by @command{mtn commit}.  With no argument, it displays the
+branch name of the current workspace or if a branch change has already
+been made, it will show that move.
 
 @item mtn commit
 @item mtn ci
