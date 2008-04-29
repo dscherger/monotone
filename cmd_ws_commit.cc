@@ -1079,7 +1079,9 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
   if (args.size() > 1)
     throw usage(execid);
 
-  app.require_workspace();
+  database db(app);
+  workspace work(app);
+  project_t project(db);
 
   if (args.size() == 0)
     {
@@ -1093,7 +1095,7 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
     F("branch of the current workspace is already set to %s") % branch);
 
   std::set<branch_name> branches;
-  app.get_project().get_branch_list(branches);
+  project.get_branch_list(branches);
 
   bool existing_branch = false;
   for (set<branch_name>::const_iterator i = branches.begin();
@@ -1107,7 +1109,7 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
     }
 
   parent_map parents;
-  app.work.get_parent_rosters(parents);
+  work.get_parent_rosters(db, parents);
 
   set<revision_id> parent_revisions;
   for (parent_map::iterator i = parents.begin();
@@ -1123,13 +1125,14 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
   if (existing_branch && parent_revisions.size() > 0)
     {
         set<revision_id> branch_heads, revs, common_ancestors;
-        app.get_project().get_branch_heads(branch, branch_heads);
+        project.get_branch_heads(branch, branch_heads,
+                                 app.opts.ignore_suspend_certs);
 
         set_union(parent_revisions.begin(), parent_revisions.end(),
                   branch_heads.begin(), branch_heads.end(),
                   inserter(revs, revs.begin()));
 
-        app.db.get_common_ancestors(revs, common_ancestors);
+        db.get_common_ancestors(revs, common_ancestors);
 
         if (common_ancestors.size() == 0)
           {
@@ -1139,11 +1142,10 @@ CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
           }
     }
 
-  // leave the other parameters empty so they won't get changed
-  system_path path;
-  rsa_keypair_id key;
+  app.opts.branchname = branch;
 
-  app.work.set_ws_options(path, branch, key, path);
+  // the workspace should remember the branch we just committed to.
+  work.set_ws_options(app.opts, true);
 
   if (existing_branch)
     P(F("next commit will use the existing branch %s") % branch);
@@ -1224,8 +1226,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         }
 
       app.opts.branchname = branchname;
-      // write out the new branch name
-      app.make_branch_sticky();
     }
 
   P(F("beginning commit on branch '%s'") % app.opts.branchname);

@@ -1553,15 +1553,17 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   N(args.size() > 0,
     F("wrong argument count"));
 
+  database db(app);
+
   set<revision_id> revs, common_ancestors;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
       revision_id rid((*i)());
-      N(app.db.revision_exists(rid), F("No such revision %s") % rid);
+      N(db.revision_exists(rid), F("No such revision %s") % rid);
       revs.insert(rid);
     }
 
-  app.db.get_common_ancestors(revs, common_ancestors);
+  db.get_common_ancestors(revs, common_ancestors);
 
   for (set<revision_id>::const_iterator i = common_ancestors.begin();
        i != common_ancestors.end(); ++i)
