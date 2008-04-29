@@ -321,7 +321,7 @@ void add_missing_parents(mtn_automate::manifest_map const& oldr,
      components.push_back(std::make_pair(sub,comp)); 
   } while (!sub.empty());
   for (std::vector<std::pair<file_path,path_component> >::const_reverse_iterator i=components.rbegin();i!=components.rend();++i)
-  { L(FL("path comp '%s'/%d\n") % i->first);
+  { L(FL("path comp '%s'\n") % i->first);
     // already added?
     if (cs.dirs_added.find(i->first)!=cs.dirs_added.end()) continue;
     mtn_automate::manifest_map::const_iterator mi=oldr.find(i->first);
@@ -701,7 +701,7 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
 // FIXME: How to flag locally modified files? add the synched sha1sum?
     if (!i->second->sha1sum.inner()().empty())
       state[std::make_pair(sp,attr_key(app.opts.domain+":sha1"))]
-            =attr_value(i->second->sha1sum.inner()().substr(0,6));
+            =attr_value(encode_hexenc(i->second->sha1sum.inner()()).substr(0,6));
   }
   return state;
 }

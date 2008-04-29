@@ -80,14 +80,15 @@ parse_path(basic_io::parser & parser, file_path & sp)
 
 file_id mtn_automate::put_file(file_data const& d, file_id const& base)
 { std::vector<std::string> args;
-  if (!null_id(base.inner())) args.push_back(base.inner()());
+  if (!null_id(base.inner())) 
+    args.push_back(encode_hexenc(base.inner()()));
   args.push_back(d.inner()());
-  return file_id(automate("put_file",args).substr(0,constants::idlen));
+  return file_id(decode_hexenc(automate("put_file",args).substr(0,constants::idlen)));
 }
 
 file_data mtn_automate::get_file(file_id const& fid)
 { std::vector<std::string> args;
-  args.push_back(fid.inner()());
+  args.push_back(encode_hexenc(fid.inner()()));
   return file_data(automate("get_file",args));
 }
 
@@ -224,7 +225,7 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
   printer.print_stanza(st);
   print_cset(printer, changes);
   std::vector<std::string> args(1,printer.buf);
-  return revision_id(automate("put_revision",args).substr(0,constants::idlen));
+  return revision_id(decode_hexenc(automate("put_revision",args).substr(0,constants::idlen)));
 }
 
 mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
@@ -255,7 +256,7 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
           pa.str(pth);
           pa.esym(syms::content);
           pa.hex(content);
-          result[file_path_internal(pth)].first=file_id(content);
+          result[file_path_internal(pth)].first=file_id(decode_hexenc(content));
         }
       else if (pa.symp(syms::dir))
         {
@@ -292,7 +293,7 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
 
 void mtn_automate::cert_revision(revision_id const& rid, std::string const& name, std::string const& value)
 { std::vector<std::string> args;
-  args.push_back(rid.inner()());
+  args.push_back(encode_hexenc(rid.inner()()));
   args.push_back(name);
   args.push_back(value);
   automate("cert",args);
@@ -300,7 +301,7 @@ void mtn_automate::cert_revision(revision_id const& rid, std::string const& name
 
 std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(rid.inner()());
+  args.push_back(encode_hexenc(rid.inner()()));
   std::string aresult=automate("certs",args);
 
   basic_io::input_source source(aresult,"automate get_revision_certs result");
@@ -412,7 +413,7 @@ parse_cset(basic_io::parser & parser,
 //      prev_path = p1;
       parser.esym(syms::content);
       parser.hex(t1);
-      safe_insert(cs.files_added, make_pair(p1, file_id(t1)));
+      safe_insert(cs.files_added, make_pair(p1, file_id(decode_hexenc(t1))));
     }
 
 //  prev_path.clear();
@@ -427,7 +428,7 @@ parse_cset(basic_io::parser & parser,
       parser.esym(syms::to);
       parser.hex(t2);
       safe_insert(cs.deltas_applied,
-                  make_pair(p1, make_pair(file_id(t1), file_id(t2))));
+                  make_pair(p1, make_pair(file_id(decode_hexenc(t1)), file_id(decode_hexenc(t2)))));
     }
 
 //  prev_pair.first.clear();
@@ -437,7 +438,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(decode_hexenc(t1)));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -470,7 +471,7 @@ parse_edge(basic_io::parser & parser,
 
   parser.esym(syms::old_revision);
   parser.hex(tmp);
-  old_rev = revision_id(tmp);
+  old_rev = revision_id(decode_hexenc(tmp));
 
   parse_cset(parser, *cs);
 
@@ -479,7 +480,7 @@ parse_edge(basic_io::parser & parser,
 
 mtn_automate::revision_t mtn_automate::get_revision(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(rid.inner()());
+  args.push_back(encode_hexenc(rid.inner()()));
   std::string aresult=automate("get_revision",args);
   
   basic_io::input_source source(aresult,"automate get_revision result");
@@ -749,7 +750,7 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
             /*|| (o->first==n->first && o->second!=n->second)*/)
         { basic_io::stanza st;
           st.push_file_pair(syms::clear, file_path(o->first.first));
-          st.push_str_pair(syms::attr, o->first.second());
+          st.push_str_pair(syms::attr, encode_hexenc(o->first.second()));
           printer.print_stanza(st);
           if (o->first==n->first) ++n;
           ++o;
@@ -762,8 +763,8 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
             || (o->first==n->first && o->second!=n->second))
         { basic_io::stanza st;
           st.push_file_pair(syms::set, file_path(n->first.first));
-          st.push_str_pair(syms::attr, n->first.second());
-          st.push_str_pair(syms::value, n->second());
+          st.push_str_pair(syms::attr, encode_hexenc(n->first.second()));
+          st.push_str_pair(syms::value, encode_hexenc(n->second()));
           printer.print_stanza(st);
           if (o->first==n->first) ++o;
           ++n;
@@ -773,7 +774,7 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
       if (printer.buf.size()>=new_data.size()) continue; // look for a shorter form
       
       I(e->first.inner()().size()==constants::idlen);
-      std::string cv=xform<Botan::Gzip_Compression>(e->first.inner()()+"\n"+printer.buf);
+      std::string cv=xform<Botan::Gzip_Compression>(encode_hexenc(e->first.inner()())+"\n"+printer.buf);
       cert_revision(rid,sync_prefix+domain,cv);
       L(FL("sync info encoded as delta from %s") % e->first);
       return;
