@@ -23,7 +23,7 @@ check(mtn("branch", "new_branch"), 0, false, true)
 check(qgrep("the new branch new_branch", "stderr"))
 
 check(mtn("branch", "testbranch"), 0, false, true)
-check(qgrep("the existing branch testbranch", "stderr"))
+check(qgrep("the original branch testbranch", "stderr"))
 
 -- check if branch issues a warning if we're trying to change the
 -- branch to a branch with an entirely independent base
