@@ -10,6 +10,6 @@ check(mtn("automate", "get_manifest_of"), 3, false, false)
 append("_MTN/revision", '\nadd_dir "./bar"\n')
 
 check(mtn("automate", "get_manifest_of"), 3, false, false)
-check(mtn("automate", "get_revision"), 3, false, false)
+check(mtn("automate", "get_current_revision"), 3, false, false)
 check(mtn("branch", "foo"), 0, false, false)
 check(mtn("commit", "--message=foo"), 3, false, false)
