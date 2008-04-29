@@ -1,0 +1,5 @@
+- mode 0777 -> mtn:execute; -kb -> mtn:manual_merge
+- .cvsignore -> .mtnignore
+- separate child node mode when committing (can change keywords and move revisions
+to attributes), make descendants merge nodes
+
