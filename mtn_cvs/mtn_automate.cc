@@ -96,7 +96,7 @@ file_data mtn_automate::get_file(file_id const& fid)
 
 std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(rid.inner()());
+  args.push_back(encode_hexenc(rid.inner()()));
   std::string children=automate("children",args);
   std::vector<revision_id> result;
   piece::piece_table lines;
@@ -104,7 +104,7 @@ std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& 
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
   { // L(FL("child '%s'") % (**p).substr(0,constants::idlen));
-    result.push_back(revision_id((**p).substr(0,constants::idlen)));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
   }
   piece::reset();
   return result;
@@ -112,14 +112,14 @@ std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& 
 
 std::vector<revision_id> mtn_automate::get_revision_parents(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(rid.inner()());
+  args.push_back(encode_hexenc(rid.inner()()));
   std::string children=automate("parents",args);
   std::vector<revision_id> result;
   piece::piece_table lines;
   piece::index_deltatext(children,lines);
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id((**p).substr(0,constants::idlen)));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
   piece::reset();
   return result;
 }
@@ -132,7 +132,7 @@ std::vector<revision_id> mtn_automate::heads(std::string const& branch)
   piece::index_deltatext(heads,lines);
   result.reserve(heads.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id((**p).substr(0,constants::idlen)));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
   piece::reset();
   return result;
 }
@@ -168,9 +168,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::add_file, i->first);
-      hexenc<id> hex;
-      encode_hexenc(i->second.inner(), hex);
-      st.push_hex_pair(syms::content, hex);
+      st.push_hex_pair(syms::content, hexenc<id>(encode_hexenc(i->second.inner()())));
       printer.print_stanza(st);
     }
 
@@ -179,11 +177,8 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::patch, i->first);
-      hexenc<id> hex;
-      encode_hexenc(i->second.first.inner(), hex);
-      st.push_hex_pair(syms::from, hex);
-      encode_hexenc(i->second.second.inner(), hex);
-      st.push_hex_pair(syms::to, hex);
+      st.push_hex_pair(syms::from, hexenc<id>(encode_hexenc(i->second.first.inner()())));
+      st.push_hex_pair(syms::to, hexenc<id>(encode_hexenc(i->second.second.inner()())));
       printer.print_stanza(st);
     }
 
@@ -219,9 +214,7 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
 
 // changeset stanza  
   basic_io::stanza st;
-  hexenc<id> hex;
-  encode_hexenc(parent.inner(), hex);
-  st.push_hex_pair(syms::old_revision, hex);
+  st.push_hex_pair(syms::old_revision, hexenc<id>(encode_hexenc(parent.inner()())));
   printer.print_stanza(st);
   print_cset(printer, changes);
   std::vector<std::string> args(1,printer.buf);
@@ -229,7 +222,7 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
 }
 
 mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
-{ std::vector<std::string> args(1,rid.inner()());
+{ std::vector<std::string> args(1,encode_hexenc(rid.inner()()));
   std::string aresult=automate("get_manifest_of",args);
   
   basic_io::input_source source(aresult,"automate get_manifest_of result");
