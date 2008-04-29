@@ -944,7 +944,8 @@ check(indir(dir2, mtn("update", "--debug")), 1, false, true)
 check(qgrep(message1, "stderr"))
 check(qgrep(message2, "stderr"))
 check(qgrep(message3, "stderr"))
-check(indir(dir2, mtn("commit", "--message", "commit", "--branch", branch .. "-propagate")), 0, false, false)
+check(indir(dir2, mtn("branch", branch .. "-propagate")), 0, false, false)
+check(indir(dir2, mtn("commit", "--message", "commit")), 0, false, false)
 
 second = indir(dir2, {base_revision})[1]()
 
@@ -1004,7 +1005,8 @@ message2 = "conflict: duplicate name"
 -- check(qgrep(message1, "stderr"))
 -- check(qgrep(message2, "stderr"))
 
-check(mtn("commit", "--message", "commit", "--branch", branch .. "-propagate"), 0, false, false)
+check(mtn("branch", branch .. "-propagate"), 0, false, false)
+check(mtn("commit", "--message", "commit"), 0, false, false)
 
 second = base_revision()
 
