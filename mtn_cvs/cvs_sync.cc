@@ -1810,7 +1810,7 @@ void cvs_repository::takeover()
     I(!(--edges.end())->revision.inner()().empty());
     of << "format_version \"1\"\n\n"
       "new_manifest [0000000000000000000000000000000000000001]\n\n"
-      "old_revision [" << (--edges.end())->revision.inner()() << "]\n";
+      "old_revision [" << encode_hexenc((--edges.end())->revision.inner()()) << "]\n";
   }
 // like in commit ?
 //  update_any_attrs(app);
