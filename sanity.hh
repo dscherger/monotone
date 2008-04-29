@@ -59,6 +59,8 @@ struct sanity {
   // command line (and needs to look at this to do so).
   bool quiet_p();
 
+  bool reallyquiet_p();
+
   void log(plain_format const & fmt,
            char const * file, int line);
   void progress(i18n_format const & fmt,
@@ -149,7 +151,7 @@ plain_format
   {}
 };
 
-template<typename T> inline plain_format const & 
+template<typename T> inline plain_format const &
 operator %(plain_format const & f, T const & t)
 {
   f.get_stream() << t;
@@ -157,7 +159,7 @@ operator %(plain_format const & f, T const & t)
   return f;
 }
 
-template<typename T> inline plain_format const & 
+template<typename T> inline plain_format const &
 operator %(const plain_format & f, T & t)
 {
   f.get_stream() << t;
@@ -165,7 +167,7 @@ operator %(const plain_format & f, T & t)
   return f;
 }
 
-template<typename T> inline plain_format & 
+template<typename T> inline plain_format &
 operator %(plain_format & f, T const & t)
 {
   f.get_stream() << t;
@@ -173,7 +175,7 @@ operator %(plain_format & f, T const & t)
   return f;
 }
 
-template<typename T> inline plain_format & 
+template<typename T> inline plain_format &
 operator %(plain_format & f, T & t)
 {
   f.get_stream() << t;
@@ -219,13 +221,13 @@ i18n_format
   explicit i18n_format(const char * localized_pattern)
     : format_base(localized_pattern, true)
   {}
-  
+
   explicit i18n_format(std::string const & localized_pattern)
     : format_base(localized_pattern, true)
   {}
 };
 
-template<typename T> inline i18n_format const & 
+template<typename T> inline i18n_format const &
 operator %(i18n_format const & f, T const & t)
 {
   f.get_stream() << t;
@@ -233,7 +235,7 @@ operator %(i18n_format const & f, T const & t)
   return f;
 }
 
-template<typename T> inline i18n_format const & 
+template<typename T> inline i18n_format const &
 operator %(i18n_format const & f, T & t)
 {
   f.get_stream() << t;
@@ -241,7 +243,7 @@ operator %(i18n_format const & f, T & t)
   return f;
 }
 
-template<typename T> inline i18n_format & 
+template<typename T> inline i18n_format &
 operator %(i18n_format & f, T const & t)
 {
   f.get_stream() << t;
@@ -249,7 +251,7 @@ operator %(i18n_format & f, T const & t)
   return f;
 }
 
-template<typename T> inline i18n_format & 
+template<typename T> inline i18n_format &
 operator %(i18n_format & f, T & t)
 {
   f.get_stream() << t;
@@ -286,15 +288,27 @@ i18n_format FP(const char * str1, const char * strn, unsigned long count);
 plain_format FL(const char * str);
 
 // L is for logging, you can log all you want
-#define L(fmt) global_sanity.log(fmt, __FILE__, __LINE__)
+#define L(fmt) \
+do { \
+  if (global_sanity.debug_p()) \
+    global_sanity.log(fmt, __FILE__, __LINE__); \
+} while (0)
 
 // P is for progress, log only stuff which the user might
 // normally like to see some indication of progress of
-#define P(fmt) global_sanity.progress(fmt, __FILE__, __LINE__)
+#define P(fmt) \
+do { \
+  if (!global_sanity.quiet_p()) \
+    global_sanity.progress(fmt, __FILE__, __LINE__); \
+} while (0)
 
 // W is for warnings, which are handled like progress only
 // they are only issued once and are prefixed with "warning: "
-#define W(fmt) global_sanity.warning(fmt, __FILE__, __LINE__)
+#define W(fmt) \
+do { \
+  if (!global_sanity.reallyquiet_p()) \
+    global_sanity.warning(fmt, __FILE__, __LINE__); \
+} while (0)
 
 
 // invariants and assertions
@@ -430,15 +444,10 @@ Musing<T>::gasp(std::string & out) const
 #define PERM_MM(obj) /* */
 #endif
 
-template <typename T>
-void dump(T const &, std::string &);
-
-template <> void dump(std::string const & obj, std::string & out);
-
 // debugging utility to dump out vars like MM but without requiring a crash
 
 extern void print_var(std::string const & value,
-                      std::string const & var,
+                      char const * var,
                       char const * file,
                       int const line,
                       char const * func);

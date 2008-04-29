@@ -19,9 +19,9 @@
 #include "botan/botan.h"
 #include "i18n.h"
 #include "app_state.hh"
+#include "botan_pipe_cache.hh"
 #include "commands.hh"
 #include "sanity.hh"
-#include "cleanup.hh"
 #include "file_io.hh"
 #include "charset.hh"
 #include "ui.hh"
@@ -31,6 +31,7 @@
 #include "sha1.hh"
 #include "simplestring_xform.hh"
 #include "platform.hh"
+#include "work.hh"
 
 
 using std::cout;
@@ -74,34 +75,14 @@ using std::ios_base;
 // will be dumped out.  if the fatal condition is only caught in the lower-
 // level handlers in main.cc, at least we'll get a friendly error message.
 
-
-// Wrapper class to ensure Botan is properly initialized and deinitialized.
-struct botan_library
-{
-  botan_library() {
-    Botan::InitializerOptions options("thread_safe=0 selftest=0 seed_rng=1 "
-                                      "use_engines=0 secure_memory=1 "
-                                      "fips140=0");
-    Botan::LibraryInitializer::initialize(options);
-  }
-  ~botan_library() {
-    Botan::LibraryInitializer::deinitialize();
-  }
-};
-
-// Similarly, for the global ui object.  (We do not want to use global
-// con/destructors for this, as they execute outside the protection of
-// main.cc's signal handlers.)
+// Wrapper class which ensures proper setup and teardown of the global ui
+// object.  (We do not want to use global con/destructors for this, as they
+// execute outside the protection of main.cc's signal handlers.)
 struct ui_library
 {
-  ui_library() {
-    ui.initialize();
-  }
-  ~ui_library() {
-    ui.deinitialize();
-  }
+  ui_library() { ui.initialize(); }
+  ~ui_library() { ui.deinitialize(); }
 };
-
 
 // This is in a separate procedure so it can be called from code that's called
 // before cpp_main(), such as program option object creation code.  It's made
@@ -118,6 +99,11 @@ void localize_monotone()
     }
 }
 
+// define the global objects needed by botan_pipe_cache.hh
+pipe_cache_cleanup * global_pipe_cleanup_object;
+Botan::Pipe * unfiltered_pipe;
+static unsigned char unfiltered_pipe_cleanup_mem[sizeof(cached_botan_pipe)];
+
 option::concrete_option_set
 read_global_options(options & opts, args_vector & args)
 {
@@ -129,7 +115,7 @@ read_global_options(options & opts, args_vector & args)
 }
 
 // read command-line options and return the command name
-commands::command_id read_options(option::concrete_option_set & optset, options & opts, args_vector & args)
+commands::command_id read_options(options & opts, option::concrete_option_set & optset, args_vector & args)
 {
   commands::command_id cmd;
 
@@ -182,10 +168,17 @@ cpp_main(int argc, char ** argv)
       global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
       
       // Set up secure memory allocation etc
-      botan_library acquire_botan;
+      Botan::LibraryInitializer acquire_botan("thread_safe=0 selftest=0 "
+                                              "seed_rng=1 use_engines=0 "
+                                              "secure_memory=1 fips140=0");
+
+      // and caching for botan pipes
+      pipe_cache_cleanup acquire_botan_pipe_caching;
+      unfiltered_pipe = new Botan::Pipe;
+      new (unfiltered_pipe_cleanup_mem) cached_botan_pipe(unfiltered_pipe);
       
       // Record where we are.  This has to happen before any use of
-      // boost::filesystem.
+      // paths.hh objects.
       save_initial_path();
       
       // decode all argv values into a UTF-8 array
@@ -224,31 +217,32 @@ cpp_main(int argc, char ** argv)
               return 0;
             }
 
-          if (app.opts.dbname_given)
-            {
-              if (!app.opts.dbname.empty())
-                app.db.set_filename(app.opts.dbname);
-            }
-
-          if (app.opts.key_dir_given || app.opts.conf_dir_given)
-            {
-              if (!app.opts.key_dir.empty())
-                app.keys.set_key_dir(app.opts.key_dir);
-            }
-
-          // at this point we allow a workspace (meaning search for it
-          // and if found read _MTN/options, but don't use the data quite
-          // yet, and read all the monotonercs).  Processing the data
-          // from _MTN/options happens later.
+          // at this point we allow a workspace (meaning search for it,
+          // and if found, change directory to it
           // Certain commands may subsequently require a workspace or fail
           // if we didn't find one at this point.
-          app.allow_workspace();
+          workspace::found = find_and_go_to_workspace(app.opts.root);
+
+          // Load all available monotonercs.  If we found a workspace above,
+          // we'll pick up _MTN/monotonerc as well as the user's monotonerc.
+          app.lua.load_rcfiles(app.opts);
 
           // now grab any command specific options and parse the command
           // this needs to happen after the monotonercs have been read
-          commands::command_id cmd = read_options(optset, app.opts, opt_args);
+          commands::command_id cmd = read_options(app.opts, optset, opt_args);
 
-          if (!app.found_workspace)
+          if (workspace::found)
+            {
+              bookkeeping_path dump_path;
+              workspace::get_local_dump_path(dump_path);
+
+              // The 'false' means that, e.g., if we're running checkout,
+              // then it's okay for dumps to go into our starting working
+              // dir's _MTN rather than the new workspace dir's _MTN.
+              global_sanity.set_dump_path(system_path(dump_path, false)
+                                          .as_external());
+            }
+          else if (app.opts.conf_dir_given || !app.opts.no_default_confdir)
             global_sanity.set_dump_path((app.opts.conf_dir / "dump")
                                         .as_external());
 

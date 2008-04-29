@@ -11,14 +11,14 @@
 #include <set>
 #include "vector.hh"
 #include <utility>
-#include <cstring> // strerror, strlen
+#include <cstring> // strlen
+#include <algorithm> // std::sort
 
 using std::pair;
 using std::set;
 using std::sort;
 using std::string;
 using std::vector;
-using std::strerror;
 using std::malloc;
 using std::free;
 

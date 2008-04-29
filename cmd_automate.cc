@@ -1,4 +1,4 @@
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -17,6 +17,7 @@
 #include "ui.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
+#include "database.hh"
 
 using std::istream;
 using std::make_pair;
@@ -50,7 +51,7 @@ namespace commands {
                  std::ostream & output) const
   {
     make_io_binary();
-    exec_from_automate(args, execid, app, output);
+    exec_from_automate(app, execid, args, output);
   }
 
   void
@@ -63,13 +64,16 @@ namespace commands {
 }
 
 static string const interface_version = "7.0";
+// Major or minor number only increments once for each monotone release;
+// check the most recent release before incrementing this.
 
 // Name: interface_version
 // Arguments: none
 // Added in: 0.0
 // Purpose: Prints version of automation interface.  Major number increments
 //   whenever a backwards incompatible change is made; minor number increments
-//   whenever any change is made (but is reset when major number increments).
+//   whenever any change is made (but is reset when major number
+//   increments).
 // Output format: "<decimal number>.<decimal number>\n".  Always matches
 //   "[0-9]+\.[0-9]+\n".
 // Error conditions: None.
@@ -337,9 +341,11 @@ CMD_AUTOMATE(stdio, "",
   N(args.size() == 0,
     F("no arguments needed"));
 
-    // initialize the database early so any calling process is notified
-    // immediately if a version discrepancy exists
-  app.db.ensure_open();
+  database db(app);
+
+  // initialize the database early so any calling process is notified
+  // immediately if a version discrepancy exists
+  db.ensure_open();
 
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
@@ -394,7 +400,7 @@ CMD_AUTOMATE(stdio, "",
 
               opts = options::opts::globals() | acmd->opts();
               opts.instantiate(&app.opts).from_key_value_pairs(params);
-              acmd->exec_from_automate(args, id, app, os);
+              acmd->exec_from_automate(app, id, args, os);
             }
           else
             opts.instantiate(&app.opts).from_key_value_pairs(params);
@@ -434,8 +440,6 @@ LUAEXT(mtn_automate, )
       int n = lua_gettop(L);
 
       E(n > 0, F("Bad input to mtn_automate() lua extension: command name is missing"));
-
-      app_p->db.ensure_open();
 
       L(FL("Starting call to mtn_automate lua hook"));
 

@@ -1,11 +1,20 @@
 #include "base.hh"
 #include "lua.hh"
+#include "paths.hh"
 #include "platform.hh"
+#include "platform-wrapped.hh"
 #include "tester-plaf.hh"
 #include "vector.hh"
 #include "sanity.hh"
+#include "botan/botan.h"
+#include "botan_pipe_cache.hh"
 #include <boost/lexical_cast.hpp>
 #include <cstring>
+
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN // no gui definitions
+#include <windows.h>
+#endif
 
 using std::string;
 using std::map;
@@ -30,6 +39,11 @@ struct tester_sanity : public sanity
 };
 tester_sanity real_sanity;
 sanity & global_sanity = real_sanity;
+
+// define the global objects needed by botan_pipe_cache.hh
+pipe_cache_cleanup * global_pipe_cleanup_object;
+Botan::Pipe * unfiltered_pipe;
+static unsigned char unfiltered_pipe_cleanup_mem[sizeof(cached_botan_pipe)];
 
 string basename(string const & s)
 {
@@ -897,7 +911,7 @@ parse_makeflags(char const * mflags,
             }
         }
       else if (int_int_option(i->c_str(), "--jobserver-fds=", jread, jwrite))
-        ;
+        0;
     }
 
   // do not permit -j in MAKEFLAGS to override -j on the command line.
@@ -997,6 +1011,16 @@ int main(int argc, char **argv)
   try
     {
       global_sanity.initialize(argc, argv, "C");
+      // Set up secure memory allocation etc
+      Botan::LibraryInitializer acquire_botan("thread_safe=0 selftest=0 "
+                                              "seed_rng=1 use_engines=0 "
+                                              "secure_memory=1 fips140=0");
+
+      // and caching for botan pipes
+      pipe_cache_cleanup acquire_botan_pipe_caching;
+      unfiltered_pipe = new Botan::Pipe;
+      new (unfiltered_pipe_cleanup_mem) cached_botan_pipe(unfiltered_pipe);
+
       parse_command_line(argc, argv,
                          want_help, need_help, debugging, list_only,
                          run_one, jobs, tests_to_run);
@@ -1051,14 +1075,19 @@ int main(int argc, char **argv)
           run_dir = firstdir + "/tester_dir";
           testfile = tests_to_run.front();
 
-          if (argv[0][0] == '/'
-#ifdef WIN32
-              || argv[0][0] != '\0' && argv[0][1] == ':'
-#endif
-              )
+#if defined(WIN32)
+          char name[MAX_PATH];
+          int len = 0;
+          len = (int)GetModuleFileName(0, name, MAX_PATH);
+          if(len != 0) {
+            argv0 = system_path(name).as_external();
+          }
+#else
+          if (argv[0][0] == '/')
             argv0 = argv[0];
           else
             argv0 = firstdir + "/" + argv[0];
+#endif
 
           change_current_working_dir(dirname(testfile));
           source_dir = get_current_working_dir();

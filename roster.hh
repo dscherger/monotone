@@ -10,16 +10,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <map>
-
-#include <boost/shared_ptr.hpp>
-
-#include "cset.hh"
 #include "hybrid_map.hh"
-#include "numeric_vocab.hh"
 #include "paths.hh"
-#include "sanity.hh"
-#include "vocab.hh"
+#include "rev_types.hh"
+#include "cset.hh" // need full definition of editable_tree
 
 struct node_id_source
 {
@@ -29,13 +23,6 @@ struct node_id_source
 
 ///////////////////////////////////////////////////////////////////
 
-struct node;
-struct dir_node;
-struct file_node;
-typedef boost::shared_ptr<node> node_t;
-typedef boost::shared_ptr<file_node> file_t;
-typedef boost::shared_ptr<dir_node> dir_t;
-
 node_id const the_null_node = 0;
 
 inline bool
@@ -44,16 +31,8 @@ null_node(node_id n)
   return n == the_null_node;
 }
 
-
-// (true, "val") or (false, "") are both valid attr values (for proper
-// merging, we have to widen the attr_value type to include a first-class
-// "undefined" value).
-typedef std::map<attr_key, std::pair<bool, attr_value> > full_attr_map_t;
-typedef std::map<path_component, node_t> dir_map;
-typedef hybrid_map<node_id, node_t> node_map;
-
+template <> void dump(node_id const & val, std::string & out);
 template <> void dump(full_attr_map_t const & val, std::string & out);
-
 
 struct node
 {
@@ -164,13 +143,9 @@ struct marking_t
   }
 };
 
-typedef std::map<node_id, marking_t> marking_map;
-
 template <> void dump(std::set<revision_id> const & revids, std::string & out);
 template <> void dump(marking_t const & marking, std::string & out);
 template <> void dump(marking_map const & marking_map, std::string & out);
-
-namespace basic_io { struct printer; struct parser; }
 
 class roster_t
 {
@@ -182,6 +157,7 @@ public:
   bool has_node(file_path const & sp) const;
   bool has_node(node_id nid) const;
   bool is_root(node_id nid) const;
+  bool is_attached(node_id nid) const;
   node_t get_node(file_path const & sp) const;
   node_t get_node(node_id nid) const;
   void get_name(node_id nid, file_path & sp) const;
@@ -319,10 +295,6 @@ struct temp_node_id_source
 
 template <> void dump(roster_t const & val, std::string & out);
 
-class app_state;
-class database;
-struct revision_t;
-
 // adaptor class to enable cset application on rosters.
 class editable_roster_base
   : public editable_tree
@@ -374,7 +346,7 @@ select_nodes_modified_by_cset(cset const & cs,
                               std::set<node_id> & nodes_modified);
 
 void
-get_content_paths(roster_t const & roster, 
+get_content_paths(roster_t const & roster,
                   std::map<file_id, file_path> & paths);
 
 // These functions are for the use of things like 'update' or 'pluck', that
@@ -405,21 +377,21 @@ mark_merge_roster(roster_t const & left_roster,
 // This is for revisions that are being written to the db, only.  It assigns
 // permanent node ids.
 void
-make_roster_for_revision(revision_t const & rev,
+make_roster_for_revision(database & db,
+                         revision_t const & rev,
                          revision_id const & rid,
                          roster_t & result,
-                         marking_map & marking,
-                         app_state & app);
+                         marking_map & marking);
 
 // This is for revisions that are not necessarily going to be written to the
 // db; you can specify your own node_id_source.
 void
-make_roster_for_revision(revision_t const & rev,
+make_roster_for_revision(database & db,
+                         node_id_source & nis,
+                         revision_t const & rev,
                          revision_id const & rid,
                          roster_t & result,
-                         marking_map & marking,
-                         database & db,
-                         node_id_source & nis);
+                         marking_map & marking);
 
 void
 read_roster_and_marking(roster_data const & dat,
@@ -438,12 +410,6 @@ write_manifest_of_roster(roster_t const & ros,
 
 void calculate_ident(roster_t const & ros,
                      manifest_id & ident);
-
-namespace basic_io
-{
-  struct stanza;
-  struct parser;
-}
 
 // for roster_delta
 void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
@@ -470,4 +436,3 @@ struct testing_node_id_source
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif
-
