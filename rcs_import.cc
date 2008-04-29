@@ -2047,10 +2047,12 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
       vector<string> first_entry_components;
       vector<string> branchpoint_components;
 
-      // require a valid RCS version
-      E(components.size() >= 2,
-        F("Invalid RCS version: %s")
-          % num);
+      // ignore invalid RCS versions
+      if (components.size() < 2)
+        {
+          W(F("Invalid RCS version: '%s'") % num);
+          continue;
+        }
 
       if (components.size() > 2 &&
           (components.size() % 2 == 1))
