@@ -31,7 +31,7 @@ check(not qgrep("privkey", "keys/foo@bar.com"))
 -- 1) without a --key= switch, it should give us the multiple
 --    available keys message and error out
 remove("_MTN/options")
-check(mtn("branch", "foo"), 0, false, false)
+check(nokey_mtn("branch", "foo"), 0, false, false)
 check(nokey_mtn("ci", "-mbar"), 1, nil, true)
 check(qgrep("multiple private keys", "stderr"))
 
