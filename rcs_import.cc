@@ -3298,12 +3298,18 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
   L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
 
+  set<cvs_blob_index> symbol_blobs;
   typedef set<cvs_blob_index>::const_iterator cm_ity;
 
   // find the oldest event in the cycle
   time_i oldest_event_in_cycle = 0;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
+      // tags shouldn't ever occur in cycles, because no other event ever
+      // depends on a tag or branch end event
+      I(!cvs.blobs[*cc].get_digest().is_tag());
+      I(!cvs.blobs[*cc].get_digest().is_branch_end());
+
       time_i bt(cvs.blobs[*cc].get_oldest_event_time());
       if ((oldest_event_in_cycle == 0) ||
           (bt < oldest_event_in_cycle))
@@ -3321,6 +3327,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       if (cvs.blobs[*cc].get_digest().is_branch_start() ||
           cvs.blobs[*cc].get_digest().is_tag())
         continue;
+
+      // remember symbol blobs
+      if (cvs.blobs[*cc].get_digest().is_symbol())
+        symbol_blobs.insert(*cc);
 
       // make sure the blob's events are sorted by timestamp
       cvs.blobs[*cc].sort_events();
@@ -3372,6 +3382,12 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       return;
     }
 
+  // Otherwise, there might be a symbol blob in the cycle. If so, we
+  // split that one.
+  if (!symbol_blobs.empty())
+    W(F("FIXME: we should better favor splitting one of the %d symbol "
+        "blobs in the cycle.") % symbol_blobs.size());
+
   // If we get here, there's no gap in any of the blobs in the cycle,
   // thus we must decide on a blob to split by other means.
 
@@ -3386,6 +3402,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       // underlying symbol.
       if (cvs.blobs[*cc].get_digest().is_branch_start() ||
           cvs.blobs[*cc].get_digest().is_tag())
+        continue;
+
+      // we cannot split blobs which consist of only one event
+      if (cvs.blobs[*cc].get_events().size() <= 1)
         continue;
 
       // loop over every event of every blob in cycle_members
@@ -3446,8 +3466,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
             count_independent_events++;
         }
 
-      if (count_independent_events >= count_total_events)
-        W(F("split_cycle: no dependencies to any cycle member!"));
+      // every blob in cycle_members must have at least one event which
+      // depends on another blob of the cycle. Otherwise, it wouldn't be
+      // part of the cycle.
+      I(count_independent_events < count_total_events);
 
       float ir = (float) count_independent_events / count_total_events;
       if (ir > most_independent_events)
