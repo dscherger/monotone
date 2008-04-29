@@ -1558,7 +1558,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   set<revision_id> revs, common_ancestors;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid((*i)());
+      revision_id rid(decode_hexenc((*i)()));
       N(db.revision_exists(rid), F("No such revision %s") % rid);
       revs.insert(rid);
     }
@@ -1567,7 +1567,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
 
   for (set<revision_id>::const_iterator i = common_ancestors.begin();
        i != common_ancestors.end(); ++i)
-      output << (*i).inner()() << '\n';
+      output << *i << '\n';
 }
 
 // Name: branches
