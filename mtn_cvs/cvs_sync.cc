@@ -315,9 +315,12 @@ void add_missing_parents(mtn_automate::manifest_map const& oldr,
   std::vector<std::pair<file_path,path_component> > components;
   L(FL("add_missing_parents(,%s,)\n") % sp);
   file_path sub=sp;
+  do
   {
      path_component comp;
-     sub.dirname_basename(sub,comp);
+     file_path sub2=sub;
+     // dirname_basename cannot output to the same object
+     sub2.dirname_basename(sub,comp);
      components.push_back(std::make_pair(sub,comp)); 
   } while (!sub.empty());
   for (std::vector<std::pair<file_path,path_component> >::const_reverse_iterator i=components.rbegin();i!=components.rend();++i)
@@ -711,12 +714,12 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
 { revision_id parent_rid;
   
   cvs_edges_ticker.reset(0);
-  L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision.inner()());
+  L(FL("commit_revisions(%s %s)\n") % time_t2human(e->time) % e->revision);
   revision_ticker.reset(new ticker("revisions", "R", 3));
   if (e!=edges.begin())
   { std::set<cvs_edge>::const_iterator before=e;
     --before;
-    L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision.inner()());
+    L(FL("found last committed %s %s\n") % time_t2human(before->time) % before->revision);
     I(!before->revision.inner()().empty());
     parent_rid=before->revision;
   }
@@ -727,7 +730,7 @@ void cvs_repository::commit_cvs2mtn(std::set<cvs_edge>::iterator e)
     mtn_automate::cset cs;
     I(e->delta_base.inner()().empty()); // no delta yet
     cvs_manifest child_manifest=get_files(*e);
-    L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision.inner()());
+    L(FL("build_change_set(%s %s)\n") % time_t2human(e->time) % e->revision);
     // revision_set rev;
     // boost::shared_ptr<cset> cs(new cset());
     mtn_automate::manifest_map oldmanifest;

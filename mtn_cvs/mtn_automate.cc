@@ -431,7 +431,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(decode_hexenc(t1)));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
