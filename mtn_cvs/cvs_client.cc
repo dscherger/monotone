@@ -1054,9 +1054,10 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
             I(lresult.size()==7);
             I(lresult[6].first=="data");
             I(lresult[3].first=="new entries line");
+            I(lresult[4].first=="mode");
             std::string new_revision;
             parse_entry(lresult[3].second,new_revision,result.keyword_substitution);
-            result.mode=lresult[4].second;
+            result.mode=permissions2int(lresult[4].second);
             result.contents=lresult[6].second;
             L(FL("file %s revision %s: %d bytes\n") % file 
                 % revision % lresult[6].second.size());
@@ -1386,7 +1387,7 @@ std::map<std::string,std::pair<std::string,std::string> >
     if (!i->removed)
     { writestr("Checkin-time "+time_t2rfc822(when)+"\n");
       writestr("Modified "+bname+"\n");
-      writestr("u=rw,g=r,o=r\n"); // standard mode
+      writestr(int2permissions(i->mode)+"\n");
       // do _not_ translate this into locale format (e.g. F() )
       writestr(boost::lexical_cast<std::string>(i->new_content.size())+"\n");
       writestr(i->new_content);

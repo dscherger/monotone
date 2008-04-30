@@ -52,12 +52,12 @@ class cvs_client
   struct checkout
   { time_t mod_time;
     std::string contents;
-    std::string mode;
+    int mode; // in unix octal form
     bool dead;
     std::string keyword_substitution;
     std::string committemplate;
     
-    checkout() : mod_time(-1), dead() {}
+    checkout() : mod_time(-1), mode(0644), dead() {}
   };
   struct update_callbacks
   { virtual void operator()(const update &) const=0;
@@ -76,11 +76,12 @@ class cvs_client
   { std::string file;
     std::string old_revision; // newly_added => "0"
     std::string keyword_substitution;
+    int mode; // in unix octal notation
     // actually these two form a tristate ;-)
     bool removed;
     std::string new_content;
     
-    commit_arg() : old_revision("0"), removed() {}
+    commit_arg() : old_revision("0"), mode(0644), removed() {}
   };
 
 private:

@@ -373,6 +373,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
             }
 #warning 2do mode_change
           // cs.attrs_cleared cs.attrs_set
+          //if (fn->second.second->??
         }  
     }
   for (cvs_manifest::const_iterator f = newm.begin(); f != newm.end(); ++f)

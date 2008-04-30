@@ -3,3 +3,16 @@
 - separate child node mode when committing (can change keywords and move revisions
 to attributes), make descendants merge nodes
 
+[markus_s]
+I'd like to talk about examples, I've just added a graph of the test
+importing_cvs_cycle_splitter3 to the CvsImport. It shows a cycle with a
+branch start. You can find the appropriate CVS repo in the test suite.
+Figure out how you want that represented in monotone! (And yes, such things
+occur in the wild.)
+
+christof: No. The example we came up with is: one programmer developing a
+feature A' and not updating but checking in, one creating B' and checking in
+without updating. Now after some time they realize that both changes
+conflict. So the branch off their development, continue work and later merge
+everything together in HEAD again. Now if you look at the tag, they will not
+match an existing point in linear history
