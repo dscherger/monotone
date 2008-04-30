@@ -57,7 +57,7 @@ enum selector_type
 typedef vector<pair<selector_type, string> > selector_list;
 typedef struct
 {
-  meta_selector_type meta_type;
+  vector<meta_selector_type> meta_types;
   selector_list selections;
 } selector_data;
 
@@ -65,15 +65,15 @@ static void
 decode_meta_selector(project_t & project,
                      options const & opts,
                      lua_hooks & lua,
-                     meta_selector_type & meta_type,
+                     vector<meta_selector_type> & meta_types,
                      string & sel)
 {
   L(FL("decoding possible meta selector '%s'") % sel);
 
-  meta_selector_type tmp = meta_sel_unknown;
-
-  if (sel.size() >= 2 && sel[1] == ':')
+  while (sel.size() >= 2 && sel[1] == ':')
     {
+      meta_selector_type tmp = meta_sel_unknown;
+
       switch (sel[0])
         {
         case 'H':
@@ -83,15 +83,17 @@ decode_meta_selector(project_t & project,
           tmp = meta_sel_lca_of;
           break;
         default:
-          W(F("unknown meta selector type: %c") % sel[0]);
           break;
         }
+
+      if (tmp != meta_sel_unknown)
+        {
+          sel.erase(0,2);
+          meta_types.push_back(tmp);
+        }
+      else
+        break;
     }
-
-  if (tmp != meta_sel_unknown)
-    sel.erase(0,2);
-
-  meta_type = tmp;
 }
 
 static void
@@ -249,7 +251,7 @@ parse_selector(project_t & project,
                lua_hooks & lua,
                string const & str, selector_data & seldata)
 {
-  seldata.meta_type = meta_sel_unknown;
+  seldata.meta_types = vector<meta_selector_type>();
   seldata.selections.clear();
 
   // this rule should always be enabled, even if the user specifies
@@ -262,7 +264,7 @@ parse_selector(project_t & project,
   else
     {
       string tmp = str;
-      decode_meta_selector(project, opts, lua, seldata.meta_type, tmp);
+      decode_meta_selector(project, opts, lua, seldata.meta_types, tmp);
 
       typedef boost::tokenizer<boost::escaped_list_separator<char> > tokenizer;
       boost::escaped_list_separator<char> slash("\\", "/", "");
@@ -404,21 +406,27 @@ complete_selector(project_t & project,
       i++;
     }
 
-  switch(limit.meta_type)
+  for(vector<meta_selector_type>::const_iterator m = limit.meta_types.end();
+      m != limit.meta_types.begin();)
     {
-    case meta_sel_heads_of:
-      erase_ancestors(project.db, completions);
-      break;
-    case meta_sel_lca_of:
-      {
-        set<revision_id> common_ancestors;
-        project.db.get_common_ancestors(completions, common_ancestors);
-        completions = common_ancestors;
-        erase_ancestors(project.db, completions);
-      }
-      break;
-    default:
-      break;
+      m--;
+
+      switch(*m)
+        {
+        case meta_sel_heads_of:
+          erase_ancestors(project.db, completions);
+          break;
+        case meta_sel_lca_of:
+          {
+            set<revision_id> common_ancestors;
+            project.db.get_common_ancestors(completions, common_ancestors);
+            completions = common_ancestors;
+            erase_ancestors(project.db, completions);
+          }
+          break;
+        default:
+          break;
+        }
     }
 }
 
