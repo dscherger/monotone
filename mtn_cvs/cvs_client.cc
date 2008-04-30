@@ -1580,7 +1580,28 @@ void cvs_client::AddDirectory(std::string const& name, std::string const& _paren
 
 int cvs_client::permissions2int(std::string const& p)
 {
-  return 0644;
+  std::vector<std::string> parts;
+  stringtok(parts, p, ",");
+  int result=0;
+  for (std::vector<std::string>::const_iterator i=parts.begin();i!=parts.end();++i)
+  {
+    if ((*i).empty()) continue;
+    I((*i)[1]=='=');
+    int shift=32, value=0;
+    switch ((*i)[0])
+    {
+      case 'u': shift=6; break;
+      case 'g': shift=3; break;
+      case 'o': shift=0; break;
+      default: W(F("strange permission token : %s\n") % (*i));
+        break;
+    }
+    if ((*i).find('r',2)!=std::string::npos) value|=4;
+    if ((*i).find('w',2)!=std::string::npos) value|=2;
+    if ((*i).find('x',2)!=std::string::npos) value|=1;
+    result|= value << shift;
+  }
+  return result;
 }
 
 std::string cvs_client::int2permissions(int p)
