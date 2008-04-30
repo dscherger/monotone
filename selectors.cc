@@ -34,6 +34,7 @@ using std::inserter;
 enum meta_selector_type
   {
     meta_sel_heads_of,
+    meta_sel_lca_of,
     meta_sel_unknown
   };
 
@@ -78,7 +79,11 @@ decode_meta_selector(project_t & project,
         case 'H':
           tmp = meta_sel_heads_of;
           break;
+        case 'L':
+          tmp = meta_sel_lca_of;
+          break;
         default:
+          W(F("unknown meta selector type: %c") % sel[0]);
           break;
         }
     }
@@ -403,6 +408,14 @@ complete_selector(project_t & project,
     {
     case meta_sel_heads_of:
       erase_ancestors(project.db, completions);
+      break;
+    case meta_sel_lca_of:
+      {
+        set<revision_id> common_ancestors;
+        project.db.get_common_ancestors(completions, common_ancestors);
+        completions = common_ancestors;
+        erase_ancestors(project.db, completions);
+      }
       break;
     default:
       break;
