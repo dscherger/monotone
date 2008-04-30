@@ -1446,8 +1446,8 @@ make_diff(string const & filename1,
         ost << color::diff_del << "--- " << filename1 << '\t'
             << id1 << '\n';
         ost << color::diff_add << "+++ " << filename2 << '\t'
-        ost << color::std;
             << id2 << '\n';
+        ost << color::std;
 
         unidiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
@@ -1458,8 +1458,8 @@ make_diff(string const & filename1,
         ost << color::diff_del << "*** " << filename1 << '\t'
             << id1 << '\n';
         ost << color::diff_add << "--- " << filename2 << '\t'
-        ost << color::std;
             << id2 << '\n';
+        ost << color::std;
 
         cxtdiff_hunk_writer hunks(lines1, lines2, 3, ost, pattern);
         walk_hunk_consumer(lcs, left_interned, right_interned, hunks);
