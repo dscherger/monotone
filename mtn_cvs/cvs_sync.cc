@@ -323,7 +323,9 @@ void add_missing_parents(mtn_automate::manifest_map const& oldr,
      sub2.dirname_basename(sub,comp);
      components.push_back(std::make_pair(sub,comp)); 
   } while (!sub.empty());
-  for (std::vector<std::pair<file_path,path_component> >::const_reverse_iterator i=components.rbegin();i!=components.rend();++i)
+  for (std::vector<std::pair<file_path,path_component> >::const_reverse_iterator i=components.rbegin();
+    i!=static_cast<std::vector<std::pair<file_path,path_component> >::const_reverse_iterator>(components.rend());
+    ++i)
   { L(FL("path comp '%s'\n") % i->first);
     // already added?
     if (cs.dirs_added.find(i->first)!=cs.dirs_added.end()) continue;

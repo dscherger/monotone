@@ -177,6 +177,8 @@ public:
   void drop_connection();
   static std::string time_t2rfc822(time_t t);
   static time_t Entries2time_t(const std::string &t);
+  static int permissions2int(std::string const& p);
+  static std::string int2permissions(int p);
 
   void validate_path(const std::string &local, const std::string &server);
 };

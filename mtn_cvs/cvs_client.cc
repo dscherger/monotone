@@ -1577,3 +1577,37 @@ void cvs_client::AddDirectory(std::string const& name, std::string const& _paren
   Directory(parent);
   SendCommand(std::string("add"),std::vector<std::string>(1,name));
 }
+
+int cvs_client::permissions2int(std::string const& p)
+{
+  return 0644;
+}
+
+std::string cvs_client::int2permissions(int p)
+{
+  std::string result;
+  if (p&0700)
+  {
+    result += "u=";
+    if (p&0400) result+= "r";
+    if (p&0200) result+= "w";
+    if (p&0100) result+= "x";
+  }
+  if (p&0070)
+  {
+    if (!result.empty()) result+=",";
+    result += "g=";
+    if (p&0040) result+= "r";
+    if (p&0020) result+= "w";
+    if (p&0010) result+= "x";
+  }
+  if (p&0007)
+  {
+    if (!result.empty()) result+=",";
+    result += "o=";
+    if (p&0004) result+= "r";
+    if (p&0002) result+= "w";
+    if (p&0001) result+= "x";
+  }
+  return result;
+}
