@@ -1226,6 +1226,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
     { if (lresult[0].second=="Created" || lresult[0].second=="Update-existing")
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
+        I(lresult[4].first=="mode");
         dir=lresult[1].second;
         result.file=lresult[2].second;
         I(!result.file.empty());
@@ -1234,6 +1235,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
           result.file=rcs_file2path(root+"/"+result.file);
         result.contents=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
+        result.mode=permissions2int(lresult[4].second);
         cb(result);
         result=update();
         state=st_normal;
@@ -1241,6 +1243,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       else if (lresult[0].second=="Rcs-diff")
       { I(lresult.size()==7);
         I(lresult[6].first=="data");
+        I(lresult[4].first=="mode");
         dir=lresult[1].second;
         result.file=lresult[2].second;
         I(!result.file.empty());
@@ -1249,6 +1252,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
           result.file=rcs_file2path(root+"/"+result.file);
         result.patch=lresult[6].second;
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
+        result.mode=permissions2int(lresult[4].second);
         cb(result);
         result=update();
         state=st_normal;
@@ -1281,10 +1285,11 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
       else if (lresult[0].second=="Mod-time")
       { result.mod_time=mod_time2time_t(lresult[1].second);
       }
-      else if (lresult[0].second=="Merged")
+      else if (lresult[0].second=="Merged") // probably unused?
       { I(state==st_merge);
         I(lresult.size()==7);
         I(lresult[6].first=="data");
+        I(lresult[4].first=="mode");
         dir=lresult[1].second;
         result.file=lresult[2].second;
         I(!result.file.empty());
@@ -1293,8 +1298,12 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
           result.file=rcs_file2path(root+"/"+result.file);
         result.contents=lresult[6].second; // strictly this is unnecessary ...
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
+        result.mode=permissions2int(lresult[4].second);
         E(false, F("Update ->%s of %s exposed CVS bug\n") 
             % result.new_revision % result.file);
+        cb(result);
+        result=update();
+        state=st_normal;
       }
       else if (lresult[0].second=="error")
       { I(state==st_merge);

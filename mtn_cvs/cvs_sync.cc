@@ -518,6 +518,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+    const_cast<int&>(s2->mode)=c.mode;
   }
 }
 
@@ -533,6 +534,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
+    const_cast<int&>(s2->mode)=c.mode;
   }
 }
 

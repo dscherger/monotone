@@ -47,10 +47,11 @@ struct file_state
   std::string log_msg;
   std::string author;
   std::string keyword_substitution;
+  int mode;
 
-  file_state() : since_when(), size(), patchsize(), dead() {}  
+  file_state() : since_when(), size(), patchsize(), dead(), mode(0644) {}  
   file_state(time_t sw,const std::string &rev,bool d=false) 
-  : since_when(sw), cvs_version(rev), size(), patchsize(), dead(d) {}  
+  : since_when(sw), cvs_version(rev), size(), patchsize(), dead(d), mode(0644) {}  
   bool operator==(const file_state &b) const
   { return since_when==b.since_when && cvs_version==cvs_version; }
   bool operator<(const file_state &b) const;

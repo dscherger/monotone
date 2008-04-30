@@ -27,7 +27,8 @@ class cvs_client
     std::string file;
     time_t mod_time;
     bool removed;
-    update() : mod_time(-1),removed() {}
+    int mode;
+    update() : mod_time(-1),removed(),mode(0644) {}
   };
   struct rlog_callbacks
   { // virtual void file(const std::string &file,)=0;
