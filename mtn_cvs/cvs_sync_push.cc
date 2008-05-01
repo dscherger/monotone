@@ -69,8 +69,8 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
       }
     }
     result+="-------------------\n"
-        +changelog+"\nmonotone "+author+" "
-        +cvs_client::time_t2rfc822(date)+" "+i->inner()()+"\n";
+        +changelog+"\nmtn "+author+" "
+        +cvs_client::time_t2rfc822(date)+" "+encode_hexenc(i->inner()())+"\n";
     result+=gather_merge_information(*i);
   }
   return result;
