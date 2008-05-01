@@ -1,0 +1,293 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Merge Conflicts - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Inodeprints.html#Inodeprints" title="Inodeprints">
+<link rel="next" href="Workspace-Collisions.html#Workspace-Collisions" title="Workspace Collisions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Merge-Conflicts"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.6 Merge Conflicts</h3>
+
+<p>Several different types of conflicts may be encountered when merging
+two revisions using the database merge commands <samp><span class="command">merge</span></samp>,
+<samp><span class="command">explicit_merge</span></samp>, <samp><span class="command">propagate</span></samp> and
+<samp><span class="command">merge_into_dir</span></samp> or when using the workspace merge commands
+<samp><span class="command">update</span></samp>, <samp><span class="command">pluck</span></samp> and <samp><span class="command">merge_into_workspace</span></samp>. 
+The <samp><span class="command">show_conflicts</span></samp> command can be used to list conflicts
+between database revisions which would be encountered by the database
+merge commands. Unfortunately, this command can't yet list conflicts
+between a database revision and the current workspace revision which
+would be encountered by the workspace merge commands.
+
+<h4 class="subsection">3.6.1 Conflict Types</h4>
+
+<p>Monotone versions both files and directories explicitly and it tracks
+individual file and directory identity from birth to death so that
+name changes throughout the full life-cycle can be tracked exactly. 
+Partly because of these qualities, monotone also notices several types
+of conflicts that other version control systems may not.
+
+   <p>The two most common conflicts are described first, then all other
+possible conflicts.
+
+<h4 class="subheading">File Content Conflict</h4>
+
+<p>This type of conflict is generally the one encountered most commonly
+and represents conflicting changes made to lines of text within two
+versions of a single file.
+
+   <p>Monotone does not generally use CVS style conflict markers for content
+conflicts. Instead it makes the content of both conflicting files and
+the content of their common ancestor available for use with your
+favorite merge tool. See the <code>merge3</code> hook for more information.
+
+   <p>Alternatively, rather than using a merge tool it is possible to make
+further changes to one or both of the conflicting file versions so
+that they will merge cleanly. This can also be a very helpful strategy
+if the merge conflicts are due to sections of text in the file being
+moved from one location to another. Rather than struggling to merge
+such conflicting changes with a merge tool, similar rearrangements can
+be made to one of the conflicting files before redoing the merge.
+
+<h4 class="subheading">Duplicate Name Conflict</h4>
+
+<p>A duplicate name conflict occurs when two distinct files or
+directories have been given the same name in the two merge parents. 
+This can occur when each of the merge parents adds a new file or
+directory with the conflicting name, or when one parent adds a new
+file or directory with the conflicting name and the other renames an
+existing file or directory to the conflicting name, or when both
+parents rename an existing file or directory to the conflicting name.
+
+   <p>In earlier versions of monotone (before version 0.39) this type of
+conflict was referred to as a <em>rename target conflict</em> although
+it doesn't necessarily have anything to do with renames.
+
+   <p>There are two main situations in which duplicate name conflicts occur:
+
+     <ul>
+<li>Two people both realize a new file should be added, and commit it. In
+this case, the files have the right name and the right contents, but
+monotone reports a conflict because they were added separately.
+
+     <li>Two people each decide to add new files with different content, and
+accidently pick the same name. 
+</ul>
+
+   <p>These conflicts are reported when someone tries to merge the two
+revisions containing the new files.
+
+<h5 class="subsubheading">Same file</h5>
+
+<p>For the first case, the conflict is resolved by <samp><span class="command">drop</span></samp>ing one
+file. The contents should be manually merged first, in case they are
+slightly different. Typically, a user will have one of the files in
+their current workspace; the other can be retrieved via
+<samp><span class="command">automate get_file_of</span></samp>; the revision id is shown in the merge
+error message. The process can be confusing; here's a detailed
+example.
+
+   <p>Suppose Beth and Abe each commit a new file <samp><span class="file">checkout.sh</span></samp>. When
+Beth attempts to merge the two heads, she gets a message like:
+
+<pre class="smallexample">     mtn: 2 heads on branch 'testbranch'
+     mtn: [left]  ae94e6677b8e31692c67d98744dccf5fa9ccffe5
+     mtn: [right] dfdf50b19fb971f502671b0cfa6d15d69a0d04bb
+     mtn: conflict: duplicate name 'checkout.sh'
+     mtn: added as a new file on the left
+     mtn: added as a new file on the right
+     mtn: error: merge failed due to unresolved conflicts
+</pre>
+   <p>The file labeled <code>right</code> is the file in Beth's workspace. To
+retrieve a copy of Abe's file, Beth executes:
+
+<pre class="smallexample">     mtn automate get_file_of checkout.sh \
+     --revision=ae94e6677b8e31692c67d98744dccf5fa9ccffe5 \
+     &gt; checkout.sh-merge
+</pre>
+   <p>Now Beth manually merges (using her favorite merge tool)
+<samp><span class="file">checkout.sh</span></samp> and <samp><span class="file">checkout.sh-merge</span></samp>, leaving the results in
+<samp><span class="file">checkout.sh-merge</span></samp> (<em>not</em> in her copy).
+
+   <p>Then Beth drops her copy, and commits that change:
+
+<pre class="smallexample">     mtn drop checkout.sh
+     mtn commit --message "resolving conflicting 'checkout.sh'"
+</pre>
+   <p>Now Beth can merge the two heads, and update her workspace:
+
+<pre class="smallexample">     mtn merge
+     mtn update
+</pre>
+   <p>This leaves a copy of Abe's original <samp><span class="file">checkout.sh</span></samp>. Beth
+overwrites it with her merged version, and commits again:
+
+<pre class="smallexample">     rm checkout.sh
+     mv checkout.sh-merge checkout.sh
+     mtn commit --message "resolving conflicting 'checkout.sh' - done"
+</pre>
+   <p>When Abe later syncs and updates, he will get the merged version.
+
+<h5 class="subsubheading">Different files</h5>
+
+<p>The second case, where two different files accidently have the same
+name, is resolved by renaming one or both of them.
+
+   <p>Suppose Beth and Abe each start working on different thermostat models
+(say Honeywell and Westinghouse), but they both name the file
+<samp><span class="file">thermostat</span></samp>. When Beth attempts to merge, she will get the same
+error message as in the first case. When she retrieves Abe's file, she
+will see that they should be different files. So she renames her file,
+merges, and updates:
+
+<pre class="smallexample">     mtn rename thermostat thermostat-honeywell
+     mtn merge
+     mtn update
+</pre>
+   <p>Now she has her file in <samp><span class="file">thermostat-honeywell</span></samp>, and Abe's in
+<samp><span class="file">thermostat</span></samp>. She may rename Abe's file to
+<samp><span class="file">thermostat-westinghouse</span></samp>, or ask Abe to do that.
+
+   <p>If a project has a good file naming convention, this second case
+should be rare.
+
+<h4 class="subheading">Missing Root Conflict</h4>
+
+<p>Monotone's merge strategy is sometimes referred to as
+<em>die-die-die</em> merge, with reference to the fact that when a file
+or directory is deleted there is no means of resurrecting it. Merging
+the deletion of a file or directory will <em>always</em> result in that
+file or directory being deleted.
+
+   <p>A missing root conflict occurs when some directory has been moved to
+the root directory in one of the merge parents and has been deleted in
+the other merge parent. Because of die-die-die merge the result will
+not contain the directory that has been moved to the root.
+
+   <p>Missing root conflicts should be very rare because it is unlikely that
+a project's root directory will change. It is even more unlikely that
+a project's root directory will be changed to some other directory in
+one merge parent and that this directory will also be deleted in the
+other merge parent. Even still, a missing root directory conflict can
+be easily resolved by moving another directory to the root in the
+merge parent where the root directory was previously changed. Because
+of die-die-die merge, no change to resolve the conflict can be made to
+the merge parent that deleted the directory which was moved to the
+root in the other merge parent.
+
+   <p>See the <samp><span class="command">pivot_root</span></samp> command for more information on moving
+another directory to the project root.
+
+<h4 class="subheading">Invalid Name Conflict</h4>
+
+<p>Monotone reserves the name <samp><span class="file">_MTN</span></samp> in a workspace root directory
+for internal use and treats this name as <em>illegal</em> for a
+versioned file or directory in the project root. This name is
+<em>legal</em> for a versioned file or directory as long as it is not in
+the project root directory.
+
+   <p>An invalid name conflict occurs when some directory is moved to the
+project root in one of the merge parents and a file or directory that
+exists in this new root directory is renamed to <samp><span class="file">_MTN</span></samp> or a new
+file or directory is added with the name <samp><span class="file">_MTN</span></samp> to this directory
+in the other merge parent.
+
+   <p>Invalid name conflicts should be very rare because it is unlikely that
+a project's root directory will change. It is even more unlikely that
+a project's root directory will change and the new root directory will
+contain a file or directory named <samp><span class="file">_MTN</span></samp>. Even still, an invalid
+name conflict can be easily resolved in several different ways. A
+different root directory can be chosen, the offending <samp><span class="file">_MTN</span></samp> file
+or directory can be renamed or deleted, or it can be moved to some
+other subdirectory in the project.
+
+   <p>See the <samp><span class="command">pivot_root</span></samp> command for more information on moving
+another directory to the project root.
+
+<h4 class="subheading">Directory Loop Conflict</h4>
+
+<p>A directory loop conflict occurs when one directory is moved under a
+second in one of the merge parents and the second directory is moved
+under the first in the other merge parent.
+
+   <p>Directory loop conflicts should be rare but can be easily resolved by
+moving one of the conflicting directories out from under the other.
+
+<h4 class="subheading">Orphaned Node Conflict</h4>
+
+<p>An orphaned node conflict occurs when a directory and all of its
+contents are deleted in one of the merge parents and further files or
+directories are added to this deleted directory, or renamed into it,
+in the other merge parent.
+
+   <p>Orphaned node conflicts do happen occasionally but can be easily
+resolved by renaming the orphaned files or directories out of the
+directory that has been deleted and into another directory that exists
+in both merge parents, or that has been added in the revision
+containing the orphaned files or directories.
+
+<h4 class="subheading">Multiple Name Conflict</h4>
+
+<p>A multiple name conflict occurs when a single file or directory has
+been renamed to two different names in the two merge parents. 
+Monotone does not allow this and requires that each file and directory
+has exactly one unique name.
+
+   <p>Multiple name conflicts do happen occasionally but can be easily
+resolved by renaming the conflicting file or directory in one or both
+of the merge parents so that both agree on the name.
+
+   <p>In earlier versions of monotone (those before version 0.39) this type
+of conflict was referred to as a <em>name conflict</em>.
+
+<h4 class="subheading">Attribute Conflict</h4>
+
+<p>An attribute conflict occurs when a versioned attribute on a file or
+directory is set to two different values by the two merge parents or
+if one of the merge parents changes the attribute's value and the
+other deletes the attribute entirely.
+
+   <p>Attribute conflicts may happen occasionally but can be easily resolved
+by ensuring that the attribute is set to the same value or is deleted
+in both of the merge parents. Attributes are <em>not</em> merged using
+the die-die-die rules and may be resurrected by simply setting their
+values.
+
+<h4 class="subsection">3.6.2 Conflict Resolution</h4>
+
+<p>Resolving the different types of conflicts is accomplished by checking
+out one of the conflicting revisions, making changes as described
+above, committing these changes as a new revision and then running the
+merge again using this new revision as one of the merge parents. This
+process can be repeated as necessary to get two revisions into a state
+where they will merge cleanly, or with a minimum of file content
+conflicts.
+
+   </body></html>
+

@@ -6,6 +6,7 @@
 <meta name="generator" content="makeinfo 4.11">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="next" href="Selectors.html#Selectors" title="Selectors">
 <link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
 <meta http-equiv="Content-Style-Type" content="text/css">
@@ -26,6 +27,7 @@
 <p>
 <a name="Other-Transports"></a>
 Next:&nbsp;<a rel="next" accesskey="n" href="Selectors.html#Selectors">Selectors</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
 <hr>
 </div>
@@ -63,6 +65,9 @@ host and port, and speaks netsync over the socket.
 <li>File URIs, of the form
   <code>file:</code><var>/path/to/db.mtn</var>, to synchronize between local databases.
         </ol>
+
+   <p><code>ssh:</code> and <code>file:</code> are currently not supported on the native
+Win32 platform; they are supported on Cygwin and all other platforms.
 
    <p>In the case of SSH URIs, the <samp><span class="command">ssh</span></samp> program must be in your
 command execution path, either <var>$PATH</var> on Unix-like systems or

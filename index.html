@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html lang="de" xml:lang="de"  xmlns="http://www.w3.org/1999/xhtml">
+<html lang="en" xml:lang="en"  xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>monotone: distributed version control</title>
   <link type="text/css" rel="stylesheet" href="res/styles.css" />
@@ -8,7 +8,7 @@
   <link rel="stylesheet" type="text/css" href="res/ie7.css" />
   <![endif]-->
   <link rel="alternate" type="application/rss+xml" title="monotone releases"
-                         href="http://monotone.ca/releases.xml">
+                         href="http://monotone.ca/releases.xml" />
 
 </head>
 <body>
@@ -25,14 +25,14 @@
         good internationalization support, has no external dependencies, runs
         on linux, solaris, OSX, windows, and other unixes, and is licensed
         under the GNU GPL.
-        <div class="clearfloat"></div>
     </p>
+    <div class="clearfloat"></div>
 </div>
 
 <div id="body">
     <img align="right" src="res/merging-fest-transparent.png" alt="merging fest"/>
     <div class="entry newversion">
-        <a href="NEWS"><b>NEWS: Wed Dec 12 2007, 0.38 release</b></a>
+        <a href="NEWS"><b>NEWS: Fri Apr 11 2008, 0.40 release</b></a>
         <ul>
             <li>see <b><a href="NEWS">NEWS</a></b> for release notes, <b><a href="UPGRADE">UPGRADE</a></b> for upgrading <small>(<a href="README.changesets">still on 0.14? README.changesets</a>)</small></li>
             <li>older versions are still <a href="downloads/">available</a></li>
@@ -52,41 +52,41 @@
     <div class="box getit">
         <h1>Get it</h1>
         <ul>
-            <li><a href="downloads/0.38/monotone-0.38.tar.gz">Source</a></li>
-            <li><a href="downloads/0.38/mtn-0.38-linux-x86.bz2">Linux x86/glibc 2.3</a></li>
-            <!-- <li><a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2">static, linux 2.6/glibc</a>(read the <a href="downloads/0.38/mtn-0.38-linux_2.6-static.README1ST">README</a>!) (<a href="downloads/0.38/mtn-0.38-linux_2.6-static.bz2.sig">PGP sig</a>)</li> --> 
+            <li><a href="downloads/0.40/monotone-0.40.tar.gz">Source</a></li>
+	    <li><a href="downloads/0.40/mtn-0.40-linux-x86.bz2">Linux x86/glibc 2.3</a></li>
+            <!-- <li><a href="downloads/0.40/mtn-0.40-linux_2.6-static.bz2">static, linux 2.6/glibc</a>(read the <a href="downloads/0.40/mtn-0.40-linux_2.6-static.README1ST">README</a>!) (<a href="downloads/0.40/mtn-0.40-linux_2.6-static.bz2.sig">PGP sig</a>)</li> --> 
             <li>Windows
-                <a href="downloads/0.38/monotone-0.38-setup.exe">native</a>
+                <a href="downloads/0.40/monotone-0.40-setup.exe">native</a>
                 <a href="http://cygwin.com/">cygwin</a>
-                </li>
-            <li>Mac OS X <a href="downloads/0.38/mtn-0.38-osx-univ.bz2">standalone</a>,
-            <a href="downloads/0.38/monotone-0.38.dmg">packaged</a></li>
-            <li>Fedora 7 <a href="downloads/0.38/monotone-0.38-0.mtn.1fc7.i386.rpm">x86</a><!--
-                <a href="downloads/0.38/monotone-0.38-0.mtn.1.x86_64.rpm">x86-64</a>
-                (<a class="lesser" href="downloads/0.38/monotone-0.38-0.mtn.1.fc5.src.rpm">srpm</a>)--></li>
+            </li>
+            <li>Mac OS X <a href="downloads/0.40/mtn-0.40-osx.bz2">standalone</a>,
+            <a href="downloads/0.40/monotone-0.40.dmg">packaged</a></li>
+            <!-- <li>Fedora 7 <a href="downloads/0.40/monotone-0.40-0.mtn.1fc7.i386.rpm">x86</a>
+                <a href="downloads/0.40/monotone-0.40-0.mtn.1.x86_64.rpm">x86-64</a>
+                (<a class="lesser" href="downloads/0.40/monotone-0.40-0.mtn.1.fc5.src.rpm">srpm</a>)</li> -->
             <li>SuSE / openSUSE
                 <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=SUSE%3ASLE-10">SLE 10.0</a>,
                 <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.2">openSUSE 10.2</a> and 
                 <a href="http://software.opensuse.org/search?p=1&amp;q=monotone&amp;baseproject=openSUSE%3A10.3">openSUSE 10.3</a>
                 for i586 and x86_64
             </li>
-            <!-- <li>deb <a href="downloads/0.38/monotone_0.38-0.1_i386.deb">x86 sid</a>,
-                <a href="downloads/0.38/monotone_0.38-0.1_amd64.deb">amd64 sid</a>,
-                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-0.1_all.deb">server setup sid</a>),
-                <a href="downloads/0.38/monotone_0.38-etch0.1_i386.deb">x86 etch</a>
-                <a href="downloads/0.38/monotone_0.38-etch0.1_amd64.deb">amd64 etch</a>
-                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-etch0.1_all.deb">server setup etch</a>)
-                <a href="downloads/0.38/monotone_0.38-sarge0.1_i386.deb">x86 sarge</a>
-                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-sarge0.1_all.deb">server setup sarge</a>),
-                <a href="downloads/0.38/monotone_0.38-dapper0.1_i386.deb">x86 dapper</a>
-                (<a class="lesser" href="downloads/0.38/monotone-server_0.38-dapper0.1_all.deb">server setup dapper</a>),
-                <a href="downloads/0.38/monotone-doc_0.38-etch0.1_all.deb">docs all</a>
-            (<a class="lesser" href="downloads/0.38/monotone_0.38-0.1.dsc">dsc</a>, 
-                <a class="lesser" href="downloads/0.38/monotone_0.38-0.1.tar.gz">orig</a>, 
-                <a class="lesser" href="downloads/0.38/monotone_0.38-0.1_i386.changes">changes</a>)
+            <!-- <li>deb <a href="downloads/0.40/monotone_0.40-0.1_i386.deb">x86 sid</a>,
+                <a href="downloads/0.40/monotone_0.40-0.1_amd64.deb">amd64 sid</a>,
+                (<a class="lesser" href="downloads/0.40/monotone-server_0.40-0.1_all.deb">server setup sid</a>),
+                <a href="downloads/0.40/monotone_0.40-etch0.1_i386.deb">x86 etch</a>
+                <a href="downloads/0.40/monotone_0.40-etch0.1_amd64.deb">amd64 etch</a>
+                (<a class="lesser" href="downloads/0.40/monotone-server_0.40-etch0.1_all.deb">server setup etch</a>)
+                <a href="downloads/0.40/monotone_0.40-sarge0.1_i386.deb">x86 sarge</a>
+                (<a class="lesser" href="downloads/0.40/monotone-server_0.40-sarge0.1_all.deb">server setup sarge</a>),
+                <a href="downloads/0.40/monotone_0.40-dapper0.1_i386.deb">x86 dapper</a>
+                (<a class="lesser" href="downloads/0.40/monotone-server_0.40-dapper0.1_all.deb">server setup dapper</a>),
+                <a href="downloads/0.40/monotone-doc_0.40-etch0.1_all.deb">docs all</a>
+            (<a class="lesser" href="downloads/0.40/monotone_0.40-0.1.dsc">dsc</a>, 
+                <a class="lesser" href="downloads/0.40/monotone_0.40-0.1.tar.gz">orig</a>, 
+                <a class="lesser" href="downloads/0.40/monotone_0.40-0.1_i386.changes">changes</a>)
             </li> -->
-            <!-- <li>sol10 <a href="downloads/0.38/PMmonotone-0.38.i386.pkg">x86</a>, <a href="downloads/0.38/PMmonotone-0.38.sparc.pkg">sparc</a></li> -->
-            <li><i class="lesser">(more 0.38 packages coming soon, or try <a href="downloads/0.37/">0.37 binaries</a>)</i></li>
+            <!-- <li>sol10 <a href="downloads/0.40/PMmonotone-0.40.i386.pkg">x86</a>, <a href="downloads/0.40/PMmonotone-0.40.sparc.pkg">sparc</a></li> -->
+            <li><i class="lesser">(more 0.40 packages coming soon, or try <a href="downloads/0.39/">0.39 binaries</a>)</i></li>
             <!-- <li><i class="lesser"><a href="downloads/">older downloads...</a></i></li> -->
             <!-- <li><a class="lesser" href="downloads.html">less common downloads...</a></li> -->
         </ul>
@@ -95,7 +95,7 @@
     <div class="box useit">
         <h1>Use it</h1>
         <ul>
-            <li><a href="docs/index.html"><b>manual</b> (with tutorial)</a><br/>(<a class=lesser href="monotone.html">one page</a>, <a class=lesser href="monotone.pdf">PDF</a>)</li>
+            <li><a href="docs/index.html"><b>manual</b> (with tutorial)</a><br/>(<a class="lesser" href="monotone.html">one page</a>, <a class="lesser" href="monotone.pdf">PDF</a>)</li>
             <li><a href="INSTALL">INSTALL</a></li>
             <li><a href="http://www.venge.net/mtn-wiki/FAQ">FAQ</a></li>
             <li><a href="http://www.venge.net/mtn-wiki/InterfacesFrontendsAndTools">GUIs/other tools</a></li>
@@ -117,8 +117,11 @@
             <li><a href="http://www.venge.net/mtn-wiki/">wiki</a></li>
             <li><a href="http://www.venge.net/mtn-wiki/SelfHostingInfo">self-hosting info</a></li>
             <li><a href="http://savannah.nongnu.org/projects/monotone">savannah</a></li>
-            <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="https://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
             <li><a href="http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone">browse source</a></li>
+            <li><a href="http://cia.navi.cx/stats/project/monotone">latest work</a> (<a class="lesser" href="https://cia.navi.cx/stats/project/monotone/.rss">RSS</a>)</li>
+            <li>commit mailing list:<br />
+              <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-diffs">with</a> / 
+              <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-nodiffs">without</a> diffs</li>
             <li><a href="buildbot/">build status</a></li>   
             <li><a href="http://frances.vorpus.org/~monotone-cov/net.venge.monotone">test coverage</a></li>
         </ul>

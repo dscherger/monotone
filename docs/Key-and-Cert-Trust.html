@@ -51,6 +51,16 @@ automatically use a certain passphrase for a given key using the
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
+     <p>The public key is stored in the database; the public and private keys
+are stored in the keystore. This allows copying the database without
+copying the private key.
+
+     <p>The location of the keystore is specified by the <samp><span class="option">--keydir</span></samp>
+option; it defaults to the value stored in <samp><span class="file">_MTN/options</span></samp> for
+commands executed in a workspace, or to
+the system default (<samp><span class="file">~/.monotone/keys</span></samp> on Unix and Cygwin,
+<samp><span class="file">%APPDATA%/monotone/keys</span></samp> on native Win32).
+
      <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-104"></a><dd>
 This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
