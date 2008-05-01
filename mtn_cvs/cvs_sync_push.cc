@@ -246,6 +246,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       a.removed=true;
       a.old_revision=old->second->cvs_version;
       a.keyword_substitution=old->second->keyword_substitution;
+      a.mode=old->second->mode;
       commits.push_back(a);
       L(FL("rename from %s -%s %s\n") % a.file % a.old_revision % a.keyword_substitution);
       
@@ -286,6 +287,12 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       a.file=file_path(i->first).as_internal();
 //      if (a.file==".mtn-sync-"+app.opts.domain) continue;
       a.new_content=app.get_file(i->second).inner()();
+      std::map<std::pair<file_path, attr_key>, attr_value>::const_iterator exec=cs->attrs_set.find(std::make_pair(file_path(i->first), attr_key("mtn:execute")));
+      if (exec!=cs->attrs_set.end() && exec->second==attr_value("true"))
+    	  a.mode|=0111;
+      exec=cs->attrs_set.find(std::make_pair(file_path(i->first), attr_key("mtn:manual_merge")));
+      if (exec!=cs->attrs_set.end() && exec->second==attr_value("true"))
+    	  a.keyword_substitution="-kb";
       commits.push_back(a);
       L(FL("add %s %d\n") % a.file % a.new_content.size());
     }
