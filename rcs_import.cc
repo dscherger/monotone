@@ -4410,7 +4410,9 @@ import_cvs_repo(options & opts,
         cvs.depth_first_search(vis, back_inserter(cvs.import_order));
 
         n_blobs.set_total(cvs.blobs.size());
-        n_blobs += cvs.import_order.size() - n_blobs.ticks;
+
+        if (cvs.import_order.size() > n_blobs.ticks)
+          n_blobs += cvs.import_order.size() - n_blobs.ticks;
 
         if (!dfs_restart_needed)
           break;
