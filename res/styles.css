@@ -27,19 +27,19 @@ ul {
 }
 
 #header, #body {
-    width: 46em;
     margin-left: auto;
     margin-right: auto;
     background: white;
     border-left: 0.0625em solid #474747;
     border-right: 0.0625em solid #474747;
-    padding: 1em;
 }
 
 #header {
     margin-bottom: 0.5em;
     border-bottom: 0.0625em solid #474747;
     text-align: justify;
+    width: 46em;
+    padding: 1em;
 }
 
 #header p {
@@ -56,25 +56,52 @@ ul {
 
 #body {
     border: 0.0625em solid #474747;
+    width: 44em;
+    padding: 2em;
+}
+
+.other {
+    float: right;
+    width: 250px;
+    margin-top: 1em;
+    text-align: center;
+}
+
+.other + .main {
+    margin-right: 250px;
+}
+
+.main:after {
+    clear: both;
 }
 
 .entry {
-    border-bottom: 0.0625em dotted #CCCCCC;
-    margin-bottom: 1em;
-    padding-bottom: 1em;
-    margin-top: 1em;
+    border-top: 0.0625em dotted #CCCCCC;
+    margin-top: 2em;
+    padding-top: 2em;
+}
+
+.entry:first-child {
+    border-top: 0;
+    margin-top: -1em;
 }
 
 .important {
     padding-left: 2.5em;
-    padding-top: 0.3em;
-    background: url(important.png) no-repeat;
+    background: url(important.png) no-repeat 0 1.5em;
 }
 
 .newversion {
     padding-left: 2.5em;
-    padding-top: 0.4em;
-    background: url(newversion.png) no-repeat;
+    background: url(newversion.png) no-repeat 0 1.5em;
+}
+
+.boxes {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 0.0625em dotted #CCCCCC;
+    border-bottom: 0.0625em dotted #CCCCCC;
+    margin-bottom: 1em;
 }
 
 .box {
@@ -83,7 +110,7 @@ ul {
     padding-right: 0.5em;
     margin-right: 0.5em;
     border-right: 0.0625em dotted #CCCCCC;
-    width: 14.5em;
+    width: 13.5em;
 }
 
 .box + .box + .box {
@@ -116,10 +143,8 @@ ul {
     background: url(improveit.png) no-repeat;
 }
 
-
 #footer {
-    border-top: 0.0625em dotted #CCCCCC;
-    padding-top: 1em;
+    margin-top: 1em;
     font-size: 0.7em;
     text-align: center;
 }
