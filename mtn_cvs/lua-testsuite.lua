@@ -1,82 +1,8 @@
 #!../tester
 
-ostype = string.sub(get_ostype(), 1, string.find(get_ostype(), " ")-1)
+monotone_path = nil
+-- logfile = io.open("lua.log", "w")
 
--- maybe this should go in tester.lua instead?
-function getpathof(exe, ext,localp)
-  local function gotit(now)
-    if test.log == nil then
-      logfile:write(exe, " found at ", now, "\n")
-    else
-      test.log:write(exe, " found at ", now, "\n")
-    end
-    return now
-  end
-  local path = os.getenv("PATH")
-  local char
-  if ostype == "Windows" then
-    char = ';'
-  else
-    char = ':'
-  end
-  if ostype == "Windows" then
-    if ext == nil then ext = ".exe" end
-  else
-    if ext == nil then ext = "" end
-  end
-  if localp == nil then localp = initial_dir end
-  local now = localp.."/"..exe..ext
-  if exists(now) then return gotit(now) end
-  for x in string.gmatch(path, "[^"..char.."]*"..char) do
-    local dir = string.sub(x, 0, -2)
-    if string.find(dir, "[\\/]$") then
-      dir = string.sub(dir, 0, -2)
-    end
-    local now = dir.."/"..exe..ext
-    if exists(now) then return gotit(now) end
-  end
-  if test.log == nil then
-    logfile:write("Cannot find ", exe, "\n")
-  else
-    test.log:write("Cannot find ", exe, "\n")
-  end
-  return nil
-end
-
-monotone_path = getpathof("mtn",nil,initial_dir..'/..')
-if monotone_path == nil then monotone_path = "mtn" end
-set_env("mtn", monotone_path)
-
-mtncvs_path = getpathof("mtn_cvs")
-if mtncvs_path == nil then mtncvs_path = "mtn_cvs" end
-
-writefile_q("in", nil)
-prepare_redirect("in", "out", "err")
-execute(monotone_path, "--full-version")
-logfile:write(readfile_q("out"))
-unlogged_remove("in")
-unlogged_remove("out")
-unlogged_remove("err")
-
--- NLS nuisances.
-for _,name in pairs({  "LANG",
-                       "LANGUAGE",
-                       "LC_ADDRESS",
-                       "LC_ALL",
-                       "LC_COLLATE",
-                       "LC_CTYPE",
-                       "LC_IDENTIFICATION",
-                       "LC_MEASUREMENT",
-                       "LC_MESSAGES",
-                       "LC_MONETARY",
-                       "LC_NAME",
-                       "LC_NUMERIC",
-                       "LC_PAPER",
-                       "LC_TELEPHONE",
-                       "LC_TIME"  }) do
-   set_env(name,"C")
-end
-       
 function mtn_cvs(...)
   return {mtncvs_path, "--mtn="..monotone_path, "--norc",
 		"--root="..test.root, "--confdir="..test.root, 
@@ -89,8 +15,27 @@ function mtn_cvs(...)
 end
 
 function safe_mtn(...)
+  if monotone_path == nil then
+    monotone_path = os.getenv("mtn")
+    if monotone_path == nil then
+      err("'mtn' environment variable not set")
+    end
+  end
   return {monotone_path, "--norc", "--root=" .. test.root,
           "--confdir="..test.root, unpack(arg)}
+end
+
+function mtn_ws_opts(...)
+  -- Return a mtn command string that uses options from _MTN/options,
+  -- root from current directory - as close to a normal user command
+  -- line as possible.
+  if monotone_path == nil then
+    monotone_path = os.getenv("mtn")
+    if monotone_path == nil then
+      err("'mtn' environment variable not set")
+    end
+  end
+  return {monotone_path, "--ssh-sign=no", "--norc", "--rcfile", test.root .. "/test_hooks.lua", unpack(arg)}
 end
 
 -- function preexecute(x)
@@ -110,6 +55,18 @@ function mtn(...)
          "--db=" .. test.root .. "/test.db",
          "--keydir", test.root .. "/keys",
          "--key=tester@test.net", unpack(arg))
+end
+
+function nodb_mtn(...)
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+         "--keydir", test.root .. "/keys",
+         "--key=tester@test.net", unpack(arg))
+end
+
+function nokey_mtn(...)
+  return raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
+         "--db=" .. test.root .. "/test.db",
+         "--keydir", test.root .. "/keys", unpack(arg))
 end
 
 function minhooks_mtn(...)
@@ -145,7 +102,7 @@ function mtn_setup()
   check(getstd("test_keys"))
   check(getstd("test_hooks.lua"))
   check(getstd("min_hooks.lua"))
-  
+
   check(mtn("db", "init"), 0, false, false)
   check(mtn("read", "test_keys"), 0, false, false)
   check(mtn("setup", "--branch=testbranch", "."), 0, false, false)
@@ -171,9 +128,13 @@ function certvalue(rev, name)
   check(safe_mtn("automate", "certs", rev), 0, false)
   local parsed = parse_basic_io(readfile("ts-stdout"))
   local cname
+  local goodsig
+  -- note: this relies on the name and signature elements appearing
+  -- before the value element, in each stanza.
   for _,l in pairs(parsed) do
     if l.name == "name" then cname = l.values[1] end
-    if cname == name and l.name == "value" then return l.values[1] end
+    if l.name == "signature" then goodsig = l.values[1] end
+    if cname == name and l.name == "value" then return l.values[1], goodsig end
   end
   return nil
 end
@@ -190,24 +151,34 @@ function addfile(filename, contents, mt)
   check(mt("add", filename), 0, false, false)
 end
 
+function adddir(dirname, mt)
+  if not isdir(dirname) then mkdir(dirname) end
+  if mt == nil then mt = mtn end
+  check(mt("add", dirname), 0, false, false)
+end
+
 function revert_to(rev, branch, mt)
   if type(branch) == "function" then
     mt = branch
     branch = nil
   end
   if mt == nil then mt = mtn end
+
+  check(mt("automate", "get_manifest_of", base_revision()), 0, true, false)
+  rename("stdout", "paths-new")
+
   remove("_MTN.old")
   rename("_MTN", "_MTN.old")
 
   check(mt("automate", "get_manifest_of", rev), 0, true, false)
-  rename("stdout", "paths")
+  rename("stdout", "paths-old")
 
   -- remove all of the files and dirs in this
   -- manifest to clear the way for checkout
 
-  for path in io.lines("paths") do
+  for path in io.lines("paths-new") do
     len = string.len(path) - 1
-    
+
     if (string.match(path, "^   file \"")) then
       path = string.sub(path, 10, len)
     elseif (string.match(path, "^dir \"")) then
@@ -220,7 +191,23 @@ function revert_to(rev, branch, mt)
       remove(path)
     end
   end
-        
+
+  for path in io.lines("paths-old") do
+    len = string.len(path) - 1
+
+    if (string.match(path, "^   file \"")) then
+      path = string.sub(path, 10, len)
+    elseif (string.match(path, "^dir \"")) then
+      path = string.sub(path, 6, len)
+    else
+      path = ""
+    end
+
+    if (string.len(path) > 0) then
+      remove(path)
+    end
+  end
+
   if branch == nil then
     check(mt("checkout", "--revision", rev, "."), 0, false, true)
   else
@@ -247,7 +234,7 @@ end
 function check_same_db_contents(db1, db2)
   check_same_stdout(mtn("--db", db1, "ls", "keys"),
                     mtn("--db", db2, "ls", "keys"))
-  
+
   check(mtn("--db", db1, "complete", "revision", ""), 0, true, false)
   rename("stdout", "revs")
   check(mtn("--db", db2, "complete", "revision", ""), 0, true, false)
@@ -261,7 +248,7 @@ function check_same_db_contents(db1, db2)
     check_same_stdout(mtn("--db", db1, "automate", "get_manifest_of", rev),
                       mtn("--db", db2, "automate", "get_manifest_of", rev))
   end
-  
+
   check(mtn("--db", db1, "complete", "file", ""), 0, true, false)
   rename("stdout", "files")
   check(mtn("--db", db2, "complete", "file", ""), 0, true, false)
@@ -346,15 +333,50 @@ end
 ------------------------------------------------------------------------
 testdir = srcdir.."/tests"
 
--- any directory in testdir with a __driver__.lua inside is a test case
--- perhaps this should be in tester.lua?
+function prepare_to_run_tests (P)
+   -- We have a bunch of tests that depend on being able to create
+   -- files or directories that we cannot read or write (mostly to
+   -- test error handling behavior).
+   require_not_root()
 
-for _,candidate in ipairs(read_directory(testdir)) do
-   -- n.b. it is not necessary to throw out directories before doing
-   -- this check, because exists(nondirectory/__driver__.lua) will
-   -- never be true.
-   if exists(testdir .. "/" .. candidate .. "/__driver__.lua") then
-      table.insert(tests, candidate)
+   -- Several tests require the ability to create temporary
+   -- directories outside the workspace.
+   local d = make_temp_dir()
+   if d == nil then
+      P("This test suite requires the ability to create files\n"..
+        "in the system-wide temporary directory.  Please correct the\n"..
+        "access permissions on this directory and try again.\n")
+      return 1
    end
+   unlogged_remove(d)
+
+   monotone_path = getpathof("mtn")
+   if monotone_path == nil then monotone_path = "mtn" end
+   set_env("mtn", monotone_path)
+
+   mtncvs_path = getpathof("mtn_cvs")
+   if mtncvs_path == nil then mtncvs_path = "mtn_cvs" end
+
+   writefile_q("in", nil)
+   prepare_redirect("in", "out", "err")
+
+   local status = execute(monotone_path, "version", "--full")
+   local out = readfile_q("out")
+   local err = readfile_q("err")
+
+   if status == 0 and err == "" and out ~= "" then
+      logfile:write(out)
+   else
+      P(string.format("mtn version --full: exit %d\nstdout:\n", status))
+      P(out)
+      P("stderr:\n")
+      P(err)
+
+      if status == 0 then status = 1 end
+   end
+
+   unlogged_remove("in")
+   unlogged_remove("out")
+   unlogged_remove("err")
+   return status
 end
-table.sort(tests)
