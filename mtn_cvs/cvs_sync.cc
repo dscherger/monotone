@@ -371,7 +371,7 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
               safe_insert(cs.deltas_applied, std::make_pair(f->first, std::make_pair(f->second.first,fn->second->sha1sum)));
 //              cvs_delta[path.as_internal()]=fn->second;
             }
-#warning 2do mode_change
+#warning 2do mode_change ?
           // cs.attrs_cleared cs.attrs_set
           //if (fn->second.second->??
         }  
@@ -386,6 +386,10 @@ build_change_set(const cvs_client &c, mtn_automate::manifest_map const& oldr, cv
         add_missing_parents(oldr, sp, cs);
         safe_insert(cs.files_added, make_pair(sp, f->second->sha1sum));
 //        cvs_delta[f->first]=f->second;
+        if (f->second->mode&0111)
+          safe_insert(cs.attrs_set, std::make_pair(std::make_pair(sp, attr_key("mtn:execute")), attr_value("true")));
+        if (f->second->keyword_substitution=="-kb")
+          safe_insert(cs.attrs_set, std::make_pair(std::make_pair(sp, attr_key("mtn:manual_merge")), attr_value("true")));
       }
     }
 }

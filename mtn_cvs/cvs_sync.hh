@@ -66,6 +66,7 @@ typedef std::set<file_state>::const_iterator cvs_file_state;
 // state of the files at a specific point in history, dead files do not occur here
 typedef std::map<cvs_file_path,cvs_file_state> cvs_manifest;
 
+// a (atomic) checkin to cvs
 struct cvs_edge // careful this name is also used in cvs_import
 {
   std::string changelog;
@@ -104,6 +105,7 @@ struct cvs_edge // careful this name is also used in cvs_import
 bool operator<(const file_state &,const cvs_edge &);
 bool operator<=(const file_state &,const cvs_edge &);
 
+// branch (of a module) data and cvs abstraction
 class cvs_repository : public cvs_client
 { 
 public:
