@@ -1,44 +1,51 @@
 grammar selectors;
 
-//setOperator : ( 'heads' | 'h' | 'erase_ancestors' | 'parent' | 'p' | 'leaves' );
+options {
+  language = C;
+}
 
-input : difference EOF;
+input : sequence EOF;
 
-difference : union ( '-' union )*;
+sequence : addition ( ',' addition )*;
 
-union : intersection ( ',' intersection )*;
+addition : intersection ( ('+'|'~') intersection )*;
 
-intersection : selector ( '/' selector )*;
+intersection : antique ( ('^'|'&') antique )*;
+
+antique : selector ( '/' selector )*; // 'antique' (c) Richard Levitte
 
 selector :
   immediate
-| '(' difference ')'
+| '(' addition ')'
 //| Difference
 //| PrefixOperator
-| function1 '(' difference ')'
+| function1 '(' addition ')'
 //| Operator2 "(" Number10 "," Selector ")"
 ;
 
 immediate :
   Identifier
-| BranchName
-| AuthorName
+| branchName
+| authorName
 ;
 
 function1 :
-  'h' | 'heads'
+  'eca'
 | 'lca'
-| 'p' | 'parents'
+| 'parents' | 'p'
+| 'ancestors' | 'anc' | 'a'
+| 'union' | 'difference' | 'intersection'
 ;
 
 Identifier : 'i:' ('0'..'9'|'a'..'f'|'A'..'F')+;
 
-BranchName : 'b:' (
-  ('a'..'z'|'0'..'9'|'-'|'_'|'.'|'@')+
-| '"' (~('\r'|'\n'|'\t'|' '|'\''|'"'|'\\')|'\\' .)+ '"'
-);
+branchName : 'b:' anyString;
 
-AuthorName : 'a:' (
-  ('a'..'z'|'0'..'9'|'-'|'_'|'.'|'@')+
-| '"' (~('\r'|'\n'|'\t'|' '|'\''|'"'|'\\')|'\\' .)+ '"'
-);
+authorName : 'a:' anyString;
+
+anyString : StringLiteral | StringQuoted | Globish | PCRE;
+
+StringLiteral : ('a'..'z'|'0'..'9'|'-'|'_'|'.'|'@')+;
+StringQuoted : '"' (~('"'|'\\')|'\\' .)+ '"';
+Globish : '<' (~('>'|'\\')|'\\' .)+ '>';
+PCRE : '#' (~('#'|'\\')|'\\' .)+ '#';
