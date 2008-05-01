@@ -3291,15 +3291,148 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 void
 split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 {
-  cvs_blob_index blob_to_split;
-
-  // shortcut for intra blob dependencies
   I(cycle_members.size() > 1);
 
-  L(FL("choosing a blob to split (out of %d blobs)") % cycle_members.size());
+  L(FL("Analyzing a cycle consisting of %d blobs") % cycle_members.size());
 
-  set<cvs_blob_index> symbol_blobs;
+  // We analyze the cycle first, trying to figure out which blobs we can
+  // split and which not. This involves checking all events of all blobs in
+  // the cycle. What we are interested in here is, dependencies to and from
+  // other events in the cycle.
+  //
+  // There are basically four variants of events in cycles:
+  //
+  //   1) those which have no in- or out-going dependencies
+  //   2) those which have out-going deps, but no incomming ones
+  //   3) those which have incomming ones, but no out-going ones
+  //   4) those which have both.
+  //
+  // We don't care much about type 1) events, they don't disturb us, but also
+  // don't help us with choosing a split point. However, each blob must have
+  // at least one event of type 2) and one of type 3), otherwise it should
+  // not be a cycle.
+  //
+  // We shouldn't split blobs which have at least one event of type 4),
+  // because that wouldn't help resolving the dependency cycle: no matter
+  // where we split such a blob, the event(s) type 4) cannot be split and
+  // would thus still keep the dependency cycle together.
+  //
+
+  multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependencies;
+  multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependents;
+
   typedef set<cvs_blob_index>::const_iterator cm_ity;
+  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
+    {
+      // Nothing should ever depend on tags and branch_end blobs, thus
+      // these blob types shouldn't ever be part of a cycle.
+      I(!cvs.blobs[*cc].get_digest().is_tag());
+      I(!cvs.blobs[*cc].get_digest().is_branch_end());
+
+      // loop over every event of every blob in cycle_members
+      vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
+      for (blob_event_iter ity = blob_events.begin();
+           ity != blob_events.end(); ++ity)
+        {
+          cvs_event_ptr this_ev = *ity;
+
+          // check every event for dependencies into the cycle, following
+          // even deep dependencies (i.e. hopping via multiple blobs *not*
+          // in the cycle).
+          for (dep_loop j = cvs.get_dependencies(this_ev); !j.ended(); ++j)
+            {
+              cvs_event_ptr dep_ev = *j;
+
+              if (cycle_members.find(dep_ev->bi) != cycle_members.end())
+                {
+                  in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
+                  in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
+                }
+            }
+        }
+    }
+
+  // loop over them again, this time accumulating the counters and trying to
+  // find splittable blobs.
+  set<cvs_blob_index> splittable_symbol_blobs;
+  set<cvs_blob_index> splittable_blobs;
+  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
+    {
+      // We never split branch starts, instead we split the underlying
+      // symbol. Thus simply skip them here.
+      if (cvs.blobs[*cc].get_digest().is_branch_start())
+        continue;
+
+      bool has_type4events = false;
+      set<cvs_event_ptr> type2events, type3events;
+
+      // loop over every event of every blob in cycle_members
+      vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
+      for (blob_event_iter ity = blob_events.begin();
+           ity != blob_events.end(); ++ity)
+        {
+          cvs_event_ptr this_ev = *ity;
+          int deps_from = 0, deps_to = 0;
+
+          typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
+          pair<mm_ity, mm_ity> range =
+            in_cycle_dependencies.equal_range(this_ev);
+
+          // just count the number of in_cycle_dependencies from this event
+          // to the cycle
+          while (range.first != range.second)
+            {
+              deps_from++;
+              range.first++;
+            }
+
+          // do the same counting for in_cycle_dependents, i.e. dependencies
+          // from the cycle to this event
+          range = in_cycle_dependents.equal_range(this_ev);
+          while (range.first != range.second)
+            {
+              deps_to++;
+              range.first++;
+            }
+
+          if (deps_from == 0)
+            {
+              if (deps_to == 0)
+                ; // a type 1 event
+              else
+                type3events.insert(this_ev); // a type 3 event
+            }
+          else
+            {
+              if (deps_to == 0)
+                type2events.insert(this_ev); // a type 2 event
+              else
+                {
+                  has_type4events = true; // a type 4 event
+                  break;
+                }
+            }
+        }
+
+      // skip blobs with type 4 events, splitting them doesn't help or
+      // isn't possible at all.
+      if (has_type4events)
+        continue;
+
+      I(type2events.size() > 0);
+      I(type3events.size() > 0);
+      if (cvs.blobs[*cc].get_digest().is_symbol())
+        safe_insert(splittable_symbol_blobs, *cc);
+      else
+        safe_insert(splittable_blobs, *cc);
+    }
+
+  L(FL("  splitting one of %d symbol blobs or one of %d other blobs would "
+       "resolve the dependency cycle.")
+    % splittable_symbol_blobs.size() % splittable_blobs.size());
+
+
+  cvs_blob_index blob_to_split;
 
   // find the oldest event in the cycle
   time_i oldest_event_in_cycle = 0;
@@ -3328,10 +3461,6 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           cvs.blobs[*cc].get_digest().is_tag())
         continue;
 
-      // remember symbol blobs
-      if (cvs.blobs[*cc].get_digest().is_symbol())
-        symbol_blobs.insert(*cc);
-
       // make sure the blob's events are sorted by timestamp
       cvs.blobs[*cc].sort_events();
       vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
@@ -3340,7 +3469,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       cvs_event_ptr this_ev, last_ev;
 
-      // loop over every event of every blob in cycle_members
+      // loop over every event
       int count_independent_events = 0;
       int count_total_events = 0;
 
@@ -3381,12 +3510,6 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       split_blob_at(cvs, largest_gap_blob, func);
       return;
     }
-
-  // Otherwise, there might be a symbol blob in the cycle. If so, we
-  // split that one.
-  if (!symbol_blobs.empty())
-    W(F("FIXME: we should better favor splitting one of the %d symbol "
-        "blobs in the cycle.") % symbol_blobs.size());
 
   // If we get here, there's no gap in any of the blobs in the cycle,
   // thus we must decide on a blob to split by other means.
@@ -4242,7 +4365,6 @@ import_cvs_repo(options & opts,
     // After stuffing all cvs_events into blobs of events with the same
     // author and changelog, we have to make sure their dependencies are
     // respected.
-    L(FL("Breaking dependency cycles (%d blobs)") % cvs.blobs.size());
 
 #ifdef DEBUG_GRAPHVIZ
     write_graphviz_complete(cvs, "all");
