@@ -330,7 +330,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
     // gather information CVS does not know about into the changelog
     changelog+=gather_merge_information(e.revision);
     std::map<std::string,std::pair<std::string,std::string> > result
-      =Commit(changelog,e.time,commits);
+      =Commit(changelog,e.time,commits,!app.opts.no_time);
     if (result.empty()) { fail=true; return edges.end(); }
 
     if (parent!=edges.end())    

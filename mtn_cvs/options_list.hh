@@ -42,6 +42,13 @@ OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
 }
 #endif
 
+OPT(no_time, "no-time", bool, false, N_("do not send Checkin-time command on push"))
+#ifdef option_bodies
+{
+  no_time = true;
+}
+#endif
+
 OPT(first, "first", bool, false, N_("take first child if choice necessary"))
 #ifdef option_bodies
 {

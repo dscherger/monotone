@@ -1375,7 +1375,7 @@ void cvs_client::parse_entry(const std::string &line, std::string &new_revision,
 
 std::map<std::string,std::pair<std::string,std::string> >
          cvs_client::Commit(const std::string &changelog, time_t when, 
-                    const std::vector<commit_arg> &commits)
+                    const std::vector<commit_arg> &commits, bool checkin_time)
 { primeModules();
   std::string olddir;
   I(!commits.empty());
@@ -1394,7 +1394,7 @@ std::map<std::string,std::pair<std::string,std::string> >
           +i->old_revision+"//"+i->keyword_substitution+"/"
           +branchpart+"\n");
     if (!i->removed)
-    { writestr("Checkin-time "+time_t2rfc822(when)+"\n");
+    { if (checkin_time) writestr("Checkin-time "+time_t2rfc822(when)+"\n");
       writestr("Modified "+bname+"\n");
       writestr(int2permissions(i->mode)+"\n");
       // do _not_ translate this into locale format (e.g. F() )

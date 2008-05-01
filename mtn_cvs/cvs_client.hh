@@ -166,7 +166,7 @@ public:
   // returns <filename, <new_revision,keyword_substitution> ("" on remove)>
   std::map<std::string,std::pair<std::string,std::string> >
          Commit(const std::string &changelog, time_t when, 
-                    const std::vector<commit_arg> &commits);
+                    const std::vector<commit_arg> &commits, bool checkin_time);
   // parent_path is module relative
   void AddDirectory(std::string const& name, std::string const& parent_path);
   
