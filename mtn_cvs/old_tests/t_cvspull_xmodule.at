@@ -1,0 +1,77 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([pull of CVS module with rapidly changed history])
+
+MTN_SETUP
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+# fake a test project
+
+AT_CHECK(mkdir $CVSROOT/test)
+
+# change the repository in various ways
+
+mkdir $CVSROOT/test2
+
+mkdir test.cvstemp
+cd test.cvstemp
+cvs -Q -d $CVSROOT co CVSROOT
+cd CVSROOT
+echo >>modules test1 test
+echo >>modules test3 test2 '&test1'
+cvs -Q ci -m "module setup"
+cd ..
+
+cvs -Q -d $CVSROOT co test3
+cd test3
+
+echo >AA initial AA
+cvs -Q add AA
+cvs -Q ci -m "AA added"
+
+mkdir sub2
+cvs -Q add sub2
+echo >sub2/BB initial BB
+cvs -Q add sub2/BB
+cvs -Q ci -m "sub2/BB added"
+
+echo >test1/A cross module change
+cvs -Q ci -m "cross module change of A"
+
+cd $CVSROOT/..
+rm -rf test.cvstemp || exit 1
+
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK([echo "fast A" >test/A])
+AT_CHECK([echo "fast B" >test/B])
+AT_CHECK([echo "fast C" >test/C])
+AT_CHECK([echo "fast D" >test/D])
+AT_CHECK([cd test;cvs -Q add A;cvs -Q ci -m "fast A change"])
+AT_CHECK([cd test;cvs -Q add C;cvs -Q ci -m "fast C change"])
+AT_CHECK([cd test;cvs -Q add B;cvs -Q ci -m "fast B add"])
+AT_CHECK([cd test;cvs -Q add D;cvs -Q ci -m "fast D change"])
+AT_CHECK([echo "fast A change" >test/A])
+AT_CHECK([echo "fast B change" >test/B])
+AT_CHECK([echo "fast C change" >test/C])
+AT_CHECK([echo "fast D change" >test/D])
+AT_CHECK([cd test;cvs -Q ci -m "fast D change" D])
+AT_CHECK([cd test;cvs -Q ci -m "fast C change" C])
+AT_CHECK([cd test;cvs -Q ci -m "fast B change" B])
+AT_CHECK([cd test;cvs -Q ci -m "fast A change" A])
+
+# pull into monotone
+
+AT_CHECK(MTN --branch=testbranch cvs_pull $CVSROOT test, [], [ignore], [ignore])
+
+# also check that history is okay -- has a unique head
+
+AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+
+AT_CLEANUP
