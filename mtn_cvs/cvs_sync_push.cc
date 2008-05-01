@@ -70,7 +70,7 @@ std::string cvs_repository::gather_merge_information(revision_id const& id)
     }
     result+="-------------------\n"
         +changelog+"\nmtn "+author+" "
-        +cvs_client::time_t2rfc822(date)+" "+encode_hexenc(i->inner()())+"\n";
+        +cvs_client::time_t2rfc822(date)+" "+encode_hexenc(i->inner()()).substr(0,6)+"\n";
     result+=gather_merge_information(*i);
   }
   return result;
@@ -325,8 +325,8 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       return --(edges.end());
     }
     std::string changelog;
-    changelog=e.changelog+"\nmonotone "+e.author+" "
-        +cvs_client::time_t2rfc822(e.time)+" "+e.revision.inner()().substr(0,6)+"\n";
+    changelog=e.changelog+"\nmtn "+e.author+" "
+        +cvs_client::time_t2rfc822(e.time)+" "+encode_hexenc(e.revision.inner()()).substr(0,6)+"\n";
     // gather information CVS does not know about into the changelog
     changelog+=gather_merge_information(e.revision);
     std::map<std::string,std::pair<std::string,std::string> > result
