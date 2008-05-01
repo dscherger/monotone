@@ -103,6 +103,7 @@ void cvs_repository::takeover_dir(const std::string &path)
             fs.since_when=time(NULL);
             fs.cvs_version=std::string();
           }
+          fs.mode= sbuf.st_mode;
         }
         // import the file and check whether it is (un-)changed
         fs.log_msg="initial cvs content";
