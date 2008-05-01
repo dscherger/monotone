@@ -3432,22 +3432,10 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
     % splittable_symbol_blobs.size() % splittable_blobs.size());
 
 
+
+
+
   cvs_blob_index blob_to_split;
-
-  // find the oldest event in the cycle
-  time_i oldest_event_in_cycle = 0;
-  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
-    {
-      // tags shouldn't ever occur in cycles, because no other event ever
-      // depends on a tag or branch end event
-      I(!cvs.blobs[*cc].get_digest().is_tag());
-      I(!cvs.blobs[*cc].get_digest().is_branch_end());
-
-      time_i bt(cvs.blobs[*cc].get_oldest_event_time());
-      if ((oldest_event_in_cycle == 0) ||
-          (bt < oldest_event_in_cycle))
-        oldest_event_in_cycle = bt;
-    }
 
   time_i largest_gap = 0;
   time_i largest_gap_at = 0;
@@ -3498,7 +3486,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
   // Hopefully, we found a gap in one of the blobs, so we are going
   // to split at that gap.
-  if (largest_gap_blob >= 0)
+  I(largest_gap_blob >= 0);
     {
       I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
       I(!cvs.blobs[largest_gap_blob].get_digest().is_tag());
@@ -3510,107 +3498,6 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
       split_blob_at(cvs, largest_gap_blob, func);
       return;
     }
-
-  // If we get here, there's no gap in any of the blobs in the cycle,
-  // thus we must decide on a blob to split by other means.
-
-  L(FL("split_cycle: no gap in any of the blobs..."));
-
-  float most_independent_events = 0.0;
-  int most_independent_events_blob = -1;
-
-  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
-    {
-      // we never split branch starts or tags, instead we split the
-      // underlying symbol.
-      if (cvs.blobs[*cc].get_digest().is_branch_start() ||
-          cvs.blobs[*cc].get_digest().is_tag())
-        continue;
-
-      // we cannot split blobs which consist of only one event
-      if (cvs.blobs[*cc].get_events().size() <= 1)
-        continue;
-
-      // loop over every event of every blob in cycle_members
-      int count_independent_events = 0;
-      int count_total_events = 0;
-
-      vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
-
-      for (blob_event_iter ity = blob_events.begin();
-           ity != blob_events.end(); ++ity)
-        {
-          cvs_event_ptr this_ev = *ity;
-
-          // check every event for dependencies into the cycle
-          stack< pair<cvs_blob_index, int> > blobs_to_track;
-          set<cvs_blob_index> blobs_done;
-          for (dep_loop j = cvs.get_dependencies(this_ev); !j.ended(); ++j)
-            {
-              blobs_to_track.push(make_pair((*j)->bi, 0));
-              safe_insert(blobs_done, (*j)->bi);
-            }
-
-          bool depends_on_a_cycle_member = false;
-          while (!blobs_to_track.empty())
-            {
-              cvs_blob_index bi = blobs_to_track.top().first;
-              int depth = blobs_to_track.top().second;
-              blobs_to_track.pop();
-
-              if (cycle_members.find(bi) != cycle_members.end())
-                {
-                  depends_on_a_cycle_member = true;
-                  break;
-                }
-
-              // ascend up to 10 blobs, but then don't go any further
-              if (depth > 10)
-                continue;
-
-              // also track dependencies of dependencies, as long as
-              // they are older than the oldest event in the cycle. 
-              for (blob_event_iter kk = cvs.blobs[bi].get_events().begin();
-                   kk != cvs.blobs[bi].get_events().end(); ++kk)
-                for (dep_loop jj = cvs.get_dependencies(*kk); !jj.ended(); ++jj)
-                  {
-                    cvs_blob_index dep_bi = (*jj)->bi;
-                    if ((*jj)->adj_time > oldest_event_in_cycle)
-                      if (blobs_done.find(dep_bi) == blobs_done.end())
-                        {
-                          blobs_to_track.push(make_pair(dep_bi, depth+1));
-                          safe_insert(blobs_done, dep_bi);
-                        }
-                  }
-            }
-
-          count_total_events++;
-          if (!depends_on_a_cycle_member)
-            count_independent_events++;
-        }
-
-      // every blob in cycle_members must have at least one event which
-      // depends on another blob of the cycle. Otherwise, it wouldn't be
-      // part of the cycle.
-      I(count_independent_events < count_total_events);
-
-      float ir = (float) count_independent_events / count_total_events;
-      if (ir > most_independent_events)
-        {
-          most_independent_events = ir;
-          most_independent_events_blob = *cc;
-        }
-    }
-
-  I(most_independent_events > 0);
-
-  vector<cvs_blob_index> path(cycle_members.size());
-  copy(cycle_members.begin(), cycle_members.end(), path.begin());
-
-  I(!path.empty());
-
-  split_by_path func(cvs, path);
-  split_blob_at(cvs, most_independent_events_blob, func);
 }
 
 void
