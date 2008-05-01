@@ -3363,7 +3363,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
   // For now, we simply collect blobs we cannot split by timestamp, but
   // which could also be split somehow to resolve the cycle.
-  set<cvs_blob_index> strange_blobs;
+  vector<cvs_blob_index> strange_blobs;
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
@@ -3493,7 +3493,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
         {
           // We cannot split this blob by timestamp, because there's no
           // reasonable split point.
-          safe_insert(strange_blobs, *cc);
+          strange_blobs.push_back(*cc);
           continue;
         }
 
@@ -3525,6 +3525,11 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           time_i time_diff = eupper - elower;
           time_i split_point = elower + time_diff / 2;
 
+          // We prefer splitting symbols over splitting commits, thus
+          // we simply multiply their count by three - that shoud suffice.
+          if (cvs.blobs[*cc].get_digest().is_symbol())
+            time_diff *= 3;
+
           if ((split_point >= lower_bound) && (split_point < upper_bound) &&
               (time_diff > largest_gap_diff))
             {
@@ -3550,10 +3555,47 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       split_by_time func(largest_gap_at);
       split_blob_at(cvs, largest_gap_blob, func);
-      return;
     }
+  else if (!strange_blobs.empty())
+    {
+      W(F("Oh, please show this repo to <markus@bluegap.ch>!"));
 
-  I(false);
+      // We couldn't find a blob to split by timestamp, but we still have
+      // the so called strange_blobs we can split to resolve the cyclic
+      // dependencies. However, choosing which one to split is guesswork.
+      // The best thing that comes to my mind is preferring symbol blobs
+      // over others. And possibly preferring larger ones over smaller
+      // ones.
+      //
+      // So we play a 'which blob scores best' game.
+      //
+      int best_points = 0;
+      cvs_blob_index best_blob = invalid_blob;
+      for (blob_index_iter i = strange_blobs.begin();
+           i != strange_blobs.end(); ++i)
+        {
+          int p = cvs.blobs[*i].get_events().size();
+
+          if (cvs.blobs[*i].get_digest().is_symbol())
+            p += 1000000;
+
+          if (p > best_points)
+            {
+              best_points = p;
+              best_blob = *i;
+            }
+        }
+
+      // split that best_blob by path, hoping the split succeeds...
+      L(FL("splitting blob %d by path")
+        % best_blob);
+      vector<cvs_blob_index> tmp(cycle_members.size());
+      copy(cycle_members.begin(), cycle_members.end(), tmp.begin());
+      split_by_path func(cvs, tmp);
+      split_blob_at(cvs, best_blob, func);
+    }
+  else
+    I(false);  // unable to split the cycle?
 }
 
 void
