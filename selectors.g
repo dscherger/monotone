@@ -16,11 +16,8 @@ antique : selector ( '/' selector )*; // 'antique' (c) Richard Levitte
 
 selector :
   immediate
-| '(' addition ')'
-//| Difference
-//| PrefixOperator
-| function1 '(' addition ')'
-//| Operator2 "(" Number10 "," Selector ")"
+| '(' sequence ')'
+| function1 '(' sequence ')'
 ;
 
 immediate :
