@@ -111,7 +111,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 CMD(push, "push", "", CMD_REF(network), 
     N_("[CVS-REPOSITORY CVS-MODULE [CVS-BRANCH]]"),
     N_("commit changes in local database to a remote cvs repository"), "",
-    options::opts::branch | options::opts::revision | options::opts::first)
+    options::opts::branch | options::opts::revision | options::opts::first | options::opts::no_time)
 {
   if (args.size() == 1 || args.size() > 3) throw usage(execid);
 

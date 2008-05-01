@@ -202,6 +202,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
   }
   // a bit like process_certs
   cvs_edge e(rid,app);
+  revision_id last_cvs_revision;
 
   mtn_automate::revision_t rs=app.get_revision(rid);
   std::vector<commit_arg> commits;
@@ -333,7 +334,7 @@ std::set<cvs_edge>::iterator cvs_repository::commit_mtn2cvs(
       =Commit(changelog,e.time,commits,!app.opts.no_time);
     if (result.empty()) { fail=true; return edges.end(); }
 
-    if (parent!=edges.end())    
+    if (parent!=edges.end())
       e.delta_base=parent->revision;
     
     // the result of the commit: create history entry (file state)
