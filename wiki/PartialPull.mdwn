@@ -20,7 +20,7 @@ We use the term *Partial Pull* to refer to possible future implementations that 
 
 Table with horizon/fake nodes will be called `sentinels` (unique indexed set). You have to test for members of this set as well as for the empty revision.
 
-See the following graph [http://home.wtal.de/petig/Mtn/PartialPull.svg SVG] http://home.wtal.de/petig/Mtn/PartialPull.png :
+See the following graph [SVG](http://home.wtal.de/petig/Mtn/PartialPull.svg) http://home.wtal.de/petig/Mtn/PartialPull.png :
 
 Light red nodes form the horizon (are stored in `sentinels`), dark green nodes have additional information in `horizon_manifests` to create rosters for them.
 

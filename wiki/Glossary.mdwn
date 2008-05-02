@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-*This page gives definitions for some of the technical terms and phrases you might come across in the advanced sections of the [http://www.venge.net/monotone/monotone.html manual], on the [http://lists.nongnu.org/mailman/listinfo/monotone-devel monotone list], or in this Wiki.*
+*This page gives definitions for some of the technical terms and phrases you might come across in the advanced sections of the [manual](http://www.venge.net/monotone/monotone.html), on the [http://lists.nongnu.org/mailman/listinfo/monotone-devel monotone list], or in this Wiki.*
 
 [[Anchor(Cert)]]
  Certificate:: (Normally: "Cert".) A note made against a revision.  Certificates are used internally by Monotone - for example, to represent branches and to store the ID of the person committing a change - but can also be added manually by users.

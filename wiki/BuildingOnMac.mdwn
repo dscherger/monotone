@@ -6,7 +6,7 @@ Building Monotone on Mac OS/X
 
 Monotone's makefile has to be generated using special GNU tools.  Tiger (OS/X 10.4) does not have the required versions of these tools in the standard installation, though XCode 2.4.1 comes with an adequate version of the C++ compiler itself (older XCode versions have been known to be buggy).
 
-One way to get and build the latest versions of GNU tools is to get them from the [http://www.macports.org/ MacPorts (previously known as Darwin Ports)] project.  Install the porting application from http://svn.macports.org/repository/macports/downloads/ and it will put a program called "port" into your */opt/local/bin* directory.  When you run this program as an administrator, it installs and builds the latest versions of GNU tools into that same directory.
+One way to get and build the latest versions of GNU tools is to get them from the [MacPorts (previously known as Darwin Ports)](http://www.macports.org/) project.  Install the porting application from http://svn.macports.org/repository/macports/downloads/ and it will put a program called "port" into your */opt/local/bin* directory.  When you run this program as an administrator, it installs and builds the latest versions of GNU tools into that same directory.
 
 (if */opt/local/bin* is not in your path, you can add it in a terminal shell by typing *PATH=/opt/local/bin:$PATH*)
 
@@ -44,7 +44,7 @@ This will take a while to download.  Once it comes you will have to build it (in
 
 # Using Xcode
 
-The GNU tools do not have an option to generate a .xcodeproj alongside your makefile (the way [http://doc.trolltech.com/4.0/qmake-manual.html Qmake] can).  If you're just building, stick with the command line.  But if you're going to be doing editing, building, and debugging, you'll probably want to use Xcode, so:
+The GNU tools do not have an option to generate a .xcodeproj alongside your makefile (the way [Qmake](http://doc.trolltech.com/4.0/qmake-manual.html) can).  If you're just building, stick with the command line.  But if you're going to be doing editing, building, and debugging, you'll probably want to use Xcode, so:
 
  * create a fresh project
  * add a new "External Target" and make sure it points to /usr/bin/make
@@ -65,7 +65,7 @@ It shouldn't say "<PENDING>" for the addresses.
 
 # Things to look out for
 
-* As of 2006-01-22, boost from darwinports is not linked with the correct install_name [http://bugzilla.opendarwin.org/show_bug.cgi?id=5533 (darwinports bug 5533)]. Linking statically should still work, or compile it yourself
+* As of 2006-01-22, boost from darwinports is not linked with the correct install_name [(darwinports bug 5533)](http://bugzilla.opendarwin.org/show_bug.cgi?id=5533). Linking statically should still work, or compile it yourself
 
 * If you are linking to boost statically and ./configure can't see the libs, try running *ranlib *.a* on the Boost library files to update the archive indexes.
 

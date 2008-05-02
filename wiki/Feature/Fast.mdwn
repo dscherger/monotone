@@ -24,7 +24,7 @@ PerformanceWork is active and ongoing to address these issues. Even for deep his
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Inodeprints Inodeprints]
+ * [Inodeprints](http://venge.net/monotone/monotone.html#Inodeprints)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureFast VCSFeatureFast]
+ * FreeBSD [VCSFeatureFast](http://wikitest.freebsd.org/VCSFeatureFast)

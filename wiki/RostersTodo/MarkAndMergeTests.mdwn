@@ -20,7 +20,7 @@ Then, there's the actual marking.  Each node has a number of scalars associated 
   * attributes
 Attributes also have a life cycle -- they never go away.  Basically, "set_attr" and "clear_attr" are both ways to set an attribute.
 
-Each scalar has a number of different cases, described in the multi-*-merge doc (see [http://article.gmane.org/gmane.comp.version-control.revctrl/93 writeup]).  These include:
+Each scalar has a number of different cases, described in the multi-*-merge doc (see [writeup](http://article.gmane.org/gmane.comp.version-control.revctrl/93)).  These include:
   * No parents:
         a*
   * One parent:

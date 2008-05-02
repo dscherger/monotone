@@ -11,7 +11,7 @@ See MtnSummit2008 for this year's location details
 # North America (2007)
 
 **When**: February 5-11, 2007.  (Monday-Sunday, with probably Thursday as a day to unwind)[[BR]]
-**Where**: Google headquarters: [http://maps.google.com/maps?f=q&q=1600+Amphitheatre+Parkway,+Mountain+View,+California&ie=UTF8&z=10&ll=37.422526,-122.085571&spn=0.863779,1.417236&om=1 1600 Amphitheatre Parkway, Mountain View, California, USA][[BR]]
+**Where**: Google headquarters: [1600 Amphitheatre Parkway, Mountain View, California, USA](http://maps.google.com/maps?f=q&q=1600+Amphitheatre+Parkway,+Mountain+View,+California&ie=UTF8&z=10&ll=37.422526,-122.085571&spn=0.863779,1.417236&om=1)[[BR]]
 **Main contact(s) for organizing**: Nathaniel Smith, njs@pobox.com
 
 Planning to come?  Add yourself:

@@ -14,7 +14,7 @@ For read-only/"anonymous" tracking of an existing project:
 
     `mtn pull && monotone up`: pull latest source and update working copy
 
-  See [http://venge.net/monotone/self-hosting.html Self Hosting] for further details on doing this for monotone itself.
+  See [Self Hosting](http://venge.net/monotone/self-hosting.html) for further details on doing this for monotone itself.
 
 For contributing:
 

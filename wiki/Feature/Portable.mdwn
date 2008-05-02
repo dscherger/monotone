@@ -14,4 +14,4 @@ Monotone is implemented in C++, and compiles and runs on all sorts of different 
 
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeaturePortable VCSFeaturePortable]
+ * FreeBSD [VCSFeaturePortable](http://wikitest.freebsd.org/VCSFeaturePortable)

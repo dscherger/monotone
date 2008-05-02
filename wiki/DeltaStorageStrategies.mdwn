@@ -8,7 +8,7 @@ Here are some of the known ways one *could* potentially do delta-compression on 
  * forwards linear-chained deltas with occasional full-text breaks
  * forwards deterministic skip-deltas (like svn)
  * forwards/backwards randomized skip-deltas (like classical skip-lists)
- * single base plus many deltas against it -- i.e., store a->b->c->d as (a, a->b, a->c, a->d), creating a new base as deltas grow.  these pretty much have to be forwards deltas.  (D. Richard Hipp, "XDFS-f" in [http://xmailserver.org/xdfs.pdf Josh MacDonald's masters thesis] (who cites Burns and Long))
+ * single base plus many deltas against it -- i.e., store a->b->c->d as (a, a->b, a->c, a->d), creating a new base as deltas grow.  these pretty much have to be forwards deltas.  (D. Richard Hipp, "XDFS-f" in [Josh MacDonald's masters thesis](http://xmailserver.org/xdfs.pdf) (who cites Burns and Long))
  * whatever it is git uses to find similar items -- sorting by size or something?
  * tree-structured storage -- using the inexplicably-not-well-known trick for storing strings as trees, one can share subtrees.  Josh cites EXODUS and SDS2 (see 2.2 of the thesis) as using this trick, and there are some other interesting cites in the same section.
  * several of these mechanisms can be applied either to a forced-linear history (like hg uses), or allowing forks (and merges?) to appear in the reconstruction graph.  Josh actually claims that that forced-linear time ordering gave him smaller deltas than RCS-style-topology branched deltas, on his test case (FreeBSD CVS history -- I guess they must have a lot of bug-fixes applied to multiple branches or the like?).
@@ -20,7 +20,7 @@ xdelta actually supports multiple-source deltas totally straightforwardly -- bas
 
 Josh also reminds us that it's possible to use extent-style tricks to efficiently combine (and maybe even invert?) delta chains, which can be useful if you have some deltas on disk and you want some different deltas to send over the network or whatever.
 
-[http://www.almaden.ibm.com/projects/data/storagesystems/iopads97.pdf Efficient Distributed Backup with Delta Compression (Burns & Long, 1997)] has some analysis of forward vs reverse vs against-base delta performance.
+[Efficient Distributed Backup with Delta Compression (Burns & Long, 1997)](http://www.almaden.ibm.com/projects/data/storagesystems/iopads97.pdf) has some analysis of forward vs reverse vs against-base delta performance.
 
 Chaining, skip-deltas, and against-base all seem to be special cases of some more general family of algorithms -- they're all trying to pick some rule that will balance compression against reconstruction cost.  Surely none of these particular three points are at the global optimum of the fitness function for this class?  And I observe that the competing variables we want to optimize for are simple to measure as we go on the actual data we're trying to store... (i.e., we can in principle calculate how many seeks, how many bytes, etc., we are using, and make decisions based on that.)
 
@@ -48,7 +48,7 @@ cache and thus avoid the long delta chains.
 
 To counteract increased netsync traffic using against-base deltas, applying zlib to the entire stream (rather than per-packet) seems to make against-base deltas comparable to linear deltas.  (I think this requires the assumption that we send related deltas together at netsync time, i.e. sort by file.)
 
-See the au.asn.ucc.matt.monotone.test-deltas branch in the main venge.net repository for a test script and [http://matt.ucc.asn.au/monotone/delta-screenshot.txt sample output].
+See the au.asn.ucc.matt.monotone.test-deltas branch in the main venge.net repository for a test script and [sample output](http://matt.ucc.asn.au/monotone/delta-screenshot.txt).
 
 ## Size comparison for against-base deltas
 

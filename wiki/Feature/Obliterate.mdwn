@@ -32,4 +32,4 @@ These steps will need to be taken on all affected databases.   If this number is
 # Further Reference
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureObliterate VCSFeatureObliterate]
+ * FreeBSD [VCSFeatureObliterate](http://wikitest.freebsd.org/VCSFeatureObliterate)

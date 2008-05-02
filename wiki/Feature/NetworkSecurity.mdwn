@@ -21,7 +21,7 @@ If you have confidentiality concerns about your revision contents (because you a
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Basic-Network-Service Basic Network Service]
+ * [Basic Network Service](http://venge.net/monotone/monotone.html#Basic-Network-Service)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureNetworkSecure VCSFeatureNetworkSecure]
+ * FreeBSD [VCSFeatureNetworkSecure](http://wikitest.freebsd.org/VCSFeatureNetworkSecure)

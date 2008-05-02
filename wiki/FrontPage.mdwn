@@ -31,7 +31,7 @@ a useful collection of brokenlinks at [[wiki]].*
 ### Using Monotone
  * [[InterfacesFrontendsAndTools]] -- other programs that work with monotone
  * [[EssentialMonotone]] -- the minimal commands needed to get anything done
- * [[AlternativeOverview]] -- a different order than the [http://venge.net/monotone/docs/Tutorial.html Tutorial] for introducing monotone capabilites
+ * [[AlternativeOverview]] -- a different order than the [Tutorial](http://venge.net/monotone/docs/Tutorial.html) for introducing monotone capabilites
  * [[BestPractices]] -- best practices for using monotone
  * [[MasterRepository]] -- Master Repositories you might be used to with a centralised VCS, and why you don't need one with monotone.
  * [[MonotoneAndCVS]] -- different ways of working with CVS and monotone.

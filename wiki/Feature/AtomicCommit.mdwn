@@ -21,8 +21,8 @@ Commits are atomic both in the VCS sense of a single revision across the entire 
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Dealing-with-a-Fork Dealing with a Fork]
+ * [Dealing with a Fork](http://venge.net/monotone/monotone.html#Dealing-with-a-Fork)
  * CommitEarlyCommitOften
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureAtomicCommit VCSFeatureAtomicCommit]
+ * FreeBSD [VCSFeatureAtomicCommit](http://wikitest.freebsd.org/VCSFeatureAtomicCommit)

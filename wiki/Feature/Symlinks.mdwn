@@ -17,4 +17,4 @@ See UnixAttribsAndSymlinks
 # Further Reference
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureSymlinks VCSFeatureSymlinks]
+ * FreeBSD [VCSFeatureSymlinks](http://wikitest.freebsd.org/VCSFeatureSymlinks)

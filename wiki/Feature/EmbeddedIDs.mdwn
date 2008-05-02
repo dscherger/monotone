@@ -17,4 +17,4 @@ It is possible to approximate this feature, if needed, using hooks. A custom att
 # Further Reference
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureDollarFreeBSD VCSFeatureDollarFreeBSD]
+ * FreeBSD [VCSFeatureDollarFreeBSD](http://wikitest.freebsd.org/VCSFeatureDollarFreeBSD)

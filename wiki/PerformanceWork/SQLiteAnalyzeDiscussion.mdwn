@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-Ever since we imported SQLite 3.2.3 (which included a much improved query optimizer, and added the [http://sqlite.org/lang_analyze.html analyze] command), we've needed to run an analyze on monotone repositories to get decent performance, otherwise SQLite doesn't make good use of our indices and we become extremely I/O bound.  This can affect many areas of monotone--for instance, a small commit into a very large repository can take an extremely long time unless the repository has been analyzed recently, because we spend many minutes seek()ing in the repository. 
+Ever since we imported SQLite 3.2.3 (which included a much improved query optimizer, and added the [analyze](http://sqlite.org/lang_analyze.html) command), we've needed to run an analyze on monotone repositories to get decent performance, otherwise SQLite doesn't make good use of our indices and we become extremely I/O bound.  This can affect many areas of monotone--for instance, a small commit into a very large repository can take an extremely long time unless the repository has been analyzed recently, because we spend many minutes seek()ing in the repository. 
 
 ----
 
@@ -138,4 +138,4 @@ At the moment, the only time we run an analyze automatically is at the end of a 
 
 As a short term thing, we could try and guess when a repository needs to be analyzed and print a message advising the user to do so manually.
 
-There is some [http://www.sqlite.org/cvstrac/tktview?tn=1414 specific discussion] in the SQLite bug tracker about the interaction between analyze and monotone and also a [http://www.sqlite.org/cvstrac/wiki?p=QueryPlans discussion of our general problem] in the SQLite wiki.  We should probably consider experimenting with some of the suggested changes to see if we can get away from a dependence on analyze for decent performance.
+There is some [specific discussion](http://www.sqlite.org/cvstrac/tktview?tn=1414) in the SQLite bug tracker about the interaction between analyze and monotone and also a [http://www.sqlite.org/cvstrac/wiki?p=QueryPlans discussion of our general problem] in the SQLite wiki.  We should probably consider experimenting with some of the suggested changes to see if we can get away from a dependence on analyze for decent performance.

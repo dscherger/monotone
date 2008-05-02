@@ -31,8 +31,8 @@ A very common developer loop:
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Branching-and-Merging Branching and Merging]
+ * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
  * DaggyFixes and ZipperMerge
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureMerging VCSFeatureMerging]
+ * FreeBSD [VCSFeatureMerging](http://wikitest.freebsd.org/VCSFeatureMerging)

@@ -27,7 +27,7 @@ These servers are inherently peers, there is no particular need for any of them 
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Network-Service-Revisited Network Service Revisited]
+ * [Network Service Revisited](http://venge.net/monotone/monotone.html#Network-Service-Revisited)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureMirroring VCSFeatureMirroring]
+ * FreeBSD [VCSFeatureMirroring](http://wikitest.freebsd.org/VCSFeatureMirroring)

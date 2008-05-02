@@ -2,7 +2,7 @@
 
 Frontend developer - mostly hacks on the automation interface in monotone and provides small bugfixes and enhancements for long-standing annoyances.
 
-Autor of [http://guitone.thomaskeller.biz guitone] - the Qt frontend for monotone.
+Autor of [guitone](http://guitone.thomaskeller.biz) - the Qt frontend for monotone.
 
 Homepage: http://www.thomaskeller.biz
 

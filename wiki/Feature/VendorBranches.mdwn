@@ -21,4 +21,4 @@ There are two aspects to this requirement that are often used together:
 # Further Reference
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureVendorBranches VCSFeatureVendorBranches]
+ * FreeBSD [VCSFeatureVendorBranches](http://wikitest.freebsd.org/VCSFeatureVendorBranches)

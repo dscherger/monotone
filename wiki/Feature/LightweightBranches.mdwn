@@ -23,7 +23,7 @@ To commit some changes in a workspace to a new branch:
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Branching-and-Merging Branching and Merging]
+ * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureBranch VCSFeatureBranch]
+ * FreeBSD [VCSFeatureBranch](http://wikitest.freebsd.org/VCSFeatureBranch)
