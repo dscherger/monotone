@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 People have complained that the current behavior of "revert" is dangerous:
   http://article.gmane.org/gmane.comp.version-control.monotone.devel/5478

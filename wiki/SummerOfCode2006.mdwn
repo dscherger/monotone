@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 # Google Summer of Code -- 2006
 

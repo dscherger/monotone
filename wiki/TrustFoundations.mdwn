@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 In Monotone, all trust is handled on the basis of certificates (called certs).
 

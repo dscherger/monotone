@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Using editable_working_tree for not only update but also for revert and checkout should allow us to re-use conflict detection and resolution machinery. For now this page lists some things about the different types of conflicts that can occur and how we'll deal with them.
 
@@ -59,21 +59,19 @@ The editable_working_tree interface currently cannot create detached files in _M
 
 eg, for update, the full set of rosters involved looks like this:
  
-{{{
-B
-|\
-| \
-|  \
-T   W
- \  |\
-  \ | \
-   \|  \
-    U   W+
-     \  |
-      \ |
-       \|
-        U+
-}}}
+    B
+    |\
+    | \
+    |  \
+    T   W
+     \  |\
+      \ | \
+       \|  \
+        U   W+
+         \  |
+          \ |
+           \|
+            U+
 
  * B is base revision workspace was checked out from
  * W is the workspace revision (known-but-uncommitted content changes, rearrangements, attrs)

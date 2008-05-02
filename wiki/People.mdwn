@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page will introduce some of the members of the monotone development team, their responsibilities and their contact data i.e. IRC nick.  See also: http://www.frappr.com/monotone
 

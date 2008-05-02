@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 In order to store or use a revision, monotone currently requires the complete ancestry of the revision to also be in the local database.   Whenever a revision is sent as part of a pull, all of its ancestors are sent too if they're not already at the receiver.
 
@@ -10,7 +10,7 @@ We use the term *Partial Pull* to refer to possible future implementations that 
 
 # Implementation details
 
- - Missing revisions are represented by a horizon. The horizon is generated from the initial partial pull request and stored as a list of nodes which are the first (most recent) ones missing. See table {{{sentinels}}}
+ - Missing revisions are represented by a horizon. The horizon is generated from the initial partial pull request and stored as a list of nodes which are the first (most recent) ones missing. See table `sentinels`
 
  - For the initial partial pull we need an additional option to send to the other host which indicates that only a subset of the revisions are going to get synchronized. For subsequent synchronizations you would have to tell the other side about the horizon. Using this information both sides can construct a decent merkle tree for synchronization.
 
@@ -18,7 +18,7 @@ We use the term *Partial Pull* to refer to possible future implementations that 
 
 # Plan to implement it
 
-Table with horizon/fake nodes will be called {{{sentinels}}} (unique indexed set). You have to test for members of this set as well as for the empty revision.
+Table with horizon/fake nodes will be called `sentinels` (unique indexed set). You have to test for members of this set as well as for the empty revision.
 
 See the following graph [http://home.wtal.de/petig/Mtn/PartialPull.svg SVG] http://home.wtal.de/petig/Mtn/PartialPull.png :
 
@@ -45,14 +45,12 @@ Light red nodes form the horizon (are stored in `sentinels`), dark green nodes h
 # More comments from njs
 
 The important question is what exactly the horizon looks like.  Here's a graph:
-{{{
-   A       B         C
-    \     / \       /
---------------------- horizon
-      \ /     \   D
-       E       \ /
-                F
-}}}
+       A       B         C
+        \     / \       /
+    --------------------- horizon
+          \ /     \   D
+           E       \ /
+                    F
 
 Important facts:
   * For purposes of netsync, we have all versions that are descendents of the set: D E.

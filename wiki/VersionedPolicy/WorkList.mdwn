@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
   * Changes to certs
     * Bundle author+branch+date+changelog into single cert (or N name/value pairs?)

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 There's some debate on what the formal definition of basic_io should be, and in particular whether stanzas and lines should be first class items, or it should continue to treat all whitespace as identical, except with one special normalized form.
 
@@ -21,9 +21,7 @@ Arguments to make stanzas/lines first class items:
 
 Arguments to leave stanzas/lines as epiphenomena:
   * meaningful whitespace is a generally bad idea.
-{{{
-    <graydon_> error cases with whitespace-sensitivity: pasting two stanzas together and forgetting to insert a newline. pasting two files together, inserting one extra newline, accidentally creating a "null stanza". wrapping. crlf conversion.
-}}}
+        <graydon_> error cases with whitespace-sensitivity: pasting two stanzas together and forgetting to insert a newline. pasting two files together, inserting one extra newline, accidentally creating a "null stanza". wrapping. crlf conversion.
      also, whitespace mangling (though "" blocks can also be mangled).
 # Empirical questions
 

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 I was wondering if anyone has considered integrating the ZeroConf discovery protocol. For Apple fans this was known as "Rendezvous", now "Bonjour". Given monotone's ability to perform peer-to-peer syncing that it would be useful (as well as cool) to auto-discover servers for your database.
 

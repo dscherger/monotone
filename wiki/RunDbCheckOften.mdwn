@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Monotone is careful about data integrity, but there are limits to what can be reasonably protected against in software.
                                                                           

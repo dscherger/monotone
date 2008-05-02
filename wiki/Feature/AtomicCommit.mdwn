@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -16,9 +16,7 @@ Commits are atomic both in the VCS sense of a single revision across the entire 
 
 # Example Usage
 
-{{{
- $ mtn commit
-}}}
+     $ mtn commit
 
 # Further Reference
 

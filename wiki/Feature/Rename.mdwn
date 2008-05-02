@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -13,11 +13,9 @@ The `rename` command (also aliased as `mv`) will allow files and directories to 
 # Example Usage
 
 To rename a file:
-{{{
- $ mtn rename -e foo.c bar.c
- $ mtn commit
- $ mtn log bar.c
-}}}
+     $ mtn rename -e foo.c bar.c
+     $ mtn commit
+     $ mtn log bar.c
 
 ''(-e executes the change in the workspace filesystem as well as in monotone's history)''
 

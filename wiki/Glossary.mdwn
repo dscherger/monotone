@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 *This page gives definitions for some of the technical terms and phrases you might come across in the advanced sections of the [http://www.venge.net/monotone/monotone.html manual], on the [http://lists.nongnu.org/mailman/listinfo/monotone-devel monotone list], or in this Wiki.*
 

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 # Installing the toolchain
 This section is preliminary setup--once this has been completed once, you can

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -19,16 +19,14 @@ Each of these commands will invoke external merge assistance tools (defined with
 # Example Usage
 
 A very common developer loop:
-{{{
- <edit files>
- $ mtn commit
- $ mtn pull
- <new revisions incoming>
- $ mtn merge
- $ mtn sync
- <local commits and merge node(s) outgoing, maybe more revisions incoming>
- $ mtn update
-}}}
+     <edit files>
+     $ mtn commit
+     $ mtn pull
+     <new revisions incoming>
+     $ mtn merge
+     $ mtn sync
+     <local commits and merge node(s) outgoing, maybe more revisions incoming>
+     $ mtn update
 
 # Further Reference
 

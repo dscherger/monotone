@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Conflicts -- they're not just for merges anymore!
 

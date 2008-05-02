@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Frontend developer - mostly hacks on the automation interface in monotone and provides small bugfixes and enhancements for long-standing annoyances.
 

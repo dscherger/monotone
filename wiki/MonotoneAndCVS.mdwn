@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 There are lots and lots of projects out there using CVS.  Understandably, they want to stop.  We hope they're going to want to use Monotone instead, or use both for a while until they're comfortable with monotone.
 

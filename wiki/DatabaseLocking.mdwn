@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 *(source discussion: http://colabti.de/irclogger/irclogger_log/monotone?date=2005-12-08,Thu&sel=90#l151)*
 

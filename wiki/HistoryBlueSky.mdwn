@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Space-age things that would be cool to support in our history representation (though not strictly necessary):
 

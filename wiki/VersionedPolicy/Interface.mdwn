@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This is what the results of the policy mechanism should be, and how it should interact with the rest of the world.
 

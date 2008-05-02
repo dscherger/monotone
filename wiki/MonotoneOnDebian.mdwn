@@ -1,11 +1,9 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 # Using Monotone on Debian
 
 Monotone packages can currently be found in the Debian repositories. Monotone changes very rapidly and versions in sarge and etch may be slightly dated. It is recommend that you use the monotone package from the monotone [http://venge.net/monotone website] or the version that is in sid/unstable which is generally kept up to date.
-{{{
-apt-get install monotone
-}}}
+    apt-get install monotone
 
 # Running a Monotone Server on Debian
 

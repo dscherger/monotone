@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Tell us what you really think.
 
@@ -16,7 +16,7 @@ Tell us what you really think.
 
  * In using Monotone from version 0.23 through version 0.30 I've seen an amazing increase in its quality and speed. In reading the development mailing list I am extremely impressed by the developers' thoroughness in their discussions of the algorithms behind monotone and their attention to the user experience and use cases that drive their usage of revision control systems. I'm convinced that monotone will only continue to get better and that it is a useful tool for all developers. -- [http://justin.patrin.info/ Justin Patrin]
 
- * I believe that Monotone is the Ada of version control systems, so it is only appropriate that I use it for my Ada work.  Monotone is safe, correct and powerful *by design*.  It uses cryptographic keys to authenticate changes.  It is written by elite programmers who, despite using C++, have the "Ada attitude": no pointers, one {{{assert()}}} every 9 lines of code, massive use of generics (templates), and not a single critical bug in 3 years. -- [http://groups.google.co.uk/group/comp.lang.ada/msg/bf2f9970828367bd Ludovic Brenta]
+ * I believe that Monotone is the Ada of version control systems, so it is only appropriate that I use it for my Ada work.  Monotone is safe, correct and powerful *by design*.  It uses cryptographic keys to authenticate changes.  It is written by elite programmers who, despite using C++, have the "Ada attitude": no pointers, one `assert()` every 9 lines of code, massive use of generics (templates), and not a single critical bug in 3 years. -- [http://groups.google.co.uk/group/comp.lang.ada/msg/bf2f9970828367bd Ludovic Brenta]
 
  * I have been using Monotone from version 0.14, and I have never ceased to be amazed by the combination of stable functionality and high speed of development the team behind Monotone has been able to show off. The beauty and simplicity both in design concept and user interface, as well as the amazing (so far unmatched) helpfulness of the Monotone team ensures that I will be a Monotone fan for a long time to come. The extra bonus of distributed functionality, next generation features and damn near perfect documentation just makes me even happier :) -- [mailto:martin_at_troja_dot_ath_dot_cx Martin Kihlgren] 2007-01-30
 

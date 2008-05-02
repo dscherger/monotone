@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 i18n and l10n are non-trivial; more so for monotone than for most apps.
 

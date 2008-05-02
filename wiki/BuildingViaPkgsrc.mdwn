@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 You can build monotone from source yourself on a number of platforms, and several pages in the wiki describe the process in some detail for various platforms.   Monotone itself is pretty easy to compile, most of the detail on these pages deals with getting the various dependencies (like boost) installed first.  You might like to try using pkgsrc to take care of all of these steps for you.
 
@@ -25,10 +25,8 @@ After bootstrapping, there are some basic [http://www.netbsd.org/Documentation/p
 # Building monotone
 
 Once you have pkgsrc set up, installing [http://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/devel/monotone/README.html the monotone pkg] and its dependencies is easy:
-{{{
- # cd /usr/pkgsrc/devel/monotone
- # bmake install
-}}}
+     # cd /usr/pkgsrc/devel/monotone
+     # bmake install
 
 There are also packages for many other InterfacesFrontendsAndTools that work with monotone.
 

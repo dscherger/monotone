@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!):
 

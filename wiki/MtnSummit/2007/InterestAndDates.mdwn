@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 The idea of holding some sort of sprint has come up.  (I.e., getting a bunch of us together to hack like mad.)  To better explore the idea, put a note here if you might be interested in attending, and where you are:
 

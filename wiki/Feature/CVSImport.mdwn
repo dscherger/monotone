@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -15,9 +15,7 @@ The primary limitation is that CVS branches are presently not attached to the re
 # Example Usage
 
 To import a full CVS history, you need a copy of the cvsroot `,v` files:
-{{{
- $ mtn -d /some/path/project.mtn cvs_import -b org.project $CVSROOT/dir
-}}}
+     $ mtn -d /some/path/project.mtn cvs_import -b org.project $CVSROOT/dir
 
 This will create a branch called `org.project` with contents and history that you would get from `cvs co dir`. Any CVS branches in that history will be created with names like `org.project.cvs-branch-name`.
 

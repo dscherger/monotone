@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 1st 2nd Abend Checkbox Diffs Guten Haltet Hermann Homepage Info Jürgen
 Morgen Perl Platt Plattdeutsch Rechtschreibprüfung Spellchecker Zeitstempel

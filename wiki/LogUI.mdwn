@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 ## Random Ideas for Improvements of the Log User Interface
 
@@ -6,7 +6,7 @@
  * The idea of *additionally* letting the user choose the direction the selected revisions are printed, has been abandoned for now.
  * (Re-)define the meaning of `--limit`. Printing a maximum number of all ancestors or descendants regardless of their distance to the node in question seems not to be very sensible. What about this: print all members of the next generation, as long as that would not exceed the maximum number of nodes to be printed?
  * Add a filtering mechanism. Let the user specify `--filter <some-selector>`. Revisions that are matched by the selector will be marked. Other nodes (i.e. merge nodes) are marked according to the unique-* algorithm. All marked nodes will be printed. That way we will retain a sensible graph structure, which is important when printing asciik-style graphs.
- * Add some fancy aliases for the filter, like `--stay-on-branch` = `--filter b:currentbranch`.  It was noted on the mailing list that you can do this with: {{{mtn auto select b:currentbranch | mtn auto toposort -@- | xargs -n 1 mtn log --last 1 --from}}}
+ * Add some fancy aliases for the filter, like `--stay-on-branch` = `--filter b:currentbranch`.  It was noted on the mailing list that you can do this with: `mtn auto select b:currentbranch | mtn auto toposort -@- | xargs -n 1 mtn log --last 1 --from`
  * Add some heuristics for detecting special cases like that: User specifies `--from a --to b` with `a` and `b` being single revisions, but `a` being an ancestor of `b` (so the log would actually be empty). Probably emit a warning and simply exchange `a` and `b`.
  * *Note to myself:* Check whether `--from h:my-branch --to h:mainline` is actually working.
  * Some people complain `--from <selector>` being a bit cumbersome to type as opposed to the old `-r`. Is there anything we can do about that?

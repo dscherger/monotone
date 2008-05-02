@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 While we're doing VersionedPolicy, we probably want to take the opportunity to clean up some stuff about how we do certs.
 

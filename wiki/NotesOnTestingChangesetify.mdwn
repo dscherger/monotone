@@ -1,17 +1,17 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 The procedure for migration from pre-0.16 databases ("changesetify") is currently not tested by the automatic testsuite.  This is partially because there's pretty good odds that there are no such databases remaining in use (so it doesn't matter if the code works) and partially because generating the necessary database dumps is not easy.
 
-I (Zack) recently attempted to construct such a dump, because I wrote code to discard the obsolete database tables ({{{manifest_certs}}}, {{{manifest_deltas}}}, and {{{manifests}}}) used by pre-roster monotone, and I wanted to make absolutely sure that this code did not destroy data needed to complete a changesetification.  (This is partially, but not completely, tested by the existing {{{schema_migration_with_rosterify}}} test case; that test only contains post-changesetify, pre-rosterify test cases, and those use only the {{{manifest_deltas}}} and {{{manifests}}} tables.)  Forthwith some notes on just what has to be done.
+I (Zack) recently attempted to construct such a dump, because I wrote code to discard the obsolete database tables (`manifest_certs`, `manifest_deltas`, and `manifests`) used by pre-roster monotone, and I wanted to make absolutely sure that this code did not destroy data needed to complete a changesetification.  (This is partially, but not completely, tested by the existing `schema_migration_with_rosterify` test case; that test only contains post-changesetify, pre-rosterify test cases, and those use only the `manifest_deltas` and `manifests` tables.)  Forthwith some notes on just what has to be done.
 
- 1. The appropriate version to use to construct a test case is monotone 0.14.  Versions 0.15 and 0.16 came out in the *middle* of the changeset transition, and have interesting bugs that we don't want to deal with.  Unfortunately, the code at {{{t:monotone-0.14}}} requires patches to compile with gcc 4.1 and boost 1.33.  The patches are at the bottom of this page.
- 1. The code for constructing a test repository (from {{{tests/schema_migration}}}) uses mtn features that did not exist in 0.14:
-  * The {{{attr}}} commands.  It is necessary to translate these to manipulations of {{{.mt-attr}}}, which is how attributes used to be done.  (Note that {{{schema_migration_with_rosterify}}} does not attempt to test attribute migration - which is worrisome, as that is a major part of the roster transition.)  
-  * The {{{--message-file}}} option is not present, and putting the message on the command line does not appear to work.  
-  * It is not clear whether the {{{--date}}} option works.  It is accepted for {{{commit}}}, but not {{{propagate}}}.
-  * monotone 0.14 wants {{{[pubkey]}}} and {{{[privkey]}}} packets instead of {{{[keypair]}}} packets.  I do not know how to convert the latter to the former.  I snarfed the key out of 0.14's {{{testsuite.at}}} instead, but I'm not sure it's the same one.
- 1. There might be an outright bug in the code to generate test databases: {{{testfile2}}} is added, then we revert to a revision in which it didn't exist, *modify it*, and check in another revision without adding it again.  Is that intentional?
- 1. If you bull your way past all of that, you get a database, which you can dump with the old version, reload with the new one, and run through {{{db migrate}}}.  Then you get this from {{{db changesetify}}}: {{{mtn: rebuilding revision graph from manifest certs
+ 1. The appropriate version to use to construct a test case is monotone 0.14.  Versions 0.15 and 0.16 came out in the *middle* of the changeset transition, and have interesting bugs that we don't want to deal with.  Unfortunately, the code at `t:monotone-0.14` requires patches to compile with gcc 4.1 and boost 1.33.  The patches are at the bottom of this page.
+ 1. The code for constructing a test repository (from `tests/schema_migration`) uses mtn features that did not exist in 0.14:
+  * The `attr` commands.  It is necessary to translate these to manipulations of `.mt-attr`, which is how attributes used to be done.  (Note that `schema_migration_with_rosterify` does not attempt to test attribute migration - which is worrisome, as that is a major part of the roster transition.)  
+  * The `--message-file` option is not present, and putting the message on the command line does not appear to work.  
+  * It is not clear whether the `--date` option works.  It is accepted for `commit`, but not `propagate`.
+  * monotone 0.14 wants `[pubkey]` and `[privkey]` packets instead of `[keypair]` packets.  I do not know how to convert the latter to the former.  I snarfed the key out of 0.14's `testsuite.at` instead, but I'm not sure it's the same one.
+ 1. There might be an outright bug in the code to generate test databases: `testfile2` is added, then we revert to a revision in which it didn't exist, *modify it*, and check in another revision without adding it again.  Is that intentional?
+ 1. If you bull your way past all of that, you get a database, which you can dump with the old version, reload with the new one, and run through `db migrate`.  Then you get this from `db changesetify`: {{{mtn: rebuilding revision graph from manifest certs
 mtn: certs in | certs out | nodes | revs out
 mtn:       28 |         0 |     5 |        0
 mtn: scanning for bogus merge edges

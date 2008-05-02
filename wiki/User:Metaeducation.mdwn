@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Hello there.  I was a programmer for a long time and have worked on two "distributed version control systems" in the past.  I am evaluating the monotone project and perhaps will be able to contribute in interesting ways.
 

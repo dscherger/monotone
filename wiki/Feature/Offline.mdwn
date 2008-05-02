@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -18,13 +18,11 @@ Even these operations do not necessarily need to use the network: revisions can 
 # Example Usage
 
 All of the following (and many other things besides) work entirely offline:
-{{{
- $ mtn log --last=3 file.c
- <edit file.c>
- $ mtn diff file.c
- $ mtn diff -r t:some-release-tag file.c
- $ mtn commit
-}}}
+     $ mtn log --last=3 file.c
+     <edit file.c>
+     $ mtn diff file.c
+     $ mtn diff -r t:some-release-tag file.c
+     $ mtn commit
 
 # Further Reference
 

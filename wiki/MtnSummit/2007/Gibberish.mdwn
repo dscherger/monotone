@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
  * no cornflakes at the restaurant
  * sixth period

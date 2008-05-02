@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -17,10 +17,8 @@ Monotone also has very robust and powerful merging capabilities (see FeatureMerg
 # Example Usage
 
 To commit some changes in a workspace to a new branch:
-{{{
- <edit files>
- $ mtn commit -b com.example.new-branch-name
-}}}
+     <edit files>
+     $ mtn commit -b com.example.new-branch-name
 
 # Further Reference
 

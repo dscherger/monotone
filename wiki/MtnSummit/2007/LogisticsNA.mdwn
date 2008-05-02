@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 # Logistics for Mtn Summit 2007 (North American edition)
 

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 *This page is mostly out of date: rosters have been part of mainline monotone since the 0.26 release.*
 

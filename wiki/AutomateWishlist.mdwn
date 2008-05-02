@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Missing (but useful) functions for the automate interface:
 
@@ -50,59 +50,55 @@ To address these problems, some changes and clarifications to the **automate std
 
 The current form has the following description:
 
-{{{
-The output consists of one or more packets for each command. A packet looks like:
-
-<command number>:<err code>:<last?>:<size>:<output>
-
-<command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
-
-<err code> is 0 for success, 1 for a syntax error, and 2 for any other error.
-
-<last?> is 'l' if this is the last piece of output for this command, and 'm' if there is more output to come.
-
-<size> is the number of bytes in the output.
-
-<output> is a piece of the output of the command.
-
-All but the last packet for a given command will have the <last?> field set to 'm'. 
-}}}
+    The output consists of one or more packets for each command. A packet looks like:
+    
+    <command number>:<err code>:<last?>:<size>:<output>
+    
+    <command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
+    
+    <err code> is 0 for success, 1 for a syntax error, and 2 for any other error.
+    
+    <last?> is 'l' if this is the last piece of output for this command, and 'm' if there is more output to come.
+    
+    <size> is the number of bytes in the output.
+    
+    <output> is a piece of the output of the command.
+    
+    All but the last packet for a given command will have the <last?> field set to 'm'. 
 
 It is proposed to change it as so:
 
-{{{
-The output consists of one or more packets for each command. A packet looks like:
-
-<command number>:<err code>:<stream>:<size>:<output>
-
-<command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
-
-<err code> is 0 for no-error, 1 for a syntax error, and 2 for any other error.  no-error on the final 'l' packet (see below) for a command indicates success of the command; on earlier packets it means no error yet.  Once an error has been detected and indicated with a packet with non-zero error value, no later packet should go back to 0.
-
-<stream> is an identifier for which output stream this packet represents, allowing multiple streams to be multiplexed over the channel.    The following streams are presently defined; more streams may be added later.
-
- 'm' and 'l': the 'm' stream represents the normal stdout automate output of the command, formatted as described in the description for that command.  The special 'l' value is described below.
-
- 'e': the 'e' stream represents any (unstructured) error message data. Internally, this maps to calls to the E() and N() print macros that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
-
- 'w': the 'w' stream represents any (unstructured) warning message data. Internally, this maps to calls to the W() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
-
- 'p': the 'e' stream represents any (unstructured) progress message data. Internally, this maps to calls to the P() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
-
-As needed, some of these (e,w,p) messages may be replaced with structured and well-defined error information for more direct interpretation by a gui frontend, not localised, on a different stream.
-
- 'p': informative progress messages from the command during execution.
-
- 't': ticker updates, as may be used by the gui to update a progress bar. The ticker stream is formatted as a series of lines, one for each ticker update.  Each line contains <tag>:<n>[/<m>]. The <tag> is the ticker name, <n> is the value, the optional <m> is the max value (which may be used for percentage in a progress bar).
-
-<size> is the number of bytes in the output.
-
-<output> is a piece of the output of the command.
-
-The last packet for a given command will have the <stream> field set to 'l'. This packet indicates termination of all streams for the command. Any content in this packet is considered to be part of the 'm' stream. The <size> in this packet is likely to be zero if there has been an error message that has prevented or interrupted normal output. 
-
-If a client implementation gets a <stream> record for a stream type it does not recognise, the record should be ignored.
-
-}}}
+    The output consists of one or more packets for each command. A packet looks like:
+    
+    <command number>:<err code>:<stream>:<size>:<output>
+    
+    <command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
+    
+    <err code> is 0 for no-error, 1 for a syntax error, and 2 for any other error.  no-error on the final 'l' packet (see below) for a command indicates success of the command; on earlier packets it means no error yet.  Once an error has been detected and indicated with a packet with non-zero error value, no later packet should go back to 0.
+    
+    <stream> is an identifier for which output stream this packet represents, allowing multiple streams to be multiplexed over the channel.    The following streams are presently defined; more streams may be added later.
+    
+     'm' and 'l': the 'm' stream represents the normal stdout automate output of the command, formatted as described in the description for that command.  The special 'l' value is described below.
+    
+     'e': the 'e' stream represents any (unstructured) error message data. Internally, this maps to calls to the E() and N() print macros that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+    
+     'w': the 'w' stream represents any (unstructured) warning message data. Internally, this maps to calls to the W() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+    
+     'p': the 'e' stream represents any (unstructured) progress message data. Internally, this maps to calls to the P() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+    
+    As needed, some of these (e,w,p) messages may be replaced with structured and well-defined error information for more direct interpretation by a gui frontend, not localised, on a different stream.
+    
+     'p': informative progress messages from the command during execution.
+    
+     't': ticker updates, as may be used by the gui to update a progress bar. The ticker stream is formatted as a series of lines, one for each ticker update.  Each line contains <tag>:<n>[/<m>]. The <tag> is the ticker name, <n> is the value, the optional <m> is the max value (which may be used for percentage in a progress bar).
+    
+    <size> is the number of bytes in the output.
+    
+    <output> is a piece of the output of the command.
+    
+    The last packet for a given command will have the <stream> field set to 'l'. This packet indicates termination of all streams for the command. Any content in this packet is considered to be part of the 'm' stream. The <size> in this packet is likely to be zero if there has been an error message that has prevented or interrupted normal output. 
+    
+    If a client implementation gets a <stream> record for a stream type it does not recognise, the record should be ignored.
+    
 
 The multiple stream encoding allows the output of errors and warnings to be associated with the command that generated them, allows the communication path to always stay in sync, and offers the opportunity to add other stream types for other useful purposes in the future as needs arise.

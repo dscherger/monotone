@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 We have to munge line endings in various ways.  This is a sad fact, but it seems unavaoidable, so how should we minimize the pain?
 

@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 The branches which we've worked upon on the 2008 summit and which should be reviewed by others:
 

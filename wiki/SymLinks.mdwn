@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 People would, occasionally, like to be able to put symlinks under version control.
 

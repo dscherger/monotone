@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -14,11 +14,9 @@ This is a primary and fundamental component of monotone. Revisions are identifie
 
 *<If relevant, walk through a quite example of how to use the feature>*
 
-{{{
- $ mtn ...
- <edit files>
- $ mtn ...
-}}}
+     $ mtn ...
+     <edit files>
+     $ mtn ...
 
 # Further Reference
 

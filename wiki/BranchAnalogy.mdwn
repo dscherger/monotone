@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 Monotone has a concept of branches that's internally quite different to some other VCS's.  While it's very powerful and flexible, this has confused some users getting used to monotone's world.  In particular:
 

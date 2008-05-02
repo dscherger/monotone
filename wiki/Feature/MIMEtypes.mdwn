@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -12,10 +12,8 @@ There is no explicit support for MIME-type information specifically; monotone ha
 
 # Example Usage
 
-{{{
- $ mtn attr set *.html MIMEType text/html
- $ mtn commit
-}}}
+     $ mtn attr set *.html MIMEType text/html
+     $ mtn commit
 
 # Further Reference
 

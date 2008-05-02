@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 The lua-based test harness is pretty nice, but it could be nicer.  Here are some ways we could improve it:
 

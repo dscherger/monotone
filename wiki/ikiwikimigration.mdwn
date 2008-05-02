@@ -34,7 +34,7 @@
 
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),
-      rather than with  `{{{` and `}}}`
+      rather than with  ```` and ````
 
     * use [[ikiwiki/formatting]] to help, and add more notes here
 

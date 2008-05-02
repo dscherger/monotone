@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 #format wiki
 #language en
@@ -16,11 +16,9 @@ Patches to make these hints unnecessary -- either to the manual or the code -- w
 This almost always turns out to be the result of mismatched C++ libraries.  The common cause of this is that your mtn binary and the Boost libraries monotone uses on were built using different versions of the C++ compiler and ended up linked against different versions of libstdc++.
 
 Check for this using ldd
-{{{
-ldd /path/to/mtn | grep 'stdc++'
-  libstdc++.so.5 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.5 (0xb7aae000)
-  libstdc++.so.6 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.6 (0xb7d32000)
-}}}
+    ldd /path/to/mtn | grep 'stdc++'
+      libstdc++.so.5 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.5 (0xb7aae000)
+      libstdc++.so.6 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.6 (0xb7d32000)
 
 In this example, mtn had been freshly built, but Boost had not been rebuilt since a compiler upgrade.  This caused mtn to be linked against libstdc++.so.6 when the Boost libraries were still linked against libstdc++.so.5.  Rebuilding Boost was the solution in this case.
 
@@ -29,85 +27,73 @@ In this example, mtn had been freshly built, but Boost had not been rebuilt sinc
 
 This will happen if the remote host is running an older version of monotone.  This is because the specification of a branch pattern to serve was dropped from the `mtn serve` command in recent versions.  This can be fixed by modifying the `get_netsync_connect_command` hook to execute the remote mtn process with '*' as the branch pattern.  The following modified hook can be placed your monotonerc file (probably in _MTN/monotonerc), to resolve this issue.
 
-{{{
-function get_netsync_connect_command(uri, args)
-
-	local argv = nil
-
-	if uri["scheme"] == "ssh"
-		and uri["host"]
-		and uri["path"] then
-
-		argv = { "ssh" }
-		if uri["user"] then
-			table.insert(argv, "-l")
-			table.insert(argv, uri["user"])
-		end
-		if uri["port"] then
-			table.insert(argv, "-p")
-			table.insert(argv, uri["port"])
-		end
-
-		table.insert(argv, uri["host"])
-	end
-
-	if uri["scheme"] == "file" and uri["path"] then
-		argv = { }
-	end
-
-	if argv then
-
-		table.insert(argv, get_mtn_command(uri["host"]))
-
-		if args["debug"] then
-			table.insert(argv, "--debug")
-		else
-			table.insert(argv, "--quiet")
-		end
-
-		table.insert(argv, "--db")
-		table.insert(argv, uri["path"])
-		table.insert(argv, "serve")
-		table.insert(argv, "*")
-		table.insert(argv, "--stdio")
-		table.insert(argv, "--no-transport-auth")
-
-		if args["include"] then
-			table.insert(argv, args["include"])
-		end
-
-		if args["exclude"] then
-			table.insert(argv, "--exclude")
-			table.insert(argv, args["exclude"])
-		end
-	end
-	return argv
-end
-}}}
+    function get_netsync_connect_command(uri, args)
+    
+    	local argv = nil
+    
+    	if uri["scheme"] == "ssh"
+    		and uri["host"]
+    		and uri["path"] then
+    
+    		argv = { "ssh" }
+    		if uri["user"] then
+    			table.insert(argv, "-l")
+    			table.insert(argv, uri["user"])
+    		end
+    		if uri["port"] then
+    			table.insert(argv, "-p")
+    			table.insert(argv, uri["port"])
+    		end
+    
+    		table.insert(argv, uri["host"])
+    	end
+    
+    	if uri["scheme"] == "file" and uri["path"] then
+    		argv = { }
+    	end
+    
+    	if argv then
+    
+    		table.insert(argv, get_mtn_command(uri["host"]))
+    
+    		if args["debug"] then
+    			table.insert(argv, "--debug")
+    		else
+    			table.insert(argv, "--quiet")
+    		end
+    
+    		table.insert(argv, "--db")
+    		table.insert(argv, uri["path"])
+    		table.insert(argv, "serve")
+    		table.insert(argv, "*")
+    		table.insert(argv, "--stdio")
+    		table.insert(argv, "--no-transport-auth")
+    
+    		if args["include"] then
+    			table.insert(argv, args["include"])
+    		end
+    
+    		if args["exclude"] then
+    			table.insert(argv, "--exclude")
+    			table.insert(argv, args["exclude"])
+    		end
+    	end
+    	return argv
+    end
 ### Check Your Quoting
 
 On Windows 
-{{{
-mtn sync myhost.com 'mybranch'
-}}}
+    mtn sync myhost.com 'mybranch'
 does not find a branch named mybranch, but
-{{{
-mtn sync myhost.com "mybranch"
-}}}
+    mtn sync myhost.com "mybranch"
 does.
 
 Also on Windows, glob expansion can be rather funky, e.g.
-{{{
-mtn sync myhost.com '*'
-}}}
+    mtn sync myhost.com '*'
 and
-{{{
-mtn sync myhost.com "*"
-}}}
+    mtn sync myhost.com "*"
 ...will both undergo glob expansion, resulting in a command-line which contains a list of files in the current directory.  To get around this, use
-{{{
-mtn sync myhost.com "{}*"
-}}}
+    mtn sync myhost.com "{}*"
 
 ''Add an 'x' here if this helped you'': x
 
@@ -116,22 +102,16 @@ mtn sync myhost.com "{}*"
 A bug in monotone right now is that it does a lousy job of giving feedback when your permissions are set up wrong -- usually the server will just drop your connection, instead of sending you a message explaining why.  If your new server does not appear to be accepting your connections try:
  * checking the server log for any notes about permissions
  * make sure your read permission file is correct -- it is in a simple little language that looks like:
-{{{
-pattern "*"
-allow "abe@juicebot.co.jp"
-allow "beth@juicebot.co.jp"
-}}}
+    pattern "*"
+    allow "abe@juicebot.co.jp"
+    allow "beth@juicebot.co.jp"
    to allow Abe and Beth read access to all branches, or
-{{{
-pattern "foo*"
-allow "*"
-}}}
+    pattern "foo*"
+    allow "*"
    to allow anonymous access to all branches whose names begin "foo".
  * make sure your write permission file is correct -- it is **not** the same format as the read permission file, because write permissions are per-db, while read permissions are per-branch.  (This has to do with the somewhat amorphous nature of monotone branches.)  A write permissions file might look like
-{{{
-abe@juicebot.co.jp
-beth@juicebot.co.jp
-}}}
+    abe@juicebot.co.jp
+    beth@juicebot.co.jp
 
 ''Add an 'x' here if this helped you'': 
 

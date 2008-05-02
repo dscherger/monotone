@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-auto]]
 
 # Importing CVS repositories with Graph Based Algorithms
 
@@ -79,5 +79,5 @@ Involving cycles with branch starts:
 
 Tested with: 040f83b3bcd4c04adc7e3947d06a9ccffc223ad5 2008-05-01T14:00:49
 
- * netbsd/othersrc: creating monotone revs: {{{../nvm.cbr/rcs_import.cc:5,018: invariant 'I(parent_blobs.size() == 1)' violated}}}
- * openssl/openssl: cycle splitting stage: {{{../nvm.cbr/rcs_import.cc:3,598: invariant 'I(false)' violated}}}
+ * netbsd/othersrc: creating monotone revs: `../nvm.cbr/rcs_import.cc:5,018: invariant 'I(parent_blobs.size() == 1)' violated`
+ * openssl/openssl: cycle splitting stage: `../nvm.cbr/rcs_import.cc:3,598: invariant 'I(false)' violated`
