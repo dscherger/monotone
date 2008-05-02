@@ -1,0 +1,180 @@
+[[!tag migration-auto]]
+
+Monotone stores important information about revisions in certs.  This page descibes how some of the common certs are used in practice; you can also define your own CustomCerts for your own purposes.
+
+The normal certs that go with just about all revisions are *branch*,
+*author*, *date* and *changelog*. There can be multiples of any of these,
+and commonly there will be if two authors have independently merged
+heads to produce the same result.  
+
+## *branch* certs
+
+The *branch* cert is probably the most important for determining the
+automated behaviour of the software in everyday use. Several commands
+embody common conventions about the meaning of branches and rely on
+your branch trust settings.
+
+ * Two (or more) heads with (trusted) certs for the same branch are
+ considered suitable for `merge`.
+
+ * `propagate` pushes changes along one branch since the most recent
+ common ancestor to another branch (for the typical "sync with HEAD"
+ operation, or for the final put back of a development branch), but
+ internally `merge` and `propagate` are identical other than the way
+ they pick revisions to operate on.
+
+ * `update` will update my workspace to the highest revision with a
+ trusted *branch* cert for the current branch.
+
+Trust is determined by the signer of the *branch* cert (rather than the
+value of the author cert), the name of the cert (eg, "branch"), and
+the value (eg, branch name), so you can configure trusts differently
+for different branches.  See TrustFoundations for more
+discussion about how trusts based on certs work, and the BranchAnalogy for more about the meaning
+and interpretation of branch membership in monotone, as compared to other systems.
+
+Because *branch* certs can be applied after the fact, it's possible to
+use them very specifically to express a "fitness for purpose" concept,
+even where it might take some time or consensus to determine that
+fitness.  I might require three release-engineering members all to attest that a
+revision belongs on the super-stable release branch, before I consider
+it fit for that purpose, for example (see below for another variant of
+this). Take a look at the DaggyFixes page for
+examples of using `approve` to bless previously committed revisions onto another branch.
+
+
+## *testresult* certs 
+
+
+The other cert that's important in most of the same cases as above is the
+*testresult* cert.  Each test is a separate key, given to the (usually
+automated) testing system, which publishes "pass" or "fail" results by
+signing a *testresult* cert on the revision. This lets information about
+test results propagate around distributed build and test systems and
+be published back to users and developers together with their normal
+syncs.  As with branches, you can configure rules requiring revisions to pass your
+desired set of tests before `update`, `merge`, etc will accept them for
+use.
+
+Tests might be simple ones like "sparc64 autobuild", results of
+regression suites, or even specific individual checks within that
+suite.  Tests can also represent derived results, so you can have a
+robot that issues another *testresult* cert on the basis of a complex
+set of test criteria; users can then depend on just that derived cert
+without having to duplicate the complex logic.  This derived cert
+might also be a *branch* cert for a "meets QA criteria" branch, of
+course.
+
+As well as simplifying and centralising this logic, this can
+also help prevent distributing an explosion of *testresult* certs: using
+the netsync filters, individual detailed *testresult* certs might only be
+sent amongst test machines or interested developers, while the public
+MasterRepository just publishes the summarised result certs to cut down on
+noise.
+
+With a smart, distributed autobuild system, a good regression suite,
+and some simple graph following logic, this can help narrow down when
+a particular bug was introduced or fixed.  Find a bug, write a new
+test for it, then set the build bots loose on a parallel graph
+traversal to build revisions and run the test, narrowing down on paths
+that pass or fail the tests.  We don't yet have such a build system,
+alas, but this is one of the key objectives monotone is designed to
+facilitate, and exactly why it works this way.
+
+## other informational certs
+
+The *author*, *date* and *changelog* certs (and a related *comment* cert) are pretty
+much purely informational, they're shown by the `log` command and
+mostly only looked at by humans. There's also a *tag* cert that does the
+obvious thing: attaches a symbolic name to the revision.
+
+## certs and selectors
+
+Apart from their simple informational value, for all of these, but
+especially *tag*, *author* and *date*, the most important way humans use the
+certs is when making selectors. Selectors allow the symbolic
+construction of revision id's via a search-like specification, rather
+than using the raw hex sha1 value.
+
+For example if there are multiple heads by different authors, and I
+want to name one of them for `update` or `diff`, I write symbolic
+selectors like "h:/a:njs" and "h:/a:graydon".  The *tag* cert is the
+clear example here, it exists almost entirely for use in selectors, in
+the same way you use tags elsewhere, eg: "co -r t:monotone-0.28".
+There are a bunch of selector expansion smarts, hookable of course,
+that allow friendly selectors and common shortcut syntax (see the
+manual for more details).
+
+## changing certs
+
+Sometimes, you make a mistake and want to change information.
+You might have made a typo, or a bigger error, in a commitlog message, and want to fix it.
+
+You can add new certs, including log and comment certs, at any time
+even to old revisions.  If you really need to actually ***change*** the
+content of an existing cert, things get a little trickier.
+Strictly speaking you can't change a cert, or for that matter a
+revision or any of the files it contains, because that changes the
+hash and thus the identity of the object.  Instead you need to delete
+the original and replace it with a new one.
+
+So you can destroy and replace such information in your local
+repository (for revisions, only if they're leaf revs that have not had
+new commits depending on them, though you can recursively delete revs
+back from a leaf to the problem rev).  If your local copy was the only
+instance of that item, fine.  If, however, those revs or certs exist
+somewhere else (say on a central reference server), then you'll just
+fetch them back again next time you `sync`, so you'll have to try and
+delete them on the server too.  But once they're on the server, the likelihood is
+that others have fetched them too and will feed them back to the
+server next time they `sync`, so you'll also have to convince them to delete
+the item(s) too.  So once the information you want to destroy has
+escaped into the wild, you have either a difficult chase or some
+careful persuading to do.  BranchRenaming illustrates this process, and 
+some of these difficulties, using the current form of *branch* certs; 
+CertCleanup contains some future development notes for a more 
+user-friendly way of handling branch (re)naming without specifically 
+changing this aspect of certs.
+
+This is a good thing. It *should* be hard for me to destroy
+information that has become public, at least without collaboration
+from other holders of the information. Things in monotone are intended
+to be permanent, and in at least some cases have to be permanent once
+other things have come to depend on them, as in the example of derived
+revs. Even if you destroy a rev locally, if it was public you can
+never know that someone elsewhere hasn't derived a new revision from
+it in the meantime.
+
+So, as happens often when thinking about switching to (any) dVCS from
+CVS and similar centralised models, once again you have to think about
+your motivations for asking the question.  What are the use cases you
+have in mind where habit tells you the answer must be to destroy
+information?
+
+ * Is it because the information is somehow bad or inappropriate for your
+ purposes, and you don't want it used?  Then adjust your trust settings
+ so as to not use that information; just having it in your database
+ untrusted does you no harm.
+
+ * Is it to correct or supplement something (like a commit log)
+ for the benefit of posterity and a more accurate historical record?
+ Then, really, the correction itself should form part of that
+ historical record too.
+
+ * Is it to avoid embarassment at publishing inaccurate information? 
+ If this is a concern for you, you will learn to be careful and review
+ what you're about to publish before `sync`ing.  Because the committing
+ and publishing steps are separate, you can `commit` many revisions or
+ even a whole development branch locally, gaining all the VCS
+ advantages of the tool, and then `push` the whole lot to a public server in one go once
+ you're happy with it. And you can, if you really want, delete (or just
+ choose to never publish) your own information that you find
+ embarassing.
+
+ * Is it because you have too much data in your db, and want a smaller
+ one to fit somewhere else for a more restricted purpose?  (eg, I want
+ to follow a stable release, and don't really need to look at
+ speculative development branches or any older release branches just here).  Well,
+ you *could* go through and delete everything you didn't want from your
+ db, but it's much much easier and better to just start a new db and
+ populate it only with what you do want.

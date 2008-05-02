@@ -1,8 +1,0 @@
-#acl DevGroup:admin,read,write All:read
-
-Anyone listed on this page can edit this page.  Anyone listed on this page is automatically given admin rights on this wiki, and in particular the ability to protect/unprotect pages from editing, and delete nonsense pages.  Anyone listed on this page should feel free to add other people that should be listed on it, if you're missing I probably just didn't know the wikiname to use...
- * JustinPatrin
- * MattJohnston
- * NathanielSmith
- * ThomasMoschny
- * ThomasKeller

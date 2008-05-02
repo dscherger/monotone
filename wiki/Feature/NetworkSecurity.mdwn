@@ -1,0 +1,27 @@
+[[!tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Network operations should be secure.
+
+# Supported
+
+Monotone's netsync protocol uses mutual authentication of client and server keys and has integrity protection, as do the signed revisions and file contents being transferred.  It is recommended that servers use dedicated keys.
+
+It does **not** inherently include confidentiality protection via native encryption, but this can be added via port forwarding through SSH, IPSec, or other suitable means.  Netsync also supports a direct ssh transport where a user has personal databases on two machines and ssh accounts and access between them; this is not scalable to many users as accessing a database via `ssh://` locks it, while the same database can be accessed by many netsync users concurrently.
+
+If you have confidentiality concerns about your revision contents (because you are working on a sensitive project), you will also need to protect the distributed database and workspace contents on disk as well as in transit across the network and in their use with other development tools. Several of these aspects are platform dependent and outside of monotone's direct control, so each project should select measures appropriate to their needs.
+
+# Example Usage
+
+*todo*
+
+# Further Reference
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Basic-Network-Service Basic Network Service]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureNetworkSecure VCSFeatureNetworkSecure]

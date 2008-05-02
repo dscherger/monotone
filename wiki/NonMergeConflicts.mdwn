@@ -1,0 +1,64 @@
+[[!tag migration-auto]]
+
+Conflicts -- they're not just for merges anymore!
+
+# Idea
+
+The idea here is this: there are a number of different cases where we have some roster or cset that we would like to write out to the workspace, but for some reason cannot.  Some reasons:
+  * the workspace is case insensitive or case preserving, and we have files that differ only in case (e.g., FAT, NTFS, HFS)
+  * the workspace is unicode normalizing, and we have files that differ only in normalization (e.g., HFS)
+  * there are special forbidden file names that we cannot write to (e.g., COM1 on win32)
+  * there is already an unversioned object in the workspace with the given name
+  * the object we want to write has a utf8 name that cannot be represented in the current locale's charset
+  * depending on if/how we implement various sorts of file content munging (line endings, charset, $$-expansion), certain file contents may not be losslessly round-trippable through the workspace.  (I.e., all such mungings have a repo->workspace transformation, and a workspace->repo transformation, and generally these are not perfect inverses.)
+  * "FAT and NTFS ... allow you to add a period to the end of the file names" ([http://blogs.msdn.com/bclteam/archive/2004/10/12/241434.aspx link])
+  * this may or may not be best handled as a "non-merge conflict", but there are also a class of workspace issues that cause problems -- files with the write bit turned off, files/dirs that can't be deleted (win32, or weird permissions), directories that we want to delete but that have unversioned children, files/dirs we want to create but there is already something in the way...
+  * a filename contains characters which are invalid on some platforms, but not other (i.e. check-in a file in Linux with a colon and try to check that out on Windows...)
+  * *(add more if you think of any)*
+
+An interesting thing is that many of these are similar to existing merge conflicts.  The problem with having two files named "A" and "a" is basically similar to the problem of merging to trees that each have a file named "a" -- there are two logical files, and they cannot both have their desired name.  Forbidden filenames -- like COM1 or things unrepresentable in the current locale -- are similar to a merge that would create a file named "MT" in the root directory (this is possible when pivot_root is used).  Etc.
+
+So, the idea is just to re-use the machinery created for MergeViaWorkingDir -- when checkout or update or revert(!) would create a problem like the above, we instead create conflict stuff in the tree.  This seems to neatly solve all of the above problems.  In particular, we achieve the goal of letting, say, a windows user fix up a tree after someone has accidentally checked in multiple files differing only in case, without having to go find a unix box to do so.
+
+# Considerations
+
+  * it becomes possible to have n-way name conflicts (in current merges, it is only possible to have 2 files that want the same name; this would change)
+  * we probably want to allow restricted commits of trees containing conflicts, iff the tree has only one parent and all conflicted files are outside of the restriction.  This is important for the case where, say, you have some critical change you need to make **right now**, so you do a quick checkout on the nearest convenient box and find that suddenly you have to deal with a bunch of irrelevant fake conflicts just so you can apply your little tweak into a completely different part of the source.  I'm not sure how to define this; probably making this possible can wait until after the initial functionality is landed.
+
+# Implementation
+
+This implementation sketch attempts to make the above work in as robust a way as possible; in particular, it tries to avoid hard-coding any knowledge of what "differs only in case" means, etc., because ultimately the only way to know this sort of thing is to ask the filesystem.  (Not even the OS, just the filesystem!)
+
+It requires as a primitive that we be able to ask "is there a file accessible by the string 'foo', and if so, what is its canonical name?" (which might be, say, 'Foo').  Win32 has this, I think; on POSIX life is more complicated, though in extremum you can stat the name, and then if you find it exists, do a readdir() and find direntry with matching inode.  Unless there are hard links, but pff.  Mac``OSX has some promising-sounding APIs in the Carbon library, such as FSRef``Make``Path.
+
+So, whenever attaching a file in the working copy:
+  * look to see if the name is allowed at all -- can be localized, is not a win32 device file, etc. -- if it is not, attach it as a conflict and continue.
+  * look to see if a file is in the way (e.g., stat() the name we want to use)
+  * if so, find that file's True Name (the canonical byte string), using the above algorithm
+    * look to see if a file with that name is versioned
+      * if so, record it being moved out of the way in MT/work
+    * in any case, actually move it out of the way to wherever name conflict files go (unless it is a sentinel file, see below)
+    * attach the file we wanted to put there wherever name conflict files go
+    * poison that location, in case any more files will conflict (e.g., "foo", "Foo", "fOo", "foO" might all exist).  Do this by writing a special sentinel file to that location, so that the next time through the above check will notice.
+  * if not, go ahead and attach the file as usual
+Then when the operation is finished ("commit"), delete all sentinel files.
+
+(Presumably we need a "commit" notion anyway, to do error handling e.g. on win32.)
+
+This is just a quick sketch I scribbled down in class; looking at it, it seems to assume that the filesystem preserves the bytestring we originally use, so that we can trivially map back from file-in-filesystem to file-in-roster.  This is true for case preserving filesystems, but not for case insensitive (do any of these still exist?) or unicode normalizing (HFS) filesystems.  Feel free to improve it and flesh it out...
+
+Basically **all** write access to the workspace has to go through this interface.  checkout and update (and soon, merge and propagate) in particular; 'revert' is a particular interesting case.  Presumably revert needs to reintroduce conflicts that might have been resolved.  This gets particularly interesting when conflicts may involve unversioned files -- should a 'revert' put back an unversioned file that was moved out of the way to avoid clobbering?  Similar things happen if conflicts involve unversioned files (e.g., if a file content conflict involves writing out .BASE, .LEFT, .RIGHT files, then these need to be restored...).
+
+----
+
+scribbling down a thought so it's not lost:
+
+instead of maintaining a "file I thought I wrote" <-> "file I actually wrote" table when writing stuff put, wait until we actually hit a conflict ("I want to write <...>, but the fs says there's already a file there"), then go back and stat every single path we know about and look for any that have the same inode
+
+this could still fail in some really really horrible terrible cases, but...
+
+(example: user checks out a workspace containing "foo", then in their workspaces makes "bar" a hard-link to "foo"; then updates to a new rev that adds another file named "bar" -- this algorithm would say "hmm, your filesystem believes 'foo' and 'bar' to be conflicting names!")
+
+(...though I guess it could rename 'foo' out of the way, and discover that that didn't help...)
+
+maybe that's the way to do it -- just go through all files we know about, and do a robust do-string-a-and-string-b-both-refer-to-this-file check -- which could be implemented robustly through a combination of stat and rename on unix, and I guess the win32 get-the-real-real-real-path-for-this API function, whatever it's called (because win32 doesn't have atomic rename, and I'm not sure what it has wrt 'stat')

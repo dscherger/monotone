@@ -1,0 +1,64 @@
+[[!tag migration-auto]]
+
+Space-age things that would be cool to support in our history representation (though not strictly necessary):
+
+# Suturing
+
+**Use case:** Melding together trees that were separately imported.  For instance, PeterSimons (used to?) use monotone to manage his [http://autoconf-archive.cryp.to/ unified autoconf archive] -- there are several sites that collect autoconf macros, and he imports each into a "vendor branch", and then merges them all on top of each other.  As each site updates the various macros in random ways, one can continue to propagate them together.
+
+Should it be undoable?  The operation is not simple "split", it is "split into this logical file that went into the suture and that logical file that went into the suture".  Very similar issues here as are faced by revival.
+
+## Merging
+
+Not clear how to textual merging -- using a naive weave merge, for instance, there are no benefits to suturing at the file level, you also have to suture at the line level in some more complex way.  But, directory suturing may be possible now.
+
+Adds conflict cases to merge -- there may be arbitrarily many different names that a given item wants to take on (as opposed to at most 2, currently).  (Imagine one side of the merge suturing n different files together, while the other side of the merge renames each of those files; after merging, every one of the n different names is a possible winner for the sutured file.)
+
+May add more conflict cases -- for instance, if one side of a merge sutures files A and B, while the other side deletes only A, what should happen?  With death as irrevocable, there is at least an unambiguous answer to this -- the suture includes A, A is totally dead, so kill the suture.  If death is revocable, then this becomes much more unclear -- what if the other side deleted A and also deleted and then revived B?
+
+If it is undoable, rather than irrevocable, then we need some way to merge suture states.  Not clear how to do this.  Random idea: model each pair-wise potential suture as a boolean, false means not currently sutured, true means currently sutured.  Scalar merge these booleans.  Problem: suturing is actually about the transitive closure of such pair-wise relations...
+
+# File/directory revival
+
+Important for reversion, undoing changes of all kinds
+
+**Use case:** accidentally deleted something on a branch, need to revive it so future merges work right
+
+**Use case (same as above, really):** merged from a vendor branch, pruned parts that don't need.  Later start needing them again; need to revive.
+
+**Use case:** Allow propagating changes in *both* directions across a merge_into_dir.
+  * merge branch A into directory subdir/ in branch B
+  * propagate A -> B to keep B up-to-date
+  * edit something under subdir/ in B, and decide that it needs to be propagated upstream
+  * propagate B -> A (the merged rev will see everything in B not under subdir/ get deleted)
+  * continue the normal A -> B propagates (what was deleted in the previous step should be revived here)
+
+For this to work, propagate would also have to manually fiddle the merge to not use the standard merger on the renamed root nodes, as well as playing with delete/revive.
+
+(Basically, have propagate use the presence of root renames as a flag to merge (live, dead) as either (delete, ...) or (..., revive).)
+
+This should allow similar behavior to nested CVS checkouts as requested in [https://savannah.nongnu.org/bugs/index.php?func=detailitem&item_id=13409 Bug 13409] (although it'd be branch-wide instead of just a specific workspace).
+
+## Merging
+
+Treat life as a scalar boolean, merge like any other scalr.
+
+## Problems
+
+How do we specify what entity is being revived?
+
+Interacts with suturing (because suturing effects entity identity model).
+
+Interacts with partial pull (because we may need to determine identity of two revivals of an object that we don't actually have a record of).
+
+May interact with content merging (because in weave merges for example, need to figure out how lines of new version correspond to lines in all "leaf" versions)
+
+# Splitting
+
+The conceptual inverse of suturing (though not, as noted above, the actual literal inverse).  This is more like "copy" -- the inverse of a copy is a suture.
+
+Copies have all sorts of weird properties.  You have to ask whether they are asymmetrical, for instance.
+
+**Use case:** I want to add a new gcc backend.  However, I find the prospect of writing such a thing from scratch terrifying, so I copy another backend and then modify it.  I consider it kind of nice that things like "annotate" work smoothly across the copy (though there is some debate about this, because the guys who wrote the brand-X backend have no real desire to be hassled about the new brand-Y backend).  As for merging, the brand-X guys should not be hassled about my changes.  However, I may wish to merge in changes made to the brand-X backend.
+
+**Use case:** I'm refactoring, and I split one file into two parts.  I'd like "annotate" etc. to follow the history in both directions.  I'd also like edits to the pre-split file to be automatically applied to the post-splits files when I merge.

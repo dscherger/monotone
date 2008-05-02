@@ -15,7 +15,7 @@
         rm ZipperMerge.moin
 
    (sed's -E option is -r on Linux)
-   this will automatically add `\[[tag migration-wip]]` at the top
+   this will automatically add `\[[!tag migration-wip]]` at the top
    of the file, tagging the page as one being worked on, but not yet
    finished, and convert emphasis notations.
    Commit and push this rev, so others can see you're working on
@@ -34,7 +34,7 @@
 
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),
-      rather than with  `{{{` and `}}}`
+      rather than with  ```` and ````
 
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
@@ -53,14 +53,15 @@
 4. Generate, test, rinse, repeat.  `commit` now and again if you like,
    because your page is still tagged as unfinished.
 
-5. When you're happy, change to `\[[tag migration-done]]`, save and
+5. When you're happy, change to `\[[!tag migration-done]]`, save and
    commit again.
 
 6. `GOTO 1`
 
 ##  running ikiwiki
 
-to generate pages, use something like:
+to generate pages you can browse with a local webserver, use something like:
 
-    ikiwiki --plugin rawhtml --plugin goodstuff --plugin graphviz --exclude index.mdwn . /tmp/ikiwiki/
+    ikiwiki --wikiname monotone --plugin rawhtml --plugin goodstuff --plugin graphviz --plugin table --exclude 'index\.mdwn' ikiwiki/checkout/dir/ output/dir/
 
+if you want to use them with `file:` protocol with no need for a local webserver, the option `--no-usedirs` is suggested.

@@ -1,4 +1,4 @@
-[[tag migration-done]]
+[[!tag migration-done]]
 
 There has been a great deal of VCS development activity in recent years, with many projects and many different solutions to the version control problem -- with significant similarities and differences between them.
 

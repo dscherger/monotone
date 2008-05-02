@@ -1,0 +1,28 @@
+[[!tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Rename files and directories without losing history or breaking future merges.
+
+# Supported
+
+The `rename` command (also aliased as `mv`) will allow files and directories to be renamed without breaking forwards or backwards history.  These changes can be committed along with content changes as a single revision. Commands that use the history, including `log` and `merge` and `annotate`, will follow files through arbitrary renames.  Two revisions that rename the same original file to different names, or that rename two different files to the same new name, will (correctly) cause a conflict will need to be resolved before they can be merged.
+
+# Example Usage
+
+To rename a file:
+     $ mtn rename -e foo.c bar.c
+     $ mtn commit
+     $ mtn log bar.c
+
+''(-e executes the change in the workspace filesystem as well as in monotone's history)''
+
+# Further Reference
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#SectionName Manual Section Name]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureRename VCSFeatureRename]
