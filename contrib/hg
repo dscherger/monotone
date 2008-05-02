@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+#
+# mercurial - scalable distributed SCM
+#
+# Copyright 2005-2007 Matt Mackall <mpm@selenic.com>
+#
+# This software may be used and distributed according to the terms
+# of the GNU General Public License, incorporated herein by reference.
+
+# enable importing on demand to reduce startup time
+from mercurial import demandimport; demandimport.enable()
+
+import mercurial.dispatch
+mercurial.dispatch.run()

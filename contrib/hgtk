@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+#
+# front-end script for TortoiseHg dialogs
+# Copyright (C) 2008 Steve Borho <steve@borho.org>
+#
+# Modify this line to the location of your tortoisehg repository
+# or set TORTOISEHG_PATH in your environment
+tortoisehg_dir = '~/tools/tortoisehg-dev'
+
+import os
+import sys
+
+dialogs = '''log synch status clone merge update userconfig repoconfig
+serve recovery commit datamine about'''
+
+nonrepo_commands = 'clone about'
+
+def help():
+    print 'TortoiseHg Dialog Wrapper\n'
+    print 'hgtk [DIALOG]'
+    print '    dialogs:', dialogs
+
+def main(command):
+    dlist = dialogs.split()
+    l = []
+    for d in dlist:
+        if d.startswith(command):
+            l.append(d)
+    if not l:
+        print 'dialog', command, 'not recognized'
+        help()
+        sys.exit(1)
+    if len(l) > 1:
+        print 'dialog', command, 'is ambiguous'
+        print '\tcould be one of', ' '.join(l)
+        sys.exit(1)
+    command = l[0]
+
+    if hasattr(sys, "frozen"):
+        # Py2exe environment
+        thgdir = os.path.dirname(sys.executable)
+        os.environ['THG_ICON_PATH'] = os.path.join(thgdir, 'icons')
+    else:
+        # Add TortoiseHg to python path
+        path = os.environ.get('TORTOISEHG_PATH') or tortoisehg_dir
+        norm = os.path.normpath(os.path.expanduser(path))
+        if norm not in sys.path:
+            sys.path.append(norm)
+
+        try:
+            # assuming TortoiseHg source layout, with hgtk in contrib
+            path = os.path.dirname(os.path.abspath(__file__))
+            norm = os.path.normpath(os.path.join(path, '..'))
+            if norm not in sys.path:
+                sys.path.append(norm)
+        except NameError: # __file__ is not always available
+            pass
+
+    try:
+        from hggtk import hglib
+    except ImportError:
+        # fix "tortoisehg_dir" at the top of this script, or ...
+        print 'Please set TORTOISEHG_PATH to location of your ' \
+                'tortoisehg repository'
+        sys.exit(1)
+
+    cwd = os.getcwd()
+    root = hglib.rootpath(cwd)
+    opts = { 'root' : root, 'cwd' : cwd }
+
+    if root is None and command not in nonrepo_commands:
+        print 'No repository found, and', command, 'requires one.'
+        sys.exit(1)
+
+    # add aliases to taste (and to commands at top of file)
+    if command in ('log'):
+        from hggtk.history import run
+        opts['files'] = [root]
+    elif command in ('datamine'):
+        from hggtk.datamine import run
+    elif command in ('synch'):
+        from hggtk.synch import run
+    elif command in ('status'):
+        from hggtk.status import run
+    elif command in ('clone'):
+        from hggtk.clone import run
+    elif command in ('merge'):
+        from hggtk.merge import run
+    elif command in ('update'):
+        from hggtk.update import run
+    elif command in ('serve'):
+        from hggtk.serve import run
+    elif command in ('recovery'):
+        from hggtk.recovery import run
+    elif command in ('commit'):
+        from hggtk.commit import run
+    elif command in ('repoconfig'):
+        from hggtk.thgconfig import run
+        opts['files'] = [root]
+    elif command in ('userconfig'):
+        from hggtk.thgconfig import run
+    elif command in ('about'):
+        from hggtk.about import run
+    run(**opts)
+
+
+if __name__=='__main__':
+    if len(sys.argv) != 2:
+        help()
+    else:
+        main(sys.argv[1])
+    sys.exit(0)

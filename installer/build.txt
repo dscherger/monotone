@@ -1,0 +1,44 @@
+Here's the simple instruction on building Windows installer for TortoiseHg.
+
+Prerequisites:
+
+[by now you should have already installed Python, pythonwin and PyGtk]
+
+1.  The py2exe distutils extension
+      http://sourceforge.net/projects/py2exe/
+
+2.  Inno Setup (v5.2.2 was used during development)
+      http://www.jrsoftware.org/isinfo.php
+
+3.  mfc71.dll (just download, don't install)
+      http://starship.python.net/crew/mhammond/win32/
+
+4.  add_path (you need only add_path.exe in the zip file)
+      http://www.barisione.org/apps.html#add_path
+
+
+Building TortoiseHg installer:
+	  
+1. Build and Install Mercurial on your system via Mercurial's source code. 
+   See Mercurial's Wiki page on how to do this:
+   
+      http://www.selenic.com/mercurial/wiki/index.cgi/WindowsInstall
+	  
+2. Clone a copy of the TortoiseHg repository, and chdir into the clone.
+
+3. Build TortoiseHg binary with py2exe:
+   
+      python setup.py py2exe
+	  
+4. Copy mfc71.dll and add_path.exe into the dist directory created by py2exe.
+
+5. Copy GTK's etc/, lib/ and share/ directories into the dist directory created
+   by py2exe.
+   
+   Note that we really only need the share/theme/ directory, so you may
+   remove all other subdirectories in dist/share/ to reduce the size of 
+   the installer.
+
+6. Open installer\tortoisehg.iss with Inno Setup compiler, then press Ctrl-F9
+   to generate the installer, TortoiseHg-snapshot.exe, in the 
+   C:\hg\tortoisehg-release\Output directory.

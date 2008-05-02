@@ -1,0 +1,192 @@
+                    Release Notes for TortoiseHg
+
+This file contains last minute notes to users about the releases, which may not
+be included in the documentation or README files included with the distribution
+kits.  It also contains change information, for users who are interested in
+what bugs have been fixed, and what features have been added in the current
+version.
+
+
+New features in 0.4
+    
+  * Added user config 'tortoisehg.overlayicons' [True|False|localdisks],
+    to enable/disable overlay icons in selected repos. The 'localdisks' 
+    global option disables overlay icons for repos reside on network drives.
+
+  * Changeset viewer shows 'MAR' file status and uses background threads
+    to load changeset diffs. File list has been moved to the left hand
+    side.
+
+  * Added 'strip' and 'backout' functions to history browser.
+
+  * Two convenience functions added to Synchronize dialog: 'View Pulled
+    Changes', and 'Update to Tip'. 
+    
+  * Added support for Fetch extension to Synchronize dialog [ 1914855 ].
+
+  * Grep searches in Datamine dialog can now be interrupted.
+
+  * Recall recently committed messages in native Commit dialog
+
+  * Recall recently accessed source and destination paths in Synchronize
+    and Clone dialogs
+
+  * Add column for user names on annotate pages of Datamine dialog.
+
+  * Hgk ('Revision Graph') is officially replaced by TortoiseHg's 
+    history browser.
+
+  * Installer now requires admin priviledges in order to prevent an
+    upgrade from requiring two reboots. 
+
+  * New TortoiseHg logo in About dialog, contributed by Peer Sommerlund.
+
+  * Updated Hg icon (on context menu and dialogs) to new droplet design 
+    from Mercurial 1.0
+
+  * Several minor bugfixes and improvements.
+
+Bug fixes in 0.4:
+
+  * TortoiseHg program groups now read 'hgproc' with hg.ico.
+    In earlier versions, it used 'Python' with python.ico
+  * Fixed random crashes on web server.
+  * Fixed addremove behavior in Commit dialog
+  * [ 1884919 ] Change Log hscroller
+  * [ 1925985 ] HTTP port field not effective
+  * [ 1914859 ] Global options should show up more often
+  * [ 1914550 ] Changelog: Problems with german umlaut characters
+  * [ 1902446 ] Commit claims file not under root while kdiff is open.
+  * [ 1895443 ] Overlay: ThreadingModel registry setting
+  * [ 1892791 ] Windows Explorer painfully slow for network drives
+
+Changes and bug fixes since 0.4RC1:
+
+  * Added buttons to stop command execution in Synchronize, Recovery,
+    as well as any dialogs that use hgcmd dialog, including Update and 
+    Clone dialogs.
+  * Show progress on status bar when updating changeset viewer.
+  * Support Mercurial's HGENCODING environment variable.
+  * [ Feature 1944469 ] Save and recall pull-update option in Synchronize
+    dialog across sessions.
+  * [ Bug 1939794 ] Unable to Merge changes with builtin commit UI.
+  * [ Bug 1941545 ] Clone log window doesn't scroll.
+  * [ Bug 1943382 ] hgproc.bat not executable without "installer"
+  * [ Bug 1941368 ] Configure Repository "Test" button results broken.
+  * [ Bug 1939911 ] Modal Dialogs aren't staying on top on application switch
+  * [ Bug 1941376 ] hgtk with no parameters gives no help.
+  * [ Bug 1937966 ] Changelog: utf8 messages handled incorrectly
+  * [ Bug 1942777 ] National characters are not handled correctly.
+
+Fixes in Mercurial since 0.3:
+
+  * qimport fixed on Windows
+  * new built-in filemerge system replaces hgmerge patches
+  * many fixes for keyword extension
+  * new -U (context lines) argument for diff and qdiff commands
+
+New features in 0.3
+
+  * Major improvements to changelog browser.  It is now good enough to
+    deprecate both hgk and hgview.  Neither are bundled with the 0.3
+    binary installer, but both can be added by the user if they wish.
+    Support for external revision log viewers will be dropped in 0.4.
+
+  * The new changelog browser supports filtering by file pattern,
+    keywords, dates, and branches.  It is capable of graphing both the
+    repository changelog and individual filelogs.  Changeset coloring by
+    author is optional (tortoisehg.authorcolor).  All changeset graphing
+    is done incrementally in batches (tortoisehg.graphlimit: 500)
+
+  * New DataMine application for searching history (hg grep) and
+    inspecting file histories (hg annotate).  This new application is
+    tabbed to facilitate debugging sessions where search results and
+    annotations can be grouped together for easy cross-reference.
+
+  * New changeset browser, supports multiple parents intrinsically and
+    supports a number of file-revision features (view at revision, save
+    at revision, annotate at revision, revert to revision, etc).  The
+    new changeset browser is also integrated into the changelog browser.
+
+  * Standardized window layouts.  Close buttons have been moved to the
+    toolbar.  Dialogs that use progress bars now use a standard status
+    bar/progress bar widget.  Tooltips have been added.
+
+  * Hgtk wrapper application for launching TortoiseHg dialogs from the
+    command line
+
+  * Support for an external visual editor: tortoisehg.editor.  Takes
+    precedence over ui.editor when viewing files with TortoiseHg
+
+  * Performance improvements in Mercurial itself (cset 0973501e5f4a)
+
+  * New installer bitmap from Peer Sommerlund
+
+  * Misc: The Synchronize dialog has been improved.  The Web Serve
+    dialog no longer requires a subprocess to run the web server.  The
+    configuration dialog has a number of bug fixes for the paths tab,
+    and now has separators in the drop-down boxes for the varying value
+    types (current, suggested, history). Http authentication has been
+    fixed.  The hg integration library has seen major cleanups.
+
+Bug Fixes in 0.3:
+
+  * [ 1863086 ] "Revision Graph" fail on UNC path
+    Fixed by removing hgk from base install.  Integrated log viewer
+    is UNC path safe.
+  * [ 1851395 ] Total Commander problem
+  * [ 1882074 ] global name 'p' is not defined
+  * [ 1854443 ] View changelog fails
+
+New features in 0.2
+
+  * Gtools has been integrated into TortoiseHg proper. It is no longer
+    bundled as a Mercurial extension. The graphlog extension is now enabled
+    again by default (only usable from the CLI, however).
+      
+  * Context menu icons, application window icons. The context menu has been
+    simplified.
+      
+  * The changelog browser has a number of new features (filters and context
+    menu options). The tag browser and changelog tagging features have been
+    merged into this tool.
+      
+  * Hgview is now the default history viewer, hgk is being deprecated.
+   
+  * An email dialog for interfacing with the patchbomb extension. It can be
+    reached from the synchronize dialog and from the changelog browser.
+     
+  * A new configuration tool (replacing hg-config dialogs) that allows you
+    to configure TortoiseHg and Mercurial.
+      
+  * Most dialogs now use HgThread and GtkUI to run hg commands. These 
+    classes run the command in a background thread and provide GUI prompts
+    for when user interaction is necessary (http web auth, etc). For some 
+    commands, it also provides a progress bar.
+      
+  * A preview of the new Mercurial merge back end. The python hgmerge.py 
+    script is being integrated into Mercurial, and this installer has a
+    preview of how that will work. You need to unset any ui.merge in your
+    Mercurial.ini file in order for it to work properly. If you don't 
+    configure anything it will use simplemerge to automatically perform 
+    merges. If conflicts are found it falls back to kdiff3 to resolve 
+    them interactively.
+      
+  * Slight improvement on speed of overlay icons display.
+    
+  * A new 'about' dialog.
+
+Bugs fixed in 0.2
+
+  * [SF Bug #1851395] Overlay icons and context menus are no longer 
+    restricted to MS-Explorer. So other file managers, such as Total 
+    Commander, should be supported.
+      
+  * [SF Bug #1844722] Users can now create repositories inside repository
+     via the context menu.
+
+Changes since 0.2rc1
+
+  - N/A -
+
+
