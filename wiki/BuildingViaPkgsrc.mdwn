@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 You can build monotone from source yourself on a number of platforms, and several pages in the wiki describe the process in some detail for various platforms.   Monotone itself is pretty easy to compile, most of the detail on these pages deals with getting the various dependencies (like boost) installed first.  You might like to try using pkgsrc to take care of all of these steps for you.
 

@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 If you are working on a project that has been partitioned, give each partition a branch. A partition could be upstream code.                                                                                                
                                                                                                                                                        

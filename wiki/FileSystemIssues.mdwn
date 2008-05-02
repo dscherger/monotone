@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 # File System Issues in Monotone
 

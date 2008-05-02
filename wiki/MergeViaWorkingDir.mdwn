@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 *Note: this page is a little out of date, and describes work in progress, not yet visible on mainline.  In the mean time, consider using the ZipperMerge pattern to help with difficult merges.*
 

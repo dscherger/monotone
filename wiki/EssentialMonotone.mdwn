@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 What is the bare minimum command set needed to use monotone?
 

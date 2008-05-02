@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 There is more than one one way to get things done with monotone. Listed here is guidance in best practices in using monotone. Following these procedures will help you get the most out of monotone, and help avoid common pitfalls. 
 

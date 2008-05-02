@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 We are holding a sprint!  Or sprints.  Or something.  Anyway, we're getting as many of us together as we can, to hack like mad.  Would you like to come too?
 

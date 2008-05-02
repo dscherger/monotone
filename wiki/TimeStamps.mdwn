@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Maybe we should store, for each rev and cert, a timestamp of when it was written to the db?  This would be purely local information, but it could be useful for forensics ("we know something happened, but have no idea what!"), and auditing ("crud, Debbie's laptop was stolen, has our (still trusted) server received any certs from her since then?").
 

@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Because of our use of SHA-1, we must make backwards-incompatible changes to our use of cryptography.  Since we will be paying the cost of a "flag day", we should consider how to get the most benefit from that cost.
 

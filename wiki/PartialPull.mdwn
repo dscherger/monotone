@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 In order to store or use a revision, monotone currently requires the complete ancestry of the revision to also be in the local database.   Whenever a revision is sent as part of a pull, all of its ancestors are sent too if they're not already at the receiver.
 

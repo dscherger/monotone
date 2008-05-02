@@ -15,7 +15,7 @@
         rm ZipperMerge.moin
 
    (sed's -E option is -r on Linux)
-   this will automatically add `\[[tag migration-wip]]` at the top
+   this will automatically add `\[[!tag migration-wip]]` at the top
    of the file, tagging the page as one being worked on, but not yet
    finished, and convert emphasis notations.
    Commit and push this rev, so others can see you're working on
@@ -53,7 +53,7 @@
 4. Generate, test, rinse, repeat.  `commit` now and again if you like,
    because your page is still tagged as unfinished.
 
-5. When you're happy, change to `\[[tag migration-done]]`, save and
+5. When you're happy, change to `\[[!tag migration-done]]`, save and
    commit again.
 
 6. `GOTO 1`

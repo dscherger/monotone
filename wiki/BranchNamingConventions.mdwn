@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 There are a number of ways to create **globally unique** branch names. There's some debate about which one is best.
 

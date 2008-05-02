@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Originally posted at http://lists.gnu.org/archive/html/monotone-devel/2006-09/msg00124.html .
 There's also a little bit of discussion at http://colabti.de/irclogger/irclogger_log/monotone?date=2006-09-08,Fri&sel=234#l464 .

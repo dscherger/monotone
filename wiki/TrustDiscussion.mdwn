@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 We need a more systematic way to deal with trust in monotone, including delegation ("let the maintainers worry about who gets commit access, I just want to submit patches"), revocation, and such things.
 

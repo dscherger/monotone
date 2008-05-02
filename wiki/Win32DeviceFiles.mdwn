@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Discussion: http://colabti.de/irclogger/irclogger_log/monotone?date=2005-12-26,Mon&sel=19#l47
 

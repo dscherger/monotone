@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 *NB: patches to integrate this information into the manual proper would be gratefully accepted*
 

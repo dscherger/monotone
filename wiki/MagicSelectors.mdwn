@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 There are a number of interesting problems and use cases where the current selector syntax isn't quite as useful as might be desirable.   Various forms of "magic" selectors have been suggested.  Some of these allow reasonably basic navigation of parts of the ancestry graph that don't currently have good names, others verge on the truly magical or are useful for very clever selection descriptions.
 

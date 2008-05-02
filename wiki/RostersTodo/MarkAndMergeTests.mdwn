@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Lots of super-critical code here.  I want, like, 173% code coverage.  This is the exact same stuff that led to months of discover-nasty-bug-worry-whether-we've-corrupted-data games the last time we rewrote our history code, and this code is all new.  And critical.  And complicated.  And prone to fantastically subtle bugs with disproportionate effects.
 

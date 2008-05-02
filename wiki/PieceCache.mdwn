@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 For xdelta reconstruction in the db layer, we really should use a piece cache instead of our current full-version cache (see `vcache` in database.cc).  Not only would it just work better, but it would have much nicer properties for more clever delta handling.  For instance, if we switched to forward deltas for files, we would need something like this to make backwards iteration through a file's history to be fast (like 'annotate' does), and it would naturally let us send deltas off the wire straight to disk without reconstructing in memory.
 

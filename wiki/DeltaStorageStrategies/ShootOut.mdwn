@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 ||<tablestyle="width: 100%; text-align: center;"> *When the going gets tough, the tough get empirical.* ||
 

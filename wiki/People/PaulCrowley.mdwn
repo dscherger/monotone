@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Cryptography guy.  This summit will be my first time coding for Monotone.
 

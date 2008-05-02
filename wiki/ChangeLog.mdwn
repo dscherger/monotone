@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 This is a first little piece of emacs-code, to achieve the task of writing log messages to  `_MTN/log` instead of `ChangeLog` if appropriate.  (Note that [http://download.gna.org/dvc/ DVC] already includes a similar feature, bound to C-x V a by default.)
 

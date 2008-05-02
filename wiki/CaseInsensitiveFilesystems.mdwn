@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Discussion: irc logger missed it, but, in #monotone around 2005-12-12T00:00:00 UTC.
 

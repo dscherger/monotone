@@ -1,4 +1,4 @@
-[[tag migration-done]]
+[[!tag migration-done]]
 
 *This page is a template for..*
 

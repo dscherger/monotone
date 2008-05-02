@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 The procedure for migration from pre-0.16 databases ("changesetify") is currently not tested by the automatic testsuite.  This is partially because there's pretty good odds that there are no such databases remaining in use (so it doesn't matter if the code works) and partially because generating the necessary database dumps is not easy.
 

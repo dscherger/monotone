@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Using editable_working_tree for not only update but also for revert and checkout should allow us to re-use conflict detection and resolution machinery. For now this page lists some things about the different types of conflicts that can occur and how we'll deal with them.
 

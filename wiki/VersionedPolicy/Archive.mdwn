@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Random notes on how to version policy (fine-grained permissions, trust delegation, branch names...).
 

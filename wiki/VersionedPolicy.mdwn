@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 The problem is to find a way to share policy for a branch about what revisions will be accepted in a way that balances simplicity and predictability with flexibility and power.
 

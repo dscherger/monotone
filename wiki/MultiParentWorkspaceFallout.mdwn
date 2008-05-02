@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Some commands needed modification to do something sensible in a multi-parent workspace.  Here I've categorized all of the documented commands (i.e. those visible in mtn --help) with some notes on what changed and why.
 

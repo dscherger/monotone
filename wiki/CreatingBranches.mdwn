@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 If you want to create a new branch, the most intuitive way (that I've                                                                              found) is to commit your changes with --branch=<new_branch> .  
 

@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
     Always use 'foo const &', not 'const foo &'.  (Yes, we're weird.)
     

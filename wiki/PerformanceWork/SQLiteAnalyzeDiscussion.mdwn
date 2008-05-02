@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Ever since we imported SQLite 3.2.3 (which included a much improved query optimizer, and added the [http://sqlite.org/lang_analyze.html analyze] command), we've needed to run an analyze on monotone repositories to get decent performance, otherwise SQLite doesn't make good use of our indices and we become extremely I/O bound.  This can affect many areas of monotone--for instance, a small commit into a very large repository can take an extremely long time unless the repository has been analyzed recently, because we spend many minutes seek()ing in the repository. 
 

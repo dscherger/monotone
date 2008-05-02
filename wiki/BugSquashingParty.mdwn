@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 We're talking about having a Bug Squashing Party this weekend (November 26-27), with the goal of getting rosters merged.
 

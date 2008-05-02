@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 GNU Arch refugee since monotone 0.18.
   * [[MailTo(chewie AT wookimus DOT net)]]

@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 You can easily host monotone anywhere you can run a daemon.  With the "dumb server" support, you don't even need that -- all that is required is standard web hosting -- but this option is more experimental, and needs more work to be fully supported (want to help?).
 

@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 The rules to determine if the release version identifier X.Y is raised or not, are as follows:
 

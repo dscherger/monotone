@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 The buildbot helps us make sure monotone continues to work on lots of platforms and configurations, and debug what's going wrong when things break.
 

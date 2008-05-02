@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Other surveys:
   * Our first survey: http://article.gmane.org/gmane.comp.version-control.monotone.devel/2235

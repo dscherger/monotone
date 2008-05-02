@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Monotone stores important information about revisions in certs.  This page descibes how some of the common certs are used in practice; you can also define your own CustomCerts for your own purposes.
 

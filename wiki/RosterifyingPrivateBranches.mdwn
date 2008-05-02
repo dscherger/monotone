@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 /!\ WARNING: at least one person using these instructions has ended up with a database with the wrong contents, and accidentally ended up sending a few thousand spurious certs to the rest of his group.  So be careful!  The algorithm given here seems correct in principle, but it could be explained clearer; make sure you are very careful if you use it, or ask in #monotone @ irc.oftc.net for hints, until we find time to expand this page.
 

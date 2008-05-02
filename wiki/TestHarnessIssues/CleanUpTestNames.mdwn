@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Now that there is no giant list of test cases in `testsuite.lua`, we ought to go through and rename all the test cases so that they are in sensible clusters, and so they are run in a sensible order (very basic tests first).  This page is for working out what the new names should be.  If you edit this, please please keep it in alphabetical order by *new* name.
 

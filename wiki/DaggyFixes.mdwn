@@ -1,5 +1,5 @@
 [[!toc levels=2]]
-[[tag migration-done]]
+[[!tag migration-done]]
 
 All software has bugs, and not all changes that you commit to a source
 tree are entirely good.

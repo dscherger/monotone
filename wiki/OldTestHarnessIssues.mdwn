@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Nice things about autotest:
   * every test gets run in its own little scratch directory

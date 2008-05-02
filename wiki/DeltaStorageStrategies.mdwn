@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 Here are some of the known ways one *could* potentially do delta-compression on large version corpora.
 

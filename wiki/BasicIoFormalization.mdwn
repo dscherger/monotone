@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 There's some debate on what the formal definition of basic_io should be, and in particular whether stanzas and lines should be first class items, or it should continue to treat all whitespace as identical, except with one special normalized form.
 

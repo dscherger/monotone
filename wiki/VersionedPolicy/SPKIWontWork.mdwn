@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 This page should probably be called "SPKIWontBeEnough", since it will probably work, just not provide quite as strong a formalism as we want (if we strip clocks from it).
 

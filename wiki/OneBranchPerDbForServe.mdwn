@@ -1,4 +1,4 @@
-[[tag migration-auto]]
+[[!tag migration-auto]]
 
 If you have a lot of big branches (maybe you need to version control a library of some sort), you can get a large db file. sqlite and monotone are paranoid about data integrity, but it is possible that a hardware failure during an operation can hose parts of the database.                                
                                                                                    
