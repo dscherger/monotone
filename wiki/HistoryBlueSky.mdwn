@@ -4,7 +4,7 @@ Space-age things that would be cool to support in our history representation (th
 
 # Suturing
 
-**Use case:** Melding together trees that were separately imported.  For instance, PeterSimons (used to?) use monotone to manage his [http://autoconf-archive.cryp.to/ unified autoconf archive] -- there are several sites that collect autoconf macros, and he imports each into a "vendor branch", and then merges them all on top of each other.  As each site updates the various macros in random ways, one can continue to propagate them together.
+**Use case:** Melding together trees that were separately imported.  For instance, PeterSimons (used to?) use monotone to manage his [unified autoconf archive](http://autoconf-archive.cryp.to/) -- there are several sites that collect autoconf macros, and he imports each into a "vendor branch", and then merges them all on top of each other.  As each site updates the various macros in random ways, one can continue to propagate them together.
 
 Should it be undoable?  The operation is not simple "split", it is "split into this logical file that went into the suture and that logical file that went into the suture".  Very similar issues here as are faced by revival.
 

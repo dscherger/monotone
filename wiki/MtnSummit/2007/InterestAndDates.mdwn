@@ -6,7 +6,7 @@ The idea of holding some sort of sprint has come up.  (I.e., getting a bunch of 
 
 # Mountain View 2007
 
-Google (specifically OSPO, the group behind code.google.com) has offered to let us host MtnSummit.us at their [http://maps.google.com/maps?f=q&hl=it&q=1600+Amphitheatre+Parkway,+Mountain+View,+California&ie=UTF8&z=10&ll=37.422526,-122.085571&spn=0.863779,1.417236&om=1 Mtn View headquarters], feed us, and "defray lodging costs" (which may mean "provide free hotel rooms", and at the very least means "use their purchasing power to get us good hotel rates").
+Google (specifically OSPO, the group behind code.google.com) has offered to let us host MtnSummit.us at their [Mtn View headquarters](http://maps.google.com/maps?f=q&hl=it&q=1600+Amphitheatre+Parkway,+Mountain+View,+California&ie=UTF8&z=10&ll=37.422526,-122.085571&spn=0.863779,1.417236&om=1), feed us, and "defray lodging costs" (which may mean "provide free hotel rooms", and at the very least means "use their purchasing power to get us good hotel rates").
 
 **Dates**: To figure out what date works, put in what weeks you might be able to do things!  Do not worry if you are important enough for us to worry about scheduling around you or anything like that, just put down the information and we will worry about that when we can see what conflicts there are!
 

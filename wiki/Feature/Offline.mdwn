@@ -27,7 +27,7 @@ All of the following (and many other things besides) work entirely offline:
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Storage-and-workflow Storage and workflow]
+ * [Storage and workflow](http://venge.net/monotone/monotone.html#Storage-and-workflow)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureOffline VCSFeatureOffline]
+ * FreeBSD [VCSFeatureOffline](http://wikitest.freebsd.org/VCSFeatureOffline)

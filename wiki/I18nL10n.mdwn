@@ -43,14 +43,14 @@ We should probably audit everything dealing with stringprep/idna/etc.  For insta
 
 ## Composition/decomposition
 
-It is possible that there are filesystems which somehow normalize unicode strings.  (E.g., [http://developer.apple.com/technotes/tn/tn1150.html#UnicodeSubtleties HFS+ on OS X] probably does.)  These raise issues similar to CaseInsensitiveFilesystems, i.e., any form of normalization can cause paths that looked different on one system to look the same on another.  In fact, [http://svn.haxx.se/users/archive-2005-12/0381.shtml SVN has encountered this issue in practice].
+It is possible that there are filesystems which somehow normalize unicode strings.  (E.g., [HFS+ on OS X](http://developer.apple.com/technotes/tn/tn1150.html#UnicodeSubtleties) probably does.)  These raise issues similar to CaseInsensitiveFilesystems, i.e., any form of normalization can cause paths that looked different on one system to look the same on another.  In fact, [http://svn.haxx.se/users/archive-2005-12/0381.shtml SVN has encountered this issue in practice].
 
 Other useful OS X links:
-  * [http://developer.apple.com/qa/qa2001/qa1235.html Converting to Precomposed Unicode]
-  * [http://lists.apple.com/archives/unix-porting/2002/Mar/threads.html#00147 filesystem encodings thread on Apple's user-porting list] ("The BSD-level interface to the file system uses canonically decomposed UTF-8.")
-  * [http://developer.apple.com/qa/qa2001/qa1173.html Text encodings in VFS]
+  * [Converting to Precomposed Unicode](http://developer.apple.com/qa/qa2001/qa1235.html)
+  * [filesystem encodings thread on Apple's user-porting list](http://lists.apple.com/archives/unix-porting/2002/Mar/threads.html#00147) ("The BSD-level interface to the file system uses canonically decomposed UTF-8.")
+  * [Text encodings in VFS](http://developer.apple.com/qa/qa2001/qa1173.html)
 
-The Unicode Consortium has an article on [http://www.unicode.org/unicode/reports/tr15/index.html normalization forms] and a somewhat related article on [http://www.unicode.org/reports/tr36/ security considerations].
+The Unicode Consortium has an article on [normalization forms](http://www.unicode.org/unicode/reports/tr15/index.html) and a somewhat related article on [http://www.unicode.org/reports/tr36/ security considerations].
 
 # File content
 

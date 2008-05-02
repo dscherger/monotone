@@ -2,7 +2,7 @@
 
 # Importing CVS repositories with Graph Based Algorithms
 
-The cvs2svn people, mainly Michael Haggerty have come up with a new algorithm (see his [http://cvs2svn.tigris.org/servlets/ReadMsg?list=dev&msgNo=1451 mail]) for cvs2svn 2.0, which is based on [http://en.wikipedia.org/wiki/Graph_theory GraphTheory]. In the branch net.venge.monotone.cvsimport-branch-reconstruction, MarkusSchiltknecht maintains an implementation in C++, with some monotone specific modifications.
+The cvs2svn people, mainly Michael Haggerty have come up with a new algorithm (see his [mail](http://cvs2svn.tigris.org/servlets/ReadMsg?list=dev&msgNo=1451)) for cvs2svn 2.0, which is based on [http://en.wikipedia.org/wiki/Graph_theory GraphTheory]. In the branch net.venge.monotone.cvsimport-branch-reconstruction, MarkusSchiltknecht maintains an implementation in C++, with some monotone specific modifications.
 
 ## Overview
 
@@ -67,12 +67,12 @@ And here the small_real_repo in all its beauty:
 
 Involving cycles with branch starts:
 
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.1.png all the graph before modifications]
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.2.png all first cycle encountered]
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.no-weak.3.png all no more cycles, w/o weak deps]
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.4.png all streamlining 1]
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.5.png all streamlining 2]
- * [http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.6.png final graph, importable by monotone]
+ * [all the graph before modifications](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.1.png)
+ * [all first cycle encountered](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.2.png)
+ * [all no more cycles, w/o weak deps](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.no-weak.3.png)
+ * [all streamlining 1](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.4.png)
+ * [all streamlining 2](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.5.png)
+ * [final graph, importable by monotone](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.6.png)
 
 
 ## Real World test repositories, and how they are currently failing

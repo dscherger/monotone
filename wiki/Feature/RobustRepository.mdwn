@@ -8,7 +8,7 @@ The repository storage format should be robust and resilient to problems caused 
 
 # Supported
 
-Monotone's repository is stored in an ACID-compliant [http://www.sqlite.org SQLite] database file. All monotone operations that write to the database occur inside transactions, and so either happen completely or not at all.  This includes not only normal VCS operations, but also administrative actions such as database schema upgrades that may occur from time to time as monotone develops. 
+Monotone's repository is stored in an ACID-compliant [SQLite](http://www.sqlite.org) database file. All monotone operations that write to the database occur inside transactions, and so either happen completely or not at all.  This includes not only normal VCS operations, but also administrative actions such as database schema upgrades that may occur from time to time as monotone develops. 
 
 Monotone is almost fanatically pedantic and paranoid about internal consistency checking, and has a strict policy of failing early.  If any problems are detected during an operation, monotone will abort rather than risking committing bad information to the database.  This is a very particular kind of robustness that favours historical integrity over user perceptions where abrupt errors are triggered.  These events are generally fairly rare, and always of interest to the developers, even if it means that a more user-friendly error message needs to be emitted.
 
@@ -25,7 +25,7 @@ Interrupt or kill monotone during any operation.
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Database Database Commands]
+ * [Database Commands](http://venge.net/monotone/monotone.html#Database)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat VCSFeatureGoodRepositoryFormat]
+ * FreeBSD [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)

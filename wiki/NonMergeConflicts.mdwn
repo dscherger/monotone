@@ -11,7 +11,7 @@ The idea here is this: there are a number of different cases where we have some 
   * there is already an unversioned object in the workspace with the given name
   * the object we want to write has a utf8 name that cannot be represented in the current locale's charset
   * depending on if/how we implement various sorts of file content munging (line endings, charset, $$-expansion), certain file contents may not be losslessly round-trippable through the workspace.  (I.e., all such mungings have a repo->workspace transformation, and a workspace->repo transformation, and generally these are not perfect inverses.)
-  * "FAT and NTFS ... allow you to add a period to the end of the file names" ([http://blogs.msdn.com/bclteam/archive/2004/10/12/241434.aspx link])
+  * "FAT and NTFS ... allow you to add a period to the end of the file names" ([link](http://blogs.msdn.com/bclteam/archive/2004/10/12/241434.aspx))
   * this may or may not be best handled as a "non-merge conflict", but there are also a class of workspace issues that cause problems -- files with the write bit turned off, files/dirs that can't be deleted (win32, or weird permissions), directories that we want to delete but that have unversioned children, files/dirs we want to create but there is already something in the way...
   * a filename contains characters which are invalid on some platforms, but not other (i.e. check-in a file in Linux with a colon and try to check that out on Windows...)
   * *(add more if you think of any)*

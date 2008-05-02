@@ -63,4 +63,4 @@ The following table should give you an overview at which time certain functional
 
 A = Addition, B = Backwards-compatible change, C = Backwards-incompatible change 
 
-If you like to get more information about certain command / format changes, please consult [http://monotone.ca/docs/Automation.html monotone's Automation documentation].
+If you like to get more information about certain command / format changes, please consult [monotone's Automation documentation](http://monotone.ca/docs/Automation.html).

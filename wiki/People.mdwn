@@ -74,7 +74,7 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Dec 2005
  * involved in monotone translation for Brazilian Portuguese
  * minor docs and Lua code meddling
- * author of [http://www.ventonegro.org/iara/ Iara] monotone web-frontend
+ * author of [Iara](http://www.ventonegro.org/iara/) monotone web-frontend
  * contact: asandroq@gmail.com, http://www.ventonegro.org/
 
 ### Matthew Nicholson (man, matthew_i, MasterYoda)
@@ -90,14 +90,14 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Jan 2006
  * involved in translation into Italian
  * contact: lapo@lapo.it
- * residence: [http://www.frappr.com/lapo Milano, Italy]
+ * residence: [Milano, Italy](http://www.frappr.com/lapo)
 
 ### Thomas Keller (tommyd)
 
  * uses monotone since Jan 2006
  * works on monotone since Mar 2006
  * involved in the UI translation into German and mtn automate extensions
- * developer of [http://guitone.thomaskeller.biz guitone], a frontend for monotone
+ * developer of [guitone](http://guitone.thomaskeller.biz), a frontend for monotone
  * contact: me AT thomaskeller DOT biz
 
 ### Thomas Moschny (thm)
@@ -106,7 +106,7 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Apr 2006
  * meddling in various areas, especially automation
  * currently maintaining the zsh completion
- * author of [http://www.ipd.uka.de/~moschny/TracMonotone TracMonotone], a version control backend to monotone for [http://trac.edgewall.org Trac]
+ * author of [TracMonotone](http://www.ipd.uka.de/~moschny/TracMonotone), a version control backend to monotone for [http://trac.edgewall.org Trac]
  * contact: thomas.moschny@gmx.de
 
 ### Zack Weinberg (zwol)
@@ -134,7 +134,7 @@ This page will introduce some of the members of the monotone development team, t
 
  * uses monotone since October 2005
  * mostly doesn't work on monotone
- * author of [http://www.midwinter.com/~lch/programming/m7/ m7] monotone front-end
+ * author of [m7](http://www.midwinter.com/~lch/programming/m7/) monotone front-end
  * contact: larry@hastings.org
 
 ## Template

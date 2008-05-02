@@ -22,7 +22,7 @@ To rename a file:
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#SectionName Manual Section Name]
+ * [Manual Section Name](http://venge.net/monotone/monotone.html#SectionName)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureRename VCSFeatureRename]
+ * FreeBSD [VCSFeatureRename](http://wikitest.freebsd.org/VCSFeatureRename)

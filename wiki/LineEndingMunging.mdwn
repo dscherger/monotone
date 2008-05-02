@@ -21,7 +21,7 @@ We currently control this stuff with a hook.  This is manifestly broken.  It sho
 
 ### Subversion
 
-Subversion has definitely put thought into their rules here.  It's worth reading their [http://svnbook.red-bean.com/en/1.1/ch07s02.html#svn-ch-7-sect-2.3.5 docs].  Basically, the rules are:
+Subversion has definitely put thought into their rules here.  It's worth reading their [docs](http://svnbook.red-bean.com/en/1.1/ch07s02.html#svn-ch-7-sect-2.3.5).  Basically, the rules are:
   * you have to opt-in to line end munging on a file-by-file basis
   * files can be specified to be always-LF, always-CRLF, always-CR, or always-native.
   * one can use a server-side hook to require that all files have a mime type, and that all files with text/* mime types have an explicit eol style.  This is recommended, and the svn people do this on their own repo.

@@ -13,7 +13,7 @@ All candidates should run with blob support and appropriate block size, since th
  * against-base
  * linear forward chaining
  * linear forward chaining with skips or breaks
- * classic [http://www.selenic.com/mercurial/wiki/index.cgi/Design#head-ef542bce2b68f24d275e7908636317491f678648 revlogs] ("classic" in that cmason is doing [http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/5407 a bunch of playing around] with different sorts of revlogs right now too; not in the sense that we use *exactly* this design, since for the prototype at least we're doing a few tricks differently)
+ * classic [revlogs](http://www.selenic.com/mercurial/wiki/index.cgi/Design#head-ef542bce2b68f24d275e7908636317491f678648) ("classic" in that cmason is doing [http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/5407 a bunch of playing around] with different sorts of revlogs right now too; not in the sense that we use *exactly* this design, since for the prototype at least we're doing a few tricks differently)
 
 A big question is how much tuning should be done on these.  The goal is to get an idea of how the technique would perform in a "proper implementation", but without spending ages of time super-optimizing each possibility before we even know if it's worth it or not.  So we should do the things that would seem to make a qualitative difference.  E.g., it's probably worth making sure that netsync is smart enough to avoid reconstructing versions when actually unnecessary.
 

@@ -22,7 +22,7 @@ This will create a branch called `org.project` with contents and history that yo
 # Further Reference
 
 Manual and Tutorial Sections:
- * [http://venge.net/monotone/monotone.html#Importing-from-CVS Importing from CVS]
+ * [Importing from CVS](http://venge.net/monotone/monotone.html#Importing-from-CVS)
 
 Features and Requirements in other evaluations:
- * FreeBSD [http://wikitest.freebsd.org/VCSFeatureCVSImport VCSFeatureCVSImport]
+ * FreeBSD [VCSFeatureCVSImport](http://wikitest.freebsd.org/VCSFeatureCVSImport)

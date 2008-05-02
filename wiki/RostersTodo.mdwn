@@ -2,7 +2,7 @@
 
 *This page is mostly out of date: rosters have been part of mainline monotone since the 0.26 release.*
 
-There is a mailing list post by NJS explaining [http://lists.gnu.org/archive/html/monotone-devel/2005-11/msg00102.html what rosters are].
+There is a mailing list post by NJS explaining [what rosters are](http://lists.gnu.org/archive/html/monotone-devel/2005-11/msg00102.html).
 
 ----
 

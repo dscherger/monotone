@@ -13,8 +13,8 @@ So, here are some smaller tasks, that very much need doing, that fit the above b
  * `mtn list duplicates` -- list files that have the same checksum (duplicate content) in a given revision (or the workspace)
  * `mtn clean --unknown --ignored` to remove files of each type from the workspace; handy for a really aggressive "make clean", and for plaforms without xargs or where there might be spaces in filenames so that `mtn ls unknown | xargs rm` is hard or dangerous.
  * `mtn diff --ignore-whitespace`
- * make the diff header contain more helpful contextual information -- some thoughts are in [http://lists.gnu.org/archive/html/monotone-devel/2006-01/msg00194.html this email]. it might take a bit of discussion to figure out the nicest format
- * 'db check' now includes a call to the sqlite [http://www.sqlite.org/pragma.html#debug PRAGMA integrity_check], but we need a test for this; check out Message-ID <20060511064950.GC5025@frances.vorpus.org> in the list archives.
+ * make the diff header contain more helpful contextual information -- some thoughts are in [this email](http://lists.gnu.org/archive/html/monotone-devel/2006-01/msg00194.html). it might take a bit of discussion to figure out the nicest format
+ * 'db check' now includes a call to the sqlite [PRAGMA integrity_check](http://www.sqlite.org/pragma.html#debug), but we need a test for this; check out Message-ID <20060511064950.GC5025@frances.vorpus.org> in the list archives.
  * more inodeprints UI -- maybe "inodeprints on/off/auto/refresh", where "auto" turns them on or off depending on the size of the tree (and is used by default at checkout time)?
  * support for .mtn-template. This is a versioned file, that is used as the default for log messages. This might be helpful so you can put in fields for bug numbers, standardize your log message format, etc. Implementation is to make it the default value of _MTN/log. One tricky bit is that commits should be canceled if given an empty or _unchanged_ log message; currently they are canceled only on an empty log message.
  * script that wraps monotone and gathers statistics on usage, that people could use to help us make UI decisions. Just recording commands would be good; taking notes on things like how many files were edited in a commit, whether any given merge or update had conflicts, etc. would be even cooler.
@@ -25,7 +25,7 @@ So, here are some smaller tasks, that very much need doing, that fit the above b
  * add a test for context diff output
  * write a test for any bugs in the [https://savannah.nongnu.org/bugs/index.php?group=monotone tracker] labeled [NEED TEST].
  * **IN PROGRESS**: Emacs code that makes C-x 4 a drop one into _MTN/log instead of ChangeLog. **See ChangeLog**
- * `mtn status -rREV` and `mtn checkout --nofiles`; see [http://lists.gnu.org/archive/html/monotone-devel/2006-08/msg00311.html this discussion] and [http://thread.gmane.org/gmane.comp.version-control.monotone.devel/7752/focus=7756 this one].
+ * `mtn status -rREV` and `mtn checkout --nofiles`; see [this discussion](http://lists.gnu.org/archive/html/monotone-devel/2006-08/msg00311.html) and [http://thread.gmane.org/gmane.comp.version-control.monotone.devel/7752/focus=7756 this one].
  * automatic updating of the tutorial section of the texinfo docs so that program output, etc. is kept current
 
 See also: InterfacesFrontendsAndTools that don't exist, but if they did they would make using monotone just that much more awesome.
