@@ -23,7 +23,7 @@ page) will be determined later.
 
 ## Other pages
 
-[[!map pages="wiki/* and !link(migration-done) and !link(migration-wip) and !wiki/*.moin"]]
+[[!map pages="wiki/* and !link(migration-done) and !link(migration-auto) and !link(migration-wip) and !wiki/*.moin"]]
 
 ## Broken links
 
