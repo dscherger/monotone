@@ -16,6 +16,8 @@
 #include <cerrno>
 #include <queue>
 
+#include <boost/shared_ptr.hpp>
+
 #include "lexical_cast.hh"
 #include "basic_io.hh"
 #include "cset.hh"
@@ -45,6 +47,7 @@ using std::string;
 using std::vector;
 
 using boost::lexical_cast;
+using boost::shared_ptr;
 
 // workspace / book-keeping file code
 
@@ -803,7 +806,12 @@ addition_builder::add_nodes_for(file_path const & path,
     case path::file:
       {
         file_id ident;
-        I(ident_existing_file(path, ident));
+        file_ident_pool pool; // FIXME!
+        shared_ptr<file_path> fpath(new file_path(path));
+        shared_ptr<file_id> fid(new file_id());
+        I(ident_existing_file(pool, fpath, fid));
+        pool.wait();
+        ident = *fid;
         nid = er.create_file_node(ident);
       }
       break;
@@ -1309,8 +1317,18 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               missing_items++;
             }
 
-          file_t file = downcast_to_file_t(node);
-          ident_existing_file(fp, file->content, status);
+          {
+            file_ident_pool pool;
+            shared_ptr<file_id> fid(new file_id());
+            shared_ptr<file_path> fpath(new file_path(fp));
+            ident_existing_file(pool, fpath, fid, status);
+
+            // wait until all jobs in the pool are done.
+            pool.wait();
+
+            file_t file = downcast_to_file_t(node);
+            file->content = *fid;
+          }
         }
 
     }
@@ -1508,9 +1526,12 @@ workspace::perform_deletions(database & db,
               else
                 {
                   file_t file = downcast_to_file_t(n);
-                  file_id fid;
-                  I(ident_existing_file(name, fid));
-                  if (file->content == fid)
+                  shared_ptr<file_path> fpath(new file_path(name));
+                  shared_ptr<file_id> fid(new file_id());
+                  file_ident_pool pool; // FIXME: speed this up!
+                  I(ident_existing_file(pool, fpath, fid));
+                  pool.wait();
+                  if (file->content == *fid)
                     delete_file_or_dir_shallow(name);
                   else
                     W(F("file %s changed - "
