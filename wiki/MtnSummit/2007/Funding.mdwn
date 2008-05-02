@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # People requesting funding
 
@@ -8,9 +8,9 @@ we shouldn't "need" anything, meaning that we can probably manage, though a bit 
 
 ## Markus Schiltknecht
 
-flight: 651.80 USD (EUR 495.51 - british airways)[[BR]]
-hotel: 10 x 35 USD = 350 USD (room with 2 occupants)[[BR]]
-costs total: 1000 USD, of which I can pay 500 USD myself.[[BR]]
+flight: 651.80 USD (EUR 495.51 - british airways)  
+hotel: 10 x 35 USD = 350 USD (room with 2 occupants)   
+costs total: 1000 USD, of which I can pay 500 USD myself.   
 total amount needed: 500 USD
 
 ## Zack Weinberg
