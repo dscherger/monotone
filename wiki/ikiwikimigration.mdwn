@@ -14,7 +14,7 @@
         mtn mv --bookkeep-only ZipperMerge.moin ZipperMerge.mdwn
         rm ZipperMerge.moin
 
-   (sed's -E option is -r on Linux)
+   (use `sed -rf` on Linux instead)
    this will automatically add `\[[!tag migration-wip]]` at the top
    of the file, tagging the page as one being worked on, but not yet
    finished, and convert emphasis notations.
@@ -23,8 +23,8 @@
 
 3. Translate the markup:
 
-    * headers are done with leading `#` `##` etc rather than
-      surrounding `==` etc
+    * headers are done with leading `#`, `##` etc rather than
+      surrounding `=`, `==` etc
 
     * *some* and **more** emphasis is done with `*` rather than lots
       of single-quotes
@@ -34,7 +34,7 @@
 
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),
-      rather than with  ```` and ````
+      rather than with  `{{{` and `}}}`
 
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
