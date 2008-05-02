@@ -4,7 +4,7 @@ You can build monotone from source yourself on a number of platforms, and severa
 
 # About pkgsrc
 
-The [pkgsrc framework](http://www.netbsd.org/Documentation/software/packages.html) supports building third-party application software packages on a large number of platforms.  It is the default package management system for [http://www.netbsd.org NetBSD] and [http://www.dragonflybsd.org DragonFlyBSD], and supports many [http://www.netbsd.org/Documentation/software/packages.html#platforms other platforms] as well, including Linux, Solaris, Irix and other Unix variants, and Interix (Microsoft Windows Services for Unix).
+The [pkgsrc framework](http://www.netbsd.org/Documentation/software/packages.html) supports building third-party application software packages on a large number of platforms.  It is the default package management system for [NetBSD](http://www.netbsd.org) and [DragonFlyBSD](http://www.dragonflybsd.org), and supports many [other platforms](http://www.netbsd.org/Documentation/software/packages.html#platforms) as well, including Linux, Solaris, Irix and other Unix variants, and Interix (Microsoft Windows Services for Unix).
 
 If you're having trouble getting monotone for your particular system, either from the binaries provided by the monotone project, or from your platform's default packaging system if it has one, pkgsrc may well help.  It might help with a lot of other tools as well!
 
@@ -18,7 +18,7 @@ If you're running on NetBSD or DragonFlyBSD, your system already comes with the 
 
 On other systems, pkgsrc needs to be bootstrapped. This process creates the tools used by the pkgsrc infrastructure to build and manage installed packages on your system. Unless you're already on a system very similar to NetBSD, one of these tools is likely to be the NetBSD make, which will be installed as `bmake` to keep it distinct from whatever make variant your platform has by default. On most platforms, you need to use `bmake` when working with pkgsrc Makefiles and packages. 
 
-Bootstrapping [pkgsrc on other platforms](http://www.netbsd.org/Documentation/pkgsrc/platforms.html) is described in detail in [http://www.netbsd.org/Documentation/pkgsrc/ the pkgsrc guide].  Bootstrapping can be done from source from within a pkgsrc source tree, or using a prebuilt [http://www.netbsd.org/Documentation/software/packages.html#binarydist binary kit].
+Bootstrapping [pkgsrc on other platforms](http://www.netbsd.org/Documentation/pkgsrc/platforms.html) is described in detail in [the pkgsrc guide](http://www.netbsd.org/Documentation/pkgsrc/).  Bootstrapping can be done from source from within a pkgsrc source tree, or using a prebuilt [binary kit](http://www.netbsd.org/Documentation/software/packages.html#binarydist).
 
 After bootstrapping, there are some basic [configuration ](http://www.netbsd.org/Documentation/pkgsrc/configuring.html) steps to do (though mostly the defaults will be fine), and then you can use pkgsrc to build and install thousands of useful third-party applications and tools.
 

@@ -8,7 +8,7 @@ A web-based interface should allow for easy browsing of sources, history, logs, 
 
 # Supported
 
-There are a number of InterfacesFrontendsAndTools that work with monotone, including several web-based ones.  Monotone's own sources can be browsed using [ViewMTN](http://grahame.angrygoats.net/viewmtn.shtml), and there is also a [http://www.ipd.uni-karlsruhe.de/~moschny/TracMonotone/ Trac plugin] under development.
+There are a number of InterfacesFrontendsAndTools that work with monotone, including several web-based ones.  Monotone's own sources can be browsed using [ViewMTN](http://grahame.angrygoats.net/viewmtn.shtml), and there is also a [Trac plugin](http://www.ipd.uni-karlsruhe.de/~moschny/TracMonotone/) under development.
 
 # Example Usage
  

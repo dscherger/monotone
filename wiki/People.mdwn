@@ -106,7 +106,7 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Apr 2006
  * meddling in various areas, especially automation
  * currently maintaining the zsh completion
- * author of [TracMonotone](http://www.ipd.uka.de/~moschny/TracMonotone), a version control backend to monotone for [http://trac.edgewall.org Trac]
+ * author of [TracMonotone](http://www.ipd.uka.de/~moschny/TracMonotone), a version control backend to monotone for [Trac](http://trac.edgewall.org)
  * contact: thomas.moschny@gmx.de
 
 ### Zack Weinberg (zwol)

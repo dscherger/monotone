@@ -20,7 +20,7 @@ technology, inventing new methods for building distributed p2p
 systems, and robustly solving complex real world problems.  Our
 [history representation](http://venge.net/monotone/docs/Historical-records.html)
 has become the de facto standard for [new](http://git.or.cz/)
-[tools](http://www.selenic.com/mercurial/); the best existing [http://revctrl.org/MarkMerge merge algorithm]
+[tools](http://www.selenic.com/mercurial/); the best existing [merge algorithm](http://revctrl.org/MarkMerge)
 was co-invented by a Monotone SoC 2005 student.  We have a few more
 ideas up our sleeves still... if all this gets you excited
 too -- maybe this is a project for you :-)
@@ -95,7 +95,7 @@ people use.  Examples:
     * Development of a trac plugin has already been started, see the  [trac-plugin branch](http://viewmtn.angrygoats.net/branch.psp?branch=net.venge.monotone.trac-plugin).
   * We could use a good general, cross-platform (so probably Qt) GUI for history browsing and
   general modification.  "guitone" is a possible start at this, in the monotone repository.
-  * [Eclipse](http://eclipse.org) and [http://www.netbeans.org NetBeans] are two great Java IDEs.
+  * [Eclipse](http://eclipse.org) and [NetBeans](http://www.netbeans.org) are two great Java IDEs.
   They need monotone plugins!  Some work has been done on each, but much more could be. (java)
   * Microsoft's Visual Studio needs a plugin too!  ([AnkhSVN](http://ankhsvn.tigris.org) is probably
   useful inspiration)
@@ -112,7 +112,7 @@ anyway:
   local database, for projects that have a lot of history.
   * SPKI-inspired naming and trust delegation.  This is an area of active work for
   monotone developers.
-  * Functionality similar to [Quilt](http://savannah.nongnu.org/projects/quilt)/[http://www.procode.org/stgit/ StGit]/[http://www.selenic.com/mercurial/wiki/index.cgi/MqExtension Mq].  See [http://article.gmane.org/gmane.comp.version-control.monotone.devel/6577 also] for why this is tricky... but maybe if someone implemented it, we would discover it was not so tricky after all.
+  * Functionality similar to [Quilt](http://savannah.nongnu.org/projects/quilt)/[StGit](http://www.procode.org/stgit/)/[Mq](http://www.selenic.com/mercurial/wiki/index.cgi/MqExtension).  See [also](http://article.gmane.org/gmane.comp.version-control.monotone.devel/6577) for why this is tricky... but maybe if someone implemented it, we would discover it was not so tricky after all.
 
 ### Oddballs
 A few funky things, that are not *strictly* related to monotone at all:

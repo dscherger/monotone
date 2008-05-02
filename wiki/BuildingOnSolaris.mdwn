@@ -13,7 +13,7 @@ You'll also need all [available patches](http://developers.sun.com/prodtech/cc/d
 ## Boost
 If you use Boost 1.34 and Studio 11 with latest patches or Studio 12, no patches are necessary anymore!
 
-For older versions of Boost, you need [some patches](http://blogs.sun.com/roller/page/sga) to the boost source itself, as its knowledge of sun studio's features is rather limited. You'll find the patches, as well as build instructions on the right pane on the site. [http://blogs.sun.com/roller/resources/sga/boost_1_32_0.patch Base patch] [http://blogs.sun.com/sga/resource/operations_posix_windows.cpp Additional patch to avoid segfaults in operations on large trees]
+For older versions of Boost, you need [some patches](http://blogs.sun.com/roller/page/sga) to the boost source itself, as its knowledge of sun studio's features is rather limited. You'll find the patches, as well as build instructions on the right pane on the site. [Base patch](http://blogs.sun.com/roller/resources/sga/boost_1_32_0.patch) [Additional patch to avoid segfaults in operations on large trees](http://blogs.sun.com/sga/resource/operations_posix_windows.cpp)
 
 ## Compiling
 You'll need `CXXFLAGS=-library=stlport4 -features=tmplife -features=tmplrefstatic`. Adding `-Qoption ccfe -complextmplexp` might help in case of problems, but the documentation warns that it might produce wrong name mangling (I use it for the packages without any issues, though --PatrickGeorgi).
