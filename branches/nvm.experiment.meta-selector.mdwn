@@ -1,0 +1,8 @@
+[[!tag branch MtnSummit2008]]
+
+`nvm.experiment.meta-selector`(Richard)
+
+Implements a framework for [[MagicSelectors]] as well as a few simple ones.
+
+Tests are in place, documentation is still missing.
+
