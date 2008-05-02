@@ -4,7 +4,7 @@
 #language en
 ## Emile Snyder
 
-Email: [[MailTo(emile@alumni.reed.edu)]] [[BR]]
+Email: [[MailTo(emile@alumni.reed.edu)]] <br>
 IRC nick: esnyder
 
 ...

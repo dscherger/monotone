@@ -1,8 +1,8 @@
-[[!tag migration-auto]]
+﻿[[!tag migration-auto]]
 
 # File System Issues in Monotone
 
-About: Encoding, platform independency and case of filenames (codepages and unicode)[[BR]]
+About: Encoding, platform independency and case of filenames (codepages and unicode)<br>
 Related: CaseInsensitiveFilesystems
 
 Last updated with monotone version 0.32
@@ -13,7 +13,7 @@ directoryname and filename can be used synonymous. I hope I always used the word
 
 ## The facts
 
-  1. Monotones copy libidn's stringprep does not work on mingw (win32). Calling "mtn löl" causes following output: [[BR]][[BR]] ?: error: failed to convert string from ASCII to UTF-8: 'l?l'[[BR]][[BR]]
+  1. Monotones copy libidn's stringprep does not work on mingw (win32). Calling "mtn löl" causes following output: [[BR]][[BR]] ?: error: failed to convert string from ASCII to UTF-8: 'l?l'[[BR]]<br>
     a. There is a quick fix for that: call "chcp" get your current codepage and set it for example: "set CHARSET=CP850".
     a. I traced down that stringprep_local_charset_slow in toutf8.c is disabled on mingw.
     a. There is a new version of libidn which states to work on mingw (not tested).
@@ -132,7 +132,7 @@ Ok, I'll try to start listing what a sane solution should do (don't tell me I'm 
 
 Locale in this context means the codepage or encoding defined by the current locale.
 
-Read == A filename is read from local file system layer into monotone. (readdir())[[BR]]
+Read == A filename is read from local file system layer into monotone. (readdir())<br>
 Write == A filename is written to local file system layer from monotone. (open(), chmod(), chown(), stat(), mkdir())
 
  1. Do conversions on read (from locale to UTF-8) and write (from UTF-8 to locale) of filenames on POSIX, except Darwin.
@@ -191,8 +191,8 @@ http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.a
 There are two commonly used normalizations of UTF-8:
 
   1. NFC (mostly precomposed) used by the whole world. Except apple.
-  2. NFD (decomposed) used by apple. [[BR]]
--> http://developer.apple.com/qa/qa2001/qa1235.html [[BR]]
+  2. NFD (decomposed) used by apple. <br>
+-> http://developer.apple.com/qa/qa2001/qa1235.html <br>
 -> http://developer.apple.com/qa/qa2001/qa1173.html
 
   Apple states: You can find a lot more information about Unicode on the Unicode consortium web site. Specifically of interest is the Unicode Standard Annex #15 Unicode Normalization Forms. As used in this Q&A, the terms decomposed and precomposed correspond to Unicode Normal Forms D (NFD) and C (NFC), respectively.
