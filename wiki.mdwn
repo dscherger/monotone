@@ -7,23 +7,23 @@ page) will be determined later.
 
 ## Pages tagged as migration-done
 
-[[map pages="wiki/* and link(migration-done)"]]
+[[!map pages="wiki/* and link(migration-done)"]]
 
 ## Pages tagged as migration-wip
 
-[[map pages="wiki/* and link(migration-wip)"]]
+[[!map pages="wiki/* and link(migration-wip)"]]
 
 ## Unmigrated moin files
 
-[[map pages="wiki/*.moin"]]
+[[!map pages="wiki/*.moin"]]
 
 ## Other pages
 
-[[map pages="wiki/* and !link(migration-done) and !link(migration-wip) and !wiki/*.moin"]]
+[[!map pages="wiki/* and !link(migration-done) and !link(migration-wip) and !wiki/*.moin"]]
 
 ## Broken links
 
 The following may indicate pages still needing to be migrated, 
 or links needing adjustment after some renaming or other changes.
 
-[[brokenlinks page="* and !recentchanges"]]
+[[!brokenlinks page="* and !recentchanges"]]
