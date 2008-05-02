@@ -1,0 +1,168 @@
+body {
+    font-size: 1em;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+a {
+    color: #4627B4;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+    padding-left: 3em;
+}
+
+code { 
+    font-weight: bold
+}
+
+pre {
+    background: #F0ECE6;
+    border: 1pt solid #C0C0C0;
+    font-family: courier,monospace;
+    padding: 0.5em;
+    margin-left: 3em;
+    margin-right: 3em;
+    white-space: -moz-pre-wrap;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  border-top: 2px solid #474747;
+  color: black;
+  line-height: 1.2em;
+  margin: 1.5em 0pt 0pt;
+  padding: 0pt 0pt 0.3em;
+}
+
+.clearfloat {
+    clear: both;
+}
+
+#header, #body {
+    margin-left: auto;
+    margin-right: auto;
+    background: white;
+    border-left: 0.0625em solid #474747;
+    border-right: 0.0625em solid #474747;
+}
+
+#header {
+    margin-bottom: 0.5em;
+    border-bottom: 0.0625em solid #474747;
+    text-align: justify;
+    width: 46em;
+    padding: 1em;
+}
+
+#header p {
+    font-size: 0.9em;
+    line-height: 1.45em;
+    margin-top: 0;
+    margin-right: 2em;
+}
+
+#header p img {
+    float: left;
+    margin-right: 1em;
+}
+
+#body {
+    border: 0.0625em solid #474747;
+    width: 44em;
+    padding: 2em;
+}
+
+.other {
+    float: right;
+    width: 250px;
+    margin-top: 1em;
+    text-align: center;
+}
+
+.other + .main {
+    margin-right: 250px;
+}
+
+.main:after {
+    clear: both;
+}
+
+.entry {
+    border-top: 0.0625em dotted #CCCCCC;
+    margin-top: 2em;
+    padding-top: 2em;
+}
+
+.entry:first-child {
+    border-top: 0;
+    margin-top: -1em;
+}
+
+.important {
+    padding-left: 2.5em;
+    background: url(important.png) no-repeat 0 1.5em;
+}
+
+.newversion {
+    padding-left: 2.5em;
+    background: url(newversion.png) no-repeat 0 1.5em;
+}
+
+.boxes {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 0.0625em dotted #CCCCCC;
+    border-bottom: 0.0625em dotted #CCCCCC;
+    margin-bottom: 1em;
+}
+
+.box {
+    float: left;
+    margin-top: -1em;
+    padding-right: 0.5em;
+    margin-right: 0.5em;
+    border-right: 0.0625em dotted #CCCCCC;
+    width: 13.5em;
+}
+
+.box + .box + .box {
+    margin-right: 0;
+    border-right: 0;
+    padding-right: 0;
+}
+
+.box h1 {
+    font-size: 1em;
+    padding-top: 0.7em;
+    padding-left: 2.5em;
+    height: 2em;
+}
+
+.box ul {
+    padding-left: 3em;
+    margin-bottom: 1em;
+}
+
+.getit h1 {
+    background: url(getit.png) no-repeat;
+}
+
+.useit h1 {
+    background: url(useit.png) no-repeat;
+}
+
+.improveit h1 {
+    background: url(improveit.png) no-repeat;
+}
+
+#footer {
+    margin-top: 1em;
+    font-size: 0.7em;
+    text-align: center;
+}
