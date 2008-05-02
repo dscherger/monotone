@@ -32,6 +32,18 @@
 
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
+    * when migrating page markup, try to minimise the number of
+      additional unrelated formatting changes (like reflowing
+      paragraphs) in the same commit.
+      That can be done as a separate step.
+
+      When flowing paragraphs, try to follow the "new sentence, new
+      line" convention.
+      Ikiwiki uses a blank line to break paragraphs.
+      This tends to mean that when someone else later adjusts a
+      few words in a paragraph, we don't get many
+      lines of sourounding diffs that are just reflowing.
+
 4. Generate, test, rinse, repeat.  `commit` now and again if you like,
    because your page is still tagged as unfinished.
 
