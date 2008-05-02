@@ -52,3 +52,9 @@
 
 6. `GOTO 1`
 
+##  running ikiwiki
+
+to generate pages, use something like:
+
+    ikiwiki --plugin rawhtml --plugin goodstuff --plugin graphviz --exclude index.mdwn . /tmp/ikiwiki/
+
