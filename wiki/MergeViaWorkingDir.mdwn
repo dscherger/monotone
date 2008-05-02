@@ -1,0 +1,66 @@
+[[tag migration-auto]]
+
+*Note: this page is a little out of date, and describes work in progress, not yet visible on mainline.  In the mean time, consider using the ZipperMerge pattern to help with difficult merges.*
+
+----
+
+Notes on updating commands to work with multi-parent workspaces:  MultiParentWorkspaceFallout
+
+----
+Everything below needs revision.
+
+This should be reasonably simple to implement with the new roster merger.
+
+Here's the idea -- we run roster_merge, and get back out a roster_merge_result.  This is an insane roster, and a bunch of little notes on the conflicts that make it insane. (NB: "insane" is a technical term here; what it means is "if we called the `check_sane` function it would fail", or in other words, it is structurally invalid.  The roster in a roster_merge_result has particular, well-specified invalid bits to it, each one corresponding to a particular conflict that needs resolution.)
+
+Now, go through, and for each conflict fix up the roster in some special way.  So, e.g., if there is a rename conflict, where two nodes want to be in the same place, they will both be detached in the roster.  Re-attach them somewhere sensible under .mt-conflicts/.  If there's a content conflict, attach new files with both versions plus the common ancestor somewhere under .mt-conflicts/, and also write out the file with conflict markers.  And so on.  In this way we end up with a sane roster, and a bunch of stuff under .mt-conflicts/.  Also write out a textual description of the conflicts somewhere, for users to look at.  Maybe make it basic_io, so tools can read it provide fancy UIs to resolving conflicts.
+
+Write this roster out to the working copy.  Make it possible to have multiple MT/work files (or make MT/work contain a revision instead of a cset, perhaps?), and have things like add/rename/drop/attr_set apply to all work csets, not just the single work cset.
+
+So in this world, the way you resolve the above rename conflict is simple -- say you decide you want .mt-conflicts/foo/1 to get the name "foo", and to drop its competitor .mt-conflicts/foo/2.  Just say `monotone rename .mt-conflicts/foo/1 foo; monotone drop .mt-conflicts/foo/2`.  This magically gets resolved into the desired changesets.
+
+Have some convenience commands, like `monotone resolve *path/to/file/with/textual/conflict*` should conveniently spawn their interactive merger, and if it works, mark that particular conflict as resolved.  `monotone resolve` with no arguments cycles through all conflicts, as now.  `monotone resolved` says "hey, I already resolved this problem, record that".  (Maybe printing a warning if it sees conflict markers still in the file.)  This sort of thing.
+
+We need some checking to make sure that people don't check in versions that still have .mt-conflicts in them.  Basically, you have to resolve conflicts before you commit.  But we should prohibit the existence of .mt-conflicts in general, so as to ensure it's always available to use for writing out problems.  Actually, this makes sense anyway -- the existence of conflicts is independent of whether we have multiple parents -- all of this applies to `update`, except it will only have a single parent.
+
+Also, I don't think it makes sense to support restricted commits of merges?
+
+(Later on, we might even want to allow committing with conflicts still present, so people can check in "merges in progress" and other people can help collaborate in resolving conflicts.  But then we need a way to talk about conflicts involving files in .mt-conflicts.)
+
+Todo:
+  * work out details of how .mt-conflicts should look
+
+A use case: http://article.gmane.org/gmane.comp.version-control.monotone.devel/5743 -- in particular, suggests may want to have some sort of merge preview.
+
+# Plan
+
+  * Turn MT/work into a revision, instead of a cset.  We need to store several csets, and keep track of which parent revid each is associated with... which is what a revision does, so we should just use it.  We have to put some sort of trash in the new_manifest field, but oh well, we already do that for add_file's in current MT/work csets, it works fine.  MT/revision can go (in which case a command to get the same info needs to be added), or can stay but become purely for user's convenience -- monotone treats it as write-only.  Teach add/drop/etc. to do a for loop over all csets in the rev, not just the sole cset.  Make commit refuse to function if this rev has more than one parent, for now.
+  * Get a function that can take two rosters and a silly revision like that stored in MT/work, and generate a temporary roster for the result.  This is almost what make_roster_for_merge in roster.cc does, but that function will have trouble with 1) needs to give temp ids to new nodes (maybe one of the existing overloads for that function already allows this); 2) it needs to not worry if the file_id's in the resulting rosters don't match up, because its job is to just create the roster skeleton, we scan the working copy to get the content hashes; 3) it needs to just generate a roster, not the marking too.  None of these should be too nasty; mostly just involves refactoring make_roster_for_merge.
+  * Update all the working copy roster generation functions to use this function, instead of just make_cset directly.
+  * Outlaw committing the dir we use for sticking conflicts files in.
+  * Write a function that calls roster_merge, and generates some list of conflicts, and also resolves them as described above.  It does not have to be perfect; if something, anything, exists, it can be fixed as we go.
+  * Write a commands.cc command that lets you actually use this function.  (In the long run we will probably reorganize the UI to merge commands to make it natural to decide what sort of merging you want to do; for now, just do some new command so people can try things out.)
+  * Make all of this work.
+  * Write lots of tests.  (Actually, do this during most of the above steps too.)
+  * Write convenience commands that invoke the user's merge tools -- some ideas: `resolved` is probably most important, then `resolve <file>`, `resolve` (no args -- cycle through all conflicts, like we do now), `resolve --next` (resolve the first remaining conflict and then exit -- or maybe this should be the behavior of the no-args version, and we could have `resolve --all` instead)
+  * Make the UI to understand what's going on in a merge clear -- "status" should maybe list remaining conflicts, for instance.  (Perhaps make "status" a more user-friendly command while we're at it, instead of just dumping the current revision.)  Also "list conflicts" and "list resolved" or similar?
+  * World domination.
+
+# A UI proposal for 'merge'
+
+Synopsis: `mtn merge -r OTHER [--to TARGET [--in DIRECTORY]]`
+
+If there are any local changes, and DIRECTORY is not given, then errors out with a helpful error message (suggesting `revert`, `commit`, or specifying a DIRECTORY).  Then, if DIRECTORY is given, performs a checkout of TARGET to that directory and switches there; otherwise, if TARGET is given but DIRECTORY is not, then performs an update of the current workspace to TARGET.  After all this, merge OTHER into the current workspace.
+
+If OTHER is a descendent of the current workspace, then simply update to it, but keep the current branch.
+
+Branch handling for TARGET/DIRECTORY is done exactly as it is done for `checkout` and `update`.
+At the end of the merge, we should probably print out the current branch, as well.
+
+We should make sure that 'commit' is happy to commit a revision that already exists, with a new branch/changelog.
+
+`propagate FROM TO` becomes `merge -r h:FROM --to h:TO` -- unless you're already in the branch workspace you want to propagate into, in which case it's just `merge -r h:FROM`.
+
+Another switch: `--preview`, which simply describes what conflicts would occur should you actually perform the given merge.
+
+Another switch, demanded by graydon and friends :-): `--direct-to-db` (FIXME: need a good name for this), which is incompatible with '--in', and commits directly (maybe with popping up textual conflict resolvers as we do now).

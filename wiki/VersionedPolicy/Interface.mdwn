@@ -1,0 +1,18 @@
+[[tag migration-auto]]
+
+This is what the results of the policy mechanism should be, and how it should interact with the rest of the world.
+
+**Initalization**
+ * Required out-of-band transfers should be limited to an identifier (hash of a policy revision), or a URI to fetch an identifier.
+ * It should be possible get a (name, identifier) list for what's available on a server. It should be possible to update this list without restarting the server. (Lua hook or db var, probably?) Of course, this list may not be exhaustive and you may not wish to trust it.
+
+**General**
+ * Monotone needs to work normally with a database holding any number of projects.
+ * It should be possible to rename branches.
+ * It should be possible to rename keys.
+ * The policy mechanism should be invisible during normal use (including the receiving end of policy updates).
+ * Branches should be able to have descriptions, as well as names.
+
+**Network**
+ * It should probably be possible to filter incoming/outgoing data according to whether it's signed by a key known to a specified policy revision (If I won't trust it anyway, why waste bandwidth/disk space on it?). It must also be possible to turn this off. (If my project is on a shared server, I shouldn't have to be bothered with what people in other projects put on shared revisions. Unless I want to be.)
+  * Definitely.  It's more than an optimization; you don't want a bunch of warez d00dz using an alternate policy branch on your server to swap cracked games.  (This has actually happened to me - ok, it was 1996, and it was an anonymous FTP server that got exploited, but hey, that's what we had in 1996.)  Or, consider an organization like the FSF that requires copyright assignments; they're going to want to be sure their "official" server doesn't even look at any submissions whose bits are the wrong color.  -- Zack

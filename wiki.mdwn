@@ -13,6 +13,10 @@ page) will be determined later.
 
 [[!map pages="wiki/* and link(migration-wip)"]]
 
+## Pages tagged as migration-auto
+
+[[map pages="wiki/* and link(migration-auto)"]]
+
 ## Unmigrated moin files
 
 [[!map pages="wiki/*.moin"]]

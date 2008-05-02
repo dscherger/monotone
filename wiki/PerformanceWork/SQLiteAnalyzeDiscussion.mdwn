@@ -1,0 +1,141 @@
+[[tag migration-auto]]
+
+Ever since we imported SQLite 3.2.3 (which included a much improved query optimizer, and added the [http://sqlite.org/lang_analyze.html analyze] command), we've needed to run an analyze on monotone repositories to get decent performance, otherwise SQLite doesn't make good use of our indices and we become extremely I/O bound.  This can affect many areas of monotone--for instance, a small commit into a very large repository can take an extremely long time unless the repository has been analyzed recently, because we spend many minutes seek()ing in the repository. 
+
+----
+
+Note: the speedup of the repository database after an ANALYZE is mostly due to simply having the database file in the OS cache. To verify this effect, simply run an ANALYZE on the repository database followed by dropping the the sqlite_stat1 table to erase all the statistics that ANALYZE generated. Subsequent monotone commands will run at the speed due to the hot cache. ANALYZE is generally only useful for multi-table joins. Using CROSS JOINs in SELECTs is a better alternative to ANALYZE when an optimal table join order is known in advance.
+
+----
+
+Note on the above note:  There are certainly cases where you can't put the performance improvement down to a hot cache after the analyze is run--for instance, committing a few small changes in a large workspace becomes much slower when using an unanalyzed database.  This was verified using a cold cache and pre and post analyze databases--I don't have the numbers handy, but the commit with the analyzed database did arund 1/10th the number of disk seeks as the commit with the unanalyzed database.
+
+----
+
+Question on Note on Note: Can you provide a specific monotone command (or ideally, a specific SQL statement) that is aided by ANALYZE when run on the latest monotone database complete with user/sys/real timings?
+  - I think 'heads' will do it, the query to select branch certs with a particular value. - MattJohnston
+
+----
+
+I tried 'mtn heads' on a freshly pulled repo and source tree with and without ANALYZE (i.e., with and without the sqlite_stat1 table). Both database files were hot. The timings were basically the same. Using a database with ANALYZE  previously run on it resulted in a timing of: real 0m3.375s. Using a database without ANALYZE previously run on it (no sqlite_stat1 table) resulted in a timing of: real 0m3.234s. ANALYZE is clearly not helpful in this case; it just served to put the database into the OS cache. Do you recall any other specific examples of monotone slowness without ANALYZE? (Please run all tests on hot databases to compare apples with apples.)
+
+Just for kicks, I powered off my computer and restarted it to guarantee that all database files would be cold. I then retested both the ANALYZEs and non-ANALYZEd databases. The timings are as follows:
+
+mt.mtn.analyze:
+
+  /c/monotone/monotone-sources$ time ../mtn.exe --db=../mt.mtn.analyze heads
+
+  mtn: branch 'net.venge.monotone' is currently merged:
+  7160327541e5ef25b37068e8cebfcff674bcb887 kinetik@orcon.net.nz 2006-05-01T12:00:21
+  
+  real    0m9.234s
+  user    0m0.015s
+  sys     0m0.015s
+
+
+mt.mtn.no-analyze:
+
+  /c/monotone/monotone-sources$ time ../mtn.exe --db=../mt.mtn.no-analyze heads
+  mtn: branch 'net.venge.monotone' is currently merged:
+  7160327541e5ef25b37068e8cebfcff674bcb887 kinetik@orcon.net.nz 2006-05-01T12:00:21  
+
+  real    0m4.672s
+  user    0m0.015s
+  sys     0m0.015s
+
+Re-run the previous commands, now that both database files are in OS cache:
+
+mt.mtn.analyze:
+
+  /c/monotone/monotone-sources$ time ../mtn.exe --db=../mt.mtn.analyze heads
+
+  mtn: branch 'net.venge.monotone' is currently merged:
+  7160327541e5ef25b37068e8cebfcff674bcb887 kinetik@orcon.net.nz 2006-05-01T12:00:21
+  
+  real    0m3.312s
+  user    0m0.015s
+  sys     0m0.015s
+
+mt.mtn.no-analyze:
+
+  /c/monotone/monotone-sources$ time ../mtn.exe --db=../mt.mtn.no-analyze heads
+  mtn: branch 'net.venge.monotone' is currently merged:
+  7160327541e5ef25b37068e8cebfcff674bcb887 kinetik@orcon.net.nz 2006-05-01T12:00:21
+
+  real    0m3.235s
+  user    0m0.015s
+  sys     0m0.015s
+
+Verify whether ANALYZE had beed run on these files:
+
+mt.mtn.analyze:
+
+  /c/monotone$ ./sqlite3.exe mt.mtn.analyze "select * from sqlite_stat1"
+
+  db_vars|sqlite_autoindex_db_vars_1|4 2 1
+  revision_certs|revision_certs__name_value|15523 2218 2
+  revision_certs|revision_certs__id|15523 4
+  revision_certs|sqlite_autoindex_revision_certs_2|15523 2218 2 2 1 1
+  revision_certs|sqlite_autoindex_revision_certs_1|15523 1
+  files|sqlite_autoindex_files_1|1433 1
+  public_keys|sqlite_autoindex_public_keys_2|24 1
+  public_keys|sqlite_autoindex_public_keys_1|24 1
+  file_deltas|sqlite_autoindex_file_deltas_1|14315 2 1
+  revisions|sqlite_autoindex_revisions_1|4122 1
+  branch_epochs|sqlite_autoindex_branch_epochs_2|1 1
+  branch_epochs|sqlite_autoindex_branch_epochs_1|1 1
+  revision_roster|sqlite_autoindex_revision_roster_1|4122 1
+  roster_deltas|sqlite_autoindex_roster_deltas_1|5008 2 1
+  revision_ancestry|revision_ancestry__child|5012 2
+  revision_ancestry|sqlite_autoindex_revision_ancestry_1|5012 2 1
+  next_roster_node_number|sqlite_autoindex_next_roster_node_number_1|1 1
+  rosters|sqlite_autoindex_rosters_1|2 1
+
+
+mt.mtn.no-analyze:
+
+  /c/monotone$ ./sqlite3.exe mt.mtn.no-analyze "select * from sqlite_stat1"
+
+  SQL error: no such table: sqlite_stat1
+
+So there you have it - ANALYZE on a hot database makes no difference, and on a cold database is actually slower (strangely, in this specific case) than a database that was not ANALYZED (no sqlite_stat1 table).
+
+----
+
+It looks like the behaviour has changed for the better in recent versions (0.26).  I think this problem was originally observed around 0.21/0.22 (whenever analyze was first introduced).  It also may be that I misremember the originally noted performance problem.  I attempted to reproduce slow commits with an unanalyzed repository with a hot and cold cache, and found that there is no significant difference in performance between analyzed and unanalyzed databases for this case.
+
+The experiment was to commit one line changes to three files in the head of net.venge.monotone.  The database had been freshly dumped, loaded and analyzed prior to each test run.  In both cases, the database was analyzed first, but in the unanalyzed case the contents of the sqlite_stat1 table was deleted after the analyze.  
+
+Analyzed, hot cache: 7.18 to 7.71 seconds, 95% C.I. 0.27
+Unanalyzed, hot cache: 7.34 to 7.73 seconds, 95% C.I. 0.19
+
+Analyzed, cold cache: 11.13 to 15.12 seconds, 95% C.I. 1.99
+Unanalyzed, cold cache: 12.74 to 14.81 seconds, 95% C.I. 1.03
+
+----
+
+I'm glad you finally agree that ANALYZE is of no use whatsoever to Monotone in its present state. The funny thing is that I'm the same dude who pointed NJS towards using ANALYZE in the SQLite ticket (http://www.sqlite.org/cvstrac/tktview?tn=1414) in the first place, and asked that SQLite continue to perform manual table join ordering somehow for this exact type of case. The reason why ANALYZE helped in that specific case is due to the fact that SQLite guessed wrongly as to how to perform the ordering of the join in the query:
+
+  SELECT A.parent, A.child
+    FROM revision_ancestry AS A, revision_certs AS C, revision_certs AS P
+   WHERE (C.id IN a_view OR P.id IN a_view) AND
+         C.id = A.child AND P.id = A.parent AND
+         C.name = 'branch' AND P.name = 'branch' AND
+         C.value != P.value
+
+
+However, you do not necessarily need ANALYZE to get good query results with multi-table joins. Simply replace each comma in the FROM clause with "CROSS JOIN" and fiddle with the order of the tables in the from clause until you find an optimal order for your SELECT (i.e., FROM revision_ancestry AS A CROSS JOIN revision_certs AS C CROSS JOIN revision_certs AS P). This is exactly how the logic in SQLite used to work before ANALYZE was introduced. The order of the tables in the from clause determined the order in which the tables were joined.
+
+Because monotone 0.26 apparently does not make use of multi-table joins in queries, ANALYZE is not helpful except as a database file pre-caching technique (although the monotone database pre-caching patch proposed on the mailing list is more effective/efficient).
+
+As for the theory on why "time ../mtn.exe --db=../mt.mtn.analyze heads" was so much slower in a cold start than "time ../mtn.exe --db=../mt.mtn.no-analyze heads", I reversed the order in which I ran the two commands and I got 6s for heads on mt.mtn.no-analyze and 9s again with mt.mtn.analyze, each after a cold machine boot.  The two database files are identical except for the existance of the sqlite_stat1 table in mt.mtn.analyze. 
+
+And for the record, it takes virtually zero time (1/10th of a second or less) to load the mtn binary into memory from a cold OS file cache. It takes less than 2 seconds for my 5 year old pentium to pre-cache an 80 meg file from a cold cache, and just 1/10th of a second from a hot cache.
+
+----
+
+At the moment, the only time we run an analyze automatically is at the end of a schema migration.  Ideally, we'd run an analyze after the repository has had some number of changes made to it (i.e. after a pull, or some number of commits).  Unfortunately, this doesn't seem to be practical--the I/O overhead caused by an analyze (which cases a full database scan in SQLite) on repositories that would benefit the most (larger ones) would likely end up slowing down monotone in more places than it would speed it up.
+
+As a short term thing, we could try and guess when a repository needs to be analyzed and print a message advising the user to do so manually.
+
+There is some [http://www.sqlite.org/cvstrac/tktview?tn=1414 specific discussion] in the SQLite bug tracker about the interaction between analyze and monotone and also a [http://www.sqlite.org/cvstrac/wiki?p=QueryPlans discussion of our general problem] in the SQLite wiki.  We should probably consider experimenting with some of the suggested changes to see if we can get away from a dependence on analyze for decent performance.

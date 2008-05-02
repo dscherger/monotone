@@ -1,0 +1,16 @@
+[[tag migration-auto]]
+
+Nice things about autotest:
+  * every test gets run in its own little scratch directory
+  * we can poke around in these scratch directories and re-run command by hand when debugging
+  * verbose every-command-executed-and-its-output logging
+  * can easily run commands, give stdin, get stdout, get stderr, get exit code, do basic unixy things like mkdir, run commands in subdirs, etc.
+
+Things we want:
+  * tests have names.  none of this weird numbers in output, filenames on disk, need tools to convert between them.
+  * proper process handling.  start a netsync server, keep a handle on the process, kill it when test is done (whether success or failure)
+  * better expectation stuff.  "the thing I expected happened (which is good)" = pass, "the thing I expected happened (which is bad)" = known bug, "something weird happened" = user needs to look.  autotest collapses the last two, which leads to testrot.  be nice if there were better ways to record what desired behavior ir -- "I think this value will be equal to that one, but I'd rather it was equal to this third one"?
+  * saner handling of data files -- maybe each test should have its own directory, and when run it can grab data files out of that directory?  AT_DATA works, but is really suboptimal.
+  * better test filtering -- I want to be able to say "run all tests with expected failures only", for instance.  (Though autotest's current functionality here isn't too bad -- by number or by keyword.)
+  * reasonable speed on windows.  NB: fork() is slow on windows, so shell is terrible here.
+  * no 9 megabyte files in our source packages.

@@ -1,0 +1,13 @@
+[[tag migration-auto]]
+
+#format wiki
+#language en
+## Emile Snyder
+
+Email: [[MailTo(emile@alumni.reed.edu)]] [[BR]]
+IRC nick: esnyder
+
+...
+
+----
+CategoryHomepage

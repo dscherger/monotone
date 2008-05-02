@@ -1,0 +1,11 @@
+[[tag migration-auto]]
+
+#format wiki
+#language en
+## Markus Schiltknecht
+
+email: : [[MailTo(markus@bluegap.ch)]]
+
+personal webpage, which certainly needs some work: [http://www.bluegap.ch]
+
+Besides monotone, I'm also working on replication solutions for PostgreSQL, see [http://www.postgres-r.org] for that.

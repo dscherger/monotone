@@ -1,0 +1,45 @@
+[[tag migration-auto]]
+
+# Logistics for Mtn Summit 2007 (North American edition)
+
+## Dates
+
+The plan is to hold the summit proper over an intense week, Monday-Sunday, with Thursday to recuperate, socialize, and let ideas gel.  (Like we're really going to stop working entirely...).  That also means if you can't come for the whole week, you can still show up for the climactic weekend!  Yeah.
+
+So if possible you want to arrive the Sunday before (or earlier), February 4, and to leave on the Monday after (or later), February 12.  If you have to leave on Sunday evening or whatever, then oh well, c'est la vie, but be aware that you'll kick yourself when everyone except you is heading out for a last round of beers.
+
+## Transportation
+
+The closest airport to Mountain View/Santa Clara is San Jose International (SJC).  The next closest is San Francisco International (SFO).  SFO may have more international flights.  Oakland also has an airport that's sort of close (OAK), but don't do that unless you have to -- it's about 2 hours of public transportation away.
+
+If you want to use Bay Area public transportation at all, then you want to know about the [http://transit.511.org/tripplanner/index.asp "TakeTransit Trip Planner"].
+
+I assume if you're close enough to drive, then you can figure that out yourself.
+
+## Lodging
+
+We have a block of rooms reserved at [http://www.guesthouseintl.com/property.cfm?property_id=39 Guesthouse International Inns and Suites, Santa Clara].  We have a group of 10 rooms held for us from February 4-12 at a special group rate of $71.18/night for 1-2 occupants, $82.13/night for 3 occupants (both numbers already include tax).  Each room has 2 single-person beds, microwave/refrigerator, and free internet access (wifi).  There is also a pool, though I don't know how much use that will get in 
+February.
+
+Address: [http://maps.google.com/maps?f=d&hl=en&saddr=2930+El+Camino+Real,+santa+clara,+95051+ca&daddr=1600+amphitheatre+parkway,+mountain+view,+ca&ie=UTF8&sll=37.388155,-122.034295&sspn=0.119206,0.233459&z=12&ll=37.388163,-122.035789&spn=0.119206,0.233459&t=h&om=1 2930 El Camino Real, Santa Clara, California] (NB: street numbers on El Camino get repeated, often the city name is needed to disambiguate)[[BR]]
+Phone: (408) 241-3010[[BR]]
+Magic words: group name "Monotone"[[BR]]
+Deadline for group rate: January 20, 2007
+
+To reserve a room, call the above number, and say you want to reserve a room in our group block, using whichever of the magic words above are necessary for them to figure out which group block that is.  You will have to give a credit card number and you will be responsible for paying the hotel for the room; we'll work out any reimbursals separately.  (Similarly, I assume pretty much everyone will be rooming with other people to share the cost; you'll have to figure out who wants to actually reserve the room and then pay them back.)  To coordinate roommates, see ["MtnSummit/Rooms"].
+
+You may have more luck calling during the day (California is on PST, so say 15:00-23:00 UTC) -- I called later and while the person at the desk was helpful, they were having some trouble figuring out how this group rate stuff worked on their computer.
+
+If you are planning to stay for some period that does not exactly match our date block (e.g. if you want to arrive earlier, or have to leave early), I have checked with the hotel and they say that is fine, and you can still get the group rate.  (Obviously they don't guarantee availability on dates outside Feb. 4-12, though, if you wait long enough to reserve your room then conceivably you could find they have already filled up.)
+
+Some math worked out for you to save time:
+  * One room for 8 nights with 2 occupants: $71.18 * 8 = $569.40
+  * One room for 8 nights with 2 occupants, per person: $569.40 / 2 = **$284.70**
+
+(More of a note for njs to himself: our contact is Ruby, who is there M-F, 7am-3pm.)
+
+## Weather
+
+Last year, same time: http://www.wunderground.com/history/airport/KNUQ/2006/2/11/WeeklyHistory.html
+
+Basically, you might want a jacket, but it won't be freezing.  It might rain, but probably won't.

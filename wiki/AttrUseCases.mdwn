@@ -1,0 +1,25 @@
+[[tag migration-auto]]
+
+Attributes are really powerful, but it's not clear what parts of monotone should respond to them, what should be hookable, etc.  To figure this out, here are some use cases for attributes:
+
+  * turn on content encoding/decoding
+    * built-in merger cares about this
+    * reading/writing working copy files cares about this
+  * turn on line ending munging
+    * built-in merger cares about this
+    * reading/writing working copy files cares about this
+  * custom mergers -- "invoke this program when I merge these openoffice documents"
+    * built-in merger cares about this (it shouldn't run)
+    * user mergers care about this
+  * turn on CVS-keyword munging
+    * reading/writing working copy files cares about this
+  * nested trees -- a magic attribute that says "hey, this placeholder directory here should have a check out of revision ..., branch ...", somehow plays nicely with updates and commits in that branch.
+    * this needs a more detailed design to understand
+    * "update" and "checkout" need to be hookable, at least, so the subtree can be updated/checked out
+    * reading working copy _attrs_ may need to care about this
+  * ...add more
+
+One thought immediately occurred to me when first starting to work with attributes:
+Why are attributes not more like certificates? They seem to express the same type of 'statements about something' only about files instead of revisions. Starting with the .26 series of monotone, the attributes are attached to the first class objects of file and directory types, so to me it would make sense to treat attributes as certificates on those objects, with all the same rules that apply for certificates too with respect to signing, selectors, automating etc.
+
+I've been playing for a while with implementing bugtracking directly **inside** a working directory. Starting with the new attributes in .26 this has gotten a whole lot easier. Attributes can comfortably be used to say, when a bugreport is stored as a file in the working dir somewhere, attach extra metainfo to that bugreport through attributes. Having the bugreports directly revisioned and distributed like the code you're tracking bugs for has obvious advantages.

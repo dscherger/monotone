@@ -1,0 +1,8 @@
+[[tag migration-auto]]
+
+Idea: on large trees, people uniformly will want to turn on inodeprints.  It's a mildly reckless thing to do, but if everyone's going to make that trade-off, then making them all do it by hand it just obnoxious on our part.
+
+So, we should consider:
+  * should inodeprints be automatically enabled at some point (e.g., some size tree)?  (this is by default, obviously you could force it always on or always off if you wanted to)
+  * is there any way we can retain (more) safety while doing this?
+    * idea: do more thorough checks on some random subset of files, each time we scan the workspace.  by tuning how we do this, we should be able to get near the speed of pure inodeprints, while avoiding the catastrophic case where a missed change is never noticed (leading to bugs where the code works in one person checkout but not another's, etc.).

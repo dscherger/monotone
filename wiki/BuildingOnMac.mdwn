@@ -1,0 +1,83 @@
+[[tag migration-auto]]
+
+Building Monotone on Mac OS/X
+
+# Installing the toolchain
+
+Monotone's makefile has to be generated using special GNU tools.  Tiger (OS/X 10.4) does not have the required versions of these tools in the standard installation, though XCode 2.4.1 comes with an adequate version of the C++ compiler itself (older XCode versions have been known to be buggy).
+
+One way to get and build the latest versions of GNU tools is to get them from the [http://www.macports.org/ MacPorts (previously known as Darwin Ports)] project.  Install the porting application from http://svn.macports.org/repository/macports/downloads/ and it will put a program called "port" into your */opt/local/bin* directory.  When you run this program as an administrator, it installs and builds the latest versions of GNU tools into that same directory.
+
+(if */opt/local/bin* is not in your path, you can add it in a terminal shell by typing *PATH=/opt/local/bin:$PATH*)
+
+Once you have installed the port tool, run the following commands (enter your password when prompted):
+    % sudo port install gettext
+    
+    % sudo port install autoconf
+    
+    % sudo port install automake
+
+# Getting the source
+Sometimes there is no pre-built binary of monotone on http://venge.net/monotone/downloads/ that is compatible with the version the development server is running.  This means that if you want to synchronize and participate with the latest sources you will have to first build your own executable from a snapshot (*.tar.gz* file).
+
+It's not actually that hard, and the instructions in the *INSTALL* file which come in the archive will walk you through it.  When you install boost it may not be put into your library path, but you can tell the configure script that generates the makefiles where it is:
+    % ./configure CPPFLAGS="-I(BOOSTPATH)/boost_1_32_0" LDFLAGS="-L(BOOSTPATH)/boost_1_32_0/libs"
+If the executable you generate seems unreasonably large (over ~10 megabytes in size) then run *strip monotone* (or *strip -S* to keep basic symbols for debugging).
+
+Once you have a working monotone, then the following commands will let you grab the current development branch off the server:
+    % monotone --db=mt.db db init
+    
+    % monotone --db=mt.db read  <<EOF
+             [pubkey monotone@off.net]
+             MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCkVU7BYI5bRRJmkJc8gomO9WdTTGG10Lmh
+             PdAEqD6sSdsMkTC9okfsQQ8obE+GODrFa70fX5PJNevNoE+Ryxzu+xtJjmuR2tYTeRNwNa0F
+             dIo/QLteQ4Vwh5162It1kPhLKb1Ki62ZG8aw6ATS4GQVJPci2g1lpn1RG0Z+fFdFJQIBEQ==
+             [end]
+            EOF
+    
+    % monotone --db=mt.db --key="" pull off.net net.venge.monotone
+    
+    % monotone --db=mt.db --branch=net.venge.monotone checkout monotone-sources
+
+This will take a while to download.  Once it comes you will have to build it (in the same way described above).  But when you pull down this source it will not have a configure script, so you will need to run *autoreconf --install* to generate it.
+
+
+# Using Xcode
+
+The GNU tools do not have an option to generate a .xcodeproj alongside your makefile (the way [http://doc.trolltech.com/4.0/qmake-manual.html Qmake] can).  If you're just building, stick with the command line.  But if you're going to be doing editing, building, and debugging, you'll probably want to use Xcode, so:
+
+ * create a fresh project
+ * add a new "External Target" and make sure it points to /usr/bin/make
+ * add a new "Executable" and make sure it points to wherever monotone is built
+ * manually populate the project with files
+
+Using Xcode as a debugger can be tricky.  When you set a breakpoint in the UI it might not be able to find the address.  Try running gdb on the command line as a sanity check:
+    % gdb monotone
+    
+    (gdb) br cpp_main
+    
+    (gdb) run
+If you don't break at the entry point, then something is wrong with your debug build.  However, if this works, then go to the debugging console in Xcode and try setting a breakpoint at cpp_main.  After that the IDE may start setting breakpoints correctly.  If you want to check on the status of your breakpoints, then in the debugging console type:
+    (gdb) info br
+It shouldn't say "<PENDING>" for the addresses.
+
+
+
+# Things to look out for
+
+* As of 2006-01-22, boost from darwinports is not linked with the correct install_name [http://bugzilla.opendarwin.org/show_bug.cgi?id=5533 (darwinports bug 5533)]. Linking statically should still work, or compile it yourself
+
+* If you are linking to boost statically and ./configure can't see the libs, try running *ranlib *.a* on the Boost library files to update the archive indexes.
+
+* As of xcode 2.3 (gcc build 5341), -ggdb will generate dwarf debugging symbols. The size of a compile dir will be significantly (4x?) smaller with dwarf, so -ggdb is recommended. Note however that Shark doesn't seem to handle dwarf debugging symbols (as of 4.3.3) - you might want to explicitly give *-gstabs*.
+
+# Building a universal binary
+.
+To create a universal binary, first you'll need to create fat boost libraries. Build two separate sets of boost static libraries, one with *-arch ppc* and one with *-arch i386*. Then use *lipo -create* to produce a set of single .a files (use *file libboost_foo.a* to check that it worked). I then put header files in */usr/local/stow/boost-1.33.0-fat/include/boost* and the .a files in */usr/local/stow/boost-1.33.0-fat/lib*.
+
+For configure, I've used:
+    ./configure CFLAGS="-O2 -mdynamic-no-pic -ggdb -gfull -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386" CXXFLAGS="-O2 -mdynamic-no-pic -fno-threadsafe-statics -ggdb -gfull -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386" --enable-static-boost=/usr/local/stow/boost-1.33.0-fat CPPFLAGS="-pipe -I/usr/local/stow/boost-1.33.0-fat/include" LDFLAGS="-L/usr/local/stow/boost-1.33.0-fat/lib -dead_strip" --disable-dependency-tracking
+
+You should then be able to just *make*, though note that distcc doesn't seem to work with multiple *-arch* flags, since it uses the *-E* gcc option. The final output binary will be massive, so *strip -S* is recommended for distribution. An alternative approach to making a universal binary is to just build two separate monotone binaries, then *lipo -create* to stick them together.
+
+The *-fno-threadsafe-statics* works around a Apple gcc bug (4227885) that causes dramatic performance decreases accessing static variables. *-dead_strip* and *-gfull* are used to avoid linking in code that isn't used, reducing the binary size.

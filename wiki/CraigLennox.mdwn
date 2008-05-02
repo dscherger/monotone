@@ -1,0 +1,3 @@
+[[tag migration-auto]]
+
+I've been a happy user of Monotone since 0.15.

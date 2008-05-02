@@ -1,0 +1,14 @@
+[[tag migration-auto]]
+
+#format wiki
+#language en
+## Richard Levitte
+
+Email: [[MailTo(richard.NOSPAM.@levitte.org)]] [[BR]]
+Homepage: http://richard.levitte.org/ [[BR]]
+IRC nick: gizmo1
+
+I'm not on IRC very often, but I can talk a lot on the mailing lists :-)
+
+----
+CategoryHomepage CategoryHomepage CategoryHomepage

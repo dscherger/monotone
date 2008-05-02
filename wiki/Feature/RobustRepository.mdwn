@@ -1,0 +1,31 @@
+[[tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+The repository storage format should be robust and resilient to problems caused by crashes, full filesystems, etc.
+
+# Supported
+
+Monotone's repository is stored in an ACID-compliant [http://www.sqlite.org SQLite] database file. All monotone operations that write to the database occur inside transactions, and so either happen completely or not at all.  This includes not only normal VCS operations, but also administrative actions such as database schema upgrades that may occur from time to time as monotone develops. 
+
+Monotone is almost fanatically pedantic and paranoid about internal consistency checking, and has a strict policy of failing early.  If any problems are detected during an operation, monotone will abort rather than risking committing bad information to the database.  This is a very particular kind of robustness that favours historical integrity over user perceptions where abrupt errors are triggered.  These events are generally fairly rare, and always of interest to the developers, even if it means that a more user-friendly error message needs to be emitted.
+
+Monotone's extensive consistency checking has on several occasions revealed underlying hardware or other problems that have led to disk or memory corruption of data, either in the repository or in the workspace.  Even under these or similar circumstances, if the worst should happen a corrupted repository can always be recreated as long as it has been replicated elsewhere.  Revisions are revalidated on transmimssion over netsync, so we are very careful to ensure it should not be possible for any corruption to spread.
+
+Although the database storage layer is SQL, this is embedded within monotone; knowledge of SQL or the schema is invisible and irrelevant for all regular use.  Even so, it is nice to know that SQL tools can be used when needed for extremely specialised operations. These circumstances usually amount to either debugging monotone, or specialised one-off administrative tasks that usually indicate the need for additional UI commands to be developed.  The database storage layer and schema is also well isolated and abstracted within the monotone codebase: all the core algorithms and UI operations are entirely storage-agnostic, allowing other storage implementations or schema changes as needed.
+
+See also: FeatureCompactRepository
+
+# Example Usage
+
+Interrupt or kill monotone during any operation.
+
+# Further Reference
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Database Database Commands]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat VCSFeatureGoodRepositoryFormat]

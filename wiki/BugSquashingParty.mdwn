@@ -1,0 +1,9 @@
+[[tag migration-auto]]
+
+We're talking about having a Bug Squashing Party this weekend (November 26-27), with the goal of getting rosters merged.
+
+Participation requires some knowledge of C++ or at least shell, but no prior experience with monotone internals -- if you've been curious about getting more involved, this might be a great way to start!
+
+Ideally we'd have a big weekend-long online party, like Debian seems to, but since we're, err, a bit smaller than Debian, we should probably pick some core times... though of course one can and should squash bugs at any time :-).
+
+An important basic goal, and great way to help prepare for better-focussed work on the weekend, would be to spend some review time looking over the bugs currenly in the tracker, and updating them with current status if they don't fully reflect current reality.

@@ -191,9 +191,9 @@ You can immediately see that your release branch `D->R1->R2` has
 inherited the bug, and is therefore also going to need the fix.
 
 Even better, because `F2` and `R2` have a common ancestor `B` (which
-introduced the bug), and `F2` contains ''only'' the fix for the bug,
+introduced the bug), and `F2` contains *only* the fix for the bug,
 approving `F2` to that branch (and merging, as before) does
-''exactly'' the right thing, producing a fixed revision `RF` on the
+*exactly* the right thing, producing a fixed revision `RF` on the
 branch:
 
        A

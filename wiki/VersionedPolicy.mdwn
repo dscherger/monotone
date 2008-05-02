@@ -1,0 +1,15 @@
+[[tag migration-auto]]
+
+The problem is to find a way to share policy for a branch about what revisions will be accepted in a way that balances simplicity and predictability with flexibility and power.
+
+As of right now at the Monotone summit, Graydon, Nathaniel and Paul are all working on this and have three distinct but overlapping sets of ideas on how to address it.
+
+ * ["/Graydon"] for Graydon's current proposal
+ * ["/Comparison"] for comparisons between proposals
+ * ["/WorkList"] for work-in-progress during conference
+ * ["/Interface"] for ideas about what the observable results should be
+
+Largely old stuff:
+
+ * ["/SPKIWontWork"]
+ * ["/Archive"] for archived discussion

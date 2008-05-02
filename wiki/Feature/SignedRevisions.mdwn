@@ -1,0 +1,28 @@
+[[tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Revisions and changes should be cryptographically signed to ensure historical integrity and detect accidental or malicious alteration.
+
+# Supported
+
+This is a primary and fundamental component of monotone. Revisions are identified by the SHA-1 hash of their ancestry+content, and additional metadata about these revisions is attached using signed certs. 
+
+# Example Usage
+
+*<If relevant, walk through a quite example of how to use the feature>*
+
+     $ mtn ...
+     <edit files>
+     $ mtn ...
+
+# Further Reference
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Certificates Certificates]
+ * TrustFoundations and UsingCerts
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureSign VCSFeatureSign]

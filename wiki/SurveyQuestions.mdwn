@@ -1,0 +1,76 @@
+[[tag migration-auto]]
+
+Other surveys:
+  * Our first survey: http://article.gmane.org/gmane.comp.version-control.monotone.devel/2235
+  * Mercurial is running one too: http://article.gmane.org/gmane.comp.version-control.mercurial.devel/6253
+  * Valgrind, of course, is where the idea came from originally, maybe also useful for reference: http://www.valgrind.org/gallery/surveys.html
+
+Questions we should consider asking the next time we do a user survey.  Some of these kind of overlap and stuff; brainstorm and add your own ideas at the end.
+
+  * What kind of data do you manage in monotone?  Source code, your home directory, email, your thesis...?
+
+  * How many committers do your monotone-managed projects have, roughly?
+
+  * How big are the trees you store in monotone?
+
+  * Would you choose to use monotone for projects in which you are the sole committer?
+
+  * Would you advocate use of monotone to your friends for such projects?  If not, why not, and what changes to monotone would cause you to start advocating it?
+
+  * Would you choose to use monotone for small projects, say 2-4 committers?
+
+  * Would you advocate etc.
+
+  * Would you choose to use monotone for large projects with many committers?
+
+  * Would you advocate etc.
+
+  * Do you use monotone at work?  Do you advocate using monotone at work?  If not, why not, and what changes to monotone would allow you to start advocating it?
+
+  * How large are the trees you manage with monotone?  (E.g., if you check out your head, how much disk space does it take?)
+
+  * What new feature(s) would you most like to see added to monotone?  You can list more than one, but try to rank them or something so we have some idea how important each is.
+
+  * What bug(s) would you most like to see fixed in monotone?  You can list more than one, but try to rank them or something so we have some idea how important each is.  If your first answer is "initial pull is too slow", try to think of at least one more beyond that :-).
+
+  * Do you use revision selectors?
+
+  * What operating system(s) do you run monotone on?  Please be as specific as possible.
+
+  * What hardware architecture(s) do you run monotone on?  Please be as specific as possible.
+
+  * How much memory and CPU speed do the machine(s) you normally run monotone on have?
+
+  * Where do you get your monotone binaries?  (E.g., by downloading source from venge.net, from the binary downloads on venge.net, from a distribution (if so, which?), etc.)
+
+  * Do you use inodeprints? Do you know that inodeprints exists?
+
+  * What is (are) your favorite thing(s) about monotone?
+
+  * What other version control systems have you used, or considered using, besides monotone?
+  * If you chose monotone over them, what were the key factors that made monotone better?
+  * If you chose one of them over monotone, which one did you choose, and what were the key factors that made monotone not your first choice?  (feel free to answer these questions multiple times, if in different circumstances or on different projects you've made different decisions for different reasons)
+
+  * How long have you used monotone?
+
+  * What do you think of the use of hashes for revision ids?  Have your views on this changed over time?
+
+  * Do you use the normal monotone executable directly from the command line?  Do you use any interfaces to monotone? (maybe list some?)  Have you written any shell (or other) scripts to make your life easier, and if so, can you describe them?  Or command line aliases?
+
+  * Are there any operations you wish were less cumbersome to perform?
+
+  * Documentation: there are several sources of documentation for monotone (list some, including 'tutorial', 'the chapter on concepts', 'reference manual' as separate parts?).  Which ones did you read?  In what order?  Which ones helped you the most?  Are there any documents that you wish existed, but didn't?  Did you work through the tutorial manually?
+
+  * Do you follow the mailing list?  Do you follow IRC?  Do you follow commit traffic?
+
+  * What tools do you use that you wish monotone had integration with?  (E.g., Eclipse, Trac, Buildbot, ...)
+
+  * Do you use custom certs?
+
+  * Do you use custom attrs?
+
+  * What version of monotone do you use?
+
+  * How much of a problem have the recent migrations caused you?
+
+  * Do you advocate monotone to your friends/colleagues/place of employment?  if not, what would have to change so that you would?  if yes, what do you tell them to convince them that they should try monotone, and how could monotone change to make convincing them easier?  And what pitfalls do you warn them about?
