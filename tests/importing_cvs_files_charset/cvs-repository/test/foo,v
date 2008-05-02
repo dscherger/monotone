@@ -1,0 +1,25 @@
+head	1.1;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2007.11.07.18.10.43;	author markus;	state Exp;
+branches;
+next	;
+commitid	X5fYNoONlY7lGFEs;
+
+
+desc
+@@
+
+
+1.1
+log
+@committing files with strange names
+@
+text
+@foo
+@
