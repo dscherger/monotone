@@ -1,5 +1,5 @@
-[[!toc ]]
-[[tag migration-wip]]
+[[!toc levels=2]]
+[[tag migration-done]]
 
 Zipper Merge is a BestPractices workflow pattern that uses the DAG
 structure to help simplify large complex merges.
