@@ -1,10 +1,10 @@
 [[!toc levels=2]]
 [[tag migration-done]]
 
-Zipper Merge is a BestPractices workflow pattern that uses the DAG
+Zipper Merge is a [[BestPractices]] workflow pattern that uses the DAG
 structure to help simplify large complex merges.
 
-It's an application of the same principles used by the DaggyFixes
+It's an application of the same principles used by the [[DaggyFixes]]
 pattern, but for the scenario where you want to merge two branches
 together, rather than make the same change to two branches that must
 remain separate otherwise. 
@@ -141,14 +141,14 @@ pick useful nodes to zipper together, and follow your progress.
 A good interactive merge assistance tool is also invaluable for 
 each of the small merges. 
 
-See InterfacesFrontendsAndTools for tools that can help with both.
+See [[InterfacesFrontendsAndTools]] for tools that can help with both.
 
 # Usage comments and notes for further development
 
 (please add comments of your own here, too)
 
 There is another style of merging under development that will allow 
-a different approach to the same problem. This is known as a workspace merge, or MergeViaWorkingDir
+a different approach to the same problem. This is known as a workspace merge, or [[MergeViaWorkingDir]]
 and is a different user interface to the underlying merge algorithms.
 
 Zipper Merge has the advantage of being available now. But even when we 

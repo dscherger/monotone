@@ -1,0 +1,42 @@
+# How to migrate pages to ikiwiki
+
+1. fetch the page you're going to migrate, in raw original moinmoin
+   markup style, into the workspace, and commit it as is for
+   reference. (adjust as needed for some other tool, like wget or curl).
+
+        ftp -o ZipperMerge.moin "http://www.venge.net/mtn-wiki/ZipperMerge?action=raw"
+        mtn add ZipperMerge.moin
+        mtn commit
+
+2. rename the file and begin the process of migrating the markup
+
+        mtn mv ZipperMerge.moin ZipperMerge.mdwn
+
+   start by adding `\[[tag migration-wip]]` at the top of the file.
+   This tags the page as one being worked on, but not yet finished.
+
+3. Translate the markup:
+
+    * headers are done with leading `#` `##` etc rather than
+      surrounding `==` etc
+
+    * *some* and **more** emphasis is done with `*` rather than lots
+      of single-quotes
+
+    * Links are done with `\[[SquareBrackets]]` rather than bare
+      `CamelCaseWords` 
+
+    * preformatted code blocks are done with 4 more spaces (inside the
+      current level of indentation, say when inside nested lists),
+      rather than with  `{{{` and `}}}`
+
+    * use [[ikiwiki/formatting]] to help, and add more notes here
+
+4. Generate, test, rinse, repeat.  `commit` now and again if you like,
+   because your page is still tagged as unfinished.
+
+5. When you're happy, change to `\[[tag migration-done]]`, save and
+   commit again.
+
+6. `GOTO 1`
+
