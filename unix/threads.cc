@@ -26,24 +26,30 @@
 #include "sanity.hh"
 #include "threads.hh"
 
+struct
+thread_context
+{
+  threaded_task * task;
+};
+
 void *threaded_call(void *c)
 {
   thread_context * ctx = (thread_context*) c;
 
-  (*ctx->func)();
+  (*ctx->task)();
 
   pthread_exit(NULL);
 }
 
 void
-create_thread_for(thread_functor * func)
+create_thread_for(threaded_task * task)
 {
   int rc;
   void *status;
   pthread_t thread;
 
   thread_context * ctx = new thread_context();
-  ctx->func = func;
+  ctx->task = task;
 
   rc = pthread_create(&thread, NULL, threaded_call, (void*) &ctx);
   I(!rc);
@@ -52,7 +58,7 @@ create_thread_for(thread_functor * func)
   I(!rc);
 
   delete ctx;
-  delete func;
+  delete task;
 }
 
 // Local Variables:

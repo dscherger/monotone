@@ -10,25 +10,28 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <stack>
 #include <boost/shared_ptr.hpp>
 
-class thread_functor
+class threaded_task
 {
 public:
   virtual void operator()() = 0;
 };
 
-struct
-thread_context
+template <typename P1, typename P2>
+class task_done_callback
 {
-  thread_functor * func;
+public:
+  virtual void operator()() = 0;
 };
 
-extern void create_thread_for(thread_functor * func);
+extern void create_thread_for(threaded_task * func);
 
 template <typename TASK, typename P1, typename P2>
 class worker_pool
 {
+  std::stack<threaded_task*> tstack;
 public:
   worker_pool()
     { };
@@ -37,16 +40,18 @@ public:
     {
       I(p1);
       I(p2);
-      thread_functor *func(new TASK(p1, p2));
-      func->operator()();
-      //create_thread_for(func);
-      delete func;
+      tstack.push(new TASK(p1, p2));
     }
 
   void wait(void)
     {
-      //
-      // sleep(10);
+      while (!tstack.empty())
+        {
+          threaded_task *task = tstack.top();
+          tstack.pop();
+          task->operator()();
+          //create_thread_for(task);
+        }
     }
 };
 
