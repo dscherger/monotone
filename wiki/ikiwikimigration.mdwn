@@ -10,10 +10,14 @@
 
 2. rename the file and begin the process of migrating the markup
 
-        mtn mv ZipperMerge.moin ZipperMerge.mdwn
+        sed -Ef moin2mdwn.sed <ZipperMerge.moin >ZipperMerge.mdwn
+        mtn mv --bookkeep-only ZipperMerge.moin ZipperMerge.mdwn
+        rm ZipperMerge.moin
 
-   start by adding `\[[tag migration-wip]]` at the top of the file.
-   This tags the page as one being worked on, but not yet finished.
+   (sed's -E option is -r on Linux)
+   this will automatically add `\[[tag migration-wip]]` at the top
+   of the file, tagging the page as one being worked on, but not yet
+   finished, and convert emphasis notations.
    Commit and push this rev, so others can see you're working on
    this file, and can pick another to start next in parallel.
 
