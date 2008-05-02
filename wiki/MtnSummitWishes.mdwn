@@ -1,3 +1,0 @@
-[[!tag migration-auto]]
-
-#REDIRECT MtnSummit/Ideas

@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!):
 
@@ -19,23 +19,27 @@ Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!
 
 ## Internals
 
- * Make [http://revctrl.org/DieDieDieMerge DieDieDie] finally Die (file resurrection or a delete-blocking cset op for merge) ([http://colabti.de/irclogger/irclogger_log/monotone?date=2007-03-20,Tue#l239 This IRC conversation] may help explain this, or it may not.
+ * Make [DieDieDie](http://revctrl.org/DieDieDieMerge) finally Die (file resurrection or a delete-blocking cset op for merge) ([ This IRC conversation](http://colabti.de/irclogger/irclogger_log/monotone?date=2007-03-20,Tue#l239) may help explain this, or it may not).
 
- * Workspace merge
- * workspace (tree layout) conflict resolution
- * suspend/resume workspace changes (local only commits)
- * revert via editable_working_tree?
- * handle dropped dirs with unversioned paths properly (still an issue?)
+ * Workspace
+  * Workspace merge
+  * workspace (tree layout) conflict resolution
+  * suspend/resume workspace changes (local only commits)
+  * revert via editable_working_tree?
+  * handle dropped dirs with unversioned paths properly (still an issue?)
 
- * redo selectors
- * extend selectors so that one can specify ranges (what is now done with --from and --to for mtn log)
- * branch filters as selectors? --exclude "foo*" -> !b:foo*
+ * Selectors
+  * redo selectors
+  * extend selectors so that one can specify ranges (what is now done with --from and --to for mtn log)
+  * branch filters as selectors? --exclude "foo*" -> !b:foo*
 
- * store sha1 sums binary in database (speed, size)
- * Think about hash function migration (what we'd need to do, what if anything ought to be done now to prepare)
+ * Hashes
+  * store sha1 sums binary in database (speed, size)
+  * Think about hash function migration (what we'd need to do, what if anything ought to be done now to prepare)
 
- * rework cert format
- * un-base64 internal cert representation
+ * Certs
+  * rework cert format
+  * un-base64 internal cert representation
 
  * come to some resolution on the line-ending mess
  * unified inodeprints/unknown/missing cache, possibly with dir-order scanning
@@ -47,7 +51,7 @@ Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!
 
  * add a --preview/--readonly option to push/pull/sync which previews the changes that are pushed or pulled (i.e. grouped by branch) but doesn't do anything else
  * Partial pull (killer feature for OSS projects e.g. OpenEmbedded, Gaim)
- * Pull over HTTP, even if it wastes more bandwith to get things right than Netsync. (See net.venge.monotone.contrib.dumb for a basically working implementation.)
+ * Pull over HTTP, even if it wastes more bandwith to get things right than Netsync. (See `net.venge.monotone.contrib.dumb` for a basically working implementation.)
  * Policy branches!
  * think about how to rework netsync into something supportable long term
  * find some kind of solution to the pulling-to-a-database-in-use problem (important for automatic pulls of all kinds -- cron jobs, viewmtn, tracmtn...)
@@ -63,7 +67,7 @@ Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!
 
  * Eclipse Plugin
  * A multi-platform GUI (guitone, ...)
- * A visual studio plugin like http://ankhsvn.tigris.org/)
+ * A visual studio plugin like <http://ankhsvn.tigris.org/>)
  * Monotone-viz on Win32
  * cvs import/sync (data fidelity, branch reconstruction and other correctness)
  * importers from other tools (svn, especially; maybe git, hg...)

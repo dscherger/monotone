@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Done
 
@@ -11,13 +11,13 @@
  * finish it translation
  * workspace merge (.nocornflakes)
  * po/ file fix
- * ChangeLog die-die-died
+ * [[ChangeLog]] die-die-died
  * testsuite.lua giant list gone
  * cygwin tests pass now
  * line-ending/charset conversion stuff gone
  * Markus found another line-merging bug :-(
  * some workspace handling bugs
- * more CvsImport
+ * more [[CvsImport]]
  * checkout is using editable_tree now
  * some initial work on TortoiseMTN
  * new concept: locked workspace
@@ -29,10 +29,10 @@
 
 # Decisions/plans
 
- * PartialPull
+ * [[PartialPull]]
  * policy branches
- * ["LogUI"]
- * DatabaseCompaction
+ * [[LogUI]]
+ * [[DatabaseCompaction]]
  * get rid of regular expressions in the UI
  * minimize dependencies on boost (esp., get rid of boost:re, boost::fs, boost::date_time)
  * fix stupid GFDL
@@ -56,7 +56,7 @@
      * need tests
      * need review: Zack
  * any more planning/discussion now?
- * WorkspaceConflicts
+ * [[WorkspaceConflicts]]
  * asciik in status
  * public presentation of project and work
  * paths relative to what
