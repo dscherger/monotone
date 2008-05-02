@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 Monotone has a concept of branches that's internally quite different to some other VCS's.  While it's very powerful and flexible, this has confused some users getting used to monotone's world.  In particular:
 
@@ -19,6 +19,7 @@ There are several important concepts in the above discussion.  The following ana
 The ancestry graph is like a family tree, documenting your genetic history. Each revision (person) has ancestors (parents).  Most people have two (genetic) parents. In monotone most revisions record only one parent - the other parent is the unnamed working copy that had the changes being committed; revisions that result from merges have two recorded parents in the ancestry graph.  
 
 The ancestry tree leading up to a revision is fixed.  Once your genetic heritage has been determined, you can't really change it. Your ancestry is a fundamental part of the definition of your identity: 
+
  * in monotone, two revisions that took a different editing path to produce identical contents are different revisions, because they have different ancestors.
  * However, if a new child is created by making the same changes to the same ancestor, this is the same revision - if identical changes are made to the same ancestor separately by several people, they produce identical clones (which are all the same revision).
  * You can't really exist without your parents, either - in monotone, in order for a database to contain a revision, it has to also have copies of all of its ancestors, for a full genetic history. 
