@@ -1,0 +1,22 @@
+[[!toc ]]
+
+This is a temporary wiki front page, for the migration-in-progress of
+the monotone wiki. It helps track progress.  Whether or not there will
+be a 'normal' wiki homepage later (as separate from the main front
+page) will be determined later.
+
+## Pages tagged as migration-done
+
+[[map pages="wiki/* and link(migration-done)"]]
+
+## Pages tagged as migration-wip
+
+[[map pages="wiki/* and link(migration-wip)"]]
+
+## Unmigrated moin files
+
+[[map pages="wiki/*.moin"]]
+
+## Other pages
+
+[[map pages="wiki/* and !link(migration-done) and !link(migration-wip) and !wiki/*.moin"]]

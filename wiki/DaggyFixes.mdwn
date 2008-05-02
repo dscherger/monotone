@@ -1,4 +1,5 @@
 [[!toc levels=2]]
+[[tag migration-done]]
 
 All software has bugs, and not all changes that you commit to a source
 tree are entirely good.
@@ -40,7 +41,12 @@ that looks like this:
       \ /
        E
 
-[[graph src="A -> B -> C -> E; B -> D -> E;" ]]
+<!--
+[[graph src="""
+node [shape=plaintext, height=0, width=.5, fontname=monospace];
+A -> B -> C -> E; B -> D -> E;
+""" ]]
+-->
 
 It is later discovered that revision `B` introduced a bug, and there's
 a series of children `B->..->E` that have inherited the bug from `B`.
