@@ -2,6 +2,7 @@
 # Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2007 Henry Ludemann <misc@hl.id.au>
 # Copyright (C) 2007 TK Soh <teekaysoh@gmail.com>
+# Copyright (C) 2008 Christof Petig <christof.petig@arcor.de>
 
 import os
 import tempfile
@@ -15,14 +16,14 @@ import win32gui
 import win32gui_struct
 import win32api
 import _winreg
-from mercurial import hg
-from mercurial import repo as _repo
+#from monotone import mtn
+#from monotone import repo as _repo
 from thgutil import *
 
 # FIXME: quick workaround traceback caused by missing "closed" 
 # attribute in win32trace.
 import sys
-from mercurial import ui
+from monotone import ui
 def write_err(self, *args):
     for a in args:
         sys.stderr.write(str(a))
@@ -62,7 +63,7 @@ def open_repo(path):
     root = find_root(path)
     if root:
         try:
-            repo = hg.repository(ui.ui(), path=root)
+            repo = mtn.repository(ui.ui(), path=root)
             return repo
         except _repo.RepoError:
             pass
@@ -70,10 +71,10 @@ def open_repo(path):
     return None
 
 def open_dialog(cmd, cmdopts='', cwd=None, root=None, filelist=[], gui=True):
-    app_path = find_path("hgproc", get_prog_root(), '.EXE;.BAT')
+    app_path = find_path("mtnproc", get_prog_root(), '.EXE;.BAT')
 
     if filelist:
-        fd, tmpfile = tempfile.mkstemp(prefix="tortoisehg_filelist_")
+        fd, tmpfile = tempfile.mkstemp(prefix="tortoisemtn_filelist_")
         os.write(fd, "\n".join(filelist))
         os.close(fd)
 
@@ -117,11 +118,11 @@ def run_program(cmdline):
                            stdout=subprocess.PIPE,
                            stdin=subprocess.PIPE)
     
-"""Windows shell extension that adds context menu items to Mercurial repository"""
+"""Windows shell extension that adds context menu items to Monotone repository"""
 class ContextMenuExtension:
-    _reg_progid_ = "Mercurial.ShellExtension.ContextMenu"
-    _reg_desc_ = "Mercurial Shell Extension"
-    _reg_clsid_ = "{EEE9936B-73ED-4D45-80C9-AF918354F885}"
+    _reg_progid_ = "Monotone.ShellExtension.ContextMenu"
+    _reg_desc_ = "Monotone Shell Extension"
+    _reg_clsid_ = "{7D521F2C-E37E-42E2-965B-9E4BA7664BD9}"
     _com_interfaces_ = [shell.IID_IShellExtInit, shell.IID_IContextMenu]
     _public_methods_ = [
         "Initialize", # From IShellExtInit
@@ -129,12 +130,12 @@ class ContextMenuExtension:
         ]
 
     registry_keys = [
-        (_winreg.HKEY_CLASSES_ROOT, r"*\shellex\ContextMenuHandlers\TortoiseHg"),
-        (_winreg.HKEY_CLASSES_ROOT, r"Directory\Background\shellex\ContextMenuHandlers\TortoiseHg"),
-        (_winreg.HKEY_CLASSES_ROOT, r"Directory\shellex\ContextMenuHandlers\TortoiseHg"),
-        (_winreg.HKEY_CLASSES_ROOT, r"Folder\shellex\ContextMenuHandlers\TortoiseHg"),
-        (_winreg.HKEY_CLASSES_ROOT, r"Directory\shellex\DragDropHandlers\TortoiseHg"),
-        (_winreg.HKEY_CLASSES_ROOT, r"Folder\shellex\DragDropHandlers\TortoiseHg"),
+        (_winreg.HKEY_CLASSES_ROOT, r"*\shellex\ContextMenuHandlers\TortoiseMtn"),
+        (_winreg.HKEY_CLASSES_ROOT, r"Directory\Background\shellex\ContextMenuHandlers\TortoiseMtn"),
+        (_winreg.HKEY_CLASSES_ROOT, r"Directory\shellex\ContextMenuHandlers\TortoiseMtn"),
+        (_winreg.HKEY_CLASSES_ROOT, r"Folder\shellex\ContextMenuHandlers\TortoiseMtn"),
+        (_winreg.HKEY_CLASSES_ROOT, r"Directory\shellex\DragDropHandlers\TortoiseMtn"),
+        (_winreg.HKEY_CLASSES_ROOT, r"Folder\shellex\DragDropHandlers\TortoiseMtn"),
         ]
 
     def __init__(self):
@@ -204,14 +205,14 @@ class ContextMenuExtension:
         if uFlags & shellcon.CMF_DEFAULTONLY:
             return 0
 
-        thgmenu = []    # hg menus
+        tmtnmenu = []    # mtn menus
 
         # a brutal hack to detect if we are the first menu to go on to the 
         # context menu. If we are not the first, then add a menu separator
         # The number '30000' is just a guess based on my observation
         print "idCmdFirst = ", idCmdFirst
         if idCmdFirst >= 30000:
-            thgmenu.append(TortoiseMenuSep())
+            tmtnmenu.append(TortoiseMenuSep())
             
         # As we are a context menu handler, we can ignore verbs.
         self._handlers = {}
@@ -222,24 +223,24 @@ class ContextMenuExtension:
             # add regularly used commit menu to main context menu
             rpath = self._folder or self._filenames[0]
             if open_repo(rpath):
-                thgmenu.append(TortoiseMenu(_("HG Commit..."), 
+                tmtnmenu.append(TortoiseMenu(_("MTN Commit..."), 
                                _("Commit changes in repository"),
                                self._commit, icon="menucommit.ico"))
                                
-            # get other menus for hg submenu
+            # get other menus for mtn submenu
             commands = self._get_commands()
 
         # add common menu items
         commands.append(TortoiseMenuSep())
         commands.append(TortoiseMenu(_("About"),
-                       _("About TortoiseHg"),
+                       _("About TortoiseMtn"),
                        self._about, icon="menuabout.ico"))
        
-        # create submenus with Hg commands
-        thgmenu.append(TortoiseSubmenu("TortoiseHG", commands, icon="hg.ico"))
-        thgmenu.append(TortoiseMenuSep())
+        # create submenus with Mtn commands
+        tmtnmenu.append(TortoiseSubmenu("TortoiseMTN", commands, icon="mtn.ico"))
+        tmtnmenu.append(TortoiseMenuSep())
         
-        idCmd = self._create_menu(hMenu, thgmenu, indexMenu, 0, idCmdFirst)
+        idCmd = self._create_menu(hMenu, tmtnmenu, indexMenu, 0, idCmdFirst)
 
         # Return total number of menus & submenus we've added
         return idCmd
@@ -269,7 +270,7 @@ class ContextMenuExtension:
         if not drag_repo:
             return []
         if drag_repo and drag_repo.root != drag_path:
-            return []   # dragged item must be a hg repo root directory
+            return []   # dragged item must be a mtn repo root directory
 
         drop_repo = open_repo(self._folder)
         
@@ -310,14 +311,14 @@ class ContextMenuExtension:
                            self._status, icon="menushowchanged.ico"))
 
             # Visual Diff (any extdiff command)
-            has_vdiff = repo.ui.config('tortoisehg', 'vdiff', '') != ''
+            has_vdiff = repo.ui.config('tortoisemtn', 'vdiff', '') != ''
             result.append(TortoiseMenu(_("Visual Diff"),
                            _("View changes using GUI diff tool"),
                            self._vdiff, icon="TortoiseMerge.ico",
                            state=has_vdiff))
                            
             result.append(TortoiseMenu(_("Add Files"),
-                           _("Add files to Hg repository"),
+                           _("Add files to Mtn repository"),
                            self._add, icon="menuadd.ico"))
             result.append(TortoiseMenu(_("Remove Files"),
                            _("Remove selected files on the next commit"),
@@ -357,7 +358,7 @@ class ContextMenuExtension:
                            _("Search revisions of files for a text pattern"),
                            self._grep, icon="menurepobrowse.ico"))
                            
-            if repo.ui.config('tortoisehg', 'view'):
+            if repo.ui.config('tortoisemtn', 'view'):
                 result.append(TortoiseMenu(_("Revision Graph"),
                                _("View history with DAG graph"),
                                self._view, icon="menurevisiongraph.ico"))
@@ -427,10 +428,10 @@ class ContextMenuExtension:
         self._run_dialog('config')
 
     def _vdiff(self, parent_window):
-        '''[tortoisehg] vdiff = <any extdiff command>'''
-        diff = ui.ui().config('tortoisehg', 'vdiff', None)
+        '''[tortoisemtn] vdiff = <any extdiff command>'''
+        diff = ui.ui().config('tortoisemtn', 'vdiff', None)
         if not diff:
-            msg = "You must configure tortoisehg.vdiff in your Mercurial.ini"
+            msg = "You must configure tortoisemtn.vdiff in your Monotone.ini"
             title = "Visual Diff Not Configured"
             win32ui.MessageBox(msg, title, win32con.MB_OK|win32con.MB_ICONERROR)
             return
@@ -439,25 +440,25 @@ class ContextMenuExtension:
         open_dialog(diff, root=root, filelist=targets, gui=False)
 
     def _view(self, parent_window):
-        '''[tortoisehg] view = [hgk | hgview]'''
-        view = ui.ui().config('tortoisehg', 'view', '')
+        '''[tortoisemtn] view = [mtnk | mtnview]'''
+        view = ui.ui().config('tortoisemtn', 'view', '')
         if not view:
-            msg = "You must configure tortoisehg.view in your Mercurial.ini"
+            msg = "You must configure tortoisemtn.view in your Monotone.ini"
             title = "Revision Graph Tool Not Configured"
             win32ui.MessageBox(msg, title, win32con.MB_OK|win32con.MB_ICONERROR)
             return
 
         targets = self._filenames or [self._folder]
         root = find_root(targets[0])
-        if view == 'hgview':
-            hgviewpath = find_path('hgview')
+        if view == 'mtnview':
+            mtnviewpath = find_path('mtnview')
             cmd = "%s --repository=%s" % \
-                    (shellquote(hgviewpath), shellquote(root))
+                    (shellquote(mtnviewpath), shellquote(root))
             if len(self._filenames) == 1:
                 cmd += " --file=%s" % shellquote(self._filenames[0])
             run_program(cmd)
         else:
-            if view == 'hgk':
+            if view == 'mtnk':
                 open_dialog('view', root=root, gui=False)
             else:
                 msg = "Revision graph viewer %s not recognized" % view
@@ -480,7 +481,7 @@ class ContextMenuExtension:
         src = self._filenames[0]
         dest = self._folder
         msg = "Push changes from %s into %s?" % (src, dest)
-        title = "Mercurial: push"
+        title = "Monotone: push"
         rv = win32ui.MessageBox(msg, title, win32con.MB_OKCANCEL)
         if rv == 2:
             return
@@ -492,7 +493,7 @@ class ContextMenuExtension:
         src = self._filenames[0]
         dest = self._folder
         msg = "Pull changes from %s?" % (src)
-        title = "Mercurial: pull"
+        title = "Monotone: pull"
         rv = win32ui.MessageBox(msg, title, win32con.MB_OKCANCEL)
         if rv == 2:
             return
@@ -514,13 +515,13 @@ class ContextMenuExtension:
 
     def _init(self, parent_window):
         dest = self._folder or self._filenames[0]
-        msg = "Create Hg repository in %s?" % (dest)
-        title = "Mercurial: init"
+        msg = "Create Mtn repository in %s?" % (dest)
+        title = "Monotone: init"
         rv = win32ui.MessageBox(msg, title, win32con.MB_OKCANCEL)
         if rv == 2:
             return
         try:
-            hg.repository(ui.ui(), dest, create=1)
+            mtn.repository(ui.ui(), dest, create=1)
         except:
             msg = "Error creating repo"
             win32ui.MessageBox(msg, title, 
@@ -601,14 +602,14 @@ class ContextMenuExtension:
         # tabs for each file
         self._run_dialog('datamine')
 
-    def _run_dialog(self, hgcmd, noargs=False, verbose=True, modal=False):
+    def _run_dialog(self, mtncmd, noargs=False, verbose=True, modal=False):
         if self._folder:
             cwd = self._folder
         elif self._filenames:
             f = self._filenames[0]
             cwd = os.path.isdir(f) and f or os.path.dirname(f)
         else:
-            win32ui.MessageBox("Can't get cwd!", 'Hg ERROR', 
+            win32ui.MessageBox("Can't get cwd!", 'Mtn ERROR', 
                    win32con.MB_OK|win32con.MB_ICONERROR)
             return
 
@@ -618,7 +619,7 @@ class ContextMenuExtension:
         if noargs == False:
             filelist = targets
         cmdopts = "%s" % (verbose and "--verbose" or "")
-        open_dialog(hgcmd, cmdopts, cwd=cwd, root=root, filelist=filelist)
+        open_dialog(mtncmd, cmdopts, cwd=cwd, root=root, filelist=filelist)
 
     def _help(self, parent_window):
         open_dialog('help', '--verbose')

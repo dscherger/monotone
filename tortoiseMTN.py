@@ -13,7 +13,7 @@ import _winreg
 if hasattr(sys, "frozen") and sys.frozen == 'dll':
     import win32traceutil
 
-# specify version string, otherwise 'hg identify' will be used:
+# specify version string, otherwise 'mtn identify' will be used:
 version = ''
 
 import tortoise.version
@@ -54,19 +54,19 @@ def DllUnregisterServer():
     register_tortoise_path(unregister=True)
 
 def RegisterServer(cls):
-    # Add mercurial to the library path
+    # Add monotone to the library path
     try:
-        import mercurial
+        import monotone
     except ImportError:
         from win32com.server import register
         register.UnregisterClasses(cls)
-        raise "Error: Failed to find mercurial module!"
+        raise "Error: Failed to find monotone module!"
 
-    hg_path = os.path.dirname(os.path.dirname(mercurial.__file__))
+    mtn_path = os.path.dirname(os.path.dirname(monotone.__file__))
     try:
         key = "CLSID\\%s\\PythonCOMPath" % cls._reg_clsid_
         path = _winreg.QueryValue(_winreg.HKEY_CLASSES_ROOT, key)
-        _winreg.SetValue(_winreg.HKEY_CLASSES_ROOT, key, _winreg.REG_SZ, "%s;%s" % (path, hg_path))
+        _winreg.SetValue(_winreg.HKEY_CLASSES_ROOT, key, _winreg.REG_SZ, "%s;%s" % (path, mtn_path))
     except:
         pass
         

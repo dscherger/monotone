@@ -9,6 +9,6 @@ show_overlay_icons = False
 
 def read():
     global show_overlay_icons
-    overlayicons = ui.ui().config('tortoisehg', 'overlayicons', '')
-    print "tortoisehg.overlayicons = ", overlayicons
+    overlayicons = ui.ui().config('tortoisemtn', 'overlayicons', '')
+    print "tortoisemtn.overlayicons = ", overlayicons
     show_overlay_icons = overlayicons != 'disabled'
