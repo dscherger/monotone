@@ -534,7 +534,7 @@ walk_tree(file_path const & path, tree_walker & walker)
 }
 
 class file_hash_calc_task
-  : public thread_functor
+  : public threaded_task
 {
   shared_ptr<file_path> path;
   shared_ptr<file_id> ident;
