@@ -523,7 +523,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
 CMD(gsync, "gsync", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
-    N_("Synchronizes branches with a netsync server"),
+    N_("Synchronizes branches with a gsync server"),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the gsync server at the address ADDRESS."),
     options::opts::set_default | options::opts::exclude |
