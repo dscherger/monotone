@@ -1,0 +1,14 @@
+[[!tag migration-auto]]
+
+  * Changes to certs
+    * Bundle author+branch+date+changelog into single cert (or N name/value pairs?)
+    * Separation of author vs. signer of statement
+    * Specify keys in terms of hash-of-key not email address
+    * Specify signing algorithm rather than hard-wiring RSA-OAEP-SHA1 or whatever
+  * (possibly: change to ID format to permit non-SHA1?)
+  * Changes to merge algorithm
+  * Creation of a data structure that holds a project
+  * Lots and lots of UI 
+    * Commands to edit state of policy / project and save back to DB
+    * Commands to query state of policy / project
+    * Modification to existing commands to permit naming projects rather than raw branches in command-line args

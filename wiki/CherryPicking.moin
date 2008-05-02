@@ -1,9 +1,0 @@
-"Cherry picking" is an extension to merge that allows changes between arbitrary versions to be merged into the current version.  
-
-Merging is an inherently heuristic process, and cherry-picking merge even more so; not all changes make sense in every context, so no implementation of cherry picking can be perfect.  Nonetheless it's an option for some revision control systems that has been a TODO item for Monotone for some time (see the FAQ).
-
-As of monotone 0.28, there is a new `pluck` command.  This command implements a lot of the primary functional components of cherry-picking: if you can see a `diff` between two revisions, then a `pluck` will apply that diff to your current workspace.  This is a bit like feeding the `diff` output through an external program like patch, but `pluck` is aware of the ancestry differences, and will adjust the patch for file renames and other changes that have happened between the source revisions being plucked and the current workspace.
-
-This is not a full cherry-picking solution in the sense that some other VCSs use the term.  In particular, the revisions being plucked are recorded in the changelog template in preparation for a later `commit`, but other than this, `pluck` operations are not recorded directly in the ancestry or otherwise in the metadata, and are therefore not recognised in any special way by later commands.  This can be important when later merging or repeatedly plucking changes between branches.
-
-Even so, `pluck` is very useful, and more advanced developer practices are expected to evolve around it.  Some examples of these practices are discussed in the DaggyFixes page.

@@ -1,0 +1,28 @@
+[[!tag migration-auto]]
+
+# Idea 1
+
+Have a command "branch".  Usage:
+  * `monotone branch foo.bar`: switch working copy to be foo.bar (simply modifies MT/options).
+  * `monotone branch -r REV foo.bar`: mark rev REV as being in branch foo.bar (simply issues a branch cert)
+Make `monotone commit` no longer accept a -b switch.
+
+In all cases give the user feedback on whether they have created a new branch or not.
+
+# Idea 2
+
+"propagate <somebranch> <newbranch>" could note/warn that a new "newbranch" will be created, and behave the same as "cert h:somebranch branch newbranch".
+
+# Idea 3
+
+Some user experience:
+  http://xaraya.com/pipermail/xaraya_devel/2006-January/002512.html
+
+Perhaps we should provide a `switch` command, which is similar to `update`, but:
+  * requires a branch argument
+  * if that branch exists, does `update -b BRANCH -r h:`
+  * if not, switches the working copy to be on BRANCH
+
+# Idea 4
+
+*your idea here*

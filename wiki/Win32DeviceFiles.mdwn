@@ -1,0 +1,13 @@
+[[!tag migration-auto]]
+
+Discussion: http://colabti.de/irclogger/irclogger_log/monotone?date=2005-12-26,Mon&sel=19#l47
+
+On Win32 (and DOS, but we don't run there anyway), there are reserved filenames -- AUX, CON, COM1, etc. -- that cannot be used as regular files.  In fact, this is true for these filenames with any extension -- AUX.FOO, CON.BAR, etc.  In fact, there may be security issues if we read or write to these files.
+
+It has happened in real use that someone inadverdantly tried to check out a tree containing a file named "aux", and was very confused at the problems that ensued.  (Fortunately, because monotone always gives files their real names via renaming, which fails for these cases, we do not seem vulnerable to any security issues at this time.  If we wrote directly to the files in question, this would not be the case.)
+
+The solution seems to be similar to that described in CaseInsensitiveFilesystems -- if the user tries to check out such files/dirs, signal them as a name conflict.
+
+Also, we should make sure that "monotone add", "monotone rename", fail for such files.
+
+A list of problematic filenames at MSDN: http://msdn.microsoft.com/library/default.asp?url=/library/en-us/fileio/fs/naming_a_file.asp

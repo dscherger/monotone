@@ -1,0 +1,66 @@
+[[!tag migration-auto]]
+
+||<tablestyle="width: 100%; text-align: center;"> *When the going gets tough, the tough get empirical.* ||
+
+
+So, we have a few prototypes, now what?  How do we choose?
+
+# candidates
+
+All candidates should run with blob support and appropriate block size, since these could potentially have non-linear effects.
+
+ * current mainline (baseline for comparison)
+ * against-base
+ * linear forward chaining
+ * linear forward chaining with skips or breaks
+ * classic [http://www.selenic.com/mercurial/wiki/index.cgi/Design#head-ef542bce2b68f24d275e7908636317491f678648 revlogs] ("classic" in that cmason is doing [http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/5407 a bunch of playing around] with different sorts of revlogs right now too; not in the sense that we use *exactly* this design, since for the prototype at least we're doing a few tricks differently)
+
+A big question is how much tuning should be done on these.  The goal is to get an idea of how the technique would perform in a "proper implementation", but without spending ages of time super-optimizing each possibility before we even know if it's worth it or not.  So we should do the things that would seem to make a qualitative difference.  E.g., it's probably worth making sure that netsync is smart enough to avoid reconstructing versions when actually unnecessary.
+
+A big question: is it worth implementing the lookup-chains-by-rowid optimizations that drh suggested for these tests?  In principle they should not affect locality _much_, since we are not VACUUMing, but avoiding traversing indexes should be a win of some magnitude.
+  * When profiling checkouts and pulls there doesn't seem to be a significantly amount of (wait-)time spent in things that look index-related for sqlite (An exception is when the database hasn't been ANALYZEd recently). It's possible that I'm not looking at the right callstacks though. - Matt Johnston
+
+# testing methodology
+
+We should test both full pulls, and repeated incremental pulls, since the various methods may interact in complicated ways with repeated incremental pulls.  (These can screw up disk locality in various ways, cause non-optimal ordering for forced delta linearization like classic revlogs do, etc.)
+
+So, for each test dataset, we have a single db.  Call this PRISTINE-0.  From this, we use `db kill_rev_locally` repeatedly to produce smaller and smaller dbs, PRISTINE-1, PRISTINE-2, PRISTINE-3, etc.  PRISTINE-*n+1* is produced by taking PRISTINE-*n*, and repeatedly running `automate leaves`, picking a random item, and `db kill_rev_locally` on it.  I'm not sure how many revs we should remove each time, or how many of these sets we should generate.  Note that the randomness here impacts reproducibility; either save these databases so everyone can re-run the tests using the same dbs, or specify the random seed used.
+
+Up until this point, everything can be done with just a random mainline version of monotone.
+
+Now, for each *n*, serve up PRISTINE-*n* using mainline, and pull it into a fresh db using the version under test.  Call the result TEST-*n*.  These are the databases we will actually use for testing.
+
+Now, measure the following things:
+  * pulling TEST-0 into a fresh database.  Measure server CPU time, client CPU and real time, and bytes transferred.  Measure size of resulting db (both `du` and `du -a`, for the revlog case), and time for a cold-cache checkout, and time for a hot-cache checkout.  And time for a cold cache `log --diffs --last=20`, and same on hot cache.  (To do a cold-cache checkout on linux, put the database into a separate partition, then umount that partition, re-mount it, and immediately run a checkout from it.)
+  * pulling each of the TEST-*n* databases into a single database -- to simulate a user tracking a project by doing a daily incremental pull.  Measure the size of the resulting db (`du` and `du -a` again), and time for a cold-cache checkout, and time for a hot-cache checkout, and hot and cold `log --diffs --last=20`.  (Maybe measure the time each pull takes too?)  Finally, measure the server CPU time, client CPU and real time, for doing a fresh pull *from* the incrementally pulled database.  (This simulates the db a server would generally have, produced by incremental pushes.)
+
+# data sets
+
+Some interesting ones:
+ * `net.venge.monotone*`
+ * `net.venge.monotone* --exclude net.venge.monotone.contrib*`
+ * xaraya core, modules, themes, languages -- http://mt.xaraya.com/ (many checkins, not so large a tree, I think)
+ * openembedded -- http://ewi546.ewi.utwente.nl/OE/OE.db.bz2 (large tree, fair number of checkins)
+ * CTWM -- http://ctwm.free.lp.se/monotone-crash-course.html (tiny all around)
+ * something big in both tree and history... anyone got a kernel import around to play with?
+
+# questions
+
+ * is the above candidate set appropriate?  are we confident these are the interesting contenders?
+   * "skips or breaks" -- which should we do?  both?  what is actually implemented?
+ * is there anything else we should measure?  time to restore some arbitrary older stuff or something?
+   * it might be worth timing "log (--diffs)" or similar operations that don't just operate on a single revision?
+ * do we have working versions of all of the candidates?
+ * do we have a kernel-ish history available to test scalability on?
+ * who will do this work?  individual tasks:
+   * make sure each candidate works
+     * **msh**?: forward chaining and against-base
+     * **graydon**?: revlogs
+     * **?**: make sure netsync is smart about letting the db do the work
+   * **?**: write the scripts to actually run a monotone on one of these data sets, i.e. implement the methodology section
+     * au.asn.ucc.matt.monotone.shootout has a "mkpristine.py" script for creating PRISTINE-N dbs.
+   * **?**: procure a big scalability data set, like get a kernel import or something.  cvs_import isn't so good for this, because we want realistic branching... maybe the bk import tool someone posted to the list recently would be useful, or porting git_import to rosters (shouldn't be too hard)...
+   * **?**: actually get all of the different configurations together and run the tests on a single machine.  This might actually be several people, just to make sure that things don't vary wildly between OSes (e.g., OS X has surprised us in the past).
+   * **njs**: organize all of the above, point of contact for figuring out what to do next and keeping track of who knows what
+
+It is more important to get some numbers than to get perfect numbers, so probably the most important thing is to get the script working, and then to get the candidates basically working, and the last priority is getting super-good data sets.

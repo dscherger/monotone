@@ -1,0 +1,145 @@
+[[!tag migration-auto]]
+
+There are a number of ways to create **globally unique** branch names. There's some debate about which one is best.
+
+Please add other options to all these lists, expand on pros/cons, add yourself to the Supporters list of things you like, etc...
+
+Keep in mind that several of the possible branch syntaxes require changes to selector syntax, so if there's a branch syntax you think is awesome, but all of the possible selector syntaxes that could be used with it make your teeth hurt... then the branch syntax probably wasn't so awesome.
+
+# Branch syntax
+
+[[Anchor(JavaStyle)]]
+## Java style
+
+Example: `net.venge.monotone`, `net.venge.monotone.cvssync`, `com.gmail.accountname.project`
+
+What we currently recommend. Many people object to the reversed domain names. No way to do email-based branches, though some use their email address for a "hostname". This only becomes a "problem" when an actual hostname shares the accountname *and* hosts monotone projects as well.
+
+[[Anchor(clennox1)]]
+  CraigLennox: Unfortunately, this style puts `net.venge.monotone.gcc4` and `net.venge.monotone.gui` in the same namespace relative to `net.venge.monotone`. At a minimum there needs to be syntax to disambiguate the ancestrial hierarchy from the categorical hierarchy, so that it becomes possible to avoid netsyncing much more than is necessary to get either a single project or a single line of development across multiple projects (**especially** when pulling from very large sites).
+
+Supporters: ["arcatan"], ChadWalstrom, ["gwk"]
+
+## Hierarchy by Separator
+There are a number of suggestions that consistently use the same general syntax to introduce hierarchy. The only difference between these suggestions is the separator character. The generic format is:
+
+Syntax: `{IDENTIFIER|FQDN|RFQDN|EMAILADDR}[{SEP}PROJECT[{SEP}SUBPROJECT[...]]]{SEP}{BRANCH}`
+
+The choice of the separator character has many implications, from selector character collision to filesystem side-affects during checkout. The generic benefits for this format include disambiguation between host name and branch name, and the ability to introduce project and sub-project hierarchy relationships between branches. The identifier preceeding the project and branch can be just about anything, as long as it has a reasonable chance to be evaluated as unique amongst the user base.
+
+### Hierarchy by /
+(was "Sorta URL style")
+
+Example: `venge.net/monotone`, `venge.net/monotone/cvssync`, `njs@pobox.com/newproj`
+
+Much more familiar way to represent hierarchical structure. Makes the branch names look like URLs, which may be bad, in that people will expect to be able to browse to them over HTTP, for instance. (Though one could also take advantage of this by actually putting a document there.) Requires escaping branch name '`/`' characters in selectors.
+
+EricAnderson: we use: "domain-name"/"project-name"/"project-branch" for global branches and "email-addr"/"project-name"/"project-branch" for personal branches. The standard for the mainline "project-branch" is just main. The only difference from the above examples is that we standardized on always having three levels in the names, which made things map slightly better onto how people coming from CVS seemed to think about branches. It has an interesting effect of if you do checkouts, they automatically show up in directories organized like the above, which is somewhat nice. However, this auto-directory effect probably wouldn't happen on Windows because the pathname separator on windows is \ not /. We haven't had any problem with people thinking they could browse these.
+
+  NathanielSmith: Since windows actually accepts both \ and / as directory separators, I think that probably would work after all.
+
+Supporters: MatthewNicholson, EricAnderson, DanielThompson
+
+### Hierarchy by :
+(was "classic mac style")
+
+Example: `venge.net:monotone`, `venge.net:monotone:cvssync`, `njs@pobox.com:newproj`
+
+Suggested by RichardLevitte. Doesn't look similar to URLs and confuse people, while still allowing a more natural order to things. Requires changes to selector syntax.
+
+*Note by RichardLevitte:* I don't agree that it requires a change to the selector syntax, as a domain name will always have at least one period.
+
+*Note by ChadWalstrom:* I tested this on a Mac OS 10.4.x machine, creating a test branch named `user@domain.tld:blah`. In the shell, the directory was correctly created as `user@domain.tld:blah` upon checkout. It did not create a subdirectory as did the "/" character when chosen as a separator. However, when viewed in the `Finder` application, the directory was listed as `user@domain.tld/blah`. The contradiction in representation of the folder name is confusing. The `Finder` does the correct thing when trying to descend into the directory, however. Practically speaking, this is cosmetic side-effect "bug".
+
+Supporters: RichardLevitte (obviously)
+
+### Hierarchy by #
+
+Example: `MyCompanyInc#project#branch`, `venge.net#monotone`, `net.venge#monotone#cvssync`, `nobody@bogus#newproj`
+
+The benefit of this format is that it doesn't really look like a URL and it doesn't require selector character change: `b:venge.net#monotone/a:nobody@bogus`. I don't believe this should have any impact on the filesystem checkout, given that the '#' is embedded within the name of the file and should be represented by all locales. Although the '#' is a meta character in POSIX shell for "comment", it does not get parsed as such if there is no space before it.
+
+Supporters: ChadWalstrom
+
+## Hierarchy by mixed separators
+
+Using mixed separators would allow more flexibility in distinguishing between branches and subprojects. Examples: `net.venge.monotone/contrib/mtsh`, `net.venge.monotone#rosters#netsync`
+
+## monotone-specific URL style
+
+Example: `monotone-branch://venge.net/monotone`, `monotone-branch://venge.net/monotone/cvssync`, `monotone-branch://njs@pobox.com/newproj`
+
+Same as above, but sticking a scheme on like "monotone-branch" or something. That particular name is pretty cumbersome. Requires changes to selector syntax.
+
+"monotone-branch:" could be shortened to, say, "mtnb:".
+
+Cumbersome in general, but makes these full-fledged URLs, able to play in all the URL games etc.
+
+["elb"]: I would opt for mtn://, and stick with this -- then allow monotone to connect directly to the named host and fetch the named branch, or allow for a hostname to be provided. This is what opencm did, for whatever that's worth.
+
+DanielThompson: I would claim that adding a monotone-specific URL transport into the branch name is a bad idea. Supporting a mtn:// transport command line syntax sugaring for 'monotone pull' (or even 'monotone checkout') would be pleasant but integrating the transport type into the branch name would not assist with this and I would prefer the 'sorta URL style' to a strict URL.
+
+  TimothyBrownawell: I would suggest supporting URLs of `mtn://hostname/branchname` . This would provide the convenience of having URLs without the problems of having the transport type or host name be part of the branch name.
+
+## standard URLs style
+
+Example: `http://venge.net/monotone`, `http://venge.net/monotone/cvssync`
+
+Similar to XML namespaces, that have (generally http://) url, though the URL is itself often basically meaningless (if retrieved, it may have no content, or trivial content). Requires changes to selector syntax. Not clear how to do email-based names (`mailto:njs@pobox.com/newproj`? `mailto:njs+newproj@pobox.com`?)
+
+May be confusing.
+
+  * ["arcatan"]'s thoughts: Let's not use branchs names which look like standard HTTP URLs if they're aren't standard HTTP URLs. If branch is called `http://venge.net/monotone/`, I want to be able to actually pull the repository over HTTP from `http://venge.net/monotone/`, then.
+
+Supporters:
+
+## URI/URN style
+
+Example: `mtnb:venge.net/monotone`, `mtnb:venge.net:monotone/cvssync`, `mtnb:project@aol.com:branch/name/here`
+
+Suggested by Hugo Mills. Abstracting away from http:// URLs, so it's obvious that it isn't going to resolve directly in a browser, but still keeping the general form of URIs. Requires changes to selector syntax.
+
+Supporters:
+
+
+## emails galore
+
+Example: `monotone@venge.net`, `monotone-cvssync@venge.net`, `njs+newproj@pobox.com`
+
+    <jasper> If we were to recommend something, I'd suggest a convention <self-id>-<project>[.<sub1>sub[.<sub2>]]@<generous-domain>. E.g. ncm-worshipnjs.bribes@gmail.com and ncm-worshipnjs.pleas@gmail.com
+    <jasper> Sorry, that's <self-id>-<project>[.<sub1>[.<sub2>]]@<generous-domain>
+
+Suggested by Nathan Myers. Simple, avoids fuss about selectors. Seems unlikely that people will actually register new emails for every branch, and it seems rude to have things that look like email addresses but aren't.
+/
+# Selector syntax
+
+The basic problem is that selectors currently have both `:` and `/` as magic (meta) characters. These are the two characters that aren't already reserved by the shell (like ```'"!#$&*()<>?;"\|[]%``) or wanted for other things within selectors (like `@.-_+=` which are all likely in email addresses and branch names).
+
+This is less of an issue with monotone version 0.27 and later. Selectors can now be escaped with a `\` character, which will cause special characters to be ignored by the selector parser. The `:` is still treated as a special character is certain cases.
+
+Possible replacement characters include:
+  * `~` -- only magical at the beginning of a shell token
+  * ,
+  * possibly ^ -- it is magical in some contexts/some archaic shells, because it was the original pipe symbol. git uses it in a similar context.
+  * *`%` -- only magical (in Unix) at the beginning of a shell token, no longer common in email addresses.* -- Err, what about on windows, which does env-var substitution like %FOO%?
+  ''Good point. Well, `%%` would avoid that, or choosing a clause separator character not likely to appear in a variable name. (Windows passes the `%...%` construct unmodified if it doesn't match a defined variable).''
+  
+URL-like things require replacing /, which is used to separate multiple clauses in a selector. So we might end up with:
+  * `b:venge.net/monotone~a:njs@pobox.com`
+  * `b:venge.net/monotone,a:njs@pobox.com`
+
+The mac-style one requires replacing :, so we might end up with things like:
+  * `b~venge.net:monotone/a~njs@pobox.com`
+  * `b,venge.net:monotone/a,njs@pobox.com`
+
+## Straw poll
+
+Stick in your name and your opinion:
+
+  * HugoMills: The URL/URI-style names have the advantage that things like XML, RDF and OWL all expect such names, so you don't have to mangle or change anything later if one of those technologies is used in some tool.
+   * KennethPerry: Also if the URL/URI style names was used, things like a monotone kioslave for KDE would fit (similar to the svn:// kioslave).
+  * NathanielSmith: I kind of like the forms with `~` or `,` as replacements for `/`. The `~` is more visually distinctive, and `,` has already associated meaning of "sequencing" a la MagicSelectors (but disappears visually more easily).
+  * ChadWalstrom: Branch names should not be transport dependent or interfere with transport naming. I do think it's important to note that that conventions should work *with* but not be enforced *by* the tool, unless it is done via hooks in lua. GNU Arch enforced naming conventions for its branches, which reflected its historical storage mechanism: directories of tarballs containing (uber) patches. This met with a lot of resistance with potential users (and even current users, myself included), especially those not interested in learning the internals and "why's" of naming conventions.
+  * CraigLennox: I favour changing as little as possible while addressing the real problem of namespace overload (which I describe at [#JavaStyle Java Style] above). This ought to be achievable without having to change the selector syntax.
+  * ["gwk"]: Java style (I'm a Java programmer...) it's nice and easy to read and type no shift etc.
+  * ExampleUser: I think [....]

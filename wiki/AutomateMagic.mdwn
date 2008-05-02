@@ -1,0 +1,17 @@
+[[!tag migration-auto]]
+
+### Show log entries for a given SELECTOR
+
+    $ mtn automate select SELECTOR | mtn automate toposort -@- | xargs -L1 mtn log --last=1 -r
+
+### Query the root or tail revision of BRANCH
+
+    $ mtn automate heads BRANCH | mtn automate ancestors -@- | mtn automate toposort -@- | head -n1
+
+Optionally, add another `| xargs -L1 mtn ls certs` to query for the certs of the revision.
+
+### Find the base revision on another BRANCH
+
+This is useful if you want to generate a diff between the current head of a branch (taken from current workspace, see the second sub-command) and the branch your work is based on (specified in the first sub-command: nvm in the example).
+
+    $ mtn au common_ancestors `mtn au select h:net.venge.monotone` `mtn au select h:`|mtn au erase_ancestors -@-

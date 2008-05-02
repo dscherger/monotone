@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[!tag migration-wip]]
 # monotone wiki
 
 This is the wiki for the version control system 

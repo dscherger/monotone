@@ -1,0 +1,24 @@
+[[!tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Import external sources from third-party vendors, and allow tracking and sensible merging of local changes with future vendor releases.
+
+# Supported
+
+Any branch can be used as a Vendor Branch. Unlike CVS, vendor branches are not treated specially in monotone. (This CVS feature with a single branch which behaves "magically" has now come to be seen fairly widely as a mistake.)
+
+There are two aspects to this requirement that are often used together:
+ * tracking "pristine" external sources in a separate branch
+ * using the sources in such a branch as part of a larger derivative project
+
+# Example Usage
+
+*under construction* The VendorBranchPattern page (will) contain detailed recommendations for BestPractices in how this should be done.
+
+# Further Reference
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureVendorBranches VCSFeatureVendorBranches]

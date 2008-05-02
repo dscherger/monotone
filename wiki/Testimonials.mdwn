@@ -1,0 +1,26 @@
+[[!tag migration-auto]]
+
+Tell us what you really think.
+
+  * "I think monotone is just about the prettiest C++ I've seen" -- Martin Pool
+
+  * "Regarding Monotone (now at 0.23), I like its lightweight portability, its efficiency (actual and potential), the serious industrial attitude of its designers, the cleanliness of its code (when last I checked), and its future prospects. I'm planning to like its rigorously specified, Codeville-derived merge algorithm when it's released." -- [http://www.advogato.org/person/ncm/diary.html?start=133 Nathan Myers]
+
+  * "I've spent some 6 years searching for the perfect replacement for CVS.  Many current replacements were either crap or too complex for me to understand.  Monotone came as a breath of fresh air, with a few powerful and stable principles and ideas, and yet simple enough to understand by just reading one chapter in the manual!  I love the distributed concept, the clearly defined off-line commits and the way the history graph is kept, and am currently moving everything I have to monotone." -- [http://richard.levitte.org Richard Levitte], 2005-11-02
+
+ * "Monotone rocks!" -- MatthewNicholson
+
+ * It's a real pleasure to work with monotone, both the product and the people. Apart from the obvious advantages of distributed revision control i've been looking forward to become more widely available in free software, the team also shows they care about the right things. This is both from a technical point of view (sometimes called *paranoia*) but also showing an interest in the problems encountered in daily work for the projects using monotone. The advantage (and necessity) for a scm to be open source has become very clear to me again. -- Marcel van der Boom
+
+ * Monotone is a version system which I'm not yet convinced sucks.  That is something -- [http://www.stacken.kth.se/~kaj/en Rasmus Kaj]
+
+ * In using Monotone from version 0.23 through version 0.30 I've seen an amazing increase in its quality and speed. In reading the development mailing list I am extremely impressed by the developers' thoroughness in their discussions of the algorithms behind monotone and their attention to the user experience and use cases that drive their usage of revision control systems. I'm convinced that monotone will only continue to get better and that it is a useful tool for all developers. -- [http://justin.patrin.info/ Justin Patrin]
+
+ * I believe that Monotone is the Ada of version control systems, so it is only appropriate that I use it for my Ada work.  Monotone is safe, correct and powerful *by design*.  It uses cryptographic keys to authenticate changes.  It is written by elite programmers who, despite using C++, have the "Ada attitude": no pointers, one `assert()` every 9 lines of code, massive use of generics (templates), and not a single critical bug in 3 years. -- [http://groups.google.co.uk/group/comp.lang.ada/msg/bf2f9970828367bd Ludovic Brenta]
+
+ * I have been using Monotone from version 0.14, and I have never ceased to be amazed by the combination of stable functionality and high speed of development the team behind Monotone has been able to show off. The beauty and simplicity both in design concept and user interface, as well as the amazing (so far unmatched) helpfulness of the Monotone team ensures that I will be a Monotone fan for a long time to come. The extra bonus of distributed functionality, next generation features and damn near perfect documentation just makes me even happier :) -- [mailto:martin_at_troja_dot_ath_dot_cx Martin Kihlgren] 2007-01-30
+
+
+ * My development team has just migrated our 11-year-old codebase from CVS to monotone with very little downtime. We develop a set of proprietary products with a development team of 25.  Overnight, we've drastically reduced the amount of time we spend managing build and integration, and we've improved our ability to support multiple versions of a product.  The merge features rock!  The documentation is brilliant.  Happy :-)  DBS. 2007-07-18
+
+ * You may have stumbled across this site in the search for a new CM system. There are a lot of free alternatives aren't there? Your head may be spinning from all the information you have absorbed. Which one do we choose? Well stop searching and simply go to the Monotone home page, you have found your answer :-). We were in this predicament about 3 months ago and when we evaluated Monotone, more out of curiousity than good judgement, we became hooked. Don't be fooled by reports of performance issues, these were addressed before the 0.3 series came out. When we started to use it everything just felt right, from the quality of the code to the simplicity of its interface. One of the key features that attracted us was the new automated merging algorithms. At first you probably won't notice the difference but after a while you might begin to wonder why so few conflicts have been detected. Well have a look at what went on using monotone-viz, you will then understand the amount of work that has silently been done for you. It is not often that I feel really passionate about software (other than the stuff I write :-)), least of all a CM system, but Monotone is undoubtedly very much the exception. To the development team, many many thanks for all your hard work :-). TC 2007-09-01 (UK)

@@ -1,0 +1,27 @@
+[[!tag migration-auto]]
+
+# CvsSync rewrite #3
+
+This page just serves as a notepad to introduce you to the more esoteric features of cvssync3.
+
+ - CvsSync3 uses attributes to store information about file revisions and metadata and directory metadata. Repository metadata is stored as root directory attributes.
+
+ - CvsSync interfaces cvs and mtn via pipes
+
+ - CvsSync (mtn_cvs) uses mtn infrastructure (ui.hh, sanity.hh, options.hh) while beeing an executable on its on
+
+ - CvsSync includes a C++ class interface to monotone automate process !
+
+Notes on discussion with Nathaniel during Monday
+
+ - consider using certs for up-to-dateness of revisions
+
+ - ? remove SHA1 attr, use explicit vs modified attr for takeover
+
+ - clean up and generalize put_revision
+
+ - consider attr only cvssync info storage by branching
+
+ - put filename into RCS dotted version attr? (because of renaming)
+
+ - maybe add cvs average date into a attribute, too

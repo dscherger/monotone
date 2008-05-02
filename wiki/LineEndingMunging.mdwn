@@ -1,0 +1,65 @@
+[[!tag migration-auto]]
+
+We have to munge line endings in various ways.  This is a sad fact, but it seems unavaoidable, so how should we minimize the pain?
+
+The goal *is not* to come up with a perfect solution that can handle every single situation we can possibly conceive of, plus a large number we can't conceive of.  The goal *is* to come up with the minimal solution that is correct and will not feel minimal to users.
+
+Discussion links:
+  * http://thread.gmane.org/gmane.comp.version-control.monotone.devel/5881
+  * http://colabti.de/irclogger/irclogger_log/monotone?date=2006-02-02,Thu&sel=53#l104
+  * http://thread.gmane.org/gmane.comp.version-control.monotone.devel/5964
+  * http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9231
+  * http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9304
+
+# In the Workspace
+
+## Current implementation
+
+We currently control this stuff with a hook.  This is manifestly broken.  It should be controlled per-file with attrs (I think the only reason it isn't is that attrs didn't exist back then).
+
+## Other implementations
+
+### Subversion
+
+Subversion has definitely put thought into their rules here.  It's worth reading their [http://svnbook.red-bean.com/en/1.1/ch07s02.html#svn-ch-7-sect-2.3.5 docs].  Basically, the rules are:
+  * you have to opt-in to line end munging on a file-by-file basis
+  * files can be specified to be always-LF, always-CRLF, always-CR, or always-native.
+  * one can use a server-side hook to require that all files have a mime type, and that all files with text/* mime types have an explicit eol style.  This is recommended, and the svn people do this on their own repo.
+  * individual users can use the "autoprops" functionality to give a list of filename patterns and the eol-style that they want automatically applied to them
+  * handling of edge cases is a bit weird -- their convert-to-<style> algorithm is, go through and replace all line endings (of any type!) with the desired resulting line ending, but bomb out if you encounter multiple line ending styles within a single file.  So applying the CRLF->LF operation on a n all-CRLF file gives an all-LF file, and applying it on an all-LF file also gives an all-LF file, but applying it on a mixed CRLF/LF file gives an error.  The logic is that:
+    * it makes their conversion code simpler if they only have to pass it the target line ending type, rather than both source and target
+    * this still preserves reversibility -- in case someone accidentally checks in a binary with conversion turned on, the original binary is retrievable by applying *some* line ending conversion or another.
+
+Their experience:
+  * always-native is used a *lot*.  Some projects simply set up their patterns so that "*" maps to svn:eol-style=native.
+  * always-CRLF is used rarely for windows-specific files
+  * always-CR is never used at all, that I can tell.  (The only uses I can find in some cursory googling are in svn and svk testsuites.)
+  * some people do actually use always-LF; I think simply as a way to prevent mixed line endings sneaking in accidentally.  Makes some sense, if you don't want to actually have file-munging going on, but you also want the tool to prevent accidental checkins of CRLF line endings.  Possibly this is not really the right place to do this, though; I can imagine wanting identical functionality to prevent people checking in code containing tabs, for instance.
+  * each user having to define their autoprops individually causes much irritation, and checkins with missing eol-style are very common.  Then people have to go fix it up afterwords.
+
+### Perforce
+
+http://article.gmane.org/gmane.comp.version-control.monotone.devel/5963
+
+## What should we do?
+
+ * We need to support no-munging and munge-to-native, at least.  munge-to-<explicitly given line ending> is not really necessary, especially in a first pass.  The only use case I know of where always-CRLF is really necessary is for complicated build setups that involve checking out on one platform and then building on the other; it seems like most of these cases can by handled by providing a way to temporarily override monotone's idea of what "native" means.  This still doesn't cover the case where you have picky tools on both posix *and* win32, *and* you want to share a single source dir between both, *and* the pickiness applies only to files used only on one platform, shared files are always processed in a non-picky manner... but YAGNI.
+ * Munging should be enabled by a file attr.  This means that only files that are explicitly marked will be munged, and one can always explicitly decide for any individual file whether it should be munged or not.
+ * It should be possible to set defaults for these file attributes on a per-project basis.  Probably this means a `.mt-autoattrs` to go with `.mt-ignore`.  This controls the attrs that are put on a file by default at `monotone add` time; they can always be modified later by hand.
+ * Monotone should refuse to commit, diff, status, etc. native-style files that have inconsistent line-endings.  They are treated similar to missing files.
+   * Should it treat native-marked files with consistent-but-non-native line endings similarly?  Or should we be like subversion and treat this case as just fine?
+ * Text files should be stored internally in a standard format -- the only really viable options are LF-separate or CRLF-separated.  (So, for instance, no length-prefixed vector of lines or whatever, please.)  This is because files may transition from not having an eol-style attr to having one, and vice versa, and if our binary representation for text files matches the standard binary representation for text files, we avoid creating massive spurious diffs.
+
+Unresolved issues:
+ * Suppose we go with LF as our internal line separator, and someone checks in a file with CRLF endings and puts a mtn:eol-style=native attr on it.  (Presumably monotone would complain if someone tried to do this, but perhaps they accidentally found some hole in monotone's checking, or are just a nasty evil person who disabled the checks so they could put weird data in the db.)  What happens next?  I see two basic options:
+   * eol-style=native means that we *guarantee* that this file contains only LF's.  In this case, netsync needs to verify this invariant on all incoming files.  This is *probably* not reasonable to implement.
+   * eol-style=native does not actually guarantee anything; it is possible to have files in the db with inconsistent line endings and this attr on them.  What should we do with such files at checkout time?  Some options:
+     * force them consistent when writing them to the workspace (i.e., normalize all line endings of whatever sort, to native).  This means that 'checkout; commit' is not a no-op, because it will normalize any inconsistent line endings.
+     * print a warning, and leave line endings alone entirely (as if there were no eol-style attr present).  This means that after 'checkout', the workspace may be inconsistent -- diff will not work, etc.
+     * record the file in the workspace as conflicted, requiring user resolution.  See NonMergeConflicts.
+ * Should we continue to support diff/merge on files that do not have a line-ending defined?  The argument for "yes" is that projects that do not want to deal with this junk can just ignore it entirely, and treat all files as binary.  (Like, for instance, the monotone project does now.)  The argument for "no" is that it's not really that big a deal to just be eol-style-correct, given appropriate tools, and certainly easier than trying to come up with a coherent strategy for guessing all the time.
+   * If we do require eol-style for files to be diff/merge-able, then we should probably require an explicit marking on every file either saying it is mergeable or it is not mergeable, to reduce instances where someone accidentally leaves the attr off, and then even after they fix it, the presence of a binary ancestor continues to screw up merges.
+
+# When merging
+
+People also complain that merging (and diffing, for that matter) wipe out line ending differences, because we split on LF|CRLF|CR and then join with LF.  I'm not sure whether this is actually bad.  More comments here would be useful.

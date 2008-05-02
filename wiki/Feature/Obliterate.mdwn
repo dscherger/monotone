@@ -1,0 +1,35 @@
+[[!tag migration-auto]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+To completely remove content and history of something committed inappropriately when necessary.
+
+Note that this is not the same as just backing out bad changes, which should be recorded as normal history. This is to remove content that must be purged, perhaps because it is legally encumbered or otherwise inappropriate.  It's not something that will happen often, but can be very important when needed.
+
+# Partially Supported
+
+This is an especially challenging operation for monotone and any other distributed VCS, because of the replicated nature of the repository. It can be difficult to know where all the copies of the offending material may be, and even more difficult to exert control over all of those places.  Ordinarily, this is a good thing: in monotone, it is and **should** be hard to remove history information by any kind of inadvertent command or accident or anything else other than a deliberate and organised effort.
+
+It is something that cannot be entirely addressed purely within software; consider the database on someone's backup CD or DVD as an example.  This is therefore something that can only *ever* be partially supported by any distributed VCS application, and will require manual steps in accordance with the particular situation at hand.
+
+The problem arises if the offending revisions and content have been `sync`ed to other databases and spread from there.  Even if all those copies can't also be destroyed, they need to be prevented from replicating back into the cleaned-up databases. The potential for a feature to filter and reject known-bad incoming revisions from netsync has been discussed but not yet implemented. This may be enough that a project can remove and prevent redistribution of the offending content from their own servers.  Future work on policy and trust distribution mechanisms may offer further capabilities in this regard.
+
+# Example Usage
+
+Revisions can be removed from a local database, if they have no descendants:
+     $ mtn -d database.mtn db kill_rev_locally <explicit-sha1-revision-id>
+
+If there are descendants, additional changes have been based on the bad revisions and they must also be removed. If they're unrelated and still wanted, they must be reapplied to an ancestor of the old revision (most likely using `pluck`).
+
+Removing the revisions does not remove the file content. This can be removed with a local sync to a new database, which won't transfer the now-unreferenced file content
+     $ mtn -d new.mtn db init
+     $ mtn -d old.mtn sync file://new.mtn '*'
+
+These steps will need to be taken on all affected databases.   If this number is known to be large, the branch epoch feature can be used to render clean and dirty databases incompatible and prevent accidental re-pollution.
+
+# Further Reference
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureObliterate VCSFeatureObliterate]
