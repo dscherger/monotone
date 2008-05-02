@@ -1,0 +1,100 @@
+There are lots and lots of projects out there using CVS.  Understandably, they want to stop.  We hope they're going to want to use Monotone instead, or use both for a while until they're comfortable with monotone.
+
+This page describes some of the interoperability and migration options between CVS and Monotone.
+
+= CVS migration and interoperation methods =
+
+Monotone has a number of methods of its own. These can be used either by a project wanting to migrate fully to monotone, or by individual developers wanting to use monotone locally to track project that is still in CVS, as well as develop their own local changes with benefits of the more featureful tool.
+
+There are also tools like tailor (and others) which support
+monotone as source or sink, so you can either use that directly, or
+use it to import from something else (like svn) as an intermediate
+step if that happens to do a better job of making sense of nasty cvs
+quirks.
+
+Each of these choices has its own considerations.
+
+
+== cvs_import method ==
+
+Monotone offers the `cvs_import` command, which will read a tree of CVS `,v` files,
+and reconstruct content and file trees to create a linear monotone history.
+
+This method pulls in the entire CVS history, and is primarily intended
+to support projects switching from CVS to monotone as their main
+version control tool.
+
+There is an important limitation, though. This method doesn't presently
+try to attach branches to their
+parents, either on the mainline or on other branches, instead each CVS branch
+gets its own separate linear history in the resulting monotone db.
+
+Disconnected branches have nasty consequences for pullups and merges
+post-import, of course. There's work (experimental) to do the branch
+reconstruction and
+produce a better full ancestry structure from the chaotic gas of CVS
+revisions, arbitrary branch points, partial and moved tags, etc etc.
+This work could use some help, if anyone feels inspired.. see the BranchStatuses page :)
+
+This is
+where the tricky issues of nasty CVS data quality and automated vs
+manual reconstruction and corrections come in, many of them not at all
+specific to monotone.  These are discussed further below.
+
+== cvs_sync method ==
+
+Disconnected branches can be fine for users wanting to use monotone to track specific branches of other projects; typically release branches of the other project which are used for reference as vendor branches in the monotone project.
+
+The (still experimental) `cvs_sync` method is designed for stand-alone
+developers following a CVS project with their own local monotone.
+
+The
+`cvs_sync` method allows the monotone db to import selective (eg, only
+recent) CVS history, and then manage 2-way updates between the CVS and
+monotone repositories: pulling in new revisions from CVS, and
+constructing CVS commits for work done locally (typically, putting
+back work in a private monotone branch back to the mainline CVS
+repository).
+
+See also CvsSyncHints.
+
+== cvs_takeover method ==
+
+The related (and also experimental) `cvs_takeover` method is an even quicker way; it starts from an existing CVS checkout, and doesn't import any CVS history at all. It takes over the workspace and commits it as a new first revision in a monotone branch, together with information about the CVS file versions that were in the workspace.
+  
+You can then use `cvs_sync` to pull in more recent changes from the original CVS repository, or push back local changes.
+
+= CVS is Hard =
+
+CVS is really a very different kind of beast to the conceptual model used by
+most modern VCSs.  In particular, although CVS tries to look like a tool
+that versions whole trees of files, it has no transactional view of these
+trees, so things can happen in CVS that can't be represented in transactional
+whole-repository systems.  While that might sound like CVS is less restrictive,
+these things that can happen in CVS are generally considered undesirable.
+For example, you can get CVS commits that overlap with eachother in time.
+
+As well as versioning and locking, everything else in CVS is done at the
+individual file level, and repository-wide actions have to be reconstructed
+from the individual files.  CVS allows tags and branches to exist per-file,
+which other systems (including monotone) don't.  CVS also loses information
+that modern VCSs want to track, such as file renames. And of course CVS has
+a long history that includes bugs, which have left other issues and
+inconsistencies in the revision history of many projects, especially the older and larger projects.
+
+It's a hard problem, and there's a lot of work in the field,
+because CVS refugees everywhere face similar issues, whatever new tool
+they're fleeing to.
+
+== What do you want to import? ==
+
+When looking at alternate tools, CVS refugees need to face some choices
+and decisions about just how much history they want to keep,
+reconstruct, or attempt to synthesise in any repository migration.
+
+As one example, CVS doesn't track file renames, but it seems possible to
+make some guesses about reconstructing this lost history during a
+migration.  Regardless of the capabilities (and accuracy) of various
+tools, consider whether you actually want to do this, or is it better to faithfully
+represent what developers did within the constraints of CVS at the
+time?

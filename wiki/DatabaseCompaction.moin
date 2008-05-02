@@ -1,0 +1,46 @@
+We do a pretty good job of storing the file data compactly on disk, but we should do a better job of storing metadata compactly too.  Here are some ways we could do that, in ascending order of invasiveness / controversiality:
+
+== Compact heights ==
+
+Heights are stored on disk as arrays of four-byte integers.  As almost all entries in these arrays are small numbers, a variable-length representation would be a win, especially if it preserves the property of being able to use `memcmp` to compare them.  I am 90% sure that a concatenated sequence of integers in the SQLite variable-length integer representation has this property.  A sequence of ULEB128 integers does not, because ULEB128 encoded values are little-endian.  This change can be totally invisible outside `rev_height.*`.
+
+== Put heights in the revisions table ==
+
+I'm not sure whether this is a good idea.  There is exactly one height for every revision, so storing all the heights in the revisions table would be a correct thing, and would probably take less space on disk.  However, there are situations where we have to throw away all the heights and rebuild them (notably, with PartialPull, horizon moves).  It may be more efficient to keep them in a separate table so we can do `DELETE FROM heights; <rebuild>` rather than `UPDATE revisions SET height=NULL; <rebuild>`.  Also, not every revision lookup needs to see the height, so we may get better disk cache behavior from keeping the heights on the side.  This change would be invisible outside `database.cc`.
+
+== Use revision rowids in the revision_ancestry table ==
+
+The revision_ancestry table's schema currently reads like so:
+
+{{{
+   CREATE TABLE revision_ancestry
+	(
+	parent not null,     -- joins with revisions.id
+	child not null,      -- joins with revisions.id
+	unique(parent, child)
+	);
+}}}
+
+where ''parent'' and ''child'' are both SHA1 values stored as binary strings, joining (as it says) with the "id" field of the revisions table.  We could instead turn them into `INTEGER`s and have them join with sqlite's internal `ROWID`s.  This change could be confined to database.cc at the price of having to join this table against `revisions` on every access, or else we could make a globally-pervasive change that ceases to use the SHA1 binary strings as cookies for revisions internally (using the `ROWID`s instead).  This would make more sense if we also ...
+
+== Use revision rowids in other tables that join with revisions.id ==
+
+This concept can also be applied to the tables `heights`, `rosters`, `roster_deltas`, and `revision_certs`.  Note that the IDs stored in `rosters.id` and `roster_deltas.id` are actually the associated ''revision'' hashes.
+
+== Use rowids for all foreign keys ==
+
+Other columns that are joined-with (at least notionally; we don't use sql joins much) and contain SHA1s are `files.id`/`file_deltas.id` (`file_deltas.base`) and `public_keys.id` (`revision_certs.keypair`).
+
+== Put all the SHA1s in a lookaside table ==
+
+At present just about every SHA1 value we have is stored at least twice, once as the actual hash of some blob, and one or more times as a pointer in some other data structure.  We could put them all in a lookaside table, and use the `ROWID` in that table everywhere they appear now.  We could then turn all the fields that point into that table into `INTEGER PRIMARY KEY`s and have SQLite collapse them into the `ROWID`.  (This is basically an extra fillip on "Use rowids for all foreign keys" above.)
+
+= More radical changes =
+
+== Compact revision/roster format ==
+
+Define a new on-disk format for revisions/rosters which is not textual and can be stored/queried more efficiently?
+
+== Experiment with other compression algorithms ==
+
+bzip2, p7zip, lzma...

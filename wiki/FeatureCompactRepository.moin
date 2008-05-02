@@ -1,0 +1,39 @@
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+= Description =
+
+The repository storage format should be compact and efficient, so that it is convenient for developers to keep replicated copies.
+
+= Supported =
+
+Monotone compresses file and delta storage with gzip before writing to the database. For typical source file content and large projects with long histories, the resulting database file is usually similar or smaller than the corresponding CVS `,v` files.  Storage size has not been a particularly strong development focus, and some information is stored uncompressed for fast indexing and searching.  Further efforts at more compact storage forms could be made, but are not considered particularly important for size results alone at this stage given the already good results - such changes may happen in the course of making performance or other improvements as well.
+
+Monotone's storage format is also very convenient: it is a single [http://www.sqlite.org SQLite] database file (by convention with a `.mtn` extension). There are no trees of history files consuming inodes in hidden/dot directories scattered throughout the workspace. One database can be shared between many workspaces on the same machine, so there is no need to duplicate the history storage when working on several independent changes or along several different branches, each in their own workspace.  Each workspace has a single `_MTN` metadata directory at the root, with a handful of small files, one of which includes a reference to the database to use for operations within the workspace.
+
+A number of useful and important operations can be performed on the database file without ''any'' workspace, so long as arguments normally inherited from the workspace are provided explicitly: network `sync` operations, branching and merging, diffs between revisions, log review, and others.
+
+The database format is machine- and endian-independant, and so databases can be quickly copied between machines where necessary or useful, including as a potential communication channel.  History can be transferred or recovered from a copy of a db file on a CD or DVD, as one example.
+
+See also: FeatureRobustRepository
+
+## = Example Usage =
+##
+## come up with a better example 
+##
+## To check out multiple workspaces 
+##
+## {{{
+## $ mtn -d monotone.mtn db init
+## $ mtn -d monotone.mtn pull venge.net '*'
+## $ mtn -d monotone.mtn co -b net.venge.monotone
+## $ mtn -d monotone.mtn co -b net.venge.monotone.experiment.foo
+## }}}
+
+= Further Reference =
+
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Database Database Commands]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat VCSFeatureGoodRepositoryFormat]

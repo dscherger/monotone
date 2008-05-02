@@ -1,0 +1,40 @@
+Some tasks for improvements to documents:
+
+= problems =
+
+ * reference docs for automate commands actually document the different tokens that can appear
+ * automate.cc duplicates this reference stuff in comments
+
+= user documentation =
+
+ * improve the getting started entry points, perhaps into several different documents with stories told from different perspectives:
+
+   * a quick worked-through example, with commands and output and very brief comments (links to more details) for a quick overview
+   * someone getting started on a new, blank project (like juicebot)
+   * someone pulling down an existing monotone-hosted project (like monotone's [http://venge.net/monotone/self-hosting.html self-hosting] page; even a template for other projects to stick on their sites to help get users started, with links back to monotone doc for more details)
+   * someone looking to migrate an existing project from other-VCS to monotone
+   * someone looking to use multiple VCS's in parallel, perhaps while trialling them, via .cvssync or tailor
+   * source-code tour (see http://opensolaris.org/os/community/zfs/source/ for a good example in another project)
+   * ... ?
+ * A good writeup of similar ideas: http://headrush.typepad.com/creating_passionate_users/2006/09/how_to_get_user.html
+
+ * a "usage guide" document (or set of wiki pages, even) on common patterns, BestPractices, TipsTricksScripts, etc
+   * why you should commit before update, why you should pull and merge before pushing, etc
+   * a good description of how to use branching and propagate; see savannah #6523 and possibly using the BranchAnalogy
+   * njs (in particular) is constantly coming out with cool little shell snippets using "monotone list ..." and "monotone automate ..." commands.
+
+ * generate the man page from commands.cc's metadata.  (maybe simplest just to add a monotone command that dumps out some troff or something; run it during build.)
+
+= advanced / internals documentation =
+
+ * formally document the basic_io format, and its intentions and usages.  a lot of the automate commmands will emit or consume this format, and an understanding of the precepts will be vital for advanced users and authors of additional tools using monotone.
+  * see http://lists.gnu.org/archive/html/monotone-devel/2005-10/msg00033.html  for a beginning
+  * see BasicIoFormalisation for some details and debate
+  * a definition of the whitespace normalisation that goes on
+  * a reference for the entitities that can be emitted (data type dictionary), either as a list or as a component of each command description
+  * see http://colabti.de/irclogger/irclogger_log/monotone?date=2005-11-25,Fri&sel=117#l194 for some more discussion
+
+ * netsync theory and operational model (less so the specific bitwise wire protocol)
+ * how merging really works, and how to get specific results and fine-grained control over it, for advanced users
+ * document and draw rosters
+ * document the merge algorithm we use (straight-forward adaptation of the [http://article.gmane.org/gmane.comp.version-control.revctrl/93 multi-*-merge paper] gives a start, plus things like lifecycle, attrs, etc.) -- very useful for advanced users, too.

@@ -1,0 +1,79 @@
+Here are some of the known ways one ''could'' potentially do delta-compression on large version corpora.
+
+ * backwards linear-chained deltas (like classical monotone)
+ * backwards linear-chained deltas with occasional full-text breaks
+ * forwards linear-chained deltas
+ * forwards linear-chained deltas with occasional full-text breaks
+ * forwards deterministic skip-deltas (like svn)
+ * forwards/backwards randomized skip-deltas (like classical skip-lists)
+ * single base plus many deltas against it -- i.e., store a->b->c->d as (a, a->b, a->c, a->d), creating a new base as deltas grow.  these pretty much have to be forwards deltas.  (D. Richard Hipp, "XDFS-f" in [http://xmailserver.org/xdfs.pdf Josh MacDonald's masters thesis] (who cites Burns and Long))
+ * whatever it is git uses to find similar items -- sorting by size or something?
+ * tree-structured storage -- using the inexplicably-not-well-known trick for storing strings as trees, one can share subtrees.  Josh cites EXODUS and SDS2 (see 2.2 of the thesis) as using this trick, and there are some other interesting cites in the same section.
+ * several of these mechanisms can be applied either to a forced-linear history (like hg uses), or allowing forks (and merges?) to appear in the reconstruction graph.  Josh actually claims that that forced-linear time ordering gave him smaller deltas than RCS-style-topology branched deltas, on his test case (FreeBSD CVS history -- I guess they must have a lot of bug-fixes applied to multiple branches or the like?).
+ * weaves (actually, these should maybe be thought of a sub-case of tree-structured storage -- with a different perspective) -- as traditionally implemented, I think these get ''excellent'' compression, because you have to rewrite your whole weave on every change, so you might as well compress the whole thing at once, and that gives your compressor much more to work with than a delta-chaining approach.  (Unless you batch up your deltas somehow.)
+
+= Random thoughts =
+
+xdelta actually supports multiple-source deltas totally straightforwardly -- basically you just use all the sources as potential places to draw strings out of in COPY operations.  is this useful at all?
+
+Josh also reminds us that it's possible to use extent-style tricks to efficiently combine (and maybe even invert?) delta chains, which can be useful if you have some deltas on disk and you want some different deltas to send over the network or whatever.
+
+[http://www.almaden.ibm.com/projects/data/storagesystems/iopads97.pdf Efficient Distributed Backup with Delta Compression (Burns & Long, 1997)] has some analysis of forward vs reverse vs against-base delta performance.
+
+Chaining, skip-deltas, and against-base all seem to be special cases of some more general family of algorithms -- they're all trying to pick some rule that will balance compression against reconstruction cost.  Surely none of these particular three points are at the global optimum of the fitness function for this class?  And I observe that the competing variables we want to optimize for are simple to measure as we go on the actual data we're trying to store... (i.e., we can in principle calculate how many seeks, how many bytes, etc., we are using, and make decisions based on that.)
+
+= Interaction with netsync =
+
+Netsync wants to send simple forward linear-chained deltas.  Reconstructing other things from these can be very expensive (e.g., what we do now to get backward linear-chained deltas, where we not only reverse every delta, but we store each full version to the db and then remove it again when the next delta comes in!).  Against base deltas might be doable here (when considering the compression mentioned below), though making sure the other side has the base adds some amount of complexity, and I'm not sure how well this works when the receiving side ''does'' have some files already.
+
+Netsync also wants to send exactly what is in the source's db, to minimize load on servers.
+
+== Forward versus Reverse Linear Chains ==
+
+The advantage of reverse linear chains seems to be that the most common accesses (check-outs) 
+are against the end of the chain which in a reverse linear chain means there are no deltas to 
+apply.  But a reverse linear chain makes netsync difficult.  A forward linear chain would
+help out netsync, but it has the disadvantage that you have to follow the whole chain of
+deltas from beginning to end in order to get the latest version.
+
+Perhaps one can meet both needs by keeping a forward linear chain 
+but also keeping a cache of fulltext of the N most recently accessed files.  Or perhaps
+the cache just contains a copy of the end of each chain. In this way, netsync gets
+the benefit of a forward chain and check-outs can usually be fulfilled from
+cache and thus avoid the long delta chains.
+
+== Interaction with zlib compression ==
+
+To counteract increased netsync traffic using against-base deltas, applying zlib to the entire stream (rather than per-packet) seems to make against-base deltas comparable to linear deltas.  (I think this requires the assumption that we send related deltas together at netsync time, i.e. sort by file.)
+
+See the au.asn.ucc.matt.monotone.test-deltas branch in the main venge.net repository for a test script and [http://matt.ucc.asn.au/monotone/delta-screenshot.txt sample output].
+
+== Size comparison for against-base deltas ==
+
+For the initial net.venge.monotone* database, of size 90,074,112: (all sizes are vacuumed)
+Storing full files when size(del(base,new)) > N*size(base):
+{{{
+N=0.10: 152,059,904
+N=0.15: 171,443,200
+N=0.20: 183,305,216
+N=0.30: 213,744,640
+}}}
+So this is fairly consistent with drh's experiments, with a ~1.5x-2x size increase. Cold-cache checkout times for head are slightly shorter with the normal reverse-chained-delta database (though may be experimental error).
+
+== Revlog variations ==
+
+http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/5407
+
+It looks like the mercurial guys are very seriously considering switching to delta-against-parent in some situations, because it seems to give significant space savings:
+  http://www.selenic.com/pipermail/mercurial/2006-March/006910.html
+(Apparently size may matter more than pure seeks for cold cache; and there are some interesting tweaks going on, like only doing this for files, not for their roster equivalents.)
+
+http://thread.gmane.org/gmane.comp.version-control.mercurial.devel/5862
+
+= Random thought on space locality using current sqlite functionality =
+
+Store a whole revlog-style whole-base+deltas span (a revlog actually consists of many of these spans, but you tend to access them sort of independently) in a single sqlite row.  In an ideal world, sqlite would let us read/write from such rows directly (possibly without allowing us to change their size), and we could store all deltas in such thingies.  Maybe even mmap them.  In this world, we would probably have to keep the latest deltas split up into separate rows like now, but could archive old ones into more compact and seek-friendly storage this way.  (I am only assuming that if we allocate a whole large blob at once, it will end up contiguous on disk.)
+
+= Shootout =
+
+How do we choose?  DeltaStorageStrategies/ShootOut

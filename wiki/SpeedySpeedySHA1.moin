@@ -1,0 +1,83 @@
+There are a number of performance issues and possible bottlenecks in monotone. Some of these represent work we do unnecessarily, where algorithms or implementations have been developed for correctness first, and now are being optimised for performance.  There is room for ''significant'' improvement of this kind in a number of areas, and we're attacking several of these bottlenecks as we find them.
+
+One thing is going to remain: monotone will always do a lot of SHA1 operations, and this work is fundamental and unavoidable. As other bottlenecks are removed and improvements are made, proportionally more and more of the remaining time monotone spends, will be spent doing SHA1.
+
+So it'd be nice to have a really fast SHA1 in botan for us.  "Really fast", these days, means hand-tuned asm; such cores can (in extreme cases) be as much as 4x faster than optimized C.
+
+= Sources =
+
+== ARM ==
+
+ * Git has GPLed arm-optimized SHA1: see directory [http://www.kernel.org/git/?p=git/git.git;a=tree;f=arm arm] in the source tree.  This is just a few self-contained files (.c and .S) exporting a simple interface.
+
+== PPC ==
+
+ * Git has GPLed ppc-optimized SHA1: see directory [http://www.kernel.org/git/?p=git/git.git;a=tree;f=ppc ppc] in the source tree.  This is just a few self-contained files (.c and .S) exporting a simple interface.
+
+ * OpenSSL has BSD+advertising licensed ppc-optimized SHA1: see directory [http://cvs.openssl.org/dir?d=openssl/crypto/sha/asm crypto/sha/asm] in the source distribution; the ppc code also depends on [http://cvs.openssl.org/rlog?f=openssl/crypto/perlasm/ppc-xlate.pl crypto/perlasm/ppc-xlate.pl] to post-process the output for portability.  Both of these files are copyright Andy Polyakov, who is willing to relicense them (see below).
+
+== IA64 ==
+
+ * OpenSSL has BSD+advertising licensed ia64-optimized SHA1: see directory [http://cvs.openssl.org/dir?d=openssl/crypto/sha/asm crypto/sha/asm] in the source distribution.  This file is copyright Andy Polyakov, who is willing to relicense it (see below).
+
+== x86-64 ==
+
+ * OpenSSL has BSD+advertising licensed x86-64-optimized SHA1: see directory [http://cvs.openssl.org/dir?d=openssl/crypto/sha/asm crypto/sha/asm] in the source distribution; the x86-64 code also depends on [http://cvs.openssl.org/rlog?f=openssl/crypto/perlasm/x86_64-xlate.pl crypto/perlasm/x86_64-xlate.pl] to post-process the output for portability.  Both of these files are copyright Andy Polyakov, who is willing to relicense them (see below).
+
+== x86 ==
+
+ * OpenSSL has BSD+advertising licensed x86-optimized SHA1: see directory [http://cvs.openssl.org/dir?d=openssl/crypto/sha/asm crypto/sha/asm] in the source distribution.  ''However'', this code cannot be relicensed.  ''However however'', Andy Polyakov may rewrite it when he gets back from vacation (see below).
+
+ * [http://sourceforge.net/projects/beecrypt/ beecrypt] has LGPLed x86-optimized SHA1; however, it is not very fast, at least on P4.  See http://article.gmane.org/gmane.comp.version-control.monotone.devel/7773.
+
+ * [http://www.lysator.liu.se/~nisse/nettle/ nettle] (site may be down, but debian for instance has the source) has GPLed x86-optimized SHA1; it is pretty fast, but (at least on P4) not nearly as fast as openssl.  See http://article.gmane.org/gmane.comp.version-control.monotone.devel/7773.
+
+= TODO =
+
+== General ==
+
+ * Write the basic framework to plug in replacement SHA1 "engines" to botan -- the basic configury, plus somewhere where we call add_engine() when we have one compiled in, etc.
+   * This is very straightforward, and explained at http://article.gmane.org/gmane.comp.version-control.monotone.devel/7674
+   * JackLloyd also says: ''It's reasonably simple, on the order of 100 LOC. Take a look at modules/eng_ossl/ossl_md.cpp for an example. The documentation is pretty lacking in this area, but I (JackLloyd) would be happy to walk someone through it.''
+
+ * Add a small sha1 benchmark to monotone -- 'mtn benchmark_sha1' or something, as a hidden command -- that runs sha1 over some number of bytes and times the result, using botan's portable SHA1, then whatever optimized version(s) we may have available.  It may be useful to compile in multiple cores for the same architecture, at least at first, so that we can ask users to run this command and send us the results, to determine which cores are best on different cpus.
+
+== Git-derived cores ==
+
+ * Just drop in the arm/ and ppc/ directories to monotone, and write a trivial engine that just calls into the C source.
+
+Open questions:
+ * Will these build and work on windows with mingw?
+
+== OpenSSL-derived cores ==
+
+ * Andy Polyakov has agreed to re-license, but on August 10 he said he is leaving for a couple weeks vacation, and so will be offline until late August.
+ * He will likely re-write the 32-bit x86 code to remove the license encumberance when he gets back.
+ * We owe him a postcard :-).  I (NathanielSmith) will send him one, but if anyone else wants to too:
+{{{
+Andy Polyakov                                   
+Sven Hultinsgata 12a
+Chalmers University of Technology
+Gothenburg
+SE-412 96 SWEDEN
+}}}
+
+Once licensing is settled:
+
+  * Figure out what to do with the perlyness of the code (both because it might let us simplify things a bit, and also because the x86 perlasm portability code is license-encumbered):
+    * On a very casual skim through these files, I believe that they can easily be de-perl-ified -- the point of the perl is to use the same source for several different assemblers / object file formats, and I think they're working much harder than they need to on that score.  For our purposes, it would be okay to have two copies, one that was correct for ELF/Unix and one that was correct for PE/Windows, and we could be pretty picky about which assemblers we supported; thus for instance we could use GAS's built-in macro facility, or GCC's ability to run assembly through the C preprocessor. -- Zack
+    * But Andy says: ''No, not only that. Perl is also used to generate unrolled loops and assign more comprehensible names to registers. In other words perl makes it manageable.''
+    * I also wonder about whether it is difficult, or we care, to support non-GNU toolchains at all.  I believe that on Solaris we might build with the native toolchain, for instance?
+
+  * Integrate into the build system/configury
+  * Drop in the Botan engine that calls into the asm (NB, we can't use anything _but_ the asm cores; the stuff in OpenSSL that does buffering and what-have-you is also license-encumbered).  JackLloyd already wrote the relevant code: http://article.gmane.org/gmane.comp.version-control.monotone.devel/7681
+
+Open questions:
+  * does the OpenSSL x86 core (labeled "i586") work on i486?  (g++ already doesn't support i386, so not much point in worrying about that...)
+  * will the x86 and x86-64 cores build and work on windows with mingw?
+
+== Nettle ==
+
+ * Just pull out the relevant pieces (or optionally link to libnettle), and hook them into Botan.
+
+This might be a good first one to try, since it has no legal issues, benefits users on x86 (not that many people care about or can test, say, ia64...) and for a first pass we could simply link to the library if it's detected by configure.  Even if Andy rewrites the x86 openssl core for us, this won't happen for a bit; having this working would make it easier to compare the different core's performance on different hardware (the P4 I ran tests on is a bit of an outlier); and in general it's a bad policy to not do things now just because someone has said that they will later do something to make it obsolete.

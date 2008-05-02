@@ -1,0 +1,153 @@
+= GCC build =
+The last experiences I had with that are 0.20-era and thus outdated. gcc, as delivered by sun is also a rapidly moving target with all kinds of bugs esp. in its copy of system headers and c++ headers.
+
+If you have some guidelines for gcc, please post them here. Feedback welcome. Thanks!
+
+= Sun Studio build =
+== Compiler ==
+The official build environment on Solaris is Sun Studio 10 and 11, of which the latter can be got at no charge on [http://developers.sun.com/prodtech/cc/products/get.html Sun's Website] (not free software).
+You'll also need all [http://developers.sun.com/prodtech/cc/downloads/patches/ss11_patches.html available patches] for the compiler for your platform.
+
+== Boost ==
+If you use Boost 1.34 and Studio 11 with latest patches or Studio 12, no patches are necessary anymore!
+
+For older versions of Boost, you need [http://blogs.sun.com/roller/page/sga some patches] to the boost source itself, as its knowledge of sun studio's features is rather limited. You'll find the patches, as well as build instructions on the right pane on the site. [http://blogs.sun.com/roller/resources/sga/boost_1_32_0.patch Base patch] [http://blogs.sun.com/sga/resource/operations_posix_windows.cpp Additional patch to avoid segfaults in operations on large trees]
+
+== Compiling ==
+You'll need {{{CXXFLAGS=-library=stlport4 -features=tmplife -features=tmplrefstatic}}}. Adding {{{-Qoption ccfe -complextmplexp}}} might help in case of problems, but the documentation warns that it might produce wrong name mangling (I use it for the packages without any issues, though --PatrickGeorgi).
+
+=== Locales ===
+You might run into issues with libiconv if there's more than just the SUN version installed in a way that the compiler will pick it up. Unfortunately, the gettext macros for autotools get a bit confused by such a scenario and might try to link against the SUN libraries but using the GNU headers on build time, which fails.
+
+A solution is to configure with {{{--with-iconv-prefix=/usr --with-libintl-prefix=/usr}}} __and__ to remove the gnu iconv headers from any kind of compiler search path.
+
+If you don't have GNU iconv installed, you won't get locales support at all (but at least, it builds). The reason for that lies in the gettext macros that we inherited from gnu gettext, which only look for the GNU flavor (wasn't autoconf made for portability and finding out such differences?)
+
+If you really want locales, and want to avoid the trouble with gnu iconv, fetch the net.venge.monotone.portable-gettext-support branch. It should be complete enough to give you locales, but it's missing developer tools support without which it can't be merged into mainline (and thus, release).
+
+== Issues ==
+I don't know what other issues there are. If any come up, please post them here. 
+
+
+= Running as Server =
+
+== Solaris Service Management Facility ==
+(oliver.reiter@dresdner-bank.com, 2007-06-11)
+
+Sun Solaris 10 introduced the "service management facility" (SMF) to replace the well-known, but arcane rc scripts. In addition to start, stop, and (optional) restart methods, it allows to define dependencies between services, sources of documentation and other meta information about the service. Each service is described in a single XML file that can be imported into the system's service repository. Here is the SMF XML file that I wrote for a monotone netsync service:
+
+{{{<?xml version="1.0"?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+
+<service_bundle type="manifest" name="rochada:mtn">
+<service name="application/mtn" type="service" version="1">
+
+ <create_default_instance enabled="false"/>
+ <single_instance/>
+
+ <dependency name="milestone"
+  grouping="require_all"
+  restart_on="none"
+  type="service">
+  <service_fmri value="svc:/milestone/sysconfig"/>
+ </dependency>
+
+<!--
+ <dependency name="fs-local"
+  grouping="require_all"
+  restart_on="none"
+  type="service">
+  <service_fmri value="svc:/system/filesystem/local"/>
+ </dependency>
+
+ <dependency name="fs-autofs"
+  grouping="optional_all"
+  restart_on="none"
+  type="service">
+  <service_fmri value="svc:/system/filesystem/autofs"/>
+ </dependency>
+
+ <dependency name="net-physical"
+  grouping="require_all"
+  restart_on="none"
+  type="service">
+  <service_fmri value="svc:/network/physical"/>
+ </dependency>
+-->
+
+ <dependency name="monotonerc"
+  grouping="require_all"
+  restart_on="restart"
+  type="path">
+  <service_fmri value="file://localhost/home/mtn/.monotone/monotonerc"/>
+ </dependency>
+
+ <dependency name="mtn_read-permissions"
+  grouping="require_all"
+  restart_on="restart"
+  type="path">
+  <service_fmri value="file://localhost/home/mtn/.monotone/read-permissions"/>
+ </dependency>
+
+ <dependency name="mtn_write-permissions"
+  grouping="require_all"
+  restart_on="restart"
+  type="path">
+  <service_fmri value="file://localhost/home/mtn/.monotone/write-permissions"/>
+ </dependency>
+
+
+ <dependent name="mtn_multi-user-server"
+  grouping="optional_all"
+  restart_on="none">
+  <service_fmri value="svc:/milestone/multi-user-server"/>
+ </dependent>
+
+
+ <exec_method type="method" name="start"
+  exec="/usr/local/bin/mtn -d /home/mtn/all.mtn serve"
+  timeout_seconds="60">
+  <method_context>
+   <method_credential user="mtn" group="mtn"/>
+  </method_context>
+ </exec_method>
+
+ <exec_method type="method" name="stop"
+  exec=":kill"
+  timeout_seconds="60">
+ </exec_method>
+
+
+ <property_group name="startd" type="framework">
+  <propval name="duration" type="astring" value="child" />
+ </property_group>
+
+
+ <stability value="Unstable"/>
+
+ <template>
+  <common_name>
+   <loctext xml:lang="C">
+    Monotone version control repository server
+   </loctext>
+  </common_name>
+
+  <documentation>
+   <manpage title="mtn" section="1" manpath="/usr/local/share/man"/>
+  </documentation>
+ </template>
+
+</service>
+</service_bundle>}}}
+
+Save this to a file, say mtn.xml, and import it (svccfg import mtn.xml).
+
+The script assumes that mtn is installed in /usr/local/bin/, the user mtn and the group mtn exist (I like to give them uid 4691 and gid 4691, like the official IANA port of monotone), the directory ~mtn/.monotone/ contains the files monotonerc, read-permissions and write-permissions, and the repository is ~mtn/all.mtn (mtn -d all.mtn db init). Make sure these files are in place.
+
+(Hmm.. Some of that could probably be done with svc properties, or not? I might try that. --PatrickGeorgi)
+
+You also need to generate a keypair for the server (using mtn genkey), and the lua function get_passphrase(keypair_id) in monotonerc must return the passphrase so that mtn starts to serve without someone typing it in (see the mtn manual).
+
+You also need to configure the read-permissions and write-permissions files to accept users (see the mtn manual), and import their public keys into the database (using mtn pubkey on the client to export, and mtn read on the server to import).
+
+When all is done, enable and start the service (svcadm enable mtn) and start syncing!

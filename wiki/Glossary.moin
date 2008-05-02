@@ -1,0 +1,44 @@
+''This page gives definitions for some of the technical terms and phrases you might come across in the advanced sections of the [http://www.venge.net/monotone/monotone.html manual], on the [http://lists.nongnu.org/mailman/listinfo/monotone-devel monotone list], or in this Wiki.''
+
+[[Anchor(Cert)]]
+ Certificate:: (Normally: "Cert".) A note made against a revision.  Certificates are used internally by Monotone - for example, to represent branches and to store the ID of the person committing a change - but can also be added manually by users.
+
+[[Anchor(Delta)]]
+ Delta:: The difference between two files, directories, etc..  The delta of two [#Manifest Manifests] is called a [#Revision Revision].
+
+[[Anchor(Domain)]]
+ Domain:: Monotone uses this term to describe a group of variables held on a database.
+
+[[Anchor(Edge)]]
+ Edge:: The changes that come from one [#Revision revision] to a descendant.  A merge would have more than one edge.  In a [#DirectedAcyclicGraph Directed Acyclic Graph], one of the arrows, as opposed to one of the points.
+
+[[Anchor(Endpoints)]]
+ Endpoints:: `Need a definition here`   "By restricting the set of trusted testresult certificates, you can require that the endpoints of an update operation have a certificate asserting that the revision in question passed a certain test, or testsuite."
+
+[[Anchor(DirectedGraph)]]
+ Directed Graph:: A diagram made up of points connected by arrows.  In discussions about Monotone, this is normally just a shorter way of saying [#DirectedAcyclicGraph Directed Acyclic Graph].
+
+[[Anchor(DirectedAcyclicGraph)]]
+ Directed Acyclic Graph (D.A.G.):: A diagram made up of points connected by arrows, where no arrow can lead back to an earlier point; in other words, the arrows cannot form a loop.  If you drew a map of Monotone revisions, connecting each revision to each of its children by an arrow, this is the sort of graph you would be drawing.  This is sometimes called the ''Revision Graph''.
+
+[[Anchor(Manifest)]]
+ Manifest:: Monotone's term for a snapshot of all the files in a working copy.
+
+[[Anchor(ManInTheMiddle)]]
+ Man In The Middle Attack:: A way of intercepting key-encrypted information sent between two parties (Alice and Bob) without either of them knowing.  The third party pretends to Alice that they are Bob, and to Bob that they are Alice.    This attack only works if Alice and Bob cannot authenticate each other's signatures by a second means, say, by reading each others' key hashes out over the 'phone.  Monotone uses keys to prove the identity of the person signing a cert.
+
+[[Anchor(Packets)]]
+ Packets:: Monotone can be made to produce a text file containing a single revision.  This text file is called a Packet.  See also [#PacketStream Packet Stream].
+
+[[Anchor(PacketStream)]]
+ Packet Stream:: Monotone writes data to disk in a Stream, in other words, at the time it changes.  For efficiency the changes are `(presumably - help, anyone?)`  sent to the database in Packets, in other words, grouped together.
+
+[[Anchor(Revision)]]
+ Revision:: Monotone's term for a record of the changes made to a [#Manifest Manifest]
+
+[[Anchor(Roster)]]
+ Roster:: It's like a manifest, except it also has various pieces of internal metadata used to make merging faster. In our data structures, this is split into roster_t, which maps nodes (files or dirs)to an id and holds the attributes (content hash (for files), attrs, (parent id, name)pair) for the nodes, and a marking_map which holds multi-*-merge metadata. When serialized, these two structures get mixed to make the text version of a roster.
+ 
+
+[[Anchor(RevisionGraph)]]
+ Revision Graph:: See [#DirectedAcyclicGraph Directed Acyclic Graph].

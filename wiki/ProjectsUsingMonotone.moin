@@ -1,0 +1,47 @@
+A number of projects use monotone.  Some of them are listed here.
+
+It's especially nice to list big cool projects that make us look good, but remember that most projects are small, and potential users would probably like to see that people use monotone for small or personal things too!
+
+Actually, it is better to show ''database'' rather than ''project'' statistics, because on this page we also want to show how Monotone scales. In the table below, when a database contains several projects, we say so. The statistics are for the database, and include the revisions imported from any previous version control systems.
+
+'''NOTE''': these numbers are updated at various times, so some projects might have outdated information
+
+(sorted by revisions*files)
+
+||<#5686b8> Project ||<#5686b8> notes ||<#5686b8> revisions ||<#5686b8> files ||<#5686b8> commits/month ||<#5686b8> First commit ||<#5686b8> Last update ||<#5686b8> Other projects in database ||
+|| [http://www.xaraya.com/ Xaraya]||[#1 1]||±33900 ||±58300 || 552 || 2002-09-28 || 2007-10-14 || ||
+|| [http://openembedded.org/ OpenEmbedded] || ||±23000 ||±14600 || 754 || 2005-06-30 || 2008-01-30 || [http://www.nslu2-linux.org/ NSLU2-Linux] ||
+|| [http://pidgin.im/ Pidgin (formerly Gaim)] || || ~23900 || ±6500 || 250 || 2000-03-23 || 2008-01-30 || ||
+|| [http://venge.net/monotone monotone] || [#2 2] ||~13800 || ~7740 || 258 || 2003-09-04 || 2008-01-30 || [http://botan.randombit.net Botan] ||
+|| [http://www.remobo.com/ Remobo] || ||±1415 ||±39445 || ~30 || 2005-11-23 || 2008-03-16 || ||
+|| [http://trig.com/ Trig] || [#3 3] || ±7948 || ±2995 || ±637 || 2006-05-09 || 2007-01-30 || ||
+|| [http://www.conquer-space.net/ ConquerSpace] || || 2392 || 4449 || ~88 || 2005-11-26 || 2008-01-30 || private projects (total ~6717 revisions) ||
+|| [http://www.ada-france.org/article130.html Ada-France] || || ~1390 || ~1270 || 74 || 2006-07-14 || 2008-01-30 || [http://www.lovelace.fr/ Lovelace OS] ||
+|| [http://gott.evilhackerdu.de/ GoTT]|| || ±1716 || ±800 || ±100 || 2005-07-08 || 2007-01-13 || ||
+|| [http://www.randombit.net/projects/ajisai/monotone.html Ajisai] || [#2 2]|| 770 || 1118 || 45 || 2006-05-18 || 2007-10-14 || [http://botan.randombit.net Botan] ||
+|| [http://syndie.i2p.net/monotone_howto.html Syndie]|| || 676 || 696 || 55 || 2006-10-12 || 2007-10-14 || ||
+|| [http://www.NetBSD.org/~jmmv/atf/ ATF]|| || 504 || 409 || ±60 || 2007-06-25 || 2008-02-06 || ||
+|| [http://matt.ucc.asn.au/dropbear/ Dropbear SSH]|| ||±250 || ±600 || few || || || ||
+|| [http://guitone.thomaskeller.biz guitone]||[#2 2]|| 640 || 214 || 30 || 2006-04-06 || 2008-01-30 || ||
+|| [http://ctwm.free.lp.se CTWM]|| ||±300 || ±350  ||low traffic|| || || ||
+|| [http://www.collaboration-world.com/pantomime/ Pantomime] and [http://www.collaboration-world.com/gnumail/ GNUMail]|| || 150 || 781|| 8 || 2006-04-29 || 2007-10-14 || ||
+|| [http://www.bonsai.com/wiki/index.php/Monotone_Distributed_Version_Control Bonsai]||[#2 2],[#5 5]|| 87 || 398 || 4 || 2005-12-18 || 2007-10-23 || ||
+|| [http://www.metatheme.org/development.php MetaTheme]|| || ? || ? || ? || || 2006-09-26 || ||
+|| [http://clarens.sourceforge.net Clarens]||[#4 4]|| ? || ? || ? || 2005-08-09 || 2006-12-13 || ||
+|| [http://www.netcrypto.org/index-FileAccess.html NetCrypto]|| || ? || ? || ? || ? || ? || ||
+|| [http://petertodd.org/art/source-code Peter Todd's Art Projects]|| || ±1500 || ? || ±100 || 2007-05-01 || 2007-09-09 || ||
+ 1. [[Anchor(1)]]Aggregate number for Xaraya core, languages, themes and modules (4 different databases).
+ 1. [[Anchor(2)]]Not counting private branches
+ 1. [[Anchor(3)]]Only the main branch of the main app
+ 1. [[Anchor(4)]]Refuses connections; server down?
+ 1. [[Anchor(5)]]mtn.bonsai.com
+
+== Tips ==
+
+To find the earliest revision in a database, use this query:
+
+{{{mtn db execute 'select value from revision_certs where name="date" order by value limit 1'}}}
+
+To find the latest revision in a database, use the same query in descending order:
+
+{{{mtn db execute 'select value from revision_certs where name="date" order by value desc limit 1'}}}

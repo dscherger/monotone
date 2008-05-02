@@ -1,0 +1,128 @@
+The procedure for migration from pre-0.16 databases ("changesetify") is currently not tested by the automatic testsuite.  This is partially because there's pretty good odds that there are no such databases remaining in use (so it doesn't matter if the code works) and partially because generating the necessary database dumps is not easy.
+
+I (Zack) recently attempted to construct such a dump, because I wrote code to discard the obsolete database tables ({{{manifest_certs}}}, {{{manifest_deltas}}}, and {{{manifests}}}) used by pre-roster monotone, and I wanted to make absolutely sure that this code did not destroy data needed to complete a changesetification.  (This is partially, but not completely, tested by the existing {{{schema_migration_with_rosterify}}} test case; that test only contains post-changesetify, pre-rosterify test cases, and those use only the {{{manifest_deltas}}} and {{{manifests}}} tables.)  Forthwith some notes on just what has to be done.
+
+ 1. The appropriate version to use to construct a test case is monotone 0.14.  Versions 0.15 and 0.16 came out in the ''middle'' of the changeset transition, and have interesting bugs that we don't want to deal with.  Unfortunately, the code at {{{t:monotone-0.14}}} requires patches to compile with gcc 4.1 and boost 1.33.  The patches are at the bottom of this page.
+ 1. The code for constructing a test repository (from {{{tests/schema_migration}}}) uses mtn features that did not exist in 0.14:
+  * The {{{attr}}} commands.  It is necessary to translate these to manipulations of {{{.mt-attr}}}, which is how attributes used to be done.  (Note that {{{schema_migration_with_rosterify}}} does not attempt to test attribute migration - which is worrisome, as that is a major part of the roster transition.)  
+  * The {{{--message-file}}} option is not present, and putting the message on the command line does not appear to work.  
+  * It is not clear whether the {{{--date}}} option works.  It is accepted for {{{commit}}}, but not {{{propagate}}}.
+  * monotone 0.14 wants {{{[pubkey]}}} and {{{[privkey]}}} packets instead of {{{[keypair]}}} packets.  I do not know how to convert the latter to the former.  I snarfed the key out of 0.14's {{{testsuite.at}}} instead, but I'm not sure it's the same one.
+ 1. There might be an outright bug in the code to generate test databases: {{{testfile2}}} is added, then we revert to a revision in which it didn't exist, ''modify it'', and check in another revision without adding it again.  Is that intentional?
+ 1. If you bull your way past all of that, you get a database, which you can dump with the old version, reload with the new one, and run through {{{db migrate}}}.  Then you get this from {{{db changesetify}}}: {{{mtn: rebuilding revision graph from manifest certs
+mtn: certs in | certs out | nodes | revs out
+mtn:       28 |         0 |     5 |        0
+mtn: scanning for bogus merge edges
+mtn: fatal: std::logic_error: ../S-vanilla/revision.cc:861: invariant 'fetching nonexistent entry from node_to_old_rev' violated}}}  I will make the debugging log and/or the database dump available if anyone asks.
+
+----
+
+== patches for 0.14 ==
+
+{{{#!cplusplus
+============================================================
+--- cryptopp/integer.cpp        f2a0e049b9aef571c5807afd972a77f377482d8f
++++ cryptopp/integer.cpp        e2cf6746ad5ce51d0bd2406ec07f9bcda36f5aa9
+@@ -1473,7 +1473,7 @@ void PentiumOptimized::Square4(word* Y,
+
+                :
+                : "D" (Y), "S" (X)
+-               : "eax",  "ecx", "edx", "ebp",   "memory"
++               : "eax",  "ecx", "edx", "memory"
+        );
+ }
+
+============================================================
+--- cryptopp/pubkey.h   e3fbc0074a9c736ed86f4e4003de49f2bdf89c96
++++ cryptopp/pubkey.h   0328c2a5276ff0173a6eb0a44d5493fd943d2b87
+@@ -38,6 +38,8 @@
+ #include "fips140.h"
+ #include "argnames.h"
+ #include "modarith.h"
++#include "asn.h"
++
+ #include <memory>
+
+ // VC60 workaround: this macro is defined in shlobj.h and conflicts with a template parameter used in this file
+@@ -745,8 +747,6 @@ void DL_PublicKey<T>::AssignFrom(const N
+        }
+ }
+
+-class OID;
+-
+ //! .
+ template <class PK, class GP>
+ class DL_KeyImpl : public PK
+============================================================
+--- merkle_tree.cc      565e0f4242011220ff3b20574cff68d74552ee2a
++++ merkle_tree.cc      2abde1a4a10709bec5ad40e325ce4016b1fcd0e1
+@@ -144,7 +144,7 @@ merkle_node::extended_prefix(size_t slot
+
+ void
+ merkle_node::extended_prefix(size_t slot,
+-                            dynamic_bitset<char> & extended) const
++                            dynamic_bitset<unsigned char> & extended) const
+ {
+   // remember, in a dynamic_bitset, bit size()-1 is most significant
+   check_invariants();
+@@ -158,7 +158,7 @@ merkle_node::extended_raw_prefix(size_t
+ merkle_node::extended_raw_prefix(size_t slot,
+                                 prefix & extended) const
+ {
+-  dynamic_bitset<char> ext;
++  dynamic_bitset<unsigned char> ext;
+   extended_prefix(slot, ext);
+   ostringstream oss;
+   to_block_range(ext, ostream_iterator<char>(oss));
+@@ -363,7 +363,7 @@ pick_slot_and_prefix_for_value(id const
+ pick_slot_and_prefix_for_value(id const & val,
+                               size_t level,
+                               size_t & slotnum,
+-                              dynamic_bitset<char> & pref)
++                              dynamic_bitset<unsigned char> & pref)
+ {
+   pref.resize(val().size() * 8);
+   from_block_range(val().begin(), val().end(), pref);
+@@ -401,7 +401,7 @@ insert_into_merkle_tree(app_state & app,
+   encode_hexenc(leaf, hleaf);
+
+   size_t slotnum;
+-  dynamic_bitset<char> pref;
++  dynamic_bitset<unsigned char> pref;
+   pick_slot_and_prefix_for_value(leaf, level, slotnum, pref);
+
+   ostringstream oss;
+============================================================
+--- merkle_tree.hh      8adb43063411673b9fd8ca07410e53a6e2d308f3
++++ merkle_tree.hh      635f951bdc8a6d045c8b063afd228508944f7513
+@@ -55,9 +55,9 @@ struct merkle_node
+ struct merkle_node
+ {
+   size_t level;
+-  boost::dynamic_bitset<char> pref;
++  boost::dynamic_bitset<unsigned char> pref;
+   size_t total_num_leaves;
+-  boost::dynamic_bitset<char> bitmap;
++  boost::dynamic_bitset<unsigned char> bitmap;
+   std::vector<id> slots;
+   netcmd_item_type type;
+
+@@ -74,7 +74,7 @@ struct merkle_node
+   void set_raw_slot(size_t slot, id const & val);
+   void set_hex_slot(size_t slot, hexenc<id> const & val);
+
+-  void extended_prefix(size_t slot, boost::dynamic_bitset<char> & extended) const;
++  void extended_prefix(size_t slot, boost::dynamic_bitset<unsigned char> & extended) const;
+   void extended_raw_prefix(size_t slot, prefix & extended) const;
+   void extended_hex_prefix(size_t slot, hexenc<prefix> & extended) const;
+
+@@ -106,7 +106,7 @@ void pick_slot_and_prefix_for_value(id c
+                     merkle_node const & node);
+
+ void pick_slot_and_prefix_for_value(id const & val, size_t level,
+-                                   size_t & slotnum, boost::dynamic_bitset<char> & pref);
++                                   size_t & slotnum, boost::dynamic_bitset<unsigned char> & pref);
+
+ // this inserts a leaf into the appropriate position in a merkle
+ // tree, writing it to the db and updating any other nodes in the
+}}}

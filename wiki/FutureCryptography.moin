@@ -1,0 +1,51 @@
+Because of our use of SHA-1, we must make backwards-incompatible changes to our use of cryptography.  Since we will be paying the cost of a "flag day", we should consider how to get the most benefit from that cost.
+
+= Cryptographic hash function =
+
+We must migrate to a new hash algorithm.
+
+SHA-1, the hash function on which everything in Monotone depends, has been broken.  Eighteen months ago, Jon Callas of PGP described the state of SHA-1 thus: "It's time to walk, but not run, to the fire exits. You don't see smoke, but the fire alarms have gone off."  It's time we picked up the pace of our move towards the exits. Bruce Schneier is predicting [http://www.schneier.com/blog/archives/2007/02/a_new_secure_ha.html] that there will be a live collision by the end of 2007.   This will immediately mean that it's possible for someone to arrange for two different revisions to have the same hash, with consequences I haven't analyzed; more generally, it will put a cloud over the perception of Monotone's security, even though in practice a collision is considerably less damaging than a second preimage attack.
+
+NIST have started the process of agreeing a new hash standard in an AES-like process.  This standard will be the AES-like gold standard of hash algorithms; I suspect it will also be considerably faster than existing hash functions, closer to PANAMA-like speeds than SHA-1 speeds [http://www.cryptopp.com/benchmarks.html].  Unfortunately it will not be agreed until 2012 [http://csrc.nist.gov/pki/HashWorkshop/timeline.html] and we can't wait that long.  The obvious interim standard is SHA-256, which seems to have as much confidence as any hash function at the moment, and which is only a little slower than SHA-1.
+
+Should Monotone migrate to supporting more than one hash function?
+
+ * Such support would make migrations much easier in future, and we'd very much like to migrate again at least once, in 2012.
+ * But a lot about Monotone works because there's a single hash function.  I'd like to hear from those who know on what issues might be raised if a history uses more than one hash function.
+ * We have to consider carefully the security implications of supporting more than one - can an attacker just use the least secure one?
+
+There are some interactions with VersionedPolicy here.  Perhaps hash functions would need to be mandated by policy.
+
+If we assume that "second preimage" attacks are infeasable but that collision generation might become feasable, things get interesting - attackers can't make new messages which match existing signatures, but they can probably cause ambiguous things to be signed.  If you assume your attackers are not ahead  of the curve on cryptanalysis, you could argue that signatures made before the attack are still valid, but those made after can't be trusted.  Policy could explicitly bless all the pre-attack signatures but rule out future use of that hash function.
+
+= Public-key signatures =
+
+As well as the hash function change, two other changes will impact on public key signatures:
+
+ * Graydon proposes to change the Monotone cert format to make a single cert do the work of several, which makes sense.  
+ * VersionedPolicy
+
+We should of course try to bring in all of these changes (and any resulting from the discussion below) at the same time to bring us down to one Flag Day.  VersionedPolicy may also play a role in making some of this more straightforward.
+
+We should use "principals" - ie key fingerprints - everywhere we use keys.  For that matter we should use them where we use email addresses too for the most part, though some of that comes under the heading of VersionedPolicy.
+
+We can reduce the computational burden of signature checking down to practically nothing with a couple of simple tricks:
+
+ * A "math cache" in the database which records simply "this hash has been signed by this principal" so we don't have to do PK verification more than once per cert.
+ * Cert chaining - each cert should have a field to name a hash of another cert as valid.  Contributors would thus chain together all the certs they sign in each branch.  Though each cert should be separately signed, you could verify all of a key's certs in a branch with a single PK operation.  Thus you'd end up doing one PK operation per netsync per branch - very fast.  We shouldn't use this chaining for any purpose besides the optimization described here.
+
+== Signature standards ==
+
+Monotone currently supports only one kind of signature: RSA-SHA1-EMSA3.  This doesn't have a lot to recommend it in and of itself.  It's an old standard that doesn't have a security reduction from the RSA problem, so it might be broken even if RSA itself is secure.  And RSA doesn't have anything inherent to recommend it over Rabin-Williams, which is faster and has a reduction from factoring. 
+
+One wrinkle is that a very recent branch of Monotone supports deferring signing operations to ssh-agent.  This is fantastically convenient - ssh-agent securely stores your private key and you only have to tell it your passphrase once.  It also means Monotone doesn't have to do the tricky job of keeping the private key private, even during signing operations.  Unfortunately ssh-agent appears to support only two public-key operations, and there are problems with choosing either.
+
+Apart from that, we don't currently interoperate with anything.  What should we be interoperating with?  RSA-SHA1-EMSA3 is compatible with X.509 and thus SSL, but if we were to use the same key to sign X.509 certs and Monotone certs we would want to be very sure that one couldn't be presented as the other; it would almost certainly be better to have separate keys for the X.509 world and the Monotone world.  These should not be RSA-SHA1-EMEA3 keys - we should use either EMSA-PSS or DSS.
+
+If we don't have any strong interoperability constraints, then we should seriously consider using elliptic curve cryptography, which gives us small signatures with fast verification.  Note that with the tricks above the verification burden is hugely reduced, so we should be most pushed about signature size.
+
+Obviously we'd like to use something standard, but the world of standards is AFAICT in a difficult state at the moment - many of the standards we'd like to use have not caught up with SHA-256.  In particular DSA and ECDSA are still bound to SHA-1.
+
+= Netsync =
+
+Netsync's cryptography has both security and performance problems.  Netsync is also quite unlike our use of cryptography elsewhere in Monotone.  We should just bite the bullet and switch to SSL, while swallowing as little of X.509 as we can manage.

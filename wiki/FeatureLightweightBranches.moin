@@ -1,0 +1,29 @@
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+= Description =
+
+Easy and cheap branching to allow parallel lines of development, and sophisticated history-aware merging for keeping branches in sync.
+
+= Supported =
+
+Monotone's implementation of branches is ''extremely'' lightweight, and quite different to that in many other systems. 
+
+Revisions can be in multiple branches (or none). Revisions can be added to branches long after they are first committed, perhaps after testing or code review to determine that they are suitable. Monotone separates completely the concept of a file's history (which is important for merging) from the concept of a branch (which is important for developers keeping track of the ''purpose'' of a particular development effort and view of the code).  The BranchAnalogy describes the separation of these concepts.
+
+Monotone also has very robust and powerful merging capabilities (see FeatureMerging).
+
+= Example Usage =
+
+To commit some changes in a workspace to a new branch:
+{{{
+ <edit files>
+ $ mtn commit -b com.example.new-branch-name
+}}}
+
+= Further Reference =
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Branching-and-Merging Branching and Merging]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureBranch VCSFeatureBranch]

@@ -1,0 +1,83 @@
+== Relative Pathnames ==
+
+Often one is building software in a directory elsewhere than a Monotone project root.  In that case, a command such as "`mtn list known | xargs etags`" will not have the desired effect, because `mtn list known` always returns pathnames relative to the project root.
+
+=== mtnpwd ===
+For those situations, the following is a simple `mtnpwd` script which prints the current working directory relative to the project root.
+
+{{{
+#!/bin/sh
+mtndir=""
+while [ "$PWD" != '/' ]; do
+    [ -d _MTN ] && echo "$mtndir" && exit 0
+    if [ -n "$mtndir" ]; then
+	mtndir="`basename $PWD`/$mtndir"
+    else
+	mtndir="`basename $PWD`"
+    fi
+    cd .. 2> /dev/null || break
+done
+echo "Not in a monotone project; no _MTN dir found." >&2
+exit 255
+}}}
+
+For example:
+{{{
+$ mtn --db=test.mtn setup -b com.example.test
+$ mkdir -p foo/bar/baz
+$ cd foo/bar/baz
+$ mtnpwd
+foo/bar/baz
+}}}
+And of course from there it is easy (assuming `sed` is GNU `sed`) to print the project root relative to the current working directory:
+{{{
+$ mtnpwd | sed -e 's/[^/]\+/../g'
+../../..
+}}}
+
+=== known ===
+Finally, here is a script called `known` which prints the output of `mtn list known` with paths made relative to the current directory.  As an added benefit, it allows one to filter out files or directories, so that the output may be piped directly into commands which expect filenames of a particular type:
+
+{{{
+#!/bin/sh
+mtndir=`mtnpwd` || exit $?
+if [ -n "$mtndir" ]; then
+    mtnrel="$(echo $mtndir | sed -e 's/[^/]\+/../g')/"
+fi
+if [ "$1" = '-h' -o "$1" = '--help' ]; then
+    echo "usage: `basename $0` [-a|-d] PATH..."
+    echo "       -a list files and directories"
+    echo "       -d list only directories"
+    echo "       otherwise, lists only files"
+    exit 255
+fi
+if [ "$1" = "-a" ]; then
+    dirs=true
+    files=true
+    shift
+elif [ "$1" = "-d" ]; then
+    dirs=true
+    files=false
+    shift
+else
+    dirs=false
+    files=true
+fi
+
+mtn list known $* | while read f; do
+    r="$mtnrel$f"
+    [ -e "$r" ] || continue
+    [ -f "$r" ] && ! $files && continue
+    [ -d "$r" ] && ! $dirs && continue
+    echo $r
+done
+exit 0
+}}}
+
+For example (assuming both `mtnpwd` and `known` are in the `PATH`):
+
+{{{
+$ known | xargs etags
+}}}
+
+builds the `TAGS` file from any directory in a source tree.

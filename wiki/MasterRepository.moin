@@ -1,0 +1,129 @@
+= Distributed VCS =
+
+Monotone is a Distributed VCS.
+
+== There is no Master... ==
+
+Unlike other version control systems people may be accustomed to,
+especially centralised systems such as CVS and SVN, in monotone
+''there is no "Master Repository" in any special privileged sense''.
+
+== ... even though it might look like there is ==
+
+It is certainly true that for many projects (including
+monotone itself) there's often a central server where a repository
+instance lives.
+Developers `sync` with this server as an easy central
+point of reference, and to avoid long relay replication chains.
+
+In the [http://venge.net/monotone/docs/Tutorial.html Tutorial], we saw Jim set up such a server for his work
+with Abe and Beth, but this is primarily a convenience.
+Each person's replica of the repository is as good as any other's,
+so long as they contain the same information.
+
+== Why do you think you need one? ==
+
+Some people new to monotone have difficulty with this, and see this as a problem.
+To decide whether it is a problem, the question of why you think you want a master copy is
+important.
+
+There are several things you might think you need a master
+copy to achieve, perhaps based on your established habits or expectations from other systems. 
+For at least ''some'' of these things, you actually
+don't -- monotone deals with the requirement differently.
+In other cases, maybe you really do need a centralised rather than a distributed VCS after all.
+
+In the following discussion, remember that there's no reason some repository instances can't be special if you want them to be, it's just that none of them really ''needs'' to be. 
+
+=== for backups? ===
+
+You might want a place to ensure you have a safe backup.
+
+Let's look at the central convenience server mentioned above, which seems
+like an obvious thing to back up, if we were to back up something.
+
+To illustrate that it's not in any sense a master copy, this
+repository usually doesn't need to be backed up at all. Since nothing
+is committed locally on the server, and since people replicate with it
+frequently, it doesn't contain any revisions that ''aren't also
+elsewhere'' in individual developers' databases.  
+Because all the revisions are signed, the same trust evaluations 
+can be applied to these revisions, even if they've been sent to 
+us by someone other than the original author (note that this is the normal
+case when getting revisions from such a server, because it only contains
+revisions that were first put there by someone else). 
+See the TrustFoundations page for more details on cert-based trusts.
+
+Restoring the server is simply a matter of putting up an
+empty server and having people feed it back from their own replicas
+again.  Most people have a copy of most revisions, and for the very
+newest revisions that haven't propagated everywhere yet, everyone who
+cares about these revisions has a copy, at least.  We saw Jim take 
+advantage of exactly this property when setting up his server, in the tutorial.
+
+Of course, that shouldn't prevent you taking backups of the server's, or
+your own, database as protection against the various gremlins that lurk 
+in dark places -- it just means that you can generally back up
+any of these databases pretty much interchangably for the same effect.
+
+=== for authoritative reference? ===
+
+You might want a place that is considered an authoritative
+reference about content or history.
+
+This might be in in case of errors or corruption, which can also be seen as a different sort of backup - and is also
+not needed.
+Since everything is signed and checked thoroughly at every opportunity,
+errors are found early and eliminated.  Should data be corrupted
+(say, due to a disk error), this will be detected.  The lost
+information will have to be restored, but it can be refreshed
+from any valid copy not just a master one.
+
+There might be other kinds of authoritative reference that could be important. Time is a good example of one of those things that are just necessarily
+different in a distributed system.  Monotone stores revision timestamps in certs.  It's possible to create a date
+cert with an arbitrary value (and, for example, cvs_import will do so,
+generating certs with cvs's times). Or people's clocks can always just be wrong.
+So you need to
+decide what trust to place in them. If 'authoritative' dates are
+important to you for some reason, you need to establish the authority:
+have a trusted server add its own date certs when it receives new
+revisions over netsync, signed with a purpose-specific key.  This server is a timestamping authority, but need not be special in any other way (and other people can choose to trust a different timestamping authority, if they really feel the need).  See the TrustFoundations and UsingCerts pages for more information.
+
+=== for centralised controls? ===
+
+You might want a place to enforce centralised controls of various
+kinds.
+
+Many of these are just not really suited or even possible to centralise in
+any distributed system like monotone, and need to be addressed in
+other, distributed ways. 
+
+Monotone has sophisticated trust evaluation mechanisms, using the
+information published in certs, that let each
+person make their own decisions about who should be trusted to 
+commit where, and how information will be used.
+
+Although very powerful, sometimes this is cumbersome to manage,
+and in a project with a common cause, people just want to agree
+and all follow the same set of rules.  The next major emphasis of
+monotone feature development is centered around this TrustDiscussion,
+to allow users to delegate the specification of project policy to trusted
+authorities.  Note that this will allow centralised publication of
+those rules, for distributed enforcement.
+
+Monotone also has network access controls over who can copy information 
+out of, or into, a server - and again, no server is particular or 
+special. Everyone's database can be a server when needed. 
+If you have confidentiality concerns over the content, 
+you need to trust the people and protect the places that information is copied. 
+Once someone has a copy of some information, there's nothing in 
+particular you can do centrally to control where else the information 
+can be copied, either with monotone or with other tools.
+
+Some of these things you either need to let go of and accept that the
+distributed system and your project is better without them, or you may
+need to look at a centralised VCS after all.
+
+=== for something else? ===
+
+You might want it for some other reason; if so, please add it to this page!

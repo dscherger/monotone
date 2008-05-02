@@ -1,0 +1,17 @@
+== Random Ideas for Improvements of the Log User Interface ==
+
+ * Log is making its way through the revision tree backwards (i.e. from newest to oldest nodes) by default. Add a switch `--forward` to override that, and change the direction. Furthermore, replace `--last` and `--next` with `--limit`, thus decoupling order and limit.
+ * The idea of ''additionally'' letting the user choose the direction the selected revisions are printed, has been abandoned for now.
+ * (Re-)define the meaning of `--limit`. Printing a maximum number of all ancestors or descendants regardless of their distance to the node in question seems not to be very sensible. What about this: print all members of the next generation, as long as that would not exceed the maximum number of nodes to be printed?
+ * Add a filtering mechanism. Let the user specify `--filter <some-selector>`. Revisions that are matched by the selector will be marked. Other nodes (i.e. merge nodes) are marked according to the unique-* algorithm. All marked nodes will be printed. That way we will retain a sensible graph structure, which is important when printing asciik-style graphs.
+ * Add some fancy aliases for the filter, like `--stay-on-branch` = `--filter b:currentbranch`.  It was noted on the mailing list that you can do this with: {{{mtn auto select b:currentbranch | mtn auto toposort -@- | xargs -n 1 mtn log --last 1 --from}}}
+ * Add some heuristics for detecting special cases like that: User specifies `--from a --to b` with `a` and `b` being single revisions, but `a` being an ancestor of `b` (so the log would actually be empty). Probably emit a warning and simply exchange `a` and `b`.
+ * ''Note to myself:'' Check whether `--from h:my-branch --to h:mainline` is actually working.
+ * Some people complain `--from <selector>` being a bit cumbersome to type as opposed to the old `-r`. Is there anything we can do about that?
+   * Make `-r` an alias for `--from` for log?  Possibly erroring out if user tries to use `-r` and `--to` together.
+   * Make `-r` behave like `--from REV --limit=1` (maybe better to add an '`mtn review`' command which is basically `mtn log --from REV --limit=1 --diffs`)
+   * Make `-b <branch>` argument to `mtn log` a synonym for `--from h:<branch>`. Alternately, perhaps `-b <branch>` should be the syntax to follow a particular branch (or set of branches).
+   * ...
+ * Cool idea (to be done later): Add a `--context` option (like in grep) that, once a revision is selected for being printed, ensures that a number of revisions around it (ancestors and descendants) gets also printed.
+ * Another cool idea to be done later: In the unrestricted case, while printing information for a merge revision, omit the information for nodes that are not marked.
+ * From the "get rid of the Change``Log"-discussion: Add a `--gnu-log` option that prints out the log in GNU Change``Log format.
