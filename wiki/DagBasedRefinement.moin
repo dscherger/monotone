@@ -1,0 +1,68 @@
+Originally posted at http://lists.gnu.org/archive/html/monotone-devel/2006-09/msg00124.html .
+There's also a little bit of discussion at http://colabti.de/irclogger/irclogger_log/monotone?date=2006-09-08,Fri&sel=234#l464 .
+
+----
+
+There's been some minor thought given to having a refinement scheme for
+revisions (for netsync) that makes use of the DAG structure to do better
+than the merkle refinement we do now.
+
+Merkle refinement is O(d*log n), d being the size of the difference
+between the sets. It also has a problem where the subset of the revision
+graph being synced needs to be agreed on beforehand.
+
+What I'm suggesting below I think will be be O(log n) generally, and
+significantly better for the common case where any one dev only touches
+a few of the graph heads. Additionally, mismatched sync sets won't cause
+huge retransmissions like they do now.
+
+(Currently, pushing a nvm.newbranch can re-send all of nvm up to the
+branch point, if a bad sync pattern (such as just the new branch) is
+used. This should fix that.)
+
+The change in O() won't matter that much, since revision traffic is also
+linear in d and is much bigger. What will probably matter more is the
+better handling of bad sync patterns.
+
+Certs and keys will still need to use merkle refinement. However, this
+should be delayed until *after* rev refinement is complete, so we know
+exactly which revs we need to include certs/keys from. (specifically we
+only have to ask about certs on shared revs, and we want to ask about
+certs on *all* shared revs, even if they don't match the sync pattern)
+
+----
+
+matching a pair of DAGs, specifically a pair of monotone revision graphs
+
+A "comparison" is: "I have rev XXX, do you also have it?"
+
+After every comparison:
+        * each side marks as shared all revs that it has that are
+          ancestors (inclusive) of a known-shared rev
+        * each side marks for send all revs that it has that are
+          descendants (inclusive) of a known-unshared rev
+
+
+1) compare heads
+        Generally, an individual dev won't be active on all branches.
+        So, the client will still have many heads that were fetched
+        from the server. (maybe note that these are heads, so any
+        descendants the other side has can be immediately marked for
+        send)
+2) compare roots (maybe)
+        If it is assumed that each history has several heads, then any
+        common roots would have likely been eliminated in (1). So check
+        any remaining roots before going random, as these are likely to
+        not be shared.
+3) compare random revisions until all is known
+        Or maybe try to split the revision graph into N+1 equal chunks,
+        where N is the number of revs checked at once (checking several
+        at once due to round-trip latency).
+
+Should be about O(log n), but significantly better in the common case.
+
+Only ask about revs that are in your sync set, but reply for revs you
+have regardless of whether they're in the sync set.
+        This would avoid the problem where, say, pushing a new feature
+        branch with a glob that *doesn't* include the base branch will
+        re-send large portions of the base branch.

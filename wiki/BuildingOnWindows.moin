@@ -1,0 +1,149 @@
+The officially supported build environment for monotone on Windows is [http://mingw.org/ MinGW].  The exact requirements are listed below.
+
+Building monotone under [http://cygwin.com/ Cygwin] is also known to work.  monotone is also included as a package in all Cygwin mirrors and can be easily installed using Cygwin's [http://cygwin.com/setup.exe installer].
+
+Building with Microsoft [http://www.microsoft.com/windowsserversystem/sfu/default.mspx Services For Unix] is untested, but would probably work without too much difficulty.
+
+Support for building using Visual Studio 8 is available, but we don't have a VC8 buildbot so sometimes the build is broken.  See ["BuildingOnWindows/VisualC8"].
+
+= Installing the toolchain =
+
+This section is preliminary setup--once this has been completed once, you can
+rebuild monotone regularly using only the instructions in the next
+section.
+
+||Package||Version||URL||
+||MingGW||5.1.3||http://prdownloads.sf.net/mingw/MinGW-5.1.3.exe?download||
+||MSYS||1.0.10||http://prdownloads.sf.net/mingw/MSYS-1.0.10.exe?download||
+||msysDTK||1.0.1||http://prdownloads.sf.net/mingw/msysDTK-1.0.1.exe?download||
+||wget||1.9.1||http://prdownloads.sf.net/mingw/wget-1.9.1-mingwPORT.tar.bz2?download||
+||libiconv||1.11||http://prdownloads.sf.net/mingw/libiconv-1.11-mingwPORT-20070423-1.tar.bz2?download||
+||autoconf||2.59||http://prdownloads.sf.net/mingw/autoconf-2.59-mingwPORT.tar.bz2?download||
+||automake||1.9.5||http://prdownloads.sf.net/mingw/automake-1.9.5-mingwPORT.tar.bz2?download||
+||zlib||1.2.3||http://prdownloads.sf.net/mingw/zlib-1.2.3-mingwPORT.tar.bz2?download||
+||gettext||0.16.1||ftp://aeneas.mit.edu/pub/gnu/gettext/gettext-0.16.1.tar.gz||
+||boost||1.33.1||http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download||
+
+ * ''Newer versions of the tools listed above are likely to work without too much trouble.''
+
+=== Installation instructions ===
+
+The installer defaults put MinGW in c:\MinGW and MSYS in c:\Msys. However, later steps sometimes 
+install new items in c:\MinGW\bin, and sometimes in c:\Msys\bin. So it is difficult to ensure that the 
+new items are always first in path. Installing MinGW and MSYS both to c:\MinGW avoids this issue. However,
+in this case the MSYS installer mistakenly renames 'make' to 'mingw32-make', so we need to change it back.
+
+msysDTK installs Perl, CVS, crypt, and other tools needed by the autoconf tools. The installed autoconf scripts are a little broken, so we need to manually fix them.
+
+ 1. MinGW - install, accept defaults but add g++ on the package selection page
+
+ 1. MSYS - install to same directory as MinGW (c:\MinGW), otherwise accept defaults
+
+ 1. msysDTK - install into MinGW directory
+
+ 1. Rename 'make'
+  1. {{{
+$ mv /bin/mingw32-make.exe /bin/make.exe
+}}}
+
+ 1. wget
+  1. {{{
+$ mkdir -p /usr/src
+$ cd /usr/src
+$ tar jxf wget-1.9.1-mingwPORT.tar.bz2
+$ cd wget-1.9.1/mingwPORT
+$ cp -a wget.exe /mingw/bin
+$ ./mingwPORT.sh
+}}}
+  1. Accept all defaults by hitting the enter key. The following steps also always accept all defaults.
+
+ 1. libiconv
+  1. {{{
+$ cd /usr/src
+$ export SRCROOT=/usr/src
+$ tar jxf libiconv-1.11-mingwPORT.tar.bz2
+$ cd libiconv-1.11/mingwPORT
+$ ./mingwPORT.sh
+}}}
+
+ 1. autoconf
+  1. {{{
+$ cd /usr/src
+$ tar jxf autoconf-2.59-mingwPORT.tar.bz2
+$ cd autoconf-2.59/mingwPORT
+$ ./mingwPORT.sh
+}}}
+  1. Open ''/mingw/bin/autoconf'' in an editor and change the following line:
+    *  from something like {{{
+: ${AUTOM4TE='c:/mingw/bin/autom4te'}
+}}}
+    *  to {{{
+: ${AUTOM4TE='/mingw/bin/autom4te'}
+}}}
+
+ 1. automake
+  1. {{{
+$ cd /usr/src
+$ tar jxf automake-1.9.5-mingwPORT.tar.bz2
+$ cd automake-1.9.5/mingwPORT
+$ ./mingwPORT.sh
+}}}
+  1. Open the files ''/mingw/bin/aclocal'', ''/mingw/bin/aclocal-1.9'', and all files matching ''auto*'' in an editor and delete ''c:/'' from all paths, as was done above for ''autoconf''.
+
+ 1. zlib
+  1. {{{
+$ cd /usr/src
+$ tar jxf zlib-1.2.3-mingwPORT.tar.bz2
+$ cd zlib-1.2.3/mingwPORT
+$ ./mingwPORT.sh
+}}}
+
+ 1. gettext
+  1. {{{
+$ cd /usr/src
+$ tar zxf gettext-0.16.1.tar.gz
+$ cd gettext-0.16.1
+$ wget 'http://cvs.savannah.gnu.org/viewvc/gettext/gettext/gettext-runtime/intl/\
+localename.c?r1=1.15&r2=1.16&view=patch' -O localename_1.15-1.16.patch
+$ cd gettext-runtime/intl
+$ patch -p0 < ../../localename_1.15-1.16.patch
+$ cd ../..
+$ ./configure --prefix=/mingw
+$ make install
+}}}
+  2. If the wget command here fails, get the patch manually: {{{
+http://cvs.savannah.gnu.org/viewvc/gettext/gettext/gettext-runtime/intl/\
+localename.c?view=log
+on version 1.15, click "select for diffs"
+on version 1.16, click "diff to previous 1.15"
+near top of page, click on "patch"
+save file as c:/Downloads/mingw/localename_1.15-1.16.patch
+}}}
+
+ 1. boost; only need headers
+  1. {{{
+$ cd /usr/src
+$ tar jxf boost_1_34_1.tar.bz2
+$ cd boost_1_34_1
+$ cp -a boost /mingw/include
+}}}
+
+= Building monotone =
+
+ 1. Install a pre-built monotone binary from http://monotone.ca/downloads/
+ 1. Follow the self-hosting instructions at SelfHostingInfo to get a copy of the monotone repository.
+ 1. {{{
+$ mtn -d /path/to/monotone.db -b net.venge.monotone co monotone
+$ cd monotone
+$ autoreconf -i
+$ ./configure
+$ make
+}}}
+ 1. And to run the testsuite: {{{
+$ make check
+}}}
+
+= Notes =
+
+ * If the {{{./configure}}} step of the monotone build fails claiming your system is unrecognized while checking the build system type, it may be caused by {{{uname -s}}} returning a string containing MSYS rather than MINGW.  This indicates that your build environment is in a special mode for producing MSYS binaries, which is not what you want when building monotone.  See the following URL for a detailed explanation: http://www.mingw.org/MinGWiki/index.php/MsysBuildEnvironment
+ * If you get strange errors from perl when running {{{autoreconf -i}}}, check that you edited the paths correctly in aclocal-* and auto*.

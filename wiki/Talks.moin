@@ -1,0 +1,25 @@
+Talks given about monotone -- perhaps useful if you'd like to give your own talk, or impress your friends by pretending that you attended one.
+
+= CodeCon 2006 =
+
+Talk given by NathanielSmith for [http://codecon.org/2006 CodeCon 2006], with GraydonHoare joining in for the question period.
+
+Slides: [http://venge.net/monotone/downloads/codecon-2006.sxi OpenOffice format (2.4 meg)], [http://venge.net/monotone/downloads/codecon-2006.pdf PDF format (1.2 meg)]
+
+I know audio was recorded, but I don't know when or if it will be available.
+
+For the demo, I showed off monotone-viz, pre-loaded with mainline and color-by-author, clicked on a few nodes, showed a diff, zoomed out to show the "10,000 foot view" (and incidentally how narrow the history actually is, since people tend to worry that allowing multiple heads allows for crazy bushy growth).  Also showed another instance pre-loaded with mainline and a few chosen branches, and color-by-branch.  (At least one person I talked to afterwards was surprised to learn that you could just grab this program and get similar displays straight out of the box on their own code, I guess they thought I had made some fancy graphs ahead of time just to show off, or something.  Props to Olivier!)
+
+= MtnSummit 2007 =
+ 
+Talk given by NathanielSmith at Google during the MtnSummit.  In fact, the talk was given without slides due to AV issues, and they certainly aren't the most polished slides to have ever been created, but someone might find them interesting.
+
+[http://venge.net/monotone/downloads/mtnsummit-2007.sxi OpenOffice format (26 KiB)], [http://venge.net/monotone/downloads/mtnsummit-2007.pdf PDF format (483 KiB)]
+
+Talk given by ZackWeinberg to the group at the MtnSummit, about workspace merge, reducing dependencies on boost, and a few other smaller issues: [http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.pdf PDF format (307 KB)], [http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.tex LaTeX source (Beamer) (11 KB)]  (none of this kibi nonsense, kilobytes are 1024 bytes)
+
+= Random note =
+
+Graydon suggested a neat idea for structuring your Basic Monotone Introductory Talk: start with a slide listing a bunch of just crazy, or stupid, or impossible things to do in a vcs design.  Then present monotone as what you get when you do ''all'' of these.
+
+(njs is just noting this down here so as to be able to find it again before the next time he or someone else has to put together a talk...)

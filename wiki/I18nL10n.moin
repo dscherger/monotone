@@ -1,0 +1,55 @@
+i18n and l10n are non-trivial; more so for monotone than for most apps.
+
+= Character sets =
+
+Firstly, we have to deal with at least 3 logically distinct charsets
+  * the user's display/entry charset
+  * the user's filesystem charset
+  * utf8, for our internal storage
+
+On most POSIX systems, the user's display/entry charset and the user's filesystem's charset are identical.  On OS X, the filesystem charset is always unicode (though this is very poorly documented, so I'm just assuming it's utf8), and the user's display/entry charset ''may'' differ -- though I do not know if it ever does in practice.  I don't know how things work on Win32, but I've heard that it's as bad as you might fear.
+
+To make this more interesting, `gettext` returns strings in the user's display/entry charset.  While technically you ''can'' tell `gettext` to instead return strings in utf8 (see `bind_textdomain_codeset`) -- perhaps because you think this will let you use a simple strategy, where internal data is always utf8 and you convert when talking to the outside world -- this runs into some issues in practice.  In particular, `strerror` will continue to return errors in the user's charset (you can work around this by converting back manually; glib's `g_strerror` does this), popt will continue to use the local charset, and for extra fun, if a charset conversion error occurs, we have no way to report it, because we cannot print to the terminal without doing charset conversion.  I tried doing this once and gave up -- if anyone wants to try again, the code around 2561d8175fafe1ce3718f1eb71112012892c5d21 will be useful.
+
+The net result is that one needs to keep track, for basically every string in the system, which of the above charsets it is in, and do conversions appropriately.  The best way to do this, obviously, is with the type system; we have a few vocab.cc types for this, but they are not used systematically.  Much more work is needed; for instance, a real solution probably includes a modified formatter object that knows how to do charset conversion when doing %s replacement, and refuses to accept bare std::string's.
+
+= Bugs =
+
+There are a bunch of places where we do not do proper conversion.  Pretty much every F() call is suspect, but there are some particular places marked in the source with BUG, where njs happened to notice things while he was going through.  Here are some more notable ones:
+
+== Filesystem reading ==
+
+The tree walker does not convert from the filesystem charset to utf8, but it should.
+
+== Data validation ==
+
+/!\ `file_path`'s verifier should validate that it is handling valid utf8.  We do not currently do this.
+
+I don't know if we make sure that changelog comments are appropriately converted.  We may not.
+
+== Display ==
+
+There are various places -- commands.cc's lining up of commands, tickers lining up numbers with labels, tickers truncating themselves at the edge of the terminal to avoid staircasing, etc. -- where we need to know the display width of characters.
+
+This is an interesting question, because not all characters take up the same amount of space, even on monospace terminals: see http://www.unicode.org/reports/tr11/
+
+I believe that the UNIX98 functions `wcwidth`, `wcswidth`, and ilk, know how to deal with this.  They are not necessarily available everywhere.  Right now, we simply use a few lines of direct coding to count up utf8 characters, which is wrong even if we are dealing with utf8, and we probably can't count on that anyway.
+
+== stringprep/idna/... ==
+
+We should probably audit everything dealing with stringprep/idna/etc.  For instance, there is wackiness in handling i18n'ed key names, because email addresses have hostnames in them and i18n hostnames are wacky.
+
+== Composition/decomposition ==
+
+It is possible that there are filesystems which somehow normalize unicode strings.  (E.g., [http://developer.apple.com/technotes/tn/tn1150.html#UnicodeSubtleties HFS+ on OS X] probably does.)  These raise issues similar to CaseInsensitiveFilesystems, i.e., any form of normalization can cause paths that looked different on one system to look the same on another.  In fact, [http://svn.haxx.se/users/archive-2005-12/0381.shtml SVN has encountered this issue in practice].
+
+Other useful OS X links:
+  * [http://developer.apple.com/qa/qa2001/qa1235.html Converting to Precomposed Unicode]
+  * [http://lists.apple.com/archives/unix-porting/2002/Mar/threads.html#00147 filesystem encodings thread on Apple's user-porting list] ("The BSD-level interface to the file system uses canonically decomposed UTF-8.")
+  * [http://developer.apple.com/qa/qa2001/qa1173.html Text encodings in VFS]
+
+The Unicode Consortium has an article on [http://www.unicode.org/unicode/reports/tr15/index.html normalization forms] and a somewhat related article on [http://www.unicode.org/reports/tr36/ security considerations].
+
+= File content =
+
+The current system for converting charsets of versioned files, which is hook-based, is not so great.  We should probably do something involving attrs instead.

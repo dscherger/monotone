@@ -1,0 +1,18 @@
+= Things in common between Paul's proposal and Graydon's =
+
+ * At the lowest level branches are identified by OIDs that don't have inherent semantics
+ * You follow a "branch descriptor" to get to a branch.  The descriptor includes information about:
+   * the OID of the branch
+   * how to tell good revisions from bad (eg trusted keys)
+ * "Policy branches" are versioned branches that contaiin branch descriptors
+ * Policy branches don't have policy for themselves, only for other branches
+   * Here, is "other branches" == sub branches? Or could net.foo.bar contain a policy for net.foo.baz? - JackLloyd
+ * They can have policy for other policy branches and for "normal" branches.
+ * Policy branches can provide names for what they refer to with branch descriptors
+ * or they can defer everything that is referred to them to another policy branch wholesale
+ * To start on a project, users import a top-level project policy branch descriptor
+ * ...that they fetch out-of-band, probably by getting it out of the DNS
+ * and they give it a name of their own choosing in their own namespace
+ * though they'd be best advised to give it the most usual name if they can eg "monotone" for monotone :-)
+
+More to come.

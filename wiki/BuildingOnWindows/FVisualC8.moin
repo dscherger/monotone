@@ -1,0 +1,42 @@
+= Installing the toolchain =
+
+This section is preliminary setup--once this has been completed once, you can
+rebuild monotone regularly using only the instructions in the next
+section.
+
+||Package||Version||URL||
+||Visual C++ 2005 Express Edition||8.0||http://msdn.microsoft.com/vstudio/express/visualc/download/||
+||Windows Server 2003 R2 Platform SDK||3/14/2006||http://www.microsoft.com/downloads/details.aspx?familyid=0BAF2B35-C656-4969-ACE8-E4C0C0716ADB&displaylang=en||
+||Boost||1.33.1||http://prdownloads.sf.net/boost/boost_1_33_1.tar.bz2?download||
+||iconv||1.9.2||http://gnuwin32.sourceforge.net/downlinks/libiconv.php||
+||zlib||1.2.3||http://gnuwin32.sourceforge.net/downlinks/zlib.php||
+
+ * ''Newer versions of the tools listed above are likely to work without too much trouble.''
+
+=== Installation instructions ===
+
+ 1. Visual C++ 2005 Express Edition - full install.
+
+ 1. Windows Server 2003 R2 Platform SDK - full install.
+
+ 1. Follow the Visual C++ 2005 Express Edition configuration instructions here: http://msdn.microsoft.com/vstudio/express/visualc/usingpsdk/
+
+ 1. Update vsvars32.bat using the instructions here: http://boost.org/tools/build/v1/vc-8_0-tools.html
+
+ 1. iconv - full install.
+
+ 1. zlib - full install.
+
+ 1. boost - follow the VS8 instructions here: http://boost.org/more/getting_started.html
+
+= Building monotone =
+
+ 1. Install a pre-built monotone binary from http://venge.net/monotone/downloads/
+ 1. Follow the self-hosting instructions at http://venge.net/monotone/self-hosting.html to get a copy of the monotone repository.
+ 1. {{{
+$ monotone -d /path/to/monotone.db -b net.venge.monotone co monotone
+}}}
+ 1. In Visual C++ 2005 Express Edition, open monotone/visualc/monotone.sln
+ 1. Select either the 'debug' or 'release' target from the toolbar dropdown.
+ 1. Review the C++ include path and Linker include path to ensure the paths to GnuWin32 (for iconv and zlib) and Boost are correct.
+ 1. Build the solution.

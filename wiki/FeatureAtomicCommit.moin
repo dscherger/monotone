@@ -1,0 +1,28 @@
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+= Description =
+
+Commits to multiple files and directories happen all at once, as a single cohesive change set in isolation from other changes.
+
+= Supported =
+
+Monotone commits are atomic and each produces a discrete revision.
+
+In addition, you can `commit` at any time to record the current state of your workspace safely.  Monotone supports (and encourages) multiple ''heads''. You don't have to worry about whether your workspace or repository are up to date with respect to other developers' changes, and you don't have to be interrupted by a need to merge your work with other changes before you can commit. Merging happens as a separate step, when you are ready, and you can always go back to the starting point you just committed if the merge turns out to be difficult.
+
+Commits are atomic both in the VCS sense of a single revision across the entire file tree, as above, and also in the database sense: see FeatureRobustRepository.
+
+= Example Usage =
+
+{{{
+ $ mtn commit
+}}}
+
+= Further Reference =
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#Dealing-with-a-Fork Dealing with a Fork]
+ * CommitEarlyCommitOften
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureAtomicCommit VCSFeatureAtomicCommit]

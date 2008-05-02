@@ -1,0 +1,21 @@
+People would, occasionally, like to be able to put symlinks under version control.
+
+This doesn't necessarily have to be included out of the box in monotone, but at a minimum the hook mechanisms should be powerful enough for someone to add it locally.  (The same goes for things like FIFOs, sockets, and char/block devices.)
+
+= Design issue =
+
+How should these things be represented in the manifest?
+
+There are several pieces of information that need to be tracked:
+  * that the thing is special (not really a file or a directory)
+  * what sort of special thing it is (symlink, fifo, etc.)
+  * extra per-type information (for a symlink, the target; for a FIFO, nothing; for a char device, major and minor numbers)
+
+Oh, well, here's on approach to the tricky parts: http://colabti.de/irclogger/irclogger_log/monotone?date=2006-01-12,Thu&sel=54#l172
+The necessary lua functions (''make_symlink()'', etc.) are not yet in '''lua.cc'''.
+
+= One possibility =
+
+One possibility to do this would be to have an extra hook that would simply provide a "content" for a requested file, and that would be called for all non-regular files (i.e. any file where S_ISREG() and S_ISDIR() would return 0 in C/C++).
+
+The file type would be stored as an attribute, just like mtn:executable and mtn:manual_merge.  On Unix systems, we could have attribute names like mtn:symlink, mtn:chardev and mtn:blockdev.  We might want to consider that these attributes may change from one revision to another, which means we need to check the file type every commit, and change or drop the attribute accordingly.

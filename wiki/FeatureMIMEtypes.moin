@@ -1,0 +1,25 @@
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+= Description =
+
+Annotating binary files in the repository with MIME-type information indicating how it should be handled.
+
+= Supported =
+
+There is no explicit support for MIME-type information specifically; monotone has no particular use for this information internally, and will simply store binary files like any other.  However, this and any other similar information about files can be stored in a custom attr on the file, and any special file handling related to the mime type can be defined in an attr hook.
+
+= Example Usage =
+
+{{{
+ $ mtn attr set *.html MIMEType text/html
+ $ mtn commit
+}}}
+
+= Further Reference =
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#File-Attributes File Attributes]
+ * [http://venge.net/monotone/monotone.html#Hooks Hooks: Attribute Handling]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureMIMEType VCSFeatureMIMEType]

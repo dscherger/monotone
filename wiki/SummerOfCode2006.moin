@@ -1,0 +1,184 @@
+= Google Summer of Code -- 2006 =
+
+Google is organizing a fantastic opportunity for students to help out
+with FLOSS development this summer, and get paid for doing it.  More
+information is available on [http://code.google.com/summerofcode.html their site].
+
+[http://venge.net/monotone Monotone] is a version control
+system, and we're one of the mentoring organizations for SoC 2006.
+The rest of this page contains information for students considering
+applying to the monotone project.
+
+What makes us excited about working on monotone?  We're trying to
+change how software development itself works -- to make it more
+pleasant, more productive, less frustrating, and more plain fun.  Work
+on tools has a multiplicative effect -- your work can make ''everyone
+else's'' work more effective.  We're pushing the boundaries of
+technology, inventing new methods for building distributed p2p
+systems, and robustly solving complex real world problems.  Our
+[http://venge.net/monotone/docs/Historical-records.html history representation]
+has become the de facto standard for [http://git.or.cz/ new]
+[http://www.selenic.com/mercurial/ tools]; the best existing [http://revctrl.org/MarkMerge merge algorithm]
+was co-invented by a Monotone SoC 2005 student.  We have a few more
+ideas up our sleeves still... if all this gets you excited
+too -- maybe this is a project for you :-)
+
+For more information on monotone in general, the comprehensive
+[http://venge.net/monotone/docs manual] has details on how
+monotone works, and the wiki (FrontPage) is used for scratch work
+about various work in progress.
+
+Monotone is written in clean and straightforward C++.  A number
+of the projects below do ''not'' require C++ knowledge.
+
+== Ideas ==
+
+Here are some example ideas for projects.  Feel free to suggest others.
+
+=== Largish projects ===
+  * MergeViaWorkingDir: This has been a number-1 requested feature for ages and ages.
+  Since the release of v0.26 this month, it is now reasonably straightforward to implement!
+  This will involve getting nice and dirty with monotone internals, the details of how
+  merging works, and have lots of crunchy UI questions too.  I envision someone doing this
+  having a basic working prototype merged into mainline in a few weeks to start getting user
+  feedback, and then working on polishing the UI, or adding cool new things like
+  NonMergeConflicts.
+  * Create a performance test harness, and benchmarks using it.  This would be _extremely_
+  valuable for tuning monotone's speed, testing changes, and catching performance regressions.
+  There are more details [http://venge.net/monotone/wiki/PerformanceWork#head-150324c5862f1b409230043ade62a5041c227400 here].
+  * UI work: find some friends, set them loose on monotone.  Watch them carefully and
+  take notes.  Write up where-ever they get confused or make mistakes; come up with
+  ways to stop them getting confused.  Implement these ways.
+  * "pserver" is the protocol that CVS uses.  Those wacky git folks have implemented
+  a pserver server in perl, so you can use a normal CVS client to talk directly to a
+  git repository and do not just checkouts but also commits!  Adapt their script to
+  work against monotone; or, do one better and add pserver support to monotone itself,
+  so that 'monotone serve' can accept connections directly from both monotone and cvs
+  clients.
+  * A branch review tool.  Something that lets us look at changes compared to the place
+  where a branch branched, make notes on changes, make our own changes, and then do
+  appropriate things with each (e.g., send the notes to the mailing list and commit
+  any additional changes to the branch directly).
+
+=== Smaller projects ===
+"Buy two, they're cheap"
+  * MagicSelectors: enhancing the monotone command line
+  * Add symlink support to monotone
+  * Teach monotone to use ssh-agent to store keys
+  * Add a way to specify "templates" for [http://venge.net/monotone/docs/Scripting.html mtn automate]
+  output; useful for scripting!
+  * "undo" for workspace operations.  (Well... not sure if this is small or not.)
+   * clarification wanted: what is undo supposed to do?
+   * Answer: Use case: I run 'mtn up', and then realize that I screwed up the merge.  I want to get back to where I was before.  Use case: I meant to run "revert <somefile>" but instead I accidentally reverted my whole workspace, including valuable uncommitted changes.  I want to get back to where I was before.
+  * monotone-dumb is a hack to let people host monotone repositories on cheap hosts that only
+  provide static http/ftp access.  It works, but could use a bunch of polish to be really
+  usable.  [http://article.gmane.org/gmane.comp.version-control.monotone.devel/6295 This mailing list post]
+  has a lot of ideas for things to work on.
+  * Add the ability to spawn a process and speak netsync to it (a kind of generalized proxy support).
+  Use this to teach monotone to run netsync over jabber/jingle, etc.
+   * clarification wanted: what about this? there's a branch that wants to provide an stdin/stdout interface to monotone. is reviving that and finishing it part of this, or something else?
+   * Answer: Yes, this is a generalization of the .ssh branch.  Basically, the idea would be to make it possible to say "mtn sync --connect-via 'ssh foo.com mtn serve-stdio'", where the argument to --connect-via is an arbitrary command.  This would allow people to add interesting new transports.  (The UI given here probably isn't optimal, that's just to give the idea.)  
+  * Our test coverage has been hovering at about 90% for a long time: [http://frances.vorpus.org/~monotone-cov/net.venge.monotone/ current status].
+  Get it higher than that!
+  * Support for "nested trees" -- Some way to combine several projects that are versioned separately into a single workspace, similar to CVS modules, or Arch "configs".  There are a fair number of people interested in this, but no design yet; part of the project would be figuring out what exactly everyone wants from this capability.
+
+=== Integration ===
+A VCS is only one piece of the development ecology -- at least as
+important as the VCS itself is how it fits into the other tools
+people use.  Examples:
+  * [http://edgewall.com/trac Trac] is a very popular
+  wiki/bug tracker/source code browser, and it supports plugins for
+  different VCSes.  We need a monotone plug-in!  Probably the thing to
+  start from is the [http://projects.edgewall.com/trac/wiki/TracMercurial mercurial plugin]. (python)
+    * Development of a trac plugin has already been started, see the  [http://viewmtn.angrygoats.net/branch.psp?branch=net.venge.monotone.trac-plugin trac-plugin branch].
+  * We could use a good general, cross-platform (so probably Qt) GUI for history browsing and
+  general modification.  "guitone" is a possible start at this, in the monotone repository.
+  * [http://eclipse.org Eclipse] and [http://www.netbeans.org NetBeans] are two great Java IDEs.
+  They need monotone plugins!  Some work has been done on each, but much more could be. (java)
+  * Microsoft's Visual Studio needs a plugin too!  ([http://ankhsvn.tigris.org AnkhSVN] is probably
+  useful inspiration)
+  * How about file manager integration?  [http://tortoisesvn.tigris.org TortoiseSVN] for Windows
+  Explorer is good inspiration again; could do similar for OS X Finder, Gnome Nautilus, KDE Konqueror, ...
+
+=== Ambitious ===
+These are probably too big for someone who doesn't have familiarity
+with monotone already to do in a summer, but throwing them out there
+anyway:
+
+  * File revival -- see HistoryBlueSky
+  * "partial pull" -- fetching only a portion of history into a
+  local database, for projects that have a lot of history.
+  * SPKI-inspired naming and trust delegation.  This is an area of active work for
+  monotone developers.
+  * Functionality similar to [http://savannah.nongnu.org/projects/quilt Quilt]/[http://www.procode.org/stgit/ StGit]/[http://www.selenic.com/mercurial/wiki/index.cgi/MqExtension Mq].  See [http://article.gmane.org/gmane.comp.version-control.monotone.devel/6577 also] for why this is tricky... but maybe if someone implemented it, we would discover it was not so tricky after all.
+
+=== Oddballs ===
+A few funky things, that are not ''strictly'' related to monotone at all:
+  * "Chryn": Monotone could use a better library for event-handling
+  (network stuff, signals, etc.); several of the things on the list
+  above would be greatly helped by this.  Chryn is a half-working
+  prototype of a general async IO library for C++.
+  * "Hedg": A mad idea of NathanielSmith's for how to build a better
+  project management system, similar to Trac but with extra coolness.
+  Talk to him if curious about details...
+
+== Notes on applying ==
+
+So you're thinking of applying?  Great!  Here are some more general
+tips on what we're looking for:
+
+  * Tell us who you are.  Remember, we're basically not going to know anything
+  about you but what your app says.
+  * Tell us why you would be a great person to pick.
+  * Show us you've thought about the project.  Don't just copy and paste
+  one of the projects on this page.  Expand on it.  Say what you think the
+  most important parts are.  Give us some idea what you think the schedule will
+  look like.  Even more important than a schedule, tell us what you think should
+  be worked on first, and second, and what can be put off.  That kind of thing.
+  * In addition to showing us you're smart and skillful, show us you're
+  enthusiastic.  We're not really looking for people who just want some
+  summer job to pass the time.  Coding is fun!  Version control is exciting!
+  Or at least... we think so.  Maybe that makes us dumb, but if so, we still
+  want to find people who will support us in our delusion ;-).
+  * Hint: we all read each other's code all day long.  Giving us a pointer
+  to where we can look at your code is one very good way to show us what you
+  can do.  You'll be speaking our native language.
+  * Overall philosophy: We're a lot more interested in you than your project.  Definitely talk
+  about what gets you excited in your application, and tell us what you want
+  to work on.  If there are multiple things you'd be interested in working on,
+  tell us that too!  Bottom line, though, is if you can convince us that you're smart, motivated, and
+  eager to learn and to teach, then you'll be in.
+
+Different orgs will be looking for different things, but here are some
+other good hints on writing a good SoC app that seem compatible with
+how we like to do things:
+  * http://drupal.org/node/59037
+  * http://www.internet2.edu/~shalunov/tmp/rwatson-soc.txt
+
+== If selected... ==
+
+To give you some idea of how we like to run things, and what to expect:
+  * Working on monotone should be your main activity through the whole
+  summer.  Going out of town for a week on vacation or whatever is fine,
+  but this is a serious commitment and you're working for serious rewards;
+  don't assume "oh, I can knock something out in the last few weeks" or "oh,
+  10 hours a week will be plenty" or whatever.  (Don't worry -- if you run
+  out of things to do, we'll be able to find ''something'' interesting ;-).)
+  * Just to keep track of things, we'll require weekly status reports.
+  * Obviously, you will have to use monotone to keep your work in progress;
+  we'll give you commit access to our central server.
+  * Just to say up front: we will ''not'' be judging project
+  completion based on how closely you can "turn in" something at the
+  end of the summer, that matches some list of features you wrote down
+  at the beginning of the summer.  Goals are important, but we'll be
+  just as happy if you totally change your mind and implement something
+  else cool, or end up writing a bunch of small-but-valuable changes
+  instead of one big one.  We'll judge on your effort, communication,
+  and interest.
+  * Feel free to drop by our [http://www.irchelp.org/ IRC] channel:
+  #monotone on irc.OFTC.net (irc://irc.oftc.net/monotone).
+  Depending on the time of day you might have to wait a bit for people
+  to wake up, but there are usually lots of people around, and a lot
+  of development discussion happens here.  It's a great way to find
+  out what's going on and get feedback on your ideas and
+  application.

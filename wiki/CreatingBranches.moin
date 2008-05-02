@@ -1,0 +1,13 @@
+If you want to create a new branch, the most intuitive way (that I've                                                                              found) is to commit your changes with --branch=<new_branch> .  
+
+Alternatively, you may want to create a branch on an existing codebase before you have any changes to commit.  To create a branch from the current workspace's revision, use the {{{mtn cert}}} e.g. {{{
+mtn cert h: branch com.yoyodine.bunchy.testing
+}}}
+
+You can then update to the branch:
+
+{{{
+mtn update --branch com.yoyodine.bunchy.testing
+}}}
+
+Advantages of this approach are that multiple developers can update and begin working and committing to that branch straight away without having to coordinate their first commit between them.  Also, I'm very forgetful, and I find that I often accidentally commit to the head - it's easy to forget that you intended to start a new branch, so making this the first step in your workflow prevents this happening.
