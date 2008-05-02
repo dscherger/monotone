@@ -1,6 +1,6 @@
 [[!tag migration-done]]
 
-This is a first little piece of emacs-code, to achieve the task of writing log messages to  `_MTN/log` instead of `ChangeLog` if appropriate.  (Note that [DVC](http://download.gna.org/dvc/ already includes a similar feature, bound to `C-x V a` by default.)
+This is a first little piece of emacs-code, to achieve the task of writing log messages to  `_MTN/log` instead of `ChangeLog` if appropriate.  (Note that [DVC](http://download.gna.org/dvc/) already includes a similar feature, bound to `C-x V a` by default.)
 
 Look at the source for a way to use it. From now on use `mtn-add-change-log-entry` instead of `add-change-log-entry`. `mtn-add-change-log-entry` will try do the right thing.
 
