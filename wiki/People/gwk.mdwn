@@ -4,8 +4,8 @@
 #language en
 ## Georg-W. Koltermann
 
-Email: [[MailTo(Georg.Koltermann@mscsoftware.com)]] [[BR]]
-Homepage: [[BR]]
+Email: [[MailTo(Georg.Koltermann@mscsoftware.com)]] <br>
+Homepage: <br>
 IRC nick: 
 
 ...

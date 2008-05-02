@@ -4,8 +4,8 @@
 
 Wrote/maintains Botan. Used to work on OpenCM, which was somewhat Monotone-like.
  
-Email: [[MailTo(lloyd@randombit.net)]] [[BR]]
-Webpage: http://www.randombit.net/ [[BR]]
+Email: [[MailTo(lloyd@randombit.net)]] <br>
+Webpage: http://www.randombit.net/ <br>
 AIM: cykl01d
 
 ----

@@ -4,7 +4,7 @@
 #language en
 ## Your Name
 
-Email: [[MailTo(derek@echologic.com)]] [[BR]]
+Email: [[MailTo(derek@echologic.com)]] <br>
 IRC nick: dscherger
 
 ----
