@@ -1,0 +1,128 @@
+[[tag migration-wip]]
+
+For xdelta reconstruction in the db layer, we really should use a piece cache instead of our current full-version cache (see `vcache` in database.cc).  Not only would it just work better, but it would have much nicer properties for more clever delta handling.  For instance, if we switched to forward deltas for files, we would need something like this to make backwards iteration through a file's history to be fast (like 'annotate' does), and it would naturally let us send deltas off the wire straight to disk without reconstructing in memory.
+
+Here is one design.
+
+# Design
+
+We use a single structure to hold both the delta text unique to a file, and the extents necessary to reconstruct the file from its delta text, plus the delta text of its precursors.  Another approach might be to split these two parts into two different structures.  The current approach assumes that in general the extents will be relatively small (which may be false, since each extent is ~20 bytes, assuming 64 bit size_t, and in general each delta in a chain has at least one more extent than its base does), and so it is not generally useful to be able to throw away extent information independent of text information.  (Text information is generally pinned in memory so long as *any successor* is recently used, while extent information is only need to reconstruct this particular file, or to apply a new delta to this particular file.)
+
+{{{
+size_t total_space_used_for_file_cache = 0;
+std::map<file_id, File *> loaded_files;
+
+struct File
+{
+  file_id fid;
+  std::string text;  // in practice, a file<delta> or file<data>
+  shared_ptr<File> precursor;  // may be null
+  size_t memory_size; // size used by this object, plus precursor->size,
+                      // i.e., total memory needed to keep this file accessible
+  struct Extent
+  {
+    // this structure represents an extent in some File's 'text' member
+    File * source; // not a shared_ptr, because may point to 'this' (causing a
+                   // reference loop), and the 'precursor' shared_ptr recursively
+                   // pins all precursors in memory anyway.
+    size_t offset;
+    size_t length; // could make this length_of_this_file_after_adding_this_extent,
+                   // to allow binary search during patch combination...
+  };
+  std::vector<Extent> extents;
+};
+
+size_t
+File::calc_this_size()
+{
+  return sizeof(File) + this->text.size() + (sizeof(Extent) * this->extents.size());
+}
+
+void
+File::init_memory_size()
+{
+  size_t precursor_size = (precursor ? precursor->memory_size : 0);
+  size_t this_size = this->calc_this_size();
+  ::total_space_used_for_file_cache += this_size;
+  this->memory_size = this_size + precursor_size;
+}
+
+File::File(file_id fid, file<data> text)
+  : fid(fid), text(text()), precursor(0);
+{
+  Extent e;
+  e.source = this;
+  e.offset = 0;
+  e.length = this->text.size();
+  extents.reserve(1);
+  extents.push_back(e);
+  this->init_memory_size();
+  safe_insert(loaded_files, std::make_pair(this->fid, this));
+}
+
+File::File(file_id fid, shared_ptr<File> base, file<delta> d)
+  : fid(fid), text(d()), precursor(base)
+{
+  // fill in the extents structure, using base->extents
+  parse_delta(d, *base, *this, this->extents);
+  this->init_memory_size();
+  safe_insert(loaded_files, std::make_pair(this->fid, this));
+}
+
+File::~File()
+{
+  ::total_space_used_for_file_cache -= this->calc_this_size();
+  safe_remove(loaded_files, this->fid));
+}
+}}}
+
+Our cache per se consists of an LRU cache of shared_ptr<File>'s.  The idea is that instead of LRU'ing the File's directly, which would cause problems because of the dependency chains between them, we LRU 'pins' -- each time we remove a pin from the LRU, we reduce a File's reference count.  When we need to reduce the cache size, we repeatedly remove pins until, eventually, things begin falling out of memory, and eventually enough falls out that we reach our low-water mark and can stop unpinning things.
+
+Example: `annotate` with forward deltas: loading the latest version pulls all the older versions (back to the last full text) into the cache.  Walking the chain backwards is free (until we fall off the fulltext and have to load the next chain segment), and only the already-walked parts of the chain can fall out of memory.
+
+Example: initial `pull` with forward deltas: the last-inserted version is there in memory, so it's very cheap to insert the forward delta from the wire and validate it.  Additionally, some number of files behind the last one received remain in memory, and these are the ones that are most likely to be jumped to when there was divergence.  E.g., if we have
+{{{
+    A
+    |
+    B
+    |\ 
+    C E
+    |
+    D
+}}}
+received in alphabetical order, then likely the B `File` will still be in memory when E is received, though A may have dropped out.
+
+## Algorithms
+
+Fetching a file:
+{{{
+  walk delta graph backwards to find either a full-text on disk, or an already cached `File`
+  walking forwards, load each delta into a File, manually keeping each in memory until the next refers to it
+  when we reach the desired file:
+    ensure the LRU's high-water mark is larger than my_file->memory_size
+    pin my_file in the LRU cache
+    reconstruct the text
+    check the SHA1
+    return it
+}}}
+
+Inserting a full-text given a good base:
+{{{
+  fetch the base as above
+  make_delta(base, new)
+  insert the delta as below
+}}}
+
+Inserting a delta directly:
+{{{
+  ensure the base is loaded into the cache, as in 'Fetching a file'
+  create a File for the new delta
+  verify its SHA1, by reading off the extent list directly into SHA1
+     (no need to reconstruct the file in a chunk of linear memory)
+  optionally, use the new File's memory_size as a clue to whether we
+    should insert it as a full-text breaking the chain (or use some
+    other heuristic more closely tied to disk access costs)
+  bump the LRU's high-water mark to larger than the new file's memory size
+  pin the new file
+  write it to the db
+}}}

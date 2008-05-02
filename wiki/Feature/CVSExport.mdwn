@@ -1,0 +1,20 @@
+[[tag migration-wip]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Put revisions committed to monotone back into a CVS repository, to allow gradual migration or support interaction between projects using different tools.
+
+# Not (yet) Supported
+
+This is not yet supported in mainline monotone, but there is experimental code on a branch which does this (see BranchStatuses).  
+
+Allowing developers to use ["MonotoneAndCVS"] together in several different ways is an explicit goal of this effort, but it is complicated by the well-known limitations of CVS.  In particular, accurately representing the DAG-structure of monotone commits in a linear CVS history presents special challenges.
+
+It is an explicit goal of this development effort to eventually support replication of this kind with multiple different repositories, whether CVS or other VCS tools, including relaying changes between them via monotone.  That ambitious goal is still some way off, however.
+
+# Further Reference
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureCVSExport VCSFeatureCVSExport]

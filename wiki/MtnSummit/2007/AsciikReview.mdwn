@@ -1,0 +1,56 @@
+[[tag migration-wip]]
+
+{{{
+Always use 'foo const &', not 'const foo &'.  (Yes, we're weird.)
+
+You are not charged by the number of newlines occurring in your code:
+  asciik::asciik(size_t min_width, ostream & os) : width(min_width), output(os)
+-->
+  asciik::asciik(size_t min_width, ostream & os)
+    : width(min_width), output(os)
+
+asciik::draw(const size_t curr_items, const size_t next_items,
+  const size_t curr_loc, const set<pair<size_t, size_t> > & links,
+  const set<size_t> & curr_ghosts, const string & annotation) const
+->
+asciik::draw(size_t const curr_items,
+             size_t const next_items,
+             size_t const curr_loc,
+             set<pair<size_t, size_t> > const & links,
+             set<size_t> const & curr_ghosts,
+             string const & annotation) const
+
+Commas mixed up with initialization are almost always confusing...:
+      size_t i = link->first, j = link->second, start, end, dot;
+->
+      size_t i = link->first;
+      size_t j = link->second;
+      size_t start, end, dot;
+
+
+Also, be careful to give things the smallest scope possible:
+      size_t i = link->first, j = link->second, start, end, dot;
+      if (i == j)
+        interline[2 * i] = '|';
+      else {
+        ...
+      }
+start, end, dot are only initialized within the 'else' block, so I
+freaked out for a moment thinking that we might be forgetting to
+initialize them sometimes... but then I verified that they are only
+_used_ within the 'else' block, so it was okay.  But this would have
+been obvious had it been done like:
+      size_t i = link->first;
+      size_t j = link->second;
+      if (i == j)
+        interline[2 * i] = '|';
+      else {
+        size_t start, end, dot;
+        ...
+      }
+
+(Also, while I'm here, that { on the 'else' is in the wrong place...)
+
+
+Your debugging tweak to charset.cc should be reverted.
+}}}

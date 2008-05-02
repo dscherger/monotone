@@ -1,0 +1,51 @@
+[[tag migration-wip]]
+
+*This page is mostly out of date: rosters have been part of mainline monotone since the 0.26 release.*
+
+There is a mailing list post by NJS explaining [http://lists.gnu.org/archive/html/monotone-devel/2005-11/msg00102.html what rosters are].
+
+----
+
+`grep -E "FIXME.ROSTER" *.cc *.hh`
+
+# Todo before real release
+
+ * tests for roster_merge
+ * make sure db check is good?
+ * basic root dir stuff, so people can import sutured root dirs
+ * cvs_import branch reconstruction would be very nice, but not a blocker
+ * merge via working dir would be very nice, but not a blocker
+
+# Still needed for baseline functionality
+
+ * we need to figure out what to do about cvs_import -- that it does not connect branches makes it much less useful than we would like!
+ * what's the status of db check?
+
+# Unit Tests Needed:
+ * simple cset tests
+   * ordering of complex renames handled correctly - some tests done, perhaps add more
+ * cset reading tests
+   * detect non-normalized-whitespace-ness - tricky, requires teaching the parser about whitespace ??
+ * test equal_up_to_renumbering
+ * RostersTodo/MarkAndMergeTests
+
+# Smaller tweaks:
+
+ * review docs to see if anything needs changing
+
+# Would be nice
+
+(read: "work on this is cool, but don't expect someone else to do it, and before doing it think about whether there's anything above you can do first")
+
+ * interactive conflict resolution for tree rearrangements (for now, rename conflicts etc. still fault)
+ * docs on merge algorithm for advanced users
+ * restrictions code is a horrible mess -- make_restricted_cset(roster_t, roster_t, cset&)?  
+ * change restriction semantics to make sense now that we have directories -- yadda-yadda-yadda wildcards?  ("commit foo" vs. "commit foo/...")?
+ * attribute hooks that are called on attr changes, rather than every time we squint at the working dir funny
+ * split_path and file_path distinction is seeming sillier and sillier
+ * some sort of state tracking for temp/non-temp and insane/sane rosters?
+
+# Deferred
+
+ * MergeViaWorkingDir
+ * git_import (unless pasky wakes up and tells us what's going on with it)

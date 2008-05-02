@@ -1,0 +1,66 @@
+[[tag migration-wip]]
+
+The rules to determine if the release version identifier X.Y is raised or not, are as follows:
+
+ * the major number X increments whenever a backwards incompatible change is made
+ * the minor number Y increments whenever any other change is made; it is reset to 0 when major number increments
+ * either the major number X or the minor number Y increases at most once per release
+
+## Interface Version Matrix
+
+The following table should give you an overview at which time certain functionalities have been added or altered in monotone's automation interface.
+
+||<rowbgcolor="#DDD">**monotone releases**   || 0.17 || 0.18 || 0.19 || 0.20-0.23 || 0.24-0.25 || 0.26 || 0.27 || 0.28 || 0.29 || 0.30 || 0.31-0.33 || 0.34 || 0.35 || 0.36 || 0.37-0.38 || 0.39-0.40 ||
+||<rowbgcolor="#DDD">**interface versions** || 0.0 || 0.1 || 0.2 || 1.0 || 1.1 || 2.0 || 2.1 || 2.2 || 3.0 || 3.1 || 4.0 || 4.1 || 4.3 || 5.0 || 6.0 || 7.0 ||
+||<rowbgcolor="#EEE">ancestors                ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">ancestry_difference      ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">branches                 ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">cert                     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">certs                    ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">children                 ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">common_ancestors         ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">content_diff             ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">descendents              ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">drop_attribute           ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||
+||<rowbgcolor="#EEE">drop_db_variables        ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||
+||<rowbgcolor="#FFF">erase_ancestors          ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">genkey                   ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_attributes           ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||  C  ||     ||     ||
+||<rowbgcolor="#EEE">get_base_revision_id     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_content_changed      ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">get_corresponding_path   ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_current_revision     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A [[FootNote(While the format of this command has not been changed between 0.39 and 0.40, the output may differ because the interpretation of the --depth option changed in 0.40 (previously: 0 = the node + its immediate children, now: 0 = only this node))]]  ||
+||<rowbgcolor="#EEE">get_current_revision_id  ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_db_variables         ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||  C  ||
+||<rowbgcolor="#EEE">get_file                 ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_file_of              ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">get_manifest_of          ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">get_option               ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">get_revision             ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  C  ||
+||<rowbgcolor="#FFF">graph                    ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">heads                    ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">identify                 ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||
+||<rowbgcolor="#EEE">interface_version        ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">inventory                ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  C  ||  C [[FootNote(While the format of this command has not been changed between 0.39 and 0.40, the output may differ because the interpretation of the --depth option changed in 0.40 (previously: 0 = the node + its immediate children, now: 0 = only this node))]]  ||
+||<rowbgcolor="#EEE">keys                     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">leaves                   ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">packet_for_fdata         ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">packet_for_fdelta        ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">packet_for_rdata         ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">packets_for_certs        ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">parents                  ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">put_file                 ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">put_revision             ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">roots                    ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||
+||<rowbgcolor="#EEE">select                   ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">set_attribute            ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||
+||<rowbgcolor="#EEE">set_db_variable          ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||  C  ||
+||<rowbgcolor="#FFF">stdio                    ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||  B  ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#EEE">tags                     ||     ||     ||     ||     ||     ||     ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#FFF">toposort                 ||     ||  A  ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||     ||
+||<rowbgcolor="#DDD">**interface versions** || 0.0 || 0.1 || 0.2 || 1.0 || 1.1 || 2.0 || 2.1 || 2.2 || 3.0 || 3.1 || 4.0 || 4.1 || 4.3 || 5.0 || 6.0 || 7.0 ||
+||<rowbgcolor="#DDD">**monotone releases**   || 0.17 || 0.18 || 0.19 || 0.20-0.23 || 0.24-0.25 || 0.26 || 0.27 || 0.28 || 0.29 || 0.30 || 0.31-0.33 || 0.34 || 0.35 || 0.36 || 0.37-0.38 || 0.39-0.40 ||
+
+A = Addition, B = Backwards-compatible change, C = Backwards-incompatible change 
+
+If you like to get more information about certain command / format changes, please consult [http://monotone.ca/docs/Automation.html monotone's Automation documentation].

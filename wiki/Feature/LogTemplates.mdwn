@@ -1,0 +1,18 @@
+[[tag migration-wip]]
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Commit log messages should start from a predefined template that prompts the developer to fill in certain information or follow certain conventions.
+
+# Not Supported
+
+This is not presently supported, but would be simple to add - just nobody has gotten around to doing it yet.   Like a number of other similar simple features and good ideas, this is one of the QuickieTasks that would be a great way for a new contributor to get used to the monotone code.
+
+It is possible to test the commit message for compliance to rules (see FeatureLogReview), and it would also be possible to implement this using hooks.  One suggestion would be to use a hook on other commands (like update) to copy the template to `_MTN/log` if it is empty.
+
+# Further Reference
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureLogTemplates VCSFeatureLogTemplates]

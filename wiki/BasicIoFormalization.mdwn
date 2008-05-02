@@ -1,0 +1,32 @@
+[[tag migration-wip]]
+
+There's some debate on what the formal definition of basic_io should be, and in particular whether stanzas and lines should be first class items, or it should continue to treat all whitespace as identical, except with one special normalized form.
+
+http://colabti.de/irclogger/irclogger_log/monotone?date=2005-11-25,Fri&sel=117#l194
+
+Attempting to tame this discussion a bit...
+
+# Concrete issues
+
+Things that need some sort of resolution:
+
+  * whitespace normalization is AFAIK the *only* property that we don't verify is correct on incoming data.  Since our policy is to verify everything, I would consider this a bug.
+
+# Fuzzier stuff
+
+Arguments to make stanzas/lines first class items:
+  * It seems unnecessarily confusing to have two somewhat different formats -- "basic_io" and "normalized basic_io"; especially since they're not clearly distinguished.
+  * It is nice if de facto and de jure standards line up.  (The field of "usability" is basically the art/science of making this happen.)  They don't right now; no-one who has simply been exposed to basic_io stuff has any idea that stanzas are insignificant.
+  * related: people will script monotone; they won't read the formal docs first
+
+Arguments to leave stanzas/lines as epiphenomena:
+  * meaningful whitespace is a generally bad idea.
+{{{
+    <graydon_> error cases with whitespace-sensitivity: pasting two stanzas together and forgetting to insert a newline. pasting two files together, inserting one extra newline, accidentally creating a "null stanza". wrapping. crlf conversion.
+}}}
+     also, whitespace mangling (though "" blocks can also be mangled).
+# Empirical questions
+
+Is one formalism easier to code up a quick parser for?
+
+Does one formalism lead to a parser that's easier to hack up a quick program around?

@@ -1,0 +1,14 @@
+[[tag migration-wip]]
+
+#format wiki
+#language en
+## Georg-W. Koltermann
+
+Email: [[MailTo(Georg.Koltermann@mscsoftware.com)]] [[BR]]
+Homepage: [[BR]]
+IRC nick: 
+
+...
+
+----
+CategoryHomepage

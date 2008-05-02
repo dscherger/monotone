@@ -1,0 +1,20 @@
+[[tag migration-wip]]
+
+Discussion: irc logger missed it, but, in #monotone around 2005-12-12T00:00:00 UTC.
+
+# Problems
+
+  * I have a revision with files Potato.c and poTato.c.  When I check it out, or update to it, on win32 or osx, either we silently screw things up, or we simply fail.  (Find out which!)  The latter would be better than the former, but neither is particularly appetizing.
+    * Proposed solution: extend MergeViaWorkingDir support to signal these like they were rename conflicts; this lets the user perform their checkout and then straighten things out.  This also would be applicable in the cases where there is random junk in the user's tree, that we don't want to clobber on update.
+    * NB: this means that MergeViaWorkingDir needs to account for conflicts involving both versioned and unversioned files.  And whatever code detects clobbering of unversioned files needs to figure out whether the file is in fact versioned, just under a different name.
+    * NB: this means we need to be able to handle n-way file name conflicts in the MergeViewWorkingDir machinery.
+  * A user on win32 or osx can do things like: "add Potato.c pOtato.c poTato.c potAto.c potaTo.c potatO.c" and have monotone cheerfully add 6 files.  (I assume, have not tested this.)  This will not corrupt history (except that they then will not be able to check their tree out unless they switch to a case sensitive filesystem, see previous), but it is certainly surprising and unhelpful.
+    * Proposed solution: One option is to find out whether the filesystem is case-insensitive (I think the only portable way may be to write out a file to MT/ and then try reading it again using a differently capitalized name?), and then write a chunk of code to make sure added files don't match each other, even with case-folded.  This requires that we know the case-folding rules, which in this i18n world is really dubious (e.g., HFS+'s [http://developer.apple.com/technotes/tn/tn1150.html#UnicodeSubtleties rules] are guided by unicode but only fully specified by HFS+ itself).  For another option, see below.
+  * "monotone add potato.c" when the file on disk is named Potato.c --> should make sure that this ends up adding Potato.c, not potato.c.  (This might solve previous automatically.)
+  * More generally, users of these filesystems expect not to have to be careful about case when specifying commands.  So, for instance, "monotone revert potato.c" -> "error: no such file" -- "but it's right there!  stupid program".  This applies to all commands that take filename arguments -- all restrictions, etc.
+    * Proposed solution: ?
+  * Ignorant Win32/Win16/DOS applications have been known to invent new filenames that differ in case from what was specified at file open time,  e.g. user edits file.txt (selected via a GUI) and saves it, and the program saves it as FILE.TXT or File.txt.
+
+----
+IMHO, darcs got it right. Warn the user at the point that conflicting cases are being added to the repo, but allow an override. Warn regardless of platform. If the user overrides, they're on their own. That doesn't solve the problem for existing monotone repos, but it's a reasonable policy moving forward.
+  * Unfortunately, this cannot be done fully reliably (because "case insensitive" is ill-specified), and the above conditions still need to be handled somehow.  But it would be a pleasant bit of UI sugar for users.

@@ -1,0 +1,103 @@
+[[tag migration-wip]]
+
+# Current Design
+
+We have a structure called a policy. Policies look like this 
+(if you happen to be an ML programmer): {{{
+
+  type policy = { id: branch_id;
+                  killed: bool;
+                  defined_users: (string, user) map;
+                  meta: (string, string) map;
+                  delegation: delegation; }
+
+  and delegation = SimpleDelegate of branch_policy
+                 | FullDelegate of { content_branch: branch_policy option;
+                                     subpolicy_branches: (string, branch_policy) map; }
+
+
+  and branch_policy = { id: branch_id;
+                        permitted_users: string set;
+                        status: branch_status;
+                        meta: (string,string) map; }
+
+  and branch_status = Active | Dormant
+
+  and branch_id = Root
+                | ChildOf(branch_id, nonce)  // hashed to compress to constant size
+
+  and user = { pk: key_id;
+               meta: (string,string) map; } 
+
+
+}}}
+
+Policies are stored in branches, and all branches in monotone become
+fully hierarchical:
+
+  * branches are a proper tree
+  * branches cannot move between parents
+  * branches 'can' be renamed within a parent
+  * every branch has a single parent
+  * the "id" (stable identity) of a branch incorporates its parent branch via a "hash(parent)+nonce" trick
+
+A policy branch manages both the namespace and the permissions of its
+sub-branches, inlcuding an optional unique content branch that has the
+same human-friendly name as the policy branch: for example, {{{foo.bar}}}
+may name both a particular content branch 'and' contain policy
+decisions that name and constrain the sub-branches {{{foo.bar.baz}}} and
+{{{foo.bar.quux}}}. 
+
+Aspects of policy accumulate "down" the tree, from the root policy
+towards content trees. So a branch like {{{foo.bar.baz}}} is judged by 
+the policy of {{{foo}}}, plus the policy of {{{foo.bar}}}, plus the policy of 
+{{{foo.bar.baz}}}.
+
+At the root of the policy-branch tree there is a branch that all
+projects everywhere refer to as their parent, called {{{Root}}}. Users
+construct their own content for the {{{Root}}} branch. Monotone makes a
+branch called {{{Root}}} exist if you haven't created one. {{{Root}}} is not
+associated with a particular project. Rather, users 'sign' revisions
+into the root branch: revisions in the root branch are policy that
+bind top-level project names into the UI. You can think of the {{{Root}}}
+branch as a user's personal list of project-policy "mount points". This
+'might' be shared between a couple of the user's personal machines, but
+the contents of a user's Root branch is generally private.
+
+Why does monotone trust the user's key when signing policy in the {{{Root}}}
+policy branch? Because there is an external, non-versioned list of 
+keys that each user keeps (typically a 1-entry list) that defines 
+which keys to trust for the {{{Root}}} branch.
+
+The important design point is that the decision for "which policy node
+represents the head of a policy branch" is made by evaluating 'certs' on
+that policy branch, and the validity of those certs is determined by
+looking in the policy you have in the 'parent' branch. So branch {{{foo}}}
+says which keys are legal for manipulating policy on branch {{{foo.bar}}} 
+(and its sub-branches), and {{{foo.bar}}} introduces the sub-branch 
+{{{foo.bar.baz}}} more keys which are legal for manipulating policy on 
+branch {{{foo.bar.baz}}}.
+
+If there are multiple policy heads, one is chosen at random and used;
+if the user wants they can force the choice between heads.  This is
+harmless conservative behavior because policy cannot refer back to
+itself, so "bad policy" cannot use "racing with good policy" to
+bootstrap itself into more permission: bad policy can be reverted by
+anyone else who has write access to the policy branch containing the
+bad policy, and anyone adding truly 'malicious' policy can be
+overridden by more-authorized admins in the parent branch by
+de-authorizing the writer who produced the malicious policy from
+writing to the policy branch. The bad certs then go dead for that
+branch, meaning that the bad revs fall out of the branch (though if
+the malicious policy was merged with good policy in the meantime,
+someone will have to commit a revert edge as well to finish cleaning
+up).
+
+There is also a per-policy-branch "kill switch" that is sticky; once
+the kill-switch on a branch is set it can never be un-set, so it 
+represents a way for an admin to permanently retire a problematic branch,
+for example if the admin's key is compromised.
+
+We also include a form of delegation that exists purely for inserting extra
+levels of authorization and kill-switches, without introducing new branch
+name components. This is a SimpleDelegate.

@@ -1,0 +1,16 @@
+[[tag migration-wip]]
+
+There is more than one one way to get things done with monotone. Listed here is guidance in best practices in using monotone. Following these procedures will help you get the most out of monotone, and help avoid common pitfalls. 
+
+||CommitEarlyCommitOften      || Making smaller changes makes it easier for others to pluck them ||
+||DaggyFixes                  || Use the ancestry graph to save fix backporting and release management work ||
+||ZipperMerge                 || Use the ancestry graph to save branch integration and merging work ||
+||BranchNamingConventions     || Name branches consistently ||
+||CreatingBranches            || Best way to create branches ||
+||VendorBranchPattern         || How to integrate other people's code into your project ||
+||BranchAssemblyPattern       || Partition modules into branches, and assemble project with `merge_into_dir` ||
+||DevelopmentBranchPattern    || Develop features on branches, and then merge ||
+||ReleaseBranchPattern        || How to deliver a project to other people ||
+||DifferentDbsForServeAndWork || Keeping your work database and the monotone server's database separate ||
+||OneBranchPerDbForServe      || Don't keep all of your eggs in one basket ||
+||RunDbCheckOften             || Catch database corruption early ||

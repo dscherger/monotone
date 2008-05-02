@@ -1,0 +1,23 @@
+[[tag migration-wip]]
+
+The branches which we've worked upon on the 2008 summit and which should be reviewed by others:
+
+## nvm.commit_without_-b (Richard)
+
+...
+
+## nvm.automate_out_of_band (Christof, Thomas K.)
+
+Adds support for multiple streams into monotone stdio which includes separate streams for informational messages (infos, warnings, errors, ...) as well as tickers. To actually test tickers automate pull is already included here.
+
+Documentation is in place, tests are still missing.
+
+## nvm.automate-netsync (Thomas K.)
+
+Implements the netsync commands push, pull and sync in automate, especially for use within stdio. Enforces and checks the usage of a running ssh-agent instance to avoid password prompting.
+
+Documentation is in place, tests are still missing.
+
+## net.venge.monotone.lapo.selectors (Lapo)
+
+...

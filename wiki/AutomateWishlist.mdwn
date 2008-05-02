@@ -1,0 +1,108 @@
+[[tag migration-wip]]
+
+Missing (but useful) functions for the automate interface:
+
+ * `ancestors`: limit the number of returned ancestors (like calling `parents` repeatedly)
+
+ * `branches`: returns the names of all branches. => How should that differ from `mtn ls branches`? - It would be callable from an automate stdio connection. [**Implemented**]
+
+ * `diff`: returns the unified diff between two revisions. [**Partially Implemented as automate content_diff**]
+
+ * `roots`: returns all revision ids without parent. [**Implemented**]
+
+ * `get_file_length ID`: returns the size of the specified file. 
+   Currently one has to fetch the whole file in order to find out its length.
+   NB: monotone does not actually store this information; the implementation inside monotone would just involve fetching the whole file and then reading its length.  So this is a little dubious; it would encourage people to do things that are actually _slower_ (like fetching both the length and the full file, instead of just calculating the length themselves) when trying to optimize.  Fetching a single file twice in a row through 'automate stdio' is pretty cheap, though.
+  
+ * `get_file ID OFFSET LEN`: returns only partial file contents.
+   Might be handy for reading big files piecewise.
+   NB: monotone does not actually have this capability internally (because sqlite does not have this capability internally); each time you requested a chunk, monotone would have to read the whole file into memory and then just deliver the requested part.  Of course, it would then keep the file in its cache, so requesting multiple chunks in a row would be reasonably cheap... but you still have the whole file in memory.  Let's leave things that "might be handy" until there's a real program that needs the capability :-).
+
+ * `get_option OPTION`: return the given option (where OPTION is "branch", "database", etc. - entries in _MTN/options)
+   Clearly, anyone that wants to know these things can just grep them out of _MTN/options - but that's not really supported and is messing about with what are really monotone's internals.  Knowing the DB monotone would use for a given workspace would be useful for GUIs.
+   [**Implemented**]
+
+## Extensions to support Graphical User Interfaces
+
+-- MarcelvanderBoom [[DateTime(2006-06-18T18:39:06Z)]]
+Given the 'automate branches' example,the whole of the document linked to above, and the growing number of commands both in automate variety and in the normal interface (mtn heads for example), my wish would be that the 'normal' interface and the 'automate' interface become one; said another way: "get rid of the mtn automate command". Using a cmdline switch or a format specifier the output produced and the specifics of the effect can be steered. What 'callable from an automate stdio connection' means to a user: 'nothing'.
+ 
+To me:
+{{{ mtn heads}}}
+and
+{{{ mtn automate heads }}}
+
+are the same thing, just formatted differently and as such i tend to look for an **option** to specify these formattings, not another **command**. Having something formatted as a plain rev list or basic io stanzas could be options to select quickly as they are used frequently. The document at berlios more or less says "give me all normal mtn commands, just in the automate interface" Why not do this in general?
+
+-- ThomasKeller [[DateTime(2006-08-28T10:33:00Z)]]
+The only reason why all these commands must live inside the automation interface is because they need to be callable via automate stdio. If there would be a general refactoring which would allow the execution of any "normal" command via this interface, then this would be sufficient as well. Obviously if the automation interface would be removed in favor of a general implementation, one would need to think about where to move the current functionality from there, which does not exist in the normal interface. And for that purpose we'd need to make a big plan, and, I don't think anybody around here is keen on making big plans which take months to implement (if they're implemented at all).
+
+
+## Automate Stdio Stream Mux
+
+A large problem for current consumers of **automate stdio** is that this interface really only caters for the normal output of the command on the stdout stream.  If the command produces some warning, errors, or even progress messages (like tickers, which may be useful for future automate commands), these are not well handled:
+
+ * some errors and messages may interrupt the stdout stream, causing the client to get out of sync with the stdio record format
+ * where multiple commands are called, it can be hard to tell which command caused which warning/error on stderr.
+ * for either case, the content of the error message is not structured for program usage; it may even be changed based on the users language settings.
+
+To address these problems, some changes and clarifications to the **automate stdio** output record format are proposed.
+
+The current form has the following description:
+
+{{{
+The output consists of one or more packets for each command. A packet looks like:
+
+<command number>:<err code>:<last?>:<size>:<output>
+
+<command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
+
+<err code> is 0 for success, 1 for a syntax error, and 2 for any other error.
+
+<last?> is 'l' if this is the last piece of output for this command, and 'm' if there is more output to come.
+
+<size> is the number of bytes in the output.
+
+<output> is a piece of the output of the command.
+
+All but the last packet for a given command will have the <last?> field set to 'm'. 
+}}}
+
+It is proposed to change it as so:
+
+{{{
+The output consists of one or more packets for each command. A packet looks like:
+
+<command number>:<err code>:<stream>:<size>:<output>
+
+<command number> is a decimal number specifying which command this output is from. It is 0 for the first command, and increases by one each time.
+
+<err code> is 0 for no-error, 1 for a syntax error, and 2 for any other error.  no-error on the final 'l' packet (see below) for a command indicates success of the command; on earlier packets it means no error yet.  Once an error has been detected and indicated with a packet with non-zero error value, no later packet should go back to 0.
+
+<stream> is an identifier for which output stream this packet represents, allowing multiple streams to be multiplexed over the channel.    The following streams are presently defined; more streams may be added later.
+
+ 'm' and 'l': the 'm' stream represents the normal stdout automate output of the command, formatted as described in the description for that command.  The special 'l' value is described below.
+
+ 'e': the 'e' stream represents any (unstructured) error message data. Internally, this maps to calls to the E() and N() print macros that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+
+ 'w': the 'w' stream represents any (unstructured) warning message data. Internally, this maps to calls to the W() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+
+ 'p': the 'e' stream represents any (unstructured) progress message data. Internally, this maps to calls to the P() print macro that would normally be written by the command to the program's stderr stream, if the automate sub-command had been called directly rather than via **stdio**. 
+
+As needed, some of these (e,w,p) messages may be replaced with structured and well-defined error information for more direct interpretation by a gui frontend, not localised, on a different stream.
+
+ 'p': informative progress messages from the command during execution.
+
+ 't': ticker updates, as may be used by the gui to update a progress bar. The ticker stream is formatted as a series of lines, one for each ticker update.  Each line contains <tag>:<n>[/<m>]. The <tag> is the ticker name, <n> is the value, the optional <m> is the max value (which may be used for percentage in a progress bar).
+
+<size> is the number of bytes in the output.
+
+<output> is a piece of the output of the command.
+
+The last packet for a given command will have the <stream> field set to 'l'. This packet indicates termination of all streams for the command. Any content in this packet is considered to be part of the 'm' stream. The <size> in this packet is likely to be zero if there has been an error message that has prevented or interrupted normal output. 
+
+If a client implementation gets a <stream> record for a stream type it does not recognise, the record should be ignored.
+
+}}}
+
+The multiple stream encoding allows the output of errors and warnings to be associated with the command that generated them, allows the communication path to always stay in sync, and offers the opportunity to add other stream types for other useful purposes in the future as needs arise.
