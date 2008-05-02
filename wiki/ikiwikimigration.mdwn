@@ -60,7 +60,8 @@
 
 ##  running ikiwiki
 
-to generate pages, use something like:
+to generate pages you can browse with a local webserver, use something like:
 
-    ikiwiki --plugin rawhtml --plugin goodstuff --plugin graphviz --exclude index.mdwn . /tmp/ikiwiki/
+    ikiwiki --wikiname monotone --plugin rawhtml --plugin goodstuff --plugin graphviz --plugin table --exclude 'index\.mdwn' ikiwiki/checkout/dir/ output/dir/
 
+if you want to use them with `file:` protocol with no need for a local webserver, the option `--no-usedirs` is suggested.
