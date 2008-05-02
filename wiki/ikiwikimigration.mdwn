@@ -14,6 +14,8 @@
 
    start by adding `\[[tag migration-wip]]` at the top of the file.
    This tags the page as one being worked on, but not yet finished.
+   Commit and push this rev, so others can see you're working on
+   this file, and can pick another to start next in parallel.
 
 3. Translate the markup:
 
@@ -51,4 +53,10 @@
    commit again.
 
 6. `GOTO 1`
+
+##  running ikiwiki
+
+to generate pages, use something like:
+
+    ikiwiki --plugin rawhtml --plugin goodstuff --plugin graphviz --exclude index.mdwn . /tmp/ikiwiki/
 

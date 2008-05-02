@@ -1,3 +1,5 @@
+[[tag migration-done]]
+
 There has been a great deal of VCS development activity in recent years, with many projects and many different solutions to the version control problem -- with significant similarities and differences between them.
 
 For developers frustrated with their current tools (often CVS, but also others) and looking for an alternative to migrate to or start using with new projects, this can be a confusing and rapidly changing landscape.  Some public comparisons have been done, each with specific objectives and each at a point in time.
@@ -6,32 +8,8 @@ This is a collection of links to pages that describe monotone's capabilities and
 
 While we happen to think monotone is already really good and getting better all the time, we also recognise that it is not perfect, not yet finished, and not for everyone. We'll be honest about our limitations, and describe how we intend to address them in future work.  We won't try to be all things to all users, but if you're looking for a feature you don't find described here, please let us know.
 
-''Note: this list is under active construction, there are several more pages yet to be written for this list. The first entries on this list are based heavily on the requirements and features from [http://wikitest.freebsd.org/VersionControl FreeBSD's evaluation], and they're still underway though mostly done at this point. We will add references to other collections as time goes on.''
+*Note: this list is under active construction, there are several more pages yet to be written for this list. The first entries on this list are based heavily on the requirements and features from [FreeBSD's evaluation](http://wikitest.freebsd.org/VersionControl), and they're still underway though mostly done at this point. We will add references to other collections as time goes on.*
 
- * FeatureAccessControl
- * FeatureAtomicCommit
- * FeatureBuildIntegration
- * FeatureCommitMail
- * FeatureCompactRepository
- * ["FeatureCVSExport"]
- * ["FeatureCVSImport"]
- * ["FeatureEmbeddedIDs"]
- * FeatureFast
- * FeatureLightweightBranches
- * FeatureLogReview
- * FeatureLogTemplates
- * ["FeatureMIMEtypes"]
- * FeatureMerging
- * FeatureMirroring
- * FeatureNetworkSecurity
- * FeatureObliterate
- * FeatureOffline
- * FeaturePortable
- * FeatureRename
- * FeatureRobustRepository
- * FeatureSignedRevisions
- * FeatureSymlinks
- * FeatureVendorBranches
- * FeatureWebInterface
+[[map pages="./Feature/* and !./Feature/Template"]]
 
-or add a new one based on the FeatureTemplate
+or add a new one based on the [[Feature/Template]]

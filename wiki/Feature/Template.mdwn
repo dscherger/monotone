@@ -1,0 +1,31 @@
+[[tag migration-wip]]
+
+''This page is a template for..''
+
+This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+= Description =
+
+''<A short description of the capability or feature and why you would want to use it>''
+
+= Supported/Not Supported/Partially Supported/etc.. =
+
+''<A short description of monotone's capability. Make reference to commands and other wiki pages that might have further description.  Mention the monotone version that made the most recent signifigant change to this feature, if possible. Try to avoid long discussion directly here, link to development pages instead>''
+
+= Example Usage =
+
+''<If relevant, walk through a quite example of how to use the feature>''
+
+{{{
+ $ mtn ...
+ <edit files>
+ $ mtn ...
+}}}
+
+= Further Reference =
+
+Manual and Tutorial Sections:
+ * [http://venge.net/monotone/monotone.html#SectionName Manual Section Name]
+
+Features and Requirements in other evaluations:
+ * FreeBSD [http://wikitest.freebsd.org/VCSFeatureBlah VCSFeatureBlah]
