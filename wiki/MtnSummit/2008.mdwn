@@ -72,31 +72,31 @@ The university mensa of Campus Freudenberg is 5 minutes from there, has excellen
 # people
 
 [[!table data="""
-|name |email|mobile phone| arrival| departure| airport| funding needed? | comments (food allergy)|
-|Siegfried Herbold|mtnsummit herbold info| +49 160 97949444| Apr 25, 20:00| |by car| no | |
-|Lapo Luchini| lapo@lapo.it | +39 347 2270475 | Apr 24 evening in Düsseldorf, Apr 27 late evening in Wuppertal | May 4, 20:21 Wuppertal Hbf | by train | no | 25-27 my girlfriend will be present and we're mainly interested in Düsseldorf sightseeing, then I'll reach Wuppertal alone |
-|Thomas Keller| me thomaskeller biz | +49 175 4661198 | Apr 28, 12:12 Wuppertal Hbf | May 3, 7:53 Wuppertal Hbf | | no | by train |
-|Thomas Moschny|thomas.moschny (at) gmx.de|+49 162 9149292|Apr 27 evening|May 1 evening|car|no|Don't need lodging.|
-|Christof Petig| christof.petig (at) arcor.de | +49 177 5816961 | already there | | | no | vegetarian |
-|Richard Levitte|richard (at) levitte org|+46 708 265344|Apr 28|May 4|by car?| |Low amount of meat (almost vegetarian)|
-|Daniel Carosone|dan geek com au | |Apr 26 12:05 | May 5|DUS | | May spend some time sightseeing around DUS after arrival until  evening of 27th, especially if others are interested in doing same. |
-|template line| | | | | | | |
+name |email|mobile phone| arrival| departure| airport| funding needed? | comments (food allergy)
+Siegfried Herbold|mtnsummit herbold info| +49 160 97949444| Apr 25, 20:00| |by car| no | 
+Lapo Luchini| lapo@lapo.it | +39 347 2270475 | Apr 24 evening in Düsseldorf, Apr 27 late evening in Wuppertal | May 4, 20:21 Wuppertal Hbf | by train | no | 25-27 my girlfriend will be present and we're mainly interested in Düsseldorf sightseeing, then I'll reach Wuppertal alone
+Thomas Keller| me thomaskeller biz | +49 175 4661198 | Apr 28, 12:12 Wuppertal Hbf | May 3, 7:53 Wuppertal Hbf | | no | by train
+Thomas Moschny|thomas.moschny (at) gmx.de|+49 162 9149292|Apr 27 evening|May 1 evening|car|no|Don't need lodging.
+Christof Petig| christof.petig (at) arcor.de | +49 177 5816961 | already there | | | no | vegetarian
+Richard Levitte|richard (at) levitte org|+46 708 265344|Apr 28|May 4|by car?| |Low amount of meat (almost vegetarian)
+Daniel Carosone|dan geek com au | |Apr 26 12:05 | May 5|DUS | | May spend some time sightseeing around DUS after arrival until  evening of 27th, especially if others are interested in doing same.
+template line| | | | | | | 
 """ ]]
 
 # schedule
 
 Apr 28, first official day of summit
-[[!table data="""
-|~10:00| first official meeting @ w-tec with breakfast|
-|14:00| lunch @w-tec|
-|18:00| evening meal @w-tec|
+[[!table header=no data="""
+~10:00| first official meeting @ w-tec with breakfast
+14:00 | lunch @w-tec
+18:00 | evening meal @w-tec
 """ ]]
 
 Apr 29 - May 4
-[[!table data="""
-|@09:00| breakfast @w-tec|
-|13-14:00| lunch @w-tec|
-|18-19:00| evening meal @w-tec|
+[[!table header=no data="""
+@09:00  | breakfast @w-tec
+13-14:00| lunch @w-tec
+18-19:00| evening meal @w-tec
 """ ]]
 
 Note that the 1st of May is a public holiday in Germany (Jesus' Ascension and May Day).

@@ -59,8 +59,8 @@
       paragraphs) in the same commit.
       That can be done as a separate step.
 
-      When flowing paragraphs, try to follow the "new sentence, new
-      line" convention.
+      When flowing paragraphs, try to follow the "*new sentence, new
+      line*" convention.
       Ikiwiki uses a blank line to break paragraphs.
       This tends to mean that when someone else later adjusts a
       few words in a paragraph, we don't get many
