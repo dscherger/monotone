@@ -39,6 +39,47 @@ code {
     margin-right: 0.3em;
 }
 
+.actions {
+    background: white;
+    text-align: right;
+}
+
+.actions ul {
+    border: 0;
+    padding: 0;
+    padding-right: 2em;
+    padding-top: 0.4em;
+}
+
+.actions ul li {
+    border-left: 1px solid #474747;
+    border-right: 1px solid #474747;
+    border-bottom: 1px solid #474747;
+    margin-left: 1em;
+    padding-top: 0.4em;
+    padding-left: 0.8em;
+    padding-right: 0.8em;
+    padding-bottom: 0.4em;
+    background: #727272;
+    -moz-border-radius-bottomleft: 0.8em;
+    -moz-border-radius-bottomright: 0.8em;
+    -webkit-border-bottom-left-radius: 0.8em;
+    -webkit-border-bottom-right-radius: 0.8em;
+}
+
+.actions ul li:hover {
+    background: #AAAAAA;
+}
+
+.actions ul li a {
+    color: white;
+}
+
+.actions ul li a:hover {
+    text-decoration: none;
+}
+
+
 .inlinepage {
     margin-bottom: 1.5em;
 }
