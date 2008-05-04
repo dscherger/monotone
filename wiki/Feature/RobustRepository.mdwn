@@ -25,7 +25,9 @@ Interrupt or kill monotone during any operation.
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Database Commands](http://venge.net/monotone/monotone.html#Database)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)

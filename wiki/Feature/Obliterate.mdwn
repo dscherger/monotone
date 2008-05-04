@@ -19,6 +19,7 @@ The problem arises if the offending revisions and content have been `sync`ed to 
 # Example Usage
 
 Revisions can be removed from a local database, if they have no descendants:
+
      $ mtn -d database.mtn db kill_rev_locally <explicit-sha1-revision-id>
 
 If there are descendants, additional changes have been based on the bad revisions and they must also be removed. If they're unrelated and still wanted, they must be reapplied to an ancestor of the old revision (most likely using `pluck`).
@@ -32,4 +33,5 @@ These steps will need to be taken on all affected databases.   If this number is
 # Further Reference
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureObliterate](http://wikitest.freebsd.org/VCSFeatureObliterate)

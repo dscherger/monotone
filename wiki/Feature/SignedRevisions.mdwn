@@ -21,8 +21,10 @@ This is a primary and fundamental component of monotone. Revisions are identifie
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Certificates](http://venge.net/monotone/monotone.html#Certificates)
  * TrustFoundations and UsingCerts
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureSign](http://wikitest.freebsd.org/VCSFeatureSign)

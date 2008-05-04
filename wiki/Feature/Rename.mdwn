@@ -13,6 +13,7 @@ The `rename` command (also aliased as `mv`) will allow files and directories to 
 # Example Usage
 
 To rename a file:
+
      $ mtn rename -e foo.c bar.c
      $ mtn commit
      $ mtn log bar.c
@@ -22,7 +23,9 @@ To rename a file:
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Manual Section Name](http://venge.net/monotone/monotone.html#SectionName)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureRename](http://wikitest.freebsd.org/VCSFeatureRename)

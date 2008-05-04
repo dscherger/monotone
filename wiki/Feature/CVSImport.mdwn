@@ -15,6 +15,7 @@ The primary limitation is that CVS branches are presently not attached to the re
 # Example Usage
 
 To import a full CVS history, you need a copy of the cvsroot `,v` files:
+
      $ mtn -d /some/path/project.mtn cvs_import -b org.project $CVSROOT/dir
 
 This will create a branch called `org.project` with contents and history that you would get from `cvs co dir`. Any CVS branches in that history will be created with names like `org.project.cvs-branch-name`.
@@ -22,7 +23,9 @@ This will create a branch called `org.project` with contents and history that yo
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Importing from CVS](http://venge.net/monotone/monotone.html#Importing-from-CVS)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureCVSImport](http://wikitest.freebsd.org/VCSFeatureCVSImport)
