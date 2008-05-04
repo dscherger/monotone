@@ -8,7 +8,7 @@
    * how to tell good revisions from bad (eg trusted keys)
  * "Policy branches" are versioned branches that contaiin branch descriptors
  * Policy branches don't have policy for themselves, only for other branches
-   * Here, is "other branches" == sub branches? Or could net.foo.bar contain a policy for net.foo.baz? - [[JackLloyd]]
+   * Here, is "other branches" == sub branches? Or could net.foo.bar contain a policy for net.foo.baz? - [[People/JackLloyd]]
  * They can have policy for other policy branches and for "normal" branches.
  * Policy branches can provide names for what they refer to with branch descriptors
  * or they can defer everything that is referred to them to another policy branch wholesale

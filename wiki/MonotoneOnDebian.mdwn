@@ -13,7 +13,7 @@ The easiest way to run a monotone server on Debian is to install the `monotone-s
 
 The sarge monotone packages are currently built with [pbuilder](http://www.netfort.gr.jp/~dancer/software/pbuilder-doc/pbuilder-doc.html) running on debian testing. Pbuilder basically extracts a minimal debian system (of a chosen distro) to a temporary directory, chroots there, installs neccessary build-deps, and then builds the given package. `pbuilder create` is used to create a base image (tarball). Note that `pdebuild` is easiest to run as root, due to the chrooting.
 
-Since sarge has too old a version of boost, 1.33 is built (using pbuilder) for sarge then linked to monotone statically. [''I can't find the my build directory for boost, there probably weren't many caveats. I may have had to disable ICU support? - [[MattJohnston]]'']. The sarge boost .debs can then be placed in a directory such as `/var/cache/pbuilder/localpackages/`. Create a script `/var/cache/pbuilder/hooks/D70results` with the contents {{{
+Since sarge has too old a version of boost, 1.33 is built (using pbuilder) for sarge then linked to monotone statically. [''I can't find the my build directory for boost, there probably weren't many caveats. I may have had to disable ICU support? - [[People/MattJohnston]]'']. The sarge boost .debs can then be placed in a directory such as `/var/cache/pbuilder/localpackages/`. Create a script `/var/cache/pbuilder/hooks/D70results` with the contents {{{
 #!/bin/sh
 cd /var/cache/pbuilder/localpackages/
 /usr/bin/dpkg-scanpackages . /dev/null > /var/cache/pbuilder/localpackages/Packages

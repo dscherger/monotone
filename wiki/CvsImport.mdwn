@@ -2,7 +2,7 @@
 
 # Importing CVS repositories with Graph Based Algorithms
 
-The cvs2svn people, mainly Michael Haggerty have come up with a new algorithm (see his [mail](http://cvs2svn.tigris.org/servlets/ReadMsg?list=dev&msgNo=1451)) for cvs2svn 2.0, which is based on [GraphTheory](http://en.wikipedia.org/wiki/Graph_theory). In the branch net.venge.monotone.cvsimport-branch-reconstruction, [[MarkusSchiltknecht]] maintains an implementation in C++, with some monotone specific modifications.
+The cvs2svn people, mainly Michael Haggerty have come up with a new algorithm (see his [mail](http://cvs2svn.tigris.org/servlets/ReadMsg?list=dev&msgNo=1451)) for cvs2svn 2.0, which is based on [GraphTheory](http://en.wikipedia.org/wiki/Graph_theory). In the branch net.venge.monotone.cvsimport-branch-reconstruction, [[People/MarkusSchiltknecht]] maintains an implementation in C++, with some monotone specific modifications.
 
 ## Overview
 

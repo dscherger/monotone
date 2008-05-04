@@ -13,4 +13,4 @@ You can use the org.sqlite branch to play around with sqlite, and when you find 
 Back to [[BestPractices]].
 --------
 ## Comments
-''A step-by-step example would be a nice enhancement to this page and to the explaination given in the manual.  A counter-example to doing nested checkouts with pro's and con's would help illustrate the benefits of merge_into_dir. -- [[ChadWalstrom]]''
+''A step-by-step example would be a nice enhancement to this page and to the explaination given in the manual.  A counter-example to doing nested checkouts with pro's and con's would help illustrate the benefits of merge_into_dir. -- [[People/ChadWalstrom]]''

@@ -13,7 +13,7 @@ Note on the above note:  There are certainly cases where you can't put the perfo
 ----
 
 Question on Note on Note: Can you provide a specific monotone command (or ideally, a specific SQL statement) that is aided by ANALYZE when run on the latest monotone database complete with user/sys/real timings?
-  - I think 'heads' will do it, the query to select branch certs with a particular value. - [[MattJohnston]]
+  - I think 'heads' will do it, the query to select branch certs with a particular value. - [[People/MattJohnston]]
 
 ----
 

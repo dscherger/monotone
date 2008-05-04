@@ -120,7 +120,7 @@ Status: landed on mainline
 
 # n.v.m.partialpull and n.v.m.gaps
 
-Contact: [[People/ChristofPetig]] and [[MarkusSchiltknecht]] respectively
+Contact: [[People/ChristofPetig]] and [[People/MarkusSchiltknecht]] respectively
 
 Both branches are about partial pulls, i.e. storing only revisions newer than those of a certain horizon (including them). See [[PartialPull]] for more information and a nice illustration. Both branches introduce some form of a sentinel, which covers an inexistant or incomplete revision. The difference for n.v.m.gaps is, that these sentinels don't just cover all revisions from the covered one until the root (null revision), but to any arbitrary revision, from which we have the revision data again.
 
