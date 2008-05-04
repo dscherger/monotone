@@ -8,20 +8,33 @@
         mtn add ZipperMerge.moin
         mtn commit
 
-2. rename the file and begin the process of migrating the markup
+   Note that most pages have already been fetched en-masse; you should
+   only need to re-fetch if there have been changes in MoinMoin you
+   want to bring across (you can check the revision history of the
+   page on the old wiki site).
+
+2. rename the file and begin the process of migrating the markup:
 
         sed -Ef moin2mdwn.sed <ZipperMerge.moin >ZipperMerge.mdwn
         mtn mv --bookkeep-only ZipperMerge.moin ZipperMerge.mdwn
         rm ZipperMerge.moin
 
    (use `sed -rf` on Linux instead)
-   this will automatically add `\[[!tag migration-wip]]` at the top
+
+   This will automatically add `\[[!tag migration-wip]]` at the top
    of the file, tagging the page as one being worked on, but not yet
    finished, and convert emphasis notations.
-   Commit and push this rev, so others can see you're working on
+
+   Note further that many of the pages fetched in bulk, above, have
+   also had an initial conversion like this. Such pages have been
+   tagged with `\[[!tag migration-auto]]` instead; if you're migrating
+   one of those pages, change the `auto` to `wip` and proceed as normal.
+
+1. Commit and push this rev, so others can see you're working on
    this file, and can pick another to start next in parallel.
 
-3. Translate the markup:
+3. Translate the markup. *Some of this may have been taken care of
+   already by the sed, but please check for sanity:*
 
     * headers are done with leading `#`, `##` etc rather than
       surrounding `=`, `==` etc
@@ -35,6 +48,9 @@
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),
       rather than with  `{{{` and `}}}`
+
+    * external web links take the form `[link text](http://url)`
+      rather than `[http://url link text]`
 
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
