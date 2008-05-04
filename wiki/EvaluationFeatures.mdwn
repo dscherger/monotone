@@ -10,6 +10,6 @@ While we happen to think monotone is already really good and getting better all 
 
 *Note: this list is under active construction, there are several more pages yet to be written for this list. The first entries on this list are based heavily on the requirements and features from [FreeBSD's evaluation](http://wikitest.freebsd.org/VersionControl), and they're still underway though mostly done at this point. We will add references to other collections as time goes on.*
 
-[[map pages="./Feature/* and !./Feature/Template"]]
+[[!map pages="./Feature/* and !./Feature/Template"]]
 
 or add a new one based on the [[Feature/Template]]
