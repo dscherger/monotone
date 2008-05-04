@@ -1,4 +1,4 @@
-﻿[[!tag migration-auto]]
+﻿[[!tag migration-wip]]
 
 A number of projects use monotone.  Some of them are listed here.
 

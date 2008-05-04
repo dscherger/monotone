@@ -16,7 +16,9 @@ Monotone is designed from the start to be integrated with other tools, to suppor
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Quality Assurance](http://venge.net/monotone/monotone.html#Quality-Assurance)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureTinderbox](http://wikitest.freebsd.org/VCSFeatureTinderbox)

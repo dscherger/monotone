@@ -19,6 +19,7 @@ Each of these commands will invoke external merge assistance tools (defined with
 # Example Usage
 
 A very common developer loop:
+
      <edit files>
      $ mtn commit
      $ mtn pull
@@ -31,8 +32,10 @@ A very common developer loop:
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
  * DaggyFixes and ZipperMerge
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureMerging](http://wikitest.freebsd.org/VCSFeatureMerging)

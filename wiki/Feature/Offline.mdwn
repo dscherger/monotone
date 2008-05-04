@@ -18,6 +18,7 @@ Even these operations do not necessarily need to use the network: revisions can 
 # Example Usage
 
 All of the following (and many other things besides) work entirely offline:
+
      $ mtn log --last=3 file.c
      <edit file.c>
      $ mtn diff file.c
@@ -27,7 +28,9 @@ All of the following (and many other things besides) work entirely offline:
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Storage and workflow](http://venge.net/monotone/monotone.html#Storage-and-workflow)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureOffline](http://wikitest.freebsd.org/VCSFeatureOffline)

@@ -15,7 +15,9 @@ There is a hook that can be invoked on commit, but this will run on the individu
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Event Notification Hooks](http://venge.net/monotone/monotone.html#Hooks)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureCommitMail](http://wikitest.freebsd.org/VCSFeatureCommitMail)

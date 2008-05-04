@@ -16,6 +16,7 @@ Not all repositories are used for the same purpose, though.  A project may choos
 # Example Usage
 
 If independent monotone servers are running at `server1` and `server2`, a developer with write privileges to both servers can replicate content between them simply by syncing with each server:
+
      $ mtn sync server1
      $ mtn sync server2
      $ mtn sync server1
@@ -27,7 +28,9 @@ These servers are inherently peers, there is no particular need for any of them 
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Network Service Revisited](http://venge.net/monotone/monotone.html#Network-Service-Revisited)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureMirroring](http://wikitest.freebsd.org/VCSFeatureMirroring)

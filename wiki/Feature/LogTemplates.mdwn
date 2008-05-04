@@ -15,4 +15,5 @@ It is possible to test the commit message for compliance to rules (see FeatureLo
 # Further Reference
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureLogTemplates](http://wikitest.freebsd.org/VCSFeatureLogTemplates)

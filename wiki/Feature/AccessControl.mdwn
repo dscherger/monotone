@@ -23,9 +23,11 @@ However, the flip-side of this unusual approach is that few projects are accusto
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * TrustFoundations and UsingCerts
  * [Trust Evaluation Hooks](http://venge.net/monotone/monotone.html#Hooks)
  * [Netsync Permission Hooks](http://venge.net/monotone/monotone.html#Hooks)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureACL](http://wikitest.freebsd.org/VCSFeatureACL)

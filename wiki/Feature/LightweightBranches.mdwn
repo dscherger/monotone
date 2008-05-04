@@ -17,13 +17,16 @@ Monotone also has very robust and powerful merging capabilities (see FeatureMerg
 # Example Usage
 
 To commit some changes in a workspace to a new branch:
+
      <edit files>
      $ mtn commit -b com.example.new-branch-name
 
 # Further Reference
 
 Manual and Tutorial Sections:
+
  * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
 
 Features and Requirements in other evaluations:
+
  * FreeBSD [VCSFeatureBranch](http://wikitest.freebsd.org/VCSFeatureBranch)
