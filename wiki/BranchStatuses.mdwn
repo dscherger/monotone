@@ -4,7 +4,7 @@ Currently active development branches:
 
 # n.v.m.cvssync (outdated)
 
-Contact: [[ChristofPetig]]
+Contact: [[People/ChristofPetig]]
 
 Adds two-way syncing with (remote) CVS servers
 
@@ -16,7 +16,7 @@ See also [[CvsSyncHints]].
 
 # n.v.m.cvssync.refactor
 
-Contact: [[ChristofPetig]]
+Contact: [[People/ChristofPetig]]
 
 A re-implementation of the cvssync architecture to be more modular, including a separate external process that interacts as a cvs client.
 
@@ -39,7 +39,7 @@ What can be put into mainline:
 
 # n.v.m.git
 
-Contact: [[PetrBaudis]]
+Contact: [[People/PetrBaudis]]
 
 Adds two-way syncing with git repositories (unix only).
 
@@ -47,7 +47,7 @@ Status: I'm not quite sure.  Petr?  (ms) hasn't been touched for awhile, stalled
 
 # n.v.m.levitte.select-heads-of
 
-Contact: [[RichardLevitte]]
+Contact: [[People/RichardLevitte]]
 
 Adds an H: selector that runs erase_ancestors over the set determined by the rest of the selector.
 
@@ -55,7 +55,7 @@ Status: Blocked on figuring out the right way to integrate this cleanly with the
 
 # n.v.m.levitte.usher
 
-Contact: [[RichardLevitte]]
+Contact: [[People/RichardLevitte]]
 Created: 2006-02-28
 
 The purpose of this branch is to add a suite of tests for usher and make it a supported program instead of just a contributed thingy.
@@ -64,7 +64,7 @@ Status: Work in progress
 
 # n.v.m.experiment.iface-refactor
 
-Contact: [[NathanielSmith]]
+Contact: [[People/NathanielSmith]]
 
 Some experimental UI and doc tweaks, in attempt to make things more streamlined and friendly to new users.
 
@@ -76,7 +76,7 @@ Status: Work in progress.
 
 # n.v.m.annotate
 
-Contact: [[EmileSnyder]]
+Contact: [[People/EmileSnyder]]
 
 Staging branch for work on the "annotate" command.  As of 2006-01-30, there is work in progress on implementing per-file-DAGs of the revision graph in the db so that you can walk just the portion of the full graph in which changes were made to a given file.
 
@@ -88,7 +88,7 @@ Status: Work in progress.
 
 # n.v.m.debian
 
-Contact: [[MatthewNicholson]]
+Contact: [[People/MatthewNicholson]]
 
 This branch adds a monotone-server debian package and also includes some tweaks to the existing package like installing the bash completion files.  This package handles creation and management of a monotone database and key pair and also includes scripts for stopping and starting the server. The package will also attempt to do db migrate and similar operations if necessary during upgrades.
 
@@ -96,7 +96,7 @@ Status: Merged into mainline.
 
 # n.v.m.cvsimport-branch-reconstruction
 
-Contact: [[MarkusSchiltknecht]]
+Contact: [[People/MarkusSchiltknecht]]
 
 Features a graph-based cvs import algorithm, loosely based on the concepts of cvs2svn 2.0.
 
@@ -104,7 +104,7 @@ Status: Still close to completion :-) - for more details, see [[CvsImport]]
 
 # n.v.m.experiment.db-compaction
 
-Contact: [[MarkusSchiltknecht]]
+Contact: [[People/MarkusSchiltknecht]]
 
 A branch for trying out things from [[DatabaseCompaction]]. It has been used for turning hex encoded hashes ones into binary data in the database. That change has landed on mainline on 31.03.2008.
 
@@ -112,7 +112,7 @@ Status: landed on mainline
 
 # n.v.m.experiment.encapsulation
 
-Contact: [[ZackWeinberg]]
+Contact: [[People/ZackWeinberg]]
 
 Removed the app_state from lots of places, instead we only pass down the required objects, which were formerly held in the app_state. These include: the lua interpreter, the database, the key store and the options.
 
@@ -120,7 +120,7 @@ Status: landed on mainline
 
 # n.v.m.partialpull and n.v.m.gaps
 
-Contact: [[ChristofPetig]] and [[MarkusSchiltknecht]] respectively
+Contact: [[People/ChristofPetig]] and [[MarkusSchiltknecht]] respectively
 
 Both branches are about partial pulls, i.e. storing only revisions newer than those of a certain horizon (including them). See [[PartialPull]] for more information and a nice illustration. Both branches introduce some form of a sentinel, which covers an inexistant or incomplete revision. The difference for n.v.m.gaps is, that these sentinels don't just cover all revisions from the covered one until the root (null revision), but to any arbitrary revision, from which we have the revision data again.
 
@@ -130,7 +130,7 @@ Status: Experimentation
 
 # n.v.m.botan
 
-Contact: [[MarkusSchiltknecht]] or [[TimothyBrownawell]]
+Contact: [[People/MarkusSchiltknecht]] or [[TimothyBrownawell]]
 
 This is the staging branch for Botan, i.e. where we manually propagate new upstream Botan versions to, before landing on mainline. See also botan/README.botan-monotone.
 
@@ -138,7 +138,7 @@ Status: Botan version 1.7.4 landed on mainline.
 
 # n.v.m.botan.system-switch
 
-Contact: [[MarkusSchiltknecht]]
+Contact: [[People/MarkusSchiltknecht]]
 
 Adds a --with-system-botan configure switch, to allow using the system provided copy of botan. Especially note, that the system provided library most probably features the assembler optimizations for SHA1, where as the bundled botan currently does not.
 
@@ -146,7 +146,7 @@ Status: Experimentation
 
 # n.v.m.svn_import
 
-Contact: [[MarkusSchiltknecht]]
+Contact: [[People/MarkusSchiltknecht]]
 
 An initial attempt at importing subversion repositories into monotone. Didn't touch that for a while, as the CVS importer is still bugging me.
 
@@ -154,7 +154,7 @@ Status: Experimentation
 
 # n.v.m.heights
 
-Contact: [[ThomasMoschny]]
+Contact: [[People/ThomasMoschny]]
 
 Implemented [[RevisionNumbering]]. The branch also serves as testbed for developing and testing applications of the heights, e.g. fast restricted log and fast annotate.
 
@@ -162,7 +162,7 @@ Status: Currently merged into mainline.
 
 # n.v.m.revision_diff
 
-Contact: [[ThomasKeller]]
+Contact: [[People/ThomasKeller]]
 
 Replaces "automate content_diff" by a generic "automate diff" command which outputs the complete changeset (including node adds, drops, renames and attribute changes) in an generic basic_io format. The actual diff is included in a "data" stanza in unified diff format.
 
@@ -170,7 +170,7 @@ Status: Stalled for quite a long time, because there hasn't yet been an consensu
 
 # n.v.m.commit_without_-b
 
-Contact: [[ThomasKeller]]
+Contact: [[People/ThomasKeller]]
 
 An attempt to remove the --branch option from "mtn commit" and replace the functionality by a new "mtn branch" command which explicitely sets the branch stanza in _MTN/options. This basically works, but is not thoroughly thought through for now, basically because we loose the old branch information after "mtn branch", so subsequent commands like "mtn update" which still rely on the old_revision and the recorded branch name fail badly unless the workspace is committed again. So, what still needs to be done is
 
@@ -183,7 +183,7 @@ Status: Stalled, decide what to do with all that.
 
 # n.v.m.experiment.informal_messages_to_stdio
 
-Contact: [[ThomasKeller]]
+Contact: [[People/ThomasKeller]]
 
 An attempt to bring warnings and informal messages properly encoded into automate stdio.
 
@@ -191,7 +191,7 @@ Status: Doesn't compile, not even alpha state. Hope to find some time for this o
 
 # n.v.m.automate-netsync and n.v.m.automate-stdio-ticker
 
-Contact: [[ThomasKeller]]
+Contact: [[People/ThomasKeller]]
 
 The former brings push/pull/sync to automate, while the latter tries to implement a stdio ticker so automate clients can actually monitor the progress of a netsync operation.
 
@@ -199,7 +199,7 @@ Status: Unusable, should probably be suspended and/or redone from scratch (and m
 
 # n.v.m.lapo.color
 
-Contact: [[LapoLuchini]]
+Contact: [[People/LapoLuchini]]
 
 Making use of extra terminal features that may be available, such as colours (useful for diff and for asciik branch-lines).
 
@@ -207,7 +207,7 @@ Status: rough and experimental
 
 # n.v.m.automate_show_conflict
 
-Contact: [[StephenLeake]]
+Contact: [[People/StephenLeake]]
 
 Goal: Provide simple flow to resolve non-content conflicts.
 
@@ -217,7 +217,7 @@ Status: Just started; 'automate show_conflicts' works for "file added on left an
 
 # n.v.m.experimental.win32_pipes
 
-Contact: [[StephenLeake]]
+Contact: [[People/StephenLeake]]
 
 mtn sync file: and mtn sync ssh: do _not_ work reliably on Windows [[MinGW]].
 
@@ -233,7 +233,7 @@ Status: on hold; use Cygwin instead, where things just work.
 
 # n.v.m.experimental.win32_pipes_2
 
-Contact: [[StephenLeake]]
+Contact: [[People/StephenLeake]]
 
 Second attempt to fix mtn sync file: and mtn sync ssh: on Windows [[MinGW]].
 
@@ -247,7 +247,7 @@ Status: on hold; no actual work beyond planning done.
 
 # n.v.m.TEMPLATE
 
-Contact: [[WikiName]]
+Contact: [[People/WikiName]]
 
 *Synopsis*
 
