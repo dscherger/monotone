@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -12,10 +12,10 @@ Monotone ignores symlinks by default, but extensions to store these can be imple
 
 # Example Usage
 
-See UnixAttribsAndSymlinks
+See [[UnixAttribsAndSymlinks]]
 
 # Further Reference
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureSymlinks](http://wikitest.freebsd.org/VCSFeatureSymlinks)
+ * [[FreeBSD]] [VCSFeatureSymlinks](http://wikitest.freebsd.org/VCSFeatureSymlinks)

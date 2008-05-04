@@ -13,7 +13,7 @@ Note on the above note:  There are certainly cases where you can't put the perfo
 ----
 
 Question on Note on Note: Can you provide a specific monotone command (or ideally, a specific SQL statement) that is aided by ANALYZE when run on the latest monotone database complete with user/sys/real timings?
-  - I think 'heads' will do it, the query to select branch certs with a particular value. - MattJohnston
+  - I think 'heads' will do it, the query to select branch certs with a particular value. - [[MattJohnston]]
 
 ----
 
@@ -138,4 +138,4 @@ At the moment, the only time we run an analyze automatically is at the end of a 
 
 As a short term thing, we could try and guess when a repository needs to be analyzed and print a message advising the user to do so manually.
 
-There is some [specific discussion](http://www.sqlite.org/cvstrac/tktview?tn=1414) in the SQLite bug tracker about the interaction between analyze and monotone and also a [discussion of our general problem](http://www.sqlite.org/cvstrac/wiki?p=QueryPlans) in the SQLite wiki.  We should probably consider experimenting with some of the suggested changes to see if we can get away from a dependence on analyze for decent performance.
+There is some [specific discussion](http://www.sqlite.org/cvstrac/tktview?tn=1414) in the SQLite bug tracker about the interaction between analyze and monotone and also a [discussion of our general problem](http://www.sqlite.org/cvstrac/wiki?p=[[QueryPlans]]) in the SQLite wiki.  We should probably consider experimenting with some of the suggested changes to see if we can get away from a dependence on analyze for decent performance.

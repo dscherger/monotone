@@ -8,7 +8,7 @@ Tell us what you really think.
 
   * "I've spent some 6 years searching for the perfect replacement for CVS.  Many current replacements were either crap or too complex for me to understand.  Monotone came as a breath of fresh air, with a few powerful and stable principles and ideas, and yet simple enough to understand by just reading one chapter in the manual!  I love the distributed concept, the clearly defined off-line commits and the way the history graph is kept, and am currently moving everything I have to monotone." -- [Richard Levitte](http://richard.levitte.org), 2005-11-02
 
- * "Monotone rocks!" -- MatthewNicholson
+ * "Monotone rocks!" -- [[MatthewNicholson]]
 
  * It's a real pleasure to work with monotone, both the product and the people. Apart from the obvious advantages of distributed revision control i've been looking forward to become more widely available in free software, the team also shows they care about the right things. This is both from a technical point of view (sometimes called *paranoia*) but also showing an interest in the problems encountered in daily work for the projects using monotone. The advantage (and necessity) for a scm to be open source has become very clear to me again. -- Marcel van der Boom
 

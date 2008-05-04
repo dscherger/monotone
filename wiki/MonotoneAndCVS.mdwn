@@ -36,7 +36,7 @@ post-import, of course. There's work (experimental) to do the branch
 reconstruction and
 produce a better full ancestry structure from the chaotic gas of CVS
 revisions, arbitrary branch points, partial and moved tags, etc etc.
-This work could use some help, if anyone feels inspired.. see the BranchStatuses page :)
+This work could use some help, if anyone feels inspired.. see the [[BranchStatuses]] page :)
 
 This is
 where the tricky issues of nasty CVS data quality and automated vs
@@ -58,7 +58,7 @@ constructing CVS commits for work done locally (typically, putting
 back work in a private monotone branch back to the mainline CVS
 repository).
 
-See also CvsSyncHints.
+See also [[CvsSyncHints]].
 
 ## cvs_takeover method
 

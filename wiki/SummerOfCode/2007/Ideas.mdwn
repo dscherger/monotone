@@ -2,7 +2,7 @@
 
 # Ideas for the Google Summer Of Code 2007
 
-Main page: SummerOfCode2007
+Main page: [[SummerOfCode2007]]
 
 ## monotone
 
@@ -24,7 +24,7 @@ Main page: SummerOfCode2007
  * make netsync startup fast
  * redo windows pipe support
  * synchronization over dumb protocols (e.g. HTTP, SFTP)
- * LogUI
+ * [[LogUI]]
  * conflict handling
  * .mtn-ignore cleanup -- globbing, move into C++ code (currently handled in lua)
  * unified workspace scan caching

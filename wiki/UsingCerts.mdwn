@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-Monotone stores important information about revisions in certs.  This page descibes how some of the common certs are used in practice; you can also define your own CustomCerts for your own purposes.
+Monotone stores important information about revisions in certs.  This page descibes how some of the common certs are used in practice; you can also define your own [[CustomCerts]] for your own purposes.
 
 The normal certs that go with just about all revisions are *branch*,
 *author*, *date* and *changelog*. There can be multiples of any of these,
@@ -29,8 +29,8 @@ your branch trust settings.
 Trust is determined by the signer of the *branch* cert (rather than the
 value of the author cert), the name of the cert (eg, "branch"), and
 the value (eg, branch name), so you can configure trusts differently
-for different branches.  See TrustFoundations for more
-discussion about how trusts based on certs work, and the BranchAnalogy for more about the meaning
+for different branches.  See [[TrustFoundations]] for more
+discussion about how trusts based on certs work, and the [[BranchAnalogy]] for more about the meaning
 and interpretation of branch membership in monotone, as compared to other systems.
 
 Because *branch* certs can be applied after the fact, it's possible to
@@ -39,7 +39,7 @@ even where it might take some time or consensus to determine that
 fitness.  I might require three release-engineering members all to attest that a
 revision belongs on the super-stable release branch, before I consider
 it fit for that purpose, for example (see below for another variant of
-this). Take a look at the DaggyFixes page for
+this). Take a look at the [[DaggyFixes]] page for
 examples of using `approve` to bless previously committed revisions onto another branch.
 
 
@@ -130,7 +130,7 @@ that others have fetched them too and will feed them back to the
 server next time they `sync`, so you'll also have to convince them to delete
 the item(s) too.  So once the information you want to destroy has
 escaped into the wild, you have either a difficult chase or some
-careful persuading to do.  BranchRenaming illustrates this process, and 
+careful persuading to do.  [[BranchRenaming]] illustrates this process, and 
 some of these difficulties, using the current form of *branch* certs; 
 CertCleanup contains some future development notes for a more 
 user-friendly way of handling branch (re)naming without specifically 

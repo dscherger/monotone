@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -26,4 +26,4 @@ Manual and Tutorial Sections:
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureNetworkSecure](http://wikitest.freebsd.org/VCSFeatureNetworkSecure)
+ * [[FreeBSD]] [VCSFeatureNetworkSecure](http://wikitest.freebsd.org/VCSFeatureNetworkSecure)

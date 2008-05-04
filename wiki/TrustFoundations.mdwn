@@ -9,7 +9,7 @@ a cryptographic SHA1 hash that represents both the entire content of
 that revision, and its fixed ancestry.  Certs are issued and signed by
 developer keys, and each cert makes some kind of assertion about a
 revision: membership of a branch, fitness for a particular purpose,
-passing a particular QA test, etc. See UsingCerts for examples of 
+passing a particular QA test, etc. See [[UsingCerts]] for examples of 
 standard assertions that are commonly made about revisions.
 
 ## Trusted Revisions
@@ -110,5 +110,5 @@ place or revision signed by someone they consider a worthy trust
 seed).
 
 Mechanisms to automate this, and allow delegation to a
-'project authority' for common VersionedPolicy statements that affect trust
+'project authority' for common [[VersionedPolicy]] statements that affect trust
 evaluation are the next major development focus.

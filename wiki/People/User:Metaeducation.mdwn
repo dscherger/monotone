@@ -5,4 +5,4 @@ Hello there.  I was a programmer for a long time and have worked on two "distrib
  * see http://en.wikipedia.org/wiki/User:Metaeducation for my Wikipedia Page
  * see http://meta.wikimedia.org/wiki/User:Metaeducation for my thoughts on improving Wiki software)
 
-I would not have been able to get my head around the Monotone model (at least not nearly as easily) if not for the patient+helpful people on the #monotone IRC channel, with whose help I started AlternativeOverview and BuildingOnMac.
+I would not have been able to get my head around the Monotone model (at least not nearly as easily) if not for the patient+helpful people on the #monotone IRC channel, with whose help I started [[AlternativeOverview]] and [[BuildingOnMac]].

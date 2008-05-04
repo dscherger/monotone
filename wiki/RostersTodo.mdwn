@@ -27,7 +27,7 @@ There is a mailing list post by NJS explaining [what rosters are](http://lists.g
  * cset reading tests
    * detect non-normalized-whitespace-ness - tricky, requires teaching the parser about whitespace ??
  * test equal_up_to_renumbering
- * RostersTodo/MarkAndMergeTests
+ * [[RostersTodo]]/MarkAndMergeTests
 
 # Smaller tweaks:
 
@@ -47,5 +47,5 @@ There is a mailing list post by NJS explaining [what rosters are](http://lists.g
 
 # Deferred
 
- * MergeViaWorkingDir
+ * [[MergeViaWorkingDir]]
  * git_import (unless pasky wakes up and tells us what's going on with it)

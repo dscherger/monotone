@@ -61,7 +61,7 @@ Documented at http://darcs.net/manual/node5.html#SECTION00510040000000000000 (UR
 
 Documented at http://svnbook.red-bean.com/en/1.4/svn.advanced.props.special.ignore.html.  This is the only one that doesn't use a file.  The `svn:ignore` property on a versioned directory specifies a list of glob patterns to be matched against basenames of files *in that directory only*.  (In practice, people have the same or nearly the same `svn:ignore` property on all their directories.)  There is also a per-user "ignore basenames matching all these globs always" pattern.
 
-The manual is at pains to point out that the ignore property does not affect treatment of files already under version control.  Apparently a lot of Subversion users are confused and think that if a versioned file matches an ignore glob, changes to it won't be committed unless specially requested.  I don't know how anyone could get that idea - does Visual SourceSafe work that way or something?
+The manual is at pains to point out that the ignore property does not affect treatment of files already under version control.  Apparently a lot of Subversion users are confused and think that if a versioned file matches an ignore glob, changes to it won't be committed unless specially requested.  I don't know how anyone could get that idea - does Visual [[SourceSafe]] work that way or something?
 
 ### codeville
 

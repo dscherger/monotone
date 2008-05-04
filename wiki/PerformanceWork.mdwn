@@ -31,7 +31,7 @@ Restricted log in backwards direction (from newer to older revisions) can alread
 
 Updating a large tree sometimes seems to take a good amount of time on a large tree and/or workspace. Finding the branch and revision to update seems to take an inordinate amount of time.
 
-    "mtn up" on an OpenEmbedded database can take 80s or more to output "updating along branch xxx". That seems an awfully long time to figure out the branch of the current checkout. Selecting the output target and actually updating was 5-10s more. During the initial 80s my CPU was mostly waiting for IO so it seems most if not all of the 100MB DB was being read into memory.
+    "mtn up" on an [[OpenEmbedded]] database can take 80s or more to output "updating along branch xxx". That seems an awfully long time to figure out the branch of the current checkout. Selecting the output target and actually updating was 5-10s more. During the initial 80s my CPU was mostly waiting for IO so it seems most if not all of the 100MB DB was being read into memory.
 
 This has been traced to a number of sources, and should have improved **significantly** in monotone 0.30.
 
@@ -47,7 +47,7 @@ This has been traced to a number of sources, and should have improved **signific
 
 # SQLite
 
-See ["PerformanceWork/SQLiteAnalyzeDiscussion"].
+See ["[[PerformanceWork]]/SQLiteAnalyzeDiscussion"].
 
 
 # Automated Performance Test Suite

@@ -18,7 +18,7 @@ The idea here is this: there are a number of different cases where we have some 
 
 An interesting thing is that many of these are similar to existing merge conflicts.  The problem with having two files named "A" and "a" is basically similar to the problem of merging to trees that each have a file named "a" -- there are two logical files, and they cannot both have their desired name.  Forbidden filenames -- like COM1 or things unrepresentable in the current locale -- are similar to a merge that would create a file named "MT" in the root directory (this is possible when pivot_root is used).  Etc.
 
-So, the idea is just to re-use the machinery created for MergeViaWorkingDir -- when checkout or update or revert(!) would create a problem like the above, we instead create conflict stuff in the tree.  This seems to neatly solve all of the above problems.  In particular, we achieve the goal of letting, say, a windows user fix up a tree after someone has accidentally checked in multiple files differing only in case, without having to go find a unix box to do so.
+So, the idea is just to re-use the machinery created for [[MergeViaWorkingDir]] -- when checkout or update or revert(!) would create a problem like the above, we instead create conflict stuff in the tree.  This seems to neatly solve all of the above problems.  In particular, we achieve the goal of letting, say, a windows user fix up a tree after someone has accidentally checked in multiple files differing only in case, without having to go find a unix box to do so.
 
 # Considerations
 

@@ -16,7 +16,7 @@ Should Monotone migrate to supporting more than one hash function?
  * But a lot about Monotone works because there's a single hash function.  I'd like to hear from those who know on what issues might be raised if a history uses more than one hash function.
  * We have to consider carefully the security implications of supporting more than one - can an attacker just use the least secure one?
 
-There are some interactions with VersionedPolicy here.  Perhaps hash functions would need to be mandated by policy.
+There are some interactions with [[VersionedPolicy]] here.  Perhaps hash functions would need to be mandated by policy.
 
 If we assume that "second preimage" attacks are infeasable but that collision generation might become feasable, things get interesting - attackers can't make new messages which match existing signatures, but they can probably cause ambiguous things to be signed.  If you assume your attackers are not ahead  of the curve on cryptanalysis, you could argue that signatures made before the attack are still valid, but those made after can't be trusted.  Policy could explicitly bless all the pre-attack signatures but rule out future use of that hash function.
 
@@ -25,11 +25,11 @@ If we assume that "second preimage" attacks are infeasable but that collision ge
 As well as the hash function change, two other changes will impact on public key signatures:
 
  * Graydon proposes to change the Monotone cert format to make a single cert do the work of several, which makes sense.  
- * VersionedPolicy
+ * [[VersionedPolicy]]
 
-We should of course try to bring in all of these changes (and any resulting from the discussion below) at the same time to bring us down to one Flag Day.  VersionedPolicy may also play a role in making some of this more straightforward.
+We should of course try to bring in all of these changes (and any resulting from the discussion below) at the same time to bring us down to one Flag Day.  [[VersionedPolicy]] may also play a role in making some of this more straightforward.
 
-We should use "principals" - ie key fingerprints - everywhere we use keys.  For that matter we should use them where we use email addresses too for the most part, though some of that comes under the heading of VersionedPolicy.
+We should use "principals" - ie key fingerprints - everywhere we use keys.  For that matter we should use them where we use email addresses too for the most part, though some of that comes under the heading of [[VersionedPolicy]].
 
 We can reduce the computational burden of signature checking down to practically nothing with a couple of simple tricks:
 

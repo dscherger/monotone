@@ -77,7 +77,7 @@ This page will introduce some of the members of the monotone development team, t
  * author of [Iara](http://www.ventonegro.org/iara/) monotone web-frontend
  * contact: asandroq@gmail.com, http://www.ventonegro.org/
 
-### Matthew Nicholson (man, matthew_i, MasterYoda)
+### Matthew Nicholson (man, matthew_i, [[MasterYoda]])
 
  * uses monotone since late 2005
  * works on monotone since early 2006

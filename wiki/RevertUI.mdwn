@@ -10,7 +10,7 @@ People have complained that the current behavior of "revert" is dangerous:
 
 # Ideas
   * List what we are doing, similar to `update`.  This seems like a no-brainer.
-  * Add undo support.  This is complex, but a seriously good idea in any case -- revert and update are both dangerous commands, and dangerous is bad.  This would seem to totally fix the first 2 issues above; even if you occasionally run `monotone revert` by accident on the wrong thing, it only takes a second to get back to where you were.  See WorkingCopyUndo.
+  * Add undo support.  This is complex, but a seriously good idea in any case -- revert and update are both dangerous commands, and dangerous is bad.  This would seem to totally fix the first 2 issues above; even if you occasionally run `monotone revert` by accident on the wrong thing, it only takes a second to get back to where you were.  See [[WorkingCopyUndo]].
   * Add an option to say "yes, I mean everything".  So, for instance, `monotone revert --all` and `monotone revert foo/bar.txt` would be legal commands, but `monotone revert` would not be.  The idea isn't so much to make the user think ahead, because users just get muscle memory for the special option and you end up accomplishing nothing (cf. `rm -f`).  But, there is still an argument for this because it
     * prevents new users from making mistakes
     * stops _accidental_ runs in experienced users, by increasing the distance between what they wanted and what would delete all their work.  (Of course, one could still type `monotone revert src` when one wanted `monotone revert src/Makefile`.)

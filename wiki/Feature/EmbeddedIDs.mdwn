@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -18,4 +18,4 @@ It is possible to approximate this feature, if needed, using hooks. A custom att
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureDollarFreeBSD](http://wikitest.freebsd.org/VCSFeatureDollarFreeBSD)
+ * [[FreeBSD]] [VCSFeatureDollarFreeBSD](http://wikitest.freebsd.org/VCSFeatureDollarFreeBSD)

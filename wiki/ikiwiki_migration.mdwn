@@ -4,20 +4,20 @@
    markup style, into the workspace, and commit it as is for
    reference. (adjust as needed for some other tool, like wget or curl).
 
-        ftp -o ZipperMerge.moin "http://www.venge.net/mtn-wiki/ZipperMerge?action=raw"
-        mtn add ZipperMerge.moin
+        ftp -o [[ZipperMerge]].moin "http://www.venge.net/mtn-wiki/ZipperMerge?action=raw"
+        mtn add [[ZipperMerge]].moin
         mtn commit
 
    Note that most pages have already been fetched en-masse; you should
-   only need to re-fetch if there have been changes in MoinMoin you
+   only need to re-fetch if there have been changes in [[MoinMoin]] you
    want to bring across (you can check the revision history of the
    page on the old wiki site).
 
 2. rename the file and begin the process of migrating the markup:
 
-        sed -Ef moin2mdwn.sed <ZipperMerge.moin >ZipperMerge.mdwn
-        mtn mv --bookkeep-only ZipperMerge.moin ZipperMerge.mdwn
-        rm ZipperMerge.moin
+        sed -Ef moin2mdwn.sed <[[ZipperMerge]].moin >[[ZipperMerge]].mdwn
+        mtn mv --bookkeep-only [[ZipperMerge]].moin [[ZipperMerge]].mdwn
+        rm [[ZipperMerge]].moin
 
    (use `sed -rf` on Linux instead)
 
@@ -43,7 +43,7 @@
       of single-quotes
 
     * Links are done with `\[[SquareBrackets]]` rather than bare
-      `CamelCaseWords` 
+      `[[CamelCaseWords]]` 
 
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),

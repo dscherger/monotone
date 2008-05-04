@@ -40,5 +40,5 @@ $ monotone -d /path/to/monotone.db -b net.venge.monotone co monotone
 }}}
  1. In Visual C++ 2005 Express Edition, open monotone/visualc/monotone.sln
  1. Select either the 'debug' or 'release' target from the toolbar dropdown.
- 1. Review the C++ include path and Linker include path to ensure the paths to GnuWin32 (for iconv and zlib) and Boost are correct.
+ 1. Review the C++ include path and Linker include path to ensure the paths to [[GnuWin32]] (for iconv and zlib) and Boost are correct.
  1. Build the solution.

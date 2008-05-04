@@ -10,7 +10,7 @@ There are also various other messages where similar ideas have come up.
 
 Apparently clearcase has something similar, and git has been developing similar notions as well -- someone should track down links to their documentation and add those here.
 
-This page should collect ideas and template definitions for possible magic selectors.  There are also some questions about how selectors should work in total, and whether selectors have any access to "context" from other parts of a compound selector. See also the Selector Syntax discussion in BranchNamingConventions.
+This page should collect ideas and template definitions for possible magic selectors.  There are also some questions about how selectors should work in total, and whether selectors have any access to "context" from other parts of a compound selector. See also the Selector Syntax discussion in [[BranchNamingConventions]].
 
 
 # Selector Naming Styles

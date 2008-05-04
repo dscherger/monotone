@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -16,7 +16,7 @@ Monotone's extensive consistency checking has on several occasions revealed unde
 
 Although the database storage layer is SQL, this is embedded within monotone; knowledge of SQL or the schema is invisible and irrelevant for all regular use.  Even so, it is nice to know that SQL tools can be used when needed for extremely specialised operations. These circumstances usually amount to either debugging monotone, or specialised one-off administrative tasks that usually indicate the need for additional UI commands to be developed.  The database storage layer and schema is also well isolated and abstracted within the monotone codebase: all the core algorithms and UI operations are entirely storage-agnostic, allowing other storage implementations or schema changes as needed.
 
-See also: FeatureCompactRepository
+See also: [[FeatureCompactRepository]]
 
 # Example Usage
 
@@ -30,4 +30,4 @@ Manual and Tutorial Sections:
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)
+ * [[FreeBSD]] [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)

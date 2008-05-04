@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -23,8 +23,8 @@ This is a primary and fundamental component of monotone. Revisions are identifie
 Manual and Tutorial Sections:
 
  * [Certificates](http://venge.net/monotone/monotone.html#Certificates)
- * TrustFoundations and UsingCerts
+ * [[TrustFoundations]] and [[UsingCerts]]
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureSign](http://wikitest.freebsd.org/VCSFeatureSign)
+ * [[FreeBSD]] [VCSFeatureSign](http://wikitest.freebsd.org/VCSFeatureSign)

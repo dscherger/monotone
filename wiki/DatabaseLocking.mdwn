@@ -15,7 +15,7 @@ Sqlite does save us from "dirty" reads; a dirty read is seeing uncommitted write
 # Use cases
 
  * (from njs) e.g., "monotone diff | less <C-z> monotone commit" -> crash, db is locked
- * ViewMTN calls monotone a lot, only to do reads. It can't access the db when the database is being updated with "monotone pull".
+ * [[ViewMTN]] calls monotone a lot, only to do reads. It can't access the db when the database is being updated with "monotone pull".
 
 # Ways forward
 

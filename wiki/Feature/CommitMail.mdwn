@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -10,7 +10,7 @@ Commits should trigger email notifications with the commit log message and detai
 
 Monotone supports this and many similar kinds of actions and triggers via hooks.
 
-There is a hook that can be invoked on commit, but this will run on the individual developer's machine where the commit is done offline.  It would be more usual to generate these messages instead when the committed revisions arrive via netsync at a convenient public server (see MasterRepository) with the appropriate email infrastructure.    Monotone also includes a hook implementation for emitting events to [CIA](http://cia.navi.cx/stats/project/monotone), from where the notifications can also be sent to IRC channels and RSS feeds.
+There is a hook that can be invoked on commit, but this will run on the individual developer's machine where the commit is done offline.  It would be more usual to generate these messages instead when the committed revisions arrive via netsync at a convenient public server (see [[MasterRepository]]) with the appropriate email infrastructure.    Monotone also includes a hook implementation for emitting events to [CIA](http://cia.navi.cx/stats/project/monotone), from where the notifications can also be sent to IRC channels and RSS feeds.
 
 # Further Reference
 
@@ -20,4 +20,4 @@ Manual and Tutorial Sections:
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureCommitMail](http://wikitest.freebsd.org/VCSFeatureCommitMail)
+ * [[FreeBSD]] [VCSFeatureCommitMail](http://wikitest.freebsd.org/VCSFeatureCommitMail)

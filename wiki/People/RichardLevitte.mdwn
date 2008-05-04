@@ -11,4 +11,4 @@ IRC nick: gizmo1
 I'm not on IRC very often, but I can talk a lot on the mailing lists :-)
 
 ----
-CategoryHomepage CategoryHomepage CategoryHomepage
+CategoryHomepage [[CategoryHomepage]] [[CategoryHomepage]]

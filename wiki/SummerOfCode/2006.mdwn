@@ -38,13 +38,13 @@ of the projects below do *not* require C++ knowledge.
 Here are some example ideas for projects.  Feel free to suggest others.
 
 ### Largish projects
-  * MergeViaWorkingDir: This has been a number-1 requested feature for ages and ages.
+  * [[MergeViaWorkingDir]]: This has been a number-1 requested feature for ages and ages.
   Since the release of v0.26 this month, it is now reasonably straightforward to implement!
   This will involve getting nice and dirty with monotone internals, the details of how
   merging works, and have lots of crunchy UI questions too.  I envision someone doing this
   having a basic working prototype merged into mainline in a few weeks to start getting user
   feedback, and then working on polishing the UI, or adding cool new things like
-  NonMergeConflicts.
+  [[NonMergeConflicts]].
   * Create a performance test harness, and benchmarks using it.  This would be _extremely_
   valuable for tuning monotone's speed, testing changes, and catching performance regressions.
   There are more details [here](http://venge.net/monotone/wiki/PerformanceWork#head-150324c5862f1b409230043ade62a5041c227400).
@@ -64,7 +64,7 @@ Here are some example ideas for projects.  Feel free to suggest others.
 
 ### Smaller projects
 "Buy two, they're cheap"
-  * MagicSelectors: enhancing the monotone command line
+  * [[MagicSelectors]]: enhancing the monotone command line
   * Add symlink support to monotone
   * Teach monotone to use ssh-agent to store keys
   * Add a way to specify "templates" for [mtn automate](http://venge.net/monotone/docs/Scripting.html)
@@ -107,7 +107,7 @@ These are probably too big for someone who doesn't have familiarity
 with monotone already to do in a summer, but throwing them out there
 anyway:
 
-  * File revival -- see HistoryBlueSky
+  * File revival -- see [[HistoryBlueSky]]
   * "partial pull" -- fetching only a portion of history into a
   local database, for projects that have a lot of history.
   * SPKI-inspired naming and trust delegation.  This is an area of active work for
@@ -120,7 +120,7 @@ A few funky things, that are not *strictly* related to monotone at all:
   (network stuff, signals, etc.); several of the things on the list
   above would be greatly helped by this.  Chryn is a half-working
   prototype of a general async IO library for C++.
-  * "Hedg": A mad idea of NathanielSmith's for how to build a better
+  * "Hedg": A mad idea of [[NathanielSmith]]'s for how to build a better
   project management system, similar to Trac but with extra coolness.
   Talk to him if curious about details...
 

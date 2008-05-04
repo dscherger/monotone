@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -14,7 +14,7 @@ Note that these hooks are run on individual developer machines where the commits
 
 # Example Usage
 
-See also: UsingCerts
+See also: [[UsingCerts]]
 
 # Further Reference
 
@@ -24,4 +24,4 @@ Manual and Tutorial Sections:
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureLogReview](http://wikitest.freebsd.org/VCSFeatureLogReview). Note that the example given talks about "approved by: re" messages.  While these might be appropriate in logs too, monotone has much more extensive and flexible mechanisms to handle approval of revisions for particular purposes and branches. See TrustFoundations and FeatureAccessControl.
+ * [[FreeBSD]] [VCSFeatureLogReview](http://wikitest.freebsd.org/VCSFeatureLogReview). Note that the example given talks about "approved by: re" messages.  While these might be appropriate in logs too, monotone has much more extensive and flexible mechanisms to handle approval of revisions for particular purposes and branches. See [[TrustFoundations]] and [[FeatureAccessControl]].

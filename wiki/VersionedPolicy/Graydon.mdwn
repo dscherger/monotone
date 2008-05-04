@@ -11,8 +11,8 @@ We have a structure called a policy. Policies look like this
                   meta: (string, string) map;
                   delegation: delegation; }
 
-  and delegation = SimpleDelegate of branch_policy
-                 | FullDelegate of { content_branch: branch_policy option;
+  and delegation = [[SimpleDelegate]] of branch_policy
+                 | [[FullDelegate]] of { content_branch: branch_policy option;
                                      subpolicy_branches: (string, branch_policy) map; }
 
 
@@ -24,7 +24,7 @@ We have a structure called a policy. Policies look like this
   and branch_status = Active | Dormant
 
   and branch_id = Root
-                | ChildOf(branch_id, nonce)  // hashed to compress to constant size
+                | [[ChildOf]](branch_id, nonce)  // hashed to compress to constant size
 
   and user = { pk: key_id;
                meta: (string,string) map; } 
@@ -100,4 +100,4 @@ for example if the admin's key is compromised.
 
 We also include a form of delegation that exists purely for inserting extra
 levels of authorization and kill-switches, without introducing new branch
-name components. This is a SimpleDelegate.
+name components. This is a [[SimpleDelegate]].

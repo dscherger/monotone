@@ -8,7 +8,7 @@ Here are some of the known ways one *could* potentially do delta-compression on 
  * forwards linear-chained deltas with occasional full-text breaks
  * forwards deterministic skip-deltas (like svn)
  * forwards/backwards randomized skip-deltas (like classical skip-lists)
- * single base plus many deltas against it -- i.e., store a->b->c->d as (a, a->b, a->c, a->d), creating a new base as deltas grow.  these pretty much have to be forwards deltas.  (D. Richard Hipp, "XDFS-f" in [Josh MacDonald's masters thesis](http://xmailserver.org/xdfs.pdf) (who cites Burns and Long))
+ * single base plus many deltas against it -- i.e., store a->b->c->d as (a, a->b, a->c, a->d), creating a new base as deltas grow.  these pretty much have to be forwards deltas.  (D. Richard Hipp, "XDFS-f" in [Josh [[MacDonald]]'s masters thesis](http://xmailserver.org/xdfs.pdf) (who cites Burns and Long))
  * whatever it is git uses to find similar items -- sorting by size or something?
  * tree-structured storage -- using the inexplicably-not-well-known trick for storing strings as trees, one can share subtrees.  Josh cites EXODUS and SDS2 (see 2.2 of the thesis) as using this trick, and there are some other interesting cites in the same section.
  * several of these mechanisms can be applied either to a forced-linear history (like hg uses), or allowing forks (and merges?) to appear in the reconstruction graph.  Josh actually claims that that forced-linear time ordering gave him smaller deltas than RCS-style-topology branched deltas, on his test case (FreeBSD CVS history -- I guess they must have a lot of bug-fixes applied to multiple branches or the like?).
@@ -76,4 +76,4 @@ Store a whole revlog-style whole-base+deltas span (a revlog actually consists of
 
 # Shootout
 
-How do we choose?  DeltaStorageStrategies/ShootOut
+How do we choose?  [[DeltaStorageStrategies]]/ShootOut

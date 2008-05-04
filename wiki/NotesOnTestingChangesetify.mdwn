@@ -25,7 +25,7 @@ mtn: fatal: std::logic_error: ../S-vanilla/revision.cc:861: invariant 'fetching 
 ============================================================
 --- cryptopp/integer.cpp        f2a0e049b9aef571c5807afd972a77f377482d8f
 +++ cryptopp/integer.cpp        e2cf6746ad5ce51d0bd2406ec07f9bcda36f5aa9
-@@ -1473,7 +1473,7 @@ void PentiumOptimized::Square4(word* Y,
+@@ -1473,7 +1473,7 @@ void [[PentiumOptimized]]::Square4(word* Y,
 
                 :
                 : "D" (Y), "S" (X)
@@ -46,7 +46,7 @@ mtn: fatal: std::logic_error: ../S-vanilla/revision.cc:861: invariant 'fetching 
  #include <memory>
 
  // VC60 workaround: this macro is defined in shlobj.h and conflicts with a template parameter used in this file
-@@ -745,8 +747,6 @@ void DL_PublicKey<T>::AssignFrom(const N
+@@ -745,8 +747,6 @@ void DL_[[PublicKey]]<T>::[[AssignFrom]](const N
         }
  }
 
@@ -54,7 +54,7 @@ mtn: fatal: std::logic_error: ../S-vanilla/revision.cc:861: invariant 'fetching 
 -
  //! .
  template <class PK, class GP>
- class DL_KeyImpl : public PK
+ class DL_[[KeyImpl]] : public PK
 ============================================================
 --- merkle_tree.cc      565e0f4242011220ff3b20574cff68d74552ee2a
 +++ merkle_tree.cc      2abde1a4a10709bec5ad40e325ce4016b1fcd0e1

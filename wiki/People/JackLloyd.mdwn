@@ -2,7 +2,7 @@
 
 ## Jack Lloyd
 
-Wrote/maintains Botan. Used to work on OpenCM, which was somewhat Monotone-like.
+Wrote/maintains Botan. Used to work on [[OpenCM]], which was somewhat Monotone-like.
  
 Email: [[MailTo(lloyd@randombit.net)]] <br>
 Webpage: http://www.randombit.net/ <br>

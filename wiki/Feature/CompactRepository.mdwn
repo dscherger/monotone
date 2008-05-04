@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -16,7 +16,7 @@ A number of useful and important operations can be performed on the database fil
 
 The database format is machine- and endian-independant, and so databases can be quickly copied between machines where necessary or useful, including as a potential communication channel.  History can be transferred or recovered from a copy of a db file on a CD or DVD, as one example.
 
-See also: FeatureRobustRepository
+See also: [[FeatureRobustRepository]]
 
 ## = Example Usage =
 ##
@@ -40,4 +40,4 @@ Manual and Tutorial Sections:
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)
+ * [[FreeBSD]] [VCSFeatureGoodRepositoryFormat](http://wikitest.freebsd.org/VCSFeatureGoodRepositoryFormat)

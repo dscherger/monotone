@@ -24,7 +24,7 @@ Missing (but useful) functions for the automate interface:
 
 ## Extensions to support Graphical User Interfaces
 
--- MarcelvanderBoom [[DateTime(2006-06-18T18:39:06Z)]]
+-- [[MarcelvanderBoom]] [[DateTime(2006-06-18T18:39:06Z)]]
 Given the 'automate branches' example,the whole of the document linked to above, and the growing number of commands both in automate variety and in the normal interface (mtn heads for example), my wish would be that the 'normal' interface and the 'automate' interface become one; said another way: "get rid of the mtn automate command". Using a cmdline switch or a format specifier the output produced and the specifics of the effect can be steered. What 'callable from an automate stdio connection' means to a user: 'nothing'.
  
 To me:
@@ -34,7 +34,7 @@ and
 
 are the same thing, just formatted differently and as such i tend to look for an **option** to specify these formattings, not another **command**. Having something formatted as a plain rev list or basic io stanzas could be options to select quickly as they are used frequently. The document at berlios more or less says "give me all normal mtn commands, just in the automate interface" Why not do this in general?
 
--- ThomasKeller [[DateTime(2006-08-28T10:33:00Z)]]
+-- [[ThomasKeller]] [[DateTime(2006-08-28T10:33:00Z)]]
 The only reason why all these commands must live inside the automation interface is because they need to be callable via automate stdio. If there would be a general refactoring which would allow the execution of any "normal" command via this interface, then this would be sufficient as well. Obviously if the automation interface would be removed in favor of a general implementation, one would need to think about where to move the current functionality from there, which does not exist in the normal interface. And for that purpose we'd need to make a big plan, and, I don't think anybody around here is keen on making big plans which take months to implement (if they're implemented at all).
 
 

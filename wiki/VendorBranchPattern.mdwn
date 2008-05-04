@@ -10,7 +10,7 @@ Now, merge_into_dir org.sqlite com.example.foo sqlite.
                                                                                                                                                        
 You can use the org.sqlite branch to play around with sqlite, and when you find a new version that you want to try, you can use explicit_merge (or propagate) to bring it into com.example.foo.                       
 
-Back to BestPractices.
+Back to [[BestPractices]].
 --------
 ## Comments
-''A step-by-step example would be a nice enhancement to this page and to the explaination given in the manual.  A counter-example to doing nested checkouts with pro's and con's would help illustrate the benefits of merge_into_dir. -- ChadWalstrom''
+''A step-by-step example would be a nice enhancement to this page and to the explaination given in the manual.  A counter-example to doing nested checkouts with pro's and con's would help illustrate the benefits of merge_into_dir. -- [[ChadWalstrom]]''

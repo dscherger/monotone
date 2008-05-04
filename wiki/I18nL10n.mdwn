@@ -43,7 +43,7 @@ We should probably audit everything dealing with stringprep/idna/etc.  For insta
 
 ## Composition/decomposition
 
-It is possible that there are filesystems which somehow normalize unicode strings.  (E.g., [HFS+ on OS X](http://developer.apple.com/technotes/tn/tn1150.html#UnicodeSubtleties) probably does.)  These raise issues similar to CaseInsensitiveFilesystems, i.e., any form of normalization can cause paths that looked different on one system to look the same on another.  In fact, [SVN has encountered this issue in practice](http://svn.haxx.se/users/archive-2005-12/0381.shtml).
+It is possible that there are filesystems which somehow normalize unicode strings.  (E.g., [HFS+ on OS X](http://developer.apple.com/technotes/tn/tn1150.html#[[UnicodeSubtleties]]) probably does.)  These raise issues similar to [[CaseInsensitiveFilesystems]], i.e., any form of normalization can cause paths that looked different on one system to look the same on another.  In fact, [SVN has encountered this issue in practice](http://svn.haxx.se/users/archive-2005-12/0381.shtml).
 
 Other useful OS X links:
   * [Converting to Precomposed Unicode](http://developer.apple.com/qa/qa2001/qa1235.html)

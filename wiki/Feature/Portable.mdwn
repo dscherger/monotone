@@ -1,6 +1,6 @@
 [[!tag migration-auto]]
 
-This page is one of many describing EvaluationFeatures that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
 # Description
 
@@ -8,11 +8,11 @@ The VCS tools should be portable to run on many kinds of development platform.
 
 # Supported
 
-Monotone is implemented in C++, and compiles and runs on all sorts of different kinds of Unix systems and Windows.  It is packaged in a number of linux distribution and packaging systems, as well as NetBSD pkgsrc which itself supports a number of different systems: see BuildingViaPkgsrc.
+Monotone is implemented in C++, and compiles and runs on all sorts of different kinds of Unix systems and Windows.  It is packaged in a number of linux distribution and packaging systems, as well as [[NetBSD]] pkgsrc which itself supports a number of different systems: see [[BuildingViaPkgsrc]].
 
 # Further Reference
 
 
 Features and Requirements in other evaluations:
 
- * FreeBSD [VCSFeaturePortable](http://wikitest.freebsd.org/VCSFeaturePortable)
+ * [[FreeBSD]] [VCSFeaturePortable](http://wikitest.freebsd.org/VCSFeaturePortable)

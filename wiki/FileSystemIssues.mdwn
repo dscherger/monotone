@@ -3,7 +3,7 @@
 # File System Issues in Monotone
 
 About: Encoding, platform independency and case of filenames (codepages and unicode)<br>
-Related: CaseInsensitiveFilesystems
+Related: [[CaseInsensitiveFilesystems]]
 
 Last updated with monotone version 0.32
 
@@ -24,7 +24,7 @@ directoryname and filename can be used synonymous. I hope I always used the word
     a. You add the file using recursion, which will lead monotone to add a decomposed (NFD) UTF-8 filename.
     a. You can add the file using the full path, which will lead monotone to add precomposed (NFC) UTF-8 filename.
     a. To drop this file you need to drop it once using your keyboards umlauts (precomposed). (i.e löl) and once using bash's completion: lo-tab -> löl (decomposed). See "About UTF-8 normalization" below.
-  4. Case insensitive file systems lead to the same problem as in 3 and sometimes to even more problems: CaseInsensitiveFilesystems
+  4. Case insensitive file systems lead to the same problem as in 3 and sometimes to even more problems: [[CaseInsensitiveFilesystems]]
 
 Now for the speculation...
 
@@ -56,9 +56,9 @@ NTFS enforces encoding to UTF-16 (or UCS2???), while FAT should not be used with
 
 Microsoft recommends to use the wide version of all file system layer accessing function.
 
-  The GetACP() Page states: The ANSI code pages can be different on different computers, or can be changed for a single computer, leading to data corruption. For the most consistent results, applications should use Unicode UTF-8 (code page 65001) or UTF-16 when possible.
+  The [[GetACP]]() Page states: The ANSI code pages can be different on different computers, or can be changed for a single computer, leading to data corruption. For the most consistent results, applications should use Unicode UTF-8 (code page 65001) or UTF-16 when possible.
 
-*But it does not state how you achieve that, since there is no SetACP(). So I think using the wide version of the functions should be save.*
+*But it does not state how you achieve that, since there is no [[SetACP]](). So I think using the wide version of the functions should be save.*
 
 **Addition**: wilx found the setlocale() function, which will change the output of ANSI versions of function in the C Standard Library: [http://msdn2.microsoft.com/en-us/library/x99tb11d(VS.80).aspx]
 
@@ -138,7 +138,7 @@ Write == A filename is written to local file system layer from monotone. (open()
  1. Do conversions on read (from locale to UTF-8) and write (from UTF-8 to locale) of filenames on POSIX, except Darwin.
  2. Do conversions on read (from UTF-8 (NFD) to UTF-8 (NFC)) and none on write of filenames on Darwin.
  3. One of the following solutions on windows:
-    1. Do conversions on read (from locale to UTF-8) and write (from UTF-8 to locale) and use new libidn or GetACP() to find out what the local locale is.
+    1. Do conversions on read (from locale to UTF-8) and write (from UTF-8 to locale) and use new libidn or [[GetACP]]() to find out what the local locale is.
     2. Use the wide versions of file system accessing functions on windows, which should return UTF-16. So you need to do conversions on read (from UTF-16 to UTF-8) and write (from UTF-8 to UTF-16).
     3. Use setlocale() to set UTF-8 and do no conversion. This differs from POSIX because win32's file system layer will do conversions. Tests on NTFS and FAT need to be done before using this solution.
  4. Convert all filenames to lower case for internal use, but save the filenames with case-information in the database, comparing should happen on uniform case. Write a nice error message on an add command, stating that the error could be caused by monotone not supporting case-sensitive filenames for the reason that there are case-insensitve file systems. Offer to rename that file.
@@ -152,7 +152,7 @@ Write == A filename is written to local file system layer from monotone. (open()
  12. I added this "offer rename" statements because there are errors you can get on a checkout/update. So if you have no workspace (no update), you can't rename, if you can't rename you can get no workspace (no update). Therefore we need to offer some means of renaming while checking out or updating.
  13. There must be a migration function if we really are going to do 4., files which only differ in case must be listed and means of renaming them must be provided, when updating to the monotone version which implements 4.. 
 
-Alternative solutions for case-insensitive FS are in CaseInsensitiveFilesystems, but I don't think they are conservative enough, on the other hand, if we really are going to only support the common subset, we need to implement "The very restrictive solution", which isn't nice, too. I'm glad I don't have to decide, but can just point out ideas.
+Alternative solutions for case-insensitive FS are in [[CaseInsensitiveFilesystems]], but I don't think they are conservative enough, on the other hand, if we really are going to only support the common subset, we need to implement "The very restrictive solution", which isn't nice, too. I'm glad I don't have to decide, but can just point out ideas.
 
 **Important:** This list is not thought as ALL OR NOTHING. Only the solutions that make sense for someone who knows the internals of monotone better than I do should be implemented. AND there are certainly variants of these solutions and some of them might make more sense. 
 
@@ -182,7 +182,7 @@ Wrong guess!
 
 ### The terminal/console
 
-Well, here most problems are solved by locales and the libidn. Except that it doesn't work on windows. Which can hopefully be solved by updating libidn or hacking the copy of libidn using GetACP().
+Well, here most problems are solved by locales and the libidn. Except that it doesn't work on windows. Which can hopefully be solved by updating libidn or hacking the copy of libidn using [[GetACP]]().
 
 http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.asp
 
