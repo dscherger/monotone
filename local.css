@@ -18,18 +18,6 @@ code {
     font-weight: bold
 }
 
-pre {
-    background: #F0F0F0;
-    border: 1pt dotted #474747;
-    font-family: courier, monospace;
-    padding: 0.5em;
-    margin-left: 3em;
-    margin-right: 3em;
-    margin-bottom: 2em;
-    font-size: 1.3em;
-    white-space: pre-wrap;
-}
-
 .clearfloat {
     clear: both;
 }
@@ -89,8 +77,8 @@ pre {
 #content p {
     margin-top: 0;
     margin-bottom: 1.5em;
-    font-size: 1.3em;
-    line-height: 1.75em;
+    font-size: 1.4em;
+    line-height: 1.5em;
 }
 
 #content ul,
@@ -136,6 +124,36 @@ pre {
 
 #content .toc > ol {
     margin-bottom: 0;
+}
+
+#content pre {
+    background: #F0F0F0;
+    border: 1px dotted #474747;
+    font-family: monospace, courier;
+    padding: 0.5em;
+    margin-left: 3em;
+    margin-right: 3em;
+    margin-bottom: 1.5em;
+    font-size: 1.4em;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
+    overflow: auto;
+}
+
+#content table {
+    border-collapse: collapse;
+    border-bottom: 1.5em;
+}
+
+#content table th,
+#content table td {
+    font-size: 1.3em;
+    border: 1px dotted #474747;
+    padding: 0.2em;
+}
+
+#content table th {
+    background: #F0F0F0;
 }
 
 #pageinfo {
