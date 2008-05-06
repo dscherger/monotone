@@ -1,9 +1,6 @@
 [[!tag migration-wip]]
 
-#format wiki
-#language en
-
-[[toc ]]
+[[toc levels=3]]
 
 This page is mostly a place holder to be filled out as common problems are noticed.  If you see someone pop up on IRC confused, and a few helpful comments get them straightened out, please jot them down here.  To help us kee how bad problems are, add an "x" where noted if a hint helps you out.
 
@@ -109,6 +106,7 @@ and
 ### Check your permissions
 
 A bug in monotone right now is that it does a lousy job of giving feedback when your permissions are set up wrong -- usually the server will just drop your connection, instead of sending you a message explaining why.  If your new server does not appear to be accepting your connections try:
+
 * checking the server log for any notes about permissions
 * make sure your read permission file is correct -- it is in a simple little language that looks like:
 
