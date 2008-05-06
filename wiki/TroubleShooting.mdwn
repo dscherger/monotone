@@ -1,9 +1,9 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
 #format wiki
 #language en
 
-[[TableOfContents]]
+[[toc ]]
 
 This page is mostly a place holder to be filled out as common problems are noticed.  If you see someone pop up on IRC confused, and a few helpful comments get them straightened out, please jot them down here.  To help us kee how bad problems are, add an "x" where noted if a hint helps you out.
 
@@ -16,6 +16,7 @@ Patches to make these hints unnecessary -- either to the manual or the code -- w
 This almost always turns out to be the result of mismatched C++ libraries.  The common cause of this is that your mtn binary and the Boost libraries monotone uses on were built using different versions of the C++ compiler and ended up linked against different versions of libstdc++.
 
 Check for this using ldd
+
     ldd /path/to/mtn | grep 'stdc++'
       libstdc++.so.5 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.5 (0xb7aae000)
       libstdc++.so.6 => /usr/lib/gcc/i686-pc-linux-gnu/3.4.6/libstdc++.so.6 (0xb7d32000)
@@ -83,37 +84,50 @@ This will happen if the remote host is running an older version of monotone.  Th
 ### Check Your Quoting
 
 On Windows 
+
     mtn sync myhost.com 'mybranch'
+
 does not find a branch named mybranch, but
+
     mtn sync myhost.com "mybranch"
+
 does.
 
 Also on Windows, glob expansion can be rather funky, e.g.
+
     mtn sync myhost.com '*'
+
 and
     mtn sync myhost.com "*"
+
 ...will both undergo glob expansion, resulting in a command-line which contains a list of files in the current directory.  To get around this, use
+
     mtn sync myhost.com "{}*"
 
-''Add an 'x' here if this helped you'': x
+*Add an 'x' here if this helped you*: x
 
 ### Check your permissions
 
 A bug in monotone right now is that it does a lousy job of giving feedback when your permissions are set up wrong -- usually the server will just drop your connection, instead of sending you a message explaining why.  If your new server does not appear to be accepting your connections try:
- * checking the server log for any notes about permissions
- * make sure your read permission file is correct -- it is in a simple little language that looks like:
+* checking the server log for any notes about permissions
+* make sure your read permission file is correct -- it is in a simple little language that looks like:
+
     pattern "*"
     allow "abe@juicebot.co.jp"
     allow "beth@juicebot.co.jp"
-   to allow Abe and Beth read access to all branches, or
+
+  to allow Abe and Beth read access to all branches, or
+
     pattern "foo*"
     allow "*"
-   to allow anonymous access to all branches whose names begin "foo".
- * make sure your write permission file is correct -- it is **not** the same format as the read permission file, because write permissions are per-db, while read permissions are per-branch.  (This has to do with the somewhat amorphous nature of monotone branches.)  A write permissions file might look like
+
+  to allow anonymous access to all branches whose names begin "foo".
+* make sure your write permission file is correct -- it is **not** the same format as the read permission file, because write permissions are per-db, while read permissions are per-branch.  (This has to do with the somewhat amorphous nature of monotone branches.)  A write permissions file might look like
+
     abe@juicebot.co.jp
     beth@juicebot.co.jp
 
-''Add an 'x' here if this helped you'': 
+*Add an 'x' here if this helped you*: 
 
 xxx
 
