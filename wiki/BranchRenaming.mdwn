@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 *NB: patches to integrate this information into the manual proper would be gratefully accepted*
 
@@ -7,12 +7,14 @@
 Branch renaming is not natively supported or encouraged in monotone, but if you feel you really need to do it, it is possible.  Keep in mind, monotone is a distributed version control system.  This means that even though you may rename a branch locally, unless every other database with that branch performs the same operation, the old branch will return the next time you do a `pull` or `sync` operation.
 
 The following commands can be used to rename a branch in your local copy.  I would advise backing up the database before performing any of these operations.
+
     for REV in `mtn automate select b:OLDBRANCH`; do
        mtn cert $REV branch NEWBRANCH
     done
     mtn db kill_branch_certs_locally OLDBRANCH
 
 If your branch names contain '/' characters, either escape the '/' characters or use the shell snippet below.
+
     for REV in `mtn db execute "SELECT id FROM revision_certs WHERE name = 'branch' AND value LIKE 'OLDBRANCH'" | grep ^[0123456789abcdef]*$`; do
        mtn cert $REV branch NEWBRANCH
     done
@@ -23,8 +25,11 @@ Basically this issues new branch certs for the branch you specifiy, and then the
 Note: You will have to enter your password once for every branch cert.  To avoid this you can create a password hook in your `.monotonerc` file or use `yes PASSWORD | mtn cert...`, although that is not very secure (users can use ps aux or read your .bash_history to get your password).  The ssh-agent integration available since mtn 0.34 is probably a solution to this, too.
 
 CraigLennox: These may fail with an "`argument list too long`" error if the branch contains a very large number (i.e. thousands) of revisions.  You can get around that limitation by replacing instances of
+
     for REV in `mtn cmd args...`; do
+
 with
+
     mtn cmd args... | while read REV; do
 
 # Branch Renaming Script
@@ -56,6 +61,7 @@ Here is a script that can be used to rename branches, including names branch wit
 
 # Using A Ruby Shell To Manipulate Branches
 Using a ruby (or perl or python) shell can be a very convienient way to solve problems.
+ 
     % irb
     irb> certs=`mtn automate select b:com.kiatoa.matt.rails`.split
     => ["0c597195698413293cc49691b0301b7f41af8be8", "17212d1b8058418432cf964754a2b08e16701e78", .... ]
@@ -65,4 +71,5 @@ Using a ruby (or perl or python) shell can be a very convienient way to solve pr
                   system "mtn cert #{c} branch com.kiatoa.matt.rails2"
              end
          end
+
 This allowed me to make a new branch with a head removed that I couldn't figure out how any other way to resolve.
