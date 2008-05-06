@@ -95,6 +95,7 @@ Also on Windows, glob expansion can be rather funky, e.g.
     mtn sync myhost.com '*'
 
 and
+
     mtn sync myhost.com "*"
 
 ...will both undergo glob expansion, resulting in a command-line which contains a list of files in the current directory.  To get around this, use
@@ -110,20 +111,20 @@ A bug in monotone right now is that it does a lousy job of giving feedback when 
 * checking the server log for any notes about permissions
 * make sure your read permission file is correct -- it is in a simple little language that looks like:
 
-    pattern "*"
-    allow "abe@juicebot.co.jp"
-    allow "beth@juicebot.co.jp"
+        pattern "*"
+        allow "abe@juicebot.co.jp"
+        allow "beth@juicebot.co.jp"
 
-  to allow Abe and Beth read access to all branches, or
+    to allow Abe and Beth read access to all branches, or
 
-    pattern "foo*"
-    allow "*"
+        pattern "foo*"
+        allow "*"
 
-  to allow anonymous access to all branches whose names begin "foo".
+    to allow anonymous access to all branches whose names begin "foo".
 * make sure your write permission file is correct -- it is **not** the same format as the read permission file, because write permissions are per-db, while read permissions are per-branch.  (This has to do with the somewhat amorphous nature of monotone branches.)  A write permissions file might look like
 
-    abe@juicebot.co.jp
-    beth@juicebot.co.jp
+        abe@juicebot.co.jp
+        beth@juicebot.co.jp
 
 *Add an 'x' here if this helped you*: 
 
