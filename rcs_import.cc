@@ -642,6 +642,7 @@ cvs_history
   {
     sort(dependencies.begin(), dependencies.end());
     sort(dependents.begin(), dependents.end());
+    sort(weak_dependencies.begin(), weak_dependencies.end());
     deps_sorted = true;
   }
 
@@ -785,6 +786,17 @@ cvs_history
     dep_loop i(lower, upper);
     return i;
   };
+
+  bool
+  is_weak(const cvs_event_ptr e, const cvs_event_ptr d)
+  {
+    if (!deps_sorted)
+      sort_dependencies();
+
+    return binary_search(weak_dependencies.begin(),
+                          weak_dependencies.end(),
+                          make_pair(e, d));
+  }
 
   void
   get_dependents(const cvs_event_ptr e,
@@ -2343,10 +2355,10 @@ struct blob_splitter
 {
 protected:
   cvs_history & cvs;
-  set< cvs_blob_index > & cycle_members;
+  vector<cvs_blob_index> & cycle_members;
 
 public:
-  blob_splitter(cvs_history & c, set< cvs_blob_index > & cm)
+  blob_splitter(cvs_history & c, vector<cvs_blob_index> & cm)
     : cvs(c),
       cycle_members(cm)
     { }
@@ -2385,7 +2397,7 @@ public:
       // We run Dijkstra's algorithm to find the shortest path from e.second
       // to e.first. All vertices in that path are part of the smallest
       // cycle which includes this back edge.
-      insert_iterator< set< cvs_blob_index > >
+      insert_iterator< vector<cvs_blob_index> >
         ity(cycle_members, cycle_members.begin());
       dijkstra_shortest_path(cvs, e.first, e.second, ity,
                              true, true, true, // follow all blobs
@@ -2395,7 +2407,8 @@ public:
       I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
-      write_graphviz_partial(cvs, "splitter", cycle_members, 5);
+      set<cvs_blob_index> cycle_members_set(cycle_members.begin(), cycle_members.end());
+      write_graphviz_partial(cvs, "splitter", cycle_members_set, 5);
 #endif
     }
 };
@@ -2424,6 +2437,22 @@ public:
   virtual bool operator () (const cvs_event_ptr & ev)
     {
       return ev->adj_time > split_point;
+    }
+};
+
+class split_by_event_set
+  : public split_decider_func
+{
+  set<cvs_event_ptr> & split_events;
+
+public:
+  split_by_event_set(set<cvs_event_ptr> & events)
+    : split_events(events)
+    { };
+
+  virtual bool operator () (const cvs_event_ptr & ev)
+    {
+      return split_events.find(ev) == split_events.end();
     }
 };
 
@@ -3290,16 +3319,15 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 }
 
 void
-split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
+split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 {
-  I(cycle_members.size() > 1);
-
+  I(!cycle_members.empty());
 
   // First, we collect the oldest (i.e. smallest, by timestamp) per file,
   // so we know where to stop tracking back dependencies later on.
   map<cvs_path, time_i> oldest_event;
   typedef map<cvs_path, time_i>::iterator oe_ity;
-  typedef set<cvs_blob_index>::const_iterator cm_ity;
+  typedef vector<cvs_blob_index>::const_iterator cm_ity;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // Nothing should ever depend on tags and branch_end blobs, thus
@@ -3326,6 +3354,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
 
   L(FL("Analyzing a cycle consisting of %d blobs") % cycle_members.size());
+  log_path(cvs, "members:", cycle_members.begin(), cycle_members.end());
 
   // We analyze the cycle first, trying to figure out which blobs we can
   // split and which not. This involves checking all events of all blobs in
@@ -3352,7 +3381,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependencies;
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependents;
+  multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_weak_dependents;
 
+  typedef vector<cvs_blob_index>::const_iterator cm_ity;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // loop over every event of every blob in cycle_members
@@ -3366,24 +3397,28 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           // even deep dependencies (i.e. hopping via multiple blobs *not*
           // in the cycle).
           set<cvs_event_ptr> done;
-          stack<cvs_event_ptr> stack;
+          stack<pair<cvs_event_ptr, bool> > stack;
 
           for (dep_loop j = cvs.get_dependencies(this_ev); !j.ended(); ++j)
             {
-              stack.push(*j);
+              stack.push(make_pair(*j, cvs.is_weak(this_ev, *j)));
               safe_insert(done, *j);
             }
 
           time_i limit = oldest_event[this_ev->path];
           while (!stack.empty())
             {
-              cvs_event_ptr dep_ev = stack.top();
+              cvs_event_ptr dep_ev = stack.top().first;
+              bool is_weak_path = stack.top().second;
               stack.pop();
 
-              if (cycle_members.find(dep_ev->bi) != cycle_members.end())
+              if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
+                  != cycle_members.end())
                 {
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
+                  if (is_weak_path)
+                    in_cycle_weak_dependents.insert(make_pair(dep_ev, this_ev));
                 }
 
               for (dep_loop j = cvs.get_dependencies(dep_ev); !j.ended(); ++j)
@@ -3393,7 +3428,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                   if ((done.find(ev) == done.end() &&
                       (ev->adj_time >= limit)))
                     {
-                      stack.push(ev);
+                      if (cvs.is_weak(dep_ev, ev))
+                        is_weak_path = true;
+                      stack.push(make_pair(ev, is_weak_path));
                       safe_insert(done, ev);
                     }
                 }
@@ -3414,6 +3451,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
   // which could also be split somehow to resolve the cycle.
   set<cvs_blob_index> blob_without_type1_events;
   vector<cvs_blob_index> splittable_blobs;
+  vector<pair<cvs_blob_index, set<cvs_event_ptr> > > splittable_symbol_blobs;
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
@@ -3430,6 +3468,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
 
       bool has_type4events = false;
       vector<cvs_event_ptr> type2events, type3events;
+      set<cvs_event_ptr> weak_events;
 
       // Loop over every event of every blob again and collect events of
       // type 2 and 3, but abort as soon as we hit a type 4 one. Type 1
@@ -3438,7 +3477,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
            ity != blob_events.end(); ++ity)
         {
           cvs_event_ptr this_ev = *ity;
-          int deps_from = 0, deps_to = 0;
+          int deps_from = 0, deps_to = 0, weak_deps_to = 0;
 
           typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
           pair<mm_ity, mm_ity> range =
@@ -3461,12 +3500,24 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               range.first++;
             }
 
+          if (cvs.blobs[*cc].get_digest().is_symbol())
+            {
+              range = in_cycle_weak_dependents.equal_range(this_ev);
+              while (range.first != range.second)
+                {
+                  weak_deps_to++;
+                  range.first++;
+                }
+            }
+
           if (deps_from == 0)
             {
               if (deps_to == 0)
                 ; // a type 1 event
               else
                 type3events.push_back(this_ev); // a type 3 event
+                if (weak_deps_to == deps_to)
+                  safe_insert(weak_events, this_ev);
             }
           else
             {
@@ -3475,8 +3526,21 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               else
                 {
                   has_type4events = true; // a type 4 event
-                  break;
+                  if (weak_deps_to == deps_to)
+                    safe_insert(weak_events, this_ev);
                 }
+            }
+        }
+
+      // Symbol blobs which don't have any hard dependency into the
+      // cycle should be split right away. The cycle exists only because
+      // of a weak dependency.
+      if (!weak_events.empty())
+        {
+          if (weak_events.size() < cvs.blobs[*cc].get_events().size())
+            {
+              splittable_symbol_blobs.push_back(make_pair(*cc, weak_events));
+              continue;
             }
         }
 
@@ -3543,7 +3607,8 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           // I've so far never seen this, and it's very probable this
           // cannot happen at all logically. However, it's trivial
           // supporting this case, so I'm just emitting a warning here.
-          W(F("Oh, please show this repo to <markus@bluegap.ch>!"));
+          W(F("Oh, still strange timestamps?!? Please show this repo "
+              "to <markus@bluegap.ch>!"));
           lower_bound = t2_upper_bound;
           upper_bound = t3_lower_bound;
         }
@@ -3598,10 +3663,26 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
     }
 
 
+  if (!splittable_symbol_blobs.empty())
+    {
+      I(splittable_symbol_blobs.size() >= 1);
+
+      cvs_blob_index best_blob = splittable_symbol_blobs.begin()->first;
+      set<cvs_event_ptr> & weak_events =
+        splittable_symbol_blobs.begin()->second;
+
+      L(FL("splitting weak events from symbol blob %d")
+        % best_blob);
+      vector<cvs_blob_index> tmp(cycle_members.size());
+      copy(cycle_members.begin(), cycle_members.end(), tmp.begin());
+      split_by_event_set func(weak_events);
+      split_blob_at(cvs, best_blob, func);
+    }
+
   // Hopefully, we found a gap we can split in one of the blobs. In that
   // case, we split the best blob at that large gap to resolve the given
   // cycle.
-  if (largest_gap_blob != invalid_blob)
+  else if (largest_gap_blob != invalid_blob)
     {
       I(largest_gap_diff > 0);
 
@@ -3617,8 +3698,6 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
     }
   else if (!splittable_blobs.empty())
     {
-      W(F("Oh, please show this repo to <markus@bluegap.ch>!"));
-
       // We couldn't find a blob to split by timestamp, but we still have
       // a collection of blob we can split to resolve the cyclic
       // dependencies. However, choosing which one to split is guesswork.
@@ -3664,7 +3743,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
     {
       L(FL("Unable to split the following cycle:"));
 
-      for (set<cvs_blob_index>::iterator i = cycle_members.begin();
+      for (vector<cvs_blob_index>::const_iterator i = cycle_members.begin();
            i != cycle_members.end(); ++i)
         {
           L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
@@ -3684,8 +3763,7 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
               continue;
             }
 
-          bool has_type4events = false;
-          vector<cvs_event_ptr> type2events, type3events;
+          vector<cvs_event_ptr> type2events, type3events, type4events;
 
           // Loop over every event of every blob again and collect events of
           // type 2 and 3, but abort as soon as we hit a type 4 one. Type 1
@@ -3729,19 +3807,9 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                   if (deps_to == 0)
                     type2events.push_back(this_ev); // a type 2 event
                   else
-                    {
-                      has_type4events = true; // a type 4 event
-                      break;
-                    }
+                    type4events.push_back(this_ev); // a type 4 event
                 }
             }
-
-          if (has_type4events)
-            {
-              L(FL("    decision: not splitting due to type4 events"));
-              continue;
-            }
-
 
           L(FL("    type 2 events:"));
           for (blob_event_iter ity = type2events.begin();
@@ -3753,10 +3821,16 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
                ity != type3events.end(); ++ity)
             L(FL("    %s") % get_event_repr(cvs, *ity));
 
-          // it's a cycle, so every blob must have at least one incomming and
-          // one outgoing dependency.
-          I(!type2events.empty());
-          I(!type3events.empty());
+          L(FL("    type 4 events:"));
+          for (blob_event_iter ity = type4events.begin();
+               ity != type4events.end(); ++ity)
+            L(FL("    %s") % get_event_repr(cvs, *ity));
+
+          if (!type4events.empty())
+            {
+              L(FL("    decision: not splitting due to type 4 events"));
+              continue;
+            }
 
           // Calculate the lower and upper bounds for both kind of events. If
           // we are going to split this blob, we need to split it between any
@@ -3793,21 +3867,17 @@ split_cycle(cvs_history & cvs, set< cvs_blob_index > const & cycle_members)
           // the cycle. So those should carry the higher timestamps.
           if (t3_upper_bound < t2_lower_bound)
             {
-              L(FL("    splittable by timestamp."));
+              L(FL("    desicion: splittable by timestamp."));
             }
           else if (t2_upper_bound < t3_lower_bound)
             {
-              // I've so far never seen this, and it's very probable this
-              // cannot happen at all logically. However, it's trivial
-              // supporting this case, so I'm just emitting a warning here.
-              W(F("Oh, please show this repo to <markus@bluegap.ch>!"));
-              L(FL("    splittable by timestamp."));
+              L(FL("    decision: splittable by timestamp."));
             }
           else
             {
               // We cannot split this blob by timestamp, because there's no
               // reasonable split point.
-              L(FL("    a strange_blob!"));
+              L(FL("    not splittable by timestamp!"));
             }
         }
 
@@ -4575,7 +4645,7 @@ import_cvs_repo(options & opts,
     while (1)
     {
       // this set will be filled with the blobs in a cycle
-      set< cvs_blob_index > cycle_members;
+      vector<cvs_blob_index> cycle_members;
 
       cvs.import_order.clear();
       blob_splitter vis(cvs, cycle_members);
