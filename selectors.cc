@@ -18,6 +18,7 @@
 #include "cmd.hh"
 #include "work.hh"
 #include "transforms.hh"
+#include "revision.hh"
 
 #include <algorithm>
 #include <boost/tokenizer.hpp>
@@ -29,6 +30,13 @@ using std::string;
 using std::vector;
 using std::set_intersection;
 using std::inserter;
+
+enum meta_selector_type
+  {
+    meta_sel_heads_of,
+    meta_sel_lca_of,
+    meta_sel_unknown
+  };
 
 enum selector_type
   {
@@ -47,17 +55,54 @@ enum selector_type
   };
 
 typedef vector<pair<selector_type, string> > selector_list;
+typedef struct
+{
+  vector<meta_selector_type> meta_types;
+  selector_list selections;
+} selector_data;
+
+static void
+decode_meta_selector(project_t & project,
+                     options const & opts,
+                     lua_hooks & lua,
+                     vector<meta_selector_type> & meta_types,
+                     string & sel)
+{
+  L(FL("decoding possible meta selector '%s'") % sel);
+
+  while (sel.size() >= 2 && sel[1] == ':')
+    {
+      meta_selector_type tmp = meta_sel_unknown;
+
+      switch (sel[0])
+        {
+        case 'H':
+          tmp = meta_sel_heads_of;
+          break;
+        case 'L':
+          tmp = meta_sel_lca_of;
+          break;
+        default:
+          break;
+        }
+
+      if (tmp != meta_sel_unknown)
+        {
+          sel.erase(0,2);
+          meta_types.push_back(tmp);
+        }
+      else
+        break;
+    }
+}
 
 static void
 decode_selector(project_t & project,
                 options const & opts,
                 lua_hooks & lua,
-                string const & orig_sel,
                 selector_type & type,
                 string & sel)
 {
-  sel = orig_sel;
-
   L(FL("decoding selector '%s'") % sel);
 
   string tmp;
@@ -204,22 +249,26 @@ static void
 parse_selector(project_t & project,
                options const & opts,
                lua_hooks & lua,
-               string const & str, selector_list & sels)
+               string const & str, selector_data & seldata)
 {
-  sels.clear();
+  seldata.meta_types = vector<meta_selector_type>();
+  seldata.selections.clear();
 
   // this rule should always be enabled, even if the user specifies
   // --norc: if you provide a revision id, you get a revision id.
   if (str.find_first_not_of(constants::legal_id_bytes) == string::npos
       && str.size() == constants::idlen)
     {
-      sels.push_back(make_pair(sel_ident, str));
+      seldata.selections.push_back(make_pair(sel_ident, str));
     }
   else
     {
+      string tmp = str;
+      decode_meta_selector(project, opts, lua, seldata.meta_types, tmp);
+
       typedef boost::tokenizer<boost::escaped_list_separator<char> > tokenizer;
       boost::escaped_list_separator<char> slash("\\", "/", "");
-      tokenizer tokens(str, slash);
+      tokenizer tokens(tmp, slash);
 
       vector<string> selector_strings;
       copy(tokens.begin(), tokens.end(), back_inserter(selector_strings));
@@ -227,11 +276,11 @@ parse_selector(project_t & project,
       for (vector<string>::const_iterator i = selector_strings.begin();
            i != selector_strings.end(); ++i)
         {
-          string sel;
+          string sel = *i;
           selector_type type = sel_unknown;
 
-          decode_selector(project, opts, lua, *i, type, sel);
-          sels.push_back(make_pair(type, sel));
+          decode_selector(project, opts, lua, type, sel);
+          seldata.selections.push_back(make_pair(type, sel));
         }
     }
 }
@@ -329,20 +378,20 @@ complete_one_selector(project_t & project,
 
 static void
 complete_selector(project_t & project,
-                  selector_list const & limit,
+                  selector_data const & limit,
                   set<revision_id> & completions)
 {
-  if (limit.empty()) // all the ids in the database
+  if (limit.selections.empty()) // all the ids in the database
     {
       project.db.complete("", completions);
       return;
     }
 
-  selector_list::const_iterator i = limit.begin();
+  selector_list::const_iterator i = limit.selections.begin();
   complete_one_selector(project, i->first, i->second, completions);
   i++;
 
-  while (i != limit.end())
+  while (i != limit.selections.end())
     {
       set<revision_id> candidates;
       set<revision_id> intersection;
@@ -356,6 +405,29 @@ complete_selector(project_t & project,
       completions = intersection;
       i++;
     }
+
+  for(vector<meta_selector_type>::const_iterator m = limit.meta_types.end();
+      m != limit.meta_types.begin();)
+    {
+      m--;
+
+      switch(*m)
+        {
+        case meta_sel_heads_of:
+          erase_ancestors(project.db, completions);
+          break;
+        case meta_sel_lca_of:
+          {
+            set<revision_id> common_ancestors;
+            project.db.get_common_ancestors(completions, common_ancestors);
+            completions = common_ancestors;
+            erase_ancestors(project.db, completions);
+          }
+          break;
+        default:
+          break;
+        }
+    }
 }
 
 void
@@ -364,22 +436,22 @@ complete(options const & opts, lua_hooks & lua,
          string const & str,
          set<revision_id> & completions)
 {
-  selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  selector_data seldata;
+  parse_selector(project, opts, lua, str, seldata);
 
   // avoid logging if there's no expansion to be done
-  if (sels.size() == 1
-      && sels[0].first == sel_ident
-      && sels[0].second.size() == constants::idlen)
+  if (seldata.selections.size() == 1
+      && seldata.selections[0].first == sel_ident
+      && seldata.selections[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
+      completions.insert(revision_id(decode_hexenc(seldata.selections[0].second)));
       N(project.db.revision_exists(*completions.begin()),
         F("no such revision '%s'") % *completions.begin());
       return;
     }
 
   P(F("expanding selection '%s'") % str);
-  complete_selector(project, sels, completions);
+  complete_selector(project, seldata, completions);
 
   N(completions.size() != 0,
     F("no match for selection '%s'") % str);
@@ -419,19 +491,19 @@ expand_selector(options const & opts, lua_hooks & lua,
                 string const & str,
                 set<revision_id> & completions)
 {
-  selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  selector_data seldata;
+  parse_selector(project, opts, lua, str, seldata);
 
   // avoid logging if there's no expansion to be done
-  if (sels.size() == 1
-      && sels[0].first == sel_ident
-      && sels[0].second.size() == constants::idlen)
+  if (seldata.selections.size() == 1
+      && seldata.selections[0].first == sel_ident
+      && seldata.selections[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
+      completions.insert(revision_id(decode_hexenc(seldata.selections[0].second)));
       return;
     }
 
-  complete_selector(project, sels, completions);
+  complete_selector(project, seldata, completions);
 }
 
 void
