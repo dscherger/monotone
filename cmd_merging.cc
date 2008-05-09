@@ -48,7 +48,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
                 revision_id const & right_rid, roster_t const & right_roster,
                 roster_merge_result & result,
                 marking_map & left_markings,
-                marking_map & right_markings)
+                marking_map & right_markings,
+                bool uselivelivelivemerge)
 {
   MM(ancestor_roster);
   MM(left_roster);
@@ -83,7 +84,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   P(F("[right] %s") % right_rid);
 
   // And do the merge
-  roster_merge(left_roster, left_markings, left_uncommon_ancestors,
+  roster_merge(uselivelivelivemerge,
+               left_roster, left_markings, left_uncommon_ancestors,
                right_roster, right_markings, right_uncommon_ancestors,
                result);
 }
@@ -271,7 +273,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   three_way_merge(old_rid, *old_roster,
                   working_rid, *working_roster,
                   chosen_rid, chosen_roster,
-                  result, left_markings, right_markings);
+                  result, left_markings, right_markings,
+                  app.opts.uselivelivelivemerge);
 
   roster_t & merged_roster = result.roster;
 
@@ -355,7 +358,7 @@ merge_two(options & opts, lua_hooks & lua, project_t & project,
 
   revision_id merged;
   transaction_guard guard(project.db);
-  interactive_merge_and_store(lua, project.db, left, right, merged);
+  interactive_merge_and_store(lua, project.db, left, right, merged, opts.uselivelivelivemerge);
 
   project.put_standard_certs_from_options(opts, lua, keys, merged, branch,
                                           utf8(log.str()));
@@ -626,7 +629,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
           }
 
         roster_merge_result result;
-        roster_merge(left_roster,
+        roster_merge(app.opts.uselivelivelivemerge,
+                     left_roster,
                      left_marking_map,
                      left_uncommon_ancestors,
                      right_roster,
@@ -737,7 +741,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   roster_merge_result merge_result;
   MM(merge_result);
-  roster_merge(*left.first, *left.second, left_uncommon_ancestors,
+  roster_merge(app.opts.uselivelivelivemerge,
+               *left.first, *left.second, left_uncommon_ancestors,
                *right.first, *right.second, right_uncommon_ancestors,
                merge_result);
 
@@ -848,7 +853,8 @@ show_conflicts_core (database & db, revision_id const & l_id, revision_id const 
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
   roster_merge_result result;
-  roster_merge(*l_roster, l_marking, l_uncommon_ancestors,
+  roster_merge(false, // don't worry about uselivelivelivemerge here because it cannot affect conflicts...
+               *l_roster, l_marking, l_uncommon_ancestors,
                *r_roster, r_marking, r_uncommon_ancestors,
                result);
 
@@ -1120,7 +1126,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   three_way_merge(from_rid, *from_roster,
                   working_rid, *working_roster,
                   to_rid, *to_roster,
-                  result, left_markings, right_markings);
+                  result, left_markings, right_markings,
+                  app.opts.uselivelivelivemerge);
 
   roster_t & merged_roster = result.roster;
 

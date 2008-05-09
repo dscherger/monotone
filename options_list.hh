@@ -329,6 +329,14 @@ OPTION(include, include, true, "include",
 }
 #endif
 
+GOPT(uselivelivelivemerge, "livelivelive", bool, false,
+     gettext_noop("When merging, nodes dropped on one side of the merge live rather than die"))
+#ifdef option_bodies
+{
+  uselivelivelivemerge = true;
+}
+#endif
+
 GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
      gettext_noop("do not ignore revisions marked as suspended"))
 #ifdef option_bodies

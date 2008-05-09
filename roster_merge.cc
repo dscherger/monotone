@@ -1428,10 +1428,11 @@ namespace
                    marking_map const & markings,
                    set<revision_id> const & uncommon_ancestors,
                    roster_t const & parent_roster,
-                   roster_t & new_roster)
+                   roster_t & new_roster,
+                   bool livelivelive)
   {
     revision_id const & birth = safe_get(markings, n->self).birth_revision;
-    if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
+    if (livelivelive || uncommon_ancestors.find(birth) != uncommon_ancestors.end())
       create_node_for(n, new_roster);
     else
       {
@@ -1596,7 +1597,8 @@ namespace
 } // end anonymous namespace
 
 void
-roster_merge(roster_t const & left_parent,
+roster_merge(bool uselivelivelivemerge,
+             roster_t const & left_parent,
              marking_map const & left_markings,
              set<revision_id> const & left_uncommon_ancestors,
              roster_t const & right_parent,
@@ -1628,13 +1630,13 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_left:
             insert_if_unborn(i.left_data(),
                              left_markings, left_uncommon_ancestors, left_parent,
-                             result.roster);
+                             result.roster, uselivelivelivemerge);
             break;
 
           case parallel::in_right:
             insert_if_unborn(i.right_data(),
                              right_markings, right_uncommon_ancestors, right_parent,
-                             result.roster);
+                             result.roster, uselivelivelivemerge);
             break;
 
           case parallel::in_both:
@@ -1997,7 +1999,10 @@ test_a_scalar_merge_impl(scalar_val left_val, string const & left_marks_str,
   string_to_set(left_uncommon_str, left_uncommon_ancestors);
   string_to_set(right_uncommon_str, right_uncommon_ancestors);
 
-  roster_merge(left_parent, left_markings, left_uncommon_ancestors,
+  #warning should change the uselivelivelivemerge hard coded to false to something that tests better...
+
+  roster_merge(false,
+               left_parent, left_markings, left_uncommon_ancestors,
                right_parent, right_markings, right_uncommon_ancestors,
                result);
 
@@ -2502,7 +2507,8 @@ UNIT_TEST(roster_merge, node_lifecycle)
                            b_safe_dir_nid, b_safe_file_nid, nis);
   // do the merge
   roster_merge_result result;
-  roster_merge(a_roster, a_markings, a_uncommon, b_roster, b_markings, b_uncommon, result);
+#warning should change the false on the next line to test better
+  roster_merge(false, a_roster, a_markings, a_uncommon, b_roster, b_markings, b_uncommon, result);
   I(result.is_clean());
   // go ahead and check the roster_delta code too, while we're at it...
   test_roster_delta_on(a_roster, a_markings, b_roster, b_markings);
@@ -2578,7 +2584,8 @@ UNIT_TEST(roster_merge, attr_lifecycle)
 
   roster_merge_result result;
   MM(result);
-  roster_merge(left_roster, left_markings, left_revs,
+#warning should change the false on the next line to test better
+  roster_merge(false, left_roster, left_markings, left_revs,
                right_roster, right_markings, right_revs,
                result);
   // go ahead and check the roster_delta code too, while we're at it...
@@ -2628,7 +2635,8 @@ struct structural_conflict_helper
     setup();
 
     MM(result);
-    roster_merge(left_roster, left_markings, left_revs,
+#warning should change the false on the next line to test better
+    roster_merge(false,left_roster, left_markings, left_revs,
                  right_roster, right_markings, right_revs,
                  result);
     // go ahead and check the roster_delta code too, while we're at it...

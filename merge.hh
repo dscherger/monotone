@@ -46,7 +46,8 @@ void
 interactive_merge_and_store(lua_hooks & lua, database & db,
                             revision_id const & left,
                             revision_id const & right,
-                            revision_id & merged);
+                            revision_id & merged,
+                            bool uselivelivelivemerge);
 
 void
 store_roster_merge_result(database & db,

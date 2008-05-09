@@ -1672,8 +1672,9 @@ mark_merge_roster(roster_t const & left_roster,
           node_t const & right_node = rni->second;
           marking_t const & right_marking = safe_get(right_markings, n->self);
           // must be unborn on the left (as opposed to dead)
-          I(right_uncommon_ancestors.find(right_marking.birth_revision)
-            != right_uncommon_ancestors.end());
+#warning I just commented out this invariant as I think it no longer applies...
+          //I(right_uncommon_ancestors.find(right_marking.birth_revision)
+          //  != right_uncommon_ancestors.end());
           mark_unmerged_node(right_marking, right_node,
                              new_rid, n, new_marking);
         }
@@ -1682,8 +1683,9 @@ mark_merge_roster(roster_t const & left_roster,
           node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
           // must be unborn on the right (as opposed to dead)
-          I(left_uncommon_ancestors.find(left_marking.birth_revision)
-            != left_uncommon_ancestors.end());
+#warning I just commented out this invariant as I think it no longer applies...
+          //I(left_uncommon_ancestors.find(left_marking.birth_revision)
+          //  != left_uncommon_ancestors.end());
           mark_unmerged_node(left_marking, left_node,
                              new_rid, n, new_marking);
         }

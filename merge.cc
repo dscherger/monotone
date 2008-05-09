@@ -185,7 +185,8 @@ void
 interactive_merge_and_store(lua_hooks & lua, database & db,
                             revision_id const & left_rid,
                             revision_id const & right_rid,
-                            revision_id & merged_rid)
+                            revision_id & merged_rid,
+                            bool uselivelivelivemerge)
 {
   roster_t left_roster, right_roster;
   marking_map left_marking_map, right_marking_map;
@@ -198,7 +199,8 @@ interactive_merge_and_store(lua_hooks & lua, database & db,
 
   roster_merge_result result;
 
-  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
+  roster_merge(uselivelivelivemerge,
+               left_roster, left_marking_map, left_uncommon_ancestors,
                right_roster, right_marking_map, right_uncommon_ancestors,
                result);
 

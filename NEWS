@@ -11,6 +11,9 @@
         - mtn automate inventory will show the birth revision for any file
           that has been committed.
 
+        - Add a "--livelivelive" option that causes merges to have files live
+          rather than die if there is any conflict.
+
         Bugs fixed
 
         - If the options --db or --keydir were previously specified for a
