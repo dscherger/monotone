@@ -14,8 +14,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include "basic_io.hh"
+#include "lua_hooks.hh"
 #include "vocab.hh"
 #include "roster_merge.hh"
+#include "options.hh"
 #include "parallel_iter.hh"
 #include "safe_map.hh"
 #include "transforms.hh"
@@ -1327,6 +1329,174 @@ roster_merge_result::report_file_content_conflicts(roster_t const & left_roster,
             }
         }
     }
+}
+
+// Resolving non-content conflicts
+
+namespace
+{
+  // FIXME: use symbols instead?
+  enum resolution_t {resolved_none, resolved_content_ws, resolved_rename};
+
+  string image (resolution_t resolution)
+  {
+    switch (resolution)
+      {
+      case resolved_none:
+        return "resolved_none";
+
+      case resolved_content_ws:
+        return "resolved_content_ws";
+
+      case resolved_rename:
+        return "resolved_rename";
+      }
+
+    return ""; // suppress bogus compiler warning
+  }
+
+  void
+  parse_resolution (std::string input,
+                    resolution_t & resolution_left,
+                    file_path & resolution_left_name,
+                    resolution_t & resolution_right,
+                    file_path & resolution_right_name)
+  {
+    // FIXME: working on core, not UI right now. This matches one use case :)
+
+    I(input == "resolved_rename_left \"thermostat-westinghouse.c\"");
+
+    resolution_left       = resolved_rename;
+    resolution_left_name  = file_path_internal ("thermostat_westinghouse.c");
+    resolution_right      = resolved_none;
+    resolution_right_name = file_path_internal ("");
+  }
+
+  static void
+  set_new_name_in_roster (lua_hooks & lua,
+                          roster_t & new_roster,
+                          node_id nid,
+                          file_path const source_path,
+                          file_path const target_path)
+  {
+    // Simplified from workspace::perform_rename in work.cc
+
+    I(!target_path.empty());
+
+    N(!new_roster.has_node(target_path), F("%s already exists") % target_path.as_external());
+    N(new_roster.has_node(target_path.dirname()),
+      F("directory %s does not exist or is unknown") % target_path.dirname());
+
+    P(F("renaming %s to %s") % source_path % target_path);
+
+    // FIXME: is this really all we have to do?
+    new_roster.attach_node (nid, target_path);
+
+    node_t node = new_roster.get_node (nid);
+    for (full_attr_map_t::const_iterator attr = node->attrs.begin();
+         attr != node->attrs.end();
+         ++attr)
+      lua.hook_apply_attribute (attr->first(), target_path, attr->second.second());
+
+  } // set_new_name_in_roster
+
+} // end anonymous namespace
+
+void
+roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
+                                                      roster_t const & left_roster,
+                                                      roster_t const & right_roster,
+                                                      content_merge_adaptor & adaptor,
+                                                      options const & opts)
+{
+  MM(left_roster);
+  MM(right_roster);
+  MM(this->roster); // New roster
+
+  I(opts.resolve_conflicts_given || opts.resolve_conflicts_file_given);
+
+  std::vector<duplicate_name_conflict>::iterator i = duplicate_name_conflicts.begin();
+  while (i != duplicate_name_conflicts.end())
+    {
+      // FIXME: share this code with above?
+      duplicate_name_conflict const & conflict = *i;
+      MM(conflict);
+
+      node_id left_nid = conflict.left_nid;
+      node_id right_nid= conflict.right_nid;
+
+      // conflict nodes are present but without filenames in new roster
+      I(!roster.is_attached(left_nid));
+      I(!roster.is_attached(right_nid));
+
+      file_path left_name, right_name;
+
+      left_roster.get_name(left_nid, left_name);
+      right_roster.get_name(right_nid, right_name);
+
+      // end FIXME:
+
+      string conflict_type ("duplicate name");
+
+      // The resolution is either to suture the two files together, or to rename one or both.
+      // If 'suture', only resolution_left is set.
+      resolution_t resolution_left = resolved_none;
+      file_path resolution_left_name;
+      resolution_t resolution_right = resolved_none;
+      file_path resolution_right_name;
+
+      if (opts.resolve_conflicts_given)
+        parse_resolution
+          (opts.resolve_conflicts, resolution_left, resolution_left_name, resolution_right, resolution_right_name);
+//      else
+      // FIXME: add this back:
+//         parse_find_resolution
+//           (opts.resolve_conflicts, &resolution_left, &resolution_right,
+//            conflict_type, left_name, left_type, right_name, right_type);
+
+      switch (resolution_left)
+      {
+      case resolved_content_ws:
+        // FIXME: do the suturing, mark conflict as resolved in result roster
+        I(false);
+        break;
+
+      case resolved_rename:
+        set_new_name_in_roster (lua, this->roster, left_nid, left_name, resolution_left_name);
+        break;
+
+      case resolved_none:
+        // Just keep current name
+        this->roster.attach_node (left_nid, left_name);
+        break;
+
+      default:
+        N(false, F("%s: invalid resolution for this conflict") % image (resolution_left));
+      }
+
+      if (resolution_left != resolved_content_ws)
+        {
+          switch (resolution_right)
+            {
+            case resolved_rename:
+              set_new_name_in_roster (lua, this->roster, right_nid, right_name, resolution_right_name);
+              break;
+
+            case resolved_none:
+              // Just keep current name
+              this->roster.attach_node (right_nid, right_name);
+              break;
+
+            default:
+              N(false, F("%s: invalid resolution for this conflict") % image (resolution_right));
+            }
+        }
+
+      duplicate_name_conflicts.erase(i);
+
+      // no 'i++' needed; erase does that by side effect. FIXME: is this proper std library usage?
+
+    } // end while
 }
 
 void

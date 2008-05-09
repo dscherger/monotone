@@ -635,6 +635,26 @@ OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-correspondi
 }
 #endif
 
+OPTSET(resolve_conflict_opts)
+OPTVAR(resolve_conflict_opts, bool, resolve_conflicts_file, false)
+OPTVAR(resolve_conflict_opts, std::string, resolve_conflicts, string (""))
+
+OPTION(resolve_conflict_opts, resolve_conflicts_file, false, "resolve_conflicts_file",
+       gettext_noop("use _MTN/conflicts to resolve conflicts"))
+#ifdef option_bodies
+{
+  resolve_conflicts_file = true;
+}
+#endif
+
+OPTION(resolve_conflict_opts, resolve_conflicts, true, "resolve_conflicts",
+       gettext_noop("use argument to resolve conflicts"))
+#ifdef option_bodies
+{
+  resolve_conflicts = arg;
+}
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

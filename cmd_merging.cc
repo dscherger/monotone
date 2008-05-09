@@ -282,7 +282,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
                                       left_markings, right_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
-                          result, wca);
+                          result, wca, app.opts);
 
   // Make sure it worked...
   I(result.is_clean());
@@ -355,7 +355,7 @@ merge_two(options & opts, lua_hooks & lua, project_t & project,
 
   revision_id merged;
   transaction_guard guard(project.db);
-  interactive_merge_and_store(lua, project.db, left, right, merged);
+  interactive_merge_and_store(lua, project.db, opts, left, right, merged);
 
   project.put_standard_certs_from_options(opts, lua, keys, merged, branch,
                                           utf8(log.str()));
@@ -417,7 +417,8 @@ find_heads_to_merge(database & db, set<revision_id> const heads)
 CMD(merge, "merge", "", CMD_REF(tree), "",
     N_("Merges unmerged heads of a branch"),
     "",
-    options::opts::branch | options::opts::date | options::opts::author)
+    options::opts::branch | options::opts::date | options::opts::author |
+    options::opts::resolve_conflict_opts)
 {
   database db(app);
   key_store keys(app);
@@ -637,8 +638,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         content_merge_database_adaptor
           dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
-        resolve_merge_conflicts(app.lua, left_roster, right_roster,
-                                result, dba);
+        resolve_merge_conflicts(app.lua, left_roster, right_roster, result, dba, app.opts);
 
         {
           dir_t moved_root = left_roster.root();
@@ -752,7 +752,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca);
+  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, app.opts);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -1136,7 +1136,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   wca.cache_roster(to_rid, to_roster);
 
   resolve_merge_conflicts(app.lua, *working_roster, *to_roster,
-                          result, wca);
+                          result, wca, app.opts);
 
   I(result.is_clean());
   // temporary node ids may appear

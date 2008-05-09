@@ -1,6 +1,7 @@
 #ifndef __ROSTER_MERGE_HH__
 #define __ROSTER_MERGE_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -180,11 +181,17 @@ struct roster_merge_result
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,
                                       std::ostream & output) const;
+
   void report_duplicate_name_conflicts(roster_t const & left,
                                        roster_t const & right,
                                        content_merge_adaptor & adaptor,
                                        bool const basic_io,
                                        std::ostream & output) const;
+  void resolve_duplicate_name_conflicts(lua_hooks & lua,
+                                        roster_t const & left_roster,
+                                        roster_t const & right_roster,
+                                        content_merge_adaptor & adaptor,
+                                        options const & opts);
 
   void report_attribute_conflicts(roster_t const & left,
                                   roster_t const & right,
