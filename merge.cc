@@ -132,17 +132,17 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
-                        options const & opts)
+                        bool resolutions_given)
 {
   if (!result.is_clean())
     result.log_conflicts();
 
   if (result.has_non_content_conflicts())
     {
-      if (opts.resolve_conflicts_given || opts.resolve_conflicts_file_given)
+      if (resolutions_given)
         {
-          // We report the conflicts we don't know how to resolve yet.
-          // FIXME_ROSTERS: perhaps add lua hooks to resolve them?
+          // We just report the conflicts we don't know how to resolve yet.
+
           result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
           result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
           result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
@@ -150,10 +150,12 @@ resolve_merge_conflicts(lua_hooks & lua,
           result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
           result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
-          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor, opts);
-
           result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
           result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+
+          // If there aren't any we can't resolve, resolve the ones we can.
+          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
+
         }
       else
         {
@@ -219,10 +221,13 @@ interactive_merge_and_store(lua_hooks & lua,
                right_roster, right_marking_map, right_uncommon_ancestors,
                result);
 
+  bool resolutions_given;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
                                      left_marking_map, right_marking_map);
-  resolve_merge_conflicts(lua, left_roster, right_roster,
-                          result, dba, opts);
+
+  parse_resolve_conflicts_opts (opts, left_roster, right_roster, result, resolutions_given);
+
+  resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,

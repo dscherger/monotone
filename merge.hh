@@ -32,7 +32,7 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & right_roster,
                         roster_merge_result & result,
                         content_merge_adaptor & adaptor,
-                        options const & opts);
+                        bool const resolutions_given);
 
 // traditional resolve-all-conflicts-as-you-go style merging with 3-way merge
 //   for file texts

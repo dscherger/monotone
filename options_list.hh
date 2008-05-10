@@ -1,3 +1,4 @@
+// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
 // This is made available under the GNU GPL v2 or later.
 
@@ -635,22 +636,26 @@ OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-correspondi
 }
 #endif
 
-OPTSET(resolve_conflict_opts)
-OPTVAR(resolve_conflict_opts, bool, resolve_conflicts_file, false)
-OPTVAR(resolve_conflict_opts, std::string, resolve_conflicts, string (""))
+OPTSET(resolve_conflicts_opts)
+OPTVAR(resolve_conflicts_opts, utf8, resolve_conflicts_file, )
+OPTVAR(resolve_conflicts_opts, std::string, resolve_conflicts, )
 
-OPTION(resolve_conflict_opts, resolve_conflicts_file, false, "resolve_conflicts_file",
+OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
        gettext_noop("use _MTN/conflicts to resolve conflicts"))
 #ifdef option_bodies
 {
-  resolve_conflicts_file = true;
+  N(!resolve_conflicts_given,
+    F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
+  resolve_conflicts_file = utf8(arg);
 }
 #endif
 
-OPTION(resolve_conflict_opts, resolve_conflicts, true, "resolve_conflicts",
+OPTION(resolve_conflicts_opts, resolve_conflicts, true, "resolve-conflicts",
        gettext_noop("use argument to resolve conflicts"))
 #ifdef option_bodies
 {
+  N(!resolve_conflicts_file_given,
+    F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
   resolve_conflicts = arg;
 }
 #endif

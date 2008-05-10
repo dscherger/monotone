@@ -144,6 +144,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
        "If a revision is given, update the workspace to that revision.  "
        "If not, update the workspace to the head of the branch."),
     options::opts::branch | options::opts::revision)
+  // this command does not accept resolve_conflict_opts, because we don't support
+  // resolving workspace conflicts.
 {
   if (args.size() > 0)
     throw usage(execid);
@@ -282,7 +284,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
                                       left_markings, right_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
-                          result, wca, app.opts);
+                          result, wca, false);
 
   // Make sure it worked...
   I(result.is_clean());
@@ -418,7 +420,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     N_("Merges unmerged heads of a branch"),
     "",
     options::opts::branch | options::opts::date | options::opts::author |
-    options::opts::resolve_conflict_opts)
+    options::opts::resolve_conflicts_opts)
 {
   database db(app);
   key_store keys(app);
@@ -497,7 +499,8 @@ CMD(propagate, "propagate", "", CMD_REF(tree),
     N_("SOURCE-BRANCH DEST-BRANCH"),
     N_("Merges from one branch to another asymmetrically"),
     "",
-    options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile)
+    options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile |
+    options::opts::resolve_conflicts_opts)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -536,7 +539,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
     N_("SOURCE-BRANCH DEST-BRANCH DIR"),
     N_("Merges one branch into a subdirectory in another branch"),
     "",
-    options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile)
+    options::opts::date | options::opts::author | options::opts::message | options::opts::msgfile |
+    options::opts::resolve_conflicts_opts)
 {
   database db(app);
   key_store keys(app);
@@ -638,7 +642,11 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         content_merge_database_adaptor
           dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
-        resolve_merge_conflicts(app.lua, left_roster, right_roster, result, dba, app.opts);
+        bool resolutions_given;
+
+        parse_resolve_conflicts_opts (app.opts, left_roster, right_roster, result, resolutions_given);
+
+        resolve_merge_conflicts(app.lua, left_roster, right_roster, result, dba, resolutions_given);
 
         {
           dir_t moved_root = left_roster.root();
@@ -682,6 +690,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
        "the workspace's base revision will be recorded as parents on commit.  "
        "The workspace's selected branch is not changed."),
     options::opts::none)
+  // this command does not accept resolve_conflict_opts, because we don't
+  // support resolving workspace conflicts.
 {
   revision_id left_id, right_id;
   cached_roster left, right;
@@ -752,7 +762,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, app.opts);
+  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, false);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -789,7 +799,8 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     N_("Merges two explicitly given revisions"),
     N_("The results of the merge are placed on the branch specified by "
        "DEST-BRANCH."),
-    options::opts::date | options::opts::author)
+    options::opts::date | options::opts::author |
+    options::opts::resolve_conflicts_opts)
 {
   database db(app);
   key_store keys(app);
@@ -1006,6 +1017,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
        "If two revisions are given, applies the changes made to get from the "
        "first revision to the second."),
     options::opts::revision | options::opts::depth | options::opts::exclude)
+  // this command does not accept resolve_conflict_opts, because we don't support
+  // resolving workspace conflicts.
 {
   database db(app);
   workspace work(app);
@@ -1136,7 +1149,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   wca.cache_roster(to_rid, to_roster);
 
   resolve_merge_conflicts(app.lua, *working_roster, *to_roster,
-                          result, wca, app.opts);
+                          result, wca, false);
 
   I(result.is_clean());
   // temporary node ids may appear
