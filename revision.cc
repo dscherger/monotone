@@ -1144,6 +1144,7 @@ not_dead_yet(node_id nid, u64 birth_rev,
              parent_roster_map const & parent_rosters,
              multimap<u64, u64> const & child_to_parents)
 {
+#warning Need to fix this for resurrection!
   // Any given node, at each point in the revision graph, is in one of the
   // states "alive", "unborn", "dead".  The invariant we must maintain in
   // constructing our revision graph is that if a node is dead in any parent,
@@ -1288,6 +1289,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
   //
   //   - If any of the parents thinks that P has died, we do not search for
   //     it in the child; we leave it as "dropped".
+#warning Check this - will it work with resurrection?
   //
   //   - We fetch the name N of the parent node P, and apply the rename map
   //     to N, getting "remapped name" M.  If we find a child node C with

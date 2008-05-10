@@ -1690,6 +1690,7 @@ mark_merge_roster(roster_t const & left_roster,
           node_t const & right_node = rni->second;
           marking_t const & right_marking = safe_get(right_markings, n->self);
           // must be unborn on the left (as opposed to dead)
+#warning need to check this for resurrection
           I(right_uncommon_ancestors.find(right_marking.birth_revision)
             != right_uncommon_ancestors.end());
           mark_unmerged_node(right_marking, right_node,
@@ -1700,6 +1701,7 @@ mark_merge_roster(roster_t const & left_roster,
           node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
           // must be unborn on the right (as opposed to dead)
+#warning need to check this for resurrection
           I(left_uncommon_ancestors.find(left_marking.birth_revision)
             != left_uncommon_ancestors.end());
           mark_unmerged_node(left_marking, left_node,
@@ -3576,6 +3578,7 @@ namespace
       roster.attach_node(root_nid, file_path_internal(""));
       marking_t marking;
       marking.birth_revision = old_rid;
+      marking.existence.insert(old_rid);
       marking.parent_name.insert(old_rid);
       safe_insert(markings, make_pair(root_nid, marking));
     }
@@ -3614,6 +3617,7 @@ namespace
       roster.create_file_node(fid, nid);
       marking_t marking;
       marking.birth_revision = scalar_origin_rid;
+      marking.existence.insert(scalar_origin_rid);
       marking.parent_name = marking.file_content = singleton(scalar_origin_rid);
       safe_insert(markings, make_pair(nid, marking));
     }
@@ -3627,6 +3631,7 @@ namespace
       roster.create_dir_node(nid);
       marking_t marking;
       marking.birth_revision = scalar_origin_rid;
+      marking.existence.insert(scalar_origin_rid);
       marking.parent_name = singleton(scalar_origin_rid);
       safe_insert(markings, make_pair(nid, marking));
     }
@@ -3722,6 +3727,7 @@ namespace
       roster.attach_node(c_nid, file_path_internal("dir_c"));
       marking_t marking;
       marking.birth_revision = old_rid;
+      marking.existence.insert(old_rid);
       marking.parent_name.insert(old_rid);
       safe_insert(markings, make_pair(a_nid, marking));
       safe_insert(markings, make_pair(b_nid, marking));
@@ -4399,6 +4405,7 @@ UNIT_TEST(roster, die_die_die_merge)
   left_roster.attach_node(left_roster.create_dir_node(nis), file_path());
   marking_t an_old_marking;
   an_old_marking.birth_revision = old_rid;
+  an_old_marking.existence.insert(old_rid);
   an_old_marking.parent_name = singleton(old_rid);
   safe_insert(left_markings, make_pair(left_roster.root()->self,
                                        an_old_marking));
@@ -4456,6 +4463,7 @@ UNIT_TEST(roster, same_nid_diff_type)
   dir_roster.attach_node(dir_roster.create_dir_node(nis), file_path());
   marking_t marking;
   marking.birth_revision = old_rid;
+  marking.existence.insert(old_rid);
   marking.parent_name = singleton(old_rid);
   safe_insert(dir_markings, make_pair(dir_roster.root()->self,
                                       marking));
@@ -4608,48 +4616,55 @@ UNIT_TEST(roster, write_roster)
     roster_data
       expected(string("format_version \"1\"\n"
                       "\n"
-                      "      dir \"\"\n"
-                      "    ident \"1\"\n"
-                      "    birth [4444444444444444444444444444444444444444]\n"
-                      "path_mark [4444444444444444444444444444444444444444]\n"
+                      "           dir \"\"\n"
+                      "         ident \"1\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "      dir \"fo\"\n"
-                      "    ident \"4\"\n"
-                      "    birth [4444444444444444444444444444444444444444]\n"
-                      "path_mark [4444444444444444444444444444444444444444]\n"
+                      "           dir \"fo\"\n"
+                      "         ident \"4\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "      dir \"foo\"\n"
-                      "    ident \"2\"\n"
-                      "    birth [4444444444444444444444444444444444444444]\n"
-                      "path_mark [4444444444444444444444444444444444444444]\n"
+                      "           dir \"foo\"\n"
+                      "         ident \"2\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "      dir \"foo/ang\"\n"
-                      "    ident \"6\"\n"
-                      "    birth [4444444444444444444444444444444444444444]\n"
-                      "path_mark [4444444444444444444444444444444444444444]\n"
+                      "           dir \"foo/ang\"\n"
+                      "         ident \"6\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "        file \"foo/bar\"\n"
-                      "     content [1111111111111111111111111111111111111111]\n"
-                      "       ident \"5\"\n"
-                      "        attr \"fascist\" \"tidiness\"\n"
-                      "       birth [4444444444444444444444444444444444444444]\n"
-                      "   path_mark [4444444444444444444444444444444444444444]\n"
-                      "content_mark [4444444444444444444444444444444444444444]\n"
-                      "   attr_mark \"fascist\" [4444444444444444444444444444444444444444]\n"
+                      "          file \"foo/bar\"\n"
+                      "       content [1111111111111111111111111111111111111111]\n"
+                      "         ident \"5\"\n"
+                      "          attr \"fascist\" \"tidiness\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
+                      "  content_mark [4444444444444444444444444444444444444444]\n"
+                      "     attr_mark \"fascist\" [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "         dir \"foo/zoo\"\n"
-                      "       ident \"7\"\n"
-                      "dormant_attr \"regime\"\n"
-                      "       birth [4444444444444444444444444444444444444444]\n"
-                      "   path_mark [4444444444444444444444444444444444444444]\n"
-                      "   attr_mark \"regime\" [4444444444444444444444444444444444444444]\n"
+                      "           dir \"foo/zoo\"\n"
+                      "         ident \"7\"\n"
+                      "  dormant_attr \"regime\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
+                      "     attr_mark \"regime\" [4444444444444444444444444444444444444444]\n"
                       "\n"
-                      "      dir \"xx\"\n"
-                      "    ident \"3\"\n"
-                      "     attr \"say\" \"hello\"\n"
-                      "    birth [4444444444444444444444444444444444444444]\n"
-                      "path_mark [4444444444444444444444444444444444444444]\n"
-                      "attr_mark \"say\" [4444444444444444444444444444444444444444]\n"
+                      "           dir \"xx\"\n"
+                      "         ident \"3\"\n"
+                      "          attr \"say\" \"hello\"\n"
+                      "         birth [4444444444444444444444444444444444444444]\n"
+                      "     path_mark [4444444444444444444444444444444444444444]\n"
+                      "existence_mark [4444444444444444444444444444444444444444]\n"
+                      "     attr_mark \"say\" [4444444444444444444444444444444444444444]\n"
                       ));
     MM(expected);
 
@@ -4749,6 +4764,25 @@ UNIT_TEST(roster, check_sane_against)
     r.attach_node(nid, foo);
     mark_new_node(rid, r.get_node(nid), mm[nid]);
     mm[nid].parent_name.clear();
+
+    UNIT_TEST_CHECK_THROW(r.check_sane_against(mm), logic_error);
+  }
+
+  {
+    L(FL("TEST: check_sane_against_test, missing existence mark"));
+    roster_t r; MM(r);
+    marking_map mm; MM(mm);
+
+    nid = nis.next();
+    r.create_dir_node(nid);
+    r.attach_node(nid, root);
+    mark_new_node(rid, r.get_node(nid), mm[nid]);
+
+    nid = nis.next();
+    r.create_dir_node(nid);
+    r.attach_node(nid, foo);
+    mark_new_node(rid, r.get_node(nid), mm[nid]);
+    mm[nid].existence.clear();
 
     UNIT_TEST_CHECK_THROW(r.check_sane_against(mm), logic_error);
   }
@@ -4975,6 +5009,7 @@ UNIT_TEST(roster, unify_rosters_end_to_end_ids)
                                file_path());
     marking_t root_marking;
     root_marking.birth_revision = old_rid;
+    root_marking.existence.insert(old_rid);
     root_marking.parent_name = singleton(old_rid);
     safe_insert(has_not_markings, make_pair(has_not_roster.root()->self,
                                             root_marking));
@@ -4988,6 +5023,7 @@ UNIT_TEST(roster, unify_rosters_end_to_end_ids)
     has_roster.attach_node(new_id, file_path_internal("foo"));
     marking_t file_marking;
     file_marking.birth_revision = has_rid;
+    file_marking.existence.insert(has_rid);
     file_marking.parent_name = file_marking.file_content = singleton(has_rid);
     safe_insert(has_markings, make_pair(new_id, file_marking));
   }
@@ -5058,6 +5094,7 @@ UNIT_TEST(roster, unify_rosters_end_to_end_attr_corpses)
     first_roster.attach_node(first_roster.create_dir_node(nis), file_path());
     marking_t marking;
     marking.birth_revision = old_rid;
+    marking.existence.insert(old_rid);
     marking.parent_name = singleton(old_rid);
     safe_insert(first_markings, make_pair(first_roster.root()->self, marking));
 
@@ -5077,6 +5114,7 @@ UNIT_TEST(roster, unify_rosters_end_to_end_attr_corpses)
                 make_pair(attr_key("testbar"), make_pair(false, attr_value())));
     marking_t marking;
     marking.birth_revision = second_rid;
+    marking.existence.insert(second_rid);
     marking.parent_name = marking.file_content = singleton(second_rid);
     safe_insert(marking.attrs,
                 make_pair(attr_key("testbar"), singleton(second_rid)));

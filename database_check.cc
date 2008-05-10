@@ -268,6 +268,14 @@ check_rosters_marking(database & db,
           if (!checked_revisions[mark.birth_revision].found)
             checked_rosters[ros_id].missing_mark_revs++;
 
+          for (set<revision_id>::const_iterator r = mark.existence.begin();
+               r != mark.existence.end(); r++)
+            {
+              checked_revisions[*r].marking_refs++;
+              if (!checked_revisions[*r].found)
+                checked_rosters[ros_id].missing_mark_revs++;
+            }
+
           for (set<revision_id>::const_iterator r = mark.parent_name.begin();
                r != mark.parent_name.end(); r++)
             {

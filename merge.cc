@@ -148,7 +148,7 @@ resolve_merge_conflicts(lua_hooks & lua,
       result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
       result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_node_existance_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_node_existence_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 

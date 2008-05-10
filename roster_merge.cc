@@ -59,10 +59,10 @@ dump(orphaned_node_conflict const & conflict, string & out)
 }
 
 template <> void
-dump(node_existance_conflict const & conflict, string & out)
+dump(node_existence_conflict const & conflict, string & out)
 {
   ostringstream oss;
-  oss << "node_existance_conflict on node: " << conflict.nid << "\n";
+  oss << "node_existence_conflict on node: " << conflict.nid << "\n";
   out = oss.str();
 }
 
@@ -130,6 +130,7 @@ roster_merge_result::has_non_content_conflicts() const
     || !invalid_name_conflicts.empty()
     || !directory_loop_conflicts.empty()
     || !orphaned_node_conflicts.empty()
+    || !node_existence_conflicts.empty()
     || !multiple_name_conflicts.empty()
     || !duplicate_name_conflicts.empty()
     || !attribute_conflicts.empty();
@@ -144,6 +145,7 @@ dump_conflicts(roster_merge_result const & result, string & out)
   dump(result.directory_loop_conflicts, out);
 
   dump(result.orphaned_node_conflicts, out);
+  dump(result.node_existence_conflicts, out);
   dump(result.multiple_name_conflicts, out);
   dump(result.duplicate_name_conflicts, out);
 
@@ -925,7 +927,7 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
 }
 
 void
-roster_merge_result::report_node_existance_conflicts(roster_t const & left_roster,
+roster_merge_result::report_node_existence_conflicts(roster_t const & left_roster,
                                                     roster_t const & right_roster,
                                                     content_merge_adaptor & adaptor,
                                                     bool basic_io,
@@ -936,9 +938,9 @@ roster_merge_result::report_node_existance_conflicts(roster_t const & left_roste
 
 #warning FIXME!!!  This function needs to be cleaned up!
 
-  for (size_t i = 0; i < node_existance_conflicts.size(); ++i)
+  for (size_t i = 0; i < node_existence_conflicts.size(); ++i)
     {
-      node_existance_conflict const & conflict = node_existance_conflicts[i];
+      node_existence_conflict const & conflict = node_existence_conflicts[i];
       MM(conflict);
 
       shared_ptr<roster_t const> lca_roster, parent_lca_roster;
@@ -955,16 +957,16 @@ roster_merge_result::report_node_existance_conflicts(roster_t const & left_roste
 
       if (type == file_type)
           if (basic_io)
-            st.push_str_pair(syms::conflict, "existance conflict");
+            st.push_str_pair(syms::conflict, "existence conflict");
           else
-            P(F("conflict: existance conflict on file '%s' from revision %s")
+            P(F("conflict: existence conflict on file '%s' from revision %s")
               % lca_name % lca_rid);
       else
         {
           if (basic_io)
-            st.push_str_pair(syms::conflict, "existance conflict");
+            st.push_str_pair(syms::conflict, "existence conflict");
           else
-            P(F("conflict: existance conflict on directory '%s' from revision %s")
+            P(F("conflict: existence conflict on directory '%s' from revision %s")
               % lca_name % lca_rid);
         }
 
@@ -1394,6 +1396,7 @@ roster_merge_result::clear()
   directory_loop_conflicts.clear();
 
   orphaned_node_conflicts.clear();
+  node_existence_conflicts.clear();
   multiple_name_conflicts.clear();
   duplicate_name_conflicts.clear();
 
@@ -1480,32 +1483,150 @@ namespace
       I(false);
   }
 
+  // We simulate mark merge for existence because we don't have marks
+  // for the existence on the side where the node has been dropped.
+
+  // If node exists in both, then it exists in the child.
+  //   (and similarly for existing in neither parent and being dead in the child.)
+  //   In either of these cases we won't reach this function
+  // If node exists in only one parent (so we reach this function), then
+  //   If it was born in an uncommon ancestor then it exists in the child, otherwise
+  //   If the live side doesn't have a mark in that side's uncommon ancestor set, then the node is dead in the child, otherwise
+  //   If the node is dead in all uncommon ancestors on the dead side, then the node is alive in the child, otherwise
+  //   There is a node existence conflict.
+  
+  // Justification of why this is mark-merge.
+  // If the two sides are equal then things are easy - they are the same in the child.
+  // When the sides differ, only marks in the uncommon ancestors are relevant.  On the
+  // dead side, there will be a mark in the uncommon ancestor set on that side iff the
+  // node was deleted on that side.  i.e. it existed one rev and not the next.
+  // On the live side we have real marks.
+  // There are four cases:
+  //   - Neither side has a mark in the uncommon ancestors.  In this case the sides
+  //     should be the same, and we should be in the top case.
+  //   - The live side has a mark, and the dead side doesn't.  Live side wins.
+  //   - The dead side has a mark, and the live side doesn't.  Dead side wins.
+  //   - Both sides have a mark.  Conflict
+  //  We speed this up by noticing that finding the marks on the dead side is
+  //  expensive, so we check the live side for information first where possible.
+  //  If the node was born in the uncommon ancestors on the live side then it
+  //  cannot have any marks on the dead side.
+  //  If the live side doesn't have a mark, then either both sides are the same, or
+  //  the dead side has a mark and in either case the child is dead.
+  
+  // Note that in all cases where the live side wins outright, we can just use
+  // the live side's marks for the child.
+  // Also note that in case of a conflict, the merge node will be marked so in
+  // that case we don't need to remember marks from either side.  The upshot of
+  // this is that we don't need to reconstruct exact marks for the dead side.
+  
+  //  This is reasonably efficient:
+  //  The only case we actually need to check for a dead side mark is when there is
+  //  a live side mark and the file wasn't born on the live side.  i.e. the file
+  //  was resurrected in the uncommon ancestors on the live side.
+  //  In this last case the dead side mark is need to see if the resurrection wins,
+  //  or if we have a conflict.
+
   inline void
-  insert_if_unborn(node_t const & n,
-                   marking_map const & markings,
-                   set<revision_id> const & uncommon_ancestors,
-                   roster_t const & parent_roster,
-                   roster_t & new_roster)
+  mark_merge_existence(node_t const & n,
+                   marking_map const & live_markings,
+                   set<revision_id> const & live_uncommon_ancestors,
+                   roster_t const & live_parent_roster,
+                   set<revision_id> const & dead_uncommon_ancestors,
+                   roster_t const & dead_parent_roster,
+                   roster_merge_result & result)
   {
-    revision_id const & birth = safe_get(markings, n->self).birth_revision;
-    if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
-      create_node_for(n, new_roster);
-    else
+    revision_id const & birth = safe_get(live_markings, n->self).birth_revision;
+    
+    // if born in a live_uncommon_ancestor then the node exists in the child
+    if (live_uncommon_ancestors.find(birth) != live_uncommon_ancestors.end())
+      {
+        create_node_for(n, result.roster);
+        return;
+      }
+
+    // If the live side doesn't have a mark in that side's uncommon ancestor set, then the node is dead in the child.
+    bool have_mark_in_live_uncommon_ancestor_set = false;
+    std::set<revision_id> const & marks = safe_get(live_markings, n->self).existence;
+    for (set<revision_id>::const_iterator it = marks.begin(); it != marks.end(); it++)
+      {
+        if (live_uncommon_ancestors.find(*it) != live_uncommon_ancestors.end())
+          {
+            have_mark_in_live_uncommon_ancestor_set = true;
+            break;
+          }
+      }
+
+    if (have_mark_in_live_uncommon_ancestor_set)
+      {
+        bool have_mark_in_dead_uncommon_ancestor_set = false;
+#warning Need to get DB access in here
+/*
+        // check for marks on the dead side... likely to be a little slow.
+        for (set<revision_id>::const_iterator it = dead_uncommon_ancestors.begin(); it != dead_uncommon_ancestors.end(); it++)
+          {
+            // Is finding out if a file was deleted in a revision really this hard?
+            // note: only want deletions that would be marked - i.e. not merge nodes.
+
+            set<revision_id> parents;
+            db.get_revision_parents(*it, parents);
+            if (parents.size() != 1)  // ignore merge nodes as they don't contain marks...
+              continue;
+
+            roster_t parent_roster;
+            marking_map parent_markings;
+            db.get_roster(*(parents.begin()), parent_roster, parent_markings);
+            
+            if (!parent_roster.has_node(n))
+              continue;
+            
+            roster_t rev_roster;
+            marking_map rev_markings;
+            db.get_roster(*it, rev_roster, rev_markings);
+            
+            if (!rev_roster.has_node(n))
+              {
+                have_mark_in_dead_uncommon_ancestor_set = true;
+                break;
+              }
+          }
+*/
+        if (have_mark_in_dead_uncommon_ancestor_set)
+          {
+            // marks on each side of the merge... conflict!
+            // at the moment I'm going to create this node.
+            node_existence_conflict c;
+            c.nid = n->self;
+            result.node_existence_conflicts.push_back(c);
+            create_node_for(n, result.roster);
+            return;
+          }
+        else
+          {
+            // no mark on dead side, and mark on live side == live in child
+            create_node_for(n, result.roster);
+            return;
+          }
+      }
+
+    // If we've reached this point then we've decided not to create the node in the child
+
+    if (true)
       {
         // In this branch we are NOT inserting the node into the new roster as it
         // has been deleted from the other side of the merge.
         // In this case, output a warning if there are changes to the file on the
         // side of the merge where it still exists.
-        set<revision_id> const & content_marks = safe_get(markings, n->self).file_content;
+        set<revision_id> const & content_marks = safe_get(live_markings, n->self).file_content;
         bool found_one_ignored_content = false;
         for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
           {
-            if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
+            if (live_uncommon_ancestors.find(*it) != live_uncommon_ancestors.end())
               {
                 if (!found_one_ignored_content)
                   {
                     file_path fp;
-                    parent_roster.get_name(n->self, fp);
+                    live_parent_roster.get_name(n->self, fp);
                     W(F("Content changes to the file '%s'\n"
                         "will be ignored during this merge as the file has been\n"
                         "removed on one side of the merge.  Affected revisions include:") % fp);
@@ -1670,9 +1791,10 @@ roster_merge(roster_t const & left_parent,
   MM(right_markings);
   MM(result);
 
-  // First handle lifecycles, by die-die-die merge -- our result will contain
-  // everything that is alive in both parents, or alive in one and unborn in
-  // the other, exactly.
+  // First handle lifecycles.
+  // We are going to simulate mark-merge.
+  // See above the mark_merge_existence function for justification.
+  
   {
     parallel::iter<node_map> i(left_parent.all_nodes(), right_parent.all_nodes());
     while (i.next())
@@ -1683,15 +1805,17 @@ roster_merge(roster_t const & left_parent,
             I(false);
 
           case parallel::in_left:
-            insert_if_unborn(i.left_data(),
+            mark_merge_existence(i.left_data(),
                              left_markings, left_uncommon_ancestors, left_parent,
-                             result.roster);
+                             right_uncommon_ancestors, right_parent,
+                             result);
             break;
 
           case parallel::in_right:
-            insert_if_unborn(i.right_data(),
+            mark_merge_existence(i.right_data(),
                              right_markings, right_uncommon_ancestors, right_parent,
-                             result.roster);
+                             left_uncommon_ancestors, left_parent,
+                             result);
             break;
 
           case parallel::in_both:
@@ -2082,6 +2206,7 @@ struct base_scalar
     r.attach_node(nid, file_path_internal(name));
     marking_t marking;
     marking.birth_revision = root_rid;
+    marking.existence.insert(root_rid);
     marking.parent_name.insert(root_rid);
     safe_insert(markings, make_pair(nid, marking));
   }
@@ -2093,6 +2218,7 @@ struct base_scalar
     r.attach_node(nid, file_path_internal(name));
     marking_t marking;
     marking.birth_revision = root_rid;
+    marking.existence.insert(root_rid);
     marking.parent_name.insert(root_rid);
     marking.file_content.insert(root_rid);
     safe_insert(markings, make_pair(nid, marking));
@@ -2497,6 +2623,7 @@ make_dir(roster_t & r, marking_map & markings,
   r.attach_node(nid, file_path_internal(name));
   marking_t marking;
   marking.birth_revision = birth_rid;
+  marking.existence.insert(birth_rid);
   marking.parent_name.insert(parent_name_rid);
   safe_insert(markings, make_pair(nid, marking));
 }
@@ -2512,6 +2639,7 @@ make_file(roster_t & r, marking_map & markings,
   r.attach_node(nid, file_path_internal(name));
   marking_t marking;
   marking.birth_revision = birth_rid;
+  marking.existence.insert(birth_rid);
   marking.parent_name.insert(parent_name_rid);
   marking.file_content.insert(file_content_rid);
   safe_insert(markings, make_pair(nid, marking));
