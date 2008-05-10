@@ -59,6 +59,14 @@ dump(orphaned_node_conflict const & conflict, string & out)
 }
 
 template <> void
+dump(node_existance_conflict const & conflict, string & out)
+{
+  ostringstream oss;
+  oss << "node_existance_conflict on node: " << conflict.nid << "\n";
+  out = oss.str();
+}
+
+template <> void
 dump(multiple_name_conflict const & conflict, string & out)
 {
   ostringstream oss;
@@ -910,6 +918,55 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
         }
       else
         I(false);
+
+      if (basic_io)
+        put_stanza (st, output);
+    }
+}
+
+void
+roster_merge_result::report_node_existance_conflicts(roster_t const & left_roster,
+                                                    roster_t const & right_roster,
+                                                    content_merge_adaptor & adaptor,
+                                                    bool basic_io,
+                                                    std::ostream & output) const
+{
+  MM(left_roster);
+  MM(right_roster);
+
+#warning FIXME!!!  This function needs to be cleaned up!
+
+  for (size_t i = 0; i < node_existance_conflicts.size(); ++i)
+    {
+      node_existance_conflict const & conflict = node_existance_conflicts[i];
+      MM(conflict);
+
+      shared_ptr<roster_t const> lca_roster, parent_lca_roster;
+      revision_id lca_rid, parent_lca_rid;
+      file_path lca_name;
+
+      adaptor.get_ancestral_roster(conflict.nid, lca_rid, lca_roster);
+
+      lca_roster->get_name(conflict.nid, lca_name);
+
+      node_type type = get_type(*lca_roster, conflict.nid);
+
+      basic_io::stanza st;
+
+      if (type == file_type)
+          if (basic_io)
+            st.push_str_pair(syms::conflict, "existance conflict");
+          else
+            P(F("conflict: existance conflict on file '%s' from revision %s")
+              % lca_name % lca_rid);
+      else
+        {
+          if (basic_io)
+            st.push_str_pair(syms::conflict, "existance conflict");
+          else
+            P(F("conflict: existance conflict on directory '%s' from revision %s")
+              % lca_name % lca_rid);
+        }
 
       if (basic_io)
         put_stanza (st, output);

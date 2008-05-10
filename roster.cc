@@ -88,6 +88,8 @@ dump(marking_t const & marking, string & out)
   oss << "parent_name: " << tmp << '\n';
   dump(marking.file_content, tmp);
   oss << "file_content: " << tmp << '\n';
+  dump(marking.existence, tmp);
+  oss << "existence: " << tmp << '\n';
   oss << "attrs (number: " << marking.attrs.size() << "):\n";
   for (map<attr_key, set<revision_id> >::const_iterator
          i = marking.attrs.begin(); i != marking.attrs.end(); ++i)
@@ -1085,6 +1087,7 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
     {
       I(!null_id(mi->second.birth_revision));
       I(!mi->second.parent_name.empty());
+      I(!mi->second.existence.empty());
 
       if (is_file_t(ri->second))
         I(!mi->second.file_content.empty());
@@ -1491,6 +1494,7 @@ namespace
   mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
   {
     new_marking.birth_revision = new_rid;
+    new_marking.existence.insert(new_rid);
     I(new_marking.parent_name.empty());
     new_marking.parent_name.insert(new_rid);
     I(new_marking.file_content.empty());
@@ -1524,6 +1528,12 @@ namespace
                          new_rid,
                          make_pair(n->parent, n->name),
                          new_marking.parent_name);
+
+    mark_unmerged_scalar(parent_marking.existence,
+                         true,
+                         new_rid,
+                         true,
+                         new_marking.existence);
 
     if (is_file_t(n))
       mark_unmerged_scalar(parent_marking.file_content,
@@ -1570,6 +1580,14 @@ namespace
                        new_rid,
                        make_pair(n->parent, n->name),
                        new_marking.parent_name);
+    // existence
+    mark_merged_scalar(left_marking.existence, left_uncommon_ancestors,
+                       true,
+                       right_marking.existence, right_uncommon_ancestors,
+                       true,
+                       new_rid,
+                       true,
+                       new_marking.existence);
     // content
     if (is_file_t(n))
       {
@@ -2479,6 +2497,10 @@ push_marking(basic_io::stanza & st,
        i != mark.parent_name.end(); ++i)
     st.push_binary_pair(basic_io::syms::path_mark, i->inner());
 
+  for (set<revision_id>::const_iterator i = mark.existence.begin();
+       i != mark.existence.end(); ++i)
+    st.push_binary_pair(basic_io::syms::existence_mark, i->inner());
+
   if (is_file)
     {
       for (set<revision_id>::const_iterator i = mark.file_content.begin();
@@ -2516,6 +2538,12 @@ parse_marking(basic_io::parser & pa,
           pa.sym();
           pa.hex(rev);
           safe_insert(marking.parent_name, revision_id(decode_hexenc(rev)));
+        }
+      else if (pa.symp(basic_io::syms::existence_mark))
+        {
+          pa.sym();
+          pa.hex(rev);
+          safe_insert(marking.existence, revision_id(decode_hexenc(rev)));
         }
       else if (pa.symp(basic_io::syms::content_mark))
         {
