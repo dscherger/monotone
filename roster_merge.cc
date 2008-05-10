@@ -1616,6 +1616,7 @@ roster_merge(roster_t const & left_parent,
   // First handle lifecycles, by die-die-die merge -- our result will contain
   // everything that is alive in both parents, or alive in one and unborn in
   // the other, exactly.
+  
   {
     parallel::iter<node_map> i(left_parent.all_nodes(), right_parent.all_nodes());
     while (i.next())

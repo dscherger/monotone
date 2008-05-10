@@ -47,6 +47,7 @@ namespace basic_io
           symbol const dormant_attr("dormant_attr");
       
           symbol const path_mark("path_mark");
+          symbol const existence_mark("existence_mark");
           symbol const content_mark("content_mark");
           symbol const attr_mark("attr_mark");
         }
