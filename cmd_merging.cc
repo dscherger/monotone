@@ -903,6 +903,7 @@ show_conflicts_core (database & db, revision_id const & l_id, revision_id const 
       result.report_directory_loop_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
 
       result.report_orphaned_node_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
+      result.report_node_existance_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_multiple_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_duplicate_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
 

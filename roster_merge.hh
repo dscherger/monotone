@@ -51,6 +51,12 @@ struct orphaned_node_conflict
   std::pair<node_id, path_component> parent_name;
 };
 
+// A node has been dropped on one side of a merge, and resurrected on the other.
+struct node_existance_conflict
+{
+  node_id nid;
+};
+
 // our general strategy is to return a (possibly insane) roster, and a list of
 // conflicts encountered in that roster.  Each conflict encountered in merging
 // the roster creates an entry in this list.
@@ -116,6 +122,7 @@ template <> void dump(invalid_name_conflict const & conflict, std::string & out)
 template <> void dump(directory_loop_conflict const & conflict, std::string & out);
 
 template <> void dump(orphaned_node_conflict const & conflict, std::string & out);
+template <> void dump(node_existance_conflict const & conflict, std::string & out);
 template <> void dump(multiple_name_conflict const & conflict, std::string & out);
 template <> void dump(duplicate_name_conflict const & conflict, std::string & out);
 
@@ -140,6 +147,7 @@ struct roster_merge_result
   std::vector<directory_loop_conflict> directory_loop_conflicts;
 
   std::vector<orphaned_node_conflict> orphaned_node_conflicts;
+  std::vector<node_existance_conflict> node_existance_conflicts;
   std::vector<multiple_name_conflict> multiple_name_conflicts;
   std::vector<duplicate_name_conflict> duplicate_name_conflicts;
 
@@ -171,6 +179,11 @@ struct roster_merge_result
                                        std::ostream & output) const;
 
   void report_orphaned_node_conflicts(roster_t const & left,
+                                      roster_t const & right,
+                                      content_merge_adaptor & adaptor,
+                                      bool const basic_io,
+                                      std::ostream & output) const;
+  void report_node_existance_conflicts(roster_t const & left,
                                       roster_t const & right,
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,

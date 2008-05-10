@@ -1509,8 +1509,8 @@ namespace
   }
 
   void
-  mark_unmerged_node(marking_t const & parent_marking, bool parent_existence, node_t parent_n,
-                     revision_id const & new_rid, node_t n, bool & n_existence,
+  mark_unmerged_node(marking_t const & parent_marking, node_t parent_n,
+                     revision_id const & new_rid, node_t n,
                      marking_t & new_marking)
   {
     // SPEEDUP?: the common case here is that the parent and child nodes are
@@ -1530,9 +1530,9 @@ namespace
                          new_marking.parent_name);
 
     mark_unmerged_scalar(parent_marking.existence,
-                         parent_existence,
+                         true,
                          new_rid,
-                         n_existence,
+                         true,
                          new_marking.existence);
 
     if (is_file_t(n))
@@ -1559,16 +1559,13 @@ namespace
 
   void
   mark_merged_node(marking_t const & left_marking,
-                   bool left_existence,
                    set<revision_id> const & left_uncommon_ancestors,
                    node_t ln,
                    marking_t const & right_marking,
-                   bool right_existence,
                    set<revision_id> const & right_uncommon_ancestors,
                    node_t rn,
                    revision_id const & new_rid,
                    node_t n,
-                   bool & n_existence,
                    marking_t & new_marking)
   {
     I(same_type(ln, n) && same_type(rn, n));
@@ -1585,11 +1582,11 @@ namespace
                        new_marking.parent_name);
     // existence
     mark_merged_scalar(left_marking.existence, left_uncommon_ancestors,
-                       left_existence,
+                       true,
                        right_marking.existence, right_uncommon_ancestors,
-                       right_existence,
+                       true,
                        new_rid,
-                       n_existence,
+                       true,
                        new_marking.existence);
     // content
     if (is_file_t(n))
@@ -1684,7 +1681,6 @@ mark_merge_roster(roster_t const & left_roster,
       bool exists_in_right = (rni != right_roster.all_nodes().end());
 
       marking_t new_marking;
-      bool new_existence;
 
       if (!exists_in_left && !exists_in_right)
         mark_new_node(new_rid, n, new_marking);
@@ -1696,8 +1692,8 @@ mark_merge_roster(roster_t const & left_roster,
           // must be unborn on the left (as opposed to dead)
           I(right_uncommon_ancestors.find(right_marking.birth_revision)
             != right_uncommon_ancestors.end());
-          mark_unmerged_node(right_marking, exists_in_right, right_node,
-                             new_rid, n, new_existence, new_marking);
+          mark_unmerged_node(right_marking, right_node,
+                             new_rid, n, new_marking);
         }
       else if (exists_in_left && !exists_in_right)
         {
@@ -1706,21 +1702,19 @@ mark_merge_roster(roster_t const & left_roster,
           // must be unborn on the right (as opposed to dead)
           I(left_uncommon_ancestors.find(left_marking.birth_revision)
             != left_uncommon_ancestors.end());
-          mark_unmerged_node(left_marking, exists_in_left, left_node,
-                             new_rid, n, new_existence, new_marking);
+          mark_unmerged_node(left_marking, left_node,
+                             new_rid, n, new_marking);
         }
       else
         {
           node_t const & left_node = lni->second;
           node_t const & right_node = rni->second;
-          mark_merged_node(safe_get(left_markings, n->self), exists_in_left,
+          mark_merged_node(safe_get(left_markings, n->self),
                            left_uncommon_ancestors, left_node,
-                           safe_get(right_markings, n->self), exists_in_right,
+                           safe_get(right_markings, n->self),
                            right_uncommon_ancestors, right_node,
-                           new_rid, n, new_existence, new_marking);
+                           new_rid, n, new_marking);
         }
-
-        I(new_existence);
 
       safe_insert(new_markings, make_pair(i->first, new_marking));
     }
@@ -2004,14 +1998,12 @@ mark_roster_with_one_parent(roster_t const & parent,
        i != child.all_nodes().end(); ++i)
     {
       marking_t new_marking;
-      bool n_existence = true;
       if (parent.has_node(i->first))
-        mark_unmerged_node(safe_get(parent_markings, i->first), true,
+        mark_unmerged_node(safe_get(parent_markings, i->first),
                            parent.get_node(i->first),
-                           child_rid, i->second, n_existence, new_marking);
+                           child_rid, i->second, new_marking);
       else
         mark_new_node(child_rid, i->second, new_marking);
-      I(n_existence);
       safe_insert(child_markings, make_pair(i->first, new_marking));
     }
 
