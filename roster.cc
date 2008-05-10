@@ -2505,11 +2505,9 @@ push_marking(basic_io::stanza & st,
        i != mark.parent_name.end(); ++i)
     st.push_binary_pair(basic_io::syms::path_mark, i->inner());
 
-    st.push_hex_pair(basic_io::syms::path_mark, i->inner());
-
   for (set<revision_id>::const_iterator i = mark.existence.begin();
        i != mark.existence.end(); ++i)
-    st.push_hex_pair(basic_io::syms::existence_mark, i->inner());
+    st.push_binary_pair(basic_io::syms::existence_mark, i->inner());
 
   if (is_file)
     {
@@ -2549,13 +2547,11 @@ parse_marking(basic_io::parser & pa,
           pa.hex(rev);
           safe_insert(marking.parent_name, revision_id(decode_hexenc(rev)));
         }
-          safe_insert(marking.parent_name, revision_id(rev));
-        }
       else if (pa.symp(basic_io::syms::existence_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.existence, revision_id(rev));
+          safe_insert(marking.existence, revision_id(decode_hexenc(rev)));
         }
       else if (pa.symp(basic_io::syms::content_mark))
         {
