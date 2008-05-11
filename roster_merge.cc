@@ -1528,7 +1528,7 @@ namespace
   //  or if we have a conflict.
 
   inline void
-  mark_merge_existence(node_t const & n,
+  mark_merge_existence(database & db, node_t const & n,
                    marking_map const & live_markings,
                    set<revision_id> const & live_uncommon_ancestors,
                    roster_t const & live_parent_roster,
@@ -1560,8 +1560,7 @@ namespace
     if (have_mark_in_live_uncommon_ancestor_set)
       {
         bool have_mark_in_dead_uncommon_ancestor_set = false;
-#warning Need to get DB access in here
-/*
+
         // check for marks on the dead side... likely to be a little slow.
         for (set<revision_id>::const_iterator it = dead_uncommon_ancestors.begin(); it != dead_uncommon_ancestors.end(); it++)
           {
@@ -1577,20 +1576,20 @@ namespace
             marking_map parent_markings;
             db.get_roster(*(parents.begin()), parent_roster, parent_markings);
             
-            if (!parent_roster.has_node(n))
+            if (!parent_roster.has_node(n->self))
               continue;
             
             roster_t rev_roster;
             marking_map rev_markings;
             db.get_roster(*it, rev_roster, rev_markings);
             
-            if (!rev_roster.has_node(n))
+            if (!rev_roster.has_node(n->self))
               {
                 have_mark_in_dead_uncommon_ancestor_set = true;
                 break;
               }
           }
-*/
+
         if (have_mark_in_dead_uncommon_ancestor_set)
           {
             // marks on each side of the merge... conflict!
@@ -1774,7 +1773,8 @@ namespace
 } // end anonymous namespace
 
 void
-roster_merge(roster_t const & left_parent,
+roster_merge(database & db,
+             roster_t const & left_parent,
              marking_map const & left_markings,
              set<revision_id> const & left_uncommon_ancestors,
              roster_t const & right_parent,
@@ -1805,14 +1805,14 @@ roster_merge(roster_t const & left_parent,
             I(false);
 
           case parallel::in_left:
-            mark_merge_existence(i.left_data(),
+            mark_merge_existence(db, i.left_data(),
                              left_markings, left_uncommon_ancestors, left_parent,
                              right_uncommon_ancestors, right_parent,
                              result);
             break;
 
           case parallel::in_right:
-            mark_merge_existence(i.right_data(),
+            mark_merge_existence(db, i.right_data(),
                              right_markings, right_uncommon_ancestors, right_parent,
                              left_uncommon_ancestors, left_parent,
                              result);

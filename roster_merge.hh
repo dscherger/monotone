@@ -216,7 +216,8 @@ struct roster_merge_result
 template <> void dump(roster_merge_result const & result, std::string & out);
 
 void
-roster_merge(roster_t const & left_parent,
+roster_merge(database & db,
+             roster_t const & left_parent,
              marking_map const & left_markings,
              std::set<revision_id> const & left_uncommon_ancestors,
              roster_t const & right_parent,

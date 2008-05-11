@@ -199,7 +199,8 @@ interactive_merge_and_store(lua_hooks & lua, database & db,
 
   roster_merge_result result;
 
-  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
+  roster_merge(db,
+               left_roster, left_marking_map, left_uncommon_ancestors,
                right_roster, right_marking_map, right_uncommon_ancestors,
                result);
 

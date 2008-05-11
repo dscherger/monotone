@@ -43,7 +43,8 @@ using std::strlen;
 using boost::shared_ptr;
 
 static void
-three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_roster,
+three_way_merge(database & db,
+                revision_id const & ancestor_rid, roster_t const & ancestor_roster,
                 revision_id const & left_rid, roster_t const & left_roster,
                 revision_id const & right_rid, roster_t const & right_roster,
                 roster_merge_result & result,
@@ -83,7 +84,7 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   P(F("[right] %s") % right_rid);
 
   // And do the merge
-  roster_merge(left_roster, left_markings, left_uncommon_ancestors,
+  roster_merge(db, left_roster, left_markings, left_uncommon_ancestors,
                right_roster, right_markings, right_uncommon_ancestors,
                result);
 }
@@ -268,7 +269,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // And finally do the merge
   roster_merge_result result;
   marking_map left_markings, right_markings;
-  three_way_merge(old_rid, *old_roster,
+  three_way_merge(db, old_rid, *old_roster,
                   working_rid, *working_roster,
                   chosen_rid, chosen_roster,
                   result, left_markings, right_markings);
@@ -626,7 +627,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
           }
 
         roster_merge_result result;
-        roster_merge(left_roster,
+        roster_merge(db,
+                     left_roster,
                      left_marking_map,
                      left_uncommon_ancestors,
                      right_roster,
@@ -737,7 +739,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   roster_merge_result merge_result;
   MM(merge_result);
-  roster_merge(*left.first, *left.second, left_uncommon_ancestors,
+  roster_merge(db,
+               *left.first, *left.second, left_uncommon_ancestors,
                *right.first, *right.second, right_uncommon_ancestors,
                merge_result);
 
@@ -848,7 +851,8 @@ show_conflicts_core (database & db, revision_id const & l_id, revision_id const 
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
   roster_merge_result result;
-  roster_merge(*l_roster, l_marking, l_uncommon_ancestors,
+  roster_merge(db,
+               *l_roster, l_marking, l_uncommon_ancestors,
                *r_roster, r_marking, r_uncommon_ancestors,
                result);
 
@@ -1118,7 +1122,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   // Now do the merge
   roster_merge_result result;
   marking_map left_markings, right_markings;
-  three_way_merge(from_rid, *from_roster,
+  three_way_merge(db, from_rid, *from_roster,
                   working_rid, *working_roster,
                   to_rid, *to_roster,
                   result, left_markings, right_markings);
