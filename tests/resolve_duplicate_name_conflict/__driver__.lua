@@ -88,9 +88,20 @@ get ("conflicts-resolved", "_MTN/conflicts")
 -- This succeeds
 check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, true, true)
 
-check(mtn("update"), 0, false, false)
+-- update fails if thermostat.c is missing, and if
+-- thermostat-honeywell.c, thermostat-westinghouse.c are in the way.
+-- So clean that up first. FIXME: update needs --ignore-missing,
+-- --overwrite-ws or something.
+check(mtn("revert", "--missing"), 0, false, false)
+remove ("thermostat-honeywell.c")
+remove ("thermostat-westinghouse.c")
+check(mtn("update"), 0, true, true)
 
--- Verify the merged checkout.sh got committed
+-- Verify file contents
+check("thermostat westinghouse" == readfile("thermostat-westinghouse.c"))
+check("thermostat honeywell" == readfile("thermostat-honeywell.c"))
+
+-- This currently fails; the merge during update first adds then drops
+-- checkout.sh. Need to change diediedie.
 check("checkout.sh merged" == readfile("checkout.sh"))
-
 -- end of file

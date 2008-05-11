@@ -814,7 +814,11 @@ roster_t::drop_detached_node(node_id nid)
   // old_locations, all those that used to be in the tree do.  and you should
   // only ever be dropping nodes that were detached, not nodes that you just
   // created and that have never been attached.
-  safe_erase(old_locations, nid);
+
+  // Update; resolving a duplicate name conflict via suture requires
+  // dropping nodes that were never attached. So we erase the key without
+  // checking whether it was present. FIXME: clean up these comments.
+  old_locations.erase(nid);
 }
 
 

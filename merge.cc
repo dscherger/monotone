@@ -156,6 +156,7 @@ resolve_merge_conflicts(lua_hooks & lua,
           // If there aren't any we can't resolve, resolve the ones we can.
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
 
+          // FIXME: need to resolve content conflicts here
         }
       else
         {
@@ -246,7 +247,7 @@ store_roster_merge_result(database & db,
 {
   I(result.is_clean());
   roster_t & merged_roster = result.roster;
-  merged_roster.check_sane();
+  merged_roster.check_sane(true); // sutured nodes have temp node ids
 
   revision_t merged_rev;
   merged_rev.made_for = made_for_database;

@@ -270,13 +270,16 @@ private:
   // definitely make sense to move this checking into editable_tree.  For now,
   // though, no such functionality is planned, so we'll see what happens.
   //
+  // Update; now we are adding precisely these operations! workaround; allow
+  // deleting a detached node with no entry in old_locations
+  //
   // The implementation itself uses the map old_locations.  A node can be in
   // the following states:
   //   -- attached, no entry in old_locations map
   //   -- detached, no entry in old_locations map
   //      -- create_dir_node, create_file_node put a node into this state
   //      -- a node in this state can be attached, anywhere, but may not be
-  //         deleted.
+  //         deleted. Update; can now be deleted.
   //   -- detached, an entry in old_locations map
   //      -- detach_node puts a node into this state
   //      -- a node in this state can be attached anywhere _except_ the

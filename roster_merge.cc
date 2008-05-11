@@ -1563,10 +1563,9 @@ parse_resolve_conflicts_opts (options const & opts,
 } // parse_resolve_conflicts_opts
 
 static void
-set_new_name_in_roster (lua_hooks & lua,
+attach_node (lua_hooks & lua,
                         roster_t & new_roster,
                         node_id nid,
-                        file_path const source_path,
                         file_path const target_path)
 {
   // Simplified from workspace::perform_rename in work.cc
@@ -1577,8 +1576,6 @@ set_new_name_in_roster (lua_hooks & lua,
   N(new_roster.has_node(target_path.dirname()),
     F("directory %s does not exist or is unknown") % target_path.dirname());
 
-  P(F("renaming %s to %s") % source_path % target_path);
-
   new_roster.attach_node (nid, target_path);
 
   node_t node = new_roster.get_node (nid);
@@ -1587,7 +1584,7 @@ set_new_name_in_roster (lua_hooks & lua,
        ++attr)
     lua.hook_apply_attribute (attr->first(), target_path, attr->second.second());
 
-} // set_new_name_in_roster
+} // attach_node
 
 void
 roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
@@ -1599,39 +1596,81 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
   MM(right_roster);
   MM(this->roster); // New roster
 
+  // Conflict nodes are present but detached (without filenames) in the new
+  // roster. The resolution is either to suture the two files together, or to
+  // rename one or both.
+
+  // This is the only conflict resolution that needs to create new nodes, so
+  // we can declare the node id source here.
+  temp_node_id_source nis;
+
   for (std::vector<duplicate_name_conflict>::const_iterator i = duplicate_name_conflicts.begin();
        i != duplicate_name_conflicts.end();
        ++i)
     {
-      // FIXME: share this code with above?
       duplicate_name_conflict const & conflict = *i;
       MM(conflict);
 
       node_id left_nid = conflict.left_nid;
       node_id right_nid= conflict.right_nid;
 
-      // conflict nodes are present but detached (without filenames) in new roster
-
       file_path left_name, right_name;
 
       left_roster.get_name(left_nid, left_name);
       right_roster.get_name(right_nid, right_name);
-
-      // end FIXME:
-
-      // The resolution is either to suture the two files together, or to rename one or both.
 
       switch (conflict.left_resolution.first)
       {
       case resolve_conflicts::suture:
         I(conflict.right_resolution.first == resolve_conflicts::suture);
 
-        // FIXME: do the suturing, mark conflict as resolved in result roster
-        I(false);
+        P(F("suturing %s, %s into %s") % left_name % right_name % conflict.left_resolution.second);
+
+        // Create a single new node, delete the two old ones. FIXME: need to
+        // record the links between the nodes somewhere.
+        {
+          node_id new_nid;
+
+          file_path const new_file_name = conflict.left_resolution.second;
+
+          if (is_dir_t(left_roster.get_node (left_nid)))
+            new_nid = roster.create_dir_node (nis);
+          else
+            {
+              file_t const left_node = downcast_to_file_t(left_roster.get_node (left_nid));
+              file_t const right_node = downcast_to_file_t(right_roster.get_node (right_nid));
+
+              N(path::file == get_path_status(new_file_name),
+                F("%s does not exist or is a directory") % new_file_name);
+
+              file_id const & left_file_id = left_node->content;
+              file_id const & right_file_id = right_node->content;
+              file_id new_file_id;
+              data new_raw_data;
+              read_data (new_file_name, new_raw_data);
+              file_data new_data (new_raw_data);
+              file_data left_data, right_data;
+
+              adaptor.get_version(left_file_id, left_data);
+              adaptor.get_version(right_file_id, right_data);
+              calculate_ident (new_data, new_file_id);
+
+              new_nid = roster.create_file_node (new_file_id, nis);
+
+              adaptor.record_merge(left_file_id, right_file_id, new_file_id, left_data, right_data, new_data);
+            }
+
+          attach_node (lua, roster, new_nid, new_file_name);
+
+          roster.drop_detached_node(left_nid);
+          roster.drop_detached_node(right_nid);
+
+        }
         break;
 
       case resolve_conflicts::rename:
-        set_new_name_in_roster (lua, this->roster, left_nid, left_name, conflict.left_resolution.second);
+        P(F("renaming %s to %s") % left_name % conflict.left_resolution.second);
+        attach_node (lua, this->roster, left_nid, conflict.left_resolution.second);
         break;
 
       case resolve_conflicts::none:
@@ -1651,7 +1690,8 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
           break;
 
         case resolve_conflicts::rename:
-          set_new_name_in_roster (lua, this->roster, right_nid, right_name, conflict.right_resolution.second);
+          P(F("renaming %s to %s") % right_name % conflict.right_resolution.second);
+          attach_node (lua, this->roster, right_nid, conflict.right_resolution.second);
           break;
 
         case resolve_conflicts::none:
