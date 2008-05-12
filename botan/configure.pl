@@ -1652,8 +1652,6 @@ sub generate_makefile {
                         map_to($$config{'doc-dir'},
                                grep { &$is_in_doc_dir($_); } @DOCS));
 
-   $docs .= File::Spec->catfile($$config{'base-dir'}, 'readme.txt');
-
    my $includes = file_list(undef, undef, undef,
                             map_to($$config{'build_include_botan'},
                                    keys %{$$config{'includes'}}));
