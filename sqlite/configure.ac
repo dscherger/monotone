@@ -14,7 +14,7 @@
 # version, we will be able to use the upstream configure script instead.
 
 AC_PREREQ(2.58)
-AC_INIT(sqlite, XX, monotone-devel@nongnu.org)
+AC_INIT([sqlite (monotone)], 3.4.2, monotone-devel@nongnu.org)
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
 
@@ -50,5 +50,13 @@ AC_SEARCH_LIBS([fdatasync], [rt],
 AC_SEARCH_LIBS([usleep], [rt],
  [AC_DEFINE(HAVE_USLEEP, 1, 
    [Define if fdatasync() is available in either libc or librt.])])
+
+# Monotone-specific configuration defines.
+AC_DEFINE(TEMP_STORE, 1, [Enable temporary storage])
+AC_DEFINE(NDEBUG, 1, [Disable debugging])
+AC_DEFINE(SQLITE_OMIT_CURSOR, 1, [Disable cursors])
+AC_DEFINE(SQLITE_OMIT_LOAD_EXTENSION, 1, [Disable dynamic extensions])
+AC_DEFINE(THREADSAFE, 0, [Disable thread safety])
+AC_DEFINE(SQLITE_THREAD_OVERRIDE_LOCK, -1, [Disable more thread safety])
 
 AC_OUTPUT
