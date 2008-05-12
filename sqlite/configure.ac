@@ -20,7 +20,7 @@ AC_CONFIG_MACRO_DIR([../m4])
 
 AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_SRCDIR([sqlite3.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile sqlite3.pc])
 
 AC_PROG_CC
 AC_PROG_RANLIB

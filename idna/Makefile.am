@@ -60,6 +60,10 @@ libidn_a_SOURCES = gunibreak.h gunicomp.h gunidecomp.h \
 	striconv.h striconv.c strverscmp.h strverscmp.c \
 	c-strcase.h c-strcasecmp.c c-ctype.c c-ctype.h
 
+# We have .pc files for pkg-config users.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libidn.pc
+
 # This is a subset of the tests originally in a separate directory
 # of the libidn distribution.  tst_pr29, tst_strerror, and tst_tld
 # have been excluded, since the corresponding code has been excluded

@@ -23,6 +23,10 @@ EXTRA_libnetxx_a_SOURCES =						\
 libnetxx_a_LIBADD = $(PLAT_OBJS)
 libnetxx_a_DEPENDENCIES = $(PLAT_OBJS)
 
+# We have .pc files for pkg-config users.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = netxx.pc
+
 # This is necessary because autoreconf doesn't pay attention to
 # AC_CONFIG_MACRO_DIR.
 ACLOCAL_AMFLAGS = -I ../m4

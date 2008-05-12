@@ -17,13 +17,13 @@
 # Makefile.am.
 
 AC_PREREQ(2.58)
-AC_INIT(lua, XX, monotone-devel@nongnu.org)
+AC_INIT([lua (monotone)], 5.1.3, monotone-devel@nongnu.org)
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
 
 AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_SRCDIR([lua.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile lua.pc])
 
 AC_PROG_CXX
 AC_PROG_RANLIB

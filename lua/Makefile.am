@@ -10,5 +10,9 @@ liblua_a_SOURCES =							\
 	ltable.cc ltable.h ltablib.cc ltests.cc ltm.cc ltm.h		\
 	lundump.cc lundump.h lvm.cc lvm.h lzio.cc lzio.h
 
+# We have .pc files for pkg-config users.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = lua.pc
+
 # Autoconf's DEFS provides nothing useful for this directory, suppress it.
 DEFS =

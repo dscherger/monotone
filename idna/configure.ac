@@ -1,4 +1,3 @@
-# Stub configuration template for Monotone third-party library directories.
 # Process this file with autoconf to produce a configure script.
 # Copyright 2008 Zachary Weinberg  <zackw@panix.com>
 #
@@ -19,7 +18,7 @@ AC_CONFIG_MACRO_DIR([../m4])
 
 AM_INIT_AUTOMAKE([1.7.1 foreign no-dist no-define])
 AC_CONFIG_SRCDIR([idna.h])
-AC_CONFIG_FILES([Makefile stringprep.h])
+AC_CONFIG_FILES([Makefile stringprep.h libidn.pc])
 AC_CONFIG_HEADERS([config.h])
 
 AC_PROG_CC

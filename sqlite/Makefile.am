@@ -10,3 +10,7 @@ libsqlite_a_SOURCES =							\
 	sqliteLimit.h table.c tokenize.c trigger.c update.c utf.c	\
 	util.c vacuum.c vdbeapi.c vdbeaux.c vdbeblob.c vdbe.c		\
 	vdbefifo.c vdbe.h vdbeInt.h vdbemem.c vtab.c where.c
+
+# We have .pc files for pkg-config users.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = sqlite3.pc

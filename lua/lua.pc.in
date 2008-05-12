@@ -1,0 +1,19 @@
+# lua.pc -- pkg-config data for Lua
+
+# canonical vars
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+# since all we've got is a static library, don't bother making the
+# Libs/Libs.private distinction.
+
+Name: Lua
+Description: An Extensible Extension Language
+Version: @VERSION@
+Requires: 
+Libs: -L${libdir} -llua -lm
+Cflags: -I${includedir}
+
+# (end of lua.pc)
