@@ -2355,10 +2355,10 @@ struct blob_splitter
 {
 protected:
   cvs_history & cvs;
-  vector<cvs_blob_index> & cycle_members;
+  set<cvs_blob_index> & cycle_members;
 
 public:
-  blob_splitter(cvs_history & c, vector<cvs_blob_index> & cm)
+  blob_splitter(cvs_history & c, set<cvs_blob_index> & cm)
     : cvs(c),
       cycle_members(cm)
     { }
@@ -2397,7 +2397,7 @@ public:
       // We run Dijkstra's algorithm to find the shortest path from e.second
       // to e.first. All vertices in that path are part of the smallest
       // cycle which includes this back edge.
-      insert_iterator< vector<cvs_blob_index> >
+      insert_iterator< set<cvs_blob_index> >
         ity(cycle_members, cycle_members.begin());
       dijkstra_shortest_path(cvs, e.first, e.second, ity,
                              true, true, true, // follow all blobs
@@ -2407,8 +2407,7 @@ public:
       I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
-      set<cvs_blob_index> cycle_members_set(cycle_members.begin(), cycle_members.end());
-      write_graphviz_partial(cvs, "splitter", cycle_members_set, 5);
+      write_graphviz_partial(cvs, "splitter", cycle_members, 5);
 #endif
     }
 };
@@ -3319,7 +3318,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 }
 
 void
-split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
+split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
 {
   I(!cycle_members.empty());
 
@@ -3327,7 +3326,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   // so we know where to stop tracking back dependencies later on.
   map<cvs_path, time_i> oldest_event;
   typedef map<cvs_path, time_i>::iterator oe_ity;
-  typedef vector<cvs_blob_index>::const_iterator cm_ity;
+  typedef set<cvs_blob_index>::const_iterator cm_ity;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // Nothing should ever depend on tags and branch_end blobs, thus
@@ -3383,7 +3382,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependents;
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_weak_dependents;
 
-  typedef vector<cvs_blob_index>::const_iterator cm_ity;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // loop over every event of every blob in cycle_members
@@ -3412,8 +3410,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
               bool is_weak_path = stack.top().second;
               stack.pop();
 
-              if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
-                  != cycle_members.end())
+              if (cycle_members.find(dep_ev->bi) != cycle_members.end())
                 {
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
@@ -3743,7 +3740,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
     {
       L(FL("Unable to split the following cycle:"));
 
-      for (vector<cvs_blob_index>::const_iterator i = cycle_members.begin();
+      for (set<cvs_blob_index>::const_iterator i = cycle_members.begin();
            i != cycle_members.end(); ++i)
         {
           L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
@@ -4645,7 +4642,7 @@ import_cvs_repo(options & opts,
     while (1)
     {
       // this set will be filled with the blobs in a cycle
-      vector<cvs_blob_index> cycle_members;
+      set<cvs_blob_index> cycle_members;
 
       cvs.import_order.clear();
       blob_splitter vis(cvs, cycle_members);
