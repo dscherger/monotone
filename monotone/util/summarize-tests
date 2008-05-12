@@ -1,0 +1,54 @@
+#! /bin/sh
+
+# Summarize results of test suites listed on the command line.
+# Based on a similar script which automake 1.9 embeds in its
+# check-am rule.
+
+all=0
+failed=0
+error=0
+
+for f in "$@"; do
+  all=`expr "$all" + 1`
+  if [ -f "$f" ]; then
+    s=`cat "$f"`
+    if [ "$s" = 0 ]; then
+      :
+    elif [ "$s" = 1 ]; then
+      failed=`expr "$failed" + 1`
+    else
+      error=`expr "$error" + 1`
+    fi
+  else
+    error=`expr "$error" + 1`
+  fi
+done
+
+if [ "$failed" = 0 ] && [ "$error" = 0 ]; then
+  exit=0
+  report=""
+  banner="All $all test suites passed"
+else
+  exit=1
+  report="Please report to $PACKAGE_BUGREPORT"
+  if [ "$error" = 0 ]; then
+    banner="$failed of $all test suites failed"
+  elif [ "$failed" = 0 ]; then
+    banner="$error of $all test suites malfunctioned"
+  else
+    banner="$failed of $all test suites failed and $error malfunctioned"
+  fi
+fi
+
+# As far as we know there is no portable shell command that will emit
+# N copies of a specified character.  If you know one please tell us.
+if [ ${#report} -gt ${#banner} ]; then
+  dashes=`echo "$report" | sed s/./=/g`
+else
+  dashes=`echo "$banner" | sed s/./=/g`
+fi
+
+echo "$dashes"
+echo "$banner"
+test -z "$report" || echo "$report"
+exit "$exit"

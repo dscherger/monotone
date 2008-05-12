@@ -3,33 +3,27 @@
 
 AC_PREREQ(2.58)
 AC_INIT(monotone, 0.40, monotone-devel@nongnu.org)
-AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
+
+AM_INIT_AUTOMAKE([1.9 foreign no-dist subdir-objects])
 AC_CONFIG_SRCDIR([app_state.cc])
-AM_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has
 dnl already been done by AM_INIT_AUTOMAKE.
 AM_PROG_CC_C_O
-AC_PROG_GCC_TRADITIONAL
 
 AC_PROG_CXX
 AC_PROG_CXX_WARNINGS
 AC_PROG_CXX_PCH
 
 AC_PROG_RANLIB
+PKG_PROG_PKG_CONFIG
 
-# ??? Shouldn't be necessary (anymore).
-test "z$GCC" = "zyes" && CFLAGS="$CFLAGS -fno-strict-aliasing"
-test "z$GXX" = "zyes" && CXXFLAGS="$CXXFLAGS -fno-strict-aliasing"
-
-AC_C_CONST
-AC_C_INLINE
-AC_CC_FEXCEPTIONS
-
+# Checks for host operating systems that need special treatment.
 AC_CACHE_CHECK([whether this is Windows],
        ac_win32, [
        AC_TRY_COMPILE([#ifdef WIN32
@@ -57,49 +51,56 @@ AC_CACHE_CHECK([whether this is AIX],
                       ac_aix=no)
 ])
 if test "$ac_aix" = "yes"; then
-   AM_CONDITIONAL(AIX_PLATFORM, true)
    LDFLAGS="$LDFLAGS -Wl,-bexpfull"
-else
-   AM_CONDITIONAL(AIX_PLATFORM, false)
 fi
 
-# Checks for header files.
-AC_HEADER_STDC
-dnl Explicitly specifying AC_INCLUDES_DEFAULT gets autoconf not to do all
-dnl the tests twice.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/file.h \
-		  sys/socket.h sys/time.h termios.h errno.h],,,
-		 [AC_INCLUDES_DEFAULT()])
-AC_HEADER_STDBOOL
+# Checks for libraries are done first because they are more likely to
+# fail the configure step than anything else.
 
-# gettext is nominally a library, but its tests don't work in C++ mode.
+# zlib is easy
+AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
+
+# gettext has its own macros (but I wish it didn't, there's all kinds
+# of unnecessary junk in them)
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION(0.11.5)
 AM_ICONV
 AC_PROG_XGETTEXT_FLAG_OPTION
 
-# Stick some logic into config.status, after the logic that
-# AM_GNU_GETTEXT sticks into config.status, to annul the UPDATEPOFILES
-# variable in po/Makefile.  This prevents auto-regeneration of the
-# .po files when the sources change, which the translators do not want.
-AC_OUTPUT_COMMANDS([
-    for ac_file in $CONFIG_FILES; do
-      # Support "outfile[:infile[:infile...]]"
-      case "$ac_file" in
-        *:*) ac_file=`echo "$ac_file"|sed 's%:.*%%'` ;;
-      esac
-      # PO directories have a Makefile.in generated from Makefile.in.in.
-      case "$ac_file" in */Makefile.in)
-        target="`echo x$ac_file | sed -e 's/.in$//' -e 's/^x//'`"
-	mtn_tmp="${target}.tmp"
-        test -n "$as_me" && echo "$as_me: fixing $target" || echo "fixing $target"
-	sed -e 's/^MSGMERGE =.*$/MSGMERGE = false/' \
-            -e 's/^MSGMERGE_UPDATE =.*$/MSGMERGE_UPDATE = true/' \
-               "$target" > "$mtn_tmp"
-	mv -f "$mtn_tmp" "$target" ;;
-      esac
-    done
-])
+# boost (test requires C++)
+AC_LANG([C++])
+BOOST_VERSION_CHECK
+BOOST_VERSION_SPECIFIC_BUGS
+AC_LANG([C])
+
+# Bundled libraries.
+if test -d ../libinst; then
+  li=`cd ../libinst && pwd`
+  PATH="${li}/bin:${PATH}"
+  PKG_CONFIG_PATH="${li}/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
+  export PATH PKG_CONFIG_PATH
+fi
+
+# All of these libraries can be probed for by some combination of
+# pkg-config and foobar-config, but it's not as simple as it ought to
+# be, hence the macros.
+
+dnl MTN_3RDPARTY_LIB(botan)
+dnl MTN_3RDPARTY_LIB(idna)
+dnl MTN_3RDPARTY_LIB(lua)
+dnl MTN_3RDPARTY_LIB(netxx)
+dnl MTN_3RDPARTY_LIB(pcre)
+dnl MTN_3RDPARTY_LIB(sqlite)
+
+dnl MTN_REMOVE_REDUNDANT_LIB_SWITCHES
+
+# Checks for header files.
+
+dnl Explicitly specifying AC_INCLUDES_DEFAULT gets autoconf not to do all
+dnl the tests twice.
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h sys/file.h \
+		  sys/socket.h sys/time.h termios.h errno.h],,,
+		 [AC_INCLUDES_DEFAULT()])
 
 AC_LANG([C++])
 # This header may not be visible to the C compiler.
@@ -138,25 +139,28 @@ AC_CHECK_FUNCS([atexit memset mkstemp strptime lrint \
 		__cxa_current_exception_type __cxa_demangle \
                 putenv setenv unsetenv dirfd fstatat mkdtemp])
 
-# simple library checks
-AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
 
-MTN_LIB_PCRE
-
-# check for all things boost-related
-BOOST_VERSION_CHECK
-BOOST_VERSION_SPECIFIC_BUGS
-
-# more complex library checks
-MTN_NETXX_DEPENDENCIES
-MTN_SQLITE_DEPENDENCIES
-
-# allow compiling with different flags/optimisation
-# for monotone versus libs, useful for testing.
-# only makes sense if CFLAGS="" or CXXFLAGS=""
-AC_SUBST(MONOTONE_CFLAGS)
-AC_SUBST(MONOTONE_CXXFLAGS)
-AC_SUBST(LIB3RDPARTY_CFLAGS)
-AC_SUBST(LIB3RDPARTY_CXXFLAGS)
+# Stick some logic into config.status, after the logic that
+# AM_GNU_GETTEXT sticks into config.status, to annul the UPDATEPOFILES
+# variable in po/Makefile.  This prevents auto-regeneration of the
+# .po files when the sources change, which the translators do not want.
+AC_OUTPUT_COMMANDS([
+    for ac_file in $CONFIG_FILES; do
+      # Support "outfile[:infile[:infile...]]"
+      case "$ac_file" in
+        *:*) ac_file=`echo "$ac_file"|sed 's%:.*%%'` ;;
+      esac
+      # PO directories have a Makefile.in generated from Makefile.in.in.
+      case "$ac_file" in */Makefile.in)
+        target="`echo x$ac_file | sed -e 's/.in$//' -e 's/^x//'`"
+	mtn_tmp="${target}.tmp"
+        test -n "$as_me" && echo "$as_me: fixing $target" || echo "fixing $target"
+	sed -e 's/^MSGMERGE =.*$/MSGMERGE = false/' \
+            -e 's/^MSGMERGE_UPDATE =.*$/MSGMERGE_UPDATE = true/' \
+               "$target" > "$mtn_tmp"
+	mv -f "$mtn_tmp" "$target" ;;
+      esac
+    done
+])
 
 AC_OUTPUT

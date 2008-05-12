@@ -1,6 +1,3 @@
-AUTOMAKE_OPTIONS=subdir-objects no-dist 1.7.1
-ACLOCAL_AMFLAGS = -I ../m4
-
 CMD_SOURCES =								\
 	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
 	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
@@ -89,12 +86,6 @@ MOST_SOURCES = 								\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
-BOOST_SANDBOX_SOURCES =							\
-	boost/circular_buffer_adaptor.hpp				\
-	boost/circular_buffer_base.hpp					\
-	boost/circular_buffer_fwd.hpp					\
-	boost/circular_buffer.hpp
-
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
@@ -146,248 +137,52 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-work_migration.$(OBJEXT)
 
 # primaries
-
 bin_PROGRAMS = mtn
-noinst_PROGRAMS = txt2c
-EXTRA_PROGRAMS =
-
 bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.c schema.c
+mtn_LDADD = libplatform.a $(LIBICONV) $(LIBINTL)
 
-unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
-unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
-
-tester_SOURCES = tester.cc transforms.cc gzip.cc
-nodist_tester_SOURCES = testlib.c
-tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
-		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
-		 	  	pcrewrap.cc)))
+# build tools
+noinst_PROGRAMS = txt2c
 
 txt2c_SOURCES = txt2c.cc
 
+# testing tools
+check_PROGRAMS = unit_tester tester
+
+unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
+unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS
+unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT) \
+	libplatform.a $(LIBICONV) $(LIBINTL)
+
+tester_SOURCES = tester.cc transforms.cc gzip.cc pcrewrap.cc \
+		 $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES)
+nodist_tester_SOURCES = testlib.c
+tester_LDADD = libplatform.a $(LIBICONV) $(LIBINTL)
+
+# platform goo
 noinst_LIBRARIES = libplatform.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
-
-htmldir = $(datadir)/doc/monotone
-html_DATA = monotone.html
-
-# flags
-
-if BUILD_PCH
-
-PCH_SOURCE = $(srcdir)/pch.hh
-# the .gch file only will be seen if it's in the same dir as the .hh file,
-# so need to copy it for separate build directories
-PCH_BUILD = pch-build.hh
-PCH_FLAGS = -Winvalid-pch -include $(PCH_BUILD)
-PCH_FILE = $(PCH_BUILD).gch
-sinclude $(PCH_FILE).dep
-
-*.o *.lo *.obj: $(PCH_FILE)
-
-$(PCH_BUILD): $(PCH_SOURCE)
-	cp $(PCH_SOURCE) $(PCH_BUILD)
-
-$(PCH_FILE): $(PCH_BUILD)
-	$(MAKE) PCH_FLAGS= pch-file
-
-pch-file:
-	$(CXXCOMPILE) -x c++-header $(PCH_BUILD) -o $(PCH_FILE) \
-	-MT $(PCH_FILE)  -MD -MP -MF "./$(PCH_FILE).Tdep" \
-	&& mv "./$(PCH_FILE).Tdep" "./$(PCH_FILE).dep" \
-	|| rm "./$(PCH_FILE).Tdep"
-endif
-
-SUFFIXES = .gch
-
-AM_CPPFLAGS =
-AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DSQLITE_OMIT_CURSOR -DSQLITE_OMIT_LOAD_EXTENSION -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
-AM_CXXFLAGS = $(AM_CPPFLAGS)
-AM_LDFLAGS =
-
-mtn_LDFLAGS =
-mtn_CPPFLAGS = -I$(top_srcdir)/lua
-mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
-mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
-mtn_LDADD = libplatform.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-unit_tester_LDFLAGS =
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua
-unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a \
-		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-tester_LDFLAGS =
-tester_CPPFLAGS = -I$(top_srcdir)/lua
-tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
+  tester_SOURCES += win32/tester-plaf.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  tester_SOURCES += win32/tester-plaf.cc
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
   tester_SOURCES += unix/tester-plaf.cc
 endif
 
-# i18n support
-
-datadir = @datadir@
-localedir = $(datadir)/locale
-DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
-
-# extra files
-
-PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
-	figures/difference-between-versions.pdf				\
-	figures/file-id-manifest-id.pdf figures/fork.pdf		\
-	figures/general-workflow.pdf figures/linear-history.pdf		\
-	figures/local-workflow.pdf figures/manifest.pdf			\
-	figures/merge.pdf figures/network-workflow.pdf			\
-	figures/parent-child-hashes.pdf					\
-	figures/parent-child-names-hashes.pdf figures/parent-child.pdf	\
-	figures/revision-chaining.pdf figures/revision.pdf		\
-	figures/statement.pdf figures/three-versions.pdf		\
-	figures/two-branches.pdf
-
-PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.png)))
-EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
-TEXI_FRAGMENTS = pcre/pcrepattern.texi pcre/pcresyntax.texi
-
-info_TEXINFOS = monotone.texi
-EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
-	UPGRADE monotone.spec monotone.html texinfo.css schema.sql	\
-	std_hooks.lua testlib.lua lua-testsuite.lua $(srcdir)/tests	\
-	tester-testsuite.lua $(srcdir)/tester-tests			\
-	unit-testsuite.lua package.m4 package_revision.txt		\
-	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	sqlite/keywordhash.h contrib/README contrib/monoprof.sh		\
-	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
-	contrib/monotone.el contrib/monotone-nav.el			\
-	contrib/monotone.bash_completion				\
-	contrib/monotone.zsh_completion contrib/mtbrowse.sh		\
-	contrib/colorize contrib/color-logs.sh contrib/color-logs.conf	\
-	contrib/get_stdio.pl contrib/ciabot_monotone_hookversion.py	\
-	contrib/Monotone.pm $(wildcard $(srcdir)/contrib/*.lua)		\
-	$(wildcard $(srcdir)/examples/*)				\
-	win32/monotone.iss win32/modpath.iss $(wildcard			\
-	$(srcdir)/debian/*) mac/monotone-pkg-logo.gif			\
-	mac/monotone.pmproj mac/package-intro.rtf audit-includes	\
-	$(TEXI_FRAGMENTS)
-
-MAKEINFOFLAGS=-I $(top_builddir)
-
-monotone.info: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS)
-
-monotone.pdf: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS) \
-              $(PDF_FIGURES)
-
-monotone.dvi: monotone.texi version.texi std_hooks.lua $(TEXI_FRAGMENTS) \
-              $(EPS_FIGURES)
-
-#%.eps: %.epsi
-#	mv -f $< $@
-#
-#%.epsi: %.ps
-#	ps2epsi $< $@
-
-%.eps : %.ps
-	ps2eps <$< >$@
-
-$(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
-	mkdir -p $(top_builddir)/figures
-#	acroread -toPostScript -pairs $< $@
-	pdftops $< $@
-
-# build an OS X installer
-# requires sudo since packagemaker just looks at directory permissions.
-PKG_INST_ROOT = $(PWD)/$(top_builddir)/pkg_inst_root
-monotone-$(PACKAGE_VERSION).pkg: monotone.pdf html
-	sudo rm -rf $(PKG_INST_ROOT)
-	rm -rf "$@"
-	$(MAKE) install-strip DESTDIR=$(PKG_INST_ROOT)
-	mkdir -p $(PKG_INST_ROOT)/Developer/Documentation/monotone
-	cp monotone.pdf $(PKG_INST_ROOT)/Developer/Documentation/monotone/
-	cp -r html $(PKG_INST_ROOT)/Developer/Documentation/monotone/html
-	plutil -convert xml1 -o monotone-xml.pmproj.in $(srcdir)/mac/monotone.pmproj
-	sed "s/__MONOTONE_VERSION__/$(PACKAGE_VERSION)/g" \
-		< monotone-xml.pmproj.in > monotone-xml.pmproj
-	cp $(srcdir)/mac/monotone-pkg-logo.gif $(srcdir)/mac/package-intro.rtf \
-		$(srcdir)/COPYING .
-	mv COPYING COPYING.txt
-	chmod -R o-w,g-w,a+rX $(PKG_INST_ROOT)
-	sudo chown -R root:wheel $(PKG_INST_ROOT)/usr
-	sudo chown -R root:admin $(PKG_INST_ROOT)/Developer
-	/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
-		-build -proj monotone-xml.pmproj -p "$@"
-
-# build an OS X distribution disk image
-dmg: monotone-$(PACKAGE_VERSION).dmg
-
-monotone-$(PACKAGE_VERSION).dmg: monotone-$(PACKAGE_VERSION).pkg
-	rm -rf $(top_builddir)/dmg_root "$@"
-	mkdir $(top_builddir)/dmg_root
-	cp -R $^ $(top_builddir)/dmg_root/
-	chmod -R a+rX $(top_builddir)/dmg_root
-	hdiutil create -srcfolder "$(top_builddir)/dmg_root" \
-		"$@" -format UDZO -scrub -imagekey zlib-level=9 \
-		-volname monotone-$(PACKAGE_VERSION)
+# i18n
+SUBDIRS = po
 
 # testsuite stuff (could this possibly be more ugly?)  To get
-# parallelism, we cannot use Automake's TESTS feature at all.  The
-# shell script embedded in the 'check-local' rule is partially
-# borrowed from automake 1.9's check.am
-
-check-local: tester_tests.status unit_tests.status lua_tests.status
-	@all=0; failed=0; error=0;					       \
-	for f in $^; do							       \
-	  all=`expr $$all + 1`;						       \
-	  if test -f $$f; then						       \
-	    s=`cat $$f`;						       \
-	    if test "$$s" = 0; then					       \
-	      :;							       \
-	    elif test "$$s" = 1; then					       \
-	      failed=`expr $$failed + 1`;				       \
-	    else							       \
-	      error=`expr $$error + 1`;					       \
-	    fi;								       \
-	  else								       \
-	    error=`expr $$error + 1`;					       \
-	  fi;								       \
-	done;								       \
-	if test "$$failed" = 0 && test "$$error" = 0; then		       \
-	  exit=0;							       \
-	  report="";							       \
-	  banner="All $$all test suites passed";			       \
-	else								       \
-	  exit=1;							       \
-	  report="Please report to $(PACKAGE_BUGREPORT)";		       \
-	  if test "$$error" = 0; then					       \
-	    banner="$$failed of $$all test suites failed";		       \
-	  elif test "$$failed" = 0; then				       \
-	    banner="$$error of $$all test suites malfunctioned";	       \
-	  else								       \
-	    banner="$$failed of $$all test suites failed"		       \
-	    banner="$$banner and $$error malfunctioned";		       \
-	  fi;								       \
-	fi;								       \
-	rl=`echo $$report | wc -c`;					       \
-	bl=`echo $$banner | wc -c`;					       \
-	if test $$rl -gt $$bl; then					       \
-	  dashes=`echo "$$report" | sed s/./=/g`;			       \
-	else								       \
-	  dashes=`echo "$$banner" | sed s/./=/g`;			       \
-	fi;								       \
-	echo $$dashes;							       \
-	echo $$banner;							       \
-	test -z "$$report" || echo "$$report";				       \
-	exit $$exit
+# parallelism, we cannot use Automake's TESTS feature at all.
 
 run_%_tests: Makefile
 	{ echo '#!/bin/sh';						  \
@@ -404,7 +199,10 @@ run_%_tests: Makefile
 
 unit_tests.status : unit_tester
 lua_tests.status : mtn
-check_PROGRAMS = unit_tester tester
+
+check-local: tester_tests.status unit_tests.status lua_tests.status
+	PACKAGE_BUGREPORT=$(PACKAGE_BUGREPORT) \
+	  $(SHELL) util/summarize-tests $^
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
@@ -416,49 +214,21 @@ FORCE:
 mostlyclean-local:
 	rm -rf tester_dir unit-tests html
 
-DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
+DISTCLEANFILES = mt-stdint.h xgettext.opts			\
 	run_tester_tests run_unit_tests run_lua_tests		\
 	tester_tests.status unit_tests.status lua_tests.status
-
-# distcheck stuff
-
-DISTCHECK_CONFIGURE_FLAGS = \
-	--with-bundled-sqlite \
-	--with-bundled-lua
-
-# note: these targets are all in srcdir; they are *not* built during
-# the VPATH build part of distcheck (with non-writable source
-# directory) but only during the initial dist stage.
-
-$(srcdir)/package.m4: $(top_srcdir)/configure.ac
-	{                                      \
-	  echo '# Signature of the current package.'; \
-	  echo 'm4_define([AT_PACKAGE_NAME],      [@PACKAGE_NAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_TARNAME],   [@PACKAGE_TARNAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_VERSION],   [@PACKAGE_VERSION@])'; \
-	  echo 'm4_define([AT_PACKAGE_STRING],    [@PACKAGE_STRING@])'; \
-	  echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
-	} >$(srcdir)/package.m4
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
 # that need to be generated early on 'make all'; this is _not_ true of
-# generated source files, but it is true for the PCH if used.
+# these generated source files
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SOURCES = std_hooks.c testlib.c schema.c \
+CLEANFILES = std_hooks.c testlib.c schema.c \
 	package_revision.c package_full_revision.c \
 	package_revision_raw.txt \
 	package_full_revision.txt package_full_revision_raw.txt 
-
-BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
-
-CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES)
-
-txt2c: txt2c.cc
-	$(CXX) $(CXXFLAGS) -o $@ $<
-	chmod 0755 $@$(EXEEXT)
 
 # FIXME: should use stamp files.
 %.c: %.sql txt2c
@@ -546,57 +316,6 @@ package_full_revision.txt: package_full_revision_raw.txt package_full_revision_d
 	rm -f $@
 	for SRC in $^; do ([ -f $$SRC -a ! -f $@ ] && cp -f $$SRC $@) || true; done
 
-# This is a magic directive copy-and-pasted, then modified, from the
-# automake 1.9 manual, section 13.4, "Checking the distribution".
-# Normally, 'distcheck' does a clean build, and then afterwards runs
-# 'distclean', and 'distclean' is supposed to remove everything that
-# the build created.  However, we have some targets
-# (package_revision.txt, package_full_revision_dist.txt) that we
-# distribute, but then always attempt to rebuild optimistically, and
-# then if that fails fall back on the distributed versions.  This
-# means that 'distclean' should _not_ remove those files, since they
-# are distributed, yet building the package will generate those files,
-# thus automake thinks that 'distclean' _should_ remove those files,
-# and 'distcheck' gets cranky if we don't.  So basically what this
-# line does is tell 'distcheck' to shut up and ignore those two files.
-distcleancheck_listfiles = find . -type f -a ! -name package_revision.txt -a ! -name package_full_revision_dist.txt
-
-# the distcheck-hook checks for errors in the use of base.hh
-distcheck-hook:
-	cd $(srcdir) && $(SHELL) audit-includes \
-		$(sort $(mtn_SOURCES) $(unit_tester_SOURCES) $(tester_SOURCES) \
-                       $(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
-                       win32/main.cc unix/main.cc)
-
-# automake doesn't build html docs
-
-CHECK_SRCDIR_EQ_BUILDDIR=[ "`cd \"$(srcdir)\"; pwd`" = "`pwd`" -a -f ./monotone.texi ]
-
-.PHONY: apidocs
-apidocs:
-	doxygen doxygen.cfg
-
-monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
-	       std_hooks.lua texinfo.css
-	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/figures .; \
-		cp $(srcdir)/texinfo.css .; \
-	fi
-	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<
-	cp $@ $@.bak
-	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@
-	rm -f $@.bak
-
-html: monotone.texi version.texi std_hooks.lua texinfo.css
-	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
-		cp -r $(srcdir)/figures .; \
-	fi
-	mkdir -p $@
-	cp -r $(srcdir)/figures $@
-	cp $(srcdir)/texinfo.css $@
-	makeinfo -I $(srcdir) --number-sections --html --output $@ $<
-	for f in $@/*.html; do \
-		cp $$f $$f.bak; \
-		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
-		rm -f $$f.bak; \
-	done
+# This is necessary because autoreconf doesn't pay attention to
+# AC_CONFIG_MACRO_DIR.
+ACLOCAL_AMFLAGS = -I ../m4
