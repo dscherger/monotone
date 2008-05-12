@@ -1,4 +1,4 @@
-# Stub configuration template for Monotone third-party library directories.
+# Configuration template for Monotone embedded sqlite.
 # Process this file with autoconf to produce a configure script.
 # Copyright 2008 Zachary Weinberg  <zackw@panix.com>
 #
@@ -9,12 +9,9 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 # PURPOSE.
 
-# This file will be replaced by the actual third-party library
-# configuration script for all directories where that is practical.
-# (It may not be practical for dead-upstream or heavily modified
-# third-party libraries, e.g. netxx and idna.)  It makes no attempt to
-# do anything beyond the bare minimum, just like the associated
-# Makefile.am.
+# This is a stopgap configuration script for Monotone's embedded copy
+# of sqlite.  Once we upgrade our embedded sqlite to a more recent
+# version, we will be able to use the upstream configure script instead.
 
 AC_PREREQ(2.58)
 AC_INIT(sqlite, XX, monotone-devel@nongnu.org)
@@ -27,5 +24,31 @@ AC_CONFIG_FILES([Makefile])
 
 AC_PROG_CC
 AC_PROG_RANLIB
+
+# Let the user specify whether he wants large file support or not in sqlite.
+AC_ARG_ENABLE([large-file],
+   AS_HELP_STRING(
+      [--disable-large-file],
+      [Disable support for repositories larger than 2GB.]
+   ), , enable_large_file=yes
+)
+
+if test "x$enable_large_file" = "xno"; then
+   AC_DEFINE(SQLITE_DISABLE_LFS, 1,
+     [Define to disable support for database files larger than 2GB.])
+fi
+
+AC_CHECK_FUNC([pread],
+  [AC_CHECK_FUNC([pwrite],
+    [AC_DEFINE(USE_PREAD, 1, 
+      [Define if pread() and pwrite() should be used.])])])
+
+AC_SEARCH_LIBS([fdatasync], [rt],
+ [AC_DEFINE(HAVE_FDATASYNC, 1, 
+   [Define if fdatasync() is available in either libc or librt.])])
+
+AC_SEARCH_LIBS([usleep], [rt],
+ [AC_DEFINE(HAVE_USLEEP, 1, 
+   [Define if fdatasync() is available in either libc or librt.])])
 
 AC_OUTPUT
