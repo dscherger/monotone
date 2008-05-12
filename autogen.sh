@@ -8,7 +8,19 @@
 # regenerating.
 
 set -e
+
+# Do the top level first, then the monotone directory.  This has the
+# side effect of creating a bunch of files, in the top level and in
+# m4/, that are expected by some of the libraries.  (This order
+# dependence would not exist if we were using verbatim copies of the
+# upstream library distributions.)
+
 autoreconf -i "$@"
-for subdir in idna lua monotone netxx pcre sqlite
-do (cd $subdir && exec autoreconf -i "$@")
-done
+(cd monotone && exec autoreconf -i "$@")
+
+# Library subdirs in alphabetical order.
+(cd idna && exec autoreconf -i "$@")
+(cd lua && exec autoreconf -i "$@")
+(cd netxx && exec autoreconf -i "$@")
+(cd pcre && exec autoreconf -i "$@")
+(cd sqlite && exec autoreconf -i "$@")
