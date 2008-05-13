@@ -183,14 +183,14 @@ code {
 
 #content table {
     border-collapse: collapse;
-    border-bottom: 1.5em;
+    margin-bottom: 1.5em;
 }
 
 #content table th,
 #content table td {
     font-size: 1.3em;
-    border: 1px dotted #474747;
-    padding: 0.2em;
+    border: 1px solid #474747;
+    padding: 0.3em;
 }
 
 #content table th {
