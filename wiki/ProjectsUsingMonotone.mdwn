@@ -1,4 +1,4 @@
-﻿[[!tag migration-wip]]
+﻿[[!tag migration-done]]
 
 A number of projects use monotone.  Some of them are listed here.
 
@@ -10,32 +10,254 @@ Actually, it is better to show *database* rather than *project* statistics, beca
 
 (sorted by revisions*files)
 
-[[!table data="""
-Project |notes |revisions |files |commits/month |First commit |Last update |Other projects in database |
-[Xaraya](http://www.xaraya.com/)                                                                                     |1  |±33900|±58300| 552|2002-09-28|2007-10-14| 
-[OpenEmbedded](http://openembedded.org/)                                                                             |   |±23000|±14600| 754|2005-06-30|2008-01-30|[NSLU2-Linux](http://www.nslu2-linux.org/)
-[Pidgin (formerly Gaim)](http://pidgin.im/)                                                                          |   |~23900| ±6500| 250|2000-03-23|2008-01-30| 
-[monotone](http://venge.net/monotone)                                                                                |2  |~13800| ~7740| 258|2003-09-04|2008-01-30|[Botan](http://botan.randombit.net/)
-[Remobo](http://www.remobo.com/)                                                                                     |   | ±1415|±39445| ~30|2005-11-23|2008-03-16| 
-[Trig](http://trig.com/)                                                                                             |3  | ±7948| ±2995|±637|2006-05-09|2007-01-30| 
-[ConquerSpace](http://www.conquer-space.net/)                                                                        |   |  2392|  4449| ~88|2005-11-26|2008-01-30|private projects (total ~6717 revisions)
-[Ada-France](http://www.ada-france.org/article130.html)                                                              |   | ~1390| ~1270|  74|2006-07-14|2008-01-30|[Lovelace OS](http://www.lovelace.fr/)
-[GoTT](http://gott.evilhackerdu.de/)                                                                                 |   | ±1716|  ±800|±100|2005-07-08|2007-01-13| 
-[Ajisai](http://www.randombit.net/projects/ajisai/monotone.html)                                                     |2  |   770|  1118|  45|2006-05-18|2007-10-14|[Botan](http://botan.randombit.net/)
-[Syndie](http://syndie.i2p.net/monotone_howto.html)                                                                  |   |   676|   696|  55|2006-10-12|2007-10-14| 
-[ATF](http://www.NetBSD.org/~jmmv/atf/)                                                                              |   |   504|   409| ±60|2007-06-25|2008-02-06| 
-[Dropbear SSH](http://matt.ucc.asn.au/dropbear/)                                                                     |   |  ±250|  ±600| few|          |          | 
-[guitone](http://guitone.thomaskeller.biz)                                                                           |2  |   640|   214|  30|2006-04-06|2008-01-30| 
-[CTWM](http://ctwm.free.lp.se)                                                                                       |   |  ±300|  ±350|low traffic|   |          | 
-[Pantomime](http://www.collaboration-world.com/pantomime/) and [GNUMail](http://www.collaboration-world.com/gnumail/)|   |   150|   781|   8|2006-04-29|2007-10-14| 
-[Bonsai](http://www.bonsai.com/wiki/index.php/Monotone_Distributed_Version_Control)                                  |2,5| 87   | 398  |   4|2005-12-18|2007-10-23| 
-[MetaTheme](http://www.metatheme.org/development.php)                                                                |   | ?    | ?    | ?  |          |2006-09-26| 
-[Clarens](http://clarens.sourceforge.net)                                                                            |4  | ?    | ?    | ?  |2005-08-09|2006-12-13| 
-[NetCrypto](http://www.netcrypto.org/index-FileAccess.html)                                                          |   | ?    | ?    | ?  |?         |?         | 
-[Peter Todd's Art Projects](http://petertodd.org/art/source-code)                                                    |   | ±1500| ?    |±100|2007-05-01|2007-09-09| 
-""" ]]
+<table>
+<thead>
+<tr>
+    <th>Project</th>
+    <th>notes</th>
+    <th>revisions</th>
+    <th>files</th>
+    <th>commits/month</th>
+    <th>First commit</th>
+    <th>Last update</th>
+    <th>Other projects in database</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+    <td><a href="http://www.xaraya.com/" target="_blank">Xaraya</a></td>
+    <td>1  </td>
+    <td>±33900</td>
+    <td>±58300</td>
+    <td> 552</td>
+    <td>2002-09-28</td>
+    <td>2007-10-14</td>
+    <td>
+</tr>
 
-Notes:
+<tr>
+    <td><a href="http://openembedded.org/" target="_blank">OpenEmbedded</a></td>
+    <td></td>
+    <td>±23000</td>
+    <td>±14600</td>
+    <td> 754</td>
+    <td>2005-06-30</td>
+    <td>2008-01-30</td>
+    <td><a href="http://www.nslu2-linux.org/" target="_blank">NSLU2-Linux</a></td>
+</tr>
+
+<tr>
+    <td><a href="http://pidgin.im/" target="_blank">Pidgin (formerly Gaim)</a></td>
+    <td></td>
+    <td>~23900</td>
+    <td>±6500</td>
+    <td>250</td>
+    <td>2000-03-23</td>
+    <td>2008-01-30</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://monotone.ca" target="_blank">monotone</a></td>
+    <td>2</td>
+    <td>~13800</td>
+    <td>~7740</td>
+    <td>258</td>
+    <td>2003-09-04</td>
+    <td>2008-01-30</td>
+    <td><a href="http://botan.randombit.net/" target="_blank">Botan</a></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.remobo.com/" target="_blank">Remobo</a></td>
+    <td></td>
+    <td>±1415</td>
+    <td>±39445</td>
+    <td>~30</td>
+    <td>2005-11-23</td>
+    <td>2008-03-16</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://trig.com/" target="_blank">Trig</a></td>
+    <td>3</td>
+    <td>±7948</td>
+    <td>±2995</td>
+    <td>±637</td>
+    <td>2006-05-09</td>
+    <td>2007-01-30</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.conquer-space.net/" target="_blank">ConquerSpace</a></td>
+    <td></td>
+    <td>2392</td>
+    <td>4449</td>
+    <td>~88</td>
+    <td>2005-11-26</td>
+    <td>2008-01-30</td>
+    <td>private projects (total ~6717 revisions)</td>
+</tr>
+
+<tr>
+    <td><a href="http://www.ada-france.org/article130.html" target="_blank">Ada-France</a></td>
+    <td></td>
+    <td>~1390</td>
+    <td>~1270</td>
+    <td>74</td>
+    <td>2006-07-14</td>
+    <td>2008-01-30</td>
+    <td><a href="http://www.lovelace.fr/" target="_blank">Lovelace OS</a></td>
+</tr>
+
+<tr>
+    <td><a href="http://gott.evilhackerdu.de/" target="_blank">GoTT</a></td>
+    <td></td>
+    <td>±1716</td>
+    <td>±800</td>
+    <td>±100</td>
+    <td>2005-07-08</td>
+    <td>2007-01-13</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.randombit.net/projects/ajisai/monotone.html" target="_blank">Ajisai</a></td>
+    <td>2</td>
+    <td>770</td>
+    <td>1118</td>
+    <td>45</td>
+    <td>2006-05-18</td>
+    <td>2007-10-14</td>
+    <td><a href="http://botan.randombit.net/" target="_blank">Botan</a></td>
+</tr>
+
+<tr>
+    <td><a href="http://syndie.i2p.net/monotone_howto.html" target="_blank">Syndie</a></td>
+    <td></td>
+    <td>676</td>
+    <td>696</td>
+    <td>55</td>
+    <td>2006-10-12</td>
+    <td>2007-10-14</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.NetBSD.org/~jmmv/atf/" target="_blank">ATF</a></td>
+    <td></td>
+    <td>504</td>
+    <td>409</td>
+    <td>±60</td>
+    <td>2007-06-25</td>
+    <td>2008-02-06</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://matt.ucc.asn.au/dropbear/" target="_blank">Dropbear SSH</a></td>
+    <td></td>
+    <td>±250</td>
+    <td>±600</td>
+    <td>few</td>
+    <td></td>
+    <td></td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://guitone.thomaskeller.biz" target="_blank">guitone</a></td>
+    <td>2</td>
+    <td>640</td>
+    <td>214</td>
+    <td>30</td>
+    <td>2006-04-06</td>
+    <td>2008-01-30</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://ctwm.free.lp.se" target="_blank">CTWM</a></td>
+    <td></td>
+    <td>±300</td>
+    <td>±350</td>
+    <td>low traffic</td>
+    <td></td>
+    <td></td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.collaboration-world.com/pantomime/" target="_blank">Pantomime</a> and <a href="http://www.collaboration-world.com/gnumail/" target="_blank">GNUMail</a></td>
+    <td></td>
+    <td>150</td>
+    <td>781</td>
+    <td>8</td>
+    <td>2006-04-29</td>
+    <td>2007-10-14</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.bonsai.com/wiki/index.php/Monotone_Distributed_Version_Control" target="_blank">Bonsai</a></td>
+    <td>2,5</td>
+    <td>87</td>
+    <td>398</td>
+    <td>4</td>
+    <td>2005-12-18</td>
+    <td>2007-10-23</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.metatheme.org/development.php" target="_blank">MetaTheme</a></td>
+    <td></td>
+    <td>?</td>
+    <td>?</td>
+    <td>?</td>
+    <td></td>
+    <td>2006-09-26</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://clarens.sourceforge.net" target="_blank">Clarens</a></td>
+    <td>4</td>
+    <td>?</td>
+    <td>?</td>
+    <td>?</td>
+    <td>2005-08-09</td>
+    <td>2006-12-13</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://www.netcrypto.org/index-FileAccess.html" target="_blank">NetCrypto</a></td>
+    <td></td>
+    <td>?</td>
+    <td>?</td>
+    <td>?</td>
+    <td>?</td>
+    <td>?</td>
+    <td></td>
+</tr>
+
+<tr>
+    <td><a href="http://petertodd.org/art/source-code" target="_blank">Peter Todd's Art Projects</a></td>
+    <td></td>
+    <td>±1500</td>
+    <td>?</td>
+    <td>±100</td>
+    <td>2007-05-01</td>
+    <td>2007-09-09</td>
+    <td></td>
+</tr>
+</tbody>
+</table>
+
+**Notes:**
 
 1. Aggregate number for Xaraya core, languages, themes and modules (4 different databases).
 2. Not counting private branches
