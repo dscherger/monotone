@@ -79,12 +79,31 @@ code {
     text-decoration: none;
 }
 
-
-.inlinepage {
-    margin-bottom: 1.5em;
+/* global margin */
+#content p,
+#content ul,
+#content ol,
+#content hr,
+#content div.toc,
+#content pre,
+#content table,
+#content .inlinepage {
+    margin-top: 1em;
+    margin-bottom: 0;
 }
 
-.inlinepage .header {
+/* less top margin for certain consecutive elements */
+#content p + ul,
+#content p + ol,
+#content h3 + *  {
+    margin-top: 0.5em;
+}
+
+#content > *:first-child {
+    margin-top: 0;
+}
+
+#content .inlinepage .header {
     display: block;
     background: none;
     padding: 0;
@@ -93,8 +112,8 @@ code {
     margin-bottom: 1em;
 }
 
-.inlinepage .pagedate,
-.inlinepage .tags {
+#content .inlinepage .pagedate,
+#content .inlinepage .tags {
     display: none;
 }
 
@@ -107,17 +126,20 @@ code {
 #content h1,
 #content h2,
 #content h3 {
-    border-bottom: 1px dotted #474747;
     color: black;
     line-height: 1.2em;
-    margin-top: 0;
-    margin-bottom: 1em;
+    margin-top: 2em;
+    margin-bottom: 0;
+}
+
+#content h1,
+#content h2 {
+    border-bottom: 1px dotted #474747;
     padding-bottom: 0.2em;
+    margin-bottom: 1em;
 }
 
 #content p {
-    margin-top: 0;
-    margin-bottom: 1.5em;
     font-size: 1.4em;
     line-height: 1.5em;
 }
@@ -126,7 +148,6 @@ code {
 #content ol {
     font-size: 1.3em;
     line-height: 1.75em;
-    margin-bottom: 1.5em;
 }
 
 #content ol li *,
@@ -147,11 +168,6 @@ code {
 #content hr {
     border: 0;
     border-top: 1px dotted #474747;
-    margin-bottom: 1.5em;
-}
-
-#content > *:last-child {
-    margin-bottom: 0;
 }
 
 #content .toc {
@@ -160,11 +176,10 @@ code {
     background: url(res/toc.png) no-repeat 10px 10px #FAFAFA;
     padding: 10px;
     padding-top: 40px;
-    margin-bottom: 2em;
 }
 
 #content .toc > ol {
-    margin-bottom: 0;
+    margin-top: 0;
 }
 
 #content pre {
@@ -174,7 +189,6 @@ code {
     padding: 0.5em;
     margin-left: 3em;
     margin-right: 3em;
-    margin-bottom: 1.5em;
     font-size: 1.4em;
     white-space: -moz-pre-wrap;
     white-space: pre-wrap;
@@ -183,7 +197,6 @@ code {
 
 #content table {
     border-collapse: collapse;
-    margin-bottom: 1.5em;
 }
 
 #content table th,
@@ -194,7 +207,15 @@ code {
 }
 
 #content table th {
-    background: #F0F0F0;
+    background: #E0E0E0;
+}
+
+#content table tr:nth-child(even) {
+    background-color: #F0F0F0;
+}
+
+#content table tr:nth-child(odd) td:nth-child(even) {
+    background-color: #FAFAFA;
 }
 
 #pageinfo {
