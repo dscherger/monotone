@@ -86,8 +86,9 @@ code {
 #content hr,
 #content div.toc,
 #content pre,
+#content blockquote,
 #content table,
-#content .inlinepage {
+#content div.inlinepage {
     margin-top: 1em;
     margin-bottom: 0;
 }
@@ -95,11 +96,14 @@ code {
 /* less top margin for certain consecutive elements */
 #content p + ul,
 #content p + ol,
-#content h3 + *  {
+#content p + blockquote,
+#content h1 + h2,
+#content h3 + * {
     margin-top: 0.5em;
 }
 
-#content > *:first-child {
+#content > *:first-child,
+#content blockquote > *:first-child {
     margin-top: 0;
 }
 
@@ -128,7 +132,7 @@ code {
 #content h3 {
     color: black;
     line-height: 1.2em;
-    margin-top: 2em;
+    margin-top: 1.5em;
     margin-bottom: 0;
 }
 
@@ -193,6 +197,28 @@ code {
     white-space: -moz-pre-wrap;
     white-space: pre-wrap;
     overflow: auto;
+}
+
+#content blockquote {
+    border: 1px dotted #474747;
+    padding: 1em;
+    padding-top: 25px;
+    padding-left: 25px;
+    margin-left: 2em;
+    margin-right: 2em;
+    background: url(res/blockquote.png) no-repeat 10px 10px;
+}
+
+#content blockquote,
+#content blockquote blockquote blockquote,
+#content blockquote blockquote blockquote blockquote blockquote {
+    background-color: #FAFAFA;
+}
+
+#content blockquote blockquote,
+#content blockquote blockquote blockquote blockquote,
+#content blockquote blockquote blockquote blockquote blockquote blockquote {
+    background-color: #F0F0F0;
 }
 
 #content table {
