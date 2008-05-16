@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -8,9 +8,9 @@ The ability to import past project history from CVS and make it available to fut
 
 # Partially Supported
 
-monotone can import cvs history, including collecting together changes in multiple files into synthesised change sets. The `cvs_import` command provides this feature; this is just one of several ways of working with ["[[MonotoneAndCVS]]"].
+monotone can import cvs history, including collecting together changes in multiple files into synthesised change sets. The `cvs_import` command provides this feature; this is just one of several ways of working with [[MonotoneAndCVS]].
 
-The primary limitation is that CVS branches are presently not attached to the revisions they branched off from: each is an independent linear history.  Work is underway to resolve this limitation.  
+The primary limitation is that CVS branches are presently not attached to the revisions they branched off from: each is an independent linear history.  Work is underway to resolve this limitation.
 
 # Example Usage
 
@@ -24,7 +24,7 @@ This will create a branch called `org.project` with contents and history that yo
 
 Manual and Tutorial Sections:
 
- * [Importing from CVS](http://venge.net/monotone/monotone.html#Importing-from-CVS)
+ * [Importing from CVS](http://monotone.ca/monotone.html#Importing-from-CVS)
 
 Features and Requirements in other evaluations:
 

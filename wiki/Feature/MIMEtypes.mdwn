@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -19,8 +19,8 @@ There is no explicit support for MIME-type information specifically; monotone ha
 
 Manual and Tutorial Sections:
 
- * [File Attributes](http://venge.net/monotone/monotone.html#File-Attributes)
- * [Hooks: Attribute Handling](http://venge.net/monotone/monotone.html#Hooks)
+ * [File Attributes](http://monotone.ca/monotone.html#File-Attributes)
+ * [Hooks: Attribute Handling](http://monotone.ca/monotone.html#Hooks)
 
 Features and Requirements in other evaluations:
 

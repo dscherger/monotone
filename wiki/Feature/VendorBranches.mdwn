@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -17,7 +17,7 @@ There are two aspects to this requirement that are often used together:
 
 # Example Usage
 
-*under construction* The [[VendorBranchPattern]] page (will) contain detailed recommendations for [[BestPractices]] in how this should be done.
+The [[VendorBranchPattern]] page contains detailed recommendations for [[BestPractices]] in how this should be done.
 
 # Further Reference
 

@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -8,11 +8,11 @@ Easy and cheap branching to allow parallel lines of development, and sophisticat
 
 # Supported
 
-Monotone's implementation of branches is *extremely* lightweight, and quite different to that in many other systems. 
+Monotone's implementation of branches is *extremely* lightweight, and quite different to that in many other systems.
 
 Revisions can be in multiple branches (or none). Revisions can be added to branches long after they are first committed, perhaps after testing or code review to determine that they are suitable. Monotone separates completely the concept of a file's history (which is important for merging) from the concept of a branch (which is important for developers keeping track of the *purpose* of a particular development effort and view of the code).  The [[BranchAnalogy]] describes the separation of these concepts.
 
-Monotone also has very robust and powerful merging capabilities (see [[FeatureMerging]]).
+Monotone also has very robust and powerful merging capabilities (see [[Feature/Merging]]).
 
 # Example Usage
 
@@ -25,7 +25,7 @@ To commit some changes in a workspace to a new branch:
 
 Manual and Tutorial Sections:
 
- * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
+ * [Branching and Merging](http://monotone.ca/monotone.html#Branching-and-Merging)
 
 Features and Requirements in other evaluations:
 

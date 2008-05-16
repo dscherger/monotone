@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -14,17 +14,15 @@ The `rename` command (also aliased as `mv`) will allow files and directories to 
 
 To rename a file:
 
-     $ mtn rename -e foo.c bar.c
+     $ mtn rename foo.c bar.c
      $ mtn commit
      $ mtn log bar.c
-
-''(-e executes the change in the workspace filesystem as well as in monotone's history)''
 
 # Further Reference
 
 Manual and Tutorial Sections:
 
- * [Manual Section Name](http://venge.net/monotone/monotone.html#[[SectionName]])
+ * [Workspace Commands](http://monotone.ca/monotone.html#Workspace)
 
 Features and Requirements in other evaluations:
 

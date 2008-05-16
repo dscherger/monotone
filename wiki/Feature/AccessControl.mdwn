@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -25,8 +25,8 @@ However, the flip-side of this unusual approach is that few projects are accusto
 Manual and Tutorial Sections:
 
  * [[TrustFoundations]] and [[UsingCerts]]
- * [Trust Evaluation Hooks](http://venge.net/monotone/monotone.html#Hooks)
- * [Netsync Permission Hooks](http://venge.net/monotone/monotone.html#Hooks)
+ * [Trust Evaluation Hooks](http://monotone.ca/monotone.html#Hooks)
+ * [Netsync Permission Hooks](http://monotone.ca/monotone.html#Hooks)
 
 Features and Requirements in other evaluations:
 

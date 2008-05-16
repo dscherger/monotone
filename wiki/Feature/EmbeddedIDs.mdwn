@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -10,7 +10,7 @@ The ability to embed in file content the revision ID of the revision it came fro
 
 Monotone does not directly support automatic expansion of version strings or other keywords inside file content.  Because the SHA-1 hashes of file content are crucial, and because these kinds of flags have proved difficult and confusing in some other systems, implementation of this feature has been avoided up to now -- mostly for lack of a compelling use case.  It is certainly possible to add.
 
-Some of the cases where this kind of feature is used in other systems are better addressed by other mechanisms in monotone; in particular it is considered better practice to use the overall revision of the tree rather than a per-file identifier.  Monotone uses this for its own embedded version in the executable, accessed via ``mtn --full-version``.  Because monotone supports distributed, offline operation, there is also less need for embedded identifiers to determine a file's revision status.  Finally, a file's SHA-1 hash **is** its identifier, so unchanged files can be identified in this manner.
+Some of the cases where this kind of feature is used in other systems are better addressed by other mechanisms in monotone; in particular it is considered better practice to use the overall revision of the tree rather than a per-file identifier.  Monotone uses this for its own embedded version in the executable, accessed via ``mtn version --full``.  Because monotone supports distributed, offline operation, there is also less need for embedded identifiers to determine a file's revision status.  Finally, a file's SHA-1 hash **is** its identifier, so unchanged files can be identified in this manner.
 
 It is possible to approximate this feature, if needed, using hooks. A custom attr could be attached to files that need such expansion, and an attr-hook defined in lua to perform the substitution.  Another possibility may be an implementation similar to that used to handle platform-specific newline formats, generalising that to other kinds of filters. In any such implementation, it would be vital to ensure that the content of the file seen for commit has been sanitised to contain only the bare keyword in a 'canonical' form that is stable between revisions.
 

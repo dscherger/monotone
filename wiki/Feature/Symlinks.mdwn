@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -8,7 +8,7 @@ Store Unix Symbolic Links as versionable objects in the repository, and recreate
 
 # Partially Supported
 
-Monotone ignores symlinks by default, but extensions to store these can be implemented using attrs and hooks. These are under active development and in use at the moment and may be integrated into a future release.
+Monotone ignores symlinks by default, but extensions to store these can be implemented using attrs and hooks. These are under development and in use at the moment and may be integrated into a future release.
 
 # Example Usage
 

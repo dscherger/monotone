@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -8,9 +8,9 @@ Automated and assisted merging of divergent revisions.
 
 # Supported
 
-Monotone has very robust and powerful merging capabilities, which work based on the DAG history structure, independent of branches. These capabilities work regardless of how developers choose to use branches. 
+Monotone has very robust and powerful merging capabilities, which work based on the DAG history structure, independent of branches. These capabilities work regardless of how developers choose to use branches.
 
-The merge, propagate and explicit_merge commands all access the same underlying merging capabilities, and differ only in how they select the revisions to be merged. merge picks multiple heads of the same branch, propagate merges the changes along one branch into another, and explicit_merge lets you pick whatever you like.
+The merge, propagate and explicit_merge commands all access the same underlying merging capabilities, and differ only in how they select the revisions to be merged. merge picks multiple heads of the same branch, propagate merges the changes along one branch into another, and `explicit_merge` lets you pick whatever you like.
 
 The `update` command will use the same merge between a repository head and local changes in the workspace, but this is in general not recommended.  Instead, recommended practice is to commit local changes first (multiple heads and explicit branches are cheap) and then merge with incoming revisions from other developers separately.
 
@@ -33,7 +33,7 @@ A very common developer loop:
 
 Manual and Tutorial Sections:
 
- * [Branching and Merging](http://venge.net/monotone/monotone.html#Branching-and-Merging)
+ * [Branching and Merging](http://monotone.ca/monotone.html#Branching-and-Merging)
  * [[DaggyFixes]] and [[ZipperMerge]]
 
 Features and Requirements in other evaluations:

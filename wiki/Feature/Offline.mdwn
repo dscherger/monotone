@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -29,7 +29,7 @@ All of the following (and many other things besides) work entirely offline:
 
 Manual and Tutorial Sections:
 
- * [Storage and workflow](http://venge.net/monotone/monotone.html#Storage-and-workflow)
+ * [Storage and workflow](http://monotone.ca/monotone.html#Storage-and-workflow)
 
 Features and Requirements in other evaluations:
 

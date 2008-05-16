@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -25,6 +25,7 @@ Revisions can be removed from a local database, if they have no descendants:
 If there are descendants, additional changes have been based on the bad revisions and they must also be removed. If they're unrelated and still wanted, they must be reapplied to an ancestor of the old revision (most likely using `pluck`).
 
 Removing the revisions does not remove the file content. This can be removed with a local sync to a new database, which won't transfer the now-unreferenced file content
+
      $ mtn -d new.mtn db init
      $ mtn -d old.mtn sync file://new.mtn '*'
 

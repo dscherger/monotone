@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -16,7 +16,7 @@ There is a hook that can be invoked on commit, but this will run on the individu
 
 Manual and Tutorial Sections:
 
- * [Event Notification Hooks](http://venge.net/monotone/monotone.html#Hooks)
+ * [Event Notification Hooks](http://monotone.ca/monotone.html#Hooks)
 
 Features and Requirements in other evaluations:
 

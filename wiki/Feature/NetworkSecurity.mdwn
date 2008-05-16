@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -22,7 +22,7 @@ If you have confidentiality concerns about your revision contents (because you a
 
 Manual and Tutorial Sections:
 
- * [Basic Network Service](http://venge.net/monotone/monotone.html#Basic-Network-Service)
+ * [Basic Network Service](http://monotone.ca/monotone.html#Basic-Network-Service)
 
 Features and Requirements in other evaluations:
 

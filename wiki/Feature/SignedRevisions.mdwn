@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
 
@@ -8,7 +8,7 @@ Revisions and changes should be cryptographically signed to ensure historical in
 
 # Supported
 
-This is a primary and fundamental component of monotone. Revisions are identified by the SHA-1 hash of their ancestry+content, and additional metadata about these revisions is attached using signed certs. 
+This is a primary and fundamental component of monotone. Revisions are identified by the SHA-1 hash of their ancestry+content, and additional metadata about these revisions is attached using signed certs.
 
 # Example Usage
 
@@ -22,7 +22,7 @@ This is a primary and fundamental component of monotone. Revisions are identifie
 
 Manual and Tutorial Sections:
 
- * [Certificates](http://venge.net/monotone/monotone.html#Certificates)
+ * [Certificates](http://monotone.ca/monotone.html#Certificates)
  * [[TrustFoundations]] and [[UsingCerts]]
 
 Features and Requirements in other evaluations:

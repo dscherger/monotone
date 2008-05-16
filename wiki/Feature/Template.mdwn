@@ -24,7 +24,7 @@ This page is one of many describing EvaluationFeatures that may be useful when c
 
 Manual and Tutorial Sections:
 
-* [Manual Section Name](http://venge.net/monotone/monotone.html#SectionName)
+* [Manual Section Name](http://monotone.ca/monotone.html#SectionName)
 
 Features and Requirements in other evaluations:
 
