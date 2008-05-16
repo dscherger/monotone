@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Logistics for Mtn Summit 2007 (North American edition)
 
@@ -21,9 +21,9 @@ I assume if you're close enough to drive, then you can figure that out yourself.
 We have a block of rooms reserved at [Guesthouse International Inns and Suites, Santa Clara](http://www.guesthouseintl.com/property.cfm?property_id=39).  We have a group of 10 rooms held for us from February 4-12 at a special group rate of $71.18/night for 1-2 occupants, $82.13/night for 3 occupants (both numbers already include tax).  Each room has 2 single-person beds, microwave/refrigerator, and free internet access (wifi).  There is also a pool, though I don't know how much use that will get in 
 February.
 
-Address: [2930 El Camino Real, Santa Clara, California](http://maps.google.com/maps?f=d&hl=en&saddr=2930+El+Camino+Real,+santa+clara,+95051+ca&daddr=1600+amphitheatre+parkway,+mountain+view,+ca&ie=UTF8&sll=37.388155,-122.034295&sspn=0.119206,0.233459&z=12&ll=37.388163,-122.035789&spn=0.119206,0.233459&t=h&om=1) (NB: street numbers on El Camino get repeated, often the city name is needed to disambiguate)   
-Phone: (408) 241-3010
-Magic words: group name "Monotone"   
+Address: [2930 El Camino Real, Santa Clara, California](http://maps.google.com/maps?f=d&hl=en&saddr=2930+El+Camino+Real,+santa+clara,+95051+ca&daddr=1600+amphitheatre+parkway,+mountain+view,+ca&ie=UTF8&sll=37.388155,-122.034295&sspn=0.119206,0.233459&z=12&ll=37.388163,-122.035789&spn=0.119206,0.233459&t=h&om=1) (NB: street numbers on El Camino get repeated, often the city name is needed to disambiguate)    
+Phone: (408) 241-3010    
+Magic words: group name "Monotone"    
 Deadline for group rate: January 20, 2007
 
 To reserve a room, call the above number, and say you want to reserve a room in our group block, using whichever of the magic words above are necessary for them to figure out which group block that is.  You will have to give a credit card number and you will be responsible for paying the hotel for the room; we'll work out any reimbursals separately.  (Similarly, I assume pretty much everyone will be rooming with other people to share the cost; you'll have to figure out who wants to actually reserve the room and then pay them back.)  To coordinate roommates, see [[Rooms]].
@@ -33,6 +33,7 @@ You may have more luck calling during the day (California is on PST, so say 15:0
 If you are planning to stay for some period that does not exactly match our date block (e.g. if you want to arrive earlier, or have to leave early), I have checked with the hotel and they say that is fine, and you can still get the group rate.  (Obviously they don't guarantee availability on dates outside Feb. 4-12, though, if you wait long enough to reserve your room then conceivably you could find they have already filled up.)
 
 Some math worked out for you to save time:
+
   * One room for 8 nights with 2 occupants: $71.18 * 8 = $569.40
   * One room for 8 nights with 2 occupants, per person: $569.40 / 2 = **$284.70**
 
