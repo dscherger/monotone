@@ -1,4 +1,5 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
+[[!toc levels=2]]
 
 # Motivation
 
@@ -42,11 +43,11 @@ sorting them according to their heights. This is not more expensive than an inte
 
 The ordering created by that algorithm doesn't always keep linear chains of revisions together. Instead, parallel running branches are zipped together in way that makes this sorting quite unusable e.g. for log output.
 
-          A	                0
+          A                 0
          / \               / \
         B   C             1   1
         |   |             |   | 
-        D   E      =>     2   2    	       	
+        D   E      =>     2   2                 
         |   |             |   | 
         F   G             3   3 
          \ /               \ /
@@ -63,12 +64,13 @@ Instead of simple integers we now use tuples of integers. We will write them in 
 Now, consider a node with the number `a.b.c` with not yet numbered children. The first child of this node will get the number `a.b.c+1`, the other `N-1` children get the numbers `a.b.c.0.0` through `a.b.c.N-2.0`. When a node has multiple parents, it gets the maximum of all numbers that would be assigned according to the rule in the previous sentence. Note that this asymmetrical: One child will get a tuple that has a size equal to that of the parent, while the other children get longer tuples.
 
 Here is an example:
+
           A                 0----. 
          /|\               / \    \
         B C D             1 0.0.0  0.1.0
         | |/ \            |   |   /     \
         | E   |           |  0.1.1       |
-        |/ \  |    =>     |	/     \      |
+        |/ \  |    =>     | /     \      |
         F   G |           2      0.1.2   | 
         |   |/            |         \   / 
         H   I             3         0.1.3 
@@ -79,6 +81,7 @@ Here is an example:
 This schema has the advantage of keeping linear chains of revisions together. If a revision `A` has only one child `B`, and `B` has only one parent `A`, there will be no other revision with a number that sorts in between `A` and `B`. The disadvantage is that sorting is a bit more expensive than with simple heights, because you have to compare tuples now. The tuples might become longer over time when there abandoned branches that accidentally got shorter tuples. This can't be avoided apriori. However, you can always renumber the whole graph, taking into account that very old branches will probably never be merged, and assign longer tuples to them.  A good strategy is to identify a branch that likely will always be merged back (e.g. `n.v.m`) and try to always assign the shorter tuples to revisions carrying that branch cert. For the current `nvm*` graph, the longest tuples have 13 elements. 
 
 That's the example with problematic log output from above, now with complex heights:
+
           A                 0
          / \               / \
         B   C             1   0.0.0
@@ -88,21 +91,25 @@ That's the example with problematic log output from above, now with complex heig
         F   G             3   0.0.2 
          \ /               \ /
           H                 4
+
 The topological sort according to the node's heights yields `ACEGBDFH`.
 
 ## Implementation
 
 A complex height is an array of integers. If you store the integers subsequently and in big endian format, a comparison of the resulting byte sequence using memcmp() yields the correct result for the ordering described earlier. The advantage is that - once created - revision heights need not to be interpreted, but can be passed around as blobs. Moreover, you can even ask the database to perform comparisons for you:
+
     SELECT ...
     FROM revisions
     JOIN heights ON revisions.id=heights.revision
     WHERE ...
     ORDER BY heights.height
+
 This yields a toposorted list of revisions even for complex heights, because the database (at least SQLite) sorts the blobs using memcmp().
 
 ## Messages on monotone-devel@nongnu.org
- * http://article.gmane.org/gmane.comp.version-control.monotone.devel/7997
- * http://article.gmane.org/gmane.comp.version-control.monotone.devel/8570
+
+ * <http://article.gmane.org/gmane.comp.version-control.monotone.devel/7997>
+ * <http://article.gmane.org/gmane.comp.version-control.monotone.devel/8570>
 
 ----
 
