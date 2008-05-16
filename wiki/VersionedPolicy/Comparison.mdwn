@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Things in common between Paul's proposal and Graydon's
 

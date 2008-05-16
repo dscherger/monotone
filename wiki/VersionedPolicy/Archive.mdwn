@@ -1,19 +1,19 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 Random notes on how to version policy (fine-grained permissions, trust delegation, branch names...).
 
 # Mostly-obsolete notes of historical interest
 
-Classic conversation on how to make permissions work at all, sketching the basic approach: http://frances.vorpus.org/~njs/mt-permission.html
+Classic conversation on how to make permissions work at all, sketching the basic approach: <http://frances.vorpus.org/~njs/mt-permission.html>
 
 January 2007:
-http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9835/focus=9835
-http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9842/focus=9842
+<http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9835/focus=9835>
+<http://thread.gmane.org/gmane.comp.version-control.monotone.devel/9842/focus=9842>
 
 And one from Paul Crowley (February 2007):
-http://thread.gmane.org/gmane.comp.version-control.monotone.devel/10077/focus=10077
+<http://thread.gmane.org/gmane.comp.version-control.monotone.devel/10077/focus=10077>
 
-Useful conversation from April 2006: http://colabti.de/irclogger//irclogger_log/monotone?date=2006-04-18,Tue&sel=119#l194
+Useful conversation from April 2006: <http://colabti.org/irclogger//irclogger_log/monotone?date=2006-04-18,Tue&sel=119#l194>
 
 Includes argument for why the right rule for evaluating whether a merge followed permission rules, is if _either_ cset is allowable by permission rules.
 
@@ -87,12 +87,12 @@ The pastebin link (since it will probably expire) is to this text:
 
 ## User requests
 
-http://article.gmane.org/gmane.comp.version-control.monotone.devel/6917
+<http://article.gmane.org/gmane.comp.version-control.monotone.devel/6917>
 
 ## Questions
-Correct me if I'm interpreting this idea incorrectly.  You plan on using a directory hierarchy of configuration files to describe policy concerning branches in the repository database itself; that these directories are not working directories for your branches.  Where would this directory hierarchy exist?  As another branch in the database?  Would you use a special checkout command to get it (`mtn -d DATABASE -bBRANCHNAME co --policy PDIR`), or simply specify something like `-bBRANCHNAME."policy"`. Could you provide links or information on the "big picture." -- [[People/ChadWalstrom]]
+>> Correct me if I'm interpreting this idea incorrectly.  You plan on using a directory hierarchy of configuration files to describe policy concerning branches in the repository database itself; that these directories are not working directories for your branches.  Where would this directory hierarchy exist?  As another branch in the database?  Would you use a special checkout command to get it (`mtn -d DATABASE -bBRANCHNAME co --policy PDIR`), or simply specify something like `-bBRANCHNAME."policy"`. Could you provide links or information on the "big picture." -- [[People/ChadWalstrom]]
 
-  *You plan on using a directory hierarchy...to describe policy...these branches are not working directories for your branches* -- yes, exactly right.  *As another branch in the database?* -- yep again, probably with some fixed name, I guess?  The exact UI beyond that I'm not sure -- certainly one thing to figure out as things settle down would be what sort of sugar is useful.  I'd almost be tempted to have it automatically checked out to a subdirectory of _MTN/ or something, even, just to make things as low-impedence as possible?  But this is just guessing, can't make sensible UI choices until much later in the process. -- [[NathanielSmith]]
+> You plan on using a directory hierarchy...to describe policy...these branches are not working directories for your branches* -- yes, exactly right.  *As another branch in the database?* -- yep again, probably with some fixed name, I guess?  The exact UI beyond that I'm not sure -- certainly one thing to figure out as things settle down would be what sort of sugar is useful.  I'd almost be tempted to have it automatically checked out to a subdirectory of _MTN/ or something, even, just to make things as low-impedence as possible?  But this is just guessing, can't make sensible UI choices until much later in the process. -- [[People/NathanielSmith]]
 
 ---
 
