@@ -1,19 +1,19 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
-This page will introduce some of the members of the monotone development team, their responsibilities and their contact data i.e. IRC nick.  See also: http://www.frappr.com/monotone
+This page will introduce some of the members of the monotone development team, their responsibilities and their contact data i.e. IRC nick.  See also: <http://www.frappr.com/monotone>
 
 ### Graydon Hoare (graydon)
 
  * wrote the initial version (starting summer/fall 2002)
  * mostly passive now, still do some features and optimization, design discussion
- * contact: graydon@pobox.com
+ * contact: <graydon@pobox.com>
 
 ### Nathaniel Smith (njs)
 
  * works on monotone since Aug 2003
  * uses monotone since Sep 2003
  * too many pies, not enough fingers
- * contact: njs@pobox.com
+ * contact: <njs@pobox.com>
 
 ### Patrick Mauritz (oxygene)
 
@@ -27,7 +27,7 @@ This page will introduce some of the members of the monotone development team, t
  * uses monotone since April 2004
  * works on monotone since May 2004
  * responsible for restrictions code and various other things
- * contact: derek@echologic.com
+ * contact: <derek@echologic.com>
 
 ### Richard Levitte (gizmo1)
 
@@ -35,9 +35,9 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since October 2004
  * responsible for translation into Swedish
  * involved in various random stuff
- * contact: richard@levitte.org
+ * contact: <richard@levitte.org>
 
- [http://richard.levitte.org/images/levitte2.jpg]
+ ![Richard Levitte](http://richard.levitte.org/images/levitte2.jpg)
 
 ### Matt Johnston (msh)
 
@@ -52,14 +52,14 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Spring 2005
  * meddles in all sorts of things (new testsuite, automate stdio, some of *-merge, ...)
  * wrote a number of useful tools that work with monotone (mtsh, usher, webhost, basic_io tools)
- * contact: tbrownaw@gmail.com
+ * contact: <tbrownaw@gmail.com>
 
 ### Matthew Gregan (kinetik)
 
  * using monotone since November 2003
  * working on monotone since April 2005
  * meddling in various areas
- * contact: kinetik@flim.org
+ * contact: <kinetik@flim.org>
 
 ### Daniel Carosone (uep)
 
@@ -75,21 +75,21 @@ This page will introduce some of the members of the monotone development team, t
  * involved in monotone translation for Brazilian Portuguese
  * minor docs and Lua code meddling
  * author of [Iara](http://www.ventonegro.org/iara/) monotone web-frontend
- * contact: asandroq@gmail.com, http://www.ventonegro.org/
+ * contact: <asandroq@gmail.com>, <http://www.ventonegro.org/>
 
 ### Matthew Nicholson (man, matthew_i, [[MasterYoda]])
 
  * uses monotone since late 2005
  * works on monotone since early 2006
  * involved in monotone debian packaging and scratching his own itches
- * contact: matt@matt-land.com, http://matt-land.com
+ * contact: <matt@matt-land.com>, <http://matt-land.com>
 
 ### Lapo Luchini (lapo)
 
  * uses monotone since Sep 2005
  * works on monotone since Jan 2006
  * involved in translation into Italian
- * contact: lapo@lapo.it
+ * contact: <lapo@lapo.it>
  * residence: [Milano, Italy](http://www.frappr.com/lapo)
 
 ### Thomas Keller (tommyd)
@@ -106,8 +106,8 @@ This page will introduce some of the members of the monotone development team, t
  * works on monotone since Apr 2006
  * meddling in various areas, especially automation
  * currently maintaining the zsh completion
- * author of [TracMonotone](http://www.ipd.uka.de/~moschny/TracMonotone), a version control backend to monotone for [Trac](http://trac.edgewall.org)
- * contact: thomas.moschny@gmx.de
+ * author of [TracMonotone](http://tracmtn.1erlei.de/), a version control backend to monotone for [Trac](http://trac.edgewall.org)
+ * contact: <thomas.moschny@gmx.de>
 
 ### Zack Weinberg (zwol)
 
@@ -121,7 +121,7 @@ This page will introduce some of the members of the monotone development team, t
  * uses monotone since November 2003
  * works on monotone since well, I've never had a patch accepted. :)
  * using monotone for absurd things, like storing Maildirs. 
- * contact jack-monotone@mudshark.org
+ * contact <jack-monotone@mudshark.org>
 
 ### Evan Deaubl (outlet)
 
@@ -135,7 +135,7 @@ This page will introduce some of the members of the monotone development team, t
  * uses monotone since October 2005
  * mostly doesn't work on monotone
  * author of [m7](http://www.midwinter.com/~lch/programming/m7/) monotone front-end
- * contact: larry@hastings.org
+ * contact: <larry@hastings.org>
 
 ## Template
 
