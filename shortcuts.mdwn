@@ -1,0 +1,3 @@
+This wiki has shortcuts enabled. Here's the list
+
+ * [[!shortcut name=download url="http://monotone.ca/downloads/%s"]]
