@@ -1,8 +1,8 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Ideas for the Google Summer Of Code 2007
 
-Main page: [[SummerOfCode2007]]
+Main page: [[SummerOfCode/2007]]
 
 ## monotone
 
@@ -36,7 +36,7 @@ monoclipse (much more sketchy b/c someone who signs up to java/eclipse stuff can
 
 ## guitone
 
-Main page: http://guitone.thomaskeller.biz
+Main page: <http://guitone.thomaskeller.biz>
 
  * a dag graph view using [libqanava](http://www.libqanava.org/), [libtulip](http://www.tulip-software.org/), [graphviz](http://www.graphviz.org/) or else
  * a kpart module for the KDE Konqueror based on the existing framework
