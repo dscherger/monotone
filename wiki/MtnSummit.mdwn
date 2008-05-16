@@ -1,3 +1,6 @@
+[[!tag migration-done]]
+
+# Monotone Summits
 
 Monotone developers try to get together regularly for a hackfest,
 chatfest, bugfest, keysigningfest and occasional beerfest we call

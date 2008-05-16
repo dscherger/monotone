@@ -17,28 +17,28 @@ See [[MtnSummit/2008]] for this year's location details
 Planning to come?  Add yourself:
 
 [[!table data="""
-| Name | Week or weekend? | Cell phone number |
-|Nathaniel Smith (njs) | week | +1 510 499 1311<br>(NB: my plan charges me for text messages) |
-|Larry Hastings | ? | Cell: +1 408 390 0945<br>Home: +1 408 530 8112 (probably better) |
-|Derek Scherger| week | +1 403 606 0459 |
-|LapoLuchini| week | +39 347 2270475 |
-|Gabriele Dini Ciacci | week | |
-|Daniel Carosone| week | |
-|Markus Schiltknecht| week | +49 176 2535 2771 *|
-|Justin Patrin | week | +1 707 322 3256 |
-|Matthew Gregan| week | +64 27 568 8442 |
-|Elizabeth Moffatt | week | +64 21 032 8878 |
-|Thomas Moschny | week | +49 162 914 9292 |
-|Graydon | week | +1 604 831 4862 |
-|Zack Weinberg | arriving Tuesday evening | +1 510 388 7620 |
-|Christof Petig | week | +49 177 5816961 |
-|PaulCrowley| week | |
-|JackCummings| weekend | +1 604 721 8365 |
-|Tam Cummings| weekend | |
-|Siegfried Herbold| week | |
+Name | Week or weekend? | Cell phone number |
+Nathaniel Smith (njs) | week | +1 510 499 1311<br>(NB: my plan charges me for text messages) |
+Larry Hastings | ? | Cell: +1 408 390 0945<br>Home: +1 408 530 8112 (probably better) |
+Derek Scherger| week | +1 403 606 0459 |
+LapoLuchini| week | +39 347 2270475 |
+Gabriele Dini Ciacci | week | |
+Daniel Carosone| week | |
+Markus Schiltknecht| week | +49 176 2535 2771 *|
+Justin Patrin | week | +1 707 322 3256 |
+Matthew Gregan| week | +64 27 568 8442 |
+Elizabeth Moffatt | week | +64 21 032 8878 |
+Thomas Moschny | week | +49 162 914 9292 |
+Graydon | week | +1 604 831 4862 |
+Zack Weinberg | arriving Tuesday evening | +1 510 388 7620 |
+Christof Petig | week | +49 177 5816961 |
+PaulCrowley| week | |
+JackCummings| weekend | +1 604 721 8365 |
+Tam Cummings| weekend | |
+Siegfried Herbold| week | |
 """ ]]
 
-* my mobile phone does not seem to work here in SF.
+\* my mobile phone does not seem to work here in SF.
 
 You'll also want to read about [[LogisticsNA]], [[Schedule]], [[Rooms]] at the hotel, and [[Funding]].
 

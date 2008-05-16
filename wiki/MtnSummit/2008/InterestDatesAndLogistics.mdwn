@@ -1,18 +1,10 @@
 ﻿[[!tag migration-done]]
-
 [[!toc levels=1]]
 
 We're planning to hold another MtnSummit, in early 2008, this time in Europe!
 
+[[Ideas]] lists many ideas we collected for last years summit, but weren't able to complete. If you have more to wishes, make sure to add them there.
 
-[[MtnSummit/2007/Ideas]] lists many ideas we collected for last years summit, but weren't able to complete. If you have more to wishes, make sure to add them there.
-
-The branches which we've worked upon on the 2008 summit and which should be reviewed by others:
-
-[[!inline pages="branches/* and link(MtnSummit2008)" sort=title]]
-
-
-----
 
 # How Can I attend?
 
