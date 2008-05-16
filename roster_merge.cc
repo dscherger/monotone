@@ -1440,47 +1440,46 @@ parse_duplicate_name_conflicts(basic_io::parser & pars,
 static void
 parse_resolve_conflicts_str(basic_io::parser & pars, roster_merge_result & result)
 {
+  char const * error_message = "can't specify a %s conflict resolution for more than one conflict";
+
   while (pars.tok.in.lookahead != EOF)
     {
       if (pars.symp (syms::resolved_suture))
         {
+          N(result.duplicate_name_conflicts.size() == 1,
+            F(error_message) % syms::resolved_suture);
+
+          duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
+
+          conflict.left_resolution.first  = resolve_conflicts::suture;
+          conflict.right_resolution.first = resolve_conflicts::suture;
           pars.sym();
-
-          for (std::vector<duplicate_name_conflict>::iterator i = result.duplicate_name_conflicts.begin();
-               i != result.duplicate_name_conflicts.end();
-               ++i)
-            {
-              duplicate_name_conflict & conflict = *i;
-
-              conflict.left_resolution.first  = resolve_conflicts::suture;
-              conflict.right_resolution.first = resolve_conflicts::suture;
-            }
+          conflict.left_resolution.second = file_path_internal (pars.token);
+          pars.str();
         }
       else if (pars.symp (syms::resolved_rename_left))
         {
-          pars.sym();
-
           N(result.duplicate_name_conflicts.size() == 1,
-            F("can't specify a rename conflict resolution for more than one conflict"));
+            F(error_message) % syms::resolved_rename_left);
 
           duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
 
           conflict.left_resolution.first  = resolve_conflicts::rename;
-          pars.str();
+          pars.sym();
           conflict.left_resolution.second = file_path_internal (pars.token);
+          pars.str();
         }
       else if (pars.symp (syms::resolved_rename_right))
         {
-          pars.sym();
-
           N(result.duplicate_name_conflicts.size() == 1,
-            F("can't specify a rename conflict resolution for more than one conflict"));
+            F(error_message) % syms::resolved_rename_right);
 
           duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
 
           conflict.right_resolution.first  = resolve_conflicts::rename;
-          pars.str();
+          pars.sym();
           conflict.right_resolution.second = file_path_internal (pars.token);
+          pars.str();
         }
       else
         N(false, F("%s is not a supported conflict resolution") % pars.token);
@@ -1622,49 +1621,44 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
       switch (conflict.left_resolution.first)
       {
       case resolve_conflicts::suture:
-        I(conflict.right_resolution.first == resolve_conflicts::suture);
-
-        P(F("suturing %s, %s into %s") % left_name % right_name % conflict.left_resolution.second);
-
-        // Create a single new node, delete the two old ones. FIXME: need to
-        // record the links between the nodes somewhere.
         {
+          I(conflict.right_resolution.first == resolve_conflicts::suture);
+
+          N(!is_dir_t(left_roster.get_node (left_nid)), F("can't suture directory : %s") % left_name);
+
+          P(F("suturing %s, %s into %s") % left_name % right_name % conflict.left_resolution.second);
+
+          // Create a single new node, delete the two old ones, set ancestors.
           node_id new_nid;
 
           file_path const new_file_name = conflict.left_resolution.second;
 
-          if (is_dir_t(left_roster.get_node (left_nid)))
-            new_nid = roster.create_dir_node (nis);
-          else
-            {
-              file_t const left_node = downcast_to_file_t(left_roster.get_node (left_nid));
-              file_t const right_node = downcast_to_file_t(right_roster.get_node (right_nid));
+          file_t const left_node = downcast_to_file_t(left_roster.get_node (left_nid));
+          file_t const right_node = downcast_to_file_t(right_roster.get_node (right_nid));
 
-              N(path::file == get_path_status(new_file_name),
-                F("%s does not exist or is a directory") % new_file_name);
+          N(path::file == get_path_status(new_file_name),
+            F("%s does not exist or is a directory") % new_file_name);
 
-              file_id const & left_file_id = left_node->content;
-              file_id const & right_file_id = right_node->content;
-              file_id new_file_id;
-              data new_raw_data;
-              read_data (new_file_name, new_raw_data);
-              file_data new_data (new_raw_data);
-              file_data left_data, right_data;
+          file_id const & left_file_id = left_node->content;
+          file_id const & right_file_id = right_node->content;
+          file_id new_file_id;
+          data new_raw_data;
+          read_data (new_file_name, new_raw_data);
+          file_data new_data (new_raw_data);
+          file_data left_data, right_data;
 
-              adaptor.get_version(left_file_id, left_data);
-              adaptor.get_version(right_file_id, right_data);
-              calculate_ident (new_data, new_file_id);
+          adaptor.get_version(left_file_id, left_data);
+          adaptor.get_version(right_file_id, right_data);
+          calculate_ident (new_data, new_file_id);
 
-              new_nid = roster.create_file_node (new_file_id, nis);
+          new_nid = roster.create_file_node (new_file_id, nis, make_pair(left_nid, right_nid));
 
-              adaptor.record_merge(left_file_id, right_file_id, new_file_id, left_data, right_data, new_data);
-            }
+          adaptor.record_merge(left_file_id, right_file_id, new_file_id, left_data, right_data, new_data);
 
           attach_node (lua, roster, new_nid, new_file_name);
 
           roster.drop_detached_node(left_nid);
           roster.drop_detached_node(right_nid);
-
         }
         break;
 

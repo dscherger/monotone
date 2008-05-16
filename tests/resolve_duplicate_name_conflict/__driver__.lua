@@ -100,8 +100,5 @@ check(mtn("update"), 0, true, true)
 -- Verify file contents
 check("thermostat westinghouse" == readfile("thermostat-westinghouse.c"))
 check("thermostat honeywell" == readfile("thermostat-honeywell.c"))
-
--- This currently fails; the merge during update first adds then drops
--- checkout.sh. Need to change diediedie.
-check("checkout.sh merged" == readfile("checkout.sh"))
+check("checkout.sh merged\n" == readfile("checkout.sh"))
 -- end of file

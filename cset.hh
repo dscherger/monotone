@@ -1,6 +1,7 @@
 #ifndef __CSET_HH__
 #define __CSET_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -55,6 +56,26 @@ struct cset
   // Additions.
   std::set<file_path> dirs_added;
   std::map<file_path, file_id> files_added;
+
+  // Sutures.
+  struct sutured_t
+  {
+    // If the suture is resolving a merge conflict, then one ancestor is
+    // from the left side of the merge, and the other ancestor is from the
+    // other side of the merge. However, each changeset only shows one of
+    // these ancestors; there are two changesets for a merged revision. Only
+    // first_ancestor is non-null in this case.
+    //
+    // If the suture is a user command, then both ancestors are from the
+    // same revision, and both are non-null.
+    file_path first_ancestor;
+    file_path second_ancestor;
+    file_id sutured_id;
+
+    sutured_t(file_path the_first, file_path the_second, file_id the_sutured_id) :
+      first_ancestor (the_first), second_ancestor (the_second), sutured_id (the_sutured_id) {};
+  };
+  std::map<file_path, sutured_t> nodes_sutured;
 
   // Pure renames.
   std::map<file_path, file_path> nodes_renamed;
