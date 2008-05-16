@@ -1,36 +1,34 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Current Design
 
-We have a structure called a policy. Policies look like this 
-(if you happen to be an ML programmer): {{{
+We have a structure called a policy. Policies look like this
+(if you happen to be an ML programmer):
 
-  type policy = { id: branch_id;
+    type policy = { id: branch_id;
                   killed: bool;
                   defined_users: (string, user) map;
                   meta: (string, string) map;
                   delegation: delegation; }
 
-  and delegation = [[SimpleDelegate]] of branch_policy
+    and delegation = [[SimpleDelegate]] of branch_policy
                  | [[FullDelegate]] of { content_branch: branch_policy option;
                                      subpolicy_branches: (string, branch_policy) map; }
 
 
-  and branch_policy = { id: branch_id;
+    and branch_policy = { id: branch_id;
                         permitted_users: string set;
                         status: branch_status;
                         meta: (string,string) map; }
 
-  and branch_status = Active | Dormant
+    and branch_status = Active | Dormant
 
-  and branch_id = Root
+    and branch_id = Root
                 | [[ChildOf]](branch_id, nonce)  // hashed to compress to constant size
 
-  and user = { pk: key_id;
-               meta: (string,string) map; } 
+    and user = { pk: key_id;
+               meta: (string,string) map; }
 
-
-}}}
 
 Policies are stored in branches, and all branches in monotone become
 fully hierarchical:
@@ -46,12 +44,12 @@ sub-branches, inlcuding an optional unique content branch that has the
 same human-friendly name as the policy branch: for example, `foo.bar`
 may name both a particular content branch 'and' contain policy
 decisions that name and constrain the sub-branches `foo.bar.baz` and
-{{{foo.bar.quux}}}. 
+`foo.bar.quux`.
 
 Aspects of policy accumulate "down" the tree, from the root policy
-towards content trees. So a branch like `foo.bar.baz` is judged by 
-the policy of `foo`, plus the policy of `foo.bar`, plus the policy of 
-{{{foo.bar.baz}}}.
+towards content trees. So a branch like `foo.bar.baz` is judged by
+the policy of `foo`, plus the policy of `foo.bar`, plus the policy of
+`foo.bar.baz`.
 
 At the root of the policy-branch tree there is a branch that all
 projects everywhere refer to as their parent, called `Root`. Users
@@ -65,17 +63,17 @@ branch as a user's personal list of project-policy "mount points". This
 the contents of a user's Root branch is generally private.
 
 Why does monotone trust the user's key when signing policy in the `Root`
-policy branch? Because there is an external, non-versioned list of 
-keys that each user keeps (typically a 1-entry list) that defines 
+policy branch? Because there is an external, non-versioned list of
+keys that each user keeps (typically a 1-entry list) that defines
 which keys to trust for the `Root` branch.
 
 The important design point is that the decision for "which policy node
 represents the head of a policy branch" is made by evaluating 'certs' on
 that policy branch, and the validity of those certs is determined by
 looking in the policy you have in the 'parent' branch. So branch `foo`
-says which keys are legal for manipulating policy on branch `foo.bar` 
-(and its sub-branches), and `foo.bar` introduces the sub-branch 
-{{{foo.bar.baz}}} more keys which are legal for manipulating policy on 
+says which keys are legal for manipulating policy on branch `foo.bar`
+(and its sub-branches), and `foo.bar` introduces the sub-branch
+`foo.bar.baz` more keys which are legal for manipulating policy on
 branch `foo.bar.baz`.
 
 If there are multiple policy heads, one is chosen at random and used;
@@ -94,10 +92,10 @@ someone will have to commit a revert edge as well to finish cleaning
 up).
 
 There is also a per-policy-branch "kill switch" that is sticky; once
-the kill-switch on a branch is set it can never be un-set, so it 
+the kill-switch on a branch is set it can never be un-set, so it
 represents a way for an admin to permanently retire a problematic branch,
 for example if the admin's key is compromised.
 
 We also include a form of delegation that exists purely for inserting extra
 levels of authorization and kill-switches, without introducing new branch
-name components. This is a [[SimpleDelegate]].
+name components. This is a simple delegate.

@@ -1,8 +1,9 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 # Using Monotone on Debian
 
 Monotone packages can currently be found in the Debian repositories. Monotone changes very rapidly and versions in sarge and etch may be slightly dated. It is recommend that you use the monotone package from the monotone [website](http://venge.net/monotone) or the version that is in sid/unstable which is generally kept up to date.
+
     apt-get install monotone
 
 # Running a Monotone Server on Debian
@@ -13,20 +14,21 @@ The easiest way to run a monotone server on Debian is to install the `monotone-s
 
 The sarge monotone packages are currently built with [pbuilder](http://www.netfort.gr.jp/~dancer/software/pbuilder-doc/pbuilder-doc.html) running on debian testing. Pbuilder basically extracts a minimal debian system (of a chosen distro) to a temporary directory, chroots there, installs neccessary build-deps, and then builds the given package. `pbuilder create` is used to create a base image (tarball). Note that `pdebuild` is easiest to run as root, due to the chrooting.
 
-Since sarge has too old a version of boost, 1.33 is built (using pbuilder) for sarge then linked to monotone statically. [''I can't find the my build directory for boost, there probably weren't many caveats. I may have had to disable ICU support? - [[People/MattJohnston]]'']. The sarge boost .debs can then be placed in a directory such as `/var/cache/pbuilder/localpackages/`. Create a script `/var/cache/pbuilder/hooks/D70results` with the contents {{{
-#!/bin/sh
-cd /var/cache/pbuilder/localpackages/
-/usr/bin/dpkg-scanpackages . /dev/null > /var/cache/pbuilder/localpackages/Packages
-echo "deb file:/var/cache/pbuilder/localpackages ./" >> /etc/apt/sources.list
-/usr/bin/apt-get update
-}}}
-and to `/etc/pbuilderrc` add the line below, so that those packages are found within the pbuilder instance. {{{
-HOOKDIR="/var/cache/pbuilder/hooks"
-}}}
+Since sarge has too old a version of boost, 1.33 is built (using pbuilder) for sarge then linked to monotone statically. (I can't find the my build directory for boost, there probably weren't many caveats. I may have had to disable ICU support? - [[People/MattJohnston]]). The sarge boost .debs can then be placed in a directory such as `/var/cache/pbuilder/localpackages/`. Create a script `/var/cache/pbuilder/hooks/D70results` with the contents
 
-To build the actual monotone package, untar the release tarball or perform a fresh checkout and neccessary auto* incantations (a clean checkout is required, otherwise `pdebuild` will try to tar up old .o files etc and it will be very slow).  Edit `debian/changelog` and change the version to something like `0.32-sarge0.1`. At the top of `debian/rules`, add a line {{{
-DEB_CONFIGURE_USER_FLAGS=--enable-static-boost
-}}}
+    #!/bin/sh
+    cd /var/cache/pbuilder/localpackages/
+    /usr/bin/dpkg-scanpackages . /dev/null > /var/cache/pbuilder/localpackages/Packages
+    echo "deb file:/var/cache/pbuilder/localpackages ./" >> /etc/apt/sources.list
+    /usr/bin/apt-get update
+
+and to `/etc/pbuilderrc` add the line below, so that those packages are found within the pbuilder instance.
+
+    HOOKDIR="/var/cache/pbuilder/hooks"
+
+To build the actual monotone package, untar the release tarball or perform a fresh checkout and neccessary auto* incantations (a clean checkout is required, otherwise `pdebuild` will try to tar up old .o files etc and it will be very slow).  Edit `debian/changelog` and change the version to something like `0.32-sarge0.1`. At the top of `debian/rules`, add a line
+
+    DEB_CONFIGURE_USER_FLAGS=--enable-static-boost
 
 The sarge version of dpkg-buildpackage doesn't like the `${source:Version}` substitution in `debian/control` so replace it with the now-deprecated `${Source-Version}`.
 

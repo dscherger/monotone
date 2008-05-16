@@ -1,10 +1,10 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 Put newbie info about lua tests here.
 
 Please write your observations about not obvious things when playing with lua tests.
 
-## How to run lua tests 
+## How to run lua tests
 
 One must build `tester`
     make tester     # on unix
@@ -13,7 +13,7 @@ NOTE if you invoke `make tester` on mingw make will try to build tester using im
 
 To run the tests invoke following command:
 
-{{{./tester ./tester lua-testsuite.lua [tests ...]}}}
+    ./tester ./tester lua-testsuite.lua [tests ...]
 
 Testsuite invoked without any test names invoke all tests.
 
@@ -21,9 +21,12 @@ Testsuite invoked without any test names invoke all tests.
 
 This is basic unittesting stuff. Interesting functions:
 
-|| `check( condition: boolean)` || fails when condition is not met ||
-|| `qgrep( pattern: string, filename: string) ` || returns true if pattern is found in given file ||
-|| `check( mtn(args ...), expected_return_value,catch_stdout, catch_stderr)` || idiom: invoke monotone with given args, check return status and possibly remember its standard and diagnostic output ||
-|| `get(filename) ` || read contents of file and return string ||
-|| `mkdir(name)   ` || create directory ||
-|| `addfile(name, contents) ` || idiom for writefile(name, contents) , mtn add name ||
+[[!table data="""
+function name | description
+`check( condition: boolean)` | fails when condition is not met
+`qgrep( pattern: string, filename: string) ` | returns true if pattern is found in given file
+`check( mtn(args ...), expected_return_value,catch_stdout, catch_stderr)` | idiom: invoke monotone with given args, check return status and possibly remember its standard and diagnostic output
+`get(filename) ` | read contents of file and return string
+`mkdir(name)   ` | create directory
+`addfile(name, contents) ` | idiom for writefile(name, contents) , mtn add name
+"""]]
