@@ -112,8 +112,8 @@ sub advanced_find($$$)
 	$advanced_find->{revision_combo_details}->{value} =
 	    $browser->{revision_combo_details}->{value};
 
-	$advanced_find->{tagged_tick}->
-	    set_active($browser->{tagged_tick}->get_active());
+	$advanced_find->{tagged_checkbutton}->
+	    set_active($browser->{tagged_checkbutton}->get_active());
 
 	&{$advanced_find->{update_handler}}($advanced_find, NEW_FIND);
 
@@ -171,207 +171,6 @@ sub advanced_find($$$)
     $advanced_find->{mtn} = undef;
 
     return $ret_val;
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_advanced_find_window
-#
-#   Description  - Creates or prepares an existing advanced find dialog window
-#                  for use.
-#
-#   Data         - $browser     : The browser instance that started the
-#                                 advanced find.
-#                  Return Value : A reference to the newly created or unused
-#                                 advanced find instance record.
-#
-##############################################################################
-
-
-
-sub get_advanced_find_window($)
-{
-
-    my $browser = $_[0];
-
-    my $instance;
-    my $window_type = "advanced_find_window";
-    my $wm = WindowManager->instance();
-
-    # Create a new advanced find dialog window if an unused one wasn't found,
-    # otherwise reuse an existing unused one.
-
-    if (! defined($instance = $wm->find_unused($window_type)))
-    {
-
-	my($renderer,
-	   $tv_column);
-
-	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
-	$instance->{mtn} = $browser->{mtn};
-
-	# Flag to stop recursive calling of callbacks.
-
-	$instance->{in_cb} = 0;
-
-	# Connect Glade registered signal handlers.
-
-	glade_signal_autoconnect($instance->{glade}, $instance);
-
-	# Link in the update handler for the advanced find window.
-
-	$instance->{update_handler} = \&update_advanced_find_state;
-
-	# Get the widgets that we are interested in.
-
-	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{simple_query_radiobutton} =
-	    $instance->{glade}->get_widget("simple_query_radiobutton");
-	$instance->{simple_frame} =
-	    $instance->{glade}->get_widget("simple_frame");
-	$instance->{advanced_frame} =
-	    $instance->{glade}->get_widget("advanced_frame");
-	$instance->{branch_combo} =
-	    $instance->{glade}->get_widget("branch_comboboxentry");
-	$instance->{revision_combo} =
-	    $instance->{glade}->get_widget("revision_comboboxentry");
-	$instance->{tagged_tick} =
-	    $instance->{glade}->get_widget("tagged_checkbutton");
-	$instance->{search_term_combo} =
-	    $instance->{glade}->get_widget("search_term_comboboxentry");
-	$instance->{term_combo} =
-	    $instance->{glade}->get_widget("term_combobox");
-	$instance->{argument_entry} =
-	    $instance->{glade}->get_widget("argument_entry");
-	$instance->{date_dateedit} =
-	    $instance->{glade}->get_widget("date_dateedit");
-	$instance->{revisions_treeview} =
-	    $instance->{glade}->get_widget("revisions_treeview");
-	$instance->{details_textview} =
-	    $instance->{glade}->get_widget("details_textview");
-	$instance->{details_scrolledwindow} =
-	    $instance->{glade}->get_widget("details_scrolledwindow");
-	$instance->{selected_branch_label} =
-	    $instance->{glade}->get_widget("selected_branch_value_label");
-	$instance->{selected_revision_label} =
-	    $instance->{glade}->get_widget("selected_revision_value_label");
-	$instance->{ok_button} = $instance->{glade}->get_widget("ok_button");
-
-	# Setup the advanced find window deletion handlers.
-
-	$instance->{window}->signal_connect
-	    ("delete_event",
-	     sub { $_[2]->{done} = 1 unless ($_[2]->{in_cb}); return TRUE; },
-	     $instance);
-	$instance->{glade}->get_widget("cancel_button")->signal_connect
-	    ("clicked",
-	     sub { $_[1]->{done} = 1 unless ($_[1]->{in_cb}); },
-	     $instance);
-	$instance->{glade}->get_widget("ok_button")->signal_connect
-	    ("clicked",
-	     sub { $_[1]->{done} = $_[1]->{selected} = 1
-		       unless ($_[1]->{in_cb}); },
-	     $instance);
-
-	# Setup the comboboxentry key release signal handlers.
-
-	$instance->{branch_combo}->child()->
-	    signal_connect("key_release_event",
-			   \&combo_key_release_event_cb,
-			   $instance);
-	$instance->{revision_combo}->child()->
-	    signal_connect("key_release_event",
-			   \&combo_key_release_event_cb,
-			   $instance);
-
-	# Setup the comboboxes.
-
-	$instance->{branch_combo}->
-	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$instance->{branch_combo}->set_text_column(0);
-	$instance->{branch_combo}->set_wrap_width(2);
-	$instance->{revision_combo}->
-	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$instance->{revision_combo}->set_text_column(0);
-	$instance->{revision_combo}->set_wrap_width(2);
-	$instance->{search_term_combo}->
-	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$instance->{search_term_combo}->set_text_column(0);
-	$instance->{query_history} = [];
-	$instance->{term_combo}->set_active(0);
-
-	# Setup the revisions list browser.
-
-	$instance->{revisions_liststore} =
-	    Gtk2::ListStore->new("Glib::String");
-	$instance->{revisions_treeview}->
-	    set_model($instance->{revisions_liststore});
-	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Matching Revision Ids");
-	$tv_column->set_sort_column_id(0);
-	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
-	$tv_column->set_attributes($renderer, "text" => 0);
-	$instance->{revisions_treeview}->append_column($tv_column);
-	$instance->{revisions_treeview}->set_search_column(0);
-
-	# Setup the revision details viewer.
-
-	$instance->{details_buffer} =
-	    $instance->{details_textview}->get_buffer();
-	create_format_tags($instance->{details_textview}->get_buffer());
-	$instance->{details_textview}->modify_font($mono_font);
-
-	# Update the advanced find dialog's state.
-
-	$instance->{window}->set_transient_for($browser->{window});
-	$instance->{branch_combo_details}->{preset} = 0;
-	$instance->{revision_combo_details}->{preset} = 0;
-	&{$instance->{update_handler}}($instance, NEW_FIND);
-
-	local $instance->{in_cb} = 1;
-	$instance->{window}->show_all();
-
-	# Register the window for management.
-
-	$wm->manage($instance, $window_type);
-	$wm->add_busy_widgets($instance,
-			      $instance->{details_textview}->
-			          get_window("text"));
-
-    }
-    else
-    {
-
-	my($height,
-	   $width);
-
-	$instance->{in_cb} = 0;
-	local $instance->{in_cb} = 1;
-
-	# Reset the advanced find dialog's state.
-
-	$instance->{mtn} = $browser->{mtn};
-	($width, $height) = $instance->{window}->get_default_size();
-	$instance->{window}->resize($width, $height);
-	$instance->{glade}->get_widget("revisions_hpaned")->set_position(300);
-	$instance->{window}->set_transient_for($browser->{window});
-	$instance->{branch_combo_details}->{preset} = 0;
-	$instance->{revision_combo_details}->{preset} = 0;
-	$instance->{appbar}->set_progress_percentage(0);
-	$instance->{appbar}->clear_stack();
-	&{$instance->{update_handler}}($instance, NEW_FIND);
-	$instance->{window}->show_all();
-
-    }
-
-    $instance->{done} = 0;
-    $instance->{selected} = 0;
-
-    return $instance;
 
 }
 #
@@ -481,8 +280,8 @@ sub populate_button_clicked_cb($$)
     # Simply get the currently selected selector and then insert it into the
     # user's query string.
 
-    $selector = $advanced_find->{term_combo}->get_model()->get
-	($advanced_find->{term_combo}->get_active_iter(), 0);
+    $selector = $advanced_find->{term_combobox}->get_model()->get
+	($advanced_find->{term_combobox}->get_active_iter(), 0);
     $arg = $advanced_find->{argument_entry}->get_text();
     $time_val = strftime("%Y-%m-%dT%H:%M:%S",
 			 localtime($advanced_find->{date_dateedit}->
@@ -533,10 +332,11 @@ sub populate_button_clicked_cb($$)
 	$to_insert = "t:" . (($arg eq "") ? "<Tag Name>" : $arg);
     }
 
-    $pos = $advanced_find->{search_term_combo}->child()->get_position();
-    $advanced_find->{search_term_combo}->child()->insert_text
+    $pos =
+	$advanced_find->{search_term_comboboxentry}->child()->get_position();
+    $advanced_find->{search_term_comboboxentry}->child()->insert_text
 	($to_insert, $pos);
-    $advanced_find->{search_term_combo}->child()->set_position
+    $advanced_find->{search_term_comboboxentry}->child()->set_position
 	($pos + length($to_insert));
 
 }
@@ -574,8 +374,8 @@ sub term_combobox_changed_cb($$)
     # Simply get the currently selected term and then enable/disable the text
     # entry and date entry widgets accordingly.
 
-    $selector = $advanced_find->{term_combo}->get_model()->get
-	($advanced_find->{term_combo}->get_active_iter(), 0);
+    $selector = $advanced_find->{term_combobox}->get_model()->get
+	($advanced_find->{term_combobox}->get_active_iter(), 0);
 
     if ($selector =~ m/^Date .*$/o)
     {
@@ -691,6 +491,196 @@ sub revisions_treeview_row_activated_cb($$$$)
 #
 ##############################################################################
 #
+#   Routine      - get_advanced_find_window
+#
+#   Description  - Creates or prepares an existing advanced find dialog window
+#                  for use.
+#
+#   Data         - $browser     : The browser instance that started the
+#                                 advanced find.
+#                  Return Value : A reference to the newly created or unused
+#                                 advanced find instance record.
+#
+##############################################################################
+
+
+
+sub get_advanced_find_window($)
+{
+
+    my $browser = $_[0];
+
+    my $instance;
+    my $window_type = "advanced_find_window";
+    my $wm = WindowManager->instance();
+
+    # Create a new advanced find dialog window if an unused one wasn't found,
+    # otherwise reuse an existing unused one.
+
+    if (! defined($instance = $wm->find_unused($window_type)))
+    {
+
+	my($renderer,
+	   $tv_column);
+
+	$instance = {};
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{mtn} = $browser->{mtn};
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+
+	# Connect Glade registered signal handlers.
+
+	glade_signal_autoconnect($instance->{glade}, $instance);
+
+	# Link in the update handler for the advanced find window.
+
+	$instance->{update_handler} = \&update_advanced_find_state;
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	foreach my $widget ("appbar",
+			    "simple_query_radiobutton",
+			    "simple_frame",
+			    "advanced_frame",
+			    "branch_comboboxentry",
+			    "revision_comboboxentry",
+			    "tagged_checkbutton",
+			    "search_term_comboboxentry",
+			    "term_combobox",
+			    "argument_entry",
+			    "date_dateedit",
+			    "revisions_hpaned",
+			    "revisions_treeview",
+			    "details_textview",
+			    "details_scrolledwindow",
+			    "selected_branch_value_label",
+			    "selected_revision_value_label",
+			    "ok_button")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
+
+	# Setup the advanced find window deletion handlers.
+
+	$instance->{window}->signal_connect
+	    ("delete_event",
+	     sub { $_[2]->{done} = 1 unless ($_[2]->{in_cb}); return TRUE; },
+	     $instance);
+	$instance->{glade}->get_widget("cancel_button")->signal_connect
+	    ("clicked",
+	     sub { $_[1]->{done} = 1 unless ($_[1]->{in_cb}); },
+	     $instance);
+	$instance->{glade}->get_widget("ok_button")->signal_connect
+	    ("clicked",
+	     sub { $_[1]->{done} = $_[1]->{selected} = 1
+		       unless ($_[1]->{in_cb}); },
+	     $instance);
+
+	# Setup the comboboxentry key release signal handlers.
+
+	$instance->{branch_comboboxentry}->child()->
+	    signal_connect("key_release_event",
+			   \&comboboxentry_key_release_event_cb,
+			   $instance);
+	$instance->{revision_comboboxentry}->child()->
+	    signal_connect("key_release_event",
+			   \&comboboxentry_key_release_event_cb,
+			   $instance);
+
+	# Setup the comboboxes.
+
+	$instance->{branch_comboboxentry}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{branch_comboboxentry}->set_text_column(0);
+	$instance->{branch_comboboxentry}->set_wrap_width(2);
+	$instance->{revision_comboboxentry}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{revision_comboboxentry}->set_text_column(0);
+	$instance->{revision_comboboxentry}->set_wrap_width(2);
+	$instance->{search_term_comboboxentry}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$instance->{search_term_comboboxentry}->set_text_column(0);
+	$instance->{query_history} = [];
+	$instance->{term_combobox}->set_active(0);
+
+	# Setup the revisions list browser.
+
+	$instance->{revisions_liststore} =
+	    Gtk2::ListStore->new("Glib::String");
+	$instance->{revisions_treeview}->
+	    set_model($instance->{revisions_liststore});
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title("Matching Revision Ids");
+	$tv_column->set_sort_column_id(0);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => 0);
+	$instance->{revisions_treeview}->append_column($tv_column);
+	$instance->{revisions_treeview}->set_search_column(0);
+
+	# Setup the revision details viewer.
+
+	$instance->{details_buffer} =
+	    $instance->{details_textview}->get_buffer();
+	create_format_tags($instance->{details_textview}->get_buffer());
+	$instance->{details_textview}->modify_font($mono_font);
+
+	# Update the advanced find dialog's state.
+
+	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{branch_combo_details}->{preset} = 0;
+	$instance->{revision_combo_details}->{preset} = 0;
+	&{$instance->{update_handler}}($instance, NEW_FIND);
+
+	local $instance->{in_cb} = 1;
+	$instance->{window}->show_all();
+
+	# Register the window for management.
+
+	$wm->manage($instance, $window_type);
+	$wm->add_busy_widgets($instance,
+			      $instance->{details_textview}->
+			          get_window("text"));
+
+    }
+    else
+    {
+
+	my($height,
+	   $width);
+
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+
+	# Reset the advanced find dialog's state.
+
+	$instance->{mtn} = $browser->{mtn};
+	($width, $height) = $instance->{window}->get_default_size();
+	$instance->{window}->resize($width, $height);
+	$instance->{revisions_hpaned}->set_position(300);
+	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{branch_combo_details}->{preset} = 0;
+	$instance->{revision_combo_details}->{preset} = 0;
+	$instance->{appbar}->set_progress_percentage(0);
+	$instance->{appbar}->clear_stack();
+	&{$instance->{update_handler}}($instance, NEW_FIND);
+	$instance->{window}->show_all();
+
+    }
+
+    $instance->{done} = 0;
+    $instance->{selected} = 0;
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
 #   Routine      - update_advanced_find_state
 #
 #   Description  - Update the display of the specified advanced find dialog
@@ -759,15 +749,15 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->set_status("Populating branch list");
 	gtk2_update();
 	my $counter = 1;
-	$advanced_find->{branch_combo}->get_model()->clear();
+	$advanced_find->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
-	    $advanced_find->{branch_combo}->append_text($branch);
+	    $advanced_find->{branch_comboboxentry}->append_text($branch);
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@branch_list));
 	    gtk2_update();
 	}
-	$advanced_find->{branch_combo}->child()->
+	$advanced_find->{branch_comboboxentry}->child()->
 	    set_text($advanced_find->{branch_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
@@ -805,7 +795,7 @@ sub update_advanced_find_state($$)
 	    # Get either a list of tags or revision ids depending upon what the
 	    # user has chosen.
 
-	    if ($advanced_find->{tagged_tick}->get_active())
+	    if ($advanced_find->{tagged_checkbutton}->get_active())
 	    {
 		my(%dup_list,
 		   @list);
@@ -849,15 +839,15 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->set_status("Populating revision list");
 	gtk2_update();
 	my $counter = 1;
-	$advanced_find->{revision_combo}->get_model()->clear();
+	$advanced_find->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
-	    $advanced_find->{revision_combo}->append_text($revision);
+	    $advanced_find->{revision_comboboxentry}->append_text($revision);
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_list));
 	    gtk2_update();
 	}
-	$advanced_find->{revision_combo}->child()->
+	$advanced_find->{revision_comboboxentry}->child()->
 	    set_text($advanced_find->{revision_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
@@ -893,7 +883,8 @@ sub update_advanced_find_state($$)
 	{
 	    my($err,
 	       $query);
-	    $query = $advanced_find->{search_term_combo}->child()->get_text();
+	    $query = $advanced_find->{search_term_comboboxentry}->child()->
+		get_text();
 
 	    # Remember the user can type in any old rubbish with advanced
 	    # queries! So protect ourselves.
@@ -955,10 +946,11 @@ sub update_advanced_find_state($$)
 		    {
 			pop(@{$advanced_find->{query_history}});
 		    }
-		    $advanced_find->{search_term_combo}->get_model()->clear();
+		    $advanced_find->{search_term_comboboxentry}->get_model()->
+			clear();
 		    foreach my $entry (@{$advanced_find->{query_history}})
 		    {
-			$advanced_find->{search_term_combo}->
+			$advanced_find->{search_term_comboboxentry}->
 			    append_text($entry);
 		    }
 		}
@@ -997,7 +989,7 @@ sub update_advanced_find_state($$)
 
 	if ($advanced_find->{revisions_treeview_details}->{value} ne "")
 	{
-	    if ($advanced_find->{selected_revision_label}->get_text()
+	    if ($advanced_find->{selected_revision_value_label}->get_text()
 		ne $advanced_find->{revisions_treeview_details}->{value})
 	    {
 		my($branch,
@@ -1042,9 +1034,10 @@ sub update_advanced_find_state($$)
 			last;
 		    }
 		}
-		set_label_value($advanced_find->{selected_branch_label},
+		set_label_value($advanced_find->{selected_branch_value_label},
 				$branch);
-		set_label_value($advanced_find->{selected_revision_label},
+		set_label_value($advanced_find->
+				    {selected_revision_value_label},
 				$advanced_find->{revisions_treeview_details}->
 				    {value});
 
@@ -1055,8 +1048,9 @@ sub update_advanced_find_state($$)
 	{
 	    $advanced_find->{ok_button}->set_sensitive(FALSE);
 	    $advanced_find->{details_buffer}->set_text("");
-	    set_label_value($advanced_find->{selected_branch_label}, "");
-	    set_label_value($advanced_find->{selected_revision_label}, "");
+	    set_label_value($advanced_find->{selected_branch_value_label}, "");
+	    set_label_value($advanced_find->{selected_revision_value_label},
+			    "");
 	}
 
     }

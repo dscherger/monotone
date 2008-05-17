@@ -55,6 +55,7 @@ use integer;
 # Standard Perl and CPAN modules.
 
 use Carp;
+use Gtk2;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 

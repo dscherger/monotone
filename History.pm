@@ -137,7 +137,7 @@ sub display_revision_change_history($$)
     # Display the file's history.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Displaying file history");
+    $instance->{appbar}->set_status("Displaying revision history");
     gtk2_update();
     $counter = 1;
     $instance->{stop} = 0;
@@ -252,7 +252,7 @@ sub display_revision_change_history($$)
     }
 
     $instance->{stop_button}->set_sensitive(FALSE);
-    set_label_value($instance->{numbers_label}, $counter)
+    set_label_value($instance->{numbers_value_label}, $counter)
 	if ($instance->{stop});
 
     # Make sure we are at the top.
@@ -497,23 +497,25 @@ sub history_list_button_clicked_cb($$)
 	if ($details->{button_type} eq "1")
 	{
 	    $instance->{first_revision_id} = $revision_id;
-	    set_label_value($instance->{revision_id_1_label}, $revision_id);
+	    set_label_value($instance->{revision_id_1_value_label},
+			    $revision_id);
 	    if ($instance->{first_revision_id}
 		eq $instance->{second_revision_id})
 	    {
 		$instance->{second_revision_id} = "";
-		set_label_value($instance->{revision_id_2_label}, "");
+		set_label_value($instance->{revision_id_2_value_label}, "");
 	    }
 	}
 	else
 	{
 	    $instance->{second_revision_id} = $revision_id;
-	    set_label_value($instance->{revision_id_2_label}, $revision_id);
+	    set_label_value($instance->{revision_id_2_value_label},
+			    $revision_id);
 	    if ($instance->{second_revision_id}
 		eq $instance->{first_revision_id})
 	    {
 		$instance->{first_revision_id} = "";
-		set_label_value($instance->{revision_id_1_label}, "");
+		set_label_value($instance->{revision_id_1_value_label}, "");
 	    }
 	}
 	if ($instance->{first_revision_id} ne ""
@@ -880,11 +882,11 @@ sub compare_revisions($$$;$)
     gtk2_update();
     @files = sort({ $a->{file_name} cmp $b->{file_name} } @files);
     $i = 1;
-    $instance->{file_combo}->get_model()->clear();
+    $instance->{file_comparison_combobox}->get_model()->clear();
     foreach my $file (@files)
     {
-	$instance->{file_combo}->get_model()->set
-	    ($instance->{file_combo}->get_model()->append(),
+	$instance->{file_comparison_combobox}->get_model()->set
+	    ($instance->{file_comparison_combobox}->get_model()->append(),
 	     CLS_NAME_COLUMN, $file->{file_name},
 	     CLS_LINE_NR_COLUMN, $file->{line_nr});
 	$instance->{appbar}->set_progress_percentage($i ++ / scalar(@files));
@@ -935,8 +937,9 @@ sub file_comparison_combobox_changed_cb($$)
 
     # Get the line number related to the selected file and then jump to it.
 
-    $line_nr = $instance->{file_combo}->get_model()->get
-	($instance->{file_combo}->get_active_iter(), CLS_LINE_NR_COLUMN);
+    $line_nr = $instance->{file_comparison_combobox}->get_model()->get
+	($instance->{file_comparison_combobox}->get_active_iter(),
+	 CLS_LINE_NR_COLUMN);
     $iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
     $instance->{comparison_textview}->scroll_to_iter($iter, 0, TRUE, 0, 0);
 
@@ -972,7 +975,7 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 
     # Work out what revision id to use.
 
-    if ($widget == $instance->{red_revision_button})
+    if ($widget == $instance->{red_revision_change_log_button})
     {
 	$revision_id = $instance->{red_revision_id};
 	$colour = "red";
@@ -1028,23 +1031,18 @@ sub get_history_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{history_label} =
-	    $instance->{glade}->get_widget("history_label");
-	$instance->{history_textview} =
-	    $instance->{glade}->get_widget("history_textview");
-	$instance->{history_scrolledwindow} =
-	    $instance->{glade}->get_widget("history_scrolledwindow");
-	$instance->{stop_button} =
-	    $instance->{glade}->get_widget("stop_button");
-	$instance->{compare_button} =
-	    $instance->{glade}->get_widget("compare_button");
-	$instance->{numbers_label} =
-	    $instance->{glade}->get_widget("numbers_value_label");
-	$instance->{revision_id_1_label} =
-	    $instance->{glade}->get_widget("revision_id_1_value_label");
-	$instance->{revision_id_2_label} =
-	    $instance->{glade}->get_widget("revision_id_2_value_label");
+	foreach my $widget ("appbar",
+			    "history_label",
+			    "history_textview",
+			    "history_scrolledwindow",
+			    "stop_button",
+			    "compare_button",
+			    "numbers_value_label",
+			    "revision_id_1_value_label",
+			    "revision_id_2_value_label")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
 
 	# Setup the file history callbacks.
 
@@ -1061,9 +1059,7 @@ sub get_history_window()
 	     },
 	     $instance);
 	$instance->{stop_button}->signal_connect
-	    ("clicked",
-	     sub { $_[1]->{stop} = 1 unless ($_[1]->{in_cb}); },
-	     $instance);
+	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
 	# Setup the file history viewer.
 
@@ -1089,9 +1085,9 @@ sub get_history_window()
 	$instance->{window}->resize($width, $height);
 	$instance->{stop_button}->set_sensitive(FALSE);
 	$instance->{compare_button}->set_sensitive(FALSE);
-	set_label_value($instance->{numbers_label}, "");
-	set_label_value($instance->{revision_id_1_label}, "");
-	set_label_value($instance->{revision_id_2_label}, "");
+	set_label_value($instance->{numbers_value_label}, "");
+	set_label_value($instance->{revision_id_1_value_label}, "");
+	set_label_value($instance->{revision_id_2_value_label}, "");
 	$instance->{appbar}->set_progress_percentage(0);
 	$instance->{appbar}->clear_stack();
     }
@@ -1141,7 +1137,8 @@ sub get_file_history_helper($$$)
 	if (! exists($hash->{$revision}))
 	{
 	    $hash->{$revision} = 1;
-	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
+	    set_label_value($instance->{numbers_value_label},
+			    scalar(keys(%$hash)));
 	    gtk2_update();
 	    @parents = ();
 	    $instance->{mtn}->parents(\@parents, $revision);
@@ -1186,7 +1183,8 @@ sub get_revision_history_helper($$$)
 	if (! exists($hash->{$parent}))
 	{
 	    $hash->{$parent} = 1;
-	    set_label_value($instance->{numbers_label}, scalar(keys(%$hash)));
+	    set_label_value($instance->{numbers_value_label},
+			    scalar(keys(%$hash)));
 	    gtk2_update();
 	    get_revision_history_helper($instance, $hash, $parent);
 	}
@@ -1237,19 +1235,15 @@ sub get_revision_comparison_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{comparison_label} =
-	    $instance->{glade}->get_widget("comparison_label");
-	$instance->{file_combo} =
-	    $instance->{glade}->get_widget("file_comparison_combobox");
-	$instance->{comparison_textview} =
-	    $instance->{glade}->get_widget("comparison_textview");
-	$instance->{comparison_scrolledwindow} =
-	    $instance->{glade}->get_widget("comparison_scrolledwindow");
-	$instance->{red_revision_button} =
-	    $instance->{glade}->get_widget("red_revision_change_log_button");
-	$instance->{green_revision_button} =
-	    $instance->{glade}->get_widget("green_revision_change_log_button");
+	foreach my $widget ("appbar",
+			    "comparison_label",
+			    "file_comparison_combobox",
+			    "comparison_textview",
+			    "comparison_scrolledwindow",
+			    "red_revision_change_log_button")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
 
 	# Setup the file history callbacks.
 
@@ -1260,7 +1254,7 @@ sub get_revision_comparison_window()
 		 return TRUE if ($instance->{in_cb});
 		 local $instance->{in_cb} = 1;
 		 $widget->hide();
-		 $instance->{file_combo}->get_model()->clear();
+		 $instance->{file_comparison_combobox}->get_model()->clear();
 		 $instance->{comparison_buffer}->set_text("");
 		 $instance->{mtn} = undef;
 		 return TRUE;
@@ -1269,13 +1263,14 @@ sub get_revision_comparison_window()
 
 	# Setup the file combobox.
 
-	$instance->{file_combo}->
+	$instance->{file_comparison_combobox}->
 	    set_model(Gtk2::ListStore->new("Glib::String", "Glib::Int"));
 	$renderer = Gtk2::CellRendererText->new();
-	$instance->{file_combo}->pack_start($renderer, TRUE);
-	$instance->{file_combo}->add_attribute($renderer, "text" => 0);
-	$instance->{file_combo}->get_model()->set
-	    ($instance->{file_combo}->get_model()->append(),
+	$instance->{file_comparison_combobox}->pack_start($renderer, TRUE);
+	$instance->{file_comparison_combobox}->add_attribute($renderer,
+							     "text" => 0);
+	$instance->{file_comparison_combobox}->get_model()->set
+	    ($instance->{file_comparison_combobox}->get_model()->append(),
 	     CLS_NAME_COLUMN, " ",
 	     CLS_LINE_NR_COLUMN, 0);
 
@@ -1299,7 +1294,7 @@ sub get_revision_comparison_window()
 	local $instance->{in_cb} = 1;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
-	$instance->{file_combo}->get_model()->clear();
+	$instance->{file_comparison_combobox}->get_model()->clear();
 	$instance->{appbar}->set_progress_percentage(0);
 	$instance->{appbar}->clear_stack();
     }

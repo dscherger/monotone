@@ -48,6 +48,7 @@ use strict;
 
 # Public routines.
 
+sub colour_to_string($);
 sub create_format_tags($);
 sub generate_revision_report($$$$;$);
 sub generate_tmp_path($);
@@ -533,7 +534,7 @@ sub get_revision_ids($$)
 
     @$revision_ids=();
     return unless ($instance->{revision_combo_details}->{complete});
-    if ($instance->{tagged_tick}->get_active())
+    if ($instance->{tagged_checkbutton}->get_active())
     {
 	$instance->{mtn}->
 	    select($revision_ids,
@@ -622,7 +623,7 @@ sub gtk2_update()
 sub create_format_tags($)
 {
 
-    my($text_buffer) = @_;
+    my $text_buffer = $_[0];
 
     # Normal Black text, assorted styles, on a white background.
 
@@ -706,6 +707,32 @@ sub create_format_tags($)
     $text_buffer->create_tag("annotate-text-2",
 			     "foreground" => "MidnightBlue",
 			     "background" => "SkyBlue");
+
+}
+#
+##############################################################################
+#
+#   Routine      - colour_to_string
+#
+#   Description  - Returns a string representing the specified
+#                  Gtk2::Gdk::Color value.
+#
+#   Data         - $colour      : A Gtk2::Gdk::Color object.
+#                  Return Value : A string containing the colour value.
+#
+##############################################################################
+
+
+
+sub colour_to_string($)
+{
+
+    my $colour = $_[0];
+
+    return sprintf("#%02X%02X%02X",
+		   ($colour->red() >> 8) & 0xff,
+		   ($colour->green() >> 8) & 0xff,
+		   ($colour->blue() >> 8) & 0xff);
 
 }
 #

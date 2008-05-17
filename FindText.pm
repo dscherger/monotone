@@ -60,7 +60,7 @@ sub reset_find_text($);
 
 # Private routines.
 
-sub find_combo_changed_cb($$);
+sub find_comboboxentry_changed_cb($$);
 sub find_current_window($);
 sub get_find_text_window($$);
 #
@@ -117,7 +117,7 @@ sub reset_find_text($)
     # Simply reset the search context for the found find text window.
 
     $instance->{match_offset_start} = $instance->{match_offset_end} = -1
-	if (defined(find_current_window($text_view)));
+	if (defined($instance = find_current_window($text_view)));
 
 }
 #
@@ -146,7 +146,7 @@ sub disable_find_text($$)
 
     # Simply disable/enable the found find text window.
 
-    if (defined(find_current_window($text_view)))
+    if (defined($instance = find_current_window($text_view)))
     {
 	if ($disable)
 	{
@@ -157,7 +157,8 @@ sub disable_find_text($$)
 	{
 	    $instance->{main_vbox}->set_sensitive(TRUE);
 	    $instance->{find_button}->set_sensitive
-		((length($instance->{find_combo}->child()->get_text()) > 0) ?
+		((length($instance->{find_comboboxentry}->child()->get_text())
+		  > 0) ?
 		 TRUE : FALSE);
 	}
     }
@@ -198,23 +199,7 @@ sub find_button_clicked_cb($$)
        $search_term,
        $start_iter);
 
-    $search_term = $instance->{find_combo}->child()->get_text();
-
-    # Just check that the user actually entered something.
-
-    if (length($search_term) == 0)
-    {
-	my $dialog;
-	$dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
-	     ["modal"],
-	     "info",
-	     "close",
-	     "Enter some text to\nsearch for first.");
-	$dialog->run();
-	$dialog->destroy();
-	return;
-    }
+    $search_term = $instance->{find_comboboxentry}->child()->get_text();
 
     # Store the search term in the history.
 
@@ -233,17 +218,17 @@ sub find_button_clicked_cb($$)
 	{
 	    pop(@{$instance->{search_history}});
 	}
-	$instance->{find_combo}->get_model()->clear();
+	$instance->{find_comboboxentry}->get_model()->clear();
 	foreach my $entry (@{$instance->{search_history}})
 	{
-	    $instance->{find_combo}->append_text($entry);
+	    $instance->{find_comboboxentry}->append_text($entry);
 	}
     }
 
     # Get the search parameters.
 
-    $case_sensitive = $instance->{case_sensitive_tick}->get_active();
-    $forward = ! $instance->{search_backwards_tick}->get_active();
+    $case_sensitive = $instance->{case_sensitive_checkbutton}->get_active();
+    $forward = ! $instance->{search_backwards_checkbutton}->get_active();
 
     # Work out where to start searching from.
 
@@ -398,7 +383,7 @@ sub find_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - find_combo_changed_cb
+#   Routine      - find_comboboxentry_changed_cb
 #
 #   Description  - Callback routine called when the user changes the value of
 #                  the find text comboboxentry by selecting an entry from its
@@ -412,7 +397,7 @@ sub find_button_clicked_cb($$)
 
 
 
-sub find_combo_changed_cb($$)
+sub find_comboboxentry_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -421,7 +406,7 @@ sub find_combo_changed_cb($$)
     local $instance->{in_cb} = 1;
 
     $instance->{find_button}->set_sensitive
-	((length($instance->{find_combo}->child()->get_text()) > 0) ?
+	((length($instance->{find_comboboxentry}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
 
 }
@@ -462,9 +447,11 @@ sub find_current_window($)
 #
 #   Description  - Creates or prepares an existing find text window for use.
 #
-#   Data         - $parent    : The parent window widget for the find text
-#                               window.
-#                  $text_view : The textview widget that is to be searched.
+#   Data         - $parent      : The parent window widget for the find text
+#                                 window.
+#                  $text_view   : The textview widget that is to be searched.
+#                  Return Value : A reference to the newly created or unused
+#                                 find text instance record.
 #
 ##############################################################################
 
@@ -499,15 +486,14 @@ sub get_find_text_window($$)
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{main_vbox} = $instance->{glade}->get_widget("main_vbox");
-	$instance->{find_combo} =
-	    $instance->{glade}->get_widget("find_comboboxentry");
-	$instance->{case_sensitive_tick} =
-	    $instance->{glade}->get_widget("case_sensitive_checkbutton");
-	$instance->{search_backwards_tick} =
-	    $instance->{glade}->get_widget("search_backwards_checkbutton");
-	$instance->{find_button} =
-	    $instance->{glade}->get_widget("find_button");
+	foreach my $widget ("main_vbox",
+			    "find_comboboxentry",
+			    "case_sensitive_checkbutton",
+			    "search_backwards_checkbutton",
+			    "find_button")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
 
 	# Setup the find text window deletion handlers.
 
@@ -533,14 +519,16 @@ sub get_find_text_window($$)
 
 	# Setup the comboboxentry changed signal handler.
 
-	$instance->{find_combo}->child()->
-	    signal_connect("changed", \&find_combo_changed_cb, $instance);
+	$instance->{find_comboboxentry}->child()->
+	    signal_connect("changed",
+			   \&find_comboboxentry_changed_cb,
+			   $instance);
 
 	# Setup the combobox.
 
-	$instance->{find_combo}->
+	$instance->{find_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$instance->{find_combo}->set_text_column(0);
+	$instance->{find_comboboxentry}->set_text_column(0);
 	$instance->{search_history} = [];
     }
     else
@@ -560,7 +548,7 @@ sub get_find_text_window($$)
     # into the comboboxentry widget.
 
     $instance->{find_button}->set_sensitive
-	((length($instance->{find_combo}->child()->get_text()) > 0) ?
+	((length($instance->{find_comboboxentry}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
 
     # Store the associated textview and text buffer.

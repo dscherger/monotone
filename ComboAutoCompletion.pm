@@ -5,7 +5,7 @@
 #   Description  - The combo box auto-completion utilities module for the
 #                  mtn-browse application. This module contains assorted
 #                  routines that implement auto-completion for all branch and
-#                  revision combo boxes.
+#                  revision comboboxentry boxes.
 #
 #   Author       - A.E.Cooper.
 #
@@ -49,12 +49,12 @@ use strict;
 
 # Public routines.
 
-sub combo_changed_cb($$);
-sub combo_key_release_event_cb($$$);
+sub comboboxentry_changed_cb($$);
+sub comboboxentry_key_release_event_cb($$$);
 #
 ##############################################################################
 #
-#   Routine      - combo_changed_cb
+#   Routine      - comboboxentry_changed_cb
 #
 #   Description  - Callback routine called when the user changes the value of
 #                  a branch or revision comboboxentry by selecting an entry
@@ -68,7 +68,7 @@ sub combo_key_release_event_cb($$$);
 
 
 
-sub combo_changed_cb($$)
+sub comboboxentry_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -81,17 +81,17 @@ sub combo_changed_cb($$)
        $item,
        $value);
 
-    if ($widget == $instance->{branch_combo})
+    if ($widget == $instance->{branch_comboboxentry})
     {
 	$change_state = BRANCH_CHANGED;
 	$combo_details = $instance->{branch_combo_details};
     }
-    elsif ($widget == $instance->{revision_combo})
+    elsif ($widget == $instance->{revision_comboboxentry})
     {
 	$change_state = REVISION_CHANGED;
 	$combo_details = $instance->{revision_combo_details};
     }
-    elsif ($widget == $instance->{directory_combo})
+    elsif ($widget == $instance->{directory_comboboxentry})
     {
 	$change_state = DIRECTORY_CHANGED;
 	$combo_details = $instance->{directory_combo_details};
@@ -125,7 +125,7 @@ sub combo_changed_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - combo_key_release_event_cb
+#   Routine      - comboboxentry_key_release_event_cb
 #
 #   Description  - Callback routine called when the user changes the value of
 #                  a branch or revision comboboxentry by entering a character
@@ -145,7 +145,7 @@ sub combo_changed_cb($$)
 
 
 
-sub combo_key_release_event_cb($$$)
+sub comboboxentry_key_release_event_cb($$$)
 {
 
     my($widget, $event, $instance) = @_;
@@ -165,23 +165,23 @@ sub combo_key_release_event_cb($$$)
        $old_value,
        $value);
 
-    if ($widget == $instance->{branch_combo}->child())
+    if ($widget == $instance->{branch_comboboxentry}->child())
     {
-	$combo = $instance->{branch_combo};
+	$combo = $instance->{branch_comboboxentry};
 	$change_state = BRANCH_CHANGED;
 	$combo_details = $instance->{branch_combo_details};
 	$name = "branch";
     }
-    elsif ($widget == $instance->{revision_combo}->child())
+    elsif ($widget == $instance->{revision_comboboxentry}->child())
     {
-	$combo = $instance->{revision_combo};
+	$combo = $instance->{revision_comboboxentry};
 	$change_state = REVISION_CHANGED;
 	$combo_details = $instance->{revision_combo_details};
 	$name = "revision";
     }
-    elsif ($widget == $instance->{directory_combo}->child())
+    elsif ($widget == $instance->{directory_comboboxentry}->child())
     {
-	$combo = $instance->{directory_combo};
+	$combo = $instance->{directory_comboboxentry};
 	$change_state = DIRECTORY_CHANGED;
 	$combo_details = $instance->{directory_combo_details};
 	$name = "directory";

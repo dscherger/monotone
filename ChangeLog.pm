@@ -146,10 +146,11 @@ sub get_change_log_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{changelog_textview} =
-	    $instance->{glade}->get_widget("changelog_textview");
-	$instance->{changelog_scrolledwindow} =
-	    $instance->{glade}->get_widget("changelog_scrolledwindow");
+	foreach my $widget ("changelog_textview",
+			    "changelog_scrolledwindow")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
 
 	# Setup the changelog window deletion handler.
 

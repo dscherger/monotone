@@ -229,11 +229,12 @@ sub get_annotation_window()
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	$instance->{appbar} = $instance->{glade}->get_widget("appbar");
-	$instance->{annotation_textview} =
-	    $instance->{glade}->get_widget("annotation_textview");
-	$instance->{annotation_scrolledwindow} =
-	    $instance->{glade}->get_widget("annotation_scrolledwindow");
+	foreach my $widget ("appbar",
+			    "annotation_textview",
+			    "annotation_scrolledwindow")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
 
 	# Setup the annotation window deletion handler.
 
