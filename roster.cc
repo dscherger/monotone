@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -263,6 +264,7 @@ dump(node_t const & n, string & out)
   string attr_map_s;
   dump(n->attrs, attr_map_s);
   oss << "attrs:\n" << attr_map_s;
+  oss << "ancestors: " << n->ancestors.first << ' ' << n->ancestors.second << '\n';
   oss << "type: ";
   if (is_file_t(n))
     {
@@ -814,7 +816,11 @@ roster_t::drop_detached_node(node_id nid)
   // old_locations, all those that used to be in the tree do.  and you should
   // only ever be dropping nodes that were detached, not nodes that you just
   // created and that have never been attached.
-  safe_erase(old_locations, nid);
+
+  // Update; resolving a duplicate name conflict via suture requires
+  // dropping nodes that were never attached. So we erase the key without
+  // checking whether it was present. FIXME: clean up these comments.
+  old_locations.erase(nid);
 }
 
 
@@ -822,17 +828,23 @@ roster_t::drop_detached_node(node_id nid)
 // for it into the old_locations member, because there is no old_location to
 // forbid
 node_id
-roster_t::create_dir_node(node_id_source & nis)
+roster_t::create_dir_node(node_id_source & nis, std::pair<node_id, node_id> ancestors)
 {
   node_id nid = nis.next();
-  create_dir_node(nid);
+  create_dir_node(nid, ancestors);
   return nid;
 }
 void
 roster_t::create_dir_node(node_id nid)
 {
+  create_dir_node(nid, make_pair(nid, the_null_node));
+}
+void
+roster_t::create_dir_node(node_id nid, std::pair<node_id, node_id> ancestors)
+{
   dir_t d = dir_t(new dir_node());
   d->self = nid;
+  d->ancestors = ancestors;
   safe_insert(nodes, make_pair(nid, d));
 }
 
@@ -841,18 +853,24 @@ roster_t::create_dir_node(node_id nid)
 // for it into the old_locations member, because there is no old_location to
 // forbid
 node_id
-roster_t::create_file_node(file_id const & content, node_id_source & nis)
+roster_t::create_file_node(file_id const & content, node_id_source & nis, std::pair<node_id, node_id> ancestors)
 {
   node_id nid = nis.next();
-  create_file_node(content, nid);
+  create_file_node(content, nid, ancestors);
   return nid;
 }
 void
 roster_t::create_file_node(file_id const & content, node_id nid)
 {
+  create_file_node(content, nid, make_pair(nid, the_null_node));
+}
+void
+roster_t::create_file_node(file_id const & content, node_id nid, std::pair<node_id, node_id> ancestors)
+{
   file_t f = file_t(new file_node());
   f->self = nid;
   f->content = content;
+  f->ancestors = ancestors;
   safe_insert(nodes, make_pair(nid, f));
 }
 
@@ -1372,12 +1390,12 @@ namespace
     // this, the two rosters will have identical node_ids at every path.
     union_new_nodes(left, left_new, right, right_new, nis);
 
-    // The other thing we need to fix up is attr corpses.  Live attrs are made
-    // identical by the csets; but if, say, on one side of a fork an attr is
-    // added and then deleted, then one of our incoming merge rosters will
-    // have a corpse for that attr, and the other will not.  We need to make
-    // sure at both of them end up with the corpse.  This function fixes up
-    // that.
+    // The other thing we need to fix up is attr corpses. Live attrs are
+    // made identical by the csets; but if, say, on one side of a fork an
+    // attr is added and then deleted, then one of our incoming merge
+    // rosters will have a corpse for that attr, and the other will not. We
+    // need to make sure that both of them end up with the corpse. This
+    // function does that.
     union_corpses(left, right);
   }
 
@@ -2039,26 +2057,84 @@ namespace
                           node_id nid, node_t n,
                           cset & cs)
   {
+    // Node is deleted; it may have been sutured into another new node
+    //
+    // We cannot easily tell which here - we'd have to search the 'to'
+    // roster for a node with this node as an ancestor. However, we can just
+    // record this node as deleted now, and change it later when the suture
+    // is seen. Note that the suture will be on a later node; nodes are
+    // processed in order, and new nodes occur after deleted nodes.
+
     file_path pth;
     from.get_name(nid, pth);
     safe_insert(cs.nodes_deleted, pth);
   }
 
 
-  void delta_only_in_to(roster_t const & to, node_id nid, node_t n,
+  void delta_only_in_to(roster_t const & from,
+                        roster_t const & to,
+                        node_id nid,
+                        node_t n,
                         cset & cs)
   {
+    MM(nid);
+
+    // Node is new; it may be a suture of two deleted nodes
     file_path pth;
     to.get_name(nid, pth);
-    if (is_file_t(n))
+
+    // Workspace rosters always have ancestors = null. The root node cannot
+    // be sutured.
+    if (n->ancestors.first != the_null_node && n->ancestors.first != nid)
       {
-        safe_insert(cs.files_added,
-                    make_pair(pth, downcast_to_file_t(n)->content));
+        // copy not implemented yet; this is a suture
+        I(n->ancestors.second != the_null_node);
+
+        I(is_file_t(n)); // can't suture directories
+
+        file_path first_anc, second_anc;
+
+        // 'from' may be either left or right merge parent, or this could
+        // be a user suture. So either ancestor could be in either 'from' or
+        // the other parent revision of the merge. If it's in the other
+        // parent, it will show up in the other changeset.
+        //
+        // If we only have one ancestor name, it goes in first_anc.
+
+        if (from.has_node(n->ancestors.first))
+          {
+            from.get_name(n->ancestors.first, first_anc);
+            safe_erase(cs.nodes_deleted, first_anc);
+
+            if (from.has_node(n->ancestors.second))
+              {
+                from.get_name (n->ancestors.second, second_anc);
+                safe_erase(cs.nodes_deleted, second_anc);
+              }
+          }
+        else
+          {
+            from.get_name(n->ancestors.second, first_anc);
+            safe_erase(cs.nodes_deleted, first_anc);
+          }
+
+        safe_insert(cs.nodes_sutured,
+                    make_pair(pth, cset::sutured_t(first_anc, second_anc, downcast_to_file_t(n)->content)));
       }
     else
       {
-        safe_insert(cs.dirs_added, pth);
+        // just added
+        if (is_file_t(n))
+          {
+            safe_insert(cs.files_added,
+                        make_pair(pth, downcast_to_file_t(n)->content));
+          }
+        else
+          {
+            safe_insert(cs.dirs_added, pth);
+          }
       }
+
     for (full_attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       if (i->second.first)
@@ -2136,6 +2212,8 @@ namespace
 void
 make_cset(roster_t const & from, roster_t const & to, cset & cs)
 {
+  MM(from);
+  MM(to);
   cs.clear();
   parallel::iter<node_map> i(from.all_nodes(), to.all_nodes());
   while (i.next())
@@ -2147,13 +2225,13 @@ make_cset(roster_t const & from, roster_t const & to, cset & cs)
           I(false);
 
         case parallel::in_left:
-          // deleted
+          // deleted or sutured
           delta_only_in_from(from, i.left_key(), i.left_data(), cs);
           break;
 
         case parallel::in_right:
-          // added
-          delta_only_in_to(to, i.right_key(), i.right_data(), cs);
+          // added or sutured
+          delta_only_in_to(from, to, i.right_key(), i.right_data(), cs);
           break;
 
         case parallel::in_both:
@@ -2385,6 +2463,14 @@ select_nodes_modified_by_cset(cset const & cs,
   for (map<file_path, file_path>::const_iterator i = cs.nodes_renamed.begin();
        i != cs.nodes_renamed.end(); ++i)
     modified_prestate_nodes.insert(i->first);
+
+  for (map<file_path, cset::sutured_t>::const_iterator i = cs.nodes_sutured.begin();
+       i != cs.nodes_sutured.end(); ++i)
+    {
+      modified_prestate_nodes.insert(i->first);                 // post-state; sutured file added
+      modified_prestate_nodes.insert(i->second.first_ancestor); // pre-state; ancestors deleted
+      modified_prestate_nodes.insert(i->second.second_ancestor);
+    }
 
   // Post-state damage
 

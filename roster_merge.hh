@@ -1,6 +1,7 @@
 #ifndef __ROSTER_MERGE_HH__
 #define __ROSTER_MERGE_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -15,6 +16,14 @@
 #include "diff_patch.hh"
 #include "roster.hh" // needs full definition of roster_t available
 
+// our general strategy is to return a (possibly insane) roster, and a list of
+// conflicts encountered in that roster.  Each conflict encountered in merging
+// the roster creates an entry in this list.
+//
+// If the user specifies a --resolve-conflicts option, and it contains a
+// resolution for a given conflict, the conflict resolutions are added to
+// each conflict object when the option is parsed.
+
 // interactions between conflict types:
 //   node rename conflicts never participate in structural conflicts
 //     (e.g., merge <rename a foo; rename b bar>, <rename a bar> could be
@@ -23,6 +32,11 @@
 //     occurs; 'b' merges cleanly and will be named 'bar' in the resulting
 //     manifest.)
 //
+
+namespace resolve_conflicts
+{
+  enum resolution_t {none, suture, rename};
+}
 
 // renaming the root dir allows these:
 //   -- _MTN in root
@@ -50,10 +64,6 @@ struct orphaned_node_conflict
   node_id nid;
   std::pair<node_id, path_component> parent_name;
 };
-
-// our general strategy is to return a (possibly insane) roster, and a list of
-// conflicts encountered in that roster.  Each conflict encountered in merging
-// the roster creates an entry in this list.
 
 // nodes with multiple name conflicts are left detached in the resulting
 // roster, with null parent and name fields.
@@ -86,6 +96,11 @@ struct duplicate_name_conflict
 {
   node_id left_nid, right_nid;
   std::pair<node_id, path_component> parent_name;
+  std::pair<resolve_conflicts::resolution_t, file_path> left_resolution, right_resolution;
+
+  duplicate_name_conflict ()
+  {left_resolution.first = resolve_conflicts::none;
+    right_resolution.first = resolve_conflicts::none;};
 };
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
@@ -180,11 +195,16 @@ struct roster_merge_result
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,
                                       std::ostream & output) const;
+
   void report_duplicate_name_conflicts(roster_t const & left,
                                        roster_t const & right,
                                        content_merge_adaptor & adaptor,
                                        bool const basic_io,
                                        std::ostream & output) const;
+  void resolve_duplicate_name_conflicts(lua_hooks & lua,
+                                        roster_t const & left_roster,
+                                        roster_t const & right_roster,
+                                        content_merge_adaptor & adaptor);
 
   void report_attribute_conflicts(roster_t const & left,
                                   roster_t const & right,
@@ -211,6 +231,12 @@ roster_merge(roster_t const & left_parent,
              std::set<revision_id> const & right_uncommon_ancestors,
              roster_merge_result & result);
 
+void
+parse_resolve_conflicts_opts (options const & opts,
+                              roster_t const & left_roster,
+                              roster_t const & right_roster,
+                              roster_merge_result & result,
+                              bool & resolutions_given);
 
 // Local Variables:
 // mode: C++

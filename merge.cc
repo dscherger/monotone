@@ -16,6 +16,7 @@
 
 #include "diff_patch.hh"
 #include "merge.hh"
+#include "options.hh"
 #include "revision.hh"
 #include "roster_merge.hh"
 #include "safe_map.hh"
@@ -130,30 +131,47 @@ resolve_merge_conflicts(lua_hooks & lua,
                         roster_t const & left_roster,
                         roster_t const & right_roster,
                         roster_merge_result & result,
-                        content_merge_adaptor & adaptor)
+                        content_merge_adaptor & adaptor,
+                        bool resolutions_given)
 {
-  // FIXME_ROSTERS: we only have code (below) to invoke the
-  // line-merger on content conflicts. Other classes of conflict will
-  // cause an invariant to trip below.  Probably just a bunch of lua
-  // hooks for remaining conflict types will be ok.
-
   if (!result.is_clean())
     result.log_conflicts();
 
-
   if (result.has_non_content_conflicts())
     {
-      result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      if (resolutions_given)
+        {
+          // We just report the conflicts we don't know how to resolve yet.
 
-      result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
-      result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-    }
+          result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+
+          result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+
+          // If there aren't any we can't resolve, resolve the ones we can.
+          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
+
+          // FIXME: need to resolve content conflicts here
+        }
+      else
+        {
+          result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+
+          result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+
+          result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+        }
+      }
   else if (result.has_content_conflicts())
     {
       // Attempt to auto-resolve any content conflicts using the line-merger.
@@ -182,7 +200,9 @@ resolve_merge_conflicts(lua_hooks & lua,
 }
 
 void
-interactive_merge_and_store(lua_hooks & lua, database & db,
+interactive_merge_and_store(lua_hooks & lua,
+                            database & db,
+                            options const & opts,
                             revision_id const & left_rid,
                             revision_id const & right_rid,
                             revision_id & merged_rid)
@@ -202,10 +222,13 @@ interactive_merge_and_store(lua_hooks & lua, database & db,
                right_roster, right_marking_map, right_uncommon_ancestors,
                result);
 
+  bool resolutions_given;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
                                      left_marking_map, right_marking_map);
-  resolve_merge_conflicts(lua, left_roster, right_roster,
-                          result, dba);
+
+  parse_resolve_conflicts_opts (opts, left_roster, right_roster, result, resolutions_given);
+
+  resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,
@@ -224,7 +247,7 @@ store_roster_merge_result(database & db,
 {
   I(result.is_clean());
   roster_t & merged_roster = result.roster;
-  merged_roster.check_sane();
+  merged_roster.check_sane(true); // sutured nodes have temp node ids
 
   revision_t merged_rev;
   merged_rev.made_for = made_for_database;
