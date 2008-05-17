@@ -53,11 +53,9 @@ struct node
   //
   // in workspace rosters, ancestors is always null
   //
-  // We currently only support suture as a merge conflict resolution, so
-  // first and second are from different parent rosters. FIXME: if we add
-  // support for a user suture command, they will be from the same parent
-  // roster; we will need to record that somehow, and indicate it in
-  // changesets.
+  // If this suture is a merge conflict resolution, first and second are
+  // from different parent rosters. If from a user suture command, they are
+  // from the same parent roster.
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
