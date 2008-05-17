@@ -68,7 +68,7 @@ using boost::shared_ptr;
 //
 // If a new revision basic_io format is not strictly a superset of a
 // previous one, we'll need to support migration for this.
-static const unsigned int current_revision_format = 1;
+static const unsigned int current_revision_format = 2;
 
 void revision_t::check_sane() const
 {

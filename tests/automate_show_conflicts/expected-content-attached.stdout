@@ -1,6 +1,6 @@
-    left [0b9e5111f3e13ccb1727bc936aff962020dc9809]
-   right [49d6a10f5f09b064a35f1700966795ae698f0555]
-ancestor [7d854bf031420b7a5c1cafcb908f1020593196a8]
+    left [a35cfd5c26dafc1bc1c36409b44c577675046c3f]
+   right [ce46153d4284818a095254fbb5c3c5cfcf7efa3e]
+ancestor [f9d7c87814f908ce4535cb482578cb124f5e0014]
 
         conflict content
        node_type "file"

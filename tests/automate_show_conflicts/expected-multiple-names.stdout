@@ -1,6 +1,6 @@
-    left [872b02c3aaa3b8ee6acf7e00e67108d5aaa8cb31]
-   right [bf62726ad7c36e553cb8906906866962786e52c0]
-ancestor [560b97068441495b17d8924f6122a1c47213a08b]
+    left [eb568bc80213750287dfad4b4eb871e3cd6a4b9d]
+   right [f22dcdccd2a1f9458e6c23ae8bdc44c62f076228]
+ancestor [38b32f0ae97a61771cd4ff936e79f330ce5d3f73]
 
         conflict multiple_names
        left_type "renamed file"

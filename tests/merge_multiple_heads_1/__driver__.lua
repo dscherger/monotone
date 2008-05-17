@@ -25,9 +25,13 @@ grandparent = base_revision()
 -- Check in ce first so that the old dumb "in whatever order
 -- get_branch_heads returns" algorithm will do it wrong.
 
-writefile_q("file", C("ce"))
+-- File contents are picked empirically to get the revid order checked
+-- below, and also to let the final merge succeed.
+
+writefile_q("file", C("ceee"))
 commit()
 ce_rev = base_revision()
+writefile("ce_rev", ce_rev)
 
 revert_to(grandparent)
 writefile_q("file", C("xx"))
@@ -37,11 +41,13 @@ parent = base_revision()
 writefile_q("file", C("cx"))
 commit()
 cx_rev = base_revision()
+writefile("cx_rev", cx_rev)
 
 revert_to(parent)
-writefile_q("file", C("xe"))
+writefile_q("file", C("xeee"))
 commit()
 xe_rev = base_revision()
+writefile("xe_rev", xe_rev)
 
 -- Double-check that the old dumb "in lexicographic order by revision_id"
 -- algorithm would get this wrong.

@@ -4,7 +4,7 @@ start: remote_keyname = tester@test.net
 start: includes = testbranch
 start: excludes = 
 revision: new_id    = REV1
-revision: revision  = format_version "1"
+revision: revision  = format_version "2"
 
 new_manifest [MAN1]
 
@@ -29,7 +29,7 @@ revision: cert.name  = date
 revision: cert.value = DATE1
 revision: cert.key   = tester@test.net
 revision: new_id    = REV2
-revision: revision  = format_version "1"
+revision: revision  = format_version "2"
 
 new_manifest [MAN2]
 

@@ -1,6 +1,6 @@
-    left [4e25e44deef167f640248e542916736b649e3044]
-   right [0b37ed4689ee191cdd4bd26e5233511329b17032]
-ancestor [27169065f28ccfb64678ac168b3805796bd9e5ae]
+    left [4eb82b9aaa40ecf438307d795bfaaeef66ee5ec6]
+   right [026290fb89cccda5ef49e77ca642b8f1f93cdc25]
+ancestor [eb7acc367bab144dcc5b599c01f77a908265011b]
 
      conflict multiple_names
     left_type "renamed directory"
