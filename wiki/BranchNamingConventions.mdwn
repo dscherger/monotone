@@ -16,7 +16,7 @@ What we currently recommend. Many people object to the reversed domain names. No
 
 >  <a name="clennox1">[[People/CraigLennox]]</a>: Unfortunately, this style puts `net.venge.monotone.gcc4` and `net.venge.monotone.gui` in the same namespace relative to `net.venge.monotone`. At a minimum there needs to be syntax to disambiguate the ancestrial hierarchy from the categorical hierarchy, so that it becomes possible to avoid netsyncing much more than is necessary to get either a single project or a single line of development across multiple projects (**especially** when pulling from very large sites).
 
-Supporters: ["arcatan"], [[People/ChadWalstrom]], ["gwk"]
+Supporters: [[People/arcatan]], [[People/ChadWalstrom]], [[People/gwk]]
 
 ## Hierarchy by Separator
 There are a number of suggestions that consistently use the same general syntax to introduce hierarchy. The only difference between these suggestions is the separator character. The generic format is:
@@ -73,7 +73,7 @@ Same as above, but sticking a scheme on like "monotone-branch" or something. Tha
 
 Cumbersome in general, but makes these full-fledged URLs, able to play in all the URL games etc.
 
-["elb"]: I would opt for mtn://, and stick with this -- then allow monotone to connect directly to the named host and fetch the named branch, or allow for a hostname to be provided. This is what opencm did, for whatever that's worth.
+[[People/elb]]: I would opt for mtn://, and stick with this -- then allow monotone to connect directly to the named host and fetch the named branch, or allow for a hostname to be provided. This is what opencm did, for whatever that's worth.
 
 DanielThompson: I would claim that adding a monotone-specific URL transport into the branch name is a bad idea. Supporting a mtn:// transport command line syntax sugaring for 'monotone pull' (or even 'monotone checkout') would be pleasant but integrating the transport type into the branch name would not assist with this and I would prefer the 'sorta URL style' to a strict URL.
 
@@ -87,7 +87,7 @@ Similar to XML namespaces, that have (generally http://) url, though the URL is 
 
 May be confusing.
 
->  * ["arcatan"]'s thoughts: Let's not use branchs names which look like standard HTTP URLs if they're aren't standard HTTP URLs. If branch is called `http://venge.net/monotone/`, I want to be able to actually pull the repository over HTTP from `http://venge.net/monotone/`, then.
+>  * [[People/arcatan]]'s thoughts: Let's not use branchs names which look like standard HTTP URLs if they're aren't standard HTTP URLs. If branch is called `http://venge.net/monotone/`, I want to be able to actually pull the repository over HTTP from `http://venge.net/monotone/`, then.
 
 Supporters:
 
@@ -142,5 +142,5 @@ Stick in your name and your opinion:
   * [[NathanielSmith]]: I kind of like the forms with `~` or `,` as replacements for `/`. The `~` is more visually distinctive, and `,` has already associated meaning of "sequencing" a la [[MagicSelectors]] (but disappears visually more easily).
   * [[People/ChadWalstrom]]: Branch names should not be transport dependent or interfere with transport naming. I do think it's important to note that that conventions should work *with* but not be enforced *by* the tool, unless it is done via hooks in lua. GNU Arch enforced naming conventions for its branches, which reflected its historical storage mechanism: directories of tarballs containing (uber) patches. This met with a lot of resistance with potential users (and even current users, myself included), especially those not interested in learning the internals and "why's" of naming conventions.
   * [[People/CraigLennox]]: I favour changing as little as possible while addressing the real problem of namespace overload (which I describe at [Java Style](#JavaStyle) above). This ought to be achievable without having to change the selector syntax.
-  * ["gwk"]: Java style (I'm a Java programmer...) it's nice and easy to read and type no shift etc.
+  * [[People/gwk]]: Java style (I'm a Java programmer...) it's nice and easy to read and type no shift etc.
   * [[ExampleUser]]: I think [....]
