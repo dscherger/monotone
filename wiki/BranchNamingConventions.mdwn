@@ -121,7 +121,7 @@ Possible replacement characters include:
   * ,
   * possibly ^ -- it is magical in some contexts/some archaic shells, because it was the original pipe symbol. git uses it in a similar context.
   * *`%` -- only magical (in Unix) at the beginning of a shell token, no longer common in email addresses.* -- Err, what about on windows, which does env-var substitution like %FOO%?
-  ''Good point. Well, `%%` would avoid that, or choosing a clause separator character not likely to appear in a variable name. (Windows passes the `%...%` construct unmodified if it doesn't match a defined variable).''
+  *Good point. Well, `%%` would avoid that, or choosing a clause separator character not likely to appear in a variable name. (Windows passes the `%...%` construct unmodified if it doesn't match a defined variable).*
   
 URL-like things require replacing /, which is used to separate multiple clauses in a selector. So we might end up with:
 
@@ -141,6 +141,6 @@ Stick in your name and your opinion:
    * [[KennethPerry]]: Also if the URL/URI style names was used, things like a monotone kioslave for KDE would fit (similar to the svn:// kioslave).
   * [[NathanielSmith]]: I kind of like the forms with `~` or `,` as replacements for `/`. The `~` is more visually distinctive, and `,` has already associated meaning of "sequencing" a la [[MagicSelectors]] (but disappears visually more easily).
   * [[People/ChadWalstrom]]: Branch names should not be transport dependent or interfere with transport naming. I do think it's important to note that that conventions should work *with* but not be enforced *by* the tool, unless it is done via hooks in lua. GNU Arch enforced naming conventions for its branches, which reflected its historical storage mechanism: directories of tarballs containing (uber) patches. This met with a lot of resistance with potential users (and even current users, myself included), especially those not interested in learning the internals and "why's" of naming conventions.
-  * [[People/CraigLennox]]: I favour changing as little as possible while addressing the real problem of namespace overload (which I describe at [#[[JavaStyle]] Java Style] above). This ought to be achievable without having to change the selector syntax.
+  * [[People/CraigLennox]]: I favour changing as little as possible while addressing the real problem of namespace overload (which I describe at [Java Style](#JavaStyle) above). This ought to be achievable without having to change the selector syntax.
   * ["gwk"]: Java style (I'm a Java programmer...) it's nice and easy to read and type no shift etc.
   * [[ExampleUser]]: I think [....]
