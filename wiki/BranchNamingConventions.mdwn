@@ -34,7 +34,7 @@ Much more familiar way to represent hierarchical structure. Makes the branch nam
 
 EricAnderson: we use: "domain-name"/"project-name"/"project-branch" for global branches and "email-addr"/"project-name"/"project-branch" for personal branches. The standard for the mainline "project-branch" is just main. The only difference from the above examples is that we standardized on always having three levels in the names, which made things map slightly better onto how people coming from CVS seemed to think about branches. It has an interesting effect of if you do checkouts, they automatically show up in directories organized like the above, which is somewhat nice. However, this auto-directory effect probably wouldn't happen on Windows because the pathname separator on windows is \ not /. We haven't had any problem with people thinking they could browse these.
 
-  [[NathanielSmith]]: Since windows actually accepts both \ and / as directory separators, I think that probably would work after all.
+>  [[NathanielSmith]]: Since windows actually accepts both \ and / as directory separators, I think that probably would work after all.
 
 Supporters: [[MatthewNicholson]], [[EricAnderson]], [[DanielThompson]]
 
@@ -51,7 +51,7 @@ Suggested by [[People/RichardLevitte]]. Doesn't look similar to URLs and confuse
 
 Supporters: [[People/RichardLevitte]] (obviously)
 
-### Hierarchy by #
+### Hierarchy by `#`
 
 Example: `[[MyCompanyInc]]#project#branch`, `venge.net#monotone`, `net.venge#monotone#cvssync`, `nobody@bogus#newproj`
 
@@ -77,7 +77,7 @@ Cumbersome in general, but makes these full-fledged URLs, able to play in all th
 
 DanielThompson: I would claim that adding a monotone-specific URL transport into the branch name is a bad idea. Supporting a mtn:// transport command line syntax sugaring for 'monotone pull' (or even 'monotone checkout') would be pleasant but integrating the transport type into the branch name would not assist with this and I would prefer the 'sorta URL style' to a strict URL.
 
-  [[TimothyBrownawell]]: I would suggest supporting URLs of `mtn://hostname/branchname` . This would provide the convenience of having URLs without the problems of having the transport type or host name be part of the branch name.
+>  [[TimothyBrownawell]]: I would suggest supporting URLs of `mtn://hostname/branchname` . This would provide the convenience of having URLs without the problems of having the transport type or host name be part of the branch name.
 
 ## standard URLs style
 
@@ -87,7 +87,7 @@ Similar to XML namespaces, that have (generally http://) url, though the URL is 
 
 May be confusing.
 
-  * ["arcatan"]'s thoughts: Let's not use branchs names which look like standard HTTP URLs if they're aren't standard HTTP URLs. If branch is called `http://venge.net/monotone/`, I want to be able to actually pull the repository over HTTP from `http://venge.net/monotone/`, then.
+>  * ["arcatan"]'s thoughts: Let's not use branchs names which look like standard HTTP URLs if they're aren't standard HTTP URLs. If branch is called `http://venge.net/monotone/`, I want to be able to actually pull the repository over HTTP from `http://venge.net/monotone/`, then.
 
 Supporters:
 
@@ -116,6 +116,7 @@ The basic problem is that selectors currently have both `:` and `/` as magic (me
 This is less of an issue with monotone version 0.27 and later. Selectors can now be escaped with a `\` character, which will cause special characters to be ignored by the selector parser. The `:` is still treated as a special character is certain cases.
 
 Possible replacement characters include:
+
   * `~` -- only magical at the beginning of a shell token
   * ,
   * possibly ^ -- it is magical in some contexts/some archaic shells, because it was the original pipe symbol. git uses it in a similar context.
@@ -123,10 +124,12 @@ Possible replacement characters include:
   ''Good point. Well, `%%` would avoid that, or choosing a clause separator character not likely to appear in a variable name. (Windows passes the `%...%` construct unmodified if it doesn't match a defined variable).''
   
 URL-like things require replacing /, which is used to separate multiple clauses in a selector. So we might end up with:
+
   * `b:venge.net/monotone~a:njs@pobox.com`
   * `b:venge.net/monotone,a:njs@pobox.com`
 
 The mac-style one requires replacing :, so we might end up with things like:
+
   * `b~venge.net:monotone/a~njs@pobox.com`
   * `b,venge.net:monotone/a,njs@pobox.com`
 
