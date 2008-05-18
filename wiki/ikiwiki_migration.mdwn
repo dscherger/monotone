@@ -79,6 +79,9 @@
       or markdown might interpret the whole block as HTML only, not to
       be processed.
 
+      Anchors are referred to as `[Java Style](#JavaStyle)` instead of
+      the moinmoin syntax `[#JavaStyle Java Style]`.
+
 4. Generate, test, rinse, repeat.  `commit` now and again if you like,
    because your page is still tagged as unfinished.
 
