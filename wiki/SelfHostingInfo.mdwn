@@ -71,6 +71,6 @@ $ mtn update ...
 
 ## Making your own server
 
-Setting up your own server is covered in the [Network Service Revisted](http://monotone.ca/monotone.html#Network-Service-Revisited) section of the documentation. Once you have your own server running, if you want me to fetch changes directly from it (and merge them with my monotone versions) you should send an email with your server's host name, collection name, and public key, to the mailing list.
+Setting up your own server is covered in the [[Network_Service_Revisted|monotone.html#Network-Service-Revisited]] section of the documentation. Once you have your own server running, if you want me to fetch changes directly from it (and merge them with my monotone versions) you should send an email with your server's host name, collection name, and public key, to the mailing list.
 
 If you have difficulty setting up a server, or are feeling lazy and would like us to host one for you, send an email to the list. For projects of a reasonable size, or if you just want to play around, we'd be happy to host an extra server for you.
