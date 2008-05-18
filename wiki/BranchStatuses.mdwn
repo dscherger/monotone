@@ -1,4 +1,4 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 
 Currently active development branches:
 
@@ -48,13 +48,15 @@ Adds two-way syncing with git repositories (unix only).
 
 Status: I'm not quite sure.  Petr?  (ms) hasn't been touched for awhile, stalled.
 
-# n.v.m.levitte.select-heads-of
+# n.v.m.experiment.meta-selector
+
+(renamed from n.v.m.levitte.select-heads-of)
 
 Contact: [[People/RichardLevitte]]
 
-Adds an H: selector that runs erase_ancestors over the set determined by the rest of the selector.
+Adds a framework for [[MagicSelectors]].  Currently implements [[H:|MagicSelectors#heads]] and [[branch point/last common ancestor|MagicSelectors#branchpoint]].
 
-Status: Blocked on figuring out the right way to integrate this cleanly with the rest of the selector functionality.  See [[MagicSelectors]].
+Status: Ready for merge with n.v.m.
 
 # n.v.m.levitte.usher
 
@@ -127,7 +129,7 @@ Contact: [[People/ChristofPetig]] and [[People/MarkusSchiltknecht]] respectively
 
 Both branches are about partial pulls, i.e. storing only revisions newer than those of a certain horizon (including them). See [[PartialPull]] for more information and a nice illustration. Both branches introduce some form of a sentinel, which covers an inexistant or incomplete revision. The difference for n.v.m.gaps is, that these sentinels don't just cover all revisions from the covered one until the root (null revision), but to any arbitrary revision, from which we have the revision data again.
 
-For more information, see this mailing list thread here: http://lists.gnu.org/archive/html/monotone-devel/2007-05/msg00185.html
+For more information, see this mailing list thread here: <http://lists.gnu.org/archive/html/monotone-devel/2007-05/msg00185.html>
 
 Status: Experimentation
 
@@ -175,11 +177,11 @@ Status: Stalled for quite a long time, because there hasn't yet been an consensu
 
 Contact: [[People/ThomasKeller]]
 
-An attempt to remove the --branch option from "mtn commit" and replace the functionality by a new "mtn branch" command which explicitely sets the branch stanza in _MTN/options. This basically works, but is not thoroughly thought through for now, basically because we loose the old branch information after "mtn branch", so subsequent commands like "mtn update" which still rely on the old_revision and the recorded branch name fail badly unless the workspace is committed again. So, what still needs to be done is
+An attempt to remove the --branch option from "mtn commit" and replace the functionality by a new "mtn branch" command which explicitely sets the branch stanza in \_MTN/options. This basically works, but is not thoroughly thought through for now, basically because we loose the old branch information after "mtn branch", so subsequent commands like "mtn update" which still rely on the old_revision and the recorded branch name fail badly unless the workspace is committed again. So, what still needs to be done is
 
  1. if mtn branch is triggered on an unmodified workspace, mtn commit should succeed and just add the new branch cert to old_revision
  1. if the branch is switched, the new branch name should be recorded as "new_branch" while keeping "branch" untouched unless commit happens, so "mtn update" and friends work properly
- 1. mtn revert should remove any "new_branch" stanza from _MTN/options
+ 1. mtn revert should remove any "new_branch" stanza from \_MTN/options
  1. eventually "mtn branch" should be renamed to "mtn switch" and get some more functionality (i.e. if switched to a named, existing branch, update the workspace to the head of this branch)
 
 Status: Stalled, decide what to do with all that.
