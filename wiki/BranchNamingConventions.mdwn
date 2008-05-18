@@ -8,15 +8,13 @@ Keep in mind that several of the possible branch syntaxes require changes to sel
 
 # Branch syntax
 
-[[Anchor(JavaStyle)]]
-## Java style
+## <a name="JavaStyle">Java style</a>
 
 Example: `net.venge.monotone`, `net.venge.monotone.cvssync`, `com.gmail.accountname.project`
 
 What we currently recommend. Many people object to the reversed domain names. No way to do email-based branches, though some use their email address for a "hostname". This only becomes a "problem" when an actual hostname shares the accountname *and* hosts monotone projects as well.
 
-[[Anchor(clennox1)]]
-  [[People/CraigLennox]]: Unfortunately, this style puts `net.venge.monotone.gcc4` and `net.venge.monotone.gui` in the same namespace relative to `net.venge.monotone`. At a minimum there needs to be syntax to disambiguate the ancestrial hierarchy from the categorical hierarchy, so that it becomes possible to avoid netsyncing much more than is necessary to get either a single project or a single line of development across multiple projects (**especially** when pulling from very large sites).
+>  <a name="clennox1">[[People/CraigLennox]]</a>: Unfortunately, this style puts `net.venge.monotone.gcc4` and `net.venge.monotone.gui` in the same namespace relative to `net.venge.monotone`. At a minimum there needs to be syntax to disambiguate the ancestrial hierarchy from the categorical hierarchy, so that it becomes possible to avoid netsyncing much more than is necessary to get either a single project or a single line of development across multiple projects (**especially** when pulling from very large sites).
 
 Supporters: ["arcatan"], [[People/ChadWalstrom]], ["gwk"]
 
