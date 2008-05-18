@@ -66,6 +66,19 @@
       few words in a paragraph, we don't get many
       lines of sourounding diffs that are just reflowing.
 
+    * It seems like anchors must be coded in HTML.  The recommendation
+      is to put the `<a name` tag inside the markdown formatting, not
+      around.  Like this:
+
+          `## <a name="JavaStyle">Java style</a>`
+
+      Not like this:
+
+          `<a name="JavaStyle">## Java style</a>`
+
+      or markdown might interpret the whole block as HTML only, not to
+      be processed.
+
 4. Generate, test, rinse, repeat.  `commit` now and again if you like,
    because your page is still tagged as unfinished.
 
