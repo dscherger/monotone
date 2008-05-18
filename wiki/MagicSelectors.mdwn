@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
 There are a number of interesting problems and use cases where the current selector syntax isn't quite as useful as might be desirable.   Various forms of "magic" selectors have been suggested.  Some of these allow reasonably basic navigation of parts of the ancestry graph that don't currently have good names, others verge on the truly magical or are useful for very clever selection descriptions.
 
@@ -34,13 +34,13 @@ Examples:  m:HEAD, m:BASE, m:ANCESTOR, m:LEFT-ANCESTOR, m:LAST-PROPAGATE
 # Individual Selector Suggestions
 
 
-## working copy base
+## <a name="workingcopybase">working copy base</a>
 
 the version in MT/revision.  Requires a working copy.
      Possible letters: B?
      Usage: 'monotone diff -rB:' is equivalent to 'monotone diff'
 
-## update target
+## <a name="updatetarget">update target</a>
 
 the version(s) that 'monotone update' will take
 you to (maybe allow a branch as the selector value, and that
@@ -52,7 +52,7 @@ means what 'monotone update -bfoo' does?)
      usage: 'monotone diff -rB: -rU:' prints the changes that will be
       applied to the working copy if 'monotone update' is run.
 
-## branch point
+## <a name="branchpoint">branch point</a>
 
 the minimal common ancestor(s) of the current version
 and the heads of some other branch.  
@@ -69,7 +69,7 @@ and the heads of some other branch.
       'monotone diff -rS:net.venge.monotone -rh:net.venge.monotone'
         -- what does net.venge.monotone have that this branch doesn't?
 
-## predecessor
+## <a name="predecessor">predecessor</a>
 
 takes a number (defaults to 1), and after evaluating
 the rest of the selector, replaces each selected revision with
@@ -77,12 +77,12 @@ the set of revisions that are reachable by taking a length-n
 walk upwards from that revision.
      possible letters: P? ("predecessor", "parent") A? ("ancestor")
 
-## successor
+## <a name="successor">successor</a>
 
 same as predecessor, but with a downward walk.
      Possible letters: S? C? ("child"), D? ("descendent")
 
-## heads
+## <a name="heads">heads</a>
 
 after evaluating the rest of the selector, runs
 erase_ancestors on the set so generated.
@@ -90,7 +90,7 @@ erase_ancestors on the set so generated.
      (NB: different from non-magic "h:" which gives heads of a branch
      -- this will probably confuse people?)
 
-## disambiguation
+## <a name="disambiguation">disambiguation</a>
 
 Takes a single number.  When the rest of the
 selector does not specify a unique revision, then this can be
@@ -105,11 +105,11 @@ used to pick the nth of the revisions that were narrowed down to
       update targets, use 'update -rU:/N:<number>' to pick from
       following list:>
 
-## initial/root revision
+## <a name="initialrevision">initial/root revision</a>
 
 The root of the ancestry tree (for the current revision?)
 
-## time-based?
+## <a name="time-based?">time-based?</a>
 
 would it be useful to have "latest of this set", "earliest of this set"
 selectors?  obviously time is not normally very useful in our model, but
