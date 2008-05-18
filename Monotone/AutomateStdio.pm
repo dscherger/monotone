@@ -179,16 +179,15 @@ sub new($;$)
 
     my $this;
 
-    $this = {};
-    $this->{db_name} = $db_name;
-    $this->{mtn_pid} = 0;
-    $this->{mtn_in} = undef;
-    $this->{mtn_out} = undef;
-    $this->{mtn_err} = undef;
-    $this->{mtn_err_msg} = "";
-    $this->{mtn_aif_major} = 0;
-    $this->{mtn_aif_minor} = 0;
-    $this->{cmd_cnt} = 0;
+    $this = {db_name       => $db_name,
+	     mtn_pid       => 0,
+	     mtn_in        => undef,
+	     mtn_out       => undef,
+	     mtn_err       => undef,
+	     mtn_err_msg   => "",
+	     mtn_aif_major => 0,
+	     mtn_aif_minor => 0,
+	     cmd_cnt       => 0};
 
     startup($this);
 
