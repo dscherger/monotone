@@ -50,9 +50,7 @@ Updating a large tree sometimes seems to take a good amount of time on a large t
 
 See [[PerformanceWork/SQLiteAnalyzeDiscussion]].
 
-
-<a name="automated-performance-testsuite"></a>
-# Automated Performance Test Suite
+# <a name="automated-performance-testsuite">Automated Performance Test Suite</a>
 
 Timothy Brownawell created the beginnings of such a beast.  You can find it in branch net.venge.monotone, in the file contrib/monoprof.sh
 
