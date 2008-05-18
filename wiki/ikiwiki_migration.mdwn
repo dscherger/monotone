@@ -52,6 +52,11 @@
     * external web links take the form `[link text](http://url)`
       rather than `[http://url link text]`
 
+      An exception: when the URL is the link text as well, it can be
+      simplified like this: `<http://url>`  
+      The angle brackets are *required* in this case.  Ikiwiki and
+      markdown do not make any attempt to interpret URLs otherwise.
+
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
     * when migrating page markup, try to minimise the number of
