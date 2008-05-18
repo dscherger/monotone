@@ -1,6 +1,6 @@
-    left [2badba7afcd709c190d4203b954951a7fd7c6b20]
-   right [a757a3c19ce030fcdc9be0038307454ef7fd1ade]
-ancestor [d5a2d848824be04c11fc2408167ef980bdd0fa9f]
+    left [4ceae2a74d9d0d7341d2cd01a71c9e84eb1fefa7]
+   right [16a19ace8ec26cd2ed13c7e727a3021e82a2204f]
+ancestor [b5f52dbc0dc530adffbdd140a7de5b129cf74f29]
 
         conflict orphaned_file
       right_type "deleted directory"

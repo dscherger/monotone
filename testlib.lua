@@ -618,6 +618,8 @@ function post_cmd(result, ret, stdout, stderr, ident)
       err("Check failed (stdout): doesn't match", 3)
     end
   elseif type(stdout) == "table" then
+    -- can't do 'canonicalize' here; some tests rely on that _not_
+    -- happening, because the compared file is generated.
     if not samefile(ident .. "stdout", stdout[1]) then
       err("Check failed (stdout): doesn't match", 3)
     end

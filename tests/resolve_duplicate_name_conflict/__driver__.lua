@@ -88,6 +88,8 @@ get ("conflicts-resolved", "_MTN/conflicts")
 -- This succeeds
 check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, true, true)
 
+-- FIXME: check for reasonable messages from merge
+
 -- update fails if thermostat.c is missing, and if
 -- thermostat-honeywell.c, thermostat-westinghouse.c are in the way.
 -- So clean that up first. FIXME: update needs --ignore-missing,
@@ -96,6 +98,12 @@ check(mtn("revert", "--missing"), 0, false, false)
 remove ("thermostat-honeywell.c")
 remove ("thermostat-westinghouse.c")
 check(mtn("update"), 0, true, true)
+
+-- verify that we got revision_format 2
+get ("expected-merged-revision")
+check(mtn("automate", "get_revision", base_revision()), 1, true, nil)
+canonicalize("stdout")
+check_same_file("expected-merged-revision", "stdout")
 
 -- Verify file contents
 check("thermostat westinghouse" == readfile("thermostat-westinghouse.c"))

@@ -2,7 +2,7 @@
 old_type "directory"
 new_type "directory"
  fs_type "directory"
-   birth [9453d17be20e9fe09f32d1cdb94372f538b9a69f]
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
   status "known"
 
     path "source/added"
@@ -20,7 +20,7 @@ old_type "file"
 old_type "file"
 new_type "file"
  fs_type "none"
-   birth [9453d17be20e9fe09f32d1cdb94372f538b9a69f]
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
   status "missing"
 
     path "source/rename_source"
@@ -33,21 +33,21 @@ new_path "source/rename_target"
 new_type "file"
 old_path "source/rename_source"
  fs_type "file"
-   birth [9453d17be20e9fe09f32d1cdb94372f538b9a69f]
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
   status "rename_target" "known"
 
     path "source/source_1"
 old_type "file"
 new_type "file"
  fs_type "file"
-   birth [9453d17be20e9fe09f32d1cdb94372f538b9a69f]
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
   status "known"
 
     path "source/source_2"
 old_type "file"
 new_type "file"
  fs_type "file"
-   birth [9453d17be20e9fe09f32d1cdb94372f538b9a69f]
+   birth [cb271687054afd3c2b873c8994f206f08fb240d3]
   status "known"
  changes "content"
 

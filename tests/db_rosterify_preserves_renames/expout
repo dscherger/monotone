@@ -1,8 +1,8 @@
-format_version "2"
+format_version "1"
 
 new_manifest [0ee54a587bc4465f17eaf5de2807fbd7d9f46c75]
 
-old_revision [66379f0924a543ad4660e1328c3dabf68f8a3ce0]
+old_revision [3ee4662e91afd842e0eb0e6681db790bf8c3e627]
 
 rename "testdir_start"
     to "testdir_end"

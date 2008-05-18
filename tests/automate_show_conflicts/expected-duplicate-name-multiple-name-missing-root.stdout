@@ -1,6 +1,6 @@
-    left [22a78387206cd5c57c1928e6fa88a3ccd63482b3]
-   right [1cc80b23fa548415014fc90687c02d2bc3fa8e27]
-ancestor [344c8d50b9b63b2db7b4e18e3e32e4684df98f64]
+    left [254fd127afd769a33979a843f5e3d8f2457097e6]
+   right [6e0b7ffd0171d72db85dfc54234a78a35dd76cf3]
+ancestor [5bc669f00cf90b76dd38077827565b624d823756]
 
      conflict missing_root
     left_type "pivoted root"

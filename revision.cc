@@ -63,12 +63,34 @@ using boost::dynamic_bitset;
 using boost::shared_ptr;
 
 // The revision format number must be incremented whenever any basic_io
-// format used for revision data in the database changes. Note that this is
-// _not_ the database schema format; see schema_migration for that.
+// format used for revision data in the database changes, but only once per
+// monotone release. Note that this is _not_ the database schema format; see
+// schema_migration for that.
 //
-// If a new revision basic_io format is not strictly a superset of a
-// previous one, we'll need to support migration for this.
+// We use the oldest format number possible when writing each revision. That
+// means that if an old revision is regenerated, it has the same revid
+// (revision_format is included in the text that is hashed to compute the
+// revid). That maintains history, maximizes interoperability between
+// monotone versions, and simplifies maintaining the test suite; there are
+// many tests that have hard-coded revision ids, that would spuriously break
+// if the revision_format number changed. schema_migration and
+// workspace_migration in particular have this problem.
 static const unsigned int current_revision_format = 2;
+static const unsigned int oldest_supported_revision_format = 1;
+
+unsigned int
+revision_t::required_revision_format() const
+{
+  // Format 2 supports file suturing, so check the edges to see if there are
+  // any sutures.
+  unsigned int result = oldest_supported_revision_format;
+  
+  for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
+    if (i->second->nodes_sutured.size() > 0)
+      result = 2;
+
+  return result;
+}
 
 void revision_t::check_sane() const
 {
@@ -1806,7 +1828,7 @@ print_insane_revision(basic_io::printer & printer,
 {
 
   basic_io::stanza format_stanza;
-  format_stanza.push_str_pair(syms::format_version, boost::lexical_cast<string>(current_revision_format));
+  format_stanza.push_str_pair(syms::format_version, boost::lexical_cast<string>(rev.required_revision_format()));
   printer.print_stanza(format_stanza);
 
   basic_io::stanza manifest_stanza;

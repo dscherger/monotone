@@ -1,6 +1,6 @@
-    left [298472e3a30969d3091ca5d1884f586dbb779909]
-   right [e012baeb4f82b60b14d329b0aec96b6566b088ad]
-ancestor [1869286d3425bea226f20e12eae8c3a7ea4ca37e]
+    left [36e62406e9792ad64f7af73c5192d2e4e53306c8]
+   right [2b96f8e6ed2bb566c22ebcbdd06d34d1043c237f]
+ancestor [56cafb3485be6d40923bacaddcd19cde63433028]
 
      conflict duplicate_name
     left_type "added file"
