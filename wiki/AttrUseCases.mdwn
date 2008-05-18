@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 Attributes are really powerful, but it's not clear what parts of monotone should respond to them, what should be hookable, etc.  To figure this out, here are some use cases for attributes:
 
