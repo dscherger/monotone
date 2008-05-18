@@ -27,8 +27,8 @@ ideas up our sleeves still... if all this gets you excited
 too -- maybe this is a project for you :-)
 
 For more information on monotone in general, the comprehensive
-[[manual|docs]] has details on how
-monotone works, and the wiki ([FrontPage]) is used for scratch work
+[[manual|docs/index.html]] has details on how
+monotone works, and the wiki ([[FrontPage]]) is used for scratch work
 about various work in progress.
 
 Monotone is written in clean and straightforward C++.  A number

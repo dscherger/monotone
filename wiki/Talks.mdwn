@@ -2,7 +2,7 @@
 
 Talks given about monotone -- perhaps useful if you'd like to give your own talk, or impress your friends by pretending that you attended one.
 
-# [[CodeCon]] 2006
+# CodeCon 2006
 
 Talk given by [[People/NathanielSmith]] for [CodeCon 2006](http://codecon.org/2006), with [[People/GraydonHoare]] joining in for the question period.
 
