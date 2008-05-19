@@ -1,4 +1,4 @@
-[[tag migration-wip]]
+[[tag migration-done]]
 
 
 # Using SSH-Agent with Monotone
@@ -34,6 +34,7 @@ The serving code does some encryption that does not fit into ssh-agent's signing
 ## ssh-agent and screen
 
 This does not directly apply to monotone but is useful for those developers who use screen heavily. If you add the following to your .bash_profile your screen sessions will be able to use a forwarded ssh-agent when you reattach from a new ssh session:
+
     if [ -n "$SSH_AUTH_SOCK" ]; then
         screen_ssh_agent="/tmp/${USER}-screen-ssh-agent.sock"
         if [ ${STY} ]; then
@@ -44,16 +45,18 @@ This does not directly apply to monotone but is useful for those developers who 
             ln -snf ${SSH_AUTH_SOCK} ${screen_ssh_agent}
         fi
     fi
-(copied from the third comment on http://woss.name/2005/08/17/using-ssh-agent-and-screen-together/)
+
+(copied from the third comment on <http://woss.name/2005/08/17/using-ssh-agent-and-screen-together/>)
 
 ## Mac OS X and ssh-agent
 
-There is a program called SSHKeychain for Mac OS X which makes using ssh-agent even easier. It not only automatically starts ssh-agent and sets the appropriate environment variables for you but can also save your keys' passwords in your Keychain. Unfortunately it does not currently (as of version 0.7.2) support the types of keys that monotone exports. This can be fixed with a simple patch:
+There is a program called SSHKeychain for Mac OS X which makes using ssh-agent even easier. It not only automatically starts ssh-agent and sets the appropriate environment variables for you but can also save your keys' passwords in your Keychain. Unfortunately it does not currently (as of version 0.8.1) support the types of keys that monotone exports. This can be fixed with a simple patch:
+
     Index: Libs/SSHKey.m
     ===================================================================
-    --- Libs/SSHKey.m	(revision 96)
+    --- Libs/SSHKey.m	(revision 99)
     +++ Libs/SSHKey.m	(working copy)
-    @@ -20,6 +20,8 @@
+    @@ -32,6 +32,8 @@
             return SSH_KEYTYPE_RSA1;
         else if ([[lines objectAtIndex:0] isEqualToString:@"-----BEGIN RSA PRIVATE KEY-----"])
             return SSH_KEYTYPE_RSA;
