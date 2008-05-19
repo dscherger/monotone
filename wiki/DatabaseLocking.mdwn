@@ -1,28 +1,31 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
-*(source discussion: http://colabti.de/irclogger/irclogger_log/monotone?date=2005-12-08,Thu&sel=90#l151)*
+*(source discussion: <http://colabti.org/irclogger/irclogger_log/monotone?date=2005-12-08,Thu&sel=90#l151>)*
 
 Discussion of database locking in Monotone, problems and suggested solutions.
 
-When monotone code needs to start a transaction, it instansiates "transaction_guard". By default this leads to execution of the  SQL statement "BEGIN EXCLUSIVE". Transaction guards can also be created in a non-exclusive mode; in this case "BEGIN DEFERRED" is run. This should only be done if it is believed no database writes will be performed.
+When monotone code needs to start a transaction, it instansiates `transaction_guard`. By default this leads to execution of the  SQL statement `BEGIN EXCLUSIVE`. Transaction guards can also be created in a non-exclusive mode; in this case `BEGIN DEFERRED` is run. This should only be done if it is believed no database writes will be performed.
 
-We are trying to monotone bailing when a transaction involving writes is committed. "BEGIN EXCLUSIVE" guarantees that monotone will exit early and with a sensible error if unable to gain a write lock on the database. However, it has the major disadavantage that readers are excluded from the database for the entire time the command is running.
+We are trying to monotone bailing when a transaction involving writes is committed. `BEGIN EXCLUSIVE` guarantees that monotone will exit early and with a sensible error if unable to gain a write lock on the database. However, it has the major disadavantage that readers are excluded from the database for the entire time the command is running.
 
-Sqlite3 has several levels of locking. Some discussion has occurred of switching to "BEGIN IMMEDIATE" rather than "BEGIN EXLUSIVE"; only one process can hold an IMMEDIATE lock but SHARED (reader) access is still permitted. At the time of commit, IMMEDIATE transitions to PENDING (no new readers) to EXCLUSIVE. The amount of time readers are unable to access the DB is reduced, however we still encounter the crash if there is a reader in the db (see use case from NJS below).
+Sqlite3 has several levels of locking. Some discussion has occurred of switching to `BEGIN IMMEDIATE` rather than `BEGIN EXLUSIVE`; only one process can hold an *IMMEDIATE* lock but *SHARED* (reader) access is still permitted. At the time of commit, *IMMEDIATE* transitions to *PENDING* (no new readers) to EXCLUSIVE. The amount of time readers are unable to access the DB is reduced, however we still encounter the crash if there is a reader in the db (see use case from [[NJS|people/NathanielSmith]] below).
 
-Sqlite does save us from "dirty" reads; a dirty read is seeing uncommitted writes in another transaction.
+Sqlite does save us from *dirty* reads; a dirty read is seeing uncommitted writes in another transaction.
+
 
 # Use cases
 
- * (from njs) e.g., "monotone diff | less <C-z> monotone commit" -> crash, db is locked
- * [[ViewMTN]] calls monotone a lot, only to do reads. It can't access the db when the database is being updated with "monotone pull".
+ * (from [[njs|people/NathanielSmith]]) e.g., `monotone diff | less`, `<C-z>`, `monotone commit` -> crash, db is locked
+ * [ViewMTN](http://grahame.angrygoats.net/moinmoin/ViewMTN) calls monotone a lot, only to do reads. It can't access the db when the database is being updated with `monotone pull`.
+
 
 # Ways forward
 
-15:22 <@njs> "In the current implementation, the RESERVED lock is also released, but that is not essential. Future versions of SQLite might provide a "CHECKPOINT" SQL command that will commit all changes made so far within a transaction but retain the RESERVED lock so that additional changes can be made without given any other process an opportunity to write."
-15:22 <@njs> ^^ sounds like what we've been wanting...
+    15:22 <@njs> "In the current implementation, the RESERVED lock is also released, but that is not essential. Future versions of SQLite might provide a "CHECKPOINT" SQL command that will commit all changes made so far within a transaction but retain the RESERVED lock so that additional changes can be made without given any other process an opportunity to write."
+    15:22 <@njs> ^^ sounds like what we've been wanting...
 
 Reference:
- * http://www.sqlite.org/lang_transaction.html
- * http://www.sqlite.org/lockingv3.html
- * http://www.postgresql.org/docs/8.1/static/transaction-iso.html
+
+ * <http://www.sqlite.org/lang_transaction.html>
+ * <http://www.sqlite.org/lockingv3.html>
+ * <http://www.postgresql.org/docs/8.1/static/transaction-iso.html>

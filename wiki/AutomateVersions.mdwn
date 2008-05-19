@@ -75,4 +75,4 @@ A = Addition, B = Backwards-compatible change, C = Backwards-incompatible change
 
 <sup>1</sup> While the format of several command has not been changed between 0.39 and 0.40, the output of the commands (f.e. `automate inventory`)  may differ because the interpretation of the --depth option changed in 0.40 (previously: 0 = the node + its immediate children, now: 0 = only this node)
 
-If you like to get more information about certain command / format changes, please consult [monotone's Automation documentation](http://monotone.ca/docs/Automation.html).
+If you like to get more information about certain command / format changes, please consult [[monotone's_Automation_documentation|docs/Automation.html]].
