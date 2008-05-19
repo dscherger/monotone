@@ -20,12 +20,12 @@ steps:
 
  1. Get or build a copy of the most recent monotone release.
  1. Initialize a database, which is just a regular file you'll store
- versions and certificates into.
+    versions and certificates into.
 
         $ mtn --db=mtn.db db init
 
  1. Run this command, you should get something similar to these
- results:
+    results:
 
         $ mtn --db=mtn.db pull monotone.ca "net.venge.monotone*"
         mtn: setting default server to monotone.ca
@@ -44,46 +44,46 @@ steps:
         mtn:   86.4 M |       528 | 50445/50445 | 12557/12557
         mtn: successful exchange with monotone.ca
     
-  Note the key fingerprint in that output; you may wish to verify that
-  it really is `3e6f5225bc2fffacbc20c9de37ff2dae1e20892e`.
+    Note the key fingerprint in that output; you may wish to verify that
+    it really is `3e6f5225bc2fffacbc20c9de37ff2dae1e20892e`.
 
-  /!\ In case monotone.ca is down, you could try one of these
-  alternative servers that sync to each other regularly:
+    /!\ In case monotone.ca is down, you could try one of these
+    alternative servers that sync to each other regularly:
 
-  [[!table data="""
-  server|fingerprint
-  monotone.mtn-host.prjek.net|`a52f85615cb2445989f525bf17a603250381a751`
-  204.152.190.23|`fee080c8906fc3a9a601587807df0a5088a3fdd8`"""]]
+    [[!table data="""
+    server|fingerprint
+    monotone.mtn-host.prjek.net|`a52f85615cb2445989f525bf17a603250381a751`
+    204.152.190.23|`fee080c8906fc3a9a601587807df0a5088a3fdd8`"""]]
 
-  This is your initial pull so it will take a bit of time, as it has
-  to transfer a few megabytes of history to you. Subsequent pulls will
-  be much faster. When you're done pulling you can take a look at the
-  heads of the branch you picked up. You should get something like
-  this (though with a different head version, different author, etc.):
+    This is your initial pull so it will take a bit of time, as it has
+    to transfer a few megabytes of history to you. Subsequent pulls will
+    be much faster. When you're done pulling you can take a look at the
+    heads of the branch you picked up. You should get something like
+    this (though with a different head version, different author, etc.):
 
         $ mtn --db=mtn.db --branch=net.venge.monotone heads
         mtn: branch 'net.venge.monotone' is currently merged:
         d947ac9f47d3c3e61af60822cbf0491ae69b2bef some_monotone_auth@example.com 2006-08-14 T12:29:35
         
-  You can now look at the certs on a particular version; we will use
-  the version tagged as monotone-0.28:
+    You can now look at the certs on a particular version; we will use
+    the version tagged as monotone-0.28:
 
         $ mtn --db=mtn.db ls certs t:monotone-0.28
         mtn: expanding selection 't:monotone-0.28'
         mtn: expanded to '8c6ce7cb2ccd21290b435e042c2be4554ec6a048'
         ...
 
-  And you can also check out that version:
+    And you can also check out that version:
 
         $ mtn --db=mtn.db checkout -r t:monotone-0.28 monotone
         mtn: expanding selection 't:monotone-0.28'
         mtn: expanded to '8c6ce7cb2ccd21290b435e042c2be4554ec6a048'
 
  1. That's it, you're done! You will now find yourself with a checked
- out working copy in the directory monotone, which you can edit,
- merge, commit, etc. In the future, you can pull new versions from my
- server and update your working copy from your database using this
- pair of commands:
+    out working copy in the directory monotone, which you can edit,
+    merge, commit, etc. In the future, you can pull new versions from my
+    server and update your working copy from your database using this
+    pair of commands:
 
         $ cd monotone ...
         $ mtn pull ...
