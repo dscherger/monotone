@@ -51,9 +51,9 @@ steps:
     alternative servers that sync to each other regularly:
 
     [[!table data="""
-    server|fingerprint
-    monotone.mtn-host.prjek.net|`a52f85615cb2445989f525bf17a603250381a751`
-    204.152.190.23|`fee080c8906fc3a9a601587807df0a5088a3fdd8`"""]]
+server|fingerprint
+monotone.mtn-host.prjek.net|`a52f85615cb2445989f525bf17a603250381a751`
+204.152.190.23|`fee080c8906fc3a9a601587807df0a5088a3fdd8`"""]]
 
     This is your initial pull so it will take a bit of time, as it has
     to transfer a few megabytes of history to you. Subsequent pulls will
