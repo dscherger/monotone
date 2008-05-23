@@ -19,7 +19,7 @@ Talk given by [[NathanielSmith]] at Google during the MtnSummit.  In fact, the t
 
 Slides: [[!download mtnsummit-2007.sxi desc="OpenOffice format (26 KiB)"]], [[!download mtnsummit-2007.pdf desc="PDF format (483 KiB)"]]
 
-Talk given by [[ZackWeinberg]] to the group at the MtnSummit, about workspace merge, reducing dependencies on boost, and a few other smaller issues: [PDF format (307 KB)](http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.pdf), [LaTeX source (Beamer) (11 KB)](http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.tex)  (none of this kibi nonsense, kilobytes are 1024 bytes)
+Talk given by [[People/ZackWeinberg]] to the group at the MtnSummit, about workspace merge, reducing dependencies on boost, and a few other smaller issues: [PDF format (307 KB)](http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.pdf), [LaTeX source (Beamer) (11 KB)](http://mrtock.ucsd.edu/~zack/talks/2007-mtn-sprint.tex)  (none of this kibi nonsense, kilobytes are 1024 bytes)
 
 # Random note
 
