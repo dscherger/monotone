@@ -1,0 +1,17 @@
+[[!tag migration-wip]]
+## n.v.m.revision_diff ##
+
+Contact: [[People/ThomasKeller]]
+
+Replaces `automate content_diff` by a generic `automate diff` command
+which outputs the complete changeset (including node adds, drops,
+renames and attribute changes) in an generic basic\_io format. The
+actual diff is included in a `data` stanza in unified diff format.
+
+Status: Stalled for quite a long time, because there hasn't yet been
+an consensus if this should really be the "official" format mtn should
+use to express external changesets - primarily because once this is
+set into stone we certainly want an `automate apply_diff` command to
+complement this functionality. We also still have to find a way to
+express binary deltas within this new format to make it really useful
+for the `apply_diff` use case.

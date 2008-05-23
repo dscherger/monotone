@@ -1,0 +1,8 @@
+[[!tag migration-wip]]
+[[!tag MtnSummit/2008]]
+
+## n.v.m.lapo.selectors ##
+
+Contact: [[People/LapoLuchini]]
+
+Rewrite of selectors to actually be a language capable of generic operations on revision sets.

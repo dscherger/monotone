@@ -1,0 +1,8 @@
+[[!tag migration-wip]]
+## n.v.m.svn\_import ##
+
+Contact: [[People/MarkusSchiltknecht]]
+
+An initial attempt at importing subversion repositories into monotone. Didn't touch that for a while, as the CVS importer is still bugging me.
+
+Status: Experimentation

@@ -1,0 +1,10 @@
+[[!tag migration-wip]]
+## n.v.m.automate\_show\_conflict ##
+
+Contact: [[People/StephenLeake]]
+
+Provide simple flow to resolve non-content conflicts.
+
+Strategy: Add 'automate show_conflicts', to aid in determining how to resolve the conflicts. Then add options to merge to specify how to resolve the conflicts.
+
+Status: Just started; 'automate show_conflicts' works for "file added on left and right" case. Need to add all other conflict cases.

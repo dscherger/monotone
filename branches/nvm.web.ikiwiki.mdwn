@@ -1,5 +1,0 @@
-[[!tag branch MtnSummit2008]]
-
-`nvm.web.ikiwiki` (Dan, all)
-
-Migration of website content and MoinMoin wiki to [[ikiwiki]].

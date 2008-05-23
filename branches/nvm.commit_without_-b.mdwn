@@ -1,9 +1,0 @@
-[[!tag branch MtnSummit2008]]
-
-`nvm.commit_without_-b` (Richard)
-
-This branch implements the command `mtn branch` and consequently,
-removes the `-b` option from `mtn commit`.
-
-`mtn branch` fiddles with `_MTN/options`, adding a new option called
-`newbranch`, which `mtn commit` picks up at commit time.

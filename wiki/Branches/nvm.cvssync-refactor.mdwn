@@ -1,0 +1,26 @@
+[[!tag migration-wip]]
+## n.v.m.cvssync.refactor ##
+
+Contact: [[People/ChristofPetig]]
+
+A re-implementation of the cvssync architecture to be more modular, including a separate external process that interacts as a cvs client.
+
+Status:
+What is done:
+
+ * mtn_cvs pull, push and takeover work with side branches and all sorts of strange setups (see tests) and are now attribute based
+
+What needs to be done:
+
+ * implement changed files
+ * implement sane branch connecting (or share with cvs_import)
+ * share the changeset-ification logic with cvs_import (I use the most simple approach for now)
+ * write documentation
+ * write migration helpers for the old branch
+
+What can be put into mainline:
+
+ * the piece_table abstraction can be shared with cvs_import (once I had committed the change)
+ * all automate extensions (the synchronization commands are about to change again to use attributes, so they might wait)
+ * the mtn_automate class (C++ wrapper library to access monotone via automate)
+ * the mtn_cvs directory infrastucture can be put into mainline but can wait as well until it's finished

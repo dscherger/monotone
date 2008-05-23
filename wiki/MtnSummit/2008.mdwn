@@ -8,4 +8,4 @@ See [[2008/InterestDatesAndLogistics]] for the old organizational page.
 
 The branches which we've worked upon on the 2008 summit and which should be reviewed by others:
 
-[[!inline pages="branches/* and link(MtnSummit2008)" sort=title]]
+[[!inline pages="wiki/Branches/* and link(MtnSummit/2008)" sort=title]]

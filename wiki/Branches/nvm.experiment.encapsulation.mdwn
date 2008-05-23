@@ -1,0 +1,11 @@
+[[!tag migration-wip]]
+## n.v.m.experiment.encapsulation ##
+
+Contact: [[People/ZackWeinberg]]
+
+Removed the `app_state` from lots of places, instead we only pass down
+the required objects, which were formerly held in the
+`app_state`. These include: the lua interpreter, the database, the key
+store and the options.
+
+Status: landed on mainline

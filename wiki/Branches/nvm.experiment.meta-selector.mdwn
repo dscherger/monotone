@@ -1,0 +1,14 @@
+[[!tag migration-wip]]
+[[!tag MtnSummit/2008]]
+
+## n.v.m.experiment.meta-selector ##
+
+(renamed from [[Branches/nvm.levitte.select-heads-of]])
+
+Contact: [[People/RichardLevitte]]
+
+Implements a framework for [[MagicSelectors]] as well as a few
+simple ones, like [[H:|MagicSelectors#heads]] and [[branch point/last
+common ancestor|MagicSelectors#branchpoint]].
+
+Status: Tests are in place, documentation is still missing.

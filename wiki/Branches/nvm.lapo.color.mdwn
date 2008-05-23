@@ -1,0 +1,8 @@
+[[!tag migration-wip]]
+## n.v.m.lapo.color ##
+
+Contact: [[People/LapoLuchini]]
+
+Making use of extra terminal features that may be available, such as colours (useful for diff and for asciik branch-lines).
+
+Status: rough and experimental

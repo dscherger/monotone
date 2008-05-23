@@ -1,8 +1,11 @@
-[[!tag branch MtnSummit2008]]
+[[!tag migration-wip]]
+[[!tag MtnSummit/2008]]
 
-`nvm.automate-netsync`(Thomas K.)
+## n.v.m.automate-netsync ##
+
+Contact: [[People/ThomasKeller]]
 
 Implements the netsync commands push, pull and sync in automate, especially for use within stdio. Enforces and checks the usage of a running ssh-agent instance to avoid password prompting.
 
-Documentation is in place, tests are still missing.
+Status: Documentation is in place, tests are still missing.
 

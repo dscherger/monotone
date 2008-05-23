@@ -1,7 +1,0 @@
-[[!tag branch MtnSummit2008]]
-
-`nvm.automate_out_of_band` (Christof, Thomas K.)
-
-Adds support for multiple streams into monotone stdio which includes separate streams for informational messages (infos, warnings, errors, ...) as well as tickers. To actually test tickers automate pull is already included here.
-
-Documentation is in place, tests are still missing.

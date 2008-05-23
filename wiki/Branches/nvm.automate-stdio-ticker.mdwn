@@ -1,0 +1,13 @@
+[[!tag migration-wip]]
+## n.v.m.automate-stdio-ticker ##
+
+Contact: [[People/ThomasKeller]]
+
+Tries to implement a stdio ticker so automate clients can
+actually monitor the progress of a netsync operation.
+
+Status: Unusable, should probably be suspended and/or redone from
+scratch (and maybe rethought even when / if [[Branches/nvm.nuskool]]
+gets ready?)
+
+Superseded by [[Branches/nvm.automate_out_of_band]] ?

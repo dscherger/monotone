@@ -1,0 +1,16 @@
+[[!tag migration-wip]]
+## n.v.m.experimental.win32\_pipes ##
+
+Contact: [[People/StephenLeake]]
+
+mtn sync file: and mtn sync ssh: do _not_ work reliably on Windows [[MinGW]].
+
+There core problem is that Win32 does not support `select` on pipes.
+
+This branch attempts to replace Win32 pipes by sockets.
+
+It fails, because ssh doesn't create sockets when it runs mtn.
+
+See comments in netxx_pipe.hh
+
+Status: on hold; use Cygwin instead, where things just work.

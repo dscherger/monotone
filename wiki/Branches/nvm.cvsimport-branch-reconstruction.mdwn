@@ -1,0 +1,8 @@
+[[!tag migration-wip]]
+## n.v.m.cvsimport-branch-reconstruction ##
+
+Contact: [[People/MarkusSchiltknecht]]
+
+Features a graph-based cvs import algorithm, loosely based on the concepts of cvs2svn 2.0.
+
+Status: Still close to completion :-) - for more details, see [[CvsImport]]

@@ -1,0 +1,8 @@
+[[!tag migration-wip]]
+## n.v.m.experiment.informal\_messages\_to\_stdio ##
+
+Contact: [[People/ThomasKeller]]
+
+An attempt to bring warnings and informal messages properly encoded into automate stdio.
+
+Status: Doesn't compile, not even alpha state. Hope to find some time for this on the next summit.

@@ -1,0 +1,34 @@
+[[!tag migration-wip]]
+[[!tag MtnSummit/2008]]
+
+## n.v.m.commit\_without\_-b ##
+
+Contact: [[People/RichardLevitte]]
+
+This branch implements the command `mtn branch` and consequently,
+removes the `-b` option from `mtn commit`.
+
+`mtn branch` fiddles with `_MTN/options`, adding a new option called
+`newbranch`, which `mtn commit` picks up at commit time.
+
+----
+
+*Info from the old wiki:*
+
+Contact: [[People/ThomasKeller]]
+
+An attempt to remove the --branch option from "mtn commit" and replace
+the functionality by a new "mtn branch" command which explicitely sets
+the branch stanza in \_MTN/options. This basically works, but is not
+thoroughly thought through for now, basically because we loose the old
+branch information after "mtn branch", so subsequent commands like
+"mtn update" which still rely on the old_revision and the recorded
+branch name fail badly unless the workspace is committed again. So,
+what still needs to be done is
+
+ 1. if mtn branch is triggered on an unmodified workspace, mtn commit should succeed and just add the new branch cert to old_revision
+ 1. if the branch is switched, the new branch name should be recorded as "new_branch" while keeping "branch" untouched unless commit happens, so "mtn update" and friends work properly
+ 1. mtn revert should remove any "new_branch" stanza from \_MTN/options
+ 1. eventually "mtn branch" should be renamed to "mtn switch" and get some more functionality (i.e. if switched to a named, existing branch, update the workspace to the head of this branch)
+
+Status: Stalled, decide what to do with all that.
