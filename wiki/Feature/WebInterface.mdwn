@@ -12,7 +12,7 @@ There are a number of [[InterfacesFrontendsAndTools]] that work with monotone, i
 
 # Example Usage
 
- * [Recent monotone activity, via [[ViewMTN]]](http://viewmtn.angrygoats.net/all/branch/changes/net.venge.monotone)
+ * [Recent monotone activity, via [ViewMTN]](http://viewmtn.angrygoats.net/all/branch/changes/net.venge.monotone)
  * [Current monotone HEAD revision](http://viewmtn.angrygoats.net/all/branch/changes/net.venge.monotone)
  * [Trac-monotone demonstration](http://tracmtn.1erlei.de/browser)
  * [Recent monotone activity, via CIA](http://cia.navi.cx/stats/project/monotone)
