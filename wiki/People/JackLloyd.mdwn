@@ -1,12 +1,10 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
 ## Jack Lloyd
 
-Wrote/maintains Botan. Used to work on [[OpenCM]], which was somewhat Monotone-like.
+Wrote/maintains Botan. Used to work on OpenCM, which was somewhat
+Monotone-like.
  
-Email: [[MailTo(lloyd@randombit.net)]] <br>
-Webpage: http://www.randombit.net/ <br>
-AIM: cykl01d
-
-----
-CategoryHomepage 
+ * Email: <mailto:lloyd@randombit.net>
+ * Webpage: <http://www.randombit.net/>
+ * AIM: cykl01d

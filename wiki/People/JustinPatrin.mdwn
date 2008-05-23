@@ -1,6 +1,5 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
-A user of monotone via the [OpenEmbedded](http://openembedded.org) project. Started developing on monotone at the 2007 summit at Google with the net.venge.monotone.ssh-agent branch (see ["[[MonotoneAndSSHAgent]]"]).
+## Justin Patrin
 
-For more info:
-http://justin.patrin.info/
+For more info: <http://justin.patrin.info/>

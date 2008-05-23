@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Patrick Mauritz (oxygene)
+
+ * uses monotone since approx. october 2003
+ * works on monotone since late 2003
+ * responsible for porting monotone to solaris and sun studio compiler
+ * contact: oxygene AT studentenbude DOT ath DOT cx

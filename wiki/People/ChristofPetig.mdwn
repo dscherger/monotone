@@ -1,3 +1,6 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
+[[!tag developer]]
 
-E-Mail: christof@petig-baender.de
+## Christoph Petig
+
+ * E-Mail: <christof@petig-baender.de>

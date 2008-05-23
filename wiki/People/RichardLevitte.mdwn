@@ -1,14 +1,15 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
+[[!tag developer]]
 
-#format wiki
-#language en
-## Richard Levitte
+## Richard Levitte (gizmo1)
 
-Email: [[MailTo(richard.NOSPAM.@levitte.org)]] <br>
-Homepage: http://richard.levitte.org/ <br>
-IRC nick: gizmo1
+ * uses monotone since September 2004
+ * works on monotone since October 2004
+ * responsible for translation into Swedish
+ * involved in various random stuff
+ * contact: <richard@levitte.org>
+ * homepage: <http://richard.levitte.org/>
+ * IRC nick: gizmo1
+
 
 I'm not on IRC very often, but I can talk a lot on the mailing lists :-)
-
-----
-CategoryHomepage [[CategoryHomepage]] [[CategoryHomepage]]

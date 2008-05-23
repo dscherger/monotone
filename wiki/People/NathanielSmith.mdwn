@@ -1,0 +1,10 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Nathaniel Smith (njs)
+
+ * works on monotone since Aug 2003
+ * uses monotone since Sep 2003
+ * too many pies, not enough fingers
+ * contact: <njs@pobox.com>
+ * IRC nick: njs

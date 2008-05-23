@@ -1,3 +1,5 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
+
+## Craig Lennox
 
 I've been a happy user of Monotone since 0.15.

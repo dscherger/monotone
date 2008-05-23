@@ -1,5 +1,8 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
-Cryptography guy.  This summit will be my first time coding for Monotone.
+## Paul Crowley
 
-http://www.ciphergoth.org/
+Cryptography guy.  This [[summit|MtnSummit/2007]] will be my first
+time coding for Monotone.
+
+<http://www.ciphergoth.org/>

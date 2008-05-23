@@ -1,12 +1,6 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
-#format wiki
-#language en
-## Your Name
+## Hugo Mills
 
-Email: [[MailTo(hugoATcarfaxDOTorgDOTuk)]]
-
-See [[http://www.carfax.org.uk/]]
-
-----
-CategoryHomepage
+ * Email: hugoATcarfaxDOTorgDOTuk
+ * See <http://www.carfax.org.uk/>

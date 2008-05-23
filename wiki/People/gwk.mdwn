@@ -1,14 +1,5 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
 
-#format wiki
-#language en
 ## Georg-W. Koltermann
 
-Email: [[MailTo(Georg.Koltermann@mscsoftware.com)]] <br>
-Homepage: <br>
-IRC nick: 
-
-...
-
-----
-CategoryHomepage
+ * Email: <mailto:Georg.Koltermann@mscsoftware.com>

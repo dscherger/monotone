@@ -1,0 +1,12 @@
+[[!tag migration-wip]]
+
+This page will introduce some of the members of the monotone
+development team, their responsibilities and their contact data
+i.e. IRC nick.  See also: <http://www.frappr.com/monotone>
+
+*To add yourself, create a new page using this [[People/Template]]. If
+you add \[[!tag developer]], your entry will be shown here, otherwise
+on the [[Users]] page.*
+
+[[!inline pages="wiki/People/* and link(developer)" raw=yes show=0 sort=title]]
+

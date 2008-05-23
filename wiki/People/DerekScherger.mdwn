@@ -1,11 +1,9 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
+[[!tag developer]]
 
-#format wiki
-#language en
-## Your Name
+## Derek Scherger (dscherger)
 
-Email: [[MailTo(derek@echologic.com)]] <br>
-IRC nick: dscherger
-
-----
-CategoryHomepage
+ * uses monotone since April 2004
+ * works on monotone since May 2004
+ * responsible for restrictions code and various other things
+ * contact: <derek@echologic.com>

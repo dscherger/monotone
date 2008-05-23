@@ -1,3 +1,9 @@
-[[!tag migration-auto]]
+[[!tag migration-wip]]
+[[!tag developer]]
 
-Matt Johnston, msh on irc, matt at ucc.asn.au
+## Matt Johnston (msh)
+
+ * uses monotone since June 2004
+ * works on monotone since November 2004
+ * involved in various bits, botan, some performance
+ * contact: msh on irc, matt at ucc.asn.au

@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+
+This page lists some of the happy users of monotone.  See also:
+<http://www.frappr.com/monotone>
+
+*To add yourself, create a new page using this [[People/Template]].*
+
+[[!inline pages="wiki/People/* and !link(developer) and !wiki/People/Template" raw=yes show=0 sort=title]]
+
