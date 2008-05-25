@@ -150,7 +150,7 @@ noinst_PROGRAMS = txt2c
 txt2c_SOURCES = txt2c.cc
 
 # testing tools
-check_PROGRAMS = unit_tester tester
+check_PROGRAMS = unit_tester tester check_net
 
 unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
 unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS
@@ -172,10 +172,12 @@ if WIN32_PLATFORM
   tester_SOURCES += win32/tester-plaf.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
+  check_net_SOURCES = win32/tester-check-net.c
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
   tester_SOURCES += unix/tester-plaf.cc
+  check_net_SOURCES = unix/tester-check-net.c
 endif
 
 # i18n
@@ -197,8 +199,8 @@ run_%_tests: Makefile
 %_tests.status: run_%_tests %-testsuite.lua tester$(EXEEXT) FORCE
 	+./run_$*_tests
 
-unit_tests.status : unit_tester
-lua_tests.status : mtn
+unit_tests.status : unit_tester$(EXEEXT)
+lua_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
 
 check-local: tester_tests.status unit_tests.status lua_tests.status
 	PACKAGE_BUGREPORT=$(PACKAGE_BUGREPORT) \
