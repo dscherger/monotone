@@ -27,7 +27,7 @@ CONFIGARGS="$ac_configure_args"
 AC_SUBST(CONFIGARGS)
 
 # --with-system-foo support goes here
-LIBRARIES="botan idna lua netxx pcre sqlite"
+LIBRARIES="botan idn lua netxx pcre sqlite"
 AC_SUBST(LIBRARIES)
 
 # A bunch of Makefile rules need to know whether or not to prepend "../"

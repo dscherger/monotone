@@ -1,6 +1,6 @@
-lib_LIBRARIES = libsqlite.a
+lib_LIBRARIES = libsqlite3.a
 include_HEADERS = sqlite3.h sqlite3ext.h
-libsqlite_a_SOURCES =							\
+libsqlite3_a_SOURCES =							\
 	alter.c analyze.c attach.c auth.c btree.c btree.h btreeInt.h	\
 	build.c callback.c complete.c date.c delete.c expr.c func.c	\
 	hash.c hash.h insert.c keywordhash.h legacy.c loadext.c main.c	\

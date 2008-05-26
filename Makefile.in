@@ -113,9 +113,7 @@ LIBSTAMPS := $(foreach d,$(LIBRARIES),libinst/$(d)-stamp)
 
 monotone/Makefile: $(srcdir)/monotone/configure $(srcdir)/monotone/Makefile.in \
                    $(LIBSTAMPS)
-	cd monotone && $(subsrcdir)/monotone/configure $(CONFIGARGS) \
-	  CPPFLAGS="-I$(blddir)/libinst/include" \
-	  LDFLAGS="-L$(blddir)/lib"
+	cd monotone && $(subsrcdir)/monotone/configure $(CONFIGARGS)
 
 $(LIBSTAMPS): libinst/%-stamp: %/Makefile
 	$(MAKE) -C $* install

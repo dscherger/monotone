@@ -85,14 +85,14 @@ fi
 # pkg-config and foobar-config, but it's not as simple as it ought to
 # be, hence the macros.
 
-dnl MTN_3RDPARTY_LIB(botan)
-dnl MTN_3RDPARTY_LIB(idna)
-dnl MTN_3RDPARTY_LIB(lua)
-dnl MTN_3RDPARTY_LIB(netxx)
-dnl MTN_3RDPARTY_LIB(pcre)
-dnl MTN_3RDPARTY_LIB(sqlite)
+MTN_3RDPARTY_LIB(botan)
+MTN_3RDPARTY_LIB(idn)
+MTN_3RDPARTY_LIB(lua)
+MTN_3RDPARTY_LIB(netxx)
+MTN_3RDPARTY_LIB(pcre)
+MTN_3RDPARTY_LIB(sqlite)
 
-dnl MTN_REMOVE_REDUNDANT_LIB_SWITCHES
+MTN_REMOVE_REDUNDANT_LIB_SWITCHES
 
 # Checks for header files.
 

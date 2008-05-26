@@ -12,7 +12,7 @@
 # This file will be replaced by the actual third-party library
 # configuration script for all directories where that is practical.
 # (It may not be practical for dead-upstream or heavily modified
-# third-party libraries, e.g. netxx and idna.)  It makes no attempt to
+# third-party libraries, e.g. netxx and idn.)  It makes no attempt to
 # do anything beyond the bare minimum, just like the associated
 # Makefile.am.
 

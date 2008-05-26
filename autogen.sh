@@ -19,7 +19,7 @@ autoreconf -i "$@"
 (cd monotone && exec autoreconf -i "$@")
 
 # Library subdirs in alphabetical order.
-(cd idna && exec autoreconf -i "$@")
+(cd idn && exec autoreconf -i "$@")
 (cd lua && exec autoreconf -i "$@")
 (cd netxx && exec autoreconf -i "$@")
 (cd pcre && exec autoreconf -i "$@")
