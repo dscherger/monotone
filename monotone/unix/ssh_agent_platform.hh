@@ -8,7 +8,7 @@
 // PURPOSE.
 
 #include "../numeric_vocab.hh"
-#include "../netxx/stream.h"
+#include <netxx/stream.h>
 
 class ssh_agent_platform {
 private:

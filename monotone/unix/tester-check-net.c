@@ -16,9 +16,9 @@
    will exit unsuccessfully and produce diagnostics on stderr.  */
 
 #include "config.h"
+#include <stdio.h>
 #if defined HAVE_SOCKET && defined HAVE_NETINET_IN_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>

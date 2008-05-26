@@ -40,7 +40,7 @@
 // local includes
 #include "netxx/types.h"
 #include "netxx/peer.h"
-#include "socket.h"
+#include "netxx/socket.h"
 
 // standard includes
 #include <utility>

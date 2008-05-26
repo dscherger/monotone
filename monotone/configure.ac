@@ -137,7 +137,7 @@ AC_FUNC_LOCALE_WORKS
 AC_FUNC_ICONV_TRANSLIT
 AC_CHECK_FUNCS([atexit memset mkstemp strptime lrint \
 		__cxa_current_exception_type __cxa_demangle \
-                putenv setenv unsetenv dirfd fstatat mkdtemp])
+                putenv setenv unsetenv dirfd fstatat mkdtemp socket])
 
 
 # Stick some logic into config.status, after the logic that

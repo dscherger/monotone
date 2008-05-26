@@ -41,7 +41,7 @@
 #include "netxx/datagram.h"
 #include "netxx/address.h"
 #include "netxx/peer.h"
-#include "socket.h"
+#include "netxx/socket.h"
 #include "sockaddr.h"
 #include "recvfrom.h"
 

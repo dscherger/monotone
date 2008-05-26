@@ -45,7 +45,7 @@
 #include "netxx/types.h"
 #include "netxx/probeinfo.h"
 #include "serverbase.h"
-#include "socket.h"
+#include "netxx/socket.h"
 #include "accept.h"
 
 // standard includes

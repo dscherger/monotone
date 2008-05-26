@@ -42,7 +42,7 @@
 #include "netxx/address.h"
 #include "netxx/sockopt.h"
 #include "netxx/probeinfo.h"
-#include "socket.h"
+#include "netxx/socket.h"
 
 // standard includes
 #include <map>

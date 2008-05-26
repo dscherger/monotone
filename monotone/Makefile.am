@@ -119,22 +119,19 @@ UNIT_TEST_SRC_SUPPORT =							\
 # testing, but can be used "as is" from the main build.  (many of
 # these _should_ have unit tests, but they haven't been written yet.)
 UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-app_state.$(OBJEXT) mtn-cert.$(OBJEXT)			\
-	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
-	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
-	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)	\
-	mtn-merkle_tree.$(OBJEXT) mtn-mt_version.$(OBJEXT)		\
-	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
-	mtn-package_full_revision.$(OBJEXT)				\
-	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
-	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
-	mtn-schema_migration.$(OBJEXT)					\
-	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
-	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-work_migration.$(OBJEXT)
+	app_state.$(OBJEXT) cert.$(OBJEXT) constants.$(OBJEXT)		\
+	database.$(OBJEXT) epoch.$(OBJEXT) file_io.$(OBJEXT)		\
+	gzip.$(OBJEXT) hmac.$(OBJEXT) inodeprint.$(OBJEXT)		\
+	key_store.$(OBJEXT) keys.$(OBJEXT) lcs.$(OBJEXT)		\
+	legacy.$(OBJEXT) lua.$(OBJEXT) lua_hooks.$(OBJEXT)		\
+	merkle_tree.$(OBJEXT) mt_version.$(OBJEXT)			\
+	mtn-sanity.$(OBJEXT) options.$(OBJEXT)				\
+	package_full_revision.$(OBJEXT) package_revision.$(OBJEXT)	\
+	pcrewrap.$(OBJEXT) project.$(OBJEXT) randomizer.$(OBJEXT)	\
+	sanity.$(OBJEXT) schema.$(OBJEXT) schema_migration.$(OBJEXT)	\
+	specialized_lexical_cast.$(OBJEXT) ssh_agent.$(OBJEXT)		\
+	std_hooks.$(OBJEXT) ui.$(OBJEXT) work.$(OBJEXT)			\
+	work_migration.$(OBJEXT)
 
 # primaries
 bin_PROGRAMS = mtn
@@ -182,6 +179,7 @@ endif
 
 # i18n
 SUBDIRS = po
+unix/fs.o : CPPFLAGS += -DLOCALEDIR=\"$(localedir)\"
 
 # testsuite stuff (could this possibly be more ugly?)  To get
 # parallelism, we cannot use Automake's TESTS feature at all.
@@ -204,7 +202,7 @@ lua_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
 
 check-local: tester_tests.status unit_tests.status lua_tests.status
 	PACKAGE_BUGREPORT=$(PACKAGE_BUGREPORT) \
-	  $(SHELL) util/summarize-tests $^
+	  $(SHELL) $(srcdir)/util/summarize-tests $^
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),

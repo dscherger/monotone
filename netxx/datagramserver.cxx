@@ -43,7 +43,7 @@
 #include "netxx/address.h"
 #include "netxx/probeinfo.h"
 #include "serverbase.h"
-#include "socket.h"
+#include "netxx/socket.h"
 #include "recvfrom.h"
 
 // standard includes

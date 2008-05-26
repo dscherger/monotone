@@ -42,8 +42,8 @@
 #include <netxx/timeout.h>
 #include <netxx/probe.h>
 #include <netxx/probeinfo.h>
-#include "socket.h"
-#include "probe_impl.h"
+#include "netxx/socket.h"
+#include "netxx/probe_impl.h"
 
 // standard includes
 #include <string>

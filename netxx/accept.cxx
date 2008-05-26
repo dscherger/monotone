@@ -42,7 +42,7 @@
 #include "netxx/sockopt.h"
 #include "netxx/types.h"
 #include "sockaddr.h"
-#include "socket.h"
+#include "netxx/socket.h"
 
 //####################################################################
 Netxx::Peer Netxx::call_accept (Socket &socket, bool dont_block) 
