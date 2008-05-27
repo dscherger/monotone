@@ -118,6 +118,7 @@ sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
 sub directory_up_button_clicked_cb($$);
+sub display_file($$);
 sub file_change_history_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
 sub help_toolbutton_clicked_cb($$);
@@ -167,8 +168,31 @@ sub view_button_clicked_cb($$);
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
-    $mono_font = Gtk2::Pango::FontDescription->from_string("monospace 10");
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
+
+    # Load in user preferences.
+
+    eval
+    {
+	$user_preferences = load_preferences();
+	$mime_match_table =
+	    build_mime_match_table($user_preferences->{mime_table});
+    };
+    if ($@ ne "")
+    {
+	chomp($@);
+	my $dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     sprintf("Your preferences cannot be loaded:\n%s", $@));
+	$dialog->run();
+	$dialog->destroy();
+	exit(1);
+    }
+    $mono_font = Gtk2::Pango::FontDescription->
+	from_string($user_preferences->{fixed_font});
 
     # Create the temporary working directory.
 
@@ -191,9 +215,9 @@ sub view_button_clicked_cb($$);
 	exit(1);
     }
 
-    # Attempt to create an mtn handle, if it fails then assume that we are not
-    # inside a workspace. However if it does work then move to the workspace's
-    # root and then pre-load the browser with the relevant branch and revision.
+    # Open a Monotone database. First attempt to open the current Monotone
+    # workspace's database. If this doesn't work or the default database is to
+    # be used anyway then attempt to open that database instead.
 
     eval
     {
@@ -216,9 +240,47 @@ sub view_button_clicked_cb($$);
 	    }
 	}
 	$mtn = Monotone::AutomateStdio->new();
-	$mtn->get_option(\$branch, "branch");
-	$mtn->get_base_revision_id(\$revision_id);
+	if ($user_preferences->{workspace}->{auto_select})
+	{
+	    $mtn->get_option(\$branch, "branch");
+	    $mtn->get_base_revision_id(\$revision_id);
+	}
     };
+    if (! ($user_preferences->{workspace}->{takes_precedence}
+	   && defined($mtn))
+	&& $user_preferences->{default_mtn_db} ne "")
+    {
+
+	# Before opening the default database, make sure we are not in any
+	# workspace.
+
+	if (defined($mtn))
+	{
+	    chdir("..");
+	    $mtn = $branch = $revision_id = undef;
+	}
+
+	# Attempt to open the default database.
+
+	eval
+	{
+	    $mtn = Monotone::AutomateStdio->
+		new($user_preferences->{default_mtn_db});
+	};
+	if ($@ ne "")
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 sprintf("Cannot open database `%s'.",
+			 $user_preferences->{default_mtn_db}));
+		$dialog->run();
+		$dialog->destroy();
+	}
+
+    }
 
     # Set up the error handlers for the Monotone library.
 
@@ -230,7 +292,7 @@ sub view_button_clicked_cb($$);
     # that control can be handed over to Gtk2 before updating the display.
 
     $browser = get_browser_window($mtn);
-    if (defined($mtn))
+    if (defined($mtn) && defined($branch))
     {
 	Glib::Idle->add
 	    (sub {
@@ -249,8 +311,8 @@ sub view_button_clicked_cb($$);
 		 return FALSE;
 	     },
 	     $browser);
-	$mtn = undef;
     }
+    $mtn = undef;
 
     # Hand control over to Gtk2.
 
@@ -345,8 +407,8 @@ sub about_activate_cb($$)
 #
 #   Routine      - new_toolbutton_clicked_cb
 #
-#   Description  - Callback routine called when the user clicks on the
-#                  new toolbutton in a main browser window.
+#   Description  - Callback routine called when the user clicks on the new
+#                  toolbutton in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -374,8 +436,8 @@ sub new_toolbutton_clicked_cb($$)
 #
 #   Routine      - open_toolbutton_clicked_cb
 #
-#   Description  - Callback routine called when the user clicks on the
-#                  open toolbutton in a main browser window.
+#   Description  - Callback routine called when the user clicks on the open
+#                  toolbutton in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -393,93 +455,13 @@ sub open_toolbutton_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my($chooser_dialog,
-       $done);
+    my $mtn;
 
-    $chooser_dialog = Gtk2::FileChooserDialog->new("Open Database",
-						   $browser->{window},
-						   "open",
-						   "gtk-cancel" => "cancel",
-						   "gtk-open" => "ok");
-
-    do
+    if (open_database($browser->{window}, \$mtn, undef))
     {
-	if ($chooser_dialog->run() eq "ok")
-	{
-
-	    my ($err,
-		$fh,
-		$file_name,
-		$mtn);
-
-	    $file_name = $chooser_dialog->get_filename();
-
-	    # The user has selected a file. First make sure we can open it for
-	    # reading (I know I could use the -r test but this takes care of
-	    # any other unforeseen access problems as well).
-
-	    if (! defined($fh = IO::File->new($file_name, "r")))
-	    {
-		my $dialog = Gtk2::MessageDialog->new
-		    ($browser->{window},
-		     ["modal"],
-		     "warning",
-		     "close",
-		     $! . ".");
-		$dialog->run();
-		$dialog->destroy();
-	    }
-	    else
-	    {
-
-		$fh->close();
-		$fh = undef;
-
-		# Ok it is a readable file, try and open it but deal with any
-		# errors in a nicer way than normal.
-
-		Monotone::AutomateStdio->register_error_handler("both");
-		eval
-		{
-		    $mtn = Monotone::AutomateStdio->new($file_name);
-		};
-		$err = $@;
-		Monotone::AutomateStdio->register_error_handler
-		    ("both", \&mtn_error_handler);
-		if ($err ne "")
-		{
-		    my $dialog = Gtk2::MessageDialog->new
-			($browser->{window},
-			 ["modal"],
-			 "warning",
-			 "close",
-			 "Not a valid Monotone database.");
-		    $dialog->run();
-		    $dialog->destroy();
-		}
-		else
-		{
-
-		    # Seems to be ok so update the browser with the new
-		    # database.
-
-		    $browser->{mtn} = $mtn;
-		    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
-		    $done = 1;
-
-		}
-
-	    }
-
-	}
-	else
-	{
-	    $done = 1;
-	}
+	$browser->{mtn} = $mtn;
+	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
     }
-    while (! $done);
-
-    $chooser_dialog->destroy();
 
 }
 #
@@ -487,8 +469,8 @@ sub open_toolbutton_clicked_cb($$)
 #
 #   Routine      - close_toolbutton_clicked_cb
 #
-#   Description  - Callback routine called when the user clicks on the
-#                  close toolbutton in a main browser window.
+#   Description  - Callback routine called when the user clicks on the close
+#                  toolbutton in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -569,7 +551,12 @@ sub preferences_toolbutton_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    preferences($browser);
+    if (preferences($browser))
+    {
+	$user_preferences = load_preferences();
+	$mime_match_table =
+	    build_mime_match_table($user_preferences->{mime_table});
+    }
 
 }
 #
@@ -1033,7 +1020,8 @@ sub view_button_clicked_cb($$)
        $data,
        $fh,
        $file_name,
-       $mime,
+       $helper,
+       $mime_obj,
        $mime_type);
 
     if (! defined($file_name =
@@ -1072,39 +1060,80 @@ sub view_button_clicked_cb($$)
     $fh->close();
     $fh = undef;
 
-    # Load into the appropriate application for this type of file, defaulting
-    # to Vi if necessary.
+    # Get the user preference settings for this type of file.
 
-    if (! defined($mime_type =
-		  Gnome2::VFS->get_mime_type("file://" . $file_name)))
+    foreach my $entry (@$mime_match_table)
     {
-	my $dialog = Gtk2::MessageDialog->new
-	    ($browser->{window},
-	     ["modal"],
-	     "warning",
-	     "close",
-	     "Unknown file type, not viewing.");
-	$dialog->run();
-	$dialog->destroy();
-	return;
+	if ($browser->{file_being_viewed}->{short_name} =~ m/$entry->{re}/)
+	{
+	    $helper = $entry->{details}->{helper_application};
+	    last;
+	}
     }
-    $app = $mime->get_default_application()
-	if (defined($mime = Gnome2::VFS::Mime::Type->new($mime_type)));
-    if (defined($app))
+
+    # If the user has specified a helper application then use that to view the
+    # file, otherwise use the default desktop settings.
+
+    if (defined($helper) && $helper ne "")
     {
-	$app->launch("file://" . $file_name);
+
+	# Use the specified helper application, replacing `{file}' with the
+	# real file name.
+
+	if ($helper =~ m/\{file\}/)
+	{
+	    $helper =~ s/\{file\}/$file_name/g;
+	}
+	else
+	{
+	    $helper .= " " . $file_name;
+	}
+
+	# Launch it.
+
+	system($helper . " &");
+
     }
     else
     {
-	my $dialog = Gtk2::MessageDialog->new
-	    ($browser->{window},
-	     ["modal"],
-	     "info",
-	     "close",
-	     sprintf("No application is associated with\n"
-		         . "Mime type `%s',\nusing Vi instead.",
-		     $mime_type));
-	system("xterm -e vi " . $file_name . " &");
+
+	# Use the desktop to load the file.
+
+	# Use the appropriate application for this type of file, defaulting to
+	# Vi if necessary.
+
+	if (! defined($mime_type =
+		      Gnome2::VFS->get_mime_type("file://" . $file_name)))
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($browser->{window},
+		 ["modal"],
+		 "warning",
+		 "close",
+		 "Unknown file type, not viewing.");
+	    $dialog->run();
+	    $dialog->destroy();
+	    return;
+	}
+	$app = $mime_obj->get_default_application()
+	    if (defined($mime_obj = Gnome2::VFS::Mime::Type->new($mime_type)));
+	if (defined($app))
+	{
+	    $app->launch("file://" . $file_name);
+	}
+	else
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($browser->{window},
+		 ["modal"],
+		 "info",
+		 "close",
+		 sprintf("No application is associated with\n"
+		             . "Mime type `%s',\nusing Vi instead.",
+			 $mime_type));
+	    system("xterm -e vi " . $file_name . " &");
+	}
+
     }
 
 }
@@ -1565,7 +1594,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{revision_combo_details}->{preset} = 0;
 	$browser->{directory_combo_details}->{preset} = 0;
 	$browser->{file_being_viewed_preset_value} = "";
-	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 
     }
     else
@@ -1589,7 +1618,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{revision_combo_details}->{preset} = 0;
 	$browser->{directory_combo_details}->{preset} = 0;
 	$browser->{file_being_viewed_preset_value} = "";
-	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 	$browser->{window}->show_all();
 
 	# Now update with the details of the specified database.
@@ -1664,7 +1693,7 @@ sub update_browser_state($$)
 
     # The database has changed.
 
-    if ($changed & BRANCH)
+    if ($changed == DATABASE_CHANGED)
     {
 
 	my $db_name;
@@ -1786,42 +1815,11 @@ sub update_browser_state($$)
 	{
 	    $browser->{appbar}->set_status("Fetching revision list");
 	    gtk2_update();
-
-	    # Get either a list of tags or revision ids depending upon what the
-	    # user has chosen.
-
-	    if ($browser->{tagged_checkbutton}->get_active())
-	    {
-		my(%dup_list,
-		   @list);
-		$browser->{mtn}->
-		    tags(\@list, $browser->{branch_combo_details}->{value});
-		$browser->{appbar}->set_progress_percentage(0.5);
-		gtk2_update();
-		foreach my $item (@list)
-		{
-		    if (! exists($dup_list{$item->{tag}}))
-		    {
-			push(@revision_list, $item->{tag});
-			$dup_list{$item->{tag}} = 1;
-		    }
-		}
-	    }
-	    else
-	    {
-		$browser->{mtn}->
-		    select(\@revision_list,
-			   "b:" . $browser->{branch_combo_details}->{value});
-		$browser->{appbar}->set_progress_percentage(0.33);
-		gtk2_update();
-		$browser->{mtn}->toposort(\@revision_list, @revision_list);
-		$browser->{appbar}->set_progress_percentage(0.66);
-		gtk2_update();
-		splice(@revision_list, 0, scalar(@revision_list) - 100);
-		@revision_list = reverse(@revision_list);
-	    }
-	    $browser->{appbar}->set_progress_percentage(1);
-	    gtk2_update();
+	    get_branch_revisions($browser->{mtn},
+				 $browser->{branch_combo_details}->{value},
+				 $browser->{tagged_checkbutton}->get_active(),
+				 $browser->{appbar},
+				 \@revision_list);
 	}
 	$browser->{revision_combo_details}->{list} = \@revision_list;
 
@@ -1861,7 +1859,7 @@ sub update_browser_state($$)
 	if ($browser->{directory_combo_details}->{preset})
 	{
 	    $browser->{directory_combo_details}->{complete} = 1;
-	    $browser->{revision_combo_details}->{preset} = 0;
+	    $browser->{directory_combo_details}->{preset} = 0;
 	}
 	else
 	{
@@ -2114,8 +2112,7 @@ sub update_browser_state($$)
 	if (exists($browser->{file_being_viewed}->{manifest_entry}))
 	{
 
-	    my $manifest_entry;
-	    $manifest_entry =
+	    my $manifest_entry =
 		$browser->{file_being_viewed}->{manifest_entry};
 
 	    # Only do anything if the selected file has changed.
@@ -2124,168 +2121,35 @@ sub update_browser_state($$)
 		ne $manifest_entry->{file_id})
 	    {
 
-		my($contents,
-		   $lang,
-		   $mime_type,
-		   $scrolled_window);
+		my $textual_data;
 
-		# Reset the file view buffer and the associated find text
-		# window.
+		# Enable the file buttons, keeping the ones relating to text
+		# files disabled, and reset any associated find text window.
 
 		$browser->{file_button_vbox}->set_sensitive(TRUE);
 		foreach my $widget (@{$browser->{text_file_sensitive_group}})
 		{
 		    $widget->set_sensitive(FALSE);
 		}
-		$browser->{file_view_svbuffer}->
-		    place_cursor($browser->{file_view_svbuffer}->
-				 get_start_iter());
-		$browser->{file_view_svbuffer}->set_text("");
-		$browser->{file_view_svbuffer}->set("highlight", FALSE);
 		reset_find_text($browser->{file_view_sv});
 		disable_find_text($browser->{file_view_sv}, 1);
 
-		# Get contents.
+		# Display the selected file's contents.
 
-		$browser->{mtn}->get_file(\$contents,
-					  $manifest_entry->{file_id});
+		display_file($browser, \$textual_data);
 
-		# Try and work out the mime type, first based on contents and
-		# then based on the file name extension.
+		# If we have just displayed a text file then enable the file
+		# buttons applicable to text files and enable any associated
+		# find text window that may be displayed.
 
-		if (! defined($mime_type =
-			      Gnome2::VFS->get_mime_type_for_data($contents))
-		    || $mime_type eq "text/plain")
+		if ($textual_data)
 		{
-		    my $name = $browser->{file_being_viewed}->{short_name};
-		    foreach my $item (@text_mime_types)
+		    foreach my $widget
+			(@{$browser->{text_file_sensitive_group}})
 		    {
-			if ($name =~ m/$item->{pattern}/)
-			{
-			    $mime_type = $item->{type};
-			    last;
-			}
+			$widget->set_sensitive(TRUE);
 		    }
-		}
-
-		# Override some mis-identified types.
-
-		$mime_type = "image/svg+xml"
-		    if ($mime_type eq "text/xml"
-			&& $browser->{file_being_viewed}->{short_name}
-			    =~ m/.*\.svg$/o);
-
-		# If it's image data then attempt to render it.
-
-		if ($mime_type =~ m/^image\/.+$/o)
-		{
-
-		    # Image data.
-
-		    eval
-		    {
-			my $loader = Gtk2::Gdk::PixbufLoader->new();
-			$loader->write($contents);
-			$loader->close();
-			$browser->{file_view_svbuffer}->insert_pixbuf
-			    ($browser->{file_view_svbuffer}->get_start_iter(),
-			     $loader->get_pixbuf());
-		    };
-		    $browser->{file_view_svbuffer}->
-			set_text("<" . $mime_type . ">") if ($@ ne "");
-
-		}
-		else
-		{
-
-		    # Non-image data.
-
-		    my $ok_to_render = 0;
-
-		    # Attempt to syntax highlight the file if it looks safe.
-
-		    if ($mime_type =~ m/^application\/.+$/o)
-		    {
-			my $part;
-			($part) = ($mime_type =~ m/^application\/(.+)$/o);
-			foreach my $item (@text_viewable_app_mime_types)
-			{
-			    if ($part eq $item)
-			    {
-				$ok_to_render = 1;
-				last;
-			    }
-			}
-		    }
-
-		    if ($mime_type =~ m/^text\/.+$/o || $ok_to_render)
-		    {
-
-			# Contents is displayable text.
-
-			my $iter;
-
-			# Enable syntax highlighting if it is available for
-			# this type of text file.
-
-			if (defined($lang = $browser->{file_view_svlangmgr}->
-				    get_language_from_mime_type($mime_type)))
-			{
-			    $browser->{file_view_svbuffer}->
-				set("highlight", TRUE);
-			    $browser->{file_view_svbuffer}->
-				set_language($lang);
-			}
-
-			# Load in the contents and then delete the trailing
-			# newline.
-
-			$browser->{file_view_svbuffer}->set_text($contents);
-			$iter = $browser->{file_view_svbuffer}->get_end_iter();
-			$browser->{file_view_svbuffer}->delete
-			    ($iter,
-			     $browser->{file_view_svbuffer}->get_end_iter())
-			    if ($iter->backward_char());
-
-			# Enable the file buttons applicable to text files.
-
-			foreach my $widget
-			    (@{$browser->{text_file_sensitive_group}})
-			{
-			    $widget->set_sensitive(TRUE);
-			}
-
-			# Enable any associated find text window that may be
-			# displayed.
-
-			disable_find_text($browser->{file_view_sv}, 0);
-
-		    }
-		    else
-		    {
-
-			# Display mime type for undisplayable file contents.
-
-			$browser->{file_view_svbuffer}->
-			    set("highlight", FALSE);
-			$browser->{file_view_svbuffer}->
-			    set_text("<" . $mime_type . ">");
-
-		    }
-
-		}
-
-		# Scroll back up to the top left.
-
-		$browser->{file_view_svbuffer}->
-		    place_cursor($browser->{file_view_svbuffer}->
-				 get_start_iter());
-		if ($browser->{file_view_scrolledwindow}->realized())
-		{
-		    $browser->{file_view_scrolledwindow}->
-			get_vadjustment()->set_value(0);
-		    $browser->{file_view_scrolledwindow}->
-			get_hadjustment()->set_value(0);
+		    disable_find_text($browser->{file_view_sv}, 0);
 		}
 
 		# Update the file details labels.
@@ -2348,6 +2212,178 @@ sub update_browser_state($$)
 
     $browser->{appbar}->pop();
     $wm->make_busy($browser, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - display_file
+#
+#   Description  - Display the currenty selected file in the sourceview
+#                  textview.
+#
+#   Data         - $browser   : The browser instance that is to display the
+#                               file.
+#                  $text_data : A reference to a variable that is to contain a
+#                               boolean indicator as to whether the displayed
+#                               file contains textual or binary data.
+#
+##############################################################################
+
+
+
+sub display_file($$)
+{
+
+    my($browser, $textual_data) = @_;
+
+    my($contents,
+       $iter,
+       $lang,
+       $mime_details,
+       $mime_type);
+
+    $$textual_data = 0;
+
+    # Reset the file view buffer.
+
+    $browser->{file_view_svbuffer}->
+	place_cursor($browser->{file_view_svbuffer}->get_start_iter());
+    $browser->{file_view_svbuffer}->set_text("");
+    $browser->{file_view_svbuffer}->set("highlight", FALSE);
+
+    # Get contents.
+
+    $browser->{mtn}->get_file(\$contents,
+			      $browser->{file_being_viewed}->{manifest_entry}->
+			          {file_id});
+
+    # Try and work out the MIME type through file name pattern matching.
+
+    foreach my $entry (@$mime_match_table)
+    {
+	if ($browser->{file_being_viewed}->{short_name} =~ m/$entry->{re}/)
+	{
+	    $mime_type = $entry->{details}->{name};
+	    $mime_details = $entry->{details};
+	    last;
+	}
+    }
+
+    # If that didn't work then try determining the MIME type based upon the
+    # file's contents.
+
+    $mime_type = Gnome2::VFS->get_mime_type_for_data($contents)
+	if (! defined($mime_type));
+
+    # Only attempt to render the file's contents if requested to do so.
+
+    if (! defined($mime_type)
+	|| (defined($mime_details) && ! $mime_details->{display_internally}))
+    {
+
+	# The user doesn't want to display this type of file.
+
+	$browser->{file_view_svbuffer}->
+	    set_text("<"
+		     . (defined($mime_type) ? $mime_type : "Unknown Contents")
+		     . ">");
+
+    }
+    else
+    {
+
+	# The user wants to display this type of file.
+
+	# Image/non-image data?
+
+	if ($mime_type =~ m/^image\/.+$/o)
+	{
+
+	    # Image data.
+
+	    eval
+	    {
+		my $loader = Gtk2::Gdk::PixbufLoader->new();
+		$loader->write($contents);
+		$loader->close();
+		$browser->{file_view_svbuffer}->insert_pixbuf
+		    ($browser->{file_view_svbuffer}->get_start_iter(),
+		     $loader->get_pixbuf());
+	    };
+	    $browser->{file_view_svbuffer}->set_text("<" . $mime_type . ">")
+		if ($@ ne "");
+
+	}
+	else
+	{
+
+	    # Non-image data.
+
+	    # Binary/text data?
+
+	    if (data_is_binary(\$contents))
+	    {
+
+		# Binary data.
+
+		# We have been asked to display this data. The only thing we
+		# can do is to hex dump it out.
+
+		$browser->{file_view_svbuffer}->
+		    set_text("<" . $mime_type . "> Hex dump:\n");
+		$browser->{file_view_svbuffer}->
+		    insert($browser->{file_view_svbuffer}->get_end_iter(),
+			   ${hex_dump(\$contents)});
+
+	    }
+	    else
+	    {
+
+		# Text data.
+
+		$$textual_data = 1;
+
+		# Enable syntax highlighting if the user wants it on and it is
+		# available for this type of file.
+
+		if ((! defined($mime_details)
+		     || (defined($mime_details)
+			 && $mime_details->{syntax_highlight}))
+		    && defined($lang =
+			       $browser->{file_view_svlangmgr}->
+				   get_language_from_mime_type($mime_type)))
+		{
+		    $browser->{file_view_svbuffer}->set("highlight", TRUE);
+		    $browser->{file_view_svbuffer}->set_language($lang);
+		}
+
+		# Load in the contents.
+
+		$browser->{file_view_svbuffer}->set_text($contents);
+
+	    }
+
+	    # Delete the trailing newline.
+
+	    $iter = $browser->{file_view_svbuffer}->get_end_iter();
+	    $browser->{file_view_svbuffer}->delete
+		($iter, $browser->{file_view_svbuffer}->get_end_iter())
+		if ($iter->backward_char());
+
+	}
+
+    }
+
+    # Scroll back up to the top left.
+
+    $browser->{file_view_svbuffer}->
+	place_cursor($browser->{file_view_svbuffer}->get_start_iter());
+    if ($browser->{file_view_scrolledwindow}->realized())
+    {
+	$browser->{file_view_scrolledwindow}->get_vadjustment()->set_value(0);
+	$browser->{file_view_scrolledwindow}->get_hadjustment()->set_value(0);
+    }
 
 }
 #

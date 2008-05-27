@@ -96,55 +96,13 @@ our $line_image;
 
 our $tmp_dir;
 
-# Text viewable application mime types.
+# The user's preferences data.
 
-our @text_viewable_app_mime_types =
-    qw(postscript
-       rtf
-       x-awk
-       x-cgi
-       x-csh
-       x-glade
-       x-java
-       x-javascript
-       x-jbuilder-project
-       x-perl
-       x-php
-       x-python
-       x-shellscript
-       x-troff-man
-       x-troff
-       xhtml+xml);
+our $user_preferences;
 
-# Supported text mime types (used for syntax highlighting).
+# The MIME type file name pattern match table.
 
-our @text_mime_types =
-    (
-     {
-	 pattern => qr/.*\.c$/o,
-	 type    => "text/x-csrc"
-     },
-     {
-	 pattern => qr/.*\.(C)|(cc)|(cp)|(cpp)|(CPP)|(cxx)|(c\+\+)$/o,
-	 type    => "text/x-c++src"
-     },
-     {
-	 pattern => qr/.*\.(h)|(hh)|(H)$/o,
-	 type    => "text/x-c++hdr"
-     },
-     {
-	 pattern => qr/.*\.h$/o,
-	 type    => "text/x-chdr"
-     },
-     {
-	 pattern => qr/(^[Mm]akefile(\.[^.]+)?)|(.*\.mk)$/o,
-	 type    => "text/x-makefile"
-     },
-     {
-	 pattern => qr/.*/o,
-	 type    => "text/plain"
-     }
-    );
+our $mime_match_table;
 
 # ***** PACKAGE INFORMATION *****
 
@@ -167,11 +125,11 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     SELECTED_REVISION_CHANGED)],
 		    variables => [qw($glade_file
 				     $line_image
+				     $mime_match_table
 				     $mono_font
-				     @text_mime_types
-				     @text_viewable_app_mime_types
 				     $tmp_dir
-				     $tooltips)]);
+				     $tooltips
+				     $user_preferences)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(constants variables));
 our $VERSION = 0.1;

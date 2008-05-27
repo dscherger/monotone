@@ -705,8 +705,8 @@ sub compare_revisions($$$;$)
     gtk2_update();
 
     $instance->{mtn} = $mtn;
-    $instance->{red_revision_id} = $revision_id_1;
-    $instance->{green_revision_id} = $revision_id_2;
+    $instance->{revision_id_1} = $revision_id_1;
+    $instance->{revision_id_2} = $revision_id_2;
 
     # Get Monotone to do the comparison.
 
@@ -792,7 +792,7 @@ sub compare_revisions($$$;$)
 	    $instance->{comparison_buffer}->insert_with_tags_by_name
 		($instance->{comparison_buffer}->get_end_iter(),
 		 $line . "\n",
-		 "compare-first-file-info");
+		 "compare-file-info-1");
 
 	    # Store the file name and the starting line number so that the user
 	    # can later jump straight to it using the file combobox.
@@ -811,7 +811,7 @@ sub compare_revisions($$$;$)
 		$instance->{comparison_buffer}->insert_with_tags_by_name
 		    ($instance->{comparison_buffer}->get_end_iter(),
 		     $line . "\n",
-		     "compare-second-file-info");
+		     "compare-file-info-2");
 	    }
 
 	}
@@ -835,7 +835,7 @@ sub compare_revisions($$$;$)
 	    $instance->{comparison_buffer}->insert_with_tags_by_name
 		($instance->{comparison_buffer}->get_end_iter(),
 		 $line . "\n",
-		 "compare-first-file");
+		 "compare-file-1");
 	}
 
 	# Deal with + change lines.
@@ -846,7 +846,7 @@ sub compare_revisions($$$;$)
 	    $instance->{comparison_buffer}->insert_with_tags_by_name
 		($instance->{comparison_buffer}->get_end_iter(),
 		 $line . "\n",
-		 "compare-second-file");
+		 "compare-file-2");
 	}
 
 	# Print out the rest.
@@ -975,15 +975,15 @@ sub coloured_revision_change_log_button_clicked_cb($$)
 
     # Work out what revision id to use.
 
-    if ($widget == $instance->{red_revision_change_log_button})
+    if ($widget == $instance->{revision_change_log_1_button})
     {
-	$revision_id = $instance->{red_revision_id};
-	$colour = "red";
+	$revision_id = $instance->{revision_id_1};
+	$colour = "compare-1";
     }
     else
     {
-	$revision_id = $instance->{green_revision_id};
-	$colour = "green";
+	$revision_id = $instance->{revision_id_2};
+	$colour = "compare-2";
     }
 
     # Display the full revision change log.
@@ -1240,7 +1240,9 @@ sub get_revision_comparison_window()
 			    "file_comparison_combobox",
 			    "comparison_textview",
 			    "comparison_scrolledwindow",
-			    "red_revision_change_log_button")
+			    "revision_change_log_1_button",
+			    "revision_change_log_1_button_label",
+			    "revision_change_log_2_button_label")
 	{
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
 	}
@@ -1280,6 +1282,17 @@ sub get_revision_comparison_window()
 	    $instance->{comparison_textview}->get_buffer();
 	create_format_tags($instance->{comparison_buffer});
 	$instance->{comparison_textview}->modify_font($mono_font);
+
+	# Setup the revision log button coloured labels.
+
+	$instance->{revision_change_log_1_button_label}->
+	    set_markup("<span foreground='"
+		       . $user_preferences->{colours}->{cmp_revision_1}->{fg}
+		       . "'>Revision Change Log</span>");
+	$instance->{revision_change_log_2_button_label}->
+	    set_markup("<span foreground='"
+		       . $user_preferences->{colours}->{cmp_revision_2}->{fg}
+		       . "'>Revision Change Log</span>");
 
 	# Register the window for management.
 

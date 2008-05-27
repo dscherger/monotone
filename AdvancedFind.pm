@@ -791,45 +791,13 @@ sub update_advanced_find_state($$)
 	{
 	    $advanced_find->{appbar}->set_status("Fetching revision list");
 	    gtk2_update();
-
-	    # Get either a list of tags or revision ids depending upon what the
-	    # user has chosen.
-
-	    if ($advanced_find->{tagged_checkbutton}->get_active())
-	    {
-		my(%dup_list,
-		   @list);
-		$advanced_find->{mtn}->
-		    tags(\@list,
-			 $advanced_find->{branch_combo_details}->{value});
-		$advanced_find->{appbar}->set_progress_percentage(0.5);
-		gtk2_update();
-		foreach my $item (@list)
-		{
-		    if (! exists($dup_list{$item->{tag}}))
-		    {
-			push(@revision_list, $item->{tag});
-			$dup_list{$item->{tag}} = 1;
-		    }
-		}
-	    }
-	    else
-	    {
-		$advanced_find->{mtn}->
-		    select(\@revision_list,
-			   "b:" . $advanced_find->{branch_combo_details}->
-			       {value});
-		$advanced_find->{appbar}->set_progress_percentage(0.33);
-		gtk2_update();
-		$advanced_find->{mtn}->toposort(\@revision_list,
-						@revision_list);
-		$advanced_find->{appbar}->set_progress_percentage(0.66);
-		gtk2_update();
-		splice(@revision_list, 0, scalar(@revision_list) - 100);
-		@revision_list = reverse(@revision_list);
-	    }
-	    $advanced_find->{appbar}->set_progress_percentage(1);
-	    gtk2_update();
+	    get_branch_revisions($advanced_find->{mtn},
+				 $advanced_find->{branch_combo_details}->
+				     {value},
+				 $advanced_find->{tagged_checkbutton}->
+				     get_active(),
+				 $advanced_find->{appbar},
+				 \@revision_list);
 	}
 	$advanced_find->{revision_combo_details}->{list} = \@revision_list;
 

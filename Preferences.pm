@@ -61,10 +61,31 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 use constant PREFERENCES_FORMAT_VERSION => 1;
 
+# Text viewable application mime types.
+
+my @text_viewable_app_mime_types =
+    qw(postscript
+       rtf
+       x-awk
+       x-cgi
+       x-csh
+       x-glade
+       x-java
+       x-javascript
+       x-jbuilder-project
+       x-perl
+       x-php
+       x-python
+       x-shellscript
+       x-troff-man
+       x-troff
+       xhtml+xml);
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Public routines.
 
+sub build_mime_match_table($);
 sub load_preferences();
 sub preferences($);
 sub save_preferences($);
@@ -93,8 +114,10 @@ sub save_preferences_from_gui($);
 #   Description  - Displays the preferences dialog window and then lets the
 #                  user change the application preferences.
 #
-#   Data         - $browser : The browser instance that called up the
-#                             preferences dialog window.
+#   Data         - $browser     : The browser instance that called up the
+#                                 preferences dialog window.
+#                  Return Value : True if the preferences were changed,
+#                                 otherwise false if they were left unaltered.
 #
 ##############################################################################
 
@@ -171,6 +194,8 @@ sub preferences($)
     $instance->{file_name_patterns_liststore}->clear();
     $instance->{preferences} = undef;
 
+    return $instance->{preferences_changed};
+
 }
 #
 ##############################################################################
@@ -237,12 +262,12 @@ sub load_preferences()
 						      bg => "SteelBlue"},
 				annotate_text_2   => {fg => "MidnightBlue",
 						      bg => "SkyBlue"},
-				cmp_revision_1    => {fg => "DarkGreen",
-						      bg => "DarkSeaGreen1",
-						      hl => "SpringGreen1"},
-				cmp_revision_2    => {fg => "DarkRed",
+				cmp_revision_1    => {fg => "DarkRed",
 						      bg => "MistyRose1",
-						      hl => "IndianRed1"}},
+						      hl => "IndianRed1"},
+				cmp_revision_2    => {fg => "DarkGreen",
+						      bg => "DarkSeaGreen1",
+						      hl => "SpringGreen1"}},
 	     mime_table     => $mime_table);
     }
 
@@ -293,6 +318,46 @@ sub save_preferences($)
 #
 ##############################################################################
 #
+#   Routine      - build_mime_match_table
+#
+#   Description  - Build a regular expression pattern matching table for
+#                  working out the MIME type of a file from its file name.
+#
+#   Data         - $mime_info_table : A reference to the MIME information
+#                                     table on which the pattern matching
+#                                     table is to be based.
+#                  Return Value     : A reference to the newly created pattern
+#                                     matching table.
+#
+##############################################################################
+
+
+
+sub build_mime_match_table($)
+{
+
+    my $mime_info_table = $_[0];
+
+    my($re_str,
+       @table);
+
+    foreach my $entry (@$mime_info_table)
+    {
+	foreach my $file_glob (@{$entry->{file_name_patterns}})
+	{
+	    $re_str = file_glob_to_regexp($file_glob);
+	    push(@table,
+		 {re      => qr/$re_str/,
+		  details => $entry});
+	}
+    }
+
+    return \@table;
+
+}
+#
+##############################################################################
+#
 #   Routine      - database_browse_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the browse
@@ -315,91 +380,10 @@ sub database_browse_button_clicked_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($chooser_dialog,
-       $done);
+    my $file_name;
 
-    $chooser_dialog = Gtk2::FileChooserDialog->new("Open Database",
-						   $instance->{window},
-						   "open",
-						   "gtk-cancel" => "cancel",
-						   "gtk-open" => "ok");
-
-    do
-    {
-	if ($chooser_dialog->run() eq "ok")
-	{
-
-	    my ($err,
-		$fh,
-		$file_name,
-		$mtn);
-
-	    $file_name = $chooser_dialog->get_filename();
-
-	    # The user has selected a file. First make sure we can open it for
-	    # reading (I know I could use the -r test but this takes care of
-	    # any other unforeseen access problems as well).
-
-	    if (! defined($fh = IO::File->new($file_name, "r")))
-	    {
-		my $dialog = Gtk2::MessageDialog->new
-		    ($instance->{window},
-		     ["modal"],
-		     "warning",
-		     "close",
-		     $! . ".");
-		$dialog->run();
-		$dialog->destroy();
-	    }
-	    else
-	    {
-
-		$fh->close();
-		$fh = undef;
-
-		# Ok it is a readable file, try and open it but deal with any
-		# errors in a nicer way than normal.
-
-		Monotone::AutomateStdio->register_error_handler("both");
-		eval
-		{
-		    $mtn = Monotone::AutomateStdio->new($file_name);
-		};
-		$err = $@;
-		Monotone::AutomateStdio->register_error_handler
-		    ("both", \&mtn_error_handler);
-		if ($err ne "")
-		{
-		    my $dialog = Gtk2::MessageDialog->new
-			($instance->{window},
-			 ["modal"],
-			 "warning",
-			 "close",
-			 "Not a valid Monotone database.");
-		    $dialog->run();
-		    $dialog->destroy();
-		}
-		else
-		{
-
-		    # Seems to be ok so update the related entry widget.
-
-		    $instance->{database_entry}->set_text($file_name);
-		    $done = 1;
-
-		}
-
-	    }
-
-	}
-	else
-	{
-	    $done = 1;
-	}
-    }
-    while (! $done);
-
-    $chooser_dialog->destroy();
+    $instance->{database_entry}->set_text($file_name)
+	if (open_database($instance->{window}, undef, \$file_name));
 
 }
 #
@@ -607,7 +591,7 @@ sub add_file_name_pattern_button_clicked_cb($$)
 
     foreach my $entry (@{$instance->{preferences}->{mime_table}})
     {
-	if (scalar(grep(/\Q$pattern\E/, @{$entry->{file_name_patterns}})) > 0)
+	if (grep(/\Q$pattern\E/, @{$entry->{file_name_patterns}}) > 0)
 	{
 	    $match = $entry->{name};
 	    last;
@@ -755,8 +739,10 @@ sub get_preferences_window($$)
 			    "auto_select_checkbutton",
 			    "tagged_lists_limit_spinbutton",
 			    "tagged_lists_sort_cronologically_radiobutton",
+			    "tagged_lists_sort_by_name_radiobutton",
 			    "id_lists_limit_spinbutton",
 			    "id_lists_sort_cronologically_radiobutton",
+			    "id_lists_sort_by_id_radiobutton",
 
 			    # Appearance pane widgets.
 
@@ -908,7 +894,7 @@ sub get_preferences_window($$)
     }
 
     $instance->{done} = 0;
-    $instance->{preferences_changed} = 0;
+    $instance->{preferences_changed} = undef;
     $instance->{selected_file_name_pattern} = undef;
     $instance->{selected_mime_types_entry} = undef;
     $instance->{selected_mime_types_path} = undef;
@@ -947,14 +933,26 @@ sub load_preferences_into_gui($)
 		   TRUE : FALSE);
     $instance->{tagged_lists_limit_spinbutton}->
 	set_value($instance->{preferences}->{query}->{tagged}->{limit});
-    $instance->{tagged_lists_sort_cronologically_radiobutton}->
-	set_active($instance->{preferences}->{query}->{tagged}->
-		   {sort_cronologically} ? TRUE : FALSE);
+    if ($instance->{preferences}->{query}->{tagged}->{sort_cronologically})
+    {
+	$instance->{tagged_lists_sort_cronologically_radiobutton}->
+	    set_active(TRUE);
+    }
+    else
+    {
+	$instance->{tagged_lists_sort_by_name_radiobutton}->set_active(TRUE);
+    }
     $instance->{id_lists_limit_spinbutton}->
 	set_value($instance->{preferences}->{query}->{id}->{limit});
-    $instance->{id_lists_sort_cronologically_radiobutton}->
-	set_active($instance->{preferences}->{query}->{id}->
-		   {sort_cronologically} ? TRUE : FALSE);
+    if ($instance->{preferences}->{query}->{id}->{sort_cronologically})
+    {
+	$instance->{id_lists_sort_cronologically_radiobutton}->
+	    set_active(TRUE);
+    }
+    else
+    {
+	$instance->{id_lists_sort_by_id_radiobutton}->set_active(TRUE);
+    }
 
     # Do the appearance pane.
 
@@ -1150,10 +1148,13 @@ sub save_preferences_from_gui($)
 sub initialise_mime_info_table()
 {
 
-    my($pattern,
+    my($display_internally,
+       $pattern,
        $globs_file,
        $line,
        %lookup,
+       $part,
+       $syntax_highlight,
        @table,
        $type);
 
@@ -1183,10 +1184,26 @@ sub initialise_mime_info_table()
 	    }
 	    else
 	    {
+		$display_internally = $syntax_highlight = 0;
+		if ($type =~ m/^application\/.+$/o)
+		{
+		    ($part) = ($type =~ m/^application\/(.+)$/o);
+		    $display_internally = $syntax_highlight = 1
+			if (grep(/\Q$part\E/, @text_viewable_app_mime_types)
+			    > 0);
+		}
+		elsif ($type =~ m/^image\/.+$/o)
+		{
+		    $display_internally = 1;
+		}
+		elsif ($type =~ m/^text\/.+$/o)
+		{
+		    $display_internally = $syntax_highlight = 1;
+		}
 		$lookup{$type} = {name               => $type,
 			          file_name_patterns => [$pattern],
-			          display_internally => 0,
-			          syntax_highlight   => 0,
+			          display_internally => $display_internally,
+			          syntax_highlight   => $syntax_highlight,
 			          helper_application => ""};
 		push(@table, $lookup{$type});
 	    }
@@ -1333,6 +1350,8 @@ sub file_glob_to_regexp($)
 	    $escaping = 0;
 	}
     }
+
+    $re_text .= "\$";
 
     return $re_text;
 
