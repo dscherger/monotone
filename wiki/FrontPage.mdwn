@@ -2,7 +2,7 @@
 # monotone wiki
 
 This is the wiki for the version control system 
-[monotone](http://monotone.ca/monotone).
+[monotone](http://monotone.ca/).
 
 monotone is a free distributed version control system. it provides a simple, single-file transactional version store, with fully disconnected operation and an efficient peer-to-peer synchronization protocol. it understands history-sensitive merging, lightweight branches, integrated code review and 3rd party testing. it uses cryptographic version naming and client-side RSA certificates. it has good internationalization support, few external dependencies, and runs on unix, OSX, windows, and is licensed under the GNU GPL.
 
@@ -17,14 +17,15 @@ a useful collection of brokenlinks at [[wiki]].*
  * [[EvaluationFeatures]]
  * [[Testimonials]]
  * [[Talks]]
- * [[People]]
- * [[MtnSummit2008]]
+ * [[Users]]
+ * [[Developers]]
 
 ### Getting Monotone
- * [[BuildingOnWindows]] and [[BuildingOnWindows/VisualC8]]
- * [[BuildingOnMac]]
- * [[BuildingOnSolaris]]
- * [[BuildingViaPkgsrc]] on a wide variety of platforms
+ * Building
+   * on [[Building/Windows]] and [[Building/Windows/VisualC8]]
+   * on [[Building/Mac]]
+   * on [[Building/Solaris]]
+   * via [[Building/pkgsrc]] on a wide variety of platforms
  * [[MonotoneOnDebian]]
  * [[SelfHostingInfo]]
 
@@ -102,14 +103,15 @@ a useful collection of brokenlinks at [[wiki]].*
  * [[AutomateVersions]]
 
 ### Previous Activities
- * [[SummerOfCode2006]]
- * [[MtnSummit]] -- Mtn View 2007
+ * [[Monotone_Summit_2008|MtnSummit/2008]] -- Germany
+ * [[Monotone_Summit_2007|MtnSummit/2007]] -- Mtn View
+ * [[Summer_of_Code_2006|SummerOfCode/2006]]
 
 ### Interesting starting points:
  * [[RecentChanges]]: see where people are currently working
  * [[SandBox]]: feel free to change this page and experiment with editing
  * [[FindPage]]: search or browse the database in various ways
- * [[ikiwiki/formatting]]: quick access to wiki syntax
+ * [[Formatting|ikiwiki/formatting]]: quick access to wiki syntax
 
 ---
 

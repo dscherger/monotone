@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+
+## n.v.m.nuskool ##
+
+Contact: [[People/MarkusSchiltknecht]], [[People/DerekScherger]]
+
+Goal: *to be filled out*
+
+Status: unfinished
