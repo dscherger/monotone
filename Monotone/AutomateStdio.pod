@@ -19,10 +19,11 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 =head1 DESCRIPTION
 
 The Monotone::AutomateStdio class gives the Perl developer access to Monotone's
-automate stdio interface; internally dealing command, option and output
-formats. For most commands that return structured information, this class also
-breaks out the information into lists of records, as anonymous hashes, for ease
-of access (detailed below).
+automate stdio facility via an easy to use interface. All command, option and
+output formats are handled internally by this class. Any structured information
+returned by Monotone is parsed and returned back to the caller as lists of
+records for ease of access (detailed below). One also has the option of
+accessing Monotone's output as one large string should you prefer.
 
 The mtn automate subprocess is also controlled by this class. A new subprocess
 is started, if necessary, when anything that requires it is called. The
