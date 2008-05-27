@@ -1,6 +1,7 @@
 #!./tester
 
 monotone_path = nil
+no_network_tests = false
 
 function safe_mtn(...)
   if monotone_path == nil then
@@ -24,6 +25,25 @@ function mtn_ws_opts(...)
     end
   end
   return {monotone_path, "--ssh-sign=no", "--norc", "--rcfile", test.root .. "/test_hooks.lua", unpack(arg)}
+end
+
+function mtn_outside_ws(...)
+  -- Return a mtn command string that is executed outside a workspace,
+  -- but specifies all appropriate options.
+  if monotone_path == nil then
+    monotone_path = os.getenv("mtn")
+    if monotone_path == nil then
+      err("'mtn' environment variable not set")
+    end
+  end
+  return {monotone_path,
+         "--ssh-sign=no",
+         "--norc", "--rcfile", test.root .. "/test_hooks.lua",
+         "--confdir="..test.root,
+         "--db=" .. test.root .. "/test.db",
+         "--keydir", test.root .. "/keys",
+         "--key=tester@test.net",
+          unpack(arg)}
 end
 
 -- function preexecute(x)
@@ -337,6 +357,36 @@ function prepare_to_run_tests (P)
       return 1
    end
    unlogged_remove(d)
+
+   -- Several tests require the ability to run a network server on
+   -- the loopback interface, and connect to it from another process
+   -- on this computer.  Unlike the above, we just skip those tests
+   -- (loudly) if we can't do that.  Verifying that this is possible
+   -- requires a helper program.
+
+   local checknet = getpathof("check_net")
+   if checknet ~= nil then
+      writefile_q("in", nil)
+      prepare_redirect("in", "out", "err")
+      local status = execute(checknet)
+      local out = readfile_q("out")
+      local err = readfile_q("err")
+
+      if status == 0 and err == "" and out == "" then
+	 logfile:write("check_net: Can use the loopback interface.\n")
+      else
+	 logfile:write(string.format("check_net: failed with status %d\n"..
+				     "stdout:\n%s\nstderr:\n%s\n",
+				     status, out, err))
+	 P("warning: network unavailable, skipping network server tests\n")
+	 no_network_tests = true
+      end
+   else
+      P("warning: check_net helper is missing, skipping network server tests\n")
+      no_network_tests = true
+   end
+
+   -- Record the full version of monotone under test in the logfile.
 
    monotone_path = getpathof("mtn")
    if monotone_path == nil then monotone_path = "mtn" end

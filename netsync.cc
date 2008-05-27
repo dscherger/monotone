@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -368,9 +369,15 @@ session:
   size_t session_id;
   static size_t session_count;
 
+  // These are read from the server, written to the local database
   vector<revision_id> written_revisions;
   vector<rsa_keypair_id> written_keys;
   vector<cert> written_certs;
+
+  // These are sent to the server
+  vector<revision_id> sent_revisions;
+  vector<rsa_keypair_id> sent_keys;
+  vector<cert> sent_certs;
 
   id saved_nonce;
 
@@ -608,23 +615,22 @@ session::~session()
             keys_in || keys_out))
     error_code = partial_transfer;
 
-  vector<cert> unattached_certs;
-  map<revision_id, vector<cert> > revcerts;
+  vector<cert> unattached_written_certs;
+  map<revision_id, vector<cert> > rev_written_certs;
   for (vector<revision_id>::iterator i = written_revisions.begin();
        i != written_revisions.end(); ++i)
-    revcerts.insert(make_pair(*i, vector<cert>()));
+    rev_written_certs.insert(make_pair(*i, vector<cert>()));
   for (vector<cert>::iterator i = written_certs.begin();
        i != written_certs.end(); ++i)
     {
       map<revision_id, vector<cert> >::iterator j;
-      j = revcerts.find(revision_id(i->ident));
-      if (j == revcerts.end())
-        unattached_certs.push_back(*i);
+      j = rev_written_certs.find(revision_id(i->ident));
+      if (j == rev_written_certs.end())
+        unattached_written_certs.push_back(*i);
       else
         j->second.push_back(*i);
     }
 
-  //  if (role == sink_role || role == source_and_sink_role)
   if (!written_keys.empty()
       || !written_revisions.empty()
       || !written_certs.empty())
@@ -641,7 +647,7 @@ session::~session()
       for (vector<revision_id>::iterator i = written_revisions.begin();
            i != written_revisions.end(); ++i)
         {
-          vector<cert> & ctmp(revcerts[*i]);
+          vector<cert> & ctmp(rev_written_certs[*i]);
           set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > certs;
           for (vector<cert>::const_iterator j = ctmp.begin();
                j != ctmp.end(); ++j)
@@ -654,11 +660,63 @@ session::~session()
         }
 
       //Certs (not attached to a new revision)
-      for (vector<cert>::iterator i = unattached_certs.begin();
-           i != unattached_certs.end(); ++i)
+      for (vector<cert>::iterator i = unattached_written_certs.begin();
+           i != unattached_written_certs.end(); ++i)
         lua.hook_note_netsync_cert_received(revision_id(i->ident), i->key,
                                             i->name, i->value, session_id);
     }
+
+  if (!sent_keys.empty()
+      || !sent_revisions.empty()
+      || !sent_certs.empty())
+    {
+
+      vector<cert> unattached_sent_certs;
+      map<revision_id, vector<cert> > rev_sent_certs;
+      for (vector<revision_id>::iterator i = sent_revisions.begin();
+           i != sent_revisions.end(); ++i)
+        rev_sent_certs.insert(make_pair(*i, vector<cert>()));
+      for (vector<cert>::iterator i = sent_certs.begin();
+           i != sent_certs.end(); ++i)
+        {
+          map<revision_id, vector<cert> >::iterator j;
+          j = rev_sent_certs.find(revision_id(i->ident));
+          if (j == rev_sent_certs.end())
+            unattached_sent_certs.push_back(*i);
+          else
+            j->second.push_back(*i);
+        }
+
+      //Keys
+      for (vector<rsa_keypair_id>::iterator i = sent_keys.begin();
+           i != sent_keys.end(); ++i)
+        {
+          lua.hook_note_netsync_pubkey_sent(*i, session_id);
+        }
+
+      //Revisions
+      for (vector<revision_id>::iterator i = sent_revisions.begin();
+           i != sent_revisions.end(); ++i)
+        {
+          vector<cert> & ctmp(rev_sent_certs[*i]);
+          set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > certs;
+          for (vector<cert>::const_iterator j = ctmp.begin();
+               j != ctmp.end(); ++j)
+            certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
+
+          revision_data rdat;
+          project.db.get_revision(*i, rdat);
+          lua.hook_note_netsync_revision_sent(*i, rdat, certs,
+                                                  session_id);
+        }
+
+      //Certs (not attached to a new revision)
+      for (vector<cert>::iterator i = unattached_sent_certs.begin();
+           i != unattached_sent_certs.end(); ++i)
+        lua.hook_note_netsync_cert_sent(revision_id(i->ident), i->key,
+                                            i->name, i->value, session_id);
+    }
+
   lua.hook_note_netsync_end(session_id, error_code,
                             bytes_in, bytes_out,
                             certs_in, certs_out,
@@ -718,6 +776,7 @@ session::note_rev(revision_id const & rev)
   data tmp;
   write_revision(rs, tmp);
   queue_data_cmd(revision_item, rev.inner(), tmp());
+  sent_revisions.push_back(rev);
 }
 
 void
@@ -730,6 +789,7 @@ session::note_cert(id const & c)
   projects.db.get_revision_cert(c, cert);
   write_cert(cert.inner(), str);
   queue_data_cmd(cert_item, c, str);
+  sent_certs.push_back(cert.inner());
 }
 
 
@@ -1335,8 +1395,27 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
             % printable_key_hash);
           projects.db.set_var(their_key_key, printable_key_hash);
         }
-      if (projects.db.put_key(their_keyname, their_key))
-        W(F("saving public key for %s to database") % their_keyname);
+      if (projects.db.public_key_exists(their_keyname))
+        {
+          rsa_pub_key tmp;
+          project.db.get_key(their_keyname, tmp);
+
+          E(keys_match(their_keyname, tmp, their_keyname, their_key),
+            F("the server sent a key with the key id '%s'\n"
+              "which is already in use in your database. you may want to execute\n"
+              "  %s dropkey %s\n"
+              "on your local database before you run this command again,\n"
+              "assuming that key currently present in your database does NOT have\n"
+              "a private counterpart (or in other words, is one of YOUR keys)")
+            % their_keyname % ui.prog_name % their_keyname);
+        }
+      else
+        {
+          // this should now always return true since we just checked
+          // for the existence of this particular key
+          I(project.db.put_key(their_keyname, their_key));
+          W(F("saving public key for %s to database") % their_keyname);
+        }
 
       {
         hexenc<id> hnonce;
@@ -1863,6 +1942,7 @@ session::load_data(netcmd_item_type type,
         projects.db.get_pubkey(item, keyid, pub);
         L(FL("public key '%s' is also called '%s'") % hitem() % keyid);
         write_pubkey(keyid, pub, out);
+        sent_keys.push_back(keyid);
       }
       break;
 
@@ -2354,7 +2434,7 @@ build_stream_to_server(options & opts, lua_hooks & lua,
                        Netxx::Timeout timeout)
 {
   shared_ptr<Netxx::StreamBase> server;
-  
+
   if (info.client.use_argv)
     {
       I(info.client.argv.size() > 0);
@@ -2791,7 +2871,7 @@ serve_connections(options & opts,
                     {
                       size_t l_colon = address().find(':');
                       size_t r_colon = address().rfind(':');
-              
+
                       if (l_colon == r_colon && l_colon == 0)
                         {
                           // can't be an IPv6 address as there is only one colon
@@ -2858,7 +2938,7 @@ serve_connections(options & opts,
                   info.client.exclude_pattern = globish(request.exclude);
                   info.client.use_argv = false;
                   parse_uri(info.client.unparsed(), info.client.u);
-                  
+
                   try
                     {
                       P(F("connecting to %s") % info.client.unparsed);

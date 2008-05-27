@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -111,7 +112,7 @@ lua_hooks::lua_hooks(app_state * app)
     "io.popen = function(c,t) "
     " error(\"io.popen disabled for security reasons.  Try spawn_pipe().\") "
     "end ";
-  
+
     if (!run_string(st, disable_dangerous,
                     "<disabled dangerous functions>"))
     throw oops("lua error while disabling existing functions");
@@ -929,14 +930,51 @@ lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
 bool
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
                                                revision_data const & rdat,
-                            set<pair<rsa_keypair_id,
-                                     pair<cert_name,
-                                          cert_value> > > const & certs,
+                                               set<pair<rsa_keypair_id,
+                                               pair<cert_name,
+                                               cert_value> > > const & certs,
                                                size_t session_id)
 {
   Lua ll(st);
   ll
     .func("note_netsync_revision_received")
+    .push_str(encode_hexenc(new_id.inner()()))
+    .push_str(rdat.inner()());
+
+  ll.push_table();
+
+  typedef set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > cdat;
+
+  int n = 1;
+  for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    {
+      ll.push_int(n++);
+      ll.push_table();
+      ll.push_str(i->first());
+      ll.set_field("key");
+      ll.push_str(i->second.first());
+      ll.set_field("name");
+      ll.push_str(i->second.second());
+      ll.set_field("value");
+      ll.set_table();
+    }
+
+  ll.push_int(session_id);
+  ll.call(4, 0);
+  return ll.ok();
+}
+
+bool
+lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
+                                           revision_data const & rdat,
+                                           set<pair<rsa_keypair_id,
+                                           pair<cert_name,
+                                           cert_value> > > const & certs,
+                                           size_t session_id)
+{
+  Lua ll(st);
+  ll
+    .func("note_netsync_revision_sent")
     .push_str(encode_hexenc(new_id.inner()()))
     .push_str(rdat.inner()());
 
@@ -978,6 +1016,20 @@ lua_hooks::hook_note_netsync_pubkey_received(rsa_keypair_id const & kid,
 }
 
 bool
+lua_hooks::hook_note_netsync_pubkey_sent(rsa_keypair_id const & kid,
+                                             size_t session_id)
+{
+  Lua ll(st);
+  ll
+    .func("note_netsync_pubkey_sent")
+    .push_str(kid())
+    .push_int(session_id);
+
+  ll.call(2, 0);
+  return ll.ok();
+}
+
+bool
 lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
                                            rsa_keypair_id const & kid,
                                            cert_name const & name,
@@ -987,6 +1039,26 @@ lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
   Lua ll(st);
   ll
     .func("note_netsync_cert_received")
+    .push_str(encode_hexenc(rid.inner()()))
+    .push_str(kid())
+    .push_str(name())
+    .push_str(value())
+    .push_int(session_id);
+
+  ll.call(5, 0);
+  return ll.ok();
+}
+
+bool
+lua_hooks::hook_note_netsync_cert_sent(revision_id const & rid,
+                                           rsa_keypair_id const & kid,
+                                           cert_name const & name,
+                                           cert_value const & value,
+                                           size_t session_id)
+{
+  Lua ll(st);
+  ll
+    .func("note_netsync_cert_sent")
     .push_str(encode_hexenc(rid.inner()()))
     .push_str(kid())
     .push_str(name())
@@ -1065,13 +1137,13 @@ void commands::cmd_lua::exec(app_state & app,
 {
   I(st);
   I(app.lua.check_lua_state(st));
-  
+
   app_state* app_p = get_app_state(st);
   I(app_p == & app);
 
   Lua ll(st);
   ll.func(f_name);
-  
+
   for (args_vector::const_iterator it = args.begin(); it != args.end(); ++it)
     ll.push_str((*it)());
 
@@ -1110,12 +1182,12 @@ LUAEXT(register_command, )
   const char *cmd_abstract = luaL_checkstring(L, -3);
   const char *cmd_desc = luaL_checkstring(L, -2);
   const char *cmd_func = luaL_checkstring(L, -1);
-  
+
   N(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
     F("%s called with an invalid parameter") % "register_command");
-  
+
   new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc, L, cmd_func);  // leak this - commands can't be removed anyway
-  
+
   lua_pushboolean(L, true);
   return 1;
 }

@@ -201,7 +201,7 @@ _monotone() {
                       --next --no-files --no-graph --no-merges --to' -- $cur ) )
 		    _filedir
 		    ;;
-		approve | disapprove | comment | tag | testresult | cert | explicit_merge | trusted | update )
+		approve | disapprove | comment | suspend | tag | testresult | cert | explicit_merge | trusted | update )
 		    _monotone_complete revision
 		    ;;
 		ls | list )
@@ -224,7 +224,7 @@ _monotone() {
 		cat )
 		    _filedir
 		    ;;
-		push | pull | serve | sync )
+		clone | push | pull | serve | sync )
 		    COMPREPLY=( $(compgen -A hostname -- $cur) )
 		    ;;
 		pubkey | privkey )
@@ -256,7 +256,7 @@ _monotone() {
 				    _monotone_complete file
 				fi
 				;;
-			    push | pull | serve | sync | propagate )
+			    clone | push | pull | serve | sync | propagate )
 				_monotone_branches
 				;;
 			    * )
@@ -287,10 +287,10 @@ _monotone() {
                           annotate cat complete diff help list log ls show_conflicts
                           status
                           cert passphrase dropkey genkey trusted
-                          pull push serve sync
+                          clone pull push serve sync
                           privkey pubkey read
                           cvs_import
-                          approve comment disapprove tag testresult
+                          approve comment disapprove suspend tag testresult
                           checkout co explicit_merge heads merge merge_into_dir
                           migrate_workspace propagate refresh_inodeprints setup
                           set unset

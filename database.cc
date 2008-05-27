@@ -180,7 +180,7 @@ namespace
                             pair<shared_ptr<Botan::PK_Verifier>,
                                  shared_ptr<Botan::RSA_PublicKey> >
                             > verifier_cache;
-  
+
 } // anonymous namespace
 
 class database_impl
@@ -278,7 +278,7 @@ private:
   // "do we have any entry for 'ident' that is a base version"
   bool roster_base_stored(revision_id const & ident);
   bool roster_base_available(revision_id const & ident);
-  
+
   // "do we have any entry for 'ident' that is a delta"
   bool delta_exists(file_id const & ident,
                     file_id const & base,
@@ -358,10 +358,10 @@ private:
   void put_cert(cert const & t, string const & table);
   void results_to_certs(results const & res,
                         vector<cert> & certs);
-  
+
   void get_certs(vector<cert> & certs,
                  string const & table);
-  
+
   void get_certs(id const & ident,
                  vector<cert> & certs,
                  string const & table);
@@ -471,7 +471,7 @@ database_impl::check_format()
   bool have_rosters = !res.empty();
   fetch(res, one_col, any_rows, query("SELECT 1 FROM heights LIMIT 1"));
   bool have_heights = !res.empty();
-  
+
 
   if (!have_manifests)
     {
@@ -1342,7 +1342,7 @@ database_impl::count(string const & table)
     {
       return format_sqlite_error_for_info(e);
     }
-        
+
 }
 
 string
@@ -1694,12 +1694,12 @@ private:
 public:
   markings_extractor(node_id const & _nid, marking_t & _markings) :
     nid(_nid), markings(_markings) {} ;
-  
+
   bool look_at_delta(roster_delta const & del)
   {
     return try_get_markings_from_roster_delta(del, nid, markings);
   }
-  
+
   void look_at_roster(roster_t const & roster, marking_map const & mm)
   {
     marking_map::const_iterator mmi =
@@ -1747,7 +1747,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
       // cases we are looking at the parent of a (content-)marked node, thus
       // the information we are for is right there in the delta leading to
       // this node.
-      // 
+      //
       // recording the deltas visited here in a set as to avoid inspecting
       // them later seems to be of little value, as it imposes a cost here,
       // but can seldom be exploited.
@@ -1990,7 +1990,7 @@ database::put_file_version(file_id const & old_id,
       W(F("dropping delta '%s' -> '%s'") % old_id % new_id);
       return;
     }
-  
+
   get_file_version(old_id, old_data);
   {
     data tmp;
@@ -2009,8 +2009,8 @@ database::put_file_version(file_id const & old_id,
     // the reconstruction and comparing hashes.
     I(old_tmp == old_data.inner());
   }
-  
-  transaction_guard guard(*this);  
+
+  transaction_guard guard(*this);
   if (file_or_manifest_base_exists(old_id, "files"))
     {
       // descendent of a head version replaces the head, therefore old head
@@ -2022,7 +2022,7 @@ database::put_file_version(file_id const & old_id,
       imp->schedule_delayed_file(new_id, new_data);
       imp->drop(new_id.inner(), "file_deltas");
     }
-    
+
   if (!imp->delta_exists(old_id, new_id, "file_deltas"))
     {
       put_file_delta(old_id, new_id, reverse_delta);
@@ -2085,7 +2085,7 @@ database::get_revision_ancestry(rev_ancestry_map & graph)
 {
   // share some storage
   id::symtab id_syms;
-  
+
   results res;
   graph.clear();
   imp->fetch(res, 2, any_rows,
@@ -2154,6 +2154,59 @@ database::get_revision_manifest(revision_id const & rid,
   revision_t rev;
   get_revision(rid, rev);
   mid = rev.new_manifest;
+}
+
+void
+database::get_common_ancestors(std::set<revision_id> const & revs,
+                               std::set<revision_id> & common_ancestors)
+{
+  set<revision_id> ancestors, all_common_ancestors;
+  vector<revision_id> frontier;
+  for (set<revision_id>::const_iterator i = revs.begin();
+       i != revs.end(); ++i)
+    {
+      I(revision_exists(*i));
+      ancestors.clear();
+      ancestors.insert(*i);
+      frontier.push_back(*i);
+      while (!frontier.empty())
+        {
+          revision_id rid = frontier.back();
+          frontier.pop_back();
+          if(!null_id(rid))
+            {
+              set<revision_id> parents;
+              get_revision_parents(rid, parents);
+              for (set<revision_id>::const_iterator i = parents.begin();
+                   i != parents.end(); ++i)
+                {
+                  if (ancestors.find(*i) == ancestors.end())
+                    {
+                      frontier.push_back(*i);
+                      ancestors.insert(*i);
+                    }
+                }
+            }
+        }
+      if (all_common_ancestors.empty())
+        all_common_ancestors = ancestors;
+      else
+        {
+          set<revision_id> common;
+          set_intersection(ancestors.begin(), ancestors.end(),
+                         all_common_ancestors.begin(), all_common_ancestors.end(),
+                         inserter(common, common.begin()));
+          all_common_ancestors = common;
+        }
+    }
+
+  for (set<revision_id>::const_iterator i = all_common_ancestors.begin();
+       i != all_common_ancestors.end(); ++i)
+    {
+      // FIXME: where do these null'ed IDs come from?
+      if (null_id(*i)) continue;
+      common_ancestors.insert(*i);
+    }
 }
 
 void
@@ -2227,9 +2280,9 @@ database::put_rev_height(revision_id const & id,
   I(!null_id(id));
   I(revision_exists(id));
   I(height.valid());
-  
+
   imp->height_cache.erase(id);
-  
+
   imp->execute(query("INSERT INTO heights VALUES(?, ?)")
                % blob(id.inner()())
                % blob(height()));
@@ -2304,7 +2357,7 @@ database::put_revision(revision_id const & new_id,
   I(rev.made_for == made_for_database);
   rev.check_sane();
 
-  // Phase 1: confirm the revision makes sense, and we the required files
+  // Phase 1: confirm the revision makes sense, and the required files
   // actually exist
   for (edge_map::const_iterator i = rev.edges.begin();
        i != rev.edges.end(); ++i)
@@ -2412,7 +2465,7 @@ database::put_height_for_revision(revision_id const & new_id,
                                   revision_t const & rev)
 {
   I(!null_id(new_id));
-  
+
   rev_height highest_parent;
   // we always branch off the highest parent ...
   for (edge_map::const_iterator e = rev.edges.begin();
@@ -2425,7 +2478,7 @@ database::put_height_for_revision(revision_id const & new_id,
         highest_parent = parent;
       }
     }
-    
+
   // ... then find the first unused child
   u32 childnr(0);
   rev_height candidate; MM(candidate);
@@ -2962,7 +3015,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 {
   // share some storage
   id::symtab id_syms;
-  
+
   results res;
   imp->fetch(res, 3, any_rows,
              query("SELECT hash, id, keypair "
@@ -3137,15 +3190,15 @@ database_impl::add_prefix_matching_constraint(string const & colname,
                                               string const & prefix,
                                               query & q)
 {
-  L(FL("add_prefix_matching_constraint for '%s'")
-    % encode_hexenc(prefix));
+  L(FL("add_prefix_matching_constraint for '%s'") % prefix);
 
   if (prefix.empty())
     q.sql_cmd += "1";  // always true
   else
     {
-      string lower_bound(prefix);
-      string upper_bound(prefix);
+      string binary_prefix = decode_hexenc(prefix);
+      string lower_bound(binary_prefix);
+      string upper_bound(binary_prefix);
 
       string::reverse_iterator ity(upper_bound.rbegin());
       ++(*ity);
@@ -3177,6 +3230,17 @@ database_impl::add_prefix_matching_constraint(string const & colname,
           q.args.push_back(blob(lower_bound));
           q.args.push_back(blob(upper_bound));
         }
+
+      // encode_hexenc might have lost a nibble a the end, thus we possibly
+      // need to add a second check, with a LIKE operator on the hex
+      // encoded string.
+
+      if (prefix.size() % 2 == 1)
+        {
+          string pattern = prefix + '%';
+          q.sql_cmd += " AND (hex(" + colname + ") LIKE ?)";
+          q.args.push_back(text(pattern));
+        }
     }
 }
 
@@ -3188,7 +3252,7 @@ database::complete(string const & partial,
   completions.clear();
   query q("SELECT id FROM revisions WHERE ");
 
-  imp->add_prefix_matching_constraint("id", decode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3204,7 +3268,7 @@ database::complete(string const & partial,
   completions.clear();
 
   query q("SELECT id FROM files WHERE ");
-  imp->add_prefix_matching_constraint("id", decode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3213,7 +3277,7 @@ database::complete(string const & partial,
   res.clear();
 
   q = query("SELECT id FROM file_deltas WHERE ");
-  imp->add_prefix_matching_constraint("id", decode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3228,7 +3292,7 @@ database::complete(string const & partial,
   completions.clear();
   query q("SELECT hash, id FROM public_keys WHERE ");
 
-  imp->add_prefix_matching_constraint("hash", decode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("hash", partial, q);
   imp->fetch(res, 2, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3246,7 +3310,7 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", partial, q);
+  imp->add_prefix_matching_constraint("child", encode_hexenc(partial), q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3576,7 +3640,7 @@ struct rev_height_graph : rev_graph
   {
     db.get_rev_height(rev, h);
   }
-  
+
   database & db;
 };
 
@@ -3586,7 +3650,7 @@ database::get_uncommon_ancestors(revision_id const & a,
                                  set<revision_id> & a_uncommon_ancs,
                                  set<revision_id> & b_uncommon_ancs)
 {
-  
+
   rev_height_graph graph(*this);
   ::get_uncommon_ancestors(a, b, graph, a_uncommon_ancs, b_uncommon_ancs);
 }
@@ -3746,7 +3810,7 @@ conditional_transaction_guard::do_checkpoint()
 void
 conditional_transaction_guard::maybe_checkpoint(size_t nbytes)
 {
-  I(acquired); 
+  I(acquired);
   checkpointed_calls += 1;
   checkpointed_bytes += nbytes;
   if (checkpointed_calls >= checkpoint_batch_size
