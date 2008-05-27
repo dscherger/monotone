@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 In order to form a more perfect UI...
 
@@ -6,7 +6,7 @@ In order to form a more perfect UI...
 
 We don't actually know very much about how people use monotone in the wild!  How silly is that?
 
-**Plan**: keep a log in ~/.monotone/ of every command run.  We should be very careful here to only log information that is not confidential.  (E.g., need to check with community whether they consider branch names confidential.  If very useful information is considered by some people to be confidentical, then fail safe -- default to not logging it, and provide a way for users who want to help, to enable more detailed logging.  Alternatively, only enable the system at all if requested by a hook.)
+**Plan**: keep a log in `~/.monotone/` of every command run.  We should be very careful here to only log information that is not confidential.  (E.g., need to check with community whether they consider branch names confidential.  If very useful information is considered by some people to be confidentical, then fail safe -- default to not logging it, and provide a way for users who want to help, to enable more detailed logging.  Alternatively, only enable the system at all if requested by a hook.)
 
 Log in particular start time of each run, the command run, plus provide a way for code to add arbitrary other things to the log.  (Example: it would be useful to log, for each merge, information on whether conflicts were found, and what they are.)
 
@@ -19,18 +19,22 @@ Perhaps have monotone check the size of this file on startup, and if it is growi
 # Involve the user
 
 Once we have the above, add several commands:
+
   * a way to express displeasure.  `monotone punish`, `monotone stab`, `monotone die`, ...?
   * a way to express pleasure.  `monotone reward`, `monotone cookie`, `monotone kiss`, ...?
-These commands react appropriately on stdout (whimpering, begging for forgiveness, pleasant surprise, ...?), and record (like any other command) to the log above.  Actually, these should take comments on the command line -- part of the inspiration is the social practices around common IRC bots with their "~lart", "~stab", etc. commands, which are used to relieve frustration -- it is very common to see usages like "~lart paypal for sucking and not supporting Poland", "~lart X11 for two clipboards", etc.  Take advantage of this and get a few more clues as to what the problem might be :-).
+
+These commands react appropriately on stdout (whimpering, begging for forgiveness, pleasant surprise, ...?), and record (like any other command) to the log above.  Actually, these should take comments on the command line -- part of the inspiration is the social practices around common IRC bots with their "`~lart`", "`~stab`", etc. commands, which are used to relieve frustration -- it is very common to see usages like "~lart paypal for sucking and not supporting Poland", "~lart X11 for two clipboards", etc.  Take advantage of this and get a few more clues as to what the problem might be :-).
 
   * a way to make comments, that's a little less intrusive and ritual-laden as filing a bug report or sending an email to the list.  `monotone whine`, `monotone complain`, `monotone say`, `monotone suggest`?  `monotone oops`, tell people to make a note whenever they make a mistake, even if they think it's their fault?  (give your comment on the command line, or else have it pop up an editor a la `commit`)
 
 # Enabling
 
 Perhaps the way to do this is to have the logging disabled by default, but have
+
   * the --help for the above commands describe how to turn it on
   * if any of the reward or punishment commands are run with it turned off, then work as normal, but also print a note saying that we won't know about their issues, and giving a reference for turning on the feedback functionality
   * if any of the "purer" feedback commands are run with it turned off, then give an error message, and describe how to turn on the feedback functionality
+
 The goal being to have it be as discoverable and require as little thought as possible -- and perhaps catch people right when they _are_ frustrated or happy, and perhaps will be most receptive to anything that suggests how they can help us help them.
 
 # Getting the feedback

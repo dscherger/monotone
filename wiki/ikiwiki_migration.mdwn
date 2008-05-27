@@ -57,6 +57,10 @@
       The angle brackets are *required* in this case.  Ikiwiki and
       markdown do not make any attempt to interpret URLs otherwise.
 
+    * Lists may or may not have a blank line *between* entries; however,
+      the beginning of a list *must* be separated from preceding material
+      by a blank line.
+
     * use [[ikiwiki/formatting]] to help, and add more notes here
 
     * when migrating page markup, try to minimise the number of
