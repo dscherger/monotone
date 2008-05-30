@@ -370,7 +370,8 @@ sub find_button_clicked_cb($$)
 	     ["modal"],
 	     "info",
 	     "close",
-	     sprintf("Could not find\n`%s'.", $search_term));
+	     __x("Could not find\n`{search_term}'.",
+		 search_term => $search_term));
 	$dialog->run();
 	$dialog->destroy();
     }

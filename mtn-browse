@@ -49,6 +49,7 @@ BEGIN
     use constant MIME_GLOB_FILE => "/usr/share/mime/globs";
 }
 use lib LIB_PATH;
+use lib "/home/aecoope/locale/lib/perl5/site_perl/5.8.5";
 use strict;
 
 # ***** REQUIRED PACKAGES *****
@@ -67,9 +68,10 @@ use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
+use Locale::TextDomain ("mtn-browse", "/home/aecoope/perl/locale");
 use IO::File;
 use IPC::Open3;
-use POSIX qw(:errno_h :sys_wait_h strftime);
+use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
 use Symbol qw(gensym);
 use Text::Tabs;
 
@@ -163,7 +165,6 @@ sub view_button_clicked_cb($$);
 
     # Initialise stuff.
 
-    set_locale Gtk2;
     Gnome2::Program->init("mtn-browse", 0.3);
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
@@ -186,7 +187,8 @@ sub view_button_clicked_cb($$);
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("Your preferences cannot be loaded:\n%s", $@));
+	     __x("Your preferences cannot be loaded:\n{error_message}",
+		 error_message => $@));
 	$dialog->run();
 	$dialog->destroy();
 	exit(1);
@@ -209,7 +211,8 @@ sub view_button_clicked_cb($$);
 	     ["modal"],
 	     "error",
 	     "close",
-	     sprintf("%s\nThis is fatal, I am going to exit.", $@));
+	     __x("{error_message}\nThis is fatal, I am going to exit.",
+		 error_message => $@));
 	$dialog->run();
 	$dialog->destroy();
 	exit(1);
@@ -232,8 +235,8 @@ sub view_button_clicked_cb($$);
 		     ["modal"],
 		     "error",
 		     "close",
-		     "Started in a workspace but I cannot\n"
-		         . "find _MTN, I am going to exit.");
+		     __("Started in a workspace but I cannot\n"
+			. "find _MTN, I am going to exit."));
 		$dialog->run();
 		$dialog->destroy();
 		exit(1);
@@ -274,8 +277,8 @@ sub view_button_clicked_cb($$);
 		 ["modal"],
 		 "warning",
 		 "close",
-		 sprintf("Cannot open database `%s'.",
-			 $user_preferences->{default_mtn_db}));
+		 __x("Cannot open database {database_name}.",
+		     database_name => $user_preferences->{default_mtn_db}));
 		$dialog->run();
 		$dialog->destroy();
 	}
@@ -394,11 +397,11 @@ sub about_activate_cb($$)
     Gnome2::About->new
 	("mtn-browse",
 	 "0.3b",
-	 "Copyright \xa9 2007-2009 Anthony Cooper",
-	 "A graphical front-end browser for Monotone VCS databases",
+	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
+	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
-	 "TBD",
-	 "TBD",
+	 __("TBD"),
+	 __("TBD"),
 	 $large_logo)->run();
 
 }
@@ -522,7 +525,7 @@ sub properties_toolbutton_clicked_cb($$)
 					  ["modal"],
 					  "info",
 					  "close",
-					  "Not implemented.");
+					  __("Not implemented."));
     $dialog->run();
     $dialog->destroy();
 
@@ -587,7 +590,7 @@ sub help_toolbutton_clicked_cb($$)
 					  ["modal"],
 					  "info",
 					  "close",
-					  "Not implemented.");
+					  __("Not implemented."));
     $dialog->run();
     $dialog->destroy();
 
@@ -917,7 +920,7 @@ sub save_as_button_clicked_cb($$)
        $continue,
        $done);
 
-    $chooser_dialog = Gtk2::FileChooserDialog->new("Save As",
+    $chooser_dialog = Gtk2::FileChooserDialog->new(__("Save As"),
 						   $browser->{window},
 						   "save",
 						   "gtk-cancel" => "cancel",
@@ -947,8 +950,8 @@ sub save_as_button_clicked_cb($$)
 		     ["modal"],
 		     "question",
 		     "yes-no",
-		     "File already exists.\nDo you want to replace it?");
-		$dialog->set_title("Confirm");
+		     __("File already exists.\nDo you want to replace it?"));
+		$dialog->set_title(__("Confirm"));
 		$continue = 0 if ($dialog->run() ne "yes");
 		$dialog->destroy();
 	    }
@@ -965,7 +968,7 @@ sub save_as_button_clicked_cb($$)
 			 ["modal"],
 			 "warning",
 			 "close",
-			 $! . ".");
+			 __x("{error_message}.", error_message => $!));
 		    $dialog->run();
 		    $dialog->destroy();
 		}
@@ -1032,8 +1035,8 @@ sub view_button_clicked_cb($$)
 	    ($browser->{window},
 	     ["modal"],
 	     "warning",
-	     "Cannot generate temporary file name: ",
-	     $! . ".");
+	     __x("Cannot generate temporary file name:\n{error_message}.",
+		 error_message => $!));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -1048,7 +1051,7 @@ sub view_button_clicked_cb($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     $! . ".");
+	     __x("{error_message}.", error_message => $!));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -1110,7 +1113,7 @@ sub view_button_clicked_cb($$)
 		 ["modal"],
 		 "warning",
 		 "close",
-		 "Unknown file type, not viewing.");
+		 __("Unknown file type, not viewing."));
 	    $dialog->run();
 	    $dialog->destroy();
 	    return;
@@ -1128,9 +1131,9 @@ sub view_button_clicked_cb($$)
 		 ["modal"],
 		 "info",
 		 "close",
-		 sprintf("No application is associated with\n"
-		             . "Mime type `%s',\nusing Vi instead.",
-			 $mime_type));
+		 __("No application is associated with\n")
+		     . __x("Mime type {mime_type},\nusing Vi instead.",
+			   mime_type => $mime_type));
 	    system("xterm -e vi " . $file_name . " &");
 	}
 
@@ -1527,7 +1530,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{manifest_browser_treeview}->append_column($tv_column);
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("File Name");
+	$tv_column->set_title(__("File Name"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("fixed");
 	$tv_column->set_fixed_width(180);
@@ -1538,7 +1541,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{manifest_browser_treeview}->append_column($tv_column);
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Last Update");
+	$tv_column->set_title(__("Last Update"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MLS_DATE_COLUMN);
@@ -1548,7 +1551,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{manifest_browser_treeview}->append_column($tv_column);
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Author");
+	$tv_column->set_title(__("Author"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
@@ -1721,7 +1724,8 @@ sub update_browser_state($$)
 	    {
 		$browser->{mtn}->get_option(\$db_name, "database");
 		set_label_value($browser->{database_name_value_label},
-				sprintf("<WorkSpace> (%s)", $db_name));
+				__x("<WorkSpace> ({database_name})",
+				    database_name => $db_name));
 	    }
 	    else
 	    {
@@ -1762,14 +1766,14 @@ sub update_browser_state($$)
 
 	# Get the new list of branches.
 
-	$browser->{appbar}->set_status("Fetching branch list");
+	$browser->{appbar}->set_status(__("Fetching branch list"));
 	gtk2_update();
 	$browser->{mtn}->branches(\@branch_list) if (defined($browser->{mtn}));
 	$browser->{branch_combo_details}->{list} = \@branch_list;
 
 	# Update the branch list combobox.
 
-	$browser->{appbar}->set_status("Populating branch list");
+	$browser->{appbar}->set_status(__("Populating branch list"));
 	gtk2_update();
 	my $counter = 1;
 	$browser->{branch_comboboxentry}->get_model()->clear();
@@ -1813,7 +1817,7 @@ sub update_browser_state($$)
 
 	if ($browser->{branch_combo_details}->{complete})
 	{
-	    $browser->{appbar}->set_status("Fetching revision list");
+	    $browser->{appbar}->set_status(__("Fetching revision list"));
 	    gtk2_update();
 	    get_branch_revisions($browser->{mtn},
 				 $browser->{branch_combo_details}->{value},
@@ -1826,7 +1830,7 @@ sub update_browser_state($$)
 	# Update the revision list combobox.
 
 	$browser->{appbar}->set_progress_percentage(0);
-	$browser->{appbar}->set_status("Populating revision list");
+	$browser->{appbar}->set_status(__("Populating revision list"));
 	gtk2_update();
 	my $counter = 1;
 	$browser->{revision_comboboxentry}->get_model()->clear();
@@ -1876,7 +1880,7 @@ sub update_browser_state($$)
 
 	# Get the new manifest.
 
-	$browser->{appbar}->set_status("Fetching manifest");
+	$browser->{appbar}->set_status(__("Fetching manifest"));
 	gtk2_update();
 	if ($browser->{revision_combo_details}->{complete})
 	{
@@ -1886,12 +1890,12 @@ sub update_browser_state($$)
 	    {
 		my $message;
 		$message =
-		    sprintf("The `%s' tag is not unique on this branch.\n"
-			        . "Please either select the revision by its "
-			            . "id\n"
-			        . "or use the <i>Advanced Find</i> feature.\n"
-			        . "The matching revision ids are:",
-			    $browser->{revision_combo_details}->{value});
+		    __x("The `{tag_name}' tag is not unique on this branch.\n",
+			tag_name =>
+			    $browser->{revision_combo_details}->{value})
+		    . __("Please either select the revision by its id\n")
+		    . __("or use the <i>Advanced Find</i> feature.\n")
+		    . __("The matching revision ids are:");
 		foreach my $item (@revision_ids)
 		{
 		    $message .= "\n" . Glib::Markup::escape_text($item);
@@ -1948,7 +1952,7 @@ sub update_browser_state($$)
 	# Update the directory list combobox.
 
 	$browser->{appbar}->set_progress_percentage(0);
-	$browser->{appbar}->set_status("Populating directory list");
+	$browser->{appbar}->set_status(__("Populating directory list"));
 	gtk2_update();
 	my $counter = 1;
 	$browser->{directory_comboboxentry}->get_model()->clear();
@@ -2009,7 +2013,7 @@ sub update_browser_state($$)
 
 	# Update the directory tree view.
 
-	$browser->{appbar}->set_status("Populating file details");
+	$browser->{appbar}->set_status(__("Populating file details"));
 	$counter = 1;
 	$taking_our_time = 0;
 	get_revision_ids($browser, \@revision_ids);
@@ -2286,7 +2290,8 @@ sub display_file($$)
 
 	$browser->{file_view_svbuffer}->
 	    set_text("<"
-		     . (defined($mime_type) ? $mime_type : "Unknown Contents")
+		     . (defined($mime_type)
+			? $mime_type : __("Unknown Contents"))
 		     . ">");
 
     }
@@ -2331,7 +2336,7 @@ sub display_file($$)
 		# can do is to hex dump it out.
 
 		$browser->{file_view_svbuffer}->
-		    set_text("<" . $mime_type . "> Hex dump:\n");
+		    set_text("<" . $mime_type . "> " . __("Hex dump:\n"));
 		$browser->{file_view_svbuffer}->
 		    insert($browser->{file_view_svbuffer}->get_end_iter(),
 			   ${hex_dump(\$contents)});
@@ -2415,9 +2420,10 @@ sub mtn_error_handler($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("Problem with monotone request, got:\n<b><i>%s</i></b>\n"
-		         . "This should not be happening!",
-		     Glib::Markup::escape_text($message)));
+	     __("Problem with monotone request, got:\n")
+	         . __x("<b><i>{error_message}</i></b>\n",
+		       error_message => Glib::Markup::escape_text($message))
+	         . __("This should not be happening!"));
 	$dialog->run();
 	$dialog->destroy();
 	die($message);
@@ -2429,10 +2435,10 @@ sub mtn_error_handler($$)
 	     ["modal"],
 	     "error",
 	     "close",
-	     sprintf("Monotone process unexpectedly exiting with:\n"
-		         . "<b><i>%s</i></b>\n"
-		         . "This is fatal, I am going to exit.",
-		     Glib::Markup::escape_text($message)));
+	     __("Monotone process unexpectedly exiting with:\n")
+	         . __x("<b><i>{error_message}</i></b>\n",
+		       error_message => Glib::Markup::escape_text($message))
+	         . __("This is fatal, I am going to exit."));
 	$dialog->run();
 	$dialog->destroy();
 	Gtk2->main_quit() unless (Gtk2->main_level() == 0);
@@ -2475,22 +2481,28 @@ sub sigchld_handler()
 		     if (exists($instance->{mtn}) && defined($instance->{mtn})
 			 && $instance->{mtn}->get_pid() == $pid)
 		     {
+			 my $message;
 			 $instance->{mtn}->closedown();
+			 if (WIFSIGNALED($status))
+			 {
+			     $message = __x("terminated by signal {number}",
+					    number => WTERMSIG($status));
+			 }
+			 else
+			 {
+			     $message = __x("exited with status {number}",
+					    number => WEXITSTATUS($status));
+			 }
 			 my $dialog = Gtk2::MessageDialog->new
 			     (undef,
 			      ["modal"],
 			      "warning",
 			      "close",
-			      sprintf("The mtn subprocess just unexpectedly\n"
-				          . "exited (%s).\n"
-				          . "This should not be happening!\n"
-				          . "It will be restarted when "
-				          .  "needed.",
-				      WIFSIGNALED($status) ?
-				          sprintf("terminated by signal %d",
-						  WTERMSIG($status)) :
-				          sprintf("exited with status %d",
-						  WEXITSTATUS($status))));
+			      __("The mtn subprocess just unexpectedly\n")
+			          . __x("exited ({error_message}).\n",
+					error_message => $message)
+			          . __("This should not be happening!\n")
+			          . __("It will be restarted when needed."));
 			 $dialog->run();
 			 $dialog->destroy();
 			 return 1;
@@ -2500,7 +2512,8 @@ sub sigchld_handler()
 
 	}
     }
-    warn("waitpid failed: $!") if ($pid < 0 && $! != ECHILD);
+    warn(__x("waitpid failed: {error_message}", error_message => $!))
+	if ($pid < 0 && $! != ECHILD);
 
 }
 #
@@ -2529,7 +2542,8 @@ sub setup_sigchld_handler($)
     # with Gtk2 as a file activity handler. This is efficient and safer than
     # some alternatives.
 
-    pipe($reader, $writer) or die("pipe failed: $!");
+    pipe($reader, $writer)
+	or die(__x("pipe failed: {error_message}", error_message => $!));
     $SIG{CHLD} = sub { syswrite($writer, "\n", 1); };
     Gtk2::Helper->add_watch(fileno($reader), "in",
 			    sub {

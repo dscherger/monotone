@@ -184,15 +184,15 @@ sub manage($$$;$)
 
     # Check for instance record compliance.
 
-    croak("No window field found") unless (exists($instance->{window}));
-    croak("No appbar field found")
+    croak(__("No window field found")) unless (exists($instance->{window}));
+    croak(__("No appbar field found"))
 	unless (exists($instance->{appbar}) || defined($grab_widget));
     foreach my $field ("busy_widgets", "grab_widget", "type")
     {
-	croak($field . " field found - I manage this")
+	croak(__x("{field} field found - I manage this", field => $field))
 	    if (exists($instance->{$field}));
     }
-    croak("Cannot manage unrealised windows")
+    croak(__("Cannot manage unrealised windows"))
 	unless(defined($instance->{window}->window()));
 
     # Ok so store what we need in the instance record.
@@ -328,7 +328,7 @@ sub make_busy($$$)
 
     my($this, $instance, $busy) = @_;
 
-    croak("Called with an unmanaged instance record")
+    croak(__("Called with an unmanaged instance record"))
 	unless (exists($instance->{grab_widget}));
 
     # Create and store the cursors if we haven't done so already.

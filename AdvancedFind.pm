@@ -287,49 +287,49 @@ sub populate_button_clicked_cb($$)
 			 localtime($advanced_find->{date_dateedit}->
 				   get_time()));
     $to_insert = "";
-    if ($selector eq "Author")
+    if ($selector eq __("Author"))
     {
-	$to_insert = "a:" . (($arg eq "") ? "<Author>" : $arg);
+	$to_insert = "a:" . (($arg eq "") ? __("<Author>") : $arg);
     }
-    elsif ($selector eq "Branch")
+    elsif ($selector eq __("Branch"))
     {
-	$to_insert = "b:" . (($arg eq "") ? "<Branch>" : $arg);
+	$to_insert = "b:" . (($arg eq "") ? __("<Branch>") : $arg);
     }
-    elsif ($selector eq "Cert")
+    elsif ($selector eq __("Cert"))
     {
-	$to_insert = "c:" . (($arg eq "") ? "<Cert Expression>" : $arg);
+	$to_insert = "c:" . (($arg eq "") ? __("<Cert Expression>") : $arg);
     }
-    elsif ($selector eq "Date (=)")
+    elsif ($selector eq __("Date (=)"))
     {
 	$to_insert = "d:" . $time_val;
     }
-    elsif ($selector eq "Date (<=)")
+    elsif ($selector eq __("Date (<=)"))
     {
 	$to_insert = "e:" . $time_val;
     }
-    elsif ($selector eq "Date (>)")
+    elsif ($selector eq __("Date (>)"))
     {
 	$to_insert = "l:" . $time_val;
     }
-    elsif ($selector eq "Head Revision")
+    elsif ($selector eq __("Head Revision"))
     {
 	$to_insert = "h:";
     }
-    elsif ($selector eq "Identifier")
+    elsif ($selector eq __("Identifier"))
     {
-	$to_insert = "i:" . (($arg eq "") ? "<Revision Id>" : $arg);
+	$to_insert = "i:" . (($arg eq "") ? __("<Revision Id>") : $arg);
     }
-    elsif ($selector eq "Parent")
+    elsif ($selector eq __("Parent"))
     {
-	$to_insert = "p:" . (($arg eq "") ? "<Revision Id>" : $arg);
+	$to_insert = "p:" . (($arg eq "") ? __("<Revision Id>") : $arg);
     }
-    elsif ($selector eq "Separator")
+    elsif ($selector eq __("Separator"))
     {
 	$to_insert = "/";
     }
-    elsif ($selector eq "Tag")
+    elsif ($selector eq __("Tag"))
     {
-	$to_insert = "t:" . (($arg eq "") ? "<Tag Name>" : $arg);
+	$to_insert = "t:" . (($arg eq "") ? __("<Tag Name>") : $arg);
     }
 
     $pos =
@@ -382,7 +382,7 @@ sub term_combobox_changed_cb($$)
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(TRUE);
     }
-    elsif ($selector eq "Head" || $selector eq "Separator")
+    elsif ($selector eq __("Head Revision") || $selector eq __("Separator"))
     {
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
@@ -614,7 +614,7 @@ sub get_advanced_find_window($)
 	$instance->{revisions_treeview}->
 	    set_model($instance->{revisions_liststore});
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Matching Revision Ids");
+	$tv_column->set_title(__("Matching Revision Ids"));
 	$tv_column->set_sort_column_id(0);
 	$renderer = Gtk2::CellRendererText->new();
 	$tv_column->pack_start($renderer, FALSE);
@@ -738,7 +738,7 @@ sub update_advanced_find_state($$)
 
 	# Get the new list of branches.
 
-	$advanced_find->{appbar}->set_status("Fetching branch list");
+	$advanced_find->{appbar}->set_status(__("Fetching branch list"));
 	gtk2_update();
 	$advanced_find->{mtn}->branches(\@branch_list)
 	    if (defined($advanced_find->{mtn}));
@@ -746,7 +746,7 @@ sub update_advanced_find_state($$)
 
 	# Update the branch list combobox.
 
-	$advanced_find->{appbar}->set_status("Populating branch list");
+	$advanced_find->{appbar}->set_status(__("Populating branch list"));
 	gtk2_update();
 	my $counter = 1;
 	$advanced_find->{branch_comboboxentry}->get_model()->clear();
@@ -789,7 +789,7 @@ sub update_advanced_find_state($$)
 
 	if ($advanced_find->{branch_combo_details}->{complete})
 	{
-	    $advanced_find->{appbar}->set_status("Fetching revision list");
+	    $advanced_find->{appbar}->set_status(__("Fetching revision list"));
 	    gtk2_update();
 	    get_branch_revisions($advanced_find->{mtn},
 				 $advanced_find->{branch_combo_details}->
@@ -804,7 +804,7 @@ sub update_advanced_find_state($$)
 	# Update the revision list combobox.
 
 	$advanced_find->{appbar}->set_progress_percentage(0);
-	$advanced_find->{appbar}->set_status("Populating revision list");
+	$advanced_find->{appbar}->set_status(__("Populating revision list"));
 	gtk2_update();
 	my $counter = 1;
 	$advanced_find->{revision_comboboxentry}->get_model()->clear();
@@ -838,7 +838,7 @@ sub update_advanced_find_state($$)
 
 	# Get the list of matching revisions.
 
-	$advanced_find->{appbar}->set_status("Finding revisions");
+	$advanced_find->{appbar}->set_status(__("Finding revisions"));
 	gtk2_update();
 	if ($advanced_find->{simple_query_radiobutton}->get_active())
 	{
@@ -867,9 +867,10 @@ sub update_advanced_find_state($$)
 			  ["modal"],
 			  "warning",
 			  "close",
-			  sprintf("Problem with your query, Monotone "
-				      . "gave:\n<b><i>%s</i></b>",
-				  Glib::Markup::escape_text($message)));
+			  __("Problem with your query, Monotone ")
+			      . __x("gave:\n<b><i>{error_message}</i></b>",
+				    error_message =>
+				        Glib::Markup::escape_text($message)));
 		     $dialog->run();
 		     $dialog->destroy();
 		     die("Bad query"); });
@@ -894,7 +895,7 @@ sub update_advanced_find_state($$)
 			 ["modal"],
 			 "info",
 			 "close",
-			 "No revisions matched your query.");
+			 __("No revisions matched your query."));
 		     $dialog->run();
 		     $dialog->destroy();
 		}
@@ -930,7 +931,8 @@ sub update_advanced_find_state($$)
 
 	# Update the revisions tree view.
 
-	$advanced_find->{appbar}->set_status("Populating revision details");
+	$advanced_find->{appbar}->
+	    set_status(__("Populating revision details"));
 	$counter = 1;
 	foreach my $item (@revision_ids)
 	{

@@ -226,7 +226,9 @@ sub comboboxentry_key_release_event_cb($$$)
 	    else
 	    {
 		$instance->{appbar}->
-		    push("Invalid " . $name . " name`" . $value . "'");
+		    push(__x("Invalid {name} name `{value}'",
+			     name  => $name,
+			     value => $value));
 	    }
 	    $value = $completion;
 	    $len = length($value);

@@ -103,8 +103,11 @@ sub generate_revision_report($$$$;$)
        %revision_data,
        %seen,
        @unique);
-    my @types =
-	("Added", "Removed", "Changed", "Renamed", "Attributes");
+    my @types = (__("Added"),
+		 __("Removed"),
+		 __("Changed"),
+		 __("Renamed"),
+		 __("Attributes"));
 
     # Sort out colour attributes.
 
@@ -124,7 +127,7 @@ sub generate_revision_report($$$$;$)
     # Revision id.
 
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "Revision id: ",
+					   __("Revision id: "),
 					   $bold);
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					   $revision_id . "\n\n",
@@ -156,7 +159,7 @@ sub generate_revision_report($$$$;$)
     # Change log.
 
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   "\nChange Log:\n",
+					   __("\nChange Log:\n"),
 					   $bold);
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					   sprintf("%s", $change_log),
@@ -170,7 +173,7 @@ sub generate_revision_report($$$$;$)
 	# Revision details.
 
 	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "\n\nChanges Made:\n",
+					       __("\n\nChanges Made:\n"),
 					       $bold);
 	foreach my $type (@types)
 	{
@@ -180,35 +183,35 @@ sub generate_revision_report($$$$;$)
 	{
 	    if ($change->{type} eq "add_dir")
 	    {
-		push(@{$revision_data{"Added"}}, $change->{name} . "/");
+		push(@{$revision_data{__("Added")}}, $change->{name} . "/");
 	    }
 	    elsif ($change->{type} eq "add_file")
 	    {
-		push(@{$revision_data{"Added"}}, $change->{name});
+		push(@{$revision_data{__("Added")}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "delete")
 	    {
-		push(@{$revision_data{"Removed"}}, $change->{name});
+		push(@{$revision_data{__("Removed")}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "patch")
 	    {
-		push(@{$revision_data{"Changed"}}, $change->{name});
+		push(@{$revision_data{__("Changed")}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "rename")
 	    {
-		push(@{$revision_data{"Renamed"}},
+		push(@{$revision_data{__("Renamed")}},
 		     $change->{from_name} . " -> " . $change->{to_name});
 	    }
 	    elsif ($change->{type} eq "clear")
 	    {
-		push(@{$revision_data{"Attributes"}},
-		     sprintf("%s: %s was cleared",
-			     $change->{name},
-			     $change->{attribute}));
+		push(@{$revision_data{__("Attributes")}},
+		     __x("{name}: {attribute} was cleared",
+			 name      => $change->{name},
+			 attribute => $change->{attribute}));
 	    }
-	    elsif ($change->{type} eq "clear" || $change->{type} eq "set")
+	    elsif ($change->{type} eq "set")
 	    {
-		push(@{$revision_data{"Attributes"}},
+		push(@{$revision_data{__("Attributes")}},
 		     sprintf("%s: %s = %s",
 			     $change->{name},
 			     $change->{attribute},
@@ -246,15 +249,16 @@ sub generate_revision_report($$$$;$)
 
 	# Parent revision and manifest ids.
 
-	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "\nParent revision id(s):\t",
-					       $bold);
+	$text_buffer->insert_with_tags_by_name
+	    ($text_buffer->get_end_iter(),
+	     __("\nParent revision id(s):\t"),
+	     $bold);
 	$text_buffer->insert_with_tags_by_name
 	    ($text_buffer->get_end_iter(),
 	     join(" ", @parent_revision_ids) . "\n",
 	     $normal);
 	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					       "Manifest id:\t\t",
+					       __("Manifest id:\t\t"),
 					       $bold);
 	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					       $manifest_id,
@@ -358,10 +362,10 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("The %s subprocess could not start,\n"
-		         . "the system gave:\n<b><i>%s</b></i>",
-		     Glib::Markup::escape_text($args[0]),
-		     Glib::Markup::escape_text($@)));
+	     __x("The {name} subprocess could not start,\n",
+		 name => Glib::Markup::escape_text($args[0]))
+	         . __x("the system gave:\n<b><i>{error_message}</b></i>",
+		       error_message => Glib::Markup::escape_text($@)));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -415,8 +419,8 @@ sub run_command($@)
 		 ["modal"],
 		 "warning",
 		 "close",
-		 sprintf("waitpid failed with:\n<b><i>%s</i></b>",
-			 Glib::Markup::escape_text($!)));
+		 __x("waitpid failed with:\n<b><i>{error_message}</i></b>",
+		     error_message => Glib::Markup::escape_text($!)));
 	    $dialog->run();
 	    $dialog->destroy();
 	    return;
@@ -430,12 +434,13 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("The %s subprocess failed with an exit status\n"
-		         . "of %d and printed the following on stderr:\n"
-		         . "<b><i>%s</i></b>",
-		     Glib::Markup::escape_text($args[0]),
-		     WEXITSTATUS($status),
-		     Glib::Markup::escape_text(join("", @err))));
+	     __x("The {name} subprocess failed with an exit status\n",
+		 name => Glib::Markup::escape_text($args[0]))
+	         . __x("of {exit_code} and printed the following on stderr:\n",
+		       exit_code => WEXITSTATUS($status))
+	         . __x("<b><i>{error_message}</i></b>",
+		       error_message =>
+		           Glib::Markup::escape_text(join("", @err))));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -447,9 +452,9 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("The %s subprocess was terminated by signal %d.",
-		     Glib::Markup::escape_text($args[0]),
-		     WTERMSIG($status)));
+	     __x("The {name} subprocess was terminated by signal {number}.",
+		 name   => Glib::Markup::escape_text($args[0]),
+		 number => WTERMSIG($status)));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -548,7 +553,7 @@ sub open_database($$$)
        $done,
        $ret_val);
 
-    $chooser_dialog = Gtk2::FileChooserDialog->new("Open Database",
+    $chooser_dialog = Gtk2::FileChooserDialog->new(__("Open Database"),
 						   $parent,
 						   "open",
 						   "gtk-cancel" => "cancel",
@@ -605,7 +610,7 @@ sub open_database($$$)
 			 ["modal"],
 			 "warning",
 			 "close",
-			 "Not a valid Monotone database.");
+			 __("Not a valid Monotone database."));
 		    $dialog->run();
 		    $dialog->destroy();
 		}

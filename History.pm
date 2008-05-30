@@ -106,8 +106,9 @@ sub display_revision_change_history($$)
     $instance->{file_name} = undef;
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
-    $instance->{window}->set_title("Revision History For " . $revision_id);
-    $instance->{history_label}->set_markup("<b>Revision History</b>");
+    $instance->{window}->set_title(__x("Revision History For {rev}",
+				       rev => $revision_id));
+    $instance->{history_label}->set_markup(__("<b>Revision History</b>"));
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
@@ -120,14 +121,14 @@ sub display_revision_change_history($$)
     # revision in the history.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Fetching revision list");
+    $instance->{appbar}->set_status(__("Fetching revision list"));
     gtk2_update();
     $history_hash{$revision_id} = 1;
     get_revision_history_helper($instance, \%history_hash, $revision_id);
 
     # Sort the list.
 
-    $instance->{appbar}->set_status("Sorting revision list");
+    $instance->{appbar}->set_status(__("Sorting revision list"));
     gtk2_update();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
@@ -137,7 +138,7 @@ sub display_revision_change_history($$)
     # Display the file's history.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Displaying revision history");
+    $instance->{appbar}->set_status(__("Displaying revision history"));
     gtk2_update();
     $counter = 1;
     $instance->{stop} = 0;
@@ -157,15 +158,15 @@ sub display_revision_change_history($$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new("Select As Id 1");
+	$button = Gtk2::Button->new(__("Select As Id 1"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "1"});
 	$tooltips->set_tip($button,
-			   "Select this revision for comparison\n"
-			       . "as the first revision");
+			   __("Select this revision for comparison\n")
+			       . __("as the first revision"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -175,15 +176,15 @@ sub display_revision_change_history($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Select As Id 2");
+	$button = Gtk2::Button->new(__("Select As Id 2"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "2"});
 	$tooltips->set_tip($button,
-			   "Select this revision for comparison\n"
-			       . "as the second revision");
+			   __("Select this revision for comparison\n")
+			       . __("as the second revision"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -193,14 +194,14 @@ sub display_revision_change_history($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Browse Revision");
+	$button = Gtk2::Button->new(__("Browse Revision"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "browse-revision"});
 	$tooltips->set_tip($button,
-			   "Browse the revision in\na new browser window");
+			   __("Browse the revision in\na new browser window"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -210,13 +211,13 @@ sub display_revision_change_history($$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Full Change Log");
+	$button = Gtk2::Button->new(__("Full Change Log"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "revision-changelog"});
-	$tooltips->set_tip($button, "View the revision's full change log");
+	$tooltips->set_tip($button, __("View the revision's full change log"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -307,9 +308,9 @@ sub display_file_change_history($$$)
     $instance->{file_name} = $file_name;
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
-    $instance->{window}->set_title
-	("File History For " . $instance->{file_name});
-    $instance->{history_label}->set_markup("<b>File History</b>");
+    $instance->{window}->set_title(__x("File History For {file}",
+				       file=> $instance->{file_name}));
+    $instance->{history_label}->set_markup(__("<b>File History</b>"));
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
@@ -321,7 +322,7 @@ sub display_file_change_history($$$)
     # temporarily disable the warning handler.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Fetching revision list");
+    $instance->{appbar}->set_status(__("Fetching revision list"));
     $instance->{stop_button}->set_sensitive(TRUE);
     gtk2_update();
     Monotone::AutomateStdio->register_error_handler("warning");
@@ -332,7 +333,7 @@ sub display_file_change_history($$$)
 
     # Sort the list.
 
-    $instance->{appbar}->set_status("Sorting revision list");
+    $instance->{appbar}->set_status(__("Sorting revision list"));
     gtk2_update();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
@@ -342,7 +343,7 @@ sub display_file_change_history($$$)
     # Display the file's history.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Displaying file history");
+    $instance->{appbar}->set_status(__("Displaying file history"));
     gtk2_update();
     $counter = 1;
     $instance->{history_buffer}->set_text("");
@@ -361,15 +362,15 @@ sub display_file_change_history($$$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new("Select As Id 1");
+	$button = Gtk2::Button->new(__("Select As Id 1"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "1"});
 	$tooltips->set_tip($button,
-			   "Select this file revision for\n"
-			       . "comparison as the first file");
+			   __("Select this file revision for\n")
+			       . __("comparison as the first file"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -379,15 +380,15 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Select As Id 2");
+	$button = Gtk2::Button->new(__("Select As Id 2"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "2"});
 	$tooltips->set_tip($button,
-			   "Select this file revision for\n"
-			       . "comparison as the second file");
+			   __("Select this file revision for\n")
+			       . __("comparison as the second file"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -397,14 +398,14 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Browse File");
+	$button = Gtk2::Button->new(__("Browse File"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "browse-file"});
 	$tooltips->set_tip($button,
-			   "Browse the file in\na new browser window");
+			   __("Browse the file in\na new browser window"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -414,13 +415,13 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new("Full Change Log");
+	$button = Gtk2::Button->new(__("Full Change Log"));
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "revision-changelog"});
-	$tooltips->set_tip($button, "View the revision's full change log");
+	$tooltips->set_tip($button, __("View the revision's full change log"));
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -685,18 +686,19 @@ sub compare_revisions($$$;$)
     $instance = get_revision_comparison_window();
     local $instance->{in_cb} = 1;
 
-    $instance->{window}->set_title("Differences Between Revisions "
-				   . $revision_id_1
-				   . " And "
-				   . $revision_id_2);
+    $instance->{window}->
+	set_title(__x("Differences Between Revisions {rev_1} and {rev_2}",
+		      rev_1 => $revision_id_1,
+		      rev_2 => $revision_id_2));
     if (defined($file_name))
     {
-	$instance->{comparison_label}->set_markup("<b>File Comparison</b>");
+	$instance->{comparison_label}->
+	    set_markup(__("<b>File Comparison</b>"));
     }
     else
     {
 	$instance->{comparison_label}->
-	    set_markup("<b>Revision Comparison</b>");
+	    set_markup(__("<b>Revision Comparison</b>"));
     }
     $instance->{window}->show_all();
 
@@ -710,7 +712,7 @@ sub compare_revisions($$$;$)
 
     # Get Monotone to do the comparison.
 
-    $instance->{appbar}->set_status("Calculating differences");
+    $instance->{appbar}->set_status(__("Calculating differences"));
     gtk2_update();
     mtn_diff(\@lines,
 	     $mtn->get_db_name(),
@@ -733,7 +735,8 @@ sub compare_revisions($$$;$)
     # Display the result, highlighting according to the diff output. Remember
     # the first two lines are just empty comment lines.
 
-    $instance->{appbar}->set_status("Formatting and displaying differences");
+    $instance->{appbar}->
+	set_status(__("Formatting and displaying differences"));
     gtk2_update();
     $padding = " " x $max_len;
     $line = substr(" Summary" . $padding, 0, $max_len);
@@ -878,7 +881,7 @@ sub compare_revisions($$$;$)
     # Populate the file combobox.
 
     $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("Populating file list");
+    $instance->{appbar}->set_status(__("Populating file list"));
     gtk2_update();
     @files = sort({ $a->{file_name} cmp $b->{file_name} } @files);
     $i = 1;
@@ -1288,11 +1291,15 @@ sub get_revision_comparison_window()
 	$instance->{revision_change_log_1_button_label}->
 	    set_markup("<span foreground='"
 		       . $user_preferences->{colours}->{cmp_revision_1}->{fg}
-		       . "'>Revision Change Log</span>");
+		       . "'>"
+		       . __("Revision Change Log")
+		       . "</span>");
 	$instance->{revision_change_log_2_button_label}->
 	    set_markup("<span foreground='"
 		       . $user_preferences->{colours}->{cmp_revision_2}->{fg}
-		       . "'>Revision Change Log</span>");
+		       . "'>"
+		       . __("Revision Change Log")
+		       . "</span>");
 
 	# Register the window for management.
 

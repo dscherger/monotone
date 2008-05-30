@@ -93,7 +93,8 @@ sub display_annotation($$$)
     $instance = get_annotation_window();
     local $instance->{in_cb} = 1;
 
-    $instance->{window}->set_title("Annotated Listing Of " . $file_name);
+    $instance->{window}->set_title(__x("Annotated Listing Of {file}",
+				       file => $file_name));
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
@@ -102,7 +103,7 @@ sub display_annotation($$$)
 
     # Get Monotone to do the annotation.
 
-    $instance->{appbar}->set_status("Annotating file");
+    $instance->{appbar}->set_status(__("Annotating file"));
     gtk2_update();
     mtn_annotate(\@lines, $mtn->get_db_name(), $revision_id, $file_name);
 
@@ -122,7 +123,7 @@ sub display_annotation($$$)
     # Display the result, highlighting according to the annotate output.
 
     $instance->{appbar}->set_status
-	("Formatting and displaying annotated file");
+	(__("Formatting and displaying annotated file"));
     gtk2_update();
     $padding = " " x $max_len;
     $prefix_tag = $text_tag = "";

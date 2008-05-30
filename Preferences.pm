@@ -81,6 +81,39 @@ my @text_viewable_app_mime_types =
        x-troff
        xhtml+xml);
 
+# A preferences sub-record mapping table, used for loading in and saving the
+# colour preferences.
+
+my @colour_mapping_table =
+    ({widget => "annotation_prefix_1_foreground_colorbutton",
+      record => "annotate_prefix_1"},
+     {widget => "annotation_prefix_1_background_colorbutton",
+      record => "annotate_prefix_1"},
+     {widget => "annotation_text_1_foreground_colorbutton",
+      record => "annotate_text_1"},
+     {widget => "annotation_text_1_background_colorbutton",
+      record => "annotate_text_1"},
+     {widget => "annotation_prefix_2_foreground_colorbutton",
+      record => "annotate_prefix_2"},
+     {widget => "annotation_prefix_2_background_colorbutton",
+      record => "annotate_prefix_2"},
+     {widget => "annotation_text_2_foreground_colorbutton",
+      record => "annotate_text_2"},
+     {widget => "annotation_text_2_background_colorbutton",
+      record => "annotate_text_2"},
+     {widget => "revision_1_foreground_colorbutton",
+      record => "cmp_revision_1"},
+     {widget => "revision_1_background_colorbutton",
+      record => "cmp_revision_1"},
+     {widget => "revision_1_highlight_colorbutton",
+      record => "cmp_revision_1"},
+     {widget => "revision_2_foreground_colorbutton",
+      record => "cmp_revision_2"},
+     {widget => "revision_2_background_colorbutton",
+      record => "cmp_revision_2"},
+     {widget => "revision_2_highlight_colorbutton",
+      record => "cmp_revision_2"});
+
 # ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
 
 # Public routines.
@@ -145,7 +178,7 @@ sub preferences($)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("The preferences dialog cannot be displayed:\n%s", $@));
+	     __("The preferences dialog cannot be displayed:\n") . $@);
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -181,7 +214,7 @@ sub preferences($)
 		 ["modal"],
 		 "warning",
 		 "close",
-		 sprintf("Your preferences could not be saved:\n%s", $@));
+		 __("Your preferences could not be saved:\n") . $@);
 	    $dialog->run();
 	    $dialog->destroy();
 	    return;
@@ -227,23 +260,24 @@ sub load_preferences()
     # Either load in the preferences or initialise them from scratch depending
     # upon whether the preferences file exists or not.
 
-    if (-f $file_name && -r $file_name)
+    if (-f $file_name)
     {
 	defined($prefs_file = IO::File->new($file_name, "r"))
-	    or die("open failed: $!\n");
+	    or die(__x("open failed: {error_message}\n", error_message => $!));
 	eval(join("", $prefs_file->getlines()));
-	die("Invalid user preferences file: $@\n") if ($@ ne "");
+	die(__x("Invalid user preferences file: {error_message}\n",
+		error_message => $@))
+	    if ($@ ne "");
 	$prefs_file->close();
-	die(sprintf("Preferences file, `%s',\n"
-		        . "is at the wrong version, please remove it.\n",
-		    $file_name))
+	die(__x("Preferences file, `{file_name}',\n", file_name => $file_name)
+	    . __("is at the wrong version, please remove it.\n"))
 	    if (! exists($preferences{version})
 		|| $preferences{version} != PREFERENCES_FORMAT_VERSION);
     }
     else
     {
 	defined($mime_table = initialise_mime_info_table())
-	    or die("Cannot load system MIME types.\n");
+	    or die(__("Cannot load system MIME types.\n"));
 	%preferences =
 	    (version        => PREFERENCES_FORMAT_VERSION,
 	     default_mtn_db => "",
@@ -304,12 +338,12 @@ sub save_preferences($)
     # Write out the preferences record to disk.
 
     defined($prefs_file = IO::File->new($file_name, "w"))
-	or die("open failed: $!\n");
+	or die(__x("open failed: {error_message}\n", error_message => $!));
     $prefs_file->print("#\n");
-    $prefs_file->print("# DO NOT EDIT! This is an automatically generated "
-		       . "file.\n");
-    $prefs_file->print("# Changes to this file may be lost or cause "
-		       . "mtn-browse to malfunction.\n");
+    $prefs_file->
+	print(__("# DO NOT EDIT! This is an automatically generated file.\n"));
+    $prefs_file->print(__("# Changes to this file may be lost or cause ")
+		       . __("mtn-browse to malfunction.\n"));
     $prefs_file->print("#\n");
     $prefs_file->print(Data::Dumper->Dump([$preferences], ["*preferences"]));
     $prefs_file->close();
@@ -581,7 +615,8 @@ sub add_file_name_pattern_button_clicked_cb($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("`%s' is an invalid\nfile name pattern.", $pattern));
+	     __x("`{pattern}' is an invalid\nfile name pattern.",
+		 pattern=> $pattern));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -604,9 +639,9 @@ sub add_file_name_pattern_button_clicked_cb($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     sprintf("`%s' is already used in MIME type\n`%s'.",
-		     $pattern,
-		     $match));
+	     __x("`{pattern}' is already used in MIME type\n`{mime_type}'.",
+		 pattern   => $pattern,
+		 mime_type => $match));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -808,7 +843,7 @@ sub get_preferences_window($$)
 	    set_model($instance->{mime_types_liststore});
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Mime Type");
+	$tv_column->set_title(__("Mime Type"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_NAME_COLUMN);
@@ -818,7 +853,7 @@ sub get_preferences_window($$)
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("File Name Patterns");
+	$tv_column->set_title(__("File Name Patterns"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_PATTERNS_COLUMN);
@@ -828,7 +863,7 @@ sub get_preferences_window($$)
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title("Helper Application");
+	$tv_column->set_title(__("Helper Application"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_HELPER_COLUMN);
@@ -958,34 +993,7 @@ sub load_preferences_into_gui($)
 
     $instance->{fonts_fontbutton}->
 	set_font_name($instance->{preferences}->{fixed_font});
-    for my $item ({widget => "annotation_prefix_1_foreground_colorbutton",
-		   record => "annotate_prefix_1"},
-		  {widget => "annotation_prefix_1_background_colorbutton",
-		   record => "annotate_prefix_1"},
-		  {widget => "annotation_text_1_foreground_colorbutton",
-		   record => "annotate_text_1"},
-		  {widget => "annotation_text_1_background_colorbutton",
-		   record => "annotate_text_1"},
-		  {widget => "annotation_prefix_2_foreground_colorbutton",
-		   record => "annotate_prefix_2"},
-		  {widget => "annotation_prefix_2_background_colorbutton",
-		   record => "annotate_prefix_2"},
-		  {widget => "annotation_text_2_foreground_colorbutton",
-		   record => "annotate_text_2"},
-		  {widget => "annotation_text_2_background_colorbutton",
-		   record => "annotate_text_2"},
-		  {widget => "revision_1_foreground_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_1_background_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_1_highlight_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_2_foreground_colorbutton",
-		   record => "cmp_revision_2"},
-		  {widget => "revision_2_background_colorbutton",
-		   record => "cmp_revision_2"},
-		  {widget => "revision_2_highlight_colorbutton",
-		   record => "cmp_revision_2"})
+    for my $item (@colour_mapping_table)
     {
 	my $field;
 	if ($item->{widget} =~ m/foreground/o)
@@ -1076,34 +1084,7 @@ sub save_preferences_from_gui($)
 
     $instance->{preferences}->{fixed_font} =
 	$instance->{fonts_fontbutton}->get_font_name();
-    for my $item ({widget => "annotation_prefix_1_foreground_colorbutton",
-		   record => "annotate_prefix_1"},
-		  {widget => "annotation_prefix_1_background_colorbutton",
-		   record => "annotate_prefix_1"},
-		  {widget => "annotation_text_1_foreground_colorbutton",
-		   record => "annotate_text_1"},
-		  {widget => "annotation_text_1_background_colorbutton",
-		   record => "annotate_text_1"},
-		  {widget => "annotation_prefix_2_foreground_colorbutton",
-		   record => "annotate_prefix_2"},
-		  {widget => "annotation_prefix_2_background_colorbutton",
-		   record => "annotate_prefix_2"},
-		  {widget => "annotation_text_2_foreground_colorbutton",
-		   record => "annotate_text_2"},
-		  {widget => "annotation_text_2_background_colorbutton",
-		   record => "annotate_text_2"},
-		  {widget => "revision_1_foreground_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_1_background_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_1_highlight_colorbutton",
-		   record => "cmp_revision_1"},
-		  {widget => "revision_2_foreground_colorbutton",
-		   record => "cmp_revision_2"},
-		  {widget => "revision_2_background_colorbutton",
-		   record => "cmp_revision_2"},
-		  {widget => "revision_2_highlight_colorbutton",
-		   record => "cmp_revision_2"})
+    for my $item (@colour_mapping_table)
     {
 	my $field;
 	if ($item->{widget} =~ m/foreground/o)
