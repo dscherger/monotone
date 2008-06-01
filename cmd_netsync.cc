@@ -228,12 +228,12 @@ CMD(push, "push", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, source_role, info);
 }
 
@@ -246,7 +246,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys,
@@ -255,7 +255,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (app.opts.signing_key() == "")
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, sink_role, info);
 }
 
@@ -269,7 +269,7 @@ CMD(sync, "sync", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
@@ -281,7 +281,7 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace work(app, true);
     }
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, source_and_sink_role, info);
 }
 
@@ -374,7 +374,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   db.ensure_open();
 
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
 
   info.client.include_pattern = globish(branchname());
   info.client.exclude_pattern = globish(app.opts.exclude_patterns);
@@ -388,7 +388,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        client_voice, sink_role, info);
 
   change_current_working_dir(workspace_dir);
@@ -398,8 +398,10 @@ CMD(clone, "clone", "", CMD_REF(network),
   if (app.opts.revision_selectors.size() == 0)
     {
       set<revision_id> heads;
-      project.get_branch_heads(branchname, heads,
-                               app.opts.ignore_suspend_certs);
+      projects
+        .get_project_of_branch(app.opts.branchname)
+        .get_branch_heads(app.opts.branchname, heads,
+                          app.opts.ignore_suspend_certs);
       N(heads.size() > 0,
         F("branch '%s' is empty") % branchname);
       if (heads.size() > 1)
@@ -407,7 +409,7 @@ CMD(clone, "clone", "", CMD_REF(network),
           P(F("branch %s has multiple heads:") % branchname);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(projects, *i));
           P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % ui.prog_name);
           E(false, F("branch %s has multiple heads") % branchname);
         }
@@ -416,9 +418,11 @@ CMD(clone, "clone", "", CMD_REF(network),
   else if (app.opts.revision_selectors.size() == 1)
     {
       // use specified revision
-      complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), ident);
+      complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), ident);
 
-      N(project.revision_is_in_branch(ident, branchname),
+      N(projects
+        .get_project_of_branch(app.opts.branchname)
+        .revision_is_in_branch(ident, app.opts.branchname),
         F("revision %s is not a member of branch %s")
           % ident % branchname);
     }
@@ -489,7 +493,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_set projects(db, app.lua, app.opts);
   pid_file pid(app.opts.pidfile);
 
   db.ensure_open();
@@ -513,7 +517,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app.opts, app.lua, projects, keys,
                        server_voice, source_and_sink_role, info);
 }
 
