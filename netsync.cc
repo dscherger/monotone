@@ -705,7 +705,7 @@ session::~session()
             certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
 
           revision_data rdat;
-          project.db.get_revision(*i, rdat);
+          projects.db.get_revision(*i, rdat);
           lua.hook_note_netsync_revision_sent(*i, rdat, certs,
                                                   session_id);
         }
@@ -1398,7 +1398,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       if (projects.db.public_key_exists(their_keyname))
         {
           rsa_pub_key tmp;
-          project.db.get_key(their_keyname, tmp);
+          projects.db.get_key(their_keyname, tmp);
 
           E(keys_match(their_keyname, tmp, their_keyname, their_key),
             F("the server sent a key with the key id '%s'\n"
@@ -1413,7 +1413,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
         {
           // this should now always return true since we just checked
           // for the existence of this particular key
-          I(project.db.put_key(their_keyname, their_key));
+          I(projects.db.put_key(their_keyname, their_key));
           W(F("saving public key for %s to database") % their_keyname);
         }
 
