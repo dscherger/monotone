@@ -97,7 +97,7 @@ our @EXPORT = qw();
 our @EXPORT_OK = qw();
 our $VERSION = 0.1;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public methods.
 
@@ -174,7 +174,8 @@ sub warning_handler_wrapper($);
 sub new($;$)
 {
 
-    my $class = ref($_[0]) ? ref($_[0]) : $_[0];
+
+    my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
     my $db_name = $_[1];
 
     my $this;
