@@ -114,7 +114,7 @@ my @colour_mapping_table =
      {widget => "revision_2_highlight_colorbutton",
       record => "cmp_revision_2"});
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
@@ -163,6 +163,7 @@ sub preferences($)
 
     my($instance,
        $preferences);
+    my $wm = WindowManager->instance();
 
     # Load in the user's preferences.
 
@@ -190,11 +191,13 @@ sub preferences($)
 
     # Handle all events until the dialog is dismissed.
 
+    $wm->make_busy($instance, 1, 1);
     $instance->{done} = 0;
     while (! $instance->{done})
     {
 	Gtk2->main_iteration();
     }
+    $wm->make_busy($instance, 0);
     $instance->{window}->hide();
 
     # Deal with the result.

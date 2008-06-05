@@ -45,7 +45,7 @@ require 5.008;
 
 use strict;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 

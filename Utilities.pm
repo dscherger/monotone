@@ -44,7 +44,7 @@ require 5.008;
 
 use strict;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
@@ -57,7 +57,6 @@ sub get_branch_revisions($$$$$);
 sub get_dir_contents($$$);
 sub get_revision_ids($$);
 sub glade_signal_autoconnect($$);
-sub gtk2_update();
 sub hex_dump($);
 sub open_database($$$);
 sub run_command($@);
@@ -235,8 +234,7 @@ sub generate_revision_report($$$$;$)
 		     "    " . $type . ":\n",
 		     $italics);
 		%seen = ();
-		@unique = sort(grep { ! $seen{$_} ++ }
-			       @{$revision_data{$type}});
+		@unique = sort(grep(! $seen{$_} ++, @{$revision_data{$type}}));
 		foreach my $line (@unique)
 		{
 		    $text_buffer->insert_with_tags_by_name
@@ -366,7 +364,7 @@ sub run_command($@)
 		 name => Glib::Markup::escape_text($args[0]))
 	         . __x("the system gave:\n<b><i>{error_message}</b></i>",
 		       error_message => Glib::Markup::escape_text($@)));
-	$dialog->run();
+	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -421,7 +419,7 @@ sub run_command($@)
 		 "close",
 		 __x("waitpid failed with:\n<b><i>{error_message}</i></b>",
 		     error_message => Glib::Markup::escape_text($!)));
-	    $dialog->run();
+	    WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    return;
 	}
@@ -441,7 +439,7 @@ sub run_command($@)
 	         . __x("<b><i>{error_message}</i></b>",
 		       error_message =>
 		           Glib::Markup::escape_text(join("", @err))));
-	$dialog->run();
+	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -455,7 +453,7 @@ sub run_command($@)
 	     __x("The {name} subprocess was terminated by signal {number}.",
 		 name   => Glib::Markup::escape_text($args[0]),
 		 number => WTERMSIG($status)));
-	$dialog->run();
+	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -677,62 +675,78 @@ sub get_branch_revisions($$$$$)
     if ($tags)
     {
 
-	my(@certs,
-	   @list,
-	   %seen);
+	my(%rev_id_to_tags,
+	   %seen,
+	   @sorted_rev_ids,
+	   @tags);
 
 	# Get the list of revision tags.
 
-	$mtn->tags(\@list, $branch);
+	$mtn->tags(\@tags, $branch);
 	$appbar->set_progress_percentage(0.5) if (defined($appbar));
-	gtk2_update();
+	WindowManager->update_gui();
 
-	# Dedupe it.
-
-	@list = grep({ ! $seen{$_->{tag}} ++ } @list);
-
-	# Sort it by date if necessary (because it needs to be truncated or
-	# that's how the user wants it sorted).
+	# Does the list need truncating (in which case we need to sort by date
+	# to keep the most recent tags) or does the user want to sort tags by
+	# date?
 
 	if (($user_preferences->{query}->{tagged}->{limit} > 0
-	     && scalar(@list) > $user_preferences->{query}->{tagged}->{limit})
+	     && scalar(@tags) > $user_preferences->{query}->{tagged}->{limit})
 	    || $user_preferences->{query}->{tagged}->{sort_cronologically})
 	{
-	    @list = sort({
-			     foreach my $rec ($a, $b)
-			     {
-				 if (! exists($rec->{date}))
-				 {
-				     $mtn->certs(\@certs,
-						 $rec->{revision_id});
-				     foreach my $cert (@certs)
-				     {
-					 if ($cert->{name} eq "date")
-					 {
-					     $rec->{date} = $cert->{value};
-					     last;
-					 }
-				     }
-				 }
-			     }
-			     $b->{date} cmp $a->{date};
-			 }
-			 @list);
+
+	    # Yes tags are to be either sorted by date or need to be truncated
+	    # (requiring them to temporarily be sorted by date).
+
+	    # Build up a hash mapping revision id to tag(s).
+
+	    foreach my $tag (@tags)
+	    {
+		if (exists($rev_id_to_tags{$tag->{revision_id}}))
+		{
+		    push(@{$rev_id_to_tags{$tag->{revision_id}}}, $tag->{tag});
+		}
+		else
+		{
+		    $rev_id_to_tags{$tag->{revision_id}} = [$tag->{tag}];
+		}
+	    }
+
+	    # Sort the revision ids into date order (youngest first).
+
+	    $mtn->toposort(\@sorted_rev_ids, keys(%rev_id_to_tags));
+	    @sorted_rev_ids = reverse(@sorted_rev_ids);
+
+	    # Now build up a list of tags based on this ordering, deduping
+	    # items and stopping when we have enough tags.
+
+	    revision: foreach my $rev_id (@sorted_rev_ids)
+	    {
+		foreach my $tag (sort(@{$rev_id_to_tags{$rev_id}}))
+		{
+		    push(@$revisions, $tag) if (! $seen{$tag} ++);
+		    last revision
+			if ($user_preferences->{query}->{tagged}->{limit} > 0
+			    && scalar(@$revisions) >=
+			        $user_preferences->{query}->{tagged}->{limit});
+		}
+	    }
+
 	}
-
-	# Truncate the list if necessary.
-
-	if ($user_preferences->{query}->{tagged}->{limit} > 0
-	    && scalar(@list) > $user_preferences->{query}->{tagged}->{limit})
+	else
 	{
-	    splice(@list, $user_preferences->{query}->{tagged}->{limit});
+
+	    # No tags are to be sorted by name, without truncation.
+
+	    # At this stage simply extract the tags and dedupe them.
+
+	    @$revisions = map($_->{tag}, grep(! $seen{$_->{tag}} ++, @tags));
+
 	}
 
-	# Extract the list of tags.
-
-	@$revisions = map({ $_->{tag} } @list);
-
-	# Sort alphabetically if required.
+	# We now have a list of tags in @$revisions of the correct size and
+	# sorted by date if so required by the user. So resort the list
+	# aplhabetically if required.
 
 	@$revisions = sort(@$revisions)
 	    if (! $user_preferences->{query}->{tagged}->{sort_cronologically});
@@ -757,16 +771,16 @@ sub get_branch_revisions($$$$$)
 	    if ($user_preferences->{query}->{id}->{sort_cronologically})
 	    {
 		$appbar->set_progress_percentage(0.33) if (defined($appbar));
-		gtk2_update();
+		WindowManager->update_gui();
 		$mtn->toposort($revisions, @$revisions);
 		$appbar->set_progress_percentage(0.66) if (defined($appbar));
-		gtk2_update();
+		WindowManager->update_gui();
 		@$revisions = reverse(@$revisions);
 	    }
 	    else
 	    {
 		$appbar->set_progress_percentage(0.5) if (defined($appbar));
-		gtk2_update();
+		WindowManager->update_gui();
 		@$revisions = sort(@$revisions);
 	    }
 
@@ -777,7 +791,7 @@ sub get_branch_revisions($$$$$)
 	    # Yes so truncate and then sort it.
 
 	    $appbar->set_progress_percentage(0.33) if (defined($appbar));
-	    gtk2_update();
+	    WindowManager->update_gui();
 	    $mtn->toposort($revisions, @$revisions);
 	    $appbar->set_progress_percentage(0.66) if (defined($appbar));
 	    splice(@$revisions,
@@ -798,7 +812,7 @@ sub get_branch_revisions($$$$$)
     }
 
     $appbar->set_progress_percentage(1) if (defined($appbar));
-    gtk2_update();
+    WindowManager->update_gui();
 
 }
 #
@@ -1088,31 +1102,6 @@ sub glade_signal_autoconnect($$)
 			    $callback_name,
 			    $connect_object ? $connect_object : $user_data); },
 	 $client_data);
-
-}
-#
-##############################################################################
-#
-#   Routine      - gtk2_update
-#
-#   Description  - Process all outstanding Gtk2 toolkit events. This is used
-#                  to update the GUI whilst the application is busy doing
-#                  something.
-#
-#   Data         - None.
-#
-##############################################################################
-
-
-
-sub gtk2_update()
-{
-
-    return if (Gtk2->main_level() == 0);
-    while (Gtk2->events_pending())
-    {
-	Gtk2->main_iteration();
-    }
 
 }
 

@@ -44,7 +44,7 @@ require 5.008;
 
 use strict;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
@@ -89,6 +89,7 @@ sub advanced_find($$$)
 
     my($advanced_find,
        $ret_val);
+    my $wm = WindowManager->instance();
 
     $advanced_find = get_advanced_find_window($browser);
 
@@ -121,11 +122,13 @@ sub advanced_find($$$)
 
     # Handle all events until the dialog is dismissed.
 
+    $wm->make_busy($advanced_find, 1, 1);
     $advanced_find->{done} = 0;
     while (! $advanced_find->{done})
     {
 	Gtk2->main_iteration();
     }
+    $wm->make_busy($advanced_find, 0);
     $advanced_find->{window}->hide();
 
     # Deal with the result.
@@ -641,8 +644,8 @@ sub get_advanced_find_window($)
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type);
-	$wm->add_busy_widgets($instance,
+	$wm->manage($instance, $window_type, $instance->{window});
+	$wm->add_busy_windows($instance,
 			      $instance->{details_textview}->
 			          get_window("text"));
 
@@ -708,7 +711,7 @@ sub update_advanced_find_state($$)
 	$wm->make_busy($advanced_find, 1);
     }
     $advanced_find->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     # The list of available branches has changed.
 
@@ -739,7 +742,7 @@ sub update_advanced_find_state($$)
 	# Get the new list of branches.
 
 	$advanced_find->{appbar}->set_status(__("Fetching branch list"));
-	gtk2_update();
+	$wm->update_gui();
 	$advanced_find->{mtn}->branches(\@branch_list)
 	    if (defined($advanced_find->{mtn}));
 	$advanced_find->{branch_combo_details}->{list} = \@branch_list;
@@ -747,7 +750,7 @@ sub update_advanced_find_state($$)
 	# Update the branch list combobox.
 
 	$advanced_find->{appbar}->set_status(__("Populating branch list"));
-	gtk2_update();
+	$wm->update_gui();
 	my $counter = 1;
 	$advanced_find->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
@@ -755,13 +758,13 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{branch_comboboxentry}->append_text($branch);
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@branch_list));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$advanced_find->{branch_comboboxentry}->child()->
 	    set_text($advanced_find->{branch_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -790,7 +793,7 @@ sub update_advanced_find_state($$)
 	if ($advanced_find->{branch_combo_details}->{complete})
 	{
 	    $advanced_find->{appbar}->set_status(__("Fetching revision list"));
-	    gtk2_update();
+	    $wm->update_gui();
 	    get_branch_revisions($advanced_find->{mtn},
 				 $advanced_find->{branch_combo_details}->
 				     {value},
@@ -805,7 +808,7 @@ sub update_advanced_find_state($$)
 
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status(__("Populating revision list"));
-	gtk2_update();
+	$wm->update_gui();
 	my $counter = 1;
 	$advanced_find->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
@@ -813,13 +816,13 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{revision_comboboxentry}->append_text($revision);
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_list));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$advanced_find->{revision_comboboxentry}->child()->
 	    set_text($advanced_find->{revision_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -839,7 +842,7 @@ sub update_advanced_find_state($$)
 	# Get the list of matching revisions.
 
 	$advanced_find->{appbar}->set_status(__("Finding revisions"));
-	gtk2_update();
+	$wm->update_gui();
 	if ($advanced_find->{simple_query_radiobutton}->get_active())
 	{
 	    if ($advanced_find->{revision_combo_details}->{complete})
@@ -871,7 +874,7 @@ sub update_advanced_find_state($$)
 			      . __x("gave:\n<b><i>{error_message}</i></b>",
 				    error_message =>
 				        Glib::Markup::escape_text($message)));
-		     $dialog->run();
+		     $wm->allow_input(sub { $dialog->run(); });
 		     $dialog->destroy();
 		     die("Bad query"); });
 	    eval
@@ -896,8 +899,8 @@ sub update_advanced_find_state($$)
 			 "info",
 			 "close",
 			 __("No revisions matched your query."));
-		     $dialog->run();
-		     $dialog->destroy();
+		    $wm->allow_input(sub { $dialog->run(); });
+		    $dialog->destroy();
 		}
 		$found = 0;
 		foreach my $entry (@{$advanced_find->{query_history}})
@@ -941,14 +944,14 @@ sub update_advanced_find_state($$)
 		    0, $item);
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_ids));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$advanced_find->{revisions_treeview}->scroll_to_point(0, 0)
 	    if ($advanced_find->{revisions_treeview}->realized());
 
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 

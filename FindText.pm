@@ -50,7 +50,7 @@ use strict;
 
 my $window_type = "find_text_window";
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 

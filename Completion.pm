@@ -60,12 +60,12 @@ our @EXPORT = qw();
 our @EXPORT_OK = qw();
 our $VERSION = 0.1;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public methods.
 
 sub get_completion($$$$);
-sub new($@);
+sub new($;$);
 #
 ##############################################################################
 #
@@ -83,19 +83,18 @@ sub new($@);
 
 
 
-sub new($@)
+sub new($;$)
 {
 
-    my($class, $list) = @_;
-    $class = ref($class) if ref($class);
+    my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
+    my $list = $_[1];
 
     my($char,
        $item,
        $level,
        $this);
 
-    $this = {};
-    $this->{tree} = {};
+    $this = {tree => {}};
 
     # Build up a hash tree for the list of possible items.
 

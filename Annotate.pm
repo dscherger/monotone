@@ -44,7 +44,7 @@ require 5.008;
 
 use strict;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
@@ -99,12 +99,12 @@ sub display_annotation($$$)
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     # Get Monotone to do the annotation.
 
     $instance->{appbar}->set_status(__("Annotating file"));
-    gtk2_update();
+    $wm->update_gui();
     mtn_annotate(\@lines, $mtn->get_db_name(), $revision_id, $file_name);
 
     # Find the longest line for future padding and also split each line into
@@ -124,7 +124,7 @@ sub display_annotation($$$)
 
     $instance->{appbar}->set_status
 	(__("Formatting and displaying annotated file"));
-    gtk2_update();
+    $wm->update_gui();
     $padding = " " x $max_len;
     $prefix_tag = $text_tag = "";
     for ($i = 0; $i <= $#lines; ++ $i)
@@ -164,7 +164,7 @@ sub display_annotation($$$)
 	{
 	    $instance->{appbar}->set_progress_percentage
 		(($i + 1) / scalar(@lines));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 
     }
@@ -184,7 +184,7 @@ sub display_annotation($$$)
     $instance->{annotation_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("");
-    gtk2_update();
+    $wm->update_gui();
 
     $instance->{appbar}->pop();
     $wm->make_busy($instance, 0);
@@ -261,7 +261,7 @@ sub get_annotation_window()
 	# Register the window for management.
 
 	$wm->manage($instance, $window_type, $instance->{window});
-	$wm->add_busy_widgets($instance,
+	$wm->add_busy_windows($instance,
 			      $instance->{annotation_textview}->
 			          get_window("text"));
     }

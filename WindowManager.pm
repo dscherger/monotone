@@ -59,6 +59,13 @@ use Gtk2;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
+# A list of event types that are to be filtered out when updating a busy GUI.
+
+my @filtered_events = ("button-press",
+		       "button-release",
+		       "key-press",
+		       "key-release");
+
 # The singleton object.
 
 my $singleton;
@@ -73,17 +80,20 @@ our @EXPORT = qw();
 our @EXPORT_OK = qw();
 our $VERSION = 0.1;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public methods.
 
-sub add_busy_widgets($$@);
+sub add_busy_windows($$@);
+sub allow_input($&);
 sub cleanup($);
-sub cond_find($$$);
+sub cond_find($$&);
 sub find_unused($$);
 sub instance($);
-sub make_busy($$$);
-sub manage($$$;$);
+sub make_busy($$$;$);
+sub manage($$$$;$);
+sub reset_state($);
+sub update_gui();
 #
 ##############################################################################
 #
@@ -103,14 +113,14 @@ sub manage($$$;$);
 sub instance($)
 {
 
-    my $class = ref($_[0]) ? ref($_[0]) : $_[0];
+    my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
 
     if (! defined($singleton))
     {
-	$singleton = {};
-	$singleton->{windows} = [];
-	$singleton->{busy_cursor} = undef;
-	$singleton->{grab_widget_stack} = [];
+	$singleton = {windows     => [],
+		      busy_cursor => Gtk2::Gdk::Cursor->new("watch"),
+		      state_stack => [],
+		      allow_input => 0};
 	return bless($singleton, $class);
 
     }
@@ -148,9 +158,6 @@ sub cleanup($)
     # Free up everything used by this object and associated window instance
     # records.
 
-    $this->{windows} = [];
-    $this->{busy_cursor} = undef;
-    $this->{grab_widget_stack} = [];
     $singleton = undef;
 
 }
@@ -167,70 +174,71 @@ sub cleanup($)
 #                  $instance    : A reference to the window instance record
 #                                 that is to be managed.
 #                  $type        : The type of window that is to be managed.
-#                  $grab_widget : The widget that should be used with an input
-#                                 grab when making the window busy. This is
-#                                 optional but if not present then the
-#                                 instance record is expected to contain an
-#                                 `appbar' widget field.
+#                  $window      : The Gtk2::Window object for the window that
+#                                 is to be managed.
+#                  $grab_widget : The widget that is to still remain
+#                                 responsive when making the window busy, most
+#                                 typically this will be a `stop' button. This
+#                                 is optional.
 #
 ##############################################################################
 
 
 
-sub manage($$$;$)
+sub manage($$$$;$)
 {
 
-    my($this, $instance, $type, $grab_widget) = @_;
+    my($this, $instance, $type, $window, $grab_widget) = @_;
 
-    # Check for instance record compliance.
+    # Simply store the details in our window list.
 
-    croak(__("No window field found")) unless (exists($instance->{window}));
-    croak(__("No appbar field found"))
-	unless (exists($instance->{appbar}) || defined($grab_widget));
-    foreach my $field ("busy_widgets", "grab_widget", "type")
-    {
-	croak(__x("{field} field found - I manage this", field => $field))
-	    if (exists($instance->{$field}));
-    }
-    croak(__("Cannot manage unrealised windows"))
-	unless(defined($instance->{window}->window()));
-
-    # Ok so store what we need in the instance record.
-
-    $instance->{type} = $type;
-    $instance->{busy_widgets} = [$instance->{window}->window()];
-    $instance->{grab_widget} =
-	defined($grab_widget) ? $grab_widget : $instance->{appbar};
-
-    # Store the instance record in our window list.
-
-    push(@{$this->{windows}}, $instance);
+    push(@{$this->{windows}},
+	 {instance     => $instance,
+	  type         => $type,
+	  window       => $window,
+	  busy_windows => [$window->window()],
+	  grab_widget  => $grab_widget});
 
 }
 #
 ##############################################################################
 #
-#   Routine      - add_busy_widgets
+#   Routine      - add_busy_windows
 #
-#   Description  - Add the specified additional widgets for busy cursor
+#   Description  - Add the specified additional windows for busy cursor
 #                  handling.
 #
 #   Data         - $this     : The object.
 #                  $instance : A reference to the window instance record that
 #                              is to be updated.
-#                  @widgets  : The list of additional widgets that are to be
-#                              handled.
+#                  @windows  : The list of additional Gtk2::Gdk::Window
+#                              objects that are to be handled.
 #
 ##############################################################################
 
 
 
-sub add_busy_widgets($$@)
+sub add_busy_windows($$@)
 {
 
-    my($this, $instance, @widgets) = @_;
+    my($this, $instance, @windows) = @_;
 
-    push(@{$instance->{busy_widgets}}, @widgets);
+    my $entry;
+
+    # Find the relevant entry for this instance.
+
+    foreach my $win_instance (@{$this->{windows}})
+    {
+	if ($win_instance->{instance} == $instance)
+	{
+	    $entry = $win_instance;
+	    last;
+	}
+    }
+    croak(__("Called with an unmanaged instance record"))
+	unless (defined($entry));
+
+    push(@{$entry->{busy_windows}}, @windows);
 
 }
 #
@@ -258,7 +266,7 @@ sub find_unused($$)
 
     foreach my $window (@{$this->{windows}})
     {
-	return $window
+	return $window->{instance}
 	    if ($window->{type} eq $type && ! $window->{window}->mapped());
     }
 
@@ -290,15 +298,16 @@ sub find_unused($$)
 
 
 
-sub cond_find($$$)
+sub cond_find($$&)
 {
 
     my($this, $type, $predicate) = @_;
 
     foreach my $window (@{$this->{windows}})
     {
-	return $window if ((! defined ($type) || $window->{type} eq $type)
-			   && &$predicate($window));
+	return $window->{instance}
+	    if ((! defined($type) || $window->{type} eq $type)
+		&& &$predicate($window->{instance}));
     }
 
     return;
@@ -318,63 +327,276 @@ sub cond_find($$$)
 #                  $busy     : True if the window is to be made busy,
 #                              otherwise false if the window is to be made
 #                              active.
+#                  $exclude  : True if the window referenced by $instance is
+#                              to be excluded from the list of windows that
+#                              are to be made busy (this is used by modal
+#                              dialogs).
 #
 ##############################################################################
 
 
 
-sub make_busy($$$)
+sub make_busy($$$;$)
 {
 
-    my($this, $instance, $busy) = @_;
+    my($this, $instance, $busy, $exclude) = @_;
 
+    my($entry,
+       $found,
+       $head,
+       @list);
+
+    $exclude = defined($exclude) ? $exclude : 0;
+
+    # Find the relevant entry for this instance.
+
+    foreach my $win_instance (@{$this->{windows}})
+    {
+	if ($win_instance->{instance} == $instance)
+	{
+	    $entry = $win_instance;
+	    last;
+	}
+    }
     croak(__("Called with an unmanaged instance record"))
-	unless (exists($instance->{grab_widget}));
+	unless (defined($entry));
 
-    # Create and store the cursors if we haven't done so already.
-
-    $this->{busy_cursor} = Gtk2::Gdk::Cursor->new("watch")
-	unless (defined($this->{busy_cursor}));
-
-    # Do it. Make the grab widget, usually the window's application bar,  grab
-    # the input when the window is busy, that way we gobble up keyboard and
-    # mouse events that could muck up the application state.
+    # When making things busy filter out keyboard and mouse button events
+    # unless they relate to the grab widget (usually a `stop' button) and make
+    # the mouse cursor busy. Making things unbusy is simply the reverse. Also
+    # cope with nested calls.
 
     if ($busy)
     {
-	Gtk2->grab_add($instance->{grab_widget});
+	Gtk2::Gdk::Event->handler_set(\&main::window_manager_event_filter,
+				      {singleton   => $this,
+				       grab_widget => $entry->{grab_widget}})
+	    if (! $exclude);
 	foreach my $win_instance (@{$this->{windows}})
 	{
-	    foreach my $window (@{$win_instance->{busy_widgets}})
+	    if (! $exclude || $win_instance->{instance} != $instance)
 	    {
-		$window->set_cursor($this->{busy_cursor});
+		foreach my $window (@{$win_instance->{busy_windows}})
+		{
+		    if ($window->is_visible())
+		    {
+			$window->set_cursor($this->{busy_cursor});
+			push(@list, $window);
+		    }
+		}
 	    }
 	}
-	push(@{$this->{grab_widget_stack}}, $instance->{grab_widget});
+	push(@{$this->{state_stack}},
+	     {exclude     => $exclude,
+	      grab_widget => $instance->{grab_widget},
+	      window_list => \@list});
     }
     else
     {
-	my $grab_widget;
-	if (defined($grab_widget = pop(@{$this->{grab_widget_stack}})))
+	pop(@{$this->{state_stack}});
+	if (scalar(@{$this->{state_stack}}) == 0)
 	{
-	    Gtk2->grab_remove($grab_widget);
-	    if ($#{$this->{grab_widget_stack}} < 0)
+	    reset_state($this);
+	}
+	else
+	{
+	    $head =
+		$this->{state_stack}->[$#{$this->{state_stack}}];
+	    foreach my $win_instance (@{$this->{windows}})
 	    {
-		foreach my $win_instance (@{$this->{windows}})
+		foreach my $window (@{$win_instance->{busy_windows}})
 		{
-		    foreach my $window (@{$win_instance->{busy_widgets}})
+		    $found = 0;
+		    foreach my $busy_window (@{$head->{window_list}})
+		    {
+			if ($window == $busy_window)
+			{
+			    $found = 1;
+			    last;
+			}
+		    }
+		    if ($found)
+		    {
+			$window->set_cursor($this->{busy_cursor});
+		    }
+		    else
 		    {
 			$window->set_cursor(undef);
 		    }
 		}
 	    }
+	    if ($head->{exclude})
+	    {
+		Gtk2::Gdk::Event->handler_set(undef);
+	    }
 	    else
 	    {
-		Gtk2->grab_add($this->{grab_widget_stack}->
-			       [$#{$this->{grab_widget_stack}}]);
+		Gtk2::Gdk::Event->handler_set
+		    (\&main::window_manager_event_filter,
+		     {singleton   => $this,
+		      grab_widget => $entry->{grab_widget}});
 	    }
 	}
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - allow_input
+#
+#   Description  - Execute the specified code block whilst allowing mouse and
+#                  keyboard input. Used for displaying dialog windows when the
+#                  application is busy.
+#
+#   Data         - $this : The object.
+#                  $code : The code block to be executed.
+#
+##############################################################################
+
+
+
+sub allow_input($&)
+{
+
+    my($this, $code) = @_;
+
+    my $head = $this->{state_stack}->[$#{$this->{state_stack}}];
+
+    local $this->{allow_input} = 1;
+
+    &$code();
+
+}
+#
+##############################################################################
+#
+#   Routine      - reset_state
+#
+#   Description  - Completely resets the state of all windows and input
+#                  handling. Useful when resetting the GUI after an exception
+#                  was raised.
+#
+#   Data         - $this : The object.
+#
+##############################################################################
+
+
+
+sub reset_state($)
+{
+
+    my $this = $_[0];
+
+    $this->{state_stack} = [];
+    $this->{allow_input} = 0;
+
+    foreach my $win_instance (@{$this->{windows}})
+    {
+	foreach my $window (@{$win_instance->{busy_windows}})
+	{
+	    $window->set_cursor(undef);
+	}
+    }
+    Gtk2::Gdk::Event->handler_set(undef);
+
+}
+#
+##############################################################################
+#
+#   Routine      - update_gui
+#
+#   Description  - Process all outstanding Gtk2 toolkit events. This is used
+#                  to update the GUI whilst the application is busy doing
+#                  something.
+#
+#   Data         - None.
+#
+##############################################################################
+
+
+
+sub update_gui()
+{
+
+    return if (Gtk2->main_level() == 0);
+    while (Gtk2->events_pending())
+    {
+	Gtk2->main_iteration();
+    }
+
+}
+#
+##############################################################################
+#
+#   Package      - main
+#
+#   Description  - The event filter routine has to be in the main package as
+#                  this is assumed when constructing calling Perl callbacks.
+#
+##############################################################################
+
+
+
+# ***** PACKAGE DECLARATION *****
+
+package main;
+
+# ***** DIRECTIVES *****
+
+require 5.008;
+
+use strict;
+use integer;
+
+# ***** REQUIRED PACKAGES *****
+
+# Standard Perl and CPAN modules.
+
+use Gtk2;
+
+# ***** FUNCTIONAL PROTOTYPES *****
+
+# Public methods.
+
+sub window_manager_event_filter($$);
+#
+##############################################################################
+#
+#   Routine      - window_manager_event_filter
+#
+#   Description  - Filter for getting rid of unwanted keyboard and mouse
+#                  button events when the application is busy.
+#
+#   Data         - $event       : The Gtk2::Gdk::Event object representing the
+#                                 current event.
+#                  $client_data : The client data that was registered along
+#                                 with this event handler.
+#
+##############################################################################
+
+
+
+sub window_manager_event_filter($$)
+{
+
+    my($event, $client_data) = @_;
+
+    my $grab_widget = $client_data->{grab_widget};
+    my $this        = $client_data->{singleton};
+    my $type        = $event->type();
+
+    if (! $this->{allow_input})
+    {
+	foreach my $filter_type (@filtered_events)
+	{
+	    return
+		if ($type eq $filter_type
+		    && (! defined($grab_widget)
+			|| Gtk2->get_event_widget($event) != $grab_widget));
+	}
+    }
+    Gtk2->main_do_event($event);
 
 }
 

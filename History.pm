@@ -51,7 +51,7 @@ use strict;
 use constant CLS_NAME_COLUMN    => 0;
 use constant CLS_LINE_NR_COLUMN => 1;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
@@ -113,7 +113,7 @@ sub display_revision_change_history($$)
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     $instance->{stop_button}->set_sensitive(TRUE);
 
@@ -122,14 +122,14 @@ sub display_revision_change_history($$)
 
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Fetching revision list"));
-    gtk2_update();
+    $wm->update_gui();
     $history_hash{$revision_id} = 1;
     get_revision_history_helper($instance, \%history_hash, $revision_id);
 
     # Sort the list.
 
     $instance->{appbar}->set_status(__("Sorting revision list"));
-    gtk2_update();
+    $wm->update_gui();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
     %history_hash = ();
@@ -139,7 +139,7 @@ sub display_revision_change_history($$)
 
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Displaying revision history"));
-    gtk2_update();
+    $wm->update_gui();
     $counter = 1;
     $instance->{stop} = 0;
     $instance->{history_buffer}->set_text("");
@@ -246,7 +246,7 @@ sub display_revision_change_history($$)
 	{
 	    $instance->{appbar}->set_progress_percentage
 		($counter / scalar(@{$instance->{history}}));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	++ $counter;
 
@@ -264,7 +264,7 @@ sub display_revision_change_history($$)
     $instance->{history_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("");
-    gtk2_update();
+    $wm->update_gui();
 
     $instance->{appbar}->pop();
     $wm->make_busy($instance, 0);
@@ -315,7 +315,7 @@ sub display_file_change_history($$$)
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     # Get the list of file change revisions. Remember that a warning is
     # generated when one goes back beyond a file's addition revision, so
@@ -324,7 +324,7 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $instance->{stop_button}->set_sensitive(TRUE);
-    gtk2_update();
+    $wm->update_gui();
     Monotone::AutomateStdio->register_error_handler("warning");
     get_file_history_helper($instance, \%history_hash, $revision_id);
     Monotone::AutomateStdio->register_error_handler("both",
@@ -334,7 +334,7 @@ sub display_file_change_history($$$)
     # Sort the list.
 
     $instance->{appbar}->set_status(__("Sorting revision list"));
-    gtk2_update();
+    $wm->update_gui();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
     %history_hash = ();
@@ -344,7 +344,7 @@ sub display_file_change_history($$$)
 
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Displaying file history"));
-    gtk2_update();
+    $wm->update_gui();
     $counter = 1;
     $instance->{history_buffer}->set_text("");
     for my $revision_id (@{$instance->{history}})
@@ -444,7 +444,7 @@ sub display_file_change_history($$$)
 
 	$instance->{appbar}->set_progress_percentage
 	    ($counter ++ / scalar(@{$instance->{history}}));
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -456,7 +456,7 @@ sub display_file_change_history($$$)
     $instance->{history_scrolledwindow}->get_hadjustment()->set_value(0);
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("");
-    gtk2_update();
+    $wm->update_gui();
 
     $instance->{appbar}->pop();
     $wm->make_busy($instance, 0);
@@ -704,7 +704,7 @@ sub compare_revisions($$$;$)
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     $instance->{mtn} = $mtn;
     $instance->{revision_id_1} = $revision_id_1;
@@ -713,7 +713,7 @@ sub compare_revisions($$$;$)
     # Get Monotone to do the comparison.
 
     $instance->{appbar}->set_status(__("Calculating differences"));
-    gtk2_update();
+    $wm->update_gui();
     mtn_diff(\@lines,
 	     $mtn->get_db_name(),
 	     $revision_id_1,
@@ -737,7 +737,7 @@ sub compare_revisions($$$;$)
 
     $instance->{appbar}->
 	set_status(__("Formatting and displaying differences"));
-    gtk2_update();
+    $wm->update_gui();
     $padding = " " x $max_len;
     $line = substr(" Summary" . $padding, 0, $max_len);
     $instance->{comparison_buffer}->insert_with_tags_by_name
@@ -866,7 +866,7 @@ sub compare_revisions($$$;$)
 	{
 	    $instance->{appbar}->set_progress_percentage
 		(($i + 1) / scalar(@lines));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 
     }
@@ -882,7 +882,7 @@ sub compare_revisions($$$;$)
 
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Populating file list"));
-    gtk2_update();
+    $wm->update_gui();
     @files = sort({ $a->{file_name} cmp $b->{file_name} } @files);
     $i = 1;
     $instance->{file_comparison_combobox}->get_model()->clear();
@@ -893,11 +893,11 @@ sub compare_revisions($$$;$)
 	     CLS_NAME_COLUMN, $file->{file_name},
 	     CLS_LINE_NR_COLUMN, $file->{line_nr});
 	$instance->{appbar}->set_progress_percentage($i ++ / scalar(@files));
-	gtk2_update();
+	$wm->update_gui();
     }
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("");
-    gtk2_update();
+    $wm->update_gui();
 
     # Make sure we are at the top.
 
@@ -1073,8 +1073,11 @@ sub get_history_window()
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{stop_button});
-	$wm->add_busy_widgets($instance,
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window},
+		    $instance->{stop_button});
+	$wm->add_busy_windows($instance,
 			      $instance->{history_textview}->
 			          get_window("text"));
     }
@@ -1142,7 +1145,7 @@ sub get_file_history_helper($$$)
 	    $hash->{$revision} = 1;
 	    set_label_value($instance->{numbers_value_label},
 			    scalar(keys(%$hash)));
-	    gtk2_update();
+	    WindowManager->update_gui();
 	    @parents = ();
 	    $instance->{mtn}->parents(\@parents, $revision);
 	    foreach my $parent (@parents)
@@ -1188,7 +1191,7 @@ sub get_revision_history_helper($$$)
 	    $hash->{$parent} = 1;
 	    set_label_value($instance->{numbers_value_label},
 			    scalar(keys(%$hash)));
-	    gtk2_update();
+	    WindowManager->update_gui();
 	    get_revision_history_helper($instance, $hash, $parent);
 	}
     }
@@ -1303,8 +1306,11 @@ sub get_revision_comparison_window()
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{stop_button});
-	$wm->add_busy_widgets($instance,
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window},
+		    $instance->{stop_button});
+	$wm->add_busy_windows($instance,
 			      $instance->{comparison_textview}->
 			          get_window("text"));
     }

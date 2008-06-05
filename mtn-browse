@@ -49,7 +49,6 @@ BEGIN
     use constant MIME_GLOB_FILE => "/usr/share/mime/globs";
 }
 use lib LIB_PATH;
-use lib "/home/aecoope/locale/lib/perl5/site_perl/5.8.5";
 use strict;
 
 # ***** REQUIRED PACKAGES *****
@@ -68,7 +67,7 @@ use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
-use Locale::TextDomain ("mtn-browse", "/home/aecoope/perl/locale");
+use Locale::TextDomain ("mtn-browse", LIB_PATH . "/share/locale");
 use IO::File;
 use IPC::Open3;
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
@@ -111,7 +110,7 @@ my $window_type = "main_window";
 
 my $large_logo;
 
-# ***** FUNCTIONAL PROTOTYPES FOR THIS FILE *****
+# ***** FUNCTIONAL PROTOTYPES *****
 
 # Private routines.
 
@@ -129,6 +128,7 @@ sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
 sub monotone_viz_button_clicked_cb($$);
 sub mtn_error_handler($$);
+sub new_blank_menu_item_clicked_cb($$);
 sub new_toolbutton_clicked_cb($$);
 sub open_toolbutton_clicked_cb($$);
 sub preferences_toolbutton_clicked_cb($$);
@@ -200,7 +200,7 @@ sub view_button_clicked_cb($$);
 
     eval
     {
-	$tmp_dir = File::Temp::tempdir("mtn-browse_XXXXXXXXXX",
+	$tmp_dir = File::Temp->tempdir("mtn-browse_XXXXXXXXXX",
 				       TMPDIR => 1,
 				       CLEANUP => 1);
     };
@@ -396,7 +396,7 @@ sub about_activate_cb($$)
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
-	 "0.3b",
+	 "0.4b",
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
@@ -422,6 +422,40 @@ sub about_activate_cb($$)
 
 
 sub new_toolbutton_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    my @revision_ids;
+
+    # Simply get a new/unused browser window and display it.
+
+    get_revision_ids($browser, \@revision_ids);
+    get_browser_window($browser->{mtn},
+		       $browser->{branch_combo_details}->{value},
+		       $revision_ids[0]);
+
+}
+#
+##############################################################################
+#
+#   Routine      - new_blank_menu_item_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the new
+#                  blank menu item in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub new_blank_menu_item_clicked_cb($$)
 {
 
     my($widget, $browser) = @_;
@@ -1587,8 +1621,8 @@ sub get_browser_window(;$$$$$)
 
 	# Register the window for management.
 
-	$wm->manage($browser, $window_type);
-	$wm->add_busy_widgets($browser,
+	$wm->manage($browser, $window_type, $browser->{window});
+	$wm->add_busy_windows($browser,
 			      $browser->{file_view_sv}->get_window("text"));
 
 	# Update the browser's internal state.
@@ -1692,7 +1726,7 @@ sub update_browser_state($$)
 
     $wm->make_busy($browser, 1);
     $browser->{appbar}->push("");
-    gtk2_update();
+    $wm->update_gui();
 
     # The database has changed.
 
@@ -1767,14 +1801,14 @@ sub update_browser_state($$)
 	# Get the new list of branches.
 
 	$browser->{appbar}->set_status(__("Fetching branch list"));
-	gtk2_update();
+	$wm->update_gui();
 	$browser->{mtn}->branches(\@branch_list) if (defined($browser->{mtn}));
 	$browser->{branch_combo_details}->{list} = \@branch_list;
 
 	# Update the branch list combobox.
 
 	$browser->{appbar}->set_status(__("Populating branch list"));
-	gtk2_update();
+	$wm->update_gui();
 	my $counter = 1;
 	$browser->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
@@ -1782,13 +1816,13 @@ sub update_browser_state($$)
 	    $browser->{branch_comboboxentry}->append_text($branch);
 	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@branch_list));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$browser->{branch_comboboxentry}->child()->
 	    set_text($browser->{branch_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -1818,7 +1852,7 @@ sub update_browser_state($$)
 	if ($browser->{branch_combo_details}->{complete})
 	{
 	    $browser->{appbar}->set_status(__("Fetching revision list"));
-	    gtk2_update();
+	    $wm->update_gui();
 	    get_branch_revisions($browser->{mtn},
 				 $browser->{branch_combo_details}->{value},
 				 $browser->{tagged_checkbutton}->get_active(),
@@ -1831,7 +1865,7 @@ sub update_browser_state($$)
 
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status(__("Populating revision list"));
-	gtk2_update();
+	$wm->update_gui();
 	my $counter = 1;
 	$browser->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
@@ -1839,13 +1873,13 @@ sub update_browser_state($$)
 	    $browser->{revision_comboboxentry}->append_text($revision);
 	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_list));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$browser->{revision_comboboxentry}->child()->
 	    set_text($browser->{revision_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -1881,7 +1915,7 @@ sub update_browser_state($$)
 	# Get the new manifest.
 
 	$browser->{appbar}->set_status(__("Fetching manifest"));
-	gtk2_update();
+	$wm->update_gui();
 	if ($browser->{revision_combo_details}->{complete})
 	{
 	    my @revision_ids;
@@ -1902,7 +1936,7 @@ sub update_browser_state($$)
 		}
 		my $dialog = Gtk2::MessageDialog->new_with_markup
 		    ($browser->{window}, ["modal"], "info", "close", $message);
-		$dialog->run();
+		$wm->allow_input(sub { $dialog->run(); });
 		$dialog->destroy();
 		$browser->{revision_combo_details}->{complete} = 0;
 		$browser->{revision_combo_details}->{value} = "";
@@ -1939,7 +1973,7 @@ sub update_browser_state($$)
 	# Generate a simple list of directories for auto completion.
 
 	$browser->{appbar}->set_progress_percentage(0.5);
-	gtk2_update();
+	$wm->update_gui();
 	foreach my $item (@manifest_list)
 	{
 	    push(@directory_list, $item->{name})
@@ -1947,13 +1981,13 @@ sub update_browser_state($$)
 	}
 	$browser->{directory_combo_details}->{list} = \@directory_list;
 	$browser->{appbar}->set_progress_percentage(1);
-	gtk2_update();
+	$wm->update_gui();
 
 	# Update the directory list combobox.
 
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status(__("Populating directory list"));
-	gtk2_update();
+	$wm->update_gui();
 	my $counter = 1;
 	$browser->{directory_comboboxentry}->get_model()->clear();
 	foreach my $item (@directory_list)
@@ -1961,7 +1995,7 @@ sub update_browser_state($$)
 	    $browser->{directory_comboboxentry}->append_text($item);
 	    $browser->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@directory_list));
-	    gtk2_update();
+	    $wm->update_gui();
 	}
 	$browser->{directory_comboboxentry}->child()->
 	    set_text($browser->{directory_combo_details}->{value});
@@ -1972,7 +2006,7 @@ sub update_browser_state($$)
 	    $widget->
 		set_sensitive($browser->{revision_combo_details}->{complete});
 	}
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -2091,7 +2125,7 @@ sub update_browser_state($$)
 	    {
 		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@directory_entry_list));
-		gtk2_update();
+		$wm->update_gui();
 	    }
 	    ++ $counter;
 
@@ -2102,7 +2136,7 @@ sub update_browser_state($$)
 
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
-	gtk2_update();
+	$wm->update_gui();
 
     }
 
@@ -2412,6 +2446,7 @@ sub mtn_error_handler($$)
     my($severity, $message) = @_;
 
     my $dialog;
+    my $wm = WindowManager->instance();
 
     if ($severity eq "warning")
     {
@@ -2424,8 +2459,9 @@ sub mtn_error_handler($$)
 	         . __x("<b><i>{error_message}</i></b>\n",
 		       error_message => Glib::Markup::escape_text($message))
 	         . __("This should not be happening!"));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
+	$wm->reset_state();
 	die($message);
     }
     else
@@ -2439,7 +2475,7 @@ sub mtn_error_handler($$)
 	         . __x("<b><i>{error_message}</i></b>\n",
 		       error_message => Glib::Markup::escape_text($message))
 	         . __("This is fatal, I am going to exit."));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	Gtk2->main_quit() unless (Gtk2->main_level() == 0);
 	die($message);
@@ -2464,6 +2500,8 @@ sub sigchld_handler()
 
     my($pid,
        $status);
+
+    my $wm = WindowManager->instance();
 
     while (($pid = waitpid(-1, WNOHANG)) > 0)
     {
@@ -2503,8 +2541,9 @@ sub sigchld_handler()
 					error_message => $message)
 			          . __("This should not be happening!\n")
 			          . __("It will be restarted when needed."));
-			 $dialog->run();
+			 $wm->allow_input(sub { $dialog->run(); });
 			 $dialog->destroy();
+			 $wm->reset_state();
 			 return 1;
 		     }
 		     return;
