@@ -126,6 +126,7 @@ sub save_preferences($);
 # Private routines.
 
 sub add_file_name_pattern_button_clicked_cb($$);
+sub add_mime_type_button_clicked_cb($$);
 sub database_browse_button_clicked_cb($$);
 sub file_name_pattern_entry_changed_cb($$);
 sub file_name_patterns_treeview_cursor_changed_cb($$);
@@ -134,9 +135,12 @@ sub get_preferences_window($$);
 sub home_dir();
 sub initialise_mime_info_table();
 sub load_file_name_patterns_treeview($);
+sub load_mime_types_page($);
 sub load_preferences_into_gui($);
+sub mime_type_entry_changed_cb($$);
 sub mime_types_treeview_cursor_changed_cb($$);
 sub remove_file_name_pattern_button_clicked_cb($$);
+sub remove_mime_type_button_clicked_cb($$);
 sub save_current_mime_types_settings($);
 sub save_preferences_from_gui($);
 #
@@ -490,6 +494,7 @@ sub mime_types_treeview_cursor_changed_cb($$)
 
 	$instance->{selected_mime_types_entry} = $entry;
 	$instance->{selected_mime_types_path} = $entry_path;
+	$instance->{remove_mime_type_button}->set_sensitive(TRUE);
 	foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
 	{
 	    $widget->set_sensitive(TRUE);
@@ -504,6 +509,166 @@ sub mime_types_treeview_cursor_changed_cb($$)
 	    set_active($entry->{syntax_highlight} ? TRUE : FALSE);
 	$instance->{helper_application_entry}->
 	    set_text($entry->{helper_application});
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - mime_type_entry_changed_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the MIME type entry in the preferences window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub mime_type_entry_changed_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    $instance->{add_mime_type_button}->set_sensitive
+	((length($instance->{mime_type_entry}->get_text()) > 0) ?
+	 TRUE : FALSE);
+
+}
+#
+##############################################################################
+#
+#   Routine      - add_mime_type_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the add
+#                  MIME type button in the preferences window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub add_mime_type_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($match,
+       $mime_type);
+
+    # Check entry to see if it is valid.
+
+    $mime_type = $instance->{mime_type_entry}->get_text();
+    if ($mime_type !~ m/^[^\/]+\/[^\/]+$/o)
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("`{mime_type}' does not\nlook like a valid MIME type.",
+		 mime_type => $mime_type));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Now check for duplicate entries.
+
+    foreach my $entry (@{$instance->{preferences}->{mime_table}})
+    {
+	if ($mime_type eq $entry->{name})
+	{
+	    $match = $entry->{name};
+	    last;
+	}
+    }
+    if (defined($match))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("`{mime_type}' is already listed.",
+		 mime_type => $mime_type));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Ok so add it to the MIME types list and reload the MIME types treeview.
+
+    push(@{$instance->{preferences}->{mime_table}},
+	 {name               => $mime_type,
+	  file_name_patterns => [],
+	  display_internally => 0,
+	  syntax_highlight   => 0,
+	  helper_application => ""});
+    @{$instance->{preferences}->{mime_table}} =
+	sort({ $a->{name} cmp $b->{name} }
+	     @{$instance->{preferences}->{mime_table}});
+    load_mime_types_page($instance);
+
+}
+#
+##############################################################################
+#
+#   Routine      - remove_mime_type_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the remove
+#                  MIME type button in the preferences window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub remove_mime_type_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my $i;
+
+    # Simply remove the selected MIME type from the list.
+
+    if (defined($instance->{selected_mime_types_entry}))
+    {
+
+	# Locate the file name pattern and remove it from the list.
+
+	for ($i = 0;
+	     $i < scalar(@{$instance->{preferences}->{mime_table}});
+	     ++ $i)
+	{
+	    last if ($instance->{selected_mime_types_entry}->{name}
+		     eq $instance->{preferences}->{mime_table}->[$i]->{name});
+	}
+	splice(@{$instance->{preferences}->{mime_table}}, $i, 1);
+
+	# Reload the MIME types list.
+
+	load_mime_types_page($instance);
 
     }
 
@@ -684,7 +849,7 @@ sub remove_file_name_pattern_button_clicked_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($i);
+    my $i;
 
     # Simply remove the selected file name pattern from the list.
 
@@ -804,6 +969,9 @@ sub get_preferences_window($$)
 
 			    "mime_types_hpaned",
 			    "mime_types_treeview",
+			    "mime_type_entry",
+			    "add_mime_type_button",
+			    "remove_mime_type_button",
 			    "file_name_patterns_treeview",
 			    "file_name_pattern_entry",
 			    "add_file_name_pattern_button",
@@ -959,7 +1127,7 @@ sub load_preferences_into_gui($)
 
     my $instance = $_[0];
 
-    # Do the general pane.
+    # Do the general page.
 
     $instance->{database_entry}->
 	set_text($instance->{preferences}->{default_mtn_db});
@@ -992,7 +1160,7 @@ sub load_preferences_into_gui($)
 	$instance->{id_lists_sort_by_id_radiobutton}->set_active(TRUE);
     }
 
-    # Do the appearance pane.
+    # Do the appearance page.
 
     $instance->{fonts_fontbutton}->
 	set_font_name($instance->{preferences}->{fixed_font});
@@ -1017,7 +1185,29 @@ sub load_preferences_into_gui($)
 					      {$field}));
     }
 
-    # Do the MIME types pane.
+    # Do the MIME types page.
+
+    load_mime_types_page($instance);
+
+}
+#
+##############################################################################
+#
+#   Routine      - load_mime_types_page
+#
+#   Description  - Loads the user's preferences into the MIME types page on
+#                  the preferences dialog window.
+#
+#   Data         - $instance : The associated window instance.
+#
+##############################################################################
+
+
+
+sub load_mime_types_page($)
+{
+
+    my $instance = $_[0];
 
     $instance->{mime_types_liststore}->clear();
     foreach my $entry (@{$instance->{preferences}->{mime_table}})
@@ -1032,6 +1222,9 @@ sub load_preferences_into_gui($)
     }
     $instance->{mime_types_treeview}->scroll_to_point(0, 0)
 	if ($instance->{mime_types_treeview}->realized());
+    $instance->{mime_type_entry}->set_text("");
+    $instance->{add_mime_type_button}->set_sensitive(FALSE);
+    $instance->{remove_mime_type_button}->set_sensitive(FALSE);
     $instance->{file_name_patterns_liststore}->clear();
     $instance->{file_name_pattern_entry}->set_text("");
     foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
@@ -1043,6 +1236,8 @@ sub load_preferences_into_gui($)
     $instance->{display_internally_checkbutton}->set_active(FALSE);
     $instance->{syntax_highlight_checkbutton}->set_active(FALSE);
     $instance->{helper_application_entry}->set_text("");
+    $instance->{selected_mime_types_entry} = undef;
+    $instance->{selected_mime_types_path} = undef;
 
 }
 #
