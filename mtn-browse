@@ -118,6 +118,7 @@ sub about_activate_cb($$);
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
+sub determine_mime_type($$$$);
 sub directory_up_button_clicked_cb($$);
 sub display_file($$);
 sub file_change_history_button_clicked_cb($$);
@@ -1058,6 +1059,7 @@ sub view_button_clicked_cb($$)
        $fh,
        $file_name,
        $helper,
+       $mime_details,
        $mime_obj,
        $mime_type);
 
@@ -1099,24 +1101,21 @@ sub view_button_clicked_cb($$)
 
     # Get the user preference settings for this type of file.
 
-    foreach my $entry (@$mime_match_table)
-    {
-	if ($browser->{file_being_viewed}->{short_name} =~ m/$entry->{re}/)
-	{
-	    $helper = $entry->{details}->{helper_application};
-	    last;
-	}
-    }
+    determine_mime_type($browser->{file_being_viewed}->{short_name},
+			\$data,
+			\$mime_type,
+			\$mime_details);
 
     # If the user has specified a helper application then use that to view the
     # file, otherwise use the default desktop settings.
 
-    if (defined($helper) && $helper ne "")
+    if (defined($mime_details) && $mime_details->{helper_application} ne "")
     {
 
 	# Use the specified helper application, replacing `{file}' with the
 	# real file name.
 
+	$helper = $mime_details->{helper_application};
 	if ($helper =~ m/\{file\}/)
 	{
 	    $helper =~ s/\{file\}/$file_name/g;
@@ -2296,23 +2295,12 @@ sub display_file($$)
 			      $browser->{file_being_viewed}->{manifest_entry}->
 			          {file_id});
 
-    # Try and work out the MIME type through file name pattern matching.
+    # Try and work out the MIME type.
 
-    foreach my $entry (@$mime_match_table)
-    {
-	if ($browser->{file_being_viewed}->{short_name} =~ m/$entry->{re}/)
-	{
-	    $mime_type = $entry->{details}->{name};
-	    $mime_details = $entry->{details};
-	    last;
-	}
-    }
-
-    # If that didn't work then try determining the MIME type based upon the
-    # file's contents.
-
-    $mime_type = Gnome2::VFS->get_mime_type_for_data($contents)
-	if (! defined($mime_type));
+    determine_mime_type($browser->{file_being_viewed}->{short_name},
+			\$contents,
+			\$mime_type,
+			\$mime_details);
 
     # Only attempt to render the file's contents if requested to do so.
 
@@ -2422,6 +2410,70 @@ sub display_file($$)
     {
 	$browser->{file_view_scrolledwindow}->get_vadjustment()->set_value(0);
 	$browser->{file_view_scrolledwindow}->get_hadjustment()->set_value(0);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - determine_mime_type
+#
+#   Description  - Given a file name and its contents, determine and return
+#                  its MIME type and the related entry in the MIME details
+#                  table.
+#
+#   Data         - $file_name    : The name of the file.
+#                  $contents     : A reference to a variable containing the
+#                                  contents of the file.
+#                  $mime_type    : A reference to a variable that is to
+#                                  contain the MIME type. This will be undef
+#                                  if no match can be found.
+#                  $mime_details : A reference to a variable that is to
+#                                  contain a refernce to the related entry in
+#                                  the MIME information table. This will be
+#                                  undef if no match can be found.
+#
+##############################################################################
+
+
+
+sub determine_mime_type($$$$)
+{
+
+    my($file_name, $contents, $mime_type, $mime_details) = @_;
+
+    $$mime_type = $$mime_details = undef;
+
+    # Try and work out the MIME type through file name pattern matching.
+
+    foreach my $entry (@$mime_match_table)
+    {
+	if ($file_name =~ m/$entry->{re}/)
+	{
+	    $$mime_type = $entry->{details}->{name};
+	    $$mime_details = $entry->{details};
+	    return;
+	}
+    }
+
+    # If that didn't work then try determining the MIME type based upon its
+    # contents.
+
+    $$mime_type = Gnome2::VFS->get_mime_type_for_data($contents);
+
+    # If we now have a MIME type then do another lookup with it but by matching
+    # MIME type names and not file name patterns.
+
+    if (defined($$mime_type))
+    {
+	foreach my $entry (@{$user_preferences->{mime_table}})
+	{
+	    if ($$mime_type eq $entry->{name})
+	    {
+		$$mime_details = $entry;
+		return;
+	    }
+	}
     }
 
 }

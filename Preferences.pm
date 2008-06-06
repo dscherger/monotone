@@ -629,7 +629,7 @@ sub add_file_name_pattern_button_clicked_cb($$)
 
     foreach my $entry (@{$instance->{preferences}->{mime_table}})
     {
-	if (grep(/\Q$pattern\E/, @{$entry->{file_name_patterns}}) > 0)
+	if (grep(/^\Q$pattern\E$/, @{$entry->{file_name_patterns}}) > 0)
 	{
 	    $match = $entry->{name};
 	    last;
