@@ -345,15 +345,27 @@ sub find_button_clicked_cb($$)
     $found = 0;
     while (! $done)
     {
+	my $pos;
 	$line =
 	    $instance->{text_buffer}->get_text($start_iter, $end_iter, TRUE);
-	if ($line =~ m/$expr/g)
+	if ($forward)
+	{
+	    $pos = pos($line) if ($found = scalar($line =~ m/$expr/g));
+	}
+	else
+	{
+	    while ($line =~ m/$expr/g)
+	    {
+		$pos = pos($line);
+		$found = 1;
+	    }
+	}
+	if ($found)
 	{
 	    $instance->{match_offset_start} =
-		$start_iter->get_offset() + pos($line) - length($search_term);
-	    $instance->{match_offset_end} =
-		$start_iter->get_offset() + pos($line);
-	    $done = $found = 1;
+		$start_iter->get_offset() + $pos - length($search_term);
+	    $instance->{match_offset_end} = $start_iter->get_offset() + $pos;
+	    $done = 1;
 	}
 	else
 	{
