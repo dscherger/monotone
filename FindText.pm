@@ -56,6 +56,7 @@ my $window_type = "find_text_window";
 
 sub disable_find_text($$);
 sub find_text($$);
+sub hide_find_text($);
 sub reset_find_text($);
 
 # Private routines.
@@ -162,6 +163,34 @@ sub disable_find_text($$)
 		 TRUE : FALSE);
 	}
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - hide_find_text
+#
+#   Description  - Hides the find text window associated with the specified
+#                  textview widget.
+#
+#   Data         - $text_view : The textview widget to which the find text
+#                               window is associated.
+#
+##############################################################################
+
+
+
+sub hide_find_text($)
+{
+
+    my($text_view, $disable) = @_;
+
+    my $instance;
+
+    # Simply hide the found find text window.
+
+    $instance->{window}->hide()
+	if (defined($instance = find_current_window($text_view)));
 
 }
 #

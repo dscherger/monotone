@@ -1388,6 +1388,7 @@ sub main_window_delete_event_cb($$$)
 	     return;
 	 });
 
+    hide_find_text($browser->{file_view_sv});
     $browser->{window}->hide();
     $browser->{mtn} = undef;
     $browser->{branch_combo_details}->{preset} = 0;

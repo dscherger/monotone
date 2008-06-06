@@ -59,12 +59,15 @@ use Gtk2;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# A list of event types that are to be filtered out when updating a busy GUI.
+# A hash of event types that are to be filtered out when updating a busy GUI.
 
-my @filtered_events = ("button-press",
-		       "button-release",
-		       "key-press",
-		       "key-release");
+my %filtered_events = ("button-press"   => 1,
+		       "2button-press"  => 1,
+		       "3button-press"  => 1,
+		       "button-release" => 1,
+		       "key-press"      => 1,
+		       "key-release"    => 1,
+		       "scroll"         => 1);
 
 # The singleton object.
 
@@ -586,16 +589,10 @@ sub window_manager_event_filter($$)
     my $this        = $client_data->{singleton};
     my $type        = $event->type();
 
-    if (! $this->{allow_input})
-    {
-	foreach my $filter_type (@filtered_events)
-	{
-	    return
-		if ($type eq $filter_type
-		    && (! defined($grab_widget)
-			|| Gtk2->get_event_widget($event) != $grab_widget));
-	}
-    }
+    return if (! $this->{allow_input}
+	       && exists($filtered_events{$type})
+	       && (! defined($grab_widget)
+		   || $grab_widget != Gtk2->get_event_widget($event)));
     Gtk2->main_do_event($event);
 
 }
