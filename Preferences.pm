@@ -128,12 +128,14 @@ sub save_preferences($);
 sub add_file_name_pattern_button_clicked_cb($$);
 sub add_mime_type_button_clicked_cb($$);
 sub database_browse_button_clicked_cb($$);
+sub defaults_button_clicked_cb($$);
+sub file_glob_to_regexp($);
 sub file_name_pattern_entry_changed_cb($$);
 sub file_name_patterns_treeview_cursor_changed_cb($$);
-sub file_glob_to_regexp($);
 sub get_preferences_window($$);
 sub home_dir();
 sub initialise_mime_info_table();
+sub initialise_preferences();
 sub load_file_name_patterns_treeview($);
 sub load_mime_types_page($);
 sub load_preferences_into_gui($);
@@ -256,7 +258,6 @@ sub load_preferences()
 {
 
     my($file_name,
-       $mime_table,
        %preferences,
        $prefs_file);
 
@@ -280,39 +281,12 @@ sub load_preferences()
 	    . __("is at the wrong version, please remove it.\n"))
 	    if (! exists($preferences{version})
 		|| $preferences{version} != PREFERENCES_FORMAT_VERSION);
+	return \%preferences;
     }
     else
     {
-	defined($mime_table = initialise_mime_info_table())
-	    or die(__("Cannot load system MIME types.\n"));
-	%preferences =
-	    (version        => PREFERENCES_FORMAT_VERSION,
-	     default_mtn_db => "",
-	     workspace      => {takes_precedence => 0,
-				auto_select      => 0},
-	     query          => {tagged => {limit => 0,
-					   sort_cronologically => 1},
-				id     => {limit => 0,
-					   sort_cronologically => 1}},
-	     fixed_font     => "monospace 10",
-	     colours        => {annotate_prefix_1 => {fg => "AliceBlue",
-						      bg => "CadetBlue"},
-				annotate_text_1   => {fg => "MidnightBlue",
-						      bg => "PaleTurquoise"},
-				annotate_prefix_2 => {fg => "AliceBlue",
-						      bg => "SteelBlue"},
-				annotate_text_2   => {fg => "MidnightBlue",
-						      bg => "SkyBlue"},
-				cmp_revision_1    => {fg => "DarkRed",
-						      bg => "MistyRose1",
-						      hl => "IndianRed1"},
-				cmp_revision_2    => {fg => "DarkGreen",
-						      bg => "DarkSeaGreen1",
-						      hl => "SpringGreen1"}},
-	     mime_table     => $mime_table);
+	return initialise_preferences();
     }
-
-    return \%preferences;
 
 }
 #
@@ -399,15 +373,67 @@ sub build_mime_match_table($)
 #
 ##############################################################################
 #
+#   Routine      - defaults_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  defaults button in the preferences window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub defaults_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($defaults,
+       @fields,
+       $page_nr);
+
+    # Save the current preferences, reset the relevant group depending upon
+    # what page is currently selected and the reload the preferenes.
+
+    save_preferences_from_gui($instance);
+    $defaults = initialise_preferences();
+    $page_nr = $instance->{notebook}->get_current_page();
+    if ($page_nr == 0)
+    {
+	@fields = ("default_mtn_db", "workspace", "query");
+    }
+    elsif ($page_nr == 1)
+    {
+	@fields = ("fixed_font", "colours");
+    }
+    else
+    {
+	@fields = ("mime_table");
+    }
+    foreach my $field (@fields)
+    {
+	$instance->{preferences}->{$field} = $defaults->{$field};
+    }
+    load_preferences_into_gui($instance);
+
+}
+#
+##############################################################################
+#
 #   Routine      - database_browse_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the browse
 #                  button in the preferences window.
 #
-#   Data         - $instance : The window instance that is associated with
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
 #                              this widget.
-#                  $browser : The browser instance that is associated with
-#                             this widget.
 #
 ##############################################################################
 
@@ -931,7 +957,8 @@ sub get_preferences_window($$)
 	# Get the widgets that we are interested in.
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
-	foreach my $widget ("ok_button",
+	foreach my $widget ("notebook",
+			    "ok_button",
 			    "cancel_button",
 
 			    # General pane widgets.
@@ -1306,6 +1333,58 @@ sub save_preferences_from_gui($)
     save_current_mime_types_settings($instance);
 
     return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - initialise_preferences
+#
+#   Description  - Initialises a brand new preferences record, filled with
+#                  default values.
+#
+#   Data         - Return Value : A reference to the newly created preferences
+#                                 record.
+#
+##############################################################################
+
+
+
+sub initialise_preferences()
+{
+
+    my($mime_table,
+       %preferences);
+
+    defined($mime_table = initialise_mime_info_table())
+	or die(__("Cannot load system MIME types.\n"));
+    %preferences =
+	(version        => PREFERENCES_FORMAT_VERSION,
+	 default_mtn_db => "",
+	 workspace      => {takes_precedence => 1,
+			    auto_select      => 1},
+	 query          => {tagged => {limit               => 200,
+				       sort_cronologically => 1},
+			    id     => {limit               => 200,
+				       sort_cronologically => 1}},
+	 fixed_font     => "monospace 10",
+	 colours        => {annotate_prefix_1 => {fg => "AliceBlue",
+						  bg => "CadetBlue"},
+			    annotate_text_1   => {fg => "MidnightBlue",
+						  bg => "PaleTurquoise"},
+			    annotate_prefix_2 => {fg => "AliceBlue",
+						  bg => "SteelBlue"},
+			    annotate_text_2   => {fg => "MidnightBlue",
+						  bg => "SkyBlue"},
+			    cmp_revision_1    => {fg => "DarkRed",
+						  bg => "MistyRose1",
+						  hl => "IndianRed1"},
+			    cmp_revision_2    => {fg => "DarkGreen",
+						  bg => "DarkSeaGreen1",
+						  hl => "SpringGreen1"}},
+	 mime_table     => $mime_table);
+
+    return \%preferences;
 
 }
 #
