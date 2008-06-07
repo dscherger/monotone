@@ -226,9 +226,14 @@ SQLITE_SOURCES =							\
 	sqlite/analyze.c sqlite/vdbefifo.c				\
 	sqlite/complete.c sqlite/malloc.c sqlite/vdbeblob.c		\
 	sqlite/loadext.c sqlite/vtab.c					\
+	sqlite/bitvec.c sqlite/btmutex.c sqlite/fault.c			\
+	sqlite/journal.c sqlite/mem1.c sqlite/mem2.c			\
+	sqlite/mem3.c sqlite/mem4.c sqlite/mem5.c sqlite/mutex.c	\
+	sqlite/mutex.h sqlite/mutex_os2.c sqlite/mutex_unix.c		\
+	sqlite/mutex_w32.c						\
 									\
 	sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h	\
-	sqlite/os_common.h sqlite/os_os2.h				\
+	sqlite/os_common.h				\
 	sqlite/parse.h sqlite/sqlite3.h	sqlite/sqlite3ext.h		\
 	sqlite/sqliteInt.h						\
 	sqlite/vdbe.h sqlite/vdbeInt.h					\

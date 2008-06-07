@@ -12,7 +12,7 @@
 ** This file contains routines used to translate between UTF-8, 
 ** UTF-16, UTF-16BE, and UTF-16LE.
 **
-** $Id: utf.c,v 1.53 2007/08/07 17:04:59 drh Exp $
+** $Id: utf.c,v 1.61 2008/03/28 15:44:10 danielk1977 Exp $
 **
 ** Notes on UTF-8:
 **
@@ -188,7 +188,6 @@ int sqlite3Utf8Read(
 ** encoding, or if *pMem does not contain a string value.
 */
 int sqlite3VdbeMemTranslate(Mem *pMem, u8 desiredEnc){
-  unsigned char zShort[NBFS]; /* Temporary short output buffer */
   int len;                    /* Maximum length of output string in bytes */
   unsigned char *zOut;                  /* Output buffer */
   unsigned char *zIn;                   /* Input iterator */
@@ -196,6 +195,7 @@ int sqlite3VdbeMemTranslate(Mem *pMem, u8 desiredEnc){
   unsigned char *z;                     /* Output iterator */
   unsigned int c;
 
+  assert( pMem->db==0 || sqlite3_mutex_held(pMem->db->mutex) );
   assert( pMem->flags&MEM_Str );
   assert( pMem->enc!=desiredEnc );
   assert( pMem->enc!=0 );
@@ -253,17 +253,14 @@ int sqlite3VdbeMemTranslate(Mem *pMem, u8 desiredEnc){
   /* Set zIn to point at the start of the input buffer and zTerm to point 1
   ** byte past the end.
   **
-  ** Variable zOut is set to point at the output buffer. This may be space
-  ** obtained from malloc(), or Mem.zShort, if it large enough and not in
-  ** use, or the zShort array on the stack (see above).
+  ** Variable zOut is set to point at the output buffer, space obtained
+  ** from sqlite3_malloc().
   */
   zIn = (u8*)pMem->z;
   zTerm = &zIn[pMem->n];
-  if( len>NBFS ){
-    zOut = sqliteMallocRaw(len);
-    if( !zOut ) return SQLITE_NOMEM;
-  }else{
-    zOut = zShort;
+  zOut = sqlite3DbMallocRaw(pMem->db, len);
+  if( !zOut ){
+    return SQLITE_NOMEM;
   }
   z = zOut;
 
@@ -305,16 +302,11 @@ int sqlite3VdbeMemTranslate(Mem *pMem, u8 desiredEnc){
   assert( (pMem->n+(desiredEnc==SQLITE_UTF8?1:2))<=len );
 
   sqlite3VdbeMemRelease(pMem);
-  pMem->flags &= ~(MEM_Static|MEM_Dyn|MEM_Ephem|MEM_Short);
+  pMem->flags &= ~(MEM_Static|MEM_Dyn|MEM_Ephem);
   pMem->enc = desiredEnc;
-  if( zOut==zShort ){
-    memcpy(pMem->zShort, zOut, len);
-    zOut = (u8*)pMem->zShort;
-    pMem->flags |= (MEM_Term|MEM_Short);
-  }else{
-    pMem->flags |= (MEM_Term|MEM_Dyn);
-  }
+  pMem->flags |= (MEM_Term|MEM_Dyn);
   pMem->z = (char*)zOut;
+  pMem->zMalloc = pMem->z;
 
 translate_out:
 #if defined(TRANSLATE_TRACE) && defined(SQLITE_DEBUG)
@@ -352,23 +344,14 @@ int sqlite3VdbeMemHandleBom(Mem *pMem){
   }
   
   if( bom ){
-    /* This function is called as soon as a string is stored in a Mem*,
-    ** from within sqlite3VdbeMemSetStr(). At that point it is not possible
-    ** for the string to be stored in Mem.zShort, or for it to be stored
-    ** in dynamic memory with no destructor.
-    */
-    assert( !(pMem->flags&MEM_Short) );
-    assert( !(pMem->flags&MEM_Dyn) || pMem->xDel );
-    if( pMem->flags & MEM_Dyn ){
-      void (*xDel)(void*) = pMem->xDel;
-      char *z = pMem->z;
-      pMem->z = 0;
-      pMem->xDel = 0;
-      rc = sqlite3VdbeMemSetStr(pMem, &z[2], pMem->n-2, bom, SQLITE_TRANSIENT);
-      xDel(z);
-    }else{
-      rc = sqlite3VdbeMemSetStr(pMem, &pMem->z[2], pMem->n-2, bom, 
-          SQLITE_TRANSIENT);
+    rc = sqlite3VdbeMemMakeWriteable(pMem);
+    if( rc==SQLITE_OK ){
+      pMem->n -= 2;
+      memmove(pMem->z, &pMem->z[2], pMem->n);
+      pMem->z[pMem->n] = '\0';
+      pMem->z[pMem->n+1] = '\0';
+      pMem->flags |= MEM_Term;
+      pMem->enc = bom;
     }
   }
   return rc;
@@ -399,22 +382,57 @@ int sqlite3Utf8CharLen(const char *zIn, int nByte){
   return r;
 }
 
+/* This test function is not currently used by the automated test-suite. 
+** Hence it is only available in debug builds.
+*/
+#if defined(SQLITE_TEST) && defined(SQLITE_DEBUG)
+/*
+** Translate UTF-8 to UTF-8.
+**
+** This has the effect of making sure that the string is well-formed
+** UTF-8.  Miscoded characters are removed.
+**
+** The translation is done in-place (since it is impossible for the
+** correct UTF-8 encoding to be longer than a malformed encoding).
+*/
+int sqlite3Utf8To8(unsigned char *zIn){
+  unsigned char *zOut = zIn;
+  unsigned char *zStart = zIn;
+  unsigned char *zTerm;
+  u32 c;
+
+  while( zIn[0] ){
+    c = sqlite3Utf8Read(zIn, zTerm, (const u8**)&zIn);
+    if( c!=0xfffd ){
+      WRITE_UTF8(zOut, c);
+    }
+  }
+  *zOut = 0;
+  return zOut - zStart;
+}
+#endif
+
 #ifndef SQLITE_OMIT_UTF16
 /*
 ** Convert a UTF-16 string in the native encoding into a UTF-8 string.
-** Memory to hold the UTF-8 string is obtained from malloc and must be
-** freed by the calling function.
+** Memory to hold the UTF-8 string is obtained from sqlite3_malloc and must
+** be freed by the calling function.
 **
 ** NULL is returned if there is an allocation error.
 */
-char *sqlite3Utf16to8(const void *z, int nByte){
+char *sqlite3Utf16to8(sqlite3 *db, const void *z, int nByte){
   Mem m;
   memset(&m, 0, sizeof(m));
+  m.db = db;
   sqlite3VdbeMemSetStr(&m, z, nByte, SQLITE_UTF16NATIVE, SQLITE_STATIC);
   sqlite3VdbeChangeEncoding(&m, SQLITE_UTF8);
-  assert( (m.flags & MEM_Term)!=0 || sqlite3MallocFailed() );
-  assert( (m.flags & MEM_Str)!=0 || sqlite3MallocFailed() );
-  return (m.flags & MEM_Dyn)!=0 ? m.z : sqliteStrDup(m.z);
+  if( db->mallocFailed ){
+    sqlite3VdbeMemRelease(&m);
+    m.z = 0;
+  }
+  assert( (m.flags & MEM_Term)!=0 || db->mallocFailed );
+  assert( (m.flags & MEM_Str)!=0 || db->mallocFailed );
+  return (m.flags & MEM_Dyn)!=0 ? m.z : sqlite3DbStrDup(db, m.z);
 }
 
 /*
@@ -450,33 +468,6 @@ int sqlite3Utf16ByteLen(const void *zIn, int nChar){
   }
   return (z-(char const *)zIn)-((c==0)?2:0);
 }
-
-#if defined(SQLITE_TEST)
-/*
-** Translate UTF-8 to UTF-8.
-**
-** This has the effect of making sure that the string is well-formed
-** UTF-8.  Miscoded characters are removed.
-**
-** The translation is done in-place (since it is impossible for the
-** correct UTF-8 encoding to be longer than a malformed encoding).
-*/
-int sqlite3Utf8To8(unsigned char *zIn){
-  unsigned char *zOut = zIn;
-  unsigned char *zStart = zIn;
-  unsigned char *zTerm;
-  u32 c;
-
-  while( zIn[0] ){
-    c = sqlite3Utf8Read(zIn, zTerm, (const u8**)&zIn);
-    if( c!=0xfffd ){
-      WRITE_UTF8(zOut, c);
-    }
-  }
-  *zOut = 0;
-  return zOut - zStart;
-}
-#endif
 
 #if defined(SQLITE_TEST)
 /*

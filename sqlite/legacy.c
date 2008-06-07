@@ -14,11 +14,10 @@
 ** other files are for internal use by SQLite and should not be
 ** accessed by users of the library.
 **
-** $Id: legacy.c,v 1.18 2007/05/04 13:15:56 drh Exp $
+** $Id: legacy.c,v 1.24 2008/03/21 18:01:14 drh Exp $
 */
 
 #include "sqliteInt.h"
-#include "os.h"
 #include <ctype.h>
 
 /*
@@ -47,6 +46,8 @@ int sqlite3_exec(
   int nCallback;
 
   if( zSql==0 ) return SQLITE_OK;
+
+  sqlite3_mutex_enter(db->mutex);
   while( (rc==SQLITE_OK || (rc==SQLITE_SCHEMA && (++nRetry)<2)) && zSql[0] ){
     int nCol;
     char **azVals = 0;
@@ -64,12 +65,7 @@ int sqlite3_exec(
     }
 
     nCallback = 0;
-
     nCol = sqlite3_column_count(pStmt);
-    azCols = sqliteMalloc(2*nCol*sizeof(const char *) + 1);
-    if( azCols==0 ){
-      goto exec_out;
-    }
 
     while( 1 ){
       int i;
@@ -79,8 +75,18 @@ int sqlite3_exec(
       if( xCallback && (SQLITE_ROW==rc || 
           (SQLITE_DONE==rc && !nCallback && db->flags&SQLITE_NullCallback)) ){
         if( 0==nCallback ){
+          if( azCols==0 ){
+            azCols = sqlite3DbMallocZero(db, 2*nCol*sizeof(const char*) + 1);
+            if( azCols==0 ){
+              goto exec_out;
+            }
+          }
           for(i=0; i<nCol; i++){
             azCols[i] = (char *)sqlite3_column_name(pStmt, i);
+            if( !azCols[i] ){
+              db->mallocFailed = 1;
+              goto exec_out;
+            }
           }
           nCallback++;
         }
@@ -88,6 +94,10 @@ int sqlite3_exec(
           azVals = &azCols[nCol];
           for(i=0; i<nCol; i++){
             azVals[i] = (char *)sqlite3_column_text(pStmt, i);
+            if( !azVals[i] && sqlite3_column_type(pStmt, i)!=SQLITE_NULL ){
+              db->mallocFailed = 1;
+              goto exec_out;
+            }
           }
         }
         if( xCallback(pArg, nCol, azVals, azCols) ){
@@ -108,15 +118,15 @@ int sqlite3_exec(
       }
     }
 
-    sqliteFree(azCols);
+    sqlite3_free(azCols);
     azCols = 0;
   }
 
 exec_out:
   if( pStmt ) sqlite3_finalize(pStmt);
-  if( azCols ) sqliteFree(azCols);
+  if( azCols ) sqlite3_free(azCols);
 
-  rc = sqlite3ApiExit(0, rc);
+  rc = sqlite3ApiExit(db, rc);
   if( rc!=SQLITE_OK && rc==sqlite3_errcode(db) && pzErrMsg ){
     int nErrMsg = 1 + strlen(sqlite3_errmsg(db));
     *pzErrMsg = sqlite3_malloc(nErrMsg);
@@ -128,5 +138,6 @@ exec_out:
   }
 
   assert( (rc&db->errMask)==rc );
+  sqlite3_mutex_leave(db->mutex);
   return rc;
 }

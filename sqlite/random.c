@@ -15,11 +15,19 @@
 ** Random numbers are used by some of the database backends in order
 ** to generate random integer keys for tables or random filenames.
 **
-** $Id: random.c,v 1.16 2007/01/05 14:38:56 drh Exp $
+** $Id: random.c,v 1.23 2008/03/21 16:45:47 drh Exp $
 */
 #include "sqliteInt.h"
-#include "os.h"
 
+
+/* All threads share a single random number generator.
+** This structure is the current state of the generator.
+*/
+static struct sqlite3PrngType {
+  unsigned char isInit;          /* True if initialized */
+  unsigned char i, j;            /* State variables */
+  unsigned char s[256];          /* State variables */
+} sqlite3Prng;
 
 /*
 ** Get a single 8-bit random value from the RC4 PRNG.  The Mutex
@@ -40,14 +48,6 @@
 static int randomByte(void){
   unsigned char t;
 
-  /* All threads share a single random number generator.
-  ** This structure is the current state of the generator.
-  */
-  static struct {
-    unsigned char isInit;          /* True if initialized */
-    unsigned char i, j;            /* State variables */
-    unsigned char s[256];          /* State variables */
-  } prng;
 
   /* Initialize the state of the random number generator once,
   ** the first time this routine is called.  The seed value does
@@ -58,43 +58,66 @@ static int randomByte(void){
   ** encryption.  The RC4 algorithm is being used as a PRNG (pseudo-random
   ** number generator) not as an encryption device.
   */
-  if( !prng.isInit ){
+  if( !sqlite3Prng.isInit ){
     int i;
     char k[256];
-    prng.j = 0;
-    prng.i = 0;
-    sqlite3OsRandomSeed(k);
+    sqlite3Prng.j = 0;
+    sqlite3Prng.i = 0;
+    sqlite3OsRandomness(sqlite3_vfs_find(0), 256, k);
     for(i=0; i<256; i++){
-      prng.s[i] = i;
+      sqlite3Prng.s[i] = i;
     }
     for(i=0; i<256; i++){
-      prng.j += prng.s[i] + k[i];
-      t = prng.s[prng.j];
-      prng.s[prng.j] = prng.s[i];
-      prng.s[i] = t;
+      sqlite3Prng.j += sqlite3Prng.s[i] + k[i];
+      t = sqlite3Prng.s[sqlite3Prng.j];
+      sqlite3Prng.s[sqlite3Prng.j] = sqlite3Prng.s[i];
+      sqlite3Prng.s[i] = t;
     }
-    prng.isInit = 1;
+    sqlite3Prng.isInit = 1;
   }
 
   /* Generate and return single random byte
   */
-  prng.i++;
-  t = prng.s[prng.i];
-  prng.j += t;
-  prng.s[prng.i] = prng.s[prng.j];
-  prng.s[prng.j] = t;
-  t += prng.s[prng.i];
-  return prng.s[t];
+  sqlite3Prng.i++;
+  t = sqlite3Prng.s[sqlite3Prng.i];
+  sqlite3Prng.j += t;
+  sqlite3Prng.s[sqlite3Prng.i] = sqlite3Prng.s[sqlite3Prng.j];
+  sqlite3Prng.s[sqlite3Prng.j] = t;
+  t += sqlite3Prng.s[sqlite3Prng.i];
+  return sqlite3Prng.s[t];
 }
 
 /*
 ** Return N random bytes.
 */
-void sqlite3Randomness(int N, void *pBuf){
+void sqlite3_randomness(int N, void *pBuf){
   unsigned char *zBuf = pBuf;
-  sqlite3OsEnterMutex();
+  static sqlite3_mutex *mutex = 0;
+  if( mutex==0 ){
+    mutex = sqlite3_mutex_alloc(SQLITE_MUTEX_STATIC_PRNG);
+  }
+  sqlite3_mutex_enter(mutex);
   while( N-- ){
     *(zBuf++) = randomByte();
   }
-  sqlite3OsLeaveMutex();
+  sqlite3_mutex_leave(mutex);
 }
+
+#ifndef SQLITE_OMIT_BUILTIN_TEST
+/*
+** For testing purposes, we sometimes want to preserve the state of
+** PRNG and restore the PRNG to its saved state at a later time.
+** The sqlite3_test_control() interface calls these routines to
+** control the PRNG.
+*/
+static struct sqlite3PrngType sqlite3SavedPrng;
+void sqlite3PrngSaveState(void){
+  memcpy(&sqlite3SavedPrng, &sqlite3Prng, sizeof(sqlite3Prng));
+}
+void sqlite3PrngRestoreState(void){
+  memcpy(&sqlite3Prng, &sqlite3SavedPrng, sizeof(sqlite3Prng));
+}
+void sqlite3PrngResetState(void){
+  sqlite3Prng.isInit = 0;
+}
+#endif /* SQLITE_OMIT_BUILTIN_TEST */

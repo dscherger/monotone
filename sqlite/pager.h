@@ -13,7 +13,7 @@
 ** subsystem.  The page cache subsystem reads and writes a file a page
 ** at a time and provides a journal for rollback.
 **
-** @(#) $Id: pager.h,v 1.61 2007/05/08 21:45:28 drh Exp $
+** @(#) $Id: pager.h,v 1.72 2008/05/01 17:03:49 drh Exp $
 */
 
 #ifndef _PAGER_H_
@@ -51,15 +51,22 @@ typedef struct PgHdr DbPage;
 #define PAGER_LOCKINGMODE_EXCLUSIVE   1
 
 /*
+** Valid values for the second argument to sqlite3PagerJournalMode().
+*/
+#define PAGER_JOURNALMODE_QUERY      -1
+#define PAGER_JOURNALMODE_DELETE      0   /* Commit by deleting journal file */
+#define PAGER_JOURNALMODE_PERSIST     1   /* Commit by zeroing journal header */
+#define PAGER_JOURNALMODE_OFF         2   /* Journal omitted.  */
+
+/*
 ** See source code comments for a detailed description of the following
 ** routines:
 */
-int sqlite3PagerOpen(Pager **ppPager, const char *zFilename,
-                     int nExtra, int flags);
+int sqlite3PagerOpen(sqlite3_vfs *, Pager **ppPager, const char*, int,int,int);
 void sqlite3PagerSetBusyhandler(Pager*, BusyHandler *pBusyHandler);
 void sqlite3PagerSetDestructor(Pager*, void(*)(DbPage*,int));
 void sqlite3PagerSetReiniter(Pager*, void(*)(DbPage*,int));
-int sqlite3PagerSetPagesize(Pager*, int);
+int sqlite3PagerSetPagesize(Pager*, u16*);
 int sqlite3PagerMaxPageCount(Pager*, int);
 int sqlite3PagerReadFileheader(Pager*, int, unsigned char*);
 void sqlite3PagerSetCachesize(Pager*, int);
@@ -70,11 +77,10 @@ DbPage *sqlite3PagerLookup(Pager *pPager, Pgno pgno);
 int sqlite3PagerRef(DbPage*);
 int sqlite3PagerUnref(DbPage*);
 int sqlite3PagerWrite(DbPage*);
-int sqlite3PagerOverwrite(Pager *pPager, Pgno pgno, void*);
 int sqlite3PagerPagecount(Pager*);
 int sqlite3PagerTruncate(Pager*,Pgno);
 int sqlite3PagerBegin(DbPage*, int exFlag);
-int sqlite3PagerCommitPhaseOne(Pager*,const char *zMaster, Pgno);
+int sqlite3PagerCommitPhaseOne(Pager*,const char *zMaster, Pgno, int);
 int sqlite3PagerCommitPhaseTwo(Pager*);
 int sqlite3PagerRollback(Pager*);
 int sqlite3PagerIsreadonly(Pager*);
@@ -86,6 +92,8 @@ void sqlite3PagerDontWrite(DbPage*);
 int sqlite3PagerRefcount(Pager*);
 void sqlite3PagerSetSafetyLevel(Pager*,int,int);
 const char *sqlite3PagerFilename(Pager*);
+const sqlite3_vfs *sqlite3PagerVfs(Pager*);
+sqlite3_file *sqlite3PagerFile(Pager*);
 const char *sqlite3PagerDirname(Pager*);
 const char *sqlite3PagerJournalname(Pager*);
 int sqlite3PagerNosync(Pager*);
@@ -93,6 +101,9 @@ int sqlite3PagerMovepage(Pager*,DbPage*,Pgno);
 void *sqlite3PagerGetData(DbPage *); 
 void *sqlite3PagerGetExtra(DbPage *); 
 int sqlite3PagerLockingMode(Pager *, int);
+int sqlite3PagerJournalMode(Pager *, int);
+void *sqlite3PagerTempSpace(Pager*);
+int sqlite3PagerSync(Pager *pPager);
 
 #if defined(SQLITE_ENABLE_MEMORY_MANAGEMENT) && !defined(SQLITE_OMIT_DISKIO)
   int sqlite3PagerReleaseMemory(int);
@@ -107,14 +118,9 @@ int sqlite3PagerLockingMode(Pager *, int);
   int sqlite3PagerIswriteable(DbPage*);
 #endif
 
-#if defined(SQLITE_DEBUG) || defined(SQLITE_TEST)
-  int sqlite3PagerLockstate(Pager*);
-#endif
-
 #ifdef SQLITE_TEST
   int *sqlite3PagerStats(Pager*);
   void sqlite3PagerRefdump(Pager*);
-  int pager3_refinfo_enable;
 #endif
 
 #ifdef SQLITE_TEST

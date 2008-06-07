@@ -14,13 +14,29 @@
 ** This file contains functions for allocating memory, comparing
 ** strings, and stuff like that.
 **
-** $Id: util.c,v 1.207 2007/06/26 00:37:28 drh Exp $
+** $Id: util.c,v 1.229 2008/05/13 16:41:50 drh Exp $
 */
 #include "sqliteInt.h"
-#include "os.h"
 #include <stdarg.h>
 #include <ctype.h>
 
+
+/*
+** Return true if the floating point value is Not a Number.
+*/
+int sqlite3IsNaN(double x){
+  /* This NaN test sometimes fails if compiled on GCC with -ffast-math.
+  ** On the other hand, the use of -ffast-math comes with the following
+  ** warning:
+  **
+  **      This option [-ffast-math] should never be turned on by any
+  **      -O option since it can result in incorrect output for programs
+  **      which depend on an exact implementation of IEEE or ISO 
+  **      rules/specifications for math functions.
+  */
+  volatile double y = x;
+  return x!=y;
+}
 
 /*
 ** Set the most recent error code and error string for the sqlite
@@ -44,15 +60,15 @@
 ** to NULL.
 */
 void sqlite3Error(sqlite3 *db, int err_code, const char *zFormat, ...){
-  if( db && (db->pErr || (db->pErr = sqlite3ValueNew())!=0) ){
+  if( db && (db->pErr || (db->pErr = sqlite3ValueNew(db))!=0) ){
     db->errCode = err_code;
     if( zFormat ){
       char *z;
       va_list ap;
       va_start(ap, zFormat);
-      z = sqlite3VMPrintf(zFormat, ap);
+      z = sqlite3VMPrintf(db, zFormat, ap);
       va_end(ap);
-      sqlite3ValueSetStr(db->pErr, -1, z, SQLITE_UTF8, sqlite3FreeX);
+      sqlite3ValueSetStr(db->pErr, -1, z, SQLITE_UTF8, sqlite3_free);
     }else{
       sqlite3ValueSetStr(db->pErr, 0, 0, SQLITE_UTF8, SQLITE_STATIC);
     }
@@ -79,9 +95,9 @@ void sqlite3Error(sqlite3 *db, int err_code, const char *zFormat, ...){
 void sqlite3ErrorMsg(Parse *pParse, const char *zFormat, ...){
   va_list ap;
   pParse->nErr++;
-  sqliteFree(pParse->zErrMsg);
+  sqlite3_free(pParse->zErrMsg);
   va_start(ap, zFormat);
-  pParse->zErrMsg = sqlite3VMPrintf(zFormat, ap);
+  pParse->zErrMsg = sqlite3VMPrintf(pParse->db, zFormat, ap);
   va_end(ap);
   if( pParse->rc==SQLITE_OK ){
     pParse->rc = SQLITE_ERROR;
@@ -92,7 +108,7 @@ void sqlite3ErrorMsg(Parse *pParse, const char *zFormat, ...){
 ** Clear the error message in pParse, if any
 */
 void sqlite3ErrorClear(Parse *pParse){
-  sqliteFree(pParse->zErrMsg);
+  sqlite3_free(pParse->zErrMsg);
   pParse->zErrMsg = 0;
   pParse->nErr = 0;
 }
@@ -246,6 +262,7 @@ int sqlite3AtoF(const char *z, double *pResult){
   int sign = 1;
   const char *zBegin = z;
   LONGDOUBLE_TYPE v1 = 0.0;
+  int nSignificant = 0;
   while( isspace(*(u8*)z) ) z++;
   if( *z=='-' ){
     sign = -1;
@@ -253,16 +270,29 @@ int sqlite3AtoF(const char *z, double *pResult){
   }else if( *z=='+' ){
     z++;
   }
+  while( z[0]=='0' ){
+    z++;
+  }
   while( isdigit(*(u8*)z) ){
     v1 = v1*10.0 + (*z - '0');
     z++;
+    nSignificant++;
   }
   if( *z=='.' ){
     LONGDOUBLE_TYPE divisor = 1.0;
     z++;
+    if( nSignificant==0 ){
+      while( z[0]=='0' ){
+        divisor *= 10.0;
+        z++;
+      }
+    }
     while( isdigit(*(u8*)z) ){
-      v1 = v1*10.0 + (*z - '0');
-      divisor *= 10.0;
+      if( nSignificant<18 ){
+        v1 = v1*10.0 + (*z - '0');
+        divisor *= 10.0;
+        nSignificant++;
+      }
       z++;
     }
     v1 /= divisor;
@@ -377,7 +407,7 @@ int sqlite3Atoi64(const char *zNum, i64 *pNum){
 ** 9223373036854775808 will not fit in 64 bits.  So it seems safer to return
 ** false.
 */
-int sqlite3FitsIn64Bits(const char *zNum){
+int sqlite3FitsIn64Bits(const char *zNum, int negFlag){
   int i, c;
   int neg = 0;
   if( *zNum=='-' ){
@@ -386,6 +416,7 @@ int sqlite3FitsIn64Bits(const char *zNum){
   }else if( *zNum=='+' ){
     zNum++;
   }
+  if( negFlag ) neg = 1-neg;
   while( *zNum=='0' ){
     zNum++;   /* Skip leading zeros.  Ticket #2454 */
   }
@@ -421,10 +452,16 @@ int sqlite3GetInt32(const char *zNum, int *pValue){
     zNum++;
   }
   while( zNum[0]=='0' ) zNum++;
-  for(i=0; i<10 && (c = zNum[i] - '0')>=0 && c<=9; i++){
+  for(i=0; i<11 && (c = zNum[i] - '0')>=0 && c<=9; i++){
     v = v*10 + c;
   }
-  if( i>9 ){
+
+  /* The longest decimal representation of a 32 bit integer is 10 digits:
+  **
+  **             1234567890
+  **     2^31 -> 2147483648
+  */
+  if( i>10 ){
     return 0;
   }
   if( v-neg>2147483647 ){
@@ -435,25 +472,6 @@ int sqlite3GetInt32(const char *zNum, int *pValue){
   }
   *pValue = (int)v;
   return 1;
-}
-
-/*
-** Check to make sure we have a valid db pointer.  This test is not
-** foolproof but it does provide some measure of protection against
-** misuse of the interface such as passing in db pointers that are
-** NULL or which have been previously closed.  If this routine returns
-** TRUE it means that the db pointer is invalid and should not be
-** dereferenced for any reason.  The calling function should invoke
-** SQLITE_MISUSE immediately.
-*/
-int sqlite3SafetyCheck(sqlite3 *db){
-  int magic;
-  if( db==0 ) return 1;
-  magic = db->magic;
-  if( magic!=SQLITE_MAGIC_CLOSED &&
-         magic!=SQLITE_MAGIC_OPEN &&
-         magic!=SQLITE_MAGIC_BUSY ) return 1;
-  return 0;
 }
 
 /*
@@ -511,71 +529,271 @@ int sqlite3PutVarint(unsigned char *p, u64 v){
 }
 
 /*
+** This routine is a faster version of sqlite3PutVarint() that only
+** works for 32-bit positive integers and which is optimized for
+** the common case of small integers.  A MACRO version, putVarint32,
+** is provided which inlines the single-byte case.  All code should use
+** the MACRO version as this function assumes the single-byte case has
+** already been handled.
+*/
+int sqlite3PutVarint32(unsigned char *p, u32 v){
+#ifndef putVarint32
+  if( (v & ~0x7f)==0 ){
+    p[0] = v;
+    return 1;
+  }
+#endif
+  if( (v & ~0x3fff)==0 ){
+    p[0] = (v>>7) | 0x80;
+    p[1] = v & 0x7f;
+    return 2;
+  }
+  return sqlite3PutVarint(p, v);
+}
+
+/*
 ** Read a 64-bit variable-length integer from memory starting at p[0].
 ** Return the number of bytes read.  The value is stored in *v.
 */
 int sqlite3GetVarint(const unsigned char *p, u64 *v){
-  u32 x;
-  u64 x64;
-  int n;
-  unsigned char c;
-  if( ((c = p[0]) & 0x80)==0 ){
-    *v = c;
+  u32 a,b,s;
+
+  a = *p;
+  // a: p0 (unmasked)
+  if (!(a&0x80))
+  {
+    *v = a;
     return 1;
   }
-  x = c & 0x7f;
-  if( ((c = p[1]) & 0x80)==0 ){
-    *v = (x<<7) | c;
+
+  p++;
+  b = *p;
+  // b: p1 (unmasked)
+  if (!(b&0x80))
+  {
+    a &= 0x7f;
+    a = a<<7;
+    a |= b;
+    *v = a;
     return 2;
   }
-  x = (x<<7) | (c&0x7f);
-  if( ((c = p[2]) & 0x80)==0 ){
-    *v = (x<<7) | c;
+
+  p++;
+  a = a<<14;
+  a |= *p;
+  // a: p0<<14 | p2 (unmasked)
+  if (!(a&0x80))
+  {
+    a &= (0x7f<<14)|(0x7f);
+    b &= 0x7f;
+    b = b<<7;
+    a |= b;
+    *v = a;
     return 3;
   }
-  x = (x<<7) | (c&0x7f);
-  if( ((c = p[3]) & 0x80)==0 ){
-    *v = (x<<7) | c;
+
+  // CSE1 from below
+  a &= (0x7f<<14)|(0x7f);
+  p++;
+  b = b<<14;
+  b |= *p;
+  // b: p1<<14 | p3 (unmasked)
+  if (!(b&0x80))
+  {
+    b &= (0x7f<<14)|(0x7f);
+    // moved CSE1 up
+    // a &= (0x7f<<14)|(0x7f);
+    a = a<<7;
+    a |= b;
+    *v = a;
     return 4;
   }
-  x64 = (x<<7) | (c&0x7f);
-  n = 4;
-  do{
-    c = p[n++];
-    if( n==9 ){
-      x64 = (x64<<8) | c;
-      break;
-    }
-    x64 = (x64<<7) | (c&0x7f);
-  }while( (c & 0x80)!=0 );
-  *v = x64;
-  return n;
+
+  // a: p0<<14 | p2 (masked)
+  // b: p1<<14 | p3 (unmasked)
+  // 1:save off p0<<21 | p1<<14 | p2<<7 | p3 (masked)
+  // moved CSE1 up
+  // a &= (0x7f<<14)|(0x7f);
+  b &= (0x7f<<14)|(0x7f);
+  s = a;
+  // s: p0<<14 | p2 (masked)
+
+  p++;
+  a = a<<14;
+  a |= *p;
+  // a: p0<<28 | p2<<14 | p4 (unmasked)
+  if (!(a&0x80))
+  {
+    // we can skip these cause they were (effectively) done above in calc'ing s
+    // a &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    // b &= (0x7f<<14)|(0x7f);
+    b = b<<7;
+    a |= b;
+    s = s>>18;
+    *v = ((u64)s)<<32 | a;
+    return 5;
+  }
+
+  // 2:save off p0<<21 | p1<<14 | p2<<7 | p3 (masked)
+  s = s<<7;
+  s |= b;
+  // s: p0<<21 | p1<<14 | p2<<7 | p3 (masked)
+
+  p++;
+  b = b<<14;
+  b |= *p;
+  // b: p1<<28 | p3<<14 | p5 (unmasked)
+  if (!(b&0x80))
+  {
+    // we can skip this cause it was (effectively) done above in calc'ing s
+    // b &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    a &= (0x7f<<14)|(0x7f);
+    a = a<<7;
+    a |= b;
+    s = s>>18;
+    *v = ((u64)s)<<32 | a;
+    return 6;
+  }
+
+  p++;
+  a = a<<14;
+  a |= *p;
+  // a: p2<<28 | p4<<14 | p6 (unmasked)
+  if (!(a&0x80))
+  {
+    a &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    b &= (0x7f<<14)|(0x7f);
+    b = b<<7;
+    a |= b;
+    s = s>>11;
+    *v = ((u64)s)<<32 | a;
+    return 7;
+  }
+
+  // CSE2 from below
+  a &= (0x7f<<14)|(0x7f);
+  p++;
+  b = b<<14;
+  b |= *p;
+  // b: p3<<28 | p5<<14 | p7 (unmasked)
+  if (!(b&0x80))
+  {
+    b &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    // moved CSE2 up
+    // a &= (0x7f<<14)|(0x7f);
+    a = a<<7;
+    a |= b;
+    s = s>>4;
+    *v = ((u64)s)<<32 | a;
+    return 8;
+  }
+
+  p++;
+  a = a<<15;
+  a |= *p;
+  // a: p4<<29 | p6<<15 | p8 (unmasked)
+
+  // moved CSE2 up
+  // a &= (0x7f<<29)|(0x7f<<15)|(0xff);
+  b &= (0x7f<<14)|(0x7f);
+  b = b<<8;
+  a |= b;
+
+  s = s<<4;
+  b = p[-4];
+  b &= 0x7f;
+  b = b>>3;
+  s |= b;
+
+  *v = ((u64)s)<<32 | a;
+
+  return 9;
 }
 
 /*
 ** Read a 32-bit variable-length integer from memory starting at p[0].
 ** Return the number of bytes read.  The value is stored in *v.
+** A MACRO version, getVarint32, is provided which inlines the 
+** single-byte case.  All code should use the MACRO version as 
+** this function assumes the single-byte case has already been handled.
 */
 int sqlite3GetVarint32(const unsigned char *p, u32 *v){
-  u32 x;
-  int n;
-  unsigned char c;
-  if( ((signed char*)p)[0]>=0 ){
-    *v = p[0];
+  u32 a,b;
+
+  a = *p;
+  // a: p0 (unmasked)
+#ifndef getVarint32
+  if (!(a&0x80))
+  {
+    *v = a;
     return 1;
   }
-  x = p[0] & 0x7f;
-  if( ((signed char*)p)[1]>=0 ){
-    *v = (x<<7) | p[1];
+#endif
+
+  p++;
+  b = *p;
+  // b: p1 (unmasked)
+  if (!(b&0x80))
+  {
+    a &= 0x7f;
+    a = a<<7;
+    *v = a | b;
     return 2;
   }
-  x = (x<<7) | (p[1] & 0x7f);
-  n = 2;
-  do{
-    x = (x<<7) | ((c = p[n++])&0x7f);
-  }while( (c & 0x80)!=0 && n<9 );
-  *v = x;
-  return n;
+
+  p++;
+  a = a<<14;
+  a |= *p;
+  // a: p0<<14 | p2 (unmasked)
+  if (!(a&0x80))
+  {
+    a &= (0x7f<<14)|(0x7f);
+    b &= 0x7f;
+    b = b<<7;
+    *v = a | b;
+    return 3;
+  }
+
+  p++;
+  b = b<<14;
+  b |= *p;
+  // b: p1<<14 | p3 (unmasked)
+  if (!(b&0x80))
+  {
+    b &= (0x7f<<14)|(0x7f);
+    a &= (0x7f<<14)|(0x7f);
+    a = a<<7;
+    *v = a | b;
+    return 4;
+  }
+
+  p++;
+  a = a<<14;
+  a |= *p;
+  // a: p0<<28 | p2<<14 | p4 (unmasked)
+  if (!(a&0x80))
+  {
+    a &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    b &= (0x7f<<28)|(0x7f<<14)|(0x7f);
+    b = b<<7;
+    *v = a | b;
+    return 5;
+  }
+
+  /* We can only reach this point when reading a corrupt database
+  ** file.  In that case we are not in any hurry.  Use the (relatively
+  ** slow) general-purpose sqlite3GetVarint() routine to extract the
+  ** value. */
+  {
+    u64 v64;
+    int n;
+
+    p -= 4;
+    n = sqlite3GetVarint(p, &v64);
+    assert( n>5 && n<=9 );
+    *v = (u32)v64;
+    return n;
+  }
 }
 
 /*
@@ -607,22 +825,23 @@ void sqlite3Put4byte(unsigned char *p, u32 v){
 
 
 
-#if !defined(SQLITE_OMIT_BLOB_LITERAL) || defined(SQLITE_HAS_CODEC) \
-    || defined(SQLITE_TEST)
+#if !defined(SQLITE_OMIT_BLOB_LITERAL) || defined(SQLITE_HAS_CODEC)
 /*
 ** Translate a single byte of Hex into an integer.
+** This routinen only works if h really is a valid hexadecimal
+** character:  0..9a..fA..F
 */
 static int hexToInt(int h){
-  if( h>='0' && h<='9' ){
-    return h - '0';
-  }else if( h>='a' && h<='f' ){
-    return h - 'a' + 10;
-  }else{
-    assert( h>='A' && h<='F' );
-    return h - 'A' + 10;
-  }
+  assert( (h>='0' && h<='9') ||  (h>='a' && h<='f') ||  (h>='A' && h<='F') );
+#ifdef SQLITE_ASCII
+  h += 9*(1&(h>>6));
+#endif
+#ifdef SQLITE_EBCDIC
+  h += 9*(1&~(h>>4));
+#endif
+  return h & 0xf;
 }
-#endif /* !SQLITE_OMIT_BLOB_LITERAL || SQLITE_HAS_CODEC || SQLITE_TEST */
+#endif /* !SQLITE_OMIT_BLOB_LITERAL || SQLITE_HAS_CODEC */
 
 #if !defined(SQLITE_OMIT_BLOB_LITERAL) || defined(SQLITE_HAS_CODEC)
 /*
@@ -631,17 +850,17 @@ static int hexToInt(int h){
 ** binary value has been obtained from malloc and must be freed by
 ** the calling routine.
 */
-void *sqlite3HexToBlob(const char *z){
+void *sqlite3HexToBlob(sqlite3 *db, const char *z, int n){
   char *zBlob;
   int i;
-  int n = strlen(z);
-  if( n%2 ) return 0;
 
-  zBlob = (char *)sqliteMalloc(n/2);
+  zBlob = (char *)sqlite3DbMallocRaw(db, n/2 + 1);
+  n--;
   if( zBlob ){
     for(i=0; i<n; i+=2){
       zBlob[i/2] = (hexToInt(z[i])<<4) | hexToInt(z[i+1]);
     }
+    zBlob[i/2] = 0;
   }
   return zBlob;
 }
@@ -673,9 +892,11 @@ void *sqlite3HexToBlob(const char *z){
 ** call to sqlite3_close(db) and db has been deallocated.  And we do
 ** not want to write into deallocated memory.
 */
+#ifdef SQLITE_DEBUG
 int sqlite3SafetyOn(sqlite3 *db){
   if( db->magic==SQLITE_MAGIC_OPEN ){
     db->magic = SQLITE_MAGIC_BUSY;
+    assert( sqlite3_mutex_held(db->mutex) );
     return 0;
   }else if( db->magic==SQLITE_MAGIC_BUSY ){
     db->magic = SQLITE_MAGIC_ERROR;
@@ -683,50 +904,55 @@ int sqlite3SafetyOn(sqlite3 *db){
   }
   return 1;
 }
+#endif
 
 /*
 ** Change the magic from SQLITE_MAGIC_BUSY to SQLITE_MAGIC_OPEN.
 ** Return an error (non-zero) if the magic was not SQLITE_MAGIC_BUSY
 ** when this routine is called.
 */
+#ifdef SQLITE_DEBUG
 int sqlite3SafetyOff(sqlite3 *db){
   if( db->magic==SQLITE_MAGIC_BUSY ){
     db->magic = SQLITE_MAGIC_OPEN;
+    assert( sqlite3_mutex_held(db->mutex) );
     return 0;
-  }else {
+  }else{
     db->magic = SQLITE_MAGIC_ERROR;
     db->u1.isInterrupted = 1;
     return 1;
   }
 }
+#endif
 
 /*
-** Return a pointer to the ThreadData associated with the calling thread.
+** Check to make sure we have a valid db pointer.  This test is not
+** foolproof but it does provide some measure of protection against
+** misuse of the interface such as passing in db pointers that are
+** NULL or which have been previously closed.  If this routine returns
+** 1 it means that the db pointer is valid and 0 if it should not be
+** dereferenced for any reason.  The calling function should invoke
+** SQLITE_MISUSE immediately.
+**
+** sqlite3SafetyCheckOk() requires that the db pointer be valid for
+** use.  sqlite3SafetyCheckSickOrOk() allows a db pointer that failed to
+** open properly and is not fit for general use but which can be
+** used as an argument to sqlite3_errmsg() or sqlite3_close().
 */
-ThreadData *sqlite3ThreadData(){
-  ThreadData *p = (ThreadData*)sqlite3OsThreadSpecificData(1);
-  if( !p ){
-    sqlite3FailedMalloc();
-  }
-  return p;
+int sqlite3SafetyCheckOk(sqlite3 *db){
+  int magic;
+  if( db==0 ) return 0;
+  magic = db->magic;
+  if( magic!=SQLITE_MAGIC_OPEN &&
+      magic!=SQLITE_MAGIC_BUSY ) return 0;
+  return 1;
 }
-
-/*
-** Return a pointer to the ThreadData associated with the calling thread.
-** If no ThreadData has been allocated to this thread yet, return a pointer
-** to a substitute ThreadData structure that is all zeros. 
-*/
-const ThreadData *sqlite3ThreadDataReadOnly(){
-  static const ThreadData zeroData = {0};  /* Initializer to silence warnings
-                                           ** from broken compilers */
-  const ThreadData *pTd = sqlite3OsThreadSpecificData(0);
-  return pTd ? pTd : &zeroData;
-}
-
-/*
-** Check to see if the ThreadData for this thread is all zero.  If it
-** is, then deallocate it. 
-*/
-void sqlite3ReleaseThreadData(){
-  sqlite3OsThreadSpecificData(-1);
+int sqlite3SafetyCheckSickOrOk(sqlite3 *db){
+  int magic;
+  if( db==0 ) return 0;
+  magic = db->magic;
+  if( magic!=SQLITE_MAGIC_SICK &&
+      magic!=SQLITE_MAGIC_OPEN &&
+      magic!=SQLITE_MAGIC_BUSY ) return 0;
+  return 1;
 }
