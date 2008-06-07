@@ -1,0 +1,6 @@
+
+Monotone uses the SQLite RDBMS (http://sqlite.org/).
+For this, a copy of the SQLite "amalgamation" (see
+http://sqlite.org/amalgamation.html) is bundled with
+Monotone in the source files "sqlite3.c" and "sqlite3.h"
+

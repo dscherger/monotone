@@ -210,29 +210,8 @@ BOOST_SANDBOX_SOURCES =							\
 	boost/circular_buffer.hpp
 
 SQLITE_SOURCES =							\
-	sqlite/alter.c sqlite/attach.c sqlite/auth.c sqlite/btree.c	\
-	sqlite/build.c sqlite/date.c sqlite/delete.c sqlite/expr.c	\
-	sqlite/func.c sqlite/hash.c sqlite/insert.c			\
-	sqlite/legacy.c	sqlite/main.c sqlite/opcodes.c			\
-	sqlite/os.c sqlite/os_unix.c sqlite/os_win.c sqlite/os_os2.c	\
-	sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c	\
-	sqlite/random.c sqlite/select.c					\
-	sqlite/table.c sqlite/tokenize.c				\
-	sqlite/trigger.c sqlite/update.c sqlite/utf.c			\
-	sqlite/util.c sqlite/vacuum.c					\
-	sqlite/vdbe.c sqlite/vdbeapi.c sqlite/vdbeaux.c			\
-	sqlite/vdbemem.c sqlite/where.c					\
-	sqlite/prepare.c sqlite/callback.c				\
-	sqlite/analyze.c sqlite/vdbefifo.c				\
-	sqlite/complete.c sqlite/malloc.c sqlite/vdbeblob.c		\
-	sqlite/loadext.c sqlite/vtab.c					\
-									\
-	sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h	\
-	sqlite/os_common.h sqlite/os_os2.h				\
-	sqlite/parse.h sqlite/sqlite3.h	sqlite/sqlite3ext.h		\
-	sqlite/sqliteInt.h						\
-	sqlite/vdbe.h sqlite/vdbeInt.h					\
-	sqlite/pager.h sqlite/btreeInt.h sqlite/sqliteLimit.h
+	sqlite3.c							\
+	sqlite3.h
 
 LUA_SOURCES =								\
 	lua/lapi.cc lua/lapi.h						\
@@ -515,7 +494,7 @@ EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
 	tester-testsuite.lua $(srcdir)/tester-tests			\
 	unit-testsuite.lua package.m4 package_revision.txt		\
 	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	sqlite/keywordhash.h contrib/README contrib/monoprof.sh		\
+	contrib/README contrib/monoprof.sh		\
 	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
 	contrib/monotone.el contrib/monotone-nav.el			\
 	contrib/monotone.bash_completion				\
