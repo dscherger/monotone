@@ -1,0 +1,8 @@
+mtn: 2 heads on branch 'testbranch'
+mtn: [left]  5285636b9d9f988e79b3dcd9a40e64d15fb7fc9f
+mtn: [right] e9ad84a3fc40ef1109251c308428439c21ad1de9
+mtn: suturing checkout.sh, checkout.sh into checkout.sh
+mtn: renaming thermostat.c to thermostat-westinghouse.c
+mtn: renaming thermostat.c to thermostat-honeywell.c
+mtn: [merged] 257729bebdb32819cd1fc059806e0fb4144f7ec7
+mtn: note: your workspaces have not been updated

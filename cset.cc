@@ -178,7 +178,7 @@ cset::apply_to(editable_tree & t) const
 
   for (map<file_path, file_id>::const_iterator i = files_added.begin();
        i != files_added.end(); ++i)
-    safe_insert(attaches, attach(t.create_file_node(i->second), i->first));
+    safe_insert(attaches, attach(t.create_file_node(i->second, null_ancestors), i->first));
 
   // Decompose all path deletion and the first-half of renamings on
   // existing paths into the set of pending detaches, to be executed
@@ -187,8 +187,43 @@ cset::apply_to(editable_tree & t) const
   for (map<file_path, cset::sutured_t>::const_iterator i = nodes_sutured.begin();
        i != nodes_sutured.end(); ++i)
     {
+      node_id left_anc_nid;
+      node_id right_anc_nid;
+
+      std::pair<node_id, node_id> ancestors;
+
+      // get_node ("") returns the root node, which is not what we want.
+      if (i->second.first_ancestor.empty())
+        left_anc_nid = the_null_node;
+      else
+        left_anc_nid = t.get_node(i->second.first_ancestor);
+
+      if (i->second.second_ancestor.empty())
+        right_anc_nid = the_null_node;
+      else
+        right_anc_nid = t.get_node(i->second.second_ancestor);
+
+      if (right_anc_nid == the_null_node)
+        {
+          // suture is from merge; t.r is left side
+          ancestors.first = left_anc_nid;
+          ancestors.second = the_null_node;
+        }
+      else if (left_anc_nid == the_null_node)
+        {
+          // suture is from merge; t.r is right side
+          ancestors.first = right_anc_nid;
+          ancestors.second = the_null_node;
+        }
+      else
+        {
+          // user suture
+          ancestors.first = left_anc_nid;
+          ancestors.second = right_anc_nid;
+        }
+
       // Sutured node is added
-      safe_insert(attaches, attach(t.create_file_node(i->second.sutured_id), i->first));
+      safe_insert(attaches, attach(t.create_file_node(i->second.sutured_id, ancestors), i->first));
 
       // Ancestor nodes are dropped; detach here, drop later.
       safe_insert(detaches, detach(i->second.first_ancestor));

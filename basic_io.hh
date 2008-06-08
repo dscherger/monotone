@@ -1,6 +1,7 @@
 #ifndef __BASIC_IO_HH__
 #define __BASIC_IO_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -34,21 +35,13 @@ namespace basic_io
           // general format symbol
           symbol const format_version("format_version");
 
-          // roster symbols
+          // common symbols
           symbol const dir("dir");
           symbol const file("file");
           symbol const content("content");
           symbol const attr("attr");
 
-          // 'local' roster and marking symbols
-          // FIXME: should these be listed as "general" symbols here as well?
-          symbol const ident("ident");
-          symbol const birth("birth");
-          symbol const dormant_attr("dormant_attr");
-
-          symbol const path_mark("path_mark");
           symbol const content_mark("content_mark");
-          symbol const attr_mark("attr_mark");
         }
     }
 
@@ -263,6 +256,9 @@ namespace basic_io
 			 std::string const & v);
     void push_file_pair(symbol const & k, file_path const & v);
     void push_str_multi(symbol const & k,
+                        std::vector<std::string> const & v);
+    void push_str_multi(symbol const & k1,
+                        symbol const & k2,
                         std::vector<std::string> const & v);
   };
 

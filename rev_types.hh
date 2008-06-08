@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -30,9 +31,13 @@ namespace basic_io
   struct stanza;
 }
 
-// full definitions in cset.hh 
 typedef std::map<attr_key, attr_value> attr_map_t;
 typedef u32 node_id;
+node_id const the_null_node = 0;
+std::pair<node_id, node_id> const null_ancestors = std::pair<node_id, node_id>(the_null_node, the_null_node);
+
+
+// full definitions in cset.hh
 struct cset;
 struct editable_tree;
 

@@ -47,6 +47,28 @@ using boost::lexical_cast;
 
 ///////////////////////////////////////////////////////////////////
 
+namespace
+{
+  namespace syms
+  {
+    symbol const ident("ident");
+    symbol const birth("birth");
+    symbol const birth_cause("birth_cause");
+    symbol const birth_add("birth_add");
+    symbol const birth_suture("birth_suture");
+    symbol const birth_split("birth_split");
+    symbol const dormant_attr("dormant_attr");
+
+    symbol const path_mark("path_mark");
+    symbol const attr_mark("attr_mark");
+  }
+}
+
+// The marking_map format number must be incremented whenever any basic_io
+// format used for marking_map data in the database changes, but only once
+// per monotone release.
+static const unsigned int current_marking_map_format = 2;
+
 template <> void
 dump(node_id const & val, string & out)
 {
@@ -62,6 +84,37 @@ dump(full_attr_map_t const & val, string & out)
         << "  status: " << (i->second.first ? "live" : "dead") << '\n'
         << "   value: '" << i->second.second << "'\n";
   out = oss.str();
+}
+
+template <> void
+dump(std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & birth_cause, string & out)
+{
+  ostringstream oss;
+  string tmp;
+  switch (birth_cause.first)
+    {
+    case marking_t::invalid:
+      out = "invalid\n";
+      return;
+
+    case marking_t::add:
+      out = syms::birth_add() + "\n";
+      return;
+
+    case marking_t::suture:
+      dump(birth_cause.second.first, tmp);
+      oss << syms::birth_suture() << tmp;
+      dump(birth_cause.second.second, tmp);
+      oss << tmp << '\n';
+      out = oss.str();
+      return;
+
+    case marking_t::split:
+      dump(birth_cause.second.first, tmp);
+      oss << syms::birth_split() << tmp << '\n';
+      out = oss.str();
+      return;
+    }
 }
 
 template <> void
@@ -85,6 +138,8 @@ dump(marking_t const & marking, string & out)
   ostringstream oss;
   string tmp;
   oss << "birth_revision: " << marking.birth_revision << '\n';
+  dump(marking.birth_cause, tmp);
+  oss << "birth_cause: " << tmp << '\n';
   dump(marking.parent_name, tmp);
   oss << "parent_name: " << tmp << '\n';
   dump(marking.file_content, tmp);
@@ -1102,6 +1157,7 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
        ++ri, ++mi)
     {
       I(!null_id(mi->second.birth_revision));
+      I(mi->second.birth_cause.first != marking_t::invalid);
       I(!mi->second.parent_name.empty());
 
       if (is_file_t(ri->second))
@@ -1166,12 +1222,19 @@ editable_roster_base::create_dir_node()
 }
 
 node_id
-editable_roster_base::create_file_node(file_id const & content)
+editable_roster_base::create_file_node(file_id const & content,
+                                       std::pair<node_id, node_id> const ancestors)
 {
   // L(FL("create_file_node('%s')") % content);
-  node_id n = r.create_file_node(content, nis);
+  node_id n = r.create_file_node(content, nis, ancestors);
   // L(FL("create_file_node('%s') -> %d") % content % n);
   return n;
+}
+
+node_id
+editable_roster_base::get_node(file_path const &pth)
+{
+  return r.get_node(pth)->self;
 }
 
 void
@@ -1244,9 +1307,10 @@ namespace
       new_nodes.insert(nid);
       return nid;
     }
-    virtual node_id create_file_node(file_id const & content)
+    virtual node_id create_file_node(file_id const & content,
+                                     std::pair<node_id, node_id> const ancestors = null_ancestors)
     {
-      node_id nid = this->editable_roster_base::create_file_node(content);
+      node_id nid = this->editable_roster_base::create_file_node(content, ancestors);
       new_nodes.insert(nid);
       return nid;
     }
@@ -1275,9 +1339,11 @@ namespace
         // but may not be worth the effort (since it doesn't take that long to
         // get out in any case)
         a.get_name(aid, p);
-        node_id bid = b.get_node(p)->self;
+        node_t bn = b.get_node(p);
+        node_id bid = bn->self;
         if (b_new.find(bid) != b_new.end())
           {
+            // New in both.
             I(temp_node(bid));
             node_id new_nid;
             do
@@ -1286,6 +1352,18 @@ namespace
 
             a.replace_node_id(aid, new_nid);
             b.replace_node_id(bid, new_nid);
+
+            if (bn->ancestors.first != the_null_node)
+              {
+                // This is a suture; unify the ancestors.
+                node_t an = a.get_node(new_nid);
+                an->ancestors.second = bn->ancestors.first;
+
+                node_t new_bn = b.get_node(new_nid);
+                new_bn->ancestors.first = an->ancestors.first;
+                new_bn->ancestors.second = bn->ancestors.first;
+              };
+
             b_new.erase(bid);
           }
         else
@@ -1509,6 +1587,7 @@ namespace
   mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
   {
     new_marking.birth_revision = new_rid;
+    new_marking.birth_cause = make_pair(marking_t::add, null_ancestors);
     I(new_marking.parent_name.empty());
     new_marking.parent_name.insert(new_rid);
     I(new_marking.file_content.empty());
@@ -1536,6 +1615,7 @@ namespace
     I(same_type(parent_n, n) && parent_n->self == n->self);
 
     new_marking.birth_revision = parent_marking.birth_revision;
+    new_marking.birth_cause = parent_marking.birth_cause;
 
     mark_unmerged_scalar(parent_marking.parent_name,
                          make_pair(parent_n->parent, parent_n->name),
@@ -1577,8 +1657,21 @@ namespace
                    marking_t & new_marking)
   {
     I(same_type(ln, n) && same_type(rn, n));
-    I(left_marking.birth_revision == right_marking.birth_revision);
-    new_marking.birth_revision = left_marking.birth_revision;
+
+    // birth.
+    if (ln->self == rn->self)
+      {
+        // not a suture; a user add in a two-parent workspace.
+        I(left_marking.birth_revision == right_marking.birth_revision);
+        new_marking.birth_revision = left_marking.birth_revision;
+        new_marking.birth_cause = make_pair (marking_t::add, null_ancestors);
+      }
+    else
+      {
+        // suture.
+        new_marking.birth_revision = new_rid;
+        new_marking.birth_cause = make_pair (marking_t::suture, make_pair(ln->self, rn->self));
+      }
 
     // name
     mark_merged_scalar(left_marking.parent_name, left_uncommon_ancestors,
@@ -1683,13 +1776,45 @@ mark_merge_roster(roster_t const & left_roster,
       marking_t new_marking;
 
       if (!exists_in_left && !exists_in_right)
-        mark_new_node(new_rid, n, new_marking);
+        {
+          // We have a new node in a merge. There are two cases:
+          //
+          // 1) Adding a file in a two-parent workspace, which is created by
+          //    merge_into_workspace
+          //
+          // 2) Doing a suture
+          //
+          // There's a third case; doing a unit test. But we can change the
+          // unit test to handle the real code :).
+
+          if (the_null_node == n->ancestors.first)
+            {
+              // not a suture; two-parent workspace
+              mark_new_node(new_rid, n, new_marking);
+            }
+          else
+            {
+              // suture
+              node_map::const_iterator left = left_roster.all_nodes().find(n->ancestors.first);
+              node_map::const_iterator right = right_roster.all_nodes().find(n->ancestors.second);
+              I(left != left_roster.all_nodes().end());
+              I(right != right_roster.all_nodes().end());
+              mark_merged_node(safe_get(left_markings, n->ancestors.first), left_uncommon_ancestors, left->second,
+                               safe_get(right_markings, n->ancestors.second), right_uncommon_ancestors, right->second,
+                               new_rid, n, new_marking);
+            }
+        }
 
       else if (!exists_in_left && exists_in_right)
         {
+          // FIXME_SUTURE: handle case where n is an ancestor of a sutured node on
+          // the left; beth_3 in test.
           node_t const & right_node = rni->second;
           marking_t const & right_marking = safe_get(right_markings, n->self);
-          // must be unborn on the left (as opposed to dead)
+
+          // Must be unborn on the left (as opposed to dead); otherwise it
+          // would not be in the merge. Therefore the birth revision for
+          // this node must be in the uncommon ancestors on the right:
           I(right_uncommon_ancestors.find(right_marking.birth_revision)
             != right_uncommon_ancestors.end());
           mark_unmerged_node(right_marking, right_node,
@@ -1697,16 +1822,23 @@ mark_merge_roster(roster_t const & left_roster,
         }
       else if (exists_in_left && !exists_in_right)
         {
+          // FIXME_SUTURE: handle case where n is an ancestor of a sutured node on
+          // the right; abe_3 in test.
           node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
-          // must be unborn on the right (as opposed to dead)
+
+          // Must be unborn on the right (as opposed to dead); otherwise it
+          // would not be in the merge. Therefore the birth revision for
+          // this node must be in the uncommon ancestors on the left:
           I(left_uncommon_ancestors.find(left_marking.birth_revision)
             != left_uncommon_ancestors.end());
+
           mark_unmerged_node(left_marking, left_node,
                              new_rid, n, new_marking);
         }
       else
         {
+          // exists in both left and right parents
           node_t const & left_node = lni->second;
           node_t const & right_node = rni->second;
           mark_merged_node(safe_get(left_markings, n->self),
@@ -1754,7 +1886,8 @@ namespace {
       return handle_new(this->editable_roster_base::create_dir_node());
     }
 
-    virtual node_id create_file_node(file_id const & content)
+    virtual node_id create_file_node(file_id const & content,
+                                     std::pair<node_id, node_id> const ancestors)
     {
       return handle_new(this->editable_roster_base::create_file_node(content));
     }
@@ -2380,7 +2513,7 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
           if (is_file_t(n->second))
             {
               file_t const f = downcast_to_file_t(n->second);
-              restricted.create_file_node(f->content, f->self);
+              restricted.create_file_node(f->content, f->self, f->ancestors);
             }
           else
             restricted.create_dir_node(n->second->self);
@@ -2559,11 +2692,39 @@ push_marking(basic_io::stanza & st,
 {
 
   I(!null_id(mark.birth_revision));
-  st.push_binary_pair(basic_io::syms::birth, mark.birth_revision.inner());
+  st.push_binary_pair(syms::birth, mark.birth_revision.inner());
+
+  switch (mark.birth_cause.first)
+    {
+    case marking_t::invalid:
+      I(false);
+      break;
+
+    case marking_t::add:
+      st.push_str_pair(syms::birth_cause, syms::birth_add);
+      break;
+
+    case marking_t::suture:
+      {
+        std::vector<std::string> data;
+        data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
+        data.push_back(lexical_cast<string>(mark.birth_cause.second.second));
+        st.push_str_multi(syms::birth_cause, syms::birth_suture, data);
+      }
+      break;
+
+    case marking_t::split:
+      {
+        std::vector<std::string> data;
+        data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
+        st.push_str_multi(syms::birth_cause, syms::birth_split, data);
+      }
+      break;
+    };
 
   for (set<revision_id>::const_iterator i = mark.parent_name.begin();
        i != mark.parent_name.end(); ++i)
-    st.push_binary_pair(basic_io::syms::path_mark, i->inner());
+    st.push_binary_pair(syms::path_mark, i->inner());
 
   if (is_file)
     {
@@ -2579,7 +2740,7 @@ push_marking(basic_io::stanza & st,
     {
       for (set<revision_id>::const_iterator j = i->second.begin();
            j != i->second.end(); ++j)
-        st.push_binary_triple(basic_io::syms::attr_mark, i->first(), j->inner());
+        st.push_binary_triple(syms::attr_mark, i->first(), j->inner());
     }
 }
 
@@ -2591,13 +2752,45 @@ parse_marking(basic_io::parser & pa,
   while (pa.symp())
     {
       string rev;
-      if (pa.symp(basic_io::syms::birth))
+      if (pa.symp(syms::birth))
         {
           pa.sym();
           pa.hex(rev);
           marking.birth_revision = revision_id(decode_hexenc(rev));
         }
-      else if (pa.symp(basic_io::syms::path_mark))
+      else if (pa.symp(syms::birth_cause))
+        {
+          std::string tmp_1, tmp_2;
+          pa.sym();
+
+          if (pa.symp (syms::birth_add))
+            {
+              pa.sym();
+              marking.birth_cause = make_pair (marking_t::add, null_ancestors);
+            }
+          else if (pa.symp (syms::birth_suture))
+            {
+              pa.sym();
+              pa.str(tmp_1);
+              pa.str(tmp_2);
+              marking.birth_cause = make_pair (marking_t::add,
+                                               make_pair(lexical_cast<node_id>(tmp_1),
+                                                         lexical_cast<node_id>(tmp_2)));
+            }
+          else if (pa.symp (syms::birth_suture))
+            {
+              pa.sym();
+              pa.str(tmp_1);
+              marking.birth_cause = make_pair (marking_t::add,
+                                               make_pair(lexical_cast<node_id>(tmp_1),
+                                                         the_null_node));
+            }
+          else
+            {
+              E(false, F("unrecognized birth_cause '%s'") % pa.token);
+            }
+        }
+      else if (pa.symp(syms::path_mark))
         {
           pa.sym();
           pa.hex(rev);
@@ -2609,7 +2802,7 @@ parse_marking(basic_io::parser & pa,
           pa.hex(rev);
           safe_insert(marking.file_content, revision_id(decode_hexenc(rev)));
         }
-      else if (pa.symp(basic_io::syms::attr_mark))
+      else if (pa.symp(syms::attr_mark))
         {
           string k;
           pa.sym();
@@ -2635,7 +2828,7 @@ roster_t::print_to(basic_io::printer & pr,
   I(has_root());
   {
     basic_io::stanza st;
-    st.push_str_pair(basic_io::syms::format_version, "1");
+    st.push_str_pair(basic_io::syms::format_version, lexical_cast<string>(current_marking_map_format));
     pr.print_stanza(st);
   }
   for (dfs_iter i(root_dir, true); !i.finished(); ++i)
@@ -2659,7 +2852,7 @@ roster_t::print_to(basic_io::printer & pr,
       if (print_local_parts)
         {
           I(curr->self != the_null_node);
-          st.push_str_pair(basic_io::syms::ident, lexical_cast<string>(curr->self));
+          st.push_str_pair(syms::ident, lexical_cast<string>(curr->self));
         }
 
       // Push the non-dormant part of the attr map
@@ -2682,7 +2875,7 @@ roster_t::print_to(basic_io::printer & pr,
               if (!j->second.first)
                 {
                   I(j->second.second().empty());
-                  st.push_str_pair(basic_io::syms::dormant_attr, j->first());
+                  st.push_str_pair(syms::dormant_attr, j->first());
                 }
             }
 
@@ -2733,7 +2926,7 @@ roster_t::parse_from(basic_io::parser & pa,
     pa.esym(basic_io::syms::format_version);
     string vers;
     pa.str(vers);
-    I(vers == "1");
+    I(vers == lexical_cast<string>(current_marking_map_format));
   }
 
   while(pa.symp())
@@ -2748,7 +2941,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.str(pth);
           pa.esym(basic_io::syms::content);
           pa.hex(content);
-          pa.esym(basic_io::syms::ident);
+          pa.esym(syms::ident);
           pa.str(ident);
           n = file_t(new file_node(read_num(ident),
                                    file_id(decode_hexenc(content))));
@@ -2757,7 +2950,7 @@ roster_t::parse_from(basic_io::parser & pa,
         {
           pa.sym();
           pa.str(pth);
-          pa.esym(basic_io::syms::ident);
+          pa.esym(syms::ident);
           pa.str(ident);
           n = dir_t(new dir_node(read_num(ident)));
         }
@@ -2790,7 +2983,7 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       // Dormant attrs
-      while(pa.symp(basic_io::syms::dormant_attr))
+      while(pa.symp(syms::dormant_attr))
         {
           pa.sym();
           string k;
@@ -3495,6 +3688,8 @@ UNIT_TEST(roster, bad_attr)
 // case-by-case analysis, where copy-paste errors could easily occur.  So the
 // purpose of this section is to systematically and exhaustively test every
 // possible case.
+//
+// FIXME_SUTURE: reference ss-mark-merge.text, add suture, split tests
 //
 // Our underlying merger, *-merge, works on scalars, case-by-case.
 // The cases are:

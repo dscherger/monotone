@@ -15,9 +15,10 @@
 #include "paths.hh"
 #include "rev_types.hh"
 
-// Virtual interface to a tree-of-files which you can edit
-// destructively; this may be the filesystem or an in-memory
-// representation (a roster / mfest).
+// Virtual interface to a tree-of-files which you can edit destructively;
+// this may be the filesystem or an in-memory representation (a roster /
+// mfest). The operations maintain both the roster and the marking_map (if
+// any).
 
 struct editable_tree
 {
@@ -25,9 +26,11 @@ struct editable_tree
   virtual node_id detach_node(file_path const & src) = 0;
   virtual void drop_detached_node(node_id nid) = 0;
 
-  // Attaching new nodes (via creation or as the tail end of renaming)
+  // Attaching new nodes (via creation, as the tail end of renaming, suturing, or splitting)
   virtual node_id create_dir_node() = 0;
-  virtual node_id create_file_node(file_id const & content) = 0;
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors) = 0;
+  virtual node_id get_node(file_path const &pth) = 0;
   virtual void attach_node(node_id nid, file_path const & dst) = 0;
 
   // Modifying elements in-place
@@ -99,7 +102,9 @@ struct cset
       ;
   }
 
+  // Apply changeset to roster and marking map in tree.
   void apply_to(editable_tree & t) const;
+
   bool empty() const;
   void clear();
 };

@@ -24,9 +24,6 @@ struct node_id_source
 
 ///////////////////////////////////////////////////////////////////
 
-node_id const the_null_node = 0;
-std::pair<node_id, node_id> const null_ancestors = std::pair<node_id, node_id>(the_null_node, the_null_node);
-
 inline bool
 null_node(node_id n)
 {
@@ -143,14 +140,20 @@ template <> void dump(node_t const & n, std::string & out);
 
 struct marking_t
 {
+  typedef enum {invalid, add, suture, split} birth_cause_t;
+
   revision_id birth_revision;
+  std::pair<birth_cause_t, std::pair<node_id, node_id> > birth_cause;
+  // if suture, the node_ids indicate the ancestors. If split, the first
+  // node_id indicates the ancestor.
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
-  marking_t() {};
+  marking_t() : birth_cause (std::make_pair (invalid, null_ancestors)) {};
   bool operator==(marking_t const & other) const
   {
     return birth_revision == other.birth_revision
+      && birth_cause == birth_cause
       && parent_name == other.parent_name
       && file_content == other.file_content
       && attrs == other.attrs;
@@ -309,7 +312,9 @@ public:
   virtual node_id detach_node(file_path const & src);
   virtual void drop_detached_node(node_id nid);
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,

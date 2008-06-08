@@ -1624,6 +1624,8 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
         {
           I(conflict.right_resolution.first == resolve_conflicts::suture);
 
+          // There's no inherent reason suturing directories can't be
+          // supported; we just haven't worked on it yet.
           N(!is_dir_t(left_roster.get_node (left_nid)), F("can't suture directory : %s") % left_name);
 
           P(F("suturing %s, %s into %s") % left_name % right_name % conflict.left_resolution.second);
@@ -1796,15 +1798,68 @@ namespace
   }
 
   inline void
-  insert_if_unborn(node_t const & n,
-                   marking_map const & markings,
-                   set<revision_id> const & uncommon_ancestors,
-                   roster_t const & parent_roster,
-                   roster_t & new_roster)
+  create_node_for(node_t const & n, std::pair<node_id, node_id> const ancestors, roster_t & new_roster)
   {
+    if (is_dir_t(n))
+      I(false);
+    else if (is_file_t(n))
+      return new_roster.create_file_node(file_id(), n->self, ancestors);
+    else
+      I(false);
+  }
+
+  inline void
+  insert_if_unborn_or_sutured(node_t const & n,
+                              marking_map const & markings,
+                              set<revision_id> const & uncommon_ancestors,
+                              roster_t const & parent_roster,
+                              roster_t & new_roster)
+  {
+    MM(markings);
+    MM(uncommon_ancestors);
+    // See comment in roster_merge below for cases. n is either the left or
+    // right parent node. We are in case iii, iv, or v. We determine which
+    // by searching for the birth revision in uncommon_ancestors.
+
     revision_id const & birth = safe_get(markings, n->self).birth_revision;
-    if (uncommon_ancestors.find(birth) != uncommon_ancestors.end())
-      create_node_for(n, new_roster);
+
+    set<revision_id>::const_iterator const uncommon_birth_i = uncommon_ancestors.find(birth);
+
+    if (uncommon_birth_i != uncommon_ancestors.end())
+      {
+        // case iii or iv
+        std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & birth_cause =
+          safe_get(markings, n->self).birth_cause;
+
+        switch (birth_cause.first)
+          {
+          case marking_t::invalid:
+            I(false);
+
+          case marking_t::add:
+            // case iv
+            create_node_for(n, new_roster);
+            break;
+
+          case marking_t::suture:
+          case marking_t::split:
+            // case iii
+            {
+              std::pair<node_id, node_id> birth_ancestors = birth_cause.second;
+
+              if (n->self == birth_ancestors.first)
+                {
+                  create_node_for(n, make_pair (n->self, birth_ancestors.second), new_roster);
+                }
+              else
+                {
+                  I(n->self == birth_ancestors.second);
+                  create_node_for(n, make_pair (birth_ancestors.second, n->self), new_roster);
+                }
+            }
+            break;
+          }
+      }
     else
       {
         // In this branch we are NOT inserting the node into the new roster as it
@@ -1965,6 +2020,120 @@ namespace
     assign_name(result, n->self, old_n->parent, old_n->name, side);
   }
 
+  void
+  merge_nodes(node_t const left_n,
+              marking_t const & left_marking,
+              set<revision_id> const & left_uncommon_ancestors,
+              node_t const right_n,
+              marking_t const & right_marking,
+              set<revision_id> const & right_uncommon_ancestors,
+              node_t const new_n,
+              roster_merge_result & result)
+    {
+      // merge name
+      pair<node_id, path_component> left_name, right_name, new_name;
+      multiple_name_conflict conflict(new_n->self);
+      left_name = make_pair(left_n->parent, left_n->name);
+      right_name = make_pair(right_n->parent, right_n->name);
+      if (merge_scalar(left_name,
+                       left_marking.parent_name,
+                       left_uncommon_ancestors,
+                       right_name,
+                       right_marking.parent_name,
+                       right_uncommon_ancestors,
+                       new_name, conflict))
+        {
+          side_t winning_side;
+
+          if (new_name == left_name)
+            winning_side = left_side;
+          else if (new_name == right_name)
+            winning_side = right_side;
+          else
+            I(false);
+
+          assign_name(result, new_n->self,
+                      new_name.first, new_name.second, winning_side);
+
+        }
+      else
+        {
+          // unsuccessful merge; leave node detached and save
+          // conflict object
+          result.multiple_name_conflicts.push_back(conflict);
+        }
+      // if a file, merge content
+      if (is_file_t(new_n))
+        {
+          file_content_conflict conflict(new_n->self);
+          if (merge_scalar(downcast_to_file_t(left_n)->content,
+                           left_marking.file_content,
+                           left_uncommon_ancestors,
+                           downcast_to_file_t(right_n)->content,
+                           right_marking.file_content,
+                           right_uncommon_ancestors,
+                           downcast_to_file_t(new_n)->content,
+                           conflict))
+            {
+              // successful merge
+            }
+          else
+            {
+              downcast_to_file_t(new_n)->content = file_id();
+              result.file_content_conflicts.push_back(conflict);
+            }
+        }
+      // merge attributes
+      {
+        full_attr_map_t::const_iterator left_ai = left_n->attrs.begin();
+        full_attr_map_t::const_iterator right_ai = right_n->attrs.begin();
+        parallel::iter<full_attr_map_t> attr_i(left_n->attrs,
+                                               right_n->attrs);
+        while(attr_i.next())
+          {
+            switch (attr_i.state())
+              {
+              case parallel::invalid:
+                I(false);
+              case parallel::in_left:
+                safe_insert(new_n->attrs, attr_i.left_value());
+                break;
+              case parallel::in_right:
+                safe_insert(new_n->attrs, attr_i.right_value());
+                break;
+              case parallel::in_both:
+                pair<bool, attr_value> new_value;
+                attribute_conflict conflict(new_n->self);
+                conflict.key = attr_i.left_key();
+                I(conflict.key == attr_i.right_key());
+                if (merge_scalar(attr_i.left_data(),
+                                 safe_get(left_marking.attrs,
+                                          attr_i.left_key()),
+                                 left_uncommon_ancestors,
+                                 attr_i.right_data(),
+                                 safe_get(right_marking.attrs,
+                                          attr_i.right_key()),
+                                 right_uncommon_ancestors,
+                                 new_value,
+                                 conflict))
+                  {
+                    // successful merge
+                    safe_insert(new_n->attrs,
+                                make_pair(attr_i.left_key(),
+                                          new_value));
+                  }
+                else
+                  {
+                    // unsuccessful merge
+                    // leave out the attr entry entirely, and save the
+                    // conflict
+                    result.attribute_conflicts.push_back(conflict);
+                  }
+                break;
+              }
+          }
+      }
+    }
 } // end anonymous namespace
 
 void
@@ -1985,9 +2154,69 @@ roster_merge(roster_t const & left_parent,
   MM(right_markings);
   MM(result);
 
-  // First handle lifecycles, by die-die-die merge -- our result will contain
-  // everything that is alive in both parents, or alive in one and unborn in
-  // the other, exactly.
+  // First handle lifecycles. Several cases:
+  //
+  //         A1  B1
+  // i)       \ /
+  //           C1
+  //
+  //     The node is merged in the child
+  //
+  //
+  //         A1  B2
+  // ii)      \ /
+  //           C3
+  //
+  //     The node is sutured in the child. This is only possible in a
+  //     conflict resolution, which will occur later in the merge process.
+  //     FIXME_SUTURE: support user sutures.
+  //
+  //
+  //         A1  B3
+  // iiia)    \ /
+  //           C3
+  //
+  //     The node was born in a suture or split in an uncommon ancestor of B
+  //
+  //         A3  B1
+  // iiib)    \ /
+  //           C3
+  //
+  //     The node was born in a suture or split in an uncommon ancestor of A
+  //
+  //
+  //         A1  B
+  // iva)     \ /
+  //           C1
+  //
+  //     The node was born new in A's uncommon ancestors
+  //
+  //         A   B1
+  // ivb)     \ /
+  //           C1
+  //
+  //     The node was born new in B's uncommon ancestors
+  //
+  //
+  //         A1  B
+  // v)       \ /
+  //           C
+  //
+  //     The node was deleted in B's uncommon ancestors
+  //
+  //         A   B1
+  //          \ /
+  //           C
+  //
+  //     The node was deleted in A's uncommon ancestors
+  //
+  //
+  // In monotone 0.4 and earlier, cases ii and iii did not exist.
+  //
+  // In case v, deletion wins over any other change; it might be better to
+  // have deletion conflict with any other change. But that's left for
+  // another time.
+
   {
     parallel::iter<node_map> i(left_parent.all_nodes(), right_parent.all_nodes());
     while (i.next())
@@ -1998,15 +2227,17 @@ roster_merge(roster_t const & left_parent,
             I(false);
 
           case parallel::in_left:
-            insert_if_unborn(i.left_data(),
-                             left_markings, left_uncommon_ancestors, left_parent,
-                             result.roster);
+            // case iii, iva, or va
+            insert_if_unborn_or_sutured(i.left_data(),
+                                        left_markings, left_uncommon_ancestors, left_parent,
+                                        result.roster);
             break;
 
           case parallel::in_right:
-            insert_if_unborn(i.right_data(),
-                             right_markings, right_uncommon_ancestors, right_parent,
-                             result.roster);
+            // case iii, ivb, or vb
+            insert_if_unborn_or_sutured(i.right_data(),
+                                        right_markings, right_uncommon_ancestors, right_parent,
+                                        result.roster);
             break;
 
           case parallel::in_both:
@@ -2033,16 +2264,48 @@ roster_merge(roster_t const & left_parent,
 
           case parallel::in_left:
             {
-              node_t const & left_n = i.left_data();
-              // we skip nodes that aren't in the result roster (were
-              // deleted in the lifecycles step above)
+              node_t const left_n = i.left_data();
+              // We skip nodes that aren't in the result roster (were
+              // deleted in the lifecycles step above), unless they are
+              // parents of a suture.
+
               if (result.roster.has_node(left_n->self))
                 {
-                  // attach this node from the left roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, left_n, left_side);
-                  ++new_i;
+                  if (left_n->ancestors.first != the_null_node &&
+                      left_n->ancestors.first != left_n->self)
+                    {
+                      // This node is the child of a suture; if right parent
+                      // exists in right, merge with it.
+                      node_map::const_iterator right_i = right_parent.all_nodes().find (left_n->ancestors.second);
+                      if (right_i != right_parent.all_nodes().end())
+                        {
+                          marking_map::const_iterator right_mi = right_markings.find(right_i->second->ancestors.first);
+
+                          // check that iterators are in sync.
+                          I(new_i->first == i.left_key());
+                          I(left_mi->first == i.left_key());
+
+                          merge_nodes(i.left_data(),   // left_n
+                                      left_mi->second, // left_marking
+                                      left_uncommon_ancestors,
+                                      right_i->second,  // right_n
+                                      right_mi->second,
+                                      right_uncommon_ancestors,
+                                      new_i->second,  // new_n
+                                      result);
+                          ++new_i;
+                        }
+                    }
+                  else
+                    {
+                      // Not child of a suture.
+                      //
+                      // Attach this node from the left roster. This may cause
+                      // a name collision with the previously attached node from
+                      // the other side of the merge.
+                      copy_node_forward(result, new_i->second, left_n, left_side);
+                      ++new_i;
+                    }
                 }
               ++left_mi;
               break;
@@ -2051,14 +2314,46 @@ roster_merge(roster_t const & left_parent,
           case parallel::in_right:
             {
               node_t const & right_n = i.right_data();
-              // we skip nodes that aren't in the result roster
+              // We skip nodes that aren't in the result roster, unless they are
+              // parents of a suture.
+
               if (result.roster.has_node(right_n->self))
                 {
-                  // attach this node from the right roster. this may cause
-                  // a name collision with the previously attached node from
-                  // the other side of the merge.
-                  copy_node_forward(result, new_i->second, right_n, right_side);
-                  ++new_i;
+                  if (right_n->ancestors.first != the_null_node &&
+                      right_n->ancestors.first != right_n->self)
+                    {
+                      // This node is the child of a suture; if right parent
+                      // exists in right, merge with it.
+                      node_map::const_iterator left_i = left_parent.all_nodes().find (right_n->ancestors.first);
+                      if (left_i != left_parent.all_nodes().end())
+                        {
+                          marking_map::const_iterator left_mi = left_markings.find(right_n->ancestors.first);
+
+                          // check that iterators are in sync.
+                          I(new_i->first == i.right_key());
+                          I(right_mi->first == i.right_key());
+
+                          merge_nodes(left_i->second,   // left_n
+                                      left_mi->second,  // left_marking
+                                      left_uncommon_ancestors,
+                                      i.right_data(),   // right_n
+                                      right_mi->second, // right_marking
+                                      right_uncommon_ancestors,
+                                      new_i->second,   // new_n
+                                      result);
+                          ++new_i;
+                        }
+                    }
+                  else
+                    {
+                      // Not child of a suture.
+                      //
+                      // Attach this node from the right roster. This may
+                      // cause a name collision with the previously attached
+                      // node from the other side of the merge.
+                      copy_node_forward(result, new_i->second, right_n, right_side);
+                      ++new_i;
+                    }
                 }
               ++right_mi;
               break;
@@ -2069,121 +2364,15 @@ roster_merge(roster_t const & left_parent,
               I(new_i->first == i.left_key());
               I(left_mi->first == i.left_key());
               I(right_mi->first == i.right_key());
-              node_t const & left_n = i.left_data();
-              marking_t const & left_marking = left_mi->second;
-              node_t const & right_n = i.right_data();
-              marking_t const & right_marking = right_mi->second;
-              node_t const & new_n = new_i->second;
-              // merge name
-              {
-                pair<node_id, path_component> left_name, right_name, new_name;
-                multiple_name_conflict conflict(new_n->self);
-                left_name = make_pair(left_n->parent, left_n->name);
-                right_name = make_pair(right_n->parent, right_n->name);
-                if (merge_scalar(left_name,
-                                 left_marking.parent_name,
-                                 left_uncommon_ancestors,
-                                 right_name,
-                                 right_marking.parent_name,
-                                 right_uncommon_ancestors,
-                                 new_name, conflict))
-                  {
-                    side_t winning_side;
 
-                    if (new_name == left_name)
-                      winning_side = left_side;
-                    else if (new_name == right_name)
-                      winning_side = right_side;
-                    else
-                      I(false);
-
-                    // attach this node from the winning side of the merge. if
-                    // there is a name collision the previously attached node
-                    // (which is blocking this one) must come from the other
-                    // side of the merge.
-                    assign_name(result, new_n->self,
-                                new_name.first, new_name.second, winning_side);
-
-                  }
-                else
-                  {
-                    // unsuccessful merge; leave node detached and save
-                    // conflict object
-                    result.multiple_name_conflicts.push_back(conflict);
-                  }
-              }
-              // if a file, merge content
-              if (is_file_t(new_n))
-                {
-                  file_content_conflict conflict(new_n->self);
-                  if (merge_scalar(downcast_to_file_t(left_n)->content,
-                                   left_marking.file_content,
-                                   left_uncommon_ancestors,
-                                   downcast_to_file_t(right_n)->content,
-                                   right_marking.file_content,
-                                   right_uncommon_ancestors,
-                                   downcast_to_file_t(new_n)->content,
-                                   conflict))
-                    {
-                      // successful merge
-                    }
-                  else
-                    {
-                      downcast_to_file_t(new_n)->content = file_id();
-                      result.file_content_conflicts.push_back(conflict);
-                    }
-                }
-              // merge attributes
-              {
-                full_attr_map_t::const_iterator left_ai = left_n->attrs.begin();
-                full_attr_map_t::const_iterator right_ai = right_n->attrs.begin();
-                parallel::iter<full_attr_map_t> attr_i(left_n->attrs,
-                                                       right_n->attrs);
-                while(attr_i.next())
-                {
-                  switch (attr_i.state())
-                    {
-                    case parallel::invalid:
-                      I(false);
-                    case parallel::in_left:
-                      safe_insert(new_n->attrs, attr_i.left_value());
-                      break;
-                    case parallel::in_right:
-                      safe_insert(new_n->attrs, attr_i.right_value());
-                      break;
-                    case parallel::in_both:
-                      pair<bool, attr_value> new_value;
-                      attribute_conflict conflict(new_n->self);
-                      conflict.key = attr_i.left_key();
-                      I(conflict.key == attr_i.right_key());
-                      if (merge_scalar(attr_i.left_data(),
-                                       safe_get(left_marking.attrs,
-                                                attr_i.left_key()),
-                                       left_uncommon_ancestors,
-                                       attr_i.right_data(),
-                                       safe_get(right_marking.attrs,
-                                                attr_i.right_key()),
-                                       right_uncommon_ancestors,
-                                       new_value,
-                                       conflict))
-                        {
-                          // successful merge
-                          safe_insert(new_n->attrs,
-                                      make_pair(attr_i.left_key(),
-                                                     new_value));
-                        }
-                      else
-                        {
-                          // unsuccessful merge
-                          // leave out the attr entry entirely, and save the
-                          // conflict
-                          result.attribute_conflicts.push_back(conflict);
-                        }
-                      break;
-                    }
-
-                }
-              }
+              merge_nodes(i.left_data(),    // left_n
+                          left_mi->second,  // left_marking
+                          left_uncommon_ancestors,
+                          i.right_data(),   // right_n
+                          right_mi->second, // right_marking
+                          right_uncommon_ancestors,
+                          new_i->second,    // new_n
+                          result);
             }
             ++left_mi;
             ++right_mi;

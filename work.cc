@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -858,7 +859,9 @@ struct editable_working_tree : public editable_tree
   virtual void drop_detached_node(node_id nid);
 
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
   virtual void apply_delta(file_path const & pth,
@@ -899,7 +902,9 @@ struct simulated_working_tree : public editable_tree
   virtual void drop_detached_node(node_id nid);
 
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
   virtual void apply_delta(file_path const & pth,
@@ -1013,8 +1018,10 @@ editable_working_tree::create_dir_node()
 }
 
 node_id
-editable_working_tree::create_file_node(file_id const & content)
+editable_working_tree::create_file_node(file_id const & content,
+                                        std::pair<node_id, node_id> const ancestors)
 {
+  I(ancestors == null_ancestors);
   node_id nid = next_nid++;
   bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
@@ -1024,6 +1031,16 @@ editable_working_tree::create_file_node(file_id const & content)
   write_data(pth, dat.inner());
 
   return nid;
+}
+
+node_id
+editable_working_tree::get_node(file_path const &pth)
+{
+  // The mapping from node ids to file_paths is not stored anywhere. So we
+  // can't do whatever operation needs this. So far, it's only looking up
+  // ancestors for sutures while applying a changeset; a working tree can't
+  // be an ancestor, so we're ok.
+  I(false);
 }
 
 void
@@ -1145,9 +1162,16 @@ simulated_working_tree::create_dir_node()
 }
 
 node_id
-simulated_working_tree::create_file_node(file_id const & content)
+simulated_working_tree::create_file_node(file_id const & content,
+                                         std::pair<node_id, node_id> const ancestors)
 {
-  return workspace.create_file_node(content, nis);
+  return workspace.create_file_node(content, nis, ancestors);
+}
+
+node_id
+simulated_working_tree::get_node(file_path const &pth)
+{
+  return workspace.get_node(pth)->self;
 }
 
 void
