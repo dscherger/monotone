@@ -49,6 +49,7 @@ use strict;
 # Public routines.
 
 sub display_change_log($$;$$);
+sub generate_revision_report($$$$;$);
 
 # Private routines.
 
@@ -103,6 +104,219 @@ sub display_change_log($$;$$)
 	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
     }
     $instance->{window}->show_all();
+
+}
+#
+##############################################################################
+#
+#   Routine      - generate_revision_report
+#
+#   Description  - Populate the specified Gtk2::TextBuffer with a pretty
+#                  printed report on the specified revision.
+#
+#   Data         - $text_buffer      : The Gtk2::TextBuffer that is to be
+#                                      populated.
+#                  $revision_id      : The id of the revision being reported
+#                                      on.
+#                  $certs_list       : A reference to a certs list as returned
+#                                      by $mtn->certs().
+#                  $colour           : One of "red, "green" or "" depending
+#                                      upon the desired colour of the text.
+#                  $revision_details : Either a reference to a revision
+#                                      details list as returned by
+#                                      $mtn->get_revision() if a detailed
+#                                      report is to be generated or undef if
+#                                      the report is to just be a summary.
+#
+##############################################################################
+
+
+
+sub generate_revision_report($$$$;$)
+{
+
+    my($text_buffer, $revision_id, $certs_list, $colour, $revision_details)
+	= @_;
+
+    my($bold,
+       $cert_max_len,
+       $change_log,
+       $italics,
+       $manifest_id,
+       $normal,
+       @parent_revision_ids,
+       %revision_data,
+       %seen,
+       @unique);
+    my @types = (__("Added"),
+		 __("Removed"),
+		 __("Changed"),
+		 __("Renamed"),
+		 __("Attributes"));
+
+    # Sort out colour attributes.
+
+    if ($colour ne "")
+    {
+	$normal = $colour;
+	$bold = "bold-" . $colour;
+	$italics = "italics-" . $colour;
+    }
+    else
+    {
+	$normal = "normal";
+	$bold = "bold";
+	$italics = "italics";
+    }
+
+    # Revision id.
+
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   __("Revision id: "),
+					   $bold);
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   $revision_id . "\n\n",
+					   $normal);
+
+    # Certs.
+
+    $cert_max_len = 0;
+    foreach my $cert (@$certs_list)
+    {
+	$cert_max_len = length($cert->{name})
+	    if ($cert->{name} ne "changelog"
+		&& length($cert->{name}) > $cert_max_len);
+    }
+    foreach my $cert (@$certs_list)
+    {
+	if ($cert->{name} eq "changelog")
+	{
+	    $change_log = $cert->{value};
+	    $change_log =~ s/\s+$//os;
+	}
+	else
+	{
+	    $cert->{value} =~ s/T/ /o if ($cert->{name} eq "date");
+	    $text_buffer->insert_with_tags_by_name
+		($text_buffer->get_end_iter(),
+		 sprintf("%-*s ",
+			 $cert_max_len + 1, ucfirst($cert->{name}) . ":"),
+		 $bold);
+	    $text_buffer->insert_with_tags_by_name
+		($text_buffer->get_end_iter(),
+		 sprintf("%s\n", $cert->{value}),
+		 $normal);
+	}
+    }
+
+    # Change log.
+
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   __("\nChange Log:\n"),
+					   $bold);
+    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					   sprintf("%s", $change_log),
+					   $normal);
+
+    # The rest is only provided if it is a detailed report.
+
+    if (defined($revision_details))
+    {
+
+	# Revision details.
+
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       __("\n\nChanges Made:\n"),
+					       $bold);
+	foreach my $type (@types)
+	{
+	    $revision_data{$type} = [];
+	}
+	foreach my $change (@$revision_details)
+	{
+	    if ($change->{type} eq "add_dir")
+	    {
+		push(@{$revision_data{__("Added")}}, $change->{name} . "/");
+	    }
+	    elsif ($change->{type} eq "add_file")
+	    {
+		push(@{$revision_data{__("Added")}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "delete")
+	    {
+		push(@{$revision_data{__("Removed")}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "patch")
+	    {
+		push(@{$revision_data{__("Changed")}}, $change->{name});
+	    }
+	    elsif ($change->{type} eq "rename")
+	    {
+		push(@{$revision_data{__("Renamed")}},
+		     $change->{from_name} . " -> " . $change->{to_name});
+	    }
+	    elsif ($change->{type} eq "clear")
+	    {
+		push(@{$revision_data{__("Attributes")}},
+		     __x("{name}: {attribute} was cleared",
+			 name      => $change->{name},
+			 attribute => $change->{attribute}));
+	    }
+	    elsif ($change->{type} eq "set")
+	    {
+		push(@{$revision_data{__("Attributes")}},
+		     sprintf("%s: %s = %s",
+			     $change->{name},
+			     $change->{attribute},
+			     $change->{value}));
+	    }
+	    elsif ($change->{type} eq "old_revision")
+	    {
+		push(@parent_revision_ids, $change->{revision_id});
+	    }
+	    elsif ($change->{type} eq "new_manifest")
+	    {
+		$manifest_id = $change->{manifest_id};
+	    }
+	}
+	foreach my $type (@types)
+	{
+	    if (scalar(@{$revision_data{$type}}) > 0)
+	    {
+		$text_buffer->insert_with_tags_by_name
+		    ($text_buffer->get_end_iter(),
+		     "    " . $type . ":\n",
+		     $italics);
+		%seen = ();
+		@unique = sort(grep(! $seen{$_} ++, @{$revision_data{$type}}));
+		foreach my $line (@unique)
+		{
+		    $text_buffer->insert_with_tags_by_name
+			($text_buffer->get_end_iter(),
+			 "\t" . $line . "\n",
+			 $normal);
+		}
+	    }
+	}
+
+	# Parent revision and manifest ids.
+
+	$text_buffer->insert_with_tags_by_name
+	    ($text_buffer->get_end_iter(),
+	     __("\nParent revision id(s): "),
+	     $bold);
+	$text_buffer->insert_with_tags_by_name
+	    ($text_buffer->get_end_iter(),
+	     join(" ", @parent_revision_ids) . "\n",
+	     $normal);
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       __("Manifest id:           "),
+					       $bold);
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       $manifest_id,
+					       $normal);
+
+    }
 
 }
 #

@@ -498,115 +498,128 @@ current branch are to be listed</property>
 		      </child>
 
 		      <child>
-			<widget class="GtkButton" id="advanced_find_button">
+			<widget class="GtkHBox" id="view_button_hbox">
 			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">Use more advanced selection
+			  <property name="homogeneous">False</property>
+			  <property name="spacing">0</property>
+
+			  <child>
+			    <widget class="GtkButton" id="advanced_find_button">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Use more advanced selection
 criteria for selecting a revision</property>
-			  <property name="can_focus">True</property>
-			  <property name="relief">GTK_RELIEF_NORMAL</property>
-			  <property name="focus_on_click">True</property>
-			  <signal name="clicked" handler="advanced_find_button_clicked_cb" last_modification_time="Sat, 08 Dec 2007 10:21:50 GMT"/>
+			      <property name="can_focus">True</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
+			      <property name="focus_on_click">True</property>
+			      <signal name="clicked" handler="advanced_find_button_clicked_cb" last_modification_time="Sat, 08 Dec 2007 10:21:50 GMT"/>
+
+			      <child>
+				<widget class="GtkImage" id="image2">
+				  <property name="visible">True</property>
+				  <property name="stock">gtk-find</property>
+				  <property name="icon_size">4</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
 
 			  <child>
-			    <widget class="GtkImage" id="image2">
+			    <widget class="GtkButton" id="monotone_viz_button">
 			      <property name="visible">True</property>
-			      <property name="stock">gtk-find</property>
-			      <property name="icon_size">4</property>
-			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
-			      <property name="xpad">0</property>
-			      <property name="ypad">0</property>
-			    </widget>
-			  </child>
-			</widget>
-			<packing>
-			  <property name="padding">0</property>
-			  <property name="expand">False</property>
-			  <property name="fill">False</property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkButton" id="monotone_viz_button">
-			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">View revision history
+			      <property name="tooltip" translatable="yes">View revision history
 in Monotone-Viz</property>
-			  <property name="can_focus">True</property>
-			  <property name="relief">GTK_RELIEF_NORMAL</property>
-			  <property name="focus_on_click">True</property>
-			  <signal name="clicked" handler="monotone_viz_button_clicked_cb" last_modification_time="Thu, 24 Apr 2008 15:10:30 GMT"/>
+			      <property name="can_focus">True</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
+			      <property name="focus_on_click">True</property>
+			      <signal name="clicked" handler="monotone_viz_button_clicked_cb" last_modification_time="Thu, 24 Apr 2008 15:10:30 GMT"/>
+
+			      <child>
+				<widget class="GtkImage" id="image33">
+				  <property name="visible">True</property>
+				  <property name="pixbuf">monotone-viz.png</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
 
 			  <child>
-			    <widget class="GtkImage" id="image33">
+			    <widget class="GtkButton" id="revision_change_history_button">
 			      <property name="visible">True</property>
-			      <property name="pixbuf">monotone-viz.png</property>
-			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
-			      <property name="xpad">0</property>
-			      <property name="ypad">0</property>
+			      <property name="tooltip" translatable="yes">View revision's change history</property>
+			      <property name="can_focus">True</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
+			      <property name="focus_on_click">True</property>
+			      <signal name="clicked" handler="revision_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:52:45 GMT"/>
+
+			      <child>
+				<widget class="GtkImage" id="image3">
+				  <property name="visible">True</property>
+				  <property name="stock">gtk-dialog-info</property>
+				  <property name="icon_size">4</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
 			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkButton" id="revision_change_log_button">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">View revision's change log</property>
+			      <property name="can_focus">True</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
+			      <property name="focus_on_click">True</property>
+			      <signal name="clicked" handler="revision_change_log_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:47:54 GMT"/>
+
+			      <child>
+				<widget class="GtkImage" id="image31">
+				  <property name="visible">True</property>
+				  <property name="stock">gtk-dnd</property>
+				  <property name="icon_size">4</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
 			  </child>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
 			  <property name="expand">False</property>
-			  <property name="fill">False</property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkButton" id="revision_change_history_button">
-			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">View revision's change history</property>
-			  <property name="can_focus">True</property>
-			  <property name="relief">GTK_RELIEF_NORMAL</property>
-			  <property name="focus_on_click">True</property>
-			  <signal name="clicked" handler="revision_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:52:45 GMT"/>
-
-			  <child>
-			    <widget class="GtkImage" id="image3">
-			      <property name="visible">True</property>
-			      <property name="stock">gtk-dialog-info</property>
-			      <property name="icon_size">4</property>
-			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
-			      <property name="xpad">0</property>
-			      <property name="ypad">0</property>
-			    </widget>
-			  </child>
-			</widget>
-			<packing>
-			  <property name="padding">0</property>
-			  <property name="expand">False</property>
-			  <property name="fill">False</property>
-			</packing>
-		      </child>
-
-		      <child>
-			<widget class="GtkButton" id="revision_change_log_button">
-			  <property name="visible">True</property>
-			  <property name="tooltip" translatable="yes">View revision's change log</property>
-			  <property name="can_focus">True</property>
-			  <property name="relief">GTK_RELIEF_NORMAL</property>
-			  <property name="focus_on_click">True</property>
-			  <signal name="clicked" handler="revision_change_log_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:47:54 GMT"/>
-
-			  <child>
-			    <widget class="GtkImage" id="image31">
-			      <property name="visible">True</property>
-			      <property name="stock">gtk-dnd</property>
-			      <property name="icon_size">4</property>
-			      <property name="xalign">0.5</property>
-			      <property name="yalign">0.5</property>
-			      <property name="xpad">0</property>
-			      <property name="ypad">0</property>
-			    </widget>
-			  </child>
-			</widget>
-			<packing>
-			  <property name="padding">0</property>
-			  <property name="expand">False</property>
-			  <property name="fill">False</property>
+			  <property name="fill">True</property>
 			</packing>
 		      </child>
 		    </widget>
@@ -744,7 +757,7 @@ in Monotone-Viz</property>
 				  <property name="visible">True</property>
 				  <property name="tooltip" translatable="yes">Go up one directory level</property>
 				  <property name="can_focus">True</property>
-				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="relief">GTK_RELIEF_NONE</property>
 				  <property name="focus_on_click">True</property>
 				  <signal name="clicked" handler="directory_up_button_clicked_cb" last_modification_time="Sun, 11 Nov 2007 09:45:55 GMT"/>
 
@@ -1316,14 +1329,14 @@ last updated with respect to this revision</property>
 				<widget class="GtkVBox" id="file_button_vbox">
 				  <property name="visible">True</property>
 				  <property name="homogeneous">False</property>
-				  <property name="spacing">5</property>
+				  <property name="spacing">0</property>
 
 				  <child>
 				    <widget class="GtkButton" id="search_text_button">
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Search text</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="search_text_button_clicked_cb" last_modification_time="Sun, 16 Mar 2008 11:37:14 GMT"/>
 
@@ -1351,7 +1364,7 @@ last updated with respect to this revision</property>
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Save file contents to disk</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="save_as_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:27 GMT"/>
 
@@ -1380,7 +1393,7 @@ last updated with respect to this revision</property>
 				      <property name="tooltip" translatable="yes">Load file contents
 into a viewer</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="view_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:42 GMT"/>
 
@@ -1408,7 +1421,7 @@ into a viewer</property>
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Annotate file contents</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="annotate_button_clicked_cb" last_modification_time="Sat, 15 Mar 2008 10:28:06 GMT"/>
 
@@ -1436,7 +1449,7 @@ into a viewer</property>
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">View file's change history</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="file_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:43:13 GMT"/>
 
@@ -2422,7 +2435,7 @@ entry field if you cannot remember the syntax</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Execute the query</property>
 			      <property name="can_focus">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">True</property>
 			      <signal name="clicked" handler="execute_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:35 GMT"/>
 
@@ -2463,7 +2476,7 @@ entry field if you cannot remember the syntax</property>
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Enter the current selector into the query above</property>
 			      <property name="can_focus">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">True</property>
 			      <signal name="clicked" handler="populate_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:10 GMT"/>
 
@@ -3367,7 +3380,7 @@ Tag</property>
 				      <property name="visible">True</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 336 10 302.4 336</property>
+				      <property name="hadjustment">0 0 365 10 328.5 365</property>
 				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
@@ -3460,10 +3473,20 @@ Tag</property>
 			      <property name="sensitive">False</property>
 			      <property name="tooltip" translatable="yes">Stop gathering history details</property>
 			      <property name="can_focus">True</property>
-			      <property name="label">gtk-stop</property>
-			      <property name="use_stock">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">True</property>
+
+			      <child>
+				<widget class="GtkImage" id="image39">
+				  <property name="visible">True</property>
+				  <property name="stock">gtk-stop</property>
+				  <property name="icon_size">4</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
@@ -3758,7 +3781,7 @@ file version that is to be compared</property>
 			      <property name="sensitive">False</property>
 			      <property name="tooltip" translatable="yes">Compare the two selected files</property>
 			      <property name="can_focus">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
 			      <property name="focus_on_click">True</property>
 			      <signal name="clicked" handler="compare_button_clicked_cb" last_modification_time="Sun, 10 Feb 2008 17:52:14 GMT"/>
 
@@ -5196,6 +5219,7 @@ make sure it is mono-spaced)</property>
 			    <widget class="GtkFontButton" id="fonts_fontbutton">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
+			      <property name="title" translatable="yes">Pick A Font</property>
 			      <property name="show_style">True</property>
 			      <property name="show_size">True</property>
 			      <property name="use_font">True</property>
@@ -5510,6 +5534,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5527,6 +5552,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5544,6 +5570,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5561,6 +5588,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5578,6 +5606,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5595,6 +5624,7 @@ in comparison listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5712,6 +5742,7 @@ used in context lines</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5763,6 +5794,7 @@ used in context lines</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5846,6 +5878,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -5896,6 +5929,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -6111,6 +6145,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -6128,6 +6163,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -6145,6 +6181,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -6162,6 +6199,7 @@ used in annotated listings</property>
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
+			      <property name="title" translatable="yes">Pick A Colour</property>
 			      <property name="focus_on_click">True</property>
 			    </widget>
 			    <packing>
@@ -6317,54 +6355,67 @@ used in annotated listings</property>
 			      </child>
 
 			      <child>
-				<widget class="GtkButton" id="add_mime_type_button">
+				<widget class="GtkHBox" id="mime_type_button_hbox">
 				  <property name="visible">True</property>
-				  <property name="tooltip" translatable="yes">Add a new MIME
+				  <property name="homogeneous">False</property>
+				  <property name="spacing">0</property>
+
+				  <child>
+				    <widget class="GtkButton" id="add_mime_type_button">
+				      <property name="visible">True</property>
+				      <property name="tooltip" translatable="yes">Add a new MIME
 type to the list</property>
-				  <property name="can_focus">True</property>
-				  <property name="relief">GTK_RELIEF_NORMAL</property>
-				  <property name="focus_on_click">True</property>
-				  <signal name="clicked" handler="add_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:17 GMT"/>
+				      <property name="can_focus">True</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
+				      <property name="focus_on_click">True</property>
+				      <signal name="clicked" handler="add_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:17 GMT"/>
 
-				  <child>
-				    <widget class="GtkImage" id="image37">
-				      <property name="visible">True</property>
-				      <property name="stock">gtk-add</property>
-				      <property name="icon_size">4</property>
-				      <property name="xalign">0.5</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <child>
+					<widget class="GtkImage" id="image37">
+					  <property name="visible">True</property>
+					  <property name="stock">gtk-add</property>
+					  <property name="icon_size">4</property>
+					  <property name="xalign">0.5</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
 				  </child>
-				</widget>
-				<packing>
-				  <property name="padding">0</property>
-				  <property name="expand">False</property>
-				  <property name="fill">False</property>
-				</packing>
-			      </child>
-
-			      <child>
-				<widget class="GtkButton" id="remove_mime_type_button">
-				  <property name="visible">True</property>
-				  <property name="tooltip" translatable="yes">Remove the currently selected
-MIME type from the list</property>
-				  <property name="can_focus">True</property>
-				  <property name="relief">GTK_RELIEF_NORMAL</property>
-				  <property name="focus_on_click">True</property>
-				  <signal name="clicked" handler="remove_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:27 GMT"/>
 
 				  <child>
-				    <widget class="GtkImage" id="image38">
+				    <widget class="GtkButton" id="remove_mime_type_button">
 				      <property name="visible">True</property>
-				      <property name="stock">gtk-remove</property>
-				      <property name="icon_size">4</property>
-				      <property name="xalign">0.5</property>
-				      <property name="yalign">0.5</property>
-				      <property name="xpad">0</property>
-				      <property name="ypad">0</property>
+				      <property name="tooltip" translatable="yes">Remove the currently selected
+MIME type from the list</property>
+				      <property name="can_focus">True</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
+				      <property name="focus_on_click">True</property>
+				      <signal name="clicked" handler="remove_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:27 GMT"/>
+
+				      <child>
+					<widget class="GtkImage" id="image38">
+					  <property name="visible">True</property>
+					  <property name="stock">gtk-remove</property>
+					  <property name="icon_size">4</property>
+					  <property name="xalign">0.5</property>
+					  <property name="yalign">0.5</property>
+					  <property name="xpad">0</property>
+					  <property name="ypad">0</property>
+					</widget>
+				      </child>
 				    </widget>
+				    <packing>
+				      <property name="padding">0</property>
+				      <property name="expand">False</property>
+				      <property name="fill">False</property>
+				    </packing>
 				  </child>
 				</widget>
 				<packing>
@@ -6476,7 +6527,7 @@ MIME type from the list</property>
 				  <property name="n_rows">2</property>
 				  <property name="n_columns">2</property>
 				  <property name="homogeneous">False</property>
-				  <property name="row_spacing">5</property>
+				  <property name="row_spacing">0</property>
 				  <property name="column_spacing">5</property>
 
 				  <child>
@@ -6485,7 +6536,7 @@ MIME type from the list</property>
 				      <property name="tooltip" translatable="yes">Add a new file name
 pattern to the list</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="add_file_name_pattern_button_clicked_cb" last_modification_time="Fri, 16 May 2008 11:41:25 GMT"/>
 
@@ -6517,7 +6568,7 @@ pattern to the list</property>
 				      <property name="tooltip" translatable="yes">Remove the currently selected
 file name pattern from the list</property>
 				      <property name="can_focus">True</property>
-				      <property name="relief">GTK_RELIEF_NORMAL</property>
+				      <property name="relief">GTK_RELIEF_NONE</property>
 				      <property name="focus_on_click">True</property>
 				      <signal name="clicked" handler="remove_file_name_pattern_button_clicked_cb" last_modification_time="Fri, 16 May 2008 11:42:14 GMT"/>
 
