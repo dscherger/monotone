@@ -1,5 +1,5 @@
 /*
-** $Id: luaconf.h,v 1.82a 2006/04/10 18:27:23 roberto Exp $
+** $Id: luaconf.h,v 1.82.1.7 2008/02/11 16:25:08 roberto Exp $
 ** Configuration file for Lua
 ** See Copyright Notice in lua.h
 */
@@ -11,8 +11,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-/* Monotone local: Needs to see the application config.h.  */
-#include "config.h"
 
 /*
 ** ==================================================================
@@ -31,13 +29,8 @@
 #endif
 
 
-/* Monotone local: We can assume POSIX if not _WIN32.  */
-#if !defined(LUA_ANSI)
-#if defined(_WIN32)
+#if !defined(LUA_ANSI) && defined(_WIN32)
 #define LUA_WIN
-#else
-#define LUA_USE_POSIX
-#endif
 #endif
 
 #if defined(LUA_USE_LINUX)
@@ -447,9 +440,10 @@
 @* can use.
 ** CHANGE it if you need lots of (Lua) stack space for your C
 ** functions. This limit is arbitrary; its only purpose is to stop C
-** functions to consume unlimited stack space.
+** functions to consume unlimited stack space. (must be smaller than
+** -LUA_REGISTRYINDEX)
 */
-#define LUAI_MAXCSTACK	2048
+#define LUAI_MAXCSTACK	8000
 
 
 
@@ -559,26 +553,30 @@
 ** in C is extremely slow, so any alternative is worth trying.
 */
 
-/* Monotone local: lrint() is what we really want, but it's C99, so we
-   can't assume it.  Also, remove horrible union hack that cannot be
-   relied upon.  Note that if LUA_NUMBER_DOUBLE is not defined, no
-   special handling is necessary.  */
+/* On a Pentium, resort to a trick */
+#if defined(LUA_NUMBER_DOUBLE) && !defined(LUA_ANSI) && !defined(__SSE2__) && \
+    (defined(__i386) || defined (_M_IX86) || defined(__i386__))
 
-#if defined(LUA_NUMBER_DOUBLE) && defined(HAVE_LRINT)
-#define lua_number2int(i,d) ((i) = lrint(d))
-#define lua_number2integer(i,n) ((i) = lrint(n))
-
-/* On a Microsoft compiler on x86 and not SSE2, use assembler */
-#elif defined(LUA_NUMBER_DOUBLE) && defined(_MSC_VER)		\
-  && (defined(__i386) || defined(__i386__) || defined(_M_IX86))	\
-  && !defined(__SSE2__)
+/* On a Microsoft compiler, use assembler */
+#if defined(_MSC_VER)
 
 #define lua_number2int(i,d)   __asm fld d   __asm fistp i
 #define lua_number2integer(i,n)		lua_number2int(i, n)
 
-/* this option always works, but may be slow */
+/* the next trick should work on any Pentium, but sometimes clashes
+   with a DirectX idiosyncrasy */
 #else
 
+union luai_Cast { double l_d; long l_l; };
+#define lua_number2int(i,d) \
+  { volatile union luai_Cast u; u.l_d = (d) + 6755399441055744.0; (i) = u.l_l; }
+#define lua_number2integer(i,n)		lua_number2int(i, n)
+
+#endif
+
+
+/* this option always works, but may be slow */
+#else
 #define lua_number2int(i,d)	((i)=(int)(d))
 #define lua_number2integer(i,d)	((i)=(lua_Integer)(d))
 
@@ -669,7 +667,7 @@
 */
 #if defined(LUA_USE_POPEN)
 
-#define lua_popen(L,c,m)	((void)L, popen(c,m))
+#define lua_popen(L,c,m)	((void)L, fflush(NULL), popen(c,m))
 #define lua_pclose(L,file)	((void)L, (pclose(file) != -1))
 
 #elif defined(LUA_WIN)
@@ -759,10 +757,6 @@
 ** without modifying the main part of the file.
 */
 
-/* Monotone local: make absolutely sure loadlib is a stub.  */
-#undef LUA_DL_DLOPEN
-#undef LUA_DL_DLL
-#undef LUA_DL_DYLD
 
 
 #endif
