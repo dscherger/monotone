@@ -11,6 +11,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <boost/shared_ptr.hpp>
+
 #include "rev_types.hh"
 #include "database.hh"
 #include "diff_patch.hh"
@@ -121,9 +123,15 @@ struct attribute_conflict
 // detached for some other reason), but with a null content hash.
 struct file_content_conflict
 {
-  node_id nid;
-  file_content_conflict(node_id nid) : nid(nid) {}
+  node_id left_nid, right_nid, result_nid;
+  file_content_conflict(node_id left_nid, node_id right_nid, node_id result_nid) :
+    left_nid(left_nid), right_nid(right_nid), result_nid(result_nid) {}
   file_id left, right;
+
+  void get_ancestor_roster(content_merge_adaptor & adaptor,
+                           node_id & ancestor_nid,
+                           revision_id & rid,
+                           boost::shared_ptr<roster_t const> & ancestor_roster) const;
 };
 
 

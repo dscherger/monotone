@@ -62,25 +62,23 @@ namespace
 
         MM(conflict);
 
-        revision_id rid;
-        shared_ptr<roster_t const> roster_for_file_lca;
-        adaptor.get_ancestral_roster(conflict.nid, rid, roster_for_file_lca);
+        node_id ancestor_nid;
+        revision_id ancestor_rid;
+        shared_ptr<roster_t const> ancestor_roster;
+        conflict.get_ancestor_roster(adaptor, ancestor_nid, ancestor_rid, ancestor_roster);
 
-        // Now we should certainly have a roster, which has the node.
-        I(roster_for_file_lca);
-        I(roster_for_file_lca->has_node(conflict.nid));
+        I(ancestor_roster);
+        I(ancestor_roster->has_node(ancestor_nid)); // this fails if there is no least common ancestor
 
         file_id anc_id, left_id, right_id;
         file_path anc_path, left_path, right_path;
-        get_file_details(*roster_for_file_lca, conflict.nid, anc_id, anc_path);
-        get_file_details(left_roster, conflict.nid, left_id, left_path);
-        get_file_details(right_roster, conflict.nid, right_id, right_path);
+        get_file_details(*ancestor_roster, ancestor_nid, anc_id, anc_path);
+        get_file_details(left_roster, conflict.left_nid, left_id, left_path);
+        get_file_details(right_roster, conflict.right_nid, right_id, right_path);
 
         file_id merged_id;
 
-        content_merger cm(lua, *roster_for_file_lca,
-                          left_roster, right_roster,
-                          adaptor);
+        content_merger cm(lua, *ancestor_roster, left_roster, right_roster, adaptor);
 
         bool merged = false;
 
@@ -111,7 +109,7 @@ namespace
           {
             L(FL("resolved content conflict %d / %d on file '%s'")
               % cnt % total_conflicts % right_path);
-            file_t f = downcast_to_file_t(result.roster.get_node(conflict.nid));
+            file_t f = downcast_to_file_t(result.roster.get_node(conflict.result_nid));
             f->content = merged_id;
 
             it = result.file_content_conflicts.erase(it);

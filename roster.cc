@@ -94,24 +94,24 @@ dump(std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & b
   switch (birth_cause.first)
     {
     case marking_t::invalid:
-      out = "invalid\n";
+      out = "invalid";
       return;
 
     case marking_t::add:
-      out = syms::birth_add() + "\n";
+      out = syms::birth_add();
       return;
 
     case marking_t::suture:
       dump(birth_cause.second.first, tmp);
-      oss << syms::birth_suture() << tmp;
+      oss << syms::birth_suture() << " " << tmp;
       dump(birth_cause.second.second, tmp);
-      oss << tmp << '\n';
+      oss  << " " << tmp;
       out = oss.str();
       return;
 
     case marking_t::split:
       dump(birth_cause.second.first, tmp);
-      oss << syms::birth_split() << tmp << '\n';
+      oss << syms::birth_split() << tmp;
       out = oss.str();
       return;
     }
@@ -531,6 +531,9 @@ shallow_equal(node_t a, node_t b,
   if (a->attrs != b->attrs)
     return false;
 
+  if (a->ancestors != b->ancestors)
+    return false;
+
   if (! same_type(a,b))
     return false;
 
@@ -574,9 +577,8 @@ shallow_equal(node_t a, node_t b,
 }
 
 
-// FIXME_ROSTERS: why does this do two loops?  why does it pass 'true' to
-// shallow_equal?
-// -- njs
+// FIXME_ROSTERS: why does this do two loops? why does it pass 'true' for
+// shallow_compare_dir_children to shallow_equal? -- njs
 bool
 roster_t::operator==(roster_t const & other) const
 {
@@ -867,14 +869,10 @@ roster_t::drop_detached_node(node_id nid)
     I(downcast_to_dir_t(n)->children.empty());
   // all right, kill it
   safe_erase(nodes, nid);
-  // can use safe_erase here, because while not every detached node appears in
-  // old_locations, all those that used to be in the tree do.  and you should
-  // only ever be dropping nodes that were detached, not nodes that you just
-  // created and that have never been attached.
 
-  // Update; resolving a duplicate name conflict via suture requires
-  // dropping nodes that were never attached. So we erase the key without
-  // checking whether it was present. FIXME: clean up these comments.
+  // Resolving a duplicate name conflict via suture requires dropping nodes
+  // that were never attached. So we erase the key without checking whether
+  // it was present.
   old_locations.erase(nid);
 }
 
@@ -1361,7 +1359,7 @@ namespace
 
                 node_t new_bn = b.get_node(new_nid);
                 new_bn->ancestors.first = an->ancestors.first;
-                new_bn->ancestors.second = bn->ancestors.first;
+                new_bn->ancestors.second = an->ancestors.second;
               };
 
             b_new.erase(bid);
@@ -1587,7 +1585,12 @@ namespace
   mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
   {
     new_marking.birth_revision = new_rid;
-    new_marking.birth_cause = make_pair(marking_t::add, null_ancestors);
+
+    if (n->ancestors.first == n->self || n->ancestors.first == the_null_node)
+      new_marking.birth_cause = make_pair(marking_t::add, null_ancestors);
+    else
+      new_marking.birth_cause = make_pair(marking_t::suture, n->ancestors);
+
     I(new_marking.parent_name.empty());
     new_marking.parent_name.insert(new_rid);
     I(new_marking.file_content.empty());
@@ -1822,19 +1825,59 @@ mark_merge_roster(roster_t const & left_roster,
         }
       else if (exists_in_left && !exists_in_right)
         {
-          // FIXME_SUTURE: handle case where n is an ancestor of a sutured node on
-          // the right; abe_3 in test.
           node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
 
-          // Must be unborn on the right (as opposed to dead); otherwise it
-          // would not be in the merge. Therefore the birth revision for
-          // this node must be in the uncommon ancestors on the left:
-          I(left_uncommon_ancestors.find(left_marking.birth_revision)
-            != left_uncommon_ancestors.end());
+          switch (left_marking.birth_cause.first)
+            {
+             case marking_t::invalid:
+               I(false);
 
-          mark_unmerged_node(left_marking, left_node,
-                             new_rid, n, new_marking);
+             case marking_t::add:
+               // Must be unborn on the right (as opposed to dead);
+               // otherwise it would not be in the merge. Therefore the
+               // birth revision for this node must be in the uncommon
+               // ancestors on the left:
+               I(left_uncommon_ancestors.find(left_marking.birth_revision)
+                 != left_uncommon_ancestors.end());
+
+               mark_unmerged_node(left_marking, left_node,
+                                  new_rid, n, new_marking);
+
+               break;
+
+            case marking_t::suture:
+              {
+                // If one of the ancestor nodes is in right, merge marks with it.
+                node_id right_nid = left_marking.birth_cause.second.first;
+                node_map::const_iterator rni = right_roster.all_nodes().find(right_nid);
+                if (rni == right_roster.all_nodes().end())
+                  {
+                    right_nid = left_marking.birth_cause.second.second;
+                    rni = right_roster.all_nodes().find(right_nid);
+                  }
+
+                if (rni == right_roster.all_nodes().end())
+                  {
+                    // Neither ancestor is in right.
+                    I(left_uncommon_ancestors.find(left_marking.birth_revision)
+                      != left_uncommon_ancestors.end());
+
+                    mark_unmerged_node(left_marking, left_node,
+                                       new_rid, n, new_marking);
+                  }
+                else
+                  {
+                    mark_merged_node(safe_get(left_markings, n->self), left_uncommon_ancestors, left_node,
+                                     safe_get(right_markings, right_nid), right_uncommon_ancestors, rni->second,
+                                     new_rid, n, new_marking);
+                  }
+                }
+              break;
+
+            case marking_t::split:
+              I(false); // not implemented yet
+            }
         }
       else
         {
@@ -2773,15 +2816,15 @@ parse_marking(basic_io::parser & pa,
               pa.sym();
               pa.str(tmp_1);
               pa.str(tmp_2);
-              marking.birth_cause = make_pair (marking_t::add,
+              marking.birth_cause = make_pair (marking_t::suture,
                                                make_pair(lexical_cast<node_id>(tmp_1),
                                                          lexical_cast<node_id>(tmp_2)));
             }
-          else if (pa.symp (syms::birth_suture))
+          else if (pa.symp (syms::birth_split))
             {
               pa.sym();
               pa.str(tmp_1);
-              marking.birth_cause = make_pair (marking_t::add,
+              marking.birth_cause = make_pair (marking_t::split,
                                                make_pair(lexical_cast<node_id>(tmp_1),
                                                          the_null_node));
             }

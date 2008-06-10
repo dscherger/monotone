@@ -165,7 +165,17 @@ writefile("checkout.sh", "checkout.sh abe 2")
 commit("testbranch", "abe_2")
 abe_2 = base_revision()
 
-check(mtn("merge"), 0, nil, true)
+-- This fails with content conflicts
+check(mtn("merge"), 1, nil, true)
+canonicalize("stderr")
+get ("expected-merge-messages-abe_2-jim_1-conflicts")
+check(samefile("expected-merge-messages-abe_2-jim_1-conflicts", "stderr"))
+
+check (mtn("automate", "show_conflicts"), 0, true, nil)
+
+-- This succeeds
+get ("merge-abe_2-jim_1-resolve_conflicts", "_MTN/conflicts")
+check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, nil, true)
 canonicalize("stderr")
 get ("expected-merge-messages-abe_2-jim_1")
 check(samefile("expected-merge-messages-abe_2-jim_1", "stderr"))

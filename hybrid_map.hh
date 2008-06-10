@@ -1,6 +1,7 @@
 #ifndef __HYBRID_MAP_HH__
 #define __HYBRID_MAP_HH__
 
+// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright 2007 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -171,8 +172,55 @@ public:
       return !(*this == other);
     }
   };
+  class const_reverse_iterator
+  {
+    friend class hybrid_map<Key, Val>;
+    bool valid;
+    typename omap::const_reverse_iterator o;
+    hybrid_map<Key, Val> const * n;
+  public:
+    const_reverse_iterator(hybrid_map<Key, Val> const * n,
+		   typename omap::const_reverse_iterator const & i)
+      : valid(i != n->ordered.rend()), o(i), n(n)
+    {}
+    const_reverse_iterator()
+      : valid(false)
+    {}
+    const_reverse_iterator & operator++()
+    {
+      I(valid);
+      ++o;
+      valid = (o != n->ordered.rend());
+      return *this;
+    }
+    const_reverse_iterator operator++(int)
+    {
+      const_reverse_iterator out = *this;
+      ++*this;
+      return out;
+    }
+    value_type const & operator*() const
+    {
+      I(valid);
+      return *o;
+    }
+    value_type const * operator->() const
+    {
+      I(valid);
+      return o.operator->();
+    }
+    bool operator==(const_reverse_iterator const & other) const
+    {
+      return (valid == other.valid) && (!valid || (*this)->first == other->first);
+    }
+    bool operator!=(const_reverse_iterator const & other) const
+    {
+      return !(*this == other);
+    }
+  };
   friend class iterator;
   friend class const_iterator;
+  friend class const_reverse_iterator;
   iterator begin()
   {
     return iterator(this, ordered.begin());
@@ -192,6 +240,14 @@ public:
   const_iterator end() const
   {
     return const_iterator(this, ordered.end());
+  }
+  const_reverse_iterator rbegin() const
+  {
+    return const_reverse_iterator(this, ordered.rbegin());
+  }
+  const_reverse_iterator rend() const
+  {
+    return const_reverse_iterator(this, ordered.rend());
   }
   const_iterator find(key_type const & k) const
   {
