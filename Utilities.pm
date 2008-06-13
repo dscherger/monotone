@@ -59,6 +59,7 @@ sub glade_signal_autoconnect($$);
 sub hex_dump($);
 sub open_database($$$);
 sub run_command($@);
+sub save_as_file($$$);
 sub set_label_value($$);
 #
 ##############################################################################
@@ -431,6 +432,105 @@ sub open_database($$$)
     $chooser_dialog->destroy();
 
     return $ret_val;
+
+}
+#
+##############################################################################
+#
+#   Routine      - save_as_file
+#
+#   Description  - Allows the user to save the specified data as a file on
+#                  disk.
+#
+#   Data         - $parent    : The parent window for any dialogs that are to
+#                               be displayed.
+#                  $file_name : The suggested name of the file that is to be
+#                               saved.
+#                  $data      : A reference to a variable containing the raw
+#                               file data.
+#
+##############################################################################
+
+
+
+sub save_as_file($$$)
+{
+
+    my($parent, $file_name, $data) = @_;
+
+    my($chooser_dialog,
+       $continue,
+       $done);
+
+    $chooser_dialog = Gtk2::FileChooserDialog->new(__("Save As"),
+						   $parent,
+						   "save",
+						   "gtk-cancel" => "cancel",
+						   "gtk-save" => "ok");
+    $chooser_dialog->set_current_name
+	($file_name) if ($file_name ne "");
+
+    do
+    {
+	if ($chooser_dialog->run() eq "ok")
+	{
+
+	    my ($fh,
+		$fname);
+
+	    $continue = 1;
+	    $fname = $chooser_dialog->get_filename();
+
+	    # See if the file exists, if so then get a confirmation from the
+	    # user.
+
+	    if (-e $fname)
+	    {
+		my $dialog = Gtk2::MessageDialog->new
+		    ($parent,
+		     ["modal"],
+		     "question",
+		     "yes-no",
+		     __("File already exists.\nDo you want to replace it?"));
+		$dialog->set_title(__("Confirm"));
+		$continue = 0 if ($dialog->run() ne "yes");
+		$dialog->destroy();
+	    }
+
+	    if ($continue)
+	    {
+
+		# Attempt to save the contents to the file.
+
+		if (! defined($fh = IO::File->new($fname, "w")))
+		{
+		    my $dialog = Gtk2::MessageDialog->new
+			($parent,
+			 ["modal"],
+			 "warning",
+			 "close",
+			 __x("{error_message}.", error_message => $!));
+		    $dialog->run();
+		    $dialog->destroy();
+		}
+		else
+		{
+		    $fh->print($$data);
+		    $fh->close();
+		    $done = 1;
+		}
+
+	    }
+
+	}
+	else
+	{
+	    $done = 1;
+	}
+    }
+    while (! $done);
+
+    $chooser_dialog->destroy();
 
 }
 #

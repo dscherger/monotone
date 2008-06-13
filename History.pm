@@ -60,9 +60,9 @@ sub display_revision_change_history($$);
 
 # Private routines.
 
-sub coloured_revision_change_log_button_clicked_cb($$);
 sub compare_button_clicked_cb($$);
 sub compare_revisions($$$;$);
+sub comparison_revision_change_log_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
 sub get_file_history_helper($$$);
 sub get_history_window();
@@ -70,6 +70,7 @@ sub get_revision_comparison_window();
 sub get_revision_history_helper($$$);
 sub history_list_button_clicked_cb($$);
 sub mtn_diff($$$$;$);
+sub save_differences_button_clicked_cb($$);
 #
 ##############################################################################
 #
@@ -140,11 +141,13 @@ sub display_revision_change_history($$)
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Displaying revision history"));
     $wm->update_gui();
-    $counter = 1;
+    $counter = 0;
     $instance->{stop} = 0;
     $instance->{history_buffer}->set_text("");
     for my $revision_id (@{$instance->{history}})
     {
+
+	++ $counter;
 
 	# Print out the revision summary.
 
@@ -225,6 +228,13 @@ sub display_revision_change_history($$)
 				     get_end_iter()));
 	$button->show_all();
 
+	if ($counter % 100 == 0)
+	{
+	    $instance->{appbar}->set_progress_percentage
+		($counter / scalar(@{$instance->{history}}));
+	    $wm->update_gui();
+	}
+
 	# Stop if the user wants to.
 
 	last if ($instance->{stop});
@@ -241,14 +251,6 @@ sub display_revision_change_history($$)
 	    $instance->{history_buffer}->
 		insert($instance->{history_buffer}->get_end_iter(), "\n");
 	}
-
-	if ($counter % 100 == 0)
-	{
-	    $instance->{appbar}->set_progress_percentage
-		($counter / scalar(@{$instance->{history}}));
-	    $wm->update_gui();
-	}
-	++ $counter;
 
     }
 
@@ -345,10 +347,12 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Displaying file history"));
     $wm->update_gui();
-    $counter = 1;
+    $counter = 0;
     $instance->{history_buffer}->set_text("");
     for my $revision_id (@{$instance->{history}})
     {
+
+	++ $counter;
 
 	# Print out the revision summary.
 
@@ -443,7 +447,7 @@ sub display_file_change_history($$$)
 	}
 
 	$instance->{appbar}->set_progress_percentage
-	    ($counter ++ / scalar(@{$instance->{history}}));
+	    ($counter / scalar(@{$instance->{history}}));
 	$wm->update_gui();
 
     }
@@ -668,19 +672,10 @@ sub compare_revisions($$$;$)
 
     my($mtn, $revision_id_1, $revision_id_2, $file_name) = @_;
 
-    my($char,
-       @files,
+    my(@files,
        $i,
        $instance,
-       $is_binary,
-       $iter,
-       $len,
-       $line,
-       @lines,
-       $max_len,
-       $name,
-       $padding,
-       $rest);
+       $iter);
     my $wm = WindowManager->instance();
 
     $instance = get_revision_comparison_window();
@@ -714,159 +709,266 @@ sub compare_revisions($$$;$)
 
     $instance->{appbar}->set_status(__("Calculating differences"));
     $wm->update_gui();
-    mtn_diff(\@lines,
+    mtn_diff($instance->{diff_output},
 	     $mtn->get_db_name(),
 	     $revision_id_1,
 	     $revision_id_2,
 	     $file_name);
 
-    # Find the longest line for future padding.
+    # Does the user want pretty printed differences output?
 
-    $max_len = 0;
-    foreach my $line (@lines)
-    {
-	($char, $rest) = unpack("a1a*", $line);
-	$rest =~ s/\s+$//o;
-	$rest = expand($rest);
-	$max_len = $len if (($len = length($rest)) > $max_len);
-	$line = $char . $rest;
-    }
-
-    # Display the result, highlighting according to the diff output. Remember
-    # the first two lines are just empty comment lines.
-
-    $instance->{appbar}->
-	set_status(__("Formatting and displaying differences"));
-    $wm->update_gui();
-    $padding = " " x $max_len;
-    $line = substr(" Summary" . $padding, 0, $max_len);
-    $instance->{comparison_buffer}->insert_with_tags_by_name
-	($instance->{comparison_buffer}->get_end_iter(),
-	 $line . "\n",
-	 "compare-info");
-    for ($i = 1; $i <= $#lines; ++ $i)
+    if ($user_preferences->{coloured_diffs})
     {
 
-	# Deal with the initial comment lines that summarise the entire set of
-	# differences between the revisions.
+	my($char,
+	   $is_binary,
+	   $len,
+	   $line,
+	   @lines,
+	   $max_len,
+	   $name,
+	   $padding,
+	   $rest);
 
-	if ($lines[$i] =~ m/^\#/o)
+	# Yes the user wants pretty printed differences output.
+
+	@lines = @{$instance->{diff_output}};
+
+	# Find the longest line for future padding.
+
+	$max_len = 0;
+	foreach my $line (@lines)
 	{
-	    $line = substr($lines[$i], 1);
-	    $instance->{comparison_buffer}->insert
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n");
+	    ($char, $rest) = unpack("a1a*", $line);
+	    $rest =~ s/\s+$//o;
+	    $rest = expand($rest);
+	    $max_len = $len if (($len = length($rest)) > $max_len);
+	    $line = $char . $rest;
 	}
 
-	# Deal with lines that introduces a new file comparison.
+	# Display the result, highlighting according to the diff output.
+	# Remember the first two lines are just empty comment lines.
 
-	elsif ($lines[$i] =~ m/^==/o)
+	$instance->{appbar}->
+	    set_status(__("Formatting and displaying differences"));
+	$wm->update_gui();
+	$padding = " " x $max_len;
+	$line = substr(" Summary" . $padding, 0, $max_len);
+	$instance->{comparison_buffer}->insert_with_tags_by_name
+	    ($instance->{comparison_buffer}->get_end_iter(),
+	     $line . "\n",
+	     "compare-info");
+	for ($i = 1; $i <= $#lines; ++ $i)
 	{
 
-	    # Print separator.
+	    # Deal with the initial comment lines that summarise the entire set
+	    # of differences between the revisions.
 
-	    $instance->{comparison_buffer}->
-		insert_pixbuf($instance->{comparison_buffer}->get_end_iter(),
-			      $line_image);
-	    $instance->{comparison_buffer}->
-		insert($instance->{comparison_buffer}->get_end_iter(),
-		       "\n");
-
-	    # Extract the file name, if this doesn't work then it is probably a
-	    # comment stating that the file is binary.
-
-	    ++ $i;
-	    ($name) = ($lines[$i] =~ m/^--- (.+)\s+[0-9a-f]{40}$/o);
-	    if (defined($name))
+	    if ($lines[$i] =~ m/^\#/o)
 	    {
-		$is_binary = 0;
-	    }
-	    else
-	    {
-		($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
-		$is_binary = 1;
+		$line = substr($lines[$i], 1);
+		$instance->{comparison_buffer}->insert
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n");
 	    }
 
-	    # Print out the details for the first file.
+	    # Deal with lines that introduce a new file comparison.
 
-	    $line = substr(substr($lines[$i], $is_binary ? 1 : 3) . $padding,
-			   0,
-			   $max_len);
-	    $instance->{comparison_buffer}->insert_with_tags_by_name
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n",
-		 "compare-file-info-1");
-
-	    # Store the file name and the starting line number so that the user
-	    # can later jump straight to it using the file combobox.
-
-	    $iter = $instance->{comparison_buffer}->get_end_iter();
-	    $iter->backward_line();
-	    $instance->{comparison_buffer}->create_mark($name, $iter, FALSE);
-	    push(@files, {file_name => $name, line_nr => $iter->get_line()});
-
-	    # Print out the details for the second file if there is one.
-
-	    if (! $is_binary)
+	    elsif ($lines[$i] =~ m/^==/o)
 	    {
+
+		# Print separator.
+
+		$instance->{comparison_buffer}->
+		    insert_pixbuf($instance->{comparison_buffer}->
+				      get_end_iter(),
+				  $line_image);
+		$instance->{comparison_buffer}->
+		    insert($instance->{comparison_buffer}->get_end_iter(),
+			   "\n");
+
+		# Extract the file name, if this doesn't work then it is
+		# probably a comment stating that the file is binary.
+
 		++ $i;
-		$line = substr(substr($lines[$i], 3) . $padding, 0, $max_len);
+		($name) = ($lines[$i] =~ m/^--- (.+)\s+[0-9a-f]{40}$/o);
+		if (defined($name))
+		{
+		    $is_binary = 0;
+		}
+		else
+		{
+		    ($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
+		    $is_binary = 1;
+		}
+
+		# Print out the details for the first file.
+
+		$line = substr(substr($lines[$i], $is_binary ? 1 : 3)
+			           . $padding,
+			       0,
+			       $max_len);
 		$instance->{comparison_buffer}->insert_with_tags_by_name
 		    ($instance->{comparison_buffer}->get_end_iter(),
 		     $line . "\n",
-		     "compare-file-info-2");
+		     "compare-file-info-1");
+
+		# Store the file name and the starting line number so that the
+		# user can later jump straight to it using the file combobox.
+
+		$iter = $instance->{comparison_buffer}->get_end_iter();
+		$iter->backward_line();
+		push(@files,
+		     {file_name => $name, line_nr => $iter->get_line()});
+
+		# Print out the details for the second file if there is one.
+
+		if (! $is_binary)
+		{
+		    ++ $i;
+		    $line = substr(substr($lines[$i], 3) . $padding,
+				   0,
+				   $max_len);
+		    $instance->{comparison_buffer}->insert_with_tags_by_name
+			($instance->{comparison_buffer}->get_end_iter(),
+			 $line . "\n",
+			 "compare-file-info-2");
+		}
+
+	    }
+
+	    # Deal with difference context lines.
+
+	    elsif ($lines[$i] =~ m/^@@/o)
+	    {
+		$line = substr(substr($lines[$i], 2) . $padding, 0, $max_len);
+		$instance->{comparison_buffer}->insert_with_tags_by_name
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n",
+		     "compare-info");
+	    }
+
+	    # Deal with - change lines.
+
+	    elsif ($lines[$i] =~ m/^-/o)
+	    {
+		$line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
+		$instance->{comparison_buffer}->insert_with_tags_by_name
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n",
+		     "compare-file-1");
+	    }
+
+	    # Deal with + change lines.
+
+	    elsif ($lines[$i] =~ m/^\+/o)
+	    {
+		$line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
+		$instance->{comparison_buffer}->insert_with_tags_by_name
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n",
+		     "compare-file-2");
+	    }
+
+	    # Print out the rest.
+
+	    else
+	    {
+		$line = substr($lines[$i], 1);
+		$instance->{comparison_buffer}->insert
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $line . "\n");
+	    }
+
+	    if (($i % 100) == 0)
+	    {
+		$instance->{appbar}->set_progress_percentage
+		    (($i + 1) / scalar(@lines));
+		$wm->update_gui();
 	    }
 
 	}
 
-	# Deal with difference context lines.
+    }
+    else
+    {
 
-	elsif ($lines[$i] =~ m/^@@/o)
+	my($is_binary,
+	   $name);
+
+	# No the user wants the raw differences output.
+
+	# Display the result, storing the locations of the files.
+
+	$instance->{appbar}->set_status(__("Displaying differences"));
+	$wm->update_gui();
+	for ($i = 0; $i <= $#{$instance->{diff_output}}; ++ $i)
 	{
-	    $line = substr(substr($lines[$i], 2) . $padding, 0, $max_len);
-	    $instance->{comparison_buffer}->insert_with_tags_by_name
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n",
-		 "compare-info");
-	}
 
-	# Deal with - change lines.
+	    # Deal with lines that introduce a new file comparison.
 
-	elsif ($lines[$i] =~ m/^-/o)
-	{
-	    $line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
-	    $instance->{comparison_buffer}->insert_with_tags_by_name
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n",
-		 "compare-file-1");
-	}
+	    if ($instance->{diff_output}->[$i] =~ m/^==/o)
+	    {
 
-	# Deal with + change lines.
+		# Extract the file name, if this doesn't work then it is
+		# probably a comment stating that the file is binary.
 
-	elsif ($lines[$i] =~ m/^\+/o)
-	{
-	    $line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
-	    $instance->{comparison_buffer}->insert_with_tags_by_name
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n",
-		 "compare-file-2");
-	}
+		++ $i;
+		($name) = ($instance->{diff_output}->[$i] =~
+			   m/^--- (.+)\s+[0-9a-f]{40}$/o);
+		if (defined($name))
+		{
+		    $is_binary = 0;
+		}
+		else
+		{
+		    ($name) = ($instance->{diff_output}->[$i] =~
+			       m/^\# (.+) is binary$/o);
+		    $is_binary = 1;
+		}
 
-	# Print out the rest.
+		# Print out the details for the first file.
 
-	else
-	{
-	    $line = substr($lines[$i], 1);
-	    $instance->{comparison_buffer}->insert
-		($instance->{comparison_buffer}->get_end_iter(),
-		 $line . "\n");
-	}
+		$instance->{comparison_buffer}->insert
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $instance->{diff_output}->[$i] . "\n");
 
-	if (($i % 100) == 0)
-	{
-	    $instance->{appbar}->set_progress_percentage
-		(($i + 1) / scalar(@lines));
-	    $wm->update_gui();
+		# Store the file name and the starting line number so that the
+		# user can later jump straight to it using the file combobox.
+
+		$iter = $instance->{comparison_buffer}->get_end_iter();
+		$iter->backward_line();
+		push(@files,
+		     {file_name => $name, line_nr => $iter->get_line()});
+
+		# Print out the details for the second file if there is one.
+
+		if (! $is_binary)
+		{
+		    ++ $i;
+		    $instance->{comparison_buffer}->insert
+			($instance->{comparison_buffer}->get_end_iter(),
+			 $instance->{diff_output}->[$i] . "\n");
+		}
+
+	    }
+
+	    # Print out the rest.
+
+	    else
+	    {
+		$instance->{comparison_buffer}->insert
+		    ($instance->{comparison_buffer}->get_end_iter(),
+		     $instance->{diff_output}->[$i] . "\n");
+	    }
+
+	    if (($i % 100) == 0)
+	    {
+		$instance->{appbar}->set_progress_percentage
+		    (($i + 1) / scalar(@{$instance->{diff_output}}));
+		$wm->update_gui();
+	    }
+
 	}
 
     }
@@ -886,6 +988,11 @@ sub compare_revisions($$$;$)
     @files = sort({ $a->{file_name} cmp $b->{file_name} } @files);
     $i = 1;
     $instance->{file_comparison_combobox}->get_model()->clear();
+    $instance->{file_comparison_combobox}->get_model()->set
+	($instance->{file_comparison_combobox}->get_model()->append(),
+	 CLS_NAME_COLUMN, "Difference Summary",
+	 CLS_LINE_NR_COLUMN,
+	     $instance->{comparison_buffer}->get_start_iter()->get_line());
     foreach my $file (@files)
     {
 	$instance->{file_comparison_combobox}->get_model()->set
@@ -950,10 +1057,41 @@ sub file_comparison_combobox_changed_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - coloured_revision_change_log_button_clicked_cb
+#   Routine      - save_differences_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the save
+#                  differences button in a revision comparison window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, revision and action that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub save_differences_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my $data;
+
+    $data = join("\n", @{$instance->{diff_output}}) . "\n";
+    save_as_file($instance->{window}, "unified_diff.out", \$data);
+
+}
+#
+##############################################################################
+#
+#   Routine      - comparison_revision_change_log_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on either of
-#                  the two coloured revision change log buttons in a revision
+#                  the two revision change log buttons in a revision
 #                  comparison window.
 #
 #   Data         - $widget  : The widget object that received the signal.
@@ -965,7 +1103,7 @@ sub file_comparison_combobox_changed_cb($$)
 
 
 
-sub coloured_revision_change_log_button_clicked_cb($$)
+sub comparison_revision_change_log_button_clicked_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -974,24 +1112,42 @@ sub coloured_revision_change_log_button_clicked_cb($$)
     local $instance->{in_cb} = 1;
 
     my($colour,
-       $revision_id);
+       $revision_id,
+       $revision_name);
 
-    # Work out what revision id to use.
+    # Work out what to do.
 
     if ($widget == $instance->{revision_change_log_1_button})
     {
 	$revision_id = $instance->{revision_id_1};
-	$colour = "compare-1";
+	if ($user_preferences->{coloured_diffs})
+	{
+	    $colour = "compare-1";
+	}
+	else
+	{
+	    $revision_name = "- " . $revision_id;
+	}
     }
     else
     {
 	$revision_id = $instance->{revision_id_2};
-	$colour = "compare-2";
+	if ($user_preferences->{coloured_diffs})
+	{
+	    $colour = "compare-2";
+	}
+	else
+	{
+	    $revision_name = "+ " . $revision_id;
+	}
     }
 
     # Display the full revision change log.
 
-    display_change_log($instance->{mtn}, $revision_id, $colour);
+    display_change_log($instance->{mtn},
+		       $revision_id,
+		       $colour,
+		       $revision_name);
 
 }
 #
@@ -1264,6 +1420,7 @@ sub get_revision_comparison_window()
 		 $widget->hide();
 		 $instance->{file_comparison_combobox}->get_model()->clear();
 		 $instance->{comparison_buffer}->set_text("");
+		 $instance->{diff_output} = [];
 		 $instance->{mtn} = undef;
 		 return TRUE;
 	     },
@@ -1289,20 +1446,32 @@ sub get_revision_comparison_window()
 	create_format_tags($instance->{comparison_buffer});
 	$instance->{comparison_textview}->modify_font($mono_font);
 
-	# Setup the revision log button coloured labels.
+	# Setup the revision log button labels.
 
-	$instance->{revision_change_log_1_button_label}->
-	    set_markup("<span foreground='"
-		       . $user_preferences->{colours}->{cmp_revision_1}->{fg}
-		       . "'>"
-		       . __("Revision Change Log")
-		       . "</span>");
-	$instance->{revision_change_log_2_button_label}->
-	    set_markup("<span foreground='"
-		       . $user_preferences->{colours}->{cmp_revision_2}->{fg}
-		       . "'>"
-		       . __("Revision Change Log")
-		       . "</span>");
+	if ($user_preferences->{coloured_diffs})
+	{
+	    $instance->{revision_change_log_1_button_label}->
+		set_markup("<span foreground='"
+			   . $user_preferences->{colours}->{cmp_revision_1}->
+			       {fg}
+			   . "'>"
+			   . __("Revision Change Log")
+			   . "</span>");
+	    $instance->{revision_change_log_2_button_label}->
+		set_markup("<span foreground='"
+			   . $user_preferences->{colours}->{cmp_revision_2}->
+			       {fg}
+			   . "'>"
+			   . __("Revision Change Log")
+			   . "</span>");
+	}
+	else
+	{
+	    $instance->{revision_change_log_1_button_label}->
+		set_text(__("- Revision Change Log"));
+	    $instance->{revision_change_log_2_button_label}->
+		set_text(__("+ Revision Change Log"));
+	}
 
 	# Register the window for management.
 
@@ -1327,6 +1496,7 @@ sub get_revision_comparison_window()
 
     # Empty out the contents.
 
+    $instance->{diff_output} = [];
     $instance->{comparison_buffer}->set_text("");
 
     return $instance;

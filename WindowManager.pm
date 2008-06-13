@@ -3,7 +3,7 @@
 #   File Name    - WindowManager.pm
 #
 #   Description  - Class module that provides a class for managing application
-#                  window, i.e. their recycling, busy cursor management etc.
+#                  windows, i.e. their recycling, busy cursor management etc.
 #
 #   Author       - A.E.Cooper.
 #
@@ -61,12 +61,13 @@ use Gtk2;
 
 # A hash of event types that are to be filtered out when updating a busy GUI.
 
-my %filtered_events = ("button-press"   => 1,
-		       "2button-press"  => 1,
+my %filtered_events = ("2button-press"  => 1,
 		       "3button-press"  => 1,
+                       "button-press"   => 1,
 		       "button-release" => 1,
 		       "key-press"      => 1,
 		       "key-release"    => 1,
+		       "motion-notify"  => 1,
 		       "scroll"         => 1);
 
 # The singleton object.

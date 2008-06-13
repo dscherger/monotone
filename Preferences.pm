@@ -59,7 +59,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 1;
+use constant PREFERENCES_FORMAT_VERSION => 2;
 
 # Text viewable application mime types.
 
@@ -145,6 +145,7 @@ sub remove_file_name_pattern_button_clicked_cb($$);
 sub remove_mime_type_button_clicked_cb($$);
 sub save_current_mime_types_settings($);
 sub save_preferences_from_gui($);
+sub upgrade_preferences($);
 #
 ##############################################################################
 #
@@ -278,9 +279,12 @@ sub load_preferences()
 	    if ($@ ne "");
 	$prefs_file->close();
 	die(__x("Preferences file, `{file_name}',\n", file_name => $file_name)
-	    . __("is at the wrong version, please remove it.\n"))
+	    . __("is corrupt, please remove it.\n"))
 	    if (! exists($preferences{version})
-		|| $preferences{version} != PREFERENCES_FORMAT_VERSION);
+		|| $preferences{version} == 0
+		|| $preferences{version} > PREFERENCES_FORMAT_VERSION);
+	upgrade_preferences(\%preferences)
+	    if ($preferences{version} < PREFERENCES_FORMAT_VERSION);
 	return \%preferences;
     }
     else
@@ -977,6 +981,7 @@ sub get_preferences_window($$)
 			    # Appearance pane widgets.
 
 			    "fonts_fontbutton",
+			    "comparison_pretty_print_checkbutton",
 			    "annotation_prefix_1_foreground_colorbutton",
 			    "annotation_prefix_1_background_colorbutton",
 			    "annotation_text_1_foreground_colorbutton",
@@ -1191,6 +1196,8 @@ sub load_preferences_into_gui($)
 
     $instance->{fonts_fontbutton}->
 	set_font_name($instance->{preferences}->{fixed_font});
+    $instance->{comparison_pretty_print_checkbutton}->
+	set_active($instance->{preferences}->{coloured_diffs} ? TRUE : FALSE);
     for my $item (@colour_mapping_table)
     {
 	my $field;
@@ -1309,6 +1316,8 @@ sub save_preferences_from_gui($)
 
     $instance->{preferences}->{fixed_font} =
 	$instance->{fonts_fontbutton}->get_font_name();
+    $instance->{preferences}->{coloured_diffs} =
+	$instance->{comparison_pretty_print_checkbutton}->get_active() ? 1 : 0;
     for my $item (@colour_mapping_table)
     {
 	my $field;
@@ -1333,6 +1342,33 @@ sub save_preferences_from_gui($)
     save_current_mime_types_settings($instance);
 
     return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - upgrade_preferences
+#
+#   Description  - Upgrades the given preferences record to the latest
+#                  version.
+#
+#   Data         - $preferences : A reference to the preferences record that
+#                                 is to be upgraded.
+#
+##############################################################################
+
+
+
+sub upgrade_preferences($)
+{
+
+    my $preferences = $_[0];
+
+    if ($preferences->{version} == 1)
+    {
+	$preferences->{coloured_diffs} = 1;
+    }
+    $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
 }
 #
@@ -1367,6 +1403,7 @@ sub initialise_preferences()
 				       sort_cronologically => 1},
 			    id     => {limit               => 200,
 				       sort_cronologically => 1}},
+	 coloured_diffs => 1,
 	 fixed_font     => "monospace 10",
 	 colours        => {annotate_prefix_1 => {fg => "AliceBlue",
 						  bg => "CadetBlue"},
