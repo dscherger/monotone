@@ -1,4 +1,4 @@
-// Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2004, 2008 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -67,14 +67,13 @@ using boost::shared_ptr;
 // monotone release. Note that this is _not_ the database schema format; see
 // schema_migration for that.
 //
-// We use the oldest format number possible when writing each revision. That
-// means that if an old revision is regenerated, it has the same revid
-// (revision_format is included in the text that is hashed to compute the
-// revid). That maintains history, maximizes interoperability between
-// monotone versions, and simplifies maintaining the test suite; there are
-// many tests that have hard-coded revision ids, that would spuriously break
-// if the revision_format number changed. schema_migration and
-// workspace_migration in particular have this problem.
+// The revision format number is included in the revision text that is
+// hashed to compute the revid. Therefore we use the oldest format number
+// possible when writing each revision. That maintains history, maximizes
+// interoperability between monotone versions, and simplifies maintaining
+// the test suite; there are many tests that have hard-coded revision ids,
+// that would spuriously break if the revision_format number changed.
+// schema_migration and workspace_migration in particular have this problem.
 static const unsigned int current_revision_format = 2;
 static const unsigned int oldest_supported_revision_format = 1;
 
@@ -84,7 +83,7 @@ revision_t::required_revision_format() const
   // Format 2 supports file suturing, so check the edges to see if there are
   // any sutures.
   unsigned int result = oldest_supported_revision_format;
-  
+
   for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
     if (i->second->nodes_sutured.size() > 0)
       result = 2;

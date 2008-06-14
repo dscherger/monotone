@@ -1865,9 +1865,6 @@ namespace
 
         switch (birth_cause.first)
           {
-          case marking_t::invalid:
-            I(false);
-
           case marking_t::add:
             // case ii, iv; if ii, conflict will be discovered in next phase
             create_node_for(n, new_roster);
@@ -2572,7 +2569,7 @@ struct base_scalar
   void
   make_dir(char const * name, node_id nid, roster_t & r, marking_map & markings)
   {
-    r.create_dir_node(nid);
+    r.create_dir_node(nid, null_ancestors);
     r.attach_node(nid, file_path_internal(name));
     marking_t marking;
     marking.birth_revision = root_rid;
@@ -2583,7 +2580,7 @@ struct base_scalar
   void
   make_file(char const * name, node_id nid, roster_t & r, marking_map & markings)
   {
-    r.create_file_node(arbitrary_file, nid);
+    r.create_file_node(arbitrary_file, nid, null_ancestors);
     r.attach_node(nid, file_path_internal(name));
     marking_t marking;
     marking.birth_revision = root_rid;
@@ -2813,7 +2810,9 @@ struct file_content_scalar : public virtual file_scalar
         break;
       case scalar_conflict:
         file_content_conflict const & c = idx(result.file_content_conflicts, 0);
-        I(c.nid == thing_nid);
+        I(c.left_nid == thing_nid);
+        I(c.right_nid == thing_nid);
+        I(c.result_nid == thing_nid);
         I(c.left == content_for(left_val));
         I(c.right == content_for(right_val));
         file_id & content = downcast_to_file_t(result.roster.get_node(thing_nid))->content;
@@ -2987,7 +2986,7 @@ make_dir(roster_t & r, marking_map & markings,
          revision_id const & birth_rid, revision_id const & parent_name_rid,
          string const & name, node_id nid)
 {
-  r.create_dir_node(nid);
+  r.create_dir_node(nid, null_ancestors);
   r.attach_node(nid, file_path_internal(name));
   marking_t marking;
   marking.birth_revision = birth_rid;
@@ -3002,7 +3001,7 @@ make_file(roster_t & r, marking_map & markings,
           string const & name, file_id const & content,
           node_id nid)
 {
-  r.create_file_node(content, nid);
+  r.create_file_node(content, nid, null_ancestors);
   r.attach_node(nid, file_path_internal(name));
   marking_t marking;
   marking.birth_revision = birth_rid;
@@ -3060,22 +3059,25 @@ UNIT_TEST(roster_merge, node_lifecycle)
   // 7 = 1 root + 2 common + 2 safe a + 2 safe b
   I(result.roster.all_nodes().size() == 7);
   // check that they're the right ones...
+  MM(result.roster);
+  MM(a_roster);
+  MM(b_roster);
   I(shallow_equal(result.roster.get_node(common_dir_nid),
-                  a_roster.get_node(common_dir_nid), false));
+                  a_roster.get_node(common_dir_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(common_file_nid),
-                  a_roster.get_node(common_file_nid), false));
+                  a_roster.get_node(common_file_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(common_dir_nid),
-                  b_roster.get_node(common_dir_nid), false));
+                  b_roster.get_node(common_dir_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(common_file_nid),
-                  b_roster.get_node(common_file_nid), false));
+                  b_roster.get_node(common_file_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(a_safe_dir_nid),
-                  a_roster.get_node(a_safe_dir_nid), false));
+                  a_roster.get_node(a_safe_dir_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(a_safe_file_nid),
-                  a_roster.get_node(a_safe_file_nid), false));
+                  a_roster.get_node(a_safe_file_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(b_safe_dir_nid),
-                  b_roster.get_node(b_safe_dir_nid), false));
+                  b_roster.get_node(b_safe_dir_nid), false, true, false));
   I(shallow_equal(result.roster.get_node(b_safe_file_nid),
-                  b_roster.get_node(b_safe_file_nid), false));
+                  b_roster.get_node(b_safe_file_nid), false, true, false));
 }
 
 UNIT_TEST(roster_merge, attr_lifecycle)

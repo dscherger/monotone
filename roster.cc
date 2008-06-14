@@ -64,10 +64,36 @@ namespace
   }
 }
 
-// The marking_map format number must be incremented whenever any basic_io
-// format used for marking_map data in the database changes, but only once
-// per monotone release.
-static const unsigned int current_marking_map_format = 2;
+// The roster format number must be incremented whenever any basic_io format
+// used for roster or marking_map data in the database changes, but only
+// once per monotone release.
+//
+// A hash of the manifest text is included in the revision text that is
+// hashed to compute the revid, and we want to produce the same revision id
+// when an old revision is regenerated. Therefore we use the oldest format
+// number possible when writing each manifest.
+static const unsigned int current_roster_format = 2;
+static const unsigned int oldest_supported_roster_format = 1;
+
+unsigned int
+roster_t::required_roster_format(marking_map const & mm) const
+{
+  // Format 2 supports birth_cause in the marking_map. This only matters if
+  // there is a suture or split, so check the marking map for those.
+  unsigned int result = oldest_supported_roster_format;
+
+  for (marking_map::const_iterator i = mm.begin(); i != mm.end(); ++i)
+    if (i->second.birth_cause.first != marking_t::add)
+      result = 2;
+
+  return result;
+}
+
+unsigned int
+roster_current_roster_format()
+{
+  return current_roster_format;
+}
 
 template <> void
 dump(node_id const & val, string & out)
@@ -93,10 +119,6 @@ dump(std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & b
   string tmp;
   switch (birth_cause.first)
     {
-    case marking_t::invalid:
-      out = "invalid";
-      return;
-
     case marking_t::add:
       out = syms::birth_add();
       return;
@@ -517,7 +539,8 @@ same_type(node_t a, node_t b)
 inline bool
 shallow_equal(node_t a, node_t b,
               bool shallow_compare_dir_children,
-              bool compare_file_contents)
+              bool compare_file_contents,
+              bool compare_ancestors)
 {
   if (a->self != b->self)
     return false;
@@ -531,8 +554,13 @@ shallow_equal(node_t a, node_t b,
   if (a->attrs != b->attrs)
     return false;
 
-  if (a->ancestors != b->ancestors)
-    return false;
+  if (compare_ancestors)
+    // compare_ancestors is set false in unit tests when comparing a merge
+    // to a parent; in that case, the ancestors may be different; the child
+    // has the parent as an ancestor, but the parent is probably the birth
+    // revision, and has no ancestor.
+    if (a->ancestors != b->ancestors)
+      return false;
 
   if (! same_type(a,b))
     return false;
@@ -1155,7 +1183,6 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
        ++ri, ++mi)
     {
       I(!null_id(mi->second.birth_revision));
-      I(mi->second.birth_cause.first != marking_t::invalid);
       I(!mi->second.parent_name.empty());
 
       if (is_file_t(ri->second))
@@ -1830,9 +1857,6 @@ mark_merge_roster(roster_t const & left_roster,
 
           switch (left_marking.birth_cause.first)
             {
-             case marking_t::invalid:
-               I(false);
-
              case marking_t::add:
                // Must be unborn on the right (as opposed to dead);
                // otherwise it would not be in the merge. Therefore the
@@ -2731,7 +2755,8 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
 void
 push_marking(basic_io::stanza & st,
              bool is_file,
-             marking_t const & mark)
+             marking_t const & mark,
+             int const marking_format)
 {
 
   I(!null_id(mark.birth_revision));
@@ -2739,16 +2764,14 @@ push_marking(basic_io::stanza & st,
 
   switch (mark.birth_cause.first)
     {
-    case marking_t::invalid:
-      I(false);
-      break;
-
     case marking_t::add:
-      st.push_str_pair(syms::birth_cause, syms::birth_add);
+      if (marking_format > 1)
+        st.push_str_pair(syms::birth_cause, syms::birth_add);
       break;
 
     case marking_t::suture:
       {
+        I(marking_format > 1);
         std::vector<std::string> data;
         data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
         data.push_back(lexical_cast<string>(mark.birth_cause.second.second));
@@ -2758,6 +2781,7 @@ push_marking(basic_io::stanza & st,
 
     case marking_t::split:
       {
+        I(marking_format > 1);
         std::vector<std::string> data;
         data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
         st.push_str_multi(syms::birth_cause, syms::birth_split, data);
@@ -2803,6 +2827,9 @@ parse_marking(basic_io::parser & pa,
         }
       else if (pa.symp(syms::birth_cause))
         {
+          // If the current roster_format is 1, there will be no birth_cause
+          // line, and marking.birth_cause will default to marking_t::add,
+          // which is correct.
           std::string tmp_1, tmp_2;
           pa.sym();
 
@@ -2869,9 +2896,11 @@ roster_t::print_to(basic_io::printer & pr,
                    bool print_local_parts) const
 {
   I(has_root());
+
+  int const marking_format = required_roster_format(mm);
   {
     basic_io::stanza st;
-    st.push_str_pair(basic_io::syms::format_version, lexical_cast<string>(current_marking_map_format));
+    st.push_str_pair(basic_io::syms::format_version, lexical_cast<string>(marking_format));
     pr.print_stanza(st);
   }
   for (dfs_iter i(root_dir, true); !i.finished(); ++i)
@@ -2924,7 +2953,7 @@ roster_t::print_to(basic_io::printer & pr,
 
           marking_map::const_iterator m = mm.find(curr->self);
           I(m != mm.end());
-          push_marking(st, is_file_t(curr), m->second);
+          push_marking(st, is_file_t(curr), m->second, marking_format);
         }
 
       pr.print_stanza(st);
@@ -2969,7 +2998,12 @@ roster_t::parse_from(basic_io::parser & pa,
     pa.esym(basic_io::syms::format_version);
     string vers;
     pa.str(vers);
-    I(vers == lexical_cast<string>(current_marking_map_format));
+    unsigned int format = boost::lexical_cast<unsigned int>(vers);
+    E(format <= current_roster_format,
+      F("encountered a roster with unknown format version %s\n"
+        "I only understand formats up to version %s\n"
+        "a newer version of monotone is required to complete this operation")
+      % vers % current_roster_format);
   }
 
   while(pa.symp())

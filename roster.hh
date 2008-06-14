@@ -133,14 +133,16 @@ downcast_to_file_t(node_t const n)
 }
 
 bool
-shallow_equal(node_t a, node_t b, bool shallow_compare_dir_children,
-              bool compare_file_contents = true);
+shallow_equal(node_t a, node_t b,
+              bool shallow_compare_dir_children,
+              bool compare_file_contents = true,
+              bool compare_ancestors = true);
 
 template <> void dump(node_t const & n, std::string & out);
 
 struct marking_t
 {
-  typedef enum {invalid, add, suture, split} birth_cause_t;
+  typedef enum {add, suture, split} birth_cause_t;
 
   revision_id birth_revision;
   std::pair<birth_cause_t, std::pair<node_id, node_id> > birth_cause;
@@ -149,7 +151,7 @@ struct marking_t
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
-  marking_t() : birth_cause (std::make_pair (invalid, null_ancestors)) {};
+  marking_t() : birth_cause (std::make_pair (add, null_ancestors)) {};
   bool operator==(marking_t const & other) const
   {
     return birth_revision == other.birth_revision
@@ -241,6 +243,8 @@ public:
   // verify that this roster is sane, and corresponds to the given
   // marking map
   void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
+
+  unsigned int required_roster_format(marking_map const & mm) const;
 
   void print_to(basic_io::printer & pr,
                 marking_map const & mm,
@@ -422,7 +426,8 @@ void calculate_ident(roster_t const & ros,
                      manifest_id & ident);
 
 // for roster_delta
-void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
+unsigned int roster_current_roster_format();
+void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark, int const marking_format);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 
 #ifdef BUILD_UNIT_TESTS
