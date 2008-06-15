@@ -1,0 +1,811 @@
+Introduction
+------------
+
+This writeup follows [1], but uses a different notation for revisions,
+and is expanded to include item identities, suture, and split.
+
+There are (at least) two criteria for a merge algorithm. It must match
+user expectations, and it must have an efficient implementation.
+
+multi-*-merge used in monotone 0.4 and earlier meets both criteria,
+except that it does not support file suturing and splitting. File
+suturing is needed for resolving duplicate name conflicts in some
+cases, and is a useful user operation. Splitting is needed to undo
+suturing, and is also a useful user operation.
+
+Here we extend multi-*-merge to support suturing and splitting. We
+call the result ss-*-merge.
+
+The main difference between multi-*-merge and ss-*-merge is the
+implementation of caching the mark data. Since we will be discussing
+monotone code details, we use terminology here that matches the code,
+to reduce confusion. In particular, "node" has the same meaning as in
+the code; it is a file or directory, which is a node in the filesystem
+tree. We use "revision" or "rev" to mean a node in the revision
+history graph.
+
+References
+----------
+
+[1] http://thread.gmane.org/gmane.comp.version-control.monotone.devel/4297
+    Nathaniel Smith's writeup of unique-*-merge
+
+[2] http://article.gmane.org/gmane.comp.version-control.revctrl/93
+    Nathaniel Smith's writeup of multi-*-merge; used in monotone 0.40
+    and earlier
+
+[3] life-cycle merge description.
+    FIXME: write it, put reference here.
+    monotone currently uses die-die-die for this, but that also needs
+    to be enhanced for sutures and splits
+
+User model
+----------
+
+"Revisions" contain sets of "nodes". In monotone, the nodes are files
+and directories.
+
+Each node has a set of "scalars" that can change value over the life
+of the node. In monotone, the scalars are the file or directory name
+(including directory path), the file contents (represented by a hash
+of the actual contents), and attributes.
+
+Nodes (and therefore revisions) can be "changed", "branched" and
+"merged".
+
+"Changing" means the scalars associated with a node have different
+values in one child revision that is derived from one parent.
+
+"Branching" means the scalars associated with a node have different
+values in two or more child revisions that are derived from one parent.
+
+"Merging" means two parents of a single child revision have different
+scalars for a node.
+
+Sometimes the user must specify what value the child scalars should
+have in a merge, but the goal is for monotone to figure out the
+appropriate value without user intervention whenever possible.
+
+The set of revisions related by changing, branching, and merging
+form a revision graph; the nodes in the graph are revisions, the
+edges are the changes to node scalars. The graph is a directed
+acyclic graph.
+
+Nodes have two life cycle events: birth and death.
+
+Each node in a revision has a unique identity (a number). When a
+node is born, it is assigned a new identity (one that has never been
+used previously). When a node dies, it is simply removed from the
+child revision.
+
+A node birth or death can be "independent" (the user simply creates or
+deletes the node), or part of a "suture" or "split".
+
+"suture" means two parent nodes die, a new child node is born, and the
+child inherits merged values of the scalars of the parents. Sutures
+are always user operations; they can occur during merge conflict
+resolution, or as an independent user operation. The user may need to
+specify the child scalar values, but we'd like monotone to help in
+that process as much as possible.
+
+"split" means one parent node dies, two child nodes are born, and each
+child inherits a possibly changed copy of the parent's scalars. Splits
+can occur only as independent user action; they can be used to undo a
+suture. The child scalar values are only changed from the parent
+values if the user specifies a new value.
+
+Suturing and splitting directories is not currently supported, but
+that's not relevant here.
+
+If a node's birth and death are not part of a suture or split, the
+scalars associated with it are not inherited from or by other nodes.
+This is the model assumed in [2].
+
+Note that we are _not_ considering node existence to be a scalar that
+is merged; we are just considering the effect of sutures and splits on
+merging the other scalars. We assume node existence is merged using a
+different merge process (see [3]).
+
+User expectations for scalars:
+
+1) Whenever a user explicitly sets the value of a scalar, they express
+   a claim that their setting is superior to the old setting.
+
+2) Whenever a user chooses to commit a new revision in which the
+   scalar value has not changed, they implicitly affirm the validity
+   of the decisions that led to the value of the scalar in that
+   revision's parents.
+
+3) A potential conflict occurs when a new revision is a merge of two
+   parent revisions, and the scalar values are different in the
+   parents. The conflict should actually occur only if the settings on
+   each side of the merge express parallel claims. (This is made more
+   precise below).
+
+Corollary of (1) and (2): whenever a user explicitly sets the value,
+they express that they consider their new setting to be superior to
+_all_ old settings.
+
+This is the same user model as in [2], but expanded to include the
+concepts of node identity, suture, and split.
+
+Notation
+--------
+
+A revision is labeled by a capital letter (A, B).
+
+The identities of the nodes in a revision are indicated by a set of
+integers (A1,2; B2,3).
+
+The value of a scalar is indicated by a lowercase letter associated
+with each identity integer (A1a,2a; B2b,3c).
+
+Parentage is indicated by lines joining revisions. Branching is
+indicated by two revisions with one parent, merging is indicated by
+one revision with two parents.
+
+Suturing and splitting are indicated by different node ids between
+parent and child nodes.
+
+"marking" is indicated by *; a revision is marked if a scalar changed in
+that revision relative to a parent. A mark indicates that a human
+expressed an intention at this revision, by 2) above.
+
+? indicates we are not yet sure whether the revision should be marked.
+
+Algorithm
+---------
+
+During a single execution of the mark-merge algorithm, we only
+consider one scalar. In monotone, we conceptually repeat mark-merge
+for each scalar and each node in the new child; this may be partly
+done in parallel.
+
+We start by marking the graph of previous revisions.  For each revision in
+the graph, we either mark it, or do not.
+
+There are several cases. Note that the node ids play no role in this
+algorithm; they are present to clarify implementation issues discussed
+below.
+
+    i)      A1a*   graph roots are always marked; the node is newly born
+
+
+            A1a
+    ii)     |      no change in value, so no mark
+            B1a
+
+            A1a
+           /   \    split; value not changed, so not marked
+          B2a   C3a
+
+
+            A1a
+    iii)    |      b != a, so revision B is marked
+            B1b*
+
+            A1a
+           /   \     branch; value changed, so marked
+          B1b*  C1c*
+
+            A1a
+           /   \     split; value changed, so marked
+          B2b*  C3c*
+
+
+          A1a  B1b
+    iv)    \   /   c != a, c != b so revision C is marked
+            C1c*
+
+          A1a  B1a
+           \   /   c != a so revision C is marked
+            C1c*
+
+
+          A1a  B2b
+           \   /    suture; value changed, so marked
+            C3c*
+
+          A1a  B2a
+           \   /    suture; value changed, so marked
+            C3c*
+
+
+          A1a  B1b
+    v)     \   /    should be marked iff this was a conflict
+            C1b?
+
+          A1a  B2b
+           \   /    suture; should be marked iff this was a conflict
+            C3b
+
+
+          A1a  B1a
+    vi)    \   /    no change in value, so no mark
+            C1a
+
+          A1a  B2a
+           \   /    suture; no change in value, so not marked
+            C3a
+
+
+These are the same marking rules as in [2], but expanded to include
+suture and split. Note that there are still only 6 cases.
+
+
+Note that for any revision graph, the marks on existing revisions do not
+change as new revisions are added; the marks may be cached for
+performance.
+
+Definition: The "parents" operation returns the set of revisions that
+contain the parent nodes of a node n in a revision A.
+
+Here "parent nodes" is defined by the operations "change", "branch",
+"merge", "suture", and "split". If the child node is not sutured or
+split, the child and parent nodes have the same identities. If the
+child node is sutured or split, the child and parent identities are
+different.
+
+Definition: The "ancestors" of a node with identity n at revision A
+include all revisions that can be reached by the parents operation.
+
+This definition of "ancestors" is consistent with the traditional
+definition in graph theory; it just makes explicit what is meant by
+suture and split.
+
+In [2], the marks for each node identity are distinct; each revision
+graph contains only one node identity. Here, because sutures and
+splits link identities, the marks for identities are _not_ distinct.
+Instead, the revision graph includes all identities that are included
+in the ancestor revisions of the leaf revisions. Each revision has
+only one mark; the mark applies to all identities in the revision.
+
+Definition: By *(A), we mean we set of minimal marked ancestors of A.
+
+"Minimal" here is used in the mathematical sense of a node in a graph
+that has no descendents in that graph.
+
+*(A) is the "marking set" of A.
+
+This is the same definition as in [2], but the meaning of "ancestors"
+is expanded to allow changes in identities due to suture and split.
+
+Algorithm: Given two revisions to merge, A and B, we consider four cases
+for the scalar being merged:
+
+   a) value(A) = value(B): return the shared value
+
+   b) *(A) > B: return value(B)
+
+   c) *(B) > A: return value(A)
+
+   d) else: conflict; escalate to user
+
+Where "*(A) > B" means "all elements of the set *(A) are non-strict
+ancestors of the revision B".
+
+Now we can say what we mean by "was a conflict" in case (v) above:
+given A1a - C1b and B1a - C1b, we leave C unmarked if and only if
+*(A) > B.
+
+Examples
+--------
+
+In each example, we have the exisiting revision graph, and are trying to
+merge the two leaves.
+
+"wins" means "the scalar takes this revision's value in the child".
+
+Examples 1 - 5 are the same as in [2], but presented with our new
+notation. 6 and 7 contain sutures.
+
+1.
+    A1a*
+   /  \
+  B1a  C1b*
+
+result: *(B) = {A}, A > C, so C wins.
+
+2.
+    A1a*
+   /   \
+  B1b*  C1c*
+
+result: *(B) = {B}, *(C) = {C}, neither B > C nor C > B, so
+conflict.
+
+3.
+    A1a*
+   /   \
+  B1b*  C1b*
+   \   / \
+    D1b   E1c*
+
+result: *(D) = {B, C}; C > E, but B is not > E, so E does not win.
+*(E) = {E}, which is not > D, so D does not win. Conflict.
+
+note: This demonstrates that this algorithm does _not_ do convergence.
+Instead, it takes the conservative position that for one revision to
+silently beat another, the winning revision must pre-empt _all_ the
+intentions that created the losing revision. While it's easy to come
+up with just-so stories where this is the correct thing to do (e.g., B
+and C each contain some other changes that independently require 'a'
+to become 'b'; E will have fixed up C's changes, but not B's), this
+doesn't actually mean much. Whether this is good or bad behavior a
+somewhat unresolved question, that may ultimately be answered by which
+merge algorithms turn out to be more tractable.
+
+4.
+    A1a*
+   /   \
+  B1b* C1b*
+  | \ / |
+  |  X  |
+  | / \ |
+  D1b  E1c*
+
+result: *(D) = {B, C} > E.  *(E) = {E}, which is not > D.  E wins
+with no conflict.
+
+5.
+     A1a*
+    /   \
+   B1b* C1c*
+  /  \ / \
+ D1c* X  E1b*
+  \  / \ /
+   F1c  G1b
+
+result: *(F) = {D, C}; C > G but D is not > G, so F does not
+win.  Likewise, *(G) = {B, E}; B > F but E is not > F, so F
+does not win either.  Conflict.
+
+6. "checksum.sh" example with conflict
+
+     A1a*   B2b*
+    /   \  /  \
+   C1c*  D3a  E2d*
+    \   /  \  /
+     G4c    H5d
+
+Abe and Beth both create a new file "checksum.sh" in A and B. The
+scalar in this graph is the file contents, but the file name scalar
+causes a conflict which is resolved by suturing. Jim sutures A and B
+in D, but Abe and Beth each make changes in C and E, and then merge
+via suture in G and H. Jim is now merging G and H, with another
+suture.
+
+At first glance, since nodes G and H have different node ids, they do
+not need merging. However, they have the same file name, so the name
+conflict is resolved by suturing nodes 4 and 5; that requires merging
+the file content.
+
+result: *(G) = {B, C}; B > H, but C not > H, so H does not win. *(H) =
+{A, E}; A > G, but E not > G, so G does not win. Conflict.
+
+7. "checksum.sh" example with clean merge
+
+Abe creates "checksum.sh" and emails it to Beth; Beth changes the
+contents but Abe does not; the result should be Beth's changed
+version. The merging pattern is the same as in 6.
+
+     A1a*   B2a*
+     |  \  /  \
+     |  D3a   E2b*
+      \ /  \  /
+       G4a  H5b
+
+result: *(G) = {A, B} > H, so H wins. *(H) = {A, E} not > G, so G does
+not win.
+
+Note that the user will be involved in the merge of G and H, because
+nodes 4 and 5 have the same file name scalar, and resolving that
+conflict requires user intervention. The point in this example is that
+the merge of the file content can succeed without user intervention.
+
+FIXME: add split conflict and clean examples. Add split/suture and
+suture/split examples.
+
+Math
+----
+
+The proofs in [1,2] are concerned only about how the scalar values in
+the revision graph change from parent to child, not about how node
+identities change. We have not changed anything that affects that;
+sutures are just merges as far as the scalars are concerned, and
+splits are just new revisions. So the proofs not repeated here.
+
+FIXME: repeat the proofs here, with the current notation, and give
+them names/numbers so we can refer to them.
+
+Implementation
+--------------
+
+Here we are concerned with the efficiency of the implementation of
+these algorithms. We noted above that the marks on a revision graph
+can be cached for performance; we discuss the data structure used for
+that cache, and how it is computed as new revisions are added.
+
+For multi-*-merge, there is a separate revision graph for each scalar
+value of each node identity. Thus the marks can be stored as sets of
+revision ids; a revision id is in the set if that revision is marked
+for that node and that scalar.
+
+The algorithm needs *(A) for each revision A; we compute that as each
+revision is added, and cache it in a data structure called a
+"marking_map":
+
+struct marking_t
+{
+  std::set<revision_id> parent_name;
+  std::set<revision_id> file_content;
+  std::map<attr_key, std::set<revision_id> > attrs;
+};
+
+typedef std::map<node_id, marking_t> marking_map;
+
+We've left out details of the real 'struct marking_t' that are not
+relevant here. In particular, 'birth_revision' is used in life-cycle
+merging, not in scalar merging; see [3].
+
+The scalars are the name of the file (called 'parent_name' instead of
+'name' for obscure historical reasons), the file content, and the set
+of attributes.
+
+The type 'node_id' corresponds exactly to our term 'node identity'; it
+is a number that is unique within the entire set of revisions in the
+database.
+
+For a given revision, each set in marking_t stores the most recent
+ancestor nodes on each parent branch in which the scalar was changed.
+
+A marking_map is specific to a revision; the database stores the
+marking_maps with each revision.
+
+When we extend this to include sutures and scalars, there is no longer
+a distinct revision graph for each node_id. Note that there is still a
+unique revision graph for each scalar. So at first glance, the
+marking_map data structure is simply not appropriate.
+
+However, if we allow some data duplication, we can use the same
+structure, but modify how we compute it. In essence, when a node is
+sutured, its initial marking map is the union of the parent node
+marking maps. First, some simple examples.
+
+The marking map for node F in example 5, assuming the only changes
+after node birth are content changes, and ignoring attributes:
+
+F_marking_map =>
+    (node 1 =>
+        (parent_name => {A},
+         file_content => {C, D}))
+
+G_marking_map =>
+    (node 1 =>
+        (parent_name => {A},
+         file_content => {B, E}))
+
+Now we walk thru the computations needed while attempting to merge F
+and G. The code starts in merge.cc, interactive_merge_and_store.
+
+First we compute the lists of uncommon ancestors of F and G; that will
+allow computing *(F) > G and *(G) > F.
+
+Uncommon ancestors are all revisions that are non-strict ancestors to
+F or G, but not both. This is done by graph.cc get_uncommon_ancestors,
+using other data cached in the database (not the marking_map).
+
+F_uncommon => {D, F}
+G_uncommon => {E, G}
+
+*(B) > A states that "all marked ancestors of B are also ancestors of
+A". This is equivalent to "no marked ancestor of B is in B_uncommon".
+So in general, to compute *(B) > A:
+
+    For each revision in B_marking_map, return false if the revision
+    is in B_uncommon. Otherwise return true.
+
+This is implemented in the function roster_merge.cc a_wins.
+
+To compute *(F) > G for parent_name:
+
+    Search F_uncommon for F_marking_map(node 1)(parent_name); A is not
+    in {D, F}, so return true.
+
+To compute *(G) > F for parent_name:
+
+    Search G_uncommon for G_marking_map(node 1)(parent_name); A is not
+    in {E, G}, so return true.
+
+To compute *(F) > G for file_content:
+
+    Search F_uncommon for F_marking_map(node 1)(file_content); D is in
+    {D, F}, so return false.
+
+To compute *(G) > F for file_content:
+
+    Search G_uncommon for G_marking_map(node 1)(file_content); E is in
+    {E, G}, so return false.
+
+Since both *(F) > G and *(G) > F return false, there is a conflict.
+Assume the user resolves the conflict by changing file content to d in
+revision H; we need to compute the marking_map for H.
+
+To compute the marking_map for a revision C, given the marking_maps
+for the parent revisions A, B:
+
+First we check whether the scalar has changed in the child from either
+parent.
+
+If it has not changed from either, the new marking_map is the same as
+either parent; they must also be the same as each other.
+
+If it has changed from both, the new marking map is {C}.
+
+If it has changed from one parent:
+
+    If there was a conflict, the revision that caused the conflict and
+    has the new scalar value is the new mark. This requires searching
+    the uncommon ancestors for revisions in marking_map again.
+
+    If there was no conflict, the new marks are the same as the parent
+    marks, which must be the same as each other.
+
+In psuedocode:
+
+        if value (A) = value (B) then
+            assert A_marking_map (scalar) = B_marking_map (scalar)
+
+            return A_marking_map (scalar)
+        end if
+
+        if value (C) = value (A) then
+
+            R = revision from A_uncommon that is also in
+            A_marking_map(scalar).
+
+            if R /= null then
+                return {R}
+            else
+                -- no conflict
+                assert A_marking_map (scalar) = B_marking_map (scalar)
+
+                return A_marking_map (scalar)
+            end if;
+
+        elsif value (C) = value (B) then
+
+            R = revision from B_uncommon that is also in
+            B_marking_map(scalar).
+
+            if R /= null then
+                return {R}
+            else
+                -- no conflict
+                assert A_marking_map (scalar) = B_marking_map (scalar)
+
+                return A_marking_map (scalar)
+            end if;
+        end if
+
+
+This is implemented in the function roster.cc mark_merged_scalar.
+
+Thus the marking map for H is:
+
+H_marking_map =>
+    (node 1 =>
+        (parent_name => {A},
+         file_content => {H}))
+
+To find the complexity order for this operation, let r be the number
+of revisions in the revision graph, n be the number of file nodes.
+
+Because the marking map is the minimal set of marked ancestors, its
+size is O(1).
+
+The computations involved in determining whether there is a
+conflict, and in updating the marking map, is O(n); the computations
+do not take longer as more revisions are added.
+
+Storing the marking map in the database and ram requires O(nr) space.
+The database size increases linearly with the number of revisions and
+the number of nodes.
+
+Now we turn to the effect of suturing. The marking maps for example 6:
+
+G_marking_map =>
+    (node 4 =>
+        (parent_name => {A, B},
+         file_content => {B, C}))
+
+H_marking_map =>
+    (node 5 =>
+        (parent_name => {A, B},
+         file_content => {A, E}))
+
+Uncommon ancestors:
+
+G_uncommon => {C, G}
+H_uncommon => {E, H}
+
+In attempting to compute *(G) > H for any scalar, we first have to
+deal with the fact that we have different node ids. We have been told
+by the user to suture nodes 4 and 5 into 6. This is recorded in the
+'ancestors' component of the 'node' data type (see roster.hh) for the
+new node 6; it contains the set {4, 5}. So we refine the
+implementation of *(B) > A for node n:
+
+    For each node m in ancestors(n):
+
+        For each revision in B_marking_map(node m)(scalar)), return
+        false if the revision is in B_uncommon.
+
+    Otherwise return true.
+
+G parent_name = H parent_name, so we don't need to compute *(G) > H or
+*(H) > G for parent_name.
+
+*(G) > H for file_content:
+
+    Search G_uncommon for G_marking_map(nodes 4, 5)(file_content); {B,
+    C} is in {C, G}, so return false.
+
+*(H) > G for file_content:
+
+    Search H_uncommon for H_marking_map(nodes 4, 5)(file_content); {A,
+    E} is in {E, H}, so return false.
+
+Assume the user resolves the conflict by changing file content to d in
+revision I.
+
+The algorithm for computing the new marking_map must also be extended
+to handle ancestor nodes different from child nodes. If the nodes are
+actually different, the parent marking maps will not be the same even
+if the values are the same.
+
+To compute the marking_map for a node n in revision C, given the marking_maps
+for ancestor nodes l, m in the parent revisions A, B:
+
+        if value (A) = value (B) then
+            if n = l = m then
+                assert A_marking_map(node l)(scalar) =
+                B_marking_map(node m)(scalar)
+            end if
+
+            return erase_ancestors (union (A_marking_map(node l)(scalar), B_marking_map(node l)(scalar)))
+        end if
+
+        if value (C) = value (A) then
+
+            R = revision from A_uncommon that is also in
+            A_marking_map(node l)(scalar).
+
+            if R /= null then
+                return {R}
+            else
+                -- no conflict
+                assert, return union (as above)
+            end if;
+
+        elsif value (C) = value (B) then
+
+            R = revision from B_uncommon that is also in
+            B_marking_map(node m)(scalar).
+
+            if R /= null then
+                return {R}
+            else
+                -- no conflict
+                assert, return union (as above)
+            end if;
+        end if
+
+I_marking_map =>
+    (node 6 =>
+        (parent_name => (A, B),
+         file_content => {E}))
+
+
+Applying these algorithms to example 7, starting with the first merge
+to D:
+
+A_marking_map =>
+    (node 1 =>
+     (parent_name => {A},
+      file_content => {A}))
+
+B_marking_map =>
+    (node 2 =>
+     (parent_name  => {B},
+      file_content => {B}))
+
+Compute merge:
+
+For parent_name:
+value(A) = value(B) = "checksum.sh", but node ids conflict, so ask
+user; they say 'suture 1,2->3 with value(D) = "checksum.sh"'
+
+For file_content:
+value(A) = value(B) = a, so value(D) = a
+
+merged node = D3a
+
+Compute marking map:
+
+For parent_name:
+value(A) = value(B) => union ({A}, {B})
+
+For file_content:
+value(A) = value(B) => union ({A}, {B})
+
+D_marking_map =>
+    (node 3 =>
+     (parent_name  => {A, B},
+      file_content => {A, B}))
+
+Computing the marking map for a non-merged node is simple (left as an
+exercise for the reader :):
+
+E_marking_map =>
+    (node 2 =>
+     (parent_name  => {B},
+      file_content => {E}))
+
+Merging A, D to G:
+
+Compute merge:
+
+For parent_name:
+value(A) = value(D) = "checksum.sh", but node ids conflict, so ask
+user; they say 'suture 1,3->4 with value(G) = "checksum.sh"'
+
+For file_content:
+value(A) = value(D) = a, so value(G) = a
+
+merged node = G4a
+
+Compute marking_map:
+
+For parent_name:
+value(A) = value(D) => union ({A}, {A, B})
+
+For file_content:
+value(A) = value(D) => union ({A}, {A, B})
+
+G_marking_map =>
+    (node 4 =>
+     (parent_name  => {A, B}
+      file_content => {A, B}))
+
+Merging D, E to H:
+
+compute merge:
+
+For parent_name:
+value(D) = value(E) = "checksum.sh", but node ids conflict, so ask
+user; they say 'suture 2,3->5 with value(H) = "checksum.sh"'
+
+For file_content:
+value(D) /= value(E); need to search uncommon
+D_uncommon => {D}
+E_uncommon => {E}
+
+*(D) > E => true
+*(E) > D => false
+
+E wins; result node is H5b
+
+compute marking map:
+
+For parent_name:
+value(D) = value(E) = "checksum.sh" => return union
+
+For file_content:
+value(D) /= value(E), value(H) = value(E)
+    so search E_uncommon for D_marking_map; none found => return union
+
+G_marking_map =>
+    (node 4 =>
+     (parent_name  => {A, B}
+      file_content => {A, E}))

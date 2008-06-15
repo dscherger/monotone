@@ -164,8 +164,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   N(parents.size() == 1,
     F("this command can only be used in a single-parent workspace"));
 
-  revision_id old_rid = parent_id(parents.begin());
-  N(!null_id(old_rid),
+  revision_id base_rid = parent_id(parents.begin());
+  N(!null_id(base_rid),
     F("this workspace is a new project; cannot update"));
 
   // Figure out where we're going
@@ -177,7 +177,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
     {
       P(F("updating along branch '%s'") % app.opts.branchname);
       set<revision_id> candidates;
-      pick_update_candidates(app.lua, project, candidates, old_rid,
+      pick_update_candidates(app.lua, project, candidates, base_rid,
                              app.opts.branchname,
                              app.opts.ignore_suspend_certs);
       N(!candidates.empty(),
@@ -209,9 +209,9 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   notify_if_multiple_heads(project,
                            app.opts.branchname, app.opts.ignore_suspend_certs);
 
-  if (old_rid == chosen_rid)
+  if (base_rid == chosen_rid)
     {
-      P(F("already up to date at %s") % old_rid);
+      P(F("already up to date at %s") % base_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
       work.set_ws_options(app.opts, true);
@@ -228,60 +228,99 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   // Okay, we have a target, we have a branch, let's do this merge!
 
-  // We have:
-  //
-  //    old  --> working
-  //     |         |
-  //     V         V
-  //  chosen --> merged
-  //
-  // - old is the revision specified in _MTN/revision
-  // - working is based on old and includes the workspace's changes
-  // - chosen is the revision we're updating to and will end up in _MTN/revision
-  // - merged is the merge of working and chosen, that will become the new
-  //   workspace
-  //
-  // we apply the working to merged cset to the workspace
-  // and write the cset from chosen to merged changeset in _MTN/work
+  // base_ and working_roster are shared_ptr for use with wca below.
+  roster_t_cp base_roster = parent_cached_roster(parents.begin()).first;
+  MM(*base_roster);
+
+  revision_id working_rid;
+  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  marking_map working_markings;
+  MM(*working_roster);
+  MM(working_markings);
 
   temp_node_id_source nis;
-
-  // Get the OLD and WORKING rosters
-  roster_t_cp old_roster
-    = parent_cached_roster(parents.begin()).first;
-  MM(*old_roster);
-
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
-
-  MM(*working_roster);
   work.get_current_roster_shape(db, nis, *working_roster);
   work.update_current_roster_from_filesystem(*working_roster);
 
-  revision_t working_rev;
-  revision_id working_rid;
-  make_revision_for_workspace(parents, *working_roster, working_rev);
-  calculate_ident(working_rev, working_rid);
+  roster_t chosen_roster;
+  marking_map chosen_markings;
+  MM(chosen_roster);
+  MM(chosen_markings);
 
-  // Get the CHOSEN roster
-  roster_t chosen_roster; MM(chosen_roster);
-  db.get_roster(chosen_rid, chosen_roster);
+  db.get_roster(chosen_rid, chosen_roster, chosen_markings);
 
-
-  // And finally do the merge
   roster_merge_result result;
-  marking_map left_markings, right_markings;
-  three_way_merge(old_rid, *old_roster,
-                  working_rid, *working_roster,
-                  chosen_rid, chosen_roster,
-                  result, left_markings, right_markings);
+
+  // If we are not switching branches, we treat the workspace as a revision
+  // that has not yet been committed, and do a normal merge. This supports
+  // sutures and splits.
+  //
+  // If we are switching branches, we assume the user wants to apply their
+  // local changes to the selected revision in the new branch.
+  if (!switched_branch)
+    {
+      // we apply the base to working cset to base_marking to obtain an up-to-date
+      // marking map, then merge working with chosen.
+
+      // We need a working_rid to put in the marking map, and the caller
+      // probably needs it later use in conflict resolution. But it doesn't have
+      // to be real in any sense, because this particular revision will never be
+      // committed to the database, so make one up.
+      working_rid = revision_id("00000000000000000042");
+
+      make_working_markings(db, nis, base_rid, working_rid, *working_roster, working_markings);
+
+      // working is an immediate child of base, so working_uncommon_ancestors =
+      // base_uncommon_ancestors + working.
+      set<revision_id> chosen_uncommon_ancestors, working_uncommon_ancestors;
+      db.get_uncommon_ancestors(chosen_rid, base_rid,
+                                chosen_uncommon_ancestors, working_uncommon_ancestors);
+      safe_insert(working_uncommon_ancestors, working_rid);
+
+      roster_merge(*working_roster, working_markings, working_uncommon_ancestors,
+                   chosen_roster, chosen_markings, chosen_uncommon_ancestors,
+                   result);
+    }
+  else
+    {
+      // Switching branches. This doesn't directly apply the cset
+      // base->working to chosen, but it is the algorithm used by monotone
+      // before suture/split was implemented, so we keep it.
+
+      // We have:
+      //
+      //    base  --> working
+      //     |         |
+      //     V         V
+      //  chosen --> merged
+      //
+      // - base is the revision specified in _MTN/revision
+      // - working is based on base and includes the workspace's changes
+      // - chosen is the revision we're updating to and will end up in _MTN/revision
+      // - merged is the merge of working and chosen, that will become the new
+      //   workspace
+
+      // Get the BASE and WORKING rosters
+
+      revision_t working_rev;
+      make_revision_for_workspace(parents, *working_roster, working_rev);
+      calculate_ident(working_rev, working_rid);
+
+      // And finally do the merge
+      three_way_merge(base_rid, *base_roster,
+                      working_rid, *working_roster,
+                      chosen_rid, chosen_roster,
+                      result, working_markings, chosen_markings);
+
+    }
 
   roster_t & merged_roster = result.roster;
 
   map<file_id, file_path> paths;
   get_content_paths(*working_roster, paths);
 
-  content_merge_workspace_adaptor wca(db, old_rid, old_roster,
-                                      left_markings, right_markings, paths);
+  content_merge_workspace_adaptor wca(db, base_rid, base_roster,
+                                      chosen_markings, working_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
                           result, wca, false);

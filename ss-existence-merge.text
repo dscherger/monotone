@@ -1,0 +1,120 @@
+doc current die-die-die-merge for existence
+    http://revctrl.org/DieDieDieMerge
+
+    implemented in roster_merge.cc roster_merge
+
+In a given revision, a node either exists or does not exist.
+
+Notation:
+
+    exists          A1
+    does not exist  A
+
+In a child revision with two parents, there are several cases:
+
+        A1  B1
+i)       \ /
+          C1
+
+    The node is merged in the child
+
+
+        A1  B2
+ii)      \ /
+          C3
+
+    The node is sutured in the child
+
+
+        A1  B3
+iiia)    \ /
+          C3
+
+    Node 3 was born in a suture or split in an uncommon ancestor of B,
+    with node 1 as a parent
+
+        A3  B1
+iiib)    \ /
+          C3
+
+    Node 3 was born in a suture or split in an uncommon ancestor of A,
+    with node 1 as a parent
+
+
+        A1  B
+iv)      \ /
+          C1
+
+    The node was born in a user add in A's uncommon ancestors
+
+        A   B1
+         \ /
+          C1
+
+    The node was born in a user add in B's uncommon ancestors
+
+
+        A1  B
+va)      \ /
+          C
+
+    The node was deleted in B's uncommon ancestors
+
+        A   B1
+vb)      \ /
+          C
+
+    The node was deleted in A's uncommon ancestors
+
+
+In monotone 0.4 and earlier, cases ii and iii did not exist.
+
+Case ii can only happen if we support sutures as user operations; not
+yet.
+
+In case v, deletion wins over any other change; it might be better to
+have deletion conflict with any other change. But that's left for
+another time.
+
+To process all nodes, we loop thru the union of the parent node ids,
+deciding which case each node belongs in. We create nodes in the
+result roster for cases i thru iv; we don't create a node for case v.
+The mark-merge step only considers nodes that are in the result
+roster.
+
+To distinguish cases iii and iv, we need to store information about
+how a node was born. This can be done in the marking map, by adding
+birth_cause, a pair containing an enumeral and a pair of node_ids. The
+enumeral indicates add, suture, or split; if suture, the node_ids
+indicate the ancestors. If split, the first node_id indicates the
+ancestor.
+
+To distinguish case iiia from va, we search B_uncommon for a node that
+is a suture or split and has 1 as an ancestor. Similarly for case iiib
+and vb.
+
+case iii will show up twice, once for node id 1 and once for node id
+3. We want to create only one node in the result roster, with node id
+3 (the sutured node id). Since we handle both nodes when we encounter
+either, we maintain a set 'already_handled' of already handled nodes;
+if a node is in already_handled, we simply ignore it. We also record
+ids 1 and 3 as the ancestors of the result node, so we can check for
+conflicts in the subsequent mark-merge step.
+
+To handle node 1 in case iii, we search A_uncommon for a node that is
+born in a suture or split with node 1 as a parent, create a node in
+the result roster for the found node, and add it to already_handled.
+
+To handle node 3 in case iii, we check birth_cause for node 3 in the
+marking map. If it is a suture, we create a node for it in the result
+map. Then we add both ancestors to already_handled. This is more
+efficient than the detection for node 1.
+
+If we process the nodes in decreasing numerical order, the sutured
+node will always occur before the non-sutured node. That means we find
+case iii more efficiently.
+
+That also simplifies checking for case v; if a node is only in A or B,
+was not born in a suture, and is not in already_handled, it is case v.
+
+(end of file)

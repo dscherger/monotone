@@ -1,11 +1,5 @@
 mtn: updating along branch 'testbranch'
 mtn: selected update target 257729bebdb32819cd1fc059806e0fb4144f7ec7
-mtn: [left]  30065575a95fc60f8deb84b15d9b8c8b3944d37c
-mtn: [right] 257729bebdb32819cd1fc059806e0fb4144f7ec7
-mtn: warning: Content changes to the file 'checkout.sh'
-mtn: warning: will be ignored during this merge as the file has been
-mtn: warning: removed on one side of the merge.  Affected revisions include:
-mtn: warning: Revision: 30065575a95fc60f8deb84b15d9b8c8b3944d37c
 mtn: adding checkout.sh
 mtn: renaming thermostat.c to thermostat-honeywell.c
 mtn: adding thermostat-westinghouse.c

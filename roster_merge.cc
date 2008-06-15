@@ -2321,7 +2321,7 @@ roster_merge(roster_t const & left_parent,
                       I(new_i->first == i.right_key());
                       I(right_mi->first == i.right_key());
 
-                      merge_nodes(left_i->second,   // left_n
+                      merge_nodes(left_n,
                                   left_mi->second,  // left_marking
                                   left_uncommon_ancestors,
                                   i.right_data(),   // right_n

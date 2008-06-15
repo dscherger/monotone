@@ -407,6 +407,16 @@ make_roster_for_revision(database & db,
                          roster_t & result,
                          marking_map & marking);
 
+// Compute working_markings by applying the changeset from base to working
+// to base markings
+void
+make_working_markings(database & db,
+                      temp_node_id_source & nis,
+                      revision_id const base_rid,
+                      revision_id const working_rid,
+                      roster_t const & working_roster,
+                      marking_map & working_markings);
+
 void
 read_roster_and_marking(roster_data const & dat,
                         roster_t & ros,

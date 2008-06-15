@@ -2245,6 +2245,32 @@ make_roster_for_revision(database & db,
 }
 
 
+void
+make_working_markings(database & db,
+                      temp_node_id_source & nis,
+                      revision_id const base_rid,
+                      revision_id const working_rid,
+                      roster_t const & working_roster,
+                      marking_map & working_markings)
+{
+  roster_t base_roster;
+  marking_map base_markings;
+
+  db.get_roster(base_rid, base_roster, base_markings);
+
+  cset base_to_work;
+  make_cset(base_roster, working_roster, base_to_work);
+
+  // We need to apply the cset to base_markings to get working_markings;
+  // base_to_work.apply does that. It also recomputes temp_roster; could
+  // save time by not doing that.
+  roster_t temp_roster = base_roster;
+  working_markings = base_markings;
+  editable_roster_for_nonmerge editable_working_roster(temp_roster, nis, working_rid, working_markings);
+  base_to_work.apply_to(editable_working_roster);
+}
+
+
 ////////////////////////////////////////////////////////////////////
 //   Calculation of a cset
 ////////////////////////////////////////////////////////////////////

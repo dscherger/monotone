@@ -116,7 +116,6 @@ check(mtn("revert", "--missing"), 0, nil, false)
 remove ("thermostat-honeywell.c")
 remove ("thermostat-westinghouse.c")
 check(mtn("update"), 0, nil, true)
--- FIXME: this warns about changes in checkout.sh being lost, even though they aren't; it doesn't understand suture
 canonicalize("stderr")
 get ("expected-update-messages-jim_1")
 check(samefile("expected-update-messages-jim_1", "stderr"))
