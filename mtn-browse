@@ -395,7 +395,7 @@ sub about_activate_cb($$)
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
-	 "0.43b",
+	 "0.44b",
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],

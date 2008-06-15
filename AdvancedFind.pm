@@ -553,6 +553,7 @@ sub get_advanced_find_window($)
 			    "revision_comboboxentry",
 			    "tagged_checkbutton",
 			    "search_term_comboboxentry",
+			    "stop_button",
 			    "term_combobox",
 			    "argument_entry",
 			    "date_dateedit",
@@ -567,7 +568,7 @@ sub get_advanced_find_window($)
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
 	}
 
-	# Setup the advanced find window deletion handlers.
+	# Setup the advanced find callbacks.
 
 	$instance->{window}->signal_connect
 	    ("delete_event",
@@ -582,6 +583,8 @@ sub get_advanced_find_window($)
 	     sub { $_[1]->{done} = $_[1]->{selected} = 1
 		       unless ($_[1]->{in_cb}); },
 	     $instance);
+	$instance->{stop_button}->signal_connect
+	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
 	# Setup the comboboxentry key release signal handlers.
 
@@ -644,7 +647,10 @@ sub get_advanced_find_window($)
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{window});
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window},
+		    $instance->{stop_button});
 	$wm->add_busy_windows($instance,
 			      $instance->{details_textview}->
 			          get_window("text"));
@@ -666,6 +672,7 @@ sub get_advanced_find_window($)
 	$instance->{window}->resize($width, $height);
 	$instance->{revisions_hpaned}->set_position(300);
 	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{stop_button}->set_sensitive(FALSE);
 	$instance->{branch_combo_details}->{preset} = 0;
 	$instance->{revision_combo_details}->{preset} = 0;
 	$instance->{appbar}->set_progress_percentage(0);
@@ -677,6 +684,7 @@ sub get_advanced_find_window($)
 
     $instance->{done} = 0;
     $instance->{selected} = 0;
+    $instance->{stop} = 0;
 
     return $instance;
 
@@ -937,6 +945,7 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->
 	    set_status(__("Populating revision details"));
 	$counter = 1;
+	$advanced_find->{stop_button}->set_sensitive(TRUE);
 	foreach my $item (@revision_ids)
 	{
 	    $advanced_find->{revisions_liststore}->
@@ -945,7 +954,10 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{appbar}->set_progress_percentage
 		($counter ++ / scalar(@revision_ids));
 	    $wm->update_gui();
+	    last if ($advanced_find->{stop});
 	}
+	$advanced_find->{stop_button}->set_sensitive(FALSE);
+	$advanced_find->{stop} = 0;
 	$advanced_find->{revisions_treeview}->scroll_to_point(0, 0)
 	    if ($advanced_find->{revisions_treeview}->realized());
 

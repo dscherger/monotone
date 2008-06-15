@@ -718,6 +718,8 @@ sub compare_revisions($$$;$)
 	     $revision_id_2,
 	     $file_name);
 
+    $instance->{stop_button}->set_sensitive(TRUE);
+
     # Does the user want pretty printed differences output?
 
     if ($user_preferences->{coloured_diffs})
@@ -797,6 +799,10 @@ sub compare_revisions($$$;$)
 
 	    elsif ($lines[$i] =~ m/^==/o)
 	    {
+
+		# Check for aborts.
+
+		last if ($instance->{stop});
 
 		# Print separator.
 
@@ -1010,6 +1016,8 @@ sub compare_revisions($$$;$)
 	}
 
     }
+
+    $instance->{stop_button}->set_sensitive(FALSE);
 
     # Delete the trailing newline.
 
@@ -1573,6 +1581,7 @@ sub get_revision_comparison_window()
 			    "comparison_label",
 			    "file_comparison_combobox",
 			    "external_diffs_button",
+			    "stop_button",
 			    "comparison_textview",
 			    "comparison_scrolledwindow",
 			    "revision_change_log_1_button",
@@ -1598,6 +1607,8 @@ sub get_revision_comparison_window()
 		 return TRUE;
 	     },
 	     $instance);
+	$instance->{stop_button}->signal_connect
+	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
 	# Setup the file combobox.
 
@@ -1668,6 +1679,7 @@ sub get_revision_comparison_window()
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
 	$instance->{external_diffs_button}->set_sensitive(FALSE);
+	$instance->{stop_button}->set_sensitive(FALSE);
 	$instance->{file_comparison_combobox}->get_model()->clear();
 	$instance->{appbar}->set_progress_percentage(0);
 	$instance->{appbar}->clear_stack();
@@ -1677,6 +1689,7 @@ sub get_revision_comparison_window()
 
     $instance->{diff_output} = [];
     $instance->{comparison_buffer}->set_text("");
+    $instance->{stop} = 0;
 
     return $instance;
 
