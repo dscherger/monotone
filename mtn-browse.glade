@@ -1426,10 +1426,9 @@ into a viewer</property>
 				      <signal name="clicked" handler="annotate_button_clicked_cb" last_modification_time="Sat, 15 Mar 2008 10:28:06 GMT"/>
 
 				      <child>
-					<widget class="GtkImage" id="image11">
+					<widget class="GtkImage" id="image41">
 					  <property name="visible">True</property>
-					  <property name="stock">gnome-stock-text-bulleted-list</property>
-					  <property name="icon_size">4</property>
+					  <property name="pixbuf">annotate.png</property>
 					  <property name="xalign">0.5</property>
 					  <property name="yalign">0.5</property>
 					  <property name="xpad">0</property>
@@ -3581,7 +3580,7 @@ Tag</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 375 10 337.5 375</property>
+				  <property name="hadjustment">0 0 376 10 338.4 376</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -3643,7 +3642,7 @@ Tag</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 375 10 337.5 375</property>
+				  <property name="hadjustment">0 0 376 10 338.4 376</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -3786,10 +3785,9 @@ file version that is to be compared</property>
 			      <signal name="clicked" handler="compare_button_clicked_cb" last_modification_time="Sun, 10 Feb 2008 17:52:14 GMT"/>
 
 			      <child>
-				<widget class="GtkImage" id="image30">
+				<widget class="GtkImage" id="image42">
 				  <property name="visible">True</property>
-				  <property name="stock">gnome-stock-multiple-file</property>
-				  <property name="icon_size">4</property>
+				  <property name="pixbuf">diffs.png</property>
 				  <property name="xalign">0.5</property>
 				  <property name="yalign">0.5</property>
 				  <property name="xpad">0</property>
@@ -3981,6 +3979,35 @@ file version that is to be compared</property>
 			  <property name="visible">True</property>
 			  <property name="homogeneous">False</property>
 			  <property name="spacing">0</property>
+
+			  <child>
+			    <widget class="GtkButton" id="external_diffs_button">
+			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
+			      <property name="tooltip" translatable="yes">Display the differences for the currently
+selected file in an external viewer</property>
+			      <property name="can_focus">True</property>
+			      <property name="relief">GTK_RELIEF_NONE</property>
+			      <property name="focus_on_click">True</property>
+			      <signal name="clicked" handler="external_diffs_button_clicked_cb" last_modification_time="Sun, 15 Jun 2008 07:21:32 GMT"/>
+
+			      <child>
+				<widget class="GtkImage" id="image43">
+				  <property name="visible">True</property>
+				  <property name="pixbuf">external-diffs.png</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
 
 			  <child>
 			    <widget class="GtkButton" id="save_differences_button">
@@ -4490,7 +4517,7 @@ of the search</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
   <property name="modal">True</property>
   <property name="default_width">970</property>
-  <property name="default_height">400</property>
+  <property name="default_height">440</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="icon">mtn-browse.png</property>
@@ -4606,27 +4633,6 @@ of the search</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">5</property>
 			  <property name="column_spacing">5</property>
-
-			  <child>
-			    <widget class="GtkEntry" id="database_entry">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
-			      <property name="visibility">True</property>
-			      <property name="max_length">0</property>
-			      <property name="text" translatable="yes"></property>
-			      <property name="has_frame">True</property>
-			      <property name="invisible_char">*</property>
-			      <property name="activates_default">False</property>
-			    </widget>
-			    <packing>
-			      <property name="left_attach">1</property>
-			      <property name="right_attach">2</property>
-			      <property name="top_attach">0</property>
-			      <property name="bottom_attach">1</property>
-			      <property name="y_options"></property>
-			    </packing>
-			  </child>
 
 			  <child>
 			    <widget class="GtkButton" id="database_browse_button">
@@ -4775,6 +4781,28 @@ loaded into the browser upon startup</property>
 			      <property name="bottom_attach">2</property>
 			      <property name="x_options">fill</property>
 			      <property name="y_options">fill</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkEntry" id="database_entry">
+			      <property name="visible">True</property>
+			      <property name="can_focus">True</property>
+			      <property name="editable">True</property>
+			      <property name="visibility">True</property>
+			      <property name="max_length">0</property>
+			      <property name="text" translatable="yes"></property>
+			      <property name="has_frame">True</property>
+			      <property name="invisible_char">*</property>
+			      <property name="activates_default">False</property>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">1</property>
+			      <property name="right_attach">2</property>
+			      <property name="top_attach">0</property>
+			      <property name="bottom_attach">1</property>
+			      <property name="x_options">fill</property>
+			      <property name="y_options"></property>
 			    </packing>
 			  </child>
 			</widget>
@@ -5168,6 +5196,129 @@ the tags to be order aphabetically</property>
 		  <property name="fill">True</property>
 		</packing>
 	      </child>
+
+	      <child>
+		<widget class="GtkFrame" id="file_comparison_frame">
+		  <property name="visible">True</property>
+		  <property name="label_xalign">0</property>
+		  <property name="label_yalign">0.5</property>
+		  <property name="shadow_type">GTK_SHADOW_ETCHED_IN</property>
+
+		  <child>
+		    <widget class="GtkAlignment" id="file_comparison_alignment">
+		      <property name="visible">True</property>
+		      <property name="xalign">0.5</property>
+		      <property name="yalign">0.5</property>
+		      <property name="xscale">1</property>
+		      <property name="yscale">1</property>
+		      <property name="top_padding">0</property>
+		      <property name="bottom_padding">0</property>
+		      <property name="left_padding">0</property>
+		      <property name="right_padding">0</property>
+
+		      <child>
+			<widget class="GtkHBox" id="file_comparison_hbox">
+			  <property name="border_width">5</property>
+			  <property name="visible">True</property>
+			  <property name="homogeneous">False</property>
+			  <property name="spacing">5</property>
+
+			  <child>
+			    <widget class="GtkEventBox" id="external_diffs_app_eventbox">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Enter a command for displaying
+the differences between two text
+files
+
+1) If this field is blank then the
+external file comparison button
+on a revision/file comparison
+window will be disabled
+
+2) The command to run the
+application must take the two
+mandatory tokens {file1} and
+{file2}, these are replaced with
+the files' full path names
+
+3) The file referred to by the token
+{file1} will be the older version than
+that referred to by {file2}</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
+
+			      <child>
+				<widget class="GtkLabel" id="external_diffs_app_label">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">Application:</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">True</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkEntry" id="external_diffs_app_entry">
+			      <property name="width_request">300</property>
+			      <property name="visible">True</property>
+			      <property name="can_focus">True</property>
+			      <property name="editable">True</property>
+			      <property name="visibility">True</property>
+			      <property name="max_length">0</property>
+			      <property name="text" translatable="yes"></property>
+			      <property name="has_frame">True</property>
+			      <property name="invisible_char">*</property>
+			      <property name="activates_default">False</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">True</property>
+			    </packing>
+			  </child>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkLabel" id="file_comparison_label">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">&lt;b&gt;External File Comparison Application&lt;/b&gt;</property>
+		      <property name="use_underline">False</property>
+		      <property name="use_markup">True</property>
+		      <property name="justify">GTK_JUSTIFY_LEFT</property>
+		      <property name="wrap">False</property>
+		      <property name="selectable">False</property>
+		      <property name="xalign">0.5</property>
+		      <property name="yalign">0.5</property>
+		      <property name="xpad">0</property>
+		      <property name="ypad">0</property>
+		    </widget>
+		    <packing>
+		      <property name="type">label_item</property>
+		    </packing>
+		  </child>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">True</property>
+		</packing>
+	      </child>
 	    </widget>
 	    <packing>
 	      <property name="tab_expand">False</property>
@@ -5367,7 +5518,7 @@ colour instead of plain black text</property>
 		</widget>
 		<packing>
 		  <property name="padding">0</property>
-		  <property name="expand">True</property>
+		  <property name="expand">False</property>
 		  <property name="fill">True</property>
 		</packing>
 	      </child>

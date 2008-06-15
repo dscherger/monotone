@@ -146,6 +146,7 @@ sub remove_mime_type_button_clicked_cb($$);
 sub save_current_mime_types_settings($);
 sub save_preferences_from_gui($);
 sub upgrade_preferences($);
+sub validate_preferences($);
 #
 ##############################################################################
 #
@@ -169,7 +170,8 @@ sub preferences($)
     my $browser = $_[0];
 
     my($instance,
-       $preferences);
+       $preferences,
+       $valid);
     my $wm = WindowManager->instance();
 
     # Load in the user's preferences.
@@ -196,22 +198,43 @@ sub preferences($)
 
     $instance = get_preferences_window($browser->{window}, $preferences);
 
-    # Handle all events until the dialog is dismissed.
+    # Allow the user to change their preferences, validating anything that is
+    # saved.
 
     $wm->make_busy($instance, 1, 1);
-    $instance->{done} = 0;
-    while (! $instance->{done})
+    do
     {
-	Gtk2->main_iteration();
+
+	# Handle all events until the dialog is dismissed.
+
+	$instance->{done} = 0;
+	$instance->{preferences_to_be_saved} = 0;
+	while (! $instance->{done})
+	{
+	    Gtk2->main_iteration();
+	}
+
+	# Validate any changes.
+
+	if ($instance->{preferences_to_be_saved})
+	{
+	    save_preferences_from_gui($instance);
+	    $valid = validate_preferences($instance);
+	}
+	else
+	{
+	    $valid = 1;
+	}
+
     }
+    while (! $valid);
     $wm->make_busy($instance, 0);
     $instance->{window}->hide();
 
     # Deal with the result.
 
-    if ($instance->{preferences_changed})
+    if ($instance->{preferences_to_be_saved})
     {
-	save_preferences_from_gui($instance);
 	eval
 	{
 	    save_preferences($preferences);
@@ -237,7 +260,7 @@ sub preferences($)
     $instance->{file_name_patterns_liststore}->clear();
     $instance->{preferences} = undef;
 
-    return $instance->{preferences_changed};
+    return $instance->{preferences_to_be_saved};
 
 }
 #
@@ -410,11 +433,12 @@ sub defaults_button_clicked_cb($$)
     $page_nr = $instance->{notebook}->get_current_page();
     if ($page_nr == 0)
     {
-	@fields = ("default_mtn_db", "workspace", "query");
+	@fields =
+	    ("default_mtn_db", "workspace", "query", "diffs_application");
     }
     elsif ($page_nr == 1)
     {
-	@fields = ("fixed_font", "colours");
+	@fields = ("fixed_font", "coloured_diffs", "colours");
     }
     else
     {
@@ -977,6 +1001,7 @@ sub get_preferences_window($$)
 			    "id_lists_limit_spinbutton",
 			    "id_lists_sort_cronologically_radiobutton",
 			    "id_lists_sort_by_id_radiobutton",
+			    "external_diffs_app_entry",
 
 			    # Appearance pane widgets.
 
@@ -1031,7 +1056,7 @@ sub get_preferences_window($$)
 	     $instance);
 	$instance->{glade}->get_widget("ok_button")->signal_connect
 	    ("clicked",
-	     sub { $_[1]->{done} = $_[1]->{preferences_changed} = 1
+	     sub { $_[1]->{done} = $_[1]->{preferences_to_be_saved} = 1
 		       unless ($_[1]->{in_cb}); },
 	     $instance);
 
@@ -1132,7 +1157,7 @@ sub get_preferences_window($$)
     }
 
     $instance->{done} = 0;
-    $instance->{preferences_changed} = undef;
+    $instance->{preferences_to_be_saved} = 0;
     $instance->{selected_file_name_pattern} = undef;
     $instance->{selected_mime_types_entry} = undef;
     $instance->{selected_mime_types_path} = undef;
@@ -1191,6 +1216,8 @@ sub load_preferences_into_gui($)
     {
 	$instance->{id_lists_sort_by_id_radiobutton}->set_active(TRUE);
     }
+    $instance->{external_diffs_app_entry}->
+	set_text($instance->{preferences}->{diffs_application});
 
     # Do the appearance page.
 
@@ -1277,6 +1304,40 @@ sub load_mime_types_page($)
 #
 ##############################################################################
 #
+#   Routine      - load_file_name_patterns_treeview
+#
+#   Description  - Load up the file name patterns treeview with the currently
+#                  selected name patterns.
+#
+#   Data         - $instance : The associated window instance.
+#
+##############################################################################
+
+
+
+sub load_file_name_patterns_treeview($)
+{
+
+    my $instance = $_[0];
+
+    # Load up the file name patterns list.
+
+    $instance->{file_name_patterns_liststore}->clear();
+    foreach my $pattern (@{$instance->{selected_mime_types_entry}->
+			   {file_name_patterns}})
+    {
+	$instance->{file_name_patterns_liststore}->
+	    set($instance->{file_name_patterns_liststore}->append(),
+		0,
+		$pattern);
+    }
+    $instance->{file_name_patterns_treeview}->scroll_to_point(0, 0)
+	if ($instance->{file_name_patterns_treeview}->realized());
+
+}
+#
+##############################################################################
+#
 #   Routine      - save_preferences_from_gui
 #
 #   Description  - Saves the user's preferences from the preferences dialog
@@ -1293,7 +1354,7 @@ sub save_preferences_from_gui($)
 
     my $instance = $_[0];
 
-    # Do the general pane.
+    # Do the general page.
 
     $instance->{preferences}->{default_mtn_db} =
 	$instance->{database_entry}->get_text();
@@ -1311,8 +1372,10 @@ sub save_preferences_from_gui($)
     $instance->{preferences}->{query}->{id}->{sort_cronologically} =
 	$instance->{id_lists_sort_cronologically_radiobutton}->get_active()
 	? 1 : 0;
+    $instance->{preferences}->{diffs_application} =
+	$instance->{external_diffs_app_entry}->get_text();
 
-    # Do the appearance pane.
+    # Do the appearance page.
 
     $instance->{preferences}->{fixed_font} =
 	$instance->{fonts_fontbutton}->get_font_name();
@@ -1337,11 +1400,86 @@ sub save_preferences_from_gui($)
 	    colour_to_string($instance->{$item->{widget}}->get_color());
     }
 
-    # Do the MIME types pane (most of it has possibly been saved already).
+    # Do the MIME types page (most of it has possibly been saved already).
 
     save_current_mime_types_settings($instance);
 
     return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - save_current_mime_types_settings
+#
+#   Description  - Save the settings for the currently selected MIME typ entry
+#                  back to the preferences record.
+#
+#   Data         - $instance : The associated window instance.
+#
+##############################################################################
+
+
+
+sub save_current_mime_types_settings($)
+{
+
+    my $instance = $_[0];
+
+    $instance->{selected_mime_types_entry}->{display_internally} =
+	$instance->{display_internally_checkbutton}->get_active() ? 1 : 0;
+    $instance->{selected_mime_types_entry}->{syntax_highlight} =
+	$instance->{syntax_highlight_checkbutton}->get_active() ? 1 : 0;
+    $instance->{selected_mime_types_entry}->{helper_application} =
+	$instance->{helper_application_entry}->get_text();
+
+}
+#
+##############################################################################
+#
+#   Routine      - validate_preferences
+#
+#   Description  - Validate the current user's preferences that are associated
+#                  witn the specified window instance.
+#
+#   Data         - $instance    : The associated window instance.
+#                  Return Value : True if the preferences are valid, otherwise
+#                                 false if they are not (the user will have
+#                                 already been told).
+#
+##############################################################################
+
+
+
+sub validate_preferences($)
+{
+
+    my $instance = $_[0];
+
+    my $value;
+
+    # Validate the external differnces application setting.
+
+    $value = $instance->{external_diffs_app_entry}->get_text();
+    if ($value ne "")
+    {
+	if ($value !~ m/^[^\{]*\{file1\}[^\{]*\{file2\}[^\{]*$/
+	    && $value !~ m/^[^\{]*\{file2\}[^\{]*\{file1\}[^\{]*$/)
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($instance->{window},
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __("The external file comparison application field is\n")
+		 . __("invalid, please correct before attempting to resave."));
+	    $dialog->run();
+	    $dialog->destroy();
+	    return;
+	}
+    }
+
+    return 1;
 
 }
 #
@@ -1367,6 +1505,7 @@ sub upgrade_preferences($)
     if ($preferences->{version} == 1)
     {
 	$preferences->{coloured_diffs} = 1;
+	$preferences->{diffs_application} = "kompare '{file1}' '{file2}'";
     }
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1395,31 +1534,32 @@ sub initialise_preferences()
     defined($mime_table = initialise_mime_info_table())
 	or die(__("Cannot load system MIME types.\n"));
     %preferences =
-	(version        => PREFERENCES_FORMAT_VERSION,
-	 default_mtn_db => "",
-	 workspace      => {takes_precedence => 1,
-			    auto_select      => 1},
-	 query          => {tagged => {limit               => 200,
-				       sort_cronologically => 1},
-			    id     => {limit               => 200,
-				       sort_cronologically => 1}},
-	 coloured_diffs => 1,
-	 fixed_font     => "monospace 10",
-	 colours        => {annotate_prefix_1 => {fg => "AliceBlue",
-						  bg => "CadetBlue"},
-			    annotate_text_1   => {fg => "MidnightBlue",
-						  bg => "PaleTurquoise"},
-			    annotate_prefix_2 => {fg => "AliceBlue",
-						  bg => "SteelBlue"},
-			    annotate_text_2   => {fg => "MidnightBlue",
-						  bg => "SkyBlue"},
-			    cmp_revision_1    => {fg => "DarkRed",
-						  bg => "MistyRose1",
-						  hl => "IndianRed1"},
-			    cmp_revision_2    => {fg => "DarkGreen",
-						  bg => "DarkSeaGreen1",
-						  hl => "SpringGreen1"}},
-	 mime_table     => $mime_table);
+	(version           => PREFERENCES_FORMAT_VERSION,
+	 default_mtn_db    => "",
+	 workspace         => {takes_precedence => 1,
+			       auto_select      => 1},
+	 query             => {tagged => {limit               => 200,
+					  sort_cronologically => 1},
+			       id     => {limit               => 200,
+					  sort_cronologically => 1}},
+	 diffs_application => "kompare '{file1}' '{file2}'",
+	 coloured_diffs    => 1,
+	 fixed_font        => "monospace 10",
+	 colours           => {annotate_prefix_1 => {fg => "AliceBlue",
+						     bg => "CadetBlue"},
+			       annotate_text_1   => {fg => "MidnightBlue",
+						     bg => "PaleTurquoise"},
+			       annotate_prefix_2 => {fg => "AliceBlue",
+						     bg => "SteelBlue"},
+			       annotate_text_2   => {fg => "MidnightBlue",
+						     bg => "SkyBlue"},
+			       cmp_revision_1    => {fg => "DarkRed",
+						     bg => "MistyRose1",
+						     hl => "IndianRed1"},
+			       cmp_revision_2    => {fg => "DarkGreen",
+						     bg => "DarkSeaGreen1",
+						     hl => "SpringGreen1"}},
+	 mime_table        => $mime_table);
 
     return \%preferences;
 
@@ -1517,67 +1657,6 @@ sub initialise_mime_info_table()
     }
 
     return \@table;
-
-}
-#
-##############################################################################
-#
-#   Routine      - load_file_name_patterns_treeview
-#
-#   Description  - Load up the file name patterns treeview with the currently
-#                  selected name patterns.
-#
-#   Data         - $instance : The associated window instance.
-#
-##############################################################################
-
-
-
-sub load_file_name_patterns_treeview($)
-{
-
-    my $instance = $_[0];
-
-    # Load up the file name patterns list.
-
-    $instance->{file_name_patterns_liststore}->clear();
-    foreach my $pattern (@{$instance->{selected_mime_types_entry}->
-			   {file_name_patterns}})
-    {
-	$instance->{file_name_patterns_liststore}->
-	    set($instance->{file_name_patterns_liststore}->append(),
-		0,
-		$pattern);
-    }
-    $instance->{file_name_patterns_treeview}->scroll_to_point(0, 0)
-	if ($instance->{file_name_patterns_treeview}->realized());
-
-}
-#
-##############################################################################
-#
-#   Routine      - save_current_mime_types_settings
-#
-#   Description  - Save the settings for the currently selected MIME typ entry
-#                  back to the preferences record.
-#
-#   Data         - $instance : The associated window instance.
-#
-##############################################################################
-
-
-
-sub save_current_mime_types_settings($)
-{
-
-    my $instance = $_[0];
-
-    $instance->{selected_mime_types_entry}->{display_internally} =
-	$instance->{display_internally_checkbutton}->get_active() ? 1 : 0;
-    $instance->{selected_mime_types_entry}->{syntax_highlight} =
-	$instance->{syntax_highlight_checkbutton}->get_active() ? 1 : 0;
-    $instance->{selected_mime_types_entry}->{helper_application} =
-	$instance->{helper_application_entry}->get_text();
 
 }
 #

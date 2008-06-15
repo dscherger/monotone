@@ -120,7 +120,7 @@ sub display_change_log($$;$$)
 #                                      on.
 #                  $certs_list       : A reference to a certs list as returned
 #                                      by $mtn->certs().
-#                  $colour           : One of "red, "green" or "" depending
+#                  $colour           : One of "red", "green" or "" depending
 #                                      upon the desired colour of the text.
 #                  $revision_details : Either a reference to a revision
 #                                      details list as returned by

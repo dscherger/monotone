@@ -48,8 +48,10 @@ use strict;
 
 # Constants for the columns within the comparison files ListStore widget.
 
-use constant CLS_NAME_COLUMN    => 0;
-use constant CLS_LINE_NR_COLUMN => 1;
+use constant CLS_FILE_NAME_COLUMN => 0;
+use constant CLS_LINE_NR_COLUMN   => 1;
+use constant CLS_FILE_ID_1_COLUMN => 2;
+use constant CLS_FILE_ID_2_COLUMN => 3;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
@@ -63,6 +65,7 @@ sub display_revision_change_history($$);
 sub compare_button_clicked_cb($$);
 sub compare_revisions($$$;$);
 sub comparison_revision_change_log_button_clicked_cb($$);
+sub external_diffs_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
 sub get_file_history_helper($$$);
 sub get_history_window();
@@ -721,6 +724,8 @@ sub compare_revisions($$$;$)
     {
 
 	my($char,
+	   $file_id_1,
+	   $file_id_2,
 	   $is_binary,
 	   $len,
 	   $line,
@@ -728,22 +733,38 @@ sub compare_revisions($$$;$)
 	   $max_len,
 	   $name,
 	   $padding,
-	   $rest);
+	   $rest,
+	   $separator);
 
 	# Yes the user wants pretty printed differences output.
 
 	@lines = @{$instance->{diff_output}};
 
-	# Find the longest line for future padding.
+	# Find the longest line for future padding, having expanded tabs
+	# (except for file details lines as tab is used as a separator (these
+	# are expanded later)).
 
-	$max_len = 0;
+	$max_len = $separator = 0;
 	foreach my $line (@lines)
 	{
-	    ($char, $rest) = unpack("a1a*", $line);
-	    $rest =~ s/\s+$//o;
-	    $rest = expand($rest);
-	    $max_len = $len if (($len = length($rest)) > $max_len);
-	    $line = $char . $rest;
+	    if ($line =~ m/^==/o)
+	    {
+		$separator = 1;
+	    }
+	    elsif ($separator)
+	    {
+		$rest = expand(substr($line, 3)) . " ";
+		$max_len = $len if (($len = length($rest)) > $max_len);
+		$separator = 0 if ($line =~ m/^\+\+\+ .+\s+[0-9a-f]{40}$/o);
+	    }
+	    else
+	    {
+		($char, $rest) = unpack("a1a*", $line);
+		$rest =~ s/\s+$//o;
+		$rest = expand($rest);
+		$max_len = $len if (($len = length($rest)) > $max_len);
+		$line = $char . $rest;
+	    }
 	}
 
 	# Display the result, highlighting according to the diff output.
@@ -787,24 +808,30 @@ sub compare_revisions($$$;$)
 		    insert($instance->{comparison_buffer}->get_end_iter(),
 			   "\n");
 
-		# Extract the file name, if this doesn't work then it is
-		# probably a comment stating that the file is binary.
+		# Attempt to extract the file name and its id, if this doesn't
+		# work then it is probably a comment stating that the file is
+		# binary.
 
 		++ $i;
-		($name) = ($lines[$i] =~ m/^--- (.+)\s+[0-9a-f]{40}$/o);
+		($name) = ($lines[$i] =~ m/^--- (.+)\t[0-9a-f]{40}$/o);
 		if (defined($name))
 		{
 		    $is_binary = 0;
+		    ($file_id_1) =
+			($lines[$i] =~ m/^--- .+\t([0-9a-f]{40})$/o);
+		    ($file_id_2) =
+			($lines[$i + 1] =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/o);
 		}
 		else
 		{
-		    ($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
 		    $is_binary = 1;
+		    ($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
+		    $file_id_1 = $file_id_2 = "";
 		}
 
 		# Print out the details for the first file.
 
-		$line = substr(substr($lines[$i], $is_binary ? 1 : 3)
+		$line = substr(expand(substr($lines[$i], $is_binary ? 1 : 3))
 			           . $padding,
 			       0,
 			       $max_len);
@@ -818,15 +845,17 @@ sub compare_revisions($$$;$)
 
 		$iter = $instance->{comparison_buffer}->get_end_iter();
 		$iter->backward_line();
-		push(@files,
-		     {file_name => $name, line_nr => $iter->get_line()});
+		push(@files, {file_name => $name,
+			      line_nr   => $iter->get_line(),
+			      file_id_1 => $file_id_1,
+			      file_id_2 => $file_id_2});
 
 		# Print out the details for the second file if there is one.
 
 		if (! $is_binary)
 		{
 		    ++ $i;
-		    $line = substr(substr($lines[$i], 3) . $padding,
+		    $line = substr(expand(substr($lines[$i], 3)) . $padding,
 				   0,
 				   $max_len);
 		    $instance->{comparison_buffer}->insert_with_tags_by_name
@@ -893,7 +922,9 @@ sub compare_revisions($$$;$)
     else
     {
 
-	my($is_binary,
+	my($file_id_1,
+	   $file_id_2,
+	   $is_binary,
 	   $name);
 
 	# No the user wants the raw differences output.
@@ -915,16 +946,21 @@ sub compare_revisions($$$;$)
 
 		++ $i;
 		($name) = ($instance->{diff_output}->[$i] =~
-			   m/^--- (.+)\s+[0-9a-f]{40}$/o);
+			   m/^--- (.+)\t[0-9a-f]{40}$/o);
 		if (defined($name))
 		{
 		    $is_binary = 0;
+		    ($file_id_1) = ($instance->{diff_output}->[$i] =~
+				    m/^--- .+\t([0-9a-f]{40})$/o);
+		    ($file_id_2) = ($instance->{diff_output}->[$i + 1]
+				    =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/o);
 		}
 		else
 		{
 		    ($name) = ($instance->{diff_output}->[$i] =~
 			       m/^\# (.+) is binary$/o);
 		    $is_binary = 1;
+		    $file_id_1 = $file_id_2 = "";
 		}
 
 		# Print out the details for the first file.
@@ -938,8 +974,10 @@ sub compare_revisions($$$;$)
 
 		$iter = $instance->{comparison_buffer}->get_end_iter();
 		$iter->backward_line();
-		push(@files,
-		     {file_name => $name, line_nr => $iter->get_line()});
+		push(@files, {file_name => $name,
+			      line_nr   => $iter->get_line(),
+			      file_id_1 => $file_id_1,
+			      file_id_2 => $file_id_2});
 
 		# Print out the details for the second file if there is one.
 
@@ -990,17 +1028,30 @@ sub compare_revisions($$$;$)
     $instance->{file_comparison_combobox}->get_model()->clear();
     $instance->{file_comparison_combobox}->get_model()->set
 	($instance->{file_comparison_combobox}->get_model()->append(),
-	 CLS_NAME_COLUMN, "Difference Summary",
+	 CLS_FILE_NAME_COLUMN, __("Summary"),
 	 CLS_LINE_NR_COLUMN,
-	     $instance->{comparison_buffer}->get_start_iter()->get_line());
+	     $instance->{comparison_buffer}->get_start_iter()->get_line(),
+	 CLS_FILE_ID_1_COLUMN, "",
+	 CLS_FILE_ID_2_COLUMN, "");
     foreach my $file (@files)
     {
 	$instance->{file_comparison_combobox}->get_model()->set
 	    ($instance->{file_comparison_combobox}->get_model()->append(),
-	     CLS_NAME_COLUMN, $file->{file_name},
-	     CLS_LINE_NR_COLUMN, $file->{line_nr});
+	     CLS_FILE_NAME_COLUMN, $file->{file_name},
+	     CLS_LINE_NR_COLUMN, $file->{line_nr},
+	     CLS_FILE_ID_1_COLUMN, $file->{file_id_1},
+	     CLS_FILE_ID_2_COLUMN, $file->{file_id_2});
 	$instance->{appbar}->set_progress_percentage($i ++ / scalar(@files));
 	$wm->update_gui();
+    }
+    if (defined($file_name))
+    {
+	$instance->{file_comparison_combobox}->set_active(1);
+	$instance->{external_diffs_button}->set_sensitive(TRUE);
+    }
+    else
+    {
+	$instance->{file_comparison_combobox}->set_active(0);
     }
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status("");
@@ -1043,15 +1094,137 @@ sub file_comparison_combobox_changed_cb($$)
     local $instance->{in_cb} = 1;
 
     my($iter,
+       $line_iter,
        $line_nr);
 
     # Get the line number related to the selected file and then jump to it.
 
-    $line_nr = $instance->{file_comparison_combobox}->get_model()->get
-	($instance->{file_comparison_combobox}->get_active_iter(),
-	 CLS_LINE_NR_COLUMN);
-    $iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
-    $instance->{comparison_textview}->scroll_to_iter($iter, 0, TRUE, 0, 0);
+    $iter = $instance->{file_comparison_combobox}->get_active_iter();
+    $line_nr = $instance->{file_comparison_combobox}->get_model()->
+	get($iter, CLS_LINE_NR_COLUMN);
+    $line_iter = $instance->{comparison_buffer}->get_iter_at_line($line_nr);
+    $instance->{comparison_textview}->
+	scroll_to_iter($line_iter, 0, TRUE, 0, 0);
+
+    # Only enable the external differences button if an actual file is
+    # selected.
+
+    if ($line_nr > 0)
+    {
+	my $file_id_1 = $instance->{file_comparison_combobox}->get_model()->
+	    get($iter, CLS_FILE_ID_1_COLUMN);
+	my $file_id_2 = $instance->{file_comparison_combobox}->get_model()->
+	    get($iter, CLS_FILE_ID_2_COLUMN);
+	if ($file_id_1 ne "" && $file_id_1 ne $file_id_2)
+	{
+	    $instance->{external_diffs_button}->set_sensitive(TRUE);
+	}
+	else
+	{
+	    $instance->{external_diffs_button}->set_sensitive(FALSE);
+	}
+    }
+    else
+    {
+	$instance->{external_diffs_button}->set_sensitive(FALSE);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - external_diffs_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  external differences button in a revision comparison
+#                  window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub external_diffs_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($cmd,
+       $data,
+       $file_id_1,
+       $file_id_2,
+       $file_name,
+       $iter,
+       $new_fh,
+       $new_file,
+       $old_fh,
+       $old_file);
+
+    # Get the details associated with the currently selected file.
+
+    $iter = $instance->{file_comparison_combobox}->get_active_iter();
+    $file_name = basename($instance->{file_comparison_combobox}->get_model()->
+			  get($iter, CLS_FILE_NAME_COLUMN));
+    $file_id_1 = $instance->{file_comparison_combobox}->get_model()->
+	get($iter, CLS_FILE_ID_1_COLUMN);
+    $file_id_2 = $instance->{file_comparison_combobox}->get_model()->
+	get($iter, CLS_FILE_ID_2_COLUMN);
+
+    # Generate temporary disk file names.
+
+    if (! defined($old_file = generate_tmp_path("OLDER_" . $file_name))
+	|| ! defined($new_file = generate_tmp_path("NEWER_" . $file_name)))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     __x("Cannot generate temporary file name:\n{error_message}.",
+		 error_message => $!));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Attempt to save the contents to the files.
+
+    if (! defined($old_fh = IO::File->new($old_file, "w"))
+	|| ! defined($new_fh = IO::File->new($new_file, "w")))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("{error_message}.", error_message => $!));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+    $instance->{mtn}->get_file(\$data, $file_id_1);
+    $old_fh->print($data);
+    $instance->{mtn}->get_file(\$data, $file_id_2);
+    $new_fh->print($data);
+    $old_fh->close();
+    $new_fh->close();
+    $old_fh = $new_fh = undef;
+
+    # Use the specified differences application, replacing `{file1}' and
+    # `{file2}' with the real file names.
+
+    $cmd = $user_preferences->{diffs_application};
+    $cmd =~ s/\{file1\}/$old_file/g;
+    $cmd =~ s/\{file2\}/$new_file/g;
+
+    # Launch it.
+
+    system($cmd . " &");
 
 }
 #
@@ -1062,10 +1235,9 @@ sub file_comparison_combobox_changed_cb($$)
 #   Description  - Callback routine called when the user clicks on the save
 #                  differences button in a revision comparison window.
 #
-#   Data         - $widget  : The widget object that received the signal.
-#                  $details : A reference to an anonymous hash containing the
-#                             window instance, revision and action that is
-#                             associated with this widget.
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
 #
 ##############################################################################
 
@@ -1400,6 +1572,7 @@ sub get_revision_comparison_window()
 	foreach my $widget ("appbar",
 			    "comparison_label",
 			    "file_comparison_combobox",
+			    "external_diffs_button",
 			    "comparison_textview",
 			    "comparison_scrolledwindow",
 			    "revision_change_log_1_button",
@@ -1429,15 +1602,20 @@ sub get_revision_comparison_window()
 	# Setup the file combobox.
 
 	$instance->{file_comparison_combobox}->
-	    set_model(Gtk2::ListStore->new("Glib::String", "Glib::Int"));
+	    set_model(Gtk2::ListStore->new("Glib::String",
+					   "Glib::Int",
+					   "Glib::String",
+					   "Glib::String"));
 	$renderer = Gtk2::CellRendererText->new();
 	$instance->{file_comparison_combobox}->pack_start($renderer, TRUE);
 	$instance->{file_comparison_combobox}->add_attribute($renderer,
 							     "text" => 0);
 	$instance->{file_comparison_combobox}->get_model()->set
 	    ($instance->{file_comparison_combobox}->get_model()->append(),
-	     CLS_NAME_COLUMN, " ",
-	     CLS_LINE_NR_COLUMN, 0);
+	     CLS_FILE_NAME_COLUMN, " ",
+	     CLS_LINE_NR_COLUMN, 0,
+	     CLS_FILE_ID_1_COLUMN, "",
+	     CLS_FILE_ID_2_COLUMN, "");
 
 	# Setup the revision comparison viewer.
 
@@ -1489,6 +1667,7 @@ sub get_revision_comparison_window()
 	local $instance->{in_cb} = 1;
 	($width, $height) = $instance->{window}->get_default_size();
 	$instance->{window}->resize($width, $height);
+	$instance->{external_diffs_button}->set_sensitive(FALSE);
 	$instance->{file_comparison_combobox}->get_model()->clear();
 	$instance->{appbar}->set_progress_percentage(0);
 	$instance->{appbar}->clear_stack();
