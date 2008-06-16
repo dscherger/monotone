@@ -239,8 +239,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   MM(working_markings);
 
   temp_node_id_source nis;
-  work.get_current_roster_shape(db, nis, *working_roster);
-  work.update_current_roster_from_filesystem(*working_roster);
+  work.get_current_roster(db, nis, working_rid, *working_roster, working_markings);
 
   roster_t chosen_roster;
   marking_map chosen_markings;
@@ -259,17 +258,6 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // local changes to the selected revision in the new branch.
   if (!switched_branch)
     {
-      // we apply the base to working cset to base_marking to obtain an up-to-date
-      // marking map, then merge working with chosen.
-
-      // We need a working_rid to put in the marking map, and the caller
-      // probably needs it later use in conflict resolution. But it doesn't have
-      // to be real in any sense, because this particular revision will never be
-      // committed to the database, so make one up.
-      working_rid = revision_id("00000000000000000042");
-
-      make_working_markings(db, nis, base_rid, working_rid, *working_roster, working_markings);
-
       // working is an immediate child of base, so working_uncommon_ancestors =
       // base_uncommon_ancestors + working.
       set<revision_id> chosen_uncommon_ancestors, working_uncommon_ancestors;

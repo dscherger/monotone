@@ -295,6 +295,33 @@ workspace::get_current_roster_shape(database & db,
     }
 }
 
+void
+workspace::get_current_roster(database & db,
+                              node_id_source & nis,
+                              revision_id & rid,
+                              roster_t & ros,
+                              marking_map & markings)
+{
+  revision_t rev;
+
+  get_work_rev(rev);
+
+  rid = revision_id(fake_id());
+
+  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
+    {
+      // There is just one parent and it is the null ID, which
+      // make_roster_for_revision does not handle correctly. Not clear we
+      // need this case, so abort.
+      I(false);
+    }
+  else
+    {
+      make_roster_for_revision(db, nis, rev, rid, ros, markings);
+      update_current_roster_from_filesystem(ros);
+    }
+}
+
 bool
 workspace::has_changes(database & db)
 {

@@ -1,7 +1,7 @@
 #ifndef __WORK_HH__
 #define __WORK_HH__
 
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -131,7 +131,7 @@ public:
 
   void perform_deletions(database & db,
                          std::set<file_path> const & targets,
-			 bool recursive, 
+			 bool recursive,
                          bool bookkeep_only);
 
   void perform_rename(database & db,
@@ -173,6 +173,13 @@ public:
   // temp_node_id_source.
   void get_current_roster_shape(database & db, node_id_source & nis,
                                 roster_t & ros);
+
+  // Return the current roster and marking map
+  void get_current_roster(database & db,
+                          node_id_source & nis,
+                          revision_id & new_rid,
+                          roster_t & ros,
+                          marking_map & mark_map);
 
   // This returns a map whose keys are revision_ids and whose values are
   // rosters, there being one such pair for each parent of the current
@@ -255,4 +262,4 @@ public:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __WORK_HH__
- 
+
