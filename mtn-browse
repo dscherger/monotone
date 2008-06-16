@@ -395,7 +395,7 @@ sub about_activate_cb($$)
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
-	 "0.44b",
+	 "0.45",
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
@@ -432,10 +432,26 @@ sub new_toolbutton_clicked_cb($$)
 
     # Simply get a new/unused browser window and display it.
 
-    get_revision_ids($browser, \@revision_ids);
-    get_browser_window($browser->{mtn},
-		       $browser->{branch_combo_details}->{value},
-		       $revision_ids[0]);
+    if (! defined($browser->{mtn}))
+    {
+	get_browser_window();
+    }
+    elsif (! $browser->{branch_combo_details}->{complete})
+    {
+	get_browser_window($browser->{mtn});
+    }
+    elsif (! $browser->{revision_combo_details}->{complete})
+    {
+	get_browser_window($browser->{mtn},
+			   $browser->{branch_combo_details}->{value});
+    }
+    else
+    {
+	get_revision_ids($browser, \@revision_ids);
+	get_browser_window($browser->{mtn},
+			   $browser->{branch_combo_details}->{value},
+			   $revision_ids[0]);
+    }
 
 }
 #

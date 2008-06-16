@@ -947,6 +947,10 @@ sub compare_revisions($$$;$)
 	    if ($instance->{diff_output}->[$i] =~ m/^==/o)
 	    {
 
+		# Check for aborts.
+
+		last if ($instance->{stop});
+
 		# Extract the file name, if this doesn't work then it is
 		# probably a comment stating that the file is binary.
 
@@ -1186,8 +1190,8 @@ sub external_diffs_button_clicked_cb($$)
 
     # Generate temporary disk file names.
 
-    if (! defined($old_file = generate_tmp_path("OLDER_" . $file_name))
-	|| ! defined($new_file = generate_tmp_path("NEWER_" . $file_name)))
+    if (! defined($old_file = generate_tmp_path(__("OLDER_") . $file_name))
+	|| ! defined($new_file = generate_tmp_path(__("NEWER_") . $file_name)))
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($instance->{window},
@@ -1262,7 +1266,7 @@ sub save_differences_button_clicked_cb($$)
     my $data;
 
     $data = join("\n", @{$instance->{diff_output}}) . "\n";
-    save_as_file($instance->{window}, "unified_diff.out", \$data);
+    save_as_file($instance->{window}, __("unified_diff.patch"), \$data);
 
 }
 #

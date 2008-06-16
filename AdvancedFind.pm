@@ -316,7 +316,7 @@ sub populate_button_clicked_cb($$)
     }
     elsif ($selector eq __("Head Revision"))
     {
-	$to_insert = "h:";
+	$to_insert = "h:" . (($arg eq "") ? __("<Branch>") : $arg);
     }
     elsif ($selector eq __("Identifier"))
     {
@@ -385,7 +385,7 @@ sub term_combobox_changed_cb($$)
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(TRUE);
     }
-    elsif ($selector eq __("Head Revision") || $selector eq __("Separator"))
+    elsif ($selector eq __("Separator"))
     {
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
