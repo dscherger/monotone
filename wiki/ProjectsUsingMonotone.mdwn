@@ -23,6 +23,7 @@ Project |notes |revisions |files |commits/month |First commit |Last update |Othe
 [GoTT](http://gott.evilhackerdu.de/)                                                                                 |   | ±1716|  ±800|±100|2005-07-08|2007-01-13| 
 [Ajisai](http://www.randombit.net/projects/ajisai/monotone.html)                                                     |2  |   770|  1118|  45|2006-05-18|2007-10-14|[Botan](http://botan.randombit.net/)
 [Syndie](http://syndie.i2p.net/monotone_howto.html)                                                                  |   |   676|   696|  55|2006-10-12|2007-10-14| 
+[PacketFence](http://www.packetfence.org/)                                                                           |   |   514|   564|  80|2006-10-02|2008-06-17|
 [ATF](http://www.NetBSD.org/~jmmv/atf/)                                                                              |   |   504|   409| ±60|2007-06-25|2008-02-06| 
 [Dropbear SSH](http://matt.ucc.asn.au/dropbear/)                                                                     |   |  ±250|  ±600| few|          |          | 
 [guitone](http://guitone.thomaskeller.biz)                                                                           |2  |   640|   214|  30|2006-04-06|2008-01-30| 
