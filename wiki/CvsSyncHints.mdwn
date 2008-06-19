@@ -1,6 +1,9 @@
-The cvs_sync branch is an experimental facility to help users work with ["MonotoneAndCVS"]
+[[tag migration-auto]]
 
-For the newest rewrite see CvsSync3.
+
+The cvs\_sync branch is an experimental facility to help users work with ["[[MonotoneAndCVS]]"]
+
+For the newest rewrite see [[CvsSync3]].
 
 You may want to not stress cvssync to the full extent. It definitely has
 problems when the time jumps (no I mean not summer vs. winter time)
@@ -11,7 +14,7 @@ heritage  :-( . And it stresses the CVS server with the initial pull
 lifetime and constructing diffs between old revisions of a file is a
 killer].
 
-Try cvs_takeover (an ''unmodified'' tree saves you worries elsewhere! *)
+Try cvs\_takeover (an *unmodified* tree saves you worries elsewhere! *)
 and continue to work from there. Merging, updating, committing etc.
 really work nice and the server is not charged that much this way. Most
 people (including me) do not need full history.
@@ -24,9 +27,10 @@ Oh, and -ko saves you much headache when you have to resync with the cvs
 server.
 
 If anything goes terribly wrong the most efficient way to resync is:
+
  * check the module with CVS out into an empty directory
  * change into that directory
- * monotone --db foo.db --branch foobranch cvs_takeover [foomodule]
+ * monotone --db foo.db --branch foobranch cvs\_takeover [foomodule]
  * monotone merge
 
 *) cvssync inserts empty dummy files as the initial state which give a

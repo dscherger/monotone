@@ -1,27 +1,30 @@
-= Setting up a Buildslave for Monotone on Windows =
+[[tag migration-auto]]
 
-Here we explain how to run a buildbot on Win32 MinGW and Cygwin.
+
+# Setting up a Buildslave for Monotone on Windows
+
+Here we explain how to run a buildbot on Win32 [[MinGW]] and Cygwin.
 
 The buildbot code is written in Python, so we need a Python
-implementation. Ideally, we would use a MinGW Python implementation
-for the MinGW buildbot, and a Cygwin one for the Cygwin buildbot.
+implementation. Ideally, we would use a [[MinGW]] Python implementation
+for the [[MinGW]] buildbot, and a Cygwin one for the Cygwin buildbot.
 
 There is a Cygwin Python. It has some trouble during installation, but
 it does work for the buildbot.
 
-There is no MinGW Python. There is a native Win32 Python, but it uses
-"cmd.exe" to run shell commands; we want it to use MinGW bash.
+There is no [[MinGW]] Python. There is a native Win32 Python, but it uses
+"cmd.exe" to run shell commands; we want it to use [[MinGW]] bash.
 Fortunately, there is a workaround for this (see below); we can use
-the Cygwin Python buildbot to run MinGW bash scripts.
+the Cygwin Python buildbot to run [[MinGW]] bash scripts.
 
-We assume the tools required to build monotone on MinGW are installed;
-see BuildOnWindows.
+We assume the tools required to build monotone on [[MinGW]] are installed;
+see [[BuildOnWindows]].
 
-== Install Cygwin ==
+## Install Cygwin
 
  1. Download the Cygwin installer from http://cygwin.com/, and run it
   
- 1. Install to "C:/", ''not'' the default "C:/Cygwin". The Cygwin installer says this is not a good idea; ignore that.
+ 1. Install to "C:/", *not* the default "C:/Cygwin". The Cygwin installer says this is not a good idea; ignore that.
 
   The reason we do this is to make Windows file syntax match Cygwin syntax on the C drive.
   Installing to "C:/" means Cygwin mounts "C:/" as "/", so Cygwin paths on the C drive are "/..." rather
@@ -29,7 +32,7 @@ see BuildOnWindows.
   
   It may be possible to make the buildbot work with Cygwin installed at "C:/Cygwin"; I have not tried it.
 
-  Note that MinGW is ''not'' installed at "C:/"; that would collide with Cygwin. This means bash scripts run by MinGW must use MinGW file syntax: "/c/...".
+  Note that [[MinGW]] is *not* installed at "C:/"; that would collide with Cygwin. This means bash scripts run by [[MinGW]] must use [[MinGW]] file syntax: "/c/...".
 
  1. Include the following packages:
   * Devel/autoconf
@@ -46,18 +49,18 @@ see BuildOnWindows.
 
   cvs and inetutils are required by autoconf, but are not included in the Cygwin installer dependency lists.
 
-== Install released MinGW monotone ==
+## Install released [[MinGW]] monotone
 
-We need a working monotone to pull the monotone source from the server. You can use either the Cygwin monotone, or the released MinGW monotone. In either case, the buildbot master needs to know where the working monotone is. It can be in PATH for the user that runs the buildbot.
+We need a working monotone to pull the monotone source from the server. You can use either the Cygwin monotone, or the released [[MinGW]] monotone. In either case, the buildbot master needs to know where the working monotone is. It can be in PATH for the user that runs the buildbot.
 
-== Install buildbot ==
+## Install buildbot
 We use /Apps as the source area; use another path if it suites you.
 
  1. Download zope.interface-3.3.0.tar.gz from http://zope.org/Products/ZopeInterface/
 
- 1. Download Twisted 2.5 source (''not'' the Win32 installer) from http://twistedmatrix.com/trac/. The file name is Twisted-2.5.0.tar.bz2
+ 1. Download Twisted 2.5 source (*not* the Win32 installer) from http://twistedmatrix.com/trac/. The file name is Twisted-2.5.0.tar.bz2
 
- 1. Download BuildBot sources as patched for monotone from http://guardian.lp.se/debian/testing/. The file name is buildbot_0.7.5-1.1+RL20070709-2testing.tar.gz
+ 1. Download [[BuildBot]] sources as patched for monotone from http://guardian.lp.se/debian/testing/. The file name is buildbot_0.7.5-1.1+RL20070709-2testing.tar.gz
 
  1. Install zope:
   1. {{{
@@ -77,7 +80,7 @@ python ./setup.py install
 }}}
 
  1. Install Twisted. 
-  It has similar link problems, and 'runner' fails entirely, because it needs 'pmap_set', which should be in    libc.a, but isn't on Cygwin. Fortunately, we don't need 'runner'.
+  It has similar link problems, and 'runner' fails entirely, because it needs 'pmap\_set', which should be in    libc.a, but isn't on Cygwin. Fortunately, we don't need 'runner'.
 
   1. {{{
 cd /Apps
@@ -93,7 +96,7 @@ python ./setup.py install
    This encounters similar link problems as above
 
   1. {{{
-cd TwistedCore-2.5.0
+cd [[TwistedCore]]-2.5.0
 link manually
 cd ..
 python ./setup.py install
@@ -108,17 +111,17 @@ cd buildbot
 python ./setup.py install
 }}}
 
-== Setup buildbot for MinGW ==
+## Setup buildbot for [[MinGW]]
 
 If desired for security, create a user account to run the buildbot. The buildbot runs code downloaded from the monotone buildbot server; there is a chance that will be hacked, or that the code is broken, and might do something harmful.
 
 It may also be helpful to have separate user for the buildbot, in order to set PATH properly. 
 
-We create local scripts to run the monotone build commands in an Msys shell, because that's the only way to get a PATH that has only MinGW in it.
+We create local scripts to run the monotone build commands in an Msys shell, because that's the only way to get a PATH that has only [[MinGW]] in it.
 
- 1. Set PATH for the user running buildbot to include Cygwin, but ''not'' MinGW. It may include the MinGW monotone, but that's not required.
+ 1. Set PATH for the user running buildbot to include Cygwin, but *not* [[MinGW]]. It may include the [[MinGW]] monotone, but that's not required.
 
- 1. Ask on the monotone mail list http://mail.nongnu.org/mailman/listinfo/monotone-devel for a bot name and password. In the message, include the path for running the working monotone. If it is in PATH, just say "mtn". Also be sure to say you are running a MinGW buildbot; it needs the buildbot master that uses local scripts to run commands.
+ 1. Ask on the monotone mail list http://mail.nongnu.org/mailman/listinfo/monotone-devel for a bot name and password. In the message, include the path for running the working monotone. If it is in PATH, just say "mtn". Also be sure to say you are running a [[MinGW]] buildbot; it needs the buildbot master that uses local scripts to run commands.
   Richard Levitte handles the buildbot master setup.
 
  1. Create a directory that will contain the buildbot scripts and the monotone source and build directory. It must be writeable by the user running the buildbot. Here we'll call this "/Gnu/monotone-buildbot-mingw"
@@ -132,7 +135,7 @@ buildbot create-slave /Gnu/monotone-buildbot-mingw monotone.ca:9001 <NAME> <PASS
 cp /Apps/MinGW/bin/gcc.exe /Apps/MinGW/bin/cc.exe
 }}}
 
- 1. Create local shell scripts to run MinGW commands from Cygwin Python buildbot. Adjust the paths to match your setup. Note the MinGW syntax in some of the paths.
+ 1. Create local shell scripts to run [[MinGW]] commands from Cygwin Python buildbot. Adjust the paths to match your setup. Note the [[MinGW]] syntax in some of the paths.
 
   1. autoreconf-local.sh {{{
 /MinGW/bin/sh.exe --login -c /c/Gnu/monotone-buildbot-mingw/autoreconf.sh
@@ -176,9 +179,9 @@ buildbot start /Gnu/monotone-buildbot-mingw/
   The first time it runs, it does some more setup. It logs everything to /Gnu/monotone-buildbot-mingw/twistd.log 
 
 
-== Setup Cygwin buildbot ==
+## Setup Cygwin buildbot
 
-A Cygwin buildbot uses the same Twisted installation as a MinGW buildbot.
+A Cygwin buildbot uses the same Twisted installation as a [[MinGW]] buildbot.
 
 Because Cygwin is very similar to Unix, we can use the standard buildbot master scripts; no need for local scripts.
 
@@ -188,7 +191,7 @@ There is one installation step required: Cygwin puts the boost library headers i
 ln --symbolic /usr/include/boost-1_33_1/boost /usr/include/boost
 }}}
 
-== Running the Buildslave ==
+## Running the Buildslave
 
 There are several ways to run a buildslave.  If the Windows box is a dedicated buildbot machine, the simplest is to just run it from a Cygwin bash shell each time you reboot the box:
 

@@ -1,83 +1,86 @@
+[[tag migration-auto]]
+
+
 This page summarizes what is left to do and who is in charge for what tasks which should be done before monotone 1.0 hits the world.
 
 If there is no contact person for a certain work piece yet and you feel responsible for it, put in your name and IRC nick.
 
-There is also an unsorted list of QuickieTasks which should help you get in contact with monotone if you like to start on it.
+There is also an unsorted list of [[QuickieTasks]] which should help you get in contact with monotone if you like to start on it.
 
-== Policy Branches ==
+## Policy Branches
 
 Contact person(s): Nathaniel Smith (njs), Paul Crowley (ciphergoth)
 
 Branch(es): net.venge.monotone.experimental.policy-branches*
 
-Entry page(s): VersionedPolicy
+Entry page(s): [[VersionedPolicy]]
 
 State: ?% (awaiting feedback on proposals since 2007-02-07)
 
-== Command naming and UI cleanups ==
+## Command naming and UI cleanups
 
 Contact person(s): Thomas Keller (tommyd)
 
-Branch(es): net.venge.monotone.commit_without_-b
+Branch(es): net.venge.monotone.commit\_without_-b
 
 Entry page(s): ?
 
 State: ?% (waiting for feedback how to continue with the current implementation of mtn branch)
 
-== Selector overhaul ==
+## Selector overhaul
 
 Contact person(s): ?
 
 Branch(es): ?
 
-Entry page(s): MagicSelectors
+Entry page(s): [[MagicSelectors]]
 
 State: ?%
 
-== CVS import with branch reconstruction ==
+## CVS import with branch reconstruction
 
 Contact person(s): Markus Schiltknecht
 
 Branch(es): net.venge.monotone.cvsimport-branch-reconstruction
 
-Entry page(s): CvsImport
+Entry page(s): [[CvsImport]]
 
 State: ?%
 
-== CVS <=> monotone synchronization ==
+## CVS <=> monotone synchronization
 
 Contact person(s): Christof Petig (christof), William Uther (willu)
 
 Branch(es): net.venge.monotone.cvssync*
 
-Entry page(s): CvsSync3
+Entry page(s): [[CvsSync3]]
 
 State: ?%
 
-== Workspace merge: conflict handling ==
+## Workspace merge: conflict handling
 
 Contact person(s): Timothy Brownawell (tbrownaw)
 
 Branch(es): net.venge.monotone.workspace-merge*
 
-Entry page(s): MergeViaWorkingDir
+Entry page(s): [[MergeViaWorkingDir]]
 
 State: ?%
 
-== Automation expansions ==
+## Automation expansions
 
 Contact person(s): Derek Scherger (dscherger), Thomas Moschny (thm), Thomas Keller (tommyd)
 
-Branch(es): net.venge.monotone.basic_io.inventory (''DONE'', merged to mainline at 07ae9cb), net.venge.monotone.revision_diff, net.venge.monotone.automate_current_revision
+Branch(es): net.venge.monotone.basic\_io.inventory (*DONE*, merged to mainline at 07ae9cb), net.venge.monotone.revision\_diff, net.venge.monotone.automate\_current\_revision
 
-Entry page(s): AutomateWishlist
+Entry page(s): [[AutomateWishlist]]
 
 State: 33%
 
 
-= Template =
+# Template
 
-== Project name ==
+## Project name
 
 Contact person(s): Firstname Lastname (irc nick), ...
 

@@ -1,3 +1,6 @@
+[[tag migration-auto]]
+
+
 At some point you'll want to share your work with others, and set up a sync server. You can run a 'mtn serve' off of the same database that you check all of your changes into. This will work, but it has problems:               
                                                                                    
  * when you are working, and commiting code, monotone locks the database. The monotone server then can't serve anything anymore.                       

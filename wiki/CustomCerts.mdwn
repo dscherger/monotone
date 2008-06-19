@@ -1,5 +1,9 @@
-Monotone uses some common certs according to standard conventions as described in UsingCerts, but this is just a start.
+[[tag migration-auto]]
+
+
+Monotone uses some common certs according to standard conventions as described in [[UsingCerts]], but this is just a start.
 
 Certs are intended as an extendable way to store metadata about revisions.  Some people even use them for this!  Here are some interesting uses I know about:
+
   * Xaraya uses them to track branch descriptions and status -- latest cert on a branch wins.  http://mt.xaraya.com/com.xaraya.core/index.psp
   * bug fixes and shipping to clients: http://article.gmane.org/gmane.comp.version-control.monotone.devel/6476 (not clear if these examples are real or made up?)
