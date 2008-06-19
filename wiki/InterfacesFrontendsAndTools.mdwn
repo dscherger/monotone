@@ -29,6 +29,7 @@
  * **[Apso](http://aleph0.info/apso/)**: A system for encrypting version control system repositories/databases (currently a prototype; the first version control system supported is Monotone).
  * **[Monotree](http://www.highscore.de/monotree/)**: A .NET based viewer for monotone's database (does not require to have monotone installed as it loads monotone's database directly and creates a report).
  * **[Ikiwiki](http://ikiwiki.info/)** is a wiki that can use a revision control system, and in particular [monotone](http://ikiwiki.info/rcs/monotone/), as a backend.  As Monotone is distributed, Ikiwiki becomes distributed.  Ikiwiki also has a bug tracking plugin that then allows distributed bug tracking.  This website is generated with ikiwiki, edited by the distributed monotone developers.
+ * **[Qct](http://qct.sourceforge.net/)** is a commit tool that supports quite a few revision constrol systems, monotone included.
 
 ## converting to monotone from other systems
 
