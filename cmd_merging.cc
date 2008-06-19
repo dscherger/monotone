@@ -250,13 +250,14 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   roster_merge_result result;
 
-  // If we are not switching branches, we treat the workspace as a revision
-  // that has not yet been committed, and do a normal merge. This supports
-  // sutures and splits.
+  // If we are not switching branches, and the user has not specified a
+  // specific revision, we treat the workspace as a revision that has not
+  // yet been committed, and do a normal merge. This supports sutures and
+  // splits.
   //
-  // If we are switching branches, we assume the user wants to apply their
-  // local changes to the selected revision in the new branch.
-  if (!switched_branch)
+  // Otherwise, we assume the user wants to apply their local changes to the
+  // specified revision or branch head, not merge.
+  if (!switched_branch && app.opts.revision_selectors.size() == 0)
     {
       // working is an immediate child of base, so working_uncommon_ancestors =
       // base_uncommon_ancestors + working.
@@ -272,8 +273,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   else
     {
       // Switching branches. This doesn't directly apply the cset
-      // base->working to chosen, but it is the algorithm used by monotone
-      // before suture/split was implemented, so we keep it.
+      // base->working to chosen, but the effect is the same, and this
+      // handles conflicts.
 
       // We have:
       //

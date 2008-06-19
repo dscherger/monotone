@@ -1563,15 +1563,17 @@ parse_resolve_conflicts_opts (options const & opts,
       // the conflicts in the same order they are generated; see merge.cc
       // resolve_merge_conflicts.
 
-      // We should not get here if there are any conflicts we don't support,
-      // so assert that first.
-      I(!result.missing_root_dir);
-      I(result.invalid_name_conflicts.size() == 0);
-      I(result.directory_loop_conflicts.size() == 0);
-      I(result.orphaned_node_conflicts.size() == 0);
-      I(result.multiple_name_conflicts.size() == 0);
-      I(result.attribute_conflicts.size() == 0);
-      I(result.file_content_conflicts.size() == 0);
+      // If there are any conflicts for which we don't currently support
+      // resolutions, give a nice error message.
+      char const * const msg = "conflict resolution for %s not yet supported";
+
+      N(!result.missing_root_dir, F(msg) % "missing_root_dir");
+      N(result.invalid_name_conflicts.size() == 0, F(msg) % "invalid_name_conflicts");
+      N(result.directory_loop_conflicts.size() == 0, F(msg) % "directory_loop_conflicts");
+      N(result.orphaned_node_conflicts.size() == 0, F(msg) % "orphaned_node_conflicts");
+      N(result.multiple_name_conflicts.size() == 0, F(msg) % "multiple_name_conflicts");
+      N(result.attribute_conflicts.size() == 0, F(msg) % "attribute_conflicts");
+      N(result.file_content_conflicts.size() == 0, F(msg) % "file_content_conflicts");
 
       // These are the ones we know how to resolve.
 
