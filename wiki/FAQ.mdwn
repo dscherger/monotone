@@ -1,49 +1,55 @@
-= Where should I go to ask more questions? =
+[[tag migration-auto]]
+
+
+# Where should I go to ask more questions?
+
  * on IRC: irc.oftc.net #monotone
  * via email: http://mail.nongnu.org/mailman/listinfo/monotone-devel
 
-= What are these libraries monotone depends on? =
-[http://www.boost.org/ Boost]
+# What are these libraries monotone depends on?
+[Boost](http://www.boost.org/)
     A set of general-purpose C++ libraries with lots of features. I use it for string processing (regexps, parsing), sockets, portable filename handling, and more. It's superb. Currently, that's all; and it is possible (and easy) to statically link against Boost, to create a binary usable on a system with no external libraries at all.
 
-= Why did you use SHA1 as your hash algorithm? =
+# Why did you use SHA1 as your hash algorithm?
+
     * It's a secure hash: nobody can look at a cert on some SHA1 hash code and cook up a fake file with the same hash code (hijacking the cert) in any reasonable amount of time.
     * Of the secure hashes, it's among the most well known.
     * Of the well-known secure hashes, it's the one with the least number of rumors circulating about it having been broken; md4 is supposedly dead meat, and md5 has (some) people worried.
     * The speed problem -- SHA1 is a bit slow -- seems mostly overwhelmed by I/O and the time spent in RSA. The benchmark on SHA1 shows it doing over 40mb / sec on a celeron. It should be fast enough.
 
-= But what about the rumors that SHA1 is broken? =
-There are indeed such [http://www.schneier.com/blog/archives/2005/02/sha1_broken.html rumors]. We're watching closely, and if this is confirmed, we'll wait until the cryptographic community settles on a replacement, and switch to using that. We know how to do the switch, and it should be straightforward.
+# But what about the rumors that SHA1 is broken?
+There are indeed such [rumors](http://www.schneier.com/blog/archives/2005/02/sha1_broken.html). We're watching closely, and if this is confirmed, we'll wait until the cryptographic community settles on a replacement, and switch to using that. We know how to do the switch, and it should be straightforward.
 
 In the mean time, we can wait until consensus emerges before making the switch. The reported attacks are still extremely costly (it remains much, much easier to break into your computer and steal your key), and there are many, many applications just as vulnerable and far more interesting to attack (e.g., SSL host certificates, PGP keys, etc.). We'll fix it, when we can be confident that our fix is correct.
 
-= How do you merge versions? =
+# How do you merge versions?
 The merging system is based on a pair of 3-way merges: one set-oriented one at the changeset level to resolve differences in tree layout (file and directory renames, for instance), and one line-oriented one at the file level, to resolve differences in concurrent edits to the same file. If either of these fail, they are passed off to a user-provided hook function, which invokes emacs ediff mode by default (but can be overridden).
 
-It is important to note that a 3-way merge is not the same as simply "applying patches" in one order or another: we locate the least common ancestor of the merged children in our ancestry graph, calculate the edits on the left and right edges, adjust the right edge's edit coordinates based on the left edge's edits, and only ''then'' do we concatenate the left and right edges (ignoring identical changes, and rejecting conflicting ones).
+It is important to note that a 3-way merge is not the same as simply "applying patches" in one order or another: we locate the least common ancestor of the merged children in our ancestry graph, calculate the edits on the left and right edges, adjust the right edge's edit coordinates based on the left edge's edits, and only *then* do we concatenate the left and right edges (ignoring identical changes, and rejecting conflicting ones).
 
-= Monotone wants me to use a merge tool; what do you recommend? =
-The best we know for merging is [http://furius.ca/xxdiff/ xxdiff]. Just install it, and monotone will automatically default to using it for merges.
+# Monotone wants me to use a merge tool; what do you recommend?
+The best we know for merging is [xxdiff](http://furius.ca/xxdiff/). Just install it, and monotone will automatically default to using it for merges.
 
-= Isn't it annoying that xxdiff doesn't have any keybinding for "save as merged"? =
-`echo 'Accel.SaveAsMerged: "Ctrl+M"' >>~/.xxdiffrc`
+# Isn't it annoying that xxdiff doesn't have any keybinding for "save as merged"?
+`echo 'Accel.[[SaveAsMerged]]: "Ctrl+M"' >>~/.xxdiffrc`
 
-= What is the "networking protocol"? =
-The networking protocol is called `netsync`. It is a bi-directional pipelined protocol for synchronizing collections using a tree of hashed indices. It allows any copy of monotone to function as either a client or a server, and rapidly synchronize or half-synchronize (push / pull) their database with another user. It is somewhat similar in flavor to [http://samba.anu.edu.au/rsync/ rsync] or [http://www.cis.upenn.edu/~bcpierce/unison/ Unison], in that it quickly and idempotently synchronizes information across the network without needing to store any local state; however, it is much ''more'' efficient than these protocols.
+# What is the "networking protocol"?
+The networking protocol is called `netsync`. It is a bi-directional pipelined protocol for synchronizing collections using a tree of hashed indices. It allows any copy of monotone to function as either a client or a server, and rapidly synchronize or half-synchronize (push / pull) their database with another user. It is somewhat similar in flavor to [rsync](http://samba.anu.edu.au/rsync/) or [Unison](http://www.cis.upenn.edu/~bcpierce/unison/), in that it quickly and idempotently synchronizes information across the network without needing to store any local state; however, it is much *more* efficient than these protocols.
 
-An important fact about monotone's networking is that it deals in ''facts'' rather than ''operations''. Networking simply ''informs'' the other party of some facts, and receives some facts from the other party. The netsync protocol determines which facts to send, based on an interactive analysis of "what is missing" on each end. No obligations, transactions, or commitments are made during networking. For all non-networking functions, monotone decides what to do by interpreting the ''facts'' it has on hand, rather than having specific conversations with other programs. Only the `push`, `pull`, `sync` and `serve` commands exchange data with anyone else on the network. The rest of the time, monotone is "offline".
+An important fact about monotone's networking is that it deals in *facts* rather than *operations*. Networking simply *informs* the other party of some facts, and receives some facts from the other party. The netsync protocol determines which facts to send, based on an interactive analysis of "what is missing" on each end. No obligations, transactions, or commitments are made during networking. For all non-networking functions, monotone decides what to do by interpreting the *facts* it has on hand, rather than having specific conversations with other programs. Only the `push`, `pull`, `sync` and `serve` commands exchange data with anyone else on the network. The rest of the time, monotone is "offline".
 
-= What happened to HTTP, NNTP, SMTP? =
+# What happened to HTTP, NNTP, SMTP?
 Monotone used to support a variety of networking protocols. Now it only does netsync. This is because the older networking protocols were based on log replay, which inherently produced coupling between clients and servers. The netsync protocol always works out what to send and receive "on the fly". This is something which is not as easy to do -- especially not so efficiently -- over HTTP, NNTP and SMTP.
 
-= What is the "server"? =
+# What is the "server"?
 There is no separate server software. Each client can act as a server by running the `serve` command. When a client contacts a server, it can send and receive facts the server has not yet seen; these can be facts about the client, or facts about other peers. There is no coupling between each client or server, so if one server goes offline, any other client can take over the role of server for a group of users.
 
 This design follows the philosophy of "end-to-end" networking, putting the brains of the system in the clients, and relegating network communication to the role of exchanging "dumb" informative data packets. Each network exchange is stateless, and monotone does not rely on the identity, location or availability of a particular networking host between exchanges.
 
 Netsync exchanges can also be tunneled through SSH, so running a dedicated `mtn serve` process is not required.
 
-= Why an embedded SQL database, instead of Berkeley DB? =
+# Why an embedded SQL database, instead of Berkeley DB?
+
     * There is a nice little command-line tool to manipulate databases by hand. You should never have to use it, but it is good to know it is there in emergencies.
     * Sqlite is actually smaller and simpler than Berkeley DB, as it has far fewer adjustable knobs and modes of operation.
     * SQL has a much richer data vocabulary built-in (tuples, uniqueness constraints, joins, indices, sorts, globs, unions, intersections, etc.)
@@ -52,7 +58,7 @@ Netsync exchanges can also be tunneled through SSH, so running a dedicated `mtn 
     * The state of the database is one big SQL statement, which you can dump out and edit in vi.
     * It leaves the door open to retargeting monotone to a larger RDBMS without much effort, if it's attractive to do so someday in the future. (Though, it has become clear that SQLite performs excellently, and it isn't clear why this would be attractive; see below.)
 
-= What about "real" SQL databases? Can I use monotone with PostgreSQL/MySQL/Oracle/...? =
+# What about "real" SQL databases? Can I use monotone with [[PostgreSQL]]/MySQL/Oracle/...?
 Like many things, if you wrote code for this, it could be made to happen. However, it probably won't accomplish what you want.
 
     * Some people want this so they can let multiple people access the same repository at once. However, this will not work; monotone prohibits concurrent access to a single repo for reasons of simplicity, robustness, and confidence in correctness. We agree that it is occasionally annoying that access to the database is serialized (though less annoying than many people expect), so we would be very interested in a plan for how to permit it in a way that is both safe, and obviously safe.
@@ -62,51 +68,52 @@ Like many things, if you wrote code for this, it could be made to happen. Howeve
 
 So, overall, there are no technical advantages to using a traditional RDBMS, and some compelling disadvantages -- and this is not even including the relative administrative costs of "a file" versus "a daemon, with its own access controls, administration, users, ...".
 
-= Can monotone store binary files? =
+# Can monotone store binary files?
 Yes. Monotone's internal delta storage format is byte-oriented: it is an implementation of Josh Mac''''''Donald's xdelta system.
 
-= Can I convert CVS archives? =
+# Can I convert CVS archives?
 Yes. Monotone can parse RCS `,v` files directly, synthesize the logical change history across a CVS repository, and import the results into a monotone database. No extra software is required. The conversion also converts branches, but does not connect them. This is being worked on.
 
-= Why not use GNU diff format diffs with GPG signatures? =
+# Why not use GNU diff format diffs with GPG signatures?
+
     * Classical diffs don't do binary very well.
     * GPG as a subprocess is slow, tricky and fragile; using the botan crypto library in-process is fast, simple and reliable.
     * Classical diffs may be whitespace-mangled, which invalidates signatures, so you need to ascii-armor it anyways.
-    * OpenPGP packet format is quite baroque, we need much ''less'' than it can do.
-    * The web of trust is useful for verifying that the name on a key matches the name on a passport. It isn't very useful for verifying that the holder of a key should have commit access to your project. We like to trust keys based on the quality of the code they sign, not based on the name attached to them. (In fact, every VCS we know of that does use OpenPGP keys doesn't leverage the web of trust at all, but rather requires you to explicitly upload each key you want to trust.)
+    * [[OpenPGP]] packet format is quite baroque, we need much *less* than it can do.
+    * The web of trust is useful for verifying that the name on a key matches the name on a passport. It isn't very useful for verifying that the holder of a key should have commit access to your project. We like to trust keys based on the quality of the code they sign, not based on the name attached to them. (In fact, every VCS we know of that does use [[OpenPGP]] keys doesn't leverage the web of trust at all, but rather requires you to explicitly upload each key you want to trust.)
     * In the rare case where you do know that the person whose passport says "Jane Doe" is a hotshot coder who should definitely have commit access, you can always ask her to just PGP-sign her email saying "my monotone key's fingerprint is 70a0f283898a18815a83df37c902e5f1492e9aa2".
     * You likely don't want to use your real PGP key for developing software in any case; most PGP keys should not, for instance, be put on a laptop that might be stolen. Yet many people would like to develop software while using their laptops.
 
-= Why don't you assign "version numbers" to files / trees, like "2.7"? =
-We thought to do this at first. But after discussion it seemed that to assign such numbers uniquely, you are faced with needing either a common authority to appeal to, or a really large number-space in which you will likely not collide. Then we thought, well, in the case of the latter, why ''not'' just use a content hash? Then it became apparent that lots of nice things happen for free when you make that choice. So we stuck with it.
+# Why don't you assign "version numbers" to files / trees, like "2.7"?
+We thought to do this at first. But after discussion it seemed that to assign such numbers uniquely, you are faced with needing either a common authority to appeal to, or a really large number-space in which you will likely not collide. Then we thought, well, in the case of the latter, why *not* just use a content hash? Then it became apparent that lots of nice things happen for free when you make that choice. So we stuck with it.
 
 People still ask for version numbers, but we don't know of any way to assign them that gives unique, sensible identifiers to all revisions (remember that there's much more branching and merging in monotone than in, say, CVS), and that keeps these identifiers stable in a distributed environment (i.e., existing revisions don't get new numbers when you commit or sync), and that assigns numbers consistently (so I can use a version number when talking to you, and trust that it will mean the same thing to you that it does to me).
 
-= Isn't there a paper that proves that SHA1 codes are no good for version identifiers? =
-You probably mean [http://www.nmt.edu/~val/review/hash/index.html this paper].
+# Isn't there a paper that proves that SHA1 codes are no good for version identifiers?
+You probably mean [this paper](http://www.nmt.edu/~val/review/hash/index.html).
 
-We think that paper is wrong. We have written a more [http://www.venge.net/monotone/docs/Hash-Integrity.html detailed response] in the manual, if you would like to examine it for yourself.
+We think that paper is wrong. We have written a more [detailed response](http://www.venge.net/monotone/docs/Hash-Integrity.html) in the manual, if you would like to examine it for yourself.
 
-= How do I work in "lock step" with other users? =
-You don't. Like CVS, monotone acknowledges that users work in parallel, and that the task of a version control system is to help ''manage'' the divergence caused by parallelism, not eliminate it. Unlike CVS, there is no such thing as a "central" monotone server, which tracks the unique head state of a branch. Each branch can have multiple "parallel" heads.
+# How do I work in "lock step" with other users?
+You don't. Like CVS, monotone acknowledges that users work in parallel, and that the task of a version control system is to help *manage* the divergence caused by parallelism, not eliminate it. Unlike CVS, there is no such thing as a "central" monotone server, which tracks the unique head state of a branch. Each branch can have multiple "parallel" heads.
 
-= If I make a change in parallel with a colleague, what happens? =
-You produce divergence. When you and your colleague exchange packets, you will find that the branch now has two heads, not one. One or other (or both) of you can then ''reduce'' the divergence by performing a merge.
+# If I make a change in parallel with a colleague, what happens?
+You produce divergence. When you and your colleague exchange packets, you will find that the branch now has two heads, not one. One or other (or both) of you can then *reduce* the divergence by performing a merge.
 
-= If we both merge, doesn't that recreate divergence? =
+# If we both merge, doesn't that recreate divergence?
 Maybe, but probably not. If you both do an automatic merge using the same algorithm (built into monotone) and arrive at the same merged tree state (identified by SHA1 -- a content hash), then there is no divergence anymore.
 
-If one of you has to manually intervene in the merge, you will produce two new heads, but unless your intervention involved the ''entire'' merge, your two new heads will be ''closer together'' than the two heads you had going into the merge. You can try again on the next exchange. Nothing breaks when there are multiple heads.
+If one of you has to manually intervene in the merge, you will produce two new heads, but unless your intervention involved the *entire* merge, your two new heads will be *closer together* than the two heads you had going into the merge. You can try again on the next exchange. Nothing breaks when there are multiple heads.
 
-= Isn't multiple heads on a branch dangerous or crazy? =
+# Isn't multiple heads on a branch dangerous or crazy?
 Not at all. CVS implicitly lets your entire team maintain multiple heads (in their working copies) all the time. Monotone just records the fact in the database, so it doesn't get "lost" in a clobbered or unavailable working copy.
 
 Here is an example: have you ever had a CVS working copy with an interesting change on your desktop, and wanted to move it to your laptop, or take it home for the evening to tinker with? Using CVS, the divergence is "hidden" from the CVS server until you commit, by which time it must be "resolved". Using monotone, you can commit whenever you like; you will just make a new head. You can check out that new head and continue to work on it (at home, on a laptop, wherever) until you're satisfied that it's OK, then merge with your colleagues.
 
-Monotone takes the approach that divergence is a fundamental part of being a VCS. Divergence always happens. The proper role of a VCS, then, is not to try to prevent or hide divergence, but instead to make it ''visible'' and provide ''tools to manage it''.
+Monotone takes the approach that divergence is a fundamental part of being a VCS. Divergence always happens. The proper role of a VCS, then, is not to try to prevent or hide divergence, but instead to make it *visible* and provide *tools to manage it*.
 
-= How is that different from "lightweight branches"? =
+# How is that different from "lightweight branches"?
 Not very different at all. Every time you commit, you may be making a fork in the storage system. In monotone's view, a branch is just a set of instructions about which forks you want to merge and which ones you want to remain not-merged. If you want your fork to remain not-merged with your colleagues, you put it on a different branch. That's all.
 
-= Can you "cherry-pick" changes from one branch/version to another? =
-''Update:'''  Yes. Visit CherryPicking for information on the new '''pluck''' command.
+# Can you "cherry-pick" changes from one branch/version to another?
+*Update:**  Yes. Visit [[CherryPicking]] for information on the new **pluck*' command.

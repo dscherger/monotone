@@ -1,18 +1,24 @@
+[[tag migration-auto]]
+
+
 Netsync has served well (no pun intended), but it's become clear over time that we need to rev it.  Let's use this page as scratch paper to figure out what the next version should look like.
 
 Some things that a new netsync should do:
+
   * leave initiation of merkle refinement up to client (currently it has to be started, and connection finishes when merkle refinement finishes).  This allows us to provide other services, things like branch listing or individual key upload, etc., that are hard to fit into the merkle refinement framework.
-  * PartialPull ?
-  * something that goes with PartialPull: transparent remote fallback.  Several people have suggested that it would be nice to fall back on cvs/svn-style behavior when one's local repository is inadequate -- just dial up the remote server and fetch needed objects on the fly.  This avoids a number of sticky issues about what exactly you _do_ do when you need some old stuff temporarily.  (Though maybe the only times you need old stuff and don't want to fetch it all properly are for old version browsing that you can just use the web interface for anyway, or something.)
-  * DagBasedRefinement ? This removes an annoying corner case, and is probably easier than merkle refinement to adapt to working with PartialPull .
+  * [[PartialPull]] ?
+  * something that goes with [[PartialPull]]: transparent remote fallback.  Several people have suggested that it would be nice to fall back on cvs/svn-style behavior when one's local repository is inadequate -- just dial up the remote server and fetch needed objects on the fly.  This avoids a number of sticky issues about what exactly you _do_ do when you need some old stuff temporarily.  (Though maybe the only times you need old stuff and don't want to fetch it all properly are for old version browsing that you can just use the web interface for anyway, or something.)
+  * [[DagBasedRefinement]] ? This removes an annoying corner case, and is probably easier than merkle refinement to adapt to working with [[PartialPull]] .
   * more coherent story on cross-version compatibility and upgrading
   * Pull buffering: during a large pull, the client stalls TCP over and over again because revision reconstruction takes lots of CPU so we only read from the network in bursts.  Ideally we would be so CPU-efficient that this wouldn't matter, but a cheap and easy hack would be to interpose a process that does nothing but grab data from the network socket as fast as possible and buffer it in memory until the real reader can absorb it.  This might also be a win on the server side but I suspect that large pushes are much less frequent so it may not be worth bothering.
 
 User requests:
+
   * encryption
   * finer grained write control
 
 Here are things pulled out of comments in netsync.cc, some are out of date:
+
   * need some way to upgrade anonymous to keyed pull, without user having to explicitly specify which they wantjust having a way to respond "access denied, try again" might work but perhaps better to have the anonymous command include a note "I _could_ use key <...> if you prefer", and if that would lead to more access, could reply "I do prefer".  (Does this lead to too much information exposure?  Allows anonymous people to probe what branches a key has access to.)
     * How about the client sending a "I could try some keys, too" flags, to which the server responds "access denied, try again" - with the client sending a full authentication instead of just the key-id (where this can be the old key, with wrong password, or a new key)
   * "warning" packet type?
@@ -20,7 +26,8 @@ Here are things pulled out of comments in netsync.cc, some are out of date:
   * add some sort of vhost field to the client's first packet, saying who they expect to talk to
 
 Things which have been fixed:
-  * redone merkle phases, to avoid the complex delayed_writer stuff.  Fetch stuff in an order so that you can write it right away; like, use merkle refinement to calculate the list of needed revisions, and then have the source side toposort them and do a single pass through them all, dumping both revision and forward deltas for all files in it.  (Alternatively, do a pass through each file history first, to cut down on reconstruction costs on the receiver by not clobbering the reconstruction cache, and then send the revisions proper?)  And then figure out certs.  Let's give this its own page: NetsyncTodo/MerklePhases
+
+  * redone merkle phases, to avoid the complex delayed\_writer stuff.  Fetch stuff in an order so that you can write it right away; like, use merkle refinement to calculate the list of needed revisions, and then have the source side toposort them and do a single pass through them all, dumping both revision and forward deltas for all files in it.  (Alternatively, do a pass through each file history first, to cut down on reconstruction costs on the receiver by not clobbering the reconstruction cache, and then send the revisions proper?)  And then figure out certs.  Let's give this its own page: [[NetsyncTodo]]/MerklePhases
   * connection teardown is flawed:
     * simple bug: often connections "fail" even though they succeeded.  should figure out why.  (Possibly one side doesn't wait for their goodbye packet to drain before closing the socket?)
     * subtle misdesign: "goodbye" packets indicate completion of data transfer.  they do not indicate that data has been written to disk.  there should be some way to indicate that data has been successfully written to disk.  See message (and thread) <E0420553-34F3-45E8-9DA4-D8A5CB9B0600@hsdev.com> on monotone-devel.

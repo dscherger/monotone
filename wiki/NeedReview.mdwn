@@ -1,0 +1,15 @@
+[[tag migration-auto]]
+
+
+Branches needing review:
+
+  * `net.venge.monotone.ssh-agent`: uses the ssh-agent to sign data
+    * no tests yet
+    * no user docs yet
+      * `mtn ssh\_agent\_export > id\_monotone`
+      * `chmod 600 id\_monotone`
+      * `ssh-agent /bin/bash`
+      * `ssh-add id\_monotone`
+      * `mtn ci/pull/push/etc`
+
+NB: See [[AutomateMagic]] for a hint on how to generate diffs between the base of a branch and the branch's head. You can also use monotone-viz's `diff with selected node` as an easy way to determine the corresponding nodes and diff the branches.

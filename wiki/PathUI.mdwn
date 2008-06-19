@@ -1,63 +1,60 @@
+[[tag migration-auto]]
+
+
 Presentation of paths and path handling in general present some interesting UI issues.
 
-= Root Directory Naming =
+# Root Directory Naming
 
  * the root directory is called "" internally
- * sometimes we use this name for the root directory '''externally''' and this is somewhat bad
+ * sometimes we use this name for the root directory **externally** and this is somewhat bad
  * other times we simply don't list the root directory because it doesn't have a sensible name
 
 For example:
-{{{
-$ mtn st
-Current branch: foobar
-Changes against parent 
-  added   
-  added   foobar
+    $ mtn st
+    Current branch: foobar
+    Changes against parent 
+      added   
+      added   foobar
+    
+    $ mtn ls known
+    foobar
 
-$ mtn ls known
-foobar
-}}}
-
-= Relative Names =
+# Relative Names
 
  * current situation
-   * paths are always '''displayed''' relative to the workspace root
-   * paths are '''interpreted''' relative to the current directory
+   * paths are always **displayed** relative to the workspace root
+   * paths are **interpreted** relative to the current directory
  * problem
    * output from ls unknown/ignonred/missing/changed is used as input for other scripts/commands by some people. this does not work properly if these commands are run from within a subdirectory of the workspace because the paths are displayed relative to the workspace root rather than the current directory
  * solution
-   * '''display''' paths relative to the current working directory
+   * **display** paths relative to the current working directory
  * downsides of that solution
    * if cwd is a subdirectory of the workspace, and the user doesn't restrict to the current working directory, the ls commands are likely to output a lot of paths that are pointing to paths outside of that directory and thus would be displayed as "../foo/bar". on the ml it has been pointed out that paths containing '..' can be ambigous when symlinks are present.
    * consistency: output of other commands (status, diff) is not likely to be changed, so we would loose conistency there
 
-= Peg Revision Syntax =
+# Peg Revision Syntax
 
  * we need some way of naming paths with respect to a specific revision
  * consider restriction of renames whic will match on either the old or the new path
  * ideally we should be able to say "path <foo> in revision <bar>"
 
 For example consider the following:
-{{{
-$ mtn rename foo bar
-$ mtn add foo
-$ mtn revert foo
-}}}
+    $ mtn rename foo bar
+    $ mtn add foo
+    $ mtn revert foo
 
-The "foo" given to mtn revert will match '''both''' the file that was renamed to bar and the new file that was added. If one wanted to only revert the addition they should be able to say something like:
-{{{
-$ mtn revert foo@NEW
-}}}
+The "foo" given to mtn revert will match **both** the file that was renamed to bar and the new file that was added. If one wanted to only revert the addition they should be able to say something like:
+    $ mtn revert foo@NEW
 
-See also ["RevertUI"].
+See also ["[[RevertUI]]"].
 
-We do currently have a way of doing ''almost'' this: {{{automate get_corresponding_path REV1 FILE REV2}}} will allow you to translate the name as it existed in one rev to the name of the corresponding nid in REV2.  If you're working in the context of REV2, you can now use this translated path instead of the other name... provided the nid still exists to have a path in REV2.
+We do currently have a way of doing *almost* this: `automate get\_corresponding\_path REV1 FILE REV2` will allow you to translate the name as it existed in one rev to the name of the corresponding nid in REV2.  If you're working in the context of REV2, you can now use this translated path instead of the other name... provided the nid still exists to have a path in REV2.
 
-Conceptually, paths only exist in the context of some revision so while the '''path@REV''' syntax is somewhat common it seems somewhat inverted. Perhaps something that represents this hierarchy (i.e. puts the '''REV''' before the '''path''') would be better.
+Conceptually, paths only exist in the context of some revision so while the **path@REV** syntax is somewhat common it seems somewhat inverted. Perhaps something that represents this hierarchy (i.e. puts the **REV** before the **path**) would be better.
 
-The idea of '''//REV/path''' doesn't work so well since REV is really a selector and selectors already use the "/" character.
+The idea of **//REV/path** doesn't work so well since REV is really a selector and selectors already use the "/" character.
 
-= Depth Syntax =
+# Depth Syntax
 
 The current --depth option applies to all paths named in a restriction. However these paths may represent directories at different levels in the hierarchy and a single --depth option may not make the most sense. Ideally, each directory named in a restriction could allow a specific depth value. 
 
