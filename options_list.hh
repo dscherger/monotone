@@ -641,7 +641,7 @@ OPTVAR(resolve_conflicts_opts, utf8, resolve_conflicts_file, )
 OPTVAR(resolve_conflicts_opts, std::string, resolve_conflicts, )
 
 OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
-       gettext_noop("use _MTN/conflicts to resolve conflicts"))
+       gettext_noop("use file to resolve conflicts"))
 #ifdef option_bodies
 {
   N(!resolve_conflicts_given,

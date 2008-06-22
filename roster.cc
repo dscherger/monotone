@@ -1698,9 +1698,28 @@ namespace
       }
     else
       {
-        // suture.
-        new_marking.birth_revision = new_rid;
-        new_marking.birth_cause = make_pair (marking_t::suture, make_pair(ln->self, rn->self));
+        // suture is involved somewhere.
+
+        if (ln->self == n->self)
+          {
+            // ln was previously sutured, now rn is being added to the
+            // suture. Keep the birth revision for the original suture.
+            new_marking.birth_revision = left_marking.birth_revision;
+            new_marking.birth_cause = left_marking.birth_cause;
+          }
+        else if (rn->self == n->self)
+          {
+            // rn was previously sutured, now ln is being added to the
+            // suture. Keep the birth revision for the original suture.
+            new_marking.birth_revision = right_marking.birth_revision;
+            new_marking.birth_cause = right_marking.birth_cause;
+          }
+        else
+          {
+            // new suture
+            new_marking.birth_revision = new_rid;
+            new_marking.birth_cause = make_pair (marking_t::suture, make_pair(ln->self, rn->self));
+          }
       }
 
     // name
@@ -2713,6 +2732,17 @@ select_nodes_modified_by_cset(cset const & cs,
       nodes_modified.insert(new_roster.get_node(*i)->self);
     }
 
+}
+
+void
+roster_t::get_file_details(node_id nid,
+                           file_id & fid,
+                           file_path & pth) const
+{
+  I(has_node(nid));
+  file_t f = downcast_to_file_t(get_node(nid));
+  fid = f->content;
+  get_name(nid, pth);
 }
 
 void

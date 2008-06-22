@@ -227,6 +227,10 @@ public:
                 attr_key const & key,
                 attr_value & val) const;
 
+  void get_file_details(node_id nid,
+                        file_id & fid,
+                        file_path & pth) const;
+
   void extract_path_set(std::set<file_path> & paths) const;
 
   node_map const & all_nodes() const

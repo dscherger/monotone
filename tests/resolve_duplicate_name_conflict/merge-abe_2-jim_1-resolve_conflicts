@@ -10,4 +10,4 @@ ancestor_file_id [61b8d4fb0e5d78be111f691b955d523c782fa92e]
     left_file_id [3390893b9a31eaa9ef0e9364b27ee1e617e6891a]
       right_name "checkout.sh"
    right_file_id [a8acbc7472178c5e87c3f0a6953ac5db954e1205]
-resolved_content "checkout.sh"
+   resolved_user "checkout.sh"

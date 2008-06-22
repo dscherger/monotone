@@ -37,7 +37,7 @@
 
 namespace resolve_conflicts
 {
-  enum resolution_t {none, suture, rename};
+  enum resolution_t {none, content_user, content_internal, rename, suture};
 }
 
 // renaming the root dir allows these:
@@ -124,9 +124,17 @@ struct attribute_conflict
 struct file_content_conflict
 {
   node_id left_nid, right_nid, result_nid;
-  file_content_conflict(node_id left_nid, node_id right_nid, node_id result_nid) :
-    left_nid(left_nid), right_nid(right_nid), result_nid(result_nid) {}
   file_id left, right;
+
+  std::pair<resolve_conflicts::resolution_t, file_path> resolution;
+
+  file_content_conflict () :
+    left_nid(the_null_node), right_nid(the_null_node), result_nid(the_null_node),
+    resolution(std::make_pair(resolve_conflicts::none, file_path())) {};
+
+  file_content_conflict(node_id left_nid, node_id right_nid, node_id result_nid) :
+    left_nid(left_nid), right_nid(right_nid), result_nid(result_nid),
+    resolution(std::make_pair(resolve_conflicts::none, file_path())) {};
 
   void get_ancestor_roster(content_merge_adaptor & adaptor,
                            node_id & ancestor_nid,
@@ -224,6 +232,10 @@ struct roster_merge_result
                                      content_merge_adaptor & adaptor,
                                      bool const basic_io,
                                      std::ostream & output) const;
+  void resolve_file_content_conflicts(lua_hooks & lua,
+                                      roster_t const & left_roster,
+                                      roster_t const & right_roster,
+                                      content_merge_adaptor & adaptor);
 
   void clear();
 };
@@ -237,6 +249,7 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
+             content_merge_adaptor & adaptor,
              roster_merge_result & result);
 
 void

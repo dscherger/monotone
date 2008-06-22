@@ -35,17 +35,6 @@ namespace
   enum merge_method { auto_merge, user_merge };
 
   void
-  get_file_details(roster_t const & ros, node_id nid,
-                   file_id & fid,
-                   file_path & pth)
-  {
-    I(ros.has_node(nid));
-    file_t f = downcast_to_file_t(ros.get_node(nid));
-    fid = f->content;
-    ros.get_name(nid, pth);
-  }
-
-  void
   try_to_merge_files(lua_hooks & lua,
                      roster_t const & left_roster, roster_t const & right_roster,
                      roster_merge_result & result, content_merge_adaptor & adaptor,
@@ -72,13 +61,13 @@ namespace
 
         file_id anc_id, left_id, right_id;
         file_path anc_path, left_path, right_path;
-        get_file_details(*ancestor_roster, ancestor_nid, anc_id, anc_path);
-        get_file_details(left_roster, conflict.left_nid, left_id, left_path);
-        get_file_details(right_roster, conflict.right_nid, right_id, right_path);
+        ancestor_roster->get_file_details(ancestor_nid, anc_id, anc_path);
+        left_roster.get_file_details(conflict.left_nid, left_id, left_path);
+        right_roster.get_file_details(conflict.right_nid, right_id, right_path);
 
         file_id merged_id;
 
-        content_merger cm(lua, *ancestor_roster, left_roster, right_roster, adaptor);
+        content_merger cm(*ancestor_roster, left_roster, right_roster, adaptor);
 
         bool merged = false;
 
@@ -91,7 +80,7 @@ namespace
             break;
 
           case user_merge:
-            merged = cm.try_user_merge(anc_path, left_path, right_path,
+            merged = cm.try_user_merge(lua, anc_path, left_path, right_path,
                                        right_path, anc_id, left_id, right_id,
                                        merged_id);
 
@@ -133,43 +122,41 @@ resolve_merge_conflicts(lua_hooks & lua,
                         bool resolutions_given)
 {
   if (!result.is_clean())
-    result.log_conflicts();
+    {
+      result.log_conflicts();
+
+      if (resolutions_given)
+        {
+          // If there are any conflicts for which we don't currently support
+          // resolutions, give a nice error message.
+          char const * const msg = "conflict resolution for %s not yet supported";
+
+          N(!result.missing_root_dir, F(msg) % "missing_root_dir");
+          N(result.invalid_name_conflicts.size() == 0, F(msg) % "invalid_name_conflicts");
+          N(result.directory_loop_conflicts.size() == 0, F(msg) % "directory_loop_conflicts");
+          N(result.orphaned_node_conflicts.size() == 0, F(msg) % "orphaned_node_conflicts");
+          N(result.multiple_name_conflicts.size() == 0, F(msg) % "multiple_name_conflicts");
+          N(result.attribute_conflicts.size() == 0, F(msg) % "attribute_conflicts");
+
+          // resolve the ones we can.
+          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
+        }
+    }
 
   if (result.has_non_content_conflicts())
     {
-      if (resolutions_given)
-        {
-          // We just report the conflicts we don't know how to resolve yet.
+      result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
-          result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
-          result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-
-          result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-
-          // If there aren't any we can't resolve, resolve the ones we can.
-          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
-
-          // FIXME: need to resolve content conflicts here
-        }
-      else
-        {
-          result.report_missing_root_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_invalid_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_directory_loop_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-
-          result.report_orphaned_node_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-
-          result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-          result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-        }
-      }
+      result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+    }
   else if (result.has_content_conflicts())
     {
       // Attempt to auto-resolve any content conflicts using the line-merger.
@@ -215,15 +202,14 @@ interactive_merge_and_store(lua_hooks & lua,
                             left_uncommon_ancestors, right_uncommon_ancestors);
 
   roster_merge_result result;
-
-  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
-               right_roster, right_marking_map, right_uncommon_ancestors,
-               result);
-
-  bool resolutions_given;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
                                      left_marking_map, right_marking_map);
 
+  roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
+               right_roster, right_marking_map, right_uncommon_ancestors,
+               dba, result);
+
+  bool resolutions_given;
   parse_resolve_conflicts_opts (opts, left_roster, right_roster, result, resolutions_given);
 
   resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);

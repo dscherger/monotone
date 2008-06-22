@@ -46,6 +46,7 @@ static void
 three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_roster,
                 revision_id const & left_rid, roster_t const & left_roster,
                 revision_id const & right_rid, roster_t const & right_roster,
+                content_merge_adaptor & adaptor,
                 roster_merge_result & result,
                 marking_map & left_markings,
                 marking_map & right_markings)
@@ -85,7 +86,7 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   // And do the merge
   roster_merge(left_roster, left_markings, left_uncommon_ancestors,
                right_roster, right_markings, right_uncommon_ancestors,
-               result);
+               adaptor, result);
 }
 
 static bool
@@ -250,6 +251,12 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   roster_merge_result result;
 
+  map<file_id, file_path> paths;
+  get_content_paths(*working_roster, paths);
+
+  content_merge_workspace_adaptor wca(db, base_rid, base_roster,
+                                      chosen_markings, working_markings, paths);
+
   // If we are not switching branches, and the user has not specified a
   // specific revision, we treat the workspace as a revision that has not
   // yet been committed, and do a normal merge. This supports sutures and
@@ -267,7 +274,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       safe_insert(working_uncommon_ancestors, working_rid);
 
       roster_merge(*working_roster, working_markings, working_uncommon_ancestors,
-                   chosen_roster, chosen_markings, chosen_uncommon_ancestors,
+                   chosen_roster, chosen_markings, chosen_uncommon_ancestors, wca,
                    result);
     }
   else
@@ -298,18 +305,13 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       // And finally do the merge
       three_way_merge(base_rid, *base_roster,
                       working_rid, *working_roster,
-                      chosen_rid, chosen_roster,
+                      chosen_rid, chosen_roster, wca,
                       result, working_markings, chosen_markings);
 
     }
 
   roster_t & merged_roster = result.roster;
 
-  map<file_id, file_path> paths;
-  get_content_paths(*working_roster, paths);
-
-  content_merge_workspace_adaptor wca(db, base_rid, base_roster,
-                                      chosen_markings, working_markings, paths);
   wca.cache_roster(working_rid, working_roster);
   resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
                           result, wca, false);
@@ -659,16 +661,17 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
           }
 
         roster_merge_result result;
+        content_merge_database_adaptor
+          dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
+
         roster_merge(left_roster,
                      left_marking_map,
                      left_uncommon_ancestors,
                      right_roster,
                      right_marking_map,
                      right_uncommon_ancestors,
+                     dba,
                      result);
-
-        content_merge_database_adaptor
-          dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
 
         bool resolutions_given;
 
@@ -773,12 +776,6 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
                                 left_uncommon_ancestors,
                                 right_uncommon_ancestors);
 
-  roster_merge_result merge_result;
-  MM(merge_result);
-  roster_merge(*left.first, *left.second, left_uncommon_ancestors,
-               *right.first, *right.second, right_uncommon_ancestors,
-               merge_result);
-
   revision_id lca_id;
   cached_roster lca;
   find_common_ancestor_for_merge(db, left_id, right_id, lca_id);
@@ -790,6 +787,13 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
+
+  roster_merge_result merge_result;
+  MM(merge_result);
+  roster_merge(*left.first, *left.second, left_uncommon_ancestors,
+               *right.first, *right.second, right_uncommon_ancestors,
+               wca, merge_result);
+
   resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, false);
 
   // Make sure it worked...
@@ -887,9 +891,11 @@ show_conflicts_core (database & db, revision_id const & l_id, revision_id const 
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
   roster_merge_result result;
+  content_merge_database_adaptor adaptor(db, l_id, r_id, l_marking, r_marking);
+
   roster_merge(*l_roster, l_marking, l_uncommon_ancestors,
                *r_roster, r_marking, r_uncommon_ancestors,
-               result);
+               adaptor, result);
 
   // note that left and right are in the order specified on the command line
   // they are not in lexical order as they are with other merge commands so
@@ -922,9 +928,6 @@ show_conflicts_core (database & db, revision_id const & l_id, revision_id const 
     }
   else
     {
-      content_merge_database_adaptor adaptor(db, l_id, r_id,
-                                             l_marking, r_marking);
-
       {
         basic_io::printer pr;
         st.push_binary_pair(syms::ancestor, adaptor.lca.inner());
@@ -1158,18 +1161,18 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   // Now do the merge
   roster_merge_result result;
   marking_map left_markings, right_markings;
-  three_way_merge(from_rid, *from_roster,
-                  working_rid, *working_roster,
-                  to_rid, *to_roster,
-                  result, left_markings, right_markings);
-
-  roster_t & merged_roster = result.roster;
-
   map<file_id, file_path> paths;
   get_content_paths(*working_roster, paths);
 
   content_merge_workspace_adaptor wca(db, from_rid, from_roster,
                                       left_markings, right_markings, paths);
+
+  three_way_merge(from_rid, *from_roster,
+                  working_rid, *working_roster,
+                  to_rid, *to_roster,
+                  wca, result, left_markings, right_markings);
+
+  roster_t & merged_roster = result.roster;
 
   wca.cache_roster(working_rid, working_roster);
   // cache the synthetic to_roster under the to_rid so that the real

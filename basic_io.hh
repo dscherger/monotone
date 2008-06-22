@@ -246,6 +246,7 @@ namespace basic_io
     stanza();
     size_t indent;
     std::vector<std::pair<symbol, std::string> > entries;
+    void push_symbol(symbol const & k);
     void push_hex_pair(symbol const & k, hexenc<id> const & v);
     void push_binary_pair(symbol const & k, id const & v);
     void push_binary_triple(symbol const & k, std::string const & n,

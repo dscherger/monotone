@@ -97,7 +97,7 @@ check (mtn ("automate", "get_file", abe_checkout), 0, true, nil)
 rename ("stdout", "checkout.sh-abe")
 check ("checkout.sh abe 1" == readfile ("checkout.sh-abe"))
 
-get ("checkout.sh-merged", "checkout.sh")
+writefile ("checkout.sh", "checkout.sh merged")
 
 -- This has the resolution lines
 get ("conflicts-resolved", "_MTN/conflicts")
@@ -129,7 +129,7 @@ check(samefile("expected-merged-revision-jim_1", "stdout"))
 -- Verify file contents
 check("thermostat westinghouse abe 1" == readfile("thermostat-westinghouse.c"))
 check("thermostat honeywell beth 1" == readfile("thermostat-honeywell.c"))
-check("checkout.sh merged\n" == readfile("checkout.sh"))
+check("checkout.sh merged" == readfile("checkout.sh"))
 
 -- In the second step, we extend the revision history graph:
 --
@@ -156,7 +156,7 @@ check("checkout.sh merged\n" == readfile("checkout.sh"))
 
 jim_1 = base_revision()
 
--- Abe edits his files and merges
+-- Abe edits his files and merges to g
 revert_to(abe_1)
 
 writefile("thermostat.c", "thermostat westinghouse abe 2")
@@ -170,8 +170,6 @@ canonicalize("stderr")
 get ("expected-merge-messages-abe_2-jim_1-conflicts")
 check(samefile("expected-merge-messages-abe_2-jim_1-conflicts", "stderr"))
 
-check (mtn("automate", "show_conflicts"), 0, true, nil)
-
 -- This succeeds
 get ("merge-abe_2-jim_1-resolve_conflicts", "_MTN/conflicts")
 check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, nil, true)
@@ -179,20 +177,52 @@ canonicalize("stderr")
 get ("expected-merge-messages-abe_2-jim_1")
 check(samefile("expected-merge-messages-abe_2-jim_1", "stderr"))
 
--- Beth edits her files and merges
+check(mtn("update"), 0, nil, true)
+check("checkout.sh abe 2" == readfile("checkout.sh"))
+
+-- Beth edits her files and merges to h
 revert_to(beth_1)
 
-writefile("thermostat.c", "thermostat honeywell beth 1")
-writefile("checkout.sh", "checkout.sh beth 1")
+writefile("thermostat.c", "thermostat honeywell beth 2")
+writefile("checkout.sh", "checkout.sh beth 1\n\n\nbeth 2")
+-- line merger succeeds for checkout.sh, since it is a simple diff
+-- from the ancestor
+
 commit("testbranch", "beth_2")
 beth_2 = base_revision()
 
+check (mtn("automate", "show_conflicts", beth_2, jim_1), 0, true, nil)
+canonicalize("stdout")
+get ("merge-beth_2-jim_1-conflicts", "_MTN/conflicts")
+check(samefile("_MTN/conflicts", "stdout"))
+
 -- If we just do 'merge', mtn will merge 'e' and 'g', since those are
 -- the current heads. To emulate separate development databases, we
--- specify the revisions to merge.
-check(mtn("merge", jim_1, beth_2), 0, nil, true)
+-- specify the revisions to merge. This also lets us excercise the
+-- other branch of some 'if's in the code; in merging to abe_2, jim_1
+-- was left; now it is right.
+check(mtn("explicit_merge", "--resolve-conflicts=resolve_internal", beth_2, jim_1, "testbranch"), 0, nil, true)
 canonicalize("stderr")
 get ("expected-merge-messages-jim_1-beth_2")
 check(samefile("expected-merge-messages-jim_1-beth_2", "stderr"))
 
+check(mtn("update"), 0, nil, true)
+canonicalize("stderr")
+get ("expected-update-messages-beth_3")
+check(samefile("expected-update-messages-beth_3", "stderr"))
+
+check("checkout.sh merged\n\n\nbeth 2\n" == readfile("checkout.sh"))
+
+-- merge g, h to f
+check(mtn("merge"), 0, nil, true)
+canonicalize("stderr")
+get ("expected-merge-messages-abe_3-beth_3")
+check(samefile("expected-merge-messages-abe_3-beth_3", "stderr"))
+
+check(mtn("update"), 0, nil, true)
+canonicalize("stderr")
+get ("expected-update-messages-jim_2")
+check(samefile("expected-update-messages-jim_2", "stderr"))
+
+check("checkout.sh abe 2\n\n\nbeth 2\n" == readfile("checkout.sh"))
 -- end of file

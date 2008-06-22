@@ -69,6 +69,14 @@ void basic_io::stanza::push_binary_pair(symbol const & k, id const & v)
   push_hex_pair(k, hexenc<id>(encode_hexenc(v())));
 }
 
+void
+basic_io::stanza::push_symbol(symbol const & k)
+{
+  entries.push_back(make_pair(k, ""));
+  if (k().size() > indent)
+    indent = k().size();
+}
+
 void basic_io::stanza::push_hex_pair(symbol const & k, hexenc<id> const & v)
 {
   entries.push_back(make_pair(k, ""));
