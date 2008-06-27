@@ -1318,24 +1318,61 @@ file_content_conflict::get_ancestor_roster(content_merge_adaptor & adaptor,
   adaptor.get_ancestral_roster (ancestor_nid, ancestor_rid, ancestor_roster);
 }
 
+namespace
+{
+  bool
+  auto_merge_succeeds(lua_hooks & lua,
+                      file_content_conflict conflict,
+                      content_merge_adaptor & adaptor,
+                      roster_t const & left_roster,
+                      roster_t const & right_roster)
+  {
+    node_id ancestor_nid;
+    revision_id ancestor_rid;
+    shared_ptr<roster_t const> ancestor_roster;
+    conflict.get_ancestor_roster(adaptor, ancestor_nid, ancestor_rid, ancestor_roster);
+
+    I(ancestor_roster);
+    I(ancestor_roster->has_node(ancestor_nid)); // this fails if there is no least common ancestor
+
+    file_id anc_id, left_id, right_id;
+    file_path anc_path, left_path, right_path;
+    ancestor_roster->get_file_details(ancestor_nid, anc_id, anc_path);
+    left_roster.get_file_details(conflict.left_nid, left_id, left_path);
+    right_roster.get_file_details(conflict.right_nid, right_id, right_path);
+
+    content_merger cm(lua, *ancestor_roster, left_roster, right_roster, adaptor);
+
+    file_data left_data, right_data, merge_data;
+
+    return cm.attempt_auto_merge(anc_path, left_path, right_path,
+                                 anc_id, left_id, right_id,
+                                 left_data, right_data, merge_data);
+  }
+}
+
 void
-roster_merge_result::report_file_content_conflicts(roster_t const & left_roster,
+roster_merge_result::report_file_content_conflicts(lua_hooks & lua,
+                                                   roster_t const & left_roster,
                                                    roster_t const & right_roster,
                                                    content_merge_adaptor & adaptor,
                                                    bool basic_io,
-                                                   std::ostream & output) const
+                                                   std::ostream & output)
 {
   MM(left_roster);
   MM(right_roster);
 
   for (size_t i = 0; i < file_content_conflicts.size(); ++i)
     {
-      file_content_conflict const & conflict = file_content_conflicts[i];
+      file_content_conflict & conflict = file_content_conflicts[i];
       MM(conflict);
 
       if (basic_io)
         {
           basic_io::stanza st;
+
+          if (auto_merge_succeeds(lua, conflict, adaptor, left_roster, right_roster))
+            conflict.resolution = make_pair(resolve_conflicts::content_internal, file_path());
 
           st.push_str_pair(syms::conflict, syms::content);
           put_content_conflict (st, left_roster, right_roster, adaptor, conflict);
@@ -1410,7 +1447,8 @@ namespace resolve_conflicts
   }
 
   bool
-  do_auto_merge(file_content_conflict const & conflict,
+  do_auto_merge(lua_hooks & lua,
+                file_content_conflict const & conflict,
                 content_merge_adaptor & adaptor,
                 roster_t const & left_roster,
                 roster_t const & right_roster,
@@ -1432,7 +1470,7 @@ namespace resolve_conflicts
     right_roster.get_file_details(conflict.right_nid, right_id, right_path);
     result_roster.get_file_details(conflict.result_nid, merged_id, merged_path);
 
-    content_merger cm(*ancestor_roster, left_roster, right_roster, adaptor);
+    content_merger cm(lua, *ancestor_roster, left_roster, right_roster, adaptor);
 
     return cm.try_auto_merge(anc_path, left_path, right_path, merged_path,
                              anc_id, left_id, right_id, merged_id);
@@ -1878,7 +1916,7 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
             {
               file_id merged_id;
 
-              N(resolve_conflicts::do_auto_merge(conflict, adaptor, left_roster,
+              N(resolve_conflicts::do_auto_merge(lua, conflict, adaptor, left_roster,
                                                  right_roster, this->roster, merged_id),
                 F("merge of %s, %s failed") % left_name % right_name);
 
@@ -2260,47 +2298,15 @@ namespace
     assign_name(result, n->self, old_n->parent, old_n->name, side);
   }
 
-  bool
-  auto_merge_succeeds(file_content_conflict conflict,
-                      content_merge_adaptor & adaptor,
-                      roster_t const & left_roster,
-                      roster_t const & right_roster)
-  {
-    node_id ancestor_nid;
-    revision_id ancestor_rid;
-    shared_ptr<roster_t const> ancestor_roster;
-    conflict.get_ancestor_roster(adaptor, ancestor_nid, ancestor_rid, ancestor_roster);
-
-    I(ancestor_roster);
-    I(ancestor_roster->has_node(ancestor_nid)); // this fails if there is no least common ancestor
-
-    file_id anc_id, left_id, right_id;
-    file_path anc_path, left_path, right_path;
-    ancestor_roster->get_file_details(ancestor_nid, anc_id, anc_path);
-    left_roster.get_file_details(conflict.left_nid, left_id, left_path);
-    right_roster.get_file_details(conflict.right_nid, right_id, right_path);
-
-    content_merger cm(*ancestor_roster, left_roster, right_roster, adaptor);
-
-    file_data left_data, right_data, merge_data;
-
-    return cm.attempt_auto_merge(anc_path, left_path, right_path,
-                                 anc_id, left_id, right_id,
-                                 left_data, right_data, merge_data);
-  }
-
   void
   merge_nodes(node_t const left_n,
               marking_t const & left_marking,
               set<revision_id> const & left_uncommon_ancestors,
-              roster_t const & left_roster,
               node_t const right_n,
               marking_t const & right_marking,
               set<revision_id> const & right_uncommon_ancestors,
-              roster_t const & right_roster,
               node_t const new_n,
-              roster_merge_result & result,
-              content_merge_adaptor & adaptor)
+              roster_merge_result & result)
     {
       // merge name
       pair<node_id, path_component> left_name, right_name, new_name;
@@ -2351,9 +2357,6 @@ namespace
             }
           else
             {
-              if (auto_merge_succeeds(conflict, adaptor, left_roster, right_roster))
-                conflict.resolution = make_pair(resolve_conflicts::content_internal, file_path());
-
               downcast_to_file_t(new_n)->content = file_id();
               result.file_content_conflicts.push_back(conflict);
             }
@@ -2418,7 +2421,6 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              set<revision_id> const & right_uncommon_ancestors,
-             content_merge_adaptor & adaptor,
              roster_merge_result & result)
 {
   set<node_id> already_handled;
@@ -2507,14 +2509,11 @@ roster_merge(roster_t const & left_parent,
                       merge_nodes(left_n,
                                   left_mi->second, // left_marking
                                   left_uncommon_ancestors,
-                                  left_parent,
                                   right_n,
                                   right_mi->second,
                                   right_uncommon_ancestors,
-                                  right_parent,
                                   new_i->second,   // new_n
-                                  result,
-                                  adaptor);
+                                  result);
                       ++new_i;
                     }
                   else
@@ -2556,14 +2555,11 @@ roster_merge(roster_t const & left_parent,
                       merge_nodes(left_n,
                                   left_mi->second,  // left_marking
                                   left_uncommon_ancestors,
-                                  left_parent,
                                   i.right_data(),   // right_n
                                   right_mi->second, // right_marking
                                   right_uncommon_ancestors,
-                                  right_parent,
                                   new_i->second,   // new_n
-                                  result,
-                                  adaptor);
+                                  result);
                       ++new_i;
                     }
                   else
@@ -2590,14 +2586,11 @@ roster_merge(roster_t const & left_parent,
               merge_nodes(i.left_data(),    // left_n
                           left_mi->second,  // left_marking
                           left_uncommon_ancestors,
-                          left_parent,
                           i.right_data(),   // right_n
                           right_mi->second, // right_marking
                           right_uncommon_ancestors,
-                          right_parent,
                           new_i->second,    // new_n
-                          result,
-                          adaptor);
+                          result);
             }
             ++left_mi;
             ++right_mi;

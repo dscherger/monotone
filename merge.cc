@@ -67,7 +67,7 @@ namespace
 
         file_id merged_id;
 
-        content_merger cm(*ancestor_roster, left_roster, right_roster, adaptor);
+        content_merger cm(lua, *ancestor_roster, left_roster, right_roster, adaptor);
 
         bool merged = false;
 
@@ -80,7 +80,7 @@ namespace
             break;
 
           case user_merge:
-            merged = cm.try_user_merge(lua, anc_path, left_path, right_path,
+            merged = cm.try_user_merge(anc_path, left_path, right_path,
                                        right_path, anc_id, left_id, right_id,
                                        merged_id);
 
@@ -155,7 +155,7 @@ resolve_merge_conflicts(lua_hooks & lua,
       result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
 
       result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
-      result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+      result.report_file_content_conflicts(lua, left_roster, right_roster, adaptor, false, std::cout);
     }
   else if (result.has_content_conflicts())
     {
@@ -173,7 +173,7 @@ resolve_merge_conflicts(lua_hooks & lua,
           P(FP("%d content conflict requires user intervention",
                "%d content conflicts require user intervention",
                remaining) % remaining);
-          result.report_file_content_conflicts(left_roster, right_roster, adaptor, false, std::cout);
+          result.report_file_content_conflicts(lua, left_roster, right_roster, adaptor, false, std::cout);
 
           try_to_merge_files(lua, left_roster, right_roster,
                              result, adaptor, user_merge);
@@ -202,14 +202,15 @@ interactive_merge_and_store(lua_hooks & lua,
                             left_uncommon_ancestors, right_uncommon_ancestors);
 
   roster_merge_result result;
-  content_merge_database_adaptor dba(db, left_rid, right_rid,
-                                     left_marking_map, right_marking_map);
 
   roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
                right_roster, right_marking_map, right_uncommon_ancestors,
-               dba, result);
+               result);
 
   bool resolutions_given;
+  content_merge_database_adaptor dba(db, left_rid, right_rid,
+                                     left_marking_map, right_marking_map);
+
   parse_resolve_conflicts_opts (opts, left_roster, right_roster, result, resolutions_given);
 
   resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);

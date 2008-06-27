@@ -161,17 +161,20 @@ content_merge_checkout_adaptor
 
 struct content_merger
 {
+  lua_hooks & lua;
   roster_t const & anc_ros;
   roster_t const & left_ros;
   roster_t const & right_ros;
 
   content_merge_adaptor & adaptor;
 
-  content_merger(roster_t const & anc_ros,
+  content_merger(lua_hooks & lua,
+                 roster_t const & anc_ros,
                  roster_t const & left_ros,
                  roster_t const & right_ros,
                  content_merge_adaptor & adaptor)
-    : anc_ros(anc_ros),
+    : lua(lua),
+      anc_ros(anc_ros),
       left_ros(left_ros),
       right_ros(right_ros),
       adaptor(adaptor)
@@ -201,8 +204,7 @@ struct content_merger
                       file_id const & right,
                       file_id & merged_id);
 
-  bool try_user_merge(lua_hooks & lua,
-                      file_path const & anc_path,
+  bool try_user_merge(file_path const & anc_path,
                       file_path const & left_path,
                       file_path const & right_path,
                       file_path const & merged_path,

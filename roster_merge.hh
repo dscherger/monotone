@@ -227,11 +227,16 @@ struct roster_merge_result
                                   content_merge_adaptor & adaptor,
                                   bool const basic_io,
                                   std::ostream & output) const;
-  void report_file_content_conflicts(roster_t const & left,
+
+  // not 'const' because this sets resolution to 'resolved_internal' if the
+  // internal merger would succeed.
+  void report_file_content_conflicts(lua_hooks & lua,
+                                     roster_t const & left,
                                      roster_t const & right,
                                      content_merge_adaptor & adaptor,
                                      bool const basic_io,
-                                     std::ostream & output) const;
+                                     std::ostream & output);
+
   void resolve_file_content_conflicts(lua_hooks & lua,
                                       roster_t const & left_roster,
                                       roster_t const & right_roster,
@@ -249,7 +254,6 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
-             content_merge_adaptor & adaptor,
              roster_merge_result & result);
 
 void

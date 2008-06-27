@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -869,8 +870,7 @@ content_merger::try_auto_merge(file_path const & anc_path,
 }
 
 bool
-content_merger::try_user_merge(lua_hooks & lua,
-                               file_path const & anc_path,
+content_merger::try_user_merge(file_path const & anc_path,
                                file_path const & left_path,
                                file_path const & right_path,
                                file_path const & merged_path,

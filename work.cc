@@ -318,7 +318,7 @@ workspace::get_current_roster(database & db,
   else
     {
       make_roster_for_revision(db, nis, rev, rid, ros, markings);
-      update_current_roster_from_filesystem(ros);
+      update_from_filesystem(ros, markings, rid);
     }
 }
 
@@ -1364,6 +1364,92 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
           ident_existing_file(fp, file->content, status);
         }
 
+    }
+
+  N(missing_items == 0,
+    F("%d missing items; use '%s ls missing' to view\n"
+      "To restore consistency, on each missing item run either\n"
+      " '%s drop ITEM' to remove it permanently, or\n"
+      " '%s revert ITEM' to restore it.\n"
+      "To handle all at once, simply use\n"
+      " '%s drop --missing' or\n"
+      " '%s revert --missing'")
+    % missing_items % ui.prog_name % ui.prog_name % ui.prog_name
+    % ui.prog_name % ui.prog_name);
+}
+
+void
+workspace::update_from_filesystem(roster_t & ros,
+                                  marking_map & markings,
+                                  revision_id const & rid)
+{
+  temp_node_id_source nis;
+  inodeprint_map ipm;
+
+  if (in_inodeprints_mode())
+    {
+      data dat;
+      read_inodeprints(dat);
+      read_inodeprint_map(dat, ipm);
+    }
+
+  size_t missing_items = 0;
+
+  // this code is speed critical, hence the use of inode fingerprints so be
+  // careful when making changes in here and preferably do some timing tests
+
+  if (!ros.has_root())
+    return;
+
+  node_map const & nodes = ros.all_nodes();
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      node_t node = i->second;
+
+      file_path fp;
+      ros.get_name(nid, fp);
+
+      const path::status status(get_path_status(fp));
+
+      if (is_dir_t(node))
+        {
+          if (status == path::nonexistent)
+            {
+              W(F("missing directory '%s'") % (fp));
+              missing_items++;
+            }
+          else if (status != path::directory)
+            {
+              W(F("not a directory '%s'") % (fp));
+              missing_items++;
+            }
+        }
+      else
+        {
+          // Only analyze changed files (or all files if inodeprints mode
+          // is disabled).
+          if (inodeprint_unchanged(ipm, fp))
+            continue;
+
+          if (status == path::nonexistent)
+            {
+              W(F("missing file '%s'") % (fp));
+              missing_items++;
+            }
+          else if (status != path::file)
+            {
+              W(F("not a file '%s'") % (fp));
+              missing_items++;
+            }
+
+          file_t file = downcast_to_file_t(node);
+          ident_existing_file(fp, file->content, status);
+
+          marking_t & marking = markings.find(nid)->second;
+          marking.file_content.clear();
+          marking.file_content.insert(rid);
+        }
     }
 
   N(missing_items == 0,

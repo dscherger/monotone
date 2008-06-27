@@ -145,12 +145,17 @@ struct marking_t
   typedef enum {add, suture, split} birth_cause_t;
 
   revision_id birth_revision;
-  std::pair<birth_cause_t, std::pair<node_id, node_id> > birth_cause;
+
   // if suture, the node_ids indicate the ancestors. If split, the first
   // node_id indicates the ancestor.
+  std::pair<birth_cause_t, std::pair<node_id, node_id> > birth_cause;
+
+  // These sets hold the minimal marking map for the merge scalars; see
+  // ss-mark-merge.text.
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
+
   marking_t() : birth_cause (std::make_pair (add, null_ancestors)) {};
   bool operator==(marking_t const & other) const
   {

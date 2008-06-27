@@ -194,6 +194,11 @@ public:
   void update_current_roster_from_filesystem(roster_t & ros,
                                              node_restriction const & mask);
 
+  // Update roster and markings from workspace
+  void update_from_filesystem(roster_t & ros,
+                              marking_map & markings,
+                              revision_id const & rid);
+
 
   // the "user log" is a file the user can edit as they program to record
   // changes they make to their source code. Upon commit the file is read
