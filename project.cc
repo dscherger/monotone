@@ -618,6 +618,7 @@ project_set::maybe_get_project(branch_prefix const & name)
 project_t &
 project_set::get_project_of_branch(branch_name const & branch)
 {
+  MM(branch);
   project_t * const project = maybe_get_project_of_branch(branch);
   I(project != NULL);
   return *project;
