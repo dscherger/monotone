@@ -1444,11 +1444,15 @@ workspace::update_from_filesystem(roster_t & ros,
             }
 
           file_t file = downcast_to_file_t(node);
+          file_id const prev_content = file->content;
           ident_existing_file(fp, file->content, status);
 
-          marking_t & marking = markings.find(nid)->second;
-          marking.file_content.clear();
-          marking.file_content.insert(rid);
+          if (prev_content != file->content)
+            {
+              marking_t & marking = markings.find(nid)->second;
+              marking.file_content.clear();
+              marking.file_content.insert(rid);
+            }
         }
     }
 
