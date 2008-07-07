@@ -1,0 +1,9 @@
+mtn: 2 heads on branch 'testbranch'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  75354508f1be7980da4cfbd0edeabf58492a2d49
+mtn: [right] 98997255d9ff7355d9e5ee2287aba2e8e8fe33e0
+mtn: conflict: duplicate name 'checkout.sh' for the directory ''
+mtn: added as a new file on the left
+mtn: added as a new file on the right
+mtn: error: merge failed due to unresolved conflicts

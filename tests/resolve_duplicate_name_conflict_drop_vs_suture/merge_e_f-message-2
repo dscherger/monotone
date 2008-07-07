@@ -1,0 +1,7 @@
+mtn: 3 heads on branch 'testbranch'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  38fee2fc132b056f10476fff55f10ccaa52b5452
+mtn: [right] f214512c044555f3519597c19e6a50399ec81241
+mtn: suturing checkout.sh, checkout.sh into checkout.sh
+mtn: misuse: checkout.sh was sutured in this merge; resolution must be 'resolved_suture'

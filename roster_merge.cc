@@ -28,6 +28,45 @@ using std::pair;
 using std::set;
 using std::string;
 
+static char * const
+image(resolve_conflicts::side_t side)
+{
+  switch (side)
+    {
+    case resolve_conflicts::left_side:
+      return "left";
+    case resolve_conflicts::right_side:
+      return "right";
+
+    default:
+      I(false);
+    }
+}
+
+static char * const
+image(resolve_conflicts::resolution_t resolution)
+{
+  switch (resolution)
+    {
+    case resolve_conflicts::none:
+      return "none";
+    case resolve_conflicts::content_user:
+      return "content_user";
+    case resolve_conflicts::content_internal:
+      return "content_internal";
+    case resolve_conflicts::ignore_drop:
+      return "ignore_drop";
+    case resolve_conflicts::rename:
+      return "rename";
+    case resolve_conflicts::respect_drop:
+      return "respect_drop";
+    case resolve_conflicts::suture:
+      return "suture";
+    default:
+      I(false);
+    }
+}
+
 template <> void
 dump(invalid_name_conflict const & conflict, string & out)
 {
@@ -77,7 +116,40 @@ dump(duplicate_name_conflict const & conflict, string & out)
   oss << "duplicate_name_conflict between left node: " << conflict.left_nid << " "
       << "and right node: " << conflict.right_nid << " "
       << "parent: " << conflict.parent_name.first << " "
-      << "basename: " << conflict.parent_name.second << "\n";
+      << "basename: " << conflict.parent_name.second;
+
+  if (conflict.left_resolution.first != resolve_conflicts::none)
+    {
+      oss << " left_resolution: " << image(conflict.left_resolution.first);
+      oss << " left_name: " << conflict.left_resolution.second;
+    }
+  if (conflict.right_resolution.first != resolve_conflicts::none)
+    {
+      oss << " right_resolution: " << image(conflict.right_resolution.first);
+      oss << " right_name: " << conflict.right_resolution.second;
+    }
+  oss << "\n";
+  out = oss.str();
+}
+
+template <> void
+dump(content_drop_conflict const & conflict, string & out)
+{
+  ostringstream oss;
+  oss << "content_drop_conflict: "
+      << "node: "<< conflict.nid << " "
+      << "content: " << conflict.fid << " "
+      << "parent_side: " << image(conflict.parent_side);
+
+  if (conflict.resolution.first != resolve_conflicts::none)
+    {
+      oss << " resolution: " << image(conflict.resolution.first);
+      if (conflict.resolution.first != resolve_conflicts::ignore_drop)
+        {
+          oss << " new_name: " << conflict.resolution.second;
+        }
+    }
+  oss << "\n";
   out = oss.str();
 }
 
@@ -127,6 +199,7 @@ roster_merge_result::has_non_content_conflicts() const
     || !orphaned_node_conflicts.empty()
     || !multiple_name_conflicts.empty()
     || !duplicate_name_conflicts.empty()
+    || !content_drop_conflicts.empty()
     || !attribute_conflicts.empty();
 }
 static void
@@ -141,6 +214,7 @@ dump_conflicts(roster_merge_result const & result, string & out)
   dump(result.orphaned_node_conflicts, out);
   dump(result.multiple_name_conflicts, out);
   dump(result.duplicate_name_conflicts, out);
+  dump(result.content_drop_conflicts, out);
 
   dump(result.attribute_conflicts, out);
   dump(result.file_content_conflicts, out);
@@ -190,6 +264,7 @@ namespace
     symbol const attribute("attribute");
     symbol const conflict("conflict");
     symbol const content("content");
+    symbol const content_drop("content_drop");
     symbol const directory_loop_created("directory_loop_created");
     symbol const duplicate_name("duplicate_name");
     symbol const invalid_name("invalid_name");
@@ -203,9 +278,11 @@ namespace
     symbol const node_type("node_type");
     symbol const orphaned_directory("orphaned_directory");
     symbol const orphaned_file("orphaned_file");
+    symbol const resolved_ignore_drop("resolved_ignore_drop");
     symbol const resolved_internal("resolved_internal");
     symbol const resolved_rename_left("resolved_rename_left");
     symbol const resolved_rename_right("resolved_rename_right");
+    symbol const resolved_respect_drop("resolved_respect_drop");
     symbol const resolved_suture ("resolved_suture");
     symbol const resolved_user("resolved_user");
     symbol const right_attr_state("right_attr_state");
@@ -486,6 +563,16 @@ put_content_conflict (basic_io::stanza & st,
       st.push_str_pair(syms::ancestor_name, ancestor_name.as_external());
       st.push_file_pair(syms::left_name, left_name);
       st.push_file_pair(syms::right_name, right_name);
+
+      switch (conflict.resolution.first)
+        {
+        case resolve_conflicts::none:
+          break;
+
+        default:
+          // not implemented yet
+          I(false);
+        }
     }
 }
 
@@ -1174,6 +1261,85 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
 }
 
 void
+roster_merge_result::report_content_drop_conflicts(roster_t const & left_roster,
+                                                   roster_t const & right_roster,
+                                                   bool const basic_io,
+                                                   std::ostream & output) const
+{
+  for (size_t i = 0; i < content_drop_conflicts.size(); ++i)
+    {
+      content_drop_conflict const & conflict = content_drop_conflicts[i];
+
+      I(!roster.is_attached(conflict.nid));
+
+      basic_io::stanza st;
+
+      file_path name;
+
+      switch (conflict.parent_side)
+        {
+        case resolve_conflicts::left_side:
+          left_roster.get_name (conflict.nid, name);
+          I(file_type == get_type (left_roster, conflict.nid));
+
+          if (basic_io)
+            {
+              st.push_str_pair(syms::conflict, syms::content_drop);
+              st.push_str_pair(syms::left_type, "file");
+              st.push_file_pair(syms::left_name, name);
+              st.push_binary_pair(syms::left_file_id, conflict.fid.inner());
+            }
+          else
+            {
+              P(F("conflict: file '%s' dropped on the right, changed on the left") % name);
+            }
+
+          break;
+
+        case resolve_conflicts::right_side:
+          right_roster.get_name (conflict.nid, name);
+          I(file_type == get_type (right_roster, conflict.nid));
+
+          if (basic_io)
+            {
+              st.push_str_pair(syms::conflict, syms::content_drop);
+              st.push_str_pair(syms::right_type, "file");
+              st.push_file_pair(syms::right_name, name);
+              st.push_binary_pair(syms::right_file_id, conflict.fid.inner());
+            }
+          else
+            {
+              P(F("conflict: file '%s' dropped on the right, changed on the left") % name);
+            }
+
+          break;
+        }
+
+      if (basic_io)
+        {
+          switch (conflict.resolution.first)
+            {
+            case resolve_conflicts::none:
+              break;
+
+            case resolve_conflicts::ignore_drop:
+              st.push_file_pair(syms::resolved_ignore_drop, conflict.resolution.second);
+              break;
+
+            case resolve_conflicts::respect_drop:
+              st.push_symbol(syms::resolved_respect_drop);
+              break;
+
+            default:
+              I(false);
+            }
+
+          put_stanza(st, output);
+        }
+    }
+}
+
+void
 roster_merge_result::report_attribute_conflicts(roster_t const & left_roster,
                                                 roster_t const & right_roster,
                                                 content_merge_adaptor & adaptor,
@@ -1422,30 +1588,6 @@ roster_merge_result::report_file_content_conflicts(lua_hooks & lua,
 
 namespace resolve_conflicts
 {
-  char* image (resolution_t resolution)
-  {
-    switch (resolution)
-      {
-      case none:
-        return "none";
-
-      case content_internal:
-        return "content_internal";
-
-      case content_user:
-        return "content_user";
-
-      case suture:
-        return "suture";
-
-      case rename:
-        return "rename";
-
-      }
-
-    return ""; // suppress bogus compiler warning
-  }
-
   bool
   do_auto_merge(lua_hooks & lua,
                 file_content_conflict const & conflict,
@@ -1549,6 +1691,88 @@ parse_duplicate_name_conflicts(basic_io::parser & pars,
 } // parse_duplicate_name_conflicts
 
 static void
+parse_content_drop_conflicts(basic_io::parser & pars,
+                             std::vector<content_drop_conflict> & conflicts,
+                             roster_t const & left_roster,
+                             roster_t const & right_roster)
+{
+  for (std::vector<content_drop_conflict>::iterator i = conflicts.begin();
+       i != conflicts.end();
+       ++i)
+    {
+      string tmp;
+      string name;
+      resolve_conflicts::side_t parent_side;
+      node_id nid;
+      string hex_fid;
+
+      content_drop_conflict & conflict = *i;
+
+      pars.esym(syms::content_drop);
+
+      if (pars.symp (syms::left_type))
+        {
+          parent_side = resolve_conflicts::left_side;
+          pars.sym();
+          pars.str(tmp);
+          I(tmp == "file");
+          pars.esym(syms::left_name);
+          pars.str(name);
+          pars.esym(syms::left_file_id); pars.hex(hex_fid);
+          nid = left_roster.get_node (file_path_internal (name))->self;
+        }
+      else
+        {
+          parent_side = resolve_conflicts::right_side;
+          pars.sym();
+          pars.str(tmp);
+          I(tmp == "file");
+          pars.esym (syms::right_name); pars.str(name);
+          pars.esym(syms::right_file_id); pars.hex(hex_fid);
+          nid = right_roster.get_node (file_path_internal (name))->self;
+        }
+
+      N(parent_side == conflict.parent_side && nid == conflict.nid && hex_fid == encode_hexenc(conflict.fid.inner()()),
+        F("conflicts file does not match current conflicts: content_drop, name %s")
+        % name);
+
+      // check for a resolution
+      if ((!pars.symp (syms::conflict)) && pars.tok.in.lookahead != EOF)
+        {
+          if (pars.symp (syms::resolved_suture))
+            {
+              conflict.resolution.first = resolve_conflicts::suture;
+              pars.sym();
+              pars.str(tmp);
+              conflict.resolution.second = file_path_internal(tmp);
+            }
+          else if (pars.symp (syms::resolved_ignore_drop))
+            {
+              conflict.resolution.first = resolve_conflicts::ignore_drop;
+              pars.sym();
+              pars.str(tmp);
+              conflict.resolution.second = file_path_internal(tmp);
+            }
+          else if (pars.symp (syms::resolved_respect_drop))
+            {
+              conflict.resolution.first = resolve_conflicts::respect_drop;
+              pars.sym();
+            }
+          else
+            N(false, F("%s is not a supported conflict resolution for %s") % pars.token % "content_drop");
+        }
+
+      if (pars.tok.in.lookahead != EOF)
+        pars.esym (syms::conflict);
+      else
+        {
+          std::vector<content_drop_conflict>::iterator tmp = i;
+          N(++tmp == conflicts.end(), F("conflicts file does not match current conflicts"));
+        }
+    }
+} // parse_content_drop_conflicts
+
+static void
 parse_file_content_conflicts(basic_io::parser & pars,
                                std::vector<file_content_conflict> & conflicts,
                                roster_t const & left_roster,
@@ -1618,27 +1842,32 @@ parse_file_content_conflicts(basic_io::parser & pars,
 static void
 parse_resolve_conflicts_str(basic_io::parser & pars, roster_merge_result & result)
 {
-  char const * error_message = "can't specify a %s conflict resolution for more than one conflict";
+  char const * error_message_1 = "can't specify a %s conflict resolution for more than one conflict";
+  char const * error_message_2 = "conflict resolution %s applies only to %s conflicts";
+  char const * error_message_3 = "conflict resolution %s is not appropriate for current conflicts";
 
   while (pars.tok.in.lookahead != EOF)
     {
-      if (pars.symp (syms::resolved_suture))
+      // resolution alphabetical order
+      if (pars.symp (syms::resolved_ignore_drop))
         {
-          N(result.duplicate_name_conflicts.size() == 1,
-            F(error_message) % syms::resolved_suture);
-
-          duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
-
-          conflict.left_resolution.first  = resolve_conflicts::suture;
-          conflict.right_resolution.first = resolve_conflicts::suture;
           pars.sym();
-          conflict.left_resolution.second = file_path_internal (pars.token);
-          pars.str();
+
+          N(result.content_drop_conflicts.size() > 0,
+            F(error_message_2) % syms::resolved_ignore_drop % syms::content_drop);
+
+          N(result.content_drop_conflicts.size() == 1,
+            F(error_message_1) % syms::resolved_ignore_drop);
+
+          content_drop_conflict & conflict = *result.content_drop_conflicts.begin();
+          string tmp;
+          pars.str(tmp);
+          conflict.resolution = make_pair(resolve_conflicts::ignore_drop, file_path_internal(tmp));
         }
       else if (pars.symp (syms::resolved_rename_left))
         {
           N(result.duplicate_name_conflicts.size() == 1,
-            F(error_message) % syms::resolved_rename_left);
+            F(error_message_1) % syms::resolved_rename_left);
 
           duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
 
@@ -1650,7 +1879,7 @@ parse_resolve_conflicts_str(basic_io::parser & pars, roster_merge_result & resul
       else if (pars.symp (syms::resolved_rename_right))
         {
           N(result.duplicate_name_conflicts.size() == 1,
-            F(error_message) % syms::resolved_rename_right);
+            F(error_message_1) % syms::resolved_rename_right);
 
           duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
 
@@ -1658,6 +1887,61 @@ parse_resolve_conflicts_str(basic_io::parser & pars, roster_merge_result & resul
           pars.sym();
           conflict.right_resolution.second = file_path_internal (pars.token);
           pars.str();
+        }
+      else if (pars.symp (syms::resolved_respect_drop))
+        {
+          pars.sym();
+
+          N(result.content_drop_conflicts.size() > 0,
+            F(error_message_2) % syms::resolved_respect_drop % syms::content_drop);
+
+          N(result.content_drop_conflicts.size() == 1,
+            F(error_message_1) % syms::resolved_ignore_drop);
+
+          content_drop_conflict & conflict = *result.content_drop_conflicts.begin();
+          conflict.resolution = make_pair(resolve_conflicts::respect_drop, file_path());
+        }
+      else if (pars.symp (syms::resolved_suture))
+        {
+          if (result.duplicate_name_conflicts.size() == 1 &&
+              result.content_drop_conflicts.size() == 1)
+            {
+              duplicate_name_conflict & dn_conflict = *result.duplicate_name_conflicts.begin();
+              content_drop_conflict & cd_conflict = *result.content_drop_conflicts.begin();
+
+              dn_conflict.left_resolution.first  = resolve_conflicts::suture;
+              dn_conflict.right_resolution.first = resolve_conflicts::suture;
+              pars.sym();
+              dn_conflict.left_resolution.second = file_path_internal (pars.token);
+              dn_conflict.right_resolution.second = dn_conflict.left_resolution.second;
+              pars.str();
+
+              cd_conflict.resolution.first = resolve_conflicts::suture;
+              cd_conflict.resolution.second = dn_conflict.left_resolution.second;
+            }
+          else if (result.duplicate_name_conflicts.size() == 1 &&
+                   result.content_drop_conflicts.size() == 0)
+            {
+              duplicate_name_conflict & conflict = *result.duplicate_name_conflicts.begin();
+
+              conflict.left_resolution.first  = resolve_conflicts::suture;
+              conflict.right_resolution.first = resolve_conflicts::suture;
+              pars.sym();
+              conflict.left_resolution.second = file_path_internal (pars.token);
+              pars.str();
+            }
+          else if (result.duplicate_name_conflicts.size() == 0 &&
+                   result.content_drop_conflicts.size() == 1)
+            {
+              content_drop_conflict & cd_conflict = *result.content_drop_conflicts.begin();
+
+              cd_conflict.resolution.first = resolve_conflicts::suture;
+              pars.sym();
+              cd_conflict.resolution.second = file_path_internal (pars.token);
+              pars.str();
+            }
+          else
+            N(false, F(error_message_3) % syms::resolved_suture);
         }
       else
         N(false, F("%s is not a supported conflict resolution") % pars.token);
@@ -1730,6 +2014,7 @@ parse_resolve_conflicts_opts (options const & opts,
       // These are the ones we know how to resolve.
 
       parse_duplicate_name_conflicts(pars, result.duplicate_name_conflicts, left_roster, right_roster);
+      parse_content_drop_conflicts(pars, result.content_drop_conflicts, left_roster, right_roster);
       parse_file_content_conflicts(pars, result.file_content_conflicts, left_roster, right_roster);
 
       if (src.lookahead != EOF)
@@ -1849,8 +2134,7 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
         break;
 
       case resolve_conflicts::none:
-        // Just keep current name
-        this->roster.attach_node (left_nid, left_name);
+        N(false, F("no resolution provided for duplicate_name %s") % left_name);
         break;
 
       default:
@@ -1880,6 +2164,98 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
     } // end for
 
   duplicate_name_conflicts.clear();
+}
+
+void
+roster_merge_result::resolve_content_drop_conflicts(roster_t const & left_roster,
+                                                    roster_t const & right_roster)
+{
+  MM(left_roster);
+  MM(right_roster);
+  MM(this->roster); // New roster
+
+  // Conflict node is present but unattached in the new roster, with null
+  // file content id. The resolution is to fill in or delete the node.
+
+  for (std::vector<content_drop_conflict>::const_iterator i = content_drop_conflicts.begin();
+       i != content_drop_conflicts.end();
+       ++i)
+    {
+      content_drop_conflict const & conflict = *i;
+      MM(conflict);
+
+      file_path name;
+      node_t old_n;
+
+      switch (conflict.parent_side)
+        {
+        case resolve_conflicts::left_side:
+          left_roster.get_name(conflict.nid, name);
+          old_n = left_roster.get_node (conflict.nid);
+          break;
+
+        case resolve_conflicts::right_side:
+          right_roster.get_name(conflict.nid, name);
+          old_n = right_roster.get_node (conflict.nid);
+          break;
+        }
+
+      switch (conflict.resolution.first)
+        {
+          case resolve_conflicts::none:
+            N(false, F("no resolution specified for conflict: content_drop %s") % name);
+            break;
+
+          case resolve_conflicts::suture:
+            {
+              // Verify that conflict.nid was sutured in this merge
+              node_t new_n = roster.get_node(conflict.resolution.second);
+
+              N((new_n->ancestors.first == conflict.nid || new_n->ancestors.second == conflict.nid),
+                F("%s was not sutured to %s in this merge") % name % conflict.resolution.second);
+            }
+            break;
+
+          case resolve_conflicts::ignore_drop:
+            {
+              file_path dirname;
+              path_component basename;
+
+              N(roster.has_node(conflict.nid),
+                F("%s was sutured in this merge; resolution must be 'resolved_suture'") % name);
+
+              node_t new_n = roster.get_node(conflict.nid);
+
+              P(F("ignoring drop of %s; new name %s") % name % conflict.resolution.second);
+              N(!roster.has_node(conflict.resolution.second),
+                F("%s already exists") % conflict.resolution.second);
+
+              name.dirname_basename(dirname, basename);
+
+              node_t dir_n = roster.get_node(dirname);
+
+              N(dir_n != 0, F("%s directory does not exist") % dirname);
+
+              // fill in node in result roster
+              new_n->attrs = old_n->attrs;
+              I(is_file_t(new_n));
+              downcast_to_file_t(new_n)->content = downcast_to_file_t(old_n)->content;
+              roster.attach_node(conflict.nid, dir_n->self, basename);
+            }
+            break;
+
+          case resolve_conflicts::respect_drop:
+            P(F("keeping drop of %s") % old_n->name);
+            roster.drop_detached_node(conflict.nid);
+            break;
+
+        default:
+          I(false);
+        }
+
+    } // end for
+
+  content_drop_conflicts.clear();
 }
 
 void
@@ -1968,6 +2344,7 @@ roster_merge_result::clear()
   orphaned_node_conflicts.clear();
   multiple_name_conflicts.clear();
   duplicate_name_conflicts.clear();
+  content_drop_conflicts.clear();
 
   attribute_conflicts.clear();
   file_content_conflicts.clear();
@@ -2069,7 +2446,8 @@ namespace
                               set<revision_id> const & uncommon_ancestors,
                               roster_t const & parent_roster,
                               roster_t const & other_parent_roster,
-                              roster_t & new_roster,
+                              resolve_conflicts::side_t parent_side,
+                              roster_merge_result & result,
                               set<node_id> & already_handled)
   {
     MM(markings);
@@ -2098,7 +2476,7 @@ namespace
           {
           case marking_t::add:
             // case ii, iv; if ii, conflict will be discovered in next phase
-            create_node_for(n, new_roster);
+            create_node_for(n, result.roster);
             break;
 
           case marking_t::split:
@@ -2120,19 +2498,19 @@ namespace
                   // Set ancestors so mark-merge step will know how to check for
                   // conflicts. We can't tell whether n is in left or right, so
                   // we always put it in ancestors.first.
-                  create_node_for(n, make_pair (n->self, birth_ancestors.first), new_roster);
+                  create_node_for(n, make_pair (n->self, birth_ancestors.first), result.roster);
                   already_handled.insert(birth_ancestors.first);
                 }
               else if (right_anc_in_other)
                 {
                   I(!left_anc_in_other);
-                  create_node_for(n, make_pair (n->self, birth_ancestors.second), new_roster);
+                  create_node_for(n, make_pair (n->self, birth_ancestors.second), result.roster);
                   already_handled.insert(birth_ancestors.second);
                 }
               else
                 {
                   // both ancestors deleted in other parent
-                  create_node_for(n, new_roster);
+                  create_node_for(n, result.roster);
                 }
             }
             break;
@@ -2140,26 +2518,19 @@ namespace
       }
     else
       {
-        // In this branch we are NOT inserting the node into the new roster as it
-        // has been deleted from the other side of the merge.
-        // In this case, output a warning if there are changes to the file on the
-        // side of the merge where it still exists.
+        // case v
+
         set<revision_id> const & content_marks = safe_get(markings, n->self).file_content;
-        bool found_one_ignored_content = false;
         for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
-                if (!found_one_ignored_content)
-                  {
-                    file_path fp;
-                    parent_roster.get_name(n->self, fp);
-                    W(F("Content changes to the file '%s'\n"
-                        "will be ignored during this merge as the file has been\n"
-                        "removed on one side of the merge.  Affected revisions include:") % fp);
-                  }
-                found_one_ignored_content = true;
-                W(F("Revision: %s") % encode_hexenc(it->inner()()));
+                result.content_drop_conflicts.push_back
+                  (content_drop_conflict(n->self,
+                                         downcast_to_file_t(parent_roster.get_node(n->self))->content,
+                                         parent_side));
+                create_node_for(n, result.roster);
+                break;
               }
           }
       }
@@ -2181,11 +2552,9 @@ namespace
     return false;
   }
 
-  enum side_t { left_side, right_side };
-
   void
   assign_name(roster_merge_result & result, node_id nid,
-              node_id parent, path_component name, side_t side)
+              node_id parent, path_component name, resolve_conflicts::side_t side)
   {
     // this function is reponsible for detecting structural conflicts.  by the
     // time we've gotten here, we have a node that's unambiguously decided on
@@ -2211,11 +2580,11 @@ namespace
             // conflicted nodes detached.
             switch (side)
               {
-              case left_side:
+              case resolve_conflicts::left_side:
                 c.left_nid = nid;
                 c.right_nid = result.roster.root()->self;
                 break;
-              case right_side:
+              case resolve_conflicts::right_side:
                 c.left_nid = result.roster.root()->self;
                 c.right_nid = nid;
                 break;
@@ -2259,11 +2628,11 @@ namespace
             // conflicted nodes detached.
             switch (side)
               {
-              case left_side:
+              case resolve_conflicts::left_side:
                 c.left_nid = nid;
                 c.right_nid = p->get_child(name)->self;
                 break;
-              case right_side:
+              case resolve_conflicts::right_side:
                 c.left_nid = p->get_child(name)->self;
                 c.right_nid = nid;
                 break;
@@ -2289,7 +2658,7 @@ namespace
 
   void
   copy_node_forward(roster_merge_result & result, node_t const & n,
-                    node_t const & old_n, side_t const & side)
+                    node_t const & old_n, resolve_conflicts::side_t const & side)
   {
     I(n->self == old_n->self);
     n->attrs = old_n->attrs;
@@ -2321,12 +2690,12 @@ namespace
                        right_uncommon_ancestors,
                        new_name, conflict))
         {
-          side_t winning_side;
+          resolve_conflicts::side_t winning_side;
 
           if (new_name == left_name)
-            winning_side = left_side;
+            winning_side = resolve_conflicts::left_side;
           else if (new_name == right_name)
-            winning_side = right_side;
+            winning_side = resolve_conflicts::right_side;
           else
             I(false);
 
@@ -2450,17 +2819,17 @@ roster_merge(roster_t const & left_parent,
             I(false);
 
           case parallel::in_left:
-            // case ii, iii, iva, or va
+            // case ii, iii, iva, va, vc
             insert_if_unborn_or_sutured(i.left_data(),
                                         left_markings, left_uncommon_ancestors, left_parent,
-                                        right_parent, result.roster, already_handled);
+                                        right_parent, resolve_conflicts::left_side, result, already_handled);
             break;
 
           case parallel::in_right:
-            // case ii, iii, ivb, or vb
+            // case ii, iii, ivb, vb, vd
             insert_if_unborn_or_sutured(i.right_data(),
                                         right_markings, right_uncommon_ancestors, right_parent,
-                                        left_parent, result.roster, already_handled);
+                                        left_parent, resolve_conflicts::right_side, result, already_handled);
             break;
 
           case parallel::in_both:
@@ -2521,9 +2890,9 @@ roster_merge(roster_t const & left_parent,
                       // Not sutured.
                       //
                       // Attach this node from the left roster. This may cause
-                      // a name collision with the previously attached node from
+                      // a name collision with a previously attached node from
                       // the other side of the merge.
-                      copy_node_forward(result, new_i->second, left_n, left_side);
+                      copy_node_forward(result, new_i->second, left_n, resolve_conflicts::left_side);
                       ++new_i;
                     }
                 }
@@ -2567,9 +2936,9 @@ roster_merge(roster_t const & left_parent,
                       // Not sutured.
                       //
                       // Attach this node from the right roster. This may
-                      // cause a name collision with the previously attached
+                      // cause a name collision with a previously attached
                       // node from the other side of the merge.
-                      copy_node_forward(result, new_i->second, right_n, right_side);
+                      copy_node_forward(result, new_i->second, right_n, resolve_conflicts::right_side);
                       ++new_i;
                     }
                 }

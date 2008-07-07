@@ -3024,15 +3024,23 @@ All merging commands accept options that specify conflict resolutions:
 @item --resolve-conflicts-file=@var{filename}
 @end table
 
-For @var{--resolve-conflicts-file}, the file must contain the output
+For @command{--resolve-conflicts-file}, the file must contain the output
 of @command{automate show_conflicts}, with conflict resolutions
 appended to each stanza. @file{_MTN/conflicts} is a good place to put
 the file.
 
-For @var{--resolve-conflicts}, a single conflict resolution is given
+For @command{--resolve-conflicts}, a single conflict resolution is given
 in the string; it has the same format as the conflict resolutions in
 the file, and must be applicable to all conflicts in the merge. This
 is most usefull when there is a single conflict.
+
+The @command{merge} command normally will perform as many merges as
+necessary to merge all current heads of a branch. However, when
+@command{--resolve-conflicts} or @command{--resolve-conflicts-file} is given,
+the conflicts and their resolutions apply only to the first merge, so
+the subsequent merges are not done; the @command{merge} command must
+be repeated, possibly with new conflicts and resolutions, to merge the
+remaining heads.
 
 The possible conflict resolutions are discussed with each conflict in
 the following sections.

@@ -405,7 +405,16 @@ typedef set<revision_id>::const_iterator rid_set_iter;
 static revpair
 find_heads_to_merge(database & db, set<revision_id> const heads)
 {
-  I(heads.size() > 2);
+  I(heads.size() >= 2);
+
+  if (heads.size() == 2)
+    {
+      rid_set_iter i = heads.begin();
+      revision_id left = *i++;
+      revision_id right = *i++;
+      return revpair(left, right);
+    };
+
   map<revision_id, revpair> heads_for_ancestor;
   set<revision_id> ancestors;
 
@@ -479,6 +488,12 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 
   size_t pass = 1, todo = heads.size() - 1;
 
+  if (app.opts.resolve_conflicts_given || app.opts.resolve_conflicts_file_given)
+    {
+      // conflicts and resolutions only apply to first merge, so only do that one.
+      todo = 1;
+    }
+
   // If there are more than two heads to be merged, on each iteration we
   // merge a pair whose least common ancestor is not an ancestor of any
   // other pair's least common ancestor.  For example, if the history graph
@@ -491,7 +506,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   //        A   B
   //
   // A and B will be merged first, and then the result will be merged with C.
-  while (heads.size() > 2)
+  while (pass <= todo)
     {
       P(F("merge %d / %d:") % pass % todo);
       P(F("calculating best pair of heads to merge next"));
@@ -507,19 +522,9 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       pass++;
     }
 
-  // Last one.
-  I(pass == todo);
-  if (todo > 1)
-    P(F("merge %d / %d:") % pass % todo);
+  if (heads.size() > 1)
+    P(F("note: branch '%s' still has %s heads; run merge again") % app.opts.branchname % heads.size());
 
-  rid_set_iter i = heads.begin();
-  revision_id left = *i++;
-  revision_id right = *i++;
-  I(i == heads.end());
-
-  merge_two(app.opts, app.lua, project, keys,
-            left, right, app.opts.branchname, string("merge"),
-            std::cout, false);
   P(F("note: your workspaces have not been updated"));
 }
 
@@ -949,6 +954,7 @@ show_conflicts_core (database & db,
       result.report_orphaned_node_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_multiple_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_duplicate_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
+      result.report_content_drop_conflicts(*l_roster, *r_roster, basic_io, output);
 
       result.report_attribute_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_file_content_conflicts(lua, *l_roster, *r_roster, adaptor, basic_io, output);
@@ -1012,19 +1018,9 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
       N(heads.size() >= 2,
         F("branch '%s' has %d heads; must be at least 2 for show_conflicts") % app.opts.branchname % heads.size());
 
-      if (heads.size() == 2)
-        {
-          set<revision_id>::const_iterator i = heads.begin();
-          l_id = *i;
-          ++i;
-          r_id = *i;
-        }
-      else
-        {
-          revpair p = find_heads_to_merge (db, heads);
-          l_id = p.first;
-          r_id = p.second;
-        }
+      revpair p = find_heads_to_merge (db, heads);
+      l_id = p.first;
+      r_id = p.second;
     }
   else if (args.size() == 2)
     {

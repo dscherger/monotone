@@ -37,7 +37,9 @@
 
 namespace resolve_conflicts
 {
-  enum resolution_t {none, content_user, content_internal, rename, suture};
+  enum resolution_t {none, content_user, content_internal, ignore_drop, rename, respect_drop, suture};
+
+  enum side_t {left_side, right_side};
 }
 
 // renaming the root dir allows these:
@@ -105,6 +107,25 @@ struct duplicate_name_conflict
     right_resolution.first = resolve_conflicts::none;};
 };
 
+// files with content_drop conflicts are left attached in result roster
+// (unless unattached for another reason), with parent content hash.
+struct content_drop_conflict
+{
+  node_id nid;
+  file_id fid;
+  resolve_conflicts::side_t parent_side; // node is in parent_side roster, not in other roster
+
+  // resolution is one of none, ignore_drop, respect_drop. If ignore_drop,
+  // provide new name to allow avoiding name conflicts.
+  std::pair<resolve_conflicts::resolution_t, file_path> resolution;
+
+  content_drop_conflict () :
+    nid(the_null_node), parent_side(resolve_conflicts::left_side) {resolution.first = resolve_conflicts::none;};
+
+  content_drop_conflict(node_id nid, file_id fid, resolve_conflicts::side_t parent_side) :
+    nid(nid), fid(fid), parent_side(parent_side){resolution.first = resolve_conflicts::none;};
+};
+
 // nodes with attribute conflicts are left attached in the resulting tree (unless
 // detached for some other reason), but with the given attribute left out of
 // their full_attr_map_t.  Note that this doesn't actually leave the resulting
@@ -123,7 +144,7 @@ struct attribute_conflict
 // detached for some other reason), but with a null content hash.
 struct file_content_conflict
 {
-  node_id left_nid, right_nid, result_nid;
+  node_id left_nid, right_nid, result_nid; // node ids can be different due to suture
   file_id left, right;
 
   std::pair<resolve_conflicts::resolution_t, file_path> resolution;
@@ -152,6 +173,7 @@ template <> void dump(duplicate_name_conflict const & conflict, std::string & ou
 
 template <> void dump(attribute_conflict const & conflict, std::string & out);
 template <> void dump(file_content_conflict const & conflict, std::string & out);
+template <> void dump(content_drop_conflict const & conflict, std::string & out);
 
 struct roster_merge_result
 {
@@ -163,6 +185,7 @@ struct roster_merge_result
   //   - orphaned node conflicts
   //   - multiple name conflicts
   //   - directory loop conflicts
+  //   - content_drop conflicts
   // - attribute conflicts
   // - file content conflicts
 
@@ -173,6 +196,7 @@ struct roster_merge_result
   std::vector<orphaned_node_conflict> orphaned_node_conflicts;
   std::vector<multiple_name_conflict> multiple_name_conflicts;
   std::vector<duplicate_name_conflict> duplicate_name_conflicts;
+  std::vector<content_drop_conflict> content_drop_conflicts;
 
   std::vector<attribute_conflict> attribute_conflicts;
   std::vector<file_content_conflict> file_content_conflicts;
@@ -221,6 +245,13 @@ struct roster_merge_result
                                         roster_t const & left_roster,
                                         roster_t const & right_roster,
                                         content_merge_adaptor & adaptor);
+
+  void report_content_drop_conflicts(roster_t const & left_roster,
+                                     roster_t const & right_roster,
+                                     bool const basic_io,
+                                     std::ostream & output) const;
+  void resolve_content_drop_conflicts(roster_t const & left_roster,
+                                      roster_t const & right_roster);
 
   void report_attribute_conflicts(roster_t const & left,
                                   roster_t const & right,

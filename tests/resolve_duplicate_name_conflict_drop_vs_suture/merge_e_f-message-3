@@ -1,0 +1,9 @@
+mtn: 3 heads on branch 'testbranch'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  38fee2fc132b056f10476fff55f10ccaa52b5452
+mtn: [right] f214512c044555f3519597c19e6a50399ec81241
+mtn: suturing checkout.sh, checkout.sh into checkout.sh
+mtn: [merged] 98997255d9ff7355d9e5ee2287aba2e8e8fe33e0
+mtn: note: branch 'testbranch' still has 2 heads; run merge again
+mtn: note: your workspaces have not been updated

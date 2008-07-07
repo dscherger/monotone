@@ -3,14 +3,21 @@ doc current die-die-die-merge for existence
 
     implemented in roster_merge.cc roster_merge
 
-In a given revision, a node either exists or does not exist.
+In a given revision, a node either exists or does not exist. In
+addition, a scalar for the node may have different values in different
+revisions.
 
 Notation:
 
-    exists          A1
-    does not exist  A
+    A1a     exists, with node id '1', scalar value 'a'
+    A       does not exist
 
-In a child revision with two parents, there are several cases:
+In a child revision with two parents, there are nominally eight cases
+depending on where the node exists. We group them into five cases; the
+scalar value matters only in the case where the node is dropped on one
+side, since changing the scalar value expresses a user intent that the
+node exist, which conflicts with the user intent expressed by the
+drop.
 
         A1  B1
 i)       \ /
@@ -66,21 +73,36 @@ vb)      \ /
 
     The node was deleted in A's uncommon ancestors
 
+       D1a  E1b
+        |   |
+vc)     A   B1b
+         \ /
+          C?
 
-In monotone 0.4 and earlier, cases ii and iii did not exist.
+    The node was deleted in A's uncommon ancestors, and modified in B's.
+
+       D1b  E1a
+        |   |
+vd)    A1b  B
+         \ /
+          C?
+
+    The node was deleted in B's uncommon ancestors, and modified in A's.
+
+
+In monotone 0.4 and earlier, cases ii, iii, vc and vd did not exist.
 
 Case ii can only happen if we support sutures as user operations; not
 yet.
 
-In case v, deletion wins over any other change; it might be better to
-have deletion conflict with any other change. But that's left for
-another time.
+In cases vc and vd, two users have expressed different intent, so we
+declare a conflict.
 
 To process all nodes, we loop thru the union of the parent node ids,
 deciding which case each node belongs in. We create nodes in the
-result roster for cases i thru iv; we don't create a node for case v.
-The mark-merge step only considers nodes that are in the result
-roster.
+result roster for cases i thru iv and vc, vd; we don't create a node
+for cases va, vb. The mark-merge step only considers nodes that are in
+the result roster.
 
 To distinguish cases iii and iv, we need to store information about
 how a node was born. This can be done in the marking map, by adding
@@ -89,9 +111,13 @@ enumeral indicates add, suture, or split; if suture, the node_ids
 indicate the ancestors. If split, the first node_id indicates the
 ancestor.
 
-To distinguish case iiia from va, we search B_uncommon for a node that
-is a suture or split and has 1 as an ancestor. Similarly for case iiib
-and vb.
+To distinguish case iiia from va and vc, we search B_uncommon for a
+node that is a suture or split and has 1 as an ancestor. If found, it
+is case iii. Similarly for iiib and vb; search A_uncommon.
+
+To distinguish case va from vc, we search B_uncommon for the scalar
+marks; if found, it is case vc. Similarly for vb, vd; search
+A_uncommon.
 
 case iii will show up twice, once for node id 1 and once for node id
 3. We want to create only one node in the result roster, with node id
