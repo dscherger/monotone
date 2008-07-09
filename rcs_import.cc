@@ -3990,7 +3990,14 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
               {
                 cvs_commit *ci = (cvs_commit*) (*i);
                 cvs_commit *cj = (cvs_commit*) (*j);
-                I(ci->rcs_version == cj->rcs_version);
+
+                // Hum.. the events may be in different branches, and thus
+                // have the same author, changelog and timestamp for pretty
+                // valid reasons. Skip in those cases, and only merge
+                // events which are really the same, i.e. by Attic and real
+                // file.
+                if (ci->rcs_version != cj->rcs_version)
+                  continue;
               }
 
             // let the first take over its dependencies...
