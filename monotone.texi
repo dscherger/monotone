@@ -3,6 +3,7 @@
 @setfilename monotone.info
 @settitle monotone documentation
 @setchapternewpage odd
+@finalout
 @c %**end of header
 
 @syncodeindex fn cp
@@ -978,7 +979,7 @@ having a common ancestor.
 @end smallexample
 @end ifinfo
 @ifnotinfo
-@image{figures/two-branches}
+@image{figures/two-branches,,10cm}
 @end ifnotinfo
 
 For each branch, the set of revisions with @emph{no children} is
@@ -4671,7 +4672,7 @@ This command creates a directory in the filesystem relative to your
 current location and adds it to your workspace's ``work list''.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the @option{--no-respect-ignore} flag,
-entries in .mtn-ignore will not be honored.
+entries in @file{.mtn-ignore} will not be honored.
 
 @item mtn [--bookkeep-only] drop @var{pathname...}
 @itemx mtn drop --missing
