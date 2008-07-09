@@ -400,7 +400,7 @@ CMD(clone, "clone", "", CMD_REF(network),
       set<revision_id> heads;
       projects
         .get_project_of_branch(app.opts.branchname)
-        .get_branch_heads(app.opts.branchname, heads,
+        .get_branch_heads(branchname, heads,
                           app.opts.ignore_suspend_certs);
       N(heads.size() > 0,
         F("branch '%s' is empty") % branchname);
@@ -421,8 +421,8 @@ CMD(clone, "clone", "", CMD_REF(network),
       complete(app.opts, app.lua, projects, idx(app.opts.revision_selectors, 0)(), ident);
 
       N(projects
-        .get_project_of_branch(app.opts.branchname)
-        .revision_is_in_branch(ident, app.opts.branchname),
+        .get_project_of_branch(branchname)
+        .revision_is_in_branch(ident, branchname),
         F("revision %s is not a member of branch %s")
           % ident % branchname);
     }
