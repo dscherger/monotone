@@ -43,10 +43,10 @@ following:
     stdio
 
 The `genkey' command is typically done by the user when setting up their
-account and so is not likely to be of great use rest of the time, the `packet'
-style commands seem to be of little use to a scripting language, the `put'
-style commands just seem too scary for words and hopefully you do not have to
-ask about the `stdio' command:-).
+account and so is not likely to be of great use the rest of the time, the
+`packet' style commands seem to be of little use to a scripting language, the
+`put' style commands just seem too scary for words and hopefully you do not
+have to ask about the `stdio' command. :-)
 
 =head1 CONSTRUCTORS
 

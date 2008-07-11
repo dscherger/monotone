@@ -47,8 +47,9 @@ package Monotone::AutomateStdio;
 
 require 5.008;
 
-use strict;
 use integer;
+use strict;
+use warnings;
 
 # ***** REQUIRED PACKAGES *****
 
