@@ -43,6 +43,8 @@
 require 5.008;
 
 use strict;
+use warnings;
+no warnings qw(recursion);
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
@@ -314,7 +316,7 @@ sub display_file_change_history($$$)
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
     $instance->{window}->set_title(__x("File History For {file}",
-				       file=> $instance->{file_name}));
+				       file => $instance->{file_name}));
     $instance->{history_label}->set_markup(__("<b>File History</b>"));
     $instance->{window}->show_all();
 
@@ -350,12 +352,10 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Displaying file history"));
     $wm->update_gui();
-    $counter = 0;
+    $counter = 1;
     $instance->{history_buffer}->set_text("");
     for my $revision_id (@{$instance->{history}})
     {
-
-	++ $counter;
 
 	# Print out the revision summary.
 
@@ -449,9 +449,13 @@ sub display_file_change_history($$$)
 		insert($instance->{history_buffer}->get_end_iter(), "\n");
 	}
 
-	$instance->{appbar}->set_progress_percentage
-	    ($counter / scalar(@{$instance->{history}}));
-	$wm->update_gui();
+	if (($counter % 10) == 0)
+	{
+	    $instance->{appbar}->set_progress_percentage
+		($counter / scalar(@{$instance->{history}}));
+	    $wm->update_gui();
+	}
+	++ $counter;
 
     }
 

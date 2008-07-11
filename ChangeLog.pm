@@ -43,6 +43,7 @@
 require 5.008;
 
 use strict;
+use warnings;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 

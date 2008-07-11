@@ -47,8 +47,9 @@ package Completion;
 
 require 5.008;
 
-use strict;
 use integer;
+use strict;
+use warnings;
 
 # ***** PACKAGE INFORMATION *****
 

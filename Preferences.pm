@@ -43,6 +43,7 @@
 require 5.008;
 
 use strict;
+use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
@@ -129,7 +130,6 @@ sub add_file_name_pattern_button_clicked_cb($$);
 sub add_mime_type_button_clicked_cb($$);
 sub database_browse_button_clicked_cb($$);
 sub defaults_button_clicked_cb($$);
-sub file_glob_to_regexp($);
 sub file_name_pattern_entry_changed_cb($$);
 sub file_name_patterns_treeview_cursor_changed_cb($$);
 sub get_preferences_window($$);
@@ -838,7 +838,7 @@ sub add_file_name_pattern_button_clicked_cb($$)
 	     "warning",
 	     "close",
 	     __x("`{pattern}' is an invalid\nfile name pattern.",
-		 pattern=> $pattern));
+		 pattern => $pattern));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -884,7 +884,7 @@ sub add_file_name_pattern_button_clicked_cb($$)
 #
 #   Routine      - remove_file_name_pattern_button_clicked_cb
 #
-#   Description  - Callback routine called when the user clicks on the add
+#   Description  - Callback routine called when the user clicks on the remove
 #                  file name pattern button in the preferences window.
 #
 #   Data         - $widget   : The widget object that received the signal.
@@ -1657,77 +1657,6 @@ sub initialise_mime_info_table()
     }
 
     return \@table;
-
-}
-#
-##############################################################################
-#
-#   Routine      - file_glob_to_regexp
-#
-#   Description  - Converts the specified string containing a file name style
-#                  glob into a regular expression.
-#
-#   Data         - $file_glob   : The file name wildcard that is to be
-#                                 converted.
-#                  Return Value : The resultant regular expression string.
-#
-##############################################################################
-
-
-
-sub file_glob_to_regexp($)
-{
-
-    my $file_glob = $_[0];
-
-    my($escaping,
-       $first,
-       $re_text);
-
-    $escaping = 0;
-    $first = 1;
-    foreach my $char (split(//, $file_glob))
-    {
-	if ($first)
-	{
-	    $re_text .= "(?=[^\\.])" unless $char eq ".";
-	    $first = 0;
-	}
-	if (".+^\$\@%()|" =~ m/\Q$char\E/)
-	{
-	    $re_text .= "\\" . $char;
-	}
-	elsif ($char eq "*")
-	{
-	    $re_text .= $escaping ? "\\*" : ".*";
-	}
-	elsif ($char eq "?")
-	{
-	    $re_text .= $escaping ? "\\?" : ".";
-	}
-	elsif ($char eq "\\")
-	{
-	    if ($escaping)
-	    {
-		$re_text .= "\\\\";
-		$escaping = 0;
-	    }
-	    else
-	    {
-		$escaping = 1;
-	    }
-	}
-	else
-	{
-	    $re_text .= "\\" if ($escaping && $char eq "[");
-	    $re_text .= $char;
-	    $escaping = 0;
-	}
-    }
-
-    $re_text .= "\$";
-
-    return $re_text;
 
 }
 #

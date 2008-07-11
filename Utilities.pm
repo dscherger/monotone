@@ -43,6 +43,7 @@
 require 5.008;
 
 use strict;
+use warnings;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
@@ -51,9 +52,11 @@ use strict;
 sub colour_to_string($);
 sub create_format_tags($);
 sub data_is_binary($);
+sub file_glob_to_regexp($);
 sub generate_tmp_path($);
 sub get_branch_revisions($$$$$);
 sub get_dir_contents($$$);
+sub get_file_details($$$$$$);
 sub get_revision_ids($$);
 sub glade_signal_autoconnect($$);
 sub hex_dump($);
@@ -285,11 +288,9 @@ sub get_dir_contents($$$)
 
     my($entry,
        $extract_re,
-       $i,
        $match_re,
        $name);
 
-    $i = 0;
     if ($path eq "")
     {
 	$match_re = qr/^[^\/]+$/;
@@ -306,8 +307,7 @@ sub get_dir_contents($$$)
 	if ($entry->{name} =~ m/$match_re/)
 	{
 	    ($name) = ($entry->{name} =~ m/$extract_re/);
-	    $$result[$i ++] = {manifest_entry => $entry,
-			       name           => $name};
+	    push(@$result, {manifest_entry => $entry, name => $name});
 	}
     }
 
@@ -713,6 +713,64 @@ sub get_branch_revisions($$$$$)
 #
 ##############################################################################
 #
+#   Routine      - get_file_details
+#
+#   Description  - Get the details of the specified file.
+#
+#   Data         - $mtn                   : The Monotone database handle that
+#                                           is to be used.
+#                  $revision_id           : The revision id from where the
+#                                           search for the latest file update
+#                                           is to start, working backwards.
+#                  $file_name             : The full path name of the file.
+#                  $author                : A reference to the variable that
+#                                           is to contain the author's
+#                                           identity.
+#                  $last_update           : A reference to the variable that
+#                                           is to contain the last updated
+#                                           date for the file.
+#                  $last_changed_revision : A reference to the variable that
+#                                           is to contain the revision id on
+#                                           which the file was last updated.
+#
+##############################################################################
+
+
+
+sub get_file_details($$$$$$)
+{
+
+    my($mtn,
+       $revision_id,
+       $file_name,
+       $author,
+       $last_update,
+       $last_changed_revision) = @_;
+
+    my(@certs_list,
+       @revision_list);
+
+    $mtn->get_content_changed(\@revision_list, $revision_id, $file_name);
+    $$last_changed_revision = $revision_list[0];
+    $mtn->certs(\@certs_list, $revision_list[0]);
+    $$author = $$last_update = "";
+    foreach my $cert (@certs_list)
+    {
+	if ($cert->{name} eq "author")
+	{
+	    $$author = $cert->{value};
+	}
+	if ($cert->{name} eq "date")
+	{
+	    $$last_update = $cert->{value};
+	}
+	last if ($$author ne "" && $$last_update ne "");
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_revision_ids
 #
 #   Description  - Return the currently selected revision id, whether this is
@@ -745,6 +803,77 @@ sub get_revision_ids($$)
     {
 	push(@$revision_ids, $instance->{revision_combo_details}->{value});
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_glob_to_regexp
+#
+#   Description  - Converts the specified string containing a file name style
+#                  glob into a regular expression.
+#
+#   Data         - $file_glob   : The file name wildcard that is to be
+#                                 converted.
+#                  Return Value : The resultant regular expression string.
+#
+##############################################################################
+
+
+
+sub file_glob_to_regexp($)
+{
+
+    my $file_glob = $_[0];
+
+    my($escaping,
+       $first,
+       $re_text);
+
+    $escaping = 0;
+    $first = 1;
+    foreach my $char (split(//, $file_glob))
+    {
+	if ($first)
+	{
+	    $re_text .= "(?=[^\\.])" unless $char eq ".";
+	    $first = 0;
+	}
+	if (".+^\$\@%()|" =~ m/\Q$char\E/)
+	{
+	    $re_text .= "\\" . $char;
+	}
+	elsif ($char eq "*")
+	{
+	    $re_text .= $escaping ? "\\*" : ".*";
+	}
+	elsif ($char eq "?")
+	{
+	    $re_text .= $escaping ? "\\?" : ".";
+	}
+	elsif ($char eq "\\")
+	{
+	    if ($escaping)
+	    {
+		$re_text .= "\\\\";
+		$escaping = 0;
+	    }
+	    else
+	    {
+		$escaping = 1;
+	    }
+	}
+	else
+	{
+	    $re_text .= "\\" if ($escaping && $char eq "[");
+	    $re_text .= $char;
+	    $escaping = 0;
+	}
+    }
+
+    $re_text .= "\$";
+
+    return $re_text;
 
 }
 #
@@ -903,12 +1032,13 @@ sub data_is_binary($)
 
     my $data = $_[0];
 
-    my $non_printable;
+    my($length,
+       $non_printable);
 
+    $length = length($$data);
     $non_printable = grep(/[^[:print:][:space:]]/, split(//, $$data));
 
-    return 1 if (((100 * $non_printable) / length($$data)) > 20);
-
+    return 1 if ($length > 0 && ((100 * $non_printable) / $length) > 20);
     return;
 
 }

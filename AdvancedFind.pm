@@ -43,6 +43,7 @@
 require 5.008;
 
 use strict;
+use warnings;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
@@ -764,9 +765,13 @@ sub update_advanced_find_state($$)
 	foreach my $branch (@branch_list)
 	{
 	    $advanced_find->{branch_comboboxentry}->append_text($branch);
-	    $advanced_find->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@branch_list));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$advanced_find->{appbar}->set_progress_percentage
+		    ($counter / scalar(@branch_list));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	}
 	$advanced_find->{branch_comboboxentry}->child()->
 	    set_text($advanced_find->{branch_combo_details}->{value});
@@ -822,9 +827,13 @@ sub update_advanced_find_state($$)
 	foreach my $revision (@revision_list)
 	{
 	    $advanced_find->{revision_comboboxentry}->append_text($revision);
-	    $advanced_find->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@revision_list));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$advanced_find->{appbar}->set_progress_percentage
+		    ($counter / scalar(@revision_list));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	}
 	$advanced_find->{revision_comboboxentry}->child()->
 	    set_text($advanced_find->{revision_combo_details}->{value});
@@ -951,9 +960,13 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{revisions_liststore}->
 		set($advanced_find->{revisions_liststore}->append(),
 		    0, $item);
-	    $advanced_find->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@revision_ids));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$advanced_find->{appbar}->set_progress_percentage
+		    ($counter / scalar(@revision_ids));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	    last if ($advanced_find->{stop});
 	}
 	$advanced_find->{stop_button}->set_sensitive(FALSE);

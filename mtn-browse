@@ -1,5 +1,4 @@
-#!/usr/bin/perl -W
-##!/usr/bin/perl -w
+#!/usr/bin/perl
 ##############################################################################
 #
 #   File Name    - mtn-browse
@@ -50,6 +49,7 @@ BEGIN
 }
 use lib LIB_PATH;
 use strict;
+use warnings;
 
 # ***** REQUIRED PACKAGES *****
 
@@ -73,6 +73,7 @@ use IPC::Open3;
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
 use Symbol qw(gensym);
 use Text::Tabs;
+use Time::Local;
 
 # Monotone AutomateStdio module.
 
@@ -86,6 +87,7 @@ use Annotate;
 use ChangeLog;
 use ComboAutoCompletion;
 use Completion;
+use FindFiles;
 use FindText;
 use History;
 use Preferences;
@@ -122,6 +124,7 @@ sub determine_mime_type($$$$);
 sub directory_up_button_clicked_cb($$);
 sub display_file($$);
 sub file_change_history_button_clicked_cb($$);
+sub find_files_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
 sub help_toolbutton_clicked_cb($$);
 sub main_window_delete_event_cb($$$);
@@ -917,6 +920,36 @@ sub directory_up_button_clicked_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - find_files_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the find
+#                  files button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub find_files_button_clicked_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    display_find_files($browser->{mtn},
+		       $browser->{revision_combo_details}->{value},
+		       $browser->{manifest},
+		       $browser->{directory_combo_details}->{value});
+
+}
+#
+##############################################################################
+#
 #   Routine      - search_text_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the search
@@ -1427,6 +1460,7 @@ sub get_browser_window(;$$$$$)
 			    "tagged_checkbutton",
 			    "directory_comboboxentry",
 			    "directory_up_button",
+			    "find_files_button",
 			    "manifest_browser_treeview",
 			    "file_view_scrolledwindow",
 			    "file_name_value_label",
@@ -1444,13 +1478,13 @@ sub get_browser_window(;$$$$$)
 
 	# Setup button sensitivity groups.
 
-	$browser->{text_file_sensitive_group} = ();
+	$browser->{text_file_sensitive_group} = [];
 	foreach my $item ("search_text", "annotate")
 	{
 	    push(@{$browser->{text_file_sensitive_group}},
 		 $browser->{glade}->get_widget($item . "_button"));
 	}
-	$browser->{revision_sensitive_group} = ();
+	$browser->{revision_sensitive_group} = [];
 	foreach my $item ("revision_change_history", "revision_change_log")
 	{
 	    push(@{$browser->{revision_sensitive_group}},
@@ -1761,9 +1795,13 @@ sub update_browser_state($$)
 	foreach my $branch (@branch_list)
 	{
 	    $browser->{branch_comboboxentry}->append_text($branch);
-	    $browser->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@branch_list));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$browser->{appbar}->set_progress_percentage
+		    ($counter / scalar(@branch_list));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	}
 	$browser->{branch_comboboxentry}->child()->
 	    set_text($browser->{branch_combo_details}->{value});
@@ -1818,9 +1856,13 @@ sub update_browser_state($$)
 	foreach my $revision (@revision_list)
 	{
 	    $browser->{revision_comboboxentry}->append_text($revision);
-	    $browser->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@revision_list));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$browser->{appbar}->set_progress_percentage
+		    ($counter / scalar(@revision_list));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	}
 	$browser->{revision_comboboxentry}->child()->
 	    set_text($browser->{revision_combo_details}->{value});
@@ -1940,9 +1982,13 @@ sub update_browser_state($$)
 	foreach my $item (@directory_list)
 	{
 	    $browser->{directory_comboboxentry}->append_text($item);
-	    $browser->{appbar}->set_progress_percentage
-		($counter ++ / scalar(@directory_list));
-	    $wm->update_gui();
+	    if (($counter % 10) == 0)
+	    {
+		$browser->{appbar}->set_progress_percentage
+		    ($counter / scalar(@directory_list));
+		$wm->update_gui();
+	    }
+	    ++ $counter;
 	}
 	$browser->{directory_comboboxentry}->child()->
 	    set_text($browser->{directory_combo_details}->{value});
@@ -1951,7 +1997,8 @@ sub update_browser_state($$)
 	foreach my $widget (@{$browser->{revision_sensitive_group}})
 	{
 	    $widget->
-		set_sensitive($browser->{revision_combo_details}->{complete});
+		set_sensitive($browser->{revision_combo_details}->{complete}
+			      ? TRUE : FALSE);
 	}
 	$wm->update_gui();
 
@@ -1963,26 +2010,31 @@ sub update_browser_state($$)
     {
 
 	my($author,
-	   @certs_list,
 	   $counter,
 	   @directory_entry_list,
 	   $last_update,
 	   @revision_ids,
-	   @revision_list,
 	   $taking_our_time);
 
 	# Reset the manifest tree view.
 
 	$browser->{manifest_liststore}->clear();
 
-	# Get the contents of the new directory.
+	# If we are currently at a valid directory then get its contents and
+	# enable the find files button.
 
-	if ($browser->{directory_combo_details}->{complete}
-	    || $browser->{directory_combo_details}->{value} eq "")
+	if ($browser->{revision_combo_details}->{complete}
+	    && ($browser->{directory_combo_details}->{complete}
+		|| $browser->{directory_combo_details}->{value} eq ""))
 	{
 	    get_dir_contents($browser->{directory_combo_details}->{value},
 			     $browser->{manifest},
 			     \@directory_entry_list);
+	    $browser->{find_files_button}->set_sensitive(TRUE);
+	}
+	else
+	{
+	    $browser->{find_files_button}->set_sensitive(FALSE);
 	}
 
 	# Disable the directory up button if we are already at the top level,
@@ -2010,36 +2062,22 @@ sub update_browser_state($$)
 		if (! exists($item->{manifest_entry}->{author}))
 		{
 		    $taking_our_time = 1;
-		    $browser->{mtn}->get_content_changed
-			(\@revision_list,
-			 $revision_ids[0],
-			 $item->{manifest_entry}->{name});
-		    $item->{manifest_entry}->{last_changed_revision} =
-			$revision_list[0];
-		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
-		    $author = $last_update = "";
-		    foreach my $cert (@certs_list)
-		    {
-			if ($cert->{name} eq "author")
-			{
-			    $author = $cert->{value};
-			    $item->{manifest_entry}->{author} = $author;
-			}
-			if ($cert->{name} eq "date")
-			{
-			    $last_update = $cert->{value};
-			    $last_update =~ s/T/ /o;
-			    $item->{manifest_entry}->{last_update} =
-				$last_update;
-			}
-			last if ($author ne "" && $last_update ne "");
-		    }
+		    get_file_details($browser->{mtn},
+				     $revision_ids[0],
+				     $item->{manifest_entry}->{name},
+				     \$author,
+				     \$last_update,
+				     \$item->{manifest_entry}->
+				         {last_changed_revision});
+		    $item->{manifest_entry}->{author} = $author;
+		    $item->{manifest_entry}->{last_update} = $last_update;
 		}
 		else
 		{
 		    $author = $item->{manifest_entry}->{author};
 		    $last_update = $item->{manifest_entry}->{last_update};
 		}
+		$last_update =~ s/T/ /o;
 	    }
 	    else
 	    {
@@ -2068,7 +2106,7 @@ sub update_browser_state($$)
 		$browser->{file_being_viewed_preset_value} = "";
 	    }
 
-	    if ($taking_our_time)
+	    if ($taking_our_time && ($counter % 10) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
 		    ($counter / scalar(@directory_entry_list));
@@ -2106,7 +2144,8 @@ sub update_browser_state($$)
 		ne $manifest_entry->{file_id})
 	    {
 
-		my $textual_data;
+		my($last_update,
+		   $textual_data);
 
 		# Enable the file buttons, keeping the ones relating to text
 		# files disabled, and reset any associated find text window.
@@ -2141,35 +2180,25 @@ sub update_browser_state($$)
 
 		if (! exists($manifest_entry->{last_changed_revision}))
 		{
-		    my(@certs_list,
-		       @revision_ids,
-		       @revision_list);
+		    my($dummy,
+		       @revision_ids);
 		    get_revision_ids($browser, \@revision_ids);
-		    $browser->{mtn}->
-			get_content_changed(\@revision_list,
-					    $revision_ids[0],
-					    $manifest_entry->{name});
-		    $manifest_entry->{last_changed_revision} =
-			$revision_list[0];
-		    $browser->{mtn}->certs(\@certs_list, $revision_list[0]);
-		    foreach my $cert (@certs_list)
-		    {
-			if ($cert->{name} eq "date")
-			{
-			    my $last_update;
-			    $last_update = $cert->{value};
-			    $last_update =~ s/T/ /o;
-			    $manifest_entry->{last_update} = $last_update;
-			    last;
-			}
-		    }
+		    get_file_details($browser->{mtn},
+				     $revision_ids[0],
+				     $manifest_entry->{name},
+				     \$dummy,
+				     \$manifest_entry->{last_update},
+				     \$manifest_entry->
+				         {last_changed_revision});
 		}
+		$last_update = $manifest_entry->{last_update};
+		$last_update =~ s/T/ /o;
 		set_label_value($browser->{file_name_value_label},
 				$manifest_entry->{name});
 		set_label_value($browser->{file_id_value_label},
 				$manifest_entry->{file_id});
 		set_label_value($browser->{last_update_value_label},
-				$manifest_entry->{last_update});
+				$last_update);
 		set_label_value($browser->{file_revision_id_value_label},
 				$manifest_entry->{last_changed_revision});
 	    }
