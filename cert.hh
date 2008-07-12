@@ -28,7 +28,7 @@
 
 class key_store;
 class database;
-class project_set;
+class project_t;
 struct options;
 
 struct cert
@@ -103,10 +103,10 @@ cert_revision_in_branch(database & db, key_store & keys,
 // reason not to.
 
 void
-guess_branch(options & opts, project_set & projects, revision_id const & rev,
+guess_branch(options & opts, project_t & project, revision_id const & rev,
              branch_name & branchname);
 void
-guess_branch(options & opts, project_set & projects, revision_id const & rev);
+guess_branch(options & opts, project_t & project, revision_id const & rev);
 
 #define date_cert_name cert_name("date")
 #define author_cert_name cert_name("author")

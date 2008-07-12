@@ -134,56 +134,6 @@ public:
                 cert_value const & value);
 };
 
-class project_set
-{
-public:
-  database & db;
-  typedef std::map<branch_prefix, project_t> project_map;
-
-private:
-  project_map projects;
-
-public:
-  project_set(database & db,
-              lua_hooks & lua,
-              options & opts);
-
-  project_map const & all_projects() const;
-
-  // Get the project containing a named branch.
-  project_t & get_project_of_branch(branch_name const & branch);
-  project_t * maybe_get_project_of_branch(branch_name const & branch);
-
-  // All branches in all projects.
-  void get_branch_list(std::set<branch_name> & names,
-                       bool check_heads = false);
-  // Subset of branches from all projects.
-  void get_branch_list(globish const & glob,
-                       std::set<branch_name> & names,
-                       bool check_heads = false);
-
-  // used by epoch handling
-  void get_branch_uids(std::set<branch_uid> & ids);
-  branch_uid translate_branch(branch_name const & branch);
-  branch_name translate_branch(branch_uid const & branch);
-
-  // What tags exist across all projects?
-  outdated_indicator get_tags(std::set<tag_t> & tags);
-  // Because tags aren't yet per-project.
-  void put_tag(key_store & keys, revision_id const & id, std::string const & name);
-
-  // What branches in *any* project does the given revision belong to?
-  outdated_indicator get_revision_branches(revision_id const & id,
-                                           std::set<branch_name> & branches);
-
-  outdated_indicator get_revision_certs_by_name(revision_id const & id,
-                                                cert_name const & name,
-                                                std::vector<revision<cert> > & certs);
-
-  outdated_indicator get_revision_certs(revision_id const & id,
-                                        std::vector<revision<cert> > & certs);
-};
-
 #endif
 
 

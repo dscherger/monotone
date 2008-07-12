@@ -404,7 +404,7 @@ put_simple_revision_cert(database & db,
 // OPTS may override.  Branch name is returned in BRANCHNAME.
 // Does not modify branch state in OPTS.
 void
-guess_branch(options & opts, project_set & projects,
+guess_branch(options & opts, project_t & project,
              revision_id const & ident, branch_name & branchname)
 {
   if (opts.branch_given && !opts.branchname().empty())
@@ -416,7 +416,7 @@ guess_branch(options & opts, project_set & projects,
           "please provide a branch name"));
 
       set<branch_name> branches;
-      projects.get_revision_branches(ident, branches);
+      project.get_revision_branches(ident, branches);
 
       N(branches.size() != 0,
         F("no branch certs found for revision %s, "
@@ -435,10 +435,10 @@ guess_branch(options & opts, project_set & projects,
 // As above, but set the branch name in the options
 // if it wasn't already set.
 void
-guess_branch(options & opts, project_set & projects, revision_id const & ident)
+guess_branch(options & opts, project_t & project, revision_id const & ident)
 {
   branch_name branchname;
-  guess_branch(opts, projects, ident, branchname);
+  guess_branch(opts, project, ident, branchname);
   opts.branchname = branchname;
 }
 

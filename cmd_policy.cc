@@ -190,14 +190,13 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
 
   database db(app);
   key_store keys(app);
-  project_set projects(db, app.lua, app.opts);
+  project_t project(db, app.lua, app.opts);
   branch_prefix prefix(idx(args, 0)());
   branch_name name(prefix() + ".__policy__");
 
   branch_policy policy_policy;
   branch_prefix parent_prefix;
-  E(projects.get_project_of_branch(name)
-    .get_policy_branch_policy_of(name, policy_policy, parent_prefix),
+  E(project.get_policy_branch_policy_of(name, policy_policy, parent_prefix),
     F("Cannot find parent policy for %s") % prefix);
   P(F("Parent policy: %s") % parent_prefix);
 
@@ -307,14 +306,12 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
 
   database db(app);
   key_store keys(app);
-  project_set projects(db, app.lua, app.opts);
+  project_t project(db, app.lua, app.opts);
   branch_name branch(idx(args, 0)());
 
   branch_policy parent_policy;
   branch_prefix parent_prefix;
-  project_t * const project = projects.maybe_get_project_of_branch(branch);
-  N(project != NULL, F("Cannot find project for %s") % branch);
-  E(project->get_policy_branch_policy_of(branch, parent_policy, parent_prefix),
+  E(project.get_policy_branch_policy_of(branch, parent_policy, parent_prefix),
     F("Cannot find a parent policy for %s") % branch);
   P(F("Parent policy: %s") % parent_prefix);
 
@@ -430,15 +427,16 @@ CMD(policies, "policies", "", CMD_REF(list),
 {
   database db(app);
   key_store keys(app);
-  project_set projects(db, app.lua, app.opts);
+  project_t project(db, app.lua, app.opts);
 
   if (args.empty())
     {
-      project_set::project_map const & project_list = projects.all_projects();
-      for (project_set::project_map::const_iterator i = project_list.begin();
-           i != project_list.end(); ++i)
+      std::set<branch_prefix> subpolicies;
+      project.get_subpolicies(branch_prefix(), subpolicies);
+      for (std::set<branch_prefix>::const_iterator i = subpolicies.begin();
+           i != subpolicies.end(); ++i)
         {
-          list_policy(i->second, i->first, app.opts.recursive);
+          list_policy(project, *i, app.opts.recursive);
         }
     }
   else
@@ -448,11 +446,9 @@ CMD(policies, "policies", "", CMD_REF(list),
         {
           branch_name const bn((*i)());
           branch_prefix const bp((*i)());
-          project_t * const project = projects.maybe_get_project_of_branch(bn);
-          N(project != NULL, F("Cannot find a project for %s") % *i);
-          N(project->policy_exists(bp),
+          N(project.policy_exists(bp),
             F("Policy %s does not exist.") % *i);
-          list_policy(*project, bp, app.opts.recursive);
+          list_policy(project, bp, app.opts.recursive);
         }
     }
 }

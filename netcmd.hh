@@ -24,7 +24,7 @@
 
 struct globish;
 class database;
-class project_set;
+class project_t;
 class key_store;
 class lua_hooks;
 class options;
@@ -196,7 +196,7 @@ struct netsync_connection_info
 };
 
 void run_netsync_protocol(options & opts, lua_hooks & lua,
-                          project_set & projects, key_store & keys,
+                          project_t & project, key_store & keys,
                           protocol_voice voice,
                           protocol_role role,
                           netsync_connection_info const & info);
