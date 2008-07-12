@@ -96,7 +96,7 @@ public:
   boost::shared_ptr<branch_policy>
   maybe_get_branch_policy(branch_name const & name);
 
-  bool
+  policy_revision const *
   get_nearest_policy(branch_name const & name,
                      branch_policy & policy_policy,
                      branch_prefix & policy_prefix,
@@ -113,7 +113,9 @@ public:
                   branch_prefix const & prefix);
   std::map<branch_name, branch_policy> all_branches();
 
-  bool
+  void get_delegation_names(std::set<branch_prefix> & names) const;
+
+  policy_revision const *
   get_nearest_policy(branch_name const & name,
                      branch_policy & policy_policy,
                      branch_prefix & policy_prefix,

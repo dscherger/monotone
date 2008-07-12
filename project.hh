@@ -66,6 +66,9 @@ public:
   bool get_policy_branch_policy_of(branch_name const & name,
                                    branch_policy & policy_branch_policy,
                                    branch_prefix & policy_prefix);
+  bool policy_exists(branch_prefix const & name) const;
+  void get_subpolicies(branch_prefix const & name,
+                       std::set<branch_prefix> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);
@@ -134,15 +137,17 @@ class project_set
 {
 public:
   database & db;
+  typedef std::map<branch_prefix, project_t> project_map;
 
 private:
-  typedef std::map<branch_prefix, project_t> project_map;
   project_map projects;
 
 public:
   project_set(database & db,
               lua_hooks & lua,
               options & opts);
+
+  project_map const & all_projects() const;
 
   // Get a named project.
   project_t & get_project(branch_prefix const & name);

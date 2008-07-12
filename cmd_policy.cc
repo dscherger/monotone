@@ -4,6 +4,8 @@
 
 #include "base.hh"
 
+#include <iostream>
+
 #include "app_state.hh"
 #include "basic_io.hh"
 #include "botan/botan.h"
@@ -19,8 +21,8 @@
 #include "transforms.hh"
 
 CMD_GROUP(policy, "policy", "", CMD_REF(__root__),
-	  N_("Commands that deal with policy branches."),
-	  "");
+          N_("Commands that deal with policy branches."),
+          "");
 
 namespace basic_io
 {
@@ -44,8 +46,8 @@ namespace {
 
   void
   write_branch_policy(data & dat,
-		      std::string const & branch_uid,
-		      std::set<rsa_keypair_id> const & committers)
+                      std::string const & branch_uid,
+                      std::set<rsa_keypair_id> const & committers)
   {
     basic_io::printer printer;
     basic_io::stanza st;
@@ -53,15 +55,15 @@ namespace {
     for (std::set<rsa_keypair_id>::const_iterator i = committers.begin();
 	 i != committers.end(); ++i)
       {
-	st.push_str_pair(basic_io::syms::committer, (*i)());
+        st.push_str_pair(basic_io::syms::committer, (*i)());
       }
     printer.print_stanza(st);
     dat = data(printer.buf);
   }
   void
   write_branch_policy(data & dat,
-		      std::string const & branch_uid,
-		      rsa_keypair_id const & committer)
+                      std::string const & branch_uid,
+                      rsa_keypair_id const & committer)
   {
     std::set<rsa_keypair_id> committers;
     committers.insert(committer);
@@ -72,10 +74,10 @@ namespace {
   // and put it in a new branch which is referenced by that file.
   void
   create_policy_branch(database & db, key_store & keys,
-		       lua_hooks & lua, options & opts,
-		       branch_prefix const & policy_name,
-		       std::set<rsa_keypair_id> const & administrators,
-		       std::string & policy_uid, data & spec)
+                       lua_hooks & lua, options & opts,
+                       branch_prefix const & policy_name,
+                       std::set<rsa_keypair_id> const & administrators,
+                       std::string & policy_uid, data & spec)
   {
     cache_user_key(opts, lua, db, keys);
 
@@ -93,7 +95,7 @@ namespace {
     cs.dirs_added.insert(file_path_internal(""));
     cs.dirs_added.insert(file_path_internal("branches"));
     cs.files_added.insert(std::make_pair(file_path_internal("branches/__policy__"),
-					 spec_id));
+                                         spec_id));
     roster_t old_roster;
     revision_t rev;
     make_revision(revision_id(), old_roster, cs, rev);
@@ -106,7 +108,7 @@ namespace {
     // write to the db
     if (!db.file_version_exists(spec_id))
       {
-	db.put_file(spec_id, spec_data);
+        db.put_file(spec_id, spec_data);
       }
     db.put_revision(rev_id, rdat);
 
@@ -123,9 +125,9 @@ namespace {
     std::string author = opts.author();
     if (author.empty())
       {
-	if (!lua.hook_get_author(branch_name(policy_name() + ".__policy__"),
-				 keys.signing_key, author))
-	  author = keys.signing_key();
+        if (!lua.hook_get_author(branch_name(policy_name() + ".__policy__"),
+                                 keys.signing_key, author))
+          author = keys.signing_key();
       }
     utf8 changelog(N_("Create new policy branch."));
 
@@ -146,8 +148,8 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
     N_(""),
     options::opts::none)
 {
-  N(args.size() == 1,
-    F("Wrong argument count."));
+  if (args.size() != 1)
+    throw usage(execid);
 
   database db(app);
   key_store keys(app);
@@ -157,10 +159,10 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
   system_path project_file = project_dir / path_component(project_name);
 
   require_path_is_directory(app.opts.conf_dir,
-			    F("Cannot find configuration directory."),
-			    F("Configuration directory is a file."));
+                            F("Cannot find configuration directory."),
+                            F("Configuration directory is a file."));
   require_path_is_nonexistent(project_file,
-			      F("You already have a project with that name."));
+                              F("You already have a project with that name."));
   mkdir_p(project_dir);
 
   cache_user_key(app.opts, app.lua, db, keys);
@@ -170,8 +172,8 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
   std::string policy_uid;
   data policy_spec;
   create_policy_branch(db, keys, app.lua, app.opts,
-		       branch_prefix(project_name), admin_keys,
-		       policy_uid, policy_spec);
+                       branch_prefix(project_name), admin_keys,
+                       policy_uid, policy_spec);
 
   write_data(project_file, policy_spec, project_dir);
   P(F("Wrote project spec to %s") % project_file);
@@ -183,8 +185,8 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     "",
     options::opts::none)
 {
-  N(args.size() == 1,
-    F("Wrong argument count."));
+  if (args.size() != 1)
+    throw usage(execid);
 
   database db(app);
   key_store keys(app);
@@ -236,20 +238,20 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   data child_spec;
   // Create the new policy branch.
   create_policy_branch(db, keys, app.lua, app.opts,
-		       prefix, admin_keys, child_uid, child_spec);
+                       prefix, admin_keys, child_uid, child_spec);
   file_id child_spec_id;
   file_data child_file_dat(child_spec);
   calculate_ident(child_file_dat, child_spec_id);
 
   // Delegate to it in the parent policy branch.
   policy_changes.files_added.insert(std::make_pair(delegation_file,
-						   child_spec_id));
+                                                   child_spec_id));
 
   revision_t policy_new_revision;
   make_revision(policy_old_rev_id,
-		policy_old_roster,
-		policy_changes,
-		policy_new_revision);
+                policy_old_roster,
+                policy_changes,
+                policy_new_revision);
 
   {
     revision_id rev_id;
@@ -261,7 +263,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     // write to the db
     if (!db.file_version_exists(child_spec_id))
       {
-	db.put_file(child_spec_id, child_file_dat);
+        db.put_file(child_spec_id, child_file_dat);
       }
     db.put_revision(rev_id, rdat);
 
@@ -278,13 +280,14 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     std::string author = app.opts.author();
     if (author.empty())
       {
-	if (!app.lua.hook_get_author(branch_name(prefix() + ".__policy__"),
-				 keys.signing_key, author))
-	  author = keys.signing_key();
+        if (!app.lua.hook_get_author(branch_name(prefix() + ".__policy__"),
+                                 keys.signing_key, author))
+          author = keys.signing_key();
       }
     utf8 changelog(N_("Create new policy branch."));
 
-    cert_revision_in_branch(db, keys, rev_id, branch_uid(policy_policy.branch_cert_value));
+    cert_revision_in_branch(db, keys, rev_id,
+                            branch_uid(policy_policy.branch_cert_value));
     cert_revision_changelog(db, keys, rev_id, changelog);
     cert_revision_date_time(db, keys, rev_id, date);
     cert_revision_author(db, keys, rev_id, author);
@@ -295,8 +298,170 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
 
 CMD(create_branch, "create_branch", "", CMD_REF(policy),
     N_("NAME"),
-    N_("Create a new branch."),
+    N_("Create a new branch, attached to the nearest subpolicy."),
     "",
     options::opts::none)
 {
+  if (args.size() != 1)
+    throw usage(execid);
+
+  database db(app);
+  key_store keys(app);
+  project_set projects(db, app.lua, app.opts);
+  branch_name branch(idx(args, 0)());
+
+  branch_policy parent_policy;
+  branch_prefix parent_prefix;
+  project_t * const project = projects.maybe_get_project_of_branch(branch);
+  N(project != NULL, F("Cannot find project for %s") % branch);
+  E(project->get_policy_branch_policy_of(branch, parent_policy, parent_prefix),
+    F("Cannot find a parent policy for %s") % branch);
+  P(F("Parent policy: %s") % parent_prefix);
+
+  I(branch().find(parent_prefix()) == 0);
+  std::string relative_name = branch().substr(parent_prefix().size());
+  if (relative_name.size() > 0 && relative_name[0] == '.')
+    relative_name.erase(0, 1);
+  if (relative_name.empty())
+    relative_name = "__main__";
+
+
+  std::set<revision_id> policy_heads;
+  get_branch_heads(parent_policy, false, db, policy_heads, NULL);
+  N(policy_heads.size() == 1,
+    F("Parent policy branch has %n heads, should have 1") % policy_heads.size());
+  revision_id policy_old_rev_id(*policy_heads.begin());
+  roster_t policy_old_roster;
+  db.get_roster(policy_old_rev_id, policy_old_roster);
+  file_path branch_dir = file_path_internal("branches");
+  file_path branch_file = branch_dir / path_component(relative_name);
+  N(!policy_old_roster.has_node(branch_file),
+    F("A branch %s already exists under policy %s")
+    % relative_name % parent_prefix);
+
+  cset policy_changes;
+  if (!policy_old_roster.has_node(branch_dir))
+    {
+      policy_changes.dirs_added.insert(branch_dir);
+    }
+
+  cache_user_key(app.opts, app.lua, db, keys);
+  std::set<rsa_keypair_id> admin_keys;
+  admin_keys.insert(keys.signing_key);
+
+  std::string branch_uid = generate_uid();
+  data branch_spec;
+  write_branch_policy(branch_spec, branch_uid, admin_keys);
+
+
+  file_id branch_spec_id;
+  file_data branch_spec_dat(branch_spec);
+  calculate_ident(branch_spec_dat, branch_spec_id);
+
+  policy_changes.files_added.insert(std::make_pair(branch_file, branch_spec_id));
+
+  revision_t policy_new_revision;
+  make_revision(policy_old_rev_id,
+                policy_old_roster,
+                policy_changes,
+                policy_new_revision);
+
+  revision_id rev_id;
+  calculate_ident(policy_new_revision, rev_id);
+  revision_data rdat;
+  write_revision(policy_new_revision, rdat);
+
+
+  transaction_guard guard(db);
+
+  if (!db.file_version_exists(branch_spec_id))
+    db.put_file(branch_spec_id, branch_spec_dat);
+  db.put_revision(rev_id, rdat);
+
+  // project_t::put_standard_certs would translate the branch name,
+  // which wouldn't work
+  date_t date;
+  if (app.opts.date_given)
+    date = app.opts.date;
+  else
+    date = date_t::now();
+
+  std::string author = app.opts.author();
+  if (author.empty())
+    {
+      if (!app.lua.hook_get_author(branch_name(parent_prefix() + ".__policy"),
+                                   keys.signing_key, author))
+        author = keys.signing_key();
+    }
+  utf8 changelog(N_("Declare new branch."));
+
+  cert_revision_in_branch(db, keys, rev_id,
+                          parent_policy.branch_cert_value);
+  cert_revision_changelog(db, keys, rev_id, changelog);
+  cert_revision_date_time(db, keys, rev_id, date);
+  cert_revision_author(db, keys, rev_id, author);
+
+  guard.commit();
 }
+
+CMD_FWD_DECL(list);
+
+void list_policy(project_t const & proj, branch_prefix const & prefix, bool recursive)
+{
+  std::cout<<prefix<<"\n";
+  if (recursive)
+    {
+      std::set<branch_prefix> subpolicies;
+      proj.get_subpolicies(prefix, subpolicies);
+      for (std::set<branch_prefix>::const_iterator i = subpolicies.begin();
+           i != subpolicies.end(); ++i)
+        {
+          list_policy(proj, *i, recursive);
+        }
+    }
+}
+
+CMD(policies, "policies", "", CMD_REF(list),
+    N_("PREFIX [...]"),
+    N_("List policies"),
+    N_("List subpolicies of the given policy prefixes, or toplevel projects\n"
+       "if no arguments are provided."),
+    options::opts::recursive)
+{
+  database db(app);
+  key_store keys(app);
+  project_set projects(db, app.lua, app.opts);
+
+  if (args.empty())
+    {
+      project_set::project_map const & project_list = projects.all_projects();
+      for (project_set::project_map::const_iterator i = project_list.begin();
+           i != project_list.end(); ++i)
+        {
+          list_policy(i->second, i->first, app.opts.recursive);
+        }
+    }
+  else
+    {
+      for (args_vector::const_iterator i = args.begin();
+           i != args.end(); ++i)
+        {
+          branch_name const bn((*i)());
+          branch_prefix const bp((*i)());
+          project_t * const project = projects.maybe_get_project_of_branch(bn);
+          N(project != NULL, F("Cannot find a project for %s") % *i);
+          N(project->policy_exists(bp),
+            F("Policy %s does not exist.") % *i);
+          list_policy(*project, bp, app.opts.recursive);
+        }
+    }
+}
+
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

@@ -75,7 +75,40 @@ project_t::get_policy_branch_policy_of(branch_name const & name,
   return project_policy->policy.get_nearest_policy(name,
                                                    policy_branch_policy,
                                                    policy_prefix,
-                                                   acc);
+                                                   acc) != NULL;
+}
+
+bool
+project_t::policy_exists(branch_prefix const & name) const
+{
+  if (project_policy->passthru)
+    return name().empty();
+
+  branch_policy pol;
+  branch_prefix prefix;
+  std::string tmp;
+  bool got = project_policy->policy.get_nearest_policy(branch_name(name()),
+                                                       pol, prefix, tmp) != NULL;
+  return got && prefix() == name();
+}
+
+void
+project_t::get_subpolicies(branch_prefix const & name,
+                           std::set<branch_prefix> & names) const
+{
+  if (project_policy->passthru)
+    return;
+
+  branch_policy pol;
+  branch_prefix prefix;
+  std::string tmp;
+  policy_revision const * pr =
+    project_policy->policy.get_nearest_policy(branch_name(name()),
+                                              pol, prefix, tmp);
+  if (pr != NULL)
+    {
+      pr->get_delegation_names(names);
+    }
 }
 
 void
@@ -597,6 +630,12 @@ project_set::project_set(database & db,
     }
 }
 
+project_set::project_map const &
+project_set::all_projects() const
+{
+  return projects;
+}
+
 project_t &
 project_set::get_project(branch_prefix const & name)
 {
@@ -633,7 +672,7 @@ project_set::maybe_get_project_of_branch(branch_name const & branch)
       if (i->first() == "")
         return &i->second;
       std::string pre = i->first() + ".";
-      if (branch().substr(0, pre.size()) == pre)
+      if (branch().substr(0, pre.size()) == pre || branch() == i->first())
         return &i->second;
     }
   return NULL;

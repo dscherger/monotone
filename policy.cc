@@ -413,7 +413,7 @@ map<branch_name, branch_policy> policy_branch::branches()
 }
 
 
-bool
+policy_revision const *
 policy_branch::get_nearest_policy(branch_name const & name,
                                   branch_policy & policy_policy,
                                   branch_prefix & policy_prefix,
@@ -421,7 +421,7 @@ policy_branch::get_nearest_policy(branch_name const & name,
 {
   shared_ptr<policy_revision> policy = get_policy();
   if (!policy)
-    return false;
+    return NULL;
 
   policy_policy = branch_policy(branch_name(),
                                 my_branch_cert_value,
@@ -430,7 +430,7 @@ policy_branch::get_nearest_policy(branch_name const & name,
                                     prefix());
 }
 
-bool
+policy_revision const *
 policy_revision::get_nearest_policy(branch_name const & name,
                                     branch_policy & policy_policy,
                                     branch_prefix & policy_prefix,
@@ -449,7 +449,18 @@ policy_revision::get_nearest_policy(branch_name const & name,
         }
     }
   policy_prefix = branch_prefix(accumulated_prefix);
-  return true;
+  return this;
+}
+
+void
+policy_revision::get_delegation_names(std::set<branch_prefix> & names) const
+{
+  names.clear();
+  for (std::map<branch_prefix, policy_branch>::const_iterator i = delegations.begin();
+       i != delegations.end(); ++i)
+    {
+      names.insert(i->first);
+    }
 }
 
 // Local Variables:
