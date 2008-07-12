@@ -62,6 +62,7 @@ public:
   project_t(branch_prefix const & project_name,
             revision_id const & policy_rev,
             database & db);
+  project_t(database & db, lua_hooks & lua, options & opts);
 
   bool get_policy_branch_policy_of(branch_name const & name,
                                    branch_policy & policy_branch_policy,
@@ -148,10 +149,6 @@ public:
               options & opts);
 
   project_map const & all_projects() const;
-
-  // Get a named project.
-  project_t & get_project(branch_prefix const & name);
-  project_t * maybe_get_project(branch_prefix const & name);
 
   // Get the project containing a named branch.
   project_t & get_project_of_branch(branch_name const & branch);

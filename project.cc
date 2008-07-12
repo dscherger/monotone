@@ -26,7 +26,6 @@ using std::multimap;
 using std::make_pair;
 using boost::shared_ptr;
 
-
 class policy_info
 {
 public:
@@ -48,6 +47,10 @@ public:
     : policy(policy_branch::empty_policy(db)), passthru(true)
   {
   }
+  policy_info(map<branch_prefix, data> const & delegations, database & db)
+    : policy(delegations, branch_prefix(), db), passthru(false)
+  {
+  }
 };
 
 project_t::project_t(branch_prefix const & project_name,
@@ -65,6 +68,35 @@ project_t::project_t(branch_prefix const & project_name,
 project_t::project_t(database & db)
   : db(db), project_policy(new policy_info(db))
 {}
+
+project_t::project_t(database & db, lua_hooks & lua, options & opts)
+  : db(db)//, project_policy(db, lua, opts)
+{
+  std::map<branch_prefix, data> delegations;
+
+
+  for (map<branch_prefix, hexenc<id> >::const_iterator
+         i = opts.policy_revisions.begin();
+       i != opts.policy_revisions.end(); ++i)
+    {
+      data dat("revision_id ["+i->second()+"]\n");
+      delegations.insert(make_pair(i->first,
+                                   dat));
+    }
+
+  std::map<string, data> defs;
+  lua.hook_get_projects(defs);
+  for (map<string, data>::const_iterator i = defs.begin();
+       i != defs.end(); ++i)
+    {
+      delegations.insert(make_pair(branch_prefix(i->first),
+                                   i->second));
+    }
+  if (delegations.empty())
+    project_policy.reset(new policy_info(db));
+  else
+    project_policy.reset(new policy_info(delegations, db));
+}
 
 bool
 project_t::get_policy_branch_policy_of(branch_name const & name,
@@ -634,24 +666,6 @@ project_set::project_map const &
 project_set::all_projects() const
 {
   return projects;
-}
-
-project_t &
-project_set::get_project(branch_prefix const & name)
-{
-  project_t * const project = maybe_get_project(name);
-  I(project != NULL);
-  return *project;
-}
-
-project_t *
-project_set::maybe_get_project(branch_prefix const & name)
-{
-  map<branch_prefix, project_t>::iterator i = projects.find(name);
-  if (i != projects.end())
-    return &i->second;
-  else
-    return NULL;
 }
 
 project_t &

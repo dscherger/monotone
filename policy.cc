@@ -69,6 +69,14 @@ policy_branch::policy_branch(revision_id const & rid,
   rev.reset(new policy_revision(db, rid, prefix));
 }
 
+policy_branch::policy_branch(std::map<branch_prefix, data> const & delegations,
+                             branch_prefix const & my_prefix,
+                             database & db)
+  : prefix(my_prefix), db(db)
+{
+  rev.reset(new policy_revision(delegations, db));
+}
+
 void
 policy_branch::init(data const & spec)
 {
@@ -210,6 +218,19 @@ policy_revision::policy_revision(database & db,
 						     subprefix,
 						     db)));
 	}
+    }
+}
+
+policy_revision::policy_revision(std::map<branch_prefix, data> const & del,
+                                 database & db)
+{
+  for (std::map<branch_prefix, data>::const_iterator i = del.begin();
+       i != del.end(); ++i)
+    {
+      delegations.insert(std::make_pair(i->first,
+                                        policy_branch(i->second,
+                                                      i->first,
+                                                      db)));
     }
 }
 

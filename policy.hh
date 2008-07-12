@@ -90,6 +90,9 @@ public:
   policy_branch(revision_id const & rid,
                 branch_prefix const & prefix,
                 database & db);
+  policy_branch(std::map<branch_prefix, data> const & delegations,
+                branch_prefix const & my_prefix,
+                database & db);
   boost::shared_ptr<policy_revision> get_policy();
   std::map<branch_name, branch_policy> branches();
 
@@ -111,6 +114,8 @@ public:
   policy_revision(database & db,
                   revision_id const & rev,
                   branch_prefix const & prefix);
+  policy_revision(std::map<branch_prefix, data> const & del,
+                  database & db);
   std::map<branch_name, branch_policy> all_branches();
 
   void get_delegation_names(std::set<branch_prefix> & names) const;
