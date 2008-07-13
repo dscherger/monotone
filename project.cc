@@ -513,7 +513,7 @@ project_t::get_branch_certs(branch_name const & branch,
   else
     bid = translate_branch(branch);
 
-  return db.get_revision_certs(branch_cert_name, cert_value(branch()), certs);
+  return db.get_revision_certs(branch_cert_name, cert_value(bid()), certs);
 }
 
 tag_t::tag_t(revision_id const & ident,
