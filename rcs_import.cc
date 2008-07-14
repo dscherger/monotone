@@ -2531,6 +2531,9 @@ void
 split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider);
 
+void
+explode_blob(cvs_history & cvs, const cvs_blob_index blob_to_split);
+
 
 struct branch_sanitizer
 {
@@ -3449,6 +3452,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
   set<cvs_blob_index> blob_without_type1_events;
   vector<cvs_blob_index> splittable_blobs;
   vector<pair<cvs_blob_index, set<cvs_event_ptr> > > splittable_symbol_blobs;
+  vector<cvs_blob_index> type4_symbol_blobs;
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
@@ -3544,7 +3548,11 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
       // skip blobs with type 4 events, splitting them doesn't help or
       // isn't possible at all.
       if (has_type4events)
-        continue;
+        {
+          if (cvs.blobs[*cc].get_digest().is_symbol())
+            type4_symbol_blobs.push_back(*cc);;
+          continue;
+        }
 
       // it's a cycle, so every blob must have at least one incomming and
       // one outgoing dependency.
@@ -3736,6 +3744,13 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
       split_by_path func(cvs, tmp);
       split_blob_at(cvs, best_blob, func);
     }
+  else if (!type4_symbol_blobs.empty())
+    {
+      L(FL("Exploding blobs with type4 events."));
+      for (vector<cvs_blob_index>::const_iterator i = type4_symbol_blobs.begin();
+           i != type4_symbol_blobs.end(); ++i)
+        explode_blob(cvs, *i);
+    }
   else
     {
       L(FL("Unable to split the following cycle:"));
@@ -3761,6 +3776,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
             }
 
           vector<cvs_event_ptr> type2events, type3events, type4events;
+          set<cvs_event_ptr> weak_events;
 
           // Loop over every event of every blob again and collect events of
           // type 2 and 3, but abort as soon as we hit a type 4 one. Type 1
@@ -3769,7 +3785,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
                ity != blob_events.end(); ++ity)
             {
               cvs_event_ptr this_ev = *ity;
-              int deps_from = 0, deps_to = 0;
+              int deps_from = 0, deps_to = 0, weak_deps_to = 0;
 
               typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
               pair<mm_ity, mm_ity> range =
@@ -3792,19 +3808,35 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
                   range.first++;
                 }
 
+              if (cvs.blobs[*i].get_digest().is_symbol())
+                {
+                  range = in_cycle_weak_dependents.equal_range(this_ev);
+                  while (range.first != range.second)
+                    {
+                      weak_deps_to++;
+                      range.first++;
+                    }
+                }
+
               if (deps_from == 0)
                 {
                   if (deps_to == 0)
                     ; // a type 1 event
                   else
                     type3events.push_back(this_ev); // a type 3 event
+                    if (weak_deps_to == deps_to)
+                      safe_insert(weak_events, this_ev);
                 }
               else
                 {
                   if (deps_to == 0)
                     type2events.push_back(this_ev); // a type 2 event
                   else
-                    type4events.push_back(this_ev); // a type 4 event
+                    {
+                      type4events.push_back(this_ev); // a type 4 event
+                      if (weak_deps_to == deps_to)
+                        safe_insert(weak_events, this_ev);
+                    }
                 }
             }
 
@@ -3822,6 +3854,12 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
           for (blob_event_iter ity = type4events.begin();
                ity != type4events.end(); ++ity)
             L(FL("    %s") % get_event_repr(cvs, *ity));
+
+          if (!weak_events.empty())
+            {
+              L(FL("    decision: splitting at weak events"));
+              continue;
+            }
 
           if (!type4events.empty())
             {
@@ -3868,7 +3906,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
             }
           else if (t2_upper_bound < t3_lower_bound)
             {
-              L(FL("    decision: splittable by timestamp."));
+              L(FL("    decision: splittable by timestamp (strange variant)."));
             }
           else
             {
@@ -3879,6 +3917,25 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
         }
 
       I(false);  // unable to split the cycle?
+    }
+}
+
+void
+explode_blob(cvs_history & cvs, const cvs_blob_index blob_to_explode)
+{
+  // make sure the blob's events are sorted by timestamp
+  cvs_blob_index bi = blob_to_explode;
+
+  // Reset the dependents both caches of the origin blob.
+  cvs.blobs[bi].reset_dependencies_cache();
+  cvs.blobs[bi].reset_dependents_cache();
+
+  while (cvs.blobs[bi].get_events().size() > 1)
+    {
+      set<cvs_event_ptr> tmp;
+      tmp.insert(*cvs.blobs[bi].get_events().rbegin());
+      split_by_event_set func(tmp);
+      split_blob_at(cvs, bi, func);
     }
 }
 
