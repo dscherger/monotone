@@ -3274,7 +3274,12 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         event_times.insert(i->second);
     }
 
-  I(!event_times.empty());
+  if (event_times.empty())
+    {
+      L(FL("unable to find a split point, %d events with equal timestamps.")
+        % equal_adj_time_events.size());
+      I(false);
+    }
 
   set<time_i>::const_iterator last, curr;
   last = event_times.begin();
