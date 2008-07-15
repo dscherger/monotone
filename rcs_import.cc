@@ -3957,7 +3957,10 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
                 // events which are really the same, i.e. by Attic and real
                 // file.
                 if (ci->rcs_version != cj->rcs_version)
-                  continue;
+                  {
+                    j++;
+                    continue;
+                  }
               }
 
             // let the first take over its dependencies...
