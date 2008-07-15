@@ -3201,6 +3201,7 @@ time_i
 get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
   list< pair<time_i, time_i> > ib_deps;
+  list< pair<cvs_event_ptr, cvs_event_ptr> > equal_adj_time_events;
 
   // Collect the conflicting intra-blob dependencies, storing the
   // timestamps of both events involved.
@@ -3230,8 +3231,9 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            I((*i)->adj_time != (*j)->adj_time);
-            if ((*i)->adj_time > (*j)->adj_time)
+            if ((*i)->adj_time == (*j)->adj_time)
+              equal_adj_time_events.push_back(make_pair(*i, *j));
+            else if ((*i)->adj_time > (*j)->adj_time)
               ib_deps.push_back(make_pair((*j)->adj_time, (*i)->adj_time));
             else
               ib_deps.push_back(make_pair((*i)->adj_time, (*j)->adj_time));
@@ -3272,7 +3274,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         event_times.insert(i->second);
     }
 
-  I(event_times.size() > 0);
+  I(!event_times.empty());
 
   set<time_i>::const_iterator last, curr;
   last = event_times.begin();
@@ -3942,9 +3944,9 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
             // different changelog texts. Most probably they originate
             // from duplicate RCS files in Attic and alive.
 
-            L(FL("merging events %s and %s")
-              % get_event_repr(cvs, *i)
-              % get_event_repr(cvs, *j));
+            L(FL("merging events %s (%d) and %s (%d)")
+              % get_event_repr(cvs, *i) % (*i)->adj_time
+              % get_event_repr(cvs, *j) % (*j)->adj_time);
 
             if (blob.etype == ET_COMMIT)
               {
