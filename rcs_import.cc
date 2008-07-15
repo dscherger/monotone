@@ -3210,24 +3210,8 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
     {
       cvs_event_ptr ev = *i;
 
-      // check for time gaps between this event and it's dependencies
-      for (dep_loop j = cvs.get_dependencies(ev); !j.ended(); ++j)
-        {
-          cvs_event_ptr dep = *j;
-
-          if ((cvs.blobs[dep->bi].get_digest() == cvs.blobs[bi].get_digest()) &&
-              (dep->bi == bi))
-            {
-              I(ev->adj_time != dep->adj_time);
-              if (ev->adj_time > dep->adj_time)
-                ib_deps.push_back(make_pair(dep->adj_time, ev->adj_time));
-              else
-                ib_deps.push_back(make_pair(ev->adj_time, dep->adj_time));
-            }
-        }
-
-      // additionally, check for time gaps between this event and any other
-      // events on the same file.
+      // check for time gaps between the current event and any other event
+      // on the same file in the same blob.
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
