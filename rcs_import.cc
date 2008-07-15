@@ -3201,7 +3201,6 @@ time_i
 get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 {
   list< pair<time_i, time_i> > ib_deps;
-  list< pair<cvs_event_ptr, cvs_event_ptr> > equal_adj_time_events;
 
   // Collect the conflicting intra-blob dependencies, storing the
   // timestamps of both events involved.
@@ -3215,9 +3214,8 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
       for (blob_event_iter j = i + 1; j != cvs.blobs[bi].end(); ++j)
         if ((*i)->path == (*j)->path)
           {
-            if ((*i)->adj_time == (*j)->adj_time)
-              equal_adj_time_events.push_back(make_pair(*i, *j));
-            else if ((*i)->adj_time > (*j)->adj_time)
+            I((*i)->adj_time != (*j)->adj_time);
+            if ((*i)->adj_time > (*j)->adj_time)
               ib_deps.push_back(make_pair((*j)->adj_time, (*i)->adj_time));
             else
               ib_deps.push_back(make_pair((*i)->adj_time, (*j)->adj_time));
@@ -3258,12 +3256,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
         event_times.insert(i->second);
     }
 
-  if (event_times.empty())
-    {
-      L(FL("unable to find a split point, %d events with equal timestamps.")
-        % equal_adj_time_events.size());
-      I(false);
-    }
+  I(!event_times.empty());
 
   set<time_i>::const_iterator last, curr;
   last = event_times.begin();
@@ -3876,6 +3869,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
 bool
 resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 {
+  list< pair<cvs_event_ptr, cvs_event_ptr> > equal_adj_time_events;
+
   cvs_blob & blob = cvs.blobs[bi];
   for (vector<cvs_event_ptr>::iterator i = blob.begin(); i != blob.end(); ++i)
     {
@@ -3905,6 +3900,9 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
                 // file.
                 if (ci->rcs_version != cj->rcs_version)
                   {
+                    if (ci->adj_time == cj->adj_time)
+                      equal_adj_time_events.push_back(make_pair(ci, cj));
+
                     j++;
                     continue;
                   }
@@ -3944,6 +3942,21 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
   // won't be merged above.
   if (blob.etype == ET_BRANCH_END)
     return true;
+
+  if (!equal_adj_time_events.empty())
+    {
+      // One or more pairs of events with equal changelog, author and
+      // timestamps, for the same file, but with different RCS versions.
+      //
+      // We need to split between these pairs, but that's not trivial!
+      L(FL("List of equal events in the same blob."));
+      for (list< pair<cvs_event_ptr, cvs_event_ptr> >::iterator i = equal_adj_time_events.begin();
+           i != equal_adj_time_events.end(); ++i)
+        {
+          L(FL("  %s vs %s") % get_event_repr(cvs, i->first) % get_event_repr(cvs, i->second));
+        }
+      return false;
+    }
 
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
@@ -4974,10 +4987,12 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
   //        v      v                  v
   //        B -> blob                 B -> blob
 
-  // get all parent revision ids
+  // get all parent revision ids - but check for duplicate rids in different
+  // blobs.
   for (set<cvs_blob_index>::iterator i = parent_blobs.begin();
        i != parent_blobs.end(); ++i)
-    safe_insert(parent_rids, cvs.blobs[*i].assigned_rid);
+    if (parent_rids.find(cvs.blobs[*i].assigned_rid) == parent_rids.end())
+      parent_rids.insert(cvs.blobs[*i].assigned_rid);
 
   // then erase the ancestors, because we cannot merge with a
   // descendent.
@@ -5191,7 +5206,7 @@ blob_consumer::operator()(cvs_blob_index bi)
   cvs_blob & blob = cvs.blobs[bi];
 
   // Check what revision to use as a parent revision.
-  set< cvs_blob_index > parent_blobs;
+  set<cvs_blob_index> parent_blobs;
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
       {
