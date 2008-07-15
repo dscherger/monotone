@@ -124,7 +124,7 @@ void walk_tree(file_path const & path,
 // define a thread pool for file identifiers, where the workers take
 // a file_path as an input, and output a success indicator as well
 // as a file_id, in case of success.
-struct file_hash_calc_task;
+class file_hash_calc_task;
 typedef worker_pool<file_hash_calc_task, file_path, file_id> file_ident_pool;
 
 bool ident_existing_file(file_ident_pool & pool,

@@ -19,16 +19,9 @@ public:
   virtual void operator()() = 0;
 };
 
-template <typename P1, typename P2>
-class task_done_callback
-{
-public:
-  virtual void operator()() = 0;
-};
-
 extern void create_thread_for(threaded_task * func);
 
-template <typename TASK, typename P1, typename P2>
+template <typename TASK, typename IN, typename OUT>
 class worker_pool
 {
   std::stack<threaded_task*> tstack;
@@ -36,11 +29,11 @@ public:
   worker_pool()
     { };
 
-  void add_job(boost::shared_ptr<P1> p1, boost::shared_ptr<P2> p2)
+  void add_job(boost::shared_ptr<IN> in, boost::shared_ptr<OUT> out)
     {
-      I(p1);
-      I(p2);
-      tstack.push(new TASK(p1, p2));
+      I(in);
+      I(out);
+      tstack.push(new TASK(in, out));
     }
 
   void wait(void)
