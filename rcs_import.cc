@@ -3757,52 +3757,9 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
       split_by_time func(largest_gap_at);
       split_blob_at(cvs, largest_gap_blob, func);
     }
-  else if (!splittable_blobs.empty())
-    {
-      // We couldn't find a blob to split by timestamp, but we still have
-      // a collection of blob we can split to resolve the cyclic
-      // dependencies. However, choosing which one to split is guesswork.
-      // The best thing that comes to my mind is preferring symbol blobs
-      // over others. And possibly preferring larger ones over smaller
-      // ones.
-      //
-      // So we play a 'which blob scores best' game.
-      //
-      int best_points = 0;
-      cvs_blob_index best_blob = invalid_blob;
-      for (blob_index_iter i = splittable_blobs.begin();
-           i != splittable_blobs.end(); ++i)
-        {
-          int p = cvs.blobs[*i].get_events().size();
-
-          // a million points for being a symbol
-          if (cvs.blobs[*i].get_digest().is_symbol())
-            p += 1000000;
-
-          // a thousand points for consisting only of type
-          // 2 and 3 events.
-          if (blob_without_type1_events.find(*i) !=
-                blob_without_type1_events.end())
-            p += 1000;
-
-          if (p > best_points)
-            {
-              best_points = p;
-              best_blob = *i;
-            }
-        }
-
-      // split that best_blob by path, hoping the split succeeds...
-      L(FL("splitting blob %d by path")
-        % best_blob);
-      vector<cvs_blob_index> tmp(cycle_members.size());
-      copy(cycle_members.begin(), cycle_members.end(), tmp.begin());
-      split_by_path func(cvs, tmp);
-      split_blob_at(cvs, best_blob, func);
-    }
   else if (!type4_symbol_blobs.empty())
     {
-      L(FL("Exploding blobs with type4 events."));
+      L(FL("Exploding symbol blobs with type4 events."));
       for (vector<cvs_blob_index>::const_iterator i = type4_symbol_blobs.begin();
            i != type4_symbol_blobs.end(); ++i)
         explode_blob(cvs, *i);
@@ -3815,10 +3772,9 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
 }
 
 void
-explode_blob(cvs_history & cvs, const cvs_blob_index blob_to_explode)
+explode_blob(cvs_history & cvs, const cvs_blob_index bi)
 {
-  // make sure the blob's events are sorted by timestamp
-  cvs_blob_index bi = blob_to_explode;
+  L(FL("  exploding blob %d") % bi);
 
   // Reset the dependents both caches of the origin blob.
   cvs.blobs[bi].reset_dependencies_cache();
