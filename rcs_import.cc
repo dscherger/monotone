@@ -3869,8 +3869,6 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
 bool
 resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 {
-  list< pair<cvs_event_ptr, cvs_event_ptr> > equal_adj_time_events;
-
   cvs_blob & blob = cvs.blobs[bi];
   for (vector<cvs_event_ptr>::iterator i = blob.begin(); i != blob.end(); ++i)
     {
@@ -3878,35 +3876,25 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
         if (((*i)->path == (*j)->path) &&
              ((*i)->adj_time == (*j)->adj_time))
           {
-            // For events in the *same* blob, with the *same* changelog
-            // and author or same symbol name, we simply merge the
-            // events. They were not even important enough to get
-            // different changelog texts. Most probably they originate
-            // from duplicate RCS files in Attic and alive.
-
-            L(FL("merging events %s (%d) and %s (%d)")
-              % get_event_repr(cvs, *i) % (*i)->adj_time
-              % get_event_repr(cvs, *j) % (*j)->adj_time);
-
+            // Check if the events are really duplicates and we can merge
+            // them into one.
             if (blob.etype == ET_COMMIT)
               {
                 cvs_commit *ci = (cvs_commit*) (*i);
                 cvs_commit *cj = (cvs_commit*) (*j);
 
-                // Hum.. the events may be in different branches, and thus
-                // have the same author, changelog and timestamp for pretty
-                // valid reasons. Skip in those cases, and only merge
-                // events which are really the same, i.e. by Attic and real
-                // file.
                 if (ci->rcs_version != cj->rcs_version)
-                  {
-                    if (ci->adj_time == cj->adj_time)
-                      equal_adj_time_events.push_back(make_pair(ci, cj));
-
-                    j++;
-                    continue;
-                  }
+                  return true;
               }
+
+            // For events in the *same* blob, with the *same* changelog,
+            // author and RCS version or with the same symbol name, we
+            // simply merge the events. They most probably originate from
+            // duplicate RCS files in Attic and alive.
+
+            L(FL("merging events %s (%d) and %s (%d)")
+              % get_event_repr(cvs, *i) % (*i)->adj_time
+              % get_event_repr(cvs, *j) % (*j)->adj_time);
 
             // let the first take over its dependencies...
             cvs.blobs[(*i)->bi].reset_dependencies_cache();
@@ -3942,21 +3930,6 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
   // won't be merged above.
   if (blob.etype == ET_BRANCH_END)
     return true;
-
-  if (!equal_adj_time_events.empty())
-    {
-      // One or more pairs of events with equal changelog, author and
-      // timestamps, for the same file, but with different RCS versions.
-      //
-      // We need to split between these pairs, but that's not trivial!
-      L(FL("List of equal events in the same blob."));
-      for (list< pair<cvs_event_ptr, cvs_event_ptr> >::iterator i = equal_adj_time_events.begin();
-           i != equal_adj_time_events.end(); ++i)
-        {
-          L(FL("  %s vs %s") % get_event_repr(cvs, i->first) % get_event_repr(cvs, i->second));
-        }
-      return false;
-    }
 
   for (blob_event_iter i = blob.begin(); i != blob.end(); ++i)
     {
