@@ -3866,6 +3866,67 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
   cvs.blobs[new_bi].height = cvs.blobs[bi].height;
 }
 
+void
+collect_dependencies(cvs_history & cvs, cvs_event_ptr start, set<cvs_blob_index> & coll)
+{
+  stack<cvs_event_ptr> stack;
+  stack.push(start);
+  while (!stack.empty())
+    {
+      cvs_event_ptr ev = stack.top();
+      stack.pop();
+
+      for (dep_loop i = cvs.get_dependencies(ev); !i.ended(); ++i)
+        if (coll.find((*i)->bi) == coll.end())
+          {
+            coll.insert((*i)->bi);
+            stack.push(*i);
+          }
+    }
+}
+
+void
+split_between_equal_commits(cvs_history & cvs, cvs_event_ptr a, cvs_event_ptr b)
+{
+  I(a->bi == b->bi);
+  I(a->path == b->path);
+  I(a->adj_time == b->adj_time);
+
+  L(FL("blob %d contains events %s (%d) and %s (%d), "
+       "resolution deferred to blob splitting phase")
+    % a->bi % get_event_repr(cvs, a) % a->adj_time
+    % get_event_repr(cvs, b) % b->adj_time);
+
+  set<cvs_blob_index> left, right;
+
+  // collect all dependent events of either side
+  collect_dependencies(cvs, a, left);
+  collect_dependencies(cvs, b, right);
+
+  // get the intersections between these sets of dependencies
+  set<cvs_blob_index> only_left, only_right;
+  set_difference(left.begin(), left.end(), right.begin(), right.end(),
+    insert_iterator< set<cvs_blob_index> >(only_left, only_left.begin()) );
+  set_difference(right.begin(), right.end(), left.begin(), left.end(),
+    insert_iterator< set<cvs_blob_index> >(only_right, only_right.begin()) );
+
+  // debug output of these sets
+  log_path(cvs, "only left:", only_left.begin(), only_left.end());
+  log_path(cvs, "only right:", only_right.begin(), only_right.end());
+
+  // Either one of these events must have dependencies the other doesn't
+  // have. Otherwise we are completely lost and cannot split this blob in
+  // any meaningful way.
+  I(!only_left.empty() || !only_right.empty());
+  if (only_left.empty())
+    swap(only_left, only_right);
+
+  vector<cvs_blob_index> split_path;
+  split_path.push_back(*only_left.begin());
+  split_by_path func(cvs, split_path);
+  split_blob_at(cvs, a->bi, func);
+}
+
 bool
 resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
 {
@@ -3884,7 +3945,10 @@ resolve_intra_blob_conflicts_for_blob(cvs_history & cvs, cvs_blob_index bi)
                 cvs_commit *cj = (cvs_commit*) (*j);
 
                 if (ci->rcs_version != cj->rcs_version)
-                  return true;
+                  {
+                    split_between_equal_commits(cvs, *i, *j);
+                    return true;
+                  }
               }
 
             // For events in the *same* blob, with the *same* changelog,
@@ -4853,8 +4917,11 @@ blob_consumer::merge_parents_for_artificial_rev(
             {
               // The right node does not have that node, but we are asked to
               // inherit from it, so should remove the node.
-              node_id nid = merged_roster.detach_node(pth);
-              merged_roster.drop_detached_node(nid);
+              if (merged_roster.has_node(pth))
+                {
+                  node_id nid = merged_roster.detach_node(pth);
+                  merged_roster.drop_detached_node(nid);
+                }
 
               // FIXME: possibly delete empty directories here...
 
