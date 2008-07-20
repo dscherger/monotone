@@ -650,34 +650,6 @@ sub help_toolbutton_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - tagged_checkbutton_toggled_cb
-#
-#   Description  - Callback routine called when the user changes the value of
-#                  the tagged check button.
-#
-#   Data         - $widget   : The widget object that received the signal.
-#                  $instance : The window instance that is associated with
-#                              this widget.
-#
-##############################################################################
-
-
-
-sub tagged_checkbutton_toggled_cb($$)
-{
-
-    my($widget, $instance) = @_;
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
-
-    $instance->{appbar}->clear_stack();
-    &{$instance->{update_handler}}($instance, BRANCH_CHANGED);
-
-}
-#
-##############################################################################
-#
 #   Routine      - advanced_find_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
@@ -769,10 +741,11 @@ sub revision_change_history_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my @revision_ids;
+    my(@revision_ids,
+       $tag);
 
-    get_revision_ids($browser, \@revision_ids);
-    display_revision_change_history($browser->{mtn}, $revision_ids[0]);
+    get_revision_ids($browser, \@revision_ids, \$tag);
+    display_revision_change_history($browser->{mtn}, $tag, $revision_ids[0]);
 
 }
 #
@@ -799,15 +772,13 @@ sub revision_change_log_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my @revision_ids;
+    my(@revision_ids,
+       $tag);
 
     # Get the currently selected revision id and then display its change log.
 
-    get_revision_ids($browser, \@revision_ids);
-    display_change_log($browser->{mtn},
-		       $revision_ids[0],
-		       "",
-		       $browser->{revision_combo_details}->{value});
+    get_revision_ids($browser, \@revision_ids, \$tag);
+    display_change_log($browser->{mtn}, $revision_ids[0], "", $tag);
 
 }
 #
@@ -941,8 +912,13 @@ sub find_files_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
+    my(@revision_ids,
+       $tag);
+
+    get_revision_ids($browser, \@revision_ids, \$tag);
     display_find_files($browser->{mtn},
-		       $browser->{revision_combo_details}->{value},
+		       $tag,
+		       $revision_ids[0],
 		       $browser->{manifest},
 		       $browser->{directory_combo_details}->{value});
 

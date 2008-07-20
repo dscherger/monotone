@@ -52,6 +52,7 @@ use warnings;
 
 sub comboboxentry_changed_cb($$);
 sub comboboxentry_key_release_event_cb($$$);
+sub tagged_checkbutton_toggled_cb($$);
 #
 ##############################################################################
 #
@@ -258,6 +259,34 @@ sub comboboxentry_key_release_event_cb($$$)
     }
 
     return FALSE;
+
+}
+#
+##############################################################################
+#
+#   Routine      - tagged_checkbutton_toggled_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  the tagged check button.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub tagged_checkbutton_toggled_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    $instance->{appbar}->clear_stack();
+    &{$instance->{update_handler}}($instance, BRANCH_CHANGED);
 
 }
 

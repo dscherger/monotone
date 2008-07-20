@@ -60,7 +60,7 @@ use constant CLS_FILE_ID_2_COLUMN => 3;
 # Public routines.
 
 sub display_file_change_history($$$);
-sub display_revision_change_history($$);
+sub display_revision_change_history($$$);
 
 # Private routines.
 
@@ -86,6 +86,10 @@ sub save_differences_button_clicked_cb($$);
 #
 #   Data         - $mtn         : The Monotone instance handle that is to be
 #                                 used to get the change history.
+#                  $tag         : Either a tag name for the specified revision
+#                                 that is to be used in the window title
+#                                 instead of the revision id or undef if the
+#                                 revision id should be used.
 #                  $revision_id : The id of the revision that is to have its
 #                                 change log displayed.
 #
@@ -93,10 +97,10 @@ sub save_differences_button_clicked_cb($$);
 
 
 
-sub display_revision_change_history($$)
+sub display_revision_change_history($$$)
 {
 
-    my($mtn, $revision_id) = @_;
+    my($mtn, $tag, $revision_id) = @_;
 
     my($button,
        @certs_list,
@@ -113,7 +117,8 @@ sub display_revision_change_history($$)
     $instance->{first_revision_id} = "";
     $instance->{second_revision_id} = "";
     $instance->{window}->set_title(__x("Revision History For {rev}",
-				       rev => $revision_id));
+				       rev => defined($tag) ?
+				           $tag : $revision_id));
     $instance->{history_label}->set_markup(__("<b>Revision History</b>"));
     $instance->{window}->show_all();
 

@@ -73,7 +73,7 @@ use constant SIZE_MB => 2;
 
 # Public routines.
 
-sub display_find_files($$$$);
+sub display_find_files($$$$$);
 
 # Private routines.
 
@@ -96,6 +96,10 @@ sub validate_query($$);
 #
 #   Data         - $mtn            : The Monotone instance handle that is to
 #                                    be used to search for files.
+#                  $tag            : Either a tag name for the specified
+#                                    revision that is to be used in the window
+#                                    title instead of the revision id or undef
+#                                    if the revision id should be used.
 #                  $revision_id    : The id of the revision that is to be
 #                                    searched.
 #                  $manifest       : A reference to the corresponding revision
@@ -107,10 +111,10 @@ sub validate_query($$);
 
 
 
-sub display_find_files($$$$)
+sub display_find_files($$$$$)
 {
 
-    my($mtn, $revision_id, $manifest, $starting_point) = @_;
+    my($mtn, $tag, $revision_id, $manifest, $starting_point) = @_;
 
     my $instance;
 
@@ -122,8 +126,9 @@ sub display_find_files($$$$)
     $instance->{manifest} = $manifest;
     $instance->{starting_point} = $starting_point;
 
-    $instance->{window}->set_title(__x("Find Files With Revision {rev}",
-				       rev => $revision_id));
+    $instance->{window}->set_title(__x("Find Files Within Revision {rev}",
+				       rev => defined($tag) ?
+				           $tag : $revision_id));
     set_label_value($instance->{searching_from_value_label},
 		    $instance->{starting_point});
 

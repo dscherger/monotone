@@ -64,7 +64,7 @@ sub generate_tmp_path($);
 sub get_branch_revisions($$$$$);
 sub get_dir_contents($$$);
 sub get_file_details($$$$$$);
-sub get_revision_ids($$);
+sub get_revision_ids($$;$);
 sub glade_signal_autoconnect($$);
 sub hex_dump($);
 sub open_database($$$);
@@ -784,27 +784,35 @@ sub get_file_details($$$$$$)
 #                  specified via a tag or as a revision id.
 #
 #   Data         - $instance     : The window instance.
-#                  $revision_ids : The list of selected revision ids. Normally
-#                                  the list will have at most one element but
-#                                  may contain more if the tag isn't unique on
-#                                  the current branch.
+#                  $revision_ids : A reference to a list that is to contain
+#                                  the revision ids. Normally the list will
+#                                  have at most one element but may contain
+#                                  more if the tag isn't unique on the current
+#                                  branch.
+#                  $tag          : A reference to a variable that is to
+#                                  contain the tag name that the user selected
+#                                  or undef if the user selected a revision id
+#                                  directly. This is optional.
 #
 ##############################################################################
 
 
 
-sub get_revision_ids($$)
+sub get_revision_ids($$;$)
 {
 
-    my($instance, $revision_ids) = @_;
+    my($instance, $revision_ids, $tag) = @_;
 
     @$revision_ids=();
+    $$tag = undef if (defined($tag));
     return unless ($instance->{revision_combo_details}->{complete});
     if ($instance->{tagged_checkbutton}->get_active())
     {
 	$instance->{mtn}->
 	    select($revision_ids,
 		   "t:" . $instance->{revision_combo_details}->{value});
+	$$tag = $instance->{revision_combo_details}->{value}
+	    if (defined($tag));
     }
     else
     {
