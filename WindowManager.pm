@@ -56,6 +56,7 @@ use warnings;
 # Standard Perl and CPAN modules.
 
 use Carp;
+use Glib;
 use Gtk2;
 
 # ***** GLOBAL DATA DECLARATIONS *****
@@ -100,6 +101,10 @@ sub make_busy($$$;$);
 sub manage($$$$;$);
 sub reset_state($);
 sub update_gui();
+
+# Private routines.
+
+sub event_filter($$);
 #
 ##############################################################################
 #
@@ -374,7 +379,7 @@ sub make_busy($$$;$)
 
     if ($busy)
     {
-	Gtk2::Gdk::Event->handler_set(\&main::window_manager_event_filter,
+	Gtk2::Gdk::Event->handler_set(\&event_filter,
 				      {singleton   => $this,
 				       grab_widget => $entry->{grab_widget}})
 	    if (! $exclude);
@@ -406,8 +411,7 @@ sub make_busy($$$;$)
 	}
 	else
 	{
-	    $head =
-		$this->{state_stack}->[$#{$this->{state_stack}}];
+	    $head = $this->{state_stack}->[$#{$this->{state_stack}}];
 	    foreach my $win_instance (@{$this->{windows}})
 	    {
 		foreach my $window (@{$win_instance->{busy_windows}})
@@ -438,7 +442,7 @@ sub make_busy($$$;$)
 	    else
 	    {
 		Gtk2::Gdk::Event->handler_set
-		    (\&main::window_manager_event_filter,
+		    (\&event_filter,
 		     {singleton   => $this,
 		      grab_widget => $entry->{grab_widget}});
 	    }
@@ -466,8 +470,6 @@ sub allow_input($&)
 {
 
     my($this, $code) = @_;
-
-    my $head = $this->{state_stack}->[$#{$this->{state_stack}}];
 
     local $this->{allow_input} = 1;
 
@@ -535,41 +537,7 @@ sub update_gui()
 #
 ##############################################################################
 #
-#   Package      - main
-#
-#   Description  - The event filter routine has to be in the main package as
-#                  this is assumed when constructing calling Perl callbacks.
-#
-##############################################################################
-
-
-
-# ***** PACKAGE DECLARATION *****
-
-package main;
-
-# ***** DIRECTIVES *****
-
-require 5.008;
-
-use strict;
-use integer;
-
-# ***** REQUIRED PACKAGES *****
-
-# Standard Perl and CPAN modules.
-
-use Gtk2;
-
-# ***** FUNCTIONAL PROTOTYPES *****
-
-# Public methods.
-
-sub window_manager_event_filter($$);
-#
-##############################################################################
-#
-#   Routine      - window_manager_event_filter
+#   Routine      - event_filter
 #
 #   Description  - Filter for getting rid of unwanted keyboard and mouse
 #                  button events when the application is busy.
@@ -583,7 +551,7 @@ sub window_manager_event_filter($$);
 
 
 
-sub window_manager_event_filter($$)
+sub event_filter($$)
 {
 
     my($event, $client_data) = @_;
