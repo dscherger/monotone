@@ -45,6 +45,13 @@ require 5.008;
 use strict;
 use warnings;
 
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# Constants for various parameters used in detecting binary data.
+
+use constant CHUNK_SIZE => 10240;
+use constant THRESHOLD  => 20;
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -1032,13 +1039,22 @@ sub data_is_binary($)
 
     my $data = $_[0];
 
-    my($length,
-       $non_printable);
+    my($chunk,
+       $length,
+       $non_printable,
+       $offset,
+       $total_length);
 
-    $length = length($$data);
-    $non_printable = grep(/[^[:print:][:space:]]/, split(//, $$data));
-
-    return 1 if ($length > 0 && ((100 * $non_printable) / $length) > 20);
+    $offset = 0;
+    $total_length = length($$data);
+    while ($offset < $total_length)
+    {
+	$chunk = substr($$data, $offset, CHUNK_SIZE);
+	$offset += CHUNK_SIZE;
+	$length = length($chunk);
+	$non_printable = grep(/[^[:print:][:space:]]/, split(//, $chunk));
+	return 1 if (((100 * $non_printable) / $length) > THRESHOLD);
+    }
     return;
 
 }
