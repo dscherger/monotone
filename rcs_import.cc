@@ -3368,6 +3368,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependents;
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_weak_dependents;
 
+  cvs_blob_index prev_bi = *cycle_members.rbegin();
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // loop over every event of every blob in cycle_members
@@ -3396,14 +3397,20 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
               bool is_weak_path = stack.top().second;
               stack.pop();
 
-              if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
-                  != cycle_members.end())
+              if (dep_ev->bi == prev_bi)
                 {
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
                   if (is_weak_path)
                     in_cycle_weak_dependents.insert(make_pair(dep_ev, this_ev));
                 }
+#if 0
+              else if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
+                  != cycle_members.end())
+                {
+                  L(FL("dependency on blob %d, but prev_bi is: %d") % *find(cycle_members.begin(), cycle_members.end(), dep_ev->bi) % prev_bi);
+                }
+#endif
 
               for (dep_loop j = cvs.get_dependencies(dep_ev); !j.ended(); ++j)
                 {
@@ -3420,6 +3427,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
                 }
             }
         }
+
+      prev_bi = *cc;
     }
 
   // Loop over them again, this time accumulating the counters and trying to
