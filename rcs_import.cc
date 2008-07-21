@@ -2343,7 +2343,7 @@ calculate_height_limit(const cvs_blob_index bi_a, const cvs_blob_index bi_b,
 #ifdef DEBUG_GRAPHVIZ
 void
 write_graphviz_partial(cvs_history & cvs, string const & desc,
-                       set<cvs_blob_index> & blobs_to_mark,
+                       vector<cvs_blob_index> & blobs_to_mark,
                        int add_depth);
 
 void
@@ -2355,10 +2355,10 @@ struct blob_splitter
 {
 protected:
   cvs_history & cvs;
-  set<cvs_blob_index> & cycle_members;
+  vector<cvs_blob_index> & cycle_members;
 
 public:
-  blob_splitter(cvs_history & c, set<cvs_blob_index> & cm)
+  blob_splitter(cvs_history & c, vector<cvs_blob_index> & cm)
     : cvs(c),
       cycle_members(cm)
     { }
@@ -2397,19 +2397,14 @@ public:
       // We run Dijkstra's algorithm to find the shortest path from e.second
       // to e.first. All vertices in that path are part of the smallest
       // cycle which includes this back edge.
-      vector<cvs_blob_index> tmp;
       insert_iterator< vector<cvs_blob_index> >
-        ity(tmp, tmp.begin());
+        ity(cycle_members, cycle_members.begin());
       dijkstra_shortest_path(cvs, e.first, e.second, ity,
                              true, true, true, // follow all blobs
                              false,
                              make_pair(invalid_blob, invalid_blob),
                              0);
-      I(!tmp.empty());
-      for (vector<cvs_blob_index>::iterator i = tmp.begin();
-           i != tmp.end(); ++i)
-        if (cycle_members.find(*i) == cycle_members.end())
-          cycle_members.insert(*i);
+      I(!cycle_members.empty());
 
 #ifdef DEBUG_GRAPHVIZ
       write_graphviz_partial(cvs, "splitter", cycle_members, 5);
@@ -2839,13 +2834,13 @@ public:
 
 #ifdef DEBUG_GRAPHVIZ
       {
-        set<cvs_blob_index> blobs_to_show;
+        vector<cvs_blob_index> blobs_to_show;
 
         for (vector<cvs_blob_index>::iterator i = path_a.begin(); i != path_a.end(); ++i)
-          blobs_to_show.insert(*i);
+          blobs_to_show.push_back(*i);
 
         for (vector<cvs_blob_index>::iterator i = path_b.begin(); i != path_b.end(); ++i)
-          blobs_to_show.insert(*i);
+          blobs_to_show.push_back(*i);
 
         write_graphviz_partial(cvs, "splitter", blobs_to_show, 5);
       }
@@ -3166,10 +3161,10 @@ public:
   void back_edge(Edge e)
     {
 #ifdef DEBUG_GRAPHVIZ
-       set<cvs_blob_index> blobs_to_show;
+       vector<cvs_blob_index> blobs_to_show;
 
-       blobs_to_show.insert(e.first);
-       blobs_to_show.insert(e.second);
+       blobs_to_show.push_back(e.first);
+       blobs_to_show.push_back(e.second);
 
       write_graphviz_partial(cvs, "invalid_back_edge", blobs_to_show, 5);
 #endif
@@ -3310,7 +3305,7 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 }
 
 void
-split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
+split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 {
   I(!cycle_members.empty());
 
@@ -3318,7 +3313,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
   // so we know where to stop tracking back dependencies later on.
   map<cvs_path, time_i> oldest_event;
   typedef map<cvs_path, time_i>::iterator oe_ity;
-  typedef set<cvs_blob_index>::const_iterator cm_ity;
+  typedef vector<cvs_blob_index>::const_iterator cm_ity;
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       // Nothing should ever depend on tags and branch_end blobs, thus
@@ -3327,7 +3322,7 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
       I(!cvs.blobs[*cc].get_digest().is_branch_end());
 
       // loop over every event of every blob in cycle_members
-      vector< cvs_event_ptr > & blob_events = cvs.blobs[*cc].get_events();
+      vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
       for (blob_event_iter ity = blob_events.begin();
            ity != blob_events.end(); ++ity)
         {
@@ -3401,7 +3396,8 @@ split_cycle(cvs_history & cvs, set<cvs_blob_index> const & cycle_members)
               bool is_weak_path = stack.top().second;
               stack.pop();
 
-              if (cycle_members.find(dep_ev->bi) != cycle_members.end())
+              if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
+                  != cycle_members.end())
                 {
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
@@ -4212,7 +4208,7 @@ write_graphviz_complete(cvs_history & cvs, string const & desc)
 
 void
 write_graphviz_partial(cvs_history & cvs, string const & desc,
-                       set<cvs_blob_index> & blobs_to_mark,
+                       vector<cvs_blob_index> & blobs_to_mark,
                        int add_depth)
 {
   std::ofstream viz_file;
@@ -4607,7 +4603,7 @@ import_cvs_repo(options & opts,
     while (1)
     {
       // this set will be filled with the blobs in a cycle
-      set<cvs_blob_index> cycle_members;
+      vector<cvs_blob_index> cycle_members;
 
       cvs.import_order.clear();
       blob_splitter vis(cvs, cycle_members);
