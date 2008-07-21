@@ -22,7 +22,7 @@ writefile("file2-1.1", "version 1.1 of test file2\n")
 writefile("file2-1.1.2.1", "version 1.1.2.1 of test file2\n")
 
 -- import into monotone and check presence of files
-xfail(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
 
 
 -- check if all non-empty branches were imported
