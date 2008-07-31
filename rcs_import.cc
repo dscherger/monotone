@@ -3366,7 +3366,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependencies;
   multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_dependents;
-  multimap<cvs_event_ptr, cvs_event_ptr> in_cycle_weak_dependents;
 
   cvs_blob_index prev_bi = *cycle_members.rbegin();
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
@@ -3382,28 +3381,24 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
           // even deep dependencies (i.e. hopping via multiple blobs *not*
           // in the cycle).
           set<cvs_event_ptr> done;
-          stack<pair<cvs_event_ptr, bool> > stack;
+          stack<cvs_event_ptr> stack;
 
           for (dep_loop j = cvs.get_dependencies(this_ev); !j.ended(); ++j)
             {
-              stack.push(make_pair(*j, cvs.is_weak(this_ev, *j)));
+              stack.push(*j);
               safe_insert(done, *j);
             }
 
           time_i limit = oldest_event[this_ev->path];
           while (!stack.empty())
             {
-              cvs_event_ptr dep_ev = stack.top().first;
-              bool is_weak_path = stack.top().second;
+              cvs_event_ptr dep_ev = stack.top();
               stack.pop();
 
               if (dep_ev->bi == prev_bi)
                 {
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
-                  if (is_weak_path)
-                    in_cycle_weak_dependents.insert(
-                      make_pair(dep_ev, this_ev));
                 }
 
               for (dep_loop j = cvs.get_dependencies(dep_ev); !j.ended(); ++j)
@@ -3413,9 +3408,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
                   if ((done.find(ev) == done.end() &&
                       (ev->adj_time >= limit)))
                     {
-                      if (cvs.is_weak(dep_ev, ev))
-                        is_weak_path = true;
-                      stack.push(make_pair(ev, is_weak_path));
+                      stack.push(ev);
                       safe_insert(done, ev);
                     }
                 }
@@ -3438,7 +3431,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   // which could also be split somehow to resolve the cycle.
   set<cvs_blob_index> blob_without_type1_events;
   vector<cvs_blob_index> splittable_blobs;
-  vector<pair<cvs_blob_index, set<cvs_event_ptr> > > splittable_symbol_blobs;
   vector<cvs_blob_index> type4_symbol_blobs;
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
@@ -3473,7 +3465,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
       bool has_type4events = false;
       vector<cvs_event_ptr> type2events, type3events;
-      set<cvs_event_ptr> weak_events;
 
       // Loop over every event of every blob again and collect events of
       // type 2 and 3, but abort as soon as we hit a type 4 one. Type 1
@@ -3482,7 +3473,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
            ity != blob_events.end(); ++ity)
         {
           cvs_event_ptr this_ev = *ity;
-          int deps_from = 0, deps_to = 0, weak_deps_to = 0;
+          int deps_from = 0, deps_to = 0;
 
           typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
           pair<mm_ity, mm_ity> range =
@@ -3505,48 +3496,19 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
               range.first++;
             }
 
-          if (cvs.blobs[*cc].get_digest().is_symbol())
-            {
-              range = in_cycle_weak_dependents.equal_range(this_ev);
-              while (range.first != range.second)
-                {
-                  weak_deps_to++;
-                  range.first++;
-                }
-            }
-
           if (deps_from == 0)
             {
               if (deps_to == 0)
                 ; // a type 1 event
               else
                 type3events.push_back(this_ev); // a type 3 event
-                if (weak_deps_to == deps_to)
-                  safe_insert(weak_events, this_ev);
             }
           else
             {
               if (deps_to == 0)
                 type2events.push_back(this_ev); // a type 2 event
               else
-                {
-                  has_type4events = true; // a type 4 event
-                  if (weak_deps_to == deps_to)
-                    safe_insert(weak_events, this_ev);
-                }
-            }
-        }
-
-      // Symbol blobs which don't have any hard dependency into the
-      // cycle should be split right away. The cycle exists only because
-      // of a weak dependency.
-      if (!weak_events.empty())
-        {
-          if (weak_events.size() < cvs.blobs[*cc].get_events().size())
-            {
-              L(FL("    can be split due to weak dependencies."));
-              splittable_symbol_blobs.push_back(make_pair(*cc, weak_events));
-              continue;
+                has_type4events = true; // a type 4 event
             }
         }
 
@@ -3678,65 +3640,10 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
     }
 
 
-  if (!splittable_symbol_blobs.empty())
-    {
-      cvs_blob_index best_blob = splittable_symbol_blobs.begin()->first;
-      time_i max_avg_diff_time = 0;
-      set<cvs_event_ptr> best_blob_weak_events
-        = splittable_symbol_blobs.begin()->second;
-
-      if (splittable_symbol_blobs.size() > 1)
-        {
-          // Figure out which of the symbol blobs with weak dependencies has
-          // the largest timestamp gap. That's the one we want to split.
-          typedef vector<pair<cvs_blob_index,
-                               set<cvs_event_ptr> > >::iterator ssbi;
-          for (ssbi i = splittable_symbol_blobs.begin();
-              i != splittable_symbol_blobs.end(); ++i)
-            {
-              time_i avg_adj_time = 0;
-              int count = 0;
-              vector<cvs_event_ptr> & blob_events
-                = cvs.blobs[i->first].get_events();
-              for (blob_event_iter ity = blob_events.begin();
-                   ity != blob_events.end(); ++ity)
-                {
-                  avg_adj_time += (*ity)->adj_time;
-                  count++;
-                }
-              avg_adj_time /= count;
-
-              time_i avg_diff_time = 0;
-              count = 0;
-              for (set<cvs_event_ptr>::iterator ity = i->second.begin();
-                   ity != i->second.end(); ++ity)
-                {
-                  avg_diff_time += abs(avg_adj_time - (*ity)->adj_time);
-                  count++;
-                }
-              avg_diff_time /= count;
-
-              if (avg_diff_time >= max_avg_diff_time)
-                {
-                  best_blob = i->first;
-                  best_blob_weak_events = i->second;
-                  max_avg_diff_time = avg_diff_time;
-                }
-            }
-        }
-
-      L(FL("splitting weak events from symbol blob %d")
-        % best_blob);
-      vector<cvs_blob_index> tmp(cycle_members.size());
-      copy(cycle_members.begin(), cycle_members.end(), tmp.begin());
-      split_by_event_set func(best_blob_weak_events);
-      split_blob_at(cvs, best_blob, func);
-    }
-
   // Hopefully, we found a gap we can split in one of the blobs. In that
   // case, we split the best blob at that large gap to resolve the given
   // cycle.
-  else if (largest_gap_blob != invalid_blob)
+  if (largest_gap_blob != invalid_blob)
     {
       I(largest_gap_diff > 0);
 
