@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 #include "platform.hh"
+#include "sanity.hh"
 
 using std::malloc;
 using std::free;
@@ -167,6 +168,69 @@ LUAEXT(get_pid, )
 {
   pid_t pid = get_process_id();
   lua_pushnumber(L, pid);
+  return 1;
+}
+
+LUAEXT(isdir, )
+{
+  try
+    {
+      char const * name = luaL_checkstring(L, -1);
+      switch (get_path_status(name))
+        {
+        case path::nonexistent:
+        case path::file:         lua_pushboolean(L, false); break;
+        case path::directory:    lua_pushboolean(L, true); break;
+        }
+    }
+  catch(informative_failure & e)
+    {
+      lua_pushnil(L);
+    }
+  return 1;
+}
+
+namespace
+{
+  struct build_table : public dirent_consumer
+  {
+    build_table(lua_State * st) : st(st), n(1)
+    {
+      lua_newtable(st);
+    }
+    virtual void consume(const char *s)
+    {
+      lua_pushstring(st, s);
+      lua_rawseti(st, -2, n);
+      n++;
+    }
+  private:
+    lua_State * st;
+    unsigned int n;
+  };
+}
+
+LUAEXT(read_directory, )
+{
+  int top = lua_gettop(L);
+  try
+    {
+      std::string path(luaL_checkstring(L, -1));
+      build_table tbl(L);
+
+      do_read_directory(path, tbl, tbl, tbl);
+    }
+  catch(informative_failure &)
+    {
+      // discard the table and any pending path element
+      lua_settop(L, top);
+      lua_pushnil(L);
+    }
+  catch (...)
+    {
+      lua_settop(L, top);
+      throw;
+    }
   return 1;
 }
 
