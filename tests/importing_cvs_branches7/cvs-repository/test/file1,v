@@ -1,0 +1,152 @@
+head	1.2;
+access;
+symbols
+	C:1.1.0.6
+	B:1.1.0.4
+	A:1.1.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2008.07.16.13.06.05;	author markus;	state Exp;
+branches;
+next	1.1;
+commitid	8RiMtkoePLxCT1bt;
+
+1.1
+date	2008.07.16.13.05.47;	author markus;	state Exp;
+branches
+	1.1.2.1
+	1.1.4.1
+	1.1.6.1;
+next	;
+commitid	YesXJgzrrjWvT1bt;
+
+1.1.2.1
+date	2008.07.16.13.05.48;	author markus;	state Exp;
+branches;
+next	1.1.2.2;
+commitid	asdnfQzarjxwT1bt;
+
+1.1.2.2
+date	2008.07.16.13.06.05;	author markus;	state Exp;
+branches;
+next	;
+commitid	CcyMiZOsDBrxT1bt;
+
+1.1.4.1
+date	2008.07.16.13.05.53;	author markus;	state Exp;
+branches;
+next	1.1.4.2;
+commitid	BUrau5Lp6abyT1bt;
+
+1.1.4.2
+date	2008.07.16.13.06.05;	author markus;	state Exp;
+branches;
+next	;
+commitid	iQumH0lh1DbzT1bt;
+
+1.1.6.1
+date	2008.07.16.13.05.58;	author markus;	state Exp;
+branches;
+next	1.1.6.2;
+commitid	yRka5C582pOzT1bt;
+
+1.1.6.2
+date	2008.07.16.13.06.05;	author markus;	state Exp;
+branches;
+next	;
+commitid	YLb6qtcg9l9BT1bt;
+
+
+desc
+@@
+
+
+1.2
+log
+@CONFLICTING COMMIT
+@
+text
+@version 1.2 of test file1
+@
+
+
+1.1
+log
+@initial import
+@
+text
+@d1 1
+a1 1
+version 1.1 of test file1
+@
+
+
+1.1.6.1
+log
+@created branch C
+@
+text
+@d1 1
+a1 1
+version 1.1.6.1 of test file1
+@
+
+
+1.1.6.2
+log
+@CONFLICTING COMMIT
+@
+text
+@d1 1
+a1 1
+version 1.1.6.2 of test file1
+@
+
+
+1.1.4.1
+log
+@created branch B
+@
+text
+@d1 1
+a1 1
+version 1.1.4.1 of test file1
+@
+
+
+1.1.4.2
+log
+@CONFLICTING COMMIT
+@
+text
+@d1 1
+a1 1
+version 1.1.4.2 of test file1
+@
+
+
+1.1.2.1
+log
+@created branch A
+@
+text
+@d1 1
+a1 1
+version 1.1.2.1 of test file1
+@
+
+
+1.1.2.2
+log
+@CONFLICTING COMMIT
+@
+text
+@d1 1
+a1 1
+version 1.1.2.2 of test file1
+@
+
+
