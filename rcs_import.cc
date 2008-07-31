@@ -2531,9 +2531,6 @@ void
 split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
               split_decider_func & split_decider);
 
-void
-explode_blob(cvs_history & cvs, const cvs_blob_index blob_to_split);
-
 
 struct branch_sanitizer
 {
@@ -3431,7 +3428,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   // which could also be split somehow to resolve the cycle.
   set<cvs_blob_index> blob_without_type1_events;
   vector<cvs_blob_index> splittable_blobs;
-  vector<cvs_blob_index> type4_symbol_blobs;
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
@@ -3511,8 +3507,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
       if (has_type4events)
         {
           L(FL("    cannot be split due to type4 events."));
-          if (cvs.blobs[*cc].get_digest().is_symbol())
-            type4_symbol_blobs.push_back(*cc);;
           continue;
         }
 
@@ -3651,35 +3645,10 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
       split_by_time func(largest_gap_at);
       split_blob_at(cvs, largest_gap_blob, func);
     }
-  else if (!type4_symbol_blobs.empty())
-    {
-      L(FL("Exploding symbol blobs with type4 events."));
-      for (vector<cvs_blob_index>::const_iterator i = type4_symbol_blobs.begin();
-           i != type4_symbol_blobs.end(); ++i)
-        explode_blob(cvs, *i);
-    }
   else
     {
       L(FL("Unable to split the cycle!"));
       I(false);  // unable to split the cycle?
-    }
-}
-
-void
-explode_blob(cvs_history & cvs, const cvs_blob_index bi)
-{
-  L(FL("  exploding blob %d") % bi);
-
-  // Reset the dependents both caches of the origin blob.
-  cvs.blobs[bi].reset_dependencies_cache();
-  cvs.blobs[bi].reset_dependents_cache();
-
-  while (cvs.blobs[bi].get_events().size() > 1)
-    {
-      set<cvs_event_ptr> tmp;
-      tmp.insert(*cvs.blobs[bi].get_events().rbegin());
-      split_by_event_set func(tmp);
-      split_blob_at(cvs, bi, func);
     }
 }
 
