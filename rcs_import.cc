@@ -3450,10 +3450,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
         }
 
       vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
-      for (blob_event_iter ity = blob_events.begin();
-           ity != blob_events.end(); ++ity)
-        L(FL("    %s\t%s") % get_event_repr(cvs, *ity)
-          % date_t::from_unix_epoch((*ity)->adj_time / 100));
 
       // skip blobs which consist of just one event, those cannot be
       // split any further anyway.
@@ -3476,25 +3472,23 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
           int deps_from = 0, deps_to = 0;
 
           typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
-          pair<mm_ity, mm_ity> range =
-            in_cycle_dependencies.equal_range(this_ev);
+          pair<mm_ity, mm_ity> range;
 
           // just count the number of in_cycle_dependencies from this event
           // to the cycle
-          while (range.first != range.second)
-            {
-              deps_from++;
-              range.first++;
-            }
+          range = in_cycle_dependencies.equal_range(this_ev);
+          for (; range.first != range.second; ++range.first)
+            deps_from++;
 
           // do the same counting for in_cycle_dependents, i.e. dependencies
           // from the cycle to this event
           range = in_cycle_dependents.equal_range(this_ev);
-          while (range.first != range.second)
-            {
-              deps_to++;
-              range.first++;
-            }
+          for (; range.first != range.second; ++range.first)
+            deps_to++;
+
+          L(FL("    %s\t%s\tfrom:%d\tto:%d") % get_event_repr(cvs, *ity)
+            % date_t::from_unix_epoch((*ity)->adj_time / 100)
+            % deps_from % deps_to);
 
           if (deps_from == 0)
             {
