@@ -3499,7 +3499,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
   // For now, we simply collect blobs we cannot split by timestamp, but
   // which could also be split somehow to resolve the cycle.
-  set<cvs_blob_index> blob_without_type1_events;
   vector<cvs_blob_index> splittable_blobs;
 
 
@@ -3550,12 +3549,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
       // this blob is potentionally splittable...
       splittable_blobs.push_back(*cc);
-
-      // Remember blobs which consist of only events of type 2 or 3, and
-      // no type 1 events. Those are easier to split, because we don't
-      // need to decide on where to put the remaining type 1 events.
-      if (type2events.size() + type3events.size() == blob_events.size())
-        safe_insert(blob_without_type1_events, *cc);
 
       // Calculate the lower and upper bounds for both kind of events. If
       // we are going to split this blob, we need to split it between any
