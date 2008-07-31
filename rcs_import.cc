@@ -3402,15 +3402,9 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
                   in_cycle_dependencies.insert(make_pair(this_ev, dep_ev));
                   in_cycle_dependents.insert(make_pair(dep_ev, this_ev));
                   if (is_weak_path)
-                    in_cycle_weak_dependents.insert(make_pair(dep_ev, this_ev));
+                    in_cycle_weak_dependents.insert(
+                      make_pair(dep_ev, this_ev));
                 }
-#if 0
-              else if (find(cycle_members.begin(), cycle_members.end(), dep_ev->bi)
-                  != cycle_members.end())
-                {
-                  L(FL("dependency on blob %d, but prev_bi is: %d") % *find(cycle_members.begin(), cycle_members.end(), dep_ev->bi) % prev_bi);
-                }
-#endif
 
               for (dep_loop j = cvs.get_dependencies(dep_ev); !j.ended(); ++j)
                 {
@@ -3466,7 +3460,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
       vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
       for (blob_event_iter ity = blob_events.begin();
            ity != blob_events.end(); ++ity)
-        L(FL("    %s") % get_event_repr(cvs, *ity));
+        L(FL("    %s\t%s") % get_event_repr(cvs, *ity)
+          % date_t::from_unix_epoch((*ity)->adj_time / 100));
 
       // skip blobs which consist of just one event, those cannot be
       // split any further anyway.
