@@ -3505,6 +3505,12 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
+      L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
+        % *cc
+        % date_t::from_unix_epoch(cvs.blobs[*cc].get_avg_time() / 100)
+        % cvs.blobs[*cc].height
+        % cvs.blobs[*cc].get_events().size());
+
       // We never split branch starts, instead we split the underlying
       // symbol. Thus simply skip them here.
       if (cvs.blobs[*cc].get_digest().is_branch_start())
