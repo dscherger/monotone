@@ -3418,6 +3418,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   // Loop over the cycle members again, this time accumulating counters for
   // type 2, 3 and 4 events.
 
+  map<cvs_blob_index, vector<cvs_event_ptr> > t1events;
   map<cvs_blob_index, vector<cvs_event_ptr> > t2events;
   map<cvs_blob_index, vector<cvs_event_ptr> > t3events;
   map<cvs_blob_index, vector<cvs_event_ptr> > t4events;
@@ -3432,6 +3433,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
       vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
 
+      vector<cvs_event_ptr> & type1events = safe_insert(t1events,
+        make_pair(*cc, vector<cvs_event_ptr>()))->second;
       vector<cvs_event_ptr> & type2events = safe_insert(t2events,
         make_pair(*cc, vector<cvs_event_ptr>()))->second;
       vector<cvs_event_ptr> & type3events = safe_insert(t3events,
@@ -3440,8 +3443,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
         make_pair(*cc, vector<cvs_event_ptr>()))->second;
 
       // Loop over every event of every blob again and collect events of
-      // type 2 and 3, but abort as soon as we hit a type 4 one. Type 1
-      // is of no interest here.
+      // type 2, 3 and 4. Type 1 is of no interest here.
       for (blob_event_iter ity = blob_events.begin();
            ity != blob_events.end(); ++ity)
         {
@@ -3470,7 +3472,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
           if (deps_from == 0)
             {
               if (deps_to == 0)
-                ; // a type 1 event
+                type1events.push_back(this_ev); // a type 1 event
               else
                 type3events.push_back(this_ev); // a type 3 event
             }
@@ -3485,73 +3487,142 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
     }
 
 
-
-  L(FL("Checking for valid split points"));
-
   // Yet another loop over all cycle members to search for optimal split
   // points which resolve the dependency cycle.
   //
-  // We try to find a blob we can split by timestamp. Choosing the best
-  // blob to split by finding the largest gap in timestamps.
+  // In the best case, we find a large gap between the type 2 and type 3
+  // events, where we can split. In case there are multiple possibilities,
+  // we choose the largest gap.
   time_i largest_gap_diff = 0;
   time_i largest_gap_at = 0;
-  cvs_blob_index largest_gap_blob = invalid_blob;
+  set<cvs_blob_index> largest_gap_candidates;
 
-  // For now, we simply collect blobs we cannot split by timestamp, but
-  // which could also be split somehow to resolve the cycle.
-  vector<cvs_blob_index> splittable_blobs;
+  // If there are no type 1 events, we can split between the type 2 and
+  // type 3 event without the need for a clear timestamp.
+  vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > > event_splits;
 
+  // We collect all blobs (or sets of blobs) which can be split to resolve
+  // the cycle. This includes candidates for which we couldn't find a
+  // simple timestamp to split at.
+  vector<set<cvs_blob_index> > splittable_blob_sets;
+  unsigned int no_blobs_to_split;
+  for (no_blobs_to_split = 1; no_blobs_to_split < cycle_members.size();
+       ++no_blobs_to_split)
+    {
+
+  // FIXME: indentation!
+  L(FL("Checking for valid split points with %d blob(s) to split")
+    % no_blobs_to_split);
 
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
-      L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
-        % *cc
-        % date_t::from_unix_epoch(cvs.blobs[*cc].get_avg_time() / 100)
-        % cvs.blobs[*cc].height
-        % cvs.blobs[*cc].get_events().size());
-
-      // We never split branch starts, instead we split the underlying
-      // symbol. Thus simply skip them here.
-      if (cvs.blobs[*cc].get_digest().is_branch_start())
+      // depending on the number of blobs to split in this iteration,
+      // we collect split candidates.
+      set<cvs_blob_index> candidates;
+      cm_ity next = cc;
+      bool set_is_splittable = true;
+      for (unsigned int i = 0; i < no_blobs_to_split; ++i)
         {
-          L(FL("    decision: not splitting because it's a branch start"));
+          // We never split branch starts, instead we split the underlying
+          // symbol. Thus simply skip them here.
+          if (cvs.blobs[*next].get_digest().is_branch_start())
+            set_is_splittable = false;
+
+          // Skip blobs which consist of just one event, or sets of blobs
+          // which contain such a blob. Those cannot be split any further
+          // anyway.
+          if (cvs.blobs[*cc].get_events().size() < 2)
+            set_is_splittable = false;
+
+          candidates.insert(*next);
+          next++;
+          if (next == cycle_members.end())
+            next = cycle_members.begin();
+        }
+
+      if (!set_is_splittable)
+        {
+          L(FL("  blob: %d:\tcannot split this set") % *cc);
           continue;
         }
 
-      vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
 
-      // skip blobs which consist of just one event, those cannot be
-      // split any further anyway.
-      if (blob_events.size() < 2)
+      vector<cvs_event_ptr> type1events, type2events, type3events,
+                            type4events;
+
+      for (set<cvs_blob_index>::iterator i = candidates.begin();
+           i != candidates.end(); ++i)
         {
-          L(FL("    decision: not splitting because of its size"));
-          continue;
+          copy(t1events[*i].begin(), t1events[*i].end(),
+               back_inserter(type1events));
+          copy(t2events[*i].begin(), t2events[*i].end(),
+               back_inserter(type2events));
+          copy(t3events[*i].begin(), t3events[*i].end(),
+               back_inserter(type3events));
+          copy(t4events[*i].begin(), t4events[*i].end(),
+               back_inserter(type4events));
         }
 
+      for (vector<cvs_event_ptr>::iterator i = type4events.begin();
+           i != type4events.end(); )
+        {
+          cvs_event_ptr ev = *i;
 
-      vector<cvs_event_ptr> & type2events = t2events[*cc];
-      vector<cvs_event_ptr> & type3events = t3events[*cc];
-      vector<cvs_event_ptr> & type4events = t4events[*cc];
+          int deps_from = 0, deps_to = 0;
+          typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
+          pair<mm_ity, mm_ity> range;
 
+          // check if this type4 events is only a dependency into any of
+          // our split candidate blobs.
+          range = in_cycle_dependencies.equal_range(ev);
+          for (; range.first != range.second; ++range.first)
+            {
+              cvs_event_ptr dep_ev = range.first->second;
+              if (candidates.find(dep_ev->bi) == candidates.end())
+                deps_from++;
+            }
 
-      // skip blobs with type 4 events, splitting them doesn't help or
-      // isn't possible at all.
+          range = in_cycle_dependents.equal_range(ev);
+          for (; range.first != range.second; ++range.first)
+            {
+              cvs_event_ptr dep_ev = range.first->second;
+              if (candidates.find(dep_ev->bi) == candidates.end())
+                deps_to++;
+            }
+
+          I(deps_from > 0 || deps_to > 0);
+
+          if (deps_from == 0)
+            {
+              // downgrade this to a type3 event
+              type3events.push_back(*i);
+              i = type4events.erase(i);
+            }
+          else if (deps_to == 0)
+            {
+              // downgrade this to a type2 event
+              type2events.push_back(*i);
+              i = type4events.erase(i);
+            }
+          else  // keep it as a type4 event
+            i++;
+        }
+
+      // skip blobs or sets with type 4 events, splitting them doesn't help
+      // or isn't possible at all.
       if (!type4events.empty())
         {
-          L(FL("    cannot be split due to type4 events."));
+          L(FL("  blob: %d:\tsplitting here doesn't help.") % *cc);
           continue;
         }
 
-      // it's a cycle, so every blob must have at least one incomming and
-      // one outgoing dependency.
+      // it's a cycle, so every blob or every set of candidate blobs must
+      // have at least one incomming and one outgoing dependency.
       I(!type2events.empty());
       I(!type3events.empty());
 
-      // this blob is potentionally splittable...
-      splittable_blobs.push_back(*cc);
-
       // Calculate the lower and upper bounds for both kind of events. If
-      // we are going to split this blob, we need to split it between any
+      // we are going to split these blobs, we need to split it between any
       // of these two bounds to resolve the cycle.
       time_i t2_upper_bound = 0,
              t2_lower_bound = (time_i) -1;
@@ -3589,7 +3660,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
         {
           lower_bound = t3_upper_bound;
           upper_bound = t2_lower_bound;
-          L(FL("    can be split between type2 and type3 events."));
+          L(FL("  blob: %d:\tcan easily split by timestamp.") % *cc);
         }
       else if (t2_upper_bound < t3_lower_bound)
         {
@@ -3600,32 +3671,68 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
               "to <markus@bluegap.ch>!"));
           lower_bound = t2_upper_bound;
           upper_bound = t3_lower_bound;
-          L(FL("    can be split between type2 and type3 events."));
+          L(FL("  blob: %d:\tstrange, but can split by timestamp.") % *cc);
         }
       else
         {
-          // We cannot split this blob by timestamp, because there's no
-          // reasonable split point.
-          L(FL("    cannot be split between type2 and type3 events, no reasonable timestamp."));
+          // The timestamps of type 2 and type 3 events are overlapping, so
+          // that we cannot use a timestamp to split the blob(s), because
+          // its unclear where to put the remaining type 1 events.
+          //
+          // However, if there are no type 1 events in any of the candidate
+          // blobs, we can simply split between type 2 and type 3 events,
+          // without having to compare timestamps.
+          if (type1events.empty())
+            {
+              L(FL("  blob: %d:\tcan split between type2 and type3 events.")
+                   % *cc);
+              vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > >::
+                iterator i;
+
+              i = event_splits.insert(event_splits.end(),
+                    make_pair(candidates, set<cvs_event_ptr>()));
+
+              // fill the set with the type 2 events
+              for (vector<cvs_event_ptr>::iterator j = type2events.begin();
+                   j != type2events.end(); ++j)
+                safe_insert(i->second, *j);
+            }
+          else
+            {
+              L(FL("  blob: %d:\tcould split, but dunno where.") % *cc);
+              splittable_blob_sets.push_back(candidates);
+            }
           continue;
         }
 
-
       // Now we have a lower and an upper time boundary, between which we
-      // can split this blob to resolve the cycle. We now try to find the
-      // largest time gap between any type 1 events within this boundary.
-      // That helps preventing splitting things which should better remain
-      // together.
+      // can split this blob or this set of candidate blobs to resolve the
+      // cycle. We now try to find the largest time gap between any events
+      // within this boundary. That helps prevent splitting things which
+      // should better remain together.
 
-      // First, make sure the blob's events are sorted by timestamp
-      cvs.blobs[*cc].sort_events();
+      // first, collect all events of all candidates
+      vector<cvs_event_ptr> candidate_events;
+      for (set<cvs_blob_index>::iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        {
+          vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
+          copy(blob_events.begin(), blob_events.end(),
+               back_inserter(candidate_events));
+        }
+
+      // then make sure the events are sorted by timestamp
+      {
+        event_ptr_time_cmp cmp;
+        sort(candidate_events.begin(), candidate_events.end(), cmp);
+      }
 
       blob_event_iter ity;
-      ity = blob_events.begin();
+      ity = candidate_events.begin();
       cvs_event_ptr this_ev, last_ev;
-      I(ity != blob_events.end());   // we have 2+ events here
+      I(ity != candidate_events.end());   // we have 2+ events here
       this_ev = *ity++;              // skip the first event
-      for (; ity != blob_events.end(); ++ity)
+      for (; ity != candidate_events.end(); ++ity)
         {
           last_ev = this_ev;
           this_ev = *ity;
@@ -3648,28 +3755,59 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
             {
               largest_gap_diff = time_diff;
               largest_gap_at = split_point;
-              largest_gap_blob = *cc;
+              largest_gap_candidates = candidates;
             }
         }
+
     }
 
+      // abort the loop as soon as we have at least one valid split point.
+      if (!largest_gap_candidates.empty() || !event_splits.empty())
+        break;
+    }
 
   // Hopefully, we found a gap we can split in one of the blobs. In that
   // case, we split the best blob at that large gap to resolve the given
   // cycle.
-  if (largest_gap_blob != invalid_blob)
+  if (!largest_gap_candidates.empty())
     {
       I(largest_gap_diff > 0);
 
-      L(FL("splitting blob %d by time %s")
-        % largest_gap_blob
-        % date_t::from_unix_epoch(largest_gap_at));
-
-      I(!cvs.blobs[largest_gap_blob].get_digest().is_branch_start());
-      I(!cvs.blobs[largest_gap_blob].get_digest().is_tag());
+      L(FL("splitting %d blobs by time %s")
+        % largest_gap_candidates.size()
+        % date_t::from_unix_epoch(largest_gap_at / 100));
 
       split_by_time func(largest_gap_at);
-      split_blob_at(cvs, largest_gap_blob, func);
+      for (set<cvs_blob_index>::iterator i = largest_gap_candidates.begin();
+           i != largest_gap_candidates.end(); ++i)
+        {
+          I(!cvs.blobs[*i].get_digest().is_branch_start());
+          I(!cvs.blobs[*i].get_digest().is_tag());
+
+          split_blob_at(cvs, *i, func);
+        }
+    }
+  else if (!event_splits.empty())
+    {
+      // simple take the first option we've found and split there.
+      set<cvs_blob_index> & candidates = event_splits.begin()->first;
+      set<cvs_event_ptr> & split_events = event_splits.begin()->second;
+
+      split_by_event_set func(split_events);
+      for (set<cvs_blob_index>::iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        {
+          I(!cvs.blobs[*i].get_digest().is_branch_start());
+          I(!cvs.blobs[*i].get_digest().is_tag());
+
+          split_blob_at(cvs, *i, func);
+        }
+    }
+  else if (!splittable_blob_sets.empty())
+    {
+      L(FL("could theoretically split the cycle, but where to put "
+           "the type 1 events?"));
+      I(false);
     }
   else
     {
