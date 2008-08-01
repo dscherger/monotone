@@ -3664,13 +3664,37 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
         }
       else
         {
-          // The timestamps of type 2 and type 3 events are overlapping, so
-          // that we cannot use a timestamp to split the blob(s), because
-          // its unclear where to put the remaining type 1 events.
+          // The upper and lower bounds of the timestamps of type 2 and
+          // type 3 events are overlapping, so that we cannot use a
+          // simple timestamp to split the blob(s), because its unclear
+          // where to put the remaining type 1 events.
           //
-          // However, if there are no type 1 events in any of the candidate
-          // blobs, we can simply split between type 2 and type 3 events,
-          // without having to compare timestamps.
+          // The first thing we try is to move some type 1 events out of
+          // the way. Those which are newer than the newest type 2 and
+          // those which are older than the oldest type 3 events can
+          // safely be be put to one or the other side.
+
+          for (vector<cvs_event_ptr>::iterator i = type1events.begin();
+               i != type1events.end(); )
+            {
+              cvs_event_ptr ev = *i;
+
+              if (ev->adj_time > t2_upper_bound)
+                {
+                  // treat like a type 2 event
+                  type2events.push_back(*i);
+                  i = type1events.erase(i);
+                }
+              else if (ev->adj_time < t3_lower_bound)
+                {
+                  // treat like a type 3 event
+                  type3events.push_back(*i);
+                  i = type1events.erase(i);
+                }
+              else
+                i++;
+            }
+
           if (type1events.empty())
             {
               L(FL("  blob: %d:\tcan split between type2 and type3 events.")
@@ -3688,7 +3712,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
             }
           else
             {
-              L(FL("  blob: %d:\tcould split, but dunno where.") % *cc);
+              L(FL("  blob: %d:\tcould split, but dunno where (t1:%d t2:%d t3:%d).")
+                % *cc % type1events.size() % type2events.size() % type3events.size());
               splittable_blob_sets.push_back(candidates);
             }
           continue;

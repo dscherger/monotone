@@ -11,5 +11,5 @@ check(get("cvs-repository"))
 --    file3:            C -> A -> B
 
 -- import into monotone and check presence of files
-xfail(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
 
