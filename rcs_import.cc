@@ -3751,7 +3751,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
     }
 
       // abort the loop as soon as we have at least one valid split point.
-      if (!largest_gap_candidates.empty() || !event_splits.empty())
+      if (!largest_gap_candidates.empty() || !event_splits.empty()
+          || !splittable_blob_sets.empty())
         break;
     }
 
