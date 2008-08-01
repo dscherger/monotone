@@ -550,7 +550,8 @@ cvs_history
     blobs.push_back(cvs_blob(t, no));
 
     // ..and an index entry for the blob
-    blob_index_iterator j = blob_index.insert(make_pair(cvs_event_digest(t, no), i));
+    blob_index_iterator j = blob_index.insert(
+      make_pair(cvs_event_digest(t, no), i));
     return j;
   }
 
@@ -670,7 +671,8 @@ cvs_history
       {
         cvs_event_ptr ev = *i;
 
-        for (blob_event_iter j = blobs[dep_bi].begin(); j != blobs[dep_bi].end(); ++j)
+        for (blob_event_iter j = blobs[dep_bi].begin();
+             j != blobs[dep_bi].end(); ++j)
           if (ev->path == (*j)->path)
             {
               add_dependency(ev, *j);
@@ -1112,7 +1114,8 @@ construct_version(vector< piece > const & source_lines,
   E(r.deltatexts.find(dest_version) != r.deltatexts.end(),
     F("delta for revision %s is missing") % dest_version);
 
-  shared_ptr<rcs_deltatext> deltatext = r.deltatexts.find(dest_version)->second;
+  shared_ptr<rcs_deltatext> deltatext =
+    r.deltatexts.find(dest_version)->second;
 
   vector<piece> deltalines;
   global_pieces.index_deltatext(deltatext, deltalines);
@@ -1230,7 +1233,8 @@ public:
       return i->second;
     }
 
-  void get_dependents(base_type const & i, pair<iter_type, iter_type> & range) const
+  void get_dependents(base_type const & i,
+                      pair<iter_type, iter_type> & range) const
     {
       event_dep_iter lower, upper;
       cvs.get_dependents(i, lower, upper);
@@ -1245,7 +1249,7 @@ public:
       range = make_pair(lower, upper);
     }
 
-  time_i const get_time(base_type const & i) const
+  time_i get_time(base_type const & i) const
     {
       return i->adj_time;
     }
@@ -1293,7 +1297,7 @@ public:
       range = make_pair(deps.begin(), deps.end());
     }
 
-  time_i const get_time(base_type const & i) const
+  time_i get_time(base_type const & i) const
     {
       I(i < cvs.blobs.size());
       return cvs.blobs[i].get_avg_time();
@@ -1711,7 +1715,8 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
               // by the toposort to many revisions later. Instead, we want
               // to raise a conflict, if a commit interferes with a tagging
               // action.
-              cvs.add_weak_dependencies(tag_symbol, last_events, reverse_import);
+              cvs.add_weak_dependencies(tag_symbol, last_events,
+                                        reverse_import);
 
               cvs_event_ptr tag_event = (cvs_event_ptr)
                     new (cvs.ev_pool.allocate<cvs_event>())
@@ -1773,8 +1778,8 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
 
           // recursively process child branches
           cvs_event_ptr first_event_in_branch =
-            process_rcs_branch(lua, db, cvs, bname, *i, branch_lines, branch_data,
-                               branch_id, r, false,
+            process_rcs_branch(lua, db, cvs, bname, *i, branch_lines,
+                               branch_data, branch_id, r, false,
                                n_rev, n_sym, dryrun);
           if (!priv)
             L(FL("finished RCS branch %s = '%s'") % (*i) % branchname);
@@ -1841,7 +1846,8 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
           // commit action certainly comes after the branch action. See
           // the comment above for tags.
           if (!is_vendor_branch)
-            cvs.add_weak_dependencies(branch_point, last_events, reverse_import);
+            cvs.add_weak_dependencies(branch_point, last_events,
+                                      reverse_import);
 
           ++n_sym;
         }
@@ -1918,7 +1924,8 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
             find(curr_events.begin(), curr_events.end(), curr_commit));
           I(ity != curr_events.end());
           curr_events.erase(ity);
-          cvs.add_weak_dependencies(branch_end_point, curr_events, reverse_import);
+          cvs.add_weak_dependencies(branch_end_point, curr_events,
+                                    reverse_import);
         }
 
       return first_commit;
@@ -1961,8 +1968,9 @@ import_rcs_file_with_cvs(lua_hooks & lua, database & db,
     cvs.append_event_to(cvs.root_blob, cvs.root_event);
 
     cvs_event_ptr first_event =
-      process_rcs_branch(lua, db, cvs, cvs.base_branch, r.admin.head, head_lines,
-                         dat, fid, r, true, n_rev, n_sym, dryrun);
+      process_rcs_branch(lua, db, cvs, cvs.base_branch, r.admin.head,
+                         head_lines, dat, fid, r, true, n_rev, n_sym,
+                         dryrun);
 
     // link the pseudo trunk branch to the first event in the branch
     cvs.add_dependency(first_event, cvs.root_event);
@@ -2167,7 +2175,8 @@ public:
         try
           {
             transaction_guard guard(db);
-            import_rcs_file_with_cvs(lua, db, cvs, file, n_rev, n_sym, dryrun);
+            import_rcs_file_with_cvs(lua, db, cvs, file, n_rev, n_sym,
+                                     dryrun);
             guard.commit();
           }
         catch (oops const & o)
@@ -2214,8 +2223,8 @@ blob_consumer
                                    cvs_symbol_no & in_branch);
 
   void merge_parents_for_artificial_rev(cvs_blob_index bi,
-                                        set<revision_id> & parent_rids,
-                                        map<cvs_event_ptr, revision_id> & event_parent_rids);
+    set<revision_id> & parent_rids,
+    map<cvs_event_ptr, revision_id> & event_parent_rids);
 
   void operator() (cvs_blob_index bi);
 };
@@ -2582,10 +2591,10 @@ public:
 
       I(cvs.blobs[e.second].color == black);
       dijkstra_shortest_path(cvs, e.second, cvs.root_blob, ity_a,
-                             false, true, true,   // follow grey and black, but
-                             true,                // break on first grey
-                             make_pair(e.second, e.first), // igndirect path
-                             0);                  // no height limit
+                             false, true, true, // follow grey and black, but
+                             true,              // break on first grey
+                             make_pair(e.second, e.first), // indirect path
+                             0);                // no height limit
       I(!path_a.empty());
 
       // From that common ancestor, we now follow the grey blobs downwards,
@@ -2782,8 +2791,8 @@ public:
           int height_limit(0);
           calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
                                  cvs, height_limit);
-          dijkstra_shortest_path(cvs, *(++path_b.rbegin()), *(++path_a.begin()),
-                                 ity_c,
+          dijkstra_shortest_path(cvs, *(++path_b.rbegin()),
+                                 *(++path_a.begin()), ity_c,
                                  true, true, true,    // follow all colors
                                  false,
                                  make_pair(invalid_blob, invalid_blob),
@@ -2803,6 +2812,7 @@ public:
 
       cvs_blob_index target_bi = *path_a.rbegin();
       I(target_bi == *path_b.rbegin());
+      cvs_blob & target_blob = cvs.blobs[target_bi];
 
       // Check if any one of the two paths contains a branch start.
       bool a_has_branch = false;
@@ -2813,7 +2823,8 @@ public:
            i != path_a.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            L(FL("path a contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            L(FL("path a contains a branch blob: %d (%s)")
+              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
             a_has_branch = true;
             first_branch_start_in_path_a = i;
             break;
@@ -2823,7 +2834,8 @@ public:
            i != path_b.end(); ++i)
         if (cvs.blobs[*i].get_digest().is_branch_start())
           {
-            L(FL("path b contains a branch blob: %d (%s)") % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
+            L(FL("path b contains a branch blob: %d (%s)")
+              % *i % get_event_repr(cvs, *cvs.blobs[*i].begin()));
             b_has_branch = true;
             first_branch_start_in_path_b = i;
             break;
@@ -2833,10 +2845,12 @@ public:
       {
         vector<cvs_blob_index> blobs_to_show;
 
-        for (vector<cvs_blob_index>::iterator i = path_a.begin(); i != path_a.end(); ++i)
+        for (vector<cvs_blob_index>::iterator i = path_a.begin();
+             i != path_a.end(); ++i)
           blobs_to_show.push_back(*i);
 
-        for (vector<cvs_blob_index>::iterator i = path_b.begin(); i != path_b.end(); ++i)
+        for (vector<cvs_blob_index>::iterator i = path_b.begin();
+             i != path_b.end(); ++i)
           blobs_to_show.push_back(*i);
 
         write_graphviz_partial(cvs, "splitter", blobs_to_show, 5);
@@ -2859,11 +2873,15 @@ public:
           // The target blob seems to be part of two (or even more)
           // branches, thus we need to split that blob.
 
-          vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
-          copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(), tmp_a.begin());
+          vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base()
+                                         - first_branch_start_in_path_a);
+          copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(),
+               tmp_a.begin());
 
-          vector< cvs_blob_index > tmp_b((++path_b.rbegin()).base() - first_branch_start_in_path_b);
-          copy(first_branch_start_in_path_b, (++path_b.rbegin()).base(), tmp_b.begin());
+          vector< cvs_blob_index > tmp_b((++path_b.rbegin()).base()
+                                         - first_branch_start_in_path_b);
+          copy(first_branch_start_in_path_b, (++path_b.rbegin()).base(),
+               tmp_b.begin());
 
           I(!tmp_a.empty());
           I(!tmp_b.empty());
@@ -2876,14 +2894,15 @@ public:
               pb_deps = 0,
               total_events = 0;
 
-          for (blob_event_iter j = cvs.blobs[target_bi].get_events().begin();
-               j != cvs.blobs[target_bi].get_events().end(); ++j)
+          for (blob_event_iter j = target_blob.get_events().begin();
+               j != target_blob.get_events().end(); ++j)
             {
               bool depends_on_path_a = func_a(*j);
               bool depends_on_path_b = func_b(*j);
 
               if (depends_on_path_a && depends_on_path_b)
-                L(FL("event %s depends on both paths!") % get_event_repr(cvs, *j));
+                L(FL("event %s depends on both paths!")
+                  % get_event_repr(cvs, *j));
 
               if (depends_on_path_a)
                 pa_deps++;
@@ -2938,7 +2957,7 @@ public:
 
           if (cvs.blobs[path_a[1]].get_digest().is_symbol() &&
               cvs.blobs[path_a[2]].get_digest().is_branch_start() &&
-              cvs.blobs[target_bi].get_digest().is_symbol() &&
+              target_blob.get_digest().is_symbol() &&
               path_b.size() == 2)
             {
               // This is a special case, where none of the commits in path_a
@@ -2966,8 +2985,8 @@ public:
 
               dfs_restart_needed = true;
             }
-          else if ((path_a[0] == cvs.root_blob) && (path_a.size() == 5) &&
-                   cvs.blobs[target_bi].get_digest().is_symbol())
+          else if ((path_a[0] == cvs.root_blob) && (path_a.size() == 5)
+                    && target_blob.get_digest().is_symbol())
             {
               // another special case: with a vendor branch, 1.1.1.1 gets
               // tagged, instead of 1.1. This poses a problem for further
@@ -3024,8 +3043,10 @@ public:
               // events which belong to path A and events which belong to
               // path B.
 
-              vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base() - first_branch_start_in_path_a);
-              copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(), tmp_a.begin());
+              vector< cvs_blob_index > tmp_a((++path_a.rbegin()).base()
+                                             - first_branch_start_in_path_a);
+              copy(first_branch_start_in_path_a, (++path_a.rbegin()).base(),
+                   tmp_a.begin());
 
               split_by_path func(cvs, tmp_a);
 
@@ -3033,8 +3054,8 @@ public:
               int pa_deps = 0,
                   total_events = 0;
 
-              for (blob_event_iter j = cvs.blobs[target_bi].get_events().begin();
-                   j != cvs.blobs[target_bi].get_events().end(); ++j)
+              for (blob_event_iter j = target_blob.get_events().begin();
+                   j != target_blob.get_events().end(); ++j)
                 {
                   bool depends_on_path_a = func(*j);
 
@@ -3098,8 +3119,8 @@ public:
               I(ity_a != path_a.end());
               I(ity_b != path_b.end());
 
-              if ((!blob_time_cmp(*ity_a, *ity_b) || (*ity_a == target_bi)) &&
-                  (*ity_b != target_bi))
+              if ((!blob_time_cmp(*ity_a, *ity_b) || (*ity_a == target_bi))
+                  && (*ity_b != target_bi))
                 {
                   // swap path a and path b, so that path a contains the
                   // youngest blob, which needs to become the new common
@@ -3423,6 +3444,8 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
   map<cvs_blob_index, vector<cvs_event_ptr> > t3events;
   map<cvs_blob_index, vector<cvs_event_ptr> > t4events;
 
+  typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
+
   for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
     {
       L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
@@ -3450,7 +3473,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
           cvs_event_ptr this_ev = *ity;
           int deps_from = 0, deps_to = 0;
 
-          typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
           pair<mm_ity, mm_ity> range;
 
           // just count the number of in_cycle_dependencies from this event
@@ -3510,270 +3532,273 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
        ++no_blobs_to_split)
     {
 
-  // FIXME: indentation!
-  L(FL("Checking for valid split points with %d blob(s) to split")
-    % no_blobs_to_split);
+      L(FL("Checking for valid split points with %d blob(s) to split")
+        % no_blobs_to_split);
 
-  for (cm_ity cc = cycle_members.begin(); cc != cycle_members.end(); ++cc)
-    {
-      // depending on the number of blobs to split in this iteration,
-      // we collect split candidates.
-      set<cvs_blob_index> candidates;
-      cm_ity next = cc;
-      bool set_is_splittable = true;
-      for (unsigned int i = 0; i < no_blobs_to_split; ++i)
+      for (cm_ity cc = cycle_members.begin();
+           cc != cycle_members.end(); ++cc)
         {
-          // We never split branch starts, instead we split the underlying
-          // symbol. Thus simply skip them here.
-          if (cvs.blobs[*next].get_digest().is_branch_start())
-            set_is_splittable = false;
-
-          // Skip blobs which consist of just one event, or sets of blobs
-          // which contain such a blob. Those cannot be split any further
-          // anyway.
-          if (cvs.blobs[*cc].get_events().size() < 2)
-            set_is_splittable = false;
-
-          candidates.insert(*next);
-          next++;
-          if (next == cycle_members.end())
-            next = cycle_members.begin();
-        }
-
-      if (!set_is_splittable)
-        {
-          L(FL("  blob: %d:\tcannot split this set") % *cc);
-          continue;
-        }
-
-
-      vector<cvs_event_ptr> type1events, type2events, type3events,
-                            type4events;
-
-      for (set<cvs_blob_index>::iterator i = candidates.begin();
-           i != candidates.end(); ++i)
-        {
-          copy(t1events[*i].begin(), t1events[*i].end(),
-               back_inserter(type1events));
-          copy(t2events[*i].begin(), t2events[*i].end(),
-               back_inserter(type2events));
-          copy(t3events[*i].begin(), t3events[*i].end(),
-               back_inserter(type3events));
-          copy(t4events[*i].begin(), t4events[*i].end(),
-               back_inserter(type4events));
-        }
-
-      for (vector<cvs_event_ptr>::iterator i = type4events.begin();
-           i != type4events.end(); )
-        {
-          cvs_event_ptr ev = *i;
-
-          int deps_from = 0, deps_to = 0;
-          typedef multimap<cvs_event_ptr, cvs_event_ptr>::const_iterator mm_ity;
-          pair<mm_ity, mm_ity> range;
-
-          // check if this type4 events is only a dependency into any of
-          // our split candidate blobs.
-          range = in_cycle_dependencies.equal_range(ev);
-          for (; range.first != range.second; ++range.first)
+          // depending on the number of blobs to split in this iteration,
+          // we collect split candidates.
+          set<cvs_blob_index> candidates;
+          cm_ity next = cc;
+          bool set_is_splittable = true;
+          for (unsigned int i = 0; i < no_blobs_to_split; ++i)
             {
-              cvs_event_ptr dep_ev = range.first->second;
-              if (candidates.find(dep_ev->bi) == candidates.end())
-                deps_from++;
+              // We never split branch starts, instead we split the underlying
+              // symbol. Thus simply skip them here.
+              if (cvs.blobs[*next].get_digest().is_branch_start())
+                set_is_splittable = false;
+
+              // Skip blobs which consist of just one event, or sets of blobs
+              // which contain such a blob. Those cannot be split any further
+              // anyway.
+              if (cvs.blobs[*cc].get_events().size() < 2)
+                set_is_splittable = false;
+
+              candidates.insert(*next);
+              next++;
+              if (next == cycle_members.end())
+                next = cycle_members.begin();
             }
 
-          range = in_cycle_dependents.equal_range(ev);
-          for (; range.first != range.second; ++range.first)
+          if (!set_is_splittable)
             {
-              cvs_event_ptr dep_ev = range.first->second;
-              if (candidates.find(dep_ev->bi) == candidates.end())
-                deps_to++;
+              L(FL("  blob: %d:\tcannot split this set") % *cc);
+              continue;
             }
 
-          I(deps_from > 0 || deps_to > 0);
 
-          if (deps_from == 0)
+          vector<cvs_event_ptr> type1events, type2events, type3events,
+                                type4events;
+
+          for (set<cvs_blob_index>::iterator i = candidates.begin();
+               i != candidates.end(); ++i)
             {
-              // downgrade this to a type3 event
-              type3events.push_back(*i);
-              i = type4events.erase(i);
+              copy(t1events[*i].begin(), t1events[*i].end(),
+                   back_inserter(type1events));
+              copy(t2events[*i].begin(), t2events[*i].end(),
+                   back_inserter(type2events));
+              copy(t3events[*i].begin(), t3events[*i].end(),
+                   back_inserter(type3events));
+              copy(t4events[*i].begin(), t4events[*i].end(),
+                   back_inserter(type4events));
             }
-          else if (deps_to == 0)
-            {
-              // downgrade this to a type2 event
-              type2events.push_back(*i);
-              i = type4events.erase(i);
-            }
-          else  // keep it as a type4 event
-            i++;
-        }
 
-      // skip blobs or sets with type 4 events, splitting them doesn't help
-      // or isn't possible at all.
-      if (!type4events.empty())
-        {
-          L(FL("  blob: %d:\tsplitting here doesn't help.") % *cc);
-          continue;
-        }
-
-      // it's a cycle, so every blob or every set of candidate blobs must
-      // have at least one incomming and one outgoing dependency.
-      I(!type2events.empty());
-      I(!type3events.empty());
-
-      // Calculate the lower and upper bounds for both kind of events. If
-      // we are going to split these blobs, we need to split it between any
-      // of these two bounds to resolve the cycle.
-      time_i t2_upper_bound = 0,
-             t2_lower_bound = (time_i) -1;
-      for (vector<cvs_event_ptr>::const_iterator i = type2events.begin();
-           i != type2events.end(); ++i)
-        {
-          cvs_event_ptr ev = *i;
-
-          if (ev->adj_time < t2_lower_bound)
-            t2_lower_bound = ev->adj_time;
-
-          if (ev->adj_time > t2_upper_bound)
-            t2_upper_bound = ev->adj_time;
-        }
-
-      time_i t3_upper_bound = 0,
-             t3_lower_bound = (time_i) -1;
-      for (vector<cvs_event_ptr>::const_iterator i = type3events.begin();
-           i != type3events.end(); ++i)
-        {
-          cvs_event_ptr ev = *i;
-
-          if (ev->adj_time < t3_lower_bound)
-            t3_lower_bound = ev->adj_time;
-
-          if (ev->adj_time > t3_upper_bound)
-            t3_upper_bound = ev->adj_time;
-        }
-
-      time_i lower_bound, upper_bound;
-
-      // The type 2 events are the ones which depend on other events in
-      // the cycle. So those should carry the higher timestamps.
-      if (t3_upper_bound < t2_lower_bound)
-        {
-          lower_bound = t3_upper_bound;
-          upper_bound = t2_lower_bound;
-          L(FL("  blob: %d:\tcan easily split by timestamp.") % *cc);
-        }
-      else
-        {
-          // The upper and lower bounds of the timestamps of type 2 and
-          // type 3 events are overlapping, so that we cannot use a
-          // simple timestamp to split the blob(s), because its unclear
-          // where to put the remaining type 1 events.
-          //
-          // The first thing we try is to move some type 1 events out of
-          // the way. Those which are newer than the newest type 2 and
-          // those which are older than the oldest type 3 events can
-          // safely be be put to one or the other side.
-
-          for (vector<cvs_event_ptr>::iterator i = type1events.begin();
-               i != type1events.end(); )
+          for (vector<cvs_event_ptr>::iterator i = type4events.begin();
+               i != type4events.end(); )
             {
               cvs_event_ptr ev = *i;
 
-              if (ev->adj_time > t2_upper_bound)
+              int deps_from = 0, deps_to = 0;
+              pair<mm_ity, mm_ity> range;
+
+              // check if this type4 events is only a dependency into any of
+              // our split candidate blobs.
+              range = in_cycle_dependencies.equal_range(ev);
+              for (; range.first != range.second; ++range.first)
                 {
-                  // treat like a type 2 event
-                  type2events.push_back(*i);
-                  i = type1events.erase(i);
+                  cvs_event_ptr dep_ev = range.first->second;
+                  if (candidates.find(dep_ev->bi) == candidates.end())
+                    deps_from++;
                 }
-              else if (ev->adj_time < t3_lower_bound)
+
+              range = in_cycle_dependents.equal_range(ev);
+              for (; range.first != range.second; ++range.first)
                 {
-                  // treat like a type 3 event
+                  cvs_event_ptr dep_ev = range.first->second;
+                  if (candidates.find(dep_ev->bi) == candidates.end())
+                    deps_to++;
+                }
+
+              I(deps_from > 0 || deps_to > 0);
+
+              if (deps_from == 0)
+                {
+                  // downgrade this to a type3 event
                   type3events.push_back(*i);
-                  i = type1events.erase(i);
+                  i = type4events.erase(i);
                 }
-              else
+              else if (deps_to == 0)
+                {
+                  // downgrade this to a type2 event
+                  type2events.push_back(*i);
+                  i = type4events.erase(i);
+                }
+              else  // keep it as a type4 event
                 i++;
             }
 
-          if (type1events.empty())
+          // skip blobs or sets with type 4 events, splitting them doesn't
+          // help or isn't possible at all.
+          if (!type4events.empty())
             {
-              L(FL("  blob: %d:\tcan split between type2 and type3 events.")
-                   % *cc);
-              vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > >::
-                iterator i;
+              L(FL("  blob: %d:\tsplitting here doesn't help.") % *cc);
+              continue;
+            }
 
-              i = event_splits.insert(event_splits.end(),
-                    make_pair(candidates, set<cvs_event_ptr>()));
+          // it's a cycle, so every blob or every set of candidate blobs must
+          // have at least one incomming and one outgoing dependency.
+          I(!type2events.empty());
+          I(!type3events.empty());
 
-              // fill the set with the type 2 events
-              for (vector<cvs_event_ptr>::iterator j = type2events.begin();
-                   j != type2events.end(); ++j)
-                safe_insert(i->second, *j);
+          // Calculate the lower and upper bounds for both kind of events. If
+          // we are going to split these blobs, we need to split it between
+          // any of these two bounds to resolve the cycle.
+          time_i t2_upper_bound = 0,
+                 t2_lower_bound = (time_i) -1;
+          for (vector<cvs_event_ptr>::const_iterator i = type2events.begin();
+               i != type2events.end(); ++i)
+            {
+              cvs_event_ptr ev = *i;
+
+              if (ev->adj_time < t2_lower_bound)
+                t2_lower_bound = ev->adj_time;
+
+              if (ev->adj_time > t2_upper_bound)
+                t2_upper_bound = ev->adj_time;
+            }
+
+          time_i t3_upper_bound = 0,
+                 t3_lower_bound = (time_i) -1;
+          for (vector<cvs_event_ptr>::const_iterator i = type3events.begin();
+               i != type3events.end(); ++i)
+            {
+              cvs_event_ptr ev = *i;
+
+              if (ev->adj_time < t3_lower_bound)
+                t3_lower_bound = ev->adj_time;
+
+              if (ev->adj_time > t3_upper_bound)
+                t3_upper_bound = ev->adj_time;
+            }
+
+          time_i lower_bound, upper_bound;
+
+          // The type 2 events are the ones which depend on other events in
+          // the cycle. So those should carry the higher timestamps.
+          if (t3_upper_bound < t2_lower_bound)
+            {
+              lower_bound = t3_upper_bound;
+              upper_bound = t2_lower_bound;
+              L(FL("  blob: %d:\tcan easily split by timestamp.") % *cc);
             }
           else
             {
-              L(FL("  blob: %d:\tcould split, but dunno where (t1:%d t2:%d t3:%d).")
-                % *cc % type1events.size() % type2events.size() % type3events.size());
-              splittable_blob_sets.push_back(candidates);
+              // The upper and lower bounds of the timestamps of type 2 and
+              // type 3 events are overlapping, so that we cannot use a
+              // simple timestamp to split the blob(s), because its unclear
+              // where to put the remaining type 1 events.
+              //
+              // The first thing we try is to move some type 1 events out of
+              // the way. Those which are newer than the newest type 2 and
+              // those which are older than the oldest type 3 events can
+              // safely be be put to one or the other side.
+
+              for (vector<cvs_event_ptr>::iterator i = type1events.begin();
+                   i != type1events.end(); )
+                {
+                  cvs_event_ptr ev = *i;
+
+                  if (ev->adj_time > t2_upper_bound)
+                    {
+                      // treat like a type 2 event
+                      type2events.push_back(*i);
+                      i = type1events.erase(i);
+                    }
+                  else if (ev->adj_time < t3_lower_bound)
+                    {
+                      // treat like a type 3 event
+                      type3events.push_back(*i);
+                      i = type1events.erase(i);
+                    }
+                  else
+                    i++;
+                }
+
+              if (type1events.empty())
+                {
+                  L(FL("  blob: %d:\tcan split between type 2 and 3 events.")
+                       % *cc);
+                  vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > >::
+                    iterator i;
+
+                  i = event_splits.insert(event_splits.end(),
+                        make_pair(candidates, set<cvs_event_ptr>()));
+
+                  // fill the set with the type 2 events
+                  for (vector<cvs_event_ptr>::iterator j
+                         = type2events.begin();
+                       j != type2events.end(); ++j)
+                    safe_insert(i->second, *j);
+                }
+              else
+                {
+                  L(FL("  blob: %d:\tcould split, "
+                       "but dunno where (t1:%d, t2:%d, t3:%d).")
+                    % *cc % type1events.size() % type2events.size()
+                    % type3events.size());
+                  splittable_blob_sets.push_back(candidates);
+                }
+              continue;
             }
-          continue;
-        }
 
-      // Now we have a lower and an upper time boundary, between which we
-      // can split this blob or this set of candidate blobs to resolve the
-      // cycle. We now try to find the largest time gap between any events
-      // within this boundary. That helps prevent splitting things which
-      // should better remain together.
+          // Now we have a lower and an upper time boundary, between which we
+          // can split this blob or this set of candidate blobs to resolve
+          // the cycle. We now try to find the largest time gap between any
+          // events within this boundary. That helps prevent splitting things
+          // which should better remain together.
 
-      // first, collect all events of all candidates
-      vector<cvs_event_ptr> candidate_events;
-      for (set<cvs_blob_index>::iterator i = candidates.begin();
-           i != candidates.end(); ++i)
-        {
-          vector<cvs_event_ptr> & blob_events = cvs.blobs[*cc].get_events();
-          copy(blob_events.begin(), blob_events.end(),
-               back_inserter(candidate_events));
-        }
-
-      // then make sure the events are sorted by timestamp
-      {
-        event_ptr_time_cmp cmp;
-        sort(candidate_events.begin(), candidate_events.end(), cmp);
-      }
-
-      blob_event_iter ity;
-      ity = candidate_events.begin();
-      cvs_event_ptr this_ev, last_ev;
-      I(ity != candidate_events.end());   // we have 2+ events here
-      this_ev = *ity++;              // skip the first event
-      for (; ity != candidate_events.end(); ++ity)
-        {
-          last_ev = this_ev;
-          this_ev = *ity;
-
-          time_i elower = last_ev->adj_time,
-                 eupper = this_ev->adj_time;
-
-          I(eupper >= elower);
-
-          time_i time_diff = eupper - elower;
-          time_i split_point = elower + time_diff / 2;
-
-          // We prefer splitting symbols over splitting commits, thus
-          // we simply multiply their count by three - that shoud suffice.
-          if (cvs.blobs[*cc].get_digest().is_symbol())
-            time_diff *= 3;
-
-          if ((split_point >= lower_bound) && (split_point < upper_bound) &&
-              (time_diff > largest_gap_diff))
+          // first, collect all events of all candidates
+          vector<cvs_event_ptr> candidate_events;
+          for (set<cvs_blob_index>::iterator i = candidates.begin();
+               i != candidates.end(); ++i)
             {
-              largest_gap_diff = time_diff;
-              largest_gap_at = split_point;
-              largest_gap_candidates = candidates;
+              vector<cvs_event_ptr> & blob_events
+                = cvs.blobs[*cc].get_events();
+              copy(blob_events.begin(), blob_events.end(),
+                   back_inserter(candidate_events));
             }
-        }
 
-    }
+          // then make sure the events are sorted by timestamp
+          {
+            event_ptr_time_cmp cmp;
+            sort(candidate_events.begin(), candidate_events.end(), cmp);
+          }
+
+          blob_event_iter ity;
+          ity = candidate_events.begin();
+          cvs_event_ptr this_ev, last_ev;
+          I(ity != candidate_events.end());   // we have 2+ events here
+          this_ev = *ity++;              // skip the first event
+          for (; ity != candidate_events.end(); ++ity)
+            {
+              last_ev = this_ev;
+              this_ev = *ity;
+
+              time_i elower = last_ev->adj_time,
+                     eupper = this_ev->adj_time;
+
+              I(eupper >= elower);
+
+              time_i time_diff = eupper - elower;
+              time_i split_point = elower + time_diff / 2;
+
+              // We prefer splitting symbols over splitting commits, thus
+              // we simply multiply their count by three - that shoud suffice.
+              if (cvs.blobs[*cc].get_digest().is_symbol())
+                time_diff *= 3;
+
+              if ((split_point >= lower_bound) && (split_point < upper_bound)
+                  && (time_diff > largest_gap_diff))
+                {
+                  largest_gap_diff = time_diff;
+                  largest_gap_at = split_point;
+                  largest_gap_candidates = candidates;
+                }
+            }
+
+        }
 
       // abort the loop as soon as we have at least one valid split point.
       if (!largest_gap_candidates.empty() || !event_splits.empty()
@@ -3857,7 +3882,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
                                        cvs.blobs[bi].symbol)->second;
 
   // Reassign events to the new blob as necessary
-  for (i = cvs.blobs[bi].get_events().begin(); i != cvs.blobs[bi].get_events().end(); )
+  i = cvs.blobs[bi].get_events().begin();
+  while (i != cvs.blobs[bi].get_events().end())
     {
       // Assign the event to the existing or to the new blob
       if (split_decider(*i))
@@ -3916,7 +3942,8 @@ split_blob_at(cvs_history & cvs, const cvs_blob_index blob_to_split,
 }
 
 void
-collect_dependencies(cvs_history & cvs, cvs_event_ptr start, set<cvs_blob_index> & coll)
+collect_dependencies(cvs_history & cvs, cvs_event_ptr start,
+                     set<cvs_blob_index> & coll)
 {
   stack<cvs_event_ptr> stack;
   stack.push(start);
@@ -3935,7 +3962,8 @@ collect_dependencies(cvs_history & cvs, cvs_event_ptr start, set<cvs_blob_index>
 }
 
 void
-split_between_equal_commits(cvs_history & cvs, cvs_event_ptr a, cvs_event_ptr b)
+split_between_equal_commits(cvs_history & cvs, cvs_event_ptr a,
+                            cvs_event_ptr b)
 {
   I(a->bi == b->bi);
   I(a->path == b->path);
@@ -4254,7 +4282,8 @@ write_graphviz_complete(cvs_history & cvs, string const & desc)
   set<cvs_blob_index> blobs_to_mark;
 
   cvs.step_no++;
-  viz_file.open((FL("cvs_graph.%s.%d.viz") % desc % cvs.step_no).str().c_str());
+  viz_file.open((FL("cvs_graph.%s.%d.viz")
+                 % desc % cvs.step_no).str().c_str());
   write_graphviz(viz_file, cvs, blw, blobs_to_show, blobs_to_mark);
   viz_file.close();
 }
@@ -4302,7 +4331,8 @@ write_graphviz_partial(cvs_history & cvs, string const & desc,
     }
 
   cvs.step_no++;
-  viz_file.open((FL("cvs_graph.%s.%d.viz") % desc % cvs.step_no).str().c_str());
+  viz_file.open((FL("cvs_graph.%s.%d.viz")
+                 % desc % cvs.step_no).str().c_str());
   write_graphviz(viz_file, cvs, blw, blobs_to_show, blobs_to_mark);
   viz_file.close();
 }
@@ -4366,7 +4396,8 @@ cvs_blob::fill_dependencies_cache(cvs_history & cvs)
       for (dep_loop j = cvs.get_dependencies(*i); !j.ended(); ++j)
         {
           cvs_blob_index dep_bi = (*j)->bi;
-          if (find(dependencies_cache.begin(), dependencies_cache.end(), dep_bi) == dependencies_cache.end())
+          if (find(dependencies_cache.begin(), dependencies_cache.end(),
+                   dep_bi) == dependencies_cache.end())
             dependencies_cache.push_back(dep_bi);
         }
     }
@@ -4387,7 +4418,8 @@ cvs_blob::fill_dependents_cache(cvs_history & cvs)
       for (dep_loop j = cvs.get_dependents(*i); !j.ended(); ++j)
         {
           cvs_blob_index dep_bi = (*j)->bi;
-          if (find(dependents_cache.begin(), dependents_cache.end(), dep_bi) == dependents_cache.end())
+          if (find(dependents_cache.begin(), dependents_cache.end(),
+                   dep_bi) == dependents_cache.end())
             dependents_cache.push_back(dep_bi);
         }
     }
@@ -4794,7 +4826,8 @@ cvs_blob::build_cset(cvs_history & cvs,
           if (!base_ros.has_node(pth))
             {
               add_missing_parents(pth.dirname(), base_ros, cs);
-              L(FL("  adding entry state for file '%s': '%s'") % pth % new_file_id);
+              L(FL("  adding entry state for file '%s': '%s'")
+                % pth % new_file_id);
               safe_insert(cs.files_added, make_pair(pth, new_file_id));
               changes++;
             }
@@ -4862,7 +4895,8 @@ add_missing_parents(roster_t & src_roster, node_t & n, roster_t & dest_roster)
       node_t dest_parent_node = dest_roster.get_node(parent_node->self);
       dir_t dest_parent_dir(downcast_to_dir_t(dest_parent_node));
       I(parent_node->self == dest_parent_node->self);
-      dest_roster.attach_node(dest_parent_node->self, parent_node->parent, parent_node->name);
+      dest_roster.attach_node(dest_parent_node->self, parent_node->parent,
+                              parent_node->name);
     }
 }
 
@@ -4900,7 +4934,8 @@ blob_consumer::merge_parents_for_artificial_rev(
   L(FL("  merging %s") % left_rid);
   L(FL("      and %s") % right_rid);
 
-  for (map<cvs_event_ptr, revision_id>::iterator i = event_parent_rids.begin();
+  for (map<cvs_event_ptr, revision_id>::iterator i
+         = event_parent_rids.begin();
        i != event_parent_rids.end(); ++i)
     {
       cvs_event_ptr ev = i->first;
@@ -5033,7 +5068,8 @@ blob_consumer::merge_parents_for_artificial_rev(
 
   // loop over the event_parent_rids again to set the new merged_rid
   // where necessary.
-  for (map<cvs_event_ptr, revision_id>::iterator i = event_parent_rids.begin();
+  for (map<cvs_event_ptr, revision_id>::iterator i
+         = event_parent_rids.begin();
        i != event_parent_rids.end(); ++i)
     {
       cvs_event_ptr ev = i->first;
@@ -5055,9 +5091,8 @@ blob_consumer::merge_parents_for_artificial_rev(
 
 void
 blob_consumer::create_artificial_revisions(cvs_blob_index bi,
-                                           set<cvs_blob_index> & parent_blobs,
-                                           revision_id & parent_rid,
-                                           cvs_symbol_no & in_branch)
+  set<cvs_blob_index> & parent_blobs, revision_id & parent_rid,
+  cvs_symbol_no & in_branch)
 {
   L(FL("creating artificial revision for %d parents.")
     % parent_blobs.size());
@@ -5192,7 +5227,8 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
               // event needs reverting patch
               project.db.get_roster(ev_parent_rid, e_ros);
 
-              file_path pth = file_path_internal(cvs.path_interner.lookup((*i)->path));
+              file_path pth = file_path_internal(
+                cvs.path_interner.lookup((*i)->path));
 
               L(FL("  checking file '%s'") % pth);
 
@@ -5210,10 +5246,12 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
 
                   if (base_fn->content != target_fn->content)
                     {
-                      L(FL("  applying reverse delta on file '%s' : '%s' -> '%s'")
+                      L(FL("  applying reverse delta on file '%s': "
+                           "'%s' -> '%s'")
                         % pth % base_fn->content % target_fn->content);
                       safe_insert(cs->deltas_applied,
-                        make_pair(pth, make_pair(base_fn->content, target_fn->content)));
+                        make_pair(pth, make_pair(base_fn->content,
+                                                 target_fn->content)));
                       changes++;
                     }
                 }
@@ -5242,7 +5280,8 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
           else
             {
               // path should not exist in this revision
-              L(FL("warning: should remove %s") % cvs.path_interner.lookup((*i)->path));
+              L(FL("warning: should remove %s")
+                % cvs.path_interner.lookup((*i)->path));
               I(false);
             }
         }
@@ -5343,7 +5382,8 @@ blob_consumer::operator()(cvs_blob_index bi)
         {
           ++n_blobs;
           ++n_revisions;
-          blob.assigned_rid = revision_id(string(constants::idlen_bytes, '\x33'));
+          blob.assigned_rid = revision_id(
+            string(constants::idlen_bytes, '\x33'));
           return;
         }
 
@@ -5447,7 +5487,8 @@ blob_consumer::operator()(cvs_blob_index bi)
         % bi % cvs.symbol_interner.lookup(blob.symbol));
 
       if (!opts.dryrun)
-        project.put_tag(keys, parent_rid, cvs.symbol_interner.lookup(blob.symbol));
+        project.put_tag(keys, parent_rid,
+                        cvs.symbol_interner.lookup(blob.symbol));
     }
   else
     I(false);
