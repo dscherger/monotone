@@ -24,5 +24,5 @@ check(get("cvs-repository"))
 -- events it doesn't know where to put.
 
 -- import into monotone and check presence of files
-xfail(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
+check(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
 
