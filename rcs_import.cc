@@ -3662,17 +3662,6 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
           upper_bound = t2_lower_bound;
           L(FL("  blob: %d:\tcan easily split by timestamp.") % *cc);
         }
-      else if (t2_upper_bound < t3_lower_bound)
-        {
-          // I've so far never seen this, and it's very probable this
-          // cannot happen at all logically. However, it's trivial
-          // supporting this case, so I'm just emitting a warning here.
-          W(F("Oh, still strange timestamps?!? Please show this repo "
-              "to <markus@bluegap.ch>!"));
-          lower_bound = t2_upper_bound;
-          upper_bound = t3_lower_bound;
-          L(FL("  blob: %d:\tstrange, but can split by timestamp.") % *cc);
-        }
       else
         {
           // The timestamps of type 2 and type 3 events are overlapping, so
