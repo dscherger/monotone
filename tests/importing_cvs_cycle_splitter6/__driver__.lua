@@ -12,15 +12,17 @@ check(get("cvs-repository"))
 --    file1b: A -> B -> C
 --    file2b:      B -> C -> A
 --    file3b:           C -> A -> B
+--    file1c: A
+--    file2c:      B
+--    file3c:           C
 --
 -- The timestamps are for the different commit events in the files do not
--- quite match, so that the cycle splitter cannot split by timestamp.
--- However, in this case, there are only type 1 events we can clearly
--- put to one or the other side (by its timestamps), so the cycle is
--- splittable.
---
--- Check the cycle_splitter6 test, for additional cruelty.
+-- match, so that the cycle splitter cannot split by timestamp. As opposed
+-- to the cycle_splitter5 test, the timestamps of the *c,v files are set
+-- in between the type 2 and type 3 events, so that the cycle splitter
+-- cannot split this cycle because it refuses to split blobs with type 1
+-- events it doesn't know where to put.
 
 -- import into monotone and check presence of files
-check(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
+xfail(mtn("--branch=test", "cvs_import", "--debug", "cvs-repository/test"), 0, false, false)
 
