@@ -11,16 +11,6 @@ page (We might want to clean out the Summit and SoC "Ideas" pages of
 things which have been accomplished already and start a general "Ideas" 
 page - what do you think?)
 
-### CustomCerts
-content should be moved into UsingCerts
-
-### CvsSync
-should be removed, renaming CvsSync3 to CvsSync?
-
-### CvsSyncHints
-content should be moved into CvsSync or CvsSync/Hints, no need for a 
-separate page in rootline
-
 ### DifferentDbsForServeAndWork
 should be moved into or below the new Ideas/ page.
 
@@ -47,10 +37,6 @@ clean this up and move it under Ideas/
 
 ### MonotoneAndCVS
 would be a great entry page for the CvsSync & friends pages, no?
-
-### NeedReview
-I'd drop this page in favour of the BranchStatuses page where one could 
-/ should clearly see which branch needs a review and which not...
 
 ### NetsyncTodo
 move to Ideas/NetsyncImprovements with a hint maybe to nuskool
