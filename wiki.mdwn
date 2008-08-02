@@ -23,10 +23,6 @@ automating, etc) that's not the (primary) purpose of these tags.
 
 [[map pages="wiki/* and link(migration-auto)"]]
 
-## Unmigrated moin files
-
-[[!map pages="wiki/*.moin"]]
-
 ## Pages tagged as migration-done
 
 [[!map pages="wiki/* and link(migration-done)"]]
