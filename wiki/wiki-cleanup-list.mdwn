@@ -48,10 +48,6 @@ clean this up and move it under Ideas/
 ### MonotoneAndCVS
 would be a great entry page for the CvsSync & friends pages, no?
 
-### NeedReview
-I'd drop this page in favour of the BranchStatuses page where one could 
-/ should clearly see which branch needs a review and which not...
-
 ### NetsyncTodo
 move to Ideas/NetsyncImprovements with a hint maybe to nuskool
 
