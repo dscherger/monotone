@@ -1,118 +1,117 @@
-Thomas Keller schrieb:
-> Furthermore we should also look later on on those pages which have not 
-> yet been converted if they're worth of being converted at all (things 
-> like new pages which contain just one implementation idea might be moved 
-> somewhere else, for example).
 
-Here is my list of pages which probably should be mangled / deleted (all 
-from the -auto list of pages):
+Here is a list of pages which probably should be mangled / deleted (all 
+from the -auto list of pages).  Note that this page is roughly
+formatted, and is more useful if you enable the ikiwiki camelcase
+plugin when generating the site (which we don't do by default) 
 
-	ZeroConf
+
+### ZeroConf
 the remaining contents should be moved to QuickieTasks or some Ideas 
 page (We might want to clean out the Summit and SoC "Ideas" pages of 
 things which have been accomplished already and start a general "Ideas" 
 page - what do you think?)
 
-	CustomCerts
+### CustomCerts
 content should be moved into UsingCerts
 
-	CvsSync
+### CvsSync
 should be removed, renaming CvsSync3 to CvsSync?
 
-	CvsSyncHints
+### CvsSyncHints
 content should be moved into CvsSync or CvsSync/Hints, no need for a 
 separate page in rootline
 
-	DifferentDbsForServeAndWork
+### DifferentDbsForServeAndWork
 should be moved into or below the new Ideas/ page.
 
-	DocTodo
+### DocTodo
 anybody really considering this on his personal todo? should be moved to 
 Ideas/DocumentationImprovements or something similar
 
-	EssentialMonotone
+### EssentialMonotone
 this very much reminds me that I should finally come around with a 
 completed cheat sheet of the mtn command reference - I started on one 
 some time ago in contrib/ - this page should, however, either be 
 completed or removed and/or point to the appropriate manual section. 
 Please also note that there exists a ReferenceCard page...
 
-	IPv6
+### IPv6
 whats left on this todo list is IPv6 testing - this one item should be 
 moved to Ideas or QuickieTasks
 
-	Keystorefiles
+### Keystorefiles
 move this to Ideas
 
-	LogUI
+### LogUI
 clean this up and move it under Ideas/
 
-	MonotoneAndCVS
+### MonotoneAndCVS
 would be a great entry page for the CvsSync & friends pages, no?
 
-	NeedReview
+### NeedReview
 I'd drop this page in favour of the BranchStatuses page where one could 
 / should clearly see which branch needs a review and which not...
 
-	NetsyncTodo
+### NetsyncTodo
 move to Ideas/NetsyncImprovements with a hint maybe to nuskool
 
-	OldTestHarnessIssues
+### OldTestHarnessIssues
 as the name implicates, this is old and should probably completly removed.
 
-	OneBranchPerDbForServe
+### OneBranchPerDbForServe
 this is already listed on BestPractices and should probably be moved 
 under this page (the same goes for all other pages listed there)
 
-	ReferenceCard
+### ReferenceCard
 should be cleaned up and used in favour of EssentialMonotone
 
-	RelativePathnames
+### RelativePathnames
 move it into the TipsTricksScripts page? We could move AutomateMagic and 
 several other missing ones there as well to get a better grouping.
 
-	RoadMap
+### RoadMap
 delete this, it just didn't work out (i.e. nobody really used it)
 
-	RootDirRenaming
+### RootDirRenaming
 drop that, we have pivot_root
 
-	RosterifyingPrivateBranches
+### RosterifyingPrivateBranches
 seems to match best under some Upgrade/ page
 
-	RostersTodo
+### RostersTodo
 uhh, another Todo page - clean up and move to Ideas/.
 
-	RostersTodo/MarkAndMergeTests
+### RostersTodo/MarkAndMergeTests
 Nathaniels comment about super-safer-complete test coverage was 
 apparently already fulfilled... no serious bugs in his code ;) Shall we 
 maybe move this and other similar wiki pages to an Attic/ directory or 
 simply remove them?
 
-	SimplerIgnoreMechanism
+### SimplerIgnoreMechanism
 move to Ideas/
 
-	SymLinks
+### SymLinks
 move to Ideas/
 
-	TestHarnessIssues
+### TestHarnessIssues
 move to Ideas/LuaTestImprovements or something similar
 
-	TestHarnessIssues/CleanUpTestNames
+### TestHarnessIssues/CleanUpTestNames
 uhh... wow. anybody still up for that?
 
-	TestHardnessUseCases
+### TestHardnessUseCases
 remove that
 
-	ThingsStatusShouldShow
+### ThingsStatusShouldShow
 move to Ideas/
 
-	TimeStamps
+### TimeStamps
 the same
 
-	WishList
+### WishList
 should be merged / cleaned up with the Ideas/ pages
 
+-----
 
 Thanks that you read until here - now a few things become apparent after 
 going through all these pages:
@@ -138,12 +137,5 @@ my obvious attempt to centralize and organize a few things better, but
 still, I have no idea if this is actually _wanted_ by the rest of the 
 crowd...
 
-Thomas.
-
--- 
-GPG-Key 0x160D1092 | tommyd3mdi@jabber.ccc.de | http://thomaskeller.biz
-Please note that according to the EU law on data retention, information
-on every electronic information exchange might be retained for a period
-of six months or longer: http://www.vorratsdatenspeicherung.de/?lang=en
 
 
