@@ -15,6 +15,11 @@
 #include "sanity.hh"
 #include "platform-wrapped.hh"
 #include "vector.hh"
+#include "threads.hh"
+
+#include <boost/shared_ptr.hpp>
+
+using std::pair;
 
 // this layer deals with talking to the filesystem, loading and saving
 // files, walking trees, etc.
@@ -116,9 +121,19 @@ public:
 void walk_tree(file_path const & path,
                tree_walker & walker);
 
+// define a thread pool for file identifiers, where the workers take
+// a file_path as an input, and output a success indicator as well
+// as a file_id, in case of success.
+class file_hash_calc_task;
+typedef worker_pool<file_hash_calc_task, file_path, file_id> file_ident_pool;
 
-bool ident_existing_file(file_path const & p, file_id & ident);
-bool ident_existing_file(file_path const & p, file_id & ident, path::status status);
+bool ident_existing_file(file_ident_pool & pool,
+                         boost::shared_ptr<file_path> p,
+                         boost::shared_ptr<file_id> ident);
+bool ident_existing_file(file_ident_pool & pool,
+                         boost::shared_ptr<file_path> p,
+                         boost::shared_ptr<file_id> ident,
+                         path::status status);
 
 void calculate_ident(file_path const & file,
                      file_id & ident);

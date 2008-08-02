@@ -11,6 +11,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <boost/shared_ptr.hpp>
+
 #include "botan/botan.h"
 #include "botan_pipe_cache.hh"
 
@@ -31,6 +33,8 @@ using std::ofstream;
 using std::logic_error;
 using std::string;
 using std::vector;
+
+using boost::shared_ptr;
 
 void
 assert_path_is_nonexistent(any_path const & path)
@@ -529,14 +533,36 @@ walk_tree(file_path const & path, tree_walker & walker)
     }
 }
 
-bool
-ident_existing_file(file_path const & p, file_id & ident)
+class file_hash_calc_task
+  : public threaded_task
 {
-  return ident_existing_file(p, ident, get_path_status(p));
+  shared_ptr<file_path> path;
+  shared_ptr<file_id> ident;
+
+public:
+  file_hash_calc_task(shared_ptr<file_path> path, shared_ptr<file_id> ident)
+    : path(path),
+      ident(ident)
+    { }
+
+  virtual void operator()()
+  {
+    calculate_ident(*path, *ident);
+  }
+};
+
+template class worker_pool<file_hash_calc_task, file_path, file_id>;
+
+bool
+ident_existing_file(file_ident_pool & pool, shared_ptr<file_path> p,
+                    shared_ptr<file_id> ident)
+{
+  return ident_existing_file(pool, p, ident, get_path_status(*p));
 }
 
 bool
-ident_existing_file(file_path const & p, file_id & ident, path::status status)
+ident_existing_file(file_ident_pool & pool, shared_ptr<file_path> p,
+                    shared_ptr<file_id> ident, path::status status)
 {
   switch (status)
     {
@@ -549,7 +575,7 @@ ident_existing_file(file_path const & p, file_id & ident, path::status status)
       return false;
     }
 
-  calculate_ident(p, ident);
+  pool.add_job(p, ident);
   return true;
 }
 

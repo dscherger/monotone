@@ -16,6 +16,8 @@
 #include <cerrno>
 #include <queue>
 
+#include <boost/shared_ptr.hpp>
+
 #include "lexical_cast.hh"
 #include "basic_io.hh"
 #include "cset.hh"
@@ -45,6 +47,7 @@ using std::string;
 using std::vector;
 
 using boost::lexical_cast;
+using boost::shared_ptr;
 
 // workspace / book-keeping file code
 
@@ -804,7 +807,12 @@ addition_builder::add_nodes_for(file_path const & path,
     case path::file:
       {
         file_id ident;
-        I(ident_existing_file(path, ident));
+        file_ident_pool pool; // FIXME!
+        shared_ptr<file_path> fpath(new file_path(path));
+        shared_ptr<file_id> fid(new file_id());
+        I(ident_existing_file(pool, fpath, fid));
+        pool.wait();
+        ident = *fid;
         nid = er.create_file_node(ident);
       }
       break;
@@ -1282,6 +1290,29 @@ workspace::update_current_roster_from_filesystem(roster_t & ros)
   update_current_roster_from_filesystem(ros, node_restriction());
 }
 
+class file_hash_calc_task
+{
+private:
+  shared_ptr<file_path> in;
+  shared_ptr<file_id> out;
+
+public:
+  file_hash_calc_task(shared_ptr<file_path> in,
+                      shared_ptr<file_id> out)
+    : in(in), out(out)
+    { };
+
+  virtual void operator()()
+    {
+      calculate_ident(*in, *out);
+    }
+};
+
+void NoOpDeallocator(file_id *p)
+{
+  /* no-op */
+}
+
 void
 workspace::update_current_roster_from_filesystem(roster_t & ros,
                                                  node_restriction const & mask)
@@ -1305,6 +1336,7 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
     return;
 
   node_map const & nodes = ros.all_nodes();
+  file_ident_pool pool;
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
       node_id nid = i->first;
@@ -1314,21 +1346,21 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
       if (!mask.includes(ros, nid))
         continue;
 
-      file_path fp;
-      ros.get_name(nid, fp);
+      shared_ptr<file_path> fp(new file_path());
+      ros.get_name(nid, *fp);
 
-      const path::status status(get_path_status(fp));
+      const path::status status(get_path_status(*fp));
 
       if (is_dir_t(node))
         {
           if (status == path::nonexistent)
             {
-              W(F("missing directory '%s'") % (fp));
+              W(F("missing directory '%s'") % (*fp));
               missing_items++;
             }
           else if (status != path::directory)
             {
-              W(F("not a directory '%s'") % (fp));
+              W(F("not a directory '%s'") % (*fp));
               missing_items++;
             }
         }
@@ -1336,25 +1368,30 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
         {
           // Only analyze changed files (or all files if inodeprints mode
           // is disabled).
-          if (inodeprint_unchanged(ipm, fp))
+          if (inodeprint_unchanged(ipm, *fp))
             continue;
 
           if (status == path::nonexistent)
             {
-              W(F("missing file '%s'") % (fp));
+              W(F("missing file '%s'") % (*fp));
               missing_items++;
             }
           else if (status != path::file)
             {
-              W(F("not a file '%s'") % (fp));
+              W(F("not a file '%s'") % (*fp));
               missing_items++;
             }
 
-          file_t file = downcast_to_file_t(node);
-          ident_existing_file(fp, file->content, status);
+          {
+            file_t file = downcast_to_file_t(node);
+            shared_ptr<file_id> fid(&file->content, NoOpDeallocator);
+            ident_existing_file(pool, fp, fid, status);
+          }
         }
-
     }
+
+  // wait until all jobs in the pool are done.
+  pool.wait();
 
   N(missing_items == 0,
     F("%d missing items; use '%s ls missing' to view\n"
@@ -1549,9 +1586,12 @@ workspace::perform_deletions(database & db,
               else
                 {
                   file_t file = downcast_to_file_t(n);
-                  file_id fid;
-                  I(ident_existing_file(name, fid));
-                  if (file->content == fid)
+                  shared_ptr<file_path> fpath(new file_path(name));
+                  shared_ptr<file_id> fid(new file_id());
+                  file_ident_pool pool; // FIXME: speed this up!
+                  I(ident_existing_file(pool, fpath, fid));
+                  pool.wait();
+                  if (file->content == *fid)
                     delete_file_or_dir_shallow(name);
                   else
                     W(F("file %s changed - "
