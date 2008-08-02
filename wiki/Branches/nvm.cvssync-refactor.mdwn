@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.cvssync.refactor ##
-
+[[!tag migration-done]]
 Contact: [[People/ChristofPetig]]
 
 A re-implementation of the cvssync architecture to be more modular, including a separate external process that interacts as a cvs client.

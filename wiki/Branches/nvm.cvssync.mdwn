@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.cvssync ##
-
+[[!tag migration-done]]
 (outdated)
 
 Contact: [[People/ChristofPetig]]

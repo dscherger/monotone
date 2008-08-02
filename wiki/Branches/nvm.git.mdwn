@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.git ##
-
+[[!tag migration-done]]
 Contact: [[People/PetrBaudis]]
 
 Adds two-way syncing with git repositories (unix only).

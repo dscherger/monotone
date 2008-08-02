@@ -1,5 +1,5 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 
 Currently active development branches:
 
-[[!inline pages="wiki/Branches/* and !wiki/Branches/Template" sort=title show=0 raw=yes]]
+[[!inline pages="wiki/Branches/* and !wiki/Branches/Template" sort=title show=0]]

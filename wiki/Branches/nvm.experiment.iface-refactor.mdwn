@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.experiment.iface-refactor ##
-
+[[!tag migration-done]]
 Contact: [[People/NathanielSmith]]
 
 Some experimental UI and doc tweaks, in attempt to make things more

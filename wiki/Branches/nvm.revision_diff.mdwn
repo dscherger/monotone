@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.revision_diff ##
-
+[[!tag migration-done]]
 Contact: [[People/ThomasKeller]]
 
 Replaces `automate content_diff` by a generic `automate diff` command

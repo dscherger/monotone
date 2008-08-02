@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.experiment.encapsulation ##
-
+[[!tag migration-done]]
 Contact: [[People/ZackWeinberg]]
 
 Removed the `app_state` from lots of places, instead we only pass down

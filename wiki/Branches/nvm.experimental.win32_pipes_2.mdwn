@@ -1,11 +1,9 @@
-[[!tag migration-wip]]
-## n.v.m.experimental.win32\_pipes\_2 ##
-
+[[!tag migration-done]]
 Contact: [[People/StephenLeake]]
 
-Second attempt to fix mtn sync file: and mtn sync ssh: on Windows [[MinGW]].
+Second attempt to fix `mtn sync file:` and `mtn sync ssh:` on Windows [[MinGW]].
 
-See n.v.m.experimental.win32_pipes
+See [[nvm.experimental.win32_pipes]]
 
 This branch attempts to fix the named pipe solution that is in the main branch.
 

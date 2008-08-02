@@ -1,11 +1,9 @@
-[[!tag migration-wip]]
-## n.v.m.annotate ##
-
+[[!tag migration-done]]
 Contact: [[People/EmileSnyder]]
 
-Staging branch for work on the "annotate" command.  As of 2006-01-30, there is work in progress on implementing per-file-DAGs of the revision graph in the db so that you can walk just the portion of the full graph in which changes were made to a given file.
+Staging branch for work on the `annotate` command.  As of 2006-01-30, there is work in progress on implementing per-file-DAGs of the revision graph in the db so that you can walk just the portion of the full graph in which changes were made to a given file.
 
-In order to try it, you must migrate your db and then run 'monotone db filedagify' on the database of interest.
+In order to try it, you must migrate your db and then run `monotone db filedagify` on the database of interest.
 
 Todo: write tests for schema migration, fix kill_rev_locally to get rid of the node_revision_ancestry entries as well, figure out why new annotate is not identical to the old implementation, extend to handle all types of file changes (renames and attr changes) so it can be used to speed up restricted log too, roll filedagify into the migration?
 

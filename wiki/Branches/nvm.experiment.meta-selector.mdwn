@@ -1,8 +1,5 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 [[!tag MtnSummit/2008]]
-
-## n.v.m.experiment.meta-selector ##
-
 (renamed from [[Branches/nvm.levitte.select-heads-of]])
 
 Contact: [[People/RichardLevitte]]

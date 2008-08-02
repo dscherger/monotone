@@ -1,8 +1,5 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 [[!tag MtnSummit/2008]]
-
-## nvm.automate\_out\_of\_band ##
-
 Contact: [[People/ChristofPetig]], [[People/ThomasKeller]]
 
 Adds support for multiple streams into monotone stdio which includes

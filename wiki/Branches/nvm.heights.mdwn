@@ -1,8 +1,6 @@
-[[!tag migration-wip]]
-## n.v.m.heights ##
-
+[[!tag migration-done]]
 Contact: [[People/ThomasMoschny]]
 
 Implemented [[RevisionNumbering]]. The branch also serves as testbed for developing and testing applications of the heights, e.g. fast restricted log and fast annotate.
 
-Status: Currently merged into mainline.
+Status: merged into mainline.

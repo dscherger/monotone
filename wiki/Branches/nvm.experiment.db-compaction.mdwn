@@ -1,9 +1,6 @@
-[[!tag migration-wip]]
-## n.v.m.experiment.db-compaction ##
-
+[[!tag migration-done]]
 Contact: [[People/MarkusSchiltknecht]]
 
 A branch for trying out things from [[DatabaseCompaction]]. It has been used for turning hex encoded hashes ones into binary data in the database. That change has landed on mainline on 31.03.2008.
 
 Status: landed on mainline
-

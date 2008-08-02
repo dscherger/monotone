@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.lapo.color ##
-
+[[!tag migration-done]]
 Contact: [[People/LapoLuchini]]
 
 Making use of extra terminal features that may be available, such as colours (useful for diff and for asciik branch-lines).

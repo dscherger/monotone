@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.levitte.usher ##
-
+[[!tag migration-done]]
 Contact: [[People/RichardLevitte]]
 Created: 2006-02-28
 

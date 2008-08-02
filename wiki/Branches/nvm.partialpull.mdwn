@@ -1,6 +1,4 @@
-[[!tag migration-wip]]
-## n.v.m.partialpull ##
-
+[[!tag migration-done]]
 Contact: [[People/ChristofPetig]]
 
 Connected to [[Branches/nvm.gaps]].

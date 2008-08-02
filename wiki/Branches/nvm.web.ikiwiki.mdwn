@@ -1,8 +1,5 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 [[!tag MtnSummit/2008]]
-
-## n.v.m.web.ikiwiki ##
-
 Contact: [[People/DanielCarosone]], all [[Developers]]
 
 Migration of website content and MoinMoin wiki to [[ikiwiki]].

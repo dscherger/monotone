@@ -7,6 +7,14 @@ page) will be determined later.
 
 See also [[wiki/wiki-cleanup-list]]
 
+For initial format conversion, a set of tags has been added to help
+sort pages according to their state. These tags mostly refer to basic
+markup conversion - just getting the markup and formatting styles
+fixed for the new syntax. While the overall conversion may also
+involve a lot of other work and cleanup (renaming, restucturing,
+automating, etc) that's not the (primary) purpose of these tags.
+
+
 ## Pages tagged as migration-wip
 
 [[!map pages="wiki/* and link(migration-wip)"]]

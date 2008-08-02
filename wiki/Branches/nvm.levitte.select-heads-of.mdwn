@@ -1,7 +1,4 @@
-[[!tag migration-wip]]
-
-## n.v.m.levitte.select-heads-of ##
-
+[[!tag migration-done]]
 Contact: [[People/RichardLevitte]]
 
 See [[Branches/nvm.experiment.meta-selector]]

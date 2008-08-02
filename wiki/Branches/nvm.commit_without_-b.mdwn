@@ -1,8 +1,5 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 [[!tag MtnSummit/2008]]
-
-## n.v.m.commit\_without\_-b ##
-
 Contact: [[People/RichardLevitte]]
 
 This branch implements the command `mtn branch` and consequently,
