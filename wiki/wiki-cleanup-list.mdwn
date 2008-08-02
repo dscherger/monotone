@@ -11,9 +11,6 @@ page (We might want to clean out the Summit and SoC "Ideas" pages of
 things which have been accomplished already and start a general "Ideas" 
 page - what do you think?)
 
-### CustomCerts
-content should be moved into UsingCerts
-
 ### CvsSync
 should be removed, renaming CvsSync3 to CvsSync?
 
