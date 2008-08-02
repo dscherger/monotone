@@ -3321,6 +3321,48 @@ get_best_split_point(cvs_history & cvs, cvs_blob_index bi)
 }
 
 void
+split_best_candidates_by_events(cvs_history & cvs,
+  vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > > & event_splits)
+{
+  I(!event_splits.empty());
+  set<cvs_blob_index> & candidates = event_splits.begin()->first;
+  set<cvs_event_ptr> events = event_splits.begin()->second;
+
+  int best_score = -1;
+
+  vector<pair<set<cvs_blob_index>, set<cvs_event_ptr> > >::iterator i;
+  for (i = event_splits.begin(); i != event_splits.end(); ++i)
+    {
+      int test_score = 0;
+      set<cvs_blob_index> & test_cand = i->first;
+
+      // count the number of symbol blobs within this set of candidates.
+      for (set<cvs_blob_index>::iterator j = test_cand.begin();
+           j != test_cand.end(); ++j)
+        if (cvs.blobs[*j].get_digest().is_symbol())
+          test_score++;
+
+      // keep track of the best set of candidates to split
+      if (test_score > best_score)
+        {
+          best_score = test_score;
+          candidates = i->first;
+          events = i->second;
+        }
+    }
+
+  split_by_event_set func(events);
+  for (set<cvs_blob_index>::iterator i = candidates.begin();
+       i != candidates.end(); ++i)
+    {
+      I(!cvs.blobs[*i].get_digest().is_branch_start());
+      I(!cvs.blobs[*i].get_digest().is_tag());
+
+      split_blob_at(cvs, *i, func);
+    }
+}
+
+void
 split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 {
   I(!cycle_members.empty());
@@ -3838,41 +3880,9 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
         }
     }
   else if (!event_splits.empty())
-    {
-      // FIXME: should prefer splitting symbol blobs here
-
-      // simple take the first option we've found and split there.
-      set<cvs_blob_index> & candidates = event_splits.begin()->first;
-      set<cvs_event_ptr> & split_events = event_splits.begin()->second;
-
-      split_by_event_set func(split_events);
-      for (set<cvs_blob_index>::iterator i = candidates.begin();
-           i != candidates.end(); ++i)
-        {
-          I(!cvs.blobs[*i].get_digest().is_branch_start());
-          I(!cvs.blobs[*i].get_digest().is_tag());
-
-          split_blob_at(cvs, *i, func);
-        }
-    }
+    split_best_candidates_by_events(cvs, event_splits);
   else if (!event_splits2.empty())
-    {
-      // FIXME: should prefer splitting symbol blobs here
-
-      // simple take the first option we've found and split there.
-      set<cvs_blob_index> & candidates = event_splits2.begin()->first;
-      set<cvs_event_ptr> & split_events = event_splits2.begin()->second;
-
-      split_by_event_set func(split_events);
-      for (set<cvs_blob_index>::iterator i = candidates.begin();
-           i != candidates.end(); ++i)
-        {
-          I(!cvs.blobs[*i].get_digest().is_branch_start());
-          I(!cvs.blobs[*i].get_digest().is_tag());
-
-          split_blob_at(cvs, *i, func);
-        }
-    }
+    split_best_candidates_by_events(cvs, event_splits2);
   else
     {
       L(FL("Unable to split the cycle!"));
