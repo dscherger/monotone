@@ -1,9 +1,9 @@
-[[tag migration-auto]]
+[[tag migration-done]]
 
 
 The cvs\_sync branch is an experimental facility to help users work with ["[[MonotoneAndCVS]]"]
 
-For the newest rewrite see [[CvsSync3]].
+For the newest rewrite see [[CvsSync]].
 
 You may want to not stress cvssync to the full extent. It definitely has
 problems when the time jumps (no I mean not summer vs. winter time)
