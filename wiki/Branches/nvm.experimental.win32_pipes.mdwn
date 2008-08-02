@@ -11,4 +11,4 @@ It fails, because ssh doesn't create sockets when it runs mtn.
 
 See comments in netxx_pipe.hh
 
-Status: on hold; use Cygwin instead, where things just work.
+Status: [[status/Stalled]]; use Cygwin instead, where things just work.

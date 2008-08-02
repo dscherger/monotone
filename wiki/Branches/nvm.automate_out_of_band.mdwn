@@ -7,4 +7,4 @@ separate streams for informational messages (infos, warnings, errors,
 ...) as well as tickers. To actually test tickers automate pull is
 already included here.
 
-Status: Documentation is in place, tests are still missing.
+Status: Documentation is in place, [[status/Needs_Tests]]

@@ -6,4 +6,4 @@ the required objects, which were formerly held in the
 `app_state`. These include: the lua interpreter, the database, the key
 store and the options.
 
-Status: landed on mainline
+Status: [[status/landed]] on mainline

@@ -3,7 +3,6 @@ Contact: [[People/ChristofPetig]]
 
 A re-implementation of the cvssync architecture to be more modular, including a separate external process that interacts as a cvs client.
 
-Status:
 What is done:
 
  * mtn_cvs pull, push and takeover work with side branches and all sorts of strange setups (see tests) and are now attribute based
@@ -22,3 +21,5 @@ What can be put into mainline:
  * all automate extensions (the synchronization commands are about to change again to use attributes, so they might wait)
  * the mtn_automate class (C++ wrapper library to access monotone via automate)
  * the mtn_cvs directory infrastucture can be put into mainline but can wait as well until it's finished
+
+Status:  [[status/Work_in_Progress]]

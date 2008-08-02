@@ -10,4 +10,4 @@ almost all cases.  Tempted to rename `genkey` too...
 
 Todo: get feedback; update docs accordingly; write tests
 
-Status: Work in progress.
+Status: [[status/Work_in_Progress]]

@@ -4,5 +4,5 @@ Created: 2006-02-28
 
 The purpose of this branch is to add a suite of tests for usher and make it a supported program instead of just a contributed thingy.
 
-Status: Work in progress
+Status: [[status/Work_in_Progress]]
 

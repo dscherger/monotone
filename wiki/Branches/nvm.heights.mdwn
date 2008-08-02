@@ -3,4 +3,4 @@ Contact: [[People/ThomasMoschny]]
 
 Implemented [[RevisionNumbering]]. The branch also serves as testbed for developing and testing applications of the heights, e.g. fast restricted log and fast annotate.
 
-Status: merged into mainline.
+Status: [[status/Landed]] on mainline.

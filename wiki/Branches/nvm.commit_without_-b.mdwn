@@ -28,4 +28,4 @@ what still needs to be done is
  1. mtn revert should remove any "new_branch" stanza from \_MTN/options
  1. eventually "mtn branch" should be renamed to "mtn switch" and get some more functionality (i.e. if switched to a named, existing branch, update the workspace to the head of this branch)
 
-Status: Stalled, decide what to do with all that.
+Status: [[status/Stalled]], decide what to do with all that.

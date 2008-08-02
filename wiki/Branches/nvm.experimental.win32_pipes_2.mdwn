@@ -9,4 +9,4 @@ This branch attempts to fix the named pipe solution that is in the main branch.
 
 See comments in netxx_pipe.hh
 
-Status: on hold; no actual work beyond planning done.
+Status: [[status/Stalled]] no actual work beyond planning done.
