@@ -1,10 +1,9 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
+[[!toc levels=2]]
 
 There are a number of interesting problems and use cases where the current selector syntax isn't quite as useful as might be desirable.   Various forms of "magic" selectors have been suggested.  Some of these allow reasonably basic navigation of parts of the ancestry graph that don't currently have good names, others verge on the truly magical or are useful for very clever selection descriptions.
 
-The most comprehensive original proposal can be found in the mailing list archives, together with some followups in the thread:
-
-http://lists.gnu.org/archive/html/monotone-devel/2005-09/msg00164.html
+The most comprehensive original proposal can be found in the mailing list archives, together with some followups in the thread: <http://lists.gnu.org/archive/html/monotone-devel/2005-09/msg00164.html>
 
 There are also various other messages where similar ideas have come up.
 

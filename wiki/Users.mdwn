@@ -1,4 +1,4 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 
 This page lists some of the happy users of monotone.  See also:
 <http://www.frappr.com/monotone>

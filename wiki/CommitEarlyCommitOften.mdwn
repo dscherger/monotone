@@ -1,4 +1,4 @@
-[[!tag migration-wip]]
+[[!tag migration-done]]
 
 Don't group many changes together into a single commit. Commit each logical change as a separate revision.
 

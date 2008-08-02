@@ -10,8 +10,7 @@
 
 **<a name="Edge">Edge</a>:** The changes that come from one [[revision|Glossary#Revision]] to a descendant.  A merge would have more than one edge.  In a [[Directed_Acyclic_Graph|Glossary#DirectedAcyclicGraph]], one of the arrows, as opposed to one of the points.
 
-**<a name="Endpoints">Endpoints</a>:** *Need a definition here*
->By restricting the set of trusted testresult certificates, you can require that the endpoints of an update operation have a certificate asserting that the revision in question passed a certain test, or testsuite.
+**<a name="Endpoints">Endpoints</a>:** *Need a definition here to match this usage: "By restricting the set of trusted testresult certificates, you can require that the endpoints of an update operation have a certificate asserting that the revision in question passed a certain test, or testsuite."*
 
 **<a name="DirectedGraph">Directed Graph</a>:** A diagram made up of points connected by arrows.  In discussions about Monotone, this is normally just a shorter way of saying [[Directed_Acyclic_Graph|Glossary#DirectedAcyclicGraph]].
 
