@@ -5,9 +5,7 @@ the monotone wiki. It helps track progress.  Whether or not there will
 be a 'normal' wiki homepage later (as separate from the main front
 page) will be determined later.
 
-## Pages tagged as migration-done
-
-[[!map pages="wiki/* and link(migration-done)"]]
+See also [[wiki/wiki-cleanup-list]]
 
 ## Pages tagged as migration-wip
 
@@ -20,6 +18,10 @@ page) will be determined later.
 ## Unmigrated moin files
 
 [[!map pages="wiki/*.moin"]]
+
+## Pages tagged as migration-done
+
+[[!map pages="wiki/* and link(migration-done)"]]
 
 ## Other pages
 
