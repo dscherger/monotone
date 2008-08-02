@@ -1060,43 +1060,41 @@ process_one_hunk(vector< piece > const & source,
   assert(directive.size() > 1);
   ++i;
 
-  try
-    {
-      char code;
-      int pos, len;
-      if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              throw oops("illformed directive '" + directive + "'");
+  char code;
+  int pos, len;
+  if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
+          throw oops("illformed directive '" + directive + "'");
 
-      if (code == 'a')
-        {
-          // 'ax y' means "copy from source to dest until cursor == x, then
-          // copy y lines from delta, leaving cursor where it is"
-          while (cursor < pos)
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos);
-          while (len--)
-            dest.push_back(*i++);
-        }
-      else if (code == 'd')
-        {
-          // 'dx y' means "copy from source to dest until cursor == x-1,
-          // then increment cursor by y, ignoring those y lines"
-          while (cursor < (pos - 1))
-            dest.push_back(source.at(cursor++));
-          I(cursor == pos - 1);
-          cursor += len;
-        }
-      else
-        throw oops("unknown directive '" + directive + "'");
-    }
-  catch (out_of_range &)
-    {
-      throw oops("out_of_range while processing " + directive
-                 + " with source.size() == "
-                 + lexical_cast<string>(source.size())
-                 + " and cursor == "
-                 + lexical_cast<string>(cursor));
-    }
+  // 'ax y' means "copy from source to dest until cursor == x, then
+  // copy y lines from delta, leaving cursor where it is"
+
+  // 'dx y' means "copy from source to dest until cursor == x-1,
+  // then increment cursor by y, ignoring those y lines"
+
+  if (code == 'd')
+    pos--;
+
+  while (cursor < pos)
+    try
+      {
+        dest.push_back(source.at(cursor++));
+      }
+    catch (out_of_range &)
+      {
+        W(F("out of range while processing directive '%s', "
+            "ignoring %d lines.") % directive % (cursor - pos));
+        cursor = pos;
+        break;
+      }
+
+  I(cursor == pos);
+  if (code == 'a')
+    while (len--)
+      dest.push_back(*i++);
+  else if (code == 'd')
+    cursor += len;
+  else
+    throw oops("unknown directive '" + directive + "'");
 }
 
 static void
