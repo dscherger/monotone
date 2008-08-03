@@ -1,4 +1,4 @@
-// Copyright (C) 2008  Markus Schiltknecht  <markus@bluegap.ch>
+// Copyright (C) 2008  Markus Wanner  <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -35,9 +35,7 @@ thread_context
 void *threaded_call(void *c)
 {
   thread_context * ctx = (thread_context*) c;
-
-  (*ctx->task)();
-
+  ctx->task->operator()();
   pthread_exit(NULL);
 }
 
@@ -51,7 +49,7 @@ create_thread_for(threaded_task * task)
   thread_context * ctx = new thread_context();
   ctx->task = task;
 
-  rc = pthread_create(&thread, NULL, threaded_call, (void*) &ctx);
+  rc = pthread_create(&thread, NULL, threaded_call, (void*) ctx);
   I(!rc);
 
   rc = pthread_join(thread, &status);

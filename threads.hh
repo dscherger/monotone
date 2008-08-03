@@ -1,7 +1,7 @@
 #ifndef __THREADS_HH__
 #define __THREADS_HH__
 
-// Copyright (C) 2008  Markus Schiltknecht  <markus@bluegap.ch>
+// Copyright (C) 2008  Markus Wanner  <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -42,8 +42,7 @@ public:
         {
           threaded_task *task = tstack.top();
           tstack.pop();
-          task->operator()();
-          //create_thread_for(task);
+          create_thread_for(task);
         }
     }
 };
