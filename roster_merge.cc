@@ -2440,6 +2440,28 @@ namespace
       I(false);
   }
 
+  struct handled_nodes
+  {
+    node_id sutured_nid;
+    node_id ancestor_nid;
+
+    handled_nodes () : sutured_nid(the_null_node), ancestor_nid(the_null_node){};
+
+    handled_nodes (node_id sutured_nid, node_id ancestor_nid) :
+    sutured_nid(sutured_nid), ancestor_nid(ancestor_nid) {};
+
+    bool operator== (handled_nodes right)
+      {return this.ancestor_nid == right.ancestor_nid;}
+
+  };
+
+  inline void
+  find_common_ancestor_nodes()
+  {
+    std::pair<node_id, node_id> birth_ancestors = birth_cause.second;
+    // FIXME: more here :)
+  }
+
   inline void
   insert_if_unborn_or_sutured(node_t const & n,
                               marking_map const & markings,
@@ -2448,7 +2470,7 @@ namespace
                               roster_t const & other_parent_roster,
                               resolve_conflicts::side_t parent_side,
                               roster_merge_result & result,
-                              set<node_id> & already_handled)
+                              set<handled_nodes> & already_handled)
   {
     MM(markings);
     MM(uncommon_ancestors);
@@ -2456,11 +2478,15 @@ namespace
     // right parent node.
 
     // First we see if we've already handled this node, due to suturing.
-    if (already_handled.find(n->self) != already_handled.end())
-      return;
+    set<handled_nodes>::iterator i = already_handled.find(n->self);
+    if (i != already_handled.end())
+      {
+        already_handled.erase(i);
+        return;
+      }
 
-    // We are in case ii, iii, iv, or v. We determine which by searching for
-    // the birth revision in uncommon_ancestors.
+    // We are in case i, iii or iv. We determine which by searching for the
+    // birth revision of node n in uncommon_ancestors.
 
     revision_id const & birth = safe_get(markings, n->self).birth_revision;
 
@@ -2468,14 +2494,14 @@ namespace
 
     if (uncommon_birth_i != uncommon_ancestors.end())
       {
-        // case ii, iii or iv
+        // case i
         std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & birth_cause =
           safe_get(markings, n->self).birth_cause;
 
         switch (birth_cause.first)
           {
           case marking_t::add:
-            // case ii, iv; if ii, conflict will be discovered in next phase
+            // case ia
             create_node_for(n, result.roster);
             break;
 
@@ -2484,14 +2510,31 @@ namespace
             break;
 
           case marking_t::suture:
-            // case iii, sutured node
+            // case ib, ic, id, ie; check state of suture parents
             {
-              std::pair<node_id, node_id> birth_ancestors = birth_cause.second;
+              set<node_id> common_ancestor_nodes =
+                find_common_ancestor_nodes(n, marking_map, uncommon_ancestors);
 
-              bool left_anc_in_other = other_parent_roster.has_node(birth_ancestors.first);
-              bool right_anc_in_other = other_parent_roster.has_node(birth_ancestors.second);
+              bool ancestor_deleted = false;
 
-              if (left_anc_in_other)
+              for (set<node_id>::const_iterator i = common_ancestor_nodes.begin();
+                   i != common_ancestor_nodes.end();
+                   i++)
+                {
+                  if (!other_parent_roster.has_node(*i))
+                    {
+                      if (!has_sutured_node(other_parent_roster, other_marking_map, *i))
+                        {
+                          ancestor_deleted = true;
+                          break;
+                        }
+                    }
+                };
+
+              if (ancestor_deleted)
+                {
+                }
+              else
                 {
                   I(!right_anc_in_other);
 
@@ -2499,13 +2542,13 @@ namespace
                   // conflicts. We can't tell whether n is in left or right, so
                   // we always put it in ancestors.first.
                   create_node_for(n, make_pair (n->self, birth_ancestors.first), result.roster);
-                  already_handled.insert(birth_ancestors.first);
+                  already_handled.insert(handled_node(n->self, birth_ancestors.first));
                 }
               else if (right_anc_in_other)
                 {
                   I(!left_anc_in_other);
                   create_node_for(n, make_pair (n->self, birth_ancestors.second), result.roster);
-                  already_handled.insert(birth_ancestors.second);
+                  already_handled.insert(handled_node(n->self, birth_ancestors.second));
                 }
               else
                 {
@@ -2518,13 +2561,20 @@ namespace
       }
     else
       {
-        // case v
+        // case iii or iv
+
+        // FIXME: iii?
+
+        // case iva or ivb
+
+        // FIXME: consider other scalars conflicting with drop
 
         set<revision_id> const & content_marks = safe_get(markings, n->self).file_content;
         for (set<revision_id>::const_iterator it = content_marks.begin(); it != content_marks.end(); it++)
           {
             if (uncommon_ancestors.find(*it) != uncommon_ancestors.end())
               {
+                // case ivb
                 result.content_drop_conflicts.push_back
                   (content_drop_conflict(n->self,
                                          downcast_to_file_t(parent_roster.get_node(n->self))->content,

@@ -126,6 +126,35 @@ struct content_drop_conflict
     nid(nid), fid(fid), parent_side(parent_side){resolution.first = resolve_conflicts::none;};
 };
 
+// files with suture_drop conflicts are left attached in result roster
+// (unless unattached for another reason), with parent content hash.
+struct suture_drop_conflict
+{
+  // We don't store the file_id in the conflict, to support suturing and
+  // conflicting directories in the future.
+  node_id sutured_nid;
+  node_id ancestor_nid;
+  resolve_conflicts::side_t parent_side; // node is in parent_side roster, not in other roster
+
+  // resolution is one of none, ignore_drop, respect_drop. If ignore_drop,
+  // provide new name to allow avoiding name conflicts.
+  std::pair<resolve_conflicts::resolution_t, file_path> resolution;
+
+  suture_drop_conflict () :
+    sutured_nid(the_null_node),
+    ancestor_nid(the_null_node),
+    parent_side(resolve_conflicts::left_side)
+  {resolution.first = resolve_conflicts::none;};
+
+  suture_drop_conflict(node_id sutured_nid,
+                       node_id ancestor_nid,
+                       resolve_conflicts::side_t parent_side) :
+    sutured_nid(sutured_nid),
+    ancestor_nid(ancestor_nid),
+    parent_side(parent_side)
+  {resolution.first = resolve_conflicts::none;};
+};
+
 // nodes with attribute conflicts are left attached in the resulting tree (unless
 // detached for some other reason), but with the given attribute left out of
 // their full_attr_map_t.  Note that this doesn't actually leave the resulting
