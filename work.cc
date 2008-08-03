@@ -807,7 +807,7 @@ addition_builder::add_nodes_for(file_path const & path,
     case path::file:
       {
         file_id ident;
-        file_ident_pool pool; // FIXME!
+        worker_pool pool; // FIXME!
         shared_ptr<file_path> fpath(new file_path(path));
         shared_ptr<file_id> fid(new file_id());
         I(ident_existing_file(pool, fpath, fid));
@@ -1336,7 +1336,7 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
     return;
 
   node_map const & nodes = ros.all_nodes();
-  file_ident_pool pool;
+  worker_pool pool;
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
       node_id nid = i->first;
@@ -1588,7 +1588,7 @@ workspace::perform_deletions(database & db,
                   file_t file = downcast_to_file_t(n);
                   shared_ptr<file_path> fpath(new file_path(name));
                   shared_ptr<file_id> fid(new file_id());
-                  file_ident_pool pool; // FIXME: speed this up!
+                  worker_pool pool; // FIXME: speed this up!
                   I(ident_existing_file(pool, fpath, fid));
                   pool.wait();
                   if (file->content == *fid)

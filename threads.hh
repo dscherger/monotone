@@ -19,32 +19,14 @@ public:
   virtual void operator()() = 0;
 };
 
-extern void create_thread_for(threaded_task * func);
-
-template <typename TASK, typename IN, typename OUT>
 class worker_pool
 {
+  int max_threads, num_threads;
   std::stack<threaded_task*> tstack;
 public:
-  worker_pool()
-    { };
-
-  void add_job(boost::shared_ptr<IN> in, boost::shared_ptr<OUT> out)
-    {
-      I(in);
-      I(out);
-      tstack.push(new TASK(in, out));
-    }
-
-  void wait(void)
-    {
-      while (!tstack.empty())
-        {
-          threaded_task *task = tstack.top();
-          tstack.pop();
-          create_thread_for(task);
-        }
-    }
+  worker_pool();
+  void add_job(threaded_task* t);
+  void wait();
 };
 
 // Local Variables:

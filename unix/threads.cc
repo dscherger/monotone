@@ -59,6 +59,26 @@ create_thread_for(threaded_task * task)
   delete task;
 }
 
+worker_pool::worker_pool()
+  : max_threads(4),
+    num_threads(0)
+{ }
+
+void worker_pool::add_job(threaded_task* t)
+{
+  tstack.push(t);
+}
+
+void worker_pool::wait(void)
+{
+  while (!tstack.empty())
+    {
+      threaded_task *task = tstack.top();
+      tstack.pop();
+      create_thread_for(task);
+    }
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

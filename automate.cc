@@ -758,10 +758,10 @@ struct inventory_itemizer : public tree_walker
   inventory_map & inventory;
   inodeprint_map ipm;
   workspace & work;
-  file_ident_pool & pool;
+  worker_pool & pool;
 
   inventory_itemizer(workspace & work,
-                     file_ident_pool & pool,
+                     worker_pool & pool,
                      path_restriction const & m,
                      inventory_map & i)
     : mask(m), inventory(i), work(work), pool(pool)
@@ -819,7 +819,7 @@ inventory_filesystem(workspace & work,
                      path_restriction const & mask,
                      inventory_map & inventory)
 {
-  file_ident_pool pool;
+  worker_pool pool;
   inventory_itemizer itemizer(work, pool, mask, inventory);
   file_path const root;
   // The constructor file_path() returns ""; the root directory. walk_tree

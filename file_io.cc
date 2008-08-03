@@ -551,17 +551,15 @@ public:
   }
 };
 
-template class worker_pool<file_hash_calc_task, file_path, file_id>;
-
 bool
-ident_existing_file(file_ident_pool & pool, shared_ptr<file_path> p,
+ident_existing_file(worker_pool & pool, shared_ptr<file_path> p,
                     shared_ptr<file_id> ident)
 {
   return ident_existing_file(pool, p, ident, get_path_status(*p));
 }
 
 bool
-ident_existing_file(file_ident_pool & pool, shared_ptr<file_path> p,
+ident_existing_file(worker_pool & pool, shared_ptr<file_path> p,
                     shared_ptr<file_id> ident, path::status status)
 {
   switch (status)
@@ -575,7 +573,7 @@ ident_existing_file(file_ident_pool & pool, shared_ptr<file_path> p,
       return false;
     }
 
-  pool.add_job(p, ident);
+  pool.add_job(new file_hash_calc_task(p, ident));
   return true;
 }
 
