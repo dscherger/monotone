@@ -486,6 +486,8 @@ public:
 struct
 cvs_history
 {
+  project_t & project;
+
   event_pool ev_pool;
 
   interner<u32> authorclog_interner;
@@ -505,6 +507,10 @@ cvs_history
   // X.Y.N.1 -> foo
   // this map is cleared for every RCS file.
   map<string, string> branch_first_entries;
+
+  // to support successive imports, we keep track of the latest
+  // imported revision for every branch.
+  map<cvs_symbol_no, revision_id> branch_head_rev;
 
   // event dependency tracking vectors
   vector<event_dep> dependencies;
@@ -531,8 +537,9 @@ cvs_history
   // the upper limit of what to import
   time_t upper_time_limit;
 
-  cvs_history(void)
-    : unnamed_branch_counter(0),
+  cvs_history(project_t & project)
+    : project(project),
+      unnamed_branch_counter(0),
       step_no(0),
       deps_sorted(false),
       upper_time_limit(0)
@@ -1603,6 +1610,37 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
   file_data curr_data(begin_data), next_data;
   file_id curr_id(begin_id), next_id;
 
+  // Lookup the latest imported revision in this branch.
+  revision_id head_rev;
+  if (cvs.branch_head_rev.find(current_branchname) == cvs.branch_head_rev.end())
+    {
+      // FIXME: this doesn't check for CVS certs and instead assumes, the
+      //         branch inserted into only has revisions imported from CVS.
+
+      string branchname = cvs.get_branchname(current_branchname);
+      set<revision_id> heads;
+
+      // We ignore suspend certs, because otherwise we could possibly fail
+      // to insert the same revision again.
+      cvs.project.get_branch_heads(branch_name(branchname), heads, true);
+      if (!heads.empty())
+        {
+          if (heads.size() > 1)
+            E(false, F("branch %s has multiple heads") % branchname);
+          head_rev = *(heads.begin());
+          cvs.branch_head_rev.insert(make_pair(current_branchname, head_rev));
+        }
+    }
+  else
+    head_rev = cvs.branch_head_rev.find(current_branchname)->second;
+
+  // If this is a successive import, find out what RCS version number this
+  // file has in that latest imported revision.
+  if (!null_id(head_rev))
+    {
+      I(false);
+    }
+
   // a counter for commits which are above our limit. We abort
   // only after consecutive violations of the limit.
   int commits_over_time = 0;
@@ -1980,9 +2018,9 @@ import_rcs_file_with_cvs(lua_hooks & lua, database & db,
 }
 
 void
-test_parse_rcs_file(system_path const & filename)
+test_parse_rcs_file(project_t & project, system_path const & filename)
 {
-  cvs_history cvs;
+  cvs_history cvs(project);
 
   I(! filename.empty());
   assert_path_is_file(filename);
@@ -4645,7 +4683,7 @@ import_cvs_repo(options & opts,
       "try importing a module instead, with 'cvs_import %s/<module_name>")
     % cvsroot % cvsroot);
 
-  cvs_history cvs;
+  cvs_history cvs(project);
   N(opts.branchname() != "", F("need base --branch argument for importing"));
 
   if (opts.until_given)
@@ -5473,6 +5511,10 @@ blob_consumer::operator()(cvs_blob_index bi)
                 utf8(changelog),
                 date_t::from_unix_epoch(commit_time),
                 author);
+
+        // add the RCS information
+        put_simple_revision_cert(project.db, keys, new_rid,
+          cert_name("origin"), cert_value("cvs_import"));
 
         ++n_revisions;
       }
