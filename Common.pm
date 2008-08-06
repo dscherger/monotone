@@ -1,8 +1,8 @@
 ##############################################################################
 #
-#   File Name    - Utilities.pm
+#   File Name    - Common.pm
 #
-#   Description  - The utilities module for the mtn-browse application. This
+#   Description  - The common module for the mtn-browse application. This
 #                  module contains assorted general purpose routines used
 #                  throughout the application.
 #

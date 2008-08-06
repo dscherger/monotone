@@ -87,12 +87,12 @@ use AdvancedFind;
 use Annotate;
 use ChangeLog;
 use ComboAutoCompletion;
+use Common;
 use Completion;
 use FindFiles;
 use FindText;
 use History;
 use Preferences;
-use Utilities;
 use WindowManager;
 
 # ***** GLOBAL DATA DECLARATIONS *****
