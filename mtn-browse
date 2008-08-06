@@ -145,6 +145,7 @@ sub revision_change_log_button_clicked_cb($$);
 sub save_as_button_clicked_cb($$);
 sub search_text_button_clicked_cb($$);
 sub setup_sigchld_handler($);
+sub show_line_numbers_togglebutton_toggled_cb($$);
 sub sigchld_handler();
 sub update_browser_state($$);
 sub view_button_clicked_cb($$);
@@ -928,6 +929,33 @@ sub find_files_button_clicked_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - show_line_numbers_togglebutton_toggled_cb
+#
+#   Description  - Callback routine called when the user toggles the show line
+#                  numbers button in a main browser window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub show_line_numbers_togglebutton_toggled_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    $browser->{file_view_sv}->set_show_line_numbers($widget->get_active());
+
+}
+#
+##############################################################################
+#
 #   Routine      - search_text_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the search
@@ -1439,6 +1467,7 @@ sub get_browser_window(;$$$$$)
 			    "directory_comboboxentry",
 			    "directory_up_button",
 			    "find_files_button",
+			    "show_line_numbers_togglebutton",
 			    "manifest_browser_treeview",
 			    "file_view_scrolledwindow",
 			    "file_name_value_label",
@@ -1625,6 +1654,8 @@ sub get_browser_window(;$$$$$)
 	$browser->{revision_combo_details}->{preset} = 0;
 	$browser->{directory_combo_details}->{preset} = 0;
 	$browser->{file_being_viewed_preset_value} = "";
+	$browser->{show_line_numbers_togglebutton}->set_active(FALSE);
+	$browser->{file_view_sv}->set_show_line_numbers(FALSE);
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 	$browser->{window}->show_all();
 
