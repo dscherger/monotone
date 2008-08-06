@@ -1930,8 +1930,8 @@ sub tags($$;$)
 #   Data         - $this         : The object.
 #                  \@list        : A reference to a list that is to contain
 #                                  the revision ids.
-#                  $revision_ids : The revision id that is to have its
-#                                  ancestors returned.
+#                  $revision_ids : The revision ids that are to be sorted with
+#                                  the ancestors coming first.
 #                  Return Value  : True on success, otherwise false on
 #                                  failure.
 #
