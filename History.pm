@@ -131,7 +131,6 @@ sub display_revision_change_history($$$)
     # Get the list of file change revisions. Remember to include the current
     # revision in the history.
 
-    $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $wm->update_gui();
     $history_hash{$revision_id} = 1;
@@ -139,12 +138,15 @@ sub display_revision_change_history($$$)
 
     # Sort the list.
 
+    $instance->{appbar}->set_progress_percentage(0.5);
     $instance->{appbar}->set_status(__("Sorting revision list"));
     $wm->update_gui();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
     %history_hash = ();
     @{$instance->{history}} = reverse(@{$instance->{history}});
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     # Display the file's history.
 
@@ -263,6 +265,8 @@ sub display_revision_change_history($$$)
 	}
 
     }
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     $instance->{stop_button}->set_sensitive(FALSE);
     set_label_value($instance->{numbers_value_label}, $counter)
@@ -333,7 +337,6 @@ sub display_file_change_history($$$)
     # generated when one goes back beyond a file's addition revision, so
     # temporarily disable the warning handler.
 
-    $instance->{appbar}->set_progress_percentage(0);
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $instance->{stop_button}->set_sensitive(TRUE);
     $wm->update_gui();
@@ -345,12 +348,15 @@ sub display_file_change_history($$$)
 
     # Sort the list.
 
+    $instance->{appbar}->set_progress_percentage(0.5);
     $instance->{appbar}->set_status(__("Sorting revision list"));
     $wm->update_gui();
     $instance->{history} = [];
     $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
     %history_hash = ();
     @{$instance->{history}} = reverse(@{$instance->{history}});
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     # Display the file's history.
 
@@ -463,6 +469,8 @@ sub display_file_change_history($$$)
 	++ $counter;
 
     }
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     # Make sure we are at the top.
 
@@ -1030,6 +1038,9 @@ sub compare_revisions($$$;$)
 
     }
 
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
+
     $instance->{stop_button}->set_sensitive(FALSE);
 
     # Delete the trailing newline.
@@ -1062,9 +1073,15 @@ sub compare_revisions($$$;$)
 	     CLS_LINE_NR_COLUMN, $file->{line_nr},
 	     CLS_FILE_ID_1_COLUMN, $file->{file_id_1},
 	     CLS_FILE_ID_2_COLUMN, $file->{file_id_2});
-	$instance->{appbar}->set_progress_percentage($i ++ / scalar(@files));
-	$wm->update_gui();
+	if (($i % 10) == 0)
+	{
+	    $instance->{appbar}->set_progress_percentage($i / scalar(@files));
+	    $wm->update_gui();
+	}
+	++ $i;
     }
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
     if (defined($file_name))
     {
 	$instance->{file_comparison_combobox}->set_active(1);
@@ -1404,6 +1421,7 @@ sub get_history_window()
 		 my($widget, $event, $instance) = @_;
 		 return TRUE if ($instance->{in_cb});
 		 local $instance->{in_cb} = 1;
+		 hide_find_text($instance->{history_textview});
 		 $widget->hide();
 		 $instance->{history_buffer}->set_text("");
 		 $instance->{mtn} = undef;
@@ -1612,6 +1630,7 @@ sub get_revision_comparison_window()
 		 my($widget, $event, $instance) = @_;
 		 return TRUE if ($instance->{in_cb});
 		 local $instance->{in_cb} = 1;
+		 hide_find_text($instance->{comparison_textview});
 		 $widget->hide();
 		 $instance->{file_comparison_combobox}->get_model()->clear();
 		 $instance->{comparison_buffer}->set_text("");

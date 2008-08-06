@@ -773,6 +773,8 @@ sub update_advanced_find_state($$)
 	    }
 	    ++ $counter;
 	}
+	$advanced_find->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$advanced_find->{branch_comboboxentry}->child()->
 	    set_text($advanced_find->{branch_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
@@ -835,6 +837,8 @@ sub update_advanced_find_state($$)
 	    }
 	    ++ $counter;
 	}
+	$advanced_find->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$advanced_find->{revision_comboboxentry}->child()->
 	    set_text($advanced_find->{revision_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
@@ -969,11 +973,12 @@ sub update_advanced_find_state($$)
 	    ++ $counter;
 	    last if ($advanced_find->{stop});
 	}
+	$advanced_find->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$advanced_find->{stop_button}->set_sensitive(FALSE);
 	$advanced_find->{stop} = 0;
 	$advanced_find->{revisions_treeview}->scroll_to_point(0, 0)
 	    if ($advanced_find->{revisions_treeview}->realized());
-
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
 	$wm->update_gui();

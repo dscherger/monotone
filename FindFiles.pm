@@ -618,6 +618,8 @@ sub search_files_button_clicked_cb($$)
 	}
 	++ $counter;
     }
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     $instance->{stop_button}->set_sensitive(FALSE);
     $instance->{stop} = 0;

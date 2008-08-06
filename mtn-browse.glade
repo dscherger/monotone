@@ -3325,6 +3325,8 @@ Tag</property>
 		  <property name="right_margin">0</property>
 		  <property name="indent">0</property>
 		  <property name="text" translatable="yes"></property>
+		  <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Wed, 06 Aug 2008 13:33:56 GMT"/>
+		  <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Wed, 06 Aug 2008 13:34:05 GMT"/>
 		</widget>
 	      </child>
 	    </widget>
@@ -3436,6 +3438,8 @@ Tag</property>
 			      <property name="right_margin">0</property>
 			      <property name="indent">0</property>
 			      <property name="text" translatable="yes"></property>
+			      <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Wed, 06 Aug 2008 13:34:41 GMT"/>
+			      <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Wed, 06 Aug 2008 13:36:43 GMT"/>
 			    </widget>
 			  </child>
 			</widget>
@@ -4201,6 +4205,8 @@ selected file in an external viewer</property>
 			  <property name="right_margin">0</property>
 			  <property name="indent">0</property>
 			  <property name="text" translatable="yes"></property>
+			  <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Wed, 06 Aug 2008 13:35:02 GMT"/>
+			  <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Wed, 06 Aug 2008 13:37:08 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -4396,6 +4402,8 @@ selected file in an external viewer</property>
 		      <property name="right_margin">0</property>
 		      <property name="indent">0</property>
 		      <property name="text" translatable="yes"></property>
+		      <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Wed, 06 Aug 2008 13:35:18 GMT"/>
+		      <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Wed, 06 Aug 2008 13:37:51 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -4552,7 +4560,6 @@ to be searched for</property>
 
 	      <child>
 		<widget class="GtkComboBoxEntry" id="find_comboboxentry">
-		  <property name="width_request">300</property>
 		  <property name="visible">True</property>
 		  <signal name="changed" handler="find_comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:39:43 GMT"/>
 		</widget>
@@ -4604,6 +4611,27 @@ to be case sensitive or not</property>
 of the search</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes">Search backwards</property>
+		  <property name="use_underline">True</property>
+		  <property name="relief">GTK_RELIEF_NORMAL</property>
+		  <property name="focus_on_click">True</property>
+		  <property name="active">False</property>
+		  <property name="inconsistent">False</property>
+		  <property name="draw_indicator">True</property>
+		</widget>
+		<packing>
+		  <property name="padding">0</property>
+		  <property name="expand">False</property>
+		  <property name="fill">False</property>
+		</packing>
+	      </child>
+
+	      <child>
+		<widget class="GtkCheckButton" id="regular_expression_checkbutton">
+		  <property name="visible">True</property>
+		  <property name="tooltip" translatable="yes">Use regular expression
+search patterns</property>
+		  <property name="can_focus">True</property>
+		  <property name="label" translatable="yes">Regular expression</property>
 		  <property name="use_underline">True</property>
 		  <property name="relief">GTK_RELIEF_NORMAL</property>
 		  <property name="focus_on_click">True</property>
@@ -8349,8 +8377,8 @@ MB</property>
 				      <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 188 10 169.199996948 188</property>
-				      <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+				      <property name="hadjustment">0 0 188 10 169.2 188</property>
+				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
 					<widget class="GtkEventBox" id="author_value_label_eventbox">
@@ -8411,8 +8439,8 @@ MB</property>
 				      <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 188 10 169.199996948 188</property>
-				      <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+				      <property name="hadjustment">0 0 188 10 169.2 188</property>
+				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
 					<widget class="GtkEventBox" id="last_update_value_label_eventbox">
@@ -8556,8 +8584,8 @@ updated with respect to this revision</property>
 				      <property name="tooltip" translatable="yes">File's unique id in database</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 192 10 172.800003052 192</property>
-				      <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+				      <property name="hadjustment">0 0 192 10 172.8 192</property>
+				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
 					<widget class="GtkEventBox" id="file_id_value_label_eventbox">
@@ -8619,8 +8647,8 @@ updated with respect to this revision</property>
 file was last changed</property>
 				      <property name="width">1</property>
 				      <property name="height">1</property>
-				      <property name="hadjustment">0 0 192 10 172.800003052 192</property>
-				      <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+				      <property name="hadjustment">0 0 192 10 172.8 192</property>
+				      <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				      <child>
 					<widget class="GtkEventBox" id="file_revision_id_value_label_eventbox">

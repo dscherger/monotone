@@ -55,8 +55,10 @@ my $window_type = "find_text_window";
 
 # Public routines.
 
-sub disable_find_text($$);
+sub enable_find_text($$);
 sub find_text($$);
+sub find_text_textview_key_press_event_cb($$$);
+sub find_text_textview_populate_popup_cb($$$);
 sub hide_find_text($);
 sub reset_find_text($);
 
@@ -125,43 +127,43 @@ sub reset_find_text($)
 #
 ##############################################################################
 #
-#   Routine      - disable_find_text
+#   Routine      - enable_find_text
 #
-#   Description  - Disables or enables the find text window associated with
+#   Description  - Enables or disables the find text window associated with
 #                  the specified textview widget.
 #
 #   Data         - $text_view : The textview widget to which the find text
 #                               window is associated.
-#                  $disable   : True if the window is to be disabled,
-#                               otherwise false if it is to be enabled.
+#                  $disable   : True if the window is to be enabled,
+#                               otherwise false if it is to be disabled.
 #
 ##############################################################################
 
 
 
-sub disable_find_text($$)
+sub enable_find_text($$)
 {
 
-    my($text_view, $disable) = @_;
+    my($text_view, $enable) = @_;
 
     my $instance;
 
-    # Simply disable/enable the found find text window.
+    # Simply enable/disable the found find text window.
 
     if (defined($instance = find_current_window($text_view)))
     {
-	if ($disable)
-	{
-	    $instance->{main_vbox}->set_sensitive(FALSE);
-	    $instance->{find_button}->set_sensitive(FALSE);
-	}
-	else
+	if ($enable)
 	{
 	    $instance->{main_vbox}->set_sensitive(TRUE);
 	    $instance->{find_button}->set_sensitive
 		((length($instance->{find_comboboxentry}->child()->get_text())
 		  > 0) ?
 		 TRUE : FALSE);
+	}
+	else
+	{
+	    $instance->{main_vbox}->set_sensitive(FALSE);
+	    $instance->{find_button}->set_sensitive(FALSE);
 	}
     }
 
@@ -197,6 +199,116 @@ sub hide_find_text($)
 #
 ##############################################################################
 #
+#   Routine      - find_text_textview_populate_popup_cb
+#
+#   Description  - Callback routine called when the user right clicks on any
+#                  textview window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $menu     : The Gtk2::Menu widget that is to be updated.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub find_text_textview_populate_popup_cb($$$)
+{
+
+    my($widget, $menu, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($menu_item,
+       $separator);
+
+    # Add a `Find' option to the right-click menu that displays the find text
+    # dialog.
+
+    $menu_item = Gtk2::MenuItem->new("_Find");
+    $menu_item->signal_connect
+	("activate",
+	 sub {
+	     my($widget, $details) = @_;
+	     return if ($details->{instance}->{in_cb});
+	     local $details->{instance}->{in_cb} = 1;
+	     find_text($details->{instance}->{window},
+		       $details->{textview_widget});
+	 },
+	 {instance        => $instance,
+	  textview_widget => $widget});
+    $menu_item->show();
+    $separator = Gtk2::SeparatorMenuItem->new();
+    $separator->show();
+    $menu->append($separator);
+    $menu->append($menu_item);
+
+}
+#
+##############################################################################
+#
+#   Routine      - find_text_textview_key_press_event_cb
+#
+#   Description  - Callback routine called when the user presses a key inside
+#                  a textview window.
+#
+#   Data         - $widget      : The widget object that received the signal.
+#                  $event       : A Gtk2::Gdk::Event object describing the
+#                                 event that has occurred.
+#                  $instance    : The window instance that is associated with
+#                                 this widget.
+#                  Return Value : TRUE if the event has been handled and needs
+#                                 no further handling, otherwise false if the
+#                                 event should carry on through the remaining
+#                                 event handling.
+#
+##############################################################################
+
+
+
+sub find_text_textview_key_press_event_cb($$$)
+{
+
+    my($widget, $event, $instance) = @_;
+
+    return FALSE if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($consumed_modifiers,
+       $keymap,
+       $keyval,
+       $state);
+
+    # Ignore the state of the caps-lock key.
+
+    $state = $event->state() - "lock_mask";
+
+    # Work out what the key is having taken into account any modifier keys
+    # (except caps-lock).
+
+    $keymap =
+	Gtk2::Gdk::Keymap->get_for_display(Gtk2::Gdk::Display->get_default());
+    ($keyval, $consumed_modifiers) =
+	($keymap->translate_keyboard_state
+	 ($event->hardware_keycode(), $state, $event->group()))[0, 3];
+
+    # We are only interested in Ctrl-f.
+
+    if (defined($keyval) && $keyval == $Gtk2::Gdk::Keysyms{f}
+	&& ($state - $consumed_modifiers) == "control_mask")
+    {
+	find_text($instance->{window}, $widget);
+	return TRUE;
+    }
+
+    return FALSE;
+
+}
+#
+##############################################################################
+#
 #   Routine      - find_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the find
@@ -225,11 +337,65 @@ sub find_button_clicked_cb($$)
        $forward,
        $found,
        $line,
+       $match_len,
        $rect,
        $search_term,
-       $start_iter);
+       $start_iter,
+       $use_regexp);
+
+    # Get the search parameters.
 
     $search_term = $instance->{find_comboboxentry}->child()->get_text();
+    $case_sensitive = $instance->{case_sensitive_checkbutton}->get_active();
+    $forward = ! $instance->{search_backwards_checkbutton}->get_active();
+    $use_regexp = $instance->{regular_expression_checkbutton}->get_active();
+
+    # Precompile the regular expression based upon the search term. When the
+    # user themselves is using regular expressions then check for errors. Also
+    # use the bytes pragma as $search_term could potentially be used against
+    # binary data.
+
+    {
+	use bytes;
+	if ($use_regexp)
+	{
+	    eval
+	    {
+		if ($case_sensitive)
+		{
+		    $expr = qr/$search_term/;
+		}
+		else
+		{
+		    $expr = qr/$search_term/i;
+		}
+	    };
+	    if ($@ ne "")
+	    {
+		my $dialog = Gtk2::MessageDialog->new
+		    ($instance->{window},
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __x("`{pattern}' is an invalid\ncontent search pattern.",
+			 pattern => $search_term));
+		$dialog->run();
+		$dialog->destroy();
+		return;
+	    }
+	}
+	else
+	{
+	    if ($case_sensitive)
+	    {
+		$expr = qr/\Q$search_term\E/;
+	    }
+	    else
+	    {
+		$expr = qr/\Q$search_term\E/i;
+	    }
+	}
+    }
 
     # Store the search term in the history.
 
@@ -254,11 +420,6 @@ sub find_button_clicked_cb($$)
 	    $instance->{find_comboboxentry}->append_text($entry);
 	}
     }
-
-    # Get the search parameters.
-
-    $case_sensitive = $instance->{case_sensitive_checkbutton}->get_active();
-    $forward = ! $instance->{search_backwards_checkbutton}->get_active();
 
     # Work out where to start searching from.
 
@@ -330,17 +491,6 @@ sub find_button_clicked_cb($$)
 
     }
 
-    # Precompile the regular expression based upon the search term.
-
-    if ($case_sensitive)
-    {
-	$expr = qr/\Q$search_term\E/;
-    }
-    else
-    {
-	$expr = qr/\Q$search_term\E/i;
-    }
-
     # Search for the text.
 
     $found = 0;
@@ -351,20 +501,25 @@ sub find_button_clicked_cb($$)
 	    $instance->{text_buffer}->get_text($start_iter, $end_iter, TRUE);
 	if ($forward)
 	{
-	    $pos = pos($line) if ($found = scalar($line =~ m/$expr/g));
+	    if ($found = scalar($line =~ m/$expr/g))
+	    {
+		$pos = pos($line);
+		$match_len = length($&);
+	    }
 	}
 	else
 	{
 	    while ($line =~ m/$expr/g)
 	    {
 		$pos = pos($line);
+		$match_len = length($&);
 		$found = 1;
 	    }
 	}
 	if ($found)
 	{
 	    $instance->{match_offset_start} =
-		$start_iter->get_offset() + $pos - length($search_term);
+		$start_iter->get_offset() + $pos - $match_len;
 	    $instance->{match_offset_end} = $start_iter->get_offset() + $pos;
 	    $done = 1;
 	}
@@ -533,6 +688,7 @@ sub get_find_text_window($$)
 			    "find_comboboxentry",
 			    "case_sensitive_checkbutton",
 			    "search_backwards_checkbutton",
+			    "regular_expression_checkbutton",
 			    "find_button")
 	{
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
@@ -594,7 +750,7 @@ sub get_find_text_window($$)
 	((length($instance->{find_comboboxentry}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
 
-    # Store the associated textview and text buffer.
+    # Store the associated textview and textbuffer.
 
     $instance->{text_view} = $text_view;
     $instance->{text_buffer} = $instance->{text_view}->get_buffer();
@@ -603,6 +759,11 @@ sub get_find_text_window($$)
 
     $instance->{window}->set_transient_for($parent);
     $instance->{window}->show_all();
+
+    # Make sure that the find comboboxentry has the focus.
+
+    $instance->{find_comboboxentry}->child()->grab_focus();
+    $instance->{find_comboboxentry}->child()->set_position(-1);
 
     # If necessary, register the window for management.
 

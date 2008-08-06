@@ -169,6 +169,8 @@ sub display_annotation($$$)
 	}
 
     }
+    $instance->{appbar}->set_progress_percentage(1);
+    $wm->update_gui();
 
     # Delete the trailing newline.
 
@@ -246,6 +248,7 @@ sub get_annotation_window()
 		 my($widget, $event, $instance) = @_;
 		 return TRUE if ($instance->{in_cb});
 		 local $instance->{in_cb} = 1;
+		 hide_find_text($instance->{annotation_textview});
 		 $widget->hide();
 		 $instance->{annotation_buffer}->set_text("");
 		 return TRUE;

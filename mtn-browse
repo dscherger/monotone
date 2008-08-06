@@ -63,6 +63,7 @@ use Glib qw(FALSE TRUE);
 use Gnome2;
 use Gnome2::VFS -init;
 use Gtk2 -init;
+use Gtk2::Gdk::Keysyms;
 use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
@@ -123,6 +124,7 @@ sub close_toolbutton_clicked_cb($$);
 sub determine_mime_type($$$$);
 sub directory_up_button_clicked_cb($$);
 sub display_file($$);
+sub enable_find_text_dialog($$);
 sub file_change_history_button_clicked_cb($$);
 sub find_files_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
@@ -1571,6 +1573,17 @@ sub get_browser_window(;$$$$$)
 	$browser->{file_view_sv}->set_cursor_visible(FALSE);
 	$browser->{file_view_sv}->set_editable(FALSE);
 	$browser->{file_view_scrolledwindow}->add($browser->{file_view_sv});
+	$browser->{file_view_sv_populate_popup_handler} =
+	    $browser->{file_view_sv}->signal_connect
+	        ("populate_popup",
+		 \&find_text_textview_populate_popup_cb,
+		 $browser);
+	$browser->{file_view_sv_key_press_handler} =
+	    $browser->{file_view_sv}->signal_connect
+	        ("key_press_event",
+		 \&find_text_textview_key_press_event_cb,
+		 $browser);
+	$browser->{file_view_sv_enabled_find_text} = 1;
 	$browser->{file_view_sv}->show_all();
 
 	local $browser->{in_cb} = 1;
@@ -1779,6 +1792,8 @@ sub update_browser_state($$)
 	    }
 	    ++ $counter;
 	}
+	$browser->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$browser->{branch_comboboxentry}->child()->
 	    set_text($browser->{branch_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
@@ -1840,6 +1855,8 @@ sub update_browser_state($$)
 	    }
 	    ++ $counter;
 	}
+	$browser->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$browser->{revision_comboboxentry}->child()->
 	    set_text($browser->{revision_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
@@ -1966,6 +1983,8 @@ sub update_browser_state($$)
 	    }
 	    ++ $counter;
 	}
+	$browser->{appbar}->set_progress_percentage(1);
+	$wm->update_gui();
 	$browser->{directory_comboboxentry}->child()->
 	    set_text($browser->{directory_combo_details}->{value});
 	$browser->{appbar}->set_progress_percentage(0);
@@ -2091,6 +2110,11 @@ sub update_browser_state($$)
 	    ++ $counter;
 
 	}
+	if ($taking_our_time)
+	{
+	    $browser->{appbar}->set_progress_percentage(1);
+	    $wm->update_gui();
+	}
 
 	$browser->{manifest_browser_treeview}->scroll_to_point(0, 0)
 	    if ($browser->{manifest_browser_treeview}->realized());
@@ -2132,7 +2156,7 @@ sub update_browser_state($$)
 		    $widget->set_sensitive(FALSE);
 		}
 		reset_find_text($browser->{file_view_sv});
-		disable_find_text($browser->{file_view_sv}, 1);
+		enable_find_text_dialog($browser, 0);
 
 		# Display the selected file's contents.
 
@@ -2149,7 +2173,7 @@ sub update_browser_state($$)
 		    {
 			$widget->set_sensitive(TRUE);
 		    }
-		    disable_find_text($browser->{file_view_sv}, 0);
+		    enable_find_text_dialog($browser, 1);
 		}
 
 		# Update the file details labels.
@@ -2194,7 +2218,7 @@ sub update_browser_state($$)
 	    set_label_value($browser->{file_id_value_label}, "");
 	    set_label_value($browser->{last_update_value_label}, "");
 	    set_label_value($browser->{file_revision_id_value_label}, "");
-	    disable_find_text($browser->{file_view_sv}, 1);
+	    enable_find_text_dialog($browser, 0);
 
 	}
 
@@ -2426,6 +2450,53 @@ sub determine_mime_type($$$$)
 		$$mime_details = $entry;
 		return;
 	    }
+	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - enable_find_text_dialog
+#
+#   Description  - Enable or disable any find text dialog associated with the
+#                  specified browser instance.
+#
+#   Data         - $browser : The browser instance that is to have any
+#                             associated find text dialog enabled or disabled.
+#                  $enable  : True if the find text dialog is to be enabled,
+#                             otherwise false if it is to be disabled.
+#
+##############################################################################
+
+
+
+sub enable_find_text_dialog($$)
+{
+
+    my($browser, $enable) = @_;
+
+    enable_find_text($browser->{file_view_sv}, $enable);
+    if ($enable)
+    {
+	if (! $browser->{file_view_sv_enabled_find_text})
+	{
+	    $browser->{file_view_sv}->signal_handler_unblock
+		($browser->{file_view_sv_populate_popup_handler});
+	    $browser->{file_view_sv}->signal_handler_unblock
+		($browser->{file_view_sv_key_press_handler});
+	    $browser->{file_view_sv_enabled_find_text} = 1;
+	}
+    }
+    else
+    {
+	if ($browser->{file_view_sv_enabled_find_text})
+	{
+	    $browser->{file_view_sv}->signal_handler_block
+		($browser->{file_view_sv_populate_popup_handler});
+	    $browser->{file_view_sv}->signal_handler_block
+		($browser->{file_view_sv_key_press_handler});
+	    $browser->{file_view_sv_enabled_find_text} = 0;
 	}
     }
 
