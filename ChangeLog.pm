@@ -141,7 +141,8 @@ sub generate_revision_report($$$$;$)
 
     my($bold,
        $cert_max_len,
-       $change_log,
+       @change_logs,
+       $i,
        $italics,
        $manifest_id,
        $normal,
@@ -192,8 +193,9 @@ sub generate_revision_report($$$$;$)
     {
 	if ($cert->{name} eq "changelog")
 	{
-	    $change_log = $cert->{value};
+	    my $change_log = $cert->{value};
 	    $change_log =~ s/\s+$//os;
+	    push(@change_logs, $change_log);
 	}
 	else
 	{
@@ -209,15 +211,28 @@ sub generate_revision_report($$$$;$)
 		 $normal);
 	}
     }
+    push(@change_logs, "") if (scalar(@change_logs) == 0);
 
-    # Change log.
+    # Change log(s).
 
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   __("\nChange Log:\n"),
-					   $bold);
-    $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   sprintf("%s", $change_log),
-					   $normal);
+    $i = 1;
+    foreach my $change_log (@change_logs)
+    {
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       "\n",
+					       $normal)
+	    if ($i > 1);
+	$text_buffer->insert_with_tags_by_name
+	    ($text_buffer->get_end_iter(),
+	     __x("\nChange Log{optional_count}:\n",
+		 optional_count => (scalar(@change_logs) > 1)
+		     ? sprintf(" %d", $i) : ""),
+	     $bold);
+	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
+					       $change_log,
+					       $normal);
+	++ $i;
+    }
 
     # The rest is only provided if it is a detailed report.
 

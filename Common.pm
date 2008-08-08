@@ -657,9 +657,12 @@ sub get_branch_revisions($$$$$)
     else
     {
 
-	# Get the list of revision ids.
+	# Get the list of revision ids, if no branch is specified then get all
+	# of the revisions within the database.
 
-	$mtn->select($revisions, "b:" . $branch);
+	$mtn->select($revisions,
+		     ((defined($branch) && $branch ne "") ? "b:" : "i:")
+		         . $branch);
 
 	# Does it need truncating?
 
@@ -720,6 +723,51 @@ sub get_branch_revisions($$$$$)
 #
 ##############################################################################
 #
+#   Routine      - get_revision_ids
+#
+#   Description  - Return the currently selected revision id, whether this is
+#                  specified via a tag or as a revision id.
+#
+#   Data         - $instance     : The window instance.
+#                  $revision_ids : A reference to a list that is to contain
+#                                  the revision ids. Normally the list will
+#                                  have at most one element but may contain
+#                                  more if the tag isn't unique on the current
+#                                  branch.
+#                  $tag          : A reference to a variable that is to
+#                                  contain the tag name that the user selected
+#                                  or undef if the user selected a revision id
+#                                  directly. This is optional.
+#
+##############################################################################
+
+
+
+sub get_revision_ids($$;$)
+{
+
+    my($instance, $revision_ids, $tag) = @_;
+
+    @$revision_ids=();
+    $$tag = undef if (defined($tag));
+    return unless ($instance->{revision_combo_details}->{complete});
+    if ($instance->{tagged_checkbutton}->get_active())
+    {
+	$instance->{mtn}->
+	    select($revision_ids,
+		   "t:" . $instance->{revision_combo_details}->{value});
+	$$tag = $instance->{revision_combo_details}->{value}
+	    if (defined($tag));
+    }
+    else
+    {
+	push(@$revision_ids, $instance->{revision_combo_details}->{value});
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_file_details
 #
 #   Description  - Get the details of the specified file.
@@ -772,51 +820,6 @@ sub get_file_details($$$$$$)
 	    $$last_update = $cert->{value};
 	}
 	last if ($$author ne "" && $$last_update ne "");
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_revision_ids
-#
-#   Description  - Return the currently selected revision id, whether this is
-#                  specified via a tag or as a revision id.
-#
-#   Data         - $instance     : The window instance.
-#                  $revision_ids : A reference to a list that is to contain
-#                                  the revision ids. Normally the list will
-#                                  have at most one element but may contain
-#                                  more if the tag isn't unique on the current
-#                                  branch.
-#                  $tag          : A reference to a variable that is to
-#                                  contain the tag name that the user selected
-#                                  or undef if the user selected a revision id
-#                                  directly. This is optional.
-#
-##############################################################################
-
-
-
-sub get_revision_ids($$;$)
-{
-
-    my($instance, $revision_ids, $tag) = @_;
-
-    @$revision_ids=();
-    $$tag = undef if (defined($tag));
-    return unless ($instance->{revision_combo_details}->{complete});
-    if ($instance->{tagged_checkbutton}->get_active())
-    {
-	$instance->{mtn}->
-	    select($revision_ids,
-		   "t:" . $instance->{revision_combo_details}->{value});
-	$$tag = $instance->{revision_combo_details}->{value}
-	    if (defined($tag));
-    }
-    else
-    {
-	push(@$revision_ids, $instance->{revision_combo_details}->{value});
     }
 
 }

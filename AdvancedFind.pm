@@ -167,7 +167,6 @@ sub advanced_find($$$)
 	}
 	unshift(@$branches, $advanced_find->{branch_combo_details}->{value})
 	    if ($found);
-	push(@$branches, "") if (scalar(@$branches) == 0);
 
 	$ret_val = 1;
     }

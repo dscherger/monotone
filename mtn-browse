@@ -701,7 +701,8 @@ sub advanced_find_button_clicked_cb($$)
 	if ($preset_branch)
 	{
 	    $browser->{branch_combo_details}->{preset} = 1;
-	    $browser->{branch_combo_details}->{value} = $branches[0];
+	    $browser->{branch_combo_details}->{value} =
+		(scalar(@branches) > 0) ? $branches[0] : "";
 	    $state = ALL_CHANGED;
 	}
 
