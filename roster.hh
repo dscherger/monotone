@@ -143,12 +143,23 @@ template <> void dump(node_t const & n, std::string & out);
 struct marking_t
 {
   typedef enum {add, suture, split} birth_cause_t;
+  struct birth_record_t
+  {
+    birth_cause_t cause;
+    std::set<node_id> parents; // parents of sutured nodes, recursive; see ss-existence-merge.text
+
+    birth_record_t() : cause(add){};
+    birth_record_t(birth_cause_t cause,
+                   std::set<node_id> parents) :
+      cause(cause), parents(parents){};
+    birth_record_t(birth_cause_t cause,
+                   std::pair<node_id, node_id> parents) :
+      cause(cause){this->parents.insert(parents.first); this->parents.insert(parents.second);};
+  };
 
   revision_id birth_revision;
 
-  // if suture, the node_ids indicate the ancestors. If split, the first
-  // node_id indicates the ancestor.
-  std::pair<birth_cause_t, std::pair<node_id, node_id> > birth_cause;
+  birth_record_t birth_record;
 
   // These sets hold the minimal marking map for the merge scalars; see
   // ss-mark-merge.text.
@@ -156,11 +167,11 @@ struct marking_t
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
 
-  marking_t() : birth_cause (std::make_pair (add, null_ancestors)) {};
   bool operator==(marking_t const & other) const
   {
     return birth_revision == other.birth_revision
-      && birth_cause == birth_cause
+      && birth_record.cause == birth_record.cause
+      && birth_record.parents == birth_record.parents
       && parent_name == other.parent_name
       && file_content == other.file_content
       && attrs == other.attrs;

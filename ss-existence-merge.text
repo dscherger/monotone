@@ -166,7 +166,7 @@ ic)
     suture is modified in the other parent's uncommon ancestors. Node
     1 is copied into the child.
 
-    Note that this is the same as case iiib, with the roles of nodes 1
+    Note that this is the same as case iiia, with the roles of nodes 1
     and 3 swapped.
 
     This case also extends to sutured parents:
@@ -181,6 +181,22 @@ ic)
 
     All parents of sutured nodes must be unmodified. Some of the
     parents may be born in A's uncommon ancestors.
+
+    Another variant is when some of the common parents of node 1 are
+    also sutured in the other parent:
+
+          D4a  A2e   I5d  H2e
+            \  /       \ /
+             A6f  E4a  F3b
+                \   \  /
+     G5d         \  B1c
+       \          \ /
+                  C1c
+
+    Since we cannot easily tell if the scalars a and e were modified
+    in the suture f, we declare this to be case id; a conflict.
+    However, if there is a node in A that has exactly the same set of
+    suture parents as node 1 in B, then we have case ie.
 
 
       D2b  E3a  F2b  G3a
@@ -197,13 +213,39 @@ id)
 
     Node 1 was born in a suture in an uncommon ancestor. It exists in
     one parent, and is unborn in the other. One or both parents of the
-    suture are modified in the other parent's uncommon ancestors. This
-    is a scalar/suture conflict.
+    suture are modified in the other parent's uncommon ancestors.
 
-    Note that this is the same as case iiic, with the roles of nodes 1
+    If there is exactly one parent of the suture that is common to A
+    and B, it can be merged by the mark-merge step. We could extend
+    this special case to allow exactly one modified parent of the
+    suture. Otherwise this is a scalar/suture conflict.
+
+    Note that this is the same as case iiib, with the roles of nodes 1
     and 3 swapped.
 
     As for case 1c, this case extends to sutured parents.
+
+
+      D2  E3  F2  G3
+        \ /     \ /
+         A1     B4
+           \   /
+            C5
+ie)
+      D2  E3  F2  G3
+        \ /     \ /
+         A4     B1
+           \   /
+            C5
+
+    Node 1 was born in a suture in an uncommon ancestor. It exists in
+    one parent, and is unborn in the other. The parents of node 1 in
+    one parent are also the parents of node 4 in the other.
+
+    Nodes 4 and 1 are sutured in the child, and their contents merged.
+    This is done automatically; it is not a conflict.
+
+    Note that this is the resolution of case id), after user sutures.
 
 
       D2  E3  F2  G5
@@ -211,7 +253,7 @@ id)
          A1     B4
            \   /
             C1?
-ie)
+if)
       D2  E5  F2  G3
         \ /     \ /
          A4     B1
@@ -220,8 +262,8 @@ ie)
 
     Node 1 was born in a suture in an uncommon ancestor. It exists in
     one parent, and is unborn in the other. A parent of the suture was
-    sutured into a different node in the other parent's uncommon
-    ancestors. This is a suture/suture conflict.
+    sutured with different parents into a different node in the other
+    parent's uncommon ancestors. This is a suture/suture conflict.
 
 
         A1  B1
@@ -233,34 +275,16 @@ ii)      \ /
     values; it is merged in the child.
 
 
-          D1  E2
-           \ /
-        A1  B3
-         \ /
-          C3
-iiia)
-      D1  E2
-       \ /
-        A3  B1
-         \ /
-          C3
-
-    Node 1 was born in a common ancestor. Node 3 was born in a suture
-    in an uncommon ancestor, with node 1 as a parent; node 2 was also
-    born in an uncommon ancestor. Node 1 exists in one parent, and is
-    sutured in the other. Node 1 is merged with the sutured node 3 in
-    the child.
-
               D1a  E2b
-               \  /
+                \  /
       A2b  A1a  B3c
        \    \  /
              C3c
-iiib)
+iiia)
       D1a  E2b
-       \  /
-       A3c  B1a  B2b
-         \ /    /
+        \  /
+        A3c  B1a  B2b
+          \  /    /
           C3c
 
     Nodes 1 and 2 were born in common ancestors. Node 3 was born in a
@@ -289,27 +313,26 @@ iiib)
       A2b  A1d  B3c
        \    \  /
         C3?  C3?
-iiic)
+iiib)
       D1a  E2b
        \  /
        A3c  B1d  B2b
          \ /    /
           C3?  C3?
 
-    Nodes 1 and 2 were born in common ancestors. Node 3 was born in a
-    suture in an uncommon ancestor, with nodes 1 and 2 as parents;
-    node 1 (and possibly 2) is modified in B.
+    Node 3 was born in a suture in an uncommon ancestor, with nodes 1
+    and 2 as parents; node 1 (and possibly 2) is modified in B.
 
-    If the scalar for only node 1 is modified, this could be handled
-    in the same way as iiia; nodes 1 and 3 are merged in the child.
-    However, if both nodes 1 and 2 are modified, then we need to do two
-    merges, and the order may matter. So we require the user to suture
-    nodes 1 and 2 in both parents before doing this merge; this is a
-    non-resolvable conflict content/suture conflict.
+    As for case iiia, this extends to an arbitrary number of sutured
+    nodes.
 
-    As for case iiib, this extends to an arbitrary number of sutured
-    nodes; if any ancestor node of the final sutured node is modified,
-    we have a conflict.
+    If there is exactly one parent of the suture that is common to A
+    and B, it can be merged by the mark-merge step. We could extend
+    this special case to allow exactly one modified parent of the
+    suture. Otherwise more than one parent is modified in B, and we
+    need to do more than one merge, and the order may matter. So we
+    require the user to suture all parents before doing this merge;
+    this is a scalar/suture conflict.
 
 
         A1  B~1
@@ -373,9 +396,10 @@ only considers nodes that are in the result roster.
 
 To distinguish among these cases, we need to store information about
 how a node was born. This is done in the marking map, by storing
-birth_cause, a pair containing an enumeral and a pair of node_ids. The
-enumeral indicates add or suture; if suture, the node_ids
-indicate the ancestors.
+birth_cause, a pair containing an enumeral and a set of node_ids. The
+enumeral indicates add or suture; if suture, the node_ids indicate all
+of the suture parents (including parents of parents that are sutures,
+etc).
 
 Then when node 1 exists in A but not B, we search A's uncommon
 ancestors for the birth revision of node 1. If found, we have case i;
@@ -387,23 +411,31 @@ cause is suture, we need to check for cases ib, ic, id, ie. These are
 distinguished by the state of the parents of the sutured node in
 revision B.
 
-First we find the set of common ancestor nodes of node 1; the
-parents of the suture that created node 1, and recursively for any
-other sutures in the revision tree holding A's uncommon ancestor
-revisions, that were born in common ancestors of A and B.
+First we find the set of common ancestor nodes of node 1; the parents
+of the suture that created node 1, and recursively for any other
+sutures in the revision tree holding A's uncommon ancestor revisions,
+that were born in common ancestors of A and B. This is done by
+checking the set of parents in the birth record for revisions in A's
+uncommon ancestors.
 
 Then we check to see if node 1's common ancestor nodes exist in B,
-either directly, or as the parents of sutures.
+either directly, or as the parents of sutures. We do this by searching
+thru all nodes in B. If a node is in the common ancestor nodes, we
+note that it was found. If a node is sutured, we check its parent set
+for the common ancestor nodes, noting any that are found, and any that
+are not in the common ancestor nodes.
 
-If any of node 1's common ancestor nodes do not exist in B at all, or
-were sutured and then dropped, we have case ib.
+If any of node 1's common ancestor nodes are not found, we have case ib.
 
-If all of node 1's common ancestor nodes exist in B, and none were
-sutured into different nodes than in A, and all their scalars are
-unmodified, we have case 1c. If any scalars are modified, we have case
-id.
+If all of node 1's common ancestor nodes are found, we have case ic or id.
 
-If any were sutured into different nodes, we have case ie.
+If a node is found with an exactly matching parent set, we have case ie.
+
+To distinguish case ic from id, we check if any common ancestor nodes
+were sutured; if so, we have case id. Otherwise we check to see if any
+scalars are modified; if so, we have case id. Otherwise, we have case
+1c.
+
 
 If node 1 was born in a common ancestor of A and B, we have case iii
 or iv.
@@ -412,40 +444,24 @@ To distinguish case iii from iv, we search B's uncommon ancestors for
 a node that is a suture and has 1 as a parent. If found, it is case
 iii. If not found, it is case iv.
 
-To distinguish case iiia from iiib and iiic, we search A's uncommon
-ancestor revisions for the birth revision of the other parent of the
-suture. If found, it is case iiia; if not, case iiib or iiic.
-
-To distinguish case iiib from iiic, we form the set of sibling nodes;
-nodes that are parents of sutures that are parents of the final
-suture. Then we check the scalar values on the sibling nodes; if any
-have changed, it is case iiic.
+To distinguish case iiia from iiib, we form the set of common ancestor
+nodes as above, but this time for node 3. Then the processing is the
+same as for case i.
 
 To distinguish case iva from ivb, we search A's uncommon ancestor
-revisions for revisions in the A's scalar marking map; if found, node
+revisions for revisions in A's scalar marking map; if found, node
 1 is modified, and we have case ivb.
 
 
-Since case ic is the same as iiib, and id is the same as case iiic, we
+Since case ic is the same as iiia, and id is the same as case iiib, we
 will encounter each case twice, once for node 1 and once for node 3.
 We handle both nodes when we encounter either, so we maintain a set
 'already_handled' of already handled nodes; if a node is in
 already_handled, we simply ignore it.
 
-The processing for case i is more efficient than the processing for
-case iii, so we process the nodes in decreasing numerical order. Since
-sutured nodes have higher node ids than their parents, case i will
-always be encountered before case iii.
-
-FIXME: not clear if the following paragraph is correct or needed:
-
-This lets us detect nodes that are sutured then dropped, as follows.
-When we encounter case ic or id, we put all of the common ancestor
-nodes in the child, and in already_handled. Then when we encounter any
-ancestor node later, we remove it from already_handled. If there are
-any nodes left in already_handled when all nodes are processed, they
-are case id, and we declare conflicts for them. Thus already_handled
-must store pairs of node_ids; the sutured node id and ancestor node
-ids.
+The processing for case i is slightly more efficient than the
+processing for case iii, so we process the nodes in decreasing
+numerical order. Since sutured nodes have higher node ids than their
+parents, case i will always be encountered before case iii.
 
 (end of file)

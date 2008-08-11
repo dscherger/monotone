@@ -83,7 +83,7 @@ roster_t::required_roster_format(marking_map const & mm) const
   unsigned int result = oldest_supported_roster_format;
 
   for (marking_map::const_iterator i = mm.begin(); i != mm.end(); ++i)
-    if (i->second.birth_cause.first != marking_t::add)
+    if (i->second.birth_record.cause != marking_t::add)
       result = 2;
 
   return result;
@@ -113,30 +113,37 @@ dump(full_attr_map_t const & val, string & out)
 }
 
 template <> void
-dump(std::pair<marking_t::birth_cause_t, std::pair<node_id, node_id> > const & birth_cause, string & out)
+dump(marking_t::birth_cause_t const & birth_cause, string & out)
 {
   ostringstream oss;
   string tmp;
-  switch (birth_cause.first)
+  switch (birth_cause)
     {
     case marking_t::add:
       out = syms::birth_add();
       return;
 
     case marking_t::suture:
-      dump(birth_cause.second.first, tmp);
-      oss << syms::birth_suture() << " " << tmp;
-      dump(birth_cause.second.second, tmp);
-      oss  << " " << tmp;
-      out = oss.str();
+      out = syms::birth_suture();
       return;
 
     case marking_t::split:
-      dump(birth_cause.second.first, tmp);
-      oss << syms::birth_split() << tmp;
-      out = oss.str();
+      I(false); // FIXME_SPLIT:
       return;
     }
+}
+
+template <> void
+dump(std::set<node_id> const & parents, string & out)
+{
+  ostringstream oss;
+  string tmp;
+  for (std::set<node_id>::const_iterator i = parents.begin(); i != parents.end(); i++)
+    {
+      dump(*i, tmp);
+      oss << " " << tmp;
+    }
+  out = oss.str();
 }
 
 template <> void
@@ -160,8 +167,10 @@ dump(marking_t const & marking, string & out)
   ostringstream oss;
   string tmp;
   oss << "birth_revision: " << marking.birth_revision << '\n';
-  dump(marking.birth_cause, tmp);
-  oss << "birth_cause: " << tmp << '\n';
+  dump(marking.birth_record.cause, tmp);
+  oss << "birth_record.cause: " << tmp << '\n';
+  dump(marking.birth_record.parents, tmp);
+  oss << "birth_record.parents: " << tmp << '\n';
   dump(marking.parent_name, tmp);
   oss << "parent_name: " << tmp << '\n';
   dump(marking.file_content, tmp);
@@ -1614,9 +1623,9 @@ namespace
     new_marking.birth_revision = new_rid;
 
     if (n->ancestors.first == n->self || n->ancestors.first == the_null_node)
-      new_marking.birth_cause = make_pair(marking_t::add, null_ancestors);
+      new_marking.birth_record = marking_t::birth_record_t();
     else
-      new_marking.birth_cause = make_pair(marking_t::suture, n->ancestors);
+      new_marking.birth_record = marking_t::birth_record_t(marking_t::suture, n->ancestors);
 
     I(new_marking.parent_name.empty());
     new_marking.parent_name.insert(new_rid);
@@ -1645,7 +1654,7 @@ namespace
     I(same_type(parent_n, n) && parent_n->self == n->self);
 
     new_marking.birth_revision = parent_marking.birth_revision;
-    new_marking.birth_cause = parent_marking.birth_cause;
+    new_marking.birth_record = parent_marking.birth_record;
 
     mark_unmerged_scalar(parent_marking.parent_name,
                          make_pair(parent_n->parent, parent_n->name),
@@ -1694,7 +1703,7 @@ namespace
         // not a suture; a user add in a two-parent workspace.
         I(left_marking.birth_revision == right_marking.birth_revision);
         new_marking.birth_revision = left_marking.birth_revision;
-        new_marking.birth_cause = make_pair (marking_t::add, null_ancestors);
+        new_marking.birth_record = marking_t::birth_record_t();
       }
     else
       {
@@ -1705,20 +1714,20 @@ namespace
             // ln was previously sutured, now rn is being added to the
             // suture. Keep the birth revision for the original suture.
             new_marking.birth_revision = left_marking.birth_revision;
-            new_marking.birth_cause = left_marking.birth_cause;
+            new_marking.birth_record = left_marking.birth_record;
           }
         else if (rn->self == n->self)
           {
             // rn was previously sutured, now ln is being added to the
             // suture. Keep the birth revision for the original suture.
             new_marking.birth_revision = right_marking.birth_revision;
-            new_marking.birth_cause = right_marking.birth_cause;
+            new_marking.birth_record = right_marking.birth_record;
           }
         else
           {
             // new suture
             new_marking.birth_revision = new_rid;
-            new_marking.birth_cause = make_pair (marking_t::suture, make_pair(ln->self, rn->self));
+            new_marking.birth_record = marking_t::birth_record_t (marking_t::suture, make_pair(ln->self, rn->self));
           }
       }
 
@@ -1874,7 +1883,7 @@ mark_merge_roster(roster_t const & left_roster,
           node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
 
-          switch (left_marking.birth_cause.first)
+          switch (left_marking.birth_record.cause)
             {
              case marking_t::add:
                // Must be unborn on the right (as opposed to dead);
@@ -1892,11 +1901,14 @@ mark_merge_roster(roster_t const & left_roster,
             case marking_t::suture:
               {
                 // If one of the ancestor nodes is in right, merge marks with it.
-                node_id right_nid = left_marking.birth_cause.second.first;
+                // FIXME_SUTURE: handle recursive parents
+                I(left_marking.birth_record.parents.size() == 2);
+                set<node_id>::const_iterator left_parents_i = left_marking.birth_record.parents.begin();
+                node_id right_nid = *left_parents_i;
                 node_map::const_iterator rni = right_roster.all_nodes().find(right_nid);
                 if (rni == right_roster.all_nodes().end())
                   {
-                    right_nid = left_marking.birth_cause.second.second;
+                    right_nid = *(++left_parents_i);
                     rni = right_roster.all_nodes().find(right_nid);
                   }
 
@@ -2792,7 +2804,7 @@ push_marking(basic_io::stanza & st,
   I(!null_id(mark.birth_revision));
   st.push_binary_pair(syms::birth, mark.birth_revision.inner());
 
-  switch (mark.birth_cause.first)
+  switch (mark.birth_record.cause)
     {
     case marking_t::add:
       if (marking_format > 1)
@@ -2803,18 +2815,19 @@ push_marking(basic_io::stanza & st,
       {
         I(marking_format > 1);
         std::vector<std::string> data;
-        data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
-        data.push_back(lexical_cast<string>(mark.birth_cause.second.second));
+        for (set<node_id>::const_iterator parents_i = mark.birth_record.parents.begin();
+             parents_i != mark.birth_record.parents.end();
+             parents_i++)
+          {
+            data.push_back(lexical_cast<string>(*parents_i));
+          }
         st.push_str_multi(syms::birth_cause, syms::birth_suture, data);
       }
       break;
 
     case marking_t::split:
       {
-        I(marking_format > 1);
-        std::vector<std::string> data;
-        data.push_back(lexical_cast<string>(mark.birth_cause.second.first));
-        st.push_str_multi(syms::birth_cause, syms::birth_split, data);
+        I(false); // FIXME_SPLIT:
       }
       break;
     };
@@ -2866,24 +2879,20 @@ parse_marking(basic_io::parser & pa,
           if (pa.symp (syms::birth_add))
             {
               pa.sym();
-              marking.birth_cause = make_pair (marking_t::add, null_ancestors);
+              marking.birth_record = marking_t::birth_record_t();
             }
           else if (pa.symp (syms::birth_suture))
             {
               pa.sym();
               pa.str(tmp_1);
               pa.str(tmp_2);
-              marking.birth_cause = make_pair (marking_t::suture,
+              marking.birth_record = marking_t::birth_record_t (marking_t::suture,
                                                make_pair(lexical_cast<node_id>(tmp_1),
                                                          lexical_cast<node_id>(tmp_2)));
             }
           else if (pa.symp (syms::birth_split))
             {
-              pa.sym();
-              pa.str(tmp_1);
-              marking.birth_cause = make_pair (marking_t::split,
-                                               make_pair(lexical_cast<node_id>(tmp_1),
-                                                         the_null_node));
+              I(false); // FIXME_SPLIT:
             }
           else
             {

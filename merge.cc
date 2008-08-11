@@ -141,6 +141,7 @@ resolve_merge_conflicts(lua_hooks & lua,
           // resolve the ones we can.
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_content_drop_conflicts(left_roster, right_roster);
+          result.resolve_suture_drop_conflicts(left_roster, right_roster);
           result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
         }
     }
@@ -155,6 +156,7 @@ resolve_merge_conflicts(lua_hooks & lua,
       result.report_multiple_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_duplicate_name_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_content_drop_conflicts(left_roster, right_roster, false, std::cout);
+      result.report_suture_drop_conflicts(left_roster, right_roster, false, std::cout);
 
       result.report_attribute_conflicts(left_roster, right_roster, adaptor, false, std::cout);
       result.report_file_content_conflicts(lua, left_roster, right_roster, adaptor, false, std::cout);

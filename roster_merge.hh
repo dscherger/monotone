@@ -18,7 +18,28 @@
 #include "diff_patch.hh"
 #include "roster.hh" // needs full definition of roster_t available
 
-// our general strategy is to return a (possibly insane) roster, and a list of
+// When adding a new conflict type, add all of the following:
+//
+// - in this file:
+// -- A struct definition
+// -- A dump template declaration
+// -- A vector of the conflicts in roster_merge_result
+// -- 'report' and 'resolve' functions in roster_merge_result
+// - in roster_merge.cc:
+// -- bodies for dump, report, resolve
+// -- line in roster_merge_result::has_non_content_conflicts
+// -- line in dump_conflicts
+// -- 'parse_*_conflicts'
+// -- case in parse_resolve_conflicts_str
+// -- line in parse_resolve_conflicts_opts
+// -- line in roster_merge_result::clear
+// -- cases to record conflicts in roster_merge and subroutines
+// - in merge.cc:
+// -- resolve and report lines in resolve_merge_conflicts
+// - in cmd_merging.cc:
+// -- line in show_conflicts_core
+
+// Our general strategy is to return a (possibly insane) roster, and a list of
 // conflicts encountered in that roster.  Each conflict encountered in merging
 // the roster creates an entry in this list.
 //
@@ -107,13 +128,13 @@ struct duplicate_name_conflict
     right_resolution.first = resolve_conflicts::none;};
 };
 
-// files with content_drop conflicts are left attached in result roster
-// (unless unattached for another reason), with parent content hash.
+// files with content_drop conflicts are unattached in result roster, with
+// parent content hash.
 struct content_drop_conflict
 {
   node_id nid;
-  file_id fid;
   resolve_conflicts::side_t parent_side; // node is in parent_side roster, not in other roster
+  file_id fid;
 
   // resolution is one of none, ignore_drop, respect_drop. If ignore_drop,
   // provide new name to allow avoiding name conflicts.
@@ -123,36 +144,75 @@ struct content_drop_conflict
     nid(the_null_node), parent_side(resolve_conflicts::left_side) {resolution.first = resolve_conflicts::none;};
 
   content_drop_conflict(node_id nid, file_id fid, resolve_conflicts::side_t parent_side) :
-    nid(nid), fid(fid), parent_side(parent_side){resolution.first = resolve_conflicts::none;};
+    nid(nid), parent_side(parent_side), fid(fid) {resolution.first = resolve_conflicts::none;};
 };
 
-// files with suture_drop conflicts are left attached in result roster
-// (unless unattached for another reason), with parent content hash.
+// files with suture_drop conflicts are unattached in result roster, with
+// sutured parent content hash.
 struct suture_drop_conflict
 {
   // We don't store the file_id in the conflict, to support suturing and
   // conflicting directories in the future.
+  //
+  // sutured_nid is in sutured_side roster, not in other roster
+  // dropped_nids are dropped in other roster
   node_id sutured_nid;
-  node_id ancestor_nid;
-  resolve_conflicts::side_t parent_side; // node is in parent_side roster, not in other roster
+  resolve_conflicts::side_t sutured_side;
+  std::set<node_id> dropped_nids;
 
-  // resolution is one of none, ignore_drop, respect_drop. If ignore_drop,
+  // resolution is one of none, ignore_drop. If ignore_drop,
   // provide new name to allow avoiding name conflicts.
   std::pair<resolve_conflicts::resolution_t, file_path> resolution;
 
   suture_drop_conflict () :
     sutured_nid(the_null_node),
-    ancestor_nid(the_null_node),
-    parent_side(resolve_conflicts::left_side)
+    sutured_side(resolve_conflicts::left_side)
   {resolution.first = resolve_conflicts::none;};
 
   suture_drop_conflict(node_id sutured_nid,
-                       node_id ancestor_nid,
-                       resolve_conflicts::side_t parent_side) :
+                       resolve_conflicts::side_t sutured_side,
+                       std::set<node_id> dropped_nids) :
     sutured_nid(sutured_nid),
-    ancestor_nid(ancestor_nid),
-    parent_side(parent_side)
+    sutured_side(sutured_side),
+    dropped_nids(dropped_nids)
   {resolution.first = resolve_conflicts::none;};
+};
+
+// files with suture_suture conflicts are left attached in result roster
+// (unless unattached for another reason), with sutured parent content hash.
+struct suture_suture_conflict
+{
+  // We don't store the file_id in the conflict, to support suturing and
+  // conflicting directories in the future.
+  //
+  // sutured_nid is in sutured_side roster, not in other roster
+  // common_parents are parents of suture_nid common to both parent rosters
+  // conflict_nids are in other roster, have subset of common_parents
+  // extra_nids are in other roster, have some parents in common_parents, other parents not in common_parents
+  node_id sutured_nid;
+  resolve_conflicts::side_t sutured_side;
+  std::set<node_id> common_parents;
+  std::set<node_id> conflict_nids;
+  std::set<node_id> extra_nids;
+
+  // There is no resolution; user must suture the nodes in the other parent
+  // to match the sutured parent, or undo the sutures in the sutured parent
+  // to match the other parent.
+
+  suture_suture_conflict () :
+    sutured_nid(the_null_node),
+    sutured_side(resolve_conflicts::left_side) {};
+
+  suture_suture_conflict(node_id sutured_nid,
+                         resolve_conflicts::side_t sutured_side,
+                         std::set<node_id> common_parents,
+                         std::set<node_id> conflict_nids,
+                         std::set<node_id> extra_nids) :
+    sutured_nid(sutured_nid),
+    sutured_side(sutured_side),
+    common_parents(common_parents),
+    conflict_nids(conflict_nids),
+    extra_nids(extra_nids) {};
 };
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
@@ -203,6 +263,7 @@ template <> void dump(duplicate_name_conflict const & conflict, std::string & ou
 template <> void dump(attribute_conflict const & conflict, std::string & out);
 template <> void dump(file_content_conflict const & conflict, std::string & out);
 template <> void dump(content_drop_conflict const & conflict, std::string & out);
+template <> void dump(suture_drop_conflict const & conflict, std::string & out);
 
 struct roster_merge_result
 {
@@ -215,6 +276,8 @@ struct roster_merge_result
   //   - multiple name conflicts
   //   - directory loop conflicts
   //   - content_drop conflicts
+  //   - suture_drop conflicts
+  //   - suture_suture conflicts
   // - attribute conflicts
   // - file content conflicts
 
@@ -226,6 +289,8 @@ struct roster_merge_result
   std::vector<multiple_name_conflict> multiple_name_conflicts;
   std::vector<duplicate_name_conflict> duplicate_name_conflicts;
   std::vector<content_drop_conflict> content_drop_conflicts;
+  std::vector<suture_drop_conflict> suture_drop_conflicts;
+  std::vector<suture_suture_conflict> suture_suture_conflicts;
 
   std::vector<attribute_conflict> attribute_conflicts;
   std::vector<file_content_conflict> file_content_conflicts;
@@ -271,6 +336,7 @@ struct roster_merge_result
                                        bool const basic_io,
                                        std::ostream & output) const;
   void resolve_duplicate_name_conflicts(lua_hooks & lua,
+                                        temp_node_id_source nis,
                                         roster_t const & left_roster,
                                         roster_t const & right_roster,
                                         content_merge_adaptor & adaptor);
@@ -281,6 +347,13 @@ struct roster_merge_result
                                      std::ostream & output) const;
   void resolve_content_drop_conflicts(roster_t const & left_roster,
                                       roster_t const & right_roster);
+
+  void report_suture_drop_conflicts(roster_t const & left_roster,
+                                    roster_t const & right_roster,
+                                    bool const basic_io,
+                                    std::ostream & output) const;
+  void resolve_suture_drop_conflicts(roster_t const & left_roster,
+                                     roster_t const & right_roster);
 
   void report_attribute_conflicts(roster_t const & left,
                                   roster_t const & right,
@@ -314,6 +387,7 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
+             temp_node_id_source nis,
              roster_merge_result & result);
 
 void

@@ -48,7 +48,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
                 revision_id const & right_rid, roster_t const & right_roster,
                 roster_merge_result & result,
                 marking_map & left_markings,
-                marking_map & right_markings)
+                marking_map & right_markings,
+                temp_node_id_source & nis)
 {
   MM(ancestor_roster);
   MM(left_roster);
@@ -85,7 +86,7 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   // And do the merge
   roster_merge(left_roster, left_markings, left_uncommon_ancestors,
                right_roster, right_markings, right_uncommon_ancestors,
-               result);
+               nis, result);
 }
 
 static bool
@@ -268,7 +269,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
       roster_merge(*working_roster, working_markings, working_uncommon_ancestors,
                    chosen_roster, chosen_markings, chosen_uncommon_ancestors,
-                   result);
+                   nis, result);
     }
   else
     {
@@ -299,7 +300,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       three_way_merge(base_rid, *base_roster,
                       working_rid, *working_roster,
                       chosen_rid, chosen_roster,
-                      result, working_markings, chosen_markings);
+                      result, working_markings, chosen_markings, nis);
 
     }
 
@@ -639,8 +640,8 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         db.get_roster(left_rid, left_roster, left_marking_map);
         db.get_roster(right_rid, right_roster, right_marking_map);
         db.get_uncommon_ancestors(left_rid, right_rid,
-                                      left_uncommon_ancestors,
-                                      right_uncommon_ancestors);
+                                  left_uncommon_ancestors,
+                                  right_uncommon_ancestors);
 
         if (!idx(args,2)().empty())
           {
@@ -663,6 +664,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
             i->second.parent_name.insert(left_rid);
           }
 
+        temp_node_id_source nis;
         roster_merge_result result;
         roster_merge(left_roster,
                      left_marking_map,
@@ -670,7 +672,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
                      right_roster,
                      right_marking_map,
                      right_uncommon_ancestors,
-                     result);
+                     nis, result);
 
         content_merge_database_adaptor
           dba(db, left_rid, right_rid, left_marking_map, right_marking_map);
@@ -778,11 +780,12 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
                                 left_uncommon_ancestors,
                                 right_uncommon_ancestors);
 
+  temp_node_id_source nis;
   roster_merge_result merge_result;
   MM(merge_result);
   roster_merge(*left.first, *left.second, left_uncommon_ancestors,
                *right.first, *right.second, right_uncommon_ancestors,
-               merge_result);
+               nis, merge_result);
 
   revision_id lca_id;
   cached_roster lca;
@@ -896,10 +899,11 @@ show_conflicts_core (database & db,
   db.get_roster(r_id, *r_roster, r_marking);
   set<revision_id> l_uncommon_ancestors, r_uncommon_ancestors;
   db.get_uncommon_ancestors(l_id, r_id, l_uncommon_ancestors, r_uncommon_ancestors);
+  temp_node_id_source nis;
   roster_merge_result result;
   roster_merge(*l_roster, l_marking, l_uncommon_ancestors,
                *r_roster, r_marking, r_uncommon_ancestors,
-               result);
+               nis, result);
 
   // note that left and right are in the order specified on the command line
   // they are not in lexical order as they are with other merge commands so
@@ -955,6 +959,7 @@ show_conflicts_core (database & db,
       result.report_multiple_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_duplicate_name_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_content_drop_conflicts(*l_roster, *r_roster, basic_io, output);
+      result.report_suture_drop_conflicts(*l_roster, *r_roster, basic_io, output);
 
       result.report_attribute_conflicts(*l_roster, *r_roster, adaptor, basic_io, output);
       result.report_file_content_conflicts(lua, *l_roster, *r_roster, adaptor, basic_io, output);
@@ -1162,7 +1167,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   three_way_merge(from_rid, *from_roster,
                   working_rid, *working_roster,
                   to_rid, *to_roster,
-                  result, left_markings, right_markings);
+                  result, left_markings, right_markings, nis);
 
   roster_t & merged_roster = result.roster;
 
