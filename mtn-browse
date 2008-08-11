@@ -133,6 +133,7 @@ sub main_window_delete_event_cb($$$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
 sub monotone_viz_button_clicked_cb($$);
+sub mtn_db_locked_handler($$);
 sub mtn_error_handler($$);
 sub new_blank_menu_item_clicked_cb($$);
 sub new_toolbutton_clicked_cb($$);
@@ -177,6 +178,11 @@ sub view_button_clicked_cb($$);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
+
+    # Set up the default database locked handler for the Monotone class.
+
+    Monotone::AutomateStdio->
+	register_db_locked_handler(\&mtn_db_locked_handler);
 
     # Load in user preferences.
 
@@ -290,7 +296,7 @@ sub view_button_clicked_cb($$);
 
     }
 
-    # Set up the error handlers for the Monotone library.
+    # Set up the error handlers for the Monotone class.
 
     Monotone::AutomateStdio->register_error_handler("both",
 						    \&mtn_error_handler);
@@ -300,25 +306,31 @@ sub view_button_clicked_cb($$);
     # that control can be handed over to Gtk2 before updating the display.
 
     $browser = get_browser_window($mtn);
-    if (defined($mtn) && defined($branch))
+    if (defined($mtn))
     {
-	Glib::Idle->add
-	    (sub {
-		 my $browser = $_[0];
+	$mtn->register_db_locked_handler(\&mtn_db_locked_handler,
+					 $browser->{window});
+	if (defined($branch))
+	{
+	    Glib::Idle->add
+		(sub {
+		     my $browser = $_[0];
 
-		 return if ($browser->{in_cb});
-		 local $browser->{in_cb} = 1;
+		     return if ($browser->{in_cb});
+		     local $browser->{in_cb} = 1;
 
-		 $browser->{branch_combo_details}->{preset} = 1;
-		 $browser->{branch_combo_details}->{value} = $branch;
-		 $browser->{revision_combo_details}->{preset} = 1;
-		 $browser->{revision_combo_details}->{value} = $revision_id;
-		 $browser->{tagged_checkbutton}->set_active(FALSE);
-		 &{$browser->{update_handler}}($browser, ALL_CHANGED);
+		     $browser->{branch_combo_details}->{preset} = 1;
+		     $browser->{branch_combo_details}->{value} = $branch;
+		     $browser->{revision_combo_details}->{preset} = 1;
+		     $browser->{revision_combo_details}->{value} =
+			 $revision_id;
+		     $browser->{tagged_checkbutton}->set_active(FALSE);
+		     &{$browser->{update_handler}}($browser, ALL_CHANGED);
 
-		 return FALSE;
-	     },
-	     $browser);
+		     return FALSE;
+		 },
+		 $browser);
+	}
     }
     $mtn = undef;
 
@@ -518,6 +530,8 @@ sub open_toolbutton_clicked_cb($$)
     if (open_database($browser->{window}, \$mtn, undef))
     {
 	$browser->{mtn} = $mtn;
+	$mtn->register_db_locked_handler(\&mtn_db_locked_handler,
+					 $browser->{window});
 	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
     }
 
@@ -1340,9 +1354,10 @@ sub manifest_browser_treeview_row_activated_cb($$$$)
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
 #                                 event that has occurred.
-#                  $client_data : The client data associated with this widget.
+#                  $browser     : The browser instance that is associated with
+#                                 this widget.
 #                  Return Value : TRUE if the event has been handled and needs
-#                                 no further handling, otherwise false if the
+#                                 no further handling, otherwise FALSE if the
 #                                 event should carry on through the remaining
 #                                 event handling.
 #
@@ -1972,7 +1987,7 @@ sub update_browser_state($$)
 		    if ($cert->{name} eq "changelog")
 		    {
 			$change_log = $cert->{value};
-			$change_log =~ s/\s+$//os;
+			$change_log =~ s/\s+$//s;
 		    }
 		}
 		set_label_value($browser->{revision_id_value_label},
@@ -2104,7 +2119,7 @@ sub update_browser_state($$)
 		    $author = $item->{manifest_entry}->{author};
 		    $last_update = $item->{manifest_entry}->{last_update};
 		}
-		$last_update =~ s/T/ /o;
+		$last_update =~ s/T/ /;
 	    }
 	    else
 	    {
@@ -2224,7 +2239,7 @@ sub update_browser_state($$)
 				         {last_changed_revision});
 		}
 		$last_update = $manifest_entry->{last_update};
-		$last_update =~ s/T/ /o;
+		$last_update =~ s/T/ /;
 		set_label_value($browser->{file_name_value_label},
 				$manifest_entry->{name});
 		set_label_value($browser->{file_id_value_label},
@@ -2333,7 +2348,7 @@ sub display_file($$)
 
 	# Image/non-image data?
 
-	if ($mime_type =~ m/^image\/.+$/o)
+	if ($mime_type =~ m/^image\/.+$/)
 	{
 
 	    # Image data.
@@ -2531,6 +2546,47 @@ sub enable_find_text_dialog($$)
 	    $browser->{file_view_sv_enabled_find_text} = 0;
 	}
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - mtn_db_locked_handler
+#
+#   Description  - This routine is called when ever a locked database
+#                  condition is detected.
+#
+#   Data         - $mtn         : The Monotone instance handle that
+#                                 encountered the locked database.
+#                  $parent      : The parent window for any dialogs that are
+#                                 to be displayed.
+#                  Return Value : True if the command is to be retried,
+#                                 otherwise false if the locked database
+#                                 should be reported as an error.
+#
+##############################################################################
+
+
+
+sub mtn_db_locked_handler($$)
+{
+
+    my($mtn, $parent) = @_;
+
+    my $dialog;
+    my $wm = WindowManager->instance();
+
+    $dialog = Gtk2::MessageDialog->new
+	($parent,
+	 ["modal"],
+	 "info",
+	 "ok",
+	 __("The Monotone database is currently locked, please\n")
+	     . __("dismiss this dialog when this is no longer the case."));
+    $wm->allow_input(sub { $dialog->run(); });
+    $dialog->destroy();
+
+    return 1;
 
 }
 #

@@ -380,7 +380,7 @@ sub term_combobox_changed_cb($$)
     $selector = $advanced_find->{term_combobox}->get_model()->get
 	($advanced_find->{term_combobox}->get_active_iter(), 0);
 
-    if ($selector =~ m/^Date .*$/o)
+    if ($selector =~ m/^Date .*$/)
     {
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(TRUE);

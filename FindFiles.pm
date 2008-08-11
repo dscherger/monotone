@@ -705,7 +705,7 @@ sub results_treeview_cursor_changed_cb($$)
 		$last_update = $manifest_entry->{last_update};
 	    }
 	    $file_id = $manifest_entry->{file_id};
-	    $last_update =~ s/T/ /o;
+	    $last_update =~ s/T/ /;
 	}
 	else
 	{

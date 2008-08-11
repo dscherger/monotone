@@ -626,7 +626,7 @@ sub add_mime_type_button_clicked_cb($$)
     # Check entry to see if it is valid.
 
     $mime_type = $instance->{mime_type_entry}->get_text();
-    if ($mime_type !~ m/^[^\/]+\/[^\/]+$/o)
+    if ($mime_type !~ m/^[^\/]+\/[^\/]+$/)
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($instance->{window},
@@ -1228,11 +1228,11 @@ sub load_preferences_into_gui($)
     for my $item (@colour_mapping_table)
     {
 	my $field;
-	if ($item->{widget} =~ m/foreground/o)
+	if ($item->{widget} =~ m/foreground/)
 	{
 	    $field = "fg";
 	}
-	elsif ($item->{widget} =~ m/background/o)
+	elsif ($item->{widget} =~ m/background/)
 	{
 	    $field = "bg";
 	}
@@ -1384,11 +1384,11 @@ sub save_preferences_from_gui($)
     for my $item (@colour_mapping_table)
     {
 	my $field;
-	if ($item->{widget} =~ m/foreground/o)
+	if ($item->{widget} =~ m/foreground/)
 	{
 	    $field = "fg";
 	}
-	elsif ($item->{widget} =~ m/background/o)
+	elsif ($item->{widget} =~ m/background/)
 	{
 	    $field = "bg";
 	}
@@ -1604,12 +1604,12 @@ sub initialise_mime_info_table()
 
 	# Only process recognisable MIME type entries.
 
-	if ($line !~ m/^(\s)|(\#.*)$/o && $line =~ m/^[^:]*:.*$/o)
+	if ($line !~ m/^(\s)|(\#.*)$/ && $line =~ m/^[^:]*:.*$/)
 	{
 
 	    # Break lines into their MIME type and file name patterns fields.
 
-	    ($type, $pattern) = $line =~ m/^([^:]*):(.*)$/o;
+	    ($type, $pattern) = $line =~ m/^([^:]*):(.*)$/;
 
 	    # File the data, creating a node if necessary
 
@@ -1620,18 +1620,18 @@ sub initialise_mime_info_table()
 	    else
 	    {
 		$display_internally = $syntax_highlight = 0;
-		if ($type =~ m/^application\/.+$/o)
+		if ($type =~ m/^application\/.+$/)
 		{
-		    ($part) = ($type =~ m/^application\/(.+)$/o);
+		    ($part) = ($type =~ m/^application\/(.+)$/);
 		    $display_internally = $syntax_highlight = 1
 			if (grep(/\Q$part\E/, @text_viewable_app_mime_types)
 			    > 0);
 		}
-		elsif ($type =~ m/^image\/.+$/o)
+		elsif ($type =~ m/^image\/.+$/)
 		{
 		    $display_internally = 1;
 		}
-		elsif ($type =~ m/^text\/.+$/o)
+		elsif ($type =~ m/^text\/.+$/)
 		{
 		    $display_internally = $syntax_highlight = 1;
 		}

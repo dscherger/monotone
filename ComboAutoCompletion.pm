@@ -212,7 +212,7 @@ sub comboboxentry_key_release_event_cb($$$)
 
 	    # So that the spacebar triggers auto-complete.
 
-	    $value =~ s/\s+$//o;
+	    $value =~ s/\s+$//;
 	    $len = length($value);
 
 	    $combo_details->{completion} =

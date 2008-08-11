@@ -953,7 +953,7 @@ sub create_format_tags($)
 	foreach my $prefix ("annotate_prefix_", "annotate_text_")
 	{
 	    my $tag = $prefix;
-	    $tag =~ s/_/-/go;
+	    $tag =~ s/_/-/g;
 	    $clr = $user_preferences->{colours}->{$prefix . $i};
 	    $text_buffer->create_tag($tag . $i,
 				     "foreground" => $clr->{fg},

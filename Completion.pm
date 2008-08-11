@@ -105,7 +105,7 @@ sub new($;$)
 	# Build up nodes for an item.
 
 	$level = $this->{tree};
-	foreach $char (split(//o, $item))
+	foreach $char (split(//, $item))
 	{
 	    if (! exists($level->{$char}))
 	    {
@@ -162,7 +162,7 @@ sub get_completion($$$$)
 
     $level = $this->{tree};
     $$result = "";
-    foreach $char (split(//o, $value))
+    foreach $char (split(//, $value))
     {
 	last unless (exists($level->{$char}));
 	$level = $level->{$char};

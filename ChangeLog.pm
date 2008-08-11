@@ -194,12 +194,12 @@ sub generate_revision_report($$$$;$)
 	if ($cert->{name} eq "changelog")
 	{
 	    my $change_log = $cert->{value};
-	    $change_log =~ s/\s+$//os;
+	    $change_log =~ s/\s+$//s;
 	    push(@change_logs, $change_log);
 	}
 	else
 	{
-	    $cert->{value} =~ s/T/ /o if ($cert->{name} eq "date");
+	    $cert->{value} =~ s/T/ / if ($cert->{name} eq "date");
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
 		 sprintf("%-*s ",

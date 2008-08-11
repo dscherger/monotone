@@ -112,11 +112,11 @@ sub display_annotation($$$)
     # the prefix and text parts.
 
     $max_len = 0;
-    $template = sprintf("a%da2a*", length(($lines[0] =~ m/^([^:]+):.*$/o)[0]));
+    $template = sprintf("a%da2a*", length(($lines[0] =~ m/^([^:]+):.*$/)[0]));
     for ($i = 0; $i <= $#lines; ++ $i)
     {
 	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0,2];
-	$lines[$i] =~ s/\s+$//o;
+	$lines[$i] =~ s/\s+$//;
 	$lines[$i] = expand($lines[$i]);
 	$max_len = $len if (($len = length($lines[$i])) > $max_len);
     }
@@ -133,7 +133,7 @@ sub display_annotation($$$)
 
 	# Change the colours if there is a new prefix.
 
-	if ($prefix[$i] !~ m/^\s+$/o)
+	if ($prefix[$i] !~ m/^\s+$/)
 	{
 	    if ($prefix_tag ne "annotate-prefix-1")
 	    {
@@ -331,7 +331,7 @@ sub mtn_annotate($$$$)
 
     # Break up the input into a list of lines.
 
-    @$list = split(/\n/o, $buffer);
+    @$list = split(/\n/, $buffer);
 
     return 1;
 

@@ -766,7 +766,7 @@ sub compare_revisions($$$;$)
 	$max_len = $separator = 0;
 	foreach my $line (@lines)
 	{
-	    if ($line =~ m/^==/o)
+	    if ($line =~ m/^==/)
 	    {
 		$separator = 1;
 	    }
@@ -774,12 +774,12 @@ sub compare_revisions($$$;$)
 	    {
 		$rest = expand(substr($line, 3)) . " ";
 		$max_len = $len if (($len = length($rest)) > $max_len);
-		$separator = 0 if ($line =~ m/^\+\+\+ .+\s+[0-9a-f]{40}$/o);
+		$separator = 0 if ($line =~ m/^\+\+\+ .+\s+[0-9a-f]{40}$/);
 	    }
 	    else
 	    {
 		($char, $rest) = unpack("a1a*", $line);
-		$rest =~ s/\s+$//o;
+		$rest =~ s/\s+$//;
 		$rest = expand($rest);
 		$max_len = $len if (($len = length($rest)) > $max_len);
 		$line = $char . $rest;
@@ -804,7 +804,7 @@ sub compare_revisions($$$;$)
 	    # Deal with the initial comment lines that summarise the entire set
 	    # of differences between the revisions.
 
-	    if ($lines[$i] =~ m/^\#/o)
+	    if ($lines[$i] =~ m/^\#/)
 	    {
 		$line = substr($lines[$i], 1);
 		$instance->{comparison_buffer}->insert
@@ -814,7 +814,7 @@ sub compare_revisions($$$;$)
 
 	    # Deal with lines that introduce a new file comparison.
 
-	    elsif ($lines[$i] =~ m/^==/o)
+	    elsif ($lines[$i] =~ m/^==/)
 	    {
 
 		# Check for aborts.
@@ -836,19 +836,19 @@ sub compare_revisions($$$;$)
 		# binary.
 
 		++ $i;
-		($name) = ($lines[$i] =~ m/^--- (.+)\t[0-9a-f]{40}$/o);
+		($name) = ($lines[$i] =~ m/^--- (.+)\t[0-9a-f]{40}$/);
 		if (defined($name))
 		{
 		    $is_binary = 0;
 		    ($file_id_1) =
-			($lines[$i] =~ m/^--- .+\t([0-9a-f]{40})$/o);
+			($lines[$i] =~ m/^--- .+\t([0-9a-f]{40})$/);
 		    ($file_id_2) =
-			($lines[$i + 1] =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/o);
+			($lines[$i + 1] =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/);
 		}
 		else
 		{
 		    $is_binary = 1;
-		    ($name) = ($lines[$i] =~ m/^\# (.+) is binary$/o);
+		    ($name) = ($lines[$i] =~ m/^\# (.+) is binary$/);
 		    $file_id_1 = $file_id_2 = "";
 		}
 
@@ -891,7 +891,7 @@ sub compare_revisions($$$;$)
 
 	    # Deal with difference context lines.
 
-	    elsif ($lines[$i] =~ m/^@@/o)
+	    elsif ($lines[$i] =~ m/^@@/)
 	    {
 		$line = substr(substr($lines[$i], 2) . $padding, 0, $max_len);
 		$instance->{comparison_buffer}->insert_with_tags_by_name
@@ -902,7 +902,7 @@ sub compare_revisions($$$;$)
 
 	    # Deal with - change lines.
 
-	    elsif ($lines[$i] =~ m/^-/o)
+	    elsif ($lines[$i] =~ m/^-/)
 	    {
 		$line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
 		$instance->{comparison_buffer}->insert_with_tags_by_name
@@ -913,7 +913,7 @@ sub compare_revisions($$$;$)
 
 	    # Deal with + change lines.
 
-	    elsif ($lines[$i] =~ m/^\+/o)
+	    elsif ($lines[$i] =~ m/^\+/)
 	    {
 		$line = substr(substr($lines[$i], 1) . $padding, 0, $max_len);
 		$instance->{comparison_buffer}->insert_with_tags_by_name
@@ -961,7 +961,7 @@ sub compare_revisions($$$;$)
 
 	    # Deal with lines that introduce a new file comparison.
 
-	    if ($instance->{diff_output}->[$i] =~ m/^==/o)
+	    if ($instance->{diff_output}->[$i] =~ m/^==/)
 	    {
 
 		# Check for aborts.
@@ -973,19 +973,19 @@ sub compare_revisions($$$;$)
 
 		++ $i;
 		($name) = ($instance->{diff_output}->[$i] =~
-			   m/^--- (.+)\t[0-9a-f]{40}$/o);
+			   m/^--- (.+)\t[0-9a-f]{40}$/);
 		if (defined($name))
 		{
 		    $is_binary = 0;
 		    ($file_id_1) = ($instance->{diff_output}->[$i] =~
-				    m/^--- .+\t([0-9a-f]{40})$/o);
+				    m/^--- .+\t([0-9a-f]{40})$/);
 		    ($file_id_2) = ($instance->{diff_output}->[$i + 1]
-				    =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/o);
+				    =~ m/^\+\+\+ .+\t([0-9a-f]{40})$/);
 		}
 		else
 		{
 		    ($name) = ($instance->{diff_output}->[$i] =~
-			       m/^\# (.+) is binary$/o);
+			       m/^\# (.+) is binary$/);
 		    $is_binary = 1;
 		    $file_id_1 = $file_id_2 = "";
 		}
@@ -1777,7 +1777,7 @@ sub mtn_diff($$$$;$)
 
     # Break up the input into a list of lines.
 
-    @$list = split(/\n/o, $buffer);
+    @$list = split(/\n/, $buffer);
 
     return 1;
 
