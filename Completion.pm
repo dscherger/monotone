@@ -51,6 +51,13 @@ use integer;
 use strict;
 use warnings;
 
+# ***** FUNCTIONAL PROTOTYPES *****
+
+# Public methods.
+
+sub get_completion($$$$);
+sub new($;$);
+
 # ***** PACKAGE INFORMATION *****
 
 # We are just a base class.
@@ -60,13 +67,6 @@ use base qw(Exporter);
 our @EXPORT = qw();
 our @EXPORT_OK = qw();
 our $VERSION = 0.1;
-
-# ***** FUNCTIONAL PROTOTYPES *****
-
-# Public methods.
-
-sub get_completion($$$$);
-sub new($;$);
 #
 ##############################################################################
 #

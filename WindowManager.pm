@@ -77,16 +77,6 @@ my %filtered_events = ("2button-press"  => 1,
 
 my $singleton;
 
-# ***** PACKAGE INFORMATION *****
-
-# We are just a base class.
-
-use base qw(Exporter);
-
-our @EXPORT = qw();
-our @EXPORT_OK = qw();
-our $VERSION = 0.1;
-
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public methods.
@@ -105,6 +95,16 @@ sub update_gui();
 # Private routines.
 
 sub event_filter($$);
+
+# ***** PACKAGE INFORMATION *****
+
+# We are just a base class.
+
+use base qw(Exporter);
+
+our @EXPORT = qw();
+our @EXPORT_OK = qw();
+our $VERSION = 0.1;
 #
 ##############################################################################
 #
