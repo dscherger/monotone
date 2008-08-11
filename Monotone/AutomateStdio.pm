@@ -62,31 +62,28 @@ use Symbol qw(gensym);
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# A pre-compiled rather evil regular expression for finding the end of a quoted
-# string possibly containing escaped quotes, i.e. " preceeded by a
-# non-backslash character or an even number of backslash characters. This re is
-# not ideal as it would be fooled by something like 22 backslashs followed by
-# an unescaped double quote, but at this point I have given up caring. What I
-# want to do is something like \{*%2}.
+# A pre-compiled regular expression for finding the end of a quoted string
+# possibly containing escaped quotes, i.e. " preceeded by a non-backslash
+# character or an even number of backslash characters.
 
-my $closing_quote_re = qr/(((^.*[^\\])|^)\"$)
-			  |(((^.*[^\\])|^)\\{2}\"$)
-			  |(((^.*[^\\])|^)\\{4}\"$)
-			  |(((^.*[^\\])|^)\\{6}\"$)
-			  |(((^.*[^\\])|^)\\{8}\"$)
-			  |(((^.*[^\\])|^)\\{10}\"$)
-			  |(((^.*[^\\])|^)\\{12}\"$)
-			  |(((^.*[^\\])|^)\\{14}\"$)
-			  |(((^.*[^\\])|^)\\{16}\"$)
-			  |(((^.*[^\\])|^)\\{18}\"$)
-			  |(((^.*[^\\])|^)\\{20}\"$)/ox;
+my $closing_quote_re = qr/((^.*[^\\])|^)(\\{2})*\"$/;
 
-# Global error callback routine references.
+# A pre-compiled regular expression for recoginising database locked conditions
+# in error output.
+
+my $database_locked_re = qr/.*sqlite error: database is locked.*/;
+
+# Global error and database locked callback routine references and associated
+# client data.
 
 my $croaker = \&croak;
-my $carper = undef;
-my($error_handler,
-   $warning_handler);
+my $db_locked_handler = sub { return; };
+my($carper,
+   $db_locked_handler_data,
+   $error_handler,
+   $error_handler_data,
+   $warning_handler,
+   $warning_handler_data);
 
 # ***** PACKAGE INFORMATION *****
 
@@ -96,7 +93,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw();
 our @EXPORT_OK = qw();
-our $VERSION = 0.1;
+our $VERSION = 0.5;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
@@ -137,7 +134,8 @@ sub keys($$);
 sub leaves($\@);
 sub new($;$);
 sub parents($\@$);
-sub register_error_handler($;$$);
+sub register_db_locked_handler(;$$$);
+sub register_error_handler($;$$$);
 sub roots($\@);
 sub select($\@$);
 sub tags($$;$);
@@ -181,15 +179,17 @@ sub new($;$)
 
     my $this;
 
-    $this = {db_name       => $db_name,
-	     mtn_pid       => 0,
-	     mtn_in        => undef,
-	     mtn_out       => undef,
-	     mtn_err       => undef,
-	     mtn_err_msg   => "",
-	     mtn_aif_major => 0,
-	     mtn_aif_minor => 0,
-	     cmd_cnt       => 0};
+    $this = {db_name                => $db_name,
+	     mtn_pid                => 0,
+	     mtn_in                 => undef,
+	     mtn_out                => undef,
+	     mtn_err                => undef,
+	     mtn_err_msg            => "",
+	     mtn_aif_major          => 0,
+	     mtn_aif_minor          => 0,
+	     cmd_cnt                => 0,
+	     db_locked_handler      => undef,
+	     db_locked_handler_data => undef};
 
     startup($this);
 
@@ -381,20 +381,20 @@ sub certs($$$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *key \"/o)
+	    if ($lines[$i] =~ m/^ *key \"/)
 	    {
 		get_quoted_value(@lines, $i, $key);
-		if ($lines[++ $i] =~ m/^ *signature \"/o)
+		if ($lines[++ $i] =~ m/^ *signature \"/)
 		{
 		    ($signature) =
-			($lines[$i] =~ m/^ *signature \"([^\"]+)\"$/o);
+			($lines[$i] =~ m/^ *signature \"([^\"]+)\"$/);
 		}
 		else
 		{
 		    &$croaker("Corrupt certs list, expected signature field "
 			      . "but didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *name \"/o)
+		if ($lines[++ $i] =~ m/^ *name \"/)
 		{
 		    get_quoted_value(@lines, $i, $name);
 		}
@@ -403,7 +403,7 @@ sub certs($$$)
 		    &$croaker("Corrupt certs list, expected name field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *value \"/o)
+		if ($lines[++ $i] =~ m/^ *value \"/)
 		{
 		    get_quoted_value(@lines, $i, $value);
 		}
@@ -412,9 +412,9 @@ sub certs($$$)
 		    &$croaker("Corrupt certs list, expected value field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *trust \"/o)
+		if ($lines[++ $i] =~ m/^ *trust \"/)
 		{
-		    ($trust) = ($lines[$i] =~ m/^ *trust \"([^\"]+)\"$/o);
+		    ($trust) = ($lines[$i] =~ m/^ *trust \"([^\"]+)\"$/);
 		}
 		else
 		{
@@ -705,13 +705,13 @@ sub get_attributes($\$$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *attr \"/o)
+	    if ($lines[$i] =~ m/^ *attr \"/)
 	    {
-		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
-		($key, $value) = split(/\" \"/o, $list);
-		if ($lines[++ $i] =~ m/^ *state \"/o)
+		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
+		($key, $value) = split(/\" \"/, $list);
+		if ($lines[++ $i] =~ m/^ *state \"/)
 		{
-		    ($state) = ($lines[$i] =~ m/^ *state \"([^\"]+)\"$/o);
+		    ($state) = ($lines[$i] =~ m/^ *state \"([^\"]+)\"$/);
 		}
 		else
 		{
@@ -806,10 +806,9 @@ sub get_content_changed($\@$$)
 
     for ($i = $j = 0, @$list = (); $i <= $#lines; ++ $i)
     {
-	if ($lines[$i] =~ m/^ *content_mark \[[^\]]+\]$/o)
+	if ($lines[$i] =~ m/^ *content_mark \[[^\]]+\]$/)
 	{
-	    ($$list[$j ++]) =
-		($lines[$i] =~ m/^ *content_mark \[([^\]]+)\]$/o);
+	    ($$list[$j ++]) = ($lines[$i] =~ m/^ *content_mark \[([^\]]+)\]$/);
 	}
     }
 
@@ -863,7 +862,7 @@ sub get_corresponding_path($\$$$$)
 
     for ($i = 0, $$buffer = ""; $i <= $#lines; ++ $i)
     {
-	if ($lines[$i] =~ m/^ *file \"/o)
+	if ($lines[$i] =~ m/^ *file \"/)
 	{
 	    get_quoted_value(@lines, $i, $$buffer);
 	    $$buffer = unescape($$buffer);
@@ -1022,13 +1021,13 @@ sub get_manifest_of($$;$)
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
 	    $type = undef;
-	    if ($lines[$i] =~ m/^ *file \"/o)
+	    if ($lines[$i] =~ m/^ *file \"/)
 	    {
 		$type = "file";
 		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/)
 		{
-		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/o);
+		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/);
 		}
 		else
 		{
@@ -1036,7 +1035,7 @@ sub get_manifest_of($$;$)
 			      . "didn't find it");
 		}
 	    }
-	    if ($lines[$i] =~ m/^ *dir \"/o)
+	    if ($lines[$i] =~ m/^ *dir \"/)
 	    {
 		$type = "directory";
 		get_quoted_value(@lines, $i, $name);
@@ -1149,18 +1148,18 @@ sub get_revision($\$$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *add_dir \"/o)
+	    if ($lines[$i] =~ m/^ *add_dir \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
 		$$ref[$j ++] = {type => "add_dir",
 				name => unescape($name)};
 	    }
-	    elsif ($lines[$i] =~ m/^ *add_file \"/o)
+	    elsif ($lines[$i] =~ m/^ *add_file \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/)
 		{
-		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/o);
+		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/);
 		}
 		else
 		{
@@ -1171,10 +1170,10 @@ sub get_revision($\$$)
 				name    => unescape($name),
 				file_id => $id};
 	    }
-	    elsif ($lines[$i] =~ m/^ *clear \"/o)
+	    elsif ($lines[$i] =~ m/^ *clear \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *attr \"/o)
+		if ($lines[++ $i] =~ m/^ *attr \"/)
 		{
 		    get_quoted_value(@lines, $i, $attr);
 		}
@@ -1187,39 +1186,39 @@ sub get_revision($\$$)
 				name      => unescape($name),
 				attribute => unescape($attr)};
 	    }
-	    elsif ($lines[$i] =~ m/^ *delete \"/o)
+	    elsif ($lines[$i] =~ m/^ *delete \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
 		$$ref[$j ++] = {type => "delete",
 				name => unescape($name)};
 	    }
-	    elsif ($lines[$i] =~ m/^ *new_manifest \[[^\]]+\]$/o)
+	    elsif ($lines[$i] =~ m/^ *new_manifest \[[^\]]+\]$/)
 	    {
-		($id) = ($lines[$i] =~ m/^ *new_manifest \[([^\]]+)\]$/o);
+		($id) = ($lines[$i] =~ m/^ *new_manifest \[([^\]]+)\]$/);
 		$$ref[$j ++] = {type        => "new_manifest",
 				manifest_id => $id};
 	    }
-	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]*\]$/o)
+	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]*\]$/)
 	    {
-		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]*)\]$/o);
+		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]*)\]$/);
 		$$ref[$j ++] = {type        => "old_revision",
 				revision_id => $id};
 	    }
-	    elsif ($lines[$i] =~ m/^ *patch \"/o)
+	    elsif ($lines[$i] =~ m/^ *patch \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *from \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *from \[[^\]]+\]$/)
 		{
-		    ($from_id) = ($lines[$i] =~ m/^ *from \[([^\]]+)\]$/o);
+		    ($from_id) = ($lines[$i] =~ m/^ *from \[([^\]]+)\]$/);
 		}
 		else
 		{
 		    &$croaker("Corrupt revision, expected from field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *to \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *to \[[^\]]+\]$/)
 		{
-		    ($to_id) = ($lines[$i] =~ m/^ *to \[([^\]]+)\]$/o);
+		    ($to_id) = ($lines[$i] =~ m/^ *to \[([^\]]+)\]$/);
 		}
 		else
 		{
@@ -1231,10 +1230,10 @@ sub get_revision($\$$)
 				from_file_id => $from_id,
 				to_file_id   => $to_id};
 	    }
-	    elsif ($lines[$i] =~ m/^ *rename \"/o)
+	    elsif ($lines[$i] =~ m/^ *rename \"/)
 	    {
 		get_quoted_value(@lines, $i, $from_name);
-		if ($lines[++ $i] =~ m/^ *to \"/o)
+		if ($lines[++ $i] =~ m/^ *to \"/)
 		{
 		    get_quoted_value(@lines, $i, $to_name);
 		}
@@ -1247,10 +1246,10 @@ sub get_revision($\$$)
 				from_name => unescape($from_name),
 				to_name   => unescape($to_name)};
 	    }
-	    elsif ($lines[$i] =~ m/^ *set \"/o)
+	    elsif ($lines[$i] =~ m/^ *set \"/)
 	    {
 		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *attr \"/o)
+		if ($lines[++ $i] =~ m/^ *attr \"/)
 		{
 		    get_quoted_value(@lines, $i, $attr);
 		}
@@ -1259,7 +1258,7 @@ sub get_revision($\$$)
 		    &$croaker("Corrupt revision, expected attr field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *value \"/o)
+		if ($lines[++ $i] =~ m/^ *value \"/)
 		{
 		    get_quoted_value(@lines, $i, $value);
 		}
@@ -1322,7 +1321,7 @@ sub graph($$)
 	}
 	for ($i = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    @parent_ids = split(/ /o, $lines[$i]);
+	    @parent_ids = split(/ /, $lines[$i]);
 	    $rev_id = shift(@parent_ids);
 	    $$ref[$i] = {revision_id => $rev_id,
 			 parent_ids  => [@parent_ids]};
@@ -1484,10 +1483,10 @@ sub inventory($$)
 
 	    for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	    {
-		if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/o)
+		if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/)
 		{
 		    ($status, $ref1, $ref2, $name) =
-			($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/o);
+			($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/);
 		    $$ref[$j ++] = {status       => $status,
 				    crossref_one => $ref1,
 				    crossref_two => $ref2,
@@ -1519,7 +1518,7 @@ sub inventory($$)
 		# The `path' element always starts a new entry, the remaining
 		# lines may be in any order.
 
-		if ($lines[$i] =~ m/^ *path \"/o)
+		if ($lines[$i] =~ m/^ *path \"/)
 		{
 
 		    # Save any existing data to a new entry in the output list.
@@ -1543,38 +1542,35 @@ sub inventory($$)
 		    get_quoted_value(@lines, $i, $path);
 
 		}
-		elsif ($lines[$i] =~ m/^ *old_type \"/o)
+		elsif ($lines[$i] =~ m/^ *old_type \"/)
 		{
-		    ($old_type) =
-			($lines[$i] =~ m/^ *old_type \"([^\"]+)\"$/o);
+		    ($old_type) = ($lines[$i] =~ m/^ *old_type \"([^\"]+)\"$/);
 		}
-		elsif ($lines[$i] =~ m/^ *new_type \"/o)
+		elsif ($lines[$i] =~ m/^ *new_type \"/)
 		{
-		    ($new_type) =
-			($lines[$i] =~ m/^ *new_type \"([^\"]+)\"$/o);
+		    ($new_type) = ($lines[$i] =~ m/^ *new_type \"([^\"]+)\"$/);
 		}
-		elsif ($lines[$i] =~ m/^ *fs_type \"/o)
+		elsif ($lines[$i] =~ m/^ *fs_type \"/)
 		{
-		    ($fs_type) =
-			($lines[$i] =~ m/^ *fs_type \"([^\"]+)\"$/o);
+		    ($fs_type) = ($lines[$i] =~ m/^ *fs_type \"([^\"]+)\"$/);
 		}
-		elsif ($lines[$i] =~ m/^ *old_path \"/o)
+		elsif ($lines[$i] =~ m/^ *old_path \"/)
 		{
 		    get_quoted_value(@lines, $i, $old_path);
 		}
-		elsif ($lines[$i] =~ m/^ *new_path \"/o)
+		elsif ($lines[$i] =~ m/^ *new_path \"/)
 		{
 		    get_quoted_value(@lines, $i, $new_path);
 		}
-		elsif ($lines[$i] =~ m/^ *status \"/o)
+		elsif ($lines[$i] =~ m/^ *status \"/)
 		{
-		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
-		    @status = split(/\" \"/o, $list);
+		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
+		    @status = split(/\" \"/, $list);
 		}
-		elsif ($lines[$i] =~ m/^ *changes \"/o)
+		elsif ($lines[$i] =~ m/^ *changes \"/)
 		{
-		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/o);
-		    @changes = split(/\" \"/o, $list);
+		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
+		    @changes = split(/\" \"/, $list);
 		}
 	    }
 	    if (defined($path))
@@ -1647,41 +1643,41 @@ sub keys($$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines;)
 	{
-	    if ($lines[$i] =~ m/^ *name \"/o)
+	    if ($lines[$i] =~ m/^ *name \"/)
 	    {
 		$priv_hash = $pub_hash = undef;
 		@priv_loc = @pub_loc = ();
 		get_quoted_value(@lines, $i, $name);
 		++ $i;
-		if ($lines[$i] =~ m/^ *public_hash \[[^\]]+\]$/o)
+		if ($lines[$i] =~ m/^ *public_hash \[[^\]]+\]$/)
 		{
 		    ($pub_hash) =
-			($lines[$i ++] =~ m/^ *public_hash \[([^\]]+)\]$/o);
+			($lines[$i ++] =~ m/^ *public_hash \[([^\]]+)\]$/);
 		}
 		else
 		{
 		    &$croaker("Corrupt keys, expected public_hash field but "
 			      . "didn't find it");
 		}
-		if ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/o)
+		if ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/)
 		{
 		    ($priv_hash) =
-			($lines[$i ++] =~ m/^ *private_hash \[([^\]]+)\]$/o);
+			($lines[$i ++] =~ m/^ *private_hash \[([^\]]+)\]$/);
 		}
-		if ($lines[$i] =~ m/^ *public_location \"/o)
+		if ($lines[$i] =~ m/^ *public_location \"/)
 		{
-		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/o);
-		    @pub_loc = split(/\" \"/o, $list);
+		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/);
+		    @pub_loc = split(/\" \"/, $list);
 		}
 		else
 		{
 		    &$croaker("Corrupt keys, expected public_location field "
 			      . "but didn't find it");
 		}
-		if ($i <= $#lines && $lines[$i] =~ m/^ *private_location \"/o)
+		if ($i <= $#lines && $lines[$i] =~ m/^ *private_location \"/)
 		{
-		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/o);
-		    @priv_loc = split(/\" \"/o, $list);
+		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/);
+		    @priv_loc = split(/\" \"/, $list);
 		}
 		if (defined($priv_hash))
 		{
@@ -1868,20 +1864,20 @@ sub tags($$;$)
 
 	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *tag \"/o)
+	    if ($lines[$i] =~ m/^ *tag \"/)
 	    {
 		@branches = ();
 		get_quoted_value(@lines, $i, $tag);
-		if ($lines[++ $i] =~ m/^ *revision \[[^\]]+\]$/o)
+		if ($lines[++ $i] =~ m/^ *revision \[[^\]]+\]$/)
 		{
-		    ($rev) = ($lines[$i] =~ m/^ *revision \[([^\]]+)\]$/o);
+		    ($rev) = ($lines[$i] =~ m/^ *revision \[([^\]]+)\]$/);
 		}
 		else
 		{
 		    &$croaker("Corrupt tags list, expected revision field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *signer \"/o)
+		if ($lines[++ $i] =~ m/^ *signer \"/)
 		{
 		    get_quoted_value(@lines, $i, $signer);
 		}
@@ -1890,12 +1886,12 @@ sub tags($$;$)
 		    &$croaker("Corrupt tags list, expected signer field but "
 			      . "didn't find it");
 		}
-		if ($lines[++ $i] =~ m/^ *branches/o)
+		if ($lines[++ $i] =~ m/^ *branches/)
 		{
-		    if ($lines[$i] =~ m/^ *branches \".+\"$/o)
+		    if ($lines[$i] =~ m/^ *branches \".+\"$/)
 		    {
-			($list) = ($lines[$i] =~ m/^ *branches \"(.+)\"$/o);
-			@branches = split(/\" \"/o, $list);
+			($list) = ($lines[$i] =~ m/^ *branches \"(.+)\"$/);
+			@branches = split(/\" \"/, $list);
 			for ($k = 0; $k <= $#branches; ++ $k)
 			{
 			    $branches[$k] = unescape($branches[$k]);
@@ -1956,38 +1952,42 @@ sub toposort($\@@)
 #                  library. This is a class method rather than an object one
 #                  as errors can be raised when calling the constructor.
 #
-#   Data         - $this     : The object. This may not be present depending
-#                              upon how this method is called and is ignored
-#                              if it is present anyway.
-#                  $severity : The level of error that the handler is being
-#                              registered for. One of "error", "warning" or
-#                              "both".
-#                  $callback : A reference to the error handler routine. If
-#                              this is not provided then the existing error
-#                              handler routine is unregistered and errors are
-#                              handled in the default way.
+#   Data         - $this        : The object. This may not be present
+#                                 depending upon how this method is called and
+#                                 is ignored if it is present anyway.
+#                  $severity    : The level of error that the handler is being
+#                                 registered for. One of "error", "warning" or
+#                                 "both".
+#                  $callback    : A reference to the error handler routine. If
+#                                 this is not provided then the existing error
+#                                 handler routine is unregistered and errors
+#                                 are handled in the default way.
+#                  $client_data : The client data that is to be passed to the
+#                                 registered error handler when it is called.
 #
 ##############################################################################
 
 
 
-sub register_error_handler($;$$)
+sub register_error_handler($;$$$)
 {
 
     shift() if ($_[0] eq __PACKAGE__ || ref($_[0]) eq __PACKAGE__);
-    my($severity, $handler) = @_;
+    my($severity, $handler, $client_data) = @_;
 
     if ($severity eq "error")
     {
 	if (defined($handler))
 	{
 	    $error_handler = $handler;
+	    $error_handler_data = $client_data;
 	    $croaker = \&error_handler_wrapper;
 	}
 	else
 	{
 	    $croaker = \&croak;
 	    $error_handler = undef;
+	    $error_handler_data = undef;
 	}
     }
     elsif ($severity eq "warning")
@@ -1995,11 +1995,12 @@ sub register_error_handler($;$$)
 	if (defined($handler))
 	{
 	    $warning_handler = $handler;
+	    $warning_handler_data = $client_data;
 	    $carper = \&warning_handler_wrapper;
 	}
 	else
 	{
-	    $carper = $warning_handler = undef;
+	    $carper = $warning_handler = $warning_handler_data = undef;
 	}
     }
     elsif ($severity eq "both")
@@ -2007,18 +2008,88 @@ sub register_error_handler($;$$)
 	if (defined($handler))
 	{
 	    $error_handler = $warning_handler = $handler;
+	    $error_handler_data = $warning_handler_data = $client_data;
 	    $carper = \&warning_handler_wrapper;
 	    $croaker = \&error_handler_wrapper;
 	}
 	else
 	{
 	    $carper = $error_handler = $warning_handler = undef;
+	    $error_handler_data = $warning_handler_data = undef;
 	    $croaker = \&croak;
 	}
     }
     else
     {
 	croak("Unknown error handler severity `" . $severity . "'");
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - register_db_locked_handler
+#
+#   Description  - Register the specified routine as a database locked handler
+#                  for this library. This is a class method rather than an
+#                  object one as locked databases can be encountered when
+#                  calling the constructor.
+#
+#   Data         - $this        : The object. This may not be present
+#                                 depending upon how this method is called and
+#                                 is ignored if it is present anyway.
+#                  $callback    : A reference to the database locked handler
+#                                 routine. If this is not provided then the
+#                                 existing database locked handler routine is
+#                                 unregistered and database locking clashes
+#                                 are handled in the default way.
+#                  $client_data : The client data that is to be passed to the
+#                                 registered database locked handler when it
+#                                 is called.
+#
+##############################################################################
+
+
+
+sub register_db_locked_handler(;$$$)
+{
+
+    my $this;
+    if ($_[0] eq __PACKAGE__)
+    {
+	shift();
+    }
+    elsif (ref($_[0]) eq __PACKAGE__)
+    {
+	$this = $_[0];
+	shift();
+    }
+    my($handler, $client_data) = @_;
+
+    if (defined($this))
+    {
+	if (defined($handler))
+	{
+	    $this->{db_locked_handler} = $handler;
+	    $this->{db_locked_handler_data} = $client_data;
+	}
+	else
+	{
+	    $this->{db_locked_handler} = $this->{db_locked_handler_data} =
+		undef;
+	}
+    }
+    else
+    {
+	if (defined($handler))
+	{
+	    $db_locked_handler = $handler;
+	    $db_locked_handler_data = $client_data;
+	}
+	else
+	{
+	    $db_locked_handler = $db_locked_handler_data = undef;
+	}
     }
 
 }
@@ -2223,49 +2294,151 @@ sub mtn_command_with_options($$$\@@)
     my($this, $cmd, $ref, $options, @parameters) = @_;
 
     my($buffer,
+       $buffer_ref,
+       $db_locked_exception,
+       $exception,
+       $handler,
+       $handler_data,
        $in,
        $opt,
-       $param);
+       $param,
+       $read_ok,
+       $retry);
 
-    startup($this) if ($this->{mtn_pid} == 0);
+    # Work out what database locked handler is to be used.
 
-    # Run the command and get the data, the unless below is required just in
-    # case undef is passed as the only parameter (which can happen when a
-    # mandatory argument is not passed by the caller).
-
-    $in = $this->{mtn_in};
-    printf($in "o") unless ($#$options < 0);
-    foreach $opt (@$options)
+    if (defined($this->{db_locked_handler}))
     {
-	printf($in "%d:%s%d:%s",
-	       length($opt->{key}),
-	       $opt->{key},
-	       length($opt->{value}),
-	       $opt->{value});
-    }
-    printf($in "e ") unless ($#$options < 0);
-    printf($in "l%d:%s", length($cmd), $cmd);
-    foreach $param (@parameters)
-    {
-	printf($in "%d:%s", length($param), $param) unless (! defined($param));
-    }
-    print($in "e\n");
-
-    # Depending upon what we have been given a reference to, either return the
-    # data as one chunk or as an array of lines.
-
-    if (ref($ref) eq "SCALAR")
-    {
-	return mtn_read_output($this, $$ref);
+	$handler = $this->{db_locked_handler};
+	$handler_data = $this->{db_locked_handler_data};
     }
     else
     {
-	if (! mtn_read_output($this, $buffer))
-	{
-	    return;
-	}
-	@$ref = split(/\n/o, $buffer);
+	$handler = $db_locked_handler;
+	$handler_data = $db_locked_handler_data;
     }
+
+    # If the output is to be returned as an array of lines as against one lump
+    # then we need to use read the output into a temporary buffer before
+    # breaking it up into lines.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	$buffer_ref = $ref;
+    }
+    elsif (ref($ref) eq "ARRAY")
+    {
+	$buffer_ref = \$buffer;
+    }
+    else
+    {
+	&$croaker("Expected a reference to a scalar or an array");
+    }
+
+    # Send the command, reading its output, repeating if necessary if retries
+    # should be attempted when the database is locked.
+
+    do
+    {
+
+	# Startup the subordinate mtn process if it hasn't already been
+	# started.
+
+	startup($this) if ($this->{mtn_pid} == 0);
+
+	# Send the command.
+
+	$in = $this->{mtn_in};
+	printf($in "o") unless ($#$options < 0);
+	foreach $opt (@$options)
+	{
+	    printf($in "%d:%s%d:%s",
+		   length($opt->{key}),
+		   $opt->{key},
+		   length($opt->{value}),
+		   $opt->{value});
+	}
+	printf($in "e ") unless ($#$options < 0);
+	printf($in "l%d:%s", length($cmd), $cmd);
+	foreach $param (@parameters)
+	{
+
+	    # The unless below is required just in case undef is passed as the
+	    # only parameter (which can happen when a mandatory argument is not
+	    # passed by the caller).
+
+	    printf($in "%d:%s", length($param), $param)
+		unless (! defined($param));
+
+	}
+	print($in "e\n");
+
+	# Attempt to read the output of the command, rethrowing any exception
+	# that does not relate to locked databases.
+
+	$db_locked_exception = $read_ok = $retry = 0;
+	eval
+	{
+	    $read_ok = mtn_read_output($this, $$buffer_ref);
+	};
+	$exception = $@;
+	if ($exception ne "")
+	{
+	    if ($exception =~ m/$database_locked_re/)
+	    {
+
+		# We need to properly closedown the mtn subprocess at this
+		# point because we are quietly handling the exception that
+		# caused it to exit but the calling application may reap the
+		# process and compare the reaped PID with the return value from
+		# the get_pid() method. At least by calling closedown() here
+		# get_pid() will return 0 and the caller can then distinguish
+		# between a handled exit and one that should be dealt with.
+
+		$in = undef;
+		closedown($this);
+		$db_locked_exception = 1;
+
+	    }
+	    else
+	    {
+		&$croaker($exception);
+	    }
+	}
+
+	# Deal with locked database exceptions and any warning messages that
+	# appeared in the output.
+
+	if (! $read_ok)
+	{
+
+	    # See if we are to retry on database locked conditions.
+
+	    $retry = &$handler($this, $handler_data)
+		if ($this->{mtn_err_msg} =~ m/$database_locked_re/
+		    || $db_locked_exception);
+
+	    # If we are to retry then close down the subordinate mtn process,
+	    # otherwise report the error to the caller.
+
+	    if ($retry)
+	    {
+		$in = undef;
+		closedown($this);
+	    }
+	    else
+	    {
+		&$carper($this->{mtn_err_msg}) if (defined($carper));
+		return;
+	    }
+	}
+
+    }
+    while ($retry);
+
+    # Split the output up into lines if that is what is required.
+
+    @$ref = split(/\n/, $buffer) if (ref($ref) eq "ARRAY");
 
     return 1;
 
@@ -2337,26 +2510,26 @@ sub mtn_read_output($\$)
 		{
 		    if ($char ne "m" && $char ne "l")
 		    {
-			&$croaker("Corrupt/missing mtn chunk header, mtn "
-				  . "gave:\n" . join("", <$err>));
+			croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+			      . join("", <$err>));
 		    }
 		}
-		elsif ($char =~ m/\D$/o)
+		elsif ($char =~ m/\D$/)
 		{
-		    &$croaker("Corrupt/missing mtn chunk header, mtn gave:\n"
-			      . join("", <$err>));
+		    croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+			  . join("", <$err>));
 		}
 	    }
 
 	    # Break out the header into its separate fields.
 
-	    if ($header =~ m/^\d+:\d+:[lm]:\d+:$/o)
+	    if ($header =~ m/^\d+:\d+:[lm]:\d+:$/)
 	    {
 		($cmd_nr, $err_code, $last, $size) =
-		    ($header =~ m/^(\d+):(\d+):([lm]):(\d+):$/o);
+		    ($header =~ m/^(\d+):(\d+):([lm]):(\d+):$/);
 		if ($cmd_nr != $this->{cmd_cnt})
 		{
-		    &$croaker("Mtn command count is out of sequence");
+		    croak("Mtn command count is out of sequence");
 		}
 		if ($err_code != 0)
 		{
@@ -2365,8 +2538,8 @@ sub mtn_read_output($\$)
 	    }
 	    else
 	    {
-		&$croaker("Corrupt/missing mtn chunk header, mtn gave:\n"
-			  . join("", <$err>));
+		croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+		      . join("", <$err>));
 	    }
 
 	    $chunk_start = 0;
@@ -2382,7 +2555,7 @@ sub mtn_read_output($\$)
 					     $size,
 					     $offset)))
 	    {
-		&$croaker("read failed: $!");
+		croak("read failed: $!");
 	    }
 	    $size -= $bytes_read;
 	    $offset += $bytes_read;
@@ -2403,7 +2576,6 @@ sub mtn_read_output($\$)
     {
 	$this->{mtn_err_msg} = $$buffer;
 	$$buffer = "";
-	&$carper($this->{mtn_err_msg}) if (defined($carper));
 	return;
     }
 
@@ -2455,7 +2627,7 @@ sub startup($)
 	$this->{cmd_cnt} = 0;
 	interface_version($this, $version);
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
-	    ($version =~ m/^(\d+)\.(\d+)$/o);
+	    ($version =~ m/^(\d+)\.(\d+)$/);
     }
 
 }
@@ -2535,7 +2707,7 @@ sub unescape($)
 #
 #   Description  - Error handler routine that wraps the user's error handler.
 #                  Essentially this routine simply prepends the severity
-#                  parameter.
+#                  parameter and appends the client data parameter.
 #
 #   Data         - $message : The error message.
 #
@@ -2548,7 +2720,7 @@ sub error_handler_wrapper($)
 
     my $message = $_[0];
 
-    &$error_handler("error", $message);
+    &$error_handler("error", $message, $error_handler_data);
     croak(__PACKAGE__ . ": Fatal error.");
 
 }
@@ -2559,7 +2731,7 @@ sub error_handler_wrapper($)
 #
 #   Description  - Warning handler routine that wraps the user's warning
 #                  handler. Essentially this routine simply prepends the
-#                  severity parameter.
+#                  severity parameter and appends the client data parameter.
 #
 #   Data         - $message : The error message.
 #
@@ -2572,7 +2744,7 @@ sub warning_handler_wrapper($)
 
     my $message = $_[0];
 
-    &$warning_handler("warning", $message);
+    &$warning_handler("warning", $message, $warning_handler_data);
 
 }
 

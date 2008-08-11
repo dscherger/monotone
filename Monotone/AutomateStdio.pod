@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.2
+0.5
 
 =head1 SYNOPSIS
 
@@ -18,17 +18,17 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 DESCRIPTION
 
-The Monotone::AutomateStdio class gives the Perl developer access to Monotone's
+The Monotone::AutomateStdio class gives a Perl developer access to Monotone's
 automate stdio facility via an easy to use interface. All command, option and
 output formats are handled internally by this class. Any structured information
 returned by Monotone is parsed and returned back to the caller as lists of
 records for ease of access (detailed below). One also has the option of
 accessing Monotone's output as one large string should you prefer.
 
-The mtn automate subprocess is also controlled by this class. A new subprocess
-is started, if necessary, when anything that requires it is called. The
-subprocess is terminated on object destruction or when $mtn-E<gt>closedown() is
-called.
+The mtn automate stdio subprocess is also controlled by this class. A new
+subprocess is started, if necessary, when anything that requires it is
+called. The subprocess is terminated on object destruction or when
+$mtn-E<gt>closedown() is called.
 
 All automate commands have been implemented in this class except for the
 following:
@@ -68,21 +68,74 @@ Creates a new Monotone::AutomateStdio object, using the database named in $db.
 =over 4
 
 =item B<Monotone::AutomateStdio-E<gt>register_error_handler($severity[,
-$handler])>
+$handler[, $client_data]])>
 
 Registers the handler specified as a subroutine reference in $handler for
 errors of a certain severity as specified by $severity. $severity can be one of
-"warning", "error" or "both". This is a class method rather than an object one
-as errors can be raised when calling a constructor. If no handler is given then
-the error handling is reset to the default behaviour for that severity level.
+"warning", "error" or "both". The value of $client_data is simply passed to the
+handler and can be used by the caller to provide a context. This is a class
+method rather than an object one as errors can be raised when calling a
+constructor. If no handler is given then the error handling is reset to the
+default behaviour for that severity level.
 
-The handler subroutine is given two arguments, the first one is a severity
-string that indicates the severity of the error being handled, either "warning"
-or "error", and the error message. Please note that if the severity is "error"
-then it is expected that croak or die will be called by the handler, if this is
-not the case then the library will call croak() upon return. If you need to
-trap errors and prevent program exit then use an eval block to protect yourself
-in the calling code.
+The handler subroutine is given three arguments, the first one is a severity
+string that indicates the severity of the error being handled (either "warning"
+or "error"), the second one is the error message and the third is the value
+passed in as $client_data when the hander was registered.
+
+Please note:
+
+=over 4
+
+=item 1)
+
+Warnings are generated whenever a message is received from an mtn subprocess
+that is flagged as being in error. For example, this occurs when an invalid
+selector is given to the $mtn-E<gt>select() method. The subprocess does not
+exit under these conditions. Errors, however, are generated whenever this class
+detects abnormal behaviour such as output that is formatted in an unexpected
+manor or output appearing on the mtn subprocess's STDERR file descriptor. Under
+these circumstances it is expected that the application should exit or at least
+destroy any Monotone::AutomateStdio objects that are in error.
+
+=item 2)
+
+Whilst warnings result in false being returned by those methods that return a
+boolean success indicator, errors always result in an exception being thrown.
+
+=item 3)
+
+If the severity is "error" then it is expected that croak or die will be called
+by the handler, if this is not the case then this class will call croak() upon
+return. If you need to trap errors and prevent program exit then use an eval
+block to protect yourself in the calling code.
+
+=item 4)
+
+If a warning handler is registered then this can be used to report problems via
+one routine rather than checking the boolean success indicator returned by most
+methods in this class.
+
+=back
+
+=item B<Monotone::AutomateStdio-E<gt>register_db_locked_handler([$handler[,
+$client_data]])>
+
+Registers the handler specified as a subroutine reference in $handler for
+database locked conditions. The value of $client_data is simply passed to the
+handler and can be used by the caller to provide a context.  This is a class
+method as well as an object one as database lock conditions can occur when
+calling a constructor. When used as a class method, this method can be used to
+set up a database locked handler for all Monotone::AutomateStdio objects that
+do not specify their own handlers.  If no handler is given then the database
+locked condition handling is reset to the default behaviour.
+
+The handler subroutine is given two arguments, the first one is the
+Monotone::AutomateStdio object that encountered the locked database or undef if
+this happened during construction and the second is the value passed in as
+$client_data when the hander was registered. If the handler returns true then
+the command that failed is retried, if false is returned (undef) then the
+default behaviour is performed, which is to treat it like any other error.
 
 =back
 
@@ -257,7 +310,7 @@ Get the value of an option stored in a workspace's _MTN directory.
 
 =item B<$mtn-E<gt>get_pid()>
 
-Return the process id of the mtn subprocess spawned by this library. Zero is
+Return the process id of the mtn subprocess spawned by this class. Zero is
 returned if no subprocess is thought to exist. Also if the subprocess should
 exit unexpectedly then this method will carry on returning its process id until
 the $mtn-E<gt>closedown() method is called.
@@ -398,6 +451,11 @@ Get a list of leaf revisions.
 
 Get a list of parents for the specified revision.
 
+=item B<$mtn-E<gt>register_db_locked_handler([$handler[, $client_data]])>
+
+Registers a database locked handler for the object rather than globally. For
+further details please see the description of the class method.
+
 =item B<$mtn-E<gt>roots(\@list)>
 
 Get a list of root revisions, i.e. revisions with no parents.
@@ -428,6 +486,7 @@ Sort the specified revisions such that the ancestors come out first.
 =head1 RETURN VALUE
 
 Except for the constructor and the
+Monotone::AutomateStdio-E<gt>register_db_locked_handler(),
 Monotone::AutomateStdio-E<gt>register_error_handler(), $mtn-E<gt>closedown(),
 $mtn-E<gt>get_db_name(), $mtn-E<gt>get_error_message() and $mtn-E<gt>get_pid()
 methods, all remaining methods return a boolean success indicator, true for
@@ -435,6 +494,7 @@ success or false for failure (where true is 1 and false is undef). The
 constructor returns a newly created object, $mtn-E<gt>get_db_name() returns a
 string or undef, $mtn-E<gt>get_error_message() returns a string,
 $mtn-E<gt>get_pid() returns an integer and
+Monotone::AutomateStdio-E<gt>register_db_locked_handler(),
 Monotone::AutomateStdio-E<gt>register_error_handler() and $mtn-E<gt>closedown()
 do not return anything.
 
@@ -443,6 +503,15 @@ do not return anything.
 The Monotone::AutomateStdio class, with the exception of the $mtn-E<gt>cert()
 and $mtn-E<gt>db_set() methods, provides a read-only interface to a Monotone
 database. This is a deliberate safety precaution for now.
+
+There are situations where this class does legitimately terminate or even
+restart the mtn subprocess (for example when a database locked condition is
+detected). Therefore if you wish to detect and handle SIGCHLD signals in your
+application then please make sure that any process ids that you reap are
+checked against the $mtn-E<gt>get_pid() method. If the process id does not
+match anything returned from $mtn-E<gt>get_pid() and is unknown to your
+application then it is likely that the exited child process was an old mtn
+subprocess that has been restarted.
 
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used
 and will consequently reset any SIGALRM timers. In C I would obviously use
@@ -455,7 +524,7 @@ opinions on this then please let me know.
 
 When the output of a command from the automate stdio interface changes
 dramatically, it will probably not be possible to protect Perl applications
-from those changes. This library is a convenience wrapper rather than something
+from those changes. This class is a convenience wrapper rather than something
 that will totally divorce you from the automate stdio interface. Also the
 chances are you will want the new type of output anyway.
 
@@ -465,12 +534,7 @@ http://monotone.ca
 
 =head1 BUGS
 
-The parsing of quoted basic stanza escaped output is done using a regular
-expression. This is not fool-proof but it is very unlikely that normal data
-would come close to exposing this flaw and it is a lot simpler and more
-efficient than the alternative.
-
-Your mileage may vary if this library is used with versions of Monotone older
+Your mileage may vary if this class is used with versions of Monotone older
 than 0.35 (automate stdio interface version 4.3).
 
 No doubt other bugs will crawl out of the wood-work.
