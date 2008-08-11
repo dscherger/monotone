@@ -85,16 +85,6 @@ my($carper,
    $warning_handler,
    $warning_handler_data);
 
-# ***** PACKAGE INFORMATION *****
-
-# We are just a base class.
-
-use base qw(Exporter);
-
-our @EXPORT = qw();
-our @EXPORT_OK = qw();
-our $VERSION = 0.5;
-
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public methods.
@@ -151,6 +141,16 @@ sub mtn_read_output($\$);
 sub startup($);
 sub unescape($);
 sub warning_handler_wrapper($);
+
+# ***** PACKAGE INFORMATION *****
+
+# We are just a base class.
+
+use base qw(Exporter);
+
+our @EXPORT = qw();
+our @EXPORT_OK = qw();
+our $VERSION = 0.5;
 #
 ##############################################################################
 #
