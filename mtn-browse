@@ -563,6 +563,7 @@ sub close_toolbutton_clicked_cb($$)
     # Simply reset the browser's Monotone instance and update its display.
 
     $browser->{mtn} = undef;
+    $browser->{appbar}->clear_stack();
     &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 
 }
@@ -730,6 +731,7 @@ sub advanced_find_button_clicked_cb($$)
 
 	$browser->{tagged_checkbutton}->set_active(FALSE);
 
+	$browser->{appbar}->clear_stack();
 	&{$browser->{update_handler}}($browser, $state);
 
     }
@@ -1747,7 +1749,7 @@ sub update_browser_state($$)
 
     # The database has changed.
 
-    if ($changed == DATABASE_CHANGED)
+    if ($changed & DATABASE_CHANGED)
     {
 
 	my $db_name;
@@ -1843,6 +1845,7 @@ sub update_browser_state($$)
 	$wm->update_gui();
 	$browser->{branch_comboboxentry}->child()->
 	    set_text($browser->{branch_combo_details}->{value});
+	$browser->{branch_comboboxentry}->child()->set_position(-1);
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
 	$wm->update_gui();
@@ -2353,17 +2356,29 @@ sub display_file($$)
 
 	    # Image data.
 
+	    my $exception;
+	    my $loader = Gtk2::Gdk::PixbufLoader->new();
 	    eval
 	    {
-		my $loader = Gtk2::Gdk::PixbufLoader->new();
 		$loader->write($contents);
+	    };
+	    $exception = $@;
+	    eval
+	    {
 		$loader->close();
+	    };
+	    $exception = $@ if ($@ ne "");
+	    if ($exception eq "")
+	    {
 		$browser->{file_view_svbuffer}->insert_pixbuf
 		    ($browser->{file_view_svbuffer}->get_start_iter(),
 		     $loader->get_pixbuf());
-	    };
-	    $browser->{file_view_svbuffer}->set_text("<" . $mime_type . ">")
-		if ($@ ne "");
+	    }
+	    else
+	    {
+		$browser->{file_view_svbuffer}->
+		    set_text("<" . $mime_type . ">");
+	    }
 
 	}
 	else
