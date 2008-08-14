@@ -242,10 +242,24 @@ ie)
     one parent, and is unborn in the other. The parents of node 1 in
     one parent are also the parents of node 4 in the other.
 
-    Nodes 4 and 1 are sutured in the child, and their contents merged.
+    Nodes 4 and 1 are sutured in the child, and their scalars merged.
     This is done automatically; it is not a conflict.
 
     Note that this is the resolution of case id), after user sutures.
+
+    This extends to more complex cases:
+
+      D2  E3  F3  G4  D2  E3
+        \ /     \ /    \  /
+         K5     B4      J7
+           \   /       /
+            A1        /
+              \      /
+                C8
+
+    As long as the common parents (in this case, nodes 2 and 3) are
+    the same in the two revisions being merged, the nodes are sutured
+    automatically.
 
 
       D2  E3  F2  G5
@@ -396,10 +410,10 @@ only considers nodes that are in the result roster.
 
 To distinguish among these cases, we need to store information about
 how a node was born. This is done in the marking map, by storing
-birth_cause, a pair containing an enumeral and a set of node_ids. The
-enumeral indicates add or suture; if suture, the node_ids indicate all
-of the suture parents (including parents of parents that are sutures,
-etc).
+birth_record, containing an enumeral and a set of node_ids and birth
+revisions. The enumeral indicates add or suture; if suture, the
+node_ids indicate all of the suture parents (including parents of
+parents that are sutures, etc), and their birth revisions.
 
 Then when node 1 exists in A but not B, we search A's uncommon
 ancestors for the birth revision of node 1. If found, we have case i;
@@ -411,11 +425,11 @@ cause is suture, we need to check for cases ib, ic, id, ie. These are
 distinguished by the state of the parents of the sutured node in
 revision B.
 
-First we find the set of common ancestor nodes of node 1; the parents
-of the suture that created node 1, and recursively for any other
-sutures in the revision tree holding A's uncommon ancestor revisions,
-that were born in common ancestors of A and B. This is done by
-checking the set of parents in the birth record for revisions in A's
+First we find the set of common parent nodes of node 1; the parents of
+the suture that created node 1, and recursively for any other sutures
+in the revision tree holding A's uncommon ancestor revisions, that
+were born in common ancestors of A and B. This is done by checking the
+set of parent birth revisions in the birth record for revisions in A's
 uncommon ancestors.
 
 Then we check to see if node 1's common ancestor nodes exist in B,

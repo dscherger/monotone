@@ -312,7 +312,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   content_merge_workspace_adaptor wca(db, base_rid, base_roster,
                                       chosen_markings, working_markings, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
+  resolve_merge_conflicts(app.lua, nis, *working_roster, chosen_roster,
                           result, wca, false);
 
   // Make sure it worked...
@@ -681,7 +681,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
         parse_resolve_conflicts_opts (app.opts, left_roster, right_roster, result, resolutions_given);
 
-        resolve_merge_conflicts(app.lua, left_roster, right_roster, result, dba, resolutions_given);
+        resolve_merge_conflicts(app.lua, nis, left_roster, right_roster, result, dba, resolutions_given);
 
         {
           dir_t moved_root = left_roster.root();
@@ -798,7 +798,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, false);
+  resolve_merge_conflicts(app.lua, nis, *left.first, *right.first, merge_result, wca, false);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -1182,7 +1182,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   // to_roster is not fetched from the db which does not have temporary nids
   wca.cache_roster(to_rid, to_roster);
 
-  resolve_merge_conflicts(app.lua, *working_roster, *to_roster,
+  resolve_merge_conflicts(app.lua, nis, *working_roster, *to_roster,
                           result, wca, false);
 
   I(result.is_clean());
@@ -1291,27 +1291,26 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       else
         {
           parent_map::const_iterator i = parents.begin();
-          revision_id left_id = parent_id(i);
+          revision_id left_rid = parent_id(i);
           roster_t const & left_roster = parent_roster(i);
           marking_map const & left_markings = parent_marking(i);
 
           i++;
-          revision_id right_id = parent_id(i);
+          revision_id right_rid = parent_id(i);
           roster_t const & right_roster = parent_roster(i);
           marking_map const & right_markings = parent_marking(i);
 
           i++; I(i == parents.end());
 
           set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
-          db.get_uncommon_ancestors(left_id, right_id,
+          db.get_uncommon_ancestors(left_rid, right_rid,
                                         left_uncommon_ancestors,
                                         right_uncommon_ancestors);
 
-          mark_merge_roster(left_roster, left_markings,
-                            left_uncommon_ancestors,
-                            right_roster, right_markings,
-                            right_uncommon_ancestors,
-                            rid, roster, mm);
+          mark_merge_roster
+            (left_rid, left_roster, left_markings, left_uncommon_ancestors,
+             right_rid, right_roster, right_markings, right_uncommon_ancestors,
+             rid, roster, mm);
         }
     }
   else if (args.size() == 1)

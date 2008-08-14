@@ -178,8 +178,8 @@ struct suture_drop_conflict
   {resolution.first = resolve_conflicts::none;};
 };
 
-// files with suture_suture conflicts are left attached in result roster
-// (unless unattached for another reason), with sutured parent content hash.
+// files with suture_suture conflicts are unattached in result roster, with
+// sutured parent content hash.
 struct suture_suture_conflict
 {
   // We don't store the file_id in the conflict, to support suturing and
@@ -213,6 +213,39 @@ struct suture_suture_conflict
     common_parents(common_parents),
     conflict_nids(conflict_nids),
     extra_nids(extra_nids) {};
+};
+
+// files with suture_scalar conflicts are unattached in result roster, with
+// sutured parent content hash.
+struct suture_scalar_conflict
+{
+  // We don't store the file_id in the conflict, to support suturing and
+  // conflicting directories in the future.
+  //
+  // sutured_nid is in sutured_side roster, not in other roster
+  // common_parents are parents of suture_nid common to both parent rosters
+  // conflict_nids are in other roster, have subset of common_parents
+  node_id sutured_nid;
+  resolve_conflicts::side_t sutured_side;
+  std::set<node_id> common_parents;
+  std::set<node_id> conflict_nids;
+
+  // There is no resolution; user must suture the nodes in the other parent
+  // to match the sutured parent, or change the scalars to match, or undo
+  // the sutures in the sutured parent to match the other parent.
+
+  suture_scalar_conflict () :
+    sutured_nid(the_null_node),
+    sutured_side(resolve_conflicts::left_side) {};
+
+  suture_scalar_conflict(node_id sutured_nid,
+                         resolve_conflicts::side_t sutured_side,
+                         std::set<node_id> common_parents,
+                         std::set<node_id> conflict_nids) :
+    sutured_nid(sutured_nid),
+    sutured_side(sutured_side),
+    common_parents(common_parents),
+    conflict_nids(conflict_nids) {};
 };
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
@@ -278,6 +311,7 @@ struct roster_merge_result
   //   - content_drop conflicts
   //   - suture_drop conflicts
   //   - suture_suture conflicts
+  //   - suture_scalar conflicts
   // - attribute conflicts
   // - file content conflicts
 
@@ -291,6 +325,7 @@ struct roster_merge_result
   std::vector<content_drop_conflict> content_drop_conflicts;
   std::vector<suture_drop_conflict> suture_drop_conflicts;
   std::vector<suture_suture_conflict> suture_suture_conflicts;
+  std::vector<suture_scalar_conflict> suture_scalar_conflicts;
 
   std::vector<attribute_conflict> attribute_conflicts;
   std::vector<file_content_conflict> file_content_conflicts;
@@ -336,7 +371,7 @@ struct roster_merge_result
                                        bool const basic_io,
                                        std::ostream & output) const;
   void resolve_duplicate_name_conflicts(lua_hooks & lua,
-                                        temp_node_id_source nis,
+                                        temp_node_id_source & nis,
                                         roster_t const & left_roster,
                                         roster_t const & right_roster,
                                         content_merge_adaptor & adaptor);
@@ -387,7 +422,7 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
-             temp_node_id_source nis,
+             temp_node_id_source & nis,
              roster_merge_result & result);
 
 void

@@ -115,6 +115,7 @@ namespace
 
 void
 resolve_merge_conflicts(lua_hooks & lua,
+                        temp_node_id_source & nis,
                         roster_t const & left_roster,
                         roster_t const & right_roster,
                         roster_merge_result & result,
@@ -139,7 +140,7 @@ resolve_merge_conflicts(lua_hooks & lua,
           N(result.attribute_conflicts.size() == 0, F(msg) % "attribute_conflicts");
 
           // resolve the ones we can.
-          result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
+          result.resolve_duplicate_name_conflicts(lua, nis, left_roster, right_roster, adaptor);
           result.resolve_content_drop_conflicts(left_roster, right_roster);
           result.resolve_suture_drop_conflicts(left_roster, right_roster);
           result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
@@ -206,10 +207,11 @@ interactive_merge_and_store(lua_hooks & lua,
                             left_uncommon_ancestors, right_uncommon_ancestors);
 
   roster_merge_result result;
+  temp_node_id_source nis;
 
   roster_merge(left_roster, left_marking_map, left_uncommon_ancestors,
                right_roster, right_marking_map, right_uncommon_ancestors,
-               result);
+               nis, result);
 
   bool resolutions_given;
   content_merge_database_adaptor dba(db, left_rid, right_rid,
@@ -217,7 +219,7 @@ interactive_merge_and_store(lua_hooks & lua,
 
   parse_resolve_conflicts_opts (opts, left_roster, right_roster, result, resolutions_given);
 
-  resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);
+  resolve_merge_conflicts(lua, nis, left_roster, right_roster, result, dba, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,

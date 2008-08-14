@@ -31,6 +31,7 @@ null_node(node_id n)
 }
 
 template <> void dump(node_id const & val, std::string & out);
+template <> void dump(std::set<node_id> const & val, std::string & out);
 template <> void dump(full_attr_map_t const & val, std::string & out);
 
 struct node
@@ -146,15 +147,21 @@ struct marking_t
   struct birth_record_t
   {
     birth_cause_t cause;
-    std::set<node_id> parents; // parents of sutured nodes, recursive; see ss-existence-merge.text
+    std::map<node_id, revision_id> parents;
+    // parents of sutured nodes and their birth revision, recursive; see
+    // ss-existence-merge.text
 
     birth_record_t() : cause(add){};
     birth_record_t(birth_cause_t cause,
-                   std::set<node_id> parents) :
+                   std::map<node_id, revision_id> parents) :
       cause(cause), parents(parents){};
     birth_record_t(birth_cause_t cause,
-                   std::pair<node_id, node_id> parents) :
-      cause(cause){this->parents.insert(parents.first); this->parents.insert(parents.second);};
+                   node_id left_nid, revision_id left_birth_rev,
+                   node_id right_nid, revision_id right_birth_rev) :
+      cause(cause)
+    {parents.insert(std::make_pair(left_nid, left_birth_rev));
+      parents.insert(std::make_pair(right_nid, right_birth_rev));
+    };
   };
 
   revision_id birth_revision;
@@ -325,6 +332,8 @@ struct temp_node_id_source
   node_id curr;
 };
 
+bool temp_node(node_id n);
+
 template <> void dump(roster_t const & val, std::string & out);
 
 // adaptor class to enable cset application on rosters.
@@ -398,9 +407,11 @@ mark_roster_with_one_parent(roster_t const & parent,
                             marking_map & child_markings);
 
 void
-mark_merge_roster(roster_t const & left_roster,
+mark_merge_roster(revision_id const & left_rid,
+                  roster_t const & left_roster,
                   marking_map const & left_markings,
                   std::set<revision_id> const & left_uncommon_ancestors,
+                  revision_id const & right_rid,
                   roster_t const & right_roster,
                   marking_map const & right_markings,
                   std::set<revision_id> const & right_uncommon_ancestors,

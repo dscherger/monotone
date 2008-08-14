@@ -16,6 +16,7 @@
 class database;
 class lua_hooks;
 class roster_t;
+class temp_node_id_source;
 
 // Destructively alter a roster_merge_result to attempt to remove any
 // conflicts in it. Takes a content_merge_adaptor to pass on to the content
@@ -28,6 +29,7 @@ struct options;
 
 void
 resolve_merge_conflicts(lua_hooks & lua,
+                        temp_node_id_source & nis,
                         roster_t const & left_roster,
                         roster_t const & right_roster,
                         roster_merge_result & result,

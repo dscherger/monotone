@@ -51,13 +51,14 @@ namespace
 {
   namespace syms
   {
-    symbol const ident("ident");
     symbol const birth("birth");
-    symbol const birth_cause("birth_cause");
     symbol const birth_add("birth_add");
-    symbol const birth_suture("birth_suture");
+    symbol const birth_cause("birth_cause");
+    symbol const birth_parent("birth_parent");
     symbol const birth_split("birth_split");
+    symbol const birth_suture("birth_suture");
     symbol const dormant_attr("dormant_attr");
+    symbol const ident("ident");
 
     symbol const path_mark("path_mark");
     symbol const attr_mark("attr_mark");
@@ -78,7 +79,7 @@ static const unsigned int oldest_supported_roster_format = 1;
 unsigned int
 roster_t::required_roster_format(marking_map const & mm) const
 {
-  // Format 2 supports birth_cause in the marking_map. This only matters if
+  // Format 2 supports birth_record in the marking_map. This only matters if
   // there is a suture or split, so check the marking map for those.
   unsigned int result = oldest_supported_roster_format;
 
@@ -134,13 +135,26 @@ dump(marking_t::birth_cause_t const & birth_cause, string & out)
 }
 
 template <> void
-dump(std::set<node_id> const & parents, string & out)
+dump(std::set<node_id> const & val, string & out)
+{
+  ostringstream oss;
+  for (std::set<node_id>::const_iterator i = val.begin(); i != val.end(); i++)
+    {
+      oss << *i << " ";
+     }
+  out = oss.str();
+}
+
+template <> void
+dump(std::map<node_id, revision_id> const & parents, string & out)
 {
   ostringstream oss;
   string tmp;
-  for (std::set<node_id>::const_iterator i = parents.begin(); i != parents.end(); i++)
+  for (std::map<node_id, revision_id>::const_iterator i = parents.begin(); i != parents.end(); i++)
     {
-      dump(*i, tmp);
+      dump(i->first, tmp);
+      oss << " " << tmp;
+      dump(i->second, tmp);
       oss << " " << tmp;
     }
   out = oss.str();
@@ -232,12 +246,13 @@ namespace
 
   const node_id first_node = 1;
   const node_id first_temp_node = widen<node_id, int>(1) << (sizeof(node_id) * 8 - 1);
-  inline bool temp_node(node_id n)
-  {
-    return n & first_temp_node;
-  }
 }
 
+bool
+temp_node(node_id n)
+{
+  return n & first_temp_node;
+}
 
 node::node(node_id i)
   : self(i),
@@ -1618,14 +1633,19 @@ namespace
   }
 
   void
-  mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
+  mark_new_node(revision_id const & new_rid,
+                node_t n,
+                revision_id left_rid,
+                revision_id right_rid,
+                marking_t & new_marking)
   {
     new_marking.birth_revision = new_rid;
 
     if (n->ancestors.first == n->self || n->ancestors.first == the_null_node)
       new_marking.birth_record = marking_t::birth_record_t();
     else
-      new_marking.birth_record = marking_t::birth_record_t(marking_t::suture, n->ancestors);
+      new_marking.birth_record = marking_t::birth_record_t
+        (marking_t::suture, n->ancestors.first, left_rid, n->ancestors.second, right_rid);
 
     I(new_marking.parent_name.empty());
     new_marking.parent_name.insert(new_rid);
@@ -1685,9 +1705,11 @@ namespace
   }
 
   void
-  mark_merged_node(marking_t const & left_marking,
+  mark_merged_node(revision_id const & left_rid,
+                   marking_t const & left_marking,
                    set<revision_id> const & left_uncommon_ancestors,
                    node_t ln,
+                   revision_id const & right_rid,
                    marking_t const & right_marking,
                    set<revision_id> const & right_uncommon_ancestors,
                    node_t rn,
@@ -1726,8 +1748,32 @@ namespace
         else
           {
             // new suture
+            std::map<node_id, revision_id> parents;
             new_marking.birth_revision = new_rid;
-            new_marking.birth_record = marking_t::birth_record_t (marking_t::suture, make_pair(ln->self, rn->self));
+            parents.insert(make_pair(ln->self, left_rid));
+            parents.insert(make_pair(rn->self, right_rid));
+
+            if (left_marking.birth_record.cause == marking_t::suture)
+              {
+                for (std::map<node_id, revision_id>::const_iterator i = left_marking.birth_record.parents.begin();
+                     i != left_marking.birth_record.parents.end();
+                     i++)
+                  {
+                    parents.insert(*i);
+                  }
+              }
+
+            if (right_marking.birth_record.cause == marking_t::suture)
+              {
+                for (std::map<node_id, revision_id>::const_iterator i = right_marking.birth_record.parents.begin();
+                     i != right_marking.birth_record.parents.end();
+                     i++)
+                  {
+                    parents.insert(*i);
+                  }
+              }
+
+            new_marking.birth_record = marking_t::birth_record_t (marking_t::suture, parents);
           }
       }
 
@@ -1811,9 +1857,11 @@ namespace
 // those invariants on a roster that involve the structure of the roster's
 // parents, rather than just the structure of the roster itself.
 void
-mark_merge_roster(roster_t const & left_roster,
+mark_merge_roster(revision_id const & left_rid,
+                  roster_t const & left_roster,
                   marking_map const & left_markings,
                   set<revision_id> const & left_uncommon_ancestors,
+                  revision_id const & right_rid,
                   roster_t const & right_roster,
                   marking_map const & right_markings,
                   set<revision_id> const & right_uncommon_ancestors,
@@ -1848,18 +1896,17 @@ mark_merge_roster(roster_t const & left_roster,
           if (the_null_node == n->ancestors.first)
             {
               // not a suture; two-parent workspace
-              mark_new_node(new_rid, n, new_marking);
+              mark_new_node(new_rid, n, left_rid, right_rid, new_marking);
             }
           else
             {
               // suture
-              node_map::const_iterator left = left_roster.all_nodes().find(n->ancestors.first);
-              node_map::const_iterator right = right_roster.all_nodes().find(n->ancestors.second);
-              I(left != left_roster.all_nodes().end());
-              I(right != right_roster.all_nodes().end());
-              mark_merged_node(safe_get(left_markings, n->ancestors.first), left_uncommon_ancestors, left->second,
-                               safe_get(right_markings, n->ancestors.second), right_uncommon_ancestors, right->second,
-                               new_rid, n, new_marking);
+              node_t const left_node = left_roster.get_node(n->ancestors.first);
+              node_t const right_node = right_roster.get_node(n->ancestors.second);
+              mark_merged_node
+                (left_rid, safe_get(left_markings, n->ancestors.first), left_uncommon_ancestors, left_node,
+                 right_rid, safe_get(right_markings, n->ancestors.second), right_uncommon_ancestors, right_node,
+                 new_rid, n, new_marking);
             }
         }
 
@@ -1903,12 +1950,12 @@ mark_merge_roster(roster_t const & left_roster,
                 // If one of the ancestor nodes is in right, merge marks with it.
                 // FIXME_SUTURE: handle recursive parents
                 I(left_marking.birth_record.parents.size() == 2);
-                set<node_id>::const_iterator left_parents_i = left_marking.birth_record.parents.begin();
-                node_id right_nid = *left_parents_i;
+                map<node_id, revision_id>::const_iterator left_parents_i = left_marking.birth_record.parents.begin();
+                node_id right_nid = left_parents_i->first;
                 node_map::const_iterator rni = right_roster.all_nodes().find(right_nid);
                 if (rni == right_roster.all_nodes().end())
                   {
-                    right_nid = *(++left_parents_i);
+                    right_nid = (++left_parents_i)->first;
                     rni = right_roster.all_nodes().find(right_nid);
                   }
 
@@ -1923,9 +1970,10 @@ mark_merge_roster(roster_t const & left_roster,
                   }
                 else
                   {
-                    mark_merged_node(safe_get(left_markings, n->self), left_uncommon_ancestors, left_node,
-                                     safe_get(right_markings, right_nid), right_uncommon_ancestors, rni->second,
-                                     new_rid, n, new_marking);
+                    mark_merged_node
+                      (left_rid, safe_get(left_markings, n->self), left_uncommon_ancestors, left_node,
+                       right_rid, safe_get(right_markings, right_nid), right_uncommon_ancestors, rni->second,
+                       new_rid, n, new_marking);
                   }
                 }
               break;
@@ -1939,11 +1987,10 @@ mark_merge_roster(roster_t const & left_roster,
           // exists in both left and right parents
           node_t const & left_node = lni->second;
           node_t const & right_node = rni->second;
-          mark_merged_node(safe_get(left_markings, n->self),
-                           left_uncommon_ancestors, left_node,
-                           safe_get(right_markings, n->self),
-                           right_uncommon_ancestors, right_node,
-                           new_rid, n, new_marking);
+          mark_merged_node
+            (left_rid, safe_get(left_markings, n->self), left_uncommon_ancestors, left_node,
+             right_rid, safe_get(right_markings, n->self), right_uncommon_ancestors, right_node,
+             new_rid, n, new_marking);
         }
 
       safe_insert(new_markings, make_pair(i->first, new_marking));
@@ -1987,7 +2034,7 @@ namespace {
     virtual node_id create_file_node(file_id const & content,
                                      std::pair<node_id, node_id> const ancestors)
     {
-      return handle_new(this->editable_roster_base::create_file_node(content));
+      return handle_new(this->editable_roster_base::create_file_node(content, ancestors));
     }
 
     virtual void apply_delta(file_path const & pth,
@@ -2018,7 +2065,9 @@ namespace {
     {
       node_t n = r.get_node(nid);
       marking_t new_marking;
-      mark_new_node(rid, n, new_marking);
+      // Sutures cannot be created except in merge, and this is a non-merge,
+      // so don't need parent rev_ids.
+      mark_new_node(rid, n, revision_id(), revision_id(), new_marking);
       safe_insert(markings, make_pair(nid, new_marking));
       return nid;
     }
@@ -2128,8 +2177,8 @@ namespace {
     // nodes were modified, and scan only them
     // load one of the parent markings directly into the new marking map
     new_markings.clear();
-    mark_merge_roster(left_roster, left_markings, left_uncommon_ancestors,
-                      right_roster, right_markings, right_uncommon_ancestors,
+    mark_merge_roster(left_rid, left_roster, left_markings, left_uncommon_ancestors,
+                      right_rid, right_roster, right_markings, right_uncommon_ancestors,
                       new_rid, new_roster, new_markings);
   }
 
@@ -2234,7 +2283,8 @@ mark_roster_with_one_parent(roster_t const & parent,
                            parent.get_node(i->first),
                            child_rid, i->second, new_marking);
       else
-        mark_new_node(child_rid, i->second, new_marking);
+        // nodes can't be sutured except in merges, so don't need parent rev_ids.
+        mark_new_node(child_rid, i->second, revision_id(), revision_id(), new_marking);
       safe_insert(child_markings, make_pair(i->first, new_marking));
     }
 
@@ -2814,14 +2864,15 @@ push_marking(basic_io::stanza & st,
     case marking_t::suture:
       {
         I(marking_format > 1);
-        std::vector<std::string> data;
-        for (set<node_id>::const_iterator parents_i = mark.birth_record.parents.begin();
+        st.push_str_pair(syms::birth_cause, syms::birth_suture);
+        for (map<node_id, revision_id>::const_iterator parents_i = mark.birth_record.parents.begin();
              parents_i != mark.birth_record.parents.end();
              parents_i++)
           {
-            data.push_back(lexical_cast<string>(*parents_i));
+            st.push_binary_triple(syms::birth_parent,
+                                  lexical_cast<string>(parents_i->first),
+                                  parents_i->second.inner());
           }
-        st.push_str_multi(syms::birth_cause, syms::birth_suture, data);
       }
       break;
 
@@ -2871,9 +2922,8 @@ parse_marking(basic_io::parser & pa,
       else if (pa.symp(syms::birth_cause))
         {
           // If the current roster_format is 1, there will be no birth_cause
-          // line, and marking.birth_cause will default to marking_t::add,
-          // which is correct.
-          std::string tmp_1, tmp_2;
+          // or birth_parent lines, and marking.birth_record will default to
+          // marking_t::add, which is correct.
           pa.sym();
 
           if (pa.symp (syms::birth_add))
@@ -2884,11 +2934,7 @@ parse_marking(basic_io::parser & pa,
           else if (pa.symp (syms::birth_suture))
             {
               pa.sym();
-              pa.str(tmp_1);
-              pa.str(tmp_2);
-              marking.birth_record = marking_t::birth_record_t (marking_t::suture,
-                                               make_pair(lexical_cast<node_id>(tmp_1),
-                                                         lexical_cast<node_id>(tmp_2)));
+              marking.birth_record.cause = marking_t::suture;
             }
           else if (pa.symp (syms::birth_split))
             {
@@ -2898,6 +2944,16 @@ parse_marking(basic_io::parser & pa,
             {
               E(false, F("unrecognized birth_cause '%s'") % pa.token);
             }
+        }
+      else if (pa.symp(syms::birth_parent))
+        {
+          std::string nid;
+          pa.sym();
+
+          pa.str(nid);
+          pa.hex(rev);
+          marking.birth_record.parents.insert(make_pair(lexical_cast<node_id>(nid),
+                                                        decode_hexenc(rev)));
         }
       else if (pa.symp(syms::path_mark))
         {
