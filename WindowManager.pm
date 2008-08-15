@@ -556,14 +556,42 @@ sub event_filter($$)
 
     my($event, $client_data) = @_;
 
+    my($event_for_grab_widget,
+       $widget);
     my $grab_widget = $client_data->{grab_widget};
     my $this        = $client_data->{singleton};
     my $type        = $event->type();
 
+    $event_for_grab_widget =
+	(defined($grab_widget)
+	 && defined($widget = Gtk2->get_event_widget($event))
+	 && $grab_widget == $widget)
+	? 1 : 0;
+
+    # Ignore the event if we are blocking input, the event is input related and
+    # it isn't destined for the grab widget (if there is one).
+
     return if (! $this->{allow_input}
 	       && exists($filtered_events{$type})
-	       && (! defined($grab_widget)
-		   || $grab_widget != Gtk2->get_event_widget($event)));
+	       && ! $event_for_grab_widget);
+
+    # If there is a grab widget then reset the mouse cursor to the default
+    # whilst it is inside that widget.
+
+    if ($event_for_grab_widget)
+    {
+	if ($type eq "enter-notify")
+	{
+	    $grab_widget->window()->set_cursor(undef);
+	}
+	elsif ($type eq "leave-notify")
+	{
+	    $grab_widget->window()->set_cursor($this->{busy_cursor});
+	}
+    }
+
+    # Actually process the event.
+
     Gtk2->main_do_event($event);
 
 }
