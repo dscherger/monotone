@@ -815,7 +815,7 @@ sub get_file_details($$$$$$)
 	{
 	    $$author = $cert->{value};
 	}
-	if ($cert->{name} eq "date")
+	elsif ($cert->{name} eq "date")
 	{
 	    $$last_update = $cert->{value};
 	}
@@ -850,6 +850,7 @@ sub file_glob_to_regexp($)
 
     $escaping = 0;
     $first = 1;
+    $re_text = "^";
     foreach my $char (split(//, $file_glob))
     {
 	if ($first)
@@ -863,11 +864,11 @@ sub file_glob_to_regexp($)
 	}
 	elsif ($char eq "*")
 	{
-	    $re_text .= $escaping ? "\\*" : ".*";
+	    $re_text .= $escaping ? "\\*" : "[^/]*";
 	}
 	elsif ($char eq "?")
 	{
-	    $re_text .= $escaping ? "\\?" : ".";
+	    $re_text .= $escaping ? "\\?" : "[^/]";
 	}
 	elsif ($char eq "\\")
 	{
@@ -888,7 +889,6 @@ sub file_glob_to_regexp($)
 	    $escaping = 0;
 	}
     }
-
     $re_text .= "\$";
 
     return $re_text;
@@ -1150,9 +1150,19 @@ sub glade_signal_autoconnect($$)
 	     my($callback_name, $widget, $signal_name, $signal_data,
 		$connect_object, $after, $user_data) = @_;
 	     my $func = $after ? "signal_connect_after" : "signal_connect";
+
+	     # Need to fully qualify any callback name that isn't prefixed by
+	     # it's package name.
+
+	     $callback_name = "main::" . $callback_name
+		 if (index($callback_name, "::") < 0);
+
+	     # Actually connect the signal handler.
+
 	     $widget->$func($signal_name,
 			    $callback_name,
-			    $connect_object ? $connect_object : $user_data); },
+			    $connect_object ? $connect_object : $user_data);
+	 },
 	 $client_data);
 
 }

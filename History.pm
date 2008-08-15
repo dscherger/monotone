@@ -123,7 +123,7 @@ sub display_revision_change_history($$$)
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
-    $instance->{appbar}->push("");
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     $instance->{stop_button}->set_sensitive(TRUE);
@@ -330,7 +330,7 @@ sub display_file_change_history($$$)
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
-    $instance->{appbar}->push("");
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     # Get the list of file change revisions. Remember that a warning is
@@ -718,7 +718,7 @@ sub compare_revisions($$$;$)
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
-    $instance->{appbar}->push("");
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     $instance->{mtn} = $mtn;
@@ -798,7 +798,7 @@ sub compare_revisions($$$;$)
 	    ($instance->{comparison_buffer}->get_end_iter(),
 	     $line . "\n",
 	     "compare-info");
-	for ($i = 1; $i <= $#lines; ++ $i)
+	for ($i = 1; $i < scalar(@lines); ++ $i)
 	{
 
 	    # Deal with the initial comment lines that summarise the entire set
@@ -956,7 +956,7 @@ sub compare_revisions($$$;$)
 
 	$instance->{appbar}->set_status(__("Displaying differences"));
 	$wm->update_gui();
-	for ($i = 0; $i <= $#{$instance->{diff_output}}; ++ $i)
+	for ($i = 0; $i < scalar(@{$instance->{diff_output}}); ++ $i)
 	{
 
 	    # Deal with lines that introduce a new file comparison.

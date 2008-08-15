@@ -480,7 +480,7 @@ sub search_files_button_clicked_cb($$)
     }
 
     $wm->make_busy($instance, 1);
-    $instance->{appbar}->push("");
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     $instance->{appbar}->set_status(__("Finding matching files"));
@@ -632,11 +632,22 @@ sub search_files_button_clicked_cb($$)
     $instance->{appbar}->pop();
     if ($matches > 0)
     {
-	$instance->{appbar}->set_status(__x("Found {files_found} files",
-					    files_found => $matches));
+	$instance->{appbar}->set_status(__nx("Found 1 file",
+					     "Found {files_found} files",
+					     $matches,
+					     files_found => $matches));
     }
     else
     {
+	my $dialog;
+	$dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "info",
+	     "close",
+	     __("No files matched your query."));
+	WindowManager::instance()->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
 	$instance->{appbar}->set_status(__("Nothing found"));
     }
     $wm->make_busy($instance, 0);

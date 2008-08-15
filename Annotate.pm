@@ -99,7 +99,7 @@ sub display_annotation($$$)
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
-    $instance->{appbar}->push("");
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     # Get Monotone to do the annotation.
@@ -113,7 +113,7 @@ sub display_annotation($$$)
 
     $max_len = 0;
     $template = sprintf("a%da2a*", length(($lines[0] =~ m/^([^:]+):.*$/)[0]));
-    for ($i = 0; $i <= $#lines; ++ $i)
+    for ($i = 0; $i < scalar(@lines); ++ $i)
     {
 	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0,2];
 	$lines[$i] =~ s/\s+$//;
@@ -128,7 +128,7 @@ sub display_annotation($$$)
     $wm->update_gui();
     $padding = " " x $max_len;
     $prefix_tag = $text_tag = "";
-    for ($i = 0; $i <= $#lines; ++ $i)
+    for ($i = 0; $i < scalar(@lines); ++ $i)
     {
 
 	# Change the colours if there is a new prefix.

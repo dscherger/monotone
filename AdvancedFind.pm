@@ -45,6 +45,15 @@ require 5.008;
 use strict;
 use warnings;
 
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# Constants for the columns within the manifest liststore widget.
+
+use constant AFLS_REVISION_ID_COLUMN => 0;
+use constant AFLS_BRANCH_COLUMN      => 1;
+use constant AFLS_DATE_COLUMN        => 2;
+use constant AFLS_AUTHOR_COLUMN      => 3;
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -172,6 +181,9 @@ sub advanced_find($$$)
     }
 
     $advanced_find->{mtn} = undef;
+    $advanced_find->{branch_combo_details}->{preset} = 0;
+    $advanced_find->{revision_combo_details}->{preset} = 0;
+    &{$advanced_find->{update_handler}}($advanced_find, ALL_CHANGED);
 
     return $ret_val;
 
@@ -429,14 +441,13 @@ sub revisions_treeview_cursor_changed_cb($$)
     $widget->get_selection()->selected_foreach
 	(sub {
 	     my($model, $path, $iter) = @_;
-	     $revision_id = $model->get($iter, 0); });
+	     $revision_id = $model->get($iter, AFLS_REVISION_ID_COLUMN); });
 
     if (defined($revision_id)
 	&& $revision_id
 	    ne $advanced_find->{revisions_treeview_details}->{value})
     {
 	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
-	$advanced_find->{appbar}->clear_stack();
 	&{$advanced_find->{update_handler}}($advanced_find,
 					    SELECTED_REVISION_CHANGED);
     }
@@ -480,12 +491,11 @@ sub revisions_treeview_row_activated_cb($$$$)
     $widget->get_selection()->selected_foreach
 	(sub {
 	     my($model, $path, $iter) = @_;
-	     $revision_id = $model->get($iter, 0); });
+	     $revision_id = $model->get($iter, AFLS_REVISION_ID_COLUMN); });
 
     if (defined($revision_id))
     {
 	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
-	$advanced_find->{appbar}->clear_stack();
 	$advanced_find->{selected} = 1;
 	$advanced_find->{done} = 1;
     }
@@ -561,8 +571,6 @@ sub get_advanced_find_window($)
 			    "revisions_treeview",
 			    "details_textview",
 			    "details_scrolledwindow",
-			    "selected_branch_value_label",
-			    "selected_revision_value_label",
 			    "ok_button")
 	{
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
@@ -616,17 +624,57 @@ sub get_advanced_find_window($)
 	# Setup the revisions list browser.
 
 	$instance->{revisions_liststore} =
-	    Gtk2::ListStore->new("Glib::String");
+	    Gtk2::ListStore->new("Glib::String",
+				 "Glib::String",
+				 "Glib::String",
+				 "Glib::String");
 	$instance->{revisions_treeview}->
 	    set_model($instance->{revisions_liststore});
+
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title(__("Matching Revision Ids"));
-	$tv_column->set_sort_column_id(0);
+	$tv_column->set_title(__("Revision Id"));
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("fixed");
+	$tv_column->set_fixed_width(100);
+	$tv_column->set_sort_column_id(AFLS_REVISION_ID_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
 	$tv_column->pack_start($renderer, FALSE);
-	$tv_column->set_attributes($renderer, "text" => 0);
+	$tv_column->set_attributes($renderer,
+				   "text" => AFLS_REVISION_ID_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
-	$instance->{revisions_treeview}->set_search_column(0);
+
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title(__("Branch"));
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("grow-only");
+	$tv_column->set_sort_column_id(AFLS_BRANCH_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => AFLS_BRANCH_COLUMN);
+	$instance->{revisions_treeview}->append_column($tv_column);
+
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title(__("Date"));
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("grow-only");
+	$tv_column->set_sort_column_id(AFLS_DATE_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => AFLS_DATE_COLUMN);
+	$instance->{revisions_treeview}->append_column($tv_column);
+
+	$tv_column = Gtk2::TreeViewColumn->new();
+	$tv_column->set_title(__("Author"));
+	$tv_column->set_resizable(TRUE);
+	$tv_column->set_sizing("grow-only");
+	$tv_column->set_sort_column_id(AFLS_AUTHOR_COLUMN);
+	$renderer = Gtk2::CellRendererText->new();
+	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->set_attributes($renderer, "text" => AFLS_AUTHOR_COLUMN);
+	$instance->{revisions_treeview}->append_column($tv_column);
+
+	$instance->{revisions_treeview}->
+	    set_search_column(AFLS_REVISION_ID_COLUMN);
 
 	# Setup the revision details viewer.
 
@@ -710,6 +758,7 @@ sub update_advanced_find_state($$)
 
     my($advanced_find, $changed) = @_;
 
+    my $matches;
     my $made_busy = 0;
     my $wm = WindowManager->instance();
 
@@ -718,7 +767,8 @@ sub update_advanced_find_state($$)
 	$made_busy = 1;
 	$wm->make_busy($advanced_find, 1);
     }
-    $advanced_find->{appbar}->push("");
+    $advanced_find->{appbar}->
+	push($advanced_find->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     # The list of available branches has changed.
@@ -851,7 +901,7 @@ sub update_advanced_find_state($$)
     if ($changed & REVISION_LIST)
     {
 
-	my($counter,
+	my($i,
 	   @revision_ids);
 
 	# Reset the revisions tree view.
@@ -868,12 +918,15 @@ sub update_advanced_find_state($$)
 	    if ($advanced_find->{revision_combo_details}->{complete})
 	    {
 		get_revision_ids($advanced_find, \@revision_ids);
+		$matches = scalar(@revision_ids);
 	    }
 	}
 	else
 	{
+
 	    my($err,
 	       $query);
+
 	    $query = $advanced_find->{search_term_comboboxentry}->child()->
 		get_text();
 
@@ -900,12 +953,13 @@ sub update_advanced_find_state($$)
 	    eval
 	    {
 		$advanced_find->{mtn}->select(\@revision_ids, $query);
+		$matches = scalar(@revision_ids);
 	    };
 	    $err = $@;
 	    Monotone::AutomateStdio->register_error_handler
 		("both", \&mtn_error_handler);
 
-	    # If the query was valid the store it in the history.
+	    # If the query was valid then store it in the history.
 
 	    if ($err eq "")
 	    {
@@ -949,29 +1003,119 @@ sub update_advanced_find_state($$)
 	    }
 
 	}
-	$advanced_find->{mtn}->toposort(\@revision_ids, @revision_ids);
+	$advanced_find->{mtn}->toposort(\@revision_ids, @revision_ids)
+	    if (scalar(@revision_ids) > 0);
 	@revision_ids = reverse(@revision_ids);
 
 	# Update the revisions tree view.
 
 	$advanced_find->{appbar}->
 	    set_status(__("Populating revision details"));
-	$counter = 1;
 	$advanced_find->{stop_button}->set_sensitive(TRUE);
-	foreach my $item (@revision_ids)
+	$i = 0;
+	while ($i < scalar(@revision_ids) && ! $advanced_find->{stop})
 	{
-	    $advanced_find->{revisions_liststore}->
-		set($advanced_find->{revisions_liststore}->append(),
-		    0, $item);
-	    if (($counter % 10) == 0)
+
+	    my($branch,
+	       %branch_hits,
+	       $nr_revisions,
+	       @revision_group);
+
+	    # Build up a list of revision ids that share the same branch.
+
+	    for ($nr_revisions = 1;
+		 $i < scalar(@revision_ids);
+		 ++ $i, ++ $nr_revisions)
 	    {
-		$advanced_find->{appbar}->set_progress_percentage
-		    ($counter / scalar(@revision_ids));
-		$wm->update_gui();
+
+		my ($author,
+		    @certs,
+		    $date,
+		    $found,
+		    $key,
+		    %unique,
+		    $value);
+
+		$advanced_find->{mtn}->certs(\@certs, $revision_ids[$i]);
+
+		# Total up unique occurrences of branch names for this
+		# revision and stash away any author and date information that
+		# we may find.
+
+		$found = 0;
+		$author = $date = "";
+		foreach my $cert (@certs)
+		{
+		    if ($cert->{name} eq "author")
+		    {
+			$author = $cert->{value};
+		    }
+		    elsif ($cert->{name} eq "branch")
+		    {
+			if (! $unique{$cert->{value}} ++)
+			{
+			    ++ $branch_hits{$cert->{value}};
+			    $found = 1;
+			}
+		    }
+		    elsif ($cert->{name} eq "date")
+		    {
+			$date = $cert->{value};
+			$date =~ s/T/ /;
+		    }
+		}
+		++ $branch_hits{""} if (! $found);
+
+		# Exit this loop if a new sequence of revisions with a
+		# different common branch has started.
+
+		$found = 0;
+		while (($key, $value) = each(%branch_hits))
+		{
+		    if ($value == $nr_revisions)
+		    {
+			$branch = $key;
+			$found = 1;
+			last;
+		    }
+		}
+		last if (! $found);
+
+		# Ok so add this revision onto the end of the group.
+
+		push(@revision_group,
+		     {revision_id => $revision_ids[$i],
+		      author      => $author,
+		      date        => $date});
+
+		if ((($i + 1) % 10) == 0)
+		{
+		    $advanced_find->{appbar}->set_progress_percentage
+			(($i + 1) / scalar(@revision_ids));
+		    $wm->update_gui();
+		}
+		if ($advanced_find->{stop})
+		{
+		    $matches = $i + 1;
+		    last;
+		}
+
 	    }
-	    ++ $counter;
-	    last if ($advanced_find->{stop});
+
+	    # Add the current revision group to the revisions tree view.
+
+	    foreach my $item (@revision_group)
+	    {
+		$advanced_find->{revisions_liststore}->
+		    set($advanced_find->{revisions_liststore}->append(),
+			AFLS_REVISION_ID_COLUMN, $item->{revision_id},
+			AFLS_BRANCH_COLUMN, $branch,
+			AFLS_DATE_COLUMN, $item->{date},
+			AFLS_AUTHOR_COLUMN, $item->{author});
+	    }
+
 	}
+
 	$advanced_find->{appbar}->set_progress_percentage(1);
 	$wm->update_gui();
 	$advanced_find->{stop_button}->set_sensitive(FALSE);
@@ -991,74 +1135,64 @@ sub update_advanced_find_state($$)
 
 	if ($advanced_find->{revisions_treeview_details}->{value} ne "")
 	{
-	    if ($advanced_find->{selected_revision_value_label}->get_text()
-		ne $advanced_find->{revisions_treeview_details}->{value})
+	    my(@certs_list,
+	       @revision_details);
+
+	    $advanced_find->{details_buffer}->set_text("");
+	    $advanced_find->{mtn}->certs
+		(\@certs_list,
+		 $advanced_find->{revisions_treeview_details}->{value});
+	    $advanced_find->{mtn}->get_revision
+		(\@revision_details,
+		 $advanced_find->{revisions_treeview_details}->{value});
+	    generate_revision_report
+		($advanced_find->{details_buffer},
+		 $advanced_find->{revisions_treeview_details}->{value},
+		 \@certs_list,
+		 "",
+		 \@revision_details);
+
+	    # Scroll back up to the top left.
+
+	    $advanced_find->{details_buffer}->
+		place_cursor($advanced_find->{details_buffer}->
+			     get_start_iter());
+	    if ($advanced_find->{details_scrolledwindow}->realized())
 	    {
-		my($branch,
-		   @certs_list,
-		   @revision_details);
-
-		$advanced_find->{details_buffer}->set_text("");
-		$advanced_find->{mtn}->certs
-		    (\@certs_list,
-		     $advanced_find->{revisions_treeview_details}->{value});
-		$advanced_find->{mtn}->get_revision
-		    (\@revision_details,
-		     $advanced_find->{revisions_treeview_details}->{value});
-		generate_revision_report
-		    ($advanced_find->{details_buffer},
-		     $advanced_find->{revisions_treeview_details}->{value},
-		     \@certs_list,
-		     "",
-		     \@revision_details);
-
-		# Scroll back up to the top left.
-
-		$advanced_find->{details_buffer}->
-		    place_cursor($advanced_find->{details_buffer}->
-				 get_start_iter());
-		if ($advanced_find->{details_scrolledwindow}->realized())
-		{
-		    $advanced_find->{details_scrolledwindow}->
-			get_vadjustment()->set_value(0);
-		    $advanced_find->{details_scrolledwindow}->
-			get_hadjustment()->set_value(0);
-		}
-
-		# Update the selected branch and revision labels.
-
-		$branch = "";
-		foreach my $cert (@certs_list)
-		{
-		    if ($cert->{name} eq "branch")
-		    {
-			$branch = $cert->{value};
-			last;
-		    }
-		}
-		set_label_value($advanced_find->{selected_branch_value_label},
-				$branch);
-		set_label_value($advanced_find->
-				    {selected_revision_value_label},
-				$advanced_find->{revisions_treeview_details}->
-				    {value});
-
-		$advanced_find->{ok_button}->set_sensitive(TRUE);
+		$advanced_find->{details_scrolledwindow}->
+		    get_vadjustment()->set_value(0);
+		$advanced_find->{details_scrolledwindow}->
+		    get_hadjustment()->set_value(0);
 	    }
+
+	    $advanced_find->{ok_button}->set_sensitive(TRUE);
 	}
 	else
 	{
 	    $advanced_find->{ok_button}->set_sensitive(FALSE);
 	    $advanced_find->{details_buffer}->set_text("");
-	    set_label_value($advanced_find->{selected_branch_value_label}, "");
-	    set_label_value($advanced_find->{selected_revision_value_label},
-			    "");
 	}
 
     }
 
     $advanced_find->{appbar}->pop();
     $wm->make_busy($advanced_find, 0) if ($made_busy);
+
+    if (defined($matches))
+    {
+	if ($matches > 0)
+	{
+	    $advanced_find->{appbar}->
+		set_status(__nx("Found 1 revision",
+				"Found {revisions_found} revisions",
+				$matches,
+				revisions_found => $matches));
+	}
+	else
+	{
+	    $advanced_find->{appbar}->set_status(__("Nothing found"));
+	}
+    }
 
 }
 

@@ -1744,7 +1744,7 @@ sub update_browser_state($$)
     my $wm = WindowManager->instance();
 
     $wm->make_busy($browser, 1);
-    $browser->{appbar}->push("");
+    $browser->{appbar}->push($browser->{appbar}->get_status()->get_text());
     $wm->update_gui();
 
     # The database has changed.
