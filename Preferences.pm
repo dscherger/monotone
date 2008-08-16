@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 2;
+use constant PREFERENCES_FORMAT_VERSION => 3;
 
 # Text viewable application mime types.
 
@@ -1044,7 +1044,7 @@ sub get_preferences_window($$)
 	     $instance->{glade}->get_widget("file_name_pattern_entry"),
 	     $instance->{glade}->get_widget("file_actions_frame")];
 
-	# Setup the advanced find window deletion handlers.
+	# Setup the preferences window deletion handlers.
 
 	$instance->{window}->signal_connect
 	    ("delete_event",
@@ -1118,7 +1118,7 @@ sub get_preferences_window($$)
 
 	$instance->{file_name_patterns_treeview}->set_search_column(0);
 
-	# Update the advanced find dialog's state.
+	# Reparent the preferences window to the specified parent.
 
 	$instance->{window}->set_transient_for($parent);
 
@@ -1506,7 +1506,18 @@ sub upgrade_preferences($)
     {
 	$preferences->{coloured_diffs} = 1;
 	$preferences->{diffs_application} = "kompare '{file1}' '{file2}'";
+	$preferences->{version} = 2;
     }
+    if ($preferences->{version} == 2)
+    {
+	$preferences->{histories} = {advanced_find          => [],
+				     find_files_named       => [],
+				     find_files_containing  => [],
+				     find_files_modified_by => [],
+				     find_text              => []};
+	$preferences->{version} = 3;
+    }
+
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
 }
@@ -1559,7 +1570,12 @@ sub initialise_preferences()
 			       cmp_revision_2    => {fg => "DarkGreen",
 						     bg => "DarkSeaGreen1",
 						     hl => "SpringGreen1"}},
-	 mime_table        => $mime_table);
+	 mime_table        => $mime_table,
+	 histories         => {advanced_find          => [],
+			       find_files_named       => [],
+			       find_files_containing  => [],
+			       find_files_modified_by => [],
+			       find_text              => []});
 
     return \%preferences;
 

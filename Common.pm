@@ -66,6 +66,7 @@ sub get_dir_contents($$$);
 sub get_file_details($$$$$$);
 sub get_revision_ids($$;$);
 sub glade_signal_autoconnect($$);
+sub handle_comboxentry_history($$;$);
 sub hex_dump($);
 sub open_database($$$);
 sub run_command($@);
@@ -892,6 +893,89 @@ sub file_glob_to_regexp($)
     $re_text .= "\$";
 
     return $re_text;
+
+}
+#
+##############################################################################
+#
+#   Routine      - handle_comboxentry_history
+#
+#   Description  - Handle comboboxentry histories. Histories are limited to a
+#                  small fixed value and are stored to disk in the user's
+#                  preferences file.
+#
+#   Data         - $widget       : The comboboxentry that is to be updated.
+#                  $history_name : The name of the history list that is to be
+#                                  updated or loaded.
+#                  $value        : The new value that is to be added to the
+#                                  specified history list and comboboxentry or
+#                                  undef if the comboboxentry is just to
+#                                  updated with the current history list. This
+#                                  is optional. 
+#
+##############################################################################
+
+
+
+sub handle_comboxentry_history($$;$)
+{
+
+    my($widget, $history_name, $value) = @_;
+
+    my $update_history = 1;
+    my $history_ref = $user_preferences->{histories}->{$history_name};
+
+    # Update the comboxentry history list and save it to disk.
+
+    if (defined($value))
+    {
+	if ($value ne "")
+	{
+	    foreach my $entry (@$history_ref)
+	    {
+		if ($entry eq $value)
+		{
+		    $update_history = 0;
+		last;
+		}
+	    }
+	}
+	else
+	{
+	    $update_history = 0;
+	}
+	if ($update_history)
+	{
+	    pop(@$history_ref) if (unshift(@$history_ref, $value) > 20);
+	    eval
+	    {
+		save_preferences($user_preferences);
+	    };
+	    if ($@ ne "")
+	    {
+		chomp($@);
+		my $dialog = Gtk2::MessageDialog->new
+		    (undef,
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __("Your preferences could not be saved:\n") . $@);
+		$dialog->run();
+		$dialog->destroy();
+	    }
+	}
+    }
+
+    # Update the comboboxentry itself if necessary.
+
+    if ($update_history)
+    {
+	$widget->get_model()->clear();
+	foreach my $entry (@$history_ref)
+	{
+	    $widget->append_text($entry);
+	}
+    }
 
 }
 #

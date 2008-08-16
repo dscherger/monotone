@@ -618,8 +618,9 @@ sub get_advanced_find_window($)
 	$instance->{search_term_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{search_term_comboboxentry}->set_text_column(0);
-	$instance->{query_history} = [];
 	$instance->{term_combobox}->set_active(0);
+	handle_comboxentry_history($instance->{search_term_comboboxentry},
+				   "advanced_find");
 
 	# Setup the revisions list browser.
 
@@ -963,7 +964,6 @@ sub update_advanced_find_state($$)
 
 	    if ($err eq "")
 	    {
-		my $found;
 		if (scalar(@revision_ids) == 0)
 		{
 		    my $dialog;
@@ -976,30 +976,10 @@ sub update_advanced_find_state($$)
 		    $wm->allow_input(sub { $dialog->run(); });
 		    $dialog->destroy();
 		}
-		$found = 0;
-		foreach my $entry (@{$advanced_find->{query_history}})
-		{
-		    if ($entry eq $query)
-		    {
-			$found = 1;
-			last;
-		    }
-		}
-		if (! $found)
-		{
-		    if (unshift(@{$advanced_find->{query_history}}, $query)
-			> 20)
-		    {
-			pop(@{$advanced_find->{query_history}});
-		    }
-		    $advanced_find->{search_term_comboboxentry}->get_model()->
-			clear();
-		    foreach my $entry (@{$advanced_find->{query_history}})
-		    {
-			$advanced_find->{search_term_comboboxentry}->
-			    append_text($entry);
-		    }
-		}
+		handle_comboxentry_history
+		    ($advanced_find->{search_term_comboboxentry},
+		     "advanced_find",
+		     $query);
 	    }
 
 	}

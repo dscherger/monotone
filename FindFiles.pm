@@ -85,7 +85,6 @@ sub results_treeview_row_activated_cb($$$$);
 sub save_query_from_gui($);
 sub search_files_button_clicked_cb($$);
 sub size_comparitor_combobox_changed_cb($$);
-sub update_comboxentries_history($$);
 sub validate_query($$);
 #
 ##############################################################################
@@ -325,7 +324,15 @@ sub search_files_button_clicked_cb($$)
 
     # Update the comboxentries histories.
 
-    update_comboxentries_history($instance, $query);
+    handle_comboxentry_history($instance->{files_named_comboboxentry},
+			       "find_files_named",
+			       $query->{file_glob});
+    handle_comboxentry_history($instance->{files_containing_comboboxentry},
+			       "find_files_containing",
+			       $query->{contents_pattern});
+    handle_comboxentry_history($instance->{modified_by_comboboxentry},
+			       "find_files_modified_by",
+			       $query->{modified_by});
 
     # Build up a sub-manifest representing the items that we are going to
     # search.
@@ -952,15 +959,12 @@ sub get_find_files_window()
 	$instance->{files_named_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{files_named_comboboxentry}->set_text_column(0);
-	$instance->{files_named_history} = [];
 	$instance->{files_containing_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{files_containing_comboboxentry}->set_text_column(0);
-	$instance->{files_containing_history} = [];
 	$instance->{modified_by_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{modified_by_comboboxentry}->set_text_column(0);
-	$instance->{modified_by_history} = [];
 	$instance->{size_comparitor_combobox}->set_active(CMP_ANY_SIZE);
 	$instance->{size_units_combobox}->set_active(SIZE_KB);
 	$instance->{time_units_combobox}->set_active(DURATION_DAYS);
@@ -1017,6 +1021,15 @@ sub get_find_files_window()
     set_label_value($instance->{file_id_value_label}, "");
     set_label_value($instance->{last_update_value_label}, "");
     set_label_value($instance->{file_revision_id_value_label}, "");
+
+    # Load in the comboboxentries histories.
+
+    handle_comboxentry_history($instance->{files_named_comboboxentry},
+			       "find_files_named");
+    handle_comboxentry_history($instance->{files_containing_comboboxentry},
+			       "find_files_containing");
+    handle_comboxentry_history($instance->{modified_by_comboboxentry},
+			       "find_files_modified_by");
 
     return $instance;
 
@@ -1141,65 +1154,6 @@ sub validate_query($$)
     }
 
     return 1;
-
-}
-#
-##############################################################################
-#
-#   Routine      - update_comboxentries_history
-#
-#   Description  - Update all the histories for every comboboxentry widget in
-#                  a in a find files window.
-#
-#   Data         - $instance : The associated window instance.
-#                  $query    : The query record containing what was saved from
-#                              the GUI.
-#
-##############################################################################
-
-
-
-sub update_comboxentries_history($$)
-{
-
-    my($instance, $query) = @_;
-
-    my $found;
-
-    # Update the comboxentries histories.
-
-    for my $record ({widget  => $instance->{files_named_comboboxentry},
-		     history => $instance->{files_named_history},
-		     value   => $query->{file_glob}},
-		    {widget  => $instance->{files_containing_comboboxentry},
-		     history => $instance->{files_containing_history},
-		     value   => $query->{contents_pattern}},
-		    {widget  => $instance->{modified_by_comboboxentry},
-		     history => $instance->{modified_by_history},
-		     value   => $query->{modified_by}})
-    {
-	$found = 0;
-	foreach my $entry (@{$record->{history}})
-	{
-	    if ($entry eq $record->{value})
-	    {
-		$found = 1;
-		last;
-	    }
-	}
-	if (! $found)
-	{
-	    if (unshift(@{$record->{history}}, $record->{value}) > 20)
-	    {
-		pop(@{$record->{history}});
-	    }
-	    $record->{widget}->get_model()->clear();
-	    foreach my $entry (@{$record->{history}})
-	    {
-		$record->{widget}->append_text($entry);
-	    }
-	}
-    }
 
 }
 #

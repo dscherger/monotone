@@ -399,27 +399,9 @@ sub find_button_clicked_cb($$)
 
     # Store the search term in the history.
 
-    $found = 0;
-    foreach my $entry (@{$instance->{search_history}})
-    {
-	if ($entry eq $search_term)
-	{
-	    $found = 1;
-	    last;
-	}
-    }
-    if (! $found)
-    {
-	if (unshift(@{$instance->{search_history}}, $search_term) > 20)
-	{
-	    pop(@{$instance->{search_history}});
-	}
-	$instance->{find_comboboxentry}->get_model()->clear();
-	foreach my $entry (@{$instance->{search_history}})
-	{
-	    $instance->{find_comboboxentry}->append_text($entry);
-	}
-    }
+    handle_comboxentry_history($instance->{find_comboboxentry},
+			       "find_text",
+			       $search_term);
 
     # Work out where to start searching from.
 
@@ -728,7 +710,6 @@ sub get_find_text_window($$)
 	$instance->{find_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{find_comboboxentry}->set_text_column(0);
-	$instance->{search_history} = [];
     }
     else
     {
@@ -742,6 +723,10 @@ sub get_find_text_window($$)
     $instance->{match_offset_start} = $instance->{match_offset_end} = -1;
     $instance->{old_y} = 0;
     $instance->{old_search_term} = "";
+
+    # Load in the comboboxentry history.
+
+    handle_comboxentry_history($instance->{find_comboboxentry}, "find_text");
 
     # Make sure the find button is only enabled when there is something entered
     # into the comboboxentry widget.
