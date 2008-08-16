@@ -1749,7 +1749,7 @@ sub update_browser_state($$)
 
     # The database has changed.
 
-    if ($changed & DATABASE_CHANGED)
+    if ($changed == DATABASE_CHANGED)
     {
 
 	my $db_name;
@@ -1858,6 +1858,47 @@ sub update_browser_state($$)
     {
 
 	my @revision_list;
+
+	# If auto-selection of the head revision is wanted by the user and it
+	# is appropriate then preset the revision id.
+
+	if ($user_preferences->{auto_select_head}
+	    && ! $browser->{tagged_checkbutton}->get_active()
+	    && $browser->{branch_combo_details}->{complete}
+	    && ! $browser->{revision_combo_details}->{preset})
+	{
+	    my @revision_ids;
+	    $browser->{appbar}->set_status(__("Auto selecting head revision"));
+	    $wm->update_gui();
+	    $browser->{mtn}->select
+		(\@revision_ids,
+		 "h:" . $browser->{branch_combo_details}->{value});
+	    if (scalar(@revision_ids) == 1)
+	    {
+		$browser->{revision_combo_details}->{preset} = 1;
+		$browser->{revision_combo_details}->{value} = $revision_ids[0];
+		$browser->{tagged_checkbutton}->set_active(FALSE);
+	    }
+	    elsif (scalar(@revision_ids) > 1)
+	    {
+		my $message;
+		$message =
+		    __x("The `{branch}' branch has multiple heads.\n",
+			branch => $browser->{branch_combo_details}->{value})
+		    . __("Please manually select the revision.\n")
+		    . __("The head revision ids are:");
+		foreach my $item (@revision_ids)
+		{
+		    $message .= "\n" . Glib::Markup::escape_text($item);
+		}
+		my $dialog = Gtk2::MessageDialog->new_with_markup
+		    ($browser->{window}, ["modal"], "info", "close", $message);
+		$wm->allow_input(sub { $dialog->run(); });
+		$dialog->destroy();
+	    }
+	    $browser->{appbar}->set_status("");
+	    $wm->update_gui();
+	}
 
 	# Reset the revision selection.
 

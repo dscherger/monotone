@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 3;
+use constant PREFERENCES_FORMAT_VERSION => 4;
 
 # Text viewable application mime types.
 
@@ -995,6 +995,7 @@ sub get_preferences_window($$)
 			    "database_browse_button",
 			    "precedence_checkbutton",
 			    "auto_select_checkbutton",
+			    "auto_select_head_checkbutton",
 			    "tagged_lists_limit_spinbutton",
 			    "tagged_lists_sort_cronologically_radiobutton",
 			    "tagged_lists_sort_by_name_radiobutton",
@@ -1194,6 +1195,9 @@ sub load_preferences_into_gui($)
     $instance->{auto_select_checkbutton}->
 	set_active($instance->{preferences}->{workspace}->{auto_select} ?
 		   TRUE : FALSE);
+    $instance->{auto_select_head_checkbutton}->
+	set_active($instance->{preferences}->{auto_select_head} ?
+		   TRUE : FALSE);
     $instance->{tagged_lists_limit_spinbutton}->
 	set_value($instance->{preferences}->{query}->{tagged}->{limit});
     if ($instance->{preferences}->{query}->{tagged}->{sort_cronologically})
@@ -1362,6 +1366,8 @@ sub save_preferences_from_gui($)
 	$instance->{precedence_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{workspace}->{auto_select} =
 	$instance->{auto_select_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{auto_select_head} =
+	$instance->{auto_select_head_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{query}->{tagged}->{limit} =
 	$instance->{tagged_lists_limit_spinbutton}->get_value_as_int();
     $instance->{preferences}->{query}->{tagged}->{sort_cronologically} =
@@ -1517,6 +1523,11 @@ sub upgrade_preferences($)
 				     find_text              => []};
 	$preferences->{version} = 3;
     }
+    if ($preferences->{version} == 3)
+    {
+	$preferences->{auto_select_head} = 0;
+	$preferences->{version} = 4;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1549,6 +1560,7 @@ sub initialise_preferences()
 	 default_mtn_db    => "",
 	 workspace         => {takes_precedence => 1,
 			       auto_select      => 1},
+	 auto_select_head  => 0,
 	 query             => {tagged => {limit               => 200,
 					  sort_cronologically => 1},
 			       id     => {limit               => 200,
