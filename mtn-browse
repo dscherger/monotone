@@ -1883,9 +1883,10 @@ sub update_browser_state($$)
 	    {
 		my $message;
 		$message =
-		    __x("The `{branch}' branch has multiple heads.\n",
+		    __x("The `{branch}' branch has multiple heads\n",
 			branch => $browser->{branch_combo_details}->{value})
-		    . __("Please manually select the revision.\n")
+		    . __("and <i>Auto select head revision</i> is switched ")
+		    . __("on.\nPlease manually select the revision.\n")
 		    . __("The head revision ids are:");
 		foreach my $item (@revision_ids)
 		{
