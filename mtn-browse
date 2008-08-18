@@ -1474,9 +1474,7 @@ sub get_browser_window(;$$$$$)
 	# Get the widgets that we are interested in.
 
 	$browser->{window} = $browser->{glade}->get_widget($window_type);
-	foreach my $widget ("bonobodock",
-			    "toolbar",
-			    "appbar",
+	foreach my $widget ("appbar",
 			    "main_vbox",
 			    "browser_hpaned",
 			    "close_toolbutton",
@@ -1502,20 +1500,6 @@ sub get_browser_window(;$$$$$)
 	{
 	    $browser->{$widget} = $browser->{glade}->get_widget($widget);
 	}
-
-	# Setup the bonobodock and toolbar widgets according to the user's
-	# preferences.
-
-	# $browser->{bonobodock}->allow_floating_items(FALSE);
-	    # if ($user_preferences->{toolbar_settings}->{fixed});
-	$browser->{toolbar}->set_icon_size("menu");
-	    # if ($user_preferences->{toolbar_settings}->{small_buttons});
-	$browser->{toolbar}->unset_style();
-	print $browser->{toolbar}->get_style() . "\n";
-	$browser->{toolbar}->set_style("icons");
-	print $browser->{toolbar}->get_style() . "\n";
-	    #if ($user_preferences->{toolbar_settings}->{hide_texts});
-	# $browser->{toolbar}->show_all();
 
 	# Setup button sensitivity groups.
 

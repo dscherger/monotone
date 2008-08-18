@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 5;
+use constant PREFERENCES_FORMAT_VERSION => 4;
 
 # Text viewable application mime types.
 
@@ -1007,9 +1007,6 @@ sub get_preferences_window($$)
 			    # Appearance pane widgets.
 
 			    "fonts_fontbutton",
-			    "small_buttons_checkbutton",
-			    "hide_text_checkbutton",
-			    "fixed_checkbutton",
 			    "comparison_pretty_print_checkbutton",
 			    "annotation_prefix_1_foreground_colorbutton",
 			    "annotation_prefix_1_background_colorbutton",
@@ -1230,15 +1227,6 @@ sub load_preferences_into_gui($)
 
     $instance->{fonts_fontbutton}->
 	set_font_name($instance->{preferences}->{fixed_font});
-    $instance->{small_buttons_checkbutton}->
-	set_active($instance->{preferences}->{toolbar_settings}->
-		   {small_buttons} ? TRUE : FALSE);
-    $instance->{hide_text_checkbutton}->
-	set_active($instance->{preferences}->{toolbar_settings}->{hide_text}
-		   ? TRUE : FALSE);
-    $instance->{fixed_checkbutton}->
-	set_active($instance->{preferences}->{toolbar_settings}->{fixed}
-		   ? TRUE : FALSE);
     $instance->{comparison_pretty_print_checkbutton}->
 	set_active($instance->{preferences}->{coloured_diffs} ? TRUE : FALSE);
     for my $item (@colour_mapping_table)
@@ -1397,12 +1385,6 @@ sub save_preferences_from_gui($)
 
     $instance->{preferences}->{fixed_font} =
 	$instance->{fonts_fontbutton}->get_font_name();
-    $instance->{preferences}->{toolbar_settings}->{small_buttons} =
-	$instance->{small_buttons_checkbutton}->get_active() ? 1 : 0;
-    $instance->{preferences}->{toolbar_settings}->{hide_text} =
-	$instance->{hide_text_checkbutton}->get_active() ? 1 : 0;
-    $instance->{preferences}->{toolbar_settings}->{fixed} =
-	$instance->{fixed_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{coloured_diffs} =
 	$instance->{comparison_pretty_print_checkbutton}->get_active() ? 1 : 0;
     for my $item (@colour_mapping_table)
@@ -1546,13 +1528,6 @@ sub upgrade_preferences($)
 	$preferences->{auto_select_head} = 0;
 	$preferences->{version} = 4;
     }
-    if ($preferences->{version} == 4)
-    {
-	$preferences->{toolbar_settings} = {small_buttons => 0,
-					    hide_text     => 0,
-					    fixed         => 0};
-	$preferences->{version} = 5;
-    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1591,11 +1566,8 @@ sub initialise_preferences()
 			       id     => {limit               => 200,
 					  sort_cronologically => 1}},
 	 diffs_application => "kompare '{file1}' '{file2}'",
-	 fixed_font        => "monospace 10",
-	 toolbar_settings  => {small_buttons => 0,
-			       hide_text     => 0,
-			       fixed         => 0},
 	 coloured_diffs    => 1,
+	 fixed_font        => "monospace 10",
 	 colours           => {annotate_prefix_1 => {fg => "AliceBlue",
 						     bg => "CadetBlue"},
 			       annotate_text_1   => {fg => "MidnightBlue",
