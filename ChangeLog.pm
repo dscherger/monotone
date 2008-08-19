@@ -45,6 +45,25 @@ require 5.008;
 use strict;
 use warnings;
 
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# The translated revision change type strings.
+
+my $__added      = __("Added");
+my $__removed    = __("Removed");
+my $__changed    = __("Changed");
+my $__renamed    = __("Renamed");
+my $__attributes = __("Attributes");
+
+# A translated list of all possible revision change types that we need to check
+# for.
+
+my @__types = ($__added,
+	       $__removed,
+	       $__changed,
+	       $__renamed,
+	       $__attributes);
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -150,11 +169,6 @@ sub generate_revision_report($$$$;$)
        %revision_data,
        %seen,
        @unique);
-    my @types = (__("Added"),
-		 __("Removed"),
-		 __("Changed"),
-		 __("Renamed"),
-		 __("Attributes"));
 
     # Sort out colour attributes.
 
@@ -177,7 +191,7 @@ sub generate_revision_report($$$$;$)
 					   __("Revision id: "),
 					   $bold);
     $text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
-					   $revision_id . "\n\n",
+					   $revision_id . "\n",
 					   $normal);
 
     # Certs.
@@ -195,23 +209,30 @@ sub generate_revision_report($$$$;$)
 	{
 	    my $change_log = $cert->{value};
 	    $change_log =~ s/\s+$//s;
-	    push(@change_logs, $change_log);
+	    push(@change_logs, $change_log) if ($change_log ne "");
 	}
 	else
 	{
-	    $cert->{value} =~ s/T/ / if ($cert->{name} eq "date");
+	    if ($cert->{name} eq "date")
+	    {
+		$cert->{value} =~ s/T/ /;
+	    }
+	    elsif (index($cert->{value}, "\n") >= 0)
+	    {
+		my $padding = sprintf("\n%-*s", $cert_max_len + 2, "");
+		$cert->{value} =~ s/\n/$padding/g;
+	    }
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
-		 sprintf("%-*s ",
+		 sprintf("\n%-*s ",
 			 $cert_max_len + 1, ucfirst($cert->{name}) . ":"),
 		 $bold);
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
-		 sprintf("%s\n", $cert->{value}),
+		 sprintf("%s", $cert->{value}),
 		 $normal);
 	}
     }
-    push(@change_logs, "") if (scalar(@change_logs) == 0);
 
     # Change log(s).
 
@@ -220,8 +241,7 @@ sub generate_revision_report($$$$;$)
     {
 	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					       "\n",
-					       $normal)
-	    if ($i > 1);
+					       $normal);
 	$text_buffer->insert_with_tags_by_name
 	    ($text_buffer->get_end_iter(),
 	     __x("\nChange Log{optional_count}:\n",
@@ -244,7 +264,7 @@ sub generate_revision_report($$$$;$)
 	$text_buffer->insert_with_tags_by_name($text_buffer->get_end_iter(),
 					       __("\n\nChanges Made:\n"),
 					       $bold);
-	foreach my $type (@types)
+	foreach my $type (@__types)
 	{
 	    $revision_data{$type} = [];
 	}
@@ -252,35 +272,35 @@ sub generate_revision_report($$$$;$)
 	{
 	    if ($change->{type} eq "add_dir")
 	    {
-		push(@{$revision_data{__("Added")}}, $change->{name} . "/");
+		push(@{$revision_data{$__added}}, $change->{name} . "/");
 	    }
 	    elsif ($change->{type} eq "add_file")
 	    {
-		push(@{$revision_data{__("Added")}}, $change->{name});
+		push(@{$revision_data{$__added}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "delete")
 	    {
-		push(@{$revision_data{__("Removed")}}, $change->{name});
+		push(@{$revision_data{$__removed}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "patch")
 	    {
-		push(@{$revision_data{__("Changed")}}, $change->{name});
+		push(@{$revision_data{$__changed}}, $change->{name});
 	    }
 	    elsif ($change->{type} eq "rename")
 	    {
-		push(@{$revision_data{__("Renamed")}},
+		push(@{$revision_data{$__renamed}},
 		     $change->{from_name} . " -> " . $change->{to_name});
 	    }
 	    elsif ($change->{type} eq "clear")
 	    {
-		push(@{$revision_data{__("Attributes")}},
+		push(@{$revision_data{$__attributes}},
 		     __x("{name}: {attribute} was cleared",
 			 name      => $change->{name},
 			 attribute => $change->{attribute}));
 	    }
 	    elsif ($change->{type} eq "set")
 	    {
-		push(@{$revision_data{__("Attributes")}},
+		push(@{$revision_data{$__attributes}},
 		     sprintf("%s: %s = %s",
 			     $change->{name},
 			     $change->{attribute},
@@ -295,7 +315,7 @@ sub generate_revision_report($$$$;$)
 		$manifest_id = $change->{manifest_id};
 	    }
 	}
-	foreach my $type (@types)
+	foreach my $type (@__types)
 	{
 	    if (scalar(@{$revision_data{$type}}) > 0)
 	    {

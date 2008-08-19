@@ -523,7 +523,7 @@ current branch are to be listed</property>
 criteria for selecting a revision</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="advanced_find_button_clicked_cb" last_modification_time="Sat, 08 Dec 2007 10:21:50 GMT"/>
 
 			      <child>
@@ -552,7 +552,7 @@ criteria for selecting a revision</property>
 in Monotone-Viz</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="monotone_viz_button_clicked_cb" last_modification_time="Thu, 24 Apr 2008 15:10:30 GMT"/>
 
 			      <child>
@@ -579,7 +579,7 @@ in Monotone-Viz</property>
 			      <property name="tooltip" translatable="yes">View revision's change history</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="revision_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:52:45 GMT"/>
 
 			      <child>
@@ -607,7 +607,7 @@ in Monotone-Viz</property>
 			      <property name="tooltip" translatable="yes">View revision's change log</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="revision_change_log_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:47:54 GMT"/>
 
 			      <child>
@@ -777,7 +777,7 @@ in Monotone-Viz</property>
 				      <property name="tooltip" translatable="yes">Go up one directory level</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="directory_up_button_clicked_cb" last_modification_time="Sun, 11 Nov 2007 09:45:55 GMT"/>
 
 				      <child>
@@ -806,7 +806,7 @@ in Monotone-Viz</property>
 or more search criteria</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="find_files_button_clicked_cb" last_modification_time="Fri, 20 Jun 2008 13:44:34 GMT"/>
 
 				      <child>
@@ -1393,7 +1393,7 @@ last updated with respect to this revision</property>
 of line numbers</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <property name="active">False</property>
 				      <property name="inconsistent">False</property>
 				      <signal name="toggled" handler="show_line_numbers_togglebutton_toggled_cb" last_modification_time="Wed, 06 Aug 2008 16:28:08 GMT"/>
@@ -1423,7 +1423,7 @@ of line numbers</property>
 				      <property name="tooltip" translatable="yes">Search text</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="search_text_button_clicked_cb" last_modification_time="Sun, 16 Mar 2008 11:37:14 GMT"/>
 
 				      <child>
@@ -1451,7 +1451,7 @@ of line numbers</property>
 				      <property name="tooltip" translatable="yes">Save file contents to disk</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="save_as_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:27 GMT"/>
 
 				      <child>
@@ -1480,7 +1480,7 @@ of line numbers</property>
 into a viewer</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="view_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:42 GMT"/>
 
 				      <child>
@@ -1508,7 +1508,7 @@ into a viewer</property>
 				      <property name="tooltip" translatable="yes">Annotate file contents</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="annotate_button_clicked_cb" last_modification_time="Sat, 15 Mar 2008 10:28:06 GMT"/>
 
 				      <child>
@@ -1535,7 +1535,7 @@ into a viewer</property>
 				      <property name="tooltip" translatable="yes">View file's change history</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="file_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:43:13 GMT"/>
 
 				      <child>
@@ -2527,7 +2527,7 @@ entry field if you cannot remember the syntax</property>
 				  <property name="tooltip" translatable="yes">Execute the query</property>
 				  <property name="can_focus">True</property>
 				  <property name="relief">GTK_RELIEF_NONE</property>
-				  <property name="focus_on_click">True</property>
+				  <property name="focus_on_click">False</property>
 				  <signal name="clicked" handler="execute_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:35 GMT"/>
 
 				  <child>
@@ -2556,7 +2556,7 @@ entry field if you cannot remember the syntax</property>
 				  <property name="tooltip" translatable="yes">Stop the query</property>
 				  <property name="can_focus">True</property>
 				  <property name="relief">GTK_RELIEF_NONE</property>
-				  <property name="focus_on_click">True</property>
+				  <property name="focus_on_click">False</property>
 
 				  <child>
 				    <widget class="GtkImage" id="image45">
@@ -2603,7 +2603,7 @@ entry field if you cannot remember the syntax</property>
 			      <property name="tooltip" translatable="yes">Enter the current selector into the query above</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="populate_button_clicked_cb" last_modification_time="Sat, 05 Jan 2008 17:29:10 GMT"/>
 
 			      <child>
@@ -3339,7 +3339,7 @@ Tag</property>
 			      <property name="tooltip" translatable="yes">Stop gathering history details</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 
 			      <child>
 				<widget class="GtkImage" id="image39">
@@ -3647,7 +3647,7 @@ file version that is to be compared</property>
 			      <property name="tooltip" translatable="yes">Compare the two selected files</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="compare_button_clicked_cb" last_modification_time="Sun, 10 Feb 2008 17:52:14 GMT"/>
 
 			      <child>
@@ -3854,7 +3854,7 @@ file version that is to be compared</property>
 selected file in an external viewer</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="external_diffs_button_clicked_cb" last_modification_time="Sun, 15 Jun 2008 07:21:32 GMT"/>
 
 			      <child>
@@ -3881,7 +3881,7 @@ selected file in an external viewer</property>
 			      <property name="tooltip" translatable="yes">Save the differences to disk</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="save_differences_button_clicked_cb" last_modification_time="Thu, 12 Jun 2008 09:16:37 GMT"/>
 
 			      <child>
@@ -3910,7 +3910,7 @@ selected file in an external viewer</property>
 			      <property name="tooltip" translatable="yes">Stop formatting the comparison results</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 
 			      <child>
 				<widget class="GtkImage" id="image44">
@@ -5405,7 +5405,7 @@ make sure it is mono-spaced)</property>
 			      <property name="show_size">True</property>
 			      <property name="use_font">True</property>
 			      <property name="use_size">True</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
@@ -5778,7 +5778,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -5796,7 +5796,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -5814,7 +5814,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -5832,7 +5832,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -5850,7 +5850,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -5868,7 +5868,7 @@ in comparison listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -5986,7 +5986,7 @@ used in context lines</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">6</property>
@@ -6038,7 +6038,7 @@ used in context lines</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">6</property>
@@ -6122,7 +6122,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -6173,7 +6173,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -6389,7 +6389,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -6407,7 +6407,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">2</property>
@@ -6425,7 +6425,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -6443,7 +6443,7 @@ used in annotated listings</property>
 			      <property name="can_focus">True</property>
 			      <property name="use_alpha">False</property>
 			      <property name="title" translatable="yes">Pick A Colour</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">4</property>
@@ -6610,7 +6610,7 @@ used in annotated listings</property>
 type to the list</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="add_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:17 GMT"/>
 
 				      <child>
@@ -6639,7 +6639,7 @@ type to the list</property>
 MIME type from the list</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="remove_mime_type_button_clicked_cb" last_modification_time="Fri, 06 Jun 2008 17:36:27 GMT"/>
 
 				      <child>
@@ -6780,7 +6780,7 @@ MIME type from the list</property>
 pattern to the list</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="add_file_name_pattern_button_clicked_cb" last_modification_time="Fri, 16 May 2008 11:41:25 GMT"/>
 
 				      <child>
@@ -6812,7 +6812,7 @@ pattern to the list</property>
 file name pattern from the list</property>
 				      <property name="can_focus">True</property>
 				      <property name="relief">GTK_RELIEF_NONE</property>
-				      <property name="focus_on_click">True</property>
+				      <property name="focus_on_click">False</property>
 				      <signal name="clicked" handler="remove_file_name_pattern_button_clicked_cb" last_modification_time="Fri, 16 May 2008 11:42:14 GMT"/>
 
 				      <child>
@@ -8038,7 +8038,7 @@ MB</property>
 			      <property name="tooltip" translatable="yes">Stop finding files</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 
 			      <child>
 				<widget class="GtkImage" id="image47">
@@ -8066,7 +8066,7 @@ MB</property>
 			      <property name="tooltip" translatable="yes">Find the files</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NONE</property>
-			      <property name="focus_on_click">True</property>
+			      <property name="focus_on_click">False</property>
 			      <signal name="clicked" handler="search_files_button_clicked_cb" last_modification_time="Fri, 20 Jun 2008 18:13:00 GMT"/>
 
 			      <child>
