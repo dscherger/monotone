@@ -1167,9 +1167,9 @@ sub view_button_clicked_cb($$)
 		 ["modal"],
 		 "info",
 		 "close",
-		 __("No application is associated with\n")
-		     . __x("Mime type {mime_type},\nusing Vi instead.",
-			   mime_type => $mime_type));
+		 __x("No application is associated with\n"
+		         . "Mime type {mime_type},\nusing Vi instead.",
+		     mime_type => $mime_type));
 	    system("xterm -e vi " . $file_name . " &");
 	}
 
@@ -1883,11 +1883,11 @@ sub update_browser_state($$)
 	    {
 		my $message;
 		$message =
-		    __x("The `{branch}' branch has multiple heads\n",
-			branch => $browser->{branch_combo_details}->{value})
-		    . __("and <i>Auto select head revision</i> is switched ")
-		    . __("on.\nPlease manually select the revision.\n")
-		    . __("The head revision ids are:");
+		    __x("The `{branch}' branch has multiple heads\nand "
+			    . "<i>Auto select head revision</i> is switched "
+			    . "on.\nPlease manually select the revision.\n"
+			    . "The head revision ids are:",
+			branch => $browser->{branch_combo_details}->{value});
 		foreach my $item (@revision_ids)
 		{
 		    $message .= "\n" . Glib::Markup::escape_text($item);
@@ -1998,12 +1998,12 @@ sub update_browser_state($$)
 	    {
 		my $message;
 		$message =
-		    __x("The `{tag_name}' tag is not unique on this branch.\n",
+		    __x("The `{tag_name}' tag is not unique on this branch.\n"
+			    . "Please either select the revision by its id\n"
+			    . "or use the <i>Advanced Find</i> feature.\n"
+			    . "The matching revision ids are:",
 			tag_name =>
-			    $browser->{revision_combo_details}->{value})
-		    . __("Please either select the revision by its id\n")
-		    . __("or use the <i>Advanced Find</i> feature.\n")
-		    . __("The matching revision ids are:");
+			    $browser->{revision_combo_details}->{value});
 		foreach my $item (@revision_ids)
 		{
 		    $message .= "\n" . Glib::Markup::escape_text($item);
@@ -2638,8 +2638,8 @@ sub mtn_db_locked_handler($$)
 	 ["modal"],
 	 "info",
 	 "ok",
-	 __("The Monotone database is currently locked, please\n")
-	     . __("dismiss this dialog when this is no longer the case."));
+	 __("The Monotone database is currently locked, please\n"
+	    . "dismiss this dialog when this is no longer the case."));
     $wm->allow_input(sub { $dialog->run(); });
     $dialog->destroy();
 
@@ -2676,10 +2676,10 @@ sub mtn_error_handler($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     __("Problem with monotone request, got:\n")
-	         . __x("<b><i>{error_message}</i></b>\n",
-		       error_message => Glib::Markup::escape_text($message))
-	         . __("This should not be happening!"));
+	     __x("Problem with monotone request, got:\n"
+		     . "<b><i>{error_message}</i></b>\n"
+		     . "This should not be happening!",
+		 error_message => Glib::Markup::escape_text($message)));
 	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	$wm->reset_state();
@@ -2692,10 +2692,10 @@ sub mtn_error_handler($$)
 	     ["modal"],
 	     "error",
 	     "close",
-	     __("Monotone process unexpectedly exiting with:\n")
-	         . __x("<b><i>{error_message}</i></b>\n",
-		       error_message => Glib::Markup::escape_text($message))
-	         . __("This is fatal, I am going to exit."));
+	     __x("Monotone process unexpectedly exiting with:\n"
+		     . "<b><i>{error_message}</i></b>\n"
+		     . "This is fatal, I am going to exit.",
+		 error_message => Glib::Markup::escape_text($message)));
 	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	Gtk2->main_quit() unless (Gtk2->main_level() == 0);
@@ -2757,11 +2757,11 @@ sub sigchld_handler()
 			      ["modal"],
 			      "warning",
 			      "close",
-			      __("The mtn subprocess just unexpectedly\n")
-			          . __x("exited ({error_message}).\n",
-					error_message => $message)
-			          . __("This should not be happening!\n")
-			          . __("It will be restarted when needed."));
+			      __x("The mtn subprocess just unexpectedly\n"
+				      . "exited ({error_message}).\n"
+				      . "This should not be happening!\n"
+				      . "It will be restarted when needed.",
+				  error_message => $message));
 			 $wm->allow_input(sub { $dialog->run(); });
 			 $dialog->destroy();
 			 $wm->reset_state();

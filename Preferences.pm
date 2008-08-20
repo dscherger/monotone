@@ -657,8 +657,7 @@ sub add_mime_type_button_clicked_cb($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     __x("`{mime_type}' is already listed.",
-		 mime_type => $mime_type));
+	     __x("`{mime_type}' is already listed.", mime_type => $mime_type));
 	$dialog->run();
 	$dialog->destroy();
 	return;
@@ -1477,8 +1476,8 @@ sub validate_preferences($)
 		 ["modal"],
 		 "warning",
 		 "close",
-		 __("The external file comparison application field is\n")
-		 . __("invalid, please correct before attempting to resave."));
+		 __("The external file comparison application field is\n"
+		    . "invalid, please correct before attempting to resave."));
 	    $dialog->run();
 	    $dialog->destroy();
 	    return;

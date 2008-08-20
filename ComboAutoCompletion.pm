@@ -227,10 +227,9 @@ sub comboboxentry_key_release_event_cb($$$)
 	    }
 	    else
 	    {
-		$instance->{appbar}->
-		    push(__x("Invalid {name} name `{value}'",
-			     name  => $name,
-			     value => $value));
+		$instance->{appbar}->push(__x("Invalid {name} name `{value}'",
+					      name  => $name,
+					      value => $value));
 	    }
 	    $value = $completion;
 	    $len = length($value);

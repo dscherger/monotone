@@ -167,10 +167,10 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     __x("The {name} subprocess could not start,\n",
-		 name => Glib::Markup::escape_text($args[0]))
-	         . __x("the system gave:\n<b><i>{error_message}</b></i>",
-		       error_message => Glib::Markup::escape_text($@)));
+	     __x("The {name} subprocess could not start,\n"
+		     . "the system gave:\n<b><i>{error_message}</b></i>",
+		 name => Glib::Markup::escape_text($args[0]),
+		 error_message => Glib::Markup::escape_text($@)));
 	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
@@ -239,13 +239,12 @@ sub run_command($@)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     __x("The {name} subprocess failed with an exit status\n",
-		 name => Glib::Markup::escape_text($args[0]))
-	         . __x("of {exit_code} and printed the following on stderr:\n",
-		       exit_code => WEXITSTATUS($status))
-	         . __x("<b><i>{error_message}</i></b>",
-		       error_message =>
-		           Glib::Markup::escape_text(join("", @err))));
+	     __x("The {name} subprocess failed with an exit status\n"
+		     . "of {exit_code} and printed the following on stderr:\n"
+		     . "<b><i>{error_message}</i></b>",
+		 name => Glib::Markup::escape_text($args[0]),
+		 exit_code => WEXITSTATUS($status),
+		 error_message => Glib::Markup::escape_text(join("", @err))));
 	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;

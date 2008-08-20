@@ -246,8 +246,7 @@ sub add_busy_windows($$@)
 	    last;
 	}
     }
-    croak(__("Called with an unmanaged instance record"))
-	unless (defined($entry));
+    croak("Called with an unmanaged instance record") unless (defined($entry));
 
     push(@{$entry->{busy_windows}}, @windows);
 
@@ -369,8 +368,7 @@ sub make_busy($$$;$)
 	    last;
 	}
     }
-    croak(__("Called with an unmanaged instance record"))
-	unless (defined($entry));
+    croak("Called with an unmanaged instance record") unless (defined($entry));
 
     # When making things busy filter out keyboard and mouse button events
     # unless they relate to the grab widget (usually a `stop' button) and make

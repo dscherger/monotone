@@ -55,6 +55,27 @@ use constant CLS_LINE_NR_COLUMN   => 1;
 use constant CLS_FILE_ID_1_COLUMN => 2;
 use constant CLS_FILE_ID_2_COLUMN => 3;
 
+# The translated history strings.
+
+my $__browse_file           = __("Browse File");
+my $__browse_file_ttip      = __("Browse the file in\na new browser window");
+my $__browse_rev            = __("Browse Revision");
+my $__browse_rev_ttip       = __("Browse the revision in\n"
+				 . "a new browser window");
+my $__full_changelog        = __("Full Change Log");
+my $__full_changelog_ttip   = __("View the revision's full change log");
+my $__select_id_1           = __("Select As Id 1");
+my $__select_id_2           = __("Select As Id 2");
+my $__select_id_file_1_ttip = __("Select this file revision for\n"
+				 . "comparison as the first file");
+my $__select_id_file_2_ttip = __("Select this file revision for\n"
+				 . "comparison as the second file");
+my $__select_id_rev_1_ttip  = __("Select this revision for comparison\n"
+				 . "as the second revision");
+my $__select_id_rev_2_ttip  = __("Select this revision for comparison\n"
+				 . "as the first revision");
+
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -173,15 +194,13 @@ sub display_revision_change_history($$$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new(__("Select As Id 1"));
+	$button = Gtk2::Button->new($__select_id_1);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "1"});
-	$tooltips->set_tip($button,
-			   __("Select this revision for comparison\n")
-			       . __("as the first revision"));
+	$tooltips->set_tip($button, $__select_id_rev_1_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -191,15 +210,13 @@ sub display_revision_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Select As Id 2"));
+	$button = Gtk2::Button->new($__select_id_2);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "2"});
-	$tooltips->set_tip($button,
-			   __("Select this revision for comparison\n")
-			       . __("as the second revision"));
+	$tooltips->set_tip($button, $__select_id_rev_2_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -209,14 +226,13 @@ sub display_revision_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Browse Revision"));
+	$button = Gtk2::Button->new($__browse_rev);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "browse-revision"});
-	$tooltips->set_tip($button,
-			   __("Browse the revision in\na new browser window"));
+	$tooltips->set_tip($button, $__browse_rev_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -226,13 +242,13 @@ sub display_revision_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Full Change Log"));
+	$button = Gtk2::Button->new($__full_changelog);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "revision-changelog"});
-	$tooltips->set_tip($button, __("View the revision's full change log"));
+	$tooltips->set_tip($button, $__full_changelog_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -380,15 +396,13 @@ sub display_file_change_history($$$)
 
 	# Add the buttons.
 
-	$button = Gtk2::Button->new(__("Select As Id 1"));
+	$button = Gtk2::Button->new($__select_id_1);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "1"});
-	$tooltips->set_tip($button,
-			   __("Select this file revision for\n")
-			       . __("comparison as the first file"));
+	$tooltips->set_tip($button, $__select_id_file_1_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -398,15 +412,13 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Select As Id 2"));
+	$button = Gtk2::Button->new($__select_id_2);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "2"});
-	$tooltips->set_tip($button,
-			   __("Select this file revision for\n")
-			       . __("comparison as the second file"));
+	$tooltips->set_tip($button, $__select_id_file_2_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -416,14 +428,13 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Browse File"));
+	$button = Gtk2::Button->new($__browse_file);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "browse-file"});
-	$tooltips->set_tip($button,
-			   __("Browse the file in\na new browser window"));
+	$tooltips->set_tip($button, $__browse_file_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->
@@ -433,13 +444,13 @@ sub display_file_change_history($$$)
 	$instance->{history_buffer}->
 	    insert($instance->{history_buffer}->get_end_iter(), " ");
 
-	$button = Gtk2::Button->new(__("Full Change Log"));
+	$button = Gtk2::Button->new($__full_changelog);
 	$button->signal_connect("clicked",
 				\&history_list_button_clicked_cb,
 				{instance    => $instance,
 				 revision_id => $revision_id,
 				 button_type => "revision-changelog"});
-	$tooltips->set_tip($button, __("View the revision's full change log"));
+	$tooltips->set_tip($button, $__full_changelog_ttip);
 	$instance->{history_textview}->add_child_at_anchor
 	    ($button,
 	     $instance->{history_buffer}->

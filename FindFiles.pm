@@ -1111,8 +1111,8 @@ sub validate_query($$)
 	     ["modal"],
 	     "warning",
 	     "close",
-	     __("The `between' dates are either\n")
-	         . __("the same or the wrong way round."));
+	     __("The `between' dates are either\n"
+		. "the same or the wrong way round."));
 	$dialog->run();
 	$dialog->destroy();
 	return;

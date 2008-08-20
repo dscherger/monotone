@@ -944,10 +944,10 @@ sub update_advanced_find_state($$)
 			  ["modal"],
 			  "warning",
 			  "close",
-			  __("Problem with your query, Monotone ")
-			      . __x("gave:\n<b><i>{error_message}</i></b>",
-				    error_message =>
-				        Glib::Markup::escape_text($message)));
+			  __x("There is a problem with your query, Monotone "
+			          . "gave:\n<b><i>{error_message}</i></b>",
+			      error_message =>
+			          Glib::Markup::escape_text($message)));
 		     $wm->allow_input(sub { $dialog->run(); });
 		     $dialog->destroy();
 		     die("Bad query"); });
