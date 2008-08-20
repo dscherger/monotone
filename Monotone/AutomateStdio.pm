@@ -47,6 +47,7 @@ package Monotone::AutomateStdio;
 
 require 5.008;
 
+no locale;
 use integer;
 use strict;
 use warnings;
@@ -2601,6 +2602,12 @@ sub startup($)
     my $this = $_[0];
 
     my $version;
+
+    # Switch to the default locale. We only want to parse the output from
+    # Monotone in one language!
+
+    local $ENV{LC_ALL} = "C";
+    local $ENV{LANG} = "C";
 
     if ($this->{mtn_pid} == 0)
     {
