@@ -594,17 +594,6 @@ sub get_advanced_find_window($)
 	$instance->{stop_button}->signal_connect
 	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
-	# Setup the comboboxentry key release signal handlers.
-
-	$instance->{branch_comboboxentry}->child()->
-	    signal_connect("key_release_event",
-			   \&comboboxentry_key_release_event_cb,
-			   $instance);
-	$instance->{revision_comboboxentry}->child()->
-	    signal_connect("key_release_event",
-			   \&comboboxentry_key_release_event_cb,
-			   $instance);
-
 	# Setup the comboboxes.
 
 	$instance->{branch_comboboxentry}->

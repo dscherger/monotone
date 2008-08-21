@@ -160,28 +160,30 @@ sub comboboxentry_key_release_event_cb($$$)
        $combo_details,
        $complete,
        $completion,
+       $entry,
        $item,
        $len,
        $name,
        $old_complete,
        $old_value,
+       $success,
        $value);
 
-    if ($widget == $instance->{branch_comboboxentry}->child())
+    if ($widget == $instance->{branch_comboboxentry})
     {
 	$combo = $instance->{branch_comboboxentry};
 	$change_state = BRANCH_CHANGED;
 	$combo_details = $instance->{branch_combo_details};
 	$name = "branch";
     }
-    elsif ($widget == $instance->{revision_comboboxentry}->child())
+    elsif ($widget == $instance->{revision_comboboxentry})
     {
 	$combo = $instance->{revision_comboboxentry};
 	$change_state = REVISION_CHANGED;
 	$combo_details = $instance->{revision_combo_details};
 	$name = "revision";
     }
-    elsif ($widget == $instance->{directory_comboboxentry}->child())
+    elsif ($widget == $instance->{directory_comboboxentry})
     {
 	$combo = $instance->{directory_comboboxentry};
 	$change_state = DIRECTORY_CHANGED;
@@ -192,6 +194,7 @@ sub comboboxentry_key_release_event_cb($$$)
     {
 	return FALSE;
     }
+    $entry = $widget->child();
 
     # The user has typed something in then validate it and auto-complete it if
     # necessary.
@@ -199,7 +202,7 @@ sub comboboxentry_key_release_event_cb($$$)
     $complete = 0;
     $old_complete = $combo_details->{complete};
     $old_value = $combo_details->{value};
-    $value = $widget->get_text();
+    $value = $entry->get_text();
     if ($value ne $old_value)
     {
 
@@ -210,18 +213,27 @@ sub comboboxentry_key_release_event_cb($$$)
 	if ($value ne substr($old_value, 0, $len))
 	{
 
-	    # So that the spacebar triggers auto-complete.
-
-	    $value =~ s/\s+$//;
-	    $len = length($value);
+	    # Initialise a new auto-completion object with a new list of terms
+	    # if it hasn't been done so already.
 
 	    $combo_details->{completion} =
 		Completion->new($combo_details->{list})
 		if (! defined($combo_details->{completion}));
 
-	    if ($combo_details->{completion}->get_completion($value,
-							     \$completion,
-							     \$complete))
+	    # Try auto-completing with what we have got, if that fails then try
+	    # stripping off any trailing white space before trying again (this
+	    # means the user can use the spacebar to trigger auto-completion in
+	    # a similar fashion to bash's use of <Tab>).
+
+	    if (! ($success = $combo_details->{completion}->
+		       get_completion($value, \$completion, \$complete)))
+	    {
+		$value =~ s/\s+$//;
+		$len = length($value);
+		$success = $combo_details->{completion}->
+		       get_completion($value, \$completion, \$complete);
+	    }
+	    if ($success)
 	    {
 		$instance->{appbar}->clear_stack();
 	    }
@@ -233,9 +245,13 @@ sub comboboxentry_key_release_event_cb($$$)
 	    }
 	    $value = $completion;
 	    $len = length($value);
-	    $widget->set_text($value);
-	    $widget->set_position(-1);
+	    $entry->set_text($value);
+	    $entry->set_position(-1);
 
+	}
+	else
+	{
+	    $instance->{appbar}->clear_stack();
 	}
 	$combo_details->{value} = $value;
 	$combo_details->{complete} = $complete;

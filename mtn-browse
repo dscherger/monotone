@@ -48,6 +48,7 @@ BEGIN
     use constant MIME_GLOB_FILE => "/usr/share/mime/globs";
 }
 use lib LIB_PATH;
+use locale;
 use strict;
 use warnings;
 
@@ -655,6 +656,8 @@ sub help_toolbutton_clicked_cb($$)
 
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
+
+    # Gnome2::Help->display("mtn-browse.xml");
 
     my $dialog = Gtk2::MessageDialog->new($browser->{window},
 					  ["modal"],
@@ -1516,21 +1519,6 @@ sub get_browser_window(;$$$$$)
 		 $browser->{glade}->get_widget($item . "_button"));
 	}
 
-	# Setup the comboboxentry key release signal handlers.
-
-	$browser->{branch_comboboxentry}->child()->
-	    signal_connect("key_release_event",
-			   \&comboboxentry_key_release_event_cb,
-			   $browser);
-	$browser->{directory_comboboxentry}->child()->
-	    signal_connect("key_release_event",
-			   \&comboboxentry_key_release_event_cb,
-			   $browser);
-	$browser->{revision_comboboxentry}->child()->
-	    signal_connect("key_release_event",
-			   \&comboboxentry_key_release_event_cb,
-			   $browser);
-
 	# Setup the comboboxes.
 
 	$browser->{branch_comboboxentry}->
@@ -1602,10 +1590,6 @@ sub get_browser_window(;$$$$$)
 
 	$browser->{manifest_browser_treeview}->
 	    set_search_column(MLS_NAME_COLUMN);
-
-	# $tv_column =
-	#     $browser->{manifest_treeview}->get_column(MLS_DATE_COLUMN);
-	# $browser->{manifest_treeview}->remove_column($tv_column);
 
 	# Setup the file file viewer (with syntax highlighting).
 

@@ -1235,9 +1235,9 @@ sub glade_signal_autoconnect($$)
 	     my $func = $after ? "signal_connect_after" : "signal_connect";
 
 	     # Need to fully qualify any callback name that isn't prefixed by
-	     # it's package name.
+	     # it's package name with the name of the calling package.
 
-	     $callback_name = "main::" . $callback_name
+	     $callback_name = __PACKAGE__ . "::" . $callback_name
 		 if (index($callback_name, "::") < 0);
 
 	     # Actually connect the signal handler.

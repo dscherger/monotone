@@ -410,6 +410,7 @@
 			    <widget class="GtkComboBoxEntry" id="branch_comboboxentry">
 			      <property name="visible">True</property>
 			      <signal name="changed" handler="comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:37:51 GMT"/>
+			      <signal name="key_release_event" handler="comboboxentry_key_release_event_cb" last_modification_time="Thu, 21 Aug 2008 10:13:42 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">0</property>
@@ -470,6 +471,7 @@
 			    <widget class="GtkComboBoxEntry" id="revision_comboboxentry">
 			      <property name="visible">True</property>
 			      <signal name="changed" handler="comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:38:05 GMT"/>
+			      <signal name="key_release_event" handler="comboboxentry_key_release_event_cb" last_modification_time="Thu, 21 Aug 2008 10:31:21 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">0</property>
@@ -747,6 +749,7 @@ in Monotone-Viz</property>
 				    <widget class="GtkComboBoxEntry" id="directory_comboboxentry">
 				      <property name="visible">True</property>
 				      <signal name="changed" handler="comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:38:18 GMT"/>
+				      <signal name="key_release_event" handler="comboboxentry_key_release_event_cb" last_modification_time="Thu, 21 Aug 2008 10:31:35 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="left_attach">0</property>
@@ -2292,6 +2295,7 @@ specify very specific selection critia</property>
 			    <widget class="GtkComboBoxEntry" id="branch_comboboxentry">
 			      <property name="visible">True</property>
 			      <signal name="changed" handler="comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:38:35 GMT"/>
+			      <signal name="key_release_event" handler="comboboxentry_key_release_event_cb" last_modification_time="Thu, 21 Aug 2008 10:32:19 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">0</property>
@@ -2352,6 +2356,7 @@ specify very specific selection critia</property>
 			    <widget class="GtkComboBoxEntry" id="revision_comboboxentry">
 			      <property name="visible">True</property>
 			      <signal name="changed" handler="comboboxentry_changed_cb" last_modification_time="Sat, 17 May 2008 09:38:45 GMT"/>
+			      <signal name="key_release_event" handler="comboboxentry_key_release_event_cb" last_modification_time="Thu, 21 Aug 2008 10:32:33 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">0</property>
