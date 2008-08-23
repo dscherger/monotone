@@ -19,6 +19,7 @@
 #include <boost/function.hpp>
 #include "lexical_cast.hh"
 #include <boost/tuple/tuple.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "app_state.hh"
 #include "project.hh"
@@ -61,6 +62,8 @@ using std::sort;
 using std::streamsize;
 using std::string;
 using std::vector;
+
+using boost::shared_ptr;
 
 
 // Name: heads
@@ -755,11 +758,13 @@ struct inventory_itemizer : public tree_walker
   inventory_map & inventory;
   inodeprint_map ipm;
   workspace & work;
+  worker_pool & pool;
 
   inventory_itemizer(workspace & work,
+                     worker_pool & pool,
                      path_restriction const & m,
                      inventory_map & i)
-    : mask(m), inventory(i), work(work)
+    : mask(m), inventory(i), work(work), pool(pool)
   {
     if (work.in_inodeprints_mode())
       {
@@ -797,7 +802,14 @@ inventory_itemizer::visit_file(file_path const & path)
           if (inodeprint_unchanged(ipm, path))
             item.fs_ident = item.old_node.ident;
           else
-            ident_existing_file(path, item.fs_ident);
+            {
+              // FIXME: pool??
+              shared_ptr<file_path> fpath(new file_path(path));
+              shared_ptr<file_id> fid(new file_id());
+              ident_existing_file(pool, fpath, fid);
+              pool.wait();
+              item.fs_ident = *fid;
+            }
         }
     }
 }
@@ -807,7 +819,8 @@ inventory_filesystem(workspace & work,
                      path_restriction const & mask,
                      inventory_map & inventory)
 {
-  inventory_itemizer itemizer(work, mask, inventory);
+  worker_pool pool;
+  inventory_itemizer itemizer(work, pool, mask, inventory);
   file_path const root;
   // The constructor file_path() returns ""; the root directory. walk_tree
   // does not visit that node, so set fs_type now, if it meets the
@@ -817,6 +830,7 @@ inventory_filesystem(workspace & work,
       inventory[root].fs_type = path::directory;
     }
   walk_tree(root, itemizer);
+  pool.wait();
 }
 
 namespace

@@ -293,7 +293,7 @@ UNIX_PLATFORM_SOURCES =							\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
 	unix/fs.cc unix/make_io_binary.cc unix/os_strerror.cc           \
 	unix/cputime.cc unix/ssh_agent_platform.cc			\
-	unix/ssh_agent_platform.hh
+	unix/ssh_agent_platform.hh unix/threads.cc
 
 WIN32_PLATFORM_SOURCES =						\
 	win32/read_password.cc win32/get_system_flavour.cc		\
@@ -415,21 +415,21 @@ lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
 lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS)
 
 mtn_LDFLAGS =
-mtn_CPPFLAGS = -I$(top_srcdir)/lua
+mtn_CPPFLAGS = -D_REENTRANT -I$(top_srcdir)/lua
 mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
 mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
-mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
+mtn_LDADD = libplatform.a lib3rdparty.a -lpthread $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 unit_tester_LDFLAGS =
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua
+unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -D_REENTRANT -I$(top_srcdir)/lua
 unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a \
+unit_tester_LDADD += libplatform.a lib3rdparty.a -lpthread \
 		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 tester_LDFLAGS =
-tester_CPPFLAGS = -I$(top_srcdir)/lua
+tester_CPPFLAGS = -D_REENTRANT -I$(top_srcdir)/lua
 tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
+tester_LDADD += libplatform.a lib3rdparty.a -lpthread $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 if INCLUDED_PCRE
   lib3rdparty_a_CPPFLAGS += -I$(top_srcdir)/pcre
