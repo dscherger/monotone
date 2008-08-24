@@ -85,13 +85,6 @@ check_basic_io_line (15, parsed[15], "left_name", "thermostat.c")
 check_basic_io_line (16, parsed[16], "left_file_id", "c2f67aa3b29c2bdab4790213c7f3bf73e58440a7")
 abe_thermostat = parsed[16].values[1]
 
--- Do the filesystem rename for Beth's thermostat.c, and retrieve Abe's version
-rename ("thermostat.c", "thermostat-honeywell.c")
-
-check (mtn ("automate", "get_file", abe_thermostat), 0, true, nil)
-rename ("stdout", "thermostat-westinghouse.c")
-check ("thermostat westinghouse abe 1" == readfile ("thermostat-westinghouse.c"))
-
 -- Do the manual merge for checkout.sh; retrieve Abe's version
 check (mtn ("automate", "get_file", abe_checkout), 0, true, nil)
 rename ("stdout", "checkout.sh-abe")
@@ -105,26 +98,16 @@ get ("conflicts-resolved", "_MTN/conflicts")
 -- This succeeds
 check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-merge-messages-abe_1-beth_1")
-check(samefile("expected-merge-messages-abe_1-beth_1", "stderr"))
+check(samefilestd("expected-merge-messages-abe_1-beth_1", "stderr"))
 
--- update fails if thermostat.c is missing, and if
--- thermostat-honeywell.c, thermostat-westinghouse.c are in the way.
--- So clean that up first. FIXME: update needs --ignore-missing,
--- --overwrite-ws or something.
-check(mtn("revert", "--missing"), 0, nil, false)
-remove ("thermostat-honeywell.c")
-remove ("thermostat-westinghouse.c")
 check(mtn("update"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-update-messages-jim_1")
-check(samefile("expected-update-messages-jim_1", "stderr"))
+check(samefilestd("expected-update-messages-jim_1", "stderr"))
 
 -- verify that we got revision_format 2
 check(mtn("automate", "get_revision", base_revision()), 0, true, nil)
 canonicalize("stdout")
-get ("expected-merged-revision-jim_1")
-check(samefile("expected-merged-revision-jim_1", "stdout"))
+check(samefilestd("expected-merged-revision-jim_1", "stdout"))
 
 -- Verify file contents
 check("thermostat westinghouse abe 1" == readfile("thermostat-westinghouse.c"))
@@ -167,15 +150,13 @@ abe_2 = base_revision()
 -- This fails with content conflicts
 check(mtn("merge"), 1, nil, true)
 canonicalize("stderr")
-get ("expected-merge-messages-abe_2-jim_1-conflicts")
-check(samefile("expected-merge-messages-abe_2-jim_1-conflicts", "stderr"))
+check(samefilestd("expected-merge-messages-abe_2-jim_1-conflicts", "stderr"))
 
 -- This succeeds
 get ("merge-abe_2-jim_1-resolve_conflicts", "_MTN/conflicts")
 check(mtn("merge", "--resolve-conflicts-file=_MTN/conflicts"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-merge-messages-abe_2-jim_1")
-check(samefile("expected-merge-messages-abe_2-jim_1", "stderr"))
+check(samefilestd("expected-merge-messages-abe_2-jim_1", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 check("checkout.sh abe 2" == readfile("checkout.sh"))
@@ -193,36 +174,31 @@ beth_2 = base_revision()
 
 check (mtn("automate", "show_conflicts", beth_2, jim_1), 0, true, nil)
 canonicalize("stdout")
-get ("merge-beth_2-jim_1-conflicts", "_MTN/conflicts")
-check(samefile("_MTN/conflicts", "stdout"))
+check(samefilestd("merge-beth_2-jim_1-conflicts", "stdout"))
 
 -- If we just do 'merge', mtn will merge 'e' and 'g', since those are
 -- the current heads. To emulate separate development databases, we
--- specify the revisions to merge. This also lets us excercise the
+-- specify the revisions to merge. This also lets us exercise the
 -- other branch of some 'if's in the code; in merging to abe_2, jim_1
 -- was left; now it is right.
 check(mtn("explicit_merge", "--resolve-conflicts=resolve_internal", beth_2, jim_1, "testbranch"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-merge-messages-jim_1-beth_2")
-check(samefile("expected-merge-messages-jim_1-beth_2", "stderr"))
+check(samefilestd("expected-merge-messages-jim_1-beth_2", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-update-messages-beth_3")
-check(samefile("expected-update-messages-beth_3", "stderr"))
+check(samefilestd("expected-update-messages-beth_3", "stderr"))
 
 check("checkout.sh merged\n\n\nbeth 2\n" == readfile("checkout.sh"))
 
 -- merge g, h to f
 check(mtn("merge"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-merge-messages-abe_3-beth_3")
-check(samefile("expected-merge-messages-abe_3-beth_3", "stderr"))
+check(samefilestd("expected-merge-messages-abe_3-beth_3", "stderr"))
 
 check(mtn("update"), 0, nil, true)
 canonicalize("stderr")
-get ("expected-update-messages-jim_2")
-check(samefile("expected-update-messages-jim_2", "stderr"))
+check(samefilestd("expected-update-messages-jim_2", "stderr"))
 
 check("checkout.sh abe 2\n\n\nbeth 2\n" == readfile("checkout.sh"))
 -- end of file

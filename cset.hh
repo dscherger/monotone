@@ -34,6 +34,7 @@ struct editable_tree
   virtual void attach_node(node_id nid, file_path const & dst) = 0;
 
   // Modifying elements in-place
+  virtual void clear_ancestors(file_path const & pth) = 0;
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id) = 0;
@@ -79,6 +80,7 @@ struct cset
       first_ancestor (the_first), second_ancestor (the_second), sutured_id (the_sutured_id) {};
   };
   std::map<file_path, sutured_t> nodes_sutured;
+  std::set<file_path> sutured_nodes_inherited;
 
   // Pure renames.
   std::map<file_path, file_path> nodes_renamed;

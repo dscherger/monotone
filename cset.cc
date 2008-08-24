@@ -192,7 +192,6 @@ cset::apply_to(editable_tree & t) const
 
       std::pair<node_id, node_id> ancestors;
 
-      // get_node ("") returns the root node, which is not what we want.
       if (i->second.first_ancestor.empty())
         left_anc_nid = the_null_node;
       else
@@ -203,6 +202,11 @@ cset::apply_to(editable_tree & t) const
       else
         right_anc_nid = t.get_node(i->second.second_ancestor);
 
+      // If this suture is resolving a merge conflict, the two ancestors are
+      // from different revisions, but this changeset only represents
+      // changes from one of them. So we set one ancestor; the other is set
+      // by the other changeset, and they are combined in roster.cc
+      // unify_rosters.
       if (right_anc_nid == the_null_node)
         {
           // suture is from merge; t.r is left side
@@ -232,6 +236,12 @@ cset::apply_to(editable_tree & t) const
         safe_insert(detaches, detach(i->second.second_ancestor));
     }
 
+  for (set<file_path>::const_iterator i = sutured_nodes_inherited.begin();
+       i != sutured_nodes_inherited.end(); ++i)
+    {
+      // Erase the ancestors; ancestors are non-null only in newly sutured nodes.
+      t.clear_ancestors(*i);
+    }
 
   for (set<file_path>::const_iterator i = nodes_deleted.begin();
        i != nodes_deleted.end(); ++i)
@@ -299,6 +309,7 @@ namespace
     symbol const add_file("add_file");
     symbol const add_dir("add_dir");
     symbol const sutured_file("sutured_file");
+    symbol const sutured_file_inherited("sutured_file_inherited");
     symbol const first_ancestor("first_ancestor");
     symbol const second_ancestor("second_ancestor");
     symbol const patch("patch");
@@ -357,6 +368,14 @@ print_cset(basic_io::printer & printer,
       st.push_file_pair(syms::first_ancestor, i->second.first_ancestor);
       st.push_file_pair(syms::second_ancestor, i->second.second_ancestor);
       st.push_binary_pair(syms::content, i->second.sutured_id.inner());
+      printer.print_stanza(st);
+    }
+
+  for (set<file_path>::const_iterator i = cs.sutured_nodes_inherited.begin();
+       i != cs.sutured_nodes_inherited.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::sutured_file_inherited, *i);
       printer.print_stanza(st);
     }
 
@@ -476,6 +495,16 @@ parse_cset(basic_io::parser & parser,
       parser.esym(syms::content);
       parser.hex(t1);
       safe_insert(cs.nodes_sutured, make_pair(p1, cset::sutured_t(p2, p3, file_id(decode_hexenc(t1)))));
+    }
+
+  prev_path.clear();
+  while (parser.symp(syms::sutured_file_inherited))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      I(prev_path.empty() || prev_path < p1);
+      prev_path = p1;
+      safe_insert(cs.sutured_nodes_inherited, p1);
     }
 
   prev_path.clear();

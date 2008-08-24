@@ -15,10 +15,8 @@ revert_to(base)
 writefile("foo/a", "some other stuff")
 commit()
 
-check(mtn("--branch=testbranch", "merge"), 0, false, false)
+check(mtn("--branch=testbranch", "merge"), 1, nil, true)
+check(qgrep("conflict: orphaned file 'foo/a' from revision", "stderr"))
+check(qgrep("conflict: file 'foo/a' dropped on the right, changed on the left", "stderr"))
 
-check(mtn("checkout", "--revision", base, "test_dir"), 0, false, false)
-check(indir("test_dir", mtn("update", "--branch=testbranch")), 0, false, false)
-
-check(not exists("test_dir/foo/a"))
-check(not exists("test_dir/bar/a"))
+-- In mtn 0.40 and earlier, the merge succeeded, now it doesn't

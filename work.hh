@@ -149,7 +149,12 @@ public:
                               content_merge_adaptor const & ca,
                               bool messages = true);
 
+  // update_any_attrs needs a valid roster to get names to update. Version
+  // without roster arg constructs a partial workspace roster internally, in
+  // case you don't have one already.
+  void update_any_attrs(database & db, roster_t const & roster);
   void update_any_attrs(database & db);
+
   void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes(database & db);

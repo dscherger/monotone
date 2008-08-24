@@ -1,4 +1,6 @@
 mtn: 2 heads on branch 'testbranch'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
 mtn: [left]  5285636b9d9f988e79b3dcd9a40e64d15fb7fc9f
 mtn: [right] e9ad84a3fc40ef1109251c308428439c21ad1de9
 mtn: suturing checkout.sh, checkout.sh into checkout.sh

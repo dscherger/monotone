@@ -6,5 +6,5 @@ mtn: [right] f214512c044555f3519597c19e6a50399ec81241
 mtn: conflict: duplicate name 'checkout.sh' for the directory ''
 mtn: added as a new file on the left
 mtn: added as a new file on the right
-mtn: conflict: file 'checkout.sh' dropped on the right, changed on the left
+mtn: conflict: file 'checkout.sh' dropped on the left, changed on the right
 mtn: error: merge failed due to unresolved conflicts

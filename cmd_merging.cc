@@ -273,9 +273,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
     }
   else
     {
-      // Switching branches. This doesn't directly apply the cset
-      // base->working to chosen, but the effect is the same, and this
-      // handles conflicts.
+      // This doesn't directly apply the cset base->working to chosen, but
+      // the effect is the same, and this handles conflicts.
 
       // We have:
       //
@@ -328,9 +327,9 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   make_revision_for_workspace(chosen_rid, chosen_roster,
                               merged_roster, remaining);
 
-  // small race condition here...
+  // small race condition here... FIXME: what is it?
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
+  work.update_any_attrs(db, merged_roster);
   work.maybe_update_inodeprints(db);
   work.set_ws_options(app.opts, true);
 
@@ -1266,12 +1265,14 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
   database db(app);
   roster_t roster;
   marking_map mm;
+  revision_id rid;
 
   if (args.size() == 0)
     {
       parent_map parents;
       temp_node_id_source nis;
-      revision_id rid(fake_id());
+
+      rid = revision_id(fake_id());
 
       workspace work(app);
       work.get_parent_rosters(db, parents);
@@ -1317,7 +1318,6 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
     {
       database db(app);
       project_t project(db);
-      revision_id rid;
       complete(app.opts, app.lua, project, idx(args, 0)(), rid);
       I(!null_id(rid));
       db.get_roster(rid, roster, mm);
@@ -1326,7 +1326,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
     throw usage(execid);
 
   roster_data dat;
-  write_roster_and_marking(roster, mm, dat);
+  write_roster_and_marking(roster, rid, mm, dat);
   cout << dat;
 }
 

@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -1467,7 +1468,7 @@ database_impl::get_roster_base(revision_id const & ident,
   gzip<data> dat_packed(res[0][1]);
   data dat;
   decode_gzip(dat_packed, dat);
-  read_roster_and_marking(roster_data(dat), roster, marking);
+  read_roster_and_marking(roster_data(dat), ident, roster, marking);
 }
 
 void
@@ -1515,7 +1516,7 @@ database_impl::write_delayed_roster(revision_id const & ident,
                                      marking_map const & marking)
 {
   roster_data dat;
-  write_roster_and_marking(roster, marking, dat);
+  write_roster_and_marking(roster, ident, marking, dat);
   gzip<data> dat_packed;
   encode_gzip(dat.inner(), dat_packed);
 
@@ -1866,7 +1867,7 @@ database::get_roster_version(revision_id const & ros_id,
   // delta reconstruction code; if there is a bug where we put something
   // into the database and then later get something different back out, then
   // this is the only thing that can catch it.
-  roster->check_sane_against(*marking);
+  roster->check_sane_against(*marking, ros_id);
   manifest_id expected_mid, actual_mid;
   get_revision_manifest(ros_id, expected_mid);
   calculate_ident(*roster, actual_mid);

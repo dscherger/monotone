@@ -37,23 +37,15 @@ template <> void dump(full_attr_map_t const & val, std::string & out);
 struct node
 {
   node();
-  node(node_id i);
+  node(node_id i, std::pair<node_id, node_id> ancestors = null_ancestors);
   node_id self;
   node_id parent; // directory containing this node; the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
   full_attr_map_t attrs;
 
   std::pair<node_id, node_id> ancestors;
-  // new, resurrected: first, second = the_null_node
-  // sutured: first = left, second = right
-  // copied: first = copy source, second = the_null_node
-  // otherwise: first = self, second = the_null_node
-  //
-  // in workspace rosters, ancestors is always null
-  //
-  // If this suture is a merge conflict resolution, first and second are
-  // from different parent rosters. If from a user suture command, they are
-  // from the same parent roster.
+  // sutured in this revision: first = left, second = right
+  // otherwise: first, second = the_null_node
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -82,7 +74,7 @@ struct file_node
   : public node
 {
   file_node();
-  file_node(node_id i, file_id const & f);
+  file_node(node_id i, file_id const & f, std::pair<node_id, node_id> ancestors = null_ancestors);
   file_id content;
 
   // need a virtual function to make dynamic_cast work
@@ -133,6 +125,9 @@ downcast_to_file_t(node_t const n)
   return f;
 }
 
+// compare_ancestors should be null when comparing parent and child
+// revisions; ancestors are non-null only for newly sutured nodes, and thus
+// should be different in parent and child.
 bool
 shallow_equal(node_t a, node_t b,
               bool shallow_compare_dir_children,
@@ -210,16 +205,13 @@ public:
   void drop_detached_node(node_id nid);
   node_id create_dir_node(node_id_source & nis,
                           std::pair<node_id, node_id> const ancestors = null_ancestors);
-  void create_dir_node(node_id nid); // ancestors = (nid, null)
-  void create_dir_node(node_id nid, std::pair<node_id, node_id> const ancestors);
+  void create_dir_node(node_id nid, std::pair<node_id, node_id> const ancestors = null_ancestors);
   node_id create_file_node(file_id const & content,
                            node_id_source & nis,
                            std::pair<node_id, node_id> const ancestors = null_ancestors);
   void create_file_node(file_id const & content,
-                        node_id nid); // ancestors = (nid, null)
-  void create_file_node(file_id const & content,
                         node_id nid,
-                        std::pair<node_id, node_id> const ancestors);
+                        std::pair<node_id, node_id> const ancestors = null_ancestors);
   void attach_node(node_id nid, file_path const & dst);
   void attach_node(node_id nid, node_id parent, path_component name);
   void apply_delta(file_path const & pth,
@@ -269,7 +261,9 @@ public:
 
   // verify that this roster is sane, and corresponds to the given
   // marking map
-  void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
+  void check_sane_against(marking_map const & marks,
+                          revision_id const & rev_id,
+                          bool temp_nodes_ok=false) const;
 
   unsigned int required_roster_format(marking_map const & mm) const;
 
@@ -349,6 +343,7 @@ public:
                                    std::pair<node_id, node_id> const ancestors = null_ancestors);
   virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -440,11 +435,13 @@ make_roster_for_revision(database & db,
 
 void
 read_roster_and_marking(roster_data const & dat,
+                        revision_id const & rid,
                         roster_t & ros,
                         marking_map & mm);
 
 void
 write_roster_and_marking(roster_t const & ros,
+                         revision_id const & rid,
                          marking_map const & mm,
                          roster_data & dat);
 

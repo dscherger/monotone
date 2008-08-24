@@ -1,9 +1,9 @@
 mtn: updating along branch 'testbranch'
 mtn: note: branch 'testbranch' has multiple heads
 mtn: note: perhaps consider 'mtn merge'
-mtn: selected update target 3be078910d1f5452a2c3cbf09787a36620b2a824
+mtn: selected update target 457bac68e3ffa5c68422cf57a5c8477113b31ca4
 mtn: adding checkout.sh
 mtn: renaming thermostat.c to thermostat-honeywell.c
 mtn: adding thermostat-westinghouse.c
 mtn: dropping checkout.sh
-mtn: updated to base revision 3be078910d1f5452a2c3cbf09787a36620b2a824
+mtn: updated to base revision 457bac68e3ffa5c68422cf57a5c8477113b31ca4

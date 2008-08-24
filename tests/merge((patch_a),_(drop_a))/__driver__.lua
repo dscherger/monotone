@@ -18,10 +18,7 @@ revert_to(base)
 check(mtn("drop", "testfile"), 0, false, false)
 commit()
 
-check(mtn("merge"), 0, false, true)
+check(mtn("merge"), 1, nil, true)
 
--- check that we're warned about the changes being dropped...
-
-check(qgrep("Content changes to the file", "stderr"))
-check(qgrep(left, "stderr"))
+check(qgrep("conflict: file 'testfile' dropped on the left, changed on the right", "stderr"))
 

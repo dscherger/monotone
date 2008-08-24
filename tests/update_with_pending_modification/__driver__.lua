@@ -18,15 +18,11 @@ commit()
 -- change that new file
 writefile("file2", "new contents of file2")
 
--- .. and upadte to the previous revision, which didn't have file2.
--- At the moment, this simply drops file2 and all changes to it.
---
+-- .. and attempt to update to the previous revision, which didn't have file2.
+-- In mtn 0.40 and earlier, this simply drops file2 and all changes to it.
+-- Now it reports a conflict
 -- See bug #15058
 
-xfail(mtn("update", "-r", REV1), 1, true, true)
-
--- IMO, the correct curse of action should be to fail updating due to
--- a conflict.
-check(exists("file2"))
-check(samelines("file2", {"new contents of file2"}))
+check(mtn("update", "-r", REV1), 1, nil, true)
+check(qgrep("conflict: file 'file2' dropped on the right, changed on the left", "stderr"))
 

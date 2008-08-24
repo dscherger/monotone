@@ -891,6 +891,7 @@ struct editable_working_tree : public editable_tree
   virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -934,6 +935,7 @@ struct simulated_working_tree : public editable_tree
   virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -1063,11 +1065,12 @@ editable_working_tree::create_file_node(file_id const & content,
 node_id
 editable_working_tree::get_node(file_path const &pth)
 {
-  // The mapping from node ids to file_paths is not stored anywhere. So we
-  // can't do whatever operation needs this. So far, it's only looking up
-  // ancestors for sutures while applying a changeset; a working tree can't
-  // be an ancestor, so we're ok.
-  I(false);
+  // The map from node_id to file_path is not stored anywhere. This is only
+  // used to lookup a node id for the ancestor field for create_file_node.
+  // That is only used when updating the marking map for a revision stored
+  // in the database. Workspace revisions are never stored in the database,
+  // so it is safe to return the_null_node here.
+  return the_null_node;
 }
 
 void
@@ -1109,6 +1112,12 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
   else
     // This will complain if the move is actually impossible
     move_path(src_pth, dst_pth);
+}
+
+void
+editable_working_tree::clear_ancestors(file_path const & pth)
+{
+  // no ancestors to clear
 }
 
 void
@@ -1236,6 +1245,13 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
           blocked_paths.insert(dst);
         }
     }
+}
+
+void
+simulated_working_tree::clear_ancestors(file_path const & pth)
+{
+  node_t n = workspace.get_node(pth);
+  n->ancestors = null_ancestors;
 }
 
 void
@@ -1895,17 +1911,14 @@ workspace::perform_content_update(database & db,
 }
 
 void
-workspace::update_any_attrs(database & db)
+workspace::update_any_attrs(database & db, roster_t const & roster)
 {
-  temp_node_id_source nis;
-  roster_t new_roster;
-  get_current_roster_shape(db, nis, new_roster);
-  node_map const & nodes = new_roster.all_nodes();
+  node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
       file_path fp;
-      new_roster.get_name(i->first, fp);
+      roster.get_name(i->first, fp);
 
       node_t n = i->second;
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
@@ -1914,6 +1927,15 @@ workspace::update_any_attrs(database & db)
           lua.hook_apply_attribute (j->first(), fp,
                                     j->second.second());
     }
+}
+
+void
+workspace::update_any_attrs(database & db)
+{
+  temp_node_id_source nis;
+  roster_t new_roster;
+  get_current_roster_shape(db, nis, new_roster);
+  update_any_attrs(db, new_roster);
 }
 
 // Local Variables:

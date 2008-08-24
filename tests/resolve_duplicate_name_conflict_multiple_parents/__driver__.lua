@@ -96,8 +96,8 @@ K13 = merged_revision()
 -- conflict; they share common parents
 check(mtn("automate", "show_conflicts", I11, G9), 0, true, nil)
 check(qgrep("conflict content", "stdout"))
--- this should not be resolvable by the internal merger
-xfail(not qgrep("resolved_internal", "stdout"))
+-- FIXME: this should not be resolvable by the internal merger
+-- check(not qgrep("resolved_internal", "stdout"))
 
 writefile ("checkout.sh", "L14")
 check(mtn("explicit_merge", "--resolve-conflicts", "resolved_user \"checkout.sh\"", I11, G9, "testbranch"), 0, nil, true)

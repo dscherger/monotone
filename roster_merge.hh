@@ -371,7 +371,7 @@ struct roster_merge_result
                                        bool const basic_io,
                                        std::ostream & output) const;
   void resolve_duplicate_name_conflicts(lua_hooks & lua,
-                                        temp_node_id_source & nis,
+                                        node_id_source & nis,
                                         roster_t const & left_roster,
                                         roster_t const & right_roster,
                                         content_merge_adaptor & adaptor);
@@ -422,7 +422,7 @@ roster_merge(roster_t const & left_parent,
              roster_t const & right_parent,
              marking_map const & right_markings,
              std::set<revision_id> const & right_uncommon_ancestors,
-             temp_node_id_source & nis,
+             node_id_source & nis,
              roster_merge_result & result);
 
 void
