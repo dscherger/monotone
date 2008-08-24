@@ -57,6 +57,7 @@ use warnings;
 # Standard Perl and CPAN modules.
 
 use Carp;
+use IO::Poll qw(POLLIN);
 use IPC::Open3;
 use POSIX qw(:errno_h);
 use Symbol qw(gensym);
@@ -74,15 +75,18 @@ my $closing_quote_re = qr/((^.*[^\\])|^)(\\{2})*\"$/;
 
 my $database_locked_re = qr/.*sqlite error: database is locked.*/;
 
-# Global error and database locked callback routine references and associated
-# client data.
+# Global error, database locked and io wait callback routine references and
+# associated client data.
 
+my $carper = sub { return; };
 my $croaker = \&croak;
 my $db_locked_handler = sub { return; };
-my($carper,
-   $db_locked_handler_data,
+my $io_wait_handler = sub { return; };
+my($db_locked_handler_data,
    $error_handler,
    $error_handler_data,
+   $io_wait_handler_data,
+   $io_wait_handler_timeout,
    $warning_handler,
    $warning_handler_data);
 
@@ -127,6 +131,7 @@ sub new($;$);
 sub parents($\@$);
 sub register_db_locked_handler(;$$$);
 sub register_error_handler($;$$$);
+sub register_io_wait_handler(;$$$$);
 sub roots($\@);
 sub select($\@$);
 sub tags($$;$);
@@ -151,7 +156,7 @@ use base qw(Exporter);
 
 our @EXPORT = qw();
 our @EXPORT_OK = qw();
-our $VERSION = 0.5;
+our $VERSION = 0.6;
 #
 ##############################################################################
 #
@@ -180,21 +185,26 @@ sub new($;$)
 
     my $this;
 
-    $this = {db_name                => $db_name,
-	     mtn_pid                => 0,
-	     mtn_in                 => undef,
-	     mtn_out                => undef,
-	     mtn_err                => undef,
-	     mtn_err_msg            => "",
-	     mtn_aif_major          => 0,
-	     mtn_aif_minor          => 0,
-	     cmd_cnt                => 0,
-	     db_locked_handler      => undef,
-	     db_locked_handler_data => undef};
+    $this = {db_name                 => $db_name,
+	     mtn_pid                 => 0,
+	     mtn_in                  => undef,
+	     mtn_out                 => undef,
+	     mtn_err                 => undef,
+	     poll                    => undef,
+	     error_msg               => "",
+	     mtn_aif_major           => 0,
+	     mtn_aif_minor           => 0,
+	     cmd_cnt                 => 0,
+	     db_locked_handler       => undef,
+	     db_locked_handler_data  => undef,
+	     io_wait_handler         => undef,
+	     io_wait_handler_data    => undef,
+	     io_wait_handler_timeout => 1};
+    bless($this, $class);
 
     startup($this);
 
-    return bless($this, $class);
+    return $this;
 
 }
 #
@@ -1949,9 +1959,9 @@ sub toposort($\@@)
 #
 #   Routine      - register_error_handler
 #
-#   Description  - Register the specified routine as an error handler for this
-#                  library. This is a class method rather than an object one
-#                  as errors can be raised when calling the constructor.
+#   Description  - Register the specified routine as an error handler for
+#                  class. This is a class method rather than an object one as
+#                  errors can be raised when calling the constructor.
 #
 #   Data         - $this        : The object. This may not be present
 #                                 depending upon how this method is called and
@@ -1959,7 +1969,7 @@ sub toposort($\@@)
 #                  $severity    : The level of error that the handler is being
 #                                 registered for. One of "error", "warning" or
 #                                 "both".
-#                  $callback    : A reference to the error handler routine. If
+#                  $handler     : A reference to the error handler routine. If
 #                                 this is not provided then the existing error
 #                                 handler routine is unregistered and errors
 #                                 are handled in the default way.
@@ -1987,8 +1997,7 @@ sub register_error_handler($;$$$)
 	else
 	{
 	    $croaker = \&croak;
-	    $error_handler = undef;
-	    $error_handler_data = undef;
+	    $error_handler = $error_handler_data = undef;
 	}
     }
     elsif ($severity eq "warning")
@@ -2001,7 +2010,8 @@ sub register_error_handler($;$$$)
 	}
 	else
 	{
-	    $carper = $warning_handler = $warning_handler_data = undef;
+	    $carper = sub { return; };
+	    $warning_handler = $warning_handler_data = undef;
 	}
     }
     elsif ($severity eq "both")
@@ -2015,8 +2025,9 @@ sub register_error_handler($;$$$)
 	}
 	else
 	{
-	    $carper = $error_handler = $warning_handler = undef;
+	    $warning_handler = $warning_handler_data = undef;
 	    $error_handler_data = $warning_handler_data = undef;
+	    $carper = sub { return; };
 	    $croaker = \&croak;
 	}
     }
@@ -2032,14 +2043,15 @@ sub register_error_handler($;$$$)
 #   Routine      - register_db_locked_handler
 #
 #   Description  - Register the specified routine as a database locked handler
-#                  for this library. This is a class method rather than an
-#                  object one as locked databases can be encountered when
-#                  calling the constructor.
+#                  for this class. This is both a class as well as an object
+#                  method. When used as a class method, the specified database
+#                  locked handler is used as the default handler for all those
+#                  objects that do not specify their own handlers.
 #
-#   Data         - $this        : The object. This may not be present
-#                                 depending upon how this method is called and
-#                                 is ignored if it is present anyway.
-#                  $callback    : A reference to the database locked handler
+#   Data         - $this        : Either the object, the package name or not
+#                                 present depending upon how this method is
+#                                 called.
+#                  $handler     : A reference to the database locked handler
 #                                 routine. If this is not provided then the
 #                                 existing database locked handler routine is
 #                                 unregistered and database locking clashes
@@ -2056,13 +2068,13 @@ sub register_db_locked_handler(;$$$)
 {
 
     my $this;
-    if ($_[0] eq __PACKAGE__)
-    {
-	shift();
-    }
-    elsif (ref($_[0]) eq __PACKAGE__)
+    if (ref($_[0]) eq __PACKAGE__)
     {
 	$this = $_[0];
+	shift();
+    }
+    elsif ($_[0] eq __PACKAGE__)
+    {
 	shift();
     }
     my($handler, $client_data) = @_;
@@ -2097,6 +2109,97 @@ sub register_db_locked_handler(;$$$)
 #
 ##############################################################################
 #
+#   Routine      - register_io_wait_handler
+#
+#   Description  - Register the specified routine as an I/O wait handler for
+#                  this class. This is both a class as well as an object
+#                  method. When used as a class method, the specified I/O wait
+#                  handler is used as the default handler for all those
+#                  objects that do not specify their own handlers.
+#
+#   Data         - $this        : Either the object, the package name or not
+#                                 present depending upon how this method is
+#                                 called.
+#                  $handler     : A reference to the I/O wait handler routine.
+#                                 If this is not provided then the existing
+#                                 I/O wait handler routine is unregistered.
+#                  $timeout     : The timeout, in seconds, that this class
+#                                 should wait for input before calling the I/O
+#                                 wait handler.
+#                  $client_data : The client data that is to be passed to the
+#                                 registered I/O wait handler when it is
+#                                 called.
+#
+##############################################################################
+
+
+
+sub register_io_wait_handler(;$$$$)
+{
+
+    my $this;
+    if (ref($_[0]) eq __PACKAGE__)
+    {
+	$this = $_[0];
+	shift();
+    }
+    elsif ($_[0] eq __PACKAGE__)
+    {
+	shift();
+    }
+    my($handler, $timeout, $client_data) = @_;
+
+    if (defined($timeout))
+    {
+	if ($timeout !~ m/^\d*\.{0,1}\d+$/ || $timeout < 0 || $timeout > 20)
+	{
+	    my $msg =
+		"I/O wait handler timeout invalid or out of range, resetting";
+	    if (defined($this))
+	    {
+		$this->{error_msg} = $msg;
+		&$carper($this->{error_msg});
+	    }
+	    carp($msg);
+	    $timeout = 1;
+	}
+    }
+    else
+    {
+	$timeout = 1;
+    }
+
+    if (defined($this))
+    {
+	if (defined($handler))
+	{
+	    $this->{io_wait_handler} = $handler;
+	    $this->{io_wait_handler_data} = $client_data;
+	    $this->{io_wait_handler_timeout} = $timeout;
+	}
+	else
+	{
+	    $this->{io_wait_handler} = $this->{io_wait_handler_data} = undef;
+	}
+    }
+    else
+    {
+	if (defined($handler))
+	{
+	    $io_wait_handler = $handler;
+	    $io_wait_handler_data = $client_data;
+	    $io_wait_handler_timeout = $timeout;
+	}
+	else
+	{
+	    $io_wait_handler = $io_wait_handler_data = undef;
+	}
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_db_name
 #
 #   Description  - Return the the file name of the Monotone database as given
@@ -2124,12 +2227,13 @@ sub get_db_name($)
 #
 #   Routine      - get_error_message
 #
-#   Description  - Return the last error message received from the mtn
-#                  subprocess.
+#   Description  - Return the message for the last error reported by this
+#                  class.
 #
 #   Data         - $this        : The object.
-#                  Return Value : The last error message received, or an empty
-#                                 string if nothing has gone wrong yet.
+#                  Return Value : The message for the last error detected, or
+#                                 an empty string if nothing has gone wrong
+#                                 yet.
 #
 ##############################################################################
 
@@ -2140,7 +2244,7 @@ sub get_error_message($)
 
     my $this = $_[0];
 
-    return $this->{mtn_err_msg};
+    return $this->{error_msg};
 
 }
 #
@@ -2229,6 +2333,7 @@ sub closedown($)
 		}
 	    }
 	}
+	$this->{poll} = undef;
 	$this->{mtn_pid} = 0;
     }
 
@@ -2416,7 +2521,7 @@ sub mtn_command_with_options($$$\@@)
 	    # See if we are to retry on database locked conditions.
 
 	    $retry = &$handler($this, $handler_data)
-		if ($this->{mtn_err_msg} =~ m/$database_locked_re/
+		if ($this->{error_msg} =~ m/$database_locked_re/
 		    || $db_locked_exception);
 
 	    # If we are to retry then close down the subordinate mtn process,
@@ -2429,7 +2534,7 @@ sub mtn_command_with_options($$$\@@)
 	    }
 	    else
 	    {
-		&$carper($this->{mtn_err_msg}) if (defined($carper));
+		&$carper($this->{error_msg});
 		return;
 	    }
 	}
@@ -2473,6 +2578,9 @@ sub mtn_read_output($\$)
        $err,
        $err_code,
        $err_occurred,
+       $handler,
+       $handler_data,
+       $handler_timeout,
        $header,
        $i,
        $last,
@@ -2481,6 +2589,23 @@ sub mtn_read_output($\$)
 
     $err = $this->{mtn_err};
 
+    # Work out what I/O wait handler is to be used.
+
+    if (defined($this->{io_wait_handler}))
+    {
+	$handler = $this->{io_wait_handler};
+	$handler_data = $this->{io_wait_handler_data};
+	$handler_timeout = $this->{io_wait_handler_timeout};
+    }
+    else
+    {
+	$handler = $io_wait_handler;
+	$handler_data = $io_wait_handler_data;
+	$handler_timeout = $io_wait_handler_timeout;
+    }
+
+    # Read in the data.
+
     $$buffer = "";
     $chunk_start = 1;
     $err_occurred = 0;
@@ -2488,6 +2613,14 @@ sub mtn_read_output($\$)
     $offset = 0;
     do
     {
+
+	# Wait here for some data, calling the I/O wait handler every second
+	# whilst we wait.
+
+	while ($this->{poll}->poll($handler_timeout) == 0)
+	{
+	    &$handler($this, $handler_data);
+	}
 
 	# If necessary, read in and process the chunk header, then we know how
 	# much to read in etc.
@@ -2575,7 +2708,7 @@ sub mtn_read_output($\$)
 
     if ($err_occurred)
     {
-	$this->{mtn_err_msg} = $$buffer;
+	$this->{error_msg} = $$buffer;
 	$$buffer = "";
 	return;
     }
@@ -2632,6 +2765,8 @@ sub startup($)
 				     "stdio");
 	}
 	$this->{cmd_cnt} = 0;
+	$this->{poll} = IO::Poll->new();
+	$this->{poll}->mask($this->{mtn_out}, POLLIN);
 	interface_version($this, $version);
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
 	    ($version =~ m/^(\d+)\.(\d+)$/);
