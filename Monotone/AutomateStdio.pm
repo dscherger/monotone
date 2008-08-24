@@ -225,7 +225,25 @@ sub DESTROY
 
     my $this = shift();
 
-    closedown($this);
+    # Make sure the destructor doesn't throw any exceptions and that any
+    # existing exception status is preserved, otherwise constructor
+    # exceptions could be lost. E.g. if the constructor throws an exception
+    # after blessing the object, Perl immediately calls the destructor,
+    # which calls code that could use eval thereby resetting $@.  Why not
+    # simply call bless as the last statement in the constructor? Well
+    # firstly callbacks can be called in the constructor and they have the
+    # object passed to them as their first argument and so it needs to be
+    # blessed, secondly the mtn subprocess needs to be properly closed down
+    # if there is an exception, which it won't be unless the destructor is
+    # called.
+
+    {
+	local $@;
+	eval
+	{
+	    closedown($this);
+	};
+    }
 
 }
 #
@@ -2301,13 +2319,20 @@ sub closedown($)
 	for ($i = 0; $i < 3; ++ $i)
 	{
 	    $ret_val = 0;
-	    eval
+
+	    # Make sure that the eval block below does not affect any existing
+	    # exception status.
+
 	    {
-		local $SIG{ALRM} = sub { die("internal sigalarm"); };
-		alarm(5);
-		$ret_val = waitpid($this->{mtn_pid}, 0);
-		alarm(0);
-	    };
+		local $@;
+		eval
+		{
+		    local $SIG{ALRM} = sub { die("internal sigalarm"); };
+		    alarm(5);
+		    $ret_val = waitpid($this->{mtn_pid}, 0);
+		    alarm(0);
+		};
+	    }
 	    if ($ret_val == $this->{mtn_pid})
 	    {
 		last;
