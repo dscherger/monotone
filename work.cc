@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -291,6 +292,33 @@ workspace::get_current_roster_shape(database & db,
     {
       marking_map dummy;
       make_roster_for_revision(db, nis, rev, new_rid, ros, dummy);
+    }
+}
+
+void
+workspace::get_current_roster(database & db,
+                              node_id_source & nis,
+                              revision_id & rid,
+                              roster_t & ros,
+                              marking_map & markings)
+{
+  revision_t rev;
+
+  get_work_rev(rev);
+
+  rid = revision_id(fake_id());
+
+  if (rev.edges.size() == 1 && null_id(edge_old_revision(rev.edges.begin())))
+    {
+      // There is just one parent and it is the null ID, which
+      // make_roster_for_revision does not handle correctly. Not clear we
+      // need this case, so abort.
+      I(false);
+    }
+  else
+    {
+      make_roster_for_revision(db, nis, rev, rid, ros, markings);
+      update_from_filesystem(ros, markings, rid);
     }
 }
 
@@ -899,9 +927,12 @@ struct editable_working_tree : public editable_tree
   virtual void drop_detached_node(node_id nid);
 
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -940,9 +971,12 @@ struct simulated_working_tree : public editable_tree
   virtual void drop_detached_node(node_id nid);
 
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
 
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -1054,8 +1088,10 @@ editable_working_tree::create_dir_node()
 }
 
 node_id
-editable_working_tree::create_file_node(file_id const & content)
+editable_working_tree::create_file_node(file_id const & content,
+                                        std::pair<node_id, node_id> const ancestors)
 {
+  I(ancestors == null_ancestors);
   node_id nid = next_nid++;
   bookkeeping_path pth = path_for_detached_nid(nid);
   require_path_is_nonexistent(pth,
@@ -1065,6 +1101,17 @@ editable_working_tree::create_file_node(file_id const & content)
   write_data(pth, dat.inner());
 
   return nid;
+}
+
+node_id
+editable_working_tree::get_node(file_path const &pth)
+{
+  // The map from node_id to file_path is not stored anywhere. This is only
+  // used to lookup a node id for the ancestor field for create_file_node.
+  // That is only used when updating the marking map for a revision stored
+  // in the database. Workspace revisions are never stored in the database,
+  // so it is safe to return the_null_node here.
+  return the_null_node;
 }
 
 void
@@ -1106,6 +1153,12 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
   else
     // This will complain if the move is actually impossible
     move_path(src_pth, dst_pth);
+}
+
+void
+editable_working_tree::clear_ancestors(file_path const & pth)
+{
+  // no ancestors to clear
 }
 
 void
@@ -1186,9 +1239,16 @@ simulated_working_tree::create_dir_node()
 }
 
 node_id
-simulated_working_tree::create_file_node(file_id const & content)
+simulated_working_tree::create_file_node(file_id const & content,
+                                         std::pair<node_id, node_id> const ancestors)
 {
-  return workspace.create_file_node(content, nis);
+  return workspace.create_file_node(content, nis, ancestors);
+}
+
+node_id
+simulated_working_tree::get_node(file_path const &pth)
+{
+  return workspace.get_node(pth)->self;
 }
 
 void
@@ -1226,6 +1286,13 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
           blocked_paths.insert(dst);
         }
     }
+}
+
+void
+simulated_working_tree::clear_ancestors(file_path const & pth)
+{
+  node_t n = workspace.get_node(pth);
+  n->ancestors = null_ancestors;
 }
 
 void
@@ -1354,6 +1421,96 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
           ident_existing_file(fp, file->content, status);
         }
 
+    }
+
+  N(missing_items == 0,
+    F("%d missing items; use '%s ls missing' to view\n"
+      "To restore consistency, on each missing item run either\n"
+      " '%s drop ITEM' to remove it permanently, or\n"
+      " '%s revert ITEM' to restore it.\n"
+      "To handle all at once, simply use\n"
+      " '%s drop --missing' or\n"
+      " '%s revert --missing'")
+    % missing_items % ui.prog_name % ui.prog_name % ui.prog_name
+    % ui.prog_name % ui.prog_name);
+}
+
+void
+workspace::update_from_filesystem(roster_t & ros,
+                                  marking_map & markings,
+                                  revision_id const & rid)
+{
+  temp_node_id_source nis;
+  inodeprint_map ipm;
+
+  if (in_inodeprints_mode())
+    {
+      data dat;
+      read_inodeprints(dat);
+      read_inodeprint_map(dat, ipm);
+    }
+
+  size_t missing_items = 0;
+
+  // this code is speed critical, hence the use of inode fingerprints so be
+  // careful when making changes in here and preferably do some timing tests
+
+  if (!ros.has_root())
+    return;
+
+  node_map const & nodes = ros.all_nodes();
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      node_id nid = i->first;
+      node_t node = i->second;
+
+      file_path fp;
+      ros.get_name(nid, fp);
+
+      const path::status status(get_path_status(fp));
+
+      if (is_dir_t(node))
+        {
+          if (status == path::nonexistent)
+            {
+              W(F("missing directory '%s'") % (fp));
+              missing_items++;
+            }
+          else if (status != path::directory)
+            {
+              W(F("not a directory '%s'") % (fp));
+              missing_items++;
+            }
+        }
+      else
+        {
+          // Only analyze changed files (or all files if inodeprints mode
+          // is disabled).
+          if (inodeprint_unchanged(ipm, fp))
+            continue;
+
+          if (status == path::nonexistent)
+            {
+              W(F("missing file '%s'") % (fp));
+              missing_items++;
+            }
+          else if (status != path::file)
+            {
+              W(F("not a file '%s'") % (fp));
+              missing_items++;
+            }
+
+          file_t file = downcast_to_file_t(node);
+          file_id const prev_content = file->content;
+          ident_existing_file(fp, file->content, status);
+
+          if (prev_content != file->content)
+            {
+              marking_t & marking = markings.find(nid)->second;
+              marking.file_content.clear();
+              marking.file_content.insert(rid);
+            }
+        }
     }
 
   N(missing_items == 0,
@@ -1795,17 +1952,14 @@ workspace::perform_content_update(database & db,
 }
 
 void
-workspace::update_any_attrs(database & db)
+workspace::update_any_attrs(database & db, roster_t const & roster)
 {
-  temp_node_id_source nis;
-  roster_t new_roster;
-  get_current_roster_shape(db, nis, new_roster);
-  node_map const & nodes = new_roster.all_nodes();
+  node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
     {
       file_path fp;
-      new_roster.get_name(i->first, fp);
+      roster.get_name(i->first, fp);
 
       node_t n = i->second;
       for (full_attr_map_t::const_iterator j = n->attrs.begin();
@@ -1814,6 +1968,15 @@ workspace::update_any_attrs(database & db)
           lua.hook_apply_attribute (j->first(), fp,
                                     j->second.second());
     }
+}
+
+void
+workspace::update_any_attrs(database & db)
+{
+  temp_node_id_source nis;
+  roster_t new_roster;
+  get_current_roster_shape(db, nis, new_roster);
+  update_any_attrs(db, new_roster);
 }
 
 // Local Variables:

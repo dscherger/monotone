@@ -1,0 +1,18 @@
+    left [38fee2fc132b056f10476fff55f10ccaa52b5452]
+   right [f214512c044555f3519597c19e6a50399ec81241]
+ancestor [ae94e6677b8e31692c67d98744dccf5fa9ccffe5]
+
+       conflict duplicate_name
+      left_type "added file"
+      left_name "checkout.sh"
+   left_file_id [dd6805ae36432d6edcbdff6ea578ea981ffa2144]
+     right_type "added file"
+     right_name "checkout.sh"
+  right_file_id [7b4836e9931cf1a3adfc8c432a3e407b2fef84e9]
+resolved_suture "checkout.sh"
+
+       conflict content_drop
+     right_type "file"
+     right_name "checkout.sh"
+  right_file_id [7b4836e9931cf1a3adfc8c432a3e407b2fef84e9]
+resolved_suture "checkout.sh"

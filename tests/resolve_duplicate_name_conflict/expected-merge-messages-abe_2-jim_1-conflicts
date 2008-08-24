@@ -1,0 +1,15 @@
+mtn: 2 heads on branch 'testbranch'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  16d13cce9d163a224e0e491da41415c322727b46
+mtn: [right] 3bb925aabafadcdbdc502699024ee282fef0c512
+mtn: 1 content conflict requires user intervention
+mtn: conflict: content conflict on file 'checkout.sh'
+mtn: content hash is f7a9033fcfa98450d0c0a25e41aa68904b7a33ce on the left
+mtn: content hash is a8acbc7472178c5e87c3f0a6953ac5db954e1205 on the right
+mtn: help required for 3-way merge
+mtn: [ancestor] checkout.sh
+mtn: [    left] checkout.sh
+mtn: [   right] checkout.sh
+mtn: [  merged] checkout.sh
+mtn: error: merge failed due to unresolved conflicts

@@ -1,0 +1,13 @@
+    left [99458e9fba1b7a43ce1a50df44754efaee63fab1]
+   right [16d13cce9d163a224e0e491da41415c322727b46]
+ancestor [e9ad84a3fc40ef1109251c308428439c21ad1de9]
+
+         conflict content
+        node_type "file"
+    ancestor_name "checkout.sh"
+ ancestor_file_id [dd6805ae36432d6edcbdff6ea578ea981ffa2144]
+        left_name "checkout.sh"
+     left_file_id [d41d63b495331210b2cd5ea69295c8b4be0cdf74]
+       right_name "checkout.sh"
+    right_file_id [f7a9033fcfa98450d0c0a25e41aa68904b7a33ce]
+resolved_internal 

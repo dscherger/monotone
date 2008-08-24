@@ -1,7 +1,7 @@
 #ifndef __WORK_HH__
 #define __WORK_HH__
 
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -131,7 +131,7 @@ public:
 
   void perform_deletions(database & db,
                          std::set<file_path> const & targets,
-			 bool recursive, 
+			 bool recursive,
                          bool bookkeep_only);
 
   void perform_rename(database & db,
@@ -149,7 +149,12 @@ public:
                               content_merge_adaptor const & ca,
                               bool messages = true);
 
+  // update_any_attrs needs a valid roster to get names to update. Version
+  // without roster arg constructs a partial workspace roster internally, in
+  // case you don't have one already.
+  void update_any_attrs(database & db, roster_t const & roster);
   void update_any_attrs(database & db);
+
   void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes(database & db);
@@ -174,6 +179,13 @@ public:
   void get_current_roster_shape(database & db, node_id_source & nis,
                                 roster_t & ros);
 
+  // Return the current roster and marking map
+  void get_current_roster(database & db,
+                          node_id_source & nis,
+                          revision_id & new_rid,
+                          roster_t & ros,
+                          marking_map & mark_map);
+
   // This returns a map whose keys are revision_ids and whose values are
   // rosters, there being one such pair for each parent of the current
   // revision.
@@ -186,6 +198,11 @@ public:
   void update_current_roster_from_filesystem(roster_t & ros);
   void update_current_roster_from_filesystem(roster_t & ros,
                                              node_restriction const & mask);
+
+  // Update roster and markings from workspace
+  void update_from_filesystem(roster_t & ros,
+                              marking_map & markings,
+                              revision_id const & rid);
 
 
   // the "user log" is a file the user can edit as they program to record
@@ -255,4 +272,4 @@ public:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __WORK_HH__
- 
+

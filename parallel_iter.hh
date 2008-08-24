@@ -1,6 +1,7 @@
 #ifndef __PARALLEL_ITER_HH__
 #define __PARALLEL_ITER_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -167,6 +168,129 @@ namespace parallel
     out += "\n";
   }
 
+  template <typename M>
+  class reverse_iter
+  {
+  public:
+    M const & left_map;
+    M const & right_map;
+
+    reverse_iter(M const & left_map, M const & right_map)
+      : left_map(left_map), right_map(right_map),
+        state_(invalid), started_(false), finished_(false)
+    {
+    }
+
+    bool next()
+    {
+      I(!finished_);
+      // update iterators past the last item returned
+      if (!started_)
+        {
+          left_ = left_map.rbegin();
+          right_ = right_map.rbegin();
+          started_ = true;
+        }
+      else
+        {
+          I(state_ != invalid);
+          if (state_ == in_left || state_ == in_both)
+            ++left_;
+          if (state_ == in_right || state_ == in_both)
+            ++right_;
+        }
+      // determine new state
+      I(started_);
+      if (left_ == left_map.rend() && right_ == right_map.rend())
+        {
+          finished_ = true;
+          state_ = invalid;
+        }
+      else if (left_ == left_map.rend() && right_ != right_map.rend())
+        state_ = in_right;
+      else if (left_ != left_map.rend() && right_ == right_map.rend())
+        state_ = in_left;
+      else
+        {
+          // Both iterators valid.
+          // ">" true is nearer end for reverse order
+          if (left_->first > right_->first)
+            state_ = in_left;
+          else if (right_->first > left_->first)
+            state_ = in_right;
+          else
+            {
+              I(left_->first == right_->first);
+              state_ = in_both;
+          }
+        }
+      return !finished_;
+    }
+
+    state_t state() const
+    {
+      return state_;
+    }
+
+    typename M::value_type const &
+    left_value()
+    {
+      I(state_ == in_left || state_ == in_both);
+      return *left_;
+    }
+
+    typename M::key_type const &
+    left_key()
+    {
+      return left_value().first;
+    }
+
+    typename M::value_type::second_type const &
+    left_data()
+    {
+      return left_value().second;
+    }
+
+    typename M::value_type const &
+    right_value()
+    {
+      I(state_ == in_right || state_ == in_both);
+      return *right_;
+    }
+
+    typename M::key_type const &
+    right_key()
+    {
+      return right_value().first;
+    }
+
+    typename M::value_type::second_type const &
+    right_data()
+    {
+      return right_value().second;
+    }
+
+  private:
+    state_t state_;
+    bool started_, finished_;
+    typename M::const_reverse_iterator left_;
+    typename M::const_reverse_iterator right_;
+
+  };
+
+  template <typename M> void
+  dump(reverse_iter<M> const & i, std::string & out)
+  {
+    out = boost::lexical_cast<std::string>(i.state());
+    switch (i.state())
+      {
+      case in_left: out += " in_left"; break;
+      case in_right: out += " in_right"; break;
+      case in_both: out += " in_both"; break;
+      case invalid: out += " invalid"; break;
+      }
+    out += "\n";
+  }
 }
 
 // Local Variables:

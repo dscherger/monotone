@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -28,7 +29,7 @@ using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
 
-namespace 
+namespace
 {
 
   struct roster_delta_t
@@ -38,8 +39,23 @@ namespace
                      node_id> dirs_added_t;
     typedef std::map<pair<node_id, path_component>,
                      pair<node_id, file_id> > files_added_t;
+
+    struct nodes_sutured_s
+    {
+      pair<node_id, node_id> ancestors;
+      file_id content;
+      pair<node_id, path_component> location; // parent nid, name
+
+      nodes_sutured_s(){};
+      nodes_sutured_s(pair<node_id, node_id> ancestors,
+                      file_id content,
+                      pair<node_id, path_component> location):
+      ancestors(ancestors), content(content), location(location) {};
+    };
+    typedef std::map<node_id, nodes_sutured_s > nodes_sutured_t;
+    typedef std::map<node_id, pair<node_id, node_id> > sutured_nodes_inherited_t;
     typedef std::map<node_id,
-                     pair<node_id, path_component> > nodes_renamed_t;
+                     pair<node_id, path_component> > nodes_renamed_t; // parent nid, name
     typedef std::map<node_id, file_id> deltas_applied_t;
     typedef std::set<pair<node_id, attr_key> > attrs_cleared_t;
     typedef std::set<pair<node_id,
@@ -50,6 +66,8 @@ namespace
     nodes_deleted_t nodes_deleted;
     dirs_added_t dirs_added;
     files_added_t files_added;
+    nodes_sutured_t nodes_sutured;
+    sutured_nodes_inherited_t sutured_nodes_inherited;
     nodes_renamed_t nodes_renamed;
     deltas_applied_t deltas_applied;
     attrs_cleared_t attrs_cleared;
@@ -74,6 +92,36 @@ namespace
            i = nodes_renamed.begin(); i != nodes_renamed.end(); ++i)
       roster.detach_node(i->first);
 
+    for (nodes_sutured_t::const_iterator
+           i = nodes_sutured.begin(); i != nodes_sutured.end(); ++i)
+    {
+      // Sutured node is added
+      roster.create_file_node(i->second.content, i->first, i->second.ancestors);
+      roster.attach_node(i->first, // nid
+                         i->second.location.first, // parent nid
+                         i->second.location.second); // name
+
+      // Ancestor nodes are dropped. If this suture is resolving a merge
+      // conflict, the two ancestors are from different revisions, but this
+      // delta only represents changes from one of them.
+      if (roster.has_node(i->second.ancestors.first))
+        {
+          roster.detach_node(i->second.ancestors.first);
+          roster.drop_detached_node(i->second.ancestors.first);
+        }
+      if (roster.has_node(i->second.ancestors.second))
+        {
+          roster.detach_node(i->second.ancestors.second);
+          roster.drop_detached_node(i->second.ancestors.second);
+        }
+    }
+
+    for (sutured_nodes_inherited_t::const_iterator
+           i = sutured_nodes_inherited.begin(); i != sutured_nodes_inherited.end(); ++i)
+    {
+      roster.get_node(i->first)->ancestors = i->second;
+    }
+
     // Delete the delete-able things.
     for (nodes_deleted_t::const_iterator
            i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
@@ -82,10 +130,10 @@ namespace
     // Add the new things.
     for (dirs_added_t::const_iterator
            i = dirs_added.begin(); i != dirs_added.end(); ++i)
-      roster.create_dir_node(i->second);
+      roster.create_dir_node(i->second, null_ancestors);
     for (files_added_t::const_iterator
            i = files_added.begin(); i != files_added.end(); ++i)
-      roster.create_file_node(i->second.second, i->second.first);
+      roster.create_file_node(i->second.second, i->second.first, null_ancestors);
 
     // Attach everything.
     for (dirs_added_t::const_iterator
@@ -122,7 +170,7 @@ namespace
   }
 
   void
-  do_delta_for_node_only_in_dest(node_t new_n, roster_delta_t & d)
+  do_delta_for_node_only_in_dest(roster_t const & from, node_t new_n, roster_delta_t & d)
   {
     node_id nid = new_n->self;
     pair<node_id, path_component> new_loc(new_n->parent, new_n->name);
@@ -132,8 +180,30 @@ namespace
     else
       {
         file_id const & content = downcast_to_file_t(new_n)->content;
-        safe_insert(d.files_added, make_pair(new_loc,
-                                             make_pair(nid, content)));
+
+        if (new_n->ancestors.first != the_null_node)
+          {
+            // suture
+            safe_insert
+              (d.nodes_sutured,
+               make_pair(nid,
+                         roster_delta_t::nodes_sutured_s
+                         (new_n->ancestors, content, make_pair(new_n->parent, new_n->name))));
+
+            // Erase previously entered delete
+            if (from.has_node(new_n->ancestors.first))
+                safe_erase(d.nodes_deleted, new_n->ancestors.first);
+
+            if (from.has_node(new_n->ancestors.second))
+                safe_erase(d.nodes_deleted, new_n->ancestors.second);
+
+          }
+        else
+          {
+            // not suture
+            safe_insert(d.files_added, make_pair(new_loc,
+                                                 make_pair(nid, content)));
+          }
       }
     for (full_attr_map_t::const_iterator i = new_n->attrs.begin();
          i != new_n->attrs.end(); ++i)
@@ -145,6 +215,11 @@ namespace
   {
     I(old_n->self == new_n->self);
     node_id nid = old_n->self;
+
+    if (old_n->ancestors.first != the_null_node ||
+        new_n->ancestors.first != the_null_node)
+      d.sutured_nodes_inherited.insert(make_pair(nid, new_n->ancestors));
+
     // rename?
     {
       pair<node_id, path_component> old_loc(old_n->parent, old_n->name);
@@ -206,17 +281,23 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
-              // deleted
+              // Node is deleted; it may have been sutured into another new node
+              //
+              // We cannot easily tell which here - we'd have to search the 'to'
+              // roster for a node with this node as an ancestor. However, we can just
+              // record this node as deleted now, and change it later when the suture
+              // is seen. Note that the suture will be on a later node; nodes are
+              // processed in order, and new nodes occur after deleted nodes.
               safe_insert(d.nodes_deleted, i.left_key());
               break;
-            
+
             case parallel::in_right:
               // added
-              do_delta_for_node_only_in_dest(i.right_data(), d);
+              do_delta_for_node_only_in_dest(from, i.right_data(), d);
               break;
-            
+
             case parallel::in_both:
               // moved/patched/attribute changes
               do_delta_for_node_in_both(i.left_data(), i.right_data(), d);
@@ -233,17 +314,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted; don't need to do anything (will be handled by
               // nodes_deleted set
               break;
-            
+
             case parallel::in_right:
               // added
               safe_insert(d.markings_changed, i.right_value());
               break;
-            
+
             case parallel::in_both:
               // maybe changed
               if (!(i.left_data() == i.right_data()))
@@ -256,18 +337,21 @@ namespace
 
   namespace syms
   {
-    symbol const deleted("deleted");
-    symbol const rename("rename");
+    // alphabetical order
     symbol const add_dir("add_dir");
     symbol const add_file("add_file");
-    symbol const delta("delta");
-    symbol const attr_cleared("attr_cleared");
-    symbol const attr_changed("attr_changed");
-    symbol const marking("marking");
-    
-    symbol const content("content");
-    symbol const location("location");
+    symbol const ancestors("ancestors");
     symbol const attr("attr");
+    symbol const attr_changed("attr_changed");
+    symbol const attr_cleared("attr_cleared");
+    symbol const content("content");
+    symbol const deleted("deleted");
+    symbol const delta("delta");
+    symbol const location("location");
+    symbol const marking("marking");
+    symbol const rename("rename");
+    symbol const suture("suture");
+    symbol const suture_inherited("suture_inherited");
     symbol const value("value");
   }
 
@@ -295,6 +379,28 @@ namespace
       {
         basic_io::stanza st;
         push_nid(syms::deleted, *i, st);
+        printer.print_stanza(st);
+      }
+    for (roster_delta_t::nodes_sutured_t::const_iterator
+           i = d.nodes_sutured.begin(); i != d.nodes_sutured.end(); ++i)
+      {
+        basic_io::stanza st;
+        push_nid(syms::suture, i->first, st);
+        st.push_str_triple(syms::ancestors,
+                         lexical_cast<std::string>(i->second.ancestors.first),
+                         lexical_cast<std::string>(i->second.ancestors.second));
+        st.push_binary_pair(syms::content, i->second.content.inner());
+        push_loc(i->second.location, st);
+        printer.print_stanza(st);
+      }
+    for (roster_delta_t::sutured_nodes_inherited_t::const_iterator
+           i = d.sutured_nodes_inherited.begin(); i != d.sutured_nodes_inherited.end(); ++i)
+      {
+        basic_io::stanza st;
+        push_nid(syms::suture_inherited, i->first, st);
+        st.push_str_triple(syms::ancestors,
+                           lexical_cast<std::string>(i->second.first),
+                           lexical_cast<std::string>(i->second.second));
         printer.print_stanza(st);
       }
     for (roster_delta_t::nodes_renamed_t::const_iterator
@@ -355,7 +461,7 @@ namespace
         basic_io::stanza st;
         push_nid(syms::marking, i->first, st);
         // ...this second argument is a bit odd...
-        push_marking(st, !i->second.file_content.empty(), i->second);
+        push_marking(st, !i->second.file_content.empty(), i->second, roster_current_roster_format());
         printer.print_stanza(st);
       }
   }
@@ -386,6 +492,31 @@ namespace
       {
         parser.sym();
         safe_insert(d.nodes_deleted, parse_nid(parser));
+      }
+    while (parser.symp(syms::suture))
+      {
+        parser.sym();
+        node_id nid = parse_nid(parser);
+        roster_delta_t::nodes_sutured_s suture;
+        parser.esym(syms::ancestors);
+        suture.ancestors.first = parse_nid(parser);
+        suture.ancestors.second = parse_nid(parser);
+        parser.esym(syms::content);
+        std::string s;
+        parser.hex(s);
+        suture.content = file_id(decode_hexenc(s));
+        parse_loc(parser, suture.location);
+        safe_insert(d.nodes_sutured, make_pair(nid, suture));
+      }
+    while (parser.symp(syms::suture_inherited))
+      {
+        parser.sym();
+        node_id nid = parse_nid(parser);
+        parser.esym(syms::ancestors);
+        pair<node_id, node_id> ancestors;
+        ancestors.first = parse_nid(parser);
+        ancestors.second = parse_nid(parser);
+        safe_insert(d.sutured_nodes_inherited, make_pair(nid, ancestors));
       }
     while (parser.symp(syms::rename))
       {
@@ -459,7 +590,7 @@ namespace
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
   }
-  
+
 } // end anonymous namespace
 
 void
@@ -536,7 +667,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
 {
   roster_delta_t d;
   read_roster_delta(del, d);
-  
+
   roster_delta_t::deltas_applied_t::const_iterator i = d.deltas_applied.find(nid);
   if (i != d.deltas_applied.end())
     {
@@ -563,7 +694,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
           return true;
         }
     }
-   
+
   return false;
 }
 

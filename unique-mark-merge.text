@@ -1,0 +1,360 @@
+http://thread.gmane.org/gmane.comp.version-control.monotone.devel/4297
+
+I set myself a toy problem a few days ago: is there a really, truly,
+right way to merge two heads of an arbitrary DAG, when the object
+being merged is as simple as possible: a single scalar value?
+
+I assume that I'm given a graph, and each node in the graph has a
+value, and no other annotation; I can add annotations, but they have
+to be derived from the values and topology.  Oh, and I assume that no
+revision has more than 2 parents; probably things can be generalized
+to the case of indegree 3 or higher, but it seems like a reasonable
+restriction...
+
+So, anyway, here's what I came up with.  Perhaps you all can tell me
+if it makes sense.
+
+User model
+----------
+
+Since the goal was to be "really, truly, right", I had to figure out
+what exactly that meant... basically, what I'm calling a "user model"
+-- a formal definition of how the user thinks about merging, to give
+an operational definition of "should conflict" and "should clean
+merge".  My rules are these:
+  1) whenever a user explicitly sets the value, they express a claim
+     that their setting is superior to the old setting
+  2) whenever a user chooses to commit a new revision, they implicitly
+     affirm the validity of the decisions that led to that revision's
+     parents
+    Corollary of (1) and (2): whenever a user explicitly sets the
+     value, they express that they consider their new setting to be
+     superior to _all_ old settings
+  3) A "conflict" should occur if, and only if, the settings on each
+     side of the merge express parallel claims.
+This in itself is not an algorithm, or anything close to it; the hope
+is that it's a good description of what people actually want out of a
+merge algorithm, expressed clearly enough that we can create an
+algorithm that fits these desiderata.
+
+Algorithm
+---------
+
+I'll use slightly novel notation.  Lower case letters represent values
+that scalar the scalar takes.  Upper case letters represent nodes in
+the graph.
+
+Now, here's an algorithm, that is supposed to just be a transcription
+of the above rules, one step more formal:
+  First, we need to know where users actively expressed an intention.
+  Intention is defined by (1), above.  We use * to mark where this
+  occurred:
+
+    i)      a*     graph roots are always marked
+
+            a
+    ii)     |      no mark, value was not set
+            a
+
+            a
+    iii)    |      b != a, so b node marked
+            b*
+
+          a   b
+    iv)    \ /
+            c*
+                   c is totally new, so marked
+          a   a
+           \ /
+            c*
+
+          a   b    we're marking places where users expressed
+    v)     \ /     intention; so b should be marked iff this
+            b?     was a conflict (!)
+
+          a   a    for now I'm not special-casing the coincidental
+    vi)    \ /     clean merge case, so let's consider this to be
+            a?     a subclass of (v).
+
+  That's all the cases possible.  So, suppose we go through and
+  annotate our graph with *s, using the above rules; we have a graph
+  with some *s peppered through it, each * representing one point that
+  a user took action.
+
+  Now, a merge algorithm per se: Let's use *(A) to mean the unique
+  nearest marked ancestor of node A.  Suppose we want to merge A and
+  B.  There are exactly 3 cases:
+    - *(A) is an ancestor of B, but not vice versa: B wins.
+    - *(B) is an ancestor of A, but not vice versa: A wins.
+    - *(A) is _not_ an ancestor of B, and vice versa: conflict,
+      escalate to user
+  Very intuitive, right?  If B supercedes the intention that led to A,
+  then B should win, and vice-versa; if not, the user has expressed
+  two conflicting intentions, and that, by definition, is a conflict.
+
+  This lets us clarify what we mean by "was a conflict" in case (v)
+  above.  When we have a merge of a and b that gives b, we simple
+  calculate *(a); if it is an ancestor of 'b', then we're done, but if
+  it isn't, then we mark the merge node.  (Subtle point: this is
+  actually not _quite_ the same as detecting whether merging 'a' and
+  'b' would have given a conflict; if we somehow managed to get a
+  point in the graph that would have clean merged to 'a', but in fact
+  was merged to 'b', then this algorithm will still mark the merge
+  node.)  For cases where the two parents differ, you have to do this
+  using the losing one; for cases where the two parents are the same,
+  you should check both, because it could have been a clean merge two
+  different ways.  If *(a1) = *(a2), i.e., both sides have the same
+  nearest marked ancestor, consider that a clean merge.
+
+  That's all.
+
+Examples
+--------
+
+Of course, I haven't shown you this is well-defined or anything, but
+to draw out the suspense a little, have some worked examples (like
+most places in this document, I draw graphs with two leaves and assume
+that those are being merged):
+
+  graph:
+       a*
+      / \
+     a   b*
+  result: *(a) is an ancestor of b, but *(b) is not an ancestor of a;
+    clean merge with result 'b'.
+
+  graph:
+       a*
+      / \
+     b*  c*
+  result: *(b) = b is not an ancestor of c, and *(c) = c is not an
+    ancestor of c; conflict.
+
+  graph:
+       a*
+      / \
+     b*  c*  <--- these are both marked, by (iii)
+     |\ /|
+     | X |
+     |/ \|
+     b*  c*  <--- which means these were conflicts, and thus marked
+  result: the two leaves are both marked, and thus generate a conflict,
+    as above.
+
+Right, enough of that.  Math time.
+
+Math
+----
+
+Theorem: In a graph marked following the above rules, every node N
+  will have a unique least marked ancestor M, and the values of M and N
+  will be the same.
+Proof: By downwards induction on the graph structure.  The base case
+  are graph roots, which by (i) are always marked, so the statement is
+  trivially true.  Proceeding by cases, (iii) and (iv) are trivially
+  true, since they produce nodes that are themselves marked.  (ii) is
+  almost as simple; in a graph 'a' -> 'a', the child obviously
+  inherits the parent's unique least marked ancestor, which by
+  inductive hypothesis exists.  The interesting case is (v) and (vi):
+     a   b
+      \ /
+       b
+  If the child is marked, then again the statement is trivial; so
+  suppose it is not.  By definition, this only occurs when *(a) is an
+  ancestor of 'b'.  But, by assumption, 'b' has a unique nearest
+  ancestor, whose value is 'b'.  Therefore, *(a) is also an ancestor
+  of *(b).  If we're in the weird edge case (vi) where a = b, then
+  these may be the same ancestor, which is fine.  Otherwise, the fact
+  that a != b, and that *(a)'s value = a's value, *(b)'s value = b's
+  value, implies that *(a) is a strict ancestor of *(b).  Either way,
+  the child has a unique least marked ancestor, and it is the same
+  ULMA as its same-valued parent, so the ULMA also has the right
+  value.  QED.
+
+Corollary: *(N) is a well-defined function.
+
+Corollary: The three cases mentioned in the merge algorithm are the
+  only possible cases.  In particular, it cannot be that *(A) is an
+  ancestor of B and *(B) is an ancestor of A simultaneously, unless
+  the two values being merged are identical (and why are you running
+  your merge algorithm then?).  Or in other words: ambiguous clean
+  merge does not exist.
+Proof: Suppose *(A) is an ancestor of B, and *(B) is an ancestor of A.
+  *(B) is unique, so *(A) must also be an ancestor of *(B).
+  Similarly, *(B) must be an ancestor of *(A).  Therefore:
+    *(A) = *(B)
+  We also have:
+    value(*(A)) = value(A)
+    value(*(B)) = value(B)
+  which implies
+    value(A) = value(B).  QED.
+
+Therefore, the above algorithm is well-defined in all possible cases.
+
+We can prove another somewhat interesting fact:
+Theorem: If A and B would merge cleanly with A winning, then any
+  descendent D of A will also merge cleanly with B, with D winning.
+Proof: *(B) is an ancestor of A, and A is an ancestor of D, so *(B) is
+  an ancestor of D.
+
+I suspect that this is enough to show that clean merges are order
+invariant, but I don't have a proof together ATM.
+
+Not sure what other properties would be interesting to prove; any
+suggestions?  It'd be nice to have some sort of proof about "once a
+conflict is resolved, you don't have to resolve it again" -- which is
+the problem that makes ambiguous clean merge so bad -- but I'm not
+sure how to state such a property formally.  Something about it being
+possible to fully converge a graph by resolving a finite number of
+conflicts or something, perhaps?
+
+Funky cases
+-----------
+
+There are two funky cases I know of.
+
+Coincidental clean merge:
+    |
+    a
+   / \
+  b*  b*
+
+Two people independently made the same change.  When we're talking
+about textual changes, some people argue this should give a conflict
+(reasoning that perhaps the same line _should_ be inserted twice).  In
+our context that argument doesn't even apply, because these are just
+scalars; so obviously this should be a clean merge.  Currently, the
+only way this algorithm has to handle this is to treat it as an
+"automatically resolved conflict" -- there's a real conflict here, but
+the VCS, acting as an agent for the user, may decide to just go ahead
+and resolve it, because it knows perfectly well what the user will do.
+In this interpretation, everything works fine, all the above stuff
+applies; it's somewhat dissatisfying, though, because it's a violation
+of the user model -- the user has not necessarily looked at this
+merge, but we put the * of user-assertion on the result anyway.  Not a
+show-stopper, I guess...
+
+It's quite possible that the above stuff could be generalized to allow
+non-unique least marked ancestors, that could only arise in exactly
+this case.
+
+I'm not actually sure what the right semantics would be, though.  If
+we're merging:
+    |
+    a
+   / \
+  b   b
+   \ / \
+    b   c
+Should that be a clean merge?  'b' was set twice, and only one of
+these settings was overridden; is that good enough?
+
+Do you still have the same opinion if the graph is:
+    |
+    a
+    |
+    b
+   / \
+  c   b
+  |  / \
+  b  b  c
+  \ /
+   b
+?  Here the reason for the second setting of 'b' was that a change
+away from it was reverted; to make it extra cringe-inducing, I threw
+in that change being reverted was another change to 'c'... (this may
+just be an example of how any merge algorithm has some particular case
+you can construct where it will get something wrong, because it
+doesn't _actually_ know how to read the users's minds).
+
+Supporting these cases may irresistably lead back to ambiguous clean,
+as well:
+     |
+     a
+    / \
+   b*  c*
+  / \ / \
+ c*  X   b*
+  \ / \ /
+   c   b
+
+The other funky case is this thing (any clever name suggestions?):
+    a
+   / \
+  b*  c*
+   \ / \
+    c*  d*
+Merging here will give a conflict, with my algorithm; 3-way merge
+would resolve it cleanly.  Polling people on #monotone and #revctrl,
+the consensus seems to be that they agree with 3-way merge, but giving
+a conflict is really not _that_ bad.  (It also seems to cause some
+funky effects with darcs-merge; see zooko's comments on #revctrl and
+darcs-users.)
+
+This is really a problem with the user model, rather than the
+algorithm.  Apparently people do not interpret the act of resolving
+the b/c merge to be "setting" the result; They seem to interpret it as
+"selecting" the result of 'c'; the 'c' in the result is in some sense
+the "same" 'c' as in the parent.  The difference between "setting" and
+"selecting" is the universe of possible options; if you see
+   a   b
+    \ /
+     c
+then you figure that the person doing the merge was picking from all
+possible resolution values; when you see
+   a   b
+    \ /
+     b
+you figure that the user was just picking between the two options
+given by the parents.  My user model is too simple to take this into
+account.  It's not a huge extension to the model to do so; it's quite
+possible that an algorithm could be devised that gave a clean merge
+here, perhaps by separately tracking each node's nearest marked
+ancestor and the original source of its value as two separate things.
+
+Relation to other work
+----------------------
+
+This algorithm is very close to the traditional codeville-merge
+approach to this problem; the primary algorithmic difference is the
+marking of conflict resolutions as being "changes".  The more
+important new stuff here, I think, are the user model and the proofs.
+
+Traditionally, merge algorithms are evaluated by coming up with some
+set of examples, eyeballing them to make some guess as to what the
+"correct" answer was, comparing that to the algorithm's output, and
+then arguing with people whose intuitions were different.
+Fundamentally, merging is about deterministically guessing the user's
+intent in situations where the user has not expressed any intent.
+Humans are very good at guessing intent; we have big chunks of squishy
+hardware designed to form sophisticated models of others intents, and
+it's completely impossible for a VCS to try and duplicate that in
+full.  My suggestion here, with my "user model", is to seriously and
+explicitly study this part of the problem.  There are complicated
+trade-offs between accuracy (correctly modeling intention),
+conservatism (avoiding incorrectly modeling intention), and
+implementability (describing the user's thought processes exactly
+isn't so useful if you can't apply it in practice).  It's hard to make
+an informed judgement when we don't have a name for the thing we're
+trying to optimize, and hard to evaluate an algorithm when we can't
+even say what it's supposed to be doing.
+
+I suspect the benefit of the proofs is obvious to anyone who has spent
+much time banging their head against this problem; until a few days
+ago I was skeptical there _was_ a way to design a merge algorithm that
+didn't run into problems like ambiguous clean merge.
+
+I'm still skeptical, of course, until people read this; merging is
+like crypto, you can't trust anything until everyone's tried to break
+it... so let's say I'm cautiously optimistic :-).  If this holds up,
+I'm quite happy; between the user model and the proofs, I'm far more
+confident that this does something sensible in all cases and has no
+lurking edge cases than I have been in any previous algorithm.  The
+few problem cases I know of display a pleasing conservatism -- perhaps
+more cautious than they need to be, but even if they do cause an
+occasional unnecessary conflict, once the conflict is resolved it
+should stay resolved.
+
+So... do your worst!
+
+-- Nathaniel

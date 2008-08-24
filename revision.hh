@@ -49,6 +49,7 @@ enum made_for { made_for_nobody, made_for_workspace, made_for_database };
 struct
 revision_t
 {
+  unsigned int required_revision_format() const;
   void check_sane() const;
   bool is_merge_node() const;
   // trivial revisions are ones that have no effect -- e.g., commit should

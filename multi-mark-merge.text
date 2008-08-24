@@ -1,0 +1,281 @@
+http://article.gmane.org/gmane.comp.version-control.revctrl/93
+
+Nathaniel Smith, based on work by Timothy Brownawell
+
+User model
+----------
+
+We keep exactly the same user model as unique-*-merge:
+
+  1) whenever a user explicitly sets the value, they express a claim
+     that their setting is superior to the old setting
+  2) whenever a user chooses to commit a new revision, they implicitly
+     affirm the validity of the decisions that led to that revision's
+     parents
+    Corollary of (1) and (2): whenever a user explicitly sets the
+     value, they express that they consider their new setting to be
+     superior to _all_ old settings
+  3) A "conflict" should occur if, and only if, the settings on each
+     side of the merge express parallel claims.
+
+The difference is that unique-*-merge does not _quite_ fulfill this
+model, because in real life your algorithm will automatically resolve
+coincidental clean merge cases without asking for user input; but
+unique-* is not smart enough to take this into account when inferring
+user intentions.
+
+Algorithm
+---------
+
+We start by marking the graph of previous revisions.  For each node in
+the graph, we either mark it (denoted by a *), or do not.  A mark
+indicates our inference that a human expressed an intention at this
+node.
+
+    i)      a*     graph roots are always marked
+
+            a1
+    ii)     |      no mark, value was not set
+            a2
+
+            a
+    iii)    |      b != a, so 'b' node marked
+            b*
+
+          a   b
+    iv)    \ /
+            c*
+                   'c' is totally new, so marked
+          a1  a2
+           \ /
+            c*
+
+          a   b1   we're marking places where users expressed
+    v)     \ /     intention; so 'b' should be marked iff this
+            b2?    was a conflict
+
+          a1  a2   'a' matches parents, and so is not marked
+    vi)    \ /     (alternatively, we can say this is a special
+            a3     case of (v), that is never a conflict)
+
+Case (vi) is the only one that differs from unique-* merge.  However,
+because of it, we must use a new definition of *():
+
+Definition: By *(A), we mean we set of minimal marked ancestors of A.
+"Minimal" here is used in the mathematical sense of a node in a graph
+that has no descendents in that graph.
+
+Algorithm: Given two nodes to merge, A and B, we consider four cases:
+   a) value(A) = value(B): return the shared value
+   b) *(A) > B: return value(B)
+   c) *(B) > A: return value(A)
+   d) else: conflict; escalate to user
+Where "*(A) > B" means "all elements of the set *(A) are non-strict
+ancestors of the revision B".  The right way to read this is as "try
+(a) first, and then if that fails try (b), (c), (d) simultaneously".
+
+Note that except for the addition of rule (a), this is a strict
+generalization of the unique-* algorithm; if *(A) and *(B) are
+single-element sets, then this performs _exactly_ the same
+computations as the unique-* algorithm.
+
+Now we can say what we mean by "was a conflict" in case (v) above:
+given a -> b2, b1 -> b2, we leave b2 unmarked if and only if
+*(a) > b1.
+
+Examples
+--------
+
+1.
+    a1*
+   / \
+  a2  b*
+
+result: *(a2) = {a1}, a1 > b, so b wins.
+
+2.
+    a*
+   / \
+  b*  c*
+
+result: *(b) = {b}, *(c) = {c}, neither *(b) > c nor *(c) > b, so
+ conflict.
+
+3.
+    a*
+   / \
+  b1* b2*
+   \ / \
+    b3  c1*
+
+result: *(b3) = {b1, b2}; b2 > c1, but b1 is not > c, so c does not
+ win.  *(c1) = {c1}, which is not > b3.  conflict.
+note: this demonstrates that this algorithm does _not_ do convergence.
+Instead, it takes the conservative position that for one node to
+silently beat another, the winning node must pre-empt _all_ the
+intentions that created the losing node.  While it's easy to come up
+with just-so stories where this is the correct thing to do (e.g., b1
+and b2 each contain some other changes that independently require 'a'
+to become 'b'; c1 will have fixed up b2's changes, but not b1's), this
+doesn't actually mean much.  Whether this is good or bad behavior a
+somewhat unresolved question, that may ultimately be answered by which
+merge algorithms turn out to be more tractable...
+
+4.
+    a*
+   / \
+  b1* b2*
+  |\ /|
+  | X |
+  |/ \|
+  b3  c*
+
+result: *(b3) = {b1, b2} > c.  *(c) = {c}, which is not > b3.  c wins
+ cleanly.
+
+5.
+     a*
+    / \
+   b1* c1*
+  / \ / \
+ c2* X   b2*
+  \ / \ /
+   c3  b3
+
+result: *(c3) = {c1, c2}; c1 > b3 but c2 is not > b3, so b3 does not
+ win.  likewise, *(b3) = {b1, b2}; b1 > c3 but b2 is not > c3, so c3
+ does not win either.  conflict.
+
+6.
+     a*
+    / \
+   b1* c1*
+  / \ / \
+ c2* X   b2*
+  \ / \ /
+   c3  b3
+   |\ /|
+   | X |
+   |/ \|
+   c4* b4*
+
+(this was my best effort to trigger an ambiguous clean merge with this
+algorithm; it fails pitifully:)
+result: *(c4) = {c4}, *(b4) = {b4}, obvious conflict.
+
+Math
+----
+
+The interesting thing about this algorithm is that all the unique-*
+proofs still go through, in a generalized form.  The key one that
+makes *-merge tractable is:
+
+Theorem: In a graph marked by the above rules, given a node N, all
+ nodes in *(N) will have the same value as N.
+Proof: By induction.  We consider the cases (i)-(vi) above.  (i)
+ through (iv) are trivially true.  (v) is interesting.  b2 is marked
+ when *(a) not > b1.  b2 being marked makes that case trivial, so
+ suppose *(a) > b1.  All elements of *(a) are marked, and are
+ ancestors of b1; therefore, by the definition of *() and "minimal",
+ they are also all ancestors of things in *(b1).  Thus no element of
+ *(a) can be a minimal marked ancestor of b2.
+ (vi) is also trivial, because *(a3) = *(a1) union *(a2).  QED.
+
+We also have to do a bit of extra work because of the sets:
+
+Corollary 1: If *(A) > B, and any element R of *(B) is R > A, then
+ value(A) = value(B).
+Proof: Let such an R be given.  R > A, and R marked, imply that there
+ is some element S of *(A) such that R > S.
+ On the other hand, *(A) > B implies that S > B.  By similar reasoning
+ to the above, this means that there is some element T of *(B) such
+ that S > T.  So, recapping, we have:
+  nodes:   R  >  S  >  T
+   from: *(B)  *(A)  *(B)
+ *(B) is a set of minimal nodes, yet we have R > T and R and T both in
+ *(B).  This implies that R = T.  R > S > R implies that S = R,
+ because we are in a DAG.  Thus
+   value(A) = value(S) = value(R) = value(B)
+ QED.
+
+Corollary 2: If *(A) > B and *(B) > A, then not only does value(A) =
+ value(B), but *(A) = *(B).
+Proof: By above, each element of *(B) is equal to some element of
+ *(A), and vice-versa.
+
+This is good, because it means our algorithm is well-defined.  The
+only time when options (b) and (c) (in the algorithm) can
+simultaneously be true, is when the two values being merged are
+identical to start with.  I.e., no somewhat anomalous "4th case" of
+ambiguous clean merge.
+
+Actually, this deserves some more discussion.  With *() returning a
+set, there are some more subtle "partial ambiguous clean" cases to
+think about -- should we be worrying about cases where some, but not
+all, of the marked ancestors are pre-empted?  This is possible, as in
+example 5 above:
+     a*
+    / \
+   b1* c1*
+  / \ / \
+ c2* X   b2*
+  \ / \ /
+   c3  b3
+A hypothetical (convergence supporting?) algorithm that said A beats B
+if _any_ elements of *(A) are > B would give an ambiguous clean merge
+on this case.  (Maybe that wouldn't be so bad, so long as we marked
+the result, but I'm in no way prepared to do any sort of sufficient
+analysis right now...)
+
+The nastiest case of this is where *(A) > B, but some elements of *(B)
+are > A -- so we silently make B win, but it's really not _quite_
+clear that's a good idea, since A also beat B sometimes -- and we're
+ignoring those user's intentions.
+
+This is the nice thing about Corollary 1 (and why I didn't just
+collapse it into Corollary 2) -- it assures us that the only time this
+_weak_ form of ambiguous clean can happen is when A and B are already
+identical.  This _can_ happen, for what it's worth:
+       a*
+      /|\
+     / | \
+    /  |  \
+   /   |   \
+  b1*  b2*  d*
+  |\   /\  /
+  | \ /  \/
+  |  X   b3*
+  | / \ /
+  |/   b4
+  b5
+Here *(b5) = {b3, b2}, *(b6) = {b2, b4}.  If we ignore for a moment
+that b4 and b5 have the same value, this is a merge that b4 would win
+and b5 would lose, even though one of b4's ancestors, i.e. b1, is
+pre-empted by b5.  However, it can _only_ happen if we ignore that
+they have the same value...
+
+The one other thing we proved about unique-* merge also still applies;
+the proof goes through word-for-word:
+Theorem: If A and B would merge cleanly with A winning, then any
+  descendent D of A will also merge cleanly with B, with D winning.
+Proof: *(B) > A, and A > D, so *(B) > D.
+
+Discussion
+----------
+
+This algorithm resolves one of the two basic problems I observed for
+unique-* merge -- coincidental clean merges are now handled, well,
+cleanly, and the user model is fully implemented.  However, we still
+do not handle the unnamed case (you guys totally let me down when I
+requested names for this case last time):
+    a
+   / \
+  b*  c*
+   \ / \
+    c*  d*
+which still gives a conflict.  We also, of course, continue to not
+support more exotic features like convergence or implicit rollback.
+
+Not the most exciting thing in the world.  OTOH, it does strictly
+increase the complexity of algorithms that are tractable to formal
+analysis.

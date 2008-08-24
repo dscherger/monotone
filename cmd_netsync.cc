@@ -441,7 +441,7 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   work.perform_content_update(db, checkout, wca, false);
 
-  work.update_any_attrs(db);
+  work.update_any_attrs(db, current_roster);
   work.maybe_update_inodeprints(db);
   guard.commit();
   remove_on_fail.commit();

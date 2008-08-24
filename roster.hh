@@ -1,6 +1,7 @@
 #ifndef __ROSTER_HH__
 #define __ROSTER_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -23,8 +24,6 @@ struct node_id_source
 
 ///////////////////////////////////////////////////////////////////
 
-node_id const the_null_node = 0;
-
 inline bool
 null_node(node_id n)
 {
@@ -32,16 +31,21 @@ null_node(node_id n)
 }
 
 template <> void dump(node_id const & val, std::string & out);
+template <> void dump(std::set<node_id> const & val, std::string & out);
 template <> void dump(full_attr_map_t const & val, std::string & out);
 
 struct node
 {
   node();
-  node(node_id i);
+  node(node_id i, std::pair<node_id, node_id> ancestors = null_ancestors);
   node_id self;
-  node_id parent; // the_null_node iff this is a root dir
+  node_id parent; // directory containing this node; the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
   full_attr_map_t attrs;
+
+  std::pair<node_id, node_id> ancestors;
+  // sutured in this revision: first = left, second = right
+  // otherwise: first, second = the_null_node
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -70,7 +74,7 @@ struct file_node
   : public node
 {
   file_node();
-  file_node(node_id i, file_id const & f);
+  file_node(node_id i, file_id const & f, std::pair<node_id, node_id> ancestors = null_ancestors);
   file_id content;
 
   // need a virtual function to make dynamic_cast work
@@ -121,22 +125,55 @@ downcast_to_file_t(node_t const n)
   return f;
 }
 
+// compare_ancestors should be null when comparing parent and child
+// revisions; ancestors are non-null only for newly sutured nodes, and thus
+// should be different in parent and child.
 bool
-shallow_equal(node_t a, node_t b, bool shallow_compare_dir_children,
-              bool compare_file_contents = true);
+shallow_equal(node_t a, node_t b,
+              bool shallow_compare_dir_children,
+              bool compare_file_contents = true,
+              bool compare_ancestors = true);
 
 template <> void dump(node_t const & n, std::string & out);
 
 struct marking_t
 {
+  typedef enum {add, suture, split} birth_cause_t;
+  struct birth_record_t
+  {
+    birth_cause_t cause;
+    std::map<node_id, revision_id> parents;
+    // parents of sutured nodes and their birth revision, recursive; see
+    // ss-existence-merge.text
+
+    birth_record_t() : cause(add){};
+    birth_record_t(birth_cause_t cause,
+                   std::map<node_id, revision_id> parents) :
+      cause(cause), parents(parents){};
+    birth_record_t(birth_cause_t cause,
+                   node_id left_nid, revision_id left_birth_rev,
+                   node_id right_nid, revision_id right_birth_rev) :
+      cause(cause)
+    {parents.insert(std::make_pair(left_nid, left_birth_rev));
+      parents.insert(std::make_pair(right_nid, right_birth_rev));
+    };
+  };
+
   revision_id birth_revision;
+
+  birth_record_t birth_record;
+
+  // These sets hold the minimal marking map for the merge scalars; see
+  // ss-mark-merge.text.
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
-  marking_t() {};
+
   bool operator==(marking_t const & other) const
   {
     return birth_revision == other.birth_revision
+      && birth_record.cause == birth_record.cause
+      && birth_record.parents == birth_record.parents
       && parent_name == other.parent_name
       && file_content == other.file_content
       && attrs == other.attrs;
@@ -166,12 +203,15 @@ public:
   // editable_tree operations
   node_id detach_node(file_path const & src);
   void drop_detached_node(node_id nid);
-  node_id create_dir_node(node_id_source & nis);
-  void create_dir_node(node_id nid);
+  node_id create_dir_node(node_id_source & nis,
+                          std::pair<node_id, node_id> const ancestors = null_ancestors);
+  void create_dir_node(node_id nid, std::pair<node_id, node_id> const ancestors = null_ancestors);
   node_id create_file_node(file_id const & content,
-                           node_id_source & nis);
+                           node_id_source & nis,
+                           std::pair<node_id, node_id> const ancestors = null_ancestors);
   void create_file_node(file_id const & content,
-                        node_id nid);
+                        node_id nid,
+                        std::pair<node_id, node_id> const ancestors = null_ancestors);
   void attach_node(node_id nid, file_path const & dst);
   void attach_node(node_id nid, node_id parent, path_component name);
   void apply_delta(file_path const & pth,
@@ -202,6 +242,10 @@ public:
                 attr_key const & key,
                 attr_value & val) const;
 
+  void get_file_details(node_id nid,
+                        file_id & fid,
+                        file_path & pth) const;
+
   void extract_path_set(std::set<file_path> & paths) const;
 
   node_map const & all_nodes() const
@@ -217,7 +261,11 @@ public:
 
   // verify that this roster is sane, and corresponds to the given
   // marking map
-  void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
+  void check_sane_against(marking_map const & marks,
+                          revision_id const & rev_id,
+                          bool temp_nodes_ok=false) const;
+
+  unsigned int required_roster_format(marking_map const & mm) const;
 
   void print_to(basic_io::printer & pr,
                 marking_map const & mm,
@@ -235,48 +283,29 @@ private:
   void do_deep_copy_from(roster_t const & other);
   dir_t root_dir;
   node_map nodes;
-  // This requires some explanation.  There is a particular kind of
+  // This requires some explanation. There is a particular kind of
   // nonsensical behavior which we wish to discourage -- when a node is
-  // detached from some location, and then re-attached at that same location
-  // (or similarly, if a new node is created, then immediately deleted -- this
-  // is like the previous case, if you think of "does not exist" as a
-  // location).  In particular, we _must_ error out if a cset attempts to do
+  // detached from some location, and then re-attached at that same
+  // location. In particular, we _must_ error out if a cset attempts to do
   // this, because it indicates that the cset had something non-normalized,
-  // like "rename a a" in it, and that is illegal.  There are two options for
-  // detecting this.  The more natural approach, perhaps, is to keep a chunk
+  // like "rename a a" in it, and that is illegal. There are two options for
+  // detecting this. The more natural approach, perhaps, is to keep a chunk
   // of state around while performing any particular operation (like cset
   // application) for which we wish to detect these kinds of redundant
-  // computations.  The other option is to keep this state directly within the
-  // roster, at all times.  In the first case, we explicitly turn on checking
-  // when we want it; the the latter, we must explicitly turn _off_ checking
-  // when we _don't_ want it.  We choose the latter, because it is more
-  // conservative --- perhaps it will turn out that it is _too_ conservative
-  // and causes problems, in which case we should probably switch to the
-  // former.
-  //
-  // FIXME: This _is_ all a little nasty, because this can be a source of
-  // abstraction leak -- for instance, roster_merge's contract is that nodes
-  // involved in name-related conflicts will be detached in the roster it returns.
-  // Those nodes really should be allowed to be attached anywhere, or dropped,
-  // which is not actually expressible right now.  Worse, whether or not they
-  // are in old_locations map is an implementation detail of roster_merge --
-  // it may temporarily attach and then detach the nodes it creates, but this
-  // is not deterministic or part of its interface.  The main time this would
-  // be a _problem_ is if we add interactive resolution of tree rearrangement
-  // conflicts -- if someone resolves a rename conflict by saying that one
-  // side wins, or by deleting one of the conflicting nodes, and this all
-  // happens in memory, then it may trigger a spurious invariant failure here.
-  // If anyone ever decides to add this kind of functionality, then it would
-  // definitely make sense to move this checking into editable_tree.  For now,
-  // though, no such functionality is planned, so we'll see what happens.
+  // computations. The other option is to keep this state directly within
+  // the roster, at all times. In the first case, we explicitly turn on
+  // checking when we want it; the the latter, we must explicitly turn _off_
+  // checking when we _don't_ want it. We choose the latter, because it is
+  // more conservative --- perhaps it will turn out that it is _too_
+  // conservative and causes problems, in which case we should probably
+  // switch to the former.
   //
   // The implementation itself uses the map old_locations.  A node can be in
   // the following states:
   //   -- attached, no entry in old_locations map
   //   -- detached, no entry in old_locations map
   //      -- create_dir_node, create_file_node put a node into this state
-  //      -- a node in this state can be attached, anywhere, but may not be
-  //         deleted.
+  //      -- a node in this state can be attached, anywhere, or deleted.
   //   -- detached, an entry in old_locations map
   //      -- detach_node puts a node into this state
   //      -- a node in this state can be attached anywhere _except_ the
@@ -288,10 +317,16 @@ private:
 struct temp_node_id_source
   : public node_id_source
 {
+  // Temp node ids are used for new nodes in rosters. They are converted to
+  // true node ids when the roster is actually written to the database; see
+  // union_new_nodes in roster.cc, ultimately called from
+  // make_roster_for_revision with true_node_id_source
   temp_node_id_source();
   virtual node_id next();
   node_id curr;
 };
+
+bool temp_node(node_id n);
 
 template <> void dump(roster_t const & val, std::string & out);
 
@@ -304,8 +339,11 @@ public:
   virtual node_id detach_node(file_path const & src);
   virtual void drop_detached_node(node_id nid);
   virtual node_id create_dir_node();
-  virtual node_id create_file_node(file_id const & content);
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors = null_ancestors);
+  virtual node_id get_node(file_path const &pth);
   virtual void attach_node(node_id nid, file_path const & dst);
+  virtual void clear_ancestors(file_path const & pth);
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
@@ -364,9 +402,11 @@ mark_roster_with_one_parent(roster_t const & parent,
                             marking_map & child_markings);
 
 void
-mark_merge_roster(roster_t const & left_roster,
+mark_merge_roster(revision_id const & left_rid,
+                  roster_t const & left_roster,
                   marking_map const & left_markings,
                   std::set<revision_id> const & left_uncommon_ancestors,
+                  revision_id const & right_rid,
                   roster_t const & right_roster,
                   marking_map const & right_markings,
                   std::set<revision_id> const & right_uncommon_ancestors,
@@ -395,11 +435,13 @@ make_roster_for_revision(database & db,
 
 void
 read_roster_and_marking(roster_data const & dat,
+                        revision_id const & rid,
                         roster_t & ros,
                         marking_map & mm);
 
 void
 write_roster_and_marking(roster_t const & ros,
+                         revision_id const & rid,
                          marking_map const & mm,
                          roster_data & dat);
 
@@ -412,7 +454,8 @@ void calculate_ident(roster_t const & ros,
                      manifest_id & ident);
 
 // for roster_delta
-void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
+unsigned int roster_current_roster_format();
+void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark, int const marking_format);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 
 #ifdef BUILD_UNIT_TESTS

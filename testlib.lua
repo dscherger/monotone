@@ -395,7 +395,7 @@ function runcmd(cmd, prefix, bgnd)
   else
     prepare_redirect(prefix.."stdin", prefix.."stdout", prefix.."stderr")
   end
-  
+
   local result
   if cmd.logline ~= nil then
     L(locheader(), cmd.logline, "\n")
@@ -417,7 +417,7 @@ function runcmd(cmd, prefix, bgnd)
 	"(first entry is a " .. type(cmd[1]) ..")")
  end
  execute = oldexec
-  
+
   if local_redir then
     files.stdin:close()
     files.stdout:close()
@@ -427,8 +427,8 @@ function runcmd(cmd, prefix, bgnd)
 end
 
 function samefile(left, right)
-  if left == "-" or right == "-" then 
-    err("tests may not rely on standard input") 
+  if left == "-" or right == "-" then
+    err("tests may not rely on standard input")
   end
   if fsize(left) ~= fsize(right) then
     return false
@@ -437,6 +437,10 @@ function samefile(left, right)
     local rdat = readfile(right)
     return ldat == rdat
  end
+end
+
+function samefilestd(left, right)
+   return samefile(testdir .. "/" .. test.name .. "/" .. left, right)
 end
 
 function samelines(f, t)
@@ -618,6 +622,8 @@ function post_cmd(result, ret, stdout, stderr, ident)
       err("Check failed (stdout): doesn't match", 3)
     end
   elseif type(stdout) == "table" then
+    -- can't do 'canonicalize' here; some tests rely on that _not_
+    -- happening, because the compared file is generated.
     if not samefile(ident .. "stdout", stdout[1]) then
       err("Check failed (stdout): doesn't match", 3)
     end
@@ -681,7 +687,7 @@ function bg(torun, ret, stdout, stderr, stdin)
   mt.__index = mt
   mt.finish = function(obj, timeout)
                 if obj.retval ~= nil then return end
-                
+
                 if timeout == nil then timeout = 0 end
                 if type(timeout) ~= "number" then
                   err("Bad timeout of type "..type(timeout))
@@ -699,7 +705,7 @@ function bg(torun, ret, stdout, stderr, stdin)
                     obj.retval, res = timed_wait(obj.pid, 2)
                   end
                 end
-                
+
                 test.bglist[obj.id] = nil
                 L(locheader(), "checking background command from ", out.locstr,
 		  cmd_as_str(out.cmd), "\n")
@@ -930,7 +936,7 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   local s = prepare_to_run_tests(P)
   if s ~= 0 then
     P("Test suite preparation failed.\n")
-    return s 
+    return s
   end
   P("Running tests...\n")
 
@@ -1116,7 +1122,7 @@ function run_one_test(tname)
       end
    end
    test.log:close()
-    
+
    -- record the short status where report_one_test can find it
    local s = io.open(test.root .. "/STATUS", "w")
    if r then

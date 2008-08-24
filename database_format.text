@@ -1,0 +1,179 @@
+A major driver for the database format is the use of netsync to
+syncronize databases.
+
+The marking map is only stored locally, not shared via netsync. Thus
+we must be able to update date it when revisions are received via
+netsync, just as we update it when we commit a new revision locally.
+
+This also means that the marking map update is done as part of the
+revision commit process, not earlier during the revision merge
+process, even though some of the same computations are needed for the
+two processes.
+
+A revision is stored in the database in several pieces:
+
+1) A "revision" in table "revisions"
+
+    gzipped basic_io format of revision.hh revision_t:
+        format (2 for suture)
+        manifest id
+        for each parent:
+            parent revision id
+            changeset
+
+2) rev_ids, changesets in 'revision_ancestry' table
+
+3) rosters in 'rosters' table
+
+    gzipped basic_io format of list of roster.hh node_t, marking_t, with local parts
+        format (2 for suture)
+        for each node:
+            node_t
+            marking_t
+
+    "local parts": node ids, ancestor ids, dormant parts of attrs, markings
+    local parts are not sent via netsync, but they are stored in the local database
+
+    written by database.cc database_impl::write_delayed_roster
+        called from database_impl::commit_transaction
+
+
+4) reverse roster deltas, in 'roster_deltas' table
+
+    changes from revision n to revision n - 1
+
+    Roster deltas implement data compression for rosters, just as file
+    deltas implement compression for file content. To retrieve an old
+    revision, you get the latest, and apply successive deltas to it.
+
+FIXME: file contents? certs?
+    files contents written by database.cc database_impl::write_delayed_file, called from database_impl::commit_transaction
+
+Merge process:
+
+cmd_merging.cc CMD(merge)
+    computes heads to merge, calls:
+cmd_merging.cc merge_two
+    calls:
+merge.cc: interactive_merge_and_store
+    gets the two rosters and marking_maps from the database
+    computes uncommon_ancestors
+    calls:
+roster_merge.cc roster_merge
+    computes the result roster without resolving conflicts, using
+    algorithms in ss-existence-merge.text, ss-mark-merge.text
+    does _not_ compute a new marking map
+    returns to interactive_merge_and_store
+    calls:
+merge.cc resolve_merge_conflicts
+    modifies result roster to resolve conflicts, using user input
+merge.cc store_roster_merge_result
+    checks that roster is "sane" (internally consistent)
+    calls:
+roster.cc calculate_ident(merged_roster)
+    writes the "manifest"; the basic_io representation of the roster,
+        to a local temp variable; does _not_ save the actual manifest
+        header contains format version (2 if change set has sutures)
+        one stanza for each file and directory, containing:
+            file name
+            file_id (hash of content - not for directories)
+            attributes
+            note that node ids are _not_ written, ancestor nids are
+            not written
+    computes the hash of that
+    returns to store_roster_merge_result
+    calls:
+roster.cc make_cset (left_roster, result_roster)
+    compares nodes, writes changeset entries for changed nodes
+        uses node.ancestors to determine suture;
+            ancestors.first may be 0
+            could just do drop/add if don't need ancestors
+    returns to store_roster_merge_result
+    computes right cset
+    calls:
+revision.cc write_revision
+    writes basic_io representation of the revision:
+        header with format version (2 for sutures)
+        manifest hash
+        left parent rev_id, changeset
+        right parent rev_id, changeset
+    returns to store_roster_merge_result
+    computes hash of revision text; the revision id
+        does not save text
+
+    data is now in the same form as received by netsync
+        FIXME: reference point in netsync code
+
+    in a database transaction guard, calls:
+database.cc put_revision (revision_id, revision_t)
+    checks that all database entries required for the revision exist:
+        parent revisions
+        added files (written during the parent commits)
+        deltas for changed files (some written during the parent commits)
+        FIXME: should check for sutured files (same as added)
+        FIXME: when are file contents modified during merge written to
+        database?
+
+    starts a transaction guard
+    calls revision.cc write_revision, saving text this time
+    gzips the text
+    writes the gzipped text into the 'revisions' table
+    writes parent rev_ids, changesets into 'revision_ancestry' table
+    calls:
+database.cc put_roster_for_revision
+    calls:
+roster.cc make_roster_for_revision (db, true_node_id_source, ...)
+    calls:
+roster.cc make_roster_for_merge
+    applies left and right changesets to the left and right parent
+    revisions
+        does _not_ use the manifest in the revision!
+        cset::apply_to attempts to get ancestors right, but doesn't
+        always succeed
+    calls:
+roster.cc unify_rosters
+    replaces node ids from nodes created by changesets
+        either permanent from other roster (node added in one parent)
+        or from node_id_source (node added during merge; a suture)
+            gets suture ancestors right for merge that creates
+            checkout.sh
+            sets other ancestors to 0
+    returns to make_roster_for_merge
+    calls:
+roster.cc mark_merge_roster
+    computes new marking map from parent rosters, new roster, parent
+    marking maps
+    calls:
+roster.cc roster_t::check_sane_against
+    returns to mark_merge_roster
+    returns to make_roster_for_merge
+    returns to database::put_roster_for_revision
+    computes manifest_id, compares to revision manifest_id
+    calls:
+database.cc database::put_roster
+    for each parent, calls:
+roster_delta.cc make_roster_delta_t
+    accumulates list of changed nodes
+        does not treat sutures specially
+    accumulates list of changed markings
+    writes basic_io representation of that to a buffer
+        same as changeset + markings changes?
+    stores gzip of that in table 'roster_deltas'
+    returns to put_roster
+    returns to put_roster_for_revision
+    returns to database::put_revision
+    calls:
+database.cc database::deltify_revision
+    changes parent rev changeset file_ids to point to file deltas from
+    this rev
+    return to database::put_revision
+    calls:
+database.cc database::put_height_for_revision
+    FIXME: not clear what heights are
+    return to database::put_revision
+    commit
+    return to store_roster_merge_result
+    commit
+    return to interactive_merge_and_store
+    return to merge_two
+    done

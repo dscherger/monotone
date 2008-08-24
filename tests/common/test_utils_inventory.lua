@@ -23,6 +23,8 @@ function check_basic_io_line (label, computed, name, value, xfail)
          checkexp(label .. i, computed.values[i], value[i], xfail)
       end
 
+   elseif value == nil then
+      checkexp(label .. ".length", #computed.values, 0, xfail)
    else
       checkexp(label .. ".length", #computed.values, 1, xfail)
       checkexp(label .. "." .. name, computed.values[1], value, xfail)

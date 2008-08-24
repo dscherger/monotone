@@ -1,4 +1,4 @@
-// Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2004, 2008 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -61,6 +61,35 @@ using std::vector;
 
 using boost::dynamic_bitset;
 using boost::shared_ptr;
+
+// The revision format number must be incremented whenever any basic_io
+// format used for revision data in the database changes, but only once per
+// monotone release. Note that this is _not_ the database schema format; see
+// schema_migration for that.
+//
+// The revision format number is included in the revision text that is
+// hashed to compute the revid. Therefore we use the oldest format number
+// possible when writing each revision. That maintains history, maximizes
+// interoperability between monotone versions, and simplifies maintaining
+// the test suite; there are many tests that have hard-coded revision ids,
+// that would spuriously break if the revision_format number changed.
+// schema_migration and workspace_migration in particular have this problem.
+static const unsigned int current_revision_format = 2;
+static const unsigned int oldest_supported_revision_format = 1;
+
+unsigned int
+revision_t::required_revision_format() const
+{
+  // Format 2 supports file suturing, so check the edges to see if there are
+  // any sutures.
+  unsigned int result = oldest_supported_revision_format;
+
+  for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
+    if (i->second->nodes_sutured.size() > 0)
+      result = 2;
+
+  return result;
+}
 
 void revision_t::check_sane() const
 {
@@ -396,7 +425,7 @@ toposort(database & db,
   map<rev_height, revision_id> work;
 
   for (set<revision_id>::const_iterator i = revisions.begin();
-       i != revisions.end(); ++i) 
+       i != revisions.end(); ++i)
     {
       rev_height height;
       db.get_rev_height(*i, height);
@@ -404,7 +433,7 @@ toposort(database & db,
     }
 
   sorted.clear();
-  
+
   for (map<rev_height, revision_id>::const_iterator i = work.begin();
        i != work.end(); ++i)
     {
@@ -461,10 +490,10 @@ erase_ancestors_and_failures(database & db,
 {
   // Load up the ancestry graph
   multimap<revision_id, revision_id> inverse_graph;
-  
+
   if (candidates.empty())
     return;
-  
+
   if (inverse_graph_cache_ptr == NULL)
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
@@ -733,7 +762,7 @@ make_restricted_revision(parent_map const & old_rosters,
       shared_ptr<cset> included(new cset());
       roster_t restricted_roster;
 
-      make_restricted_roster(parent_roster(i), new_roster, 
+      make_restricted_roster(parent_roster(i), new_roster,
                              restricted_roster, mask);
       make_cset(parent_roster(i), restricted_roster, *included);
       safe_insert(edges, make_pair(parent_id(i), included));
@@ -759,7 +788,7 @@ make_restricted_revision(parent_map const & old_rosters,
       shared_ptr<cset> included(new cset());
       roster_t restricted_roster;
 
-      make_restricted_roster(parent_roster(i), new_roster, 
+      make_restricted_roster(parent_roster(i), new_roster,
                              restricted_roster, mask);
       make_cset(parent_roster(i), restricted_roster, *included);
       make_cset(restricted_roster, new_roster, excluded);
@@ -1632,7 +1661,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           L(FL("mapped node %d to revision %s") % child % new_rid);
           if (db.put_revision(new_rid, rev))
             ++n_revs_out;
-          
+
           // Mark this child as done, hooray!
           safe_insert(done, child);
 
@@ -1798,7 +1827,7 @@ print_insane_revision(basic_io::printer & printer,
 {
 
   basic_io::stanza format_stanza;
-  format_stanza.push_str_pair(syms::format_version, "1");
+  format_stanza.push_str_pair(syms::format_version, boost::lexical_cast<string>(rev.required_revision_format()));
   printer.print_stanza(format_stanza);
 
   basic_io::stanza manifest_stanza;
@@ -1849,11 +1878,12 @@ parse_revision(basic_io::parser & parser,
   string tmp;
   parser.esym(syms::format_version);
   parser.str(tmp);
-  E(tmp == "1",
-    F("encountered a revision with unknown format, version '%s'\n"
-      "I only know how to understand the version '1' format\n"
+  unsigned int format = boost::lexical_cast<unsigned int>(tmp);
+  E(format <= current_revision_format,
+    F("encountered a revision with unknown format version %s\n"
+      "I only understand formats up to version %s\n"
       "a newer version of monotone is required to complete this operation")
-    % tmp);
+    % tmp % current_revision_format);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);
   rev.new_manifest = manifest_id(decode_hexenc(tmp));

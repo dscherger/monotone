@@ -1,3 +1,4 @@
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -78,6 +79,7 @@ cset::empty() const
     nodes_deleted.empty()
     && dirs_added.empty()
     && files_added.empty()
+    && nodes_sutured.empty()
     && nodes_renamed.empty()
     && deltas_applied.empty()
     && attrs_cleared.empty()
@@ -90,6 +92,7 @@ cset::clear()
   nodes_deleted.clear();
   dirs_added.clear();
   files_added.clear();
+  nodes_sutured.clear();
   nodes_renamed.clear();
   deltas_applied.clear();
   attrs_cleared.clear();
@@ -175,12 +178,70 @@ cset::apply_to(editable_tree & t) const
 
   for (map<file_path, file_id>::const_iterator i = files_added.begin();
        i != files_added.end(); ++i)
-    safe_insert(attaches, attach(t.create_file_node(i->second), i->first));
-
+    safe_insert(attaches, attach(t.create_file_node(i->second, null_ancestors), i->first));
 
   // Decompose all path deletion and the first-half of renamings on
   // existing paths into the set of pending detaches, to be executed
   // bottom-up.
+
+  for (map<file_path, cset::sutured_t>::const_iterator i = nodes_sutured.begin();
+       i != nodes_sutured.end(); ++i)
+    {
+      node_id left_anc_nid;
+      node_id right_anc_nid;
+
+      std::pair<node_id, node_id> ancestors;
+
+      if (i->second.first_ancestor.empty())
+        left_anc_nid = the_null_node;
+      else
+        left_anc_nid = t.get_node(i->second.first_ancestor);
+
+      if (i->second.second_ancestor.empty())
+        right_anc_nid = the_null_node;
+      else
+        right_anc_nid = t.get_node(i->second.second_ancestor);
+
+      // If this suture is resolving a merge conflict, the two ancestors are
+      // from different revisions, but this changeset only represents
+      // changes from one of them. So we set one ancestor; the other is set
+      // by the other changeset, and they are combined in roster.cc
+      // unify_rosters.
+      if (right_anc_nid == the_null_node)
+        {
+          // suture is from merge; t.r is left side
+          ancestors.first = left_anc_nid;
+          ancestors.second = the_null_node;
+        }
+      else if (left_anc_nid == the_null_node)
+        {
+          // suture is from merge; t.r is right side
+          ancestors.first = right_anc_nid;
+          ancestors.second = the_null_node;
+        }
+      else
+        {
+          // user suture
+          ancestors.first = left_anc_nid;
+          ancestors.second = right_anc_nid;
+        }
+
+      // Sutured node is added
+      safe_insert(attaches, attach(t.create_file_node(i->second.sutured_id, ancestors), i->first));
+
+      // Ancestor nodes are dropped; detach here, drop later.
+      safe_insert(detaches, detach(i->second.first_ancestor));
+
+      if (!i->second.second_ancestor.empty())
+        safe_insert(detaches, detach(i->second.second_ancestor));
+    }
+
+  for (set<file_path>::const_iterator i = sutured_nodes_inherited.begin();
+       i != sutured_nodes_inherited.end(); ++i)
+    {
+      // Erase the ancestors; ancestors are non-null only in newly sutured nodes.
+      t.clear_ancestors(*i);
+    }
 
   for (set<file_path>::const_iterator i = nodes_deleted.begin();
        i != nodes_deleted.end(); ++i)
@@ -247,6 +308,10 @@ namespace
     symbol const content("content");
     symbol const add_file("add_file");
     symbol const add_dir("add_dir");
+    symbol const sutured_file("sutured_file");
+    symbol const sutured_file_inherited("sutured_file_inherited");
+    symbol const first_ancestor("first_ancestor");
+    symbol const second_ancestor("second_ancestor");
     symbol const patch("patch");
     symbol const from("from");
     symbol const to("to");
@@ -292,6 +357,25 @@ print_cset(basic_io::printer & printer,
       basic_io::stanza st;
       st.push_file_pair(syms::add_file, i->first);
       st.push_binary_pair(syms::content, i->second.inner());
+      printer.print_stanza(st);
+    }
+
+  for (map<file_path, cset::sutured_t>::const_iterator i = cs.nodes_sutured.begin();
+       i != cs.nodes_sutured.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::sutured_file, i->first);
+      st.push_file_pair(syms::first_ancestor, i->second.first_ancestor);
+      st.push_file_pair(syms::second_ancestor, i->second.second_ancestor);
+      st.push_binary_pair(syms::content, i->second.sutured_id.inner());
+      printer.print_stanza(st);
+    }
+
+  for (set<file_path>::const_iterator i = cs.sutured_nodes_inherited.begin();
+       i != cs.sutured_nodes_inherited.end(); ++i)
+    {
+      basic_io::stanza st;
+      st.push_file_pair(syms::sutured_file_inherited, *i);
       printer.print_stanza(st);
     }
 
@@ -342,7 +426,7 @@ parse_cset(basic_io::parser & parser,
   string t1, t2;
   MM(t1);
   MM(t2);
-  file_path p1, p2;
+  file_path p1, p2, p3;
   MM(p1);
   MM(p2);
 
@@ -395,6 +479,32 @@ parse_cset(basic_io::parser & parser,
       parser.esym(syms::content);
       parser.hex(t1);
       safe_insert(cs.files_added, make_pair(p1, file_id(decode_hexenc(t1))));
+    }
+
+  prev_path.clear();
+  while (parser.symp(syms::sutured_file))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      I(prev_path.empty() || prev_path < p1);
+      prev_path = p1;
+      parser.esym(syms::first_ancestor);
+      parse_path(parser, p2);
+      parser.esym(syms::second_ancestor);
+      parse_path(parser, p3);
+      parser.esym(syms::content);
+      parser.hex(t1);
+      safe_insert(cs.nodes_sutured, make_pair(p1, cset::sutured_t(p2, p3, file_id(decode_hexenc(t1)))));
+    }
+
+  prev_path.clear();
+  while (parser.symp(syms::sutured_file_inherited))
+    {
+      parser.sym();
+      parse_path(parser, p1);
+      I(prev_path.empty() || prev_path < p1);
+      prev_path = p1;
+      safe_insert(cs.sutured_nodes_inherited, p1);
     }
 
   prev_path.clear();

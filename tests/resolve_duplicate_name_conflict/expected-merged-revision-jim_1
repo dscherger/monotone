@@ -1,0 +1,29 @@
+format_version "2"
+
+new_manifest [2a69f545ebc0c6ec2feae218a1f5b6fdff456661]
+
+old_revision [5285636b9d9f988e79b3dcd9a40e64d15fb7fc9f]
+
+rename "thermostat.c"
+    to "thermostat-westinghouse.c"
+
+add_file "thermostat-honeywell.c"
+ content [770bfb0965db64d8b7a267f61ebd50803f27d5e7]
+
+   sutured_file "checkout.sh"
+ first_ancestor "checkout.sh"
+second_ancestor ""
+        content [f7a9033fcfa98450d0c0a25e41aa68904b7a33ce]
+
+old_revision [e9ad84a3fc40ef1109251c308428439c21ad1de9]
+
+rename "thermostat.c"
+    to "thermostat-honeywell.c"
+
+add_file "thermostat-westinghouse.c"
+ content [c2f67aa3b29c2bdab4790213c7f3bf73e58440a7]
+
+   sutured_file "checkout.sh"
+ first_ancestor "checkout.sh"
+second_ancestor ""
+        content [f7a9033fcfa98450d0c0a25e41aa68904b7a33ce]

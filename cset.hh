@@ -1,6 +1,7 @@
 #ifndef __CSET_HH__
 #define __CSET_HH__
 
+// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -14,9 +15,10 @@
 #include "paths.hh"
 #include "rev_types.hh"
 
-// Virtual interface to a tree-of-files which you can edit
-// destructively; this may be the filesystem or an in-memory
-// representation (a roster / mfest).
+// Virtual interface to a tree-of-files which you can edit destructively;
+// this may be the filesystem or an in-memory representation (a roster /
+// mfest). The operations maintain both the roster and the marking_map (if
+// any).
 
 struct editable_tree
 {
@@ -24,12 +26,15 @@ struct editable_tree
   virtual node_id detach_node(file_path const & src) = 0;
   virtual void drop_detached_node(node_id nid) = 0;
 
-  // Attaching new nodes (via creation or as the tail end of renaming)
+  // Attaching new nodes (via creation, as the tail end of renaming, suturing, or splitting)
   virtual node_id create_dir_node() = 0;
-  virtual node_id create_file_node(file_id const & content) = 0;
+  virtual node_id create_file_node(file_id const & content,
+                                   std::pair<node_id, node_id> const ancestors) = 0;
+  virtual node_id get_node(file_path const &pth) = 0;
   virtual void attach_node(node_id nid, file_path const & dst) = 0;
 
   // Modifying elements in-place
+  virtual void clear_ancestors(file_path const & pth) = 0;
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id) = 0;
@@ -56,6 +61,27 @@ struct cset
   std::set<file_path> dirs_added;
   std::map<file_path, file_id> files_added;
 
+  // Sutures.
+  struct sutured_t
+  {
+    // If the suture is resolving a merge conflict, then one ancestor is
+    // from the left side of the merge, and the other ancestor is from the
+    // other side of the merge. However, each changeset only shows one of
+    // these ancestors; there are two changesets for a merged revision. Only
+    // first_ancestor is non-null in this case.
+    //
+    // If the suture is a user command, then both ancestors are from the
+    // same revision, and both are non-null.
+    file_path first_ancestor;
+    file_path second_ancestor;
+    file_id sutured_id;
+
+    sutured_t(file_path the_first, file_path the_second, file_id the_sutured_id) :
+      first_ancestor (the_first), second_ancestor (the_second), sutured_id (the_sutured_id) {};
+  };
+  std::map<file_path, sutured_t> nodes_sutured;
+  std::set<file_path> sutured_nodes_inherited;
+
   // Pure renames.
   std::map<file_path, file_path> nodes_renamed;
 
@@ -78,7 +104,9 @@ struct cset
       ;
   }
 
+  // Apply changeset to roster and marking map in tree.
   void apply_to(editable_tree & t) const;
+
   bool empty() const;
   void clear();
 };

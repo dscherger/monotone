@@ -19,9 +19,8 @@ check(mtn("rename", "--bookkeep-only", "original", "different"), 0, false, false
 append("different", "more\n")
 commit()
 
-check(mtn("merge"), 0, false, false)
-check(mtn("checkout", "-b", "testbranch", "clean"), 0, false, false)
+check(mtn("merge"), 1, nil, true)
+check(qgrep("conflict: file 'different' dropped on the left, changed on the right", "stderr"))
 
--- check that the file doesn't exist
-check(not exists("clean/original"))
-check(not exists("clean/different"))
+-- In mtn 0.40 and earlier, the merge succeeded, now it doesn't
+
