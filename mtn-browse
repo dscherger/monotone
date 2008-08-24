@@ -180,10 +180,13 @@ sub view_button_clicked_cb($$);
     $tooltips = Gtk2::Tooltips->new();
     $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
 
-    # Set up the default database locked handler for the Monotone class.
+    # Set up the default database locked and I/O wait handlers for the Monotone
+    # class.
 
     Monotone::AutomateStdio->
 	register_db_locked_handler(\&mtn_db_locked_handler);
+    Monotone::AutomateStdio->register_io_wait_handler
+	(sub { WindowManager->instance()->update_gui(); }, 1);
 
     # Load in user preferences.
 

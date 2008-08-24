@@ -864,11 +864,11 @@ sub file_glob_to_regexp($)
 	}
 	elsif ($char eq "*")
 	{
-	    $re_text .= $escaping ? "\\*" : "[^/]*";
+	    $re_text .= $escaping ? "\\*" : ".*";
 	}
 	elsif ($char eq "?")
 	{
-	    $re_text .= $escaping ? "\\?" : "[^/]";
+	    $re_text .= $escaping ? "\\?" : ".";
 	}
 	elsif ($char eq "\\")
 	{
