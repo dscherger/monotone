@@ -37,11 +37,19 @@
         - mtn would produce a warning if executed from the root
           directory of a Windows drive; this has been fixed.
 
+        - the 'note_commit' hook now returns the new revision id 
+          hexencoded again - the bug was introduced in 0.40
+
         New features
 
+        - New 'get_default_command_options' lua hook which lets you
+          specify default options for a given, triggered command.
+          Useful f.e. if you always want to have your 'mtn add'
+          command executed with '-R' / '--recursive'
+ 
         - Add 'automate show_conflicts' command
 
-        - Add 'automate get_workspce_root' command
+        - Add 'automate get_workspace_root' command
 
         - Add Lua hooks 'note_netsync_revision_sent',
           'note_netsync_cert_sent', 'note_netsync_pubkey_sent'
