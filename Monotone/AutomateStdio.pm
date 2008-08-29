@@ -57,12 +57,19 @@ use warnings;
 # Standard Perl and CPAN modules.
 
 use Carp;
-use IO::Poll qw(POLLIN);
+use IO::Poll qw(POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h);
 use Symbol qw(gensym);
 
 # ***** GLOBAL DATA DECLARATIONS *****
+
+# Constants used to represent the different types of capability Monotone may or
+# may not provide depending upon its version.
+
+use constant MTN_IGNORE_SUSPEND_CERTS       => 1;
+use constant MTN_INVENTORY_IO_STANZA_FORMAT => 2;
+use constant MTN_P_SELECTOR                 => 3;
 
 # A pre-compiled regular expression for finding the end of a quoted string
 # possibly containing escaped quotes, i.e. " preceeded by a non-backslash
@@ -70,7 +77,7 @@ use Symbol qw(gensym);
 
 my $closing_quote_re = qr/((^.*[^\\])|^)(\\{2})*\"$/;
 
-# A pre-compiled regular expression for recoginising database locked conditions
+# A pre-compiled regular expression for recognising database locked conditions
 # in error output.
 
 my $database_locked_re = qr/.*sqlite error: database is locked.*/;
@@ -97,6 +104,7 @@ my($db_locked_handler_data,
 sub ancestors($\@@);
 sub ancestry_difference($\@$;@);
 sub branches($\@);
+sub can($$);
 sub cert($$$$);
 sub certs($$$);
 sub children($\@$);
@@ -123,6 +131,7 @@ sub get_revision($\$$);
 sub graph($$);
 sub heads($\@;$);
 sub identify($\$$);
+sub ignore_suspend_certs($$);
 sub interface_version($\$);
 sub inventory($$);
 sub keys($$);
@@ -154,8 +163,11 @@ sub warning_handler_wrapper($);
 
 use base qw(Exporter);
 
+our %EXPORT_TAGS = (constants => [qw(MTN_IGNORE_SUSPEND_CERTS
+				     MTN_INVENTORY_IO_STANZA_FORMAT
+				     MTN_P_SELECTOR)]);
 our @EXPORT = qw();
-our @EXPORT_OK = qw();
+Exporter::export_ok_tags(qw(constants));
 our $VERSION = 0.6;
 #
 ##############################################################################
@@ -192,6 +204,7 @@ sub new($;$)
 	     mtn_err                 => undef,
 	     poll                    => undef,
 	     error_msg               => "",
+	     honour_suspend_certs    => 1,
 	     mtn_aif_major           => 0,
 	     mtn_aif_minor           => 0,
 	     cmd_cnt                 => 0,
@@ -1498,7 +1511,7 @@ sub inventory($$)
 	# The output format of this command was switched over to a basic_io
 	# stanza in 0.37 (i/f version 6.x).
 
-	if ($this->{mtn_aif_major} < 6)
+	if (! can($this, MTN_INVENTORY_IO_STANZA_FORMAT))
 	{
 
 	    my($i,
@@ -1975,6 +1988,120 @@ sub toposort($\@@)
 #
 ##############################################################################
 #
+#   Routine      - can
+#
+#   Description  - Determine whether a certain feature is available with the
+#                  version of Monotone that is currently being used.
+#
+#   Data         - $this         : The object.
+#                  $feature      : A constant specifying the feature that is
+#                                  to be checked for.
+#                  Return Value  : True if the feature is supported, otherwise
+#                                  false if it is not.
+#
+##############################################################################
+
+
+
+sub can($$)
+{
+
+    my($this, $feature) = @_;
+
+    if ($feature == MTN_IGNORE_SUSPEND_CERTS)
+    {
+
+	# This is only available from version 0.37 (i/f version 6.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 6);
+
+    }
+    elsif ($feature == MTN_INVENTORY_IO_STANZA_FORMAT)
+    {
+
+	# This is only available from version 0.37 (i/f version 6.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 6);
+
+    }
+    elsif ($feature == MTN_P_SELECTOR)
+    {
+
+	# This is only available from version 0.37 (i/f version 6.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 6);
+
+    }
+    else
+    {
+
+	# An unknown feature was requested.
+
+	$this->{error_msg} = "Unknown feature requested";
+	&$carper($this->{error_msg});
+
+    }
+
+    return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - ignore_suspend_certs
+#
+#   Description  - Determine whether revisions with the suspend cert are to be
+#                  ignored or not. If the head revisions on a branch are all
+#                  suspended then that branch is also ignored.
+#
+#   Data         - $this         : The object.
+#                  $ignore       : True if suspend certs are to be ignored
+#                                  (i.e. all revisions are `visible'),
+#                                  otherwise false if suspend certs are to be
+#                                  honoured.
+#                  Return Value  : True on success, otherwise false on
+#                                  failure.
+#
+##############################################################################
+
+
+
+sub ignore_suspend_certs($$)
+{
+
+    my($this, $ignore) = @_;
+
+    # This only works from version 0.37 (i/f version 6.x).
+
+    if ($this->{honour_suspend_certs} && $ignore)
+    {
+	if (can($this, MTN_IGNORE_SUSPEND_CERTS))
+	{
+	    $this->{honour_suspend_certs} = 0;
+	    closedown($this);
+	    startup($this);
+	}
+	else
+	{
+	    $this->{error_msg} = "Ignoring suspend certs is unsupported in "
+		. "this version of Monotone";
+	    &$carper($this->{error_msg});
+	    return;
+	}
+    }
+    elsif (! ($this->{honour_suspend_certs} || $ignore))
+    {
+	$this->{honour_suspend_certs} = 1;
+	closedown($this);
+	startup($this);
+    }
+
+    return 1;
+
+}
+#
+##############################################################################
+#
 #   Routine      - register_error_handler
 #
 #   Description  - Register the specified routine as an error handler for
@@ -2173,12 +2300,8 @@ sub register_io_wait_handler(;$$$$)
 	{
 	    my $msg =
 		"I/O wait handler timeout invalid or out of range, resetting";
-	    if (defined($this))
-	    {
-		$this->{error_msg} = $msg;
-		&$carper($this->{error_msg});
-	    }
-	    carp($msg);
+	    $this->{error_msg} = $msg if (defined($this));
+	    &$carper($msg);
 	    $timeout = 1;
 	}
     }
@@ -2657,7 +2780,7 @@ sub mtn_read_output($\$)
 	    # there is an error.
 
 	    for ($header = "", $colons = $i = 0;
-		 $colons < 4 && read($this->{mtn_out}, $header, 1, $i);
+		 $colons < 4 && sysread($this->{mtn_out}, $header, 1, $i);
 		 ++ $i)
 	    {
 		$char = substr($header, $i, 1);
@@ -2709,12 +2832,12 @@ sub mtn_read_output($\$)
 
 	if ($size > 0)
 	{
-	    if (! defined($bytes_read = read($this->{mtn_out},
-					     $$buffer,
-					     $size,
-					     $offset)))
+	    if (! defined($bytes_read = sysread($this->{mtn_out},
+						$$buffer,
+						$size,
+						$offset)))
 	    {
-		croak("read failed: $!");
+		croak("sysread failed: $!");
 	    }
 	    $size -= $bytes_read;
 	    $offset += $bytes_read;
@@ -2759,7 +2882,8 @@ sub startup($)
 
     my $this = $_[0];
 
-    my $version;
+    my(@args,
+       $version);
 
     # Switch to the default locale. We only want to parse the output from
     # Monotone in one language!
@@ -2770,28 +2894,19 @@ sub startup($)
     if ($this->{mtn_pid} == 0)
     {
 	$this->{mtn_err} = gensym();
-	if ($this->{db_name})
-	{
-	    $this->{mtn_pid} = open3($this->{mtn_in},
-				     $this->{mtn_out},
-				     $this->{mtn_err},
-				     "mtn",
-				     "--db=" . $this->{db_name},
-				     "automate",
-				     "stdio");
-	}
-	else
-	{
-	    $this->{mtn_pid} = open3($this->{mtn_in},
-				     $this->{mtn_out},
-				     $this->{mtn_err},
-				     "mtn",
-				     "automate",
-				     "stdio");
-	}
+	@args = ("mtn");
+	push(@args, "--db=" . $this->{db_name}) if ($this->{db_name});
+	push(@args, "--ignore-suspend-certs")
+	    if (! $this->{honour_suspend_certs});
+	push(@args, "automate", "stdio");
+	$this->{mtn_pid} = open3($this->{mtn_in},
+				 $this->{mtn_out},
+				 $this->{mtn_err},
+				 @args);
 	$this->{cmd_cnt} = 0;
 	$this->{poll} = IO::Poll->new();
-	$this->{poll}->mask($this->{mtn_out}, POLLIN);
+	$this->{poll}->mask($this->{mtn_out} => POLLIN,
+			    $this->{mtn_out} => POLLPRI);
 	interface_version($this, $version);
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
 	    ($version =~ m/^(\d+)\.(\d+)$/);

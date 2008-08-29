@@ -10,10 +10,13 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 SYNOPSIS
 
-  use Monotone::AutomateStdio;
-  my $mtn = Monotone::AutomateStdio->new("/home/fred/venge.mtn");
-  my @manifest;
-  $mtn->get_manifest_of(\@manifest)
+  use Monotone::AutomateStdio qw(:constants);
+  my(@manifest,
+     $mtn,
+     @revs);
+  $mtn = Monotone::AutomateStdio->new("/home/fred/venge.mtn");
+  $mtn->select(\@revs, "h:net.venge.monotone");
+  $mtn->get_manifest_of(\@manifest, $revs[0])
       or die("mtn: " . $mtn->get_error_message());
 
 =head1 DESCRIPTION
@@ -172,11 +175,11 @@ Gtk2 events so that the application can keep its windows up to date.
 See http://monotone.ca/monotone.html for a complete description of the mtn
 automate commands.
 
-Methods that return data do so via the first argument, which is a reference to
-a buffer or list that is to hold the data. Methods that return lists of
-structured records also provide the option of returning the data as one raw
-string if the reference points to a scalar variable rather than a list or
-array. Therefore:
+Methods that return data do so via their first argument. This argument is a
+reference to either a scalar or a list depending upon whether the data returned
+by the method is raw data or a list of items respectively. Methods that return
+lists of records also provide the option of returning the data as one raw chunk
+if the reference points to a scalar rather than a list. Therefore:
 
     $mtn->get_manifest_of(\$buffer);
 
@@ -185,10 +188,19 @@ variable named $buffer, whereas:
 
     $mtn->get_manifest_of(\@list);
 
-would return the output as a list of structured records (actually anonymous
-hashes to be precise).
+would return the output as a list of records (actually anonymous hashes to be
+precise). However:
 
-The remaining arguments are dependent on the mtn command being used.
+    $mtn->get_file(\$buffer, $file_id);
+
+will always need a reference to a scalar and:
+
+    $mtn->select(\@list, $selector);
+
+will always need a reference to a list (each item is just a string containing a
+revision id rather than a record).
+
+The remaining arguments depend upon the mtn command being used.
 
 The following methods are provided:
 
@@ -208,13 +220,31 @@ ancestors for the specified old revisions.
 
 Get a list of branches.
 
+=item B<$mtn-E<gt>can($feature)>
+
+Determine whether a certain feature is available with the version of Monotone
+that is currently being used by this object. The list of valid features are:
+
+    MTN_IGNORE_SUSPEND_CERTS
+    MTN_INVENTORY_IO_STANZA_FORMAT
+    MTN_P_SELECTOR
+
+In order to get these constants into your namespace you need to use the
+following to load in this library.
+
+    use Monotone::AutomateStdio qw(:constants);
+
+Please note that if you see (feature: ...) then this means that whatever is
+being discussed is only available if $mtn-E<gt>can() returns true for the
+specified feature.
+
 =item B<$mtn-E<gt>cert($revision_id, $name, $value)>
 
-Add the specified cert to the specified revision.
+Add the specified certificate to the specified revision.
 
 =item B<$mtn-E<gt>certs(\$buffer | \@list, $revision_id)>
 
-Get all the certs for the specified revision. If \$buffer is passed then
+Get all the certificates for the specified revision. If \$buffer is passed then
 the output from the command is simply placed into the variable. However if
 \@list is passed then the output is returned as a list of anonymous hashes,
 each one containing the following fields:
@@ -409,6 +439,14 @@ is given then the workspace's branch is used.
 
 Get the file id, i.e. hash, of the specified file.
 
+=item B<$mtn-E<gt>ignore_suspend_certs($ignore)>
+
+Determine whether revisions with a suspend certificate are to be ignored or
+not. If $ignore is true then suspend certificates are ignored, otherwise they
+are honoured (in which case any suspended revisions and branches that only have
+suspended revisions on their heads will not be listed). The default behaviour
+is to honour suspend certificates. (feature: MTN_IGNORE_SUSPEND_CERTS)
+
 =item B<$mtn-E<gt>interface_version(\$buffer)>
 
 Get the version of the mtn automate interface.
@@ -427,7 +465,8 @@ containing the following fields:
         crossref_two - The second cross-referencing number.
         name         - The name of the file or directory.
 
-    From version 0.37 of Monotone onwards:
+    From version 0.37 of Monotone onwards
+    (feature: MTN_INVENTORY_IO_STANZA_FORMAT):
         path     - The name of the file or directory.
         old_type - The type of the entry in the base manifest. Values
                    can be one of "directory", "file" or "none".
