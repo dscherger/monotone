@@ -105,8 +105,8 @@ sub save_differences_button_clicked_cb($$);
 #   Description  - Display a revision's change history, complete with
 #                  selection and comparison buttons.
 #
-#   Data         - $mtn         : The Monotone instance handle that is to be
-#                                 used to get the change history.
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used to get the change history.
 #                  $tag         : Either a tag name for the specified revision
 #                                 that is to be used in the window title
 #                                 instead of the revision id or undef if the
@@ -310,8 +310,8 @@ sub display_revision_change_history($$$)
 #   Description  - Display a file's change history, complete with selection
 #                  and comparison buttons.
 #
-#   Data         - $mtn         : The Monotone instance handle that is to be
-#                                 used to get the change history.
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used to get the change history.
 #                  $revision_id : The revision id in which the desired version
 #                                 of the file resides.
 #                  $file_name   : The name of the file that is to have its
@@ -683,8 +683,8 @@ sub compare_button_clicked_cb($$)
 #                  specified revisions, optionally restricting it to the
 #                  specified file.
 #
-#   Data         - $mtn           : The Monotone instance handle that is to be
-#                                   used to do the comparison.
+#   Data         - $mtn           : The Monotone::AutomateStdio object that is
+#                                   to be used to do the comparison.
 #                  $revision_id_1 : The first revision id that is to be
 #                                   compared.
 #                  $revision_id_2 : The second revision id that is to be
@@ -1747,7 +1747,7 @@ sub get_revision_comparison_window()
 #
 #   Data         - $list          : A reference to the list that is to contain
 #                                   the output from the diff command.
-#                  $mtn           : The Monotone database that is to be used
+#                  $mtn_db        : The Monotone database that is to be used
 #                                   or undef if the database associated with
 #                                   the current workspace is to be used.
 #                  $revision_id_1 : The first revision id that is to be

@@ -93,8 +93,8 @@ sub validate_query($$);
 #
 #   Description  - Display the find files window.
 #
-#   Data         - $mtn            : The Monotone instance handle that is to
-#                                    be used to search for files.
+#   Data         - $mtn            : The Monotone::AutomateStdio object that
+#                                    is to be used to search for files.
 #                  $tag            : Either a tag name for the specified
 #                                    revision that is to be used in the window
 #                                    title instead of the revision id or undef

@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 4;
+use constant PREFERENCES_FORMAT_VERSION => 5;
 
 # Text viewable application mime types.
 
@@ -433,8 +433,13 @@ sub defaults_button_clicked_cb($$)
     $page_nr = $instance->{notebook}->get_current_page();
     if ($page_nr == 0)
     {
-	@fields =
-	    ("default_mtn_db", "workspace", "query", "diffs_application");
+	@fields = ("default_mtn_db",
+		   "workspace",
+		   "auto_select_head",
+		   "show_suspended",
+		   "show_file_details",
+		   "query",
+		   "diffs_application");
     }
     elsif ($page_nr == 1)
     {
@@ -1001,6 +1006,8 @@ sub get_preferences_window($$)
 			    "id_lists_limit_spinbutton",
 			    "id_lists_sort_cronologically_radiobutton",
 			    "id_lists_sort_by_id_radiobutton",
+			    "show_suspended_revisions_checkbutton",
+			    "detailed_file_listing_checkbutton",
 			    "external_diffs_app_entry",
 
 			    # Appearance pane widgets.
@@ -1219,6 +1226,11 @@ sub load_preferences_into_gui($)
     {
 	$instance->{id_lists_sort_by_id_radiobutton}->set_active(TRUE);
     }
+    $instance->{show_suspended_revisions_checkbutton}->
+	set_active($instance->{preferences}->{show_suspended} ? TRUE : FALSE);
+    $instance->{detailed_file_listing_checkbutton}->
+	set_active($instance->{preferences}->{show_file_details} ?
+		   TRUE : FALSE);
     $instance->{external_diffs_app_entry}->
 	set_text($instance->{preferences}->{diffs_application});
 
@@ -1375,8 +1387,13 @@ sub save_preferences_from_gui($)
     $instance->{preferences}->{query}->{id}->{limit} =
 	$instance->{id_lists_limit_spinbutton}->get_value_as_int();
     $instance->{preferences}->{query}->{id}->{sort_cronologically} =
-	$instance->{id_lists_sort_cronologically_radiobutton}->get_active()
-	? 1 : 0;
+	$instance->{id_lists_sort_cronologically_radiobutton}->get_active() ?
+	1 : 0;
+    $instance->{preferences}->{show_suspended} =
+	$instance->{show_suspended_revisions_checkbutton}->get_active() ?
+	1 : 0;
+    $instance->{preferences}->{show_file_details} =
+	$instance->{detailed_file_listing_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{diffs_application} =
 	$instance->{external_diffs_app_entry}->get_text();
 
@@ -1527,6 +1544,12 @@ sub upgrade_preferences($)
 	$preferences->{auto_select_head} = 0;
 	$preferences->{version} = 4;
     }
+    if ($preferences->{version} == 4)
+    {
+	$preferences->{show_suspended} = 0;
+	$preferences->{show_file_details} = 1;
+	$preferences->{version} = 5;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1564,6 +1587,8 @@ sub initialise_preferences()
 					  sort_cronologically => 1},
 			       id     => {limit               => 200,
 					  sort_cronologically => 1}},
+	 show_suspended    => 0,
+	 show_file_details => 1,
 	 diffs_application => "kompare '{file1}' '{file2}'",
 	 coloured_diffs    => 1,
 	 fixed_font        => "monospace 10",

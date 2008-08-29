@@ -62,8 +62,8 @@ sub mtn_annotate($$$$);
 #
 #   Description  - Display the annotated listing for the specified file.
 #
-#   Data         - $mtn         : The Monotone instance handle that is to be
-#                                 used to display the annotated file.
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used to display the annotated file.
 #                  $revision_id : The revision id in which the desired version
 #                                 of the file resides.
 #                  $file_name   : The name of the file that is to be
@@ -297,7 +297,7 @@ sub get_annotation_window()
 #
 #   Data         - $list        : A reference to the list that is to contain
 #                                 the output from the annotate command.
-#                  $mtn         : The Monotone database that is to be used or
+#                  $mtn_db      : The Monotone database that is to be used or
 #                                 undef if the database associated with the
 #                                 current workspace is to be used.
 #                  $revision_id : The revision id on which the desired version

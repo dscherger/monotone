@@ -549,8 +549,8 @@ sub save_as_file($$$)
 #                  that take into account the user's preferences for ordering
 #                  and the maximum number of revisions to display.
 #
-#   Data         - $mtn       : The Monotone database handle that is to be
-#                               used.
+#   Data         - $mtn       : The Monotone::AutomateStdio object that is to
+#                               be used.
 #                  $branch    : The name of the branch that revisions are to
 #                               be found for.
 #                  $tags      : True if the list of revisions are to be tags,
@@ -772,8 +772,8 @@ sub get_revision_ids($$;$)
 #
 #   Description  - Get the details of the specified file.
 #
-#   Data         - $mtn                   : The Monotone database handle that
-#                                           is to be used.
+#   Data         - $mtn                   : The Monotone::AutomateStdio object
+#                                           that is to be used.
 #                  $revision_id           : The revision id from where the
 #                                           search for the latest file update
 #                                           is to start, working backwards.
@@ -1228,6 +1228,9 @@ sub glade_signal_autoconnect($$)
 
     my($glade, $client_data) = @_;
 
+    my $caller_package = caller();
+    $caller_package = "main" if (! defined($caller_package));
+
     $glade->signal_autoconnect
 	(sub {
 	     my($callback_name, $widget, $signal_name, $signal_data,
@@ -1237,7 +1240,7 @@ sub glade_signal_autoconnect($$)
 	     # Need to fully qualify any callback name that isn't prefixed by
 	     # it's package name with the name of the calling package.
 
-	     $callback_name = __PACKAGE__ . "::" . $callback_name
+	     $callback_name = $caller_package . "::" . $callback_name
 		 if (index($callback_name, "::") < 0);
 
 	     # Actually connect the signal handler.

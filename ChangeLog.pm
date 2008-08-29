@@ -81,8 +81,8 @@ sub get_change_log_window();
 #
 #   Description  - Display a revision's change log in a window.
 #
-#   Data         - $mtn         : The Monotone instance handle that is to be
-#                                 used to display the change log.
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used to display the change log.
 #                  $revision_id : The revision id that is to have its change
 #                                 log displayed.
 #                  $text_colour : Either the colour of the text or undef or ""

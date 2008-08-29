@@ -79,7 +79,7 @@ use Time::Local;
 
 # Monotone AutomateStdio module.
 
-use Monotone::AutomateStdio;
+use Monotone::AutomateStdio qw(:constants);
 
 # Modules specific to this application.
 
@@ -146,6 +146,7 @@ sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
 sub save_as_button_clicked_cb($$);
 sub search_text_button_clicked_cb($$);
+sub setup_mtn_object($$);
 sub setup_sigchld_handler($);
 sub show_line_numbers_togglebutton_toggled_cb($$);
 sub sigchld_handler();
@@ -312,8 +313,7 @@ sub view_button_clicked_cb($$);
     $browser = get_browser_window($mtn);
     if (defined($mtn))
     {
-	$mtn->register_db_locked_handler(\&mtn_db_locked_handler,
-					 $browser->{window});
+	setup_mtn_object($mtn, $browser->{window});
 	if (defined($branch))
 	{
 	    Glib::Idle->add
@@ -533,9 +533,8 @@ sub open_toolbutton_clicked_cb($$)
 
     if (open_database($browser->{window}, \$mtn, undef))
     {
+	setup_mtn_object($mtn, $browser->{window});
 	$browser->{mtn} = $mtn;
-	$mtn->register_db_locked_handler(\&mtn_db_locked_handler,
-					 $browser->{window});
 	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
     }
 
@@ -1419,10 +1418,10 @@ sub main_window_delete_event_cb($$$)
 #
 #   Description  - Creates or prepares an existing browser window for use.
 #
-#   Data         - $mtn         : The Monotone instance handle that is to be
-#                                 used for the browser window. If it is undef
-#                                 then no database is used and a blank browser
-#                                 window is displayed.
+#   Data         - $mtn         : The Monotone::AutomateStdio object that is
+#                                 to be used for the browser window. If it is
+#                                 undef then no database is used and a blank
+#                                 browser window is displayed.
 #                  $branch      : The branch name that is to be preselected in
 #                                 the browser window. This is optional unless
 #                                 any of the following arguments are
@@ -1571,25 +1570,32 @@ sub get_browser_window(;$$$$$)
 	$tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
 	$browser->{manifest_browser_treeview}->append_column($tv_column);
 
-	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title(__("Last Update"));
-	$tv_column->set_resizable(TRUE);
-	$tv_column->set_sizing("grow-only");
-	$tv_column->set_sort_column_id(MLS_DATE_COLUMN);
-	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
-	$tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
-	$browser->{manifest_browser_treeview}->append_column($tv_column);
+	# Only set up the remaining columns if that is what the user wants.
 
-	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title(__("Author"));
-	$tv_column->set_resizable(TRUE);
-	$tv_column->set_sizing("grow-only");
-	$tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
-	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
-	$tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
-	$browser->{manifest_browser_treeview}->append_column($tv_column);
+	if ($user_preferences->{show_file_details})
+	{
+	    $tv_column = Gtk2::TreeViewColumn->new();
+	    $tv_column->set_title(__("Last Update"));
+	    $tv_column->set_resizable(TRUE);
+	    $tv_column->set_sizing("grow-only");
+	    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
+	    $renderer = Gtk2::CellRendererText->new();
+	    $tv_column->pack_start($renderer, FALSE);
+	    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
+	    $browser->{manifest_browser_treeview}->append_column($tv_column);
+
+	    $tv_column = Gtk2::TreeViewColumn->new();
+	    $tv_column->set_title(__("Author"));
+	    $tv_column->set_resizable(TRUE);
+	    $tv_column->set_sizing("grow-only");
+	    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
+	    $renderer = Gtk2::CellRendererText->new();
+	    $tv_column->pack_start($renderer, FALSE);
+	    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
+	    $browser->{manifest_browser_treeview}->append_column($tv_column);
+
+	}
+	$browser->{show_file_details} = $user_preferences->{show_file_details};
 
 	$browser->{manifest_browser_treeview}->
 	    set_search_column(MLS_NAME_COLUMN);
@@ -2127,11 +2133,12 @@ sub update_browser_state($$)
 	foreach my $item (@directory_entry_list)
 	{
 
-	    # Get the latest modification time and the author if the entry is a
-	    # file (caching the result in the manifest for future reference if
-	    # we have to work it out).
+	    # Get the latest modification time and the author if that is what
+	    # the user wants and the entry is a file (caching the result in the
+	    # manifest for future reference if we have to work it out).
 
-	    if ($item->{manifest_entry}->{type} eq "file")
+	    if ($browser->{show_file_details}
+		&& $item->{manifest_entry}->{type} eq "file")
 	    {
 		if (! exists($item->{manifest_entry}->{author}))
 		{
@@ -2259,13 +2266,12 @@ sub update_browser_state($$)
 
 		if (! exists($manifest_entry->{last_changed_revision}))
 		{
-		    my($dummy,
-		       @revision_ids);
+		    my @revision_ids;
 		    get_revision_ids($browser, \@revision_ids);
 		    get_file_details($browser->{mtn},
 				     $revision_ids[0],
 				     $manifest_entry->{name},
-				     \$dummy,
+				     \$manifest_entry->{author},
 				     \$manifest_entry->{last_update},
 				     \$manifest_entry->
 				         {last_changed_revision});
@@ -2548,6 +2554,68 @@ sub determine_mime_type($$$$)
 #
 ##############################################################################
 #
+#   Routine      - setup_mtn_object
+#
+#   Description  - Sets up a new Monotone::AutomateStdio object so that it can
+#                  be used in this application.
+#
+#   Data         - $mtn    : The Monotone::AutomateStdio object that is to be
+#                            setup.
+#                  $parent : The parent window widget that is to be used for
+#                            assorted dialog windows that may appear.
+#
+##############################################################################
+
+
+
+sub setup_mtn_object($$)
+{
+
+    my($mtn, $parent) = @_;
+
+    $mtn->register_db_locked_handler(\&mtn_db_locked_handler, $parent);
+    if ($user_preferences->{show_suspended})
+    {
+	if ($mtn->can(MTN_IGNORE_SUSPEND_CERTS))
+	{
+	    $mtn->ignore_suspend_certs(1);
+	}
+	else
+	{
+	    my $dialog = Gtk2::MessageDialog->
+		new($parent,
+		    ["modal"],
+		    "info",
+		    "close",
+		    __("Your version of Monotone does not support\n"
+		       . "suspend certificates. I will adjusted your\n"
+		       . "preferences accordingly."));
+	    $dialog->run();
+	    $dialog->destroy();
+	    $user_preferences->{show_suspended} = 0;
+	    eval
+	    {
+		save_preferences($user_preferences);
+	    };
+	    if ($@ ne "")
+	    {
+		chomp($@);
+		my $dialog = Gtk2::MessageDialog->new
+		    (undef,
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __("Your preferences could not be saved:\n") . $@);
+		$dialog->run();
+		$dialog->destroy();
+	    }
+	}
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - enable_find_text_dialog
 #
 #   Description  - Enable or disable any find text dialog associated with the
@@ -2600,7 +2668,7 @@ sub enable_find_text_dialog($$)
 #   Description  - This routine is called when ever a locked database
 #                  condition is detected.
 #
-#   Data         - $mtn         : The Monotone instance handle that
+#   Data         - $mtn         : The Monotone::AutomateStdio object that
 #                                 encountered the locked database.
 #                  $parent      : The parent window for any dialogs that are
 #                                 to be displayed.
