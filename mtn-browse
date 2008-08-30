@@ -140,8 +140,8 @@ sub new_blank_menu_item_clicked_cb($$);
 sub new_toolbutton_clicked_cb($$);
 sub open_toolbutton_clicked_cb($$);
 sub preferences_toolbutton_clicked_cb($$);
-sub properties_toolbutton_clicked_cb($$);
 sub quit_activate_cb($$);
+sub reload_toolbutton_clicked_cb($$);
 sub revision_change_history_button_clicked_cb($$);
 sub revision_change_log_button_clicked_cb($$);
 sub save_as_button_clicked_cb($$);
@@ -573,10 +573,10 @@ sub close_toolbutton_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - properties_toolbutton_clicked_cb
+#   Routine      - reload_toolbutton_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the
-#                  properties toolbutton in a main browser window.
+#                  reload toolbutton in a main browser window.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -586,7 +586,7 @@ sub close_toolbutton_clicked_cb($$)
 
 
 
-sub properties_toolbutton_clicked_cb($$)
+sub reload_toolbutton_clicked_cb($$)
 {
 
     my($widget, $browser) = @_;
@@ -594,13 +594,28 @@ sub properties_toolbutton_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my $dialog = Gtk2::MessageDialog->new($browser->{window},
-					  ["modal"],
-					  "info",
-					  "close",
-					  __("Not implemented."));
-    $dialog->run();
-    $dialog->destroy();
+    # Simply refresh the entire browser.
+
+    if ($browser->{branch_combo_details}->{complete})
+    {
+	$browser->{branch_combo_details}->{preset} = 1;
+	if ($browser->{revision_combo_details}->{complete})
+	{
+	    $browser->{revision_combo_details}->{preset} = 1;
+	    if ($browser->{directory_combo_details}->{complete})
+	    {
+		$browser->{directory_combo_details}->{preset} = 1;
+		if (exists($browser->{file_being_viewed}->{manifest_entry}))
+		{
+		    $browser->{file_being_viewed_preset_value} =
+			$browser->{file_being_viewed}->{short_name};
+		}
+	    }
+	}
+    }
+    $browser->{mtn}->closedown();
+    $browser->{appbar}->clear_stack();
+    &{$browser->{update_handler}}($browser, ALL_CHANGED);
 
 }
 #
@@ -1499,7 +1514,7 @@ sub get_browser_window(;$$$$$)
 			    "file_revision_id_value_label",
 			    "file_button_vbox",
 			    "database_name_value_label",
-			    "revision_id_value_label",
+			    "date_value_label",
 			    "author_value_label",
 			    "change_log_value_label")
 	{
@@ -1968,10 +1983,10 @@ sub update_browser_state($$)
 	}
 	else
 	{
-	    $browser->{directory_combo_details}->{complete} = 0;
+	    $browser->{directory_combo_details}->{complete} = 1;
 	    $browser->{directory_combo_details}->{value} = "";
 	}
-	set_label_value($browser->{revision_id_value_label}, "");
+	set_label_value($browser->{date_value_label}, "");
 	set_label_value($browser->{author_value_label}, "");
 	set_label_value($browser->{change_log_value_label}, "");
 
@@ -2013,23 +2028,30 @@ sub update_browser_state($$)
 	    {
 		my($author,
 		   @certs_list,
-		   $change_log);
+		   $change_log,
+		   $date);
 		$browser->{mtn}->get_manifest_of(\@manifest_list,
 						 $revision_ids[0]);
 		$browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
-		$author = $change_log = "";
+		$author = $change_log = $date = "";
 		foreach my $cert (@certs_list)
 		{
-		    $author = $cert->{value}
-		        if ($cert->{name} eq "author");
-		    if ($cert->{name} eq "changelog")
+		    if ($cert->{name} eq "author")
+		    {
+			$author = $cert->{value};
+		    }
+		    elsif ($cert->{name} eq "changelog")
 		    {
 			$change_log = $cert->{value};
 			$change_log =~ s/\s+$//s;
 		    }
+		    elsif ($cert->{name} eq "date")
+		    {
+			$date = $cert->{value};
+			$date =~ s/T/ /;
+		    }
 		}
-		set_label_value($browser->{revision_id_value_label},
-				$revision_ids[0]);
+		set_label_value($browser->{date_value_label}, $date);
 		set_label_value($browser->{author_value_label}, $author);
 		set_label_value($browser->{change_log_value_label},
 				$change_log);
@@ -2104,8 +2126,7 @@ sub update_browser_state($$)
 	# enable the find files button.
 
 	if ($browser->{revision_combo_details}->{complete}
-	    && ($browser->{directory_combo_details}->{complete}
-		|| $browser->{directory_combo_details}->{value} eq ""))
+	    && $browser->{directory_combo_details}->{complete})
 	{
 	    get_dir_contents($browser->{directory_combo_details}->{value},
 			     $browser->{manifest},

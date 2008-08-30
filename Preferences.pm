@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 5;
+use constant PREFERENCES_FORMAT_VERSION => 6;
 
 # Text viewable application mime types.
 
@@ -436,9 +436,10 @@ sub defaults_button_clicked_cb($$)
 	@fields = ("default_mtn_db",
 		   "workspace",
 		   "auto_select_head",
+		   "query",
+		   "history_size",
 		   "show_suspended",
 		   "show_file_details",
-		   "query",
 		   "diffs_application");
     }
     elsif ($page_nr == 1)
@@ -1006,6 +1007,7 @@ sub get_preferences_window($$)
 			    "id_lists_limit_spinbutton",
 			    "id_lists_sort_cronologically_radiobutton",
 			    "id_lists_sort_by_id_radiobutton",
+			    "history_size_spinbutton",
 			    "show_suspended_revisions_checkbutton",
 			    "detailed_file_listing_checkbutton",
 			    "external_diffs_app_entry",
@@ -1226,6 +1228,8 @@ sub load_preferences_into_gui($)
     {
 	$instance->{id_lists_sort_by_id_radiobutton}->set_active(TRUE);
     }
+    $instance->{history_size_spinbutton}->
+	set_value($instance->{preferences}->{history_size});
     $instance->{show_suspended_revisions_checkbutton}->
 	set_active($instance->{preferences}->{show_suspended} ? TRUE : FALSE);
     $instance->{detailed_file_listing_checkbutton}->
@@ -1389,6 +1393,8 @@ sub save_preferences_from_gui($)
     $instance->{preferences}->{query}->{id}->{sort_cronologically} =
 	$instance->{id_lists_sort_cronologically_radiobutton}->get_active() ?
 	1 : 0;
+    $instance->{preferences}->{history_size} =
+	$instance->{history_size_spinbutton}->get_value_as_int();
     $instance->{preferences}->{show_suspended} =
 	$instance->{show_suspended_revisions_checkbutton}->get_active() ?
 	1 : 0;
@@ -1550,6 +1556,11 @@ sub upgrade_preferences($)
 	$preferences->{show_file_details} = 1;
 	$preferences->{version} = 5;
     }
+    if ($preferences->{version} == 5)
+    {
+	$preferences->{history_size} = 20;
+	$preferences->{version} = 6;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1587,11 +1598,12 @@ sub initialise_preferences()
 					  sort_cronologically => 1},
 			       id     => {limit               => 200,
 					  sort_cronologically => 1}},
+	 history_size      => 20,
 	 show_suspended    => 0,
 	 show_file_details => 1,
 	 diffs_application => "kompare '{file1}' '{file2}'",
-	 coloured_diffs    => 1,
 	 fixed_font        => "monospace 10",
+	 coloured_diffs    => 1,
 	 colours           => {annotate_prefix_1 => {fg => "AliceBlue",
 						     bg => "CadetBlue"},
 			       annotate_text_1   => {fg => "MidnightBlue",

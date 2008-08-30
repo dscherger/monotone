@@ -945,7 +945,9 @@ sub handle_comboxentry_history($$;$)
 	}
 	if ($update_history)
 	{
-	    pop(@$history_ref) if (unshift(@$history_ref, $value) > 20);
+	    splice(@$history_ref, $user_preferences->{history_size})
+		if (unshift(@$history_ref, $value) >
+		    $user_preferences->{history_size});
 	    eval
 	    {
 		save_preferences($user_preferences);
