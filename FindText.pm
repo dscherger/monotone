@@ -95,6 +95,8 @@ sub find_text($$)
     get_find_text_window($parent, $text_view)
 	if (! defined(find_current_window($text_view)));
 
+    delete($text_view->{find_text_disabled});
+
 }
 #
 ##############################################################################
@@ -167,6 +169,18 @@ sub enable_find_text($$)
 	}
     }
 
+    # Ammend the textview object to reflect its file text enabled/disabled
+    # state.
+
+    if ($enable)
+    {
+	delete($text_view->{find_text_disabled});
+    }
+    else
+    {
+	$text_view->{find_text_disabled} = 1;
+    }
+
 }
 #
 ##############################################################################
@@ -228,17 +242,24 @@ sub find_text_textview_populate_popup_cb($$$)
     # dialog.
 
     $menu_item = Gtk2::MenuItem->new("_Find");
-    $menu_item->signal_connect
-	("activate",
-	 sub {
-	     my($widget, $details) = @_;
-	     return if ($details->{instance}->{in_cb});
-	     local $details->{instance}->{in_cb} = 1;
-	     find_text($details->{instance}->{window},
-		       $details->{textview_widget});
-	 },
-	 {instance        => $instance,
-	  textview_widget => $widget});
+    if ($widget->{find_text_disabled})
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     sub {
+		 my($widget, $details) = @_;
+		 return if ($details->{instance}->{in_cb});
+		 local $details->{instance}->{in_cb} = 1;
+		 find_text($details->{instance}->{window},
+			   $details->{textview_widget});
+	     },
+	     {instance        => $instance,
+	      textview_widget => $widget});
+    }
     $menu_item->show();
     $separator = Gtk2::SeparatorMenuItem->new();
     $separator->show();
@@ -275,6 +296,8 @@ sub find_text_textview_key_press_event_cb($$$)
 
     return FALSE if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
+
+    return FALSE if ($widget->{find_text_disabled});
 
     my($consumed_modifiers,
        $keymap,
