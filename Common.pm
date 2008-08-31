@@ -396,14 +396,15 @@ sub open_database($$$)
 		# Ok it is a readable file, try and open it but deal with any
 		# errors in a nicer way than normal.
 
-		Monotone::AutomateStdio->register_error_handler("both");
+		Monotone::AutomateStdio->register_error_handler
+		    (MTN_SEVERITY_ALL);
 		eval
 		{
 		    $mtn_obj = Monotone::AutomateStdio->new($fname);
 		};
 		$err = $@;
 		Monotone::AutomateStdio->register_error_handler
-		    ("both", \&mtn_error_handler);
+		    (MTN_SEVERITY_ALL, \&mtn_error_handler);
 		if ($err ne "")
 		{
 		    my $dialog = Gtk2::MessageDialog->new

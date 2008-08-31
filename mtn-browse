@@ -79,7 +79,7 @@ use Time::Local;
 
 # Monotone AutomateStdio module.
 
-use Monotone::AutomateStdio qw(:constants);
+use Monotone::AutomateStdio qw(:capabilities :severities);
 
 # Modules specific to this application.
 
@@ -302,7 +302,7 @@ sub view_button_clicked_cb($$);
 
     # Set up the error handlers for the Monotone class.
 
-    Monotone::AutomateStdio->register_error_handler("both",
+    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
 						    \&mtn_error_handler);
 
     # Create the browser window and display it. Please note that updating the
@@ -2698,7 +2698,7 @@ sub mtn_error_handler($$)
     my $dialog;
     my $wm = WindowManager->instance();
 
-    if ($severity eq "warning")
+    if ($severity == MTN_SEVERITY_WARNING)
     {
 	$dialog = Gtk2::MessageDialog->new_with_markup
 	    (undef,

@@ -75,7 +75,6 @@ my $__select_id_rev_1_ttip  = __("Select this revision for comparison\n"
 my $__select_id_rev_2_ttip  = __("Select this revision for comparison\n"
 				 . "as the first revision");
 
-
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -356,9 +355,9 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $instance->{stop_button}->set_sensitive(TRUE);
     $wm->update_gui();
-    Monotone::AutomateStdio->register_error_handler("warning");
+    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_WARNING);
     get_file_history_helper($instance, \%history_hash, $revision_id);
-    Monotone::AutomateStdio->register_error_handler("both",
+    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
 						    \&mtn_error_handler);
     $instance->{stop_button}->set_sensitive(FALSE);
 

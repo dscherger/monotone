@@ -922,7 +922,7 @@ sub update_advanced_find_state($$)
 	    # queries! So protect ourselves.
 
 	    Monotone::AutomateStdio->register_error_handler
-		("both",
+		(MTN_SEVERITY_ALL,
 		 sub {
 		     my($severity, $message) = @_;
 		     my $dialog;
@@ -945,7 +945,7 @@ sub update_advanced_find_state($$)
 	    };
 	    $err = $@;
 	    Monotone::AutomateStdio->register_error_handler
-		("both", \&mtn_error_handler);
+		(MTN_SEVERITY_ALL, \&mtn_error_handler);
 
 	    # If the query was valid then store it in the history.
 
