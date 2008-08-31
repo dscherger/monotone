@@ -1454,10 +1454,8 @@ sub get_history_window()
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button});
-	$wm->add_busy_windows($instance,
-			      $instance->{history_textview}->
-			          get_window("text"));
+		    $instance->{stop_button},
+		    $instance->{history_textview}->get_window("text"));
     }
     else
     {
@@ -1710,10 +1708,8 @@ sub get_revision_comparison_window()
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button});
-	$wm->add_busy_windows($instance,
-			      $instance->{comparison_textview}->
-			          get_window("text"));
+		    $instance->{stop_button},
+		    $instance->{comparison_textview}->get_window("text"));
     }
     else
     {

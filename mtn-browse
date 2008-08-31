@@ -1644,9 +1644,11 @@ sub get_browser_window(;$$$$$)
 
 	# Register the window for management.
 
-	$wm->manage($browser, $window_type, $browser->{window});
-	$wm->add_busy_windows($browser,
-			      $browser->{file_view_sv}->get_window("text"));
+	$wm->manage($browser,
+		    $window_type,
+		    $browser->{window},
+		    undef,
+		    $browser->{file_view_sv}->get_window("text"));
 
 	# Update the browser's internal state.
 

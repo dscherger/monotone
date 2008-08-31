@@ -294,10 +294,8 @@ sub find_text_textview_key_press_event_cb($$$)
 
     my($widget, $event, $instance) = @_;
 
-    return FALSE if ($instance->{in_cb});
+    return FALSE if ($instance->{in_cb} || $widget->{find_text_disabled});
     local $instance->{in_cb} = 1;
-
-    return FALSE if ($widget->{find_text_disabled});
 
     my($consumed_modifiers,
        $keymap,
@@ -492,7 +490,7 @@ sub find_button_clicked_cb($$)
 	}
 	$start_iter = ($instance->{text_view}->get_line_at_y($y))[0];
 	$end_iter = ($instance->{text_view}->get_line_at_y($y))[0];
-	$end_iter->forward_to_line_end();
+	$end_iter->forward_to_line_end() unless ($end_iter->ends_line());
 
     }
 
@@ -775,7 +773,7 @@ sub get_find_text_window($$)
 
     # If necessary, register the window for management.
 
-    $wm->manage($instance, $window_type, $instance->{window}) if ($new);
+    $wm->manage($instance, $window_type, $instance->{window}, undef) if ($new);
 
     return $instance;
 

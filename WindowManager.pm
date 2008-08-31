@@ -81,14 +81,13 @@ my $singleton;
 
 # Public methods.
 
-sub add_busy_windows($$@);
 sub allow_input($&);
 sub cleanup($);
 sub cond_find($$&);
 sub find_unused($$);
 sub instance($);
 sub make_busy($$$;$);
-sub manage($$$$;$);
+sub manage($$$$;$@);
 sub reset_state($);
 sub update_gui();
 
@@ -178,28 +177,30 @@ sub cleanup($)
 #   Routine      - manage
 #
 #   Description  - Take the given window instance record and start managing
-#                  it. Please note that it is expected that the top level
-#                  window widget will be in a field called `window'.
+#                  it.
 #
 #   Data         - $this        : The object.
 #                  $instance    : A reference to the window instance record
 #                                 that is to be managed.
 #                  $type        : The type of window that is to be managed.
-#                  $window      : The Gtk2::Window object for the window that
-#                                 is to be managed.
-#                  $grab_widget : The widget that is to still remain
+#                  $window      : The main Gtk2::Window object that is
+#                                 associated with $instance.
+#                  $grab_widget : The widget object that is to still remain
 #                                 responsive when making the window busy, most
 #                                 typically this will be a `stop' button. This
 #                                 is optional.
+#                  @windows     : A list of additional Gtk2::Gdk::Window
+#                                 objects that are to be managed in addition
+#                                 to $window. This is optional.
 #
 ##############################################################################
 
 
 
-sub manage($$$$;$)
+sub manage($$$$;$@)
 {
 
-    my($this, $instance, $type, $window, $grab_widget) = @_;
+    my($this, $instance, $type, $window, $grab_widget, @windows) = @_;
 
     # Simply store the details in our window list.
 
@@ -207,48 +208,8 @@ sub manage($$$$;$)
 	 {instance     => $instance,
 	  type         => $type,
 	  window       => $window,
-	  busy_windows => [$window->window()],
+	  busy_windows => [$window->window(), @windows],
 	  grab_widget  => $grab_widget});
-
-}
-#
-##############################################################################
-#
-#   Routine      - add_busy_windows
-#
-#   Description  - Add the specified additional windows for busy cursor
-#                  handling.
-#
-#   Data         - $this     : The object.
-#                  $instance : A reference to the window instance record that
-#                              is to be updated.
-#                  @windows  : The list of additional Gtk2::Gdk::Window
-#                              objects that are to be handled.
-#
-##############################################################################
-
-
-
-sub add_busy_windows($$@)
-{
-
-    my($this, $instance, @windows) = @_;
-
-    my $entry;
-
-    # Find the relevant entry for this instance.
-
-    foreach my $win_instance (@{$this->{windows}})
-    {
-	if ($win_instance->{instance} == $instance)
-	{
-	    $entry = $win_instance;
-	    last;
-	}
-    }
-    croak("Called with an unmanaged instance record") unless (defined($entry));
-
-    push(@{$entry->{busy_windows}}, @windows);
 
 }
 #

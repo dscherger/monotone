@@ -427,10 +427,11 @@ sub get_change_log_window()
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{window});
-	$wm->add_busy_windows($instance,
-			      $instance->{changelog_textview}->
-			          get_window("text"));
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window},
+		    undef,
+		    $instance->{changelog_textview}->get_window("text"));
     }
     else
     {

@@ -1141,7 +1141,7 @@ sub get_preferences_window($$)
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{window});
+	$wm->manage($instance, $window_type, $instance->{window}, undef);
 
     }
     else

@@ -688,10 +688,8 @@ sub get_advanced_find_window($)
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button});
-	$wm->add_busy_windows($instance,
-			      $instance->{details_textview}->
-			          get_window("text"));
+		    $instance->{stop_button},
+		    $instance->{details_textview}->get_window("text"));
 
     }
     else

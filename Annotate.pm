@@ -53,6 +53,7 @@ sub display_annotation($$$);
 
 # Private routines.
 
+sub annotation_textview_populate_popup_cb($$$);
 sub get_annotation_window();
 sub mtn_annotate($$$$);
 #
@@ -94,6 +95,7 @@ sub display_annotation($$$)
     $instance = get_annotation_window();
     local $instance->{in_cb} = 1;
 
+    $instance->{mtn} = $mtn;
     $instance->{window}->set_title(__x("Annotated Listing Of {file}",
 				       file => $file_name));
     $instance->{window}->show_all();
@@ -109,10 +111,11 @@ sub display_annotation($$$)
     mtn_annotate(\@lines, $mtn->get_db_name(), $revision_id, $file_name);
 
     # Find the longest line for future padding and also split each line into
-    # the prefix and text parts.
+    # their prefix and text parts.
 
     $max_len = 0;
-    $template = sprintf("a%da2a*", length(($lines[0] =~ m/^([^:]+):.*$/)[0]));
+    $instance->{prefix_length} = length(($lines[0] =~ m/^([^:]+):.*$/)[0]);
+    $template = sprintf("a%da2a*", $instance->{prefix_length});
     for ($i = 0; $i < scalar(@lines); ++ $i)
     {
 	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0,2];
@@ -196,6 +199,139 @@ sub display_annotation($$$)
 #
 ##############################################################################
 #
+#   Routine      - annotation_textview_populate_popup_cb
+#
+#   Description  - Callback routine called when the user right clicks on any
+#                  textview window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $menu     : The Gtk2::Menu widget that is to be updated.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub annotation_textview_populate_popup_cb($$$)
+{
+
+    my($widget, $menu, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my($menu_item,
+       $revision_part,
+       $separator,
+       $start_iter,
+       $x,
+       $y);
+
+    # Extract the revision id relating to the block of text directly under the
+    # mouse cursor.
+
+    ($x, $y) = ($widget->window()->get_pointer())[1 .. 2];
+    ($x, $y) = $widget->window_to_buffer_coords("widget", $x, $y);
+    if (defined($start_iter = ($widget->get_line_at_y($y))[0]))
+    {
+	my($end_iter,
+	   $prefix,
+	   $no_more,
+	   $text_buffer);
+	$end_iter = ($widget->get_line_at_y($y))[0];
+	$end_iter->forward_to_line_end();
+	$text_buffer = $widget->get_buffer();
+	$prefix = substr($text_buffer->get_text($start_iter, $end_iter, TRUE),
+			 0,
+			 $instance->{prefix_length});
+	while ($prefix !~ m/^ *[0-9a-f]+\.+.*$/)
+	{
+	    if (! $start_iter->backward_line())
+	    {
+		$no_more = 1;
+		last;
+	    }
+	    $end_iter->backward_line();
+	    $end_iter->forward_to_line_end()
+		unless ($end_iter->ends_line());
+	    $prefix = substr($text_buffer->get_text($start_iter,
+						    $end_iter,
+						    TRUE),
+			     0,
+			     $instance->{prefix_length});
+	}
+	($revision_part) = ($prefix =~ m/^ *([0-9a-f]+)\.+.*$/)
+	    unless ($no_more);
+    }
+
+    # Add a `Display Change Log' option to the right-click menu that displays
+    # the change log of the revision responsible for the text directly under
+    # the mouse cursor.
+
+    $menu_item = Gtk2::MenuItem->new("Display Change _Log");
+    if (! defined($revision_part))
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     sub {
+
+		 my($widget, $details) = @_;
+
+		 return if ($details->{instance}->{in_cb});
+		 local $details->{instance}->{in_cb} = 1;
+
+		 my @revision_ids;
+		 my $wm = WindowManager->instance();
+
+		 $wm->make_busy($details->{instance}, 1);
+		 $instance->{appbar}->
+		     push($instance->{appbar}->get_status()->get_text());
+		 $instance->{appbar}->set_status(__("Finding change log"));
+		 $wm->update_gui();
+
+		 $details->{instance}->{mtn}->
+		     select(\@revision_ids, "i:" . $details->{revision_part});
+		 if (scalar(@revision_ids) == 1)
+		 {
+		     display_change_log($details->{instance}->{mtn},
+					$revision_ids[0],
+					"",
+					undef);
+		 }
+		 else
+		 {
+		     my $dialog = Gtk2::MessageDialog->new
+			 ($instance->{window},
+			  ["modal"],
+			  "warning",
+			  "close",
+			  __("Cannot access unique revision id."));
+		     $dialog->run();
+		     $dialog->destroy();
+		 }
+
+		 $instance->{appbar}->pop();
+		 $wm->make_busy($details->{instance}, 0);
+
+	     },
+	     {instance      => $instance,
+	      revision_part => $revision_part});
+    }
+    $menu_item->show();
+    $separator = Gtk2::SeparatorMenuItem->new();
+    $separator->show();
+    $menu->append($separator);
+    $menu->append($menu_item);
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_annotation_window
 #
 #   Description  - Creates or prepares an existing annotation window for use.
@@ -251,6 +387,7 @@ sub get_annotation_window()
 		 hide_find_text($instance->{annotation_textview});
 		 $widget->hide();
 		 $instance->{annotation_buffer}->set_text("");
+		 $instance->{mtn} = undef;
 		 return TRUE;
 	     },
 	     $instance);
@@ -264,10 +401,11 @@ sub get_annotation_window()
 
 	# Register the window for management.
 
-	$wm->manage($instance, $window_type, $instance->{window});
-	$wm->add_busy_windows($instance,
-			      $instance->{annotation_textview}->
-			          get_window("text"));
+	$wm->manage($instance,
+		    $window_type,
+		    $instance->{window},
+		    undef,
+		    $instance->{annotation_textview}->get_window("text"));
     }
     else
     {

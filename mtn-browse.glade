@@ -4177,6 +4177,7 @@ selected file in an external viewer</property>
 		      <property name="text" translatable="yes"></property>
 		      <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Wed, 06 Aug 2008 13:35:18 GMT"/>
 		      <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Wed, 06 Aug 2008 13:37:51 GMT"/>
+		      <signal name="populate_popup" handler="annotation_textview_populate_popup_cb" last_modification_time="Sat, 30 Aug 2008 16:46:45 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
