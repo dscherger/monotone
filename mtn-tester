@@ -10,16 +10,18 @@ use POSIX qw(strftime);
 use Storable;
 use Data::Dumper;
 use GDBM_File;
+use IO::File;
 use IO::Handle;
-use Monotone::AutomateStdio;
+use Monotone::AutomateStdio qw(:capabilities :severities);
 use Data::Dumper;
 
 my($data,
+   %hash,
    @list,
    $mtn);
 
 Monotone::AutomateStdio->register_error_handler
-    ("both",
+    (MTN_SEVERITY_ALL,
      sub
      {
 	 my($severity, $message) = @_;
@@ -451,6 +453,92 @@ else
 {
     print Dumper(\@list);
 }
+
+if (! $mtn->packet_for_fdata(\$data,
+			     "38d8ad417471d7ac2724e477eaafd1a59581ca8a"))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->packet_for_fdelta(\$data,
+			      "a152991b3936bd8b49e9392fd908e882a7c13c4b",
+			      "38d8ad417471d7ac2724e477eaafd1a59581ca8a"))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->packet_for_rdata(\$data,
+			      "d7cfaacc152a049d004587192cc5a8979d051c14"))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (! $mtn->packets_for_certs(\$data,
+			      "d7cfaacc152a049d004587192cc5a8979d051c14"))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+
+if (1 == 0)
+{
+    if (! $mtn->genkey(\%hash, 'whinnie@the.pooh', "bear of little brain"))
+    {
+	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+    }
+    else
+    {
+	print Dumper(\%hash);
+    }
+}
+
+my $data_file = IO::File->new("../mtn-tester", "r");
+my $fdata;
+$data_file->sysread($fdata, 64000);
+$data_file = undef;
+if (! $mtn->put_file(\$data, undef, $fdata))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+my $base_rev;
+$mtn->get_base_revision_id(\$base_rev);
+$fdata = "format_version \"1\"\n\n"
+    . "new_manifest [0000000000000000000000000000000000000000]\n\n"
+    . "old_revision [" . $base_rev . "]\n\n"
+    . "add_file \"mtn-tester\"\n"
+    . " content [" . $data . "]\n";
+print $fdata;
+if (! $mtn->put_revision(\$data, $fdata))
+{
+    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+}
+else
+{
+    print Dumper(\$data);
+}
+$mtn->cert($data, "author", "aecooper\@coosoft.plus.com");
+$mtn->cert($data, "branch", "net.venge.monotone");
+$mtn->cert($data, "changelog", "Automated checkin.");
+$mtn->cert($data, "date", "2008-08-31T18:42:30");
 
 printf("Last error message `%s'\n", $mtn->get_error_message());
 print Dumper (\$mtn);

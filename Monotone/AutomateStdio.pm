@@ -67,9 +67,15 @@ use Symbol qw(gensym);
 # Constants used to represent the different types of capability Monotone may or
 # may not provide depending upon its version.
 
-use constant MTN_IGNORE_SUSPEND_CERTS       => 1;
-use constant MTN_INVENTORY_IO_STANZA_FORMAT => 2;
-use constant MTN_P_SELECTOR                 => 3;
+use constant MTN_IGNORE_SUSPEND_CERTS       => 0;
+use constant MTN_INVENTORY_IO_STANZA_FORMAT => 1;
+use constant MTN_P_SELECTOR                 => 2;
+
+# Constants used to represent the different error levels.
+
+use constant MTN_SEVERITY_ALL     => 0x03;
+use constant MTN_SEVERITY_ERROR   => 0x01;
+use constant MTN_SEVERITY_WARNING => 0x02;
 
 # A pre-compiled regular expression for finding the end of a quoted string
 # possibly containing escaped quotes, i.e. " preceeded by a non-backslash
@@ -115,6 +121,7 @@ sub db_get($\$$$);
 sub db_set($$$$);
 sub descendents($\@@);
 sub erase_ancestors($\@@);
+sub genkey($\$$$);
 sub get_attributes($\$$);
 sub get_base_revision_id($\$);
 sub get_content_changed($\@$$);
@@ -137,7 +144,13 @@ sub inventory($$);
 sub keys($$);
 sub leaves($\@);
 sub new($;$);
+sub packet_for_fdata($\$$);
+sub packet_for_fdelta($\$$$);
+sub packet_for_rdata($\$$);
+sub packets_for_certs($\$$);
 sub parents($\@$);
+sub put_file($\$$\$);
+sub put_revision($\$\$);
 sub register_db_locked_handler(;$$$);
 sub register_error_handler($;$$$);
 sub register_io_wait_handler(;$$$$);
@@ -163,12 +176,15 @@ sub warning_handler_wrapper($);
 
 use base qw(Exporter);
 
-our %EXPORT_TAGS = (constants => [qw(MTN_IGNORE_SUSPEND_CERTS
-				     MTN_INVENTORY_IO_STANZA_FORMAT
-				     MTN_P_SELECTOR)]);
+our %EXPORT_TAGS = (capabilities => [qw(MTN_IGNORE_SUSPEND_CERTS
+					MTN_INVENTORY_IO_STANZA_FORMAT
+					MTN_P_SELECTOR)],
+		    severities   => [qw(MTN_SEVERITY_ALL
+					MTN_SEVERITY_ERROR
+					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
-Exporter::export_ok_tags(qw(constants));
-our $VERSION = 0.6;
+Exporter::export_ok_tags(qw(capabilities severities));
+our $VERSION = 0.7;
 #
 ##############################################################################
 #
@@ -367,9 +383,9 @@ sub cert($$$$)
 
     my($this, $revision_id, $name, $value) = @_;
 
-    my @dummy;
+    my $dummy;
 
-    return mtn_command($this, "cert", @dummy, $revision_id, $name, $value);
+    return mtn_command($this, "cert", \$dummy, $revision_id, $name, $value);
 
 }
 #
@@ -682,6 +698,84 @@ sub erase_ancestors($\@@)
     my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "erase_ancestors", $list, @revision_ids);
+
+}
+#
+##############################################################################
+#
+#   Routine      - genkey
+#
+#   Description  - Generate a new key for use within the database.
+#
+#   Data         - $this        : The object.
+#                  $ref         : A reference to a buffer or a hash that is to
+#                                 contain the output from this command.
+#                  $key_id      : The key id for the new key.
+#                  $pass_phrase : The pass phrase for the key.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub genkey($\$$$)
+{
+
+    my($this, $ref, $key_id, $pass_phrase) = @_;
+
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command($this, "genkey", $ref, $key_id, $pass_phrase);
+    }
+    else
+    {
+
+	my($i,
+	   @lines,
+	   $value);
+
+	if (! mtn_command($this, "genkey", \@lines, $key_id, $pass_phrase))
+	{
+	    return;
+	}
+
+	# Reformat the data into a structured record.
+
+	for ($i = 0, %$ref = (); $i <= $#lines; ++ $i)
+	{
+	    if ($lines[$i] =~ m/^ *name \"/)
+	    {
+		get_quoted_value(@lines, $i, $value);
+		$$ref{name} = unescape($value);
+	    }
+	    elsif ($lines[$i] =~ m/^ *public_hash \[[^\]]+\]$/)
+	    {
+		($value) = ($lines[$i] =~ m/^ *public_hash \[([^\]]+)\]$/);
+		$$ref{public_hash} = $value;
+	    }
+	    elsif ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/)
+	    {
+		($value) = ($lines[$i] =~ m/^ *private_hash \[([^\]]+)\]$/);
+		$$ref{private_hash} = $value;
+	    }
+	    elsif ($lines[$i] =~ m/^ *public_location \"/)
+	    {
+		get_quoted_value(@lines, $i, $value);
+		$$ref{public_location} = unescape($value);
+	    }
+	    elsif ($lines[$i] =~ m/^ *private_location \"/)
+	    {
+		get_quoted_value(@lines, $i, $value);
+		$$ref{private_location} = unescape($value);
+	    }
+	}
+
+	return 1;
+
+    }
 
 }
 #
@@ -1776,6 +1870,118 @@ sub leaves($\@)
 #
 ##############################################################################
 #
+#   Routine      - packet_for_fdata
+#
+#   Description  - Get the contents of the file referenced by the specified
+#                  file id in packet format.
+#
+#   Data         - $this        : The object.
+#                  \$buffer     : A reference to a buffer that is to contain
+#                                 the output from this command.
+#                  $file_id     : The file id of the file that is to be
+#                                 returned.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub packet_for_fdata($\$$)
+{
+
+    my($this, $buffer, $file_id) = @_;
+
+    return mtn_command($this, "packet_for_fdata", $buffer, $file_id);
+
+}
+#
+##############################################################################
+#
+#   Routine      - packet_for_fdelta
+#
+#   Description  - Get the file delta between the two files referenced by the
+#                  specified file ids in packet format.
+#
+#   Data         - $this         : The object.
+#                  \$buffer      : A reference to a buffer that is to contain
+#                                  the output from this command.
+#                  $from_file_id : The file id of the file that is to be used
+#                                  as the base in the delta operation.
+#                  $to_file_id   : The file id of the file that is to be used
+#                                  as the target in the delta operation.
+#                  Return Value  : True on success, otherwise false on
+#                                  failure.
+#
+##############################################################################
+
+
+
+sub packet_for_fdelta($\$$$)
+{
+
+    my($this, $buffer, $from_file_id, $to_file_id) = @_;
+
+    return mtn_command
+	($this, "packet_for_fdelta", $buffer, $from_file_id, $to_file_id);
+
+}
+#
+##############################################################################
+#
+#   Routine      - packet_for_rdata
+#
+#   Description  - Get the contents of the revision referenced by the
+#                  specified revision id in packet format.
+#
+#   Data         - $this        : The object.
+#                  \$buffer     : A reference to a buffer that is to contain
+#                                 the output from this command.
+#                  $revision_id : The revision id of the revision that is to
+#                                 be returned.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub packet_for_rdata($\$$)
+{
+
+    my($this, $buffer, $revision_id) = @_;
+
+    return mtn_command($this, "packet_for_rdata", $buffer, $revision_id);
+
+}
+#
+##############################################################################
+#
+#   Routine      - packets_for_certs
+#
+#   Description  - Get all the certs for the revision referenced by the
+#                  specified revision id in packet format.
+#
+#   Data         - $this        : The object.
+#                  \$buffer     : A reference to a buffer that is to contain
+#                                 the output from this command.
+#                  $revision_id : The revision id of the revision that is to
+#                                 have its certs returned.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub packets_for_certs($\$$)
+{
+
+    my($this, $buffer, $revision_id) = @_;
+
+    return mtn_command($this, "packets_for_certs", $buffer, $revision_id);
+
+}
+#
+##############################################################################
+#
 #   Routine      - parents
 #
 #   Description  - Get a list of parents for the specified revision.
@@ -1797,6 +2003,93 @@ sub parents($\@$)
     my($this, $list, $revision_id) = @_;
 
     return mtn_command($this, "parents", $list, $revision_id);
+
+}
+#
+##############################################################################
+#
+#   Routine      - put_file
+#
+#   Description  - Put the specified file contents into the database,
+#                  optionally basing it on the specified file id (this is used
+#                  for delta encoding).
+#
+#   Data         - $this         : The object.
+#                  \$buffer      : A reference to a buffer that is to contain
+#                                  the output from this command.
+#                  $base_file_id : The file id of the previous version of this
+#                                  file or undef if this is a new file.
+#                  \$contents    : A reference to a buffer containing the
+#                                  file's contents.
+#                  Return Value  : True on success, otherwise false on
+#                                  failure.
+#
+##############################################################################
+
+
+
+sub put_file($\$$\$)
+{
+
+    my($this, $buffer, $base_file_id, $contents) = @_;
+
+    my @list;
+
+    if (defined($base_file_id))
+    {
+	if (! mtn_command($this,
+			  "put_file",
+			  \@list,
+			  $base_file_id,
+			  $contents))
+	{
+	    return;
+	}
+    }
+    else
+    {
+	if (! mtn_command($this, "put_file", \@list, $contents))
+	{
+	    return;
+	}
+    }
+    $$buffer = $list[0];
+
+    return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - put_revision
+#
+#   Description  - Put the specified revision data into the database.
+#
+#   Data         - $this        : The object.
+#                  \$buffer     : A reference to a buffer that is to contain
+#                                 the output from this command.
+#                  \$contents   : A reference to a buffer containing the
+#                                 revision's contents.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub put_revision($\$\$)
+{
+
+    my($this, $buffer, $contents) = @_;
+
+    my @list;
+
+    if (! mtn_command($this, "put_revision", \@list, $contents))
+    {
+	return;
+    }
+    $$buffer = $list[0];
+
+    return 1;
 
 }
 #
@@ -2112,8 +2405,7 @@ sub ignore_suspend_certs($$)
 #                                 depending upon how this method is called and
 #                                 is ignored if it is present anyway.
 #                  $severity    : The level of error that the handler is being
-#                                 registered for. One of "error", "warning" or
-#                                 "both".
+#                                 registered for.
 #                  $handler     : A reference to the error handler routine. If
 #                                 this is not provided then the existing error
 #                                 handler routine is unregistered and errors
@@ -2131,7 +2423,7 @@ sub register_error_handler($;$$$)
     shift() if ($_[0] eq __PACKAGE__ || ref($_[0]) eq __PACKAGE__);
     my($severity, $handler, $client_data) = @_;
 
-    if ($severity eq "error")
+    if ($severity == MTN_SEVERITY_ERROR)
     {
 	if (defined($handler))
 	{
@@ -2145,7 +2437,7 @@ sub register_error_handler($;$$$)
 	    $error_handler = $error_handler_data = undef;
 	}
     }
-    elsif ($severity eq "warning")
+    elsif ($severity == MTN_SEVERITY_WARNING)
     {
 	if (defined($handler))
 	{
@@ -2159,7 +2451,7 @@ sub register_error_handler($;$$$)
 	    $warning_handler = $warning_handler_data = undef;
 	}
     }
-    elsif ($severity eq "both")
+    elsif ($severity == MTN_SEVERITY_ALL)
     {
 	if (defined($handler))
 	{
@@ -2178,7 +2470,7 @@ sub register_error_handler($;$$$)
     }
     else
     {
-	croak("Unknown error handler severity `" . $severity . "'");
+	croak("Unknown error handler severity");
     }
 
 }
@@ -2617,12 +2909,22 @@ sub mtn_command_with_options($$$\@@)
 	foreach $param (@parameters)
 	{
 
-	    # The unless below is required just in case undef is passed as the
-	    # only parameter (which can happen when a mandatory argument is not
-	    # passed by the caller).
+	    # Cater for passing by reference (useful when sending large lumps
+	    # of data as in put_file). Also defend against undef being passed
+	    # as the only parameter (which can happen when a mandatory argument
+	    # is not passed by the caller).
 
-	    printf($in "%d:%s", length($param), $param)
-		unless (! defined($param));
+	    if (defined $param)
+	    {
+		if (ref($param) ne "")
+		{
+		    printf($in "%d:%s", length($$param), $$param);
+		}
+		else
+		{
+		    printf($in "%d:%s", length($param), $param);
+		}
+	    }
 
 	}
 	print($in "e\n");
@@ -3002,7 +3304,7 @@ sub error_handler_wrapper($)
 
     my $message = $_[0];
 
-    &$error_handler("error", $message, $error_handler_data);
+    &$error_handler(MTN_SEVERITY_ERROR, $message, $error_handler_data);
     croak(__PACKAGE__ . ": Fatal error.");
 
 }
@@ -3026,7 +3328,7 @@ sub warning_handler_wrapper($)
 
     my $message = $_[0];
 
-    &$warning_handler("warning", $message, $warning_handler_data);
+    &$warning_handler(MTN_SEVERITY_WARNING, $message, $warning_handler_data);
 
 }
 

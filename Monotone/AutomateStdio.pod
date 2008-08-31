@@ -6,11 +6,11 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.6
+0.7
 
 =head1 SYNOPSIS
 
-  use Monotone::AutomateStdio qw(:constants);
+  use Monotone::AutomateStdio qw(:capabilities :severities);
   my(@manifest,
      $mtn,
      @revs);
@@ -33,23 +33,10 @@ subprocess is started, if necessary, when anything that requires it is
 called. The subprocess is terminated on object destruction or when
 $mtn-E<gt>closedown() is called.
 
-All automate commands have been implemented in this class except for the
-following:
-
-    genkey
-    packet_for_fdata
-    packet_for_fdelta
-    packet_for_rdata
-    packets_for_certs
-    put_file
-    put_revision
-    stdio
-
-The `genkey' command is typically done by the user when setting up their
-account and so is not likely to be of great use the rest of the time, the
-`packet' style commands seem to be of little use to a scripting language, the
-`put' style commands just seem too scary for words and hopefully you do not
-have to ask about the `stdio' command. :-)
+All 0.35 automate commands have been implemented in this class except for the
+`stdio' command, which hopefully is obvious. :-) I am currently working on
+supporting versions of Monotone from 0.35 onwards (0.40 works with this
+library, it is just that you will not be able to use the new features).
 
 =head1 CONSTRUCTORS
 
@@ -75,16 +62,17 @@ $handler[, $client_data]])>
 
 Registers the handler specified as a subroutine reference in $handler for
 errors of a certain severity as specified by $severity. $severity can be one of
-"warning", "error" or "both". The value of $client_data is simply passed to the
-handler and can be used by the caller to provide a context. This is a class
-method rather than an object one as errors can be raised when calling a
-constructor. If no handler is given then the error handling is reset to the
-default behaviour for that severity level.
+MTN_SEVERITY_WARNING, MTN_SEVERITY_ERROR or MTN_SEVERITY_ALL. The value of
+$client_data is simply passed to the handler and can be used by the caller to
+provide a context. This is a class method rather than an object one as errors
+can be raised when calling a constructor. If no handler is given then the error
+handling is reset to the default behaviour for that severity level.
 
 The handler subroutine is given three arguments, the first one is a severity
-string that indicates the severity of the error being handled (either "warning"
-or "error"), the second one is the error message and the third is the value
-passed in as $client_data when the hander was registered.
+string that indicates the severity of the error being handled (either
+MTN_SEVERITY_WARNING or MTN_SEVERITY_ERROR), the second one is the error
+message and the third is the value passed in as $client_data when the hander
+was registered.
 
 Please note:
 
@@ -109,16 +97,23 @@ boolean success indicator, errors always result in an exception being thrown.
 
 =item 3)
 
-If the severity is "error" then it is expected that croak or die will be called
-by the handler, if this is not the case then this class will call croak() upon
-return. If you need to trap errors and prevent program exit then use an eval
-block to protect yourself in the calling code.
+If the severity is MTN_SEVERITY_ERROR then it is expected that croak or die
+will be called by the handler, if this is not the case then this class will
+call croak() upon return. If you need to trap errors and prevent program exit
+then use an eval block to protect yourself in the calling code.
 
 =item 4)
 
 If a warning handler is registered then this can be used to report problems via
 one routine rather than checking the boolean success indicator returned by most
 methods in this class.
+
+=item 5)
+
+In order to get the severity constants into your namespace you need to use the
+following to load in this library.
+
+    use Monotone::AutomateStdio qw(:severities);
 
 =back
 
@@ -175,11 +170,12 @@ Gtk2 events so that the application can keep its windows up to date.
 See http://monotone.ca/monotone.html for a complete description of the mtn
 automate commands.
 
-Methods that return data do so via their first argument. This argument is a
-reference to either a scalar or a list depending upon whether the data returned
-by the method is raw data or a list of items respectively. Methods that return
-lists of records also provide the option of returning the data as one raw chunk
-if the reference points to a scalar rather than a list. Therefore:
+Methods that return data from the mtn subprocess do so via their first
+argument. This argument is a reference to either a scalar or a list depending
+upon whether the data returned by the method is raw data or a list of items
+respectively. Methods that return lists of records also provide the option of
+returning the data as one raw chunk if the reference points to a scalar rather
+than a list. Therefore:
 
     $mtn->get_manifest_of(\$buffer);
 
@@ -199,6 +195,10 @@ will always need a reference to a scalar and:
 
 will always need a reference to a list (each item is just a string containing a
 revision id rather than a record).
+
+The one exception to the above is the $mtn-E<gt>genkey() method, which expects
+a reference to either a scalar or a hash as it only ever returns one record's
+worth of information.
 
 The remaining arguments depend upon the mtn command being used.
 
@@ -232,7 +232,7 @@ that is currently being used by this object. The list of valid features are:
 In order to get these constants into your namespace you need to use the
 following to load in this library.
 
-    use Monotone::AutomateStdio qw(:constants);
+    use Monotone::AutomateStdio qw(:capabilities);
 
 Please note that if you see (feature: ...) then this means that whatever is
 being discussed is only available if $mtn-E<gt>can() returns true for the
@@ -297,6 +297,23 @@ Get a list of descendants for the specified revision(s).
 
 For a given list of revisions, weed out those that are ancestors to other
 revisions specified within the list.
+
+=item B<$mtn-E<gt>genkey(\$buffer | \%hash, $key_id, $pass_phrase)>
+
+Generate a new key for use within the database. If \$buffer is passed then the
+output from the command is simply placed into the variable. However if \%hash
+is passed then the output is returned as one anonymous hash containing the
+following fields:
+
+    name              - The name of the key.
+    public_hash       - The public hash code.
+    private_hash      - The private hash code.
+    public_locations  - A list of locations for the public hash code.
+                        Values can be one of "database" or
+                        "keystore".
+    private_locations - A list of locations for the private hash
+                        code. Values can be one of "database" or
+                        "keystore".
 
 =item B<$mtn-E<gt>get_attributes(\$buffer, $file_name)>
 
@@ -514,9 +531,41 @@ containing the following fields:
 
 Get a list of leaf revisions.
 
+=item B<$mtn-E<gt>packet_for_fdata(\$buffer, $file_id)>
+
+Get the contents of the file referenced by the specified file id in packet
+format.
+
+=item B<$mtn-E<gt>packet_for_fdelta(\$buffer, $from_file_id, $to_file_id)>
+
+Get the file delta between the two files referenced by the specified file ids
+in packet format.
+
+=item B<$mtn-E<gt>packet_for_rdata(\$buffer, $revision_id)>
+
+Get the contents of the revision referenced by the specified revision id in
+packet format.
+
+=item B<$mtn-E<gt>packets_for_certs(\$buffer, $revision_id)>
+
+Get all the certs for the revision referenced by the specified revision id in
+packet format.
+
 =item B<$mtn-E<gt>parents(\@list, $revision_id)>
 
 Get a list of parents for the specified revision.
+
+=item B<$mtn-E<gt>put_file(\$buffer, $base_file_id, \$contents)>
+
+Put the specified file contents into the database, optionally basing it on the
+specified file id (this is used for delta encoding). The file id is returned.
+
+=item B<$mtn-E<gt>put_revision(\$buffer, \$contents)>
+
+Put the specified revision data into the database. The revision id is
+returned. Please note that any newly created revisions have no certificates
+associated with them and so these have to be added using the $mtn-E<gt>cert()
+method.
 
 =item B<$mtn-E<gt>register_db_locked_handler([$handler[, $client_data]])>
 
@@ -574,10 +623,6 @@ Monotone::AutomateStdio-E<gt>register_io_wait_handler() and
 $mtn-E<gt>closedown() do not return anything.
 
 =head1 NOTES
-
-The Monotone::AutomateStdio class, with the exception of the $mtn-E<gt>cert()
-and $mtn-E<gt>db_set() methods, provides a read-only interface to a Monotone
-database. This is a deliberate safety precaution for now.
 
 There are situations where this class does legitimately terminate or even
 restart the mtn subprocess (for example when a database locked condition is
