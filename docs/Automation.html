@@ -3,7 +3,7 @@
 <title>Automation - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.11">
+<meta name="generator" content="makeinfo 4.8">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Database.html#Database" title="Database">
@@ -26,9 +26,9 @@
 <div class="node">
 <p>
 <a name="Automation"></a>
-Next:&nbsp;<a rel="next" accesskey="n" href="RCS.html#RCS">RCS</a>,
-Previous:&nbsp;<a rel="previous" accesskey="p" href="Database.html#Database">Database</a>,
-Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+n&auml;chstes:&nbsp;<a rel="next" accesskey="n" href="RCS.html#RCS">RCS</a>,
+voriges:&nbsp;<a rel="previous" accesskey="p" href="Database.html#Database">Database</a>,
+aufw&auml;rts:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
 <hr>
 </div>
 
@@ -604,7 +604,7 @@ marker.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate inventory [</span><samp><span class="option">options...</span></samp><span class="command">] [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-156"></a><dd>
+     <br><dt><samp><span class="command">mtn automate inventory [<samp>options...</samp>] [</span><var>files...</var><span class="command">]</span></samp><a name="index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-156"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more file paths (optional). If present, only show an inventory for the
@@ -628,6 +628,7 @@ paths for this restriction.
 
           <br><dt><strong>Changes:</strong><dd>
                <ul>
+<li>8.0 &ndash; added the output of the <code>birth</code> key
 <li>7.0 &ndash; added options <samp><span class="option">--no-ignored</span></samp>, <samp><span class="option">--no-unknown</span></samp>,
 <samp><span class="option">--no-unchanged</span></samp> and <samp><span class="option">--no-corresponding-renames</span></samp>
 <li>6.0 &ndash; converted to basic_io format (restriction support, various fixes)
@@ -652,12 +653,14 @@ All basic status cases:
           old_type "file"
           new_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "known"
            changes "attrs"
           
               path "dropped"
           old_type "file"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "dropped"
           
              path "ignored~"
@@ -668,18 +671,21 @@ All basic status cases:
           old_type "file"
           new_type "file"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "missing"
           
               path "original"
           old_type "file"
           new_path "renamed"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
           
               path "patched"
           old_type "file"
           new_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "known"
            changes "content"
           
@@ -687,6 +693,7 @@ All basic status cases:
           old_type "file"
           new_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "known"
            changes "content" "attrs"
           
@@ -694,12 +701,14 @@ All basic status cases:
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "known"
           
               path "unchanged"
           old_type "file"
           new_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "known"
           
              path "unknown"
@@ -715,6 +724,7 @@ All basic status cases:
           new_type "file"
           old_path "unchanged"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
           
               path "unchanged"
@@ -723,6 +733,7 @@ All basic status cases:
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
      </pre>
 
@@ -736,6 +747,7 @@ as patched:
           new_type "file"
           old_path "unchanged"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
            changes "content"
           
@@ -745,6 +757,7 @@ as patched:
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
            changes "content"
           
@@ -758,12 +771,14 @@ add (in the manifest and the workspace) new file <samp><span class="file">foo</s
           new_path "bar"
           new_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "added" "known"
           
               path "bar"
           new_type "file"
           old_path "foo"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "known"
      </pre>
 
@@ -776,6 +791,7 @@ the manifest and the workspace):
           new_type "file"
           old_path "baz"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
           
               path "bar"
@@ -784,6 +800,7 @@ the manifest and the workspace):
           new_type "file"
           old_path "foo"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
           
               path "baz"
@@ -792,6 +809,7 @@ the manifest and the workspace):
           new_type "file"
           old_path "bar"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
      </pre>
 
@@ -806,6 +824,7 @@ been patched:
           new_type "file"
           old_path "baz"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
            changes "content"
           
@@ -815,6 +834,7 @@ been patched:
           new_type "file"
           old_path "foo"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
            changes "content"
           
@@ -824,6 +844,7 @@ been patched:
           new_type "file"
           old_path "bar"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "rename_target" "known"
            changes "content"
      </pre>
@@ -834,6 +855,7 @@ unknown:
               path "dropped"
           old_type "file"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "dropped" "unknown"
      </pre>
 
@@ -852,12 +874,14 @@ and thus unknown source and missing target:
           old_type "file"
           new_path "renamed"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source" "unknown"
           
               path "renamed"
           new_type "file"
           old_path "original"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "missing"
      </pre>
 
@@ -881,12 +905,14 @@ thus missing source and unknown target:
           old_type "file"
           new_path "renamed"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
           
               path "renamed"
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "known"
            changes "content"
      </pre>
@@ -897,12 +923,14 @@ thus missing source and unknown target:
           old_type "file"
           new_path "renamed"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
           
               path "renamed"
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "known"
            changes "content"
      </pre>
@@ -913,6 +941,7 @@ thus missing source and unknown target:
           old_type "file"
           new_path "renamed"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
      </pre>
 
@@ -922,6 +951,7 @@ thus missing source and unknown target:
           new_type "file"
           old_path "original"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "known"
            changes "content"
      </pre>
@@ -932,6 +962,7 @@ thus missing source and unknown target:
           old_type "file"
           new_type "file"
            fs_type "directory"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "invalid"
            changes "content"
      </pre>
@@ -952,24 +983,28 @@ unversioned file is in the way:
           old_type "directory"
           new_path "target"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
           
               path "source/a"
           old_type "file"
           new_path "target/a"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_source"
           
               path "target"
           new_type "directory"
           old_path "source"
            fs_type "file"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "invalid"
           
               path "target/a"
           new_type "file"
           old_path "source/a"
            fs_type "none"
+             birth [cb271687054afd3c2b873c8994f206f08fb240d3]
             status "rename_target" "missing"
      </pre>
 
@@ -1009,6 +1044,9 @@ manifest.
 manifest. 
 <samp><span class="option">new_path</span></samp> is only output for rename sources.
 
+               <br><dt><samp><span class="option">birth</span></samp><dd>The identify of the revision that the node was first added in. 
+<samp><span class="option">birth</span></samp> is only output if it exists in a committed revision.
+
                <br><dt><samp><span class="option">status</span></samp><dd><samp><span class="option">status</span></samp> is always output. Its value is one or more of:
 
                     <dl>
@@ -1023,6 +1061,10 @@ base manifest.
 
                     <br><dt><samp><span class="option">missing</span></samp><dd><var>path</var> has been deleted in the workspace, but still exists in the revision
 manifest.
+
+                    <p>A file will also be labeled <samp><span class="option">missing</span></samp> if it is in a directory
+that is ignored due to a regular expression in <samp><span class="file">.mtn-ignore</span></samp>, but
+is also in the revision manifest. A warning is issued in this case.
 
                     <br><dt><samp><span class="option">ignored</span></samp><dd><var>path</var> is ignored by monotone.
 
@@ -1528,7 +1570,7 @@ The argument <var>path</var> determines which path's attributes should be printe
           <br><dt><strong>Added in:</strong><dd>
 3.0
 
-          <br><dt><strong>Renamed from </strong><samp><span class="command">attributes</span></samp><strong> to </strong><samp><span class="command">get_attributes</span></samp><strong> in:</strong><dd>
+          <br><dt><strong>Renamed from <samp></strong><span class="command">attributes</span><strong></samp> to <samp></strong><span class="command">get_attributes</span><strong></samp> in:</strong><dd>
 5.0
 
           <br><dt><strong>Purpose:</strong><dd>
@@ -2199,7 +2241,7 @@ Workspace-less commit. Normally used via <samp><span class="command">automate st
                
                add_file "foo"
                content [5bf1fd927dfb8679496a2e6cf00cbe50c1c87145]
-</pre>
+          </pre>
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
           4c2c1d846fa561601254200918fba1fd71e6795d
@@ -2240,6 +2282,286 @@ No output.
           <br><dt><strong>Error conditions:</strong><dd>
 If the revision is invalid prints an error message to stderr and
 exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate show_conflicts [</span><var>&ndash;branch BRANCH</var><span class="command">] [</span><var>left_rev right_rev</var><span class="command">]</span></samp><a name="index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-185"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+Optional left and right revision ids.
+
+          <p>If no revs are given, they default to the first two heads that would
+be chosen by the <samp><span class="command">merge</span></samp> command for the current branch. If no
+workspace is present, the branch may be given by the <var>&ndash;branch</var>
+option.
+
+          <br><dt><strong>Added in:</strong><dd>
+7.1
+
+          <br><dt><strong>Purpose:</strong><dd>
+Show all conflicts between two revisions.
+
+          <p>This is intended to be used before a <samp><span class="command">merge</span></samp>; an external tool
+can guide the user thru resolving each conflict in turn, then do the
+merge.
+
+          <p>For more information on conflicts, <a href="Merge-Conflicts.html#Merge-Conflicts">Merge Conflicts</a>.
+
+          <p>Note that this cannot be used to show conflicts that would occur in an
+<samp><span class="command">update</span></samp>, since in that case one revision is the workspace.
+
+          <br><dt><strong>Sample output:</strong><dd>
+The output starts by listing the revisions and their common ancestor:
+<pre class="verbatim">          
+              left [532ab5011ea9e64aa212d4ea52363b1b8133d5ba]
+             right [b94a03a922c2c281a88d8988db64e76a32edb6a1]
+          ancestor [ead03530f5fefe50c9010157c42c0ebe18086559]
+     </pre>
+
+          <p>Attribute changed in both branches, or dropped in one:
+<pre class="verbatim">          
+                  conflict attribute
+                 node_type "file"
+                 attr_name "attr1"
+             ancestor_name "foo"
+          ancestor_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+                 left_name "foo"
+              left_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+           left_attr_value "valueX"
+                right_name "foo"
+             right_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+          right_attr_value "valueZ"
+          
+                  conflict attribute
+                 node_type "file"
+                 attr_name "attr2"
+             ancestor_name "foo"
+          ancestor_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+                 left_name "foo"
+              left_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+           left_attr_value "valueY"
+                right_name "foo"
+             right_file_id [bab2022ff2ed13501a8a83bcc6bd53f5042141be]
+          right_attr_state "dropped"
+     </pre>
+
+          <p>Missing root directory:
+<pre class="verbatim">          
+               conflict missing_root
+              left_type "pivoted root"
+          ancestor_name "foo"
+             right_type "deleted directory"
+          ancestor_name "foo"
+     </pre>
+
+          <p>Directory deleted and/or renamed:
+<pre class="verbatim">          
+               conflict orphaned_directory
+             right_type "deleted directory"
+          ancestor_name ""
+              left_type "renamed directory"
+          ancestor_name ""
+              left_name "bar"
+          
+               conflict orphaned_file
+             right_type "deleted directory"
+          ancestor_name "foo"
+              left_type "added file"
+              left_name "foo/baz"
+           left_file_id [f5122a7f896cb2dd7ecaa84be89c94ab09c15101]
+          
+                  conflict orphaned_file
+                right_type "deleted directory"
+             ancestor_name "foo"
+                 left_type "renamed file"
+             ancestor_name "bar"
+          ancestor_file_id [ac4c6d06436632e017bb7d3ea241734e8899f8ce]
+                 left_name "foo/baz"
+              left_file_id [ac4c6d06436632e017bb7d3ea241734e8899f8ce]
+          
+               conflict multiple_names
+              left_type "renamed directory"
+          ancestor_name ""
+              left_name "aaa"
+             right_type "renamed directory"
+          ancestor_name ""
+             right_name "bbb"
+          
+               conflict duplicate_name
+              left_type "renamed directory"
+          ancestor_name "foo"
+              left_name ""
+             right_type "renamed directory"
+          ancestor_name "bar"
+             right_name ""
+          
+               conflict multiple_names
+              left_type "renamed directory"
+          ancestor_name "foo"
+              left_name "a/foo"
+             right_type "renamed directory"
+          ancestor_name "foo"
+             right_name "b/foo"
+     </pre>
+
+          <p>Directory loop created:
+<pre class="verbatim">          
+               conflict directory_loop_created
+              left_type "renamed directory"
+          ancestor_name "foo"
+              left_name "bar/foo"
+             right_type "renamed directory"
+          ancestor_name "bar"
+             right_name "foo/bar"
+     </pre>
+
+          <p>File content changed (this may be resolvable by the internal line
+merger), file also renamed:
+<pre class="verbatim">          
+                  conflict content
+                 node_type "file"
+             ancestor_name "bar"
+          ancestor_file_id [f0ef49fe92167fe2a086588019ffcff7ea561786]
+                 left_name "bar"
+              left_file_id [08cd878106a93ce2ef036a32499c1432adb3ee0d]
+                right_name "bar"
+             right_file_id [0cf419dd93d38b2daaaf1f5e0f3ec647745b9690]
+          
+                  conflict content
+                 node_type "file"
+             ancestor_name "foo"
+          ancestor_file_id [50bf338804db2685a575124c8c8371d06b65c523]
+                 left_name "bar"
+              left_file_id [f1bb6fff2ad16d67143d89fc374ede7abec5d437]
+                right_name "baz"
+             right_file_id [b966b2d35b99e456cb0c55e4573ef0b1b155b4a9]
+     </pre>
+
+          <p>File added and/or renamed:
+<pre class="verbatim">          
+               conflict duplicate_name
+              left_type "added file"
+              left_name "bar"
+           left_file_id [ba4637112ee3e55a6106d647d6c4e04a6643f8eb]
+             right_type "added file"
+             right_name "bar"
+          right_file_id [fe6d523f607e2f2fc0f0defad3bda0351a95a337]
+          
+                  conflict duplicate_name
+                 left_type "renamed file"
+             ancestor_name "foo"
+          ancestor_file_id [c6864a8456855c48afe83488a47501fe8b94bd57]
+                 left_name "bar"
+              left_file_id [c6864a8456855c48afe83488a47501fe8b94bd57]
+                right_type "added file"
+                right_name "bar"
+             right_file_id [c809d71002ec57a2f1d10221f05993012a491436]
+          
+                  conflict duplicate_name
+                 left_type "renamed file"
+             ancestor_name "foo"
+          ancestor_file_id [918f3642b57a5e2dd13ee874e3dc2518a53ab4b4]
+                 left_name "abc"
+              left_file_id [918f3642b57a5e2dd13ee874e3dc2518a53ab4b4]
+                right_type "renamed file"
+             ancestor_name "bar"
+          ancestor_file_id [bdf46a521d5f1dd54c31dda15e99ff6b0c80394a]
+                right_name "abc"
+             right_file_id [bdf46a521d5f1dd54c31dda15e99ff6b0c80394a]
+     </pre>
+
+          <p>File renamed to different names:
+<pre class="verbatim">          
+                  conflict multiple_names
+                 left_type "renamed file"
+             ancestor_name "foo"
+          ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+                 left_name "bar"
+              left_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+                right_type "renamed file"
+             ancestor_name "foo"
+          ancestor_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+                right_name "baz"
+             right_file_id [e80910e54d0bdea1b6d295ada320b87aaf9fdc23]
+     </pre>
+
+          <p>Invalid file name (<samp><span class="file">_MTN</span></samp> in root directory):
+<pre class="verbatim">          
+               conflict invalid_name
+              left_type "pivoted root"
+          ancestor_name "foo"
+             right_type "added directory"
+             right_name "foo/_MTN"
+          
+                  conflict invalid_name
+                 left_type "pivoted root"
+             ancestor_name "foo"
+                right_type "renamed file"
+             ancestor_name "bad/_MTN"
+          ancestor_file_id [629d9e5d254241abf4b46f108fb53189e314e41d]
+                right_name "foo/_MTN"
+             right_file_id [629d9e5d254241abf4b46f108fb53189e314e41d]
+     </pre>
+
+          <p>Revisions that don't share a common ancestor:
+<pre class="verbatim">          
+              left [161e426c3b0c3f98d0be225f69d6f893ce8e0442]
+             right [0e3260f51acd1e98c40666557eb6c0eefeae5f02]
+          ancestor []
+          
+          conflict missing_root
+          
+            conflict duplicate_name
+           left_type "added directory"
+           left_name ""
+          right_type "added directory"
+          right_name ""
+     </pre>
+
+          <br><dt><strong>Output format:</strong><dd>
+First the revision ids of the left and right revisions, and their
+common ancestor, are printed in one basic_io stanza.
+
+          <p>Then each conflict is listed in a basic_io stanza. Stanzas are
+separated by blank lines.
+
+          <p>Each conflict stanza starts with a <code>conflict</code> line, and contains
+up to eleven lines. The order of the lines is not important, and may
+change in future revisions, except that the first line will always be
+<code>conflict</code>.
+
+          <p>When the conflicts involve files, the file ids are output, so the file
+contents can be retrieved efficiently via <code>automate get_file</code>,
+to aid in conflict resolution.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the revision IDs are given, but either is unknown or
+invalid, prints an error message to stderr and exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate get_workspace_root</span></samp><a name="index-mtn-automate-get_005fworkspace_005froot-186"></a><dd>
+          <dl>
+<dt><strong>Arguments:</strong><dd>
+None.
+
+          <br><dt><strong>Added in:</strong><dd>
+8.0
+
+          <br><dt><strong>Purpose:</strong><dd>
+To show the path of the workspace root for the current directory.
+
+          <br><dt><strong>Sample output:</strong><dd>
+<pre class="verbatim">          
+          /home/jim/juice
+     </pre>
+
+          <br><dt><strong>Output format:</strong><dd>
+A path.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+If the current directory isn't part of a workspace, prints an error to
+stderr and exits with status 1.
 
      </dl>
 

@@ -3,7 +3,7 @@
 <title>Tree - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.11">
+<meta name="generator" content="makeinfo 4.8">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Command-Reference.html#Command-Reference" title="Command Reference">
@@ -26,9 +26,9 @@
 <div class="node">
 <p>
 <a name="Tree"></a>
-Next:&nbsp;<a rel="next" accesskey="n" href="Workspace.html#Workspace">Workspace</a>,
-Previous:&nbsp;<a rel="previous" accesskey="p" href="Command-Reference.html#Command-Reference">Command Reference</a>,
-Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+n&auml;chstes:&nbsp;<a rel="next" accesskey="n" href="Workspace.html#Workspace">Workspace</a>,
+voriges:&nbsp;<a rel="previous" accesskey="p" href="Command-Reference.html#Command-Reference">Command Reference</a>,
+aufw&auml;rts:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
 <hr>
 </div>
 
@@ -63,13 +63,13 @@ these entries:
           
              file "src/hello.c
           content [97dfc6fd4f486df95868d85b4b81197014ae2a84]
-</pre>
+     </pre>
      <p>Then the following files are created:
      <pre class="smallexample">          <var>directory</var>/
           <var>directory</var>/Makefile
           <var>directory</var>/include/hello.h
           <var>directory</var>/src/hello.c
-</pre>
+     </pre>
      <p>If you wish to <samp><span class="command">checkout</span></samp> in the current directory, you can
 supply the special name <samp><span class="file">.</span></samp> (a single period) for
 <var>directory</var>. When running <samp><span class="command">checkout</span></samp> into an existing
@@ -173,7 +173,18 @@ consequently into the branch that revision resides in).
 branch already exists, any missing files are dropped and any unknown
 files are added before committing.
 
-     <p>If <samp><span class="command">--dry-run</span></samp> is given, no commit is done. 
+     <p>If <samp><span class="command">--dry-run</span></samp> is given, no commit is done.
+
+     <p>Roughly speaking, <samp><span class="command">mtn import</span></samp> does the following:
+
+     <pre class="example">          $ mtn setup <span class="roman">(with a twist)</span>
+          $ mtn drop --missing
+          $ mtn add --unknown
+          $ mtn commit
+     </pre>
+     <p>The twist with the <samp><span class="command">mtn setup</span></samp> part is that it sets the parent
+to be the given revision or the head of the given branch instead of the
+null revision. 
 </dl>
 
    </body></html>

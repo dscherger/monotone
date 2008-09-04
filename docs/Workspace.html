@@ -3,7 +3,7 @@
 <title>Workspace - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.11">
+<meta name="generator" content="makeinfo 4.8">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
 <link rel="prev" href="Tree.html#Tree" title="Tree">
@@ -26,9 +26,9 @@
 <div class="node">
 <p>
 <a name="Workspace"></a>
-Next:&nbsp;<a rel="next" accesskey="n" href="Network.html#Network">Network</a>,
-Previous:&nbsp;<a rel="previous" accesskey="p" href="Tree.html#Tree">Tree</a>,
-Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+n&auml;chstes:&nbsp;<a rel="next" accesskey="n" href="Network.html#Network">Network</a>,
+voriges:&nbsp;<a rel="previous" accesskey="p" href="Tree.html#Tree">Tree</a>,
+aufw&auml;rts:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
 <hr>
 </div>
 
@@ -46,7 +46,7 @@ or within an existing directory full of files, prior to using
 <samp><span class="command">mtn commit</span></samp>. If no directory is specified, the current
 directory is used.
 
-     <br><dt><samp><span class="command">mtn add </span><var>pathname...</var></samp><a name="index-mtn-add-_0040var_007bpathname_002e_002e_002e_007d-17"></a><br><dt><samp><span class="command">mtn add --unknown</span></samp><a name="index-mtn-add-_002d_002dunknown-18"></a><dd>This command places &ldquo;add&rdquo; entries for the paths specified in
+     <br><dt><samp><span class="command">mtn add [--recursive | -R] [--no-respect-ignore] </span><var>pathname...</var></samp><a name="index-mtn-add-_005b_002d_002drecursive-_007c-_002dR_005d-_005b_002d_002dno_002drespect_002dignore_005d-_0040var_007bpathname_002e_002e_002e_007d-17"></a><br><dt><samp><span class="command">mtn add [--recursive | -R] [--no-respect-ignore] --unknown [</span><var>pathname...</var><span class="command">]</span></samp><a name="index-mtn-add-_005b_002d_002drecursive-_007c-_002dR_005d-_005b_002d_002dno_002drespect_002dignore_005d-_002d_002dunknown-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-18"></a><dd>This command places &ldquo;add&rdquo; entries for the paths specified in
 <var>pathname...</var> in the workspace's &ldquo;work list&rdquo;. The work list of
 your workspace is stored in <samp><span class="file">_MTN/revision</span></samp>, and is a list of
 explicit pathname changes you wish to commit at some future time, such
@@ -62,11 +62,17 @@ workspace, monotone will use the work list to build a new revision,
 which it will then commit to the database. The new revision will have
 any added entries inserted in its manifest.
 
+     <p>Adding directories, whether explicitly or using the <samp><span class="option">--unknown</span></samp>
+option, is non-recursive by default.  The <samp><span class="command">add</span></samp> command can be
+made recursive using the <samp><span class="option">--recursive</span></samp> option.  When adding a
+directory non-recursively, monotone will warn if the directory has
+any files that would be added by a recursive add.
+
      <br><dt><samp><span class="command">mtn [--no-respect-ignore] mkdir </span><var>directory...</var></samp><a name="index-mtn-_005b_002d_002dno_002drespect_002dignore_005d-mkdir-_0040var_007bdirectory_002e_002e_002e_007d-19"></a><dd>This command creates a directory in the filesystem relative to your
 current location and adds it to your workspace's &ldquo;work list&rdquo;.  The
 changes are not reflected in your database until such time as you
 perform a commit.  If you use the <samp><span class="option">--no-respect-ignore</span></samp> flag,
-entries in .mtn-ignore will not be honored.
+entries in <samp><span class="file">.mtn-ignore</span></samp> will not be honored.
 
      <br><dt><samp><span class="command">mtn [--bookkeep-only] drop </span><var>pathname...</var></samp><a name="index-mtn-_005b_002d_002dbookkeep_002donly_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-20"></a><dt><samp><span class="command">mtn drop --missing</span></samp><a name="index-mtn-drop-_002d_002dmissing-21"></a><dd>This command places &ldquo;drop&rdquo; entries for the paths specified in
 <var>pathname...</var> in the workspace's &ldquo;work list&rdquo; and deletes
@@ -236,8 +242,8 @@ specify an explicit <samp><span class="option">--revision</span></samp> argument
      <br><dt><samp><span class="command">mtn pluck --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bto_007d-42"></a><dt><samp><span class="command">mtn pluck --revision=</span><var>from</var><span class="command"> --revision=</span><var>to</var></samp><a name="index-mtn-pluck-_002d_002drevision_003d_0040var_007bfrom_007d-_002d_002drevision_003d_0040var_007bto_007d-43"></a><dd>
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
-identical to running <samp><span class="command">mtn diff </span><samp><span class="option">-r</span></samp> <var>from</var>
-<samp><span class="option">-r</span></samp> <var>to</var><span class="command"> | patch </span><samp><span class="option">-p0</span></samp></samp>, except that this command
+identical to running <samp><span class="command">mtn diff <samp>-r</samp> </span><var>from</var><span class="command">
+<samp>-r</samp> </span><var>to</var><span class="command"> | patch <samp>-p0</samp></span></samp>, except that this command
 uses monotone's merger, and thus intelligently handles renames,
 conflicts, and so on.
 
@@ -287,7 +293,7 @@ workspace:
 
      <pre class="smallexample">          $ mtn rename . <var>new_root</var>/<var>put_old</var>
           $ mtn rename <var>new_root</var> .
-</pre>
+     </pre>
      <p>Except, of course, that these <samp><span class="command">rename</span></samp> commands are illegal,
 because after the first command the tree has no root at all, and there
 is a directory loop.  This illegality is the only reason for

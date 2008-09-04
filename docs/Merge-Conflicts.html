@@ -3,7 +3,7 @@
 <title>Merge Conflicts - monotone documentation</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="monotone documentation">
-<meta name="generator" content="makeinfo 4.11">
+<meta name="generator" content="makeinfo 4.8">
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="prev" href="Inodeprints.html#Inodeprints" title="Inodeprints">
@@ -26,9 +26,9 @@
 <div class="node">
 <p>
 <a name="Merge-Conflicts"></a>
-Next:&nbsp;<a rel="next" accesskey="n" href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a>,
-Previous:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
-Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+n&auml;chstes:&nbsp;<a rel="next" accesskey="n" href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a>,
+voriges:&nbsp;<a rel="previous" accesskey="p" href="Inodeprints.html#Inodeprints">Inodeprints</a>,
+aufw&auml;rts:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
 <hr>
 </div>
 
@@ -38,12 +38,13 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advan
 two revisions using the database merge commands <samp><span class="command">merge</span></samp>,
 <samp><span class="command">explicit_merge</span></samp>, <samp><span class="command">propagate</span></samp> and
 <samp><span class="command">merge_into_dir</span></samp> or when using the workspace merge commands
-<samp><span class="command">update</span></samp>, <samp><span class="command">pluck</span></samp> and <samp><span class="command">merge_into_workspace</span></samp>. 
-The <samp><span class="command">show_conflicts</span></samp> command can be used to list conflicts
-between database revisions which would be encountered by the database
-merge commands. Unfortunately, this command can't yet list conflicts
-between a database revision and the current workspace revision which
-would be encountered by the workspace merge commands.
+<samp><span class="command">update</span></samp>, <samp><span class="command">pluck</span></samp> and <samp><span class="command">merge_into_workspace</span></samp>.
+
+   <p>The <samp><span class="command">show_conflicts</span></samp> and <samp><span class="command">automate show_conflicts</span></samp>
+commands can be used to list conflicts between database revisions
+which would be encountered by the database merge commands. 
+Unfortunately, these commands can't yet list conflicts between a
+database revision and the current workspace.
 
 <h4 class="subsection">3.6.1 Conflict Types</h4>
 
