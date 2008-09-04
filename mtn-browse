@@ -174,7 +174,7 @@ sub view_button_clicked_cb($$);
 
     # Initialise stuff.
 
-    Gnome2::Program->init("mtn-browse", 0.3);
+    Gnome2::Program->init("mtn-browse", 0.51);
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
@@ -416,7 +416,7 @@ sub about_activate_cb($$)
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
-	 "0.45",
+	 "0.51",
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
@@ -1338,15 +1338,13 @@ sub manifest_browser_treeview_row_activated_cb($$$$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my($manifest_entry,
-       $short_name);
+    my $manifest_entry;
 
     # Get the manifest entry details for the item that was double-clicked.
 
     $widget->get_selection()->selected_foreach
 	(sub {
 	     my($model, $path, $iter) = @_;
-	     $short_name = $model->get($iter, MLS_NAME_COLUMN);
 	     $manifest_entry = $model->get($iter, MLS_MANIFEST_ENTRY_COLUMN);
 	 });
 
@@ -2164,21 +2162,12 @@ sub update_browser_state($$)
 		if (! exists($item->{manifest_entry}->{author}))
 		{
 		    $taking_our_time = 1;
-		    get_file_details($browser->{mtn},
-				     $revision_ids[0],
-				     $item->{manifest_entry}->{name},
-				     \$author,
-				     \$last_update,
-				     \$item->{manifest_entry}->
-				         {last_changed_revision});
-		    $item->{manifest_entry}->{author} = $author;
-		    $item->{manifest_entry}->{last_update} = $last_update;
+		    cache_extra_file_info($browser->{mtn},
+					  $revision_ids[0],
+					  $item->{manifest_entry});
 		}
-		else
-		{
-		    $author = $item->{manifest_entry}->{author};
-		    $last_update = $item->{manifest_entry}->{last_update};
-		}
+		$author = $item->{manifest_entry}->{author};
+		$last_update = $item->{manifest_entry}->{last_update};
 		$last_update =~ s/T/ /;
 	    }
 	    else
@@ -2289,13 +2278,9 @@ sub update_browser_state($$)
 		{
 		    my @revision_ids;
 		    get_revision_ids($browser, \@revision_ids);
-		    get_file_details($browser->{mtn},
-				     $revision_ids[0],
-				     $manifest_entry->{name},
-				     \$manifest_entry->{author},
-				     \$manifest_entry->{last_update},
-				     \$manifest_entry->
-				         {last_changed_revision});
+		    cache_extra_file_info($browser->{mtn},
+					  $revision_ids[0],
+					  $manifest_entry);
 		}
 		$last_update = $manifest_entry->{last_update};
 		$last_update =~ s/T/ /;

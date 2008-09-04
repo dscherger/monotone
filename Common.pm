@@ -56,6 +56,7 @@ use constant THRESHOLD  => 20;
 
 # Public routines.
 
+sub cache_extra_file_info($$$);
 sub colour_to_string($);
 sub create_format_tags($);
 sub data_is_binary($);
@@ -769,6 +770,38 @@ sub get_revision_ids($$;$)
 #
 ##############################################################################
 #
+#   Routine      - cache_extra_file_info
+#
+#   Description  - Cache extra information about a file in its manifest entry
+#                  record.
+#
+#   Data         - $mtn            : The Monotone::AutomateStdio object that
+#                                    is to be used.
+#                  $revision_id    : The revision id from where the search for
+#                                    the latest file update is to start,
+#                                    working backwards.
+#                  $manifest_entry : A reference to the file's manifest entry.
+#
+##############################################################################
+
+
+
+sub cache_extra_file_info($$$)
+{
+
+    my($mtn, $revision_id, $manifest_entry) = @_;
+
+    get_file_details($mtn,
+		     $revision_id,
+		     $manifest_entry->{name},
+		     \$manifest_entry->{author},
+		     \$manifest_entry->{last_update},
+		     \$manifest_entry->{last_changed_revision});
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_file_details
 #
 #   Description  - Get the details of the specified file.
@@ -865,11 +898,11 @@ sub file_glob_to_regexp($)
 	}
 	elsif ($char eq "*")
 	{
-	    $re_text .= $escaping ? "\\*" : ".*";
+	    $re_text .= $escaping ? "\\*" : "[^/]*";
 	}
 	elsif ($char eq "?")
 	{
-	    $re_text .= $escaping ? "\\?" : ".";
+	    $re_text .= $escaping ? "\\?" : "[^/]";
 	}
 	elsif ($char eq "\\")
 	{

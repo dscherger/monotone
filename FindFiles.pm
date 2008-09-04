@@ -310,8 +310,10 @@ sub search_files_button_clicked_cb($$)
     my($contents_re,
        $counter,
        $file_glob_re,
+       $file_prefix_length,
        $manifest,
        $matches,
+       $name,
        $period,
        $query,
        $size);
@@ -337,6 +339,7 @@ sub search_files_button_clicked_cb($$)
     # Build up a sub-manifest representing the items that we are going to
     # search.
 
+    $file_prefix_length = 0;
     if ($query->{file_glob_search_subdirectories}
 	&& $instance->{starting_point} eq "")
     {
@@ -360,6 +363,8 @@ sub search_files_button_clicked_cb($$)
 	    @manifest = map($_->{manifest_entry}, @result);
 	}
 	$manifest = \@manifest;
+	$file_prefix_length = length($instance->{starting_point});
+	++ $file_prefix_length if ($file_prefix_length > 0);
     }
 
     # Precompile the regexps and more complex comparison values.
@@ -515,7 +520,7 @@ sub search_files_button_clicked_cb($$)
 
 	# Name.
 
-	next if ($entry->{name} !~ m/$file_glob_re/
+	next if (basename($entry->{name}) !~ m/$file_glob_re/
 		 || ($query->{file_glob} eq "" && $entry->{type} ne "file"));
 
 	# The remaining tests only make sense for files.
@@ -532,20 +537,12 @@ sub search_files_button_clicked_cb($$)
 		   $last_update);
 		if (! exists($entry->{author}))
 		{
-		    get_file_details($instance->{mtn},
-				     $instance->{revision_id},
-				     $entry->{name},
-				     \$author,
-				     \$last_update,
-				     \$entry->{last_changed_revision});
-		    $entry->{author} = $author;
-		    $entry->{last_update} = $last_update;
+		    cache_extra_file_info($instance->{mtn},
+					  $instance->{revision_id},
+					  $entry);
 		}
-		else
-		{
-		    $author = $entry->{author};
-		    $last_update = $entry->{last_update};
-		}
+		$author = $entry->{author};
+		$last_update = $entry->{last_update};
 		if (exists($query->{older_date}))
 		{
 		    next if ($last_update lt $query->{older_date}
@@ -609,9 +606,10 @@ sub search_files_button_clicked_cb($$)
 	# If we have got this far then it is a match.
 
 	++ $matches;
+	$name = substr($entry->{name}, $file_prefix_length);
 	$instance->{results_liststore}->
 	    set($instance->{results_liststore}->append(),
-		RLS_NAME_COLUMN, $entry->{name},
+		RLS_NAME_COLUMN, $name,
 		RLS_MANIFEST_ENTRY_COLUMN, $entry);
 
     }
@@ -704,25 +702,14 @@ sub results_treeview_cursor_changed_cb($$)
 	{
 	    if (! exists($manifest_entry->{author}))
 	    {
-		get_file_details($instance->{mtn},
-				 $instance->{revision_id},
-				 $manifest_entry->{name},
-				 \$author,
-				 \$last_update,
-				 \$last_changed_revision);
-		$manifest_entry->{author} = $author;
-		$manifest_entry->{last_changed_revision} =
-		    $last_changed_revision;
-		$manifest_entry->{last_update} = $last_update;
+		cache_extra_file_info($instance->{mtn},
+				      $instance->{revision_id},
+				      $manifest_entry);
 	    }
-	    else
-	    {
-		$author = $manifest_entry->{author};
-		$last_changed_revision =
-		    $manifest_entry->{last_changed_revision};
-		$last_update = $manifest_entry->{last_update};
-	    }
+	    $author = $manifest_entry->{author};
 	    $file_id = $manifest_entry->{file_id};
+	    $last_changed_revision = $manifest_entry->{last_changed_revision};
+	    $last_update = $manifest_entry->{last_update};
 	    $last_update =~ s/T/ /;
 	}
 	else
