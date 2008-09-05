@@ -3,9 +3,14 @@
 
 #include "base.hh"
 #include "vector.hh"
+#include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
 
 #include "cert.hh"
 #include "database.hh"
+#include "file_io.hh"
+#include "globish.hh"
+#include "policy.hh"
 #include "project.hh"
 #include "revision.hh"
 #include "transforms.hh"
@@ -16,17 +21,142 @@
 using std::string;
 using std::set;
 using std::vector;
+using std::map;
 using std::multimap;
 using std::make_pair;
+using boost::shared_ptr;
+
+class policy_info
+{
+public:
+  policy_branch policy;
+  bool passthru;
+  policy_info(data const & spec,
+              branch_prefix const & prefix,
+              database & db)
+    : policy(spec, prefix, db), passthru(false)
+  {
+  }
+  policy_info(revision_id const & rev,
+              branch_prefix const & prefix,
+              database & db)
+    : policy(rev, prefix, db), passthru(false)
+  {
+  }
+  explicit policy_info(database & db)
+    : policy(policy_branch::empty_policy(db)), passthru(true)
+  {
+  }
+  policy_info(map<branch_prefix, data> const & delegations, database & db)
+    : policy(delegations, branch_prefix(), db), passthru(false)
+  {
+  }
+};
+
+project_t::project_t(branch_prefix const & project_name,
+                     data const & project_spec,
+                     database & db)
+  : db(db), project_policy(new policy_info(project_spec, project_name, db))
+{}
+
+project_t::project_t(branch_prefix const & project_name,
+                     revision_id const & policy_rev,
+                     database & db)
+  : db(db), project_policy(new policy_info(policy_rev, project_name, db))
+{}
 
 project_t::project_t(database & db)
-  : db(db)
+  : db(db), project_policy(new policy_info(db))
 {}
+
+project_t::project_t(database & db, lua_hooks & lua, options & opts)
+  : db(db)//, project_policy(db, lua, opts)
+{
+  std::map<branch_prefix, data> delegations;
+
+
+  for (map<branch_prefix, hexenc<id> >::const_iterator
+         i = opts.policy_revisions.begin();
+       i != opts.policy_revisions.end(); ++i)
+    {
+      data dat("revision_id ["+i->second()+"]\n");
+      delegations.insert(make_pair(i->first,
+                                   dat));
+    }
+
+  std::map<string, data> defs;
+  lua.hook_get_projects(defs);
+  for (map<string, data>::const_iterator i = defs.begin();
+       i != defs.end(); ++i)
+    {
+      delegations.insert(make_pair(branch_prefix(i->first),
+                                   i->second));
+    }
+  if (delegations.empty())
+    project_policy.reset(new policy_info(db));
+  else
+    project_policy.reset(new policy_info(delegations, db));
+}
+
+bool
+project_t::get_policy_branch_policy_of(branch_name const & name,
+                                       branch_policy & policy_branch_policy,
+                                       branch_prefix & policy_prefix)
+{
+  std::string acc;
+  return project_policy->policy.get_nearest_policy(name,
+                                                   policy_branch_policy,
+                                                   policy_prefix,
+                                                   acc) != NULL;
+}
+
+bool
+project_t::policy_exists(branch_prefix const & name) const
+{
+  if (project_policy->passthru)
+    return name().empty();
+
+  branch_policy pol;
+  branch_prefix prefix;
+  std::string tmp;
+  bool got = project_policy->policy.get_nearest_policy(branch_name(name()),
+                                                       pol, prefix, tmp) != NULL;
+  return got && prefix() == name();
+}
+
+void
+project_t::get_subpolicies(branch_prefix const & name,
+                           std::set<branch_prefix> & names) const
+{
+  if (project_policy->passthru)
+    return;
+
+  branch_policy pol;
+  branch_prefix prefix;
+  std::string tmp;
+  policy_revision const * pr =
+    project_policy->policy.get_nearest_policy(branch_name(name()),
+                                              pol, prefix, tmp);
+  if (pr != NULL)
+    {
+      pr->get_delegation_names(names);
+    }
+}
 
 void
 project_t::get_branch_list(std::set<branch_name> & names,
                            bool check_heads)
 {
+  if (!project_policy->passthru)
+    {
+      map<branch_name, branch_policy> branches = project_policy->policy.branches();
+      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+           i != branches.end(); ++i)
+        {
+          names.insert(i->first);
+        }
+      return;
+    }
   if (indicator.outdated())
     {
       std::vector<std::string> got;
@@ -57,6 +187,18 @@ project_t::get_branch_list(globish const & glob,
                            std::set<branch_name> & names,
                            bool check_heads)
 {
+  if (!project_policy->passthru)
+    {
+      map<branch_name, branch_policy> branches = project_policy->policy.branches();
+      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+           i != branches.end(); ++i)
+        {
+          if (glob.matches(i->first()))
+            names.insert(i->first);
+        }
+      return;
+    }
+
   std::vector<std::string> got;
   db.get_branches(glob, got);
   names.clear();
@@ -75,6 +217,58 @@ project_t::get_branch_list(globish const & glob,
       if (!check_heads || !heads.empty())
         names.insert(branch);
     }
+}
+
+void
+project_t::get_branch_list(std::set<branch_uid> & branch_ids)
+{
+  branch_ids.clear();
+  if (project_policy->passthru)
+    {
+      std::set<branch_name> names;
+      get_branch_list(names, false);
+      for (std::set<branch_name>::const_iterator i = names.begin();
+           i != names.end(); ++i)
+        {
+          branch_ids.insert(branch_uid((*i)()));
+        }
+      return;
+    }
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  for (branchlist::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      branch_ids.insert(i->second.branch_cert_value);
+    }
+}
+
+branch_uid
+project_t::translate_branch(branch_name const & name)
+{
+  if (project_policy->passthru)
+    return branch_uid(name());
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  branchlist::iterator i = branches.find(name);
+  I(i != branches.end());
+  return i->second.branch_cert_value;
+}
+
+branch_name
+project_t::translate_branch(branch_uid const & uid)
+{
+  if (project_policy->passthru)
+    return branch_name(uid());
+  typedef map<branch_name, branch_policy> branchlist;
+  branchlist branches = project_policy->policy.branches();
+  for (branchlist::const_iterator i = branches.begin();
+       i != branches.end(); ++i)
+    {
+      if (i->second.branch_cert_value == uid)
+        return i->first;
+    }
+  I(false);
 }
 
 namespace
@@ -130,28 +324,47 @@ project_t::get_branch_heads(branch_name const & name,
     cache_index(name, ignore_suspend_certs);
   std::pair<outdated_indicator, std::set<revision_id> > &
     branch = branch_heads[cache_index];
+
   if (branch.first.outdated())
     {
       L(FL("getting heads of branch %s") % name);
 
-      branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
+      if (project_policy->passthru)
+        {
+
+          branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
                                                 cert_value(name()),
                                                 branch.second);
 
-      not_in_branch p(db, name);
-      erase_ancestors_and_failures(db, branch.second, p,
-                                   inverse_graph_cache_ptr);
+          not_in_branch p(db, name);
+          erase_ancestors_and_failures(db, branch.second, p,
+                                       inverse_graph_cache_ptr);
 
-      if (!ignore_suspend_certs)
-        {
-          suspended_in_branch s(db, name);
-          std::set<revision_id>::iterator it = branch.second.begin();
-          while (it != branch.second.end())
-            if (s(*it))
-              branch.second.erase(it++);
-            else
-              it++;
+          if (!ignore_suspend_certs)
+            {
+              suspended_in_branch s(db, name);
+              std::set<revision_id>::iterator it = branch.second.begin();
+              while (it != branch.second.end())
+                {
+                  if (s(*it))
+                    branch.second.erase(it++);
+                  else
+                    it++;
+                }
+            }
         }
+      else
+        {
+          shared_ptr<branch_policy> bp;
+          bp  = project_policy->policy.maybe_get_branch_policy(name);
+          E(bp, F("Cannot find policy for branch %s.") % name);
+
+          branch.first = ::get_branch_heads(*bp, ignore_suspend_certs, db,
+                                            branch.second,
+                                            inverse_graph_cache_ptr);
+        }
+
+
       
       L(FL("found heads of branch %s (%s heads)")
         % name % branch.second.size());
@@ -163,20 +376,31 @@ bool
 project_t::revision_is_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
-  vector<revision<cert> > certs;
-  db.get_revision_certs(id, branch_cert_name, cert_value(branch()), certs);
+  if (project_policy->passthru)
+    {
+      branch_uid bid = branch_uid(branch());
+      vector<revision<cert> > certs;
+      db.get_revision_certs(id, branch_cert_name, cert_value(bid()), certs);
 
-  int num = certs.size();
+      int num = certs.size();
 
-  erase_bogus_certs(db, certs);
+      erase_bogus_certs(db, certs);
 
-  L(FL("found %d (%d valid) %s branch certs on revision %s")
-    % num
-    % certs.size()
-    % branch
-    % id);
+      L(FL("found %d (%d valid) %s branch certs on revision %s")
+        % num
+        % certs.size()
+        % branch
+        % id);
 
-  return !certs.empty();
+      return !certs.empty();
+    }
+  else
+    {
+      shared_ptr<branch_policy> bp;
+      bp  = project_policy->policy.maybe_get_branch_policy(branch);
+      E(bp, F("Cannot find policy for branch %s.") % branch);
+      return ::revision_is_in_branch(*bp, id, db);
+    }
 }
 
 void
@@ -184,13 +408,23 @@ project_t::put_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch)
 {
-  cert_revision_in_branch(db, keys, id, branch);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_in_branch(db, keys, id, bid);
 }
 
 bool
 project_t::revision_is_suspended_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
   vector<revision<cert> > certs;
   db.get_revision_certs(id, suspend_cert_name, cert_value(branch()), certs);
 
@@ -212,7 +446,12 @@ project_t::suspend_revision_in_branch(key_store & keys,
                                       revision_id const & id,
                                       branch_name const & branch)
 {
-  cert_revision_suspended_in_branch(db, keys, id, branch);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_suspended_in_branch(db, keys, id, bid);
 }
 
 
@@ -249,16 +488,32 @@ project_t::get_revision_branches(revision_id const & id,
   branches.clear();
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
-    branches.insert(branch_name(i->inner().value()));
-
+    {
+      if (project_policy->passthru)
+        branches.insert(branch_name(i->inner().value()));
+      else
+        {
+          std::set<branch_uid> branchids;
+          get_branch_list(branchids);
+          if (branchids.find(branch_uid(i->inner().value())) != branchids.end())
+            branches.insert(translate_branch(branch_uid(i->inner().value())));
+        }
+    }
   return i;
 }
+
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
                             std::vector<revision<cert> > & certs)
 {
-  return db.get_revision_certs(branch_cert_name, cert_value(branch()), certs);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+
+  return db.get_revision_certs(branch_cert_name, cert_value(bid()), certs);
 }
 
 tag_t::tag_t(revision_id const & ident,
@@ -322,7 +577,12 @@ project_t::put_standard_certs(key_store & keys,
   I(time.valid());
   I(!author.empty());
 
-  cert_revision_in_branch(db, keys, id, branch);
+  branch_uid bid;
+  if (project_policy->passthru)
+    bid = branch_uid(branch());
+  else
+    bid = translate_branch(branch);
+  cert_revision_in_branch(db, keys, id, bid);
   cert_revision_changelog(db, keys, id, changelog);
   cert_revision_date_time(db, keys, id, time);
   cert_revision_author(db, keys, id, author);
@@ -363,7 +623,6 @@ project_t::put_cert(key_store & keys,
 {
   put_simple_revision_cert(db, keys, id, name, value);
 }
-
 
 // Local Variables:
 // mode: C++
