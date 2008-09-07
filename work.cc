@@ -825,18 +825,18 @@ addition_builder::visit_dir(file_path const & path)
 {
   if (!recursive) {
     bool warn = false;
-  
+
     // If the db can ever be stored in a dir
     // then revisit this logic
     I(!db.is_dbfile(path));
-  
+
     if (!respect_ignore)
       warn = !directory_empty(path);
     else if (respect_ignore && !work.ignore_file(path))
       {
         vector<path_component> children;
         read_directory(path, children, children);
-        
+
         for (vector<path_component>::const_iterator i = children.begin();
              i != children.end(); ++i)
           {
@@ -857,12 +857,12 @@ addition_builder::visit_dir(file_path const & path)
               }
           }
       }
-  
+
     if (warn)
       W(F("Non-recursive add: Files in the directory '%s' "
           "will not be added automatically.") % path);
   }
-  
+
   this->visit_file(path);
   return true;
 }
@@ -930,11 +930,11 @@ struct simulated_working_tree : public editable_tree
   node_id_source & nis;
 
   set<file_path> blocked_paths;
+  set<file_path> leftover_paths;
   map<node_id, file_path> nid_map;
-  int conflicts;
 
   simulated_working_tree(roster_t & r, temp_node_id_source & n)
-    : workspace(r), nis(n), conflicts(0) {}
+    : workspace(r), nis(n) {}
 
   virtual node_id detach_node(file_path const & src);
   virtual void drop_detached_node(node_id nid);
@@ -1173,8 +1173,10 @@ simulated_working_tree::drop_detached_node(node_id nid)
         {
           map<node_id, file_path>::const_iterator i = nid_map.find(nid);
           I(i != nid_map.end());
-          W(F("cannot drop non-empty directory '%s'") % i->second);
-          conflicts++;
+          L(FL("directory '%s' should be dropped, but is not empty") % i->second);
+          for (dir_map::const_iterator j = dir->children.begin();
+               j != dir->children.end(); ++j)
+            leftover_paths.insert(i->second / j->first);
         }
     }
 }
@@ -1203,9 +1205,9 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
 
   if (workspace.has_node(dst))
     {
-      W(F("attach node %d blocked by unversioned path '%s'") % nid % dst);
+      L(FL("attach node %d blocked by unversioned path '%s'") % nid % dst);
       blocked_paths.insert(dst);
-      conflicts++;
+      leftover_paths.insert(dst);
     }
   else if (dst.empty())
     {
@@ -1221,7 +1223,7 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
         workspace.attach_node(nid, dst);
       else
         {
-          W(F("attach node %d blocked by blocked parent '%s'")
+          L(FL("attach node %d blocked by blocked parent '%s'")
             % nid % parent);
           blocked_paths.insert(dst);
         }
@@ -1253,7 +1255,40 @@ simulated_working_tree::set_attr(file_path const & pth,
 void
 simulated_working_tree::commit()
 {
-  N(conflicts == 0, F("%d workspace conflicts") % conflicts);
+  // if we have found paths during the test-run which will conflict with newly
+  // attached or to-be-dropped nodes, move these paths out of the way into
+  // _MTN/leftover while keeping the path to these paths intact in case the
+  // user wants them back
+  if (leftover_paths.size() > 0)
+    {
+      string now = date_t::now().as_iso_8601_extended();
+      bookkeeping_path leftover_path = bookkeeping_root / "leftover" / now.data();
+      require_path_is_nonexistent(leftover_path,
+                                  F("cannot move left-over paths - "
+                                    "base path %s already exists") % leftover_path);
+
+      mkdir_p(leftover_path);
+
+      for (set<file_path>::const_iterator i = leftover_paths.begin();
+            i != leftover_paths.end(); ++i)
+        {
+          L(FL("processing %s") % *i);
+
+          file_path basedir = (*i).dirname();
+          if (!basedir.empty())
+            mkdir_p(leftover_path / basedir);
+
+          bookkeeping_path new_path = leftover_path / *i;
+          if (directory_exists(*i))
+            move_dir(*i, new_path);
+          else if (file_exists(*i))
+            move_file(*i, new_path);
+          else
+            I(false);
+
+          P(F("moved left-over path %s to %s") % *i % new_path);
+        }
+    }
 }
 
 simulated_working_tree::~simulated_working_tree()
