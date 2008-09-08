@@ -1,0 +1,82 @@
+head	1.3;
+access;
+symbols
+	D:1.2.0.8
+	C:1.2.0.6
+	B:1.2.0.4
+	A:1.2.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.3
+date	2007.03.10.12.10.06;	author markus;	state Exp;
+branches;
+next	1.2;
+commitid	ebGW0koTXumUsx9s;
+
+1.2
+date	2007.03.10.12.10.01;	author markus;	state Exp;
+branches
+	1.2.8.1;
+next	1.1;
+commitid	DQfi38SuodxSsx9s;
+
+1.1
+date	2007.03.10.12.10.00;	author markus;	state Exp;
+branches;
+next	;
+commitid	ypY9fBLqgi5Ssx9s;
+
+1.2.8.1
+date	2007.03.10.12.10.04;	author markus;	state Exp;
+branches;
+next	;
+commitid	JwFdTHp8EAzTsx9s;
+
+
+desc
+@@
+
+
+1.3
+log
+@commit on mainline after branch
+@
+text
+@version 1.3 of test file1
+@
+
+
+1.2
+log
+@first commit
+@
+text
+@d1 1
+a1 1
+version 1.2 of test file1
+@
+
+
+1.2.8.1
+log
+@commit on branch D
+@
+text
+@d1 1
+a1 1
+version 1.2.8.1 of test file1
+@
+
+
+1.1
+log
+@initial import
+@
+text
+@d1 1
+a1 1
+version 1.1 of test file1
+@
+
