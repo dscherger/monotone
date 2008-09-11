@@ -35,6 +35,7 @@ MOST_SOURCES = 								\
 	work.cc work_migration.cc work.hh				\
 	cert.cc cert.hh							\
 	policy.cc policy.hh						\
+	editable_policy.cc editable_policy.hh				\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\

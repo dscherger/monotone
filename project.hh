@@ -24,7 +24,9 @@ public:
   revision_id const ident;
   utf8 const name;
   rsa_keypair_id const key;
-  tag_t(revision_id const & ident, utf8 const & name, rsa_keypair_id const & key);
+  tag_t(revision_id const & ident,
+        utf8 const & name,
+        rsa_keypair_id const & key);
 };
 bool operator < (tag_t const & a, tag_t const & b);
 
@@ -81,14 +83,18 @@ public:
   branch_uid translate_branch(branch_name const & branch);
   branch_name translate_branch(branch_uid const & branch);
 
-  void get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
+  void get_branch_heads(branch_name const & name,
+                        std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
                         std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
 
   outdated_indicator get_tags(std::set<tag_t> & tags);
-  void put_tag(key_store & keys, revision_id const & id, std::string const & name);
+  void put_tag(key_store & keys,
+               revision_id const & id,
+               std::string const & name);
 
-  bool revision_is_in_branch(revision_id const & id, branch_name const & branch);
+  bool revision_is_in_branch(revision_id const & id,
+                             branch_name const & branch);
   void put_revision_in_branch(key_store & keys,
                               revision_id const & id,
                               branch_name const & branch);

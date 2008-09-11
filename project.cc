@@ -543,16 +543,22 @@ operator < (tag_t const & a, tag_t const & b)
 outdated_indicator
 project_t::get_tags(set<tag_t> & tags)
 {
-  std::vector<revision<cert> > certs;
-  outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
-  erase_bogus_certs(db, certs);
-  tags.clear();
-  for (std::vector<revision<cert> >::const_iterator i = certs.begin();
-       i != certs.end(); ++i)
-    tags.insert(tag_t(revision_id(i->inner().ident),
-                      utf8(i->inner().value()), i->inner().key));
+  if (project_policy->passthru)
+    {
+      std::vector<revision<cert> > certs;
+      outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
+      erase_bogus_certs(db, certs);
+      tags.clear();
+      for (std::vector<revision<cert> >::const_iterator i = certs.begin();
+           i != certs.end(); ++i)
+        tags.insert(tag_t(revision_id(i->inner().ident),
+                          utf8(i->inner().value()), i->inner().key));
 
-  return i;
+      return i;
+    }
+  else
+    {
+    }
 }
 
 void
@@ -560,7 +566,11 @@ project_t::put_tag(key_store & keys,
                    revision_id const & id,
                    string const & name)
 {
-  cert_revision_tag(db, keys, id, name);
+  if (project_policy->passthru)
+    cert_revision_tag(db, keys, id, name);
+  else
+    {
+    }
 }
 
 
