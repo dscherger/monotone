@@ -13,6 +13,7 @@
 #include <iterator>
 #include <sstream>
 #include <unistd.h>
+#include <iostream>
 #include "vector.hh"
 
 #include <boost/bind.hpp>
@@ -61,6 +62,7 @@ using std::sort;
 using std::streamsize;
 using std::string;
 using std::vector;
+using std::ostream_iterator;
 
 
 // Name: heads
@@ -502,7 +504,9 @@ CMD_AUTOMATE(graph, "",
 CMD_AUTOMATE(select, N_("SELECTOR"),
              N_("Lists the revisions that match a selector"),
              "",
-             options::opts::none)
+             options::opts::sort_revs|
+             options::opts::limit|
+             options::opts::reverse)
 {
   N(args.size() == 1,
     F("wrong argument count"));
@@ -512,9 +516,38 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
   set<revision_id> completions;
   expand_selector(app.opts, app.lua, project, idx(args, 0)(), completions);
 
-  for (set<revision_id>::const_iterator i = completions.begin();
-       i != completions.end(); ++i)
-    output << *i << '\n';
+  if (app.opts.sort_revs.empty())
+    {
+      copy(completions.begin(), completions.end(),
+           ostream_iterator<revision_id>(output, "\n"));
+    }
+  else
+    {
+      vector<revision_id> result;
+      
+      if (app.opts.sort_revs == "topological")
+        {
+          toposort(db, completions, result);
+        }
+      else
+        {
+          // TBD: add more sorting options here
+          copy(completions.begin(), completions.end(),
+               back_inserter(result));
+        }
+      long count = std::min(boost::lexical_cast<long>(result.size()), app.opts.limit);
+      
+      if (app.opts.reverse)
+        {
+          copy(result.rbegin(), result.rbegin()+count,
+               ostream_iterator<revision_id>(output, "\n"));
+        }
+      else
+        {
+          copy(result.begin(), result.begin()+count,
+               ostream_iterator<revision_id>(output, "\n"));
+        }
+    }
 }
 
 struct node_info

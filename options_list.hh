@@ -535,6 +535,37 @@ OPT(set_default, "set-default", bool, false,
 }
 #endif
 
+OPT(sort_revs, "sort-revs", std::string, ,
+    gettext_noop("specify how to sort the revisions list"))
+#ifdef option_bodies
+{
+  sort_revs = arg;
+  
+  if (arg.empty())
+    throw bad_arg_internal(F("--sort requires a value ").str());
+  //  if (arg != "topological" )
+  //  throw bad_arg_internal(F("invalid arg for --sort").str());
+}
+#endif
+
+OPT(limit, "limit", long, 0,
+    gettext_noop("limit the number of revisions returned"))
+#ifdef option_bodies
+{
+  limit = boost::lexical_cast<long>(arg);
+  if (limit < 0)
+    throw bad_arg_internal(F("limit cannot be negative").str());
+}
+#endif
+
+OPT(reverse, "reverse", bool, false,
+    gettext_noop("revert the order for the list of revisions returned"))
+#ifdef option_bodies
+{
+  reverse = true;
+}
+#endif
+
 GOPT(ticker, "ticker", std::string, ,
      gettext_noop("set ticker style (count|dot|none)"))
 #ifdef option_bodies
