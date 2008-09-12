@@ -169,7 +169,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   revision_id rev_id;
   roster_t roster;
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   N(app.opts.revision_selectors.size() <= 1,
     F("more than one revision given"));
