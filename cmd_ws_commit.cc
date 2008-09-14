@@ -552,7 +552,7 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
        "that is currently the root "
        "directory will have name PUT_OLD.\n"
        "Use of --bookkeep-only is NOT recommended."),
-    options::opts::bookkeep_only)
+    options::opts::bookkeep_only | options::opts::move_conflicting_paths)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -562,7 +562,8 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
   file_path new_root = file_path_external(idx(args, 0));
   file_path put_old = file_path_external(idx(args, 1));
   work.perform_pivot_root(db, new_root, put_old,
-                              app.opts.bookkeep_only);
+                          app.opts.bookkeep_only,
+                          app.opts.move_conflicting_paths);
 }
 
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
@@ -600,7 +601,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch (given or implicit).  "
        "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
 {
   revision_id revid;
   system_path dir;
@@ -695,7 +697,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
   content_merge_checkout_adaptor wca(db);
 
-  work.perform_content_update(db, checkout, wca, false);
+  work.perform_content_update(db, checkout, wca, false,
+                              app.opts.move_conflicting_paths);
 
   work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);

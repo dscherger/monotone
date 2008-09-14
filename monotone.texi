@@ -3323,14 +3323,19 @@ same name.
 
 These examples describe collisions on @command{update}; the same kinds
 of things can happen with other commands that can bring changes into
-your workspace, such as @command{checkout} or @command{pluck} too.
+your workspace, such as @command{checkout}, @command{pivot_root} or
+@command{pluck} too.
 
 Monotone is careful to avoid hitting such collisions. Before changing
 the workspace, it will try and detect the possibility of collisions, and
 the command will fail, warning you about the names that collide.  The
 file content in the database is safe and can be recovered at any time,
 so monotone is conservative and will refuse to destroy the information
-in your workspace contents.
+in your workspace contents. Furthermore, all workspace-changing commands have
+an option @option{--move-conflicting-paths}, which moves unversioned, but
+conflicting files and directories from the workspace into a new subdirectory
+under _MTN/conflicts. This is useful if you want to ensure that an update
+always succeeds and you just want to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:
@@ -4454,10 +4459,10 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
-@item mtn checkout --revision=@var{id} @var{directory}
-@itemx mtn co --revision=@var{id} @var{directory}
-@itemx mtn --branch=@var{branchname} checkout @var{directory}
-@itemx mtn --branch=@var{branchname} co @var{directory}
+@item mtn checkout [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn co [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} co @var{directory}
 
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
@@ -4825,8 +4830,8 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-@item mtn update
-@itemx mtn update --revision=@var{revision}
+@item mtn update [--move-conflicting-paths]
+@itemx mtn update [--move-conflicting-paths] --revision=@var{revision}
 Without a @option{--revision} argument, this command incorporates
 ``recent'' changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
@@ -4868,8 +4873,8 @@ specify an explicit @option{--revision} argument).
 When running @command{update}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck --revision=@var{to}
-@itemx mtn pluck --revision=@var{from} --revision=@var{to}
+@item mtn pluck [--move-conflicting-paths] --revision=@var{to}
+@itemx mtn pluck [--move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -4912,7 +4917,7 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn pivot_root [--bookkeep-only] pivot_root @var{new_root} @var{put_old}
+@item mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also @command{merge_into_dir}.

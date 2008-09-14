@@ -283,6 +283,15 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 }
 #endif
 
+OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
+        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+                     "before proceeding with any workspace change"))
+#ifdef option_bodies
+{
+  move_conflicting_paths = true;
+}
+#endif
+
 GOPT(ssh_sign, "ssh-sign", std::string, "yes",
      gettext_noop("controls use of ssh-agent.  valid arguments are: "
                   "'yes' to use ssh-agent to make signatures if possible, "

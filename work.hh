@@ -131,7 +131,7 @@ public:
 
   void perform_deletions(database & db,
                          std::set<file_path> const & targets,
-			 bool recursive, 
+                         bool recursive,
                          bool bookkeep_only);
 
   void perform_rename(database & db,
@@ -142,12 +142,14 @@ public:
   void perform_pivot_root(database & db,
                           file_path const & new_root,
                           file_path const & put_old,
-                          bool bookkeep_only);
+                          bool bookkeep_only,
+                          bool move_conflicting_paths);
 
   void perform_content_update(database & db,
                               cset const & cs,
                               content_merge_adaptor const & ca,
-                              bool messages = true);
+                              bool const messages = true,
+                              bool const move_conflicting_paths = false);
 
   void update_any_attrs(database & db);
   void init_attributes(file_path const & path, editable_roster_base & er);
@@ -255,4 +257,4 @@ public:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
 #endif // __WORK_HH__
- 
+

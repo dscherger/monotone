@@ -439,7 +439,10 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   content_merge_checkout_adaptor wca(db);
 
-  work.perform_content_update(db, checkout, wca, false);
+  // FIXME: in contrast to checkout, clone must be given an non-existant
+  // directory, thus it makes no sense to allow moving conflicting files in
+  // it away - since there just should not be any existing ones.
+  work.perform_content_update(db, checkout, wca, false, false);
 
   work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);

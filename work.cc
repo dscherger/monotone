@@ -930,11 +930,12 @@ struct simulated_working_tree : public editable_tree
   node_id_source & nis;
 
   set<file_path> blocked_paths;
-  set<file_path> leftover_paths;
+  set<file_path> conflicting_paths;
+  int conflicts;
   map<node_id, file_path> nid_map;
 
   simulated_working_tree(roster_t & r, temp_node_id_source & n)
-    : workspace(r), nis(n) {}
+    : workspace(r), nis(n), conflicts(0) {}
 
   virtual node_id detach_node(file_path const & src);
   virtual void drop_detached_node(node_id nid);
@@ -953,6 +954,9 @@ struct simulated_working_tree : public editable_tree
                         attr_value const & val);
 
   virtual void commit();
+
+  virtual bool has_conflicting_paths() const { return conflicting_paths.size() > 0; }
+  virtual set<file_path> get_conflicting_paths() const { return conflicting_paths; }
 
   virtual ~simulated_working_tree();
 };
@@ -1173,10 +1177,11 @@ simulated_working_tree::drop_detached_node(node_id nid)
         {
           map<node_id, file_path>::const_iterator i = nid_map.find(nid);
           I(i != nid_map.end());
-          L(FL("directory '%s' should be dropped, but is not empty") % i->second);
+          W(F("cannot drop non-empty directory '%s'") % i->second);
+          conflicts++;
           for (dir_map::const_iterator j = dir->children.begin();
                j != dir->children.end(); ++j)
-            leftover_paths.insert(i->second / j->first);
+            conflicting_paths.insert(i->second / j->first);
         }
     }
 }
@@ -1205,9 +1210,10 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
 
   if (workspace.has_node(dst))
     {
-      L(FL("attach node %d blocked by unversioned path '%s'") % nid % dst);
+      W(F("attach node %d blocked by unversioned path '%s'") % nid % dst);
       blocked_paths.insert(dst);
-      leftover_paths.insert(dst);
+      conflicting_paths.insert(dst);
+      conflicts++;
     }
   else if (dst.empty())
     {
@@ -1223,7 +1229,7 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
         workspace.attach_node(nid, dst);
       else
         {
-          L(FL("attach node %d blocked by blocked parent '%s'")
+          W(F("attach node %d blocked by blocked parent '%s'")
             % nid % parent);
           blocked_paths.insert(dst);
         }
@@ -1255,40 +1261,10 @@ simulated_working_tree::set_attr(file_path const & pth,
 void
 simulated_working_tree::commit()
 {
-  // if we have found paths during the test-run which will conflict with newly
-  // attached or to-be-dropped nodes, move these paths out of the way into
-  // _MTN/leftover while keeping the path to these paths intact in case the
-  // user wants them back
-  if (leftover_paths.size() > 0)
-    {
-      string now = date_t::now().as_iso_8601_extended();
-      bookkeeping_path leftover_path = bookkeeping_root / "leftover" / now.data();
-      require_path_is_nonexistent(leftover_path,
-                                  F("cannot move left-over paths - "
-                                    "base path %s already exists") % leftover_path);
-
-      mkdir_p(leftover_path);
-
-      for (set<file_path>::const_iterator i = leftover_paths.begin();
-            i != leftover_paths.end(); ++i)
-        {
-          L(FL("processing %s") % *i);
-
-          file_path basedir = (*i).dirname();
-          if (!basedir.empty())
-            mkdir_p(leftover_path / basedir);
-
-          bookkeeping_path new_path = leftover_path / *i;
-          if (directory_exists(*i))
-            move_dir(*i, new_path);
-          else if (file_exists(*i))
-            move_file(*i, new_path);
-          else
-            I(false);
-
-          P(F("moved left-over path %s to %s") % *i % new_path);
-        }
-    }
+  if (conflicts > 0)
+  {
+    W(F("%d workspace conflicts") % conflicts);
+  }
 }
 
 simulated_working_tree::~simulated_working_tree()
@@ -1297,6 +1273,40 @@ simulated_working_tree::~simulated_working_tree()
 
 
 }; // anonymous namespace
+
+static void
+move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
+{
+  I(leftover_paths.size() > 0);
+
+  string now = date_t::now().as_iso_8601_extended();
+  bookkeeping_path leftover_path = bookkeeping_root / "conflicts" / now.data();
+  require_path_is_nonexistent(leftover_path,
+                              F("cannot move conflicting paths - "
+                                "base path %s already exists") % leftover_path);
+
+  mkdir_p(leftover_path);
+
+  for (set<file_path>::const_iterator i = leftover_paths.begin();
+        i != leftover_paths.end(); ++i)
+    {
+      L(FL("processing %s") % *i);
+
+      file_path basedir = (*i).dirname();
+      if (!basedir.empty())
+        mkdir_p(leftover_path / basedir);
+
+      bookkeeping_path new_path = leftover_path / *i;
+      if (directory_exists(*i))
+        move_dir(*i, new_path);
+      else if (file_exists(*i))
+        move_file(*i, new_path);
+      else
+        I(false);
+
+      P(F("moved conflicting path %s to %s") % *i % new_path);
+    }
+}
 
 static void
 add_parent_dirs(database & db, node_id_source & nis, workspace & work,
@@ -1736,7 +1746,8 @@ void
 workspace::perform_pivot_root(database & db,
                               file_path const & new_root,
                               file_path const & put_old,
-                              bool bookkeep_only)
+                              bool bookkeep_only,
+                              bool move_conflicting_paths)
 {
   temp_node_id_source nis;
   roster_t new_roster;
@@ -1790,7 +1801,7 @@ workspace::perform_pivot_root(database & db,
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
-      perform_content_update(db, cs, cmea);
+      perform_content_update(db, cs, cmea, true, move_conflicting_paths);
     }
   update_any_attrs(db);
 }
@@ -1799,7 +1810,8 @@ void
 workspace::perform_content_update(database & db,
                                   cset const & update,
                                   content_merge_adaptor const & ca,
-                                  bool const messages)
+                                  bool const messages,
+                                  bool const move_conflicting_paths)
 {
   roster_t roster;
   temp_node_id_source nis;
@@ -1820,6 +1832,18 @@ workspace::perform_content_update(database & db,
 
   simulated_working_tree swt(roster, nis);
   update.apply_to(swt);
+
+  // if we have found paths during the test-run which will conflict with newly
+  // attached or to-be-dropped nodes, move these paths out of the way into
+  // _MTN/leftover while keeping the path to these paths intact in case the
+  // user wants them back
+  if (swt.has_conflicting_paths())
+    {
+      E(move_conflicting_paths,
+        F("re-run this command with --move-conflicting-paths to move "
+          "conflicting paths out of the way."));
+      move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
+    }
 
   mkdir_p(detached);
 

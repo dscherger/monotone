@@ -143,7 +143,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
        "different revision, preserving uncommitted changes as it does so.  "
        "If a revision is given, update the workspace to that revision.  "
        "If not, update the workspace to the head of the branch."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
 {
   if (args.size() > 0)
     throw usage(execid);
@@ -291,7 +292,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // Now finally modify the workspace
   cset update;
   make_cset(*working_roster, merged_roster, update);
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(db, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   revision_t remaining;
   make_revision_for_workspace(chosen_rid, chosen_roster,
@@ -681,7 +683,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
        "pending changes in the current workspace.  Both OTHER-REVISION and "
        "the workspace's base revision will be recorded as parents on commit.  "
        "The workspace's selected branch is not changed."),
-    options::opts::none)
+    options::opts::move_conflicting_paths)
 {
   revision_id left_id, right_id;
   cached_roster left, right;
@@ -772,7 +774,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   make_cset(*left.first, merge_result.roster, update);
 
   // small race condition here...
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(db, update, wca, true,
+                              app.opts.move_conflicting_paths);
   work.put_work_rev(merged_rev);
   work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
@@ -1005,7 +1008,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
        "compared to its parent.\n"
        "If two revisions are given, applies the changes made to get from the "
        "first revision to the second."),
-    options::opts::revision | options::opts::depth | options::opts::exclude)
+    options::opts::revision | options::opts::depth | options::opts::exclude |
+    options::opts::move_conflicting_paths)
 {
   database db(app);
   workspace work(app);
@@ -1147,7 +1151,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   MM(update);
   make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), F("no changes were applied"));
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(db, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   P(F("applied changes to workspace"));
 
