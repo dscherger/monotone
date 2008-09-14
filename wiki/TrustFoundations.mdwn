@@ -1,4 +1,4 @@
-[[!tag migration-auto]]
+[[!tag migration-done]]
 
 In Monotone, all trust is handled on the basis of certificates (called certs).
 
@@ -72,10 +72,11 @@ In monotone, they are separate:
 So, when I `sync` with someone, I might learn of a whole pile of
 revisions and assertions about those revisions, and take them into my
 database.  That in no way means those revisions are trusted for
-anything. Merging of divergent revisions, whether explicitly named branches or                                                                                                    
-just multiple little parallel edits, is done as a local command just                                                                                                    
-like any other change/commit to the repository, and creates new                                                                                                         
-revisions with the merged content (that you can then publish back to                                                                                                    
+anything. Merging of divergent revisions, whether explicitly named
+branches or
+just multiple little parallel edits, is done as a local command just
+like any other change/commit to the repository, and creates new
+revisions with the merged content (that you can then publish back to
 other repositories).
 
 I can change my trust preferences at any time (or have
@@ -83,9 +84,11 @@ different preferences for different purposes), and the trust in
 revisions is reevaluated as needed based on the assertions in the permanent certs
 that were recorded with the original revisions.
 For example, I could
-set up a workspace to evaluate experimental revisions and code
+set up a workspace to evaluate experimental revisions -- such as code
 submissions from 'strangers' I wouldn't normally trust on mainline
-code, look at their submissions and `approve` (adding my own certs) some
+code.  The trust settings for that workspace would allow me to
+`update` it to those revisions, look at their submissions
+and `approve` (adding my own certs) some 
 of them as being appropriate for other purposes.  On the basis of these
 additional certs that represent code review, these revs might then be
 considered trusted elsewhere (in my other workspaces, or by other
