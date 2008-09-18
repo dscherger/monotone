@@ -17,7 +17,7 @@ class key_store;
 class project_t;
 class branch_name;
 
-void test_parse_rcs_file(system_path const & filename);
+void test_parse_rcs_file(project_t & project, system_path const & filename);
 void import_cvs_repo(options & opts,
                      lua_hooks & lua,
                      project_t & project,
