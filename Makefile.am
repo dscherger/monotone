@@ -82,7 +82,7 @@ MOST_SOURCES = 								\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
 	randomizer.cc randomizer.hh					\
-	netio.hh smap.hh gettext.h					\
+	netio.hh gettext.h						\
 	package_revision.c package_revision.h				\
 	package_full_revision.c package_full_revision.h			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
@@ -344,7 +344,7 @@ bin_PROGRAMS = mtn
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS =
 
-bin_SCRIPTS = mtnopt
+dist_bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.c schema.c
@@ -566,9 +566,8 @@ monotone-$(PACKAGE_VERSION).pkg: monotone.pdf html
 	plutil -convert xml1 -o monotone-xml.pmproj.in $(srcdir)/mac/monotone.pmproj
 	sed "s/__MONOTONE_VERSION__/$(PACKAGE_VERSION)/g" \
 		< monotone-xml.pmproj.in > monotone-xml.pmproj
-	cp $(srcdir)/mac/monotone-pkg-logo.gif $(srcdir)/mac/package-intro.rtf \
-		$(srcdir)/COPYING .
-	mv COPYING COPYING.txt
+	cp $(srcdir)/mac/monotone-pkg-logo.gif $(srcdir)/mac/package-intro.rtf .
+	cp $(srcdir)/COPYING COPYING.txt
 	chmod -R o-w,g-w,a+rX $(PKG_INST_ROOT)
 	sudo chown -R root:wheel $(PKG_INST_ROOT)/usr
 	sudo chown -R root:admin $(PKG_INST_ROOT)/Developer
@@ -666,7 +665,8 @@ mostlyclean-local:
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status
+	tester_tests.status unit_tests.status lua_tests.status  \
+	mtnopt
 
 # distcheck stuff
 
