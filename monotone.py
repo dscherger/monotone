@@ -67,9 +67,13 @@ class Feeder:
     def close(self):
         if self.process is None:
             return
-        stdout, stderr = self.process.communicate()
-        if self.process.returncode:
-            raise MonotoneError, stderr
+        try:
+            self.process.stdin.close()
+            rc = self.process.wait();
+            if self.process.returncode:
+                raise MonotoneError, self.process.stderr.read()
+        finally:
+            self.process = None
 
 class Monotone:
     def __init__(self, db, executable="mtn"):
