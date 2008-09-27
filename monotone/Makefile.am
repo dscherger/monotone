@@ -79,7 +79,7 @@ MOST_SOURCES = 								\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
 	randomizer.cc randomizer.hh					\
-	netio.hh smap.hh gettext.h					\
+	netio.hh gettext.h						\
 	package_revision.c package_revision.h				\
 	package_full_revision.c package_full_revision.h			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
@@ -135,7 +135,7 @@ UNIT_TEST_OBJ_SUPPORT =							\
 
 # primaries
 bin_PROGRAMS = mtn
-bin_SCRIPTS = mtnopt
+dist_bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.c schema.c
@@ -216,7 +216,8 @@ mostlyclean-local:
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts			\
 	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status
+	tester_tests.status unit_tests.status lua_tests.status  \
+	mtnopt
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things

@@ -528,7 +528,7 @@ struct node_info
   file_id ident;
   full_attr_map_t attrs;
 
-  node_info() : exists(false), type(path::nonexistent) {}
+  node_info() : exists(false), id(the_null_node), type(path::nonexistent) {}
 };
 
 static void
@@ -966,7 +966,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
       if (item.new_node.type == path::file)
         changes.push_back("content");
 
-      if (item.new_node.attrs.size() > 0)
+      if (!item.new_node.attrs.empty())
         changes.push_back("attrs");
     }
 }
@@ -2150,7 +2150,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
       if (cur_domain != i->first.first)
         {
           // check if we need to print a previous stanza
-          if (st.entries.size() > 0)
+          if (!st.entries.empty())
             {
               pr.print_stanza(st);
               st.entries.clear();

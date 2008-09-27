@@ -2,14 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT(monotone, 0.40, monotone-devel@nongnu.org)
+AC_INIT(monotone, 0.41, monotone-devel@nongnu.org)
 AC_CONFIG_AUX_DIR([..])
 AC_CONFIG_MACRO_DIR([../m4])
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist subdir-objects])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([util/mtnopt])
 
 # Checks for programs.
 dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has

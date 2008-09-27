@@ -32,9 +32,9 @@ monotone_check_minimum_previous_version ()
 	echo "Cannot automatically upgrade from monotone version $2." >&2
 	echo "Please see UPGRADE and README.changesets in /usr/share/doc/monotone for" >&2
 	echo "information on manually upgrading your database." >&2
-	/bin/false
+	false
     else
-	/bin/true
+	true
     fi
 }
 
@@ -50,15 +50,15 @@ monotone_migrate ()
 	if $MTN --db=$MTN_DB db migrate --rcfile=$MTN_CONFDIR/hooks.lua \
 	    --norc --keydir=$MTN_KEYDIR --confdir=$MTN_CONFDIR >&2; then
 	    echo "Database successfully migrated." >&2
-	    /bin/true
+	    true
 	else
 	    echo "*** Error migrating database. ***" >&2
 	    echo "Please see UPGRADE and README.changesets in /usr/share/doc/monotone for" >&2
 	    echo "information on manually upgrading your database." >&2
-	    /bin/false
+	    false
 	fi
     else
-	/bin/true
+	true
     fi
 }
 
@@ -71,15 +71,15 @@ monotone_rosterify ()
 	if $MTN --db=$MTN_DB db rosterify --rcfile=$MTN_CONFDIR/hooks.lua \
 	    --norc --keydir=$MTN_KEYDIR --confdir=$MTN_CONFDIR >&2; then
 	    echo "Database successfully rosterified." >&2
-	    /bin/true
+	    true
 	else
 	    echo "*** Error rosterifying database. ***" >&2
 	    echo "Please see UPGRADE and README.changesets in /usr/share/doc/monotone for" >&2
 	    echo "information on manually upgrading your database." >&2
-	    /bin/false
+	    false
 	fi
     else
-	/bin/true
+	true
     fi
 }
 
@@ -92,29 +92,36 @@ monotone_regenerate_caches ()
 	if $MTN --db=$MTN_DB db regenerate_caches --rcfile=$MTN_CONFDIR/hooks.lua \
 	    --norc --keydir=$MTN_KEYDIR --confdir=$MTN_CONFDIR >&2; then
 	    echo "Caches successfully regenerated." >&2
-	    /bin/true
+	    true
 	else
 	    echo "*** Error regenerating roster. ***" >&2
 	    echo "Please see UPGRADE and README.changesets in /usr/share/doc/monotone for" >&2
 	    echo "information on manually upgrading your database." >&2
-	    /bin/false
+	    false
 	fi
     else
-	/bin/true
+	true
     fi
 }
 
 case "$1" in
     configure)
 
+        # directory turned into symlink; give dpkg a hand
+	if [ ! -L /usr/share/doc/monotone-server ] && \
+	   [ -e /usr/share/doc/monotone-server ]; then
+            rmdir /usr/share/doc/monotone-server
+	    ln -sf monotone /usr/share/doc/monotone-server
+	fi
+
        MTN_HOME=/var/lib/monotone
        MTN_DB=$MTN_HOME/default.mtn
        MTN_CONFDIR=/etc/monotone
        MTN_KEYDIR=$MTN_HOME/keys
 	       
-       ucf --debconf-ok /usr/share/doc/monotone-server/examples/write-permissions /etc/monotone/write-permissions
-       ucf --debconf-ok /usr/share/doc/monotone-server/examples/read-permissions /etc/monotone/read-permissions
-       ucf --debconf-ok /usr/share/doc/monotone/contrib/get_passphrase_from_file.lua /etc/monotone/hooks.lua
+       ucf --debconf-ok /usr/share/monotone/write-permissions.base /etc/monotone/write-permissions
+       ucf --debconf-ok /usr/share/monotone/read-permissions.base /etc/monotone/read-permissions
+       ucf --debconf-ok /usr/share/monotone/hooks.lua.base /etc/monotone/hooks.lua
 
        ucfr monotone-server /etc/monotone/write-permissions
        ucfr monotone-server /etc/monotone/read-permissions
