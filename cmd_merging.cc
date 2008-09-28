@@ -122,7 +122,7 @@ pick_branch_for_update(options & opts, project_t & project, revision_id chosen_r
         }
       else
         {
-          I(branches.size() == 0);
+          I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
             % opts.branchname);
@@ -139,7 +139,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
        "If not, update the workspace to the head of the branch."),
     options::opts::branch | options::opts::revision)
 {
-  if (args.size() > 0)
+  if (!args.empty())
     throw usage(execid);
 
   if (app.opts.revision_selectors.size() > 1)
@@ -166,7 +166,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   MM(app.opts.branchname);
 
   revision_id chosen_rid;
-  if (app.opts.revision_selectors.size() == 0)
+  if (app.opts.revision_selectors.empty())
     {
       P(F("updating along branch '%s'") % app.opts.branchname);
       set<revision_id> candidates;
@@ -399,7 +399,7 @@ find_heads_to_merge(database & db, set<revision_id> const heads)
   // ancestors each of which is not itself an ancestor of any other
   // merge ancestor.
   erase_ancestors(db, ancestors);
-  I(ancestors.size() > 0);
+  I(!ancestors.empty());
 
   // Take the first ancestor from the above set.
   return heads_for_ancestor[*ancestors.begin()];
@@ -418,7 +418,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   key_store keys(app);
   project_t project(db, app.lua, app.opts);
 
-  if (args.size() != 0)
+  if (!args.empty())
     throw usage(execid);
 
   N(app.opts.branchname() != "",
@@ -428,7 +428,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   project.get_branch_heads(app.opts.branchname, heads,
                            app.opts.ignore_suspend_certs);
 
-  N(heads.size() != 0, F("branch '%s' is empty") % app.opts.branchname);
+  N(!heads.empty(), F("branch '%s' is empty") % app.opts.branchname);
   if (heads.size() == 1)
     {
       P(F("branch '%s' is already merged") % app.opts.branchname);
@@ -950,7 +950,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
   project_t project(db, app.lua, app.opts);
   revision_id l_id, r_id;
 
-  if (args.size() == 0)
+  if (args.empty())
     {
       // get ids from heads
       N(app.opts.branchname() != "",
@@ -1182,7 +1182,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
     options::opts::branch)
 {
   set<revision_id> heads;
-  if (args.size() != 0)
+  if (!args.empty())
     throw usage(execid);
 
   N(app.opts.branchname() != "",
@@ -1194,7 +1194,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
   project.get_branch_heads(app.opts.branchname, heads,
                            app.opts.ignore_suspend_certs);
 
-  if (heads.size() == 0)
+  if (heads.empty())
     P(F("branch '%s' is empty") % app.opts.branchname);
   else if (heads.size() == 1)
     P(F("branch '%s' is currently merged:") % app.opts.branchname);
@@ -1215,7 +1215,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
   roster_t roster;
   marking_map mm;
 
-  if (args.size() == 0)
+  if (args.empty())
     {
       parent_map parents;
       temp_node_id_source nis;
@@ -1226,7 +1226,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
       work.get_current_roster_shape(db, nis, roster);
       work.update_current_roster_from_filesystem(roster);
 
-      if (parents.size() == 0)
+      if (parents.empty())
         {
           mark_roster_with_no_parents(rid, roster, mm);
         }
