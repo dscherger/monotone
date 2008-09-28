@@ -8,8 +8,11 @@
 #include <set>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
+#include "branch_name.hh"
 #include "database.hh"
+#include "editable_policy.hh"
 #include "vocab.hh"
 
 
@@ -63,71 +66,74 @@ get_branch_heads(branch_policy const & pol,
                  std::set<revision_id> & heads,
                  std::multimap<revision_id, revision_id>
                  * inverse_graph_cache_ptr);
+outdated_indicator
+get_branch_heads(editable_policy::branch const & br,
+                 bool ignore_suspend_certs,
+                 database & db,
+                 std::set<revision_id> & heads,
+                 std::multimap<revision_id, revision_id>
+                 * inverse_graph_cache_ptr);
 
 bool
 revision_is_in_branch(branch_policy const & pol,
                       revision_id const & rid,
                       database & db);
+bool
+revision_is_in_branch(editable_policy::branch const & br,
+                      revision_id const & rid,
+                      database & db);
 
-class policy_revision;
-
-class policy_branch
+class policy_branch : public boost::enable_shared_from_this<policy_branch>
 {
-  branch_prefix prefix;
-  branch_uid my_branch_cert_value;
-  std::set<rsa_keypair_id> my_committers;
-
   database & db;
-  boost::shared_ptr<policy_revision> rev;
-  void init(data const & spec);
+  boost::shared_ptr<editable_policy const> policy;
+  boost::shared_ptr<editable_policy::delegation const> delayed;
+  typedef std::map<std::string, boost::shared_ptr<policy_branch> > delegation_map;
+  delegation_map delegations;
+
+  // Load from the db.
+  bool init();
 
   policy_branch(database & db);
 public:
-  static policy_branch empty_policy(database & db);
-  policy_branch(data const & spec,
-                branch_prefix const & prefix,
-                database & db);
-  policy_branch(revision_id const & rid,
-                branch_prefix const & prefix,
-                database & db);
-  policy_branch(std::map<branch_prefix, data> const & delegations,
-                branch_prefix const & my_prefix,
-                database & db);
-  boost::shared_ptr<policy_revision> get_policy();
-  std::map<branch_name, branch_policy> branches();
+  static boost::shared_ptr<policy_branch> empty_policy(database & db);
 
-  boost::shared_ptr<branch_policy>
-  maybe_get_branch_policy(branch_name const & name);
+private:
+  policy_branch(editable_policy::delegation const & del,
+                database & db);
 
-  policy_revision const *
-  get_nearest_policy(branch_name const & name,
-                     branch_policy & policy_policy,
-                     branch_prefix & policy_prefix,
-                     std::string const & accumulated_prefix);
-};
-
-class policy_revision
-{
-  std::map<branch_name, branch_policy> branches;
-  std::map<branch_prefix, policy_branch> delegations;
+  policy_branch(boost::shared_ptr<editable_policy const> pol,
+                database & db);
 public:
-  policy_revision(database & db,
-                  revision_id const & rev,
-                  branch_prefix const & prefix);
-  policy_revision(std::map<branch_prefix, data> const & del,
-                  database & db);
-  std::map<branch_name, branch_policy> all_branches();
+  static boost::shared_ptr<policy_branch>
+  create(editable_policy::delegation const & del,
+         database & db);
+  static boost::shared_ptr<policy_branch>
+  create(boost::shared_ptr<editable_policy const> pol,
+         database & db);
 
-  void get_delegation_names(std::set<branch_prefix> & names) const;
 
-  policy_revision const *
-  get_nearest_policy(branch_name const & name,
-                     branch_policy & policy_policy,
-                     branch_prefix & policy_prefix,
-                     std::string const & accumulated_prefix);
+  boost::shared_ptr<editable_policy const> get_policy();
+
+  boost::shared_ptr<policy_branch> walk(branch_name target,
+                                        branch_name & result);
+
+  typedef std::map<branch_name, editable_policy::branch const> branchmap;
+
+  branchmap branches();
+
+  typedef std::map<branch_name, editable_policy::tag const> tagmap;
+  tagmap tags();
+private:
+  void
+  branches(branch_name const & prefix, branchmap & branchlist);
+  void
+  tags(branch_name const & prefix, tagmap & taglist);
+public:
+
+  boost::shared_ptr<editable_policy::branch const>
+  maybe_get_branch_policy(branch_name const & name);
 };
-
-
 
 #endif
 

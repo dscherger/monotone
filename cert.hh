@@ -14,6 +14,7 @@
 #include <set>
 #include "vector.hh"
 
+#include "branch_name.hh"
 #include "vocab.hh"
 #include "dates.hh"
 

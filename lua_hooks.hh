@@ -16,6 +16,7 @@
 
 #include <set>
 #include <map>
+#include "branch_name.hh"
 #include "file_io.hh"
 #include "option.hh"
 #include "vocab.hh"

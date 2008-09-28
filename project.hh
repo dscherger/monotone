@@ -7,7 +7,9 @@
 #include <map>
 #include <set>
 
+#include "branch_name.hh"
 #include "cert.hh"
+#include "editable_policy.hh"
 #include "outdated_indicator.hh"
 #include "vocab.hh"
 
@@ -15,7 +17,6 @@ class database;
 class key_store;
 class options;
 class lua_hooks;
-
 class branch_policy;
 
 class tag_t
@@ -33,8 +34,6 @@ bool operator < (tag_t const & a, tag_t const & b);
 typedef bool suspended_indicator;
 
 class policy_info;
-
-class project_set;
 
 class project_t
 {
@@ -55,23 +54,15 @@ private:
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
-  explicit project_t(database & db);
-  friend class project_set;
 public:
-  project_t(branch_prefix const & project_name,
-            data const & project_spec,
-            database & db);
-  project_t(branch_prefix const & project_name,
-            revision_id const & policy_rev,
-            database & db);
   project_t(database & db, lua_hooks & lua, options & opts);
 
   bool get_policy_branch_policy_of(branch_name const & name,
-                                   branch_policy & policy_branch_policy,
-                                   branch_prefix & policy_prefix);
-  bool policy_exists(branch_prefix const & name) const;
-  void get_subpolicies(branch_prefix const & name,
-                       std::set<branch_prefix> & names) const;
+                                   editable_policy & policy_branch_policy,
+                                   branch_name & policy_prefix);
+  bool policy_exists(branch_name const & name) const;
+  void get_subpolicies(branch_name const & name,
+                       std::set<branch_name> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);

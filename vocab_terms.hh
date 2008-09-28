@@ -20,8 +20,6 @@ ATOMIC_NOVERIFY(data);        // meaningless blob
 ATOMIC_NOVERIFY(delta);       // xdelta between 2 datas
 ATOMIC_NOVERIFY(inodeprint);  // fingerprint of an inode
 
-ATOMIC_NOVERIFY(branch_name); // utf-8
-ATOMIC_NOVERIFY(branch_prefix); // a partial branch name
 ATOMIC_NOVERIFY(branch_uid); // what goes in the database
 
 ATOMIC(cert_name);            // symbol-of-your-choosing

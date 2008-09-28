@@ -112,6 +112,34 @@ public:
   editable_policy_impl(database & db)
     : db(db)
   {}
+  editable_policy_impl(editable_policy_impl const & other)
+    : db(other.db), old_rev_id(other.old_rev_id),
+      old_roster(other.old_roster),
+      files(other.files),
+      new_revision(other.new_revision)
+  {
+    for (tag_holder::container::const_iterator i = other.tags.begin();
+         i != other.tags.end(); ++i)
+      {
+        tag_holder::info_type x = *i;
+        x.new_value.reset(new editable_policy::tag(*x.new_value));
+        tags.insert(x);
+      }
+    for (branch_holder::container::const_iterator i = other.branches.begin();
+         i != other.branches.end(); ++i)
+      {
+        branch_holder::info_type x = *i;
+        x.new_value.reset(new editable_policy::branch(*x.new_value));
+        branches.insert(x);
+      }
+    for (delegation_holder::container::const_iterator i = other.delegations.begin();
+         i != other.delegations.end(); ++i)
+      {
+        delegation_holder::info_type x = *i;
+        x.new_value.reset(new editable_policy::delegation(*x.new_value));
+        delegations.insert(x);
+      }
+  }
 
   revision_id old_rev_id;
   roster_t old_roster;
@@ -186,9 +214,51 @@ editable_policy::editable_policy(database & db,
                                  revision_id const & rev)
   : impl(new editable_policy_impl(db))
 {
+  init(rev);
+}
+
+editable_policy::editable_policy(database & db,
+                                 branch_policy const & policy_policy)
+  : impl(new editable_policy_impl(db))
+{
+  branch br;
+  br.uid = policy_policy.branch_cert_value;
+  br.committers = policy_policy.committers;
+  init(br);
+}
+
+editable_policy::editable_policy(database & db,
+                                 editable_policy::delegation const & del)
+  : impl(new editable_policy_impl(db))
+{
+  branch br;
+  br.uid = del.uid;
+  br.committers = del.committers;
+  init(br);
+}
+
+editable_policy::editable_policy()
+{ }
+
+editable_policy::editable_policy(editable_policy const & other)
+  : impl(new editable_policy_impl(*other.impl)), uid(other.uid)
+{
+}
+
+editable_policy const &
+editable_policy::operator = (editable_policy const & other)
+{
+  impl.reset(new editable_policy_impl(*other.impl));
+  uid = other.uid;
+  return *this;
+}
+
+void
+editable_policy::init(revision_id const & rev)
+{
   vector<revision<cert> > certs;
   impl->db.get_revision_certs(rev, branch_cert_name, certs);
-  erase_bogus_certs(db, certs);
+  erase_bogus_certs(impl->db, certs);
   if (certs.size() == 1)
     {
       uid = branch_uid(idx(certs,0).inner().value());
@@ -199,16 +269,14 @@ editable_policy::editable_policy(database & db,
   load_policy(impl);
 }
 
-editable_policy::editable_policy(database & db,
-                                 branch_policy const & policy_policy)
-  : impl(new editable_policy_impl(db))
+void
+editable_policy::init(editable_policy::branch const & br)
 {
-  uid = policy_policy.branch_cert_value;
+  uid = br.uid;
   set<revision_id> heads;
-  get_branch_heads(policy_policy, false, db, heads, NULL);
+  get_branch_heads(br, false, impl->db, heads, NULL);
   E(heads.size() == 1,
-    F("Policy branch %s does not have exactly 1 head")
-    % policy_policy.branch_cert_value);
+    F("Policy branch %s does not have exactly 1 head") % uid);
   impl->old_rev_id = *heads.begin();
   impl->db.get_roster(impl->old_rev_id, impl->old_roster);
   load_policy(impl);
@@ -461,7 +529,6 @@ editable_policy::calculate_id()
 
 revision_id
 editable_policy::commit(key_store & keys,
-                        lua_hooks & lua,
                         utf8 const & changelog,
                         string author)
 {
@@ -563,7 +630,7 @@ editable_policy::rename_tag(string const & from,
 }
 
 
-shared_ptr<editable_policy::delegation>
+editable_policy::delegation_t
 editable_policy::get_delegation(string const & name, bool create)
 {
   delegation_holder::by_current::iterator i = impl->delegations.find(name);
@@ -578,7 +645,7 @@ editable_policy::get_delegation(string const & name, bool create)
   return item.new_value;
 }
 
-shared_ptr<editable_policy::branch>
+editable_policy::branch_t
 editable_policy::get_branch(string const & name, bool create)
 {
   branch_holder::by_current::iterator i = impl->branches.find(name);
@@ -593,7 +660,7 @@ editable_policy::get_branch(string const & name, bool create)
   return item.new_value;
 }
 
-shared_ptr<editable_policy::tag>
+editable_policy::tag_t
 editable_policy::get_tag(string const & name, bool create)
 {
   tag_holder::by_current::iterator i = impl->tags.find(name);
@@ -606,4 +673,77 @@ editable_policy::get_tag(string const & name, bool create)
   item.new_value.reset(new tag());
   impl->tags.insert(item);
   return item.new_value;
+}
+
+
+editable_policy::delegation_map
+editable_policy::get_all_delegations()
+{
+  delegation_map ret;
+  for (delegation_holder::by_current::iterator i = impl->delegations.begin();
+       i != impl->delegations.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, i->new_value));
+    }
+  return ret;
+}
+
+editable_policy::const_delegation_map
+editable_policy::get_all_delegations() const
+{
+  const_delegation_map ret;
+  for (delegation_holder::by_current::iterator i = impl->delegations.begin();
+       i != impl->delegations.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, const_delegation_t(i->new_value)));
+    }
+  return ret;
+}
+
+editable_policy::branch_map
+editable_policy::get_all_branches()
+{
+  branch_map ret;
+  for (branch_holder::by_current::iterator i = impl->branches.begin();
+       i != impl->branches.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, i->new_value));
+    }
+  return ret;
+}
+
+editable_policy::const_branch_map
+editable_policy::get_all_branches() const
+{
+  const_branch_map ret;
+  for (branch_holder::by_current::iterator i = impl->branches.begin();
+       i != impl->branches.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, const_branch_t(i->new_value)));
+    }
+  return ret;
+}
+
+editable_policy::tag_map
+editable_policy::get_all_tags()
+{
+  tag_map ret;
+  for (tag_holder::by_current::iterator i = impl->tags.begin();
+       i != impl->tags.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, i->new_value));
+    }
+  return ret;
+}
+
+editable_policy::const_tag_map
+editable_policy::get_all_tags() const
+{
+  const_tag_map ret;
+  for (tag_holder::by_current::iterator i = impl->tags.begin();
+       i != impl->tags.end(); ++i)
+    {
+      ret.insert(make_pair(i->new_name, const_tag_t(i->new_value)));
+    }
+  return ret;
 }

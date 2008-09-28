@@ -59,7 +59,7 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
   data policy_spec;
   editable_policy ep(db, admin_keys);
   ep.get_branch("__policy__")->write(policy_spec);
-  ep.commit(keys, app.lua, utf8(N_("Create new policy branch")));
+  ep.commit(keys, utf8(N_("Create new policy branch")));
 
   write_data(project_file, policy_spec, project_dir);
   P(F("Wrote project spec to %s") % project_file);
@@ -77,12 +77,12 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   database db(app);
   key_store keys(app);
   project_t project(db, app.lua, app.opts);
-  branch_prefix prefix(idx(args, 0)());
+  branch_name prefix(idx(args, 0)());
   branch_name name(prefix() + ".__policy__");
 
-  branch_policy policy_policy;
-  branch_prefix parent_prefix;
-  E(project.get_policy_branch_policy_of(name, policy_policy, parent_prefix),
+  editable_policy parent;
+  branch_name parent_prefix;
+  E(project.get_policy_branch_policy_of(name, parent, parent_prefix),
     F("Cannot find parent policy for %s") % prefix);
   P(F("Parent policy: %s") % parent_prefix);
 
@@ -97,7 +97,6 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   admin_keys.insert(keys.signing_key);
 
 
-  editable_policy parent(db, policy_policy);
   editable_policy child(db, admin_keys);
   shared_ptr<editable_policy::delegation>
     del = parent.get_delegation(subprefix, true);
@@ -105,8 +104,8 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   del->committers = admin_keys;
 
   transaction_guard guard(db);
-  child.commit(keys, app.lua, utf8(N_("Create new policy branch")));
-  parent.commit(keys, app.lua, utf8(N_("Add new delegation")));
+  child.commit(keys, utf8(N_("Create new policy branch")));
+  parent.commit(keys, utf8(N_("Add new delegation")));
   
   guard.commit();
 }
@@ -125,9 +124,9 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name branch(idx(args, 0)());
 
-  branch_policy parent_policy;
-  branch_prefix parent_prefix;
-  E(project.get_policy_branch_policy_of(branch, parent_policy, parent_prefix),
+  editable_policy parent;
+  branch_name parent_prefix;
+  E(project.get_policy_branch_policy_of(branch, parent, parent_prefix),
     F("Cannot find a parent policy for %s") % branch);
   P(F("Parent policy: %s") % parent_prefix);
 
@@ -143,26 +142,25 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   admin_keys.insert(keys.signing_key);
 
 
-  editable_policy parent(db, parent_policy);
   shared_ptr<editable_policy::branch>
     br = parent.get_branch(relative_name);
   N(!br,  F("A branch %s already exists under policy %s")
     % relative_name % parent_prefix);
   br = parent.get_branch(relative_name, true);
 
-  parent.commit(keys, app.lua, utf8(N_("Declare new branch")));
+  parent.commit(keys, utf8(N_("Declare new branch")));
 }
 
 CMD_FWD_DECL(list);
 
-void list_policy(project_t const & proj, branch_prefix const & prefix, bool recursive)
+void list_policy(project_t const & proj, branch_name const & prefix, bool recursive)
 {
   std::cout<<prefix<<"\n";
   if (recursive)
     {
-      std::set<branch_prefix> subpolicies;
+      std::set<branch_name> subpolicies;
       proj.get_subpolicies(prefix, subpolicies);
-      for (std::set<branch_prefix>::const_iterator i = subpolicies.begin();
+      for (std::set<branch_name>::const_iterator i = subpolicies.begin();
            i != subpolicies.end(); ++i)
         {
           list_policy(proj, *i, recursive);
@@ -183,9 +181,9 @@ CMD(policies, "policies", "", CMD_REF(list),
 
   if (args.empty())
     {
-      std::set<branch_prefix> subpolicies;
-      project.get_subpolicies(branch_prefix(), subpolicies);
-      for (std::set<branch_prefix>::const_iterator i = subpolicies.begin();
+      std::set<branch_name> subpolicies;
+      project.get_subpolicies(branch_name(), subpolicies);
+      for (std::set<branch_name>::const_iterator i = subpolicies.begin();
            i != subpolicies.end(); ++i)
         {
           list_policy(project, *i, app.opts.recursive);
@@ -197,7 +195,7 @@ CMD(policies, "policies", "", CMD_REF(list),
            i != args.end(); ++i)
         {
           branch_name const bn((*i)());
-          branch_prefix const bp((*i)());
+          branch_name const bp((*i)());
           N(project.policy_exists(bp),
             F("Policy %s does not exist.") % *i);
           list_policy(project, bp, app.opts.recursive);

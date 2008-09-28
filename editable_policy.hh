@@ -9,6 +9,7 @@
 // This files defines higher-level editing operations on
 // policy-branch revisions.
 
+#include <map>
 #include <set>
 #include <boost/shared_ptr.hpp>
 
@@ -33,6 +34,8 @@ public:
     void write(data & dat);
     void read(data const & dat);
   };
+  typedef boost::shared_ptr<tag> tag_t;
+  typedef boost::shared_ptr<tag const> const_tag_t;
   class branch
   {
   public:
@@ -41,7 +44,9 @@ public:
     void write(data & dat);
     void read(data const & dat);
   };
-  class delegation
+  typedef boost::shared_ptr<branch> branch_t;
+  typedef boost::shared_ptr<branch const> const_branch_t;
+  class delegation // union { branch, revision_id }
   {
   public:
     revision_id rev;
@@ -50,6 +55,8 @@ public:
     void write(data & dat);
     void read(data const & dat);
   };
+  typedef boost::shared_ptr<delegation> delegation_t;
+  typedef boost::shared_ptr<delegation const> const_delegation_t;
 
   // Create a new policy.
   editable_policy(database & db,
@@ -61,9 +68,17 @@ public:
   // Edit an existing policy branch. This will fail if the branch
   // doesn't have exactly one head.
   editable_policy(database & db, branch_policy const & policy_policy);
+  editable_policy(database & db, delegation const & del);
+  editable_policy();
+  editable_policy(editable_policy const & other);
+  editable_policy const & operator = (editable_policy const & other);
+
+private:
+  void init(revision_id const & rev);
+  void init(branch const & br);
+public:
 
   revision_id commit(key_store & keys,
-                     lua_hooks & lua,
                      utf8 const & changelog,
                      std::string author = "");
   revision_id calculate_id();
@@ -79,14 +94,27 @@ public:
   void rename_tag(std::string const & from, std::string const & to);
 
 
-  boost::shared_ptr<delegation>
+  delegation_t
   get_delegation(std::string const & name, bool create = false);
 
-  boost::shared_ptr<branch>
+  branch_t
   get_branch(std::string const & name, bool create = false);
 
-  boost::shared_ptr<tag>
+  tag_t
   get_tag(std::string const & name, bool create = false);
+
+  typedef std::map<std::string, delegation_t> delegation_map;
+  typedef std::map<std::string, const_delegation_t> const_delegation_map;
+  delegation_map get_all_delegations();
+  const_delegation_map get_all_delegations() const;
+  typedef std::map<std::string, branch_t> branch_map;
+  typedef std::map<std::string, const_branch_t> const_branch_map;
+  branch_map get_all_branches();
+  const_branch_map get_all_branches() const;
+  typedef std::map<std::string, tag_t> tag_map;
+  typedef std::map<std::string, const_tag_t> const_tag_map;
+  tag_map get_all_tags();
+  const_tag_map get_all_tags() const;
 };
 
 #endif

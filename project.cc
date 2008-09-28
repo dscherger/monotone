@@ -29,59 +29,32 @@ using boost::shared_ptr;
 class policy_info
 {
 public:
-  policy_branch policy;
+  shared_ptr<policy_branch> policy;
   bool passthru;
-  policy_info(data const & spec,
-              branch_prefix const & prefix,
-              database & db)
-    : policy(spec, prefix, db), passthru(false)
-  {
-  }
-  policy_info(revision_id const & rev,
-              branch_prefix const & prefix,
-              database & db)
-    : policy(rev, prefix, db), passthru(false)
-  {
-  }
   explicit policy_info(database & db)
-    : policy(policy_branch::empty_policy(db)), passthru(true)
+    : policy(policy_branch::empty_policy(db)),
+      passthru(true)
   {
   }
-  policy_info(map<branch_prefix, data> const & delegations, database & db)
-    : policy(delegations, branch_prefix(), db), passthru(false)
+  policy_info(shared_ptr<editable_policy> const & ep, database & db)
+    : policy(policy_branch::create(ep, db)), passthru(false)
   {
   }
 };
 
-project_t::project_t(branch_prefix const & project_name,
-                     data const & project_spec,
-                     database & db)
-  : db(db), project_policy(new policy_info(project_spec, project_name, db))
-{}
-
-project_t::project_t(branch_prefix const & project_name,
-                     revision_id const & policy_rev,
-                     database & db)
-  : db(db), project_policy(new policy_info(policy_rev, project_name, db))
-{}
-
-project_t::project_t(database & db)
-  : db(db), project_policy(new policy_info(db))
-{}
-
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
   : db(db)//, project_policy(db, lua, opts)
 {
-  std::map<branch_prefix, data> delegations;
+  shared_ptr<editable_policy> ep(new editable_policy(db, set<rsa_keypair_id>()));
 
+  std::map<branch_name, data> delegations;
 
-  for (map<branch_prefix, hexenc<id> >::const_iterator
+  for (map<branch_name, hexenc<id> >::const_iterator
          i = opts.policy_revisions.begin();
        i != opts.policy_revisions.end(); ++i)
     {
       data dat("revision_id ["+i->second()+"]\n");
-      delegations.insert(make_pair(i->first,
-                                   dat));
+      ep->get_delegation(i->first(), true)->read(dat);
     }
 
   std::map<string, data> defs;
@@ -89,57 +62,58 @@ project_t::project_t(database & db, lua_hooks & lua, options & opts)
   for (map<string, data>::const_iterator i = defs.begin();
        i != defs.end(); ++i)
     {
-      delegations.insert(make_pair(branch_prefix(i->first),
-                                   i->second));
+      ep->get_delegation(i->first, true)->read(i->second);
     }
   if (delegations.empty())
     project_policy.reset(new policy_info(db));
   else
-    project_policy.reset(new policy_info(delegations, db));
+    project_policy.reset(new policy_info(ep, db));
 }
 
 bool
 project_t::get_policy_branch_policy_of(branch_name const & name,
-                                       branch_policy & policy_branch_policy,
-                                       branch_prefix & policy_prefix)
+                                       editable_policy & policy_branch_policy,
+                                       branch_name & policy_prefix)
 {
-  std::string acc;
-  return project_policy->policy.get_nearest_policy(name,
-                                                   policy_branch_policy,
-                                                   policy_prefix,
-                                                   acc) != NULL;
+  shared_ptr<policy_branch> result;
+  result = project_policy->policy->walk(name, policy_prefix);
+  if (!result)
+    return false;
+  policy_branch_policy = *result->get_policy();
+  return true;
 }
 
 bool
-project_t::policy_exists(branch_prefix const & name) const
+project_t::policy_exists(branch_name const & name) const
 {
   if (project_policy->passthru)
     return name().empty();
 
-  branch_policy pol;
-  branch_prefix prefix;
-  std::string tmp;
-  bool got = project_policy->policy.get_nearest_policy(branch_name(name()),
-                                                       pol, prefix, tmp) != NULL;
-  return got && prefix() == name();
+  branch_name got;
+  shared_ptr<policy_branch> sub = project_policy->policy->walk(name, got);
+  return sub && name == got;
 }
 
 void
-project_t::get_subpolicies(branch_prefix const & name,
-                           std::set<branch_prefix> & names) const
+project_t::get_subpolicies(branch_name const & name,
+                           std::set<branch_name> & names) const
 {
   if (project_policy->passthru)
     return;
 
-  branch_policy pol;
-  branch_prefix prefix;
-  std::string tmp;
-  policy_revision const * pr =
-    project_policy->policy.get_nearest_policy(branch_name(name()),
-                                              pol, prefix, tmp);
-  if (pr != NULL)
+  branch_name got;
+  shared_ptr<policy_branch> sub = project_policy->policy->walk(name, got);
+  if (sub && got == name)
     {
-      pr->get_delegation_names(names);
+      shared_ptr<editable_policy const> pol = sub->get_policy();
+      editable_policy::const_delegation_map dels = pol->get_all_delegations();
+      for (editable_policy::const_delegation_map::const_iterator i = dels.begin();
+           i != dels.end(); ++i)
+        {
+          branch_name n(name);
+          n.append(branch_name(i->first));
+          names.insert(n);
+        }
     }
 }
 
@@ -149,8 +123,8 @@ project_t::get_branch_list(std::set<branch_name> & names,
 {
   if (!project_policy->passthru)
     {
-      map<branch_name, branch_policy> branches = project_policy->policy.branches();
-      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+      policy_branch::branchmap branches = project_policy->policy->branches();
+      for (policy_branch::branchmap::const_iterator i = branches.begin();
            i != branches.end(); ++i)
         {
           names.insert(i->first);
@@ -189,8 +163,8 @@ project_t::get_branch_list(globish const & glob,
 {
   if (!project_policy->passthru)
     {
-      map<branch_name, branch_policy> branches = project_policy->policy.branches();
-      for (map<branch_name, branch_policy>::const_iterator i = branches.begin();
+      policy_branch::branchmap branches = project_policy->policy->branches();
+      for (policy_branch::branchmap::const_iterator i = branches.begin();
            i != branches.end(); ++i)
         {
           if (glob.matches(i->first()))
@@ -234,12 +208,11 @@ project_t::get_branch_list(std::set<branch_uid> & branch_ids)
         }
       return;
     }
-  typedef map<branch_name, branch_policy> branchlist;
-  branchlist branches = project_policy->policy.branches();
-  for (branchlist::const_iterator i = branches.begin();
+  policy_branch::branchmap branches = project_policy->policy->branches();
+  for (policy_branch::branchmap::const_iterator i = branches.begin();
        i != branches.end(); ++i)
     {
-      branch_ids.insert(i->second.branch_cert_value);
+      branch_ids.insert(i->second.uid);
     }
 }
 
@@ -248,11 +221,10 @@ project_t::translate_branch(branch_name const & name)
 {
   if (project_policy->passthru)
     return branch_uid(name());
-  typedef map<branch_name, branch_policy> branchlist;
-  branchlist branches = project_policy->policy.branches();
-  branchlist::iterator i = branches.find(name);
+  policy_branch::branchmap branches = project_policy->policy->branches();
+  policy_branch::branchmap::iterator i = branches.find(name);
   I(i != branches.end());
-  return i->second.branch_cert_value;
+  return i->second.uid;
 }
 
 branch_name
@@ -260,12 +232,11 @@ project_t::translate_branch(branch_uid const & uid)
 {
   if (project_policy->passthru)
     return branch_name(uid());
-  typedef map<branch_name, branch_policy> branchlist;
-  branchlist branches = project_policy->policy.branches();
-  for (branchlist::const_iterator i = branches.begin();
+  policy_branch::branchmap branches = project_policy->policy->branches();
+  for (policy_branch::branchmap::const_iterator i = branches.begin();
        i != branches.end(); ++i)
     {
-      if (i->second.branch_cert_value == uid)
+      if (i->second.uid == uid)
         return i->first;
     }
   I(false);
@@ -355,8 +326,8 @@ project_t::get_branch_heads(branch_name const & name,
         }
       else
         {
-          shared_ptr<branch_policy> bp;
-          bp  = project_policy->policy.maybe_get_branch_policy(name);
+          shared_ptr<editable_policy::branch const> bp;
+          bp  = project_policy->policy->maybe_get_branch_policy(name);
           E(bp, F("Cannot find policy for branch %s.") % name);
 
           branch.first = ::get_branch_heads(*bp, ignore_suspend_certs, db,
@@ -396,8 +367,8 @@ project_t::revision_is_in_branch(revision_id const & id,
     }
   else
     {
-      shared_ptr<branch_policy> bp;
-      bp  = project_policy->policy.maybe_get_branch_policy(branch);
+      shared_ptr<editable_policy::branch const> bp;
+      bp  = project_policy->policy->maybe_get_branch_policy(branch);
       E(bp, F("Cannot find policy for branch %s.") % branch);
       return ::revision_is_in_branch(*bp, id, db);
     }
@@ -558,6 +529,15 @@ project_t::get_tags(set<tag_t> & tags)
     }
   else
     {
+      policy_branch::tagmap got = project_policy->policy->tags();
+      for (policy_branch::tagmap::const_iterator i = got.begin();
+           i != got.end(); ++i)
+        {
+          tags.insert(tag_t(i->second.rev,
+                            utf8(i->first()),
+                            rsa_keypair_id()));
+        }
+      return outdated_indicator();
     }
 }
 
@@ -570,6 +550,16 @@ project_t::put_tag(key_store & keys,
     cert_revision_tag(db, keys, id, name);
   else
     {
+      shared_ptr<policy_branch> policy_br;
+      branch_name tag_name(name);
+      branch_name policy_name;
+      policy_br = project_policy->policy->walk(tag_name, policy_name);
+      E(policy_br && policy_br != project_policy->policy,
+        F("Cannot find a parent policy for tag %s") % tag_name);
+      tag_name.strip_prefix(policy_name);
+      editable_policy ep(*policy_br->get_policy());
+      ep.get_tag(tag_name(), true)->rev = id;
+      ep.commit(keys, utf8((F("Set tag %s to %s") % tag_name % id).str()));
     }
 }
 
