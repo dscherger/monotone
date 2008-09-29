@@ -39,7 +39,7 @@ policy_branch::policy_branch(database & db)
 shared_ptr<policy_branch>
 policy_branch::empty_policy(database & db)
 {
-  return (new policy_branch(db))->shared_from_this();
+  return shared_ptr<policy_branch>(new policy_branch(db));
 }
 
 policy_branch::policy_branch(editable_policy::delegation const & del,
@@ -58,14 +58,14 @@ shared_ptr<policy_branch>
 policy_branch::create(editable_policy::delegation const & del,
                       database & db)
 {
-  return (new policy_branch(del, db))->shared_from_this();
+  return shared_ptr<policy_branch>(new policy_branch(del, db));
 }
 
 shared_ptr<policy_branch>
 policy_branch::create(shared_ptr<editable_policy const> pol,
                       database & db)
 {
-  return (new policy_branch(pol, db))->shared_from_this();
+  return shared_ptr<policy_branch>(new policy_branch(pol, db));
 }
 
 bool

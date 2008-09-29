@@ -340,7 +340,8 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-schema_migration.$(OBJEXT)					\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-work_migration.$(OBJEXT)
+	mtn-work_migration.$(OBJEXT) mtn-branch_name.$(OBJEXT)		\
+	mtn-editable_policy.$(OBJEXT)
 
 # primaries
 
