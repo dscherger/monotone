@@ -52,6 +52,7 @@ policy_branch::policy_branch(shared_ptr<editable_policy const> pol,
                              database & db)
   : db(db), policy(pol)
 {
+  init_lower();
 }
 
 shared_ptr<policy_branch>
@@ -79,14 +80,18 @@ policy_branch::init()
   policy.reset(new editable_policy(db, *delayed));
   delayed.reset();
 
+  init_lower();
+  return true;
+}
+void
+policy_branch::init_lower()
+{
   editable_policy::const_delegation_map dels = policy->get_all_delegations();
   for (editable_policy::const_delegation_map::const_iterator i = dels.begin();
        i != dels.end(); ++i)
     {
       delegations.insert(make_pair(i->first, create(*i->second, db)));
     }
-
-  return true;
 }
 
 shared_ptr<editable_policy const>
@@ -227,21 +232,6 @@ namespace
 }
 
 outdated_indicator
-get_branch_heads(branch_policy const & pol,
-		 bool ignore_suspend_certs,
-		 database & db,
-		 std::set<revision_id> & heads,
-		 multimap<revision_id, revision_id>
-		 * inverse_graph_cache_ptr)
-{
-  editable_policy::branch br;
-  br.uid = pol.branch_cert_value;
-  br.committers = pol.committers;
-  return get_branch_heads(br, ignore_suspend_certs, db, heads,
-                          inverse_graph_cache_ptr);
-}
-
-outdated_indicator
 get_branch_heads(editable_policy::branch const & br,
 		 bool ignore_suspend_certs,
 		 database & db,
@@ -273,16 +263,6 @@ get_branch_heads(editable_policy::branch const & br,
   return ret;
 }
 
-bool
-revision_is_in_branch(branch_policy const & pol,
-                      revision_id const & rid,
-                      database & db)
-{
-  not_in_managed_branch p(db,
-                          cert_value(pol.branch_cert_value()),
-                          pol.committers);
-  return !p(rid);
-}
 bool
 revision_is_in_branch(editable_policy::branch const & br,
                       revision_id const & rid,

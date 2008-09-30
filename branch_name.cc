@@ -22,6 +22,8 @@ branch_name::size() const
 bool
 branch_name::has_prefix(branch_name const & pre) const
 {
+  if (pre.data.empty())
+    return true;
   if (data.size() == pre.data.size())
     return data == pre.data;
   else if (data.size() > pre.data.size())
@@ -34,6 +36,8 @@ branch_name::has_prefix(branch_name const & pre) const
 bool
 branch_name::strip_prefix(branch_name const & pre)
 {
+  if (pre.data.empty())
+    return true;
   if (!has_prefix(pre))
     return false;
 
@@ -47,13 +51,21 @@ branch_name::strip_prefix(branch_name const & pre)
 void
 branch_name::prepend(branch_name const & pre)
 {
-  data = pre.data + "." + data;
+  if (pre.data.empty())
+    return;
+  if (data.empty())
+    data = pre.data;
+  else
+    data = pre.data + "." + data;
 }
 
 void
 branch_name::append(branch_name const & post)
 {
-  data += ".";
+  if (post.data.empty())
+    return;
+  if (!data.empty())
+    data += ".";
   data += post.data;
 }
 

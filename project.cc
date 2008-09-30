@@ -43,11 +43,17 @@ public:
 };
 
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
-  : db(db)//, project_policy(db, lua, opts)
+  : db(db)
 {
   shared_ptr<editable_policy> ep(new editable_policy(db, set<rsa_keypair_id>()));
+  // Empty editable_policy's start with (at least) a self-referencing
+  // __policy__ branch. We don't want that.
+  while (!ep->get_all_branches().empty())
+    {
+      ep->remove_branch(ep->get_all_branches().begin()->first);
+    }
 
-  std::map<branch_name, data> delegations;
+  bool have_delegation(false);
 
   for (map<branch_name, hexenc<id> >::const_iterator
          i = opts.policy_revisions.begin();
@@ -55,6 +61,7 @@ project_t::project_t(database & db, lua_hooks & lua, options & opts)
     {
       data dat("revision_id ["+i->second()+"]\n");
       ep->get_delegation(i->first(), true)->read(dat);
+      have_delegation = true;
     }
 
   std::map<string, data> defs;
@@ -62,12 +69,17 @@ project_t::project_t(database & db, lua_hooks & lua, options & opts)
   for (map<string, data>::const_iterator i = defs.begin();
        i != defs.end(); ++i)
     {
+      // Don't overwrite something that was overridden
+      // from the command line (above).
+      if (ep->get_delegation(i->first))
+        continue;
       ep->get_delegation(i->first, true)->read(i->second);
+      have_delegation = true;
     }
-  if (delegations.empty())
-    project_policy.reset(new policy_info(db));
-  else
+  if (have_delegation)
     project_policy.reset(new policy_info(ep, db));
+  else
+    project_policy.reset(new policy_info(db));
 }
 
 bool

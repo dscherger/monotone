@@ -15,57 +15,6 @@
 #include "editable_policy.hh"
 #include "vocab.hh"
 
-
-class branch_policy
-{
-  branch_name _visible_name;
-  branch_uid _branch_cert_value;
-  std::set<rsa_keypair_id> _committers;
-public:
-  branch_name const & visible_name;
-  branch_uid const & branch_cert_value;
-  std::set<rsa_keypair_id> const & committers;
-
-  branch_policy()
-    : visible_name(_visible_name),
-      branch_cert_value(_branch_cert_value),
-      committers(_committers)
-  { }
-  branch_policy(branch_name const & name,
-                branch_uid const & value,
-                std::set<rsa_keypair_id> const & keys)
-    : _visible_name(name),
-      _branch_cert_value(value),
-      _committers(keys),
-      visible_name(_visible_name),
-      branch_cert_value(_branch_cert_value),
-      committers(_committers)
-  { }
-  branch_policy(branch_policy const & rhs)
-    : _visible_name(rhs._visible_name),
-      _branch_cert_value(rhs._branch_cert_value),
-      _committers(rhs._committers),
-      visible_name(_visible_name),
-      branch_cert_value(_branch_cert_value),
-      committers(_committers)
-  { }
-  branch_policy const &
-  operator=(branch_policy const & rhs)
-  {
-    _visible_name = rhs._visible_name;
-    _branch_cert_value = rhs._branch_cert_value;
-    _committers = rhs._committers;
-    return *this;
-  }
-};
-
-outdated_indicator
-get_branch_heads(branch_policy const & pol,
-                 bool ignore_suspend_certs,
-                 database & db,
-                 std::set<revision_id> & heads,
-                 std::multimap<revision_id, revision_id>
-                 * inverse_graph_cache_ptr);
 outdated_indicator
 get_branch_heads(editable_policy::branch const & br,
                  bool ignore_suspend_certs,
@@ -74,10 +23,6 @@ get_branch_heads(editable_policy::branch const & br,
                  std::multimap<revision_id, revision_id>
                  * inverse_graph_cache_ptr);
 
-bool
-revision_is_in_branch(branch_policy const & pol,
-                      revision_id const & rid,
-                      database & db);
 bool
 revision_is_in_branch(editable_policy::branch const & br,
                       revision_id const & rid,
@@ -93,6 +38,8 @@ class policy_branch : public boost::enable_shared_from_this<policy_branch>
 
   // Load from the db.
   bool init();
+  // Process the loaded policy info.
+  void init_lower();
 
   policy_branch(database & db);
 public:

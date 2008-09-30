@@ -17,7 +17,6 @@ class database;
 class key_store;
 class options;
 class lua_hooks;
-class branch_policy;
 
 class tag_t
 {

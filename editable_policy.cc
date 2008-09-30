@@ -190,6 +190,7 @@ namespace {
         info.new_name = i->first();
         info.new_value.reset(new typename T::value_type::item_type());
         info.new_value->read(fdat.inner());
+        cont.insert(info);
       }
   }
   void
@@ -218,23 +219,18 @@ editable_policy::editable_policy(database & db,
 }
 
 editable_policy::editable_policy(database & db,
-                                 branch_policy const & policy_policy)
-  : impl(new editable_policy_impl(db))
-{
-  branch br;
-  br.uid = policy_policy.branch_cert_value;
-  br.committers = policy_policy.committers;
-  init(br);
-}
-
-editable_policy::editable_policy(database & db,
                                  editable_policy::delegation const & del)
   : impl(new editable_policy_impl(db))
 {
-  branch br;
-  br.uid = del.uid;
-  br.committers = del.committers;
-  init(br);
+  if (null_id(del.rev))
+    {
+      branch br;
+      br.uid = del.uid;
+      br.committers = del.committers;
+      init(br);
+    }
+  else
+    init(del.rev);
 }
 
 editable_policy::editable_policy()
@@ -275,11 +271,22 @@ editable_policy::init(editable_policy::branch const & br)
   uid = br.uid;
   set<revision_id> heads;
   get_branch_heads(br, false, impl->db, heads, NULL);
-  E(heads.size() == 1,
-    F("Policy branch %s does not have exactly 1 head") % uid);
-  impl->old_rev_id = *heads.begin();
-  impl->db.get_roster(impl->old_rev_id, impl->old_roster);
-  load_policy(impl);
+  E(heads.size() <= 1,
+    F("Policy branch %s has too many heads") % uid);
+  if (heads.empty())
+    {
+      W(F("Cannot find policy %s, loading an empty policy") % br.uid);
+      branch_holder::info_type self;
+      self.new_name = "__policy__";
+      self.new_value.reset(new branch(br));
+      impl->branches.insert(self);
+    }
+  else
+    {
+      impl->old_rev_id = *heads.begin();
+      impl->db.get_roster(impl->old_rev_id, impl->old_roster);
+      load_policy(impl);
+    }
 }
 
 

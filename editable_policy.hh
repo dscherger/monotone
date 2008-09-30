@@ -15,7 +15,6 @@
 
 #include "vocab.hh"
 
-class branch_policy;
 class database;
 class key_store;
 class lua_hooks;
@@ -67,7 +66,6 @@ public:
   editable_policy(database & db, revision_id const & rev);
   // Edit an existing policy branch. This will fail if the branch
   // doesn't have exactly one head.
-  editable_policy(database & db, branch_policy const & policy_policy);
   editable_policy(database & db, delegation const & del);
   editable_policy();
   editable_policy(editable_policy const & other);
