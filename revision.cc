@@ -21,7 +21,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "botan/botan.h"
+#include <botan/botan.h>
 
 #include "basic_io.hh"
 #include "cert.hh"

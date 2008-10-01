@@ -16,7 +16,6 @@
 #include <locale.h>
 #include <stdlib.h>
 
-#include "botan/botan.h"
 #include "i18n.h"
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"

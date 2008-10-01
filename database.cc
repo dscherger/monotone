@@ -20,6 +20,12 @@
 #include <string.h>
 
 #include <boost/shared_ptr.hpp>
+#include <botan/botan.h>
+#include <botan/rsa.h>
+#include <botan/keypair.h>
+#include <botan/pem.h>
+#include <botan/look_pk.h>
+
 #include "lexical_cast.hh"
 
 #include "sqlite/sqlite3.h"
@@ -53,11 +59,6 @@
 #include "lua_hooks.hh"
 #include "outdated_indicator.hh"
 #include "lru_writeback_cache.hh"
-
-#include "botan/botan.h"
-#include "botan/rsa.h"
-#include "botan/keypair.h"
-#include "botan/pem.h"
 
 // defined in schema.c, generated from schema.sql:
 extern char const schema_constant[];

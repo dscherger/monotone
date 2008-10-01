@@ -13,7 +13,7 @@
 #include "vector.hh"
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/rng.h>
 
 #include "rev_types.hh"
 #include "cert.hh"

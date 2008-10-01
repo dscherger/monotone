@@ -73,7 +73,7 @@ AC_DEFUN([MTN_FIND_PCRE],
    CFLAGS="$CFLAGS $PCRE_CFLAGS"
    AC_PREPROC_IFELSE([
 #include "conftest.h"
-#include "pcre.h"
+#include <pcre.h>
 #if PCRE_MAJOR < REQUIRED_PCRE_MAJOR || \
     (PCRE_MAJOR == REQUIRED_PCRE_MAJOR && PCRE_MINOR < REQUIRED_PCRE_MINOR)
 #error out of date

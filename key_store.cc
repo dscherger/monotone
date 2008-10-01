@@ -5,6 +5,7 @@
 #include <botan/rsa.h>
 #include <botan/keypair.h>
 #include <botan/pem.h>
+#include <botan/look_pk.h>
 
 #include "key_store.hh"
 #include "file_io.hh"

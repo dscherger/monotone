@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/rng.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0

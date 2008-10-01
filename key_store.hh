@@ -2,7 +2,8 @@
 #define __KEY_STORE_H__
 
 #include <boost/scoped_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/rng.h>
+
 #include "vector.hh"
 #include "vocab.hh"
 #include "paths.hh"

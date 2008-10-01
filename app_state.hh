@@ -11,7 +11,7 @@
 // PURPOSE.
 
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/rng.h>
 
 #include "options.hh"
 #include "lua_hooks.hh"

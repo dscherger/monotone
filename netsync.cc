@@ -23,6 +23,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
+#include <botan/botan.h>
+
 #include "lua_hooks.hh"
 #include "key_store.hh"
 #include "project.hh"
@@ -48,8 +50,6 @@
 #include "globish.hh"
 #include "uri.hh"
 #include "options.hh"
-
-#include "botan/botan.h"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
