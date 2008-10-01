@@ -1,6 +1,11 @@
 #include "base.hh"
 #include <sstream>
 
+#include <botan/botan.h>
+#include <botan/rsa.h>
+#include <botan/keypair.h>
+#include <botan/pem.h>
+
 #include "key_store.hh"
 #include "file_io.hh"
 #include "packet.hh"
@@ -13,10 +18,6 @@
 #include "ssh_agent.hh"
 #include "safe_map.hh"
 
-#include "botan/botan.h"
-#include "botan/rsa.h"
-#include "botan/keypair.h"
-#include "botan/pem.h"
 #include "botan_pipe_cache.hh"
 
 using std::make_pair;
@@ -751,7 +752,17 @@ key_store_state::migrate_old_key_pair
         arc4_key.set(reinterpret_cast<Botan::byte const *>(phrase().data()),
                      phrase().size());
 
+#if BOTAN_VERSION_MAJOR != 1 || BOTAN_VERSION_MINOR != 7
+#error Unsupported botan version
+#endif
+
+#if BOTAN_VERSION_PATCH >= 15
+        Pipe arc4_decryptor(get_cipher(Botan::global_state(), "ARC4",
+                                       arc4_key, Botan::DECRYPTION));
+#else
+        // botan before 1.7.15 didn't have a global state object
         Pipe arc4_decryptor(get_cipher("ARC4", arc4_key, Botan::DECRYPTION));
+#endif
         arc4_decryptor.process_msg(old_priv());
 
         // This is necessary because PKCS8::load_key() cannot currently
