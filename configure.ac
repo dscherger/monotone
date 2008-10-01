@@ -140,7 +140,9 @@ AC_CHECK_FUNCS([atexit memset mkstemp strptime lrint \
 # simple library checks
 AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
 
-MTN_LIB_PCRE
+MTN_FIND_LUA
+MTN_FIND_PCRE
+MTN_FIND_BOTAN
 
 # check for all things boost-related
 BOOST_VERSION_CHECK
