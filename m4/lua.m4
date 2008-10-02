@@ -27,8 +27,10 @@ AC_DEFUN([MTN_FIND_LUA],
 
    if test $found_liblua = no; then
      AC_MSG_RESULT([no; guessing])
+     AC_CHECK_LIB([lua5.1], [lua_load], 
+                  [LUA_LIBS=-llua5.1], 
+                  [LUA_LIBS=-llua])
      LUA_CFLAGS=
-     LUA_LIBS=-llua5.1
    fi
 
    # Wherever we got the settings from, make sure they work.
