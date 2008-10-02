@@ -72,25 +72,50 @@ policy_branch::create(shared_ptr<editable_policy const> pol,
 bool
 policy_branch::init()
 {
-  if (policy)
+  if (policy && !policy->outdated())
     return true;
   if (!delayed)
     return false;
 
   policy.reset(new editable_policy(db, *delayed));
-  delayed.reset();
 
   init_lower();
   return true;
 }
+
 void
 policy_branch::init_lower()
 {
+  delegation_map old_delegations = delegations;
+  delegations.clear();
+
   editable_policy::const_delegation_map dels = policy->get_all_delegations();
   for (editable_policy::const_delegation_map::const_iterator i = dels.begin();
        i != dels.end(); ++i)
     {
-      delegations.insert(make_pair(i->first, create(*i->second, db)));
+      delegation_map::iterator j = old_delegations.find(i->first);
+      if (j != old_delegations.end())
+        { // Is this delegation unchanged?
+          if (j->second->delayed && *j->second->delayed == *i->second)
+            {
+              delegations.insert(*j);
+              continue;
+            }
+        }
+      bool found = false;
+      for (j = old_delegations.begin(); j != old_delegations.end(); ++j)
+        { // Does it exist somewhere else (renamed)?
+          if (j->second->delayed && *j->second->delayed == *i->second)
+            {
+              delegations.insert(*j);
+              found = true;
+              continue;
+            }
+        }
+      if (!found)
+        {
+          delegations.insert(make_pair(i->first, create(*i->second, db)));
+        }
     }
 }
 

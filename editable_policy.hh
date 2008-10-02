@@ -25,6 +25,7 @@ class editable_policy
   boost::shared_ptr<editable_policy_impl> impl;
 public:
   branch_uid uid;
+  bool outdated() const;
 
   class tag
   {
@@ -114,5 +115,8 @@ public:
   tag_map get_all_tags();
   const_tag_map get_all_tags() const;
 };
+bool
+operator == (editable_policy::delegation const & lhs,
+             editable_policy::delegation const & rhs);
 
 #endif

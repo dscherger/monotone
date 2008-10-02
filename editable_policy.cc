@@ -49,6 +49,15 @@ namespace basic_io
   }
 }
 
+bool
+operator == (editable_policy::delegation const & lhs,
+             editable_policy::delegation const & rhs)
+{
+  return lhs.rev == rhs.rev
+    && lhs.uid == rhs.uid
+    && lhs.committers == rhs.committers;
+}
+
 namespace {
   branch_uid
   generate_uid()
@@ -103,12 +112,16 @@ namespace {
   typedef thing_holder<editable_policy::tag> tag_holder;
   typedef thing_holder<editable_policy::branch> branch_holder;
   typedef thing_holder<editable_policy::delegation> delegation_holder;
+
+
+  outdated_indicator_factory never_outdated;
 }
 
 class editable_policy_impl
 {
 public:
   database & db;
+  outdated_indicator indicator;
   editable_policy_impl(database & db)
     : db(db)
   {}
@@ -162,6 +175,7 @@ editable_policy::editable_policy(database & db,
   self.new_value->uid = uid;
   self.new_value->committers = admins;
   impl->branches.insert(self);
+  impl->indicator = never_outdated.get_indicator();
 }
 
 namespace {
@@ -249,6 +263,12 @@ editable_policy::operator = (editable_policy const & other)
   return *this;
 }
 
+bool
+editable_policy::outdated() const
+{
+  return impl->indicator.outdated();
+}
+
 void
 editable_policy::init(revision_id const & rev)
 {
@@ -263,6 +283,7 @@ editable_policy::init(revision_id const & rev)
   impl->old_rev_id = rev;
   impl->db.get_roster(rev, impl->old_roster);
   load_policy(impl);
+  impl->indicator = never_outdated.get_indicator();
 }
 
 void
@@ -270,7 +291,7 @@ editable_policy::init(editable_policy::branch const & br)
 {
   uid = br.uid;
   set<revision_id> heads;
-  get_branch_heads(br, false, impl->db, heads, NULL);
+  impl->indicator = get_branch_heads(br, false, impl->db, heads, NULL);
   E(heads.size() <= 1,
     F("Policy branch %s has too many heads") % uid);
   if (heads.empty())
@@ -663,6 +684,7 @@ editable_policy::get_branch(string const & name, bool create)
   branch_holder::info_type item;
   item.new_name = name;
   item.new_value.reset(new branch());
+  item.new_value->uid = generate_uid();
   impl->branches.insert(item);
   return item.new_value;
 }

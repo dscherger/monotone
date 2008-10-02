@@ -29,7 +29,11 @@ check(qgrep("already merged", "stderr"))
 
 check(mtn("update", "-r", base), 0, false, false)
 addfile("file3", "data3")
-check(mtn("ci", "-mtwogood", "--branch=test_project.__policy__"), 0, false, false)
+-- This will actually fail after the commit proper if --policy-revision
+-- isn't given, because you can't get the new head count because the
+-- policy is suddenly invalid...
+check(mtn("ci", "-mtwogood", "--branch=test_project.__policy__",
+          "--policy-revision=test_project@" .. base), 0, false, false)
 
 -- Can't do stuff now, because the policy branch has two heads.
 check(mtn("heads", "--branch=test_project.__policy__"), 1, false, false)

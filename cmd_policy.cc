@@ -147,6 +147,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   N(!br,  F("A branch %s already exists under policy %s")
     % relative_name % parent_prefix);
   br = parent.get_branch(relative_name, true);
+  br->committers = admin_keys;
 
   parent.commit(keys, utf8(N_("Declare new branch")));
 }
