@@ -727,6 +727,18 @@ key_store::export_key_for_agent(rsa_keypair_id const & id,
 // Migration from old databases
 //
 
+#if BOTAN_VERSION_MAJOR == 1 && BOTAN_VERSION_MINOR == 7 && BOTAN_VERSION_PATCH == 14
+// ZZ: ugly hack for botan-1.7.14 which had some API fluctuations
+namespace Botan {
+  Keyed_Filter* get_cipher(const std::string& name,
+                           const SymmetricKey& sk,
+                           Cipher_Dir cd)
+  {
+    return get_cipher(global_state(), name, sk, cd);
+  }
+}
+#endif
+
 void
 key_store_state::migrate_old_key_pair
     (rsa_keypair_id const & id,
@@ -753,17 +765,8 @@ key_store_state::migrate_old_key_pair
         arc4_key.set(reinterpret_cast<Botan::byte const *>(phrase().data()),
                      phrase().size());
 
-#if BOTAN_VERSION_MAJOR != 1 || BOTAN_VERSION_MINOR != 7
-#error Unsupported botan version
-#endif
-
-#if BOTAN_VERSION_PATCH >= 15
-        Pipe arc4_decryptor(get_cipher(Botan::global_state(), "ARC4",
-                                       arc4_key, Botan::DECRYPTION));
-#else
-        // botan before 1.7.15 didn't have a global state object
         Pipe arc4_decryptor(get_cipher("ARC4", arc4_key, Botan::DECRYPTION));
-#endif
+
         arc4_decryptor.process_msg(old_priv());
 
         // This is necessary because PKCS8::load_key() cannot currently
