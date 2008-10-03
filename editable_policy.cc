@@ -59,16 +59,6 @@ operator == (editable_policy::delegation const & lhs,
 }
 
 namespace {
-  branch_uid
-  generate_uid()
-  {
-    // FIXME: I'm sure there's a better way to do this.
-    std::string when = date_t::now().as_iso_8601_extended();
-    char buf[20];
-    Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte*>(buf), 20);
-    return branch_uid(when + "--" + encode_hexenc(std::string(buf, 20)));
-  }
-
   template<typename Value>
   struct thing_info
   {
@@ -167,7 +157,7 @@ public:
 
 editable_policy::editable_policy(database & db,
                                  set<rsa_keypair_id> const & admins)
-  : impl(new editable_policy_impl(db)), uid(generate_uid())
+  : impl(new editable_policy_impl(db)), uid(db.generate_uid())
 {
   branch_holder::info_type self;
   self.new_name = "__policy__";
@@ -684,7 +674,7 @@ editable_policy::get_branch(string const & name, bool create)
   branch_holder::info_type item;
   item.new_name = name;
   item.new_value.reset(new branch());
-  item.new_value->uid = generate_uid();
+  item.new_value->uid = impl->db.generate_uid();
   impl->branches.insert(item);
   return item.new_value;
 }

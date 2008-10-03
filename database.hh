@@ -434,6 +434,8 @@ public:
   bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
     revision_id const & id, cert_name const & name, cert_value const & val);
 
+  // This wants to be somewhere with access to a RNG.
+  branch_uid generate_uid() const;
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;

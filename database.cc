@@ -3785,6 +3785,17 @@ database::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
   return lua.hook_get_revision_cert_trust(signers, id, name, val);
 };
 
+// Get a meaningless, unique value for use in branch certs.
+branch_uid
+database::generate_uid() const
+{
+  // FIXME: I'm sure there's a better way to do this.
+  std::string when = date_t::now().as_iso_8601_extended();
+  char buf[20];
+  rng->randomize(reinterpret_cast<Botan::byte*>(buf), 20);
+  return branch_uid(when + "--" + encode_hexenc(std::string(buf, 20)));
+}
+
 // transaction guards
 
 conditional_transaction_guard::~conditional_transaction_guard()
