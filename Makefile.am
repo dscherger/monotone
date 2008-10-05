@@ -12,16 +12,6 @@ SANITY_CORE_SOURCES =							\
 	constants.cc constants.hh numeric_vocab.hh 			\
 	platform.hh numeric_vocab.cc
 
-LUAEXT_SOURCES = 							\
-	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
-	charset.cc charset.hh paths.cc paths.hh				\
-	interner.hh hash_map.hh	vocab_hash.hh				\
-	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
-	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
-	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
-	globish.cc globish.hh basic_io.cc basic_io.hh			\
-	char_classifiers.hh
-
 MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
 	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
