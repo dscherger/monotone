@@ -1,0 +1,5 @@
+This is a test branch for the Monotone::AutomateStdio Perl library. This branch
+is branched off from Monotone version 0.41 and contains random changes in order
+to exercise specific bits of the automate stdio interface and the
+Monotone::AutomateStdio library. This branch must in no way ever be merged back
+to the main Monotone branch.
