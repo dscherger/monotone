@@ -15,15 +15,6 @@ using std::map;
 using std::set;
 using std::string;
 
-using option::bad_arg_internal;
-
-template<typename T>
-bool has_arg() { return true; }
-template<>
-bool has_arg<bool>() { return false; }
-
-
-
 std::map<options::static_options_fun, std::set<options::static_options_fun> > &
 options::children()
 {
