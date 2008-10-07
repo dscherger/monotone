@@ -24,12 +24,15 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
        "You probably want to use cvs_import."),
     options::opts::branch)
 {
+  database db(app);
+  project_t project(db);
+
   if (args.size() < 1)
     throw usage(execid);
 
   for (args_vector::const_iterator i = args.begin();
        i != args.end(); ++i)
-    test_parse_rcs_file(system_path((*i)()));
+    test_parse_rcs_file(project, system_path((*i)()));
 }
 
 
