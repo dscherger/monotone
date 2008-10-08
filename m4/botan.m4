@@ -1,6 +1,6 @@
 # Currently we accept botan version 1.7.8 and newer, limited to the
 # development branch 1.7, emitting a warning if the found botan is
-# newer than 1.7.15.
+# newer than 1.7.16.
 
 AC_DEFUN([MTN_FIND_BOTAN],
 [
@@ -56,7 +56,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
     AC_PREPROC_IFELSE([
 #include <botan/build.h>
 
-#if BOTAN_VERSION_PATCH > 15
+#if BOTAN_VERSION_PATCH > 16
 #error Botan from the future
 #endif],
     [botan_version_match=yes],
@@ -67,6 +67,10 @@ AC_DEFUN([MTN_FIND_BOTAN],
 
     CFLAGS="$save_CFLAGS"
     AC_MSG_RESULT([yes])
+
+    AC_MSG_NOTICE([using botan compile flags: "$BOTAN_CPPFLAGS"])
+    AC_MSG_NOTICE([using botan link flags: "$BOTAN_LIBS"])
+
     AC_SUBST(BOTAN_LIBS)
     AC_SUBST(BOTAN_CFLAGS)
   else

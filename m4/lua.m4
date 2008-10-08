@@ -2,7 +2,6 @@
 # for pkg-config.
 AC_DEFUN([MTN_FIND_LUA],
 [  PKG_PROG_PKG_CONFIG
-   AC_MSG_CHECKING([for lua 5.1])
 
    # We manually test the variables here because we want them to work
    # even if pkg-config isn't installed.  The use of + instead of :+ is
@@ -16,6 +15,7 @@ AC_DEFUN([MTN_FIND_LUA],
    fi
 
    if test $found_liblua = no; then
+     AC_MSG_CHECKING([for lua 5.1])
      # try lua-config5x, in case we're on a system with no pkg-config
      if test -n "`type -p lua-config51`"; then
        LUA_CFLAGS="`lua-config51 --include`"
