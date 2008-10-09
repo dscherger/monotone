@@ -1,10 +1,10 @@
 # Currently we accept botan version 1.7.8 and newer, limited to the
 # development branch 1.7, emitting a warning if the found botan is
-# newer than 1.7.16.
+# newer than 1.7.17.
 
 AC_DEFUN([MTN_FIND_BOTAN],
 [
-  AC_MSG_CHECKING([for Botan version 1.7.8 or newer])
+  AC_MSG_CHECKING([for Botan])
   if test -n "`type -p botan-config`"; then
     BOTAN_VERSION="`botan-config --version`"
     BOTAN_CPPFLAGS="`botan-config --cflags`"
@@ -25,11 +25,11 @@ AC_DEFUN([MTN_FIND_BOTAN],
 #include <botan/build.h>
 
 #ifndef BOTAN_VERSION_MAJOR
-#error Botan didn't define version macros?!?
+#error "Botan did not define version macros"
 #endif
 
 #if BOTAN_VERSION_MAJOR != 1
-#error Botan major version mismatch.
+#error "Botan major version mismatch."
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])
@@ -43,7 +43,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
 #include <botan/build.h>
 
 #if BOTAN_VERSION_PATCH < 8
-#error Botan is too old
+#error "Botan is too old"
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])
@@ -56,8 +56,8 @@ AC_DEFUN([MTN_FIND_BOTAN],
     AC_PREPROC_IFELSE([
 #include <botan/build.h>
 
-#if BOTAN_VERSION_PATCH > 16
-#error Botan from the future
+#if BOTAN_VERSION_PATCH > 17
+#error "Botan from the future"
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])
@@ -66,10 +66,10 @@ AC_DEFUN([MTN_FIND_BOTAN],
     fi
 
     CPPFLAGS="$save_CPPFLAGS"
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([yes (version $BOTAN_VERSION)])
 
-    AC_MSG_NOTICE([using botan compile flags: "$BOTAN_CPPFLAGS"])
-    AC_MSG_NOTICE([using botan link flags: "$BOTAN_LIBS"])
+    # AC_MSG_NOTICE([using botan compile flags: "$BOTAN_CPPFLAGS"])
+    # AC_MSG_NOTICE([using botan link flags: "$BOTAN_LIBS"])
 
     AC_SUBST(BOTAN_LIBS)
     AC_SUBST(BOTAN_CPPFLAGS)
