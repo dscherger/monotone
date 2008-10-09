@@ -19,8 +19,8 @@ AC_DEFUN([MTN_FIND_BOTAN],
     found_botan=yes
 
     # make sure we have to do with botan version 1.7
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$CFLAGS $BOTAN_CPPFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$CPPFLAGS $BOTAN_CPPFLAGS"
     AC_PREPROC_IFELSE([
 #include <botan/build.h>
 
@@ -65,14 +65,14 @@ AC_DEFUN([MTN_FIND_BOTAN],
       AC_MSG_WARN([Your botan library version ($BOTAN_VERSION) is newer than expected. Monotone might not build cleanly.])
     fi
 
-    CFLAGS="$save_CFLAGS"
+    CPPFLAGS="$save_CPPFLAGS"
     AC_MSG_RESULT([yes])
 
     AC_MSG_NOTICE([using botan compile flags: "$BOTAN_CPPFLAGS"])
     AC_MSG_NOTICE([using botan link flags: "$BOTAN_LIBS"])
 
     AC_SUBST(BOTAN_LIBS)
-    AC_SUBST(BOTAN_CFLAGS)
+    AC_SUBST(BOTAN_CPPFLAGS)
   else
     found_botan=no
     AC_MSG_RESULT([no])
