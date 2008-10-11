@@ -12,7 +12,9 @@
 
 #include "vector.hh"
 #include <set>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include "botan/rng.h"
+
 #include "rev_types.hh"
 #include "cert.hh"
 
@@ -433,8 +435,9 @@ public:
     revision_id const & id, cert_name const & name, cert_value const & val);
 
 private:
-  boost::scoped_ptr<database_impl> imp;
+  boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
+  boost::shared_ptr<Botan::RandomNumberGenerator> rng;
 };
 
 // not a member function, defined in database_check.cc

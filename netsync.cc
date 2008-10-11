@@ -796,10 +796,10 @@ session::note_cert(id const & c)
 id
 session::mk_nonce()
 {
-  I(this->saved_nonce().size() == 0);
+  I(this->saved_nonce().empty());
   char buf[constants::merkle_hash_length_in_bytes];
-  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
-          constants::merkle_hash_length_in_bytes);
+  keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
+                             constants::merkle_hash_length_in_bytes);
   this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes));
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
@@ -1356,7 +1356,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
                            id const & nonce)
 {
   I(!this->received_remote_key);
-  I(this->saved_nonce().size() == 0);
+  I(this->saved_nonce().empty());
 
   if (use_transport_auth)
     {
@@ -1608,6 +1608,10 @@ session::process_auth_cmd(protocol_role their_role,
         project.db.put_key(their_key_id, their_keypair.pub);
       else
         {
+          return process_anonymous_cmd(their_role,
+                                       their_include_pattern,
+                                       their_exclude_pattern);
+          /*
           this->saved_nonce = id("");
 
           lua.hook_note_netsync_start(session_id, "server", their_role,
@@ -1617,6 +1621,7 @@ session::process_auth_cmd(protocol_role their_role,
           error(unknown_key,
                 (F("remote public key hash '%s' is unknown")
                  % encode_hexenc(client())).str());
+          */
         }
     }
 
@@ -2438,7 +2443,7 @@ build_stream_to_server(options & opts, lua_hooks & lua,
 
   if (info.client.use_argv)
     {
-      I(info.client.argv.size() > 0);
+      I(!info.client.argv.empty());
       string cmd = info.client.argv[0];
       info.client.argv.erase(info.client.argv.begin());
       return shared_ptr<Netxx::StreamBase>
