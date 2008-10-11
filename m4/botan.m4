@@ -22,27 +22,9 @@ AC_DEFUN([MTN_FIND_BOTAN],
     save_CPPFLAGS="$CPPFLAGS"
     CPPFLAGS="$CPPFLAGS $BOTAN_CPPFLAGS"
     AC_PREPROC_IFELSE([
-#include <botan/build.h>
+#include <botan/version.h>
 
-#ifndef BOTAN_VERSION_MAJOR
-#error "Botan did not define version macros"
-#endif
-
-#if BOTAN_VERSION_MAJOR != 1
-#error "Botan major version mismatch."
-#endif],
-    [botan_version_match=yes],
-    [botan_version_match=no])
-    if test $botan_version_match = no; then
-      AC_MSG_RESULT([no])
-      AC_MSG_ERROR([Your botan library version not match ($BOTAN_VERSION).])
-    fi
-
-    # prevent from building against older, no longer supported versions
-    AC_PREPROC_IFELSE([
-#include <botan/build.h>
-
-#if BOTAN_VERSION_PATCH < 8
+#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,7,8)
 #error "Botan is too old"
 #endif],
     [botan_version_match=yes],
@@ -54,9 +36,9 @@ AC_DEFUN([MTN_FIND_BOTAN],
 
     # check against unknown versions from the future and warn
     AC_PREPROC_IFELSE([
-#include <botan/build.h>
+#include <botan/version.h>
 
-#if BOTAN_VERSION_PATCH > 17
+#if BOTAN_VERSION_CODE > BOTAN_VERSION_CODE_FOR(1,7,17)
 #error "Botan from the future"
 #endif],
     [botan_version_match=yes],
