@@ -1,31 +1,60 @@
-dnl checks only done because the bundled sqlite needs them.
-AC_DEFUN([MTN_SQLITE_DEPENDENCIES],
-[SQLITE_CPPFLAGS=
+# This is a separate macro primarily to trick autoconf into not looking
+# for pkg-config.
+AC_DEFUN([MTN_FIND_SQLITE],
+[  PKG_PROG_PKG_CONFIG
 
-# sqlite does not read our config.h so we have to shove all this on the
-# command line.
+   # We manually test the variables here because we want them to work
+   # even if pkg-config isn't installed.  The use of + instead of :+ is
+   # deliberate; the user should be able to tell us that the empty string
+   # is the correct set of flags.  (PKG_CHECK_MODULES gets this wrong!)
+   if test -n "${SQLITE_CFLAGS+set}" || test -n "${SQLITE_LIBS+set}"; then
+     found_libsqlite=yes
+   else
+     PKG_CHECK_MODULES([SQLITE], [sqlite3],
+                       [found_libsqlite=yes], [found_libsqlite=no])
+   fi
 
-AC_SEARCH_LIBS([fdatasync], [rt],
- [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DHAVE_FDATASYNC=1"])
+   if test $found_libsqlite = no; then
+     AC_MSG_RESULT([no; guessing])
+     AC_CHECK_LIB([sqlite3], [sqlite3_exec], 
+                  [SQLITE_LIBS=-lsqlite3], 
+                  [SQLITE_LIBS=])
+     SQLITE_CFLAGS=
+   fi
 
-AC_SEARCH_LIBS([usleep], [rt],
- [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DHAVE_USLEEP=1"])
+   # Wherever we got the settings from, make sure they work.
+   SQLITE_CFLAGS="`echo :$SQLITE_CFLAGS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
+   SQLITE_LIBS="`echo :$SQLITE_LIBS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
 
-AC_CHECK_FUNC([pread],
-  [AC_CHECK_FUNC([pwrite],
-    [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DUSE_PREAD=1"])])
+   AC_MSG_NOTICE([using sqlite compile flags: "$SQLITE_CFLAGS"])
+   AC_MSG_NOTICE([using sqlite link flags: "$SQLITE_LIBS"])
 
-# Let the user specify whether he wants large file support or not in sqlite.
-AC_ARG_ENABLE([large-file],
-   AS_HELP_STRING(
-      [--disable-large-file],
-      [Disable large file support in builtin sqlite]
-   ), , enable_large_file=yes
-)
+   AC_CACHE_CHECK([whether the sqlite library is usable], ac_cv_lib_sqlite_works,
+    [save_LIBS="$LIBS"
+     save_CFLAGS="$CFLAGS"
+     LIBS="$LIBS $SQLITE_LIBS"
+     CFLAGS="$CFLAGS $SQLITE_CFLAGS"
+     CPPFLAGS="$CFLAGS $SQLITE_CFLAGS"
+     AC_LINK_IFELSE([AC_LANG_PROGRAM(
+      [
+extern "C"
+{
+  #include <sqlite3.h>
+}
+      ],
+      [
 
-if test "x$enable_large_file" = "xno"; then
-   SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DSQLITE_DISABLE_LFS"
-fi
+#if SQLITE_VERSION_NUMBER != 3005009
+#error Sqlite version mismatch
+#endif
 
-AC_SUBST(SQLITE_CPPFLAGS)
+      int v = sqlite3_libversion_number();
+      ])],
+      [ac_cv_lib_sqlite_works=yes], [ac_cv_lib_sqlite_works=no])
+     LIBS="$save_LIBS"
+     CFLAGS="$save_CFLAGS"])
+   if test $ac_cv_lib_sqlite_works = no; then
+      AC_MSG_ERROR([Your sqlite library is not usable.])
+   fi
+
 ])

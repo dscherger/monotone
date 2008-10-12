@@ -28,7 +28,7 @@
 
 #include "lexical_cast.hh"
 
-#include "sqlite/sqlite3.h"
+#include <sqlite3.h>
 
 #include "app_state.hh"
 #include "cert.hh"

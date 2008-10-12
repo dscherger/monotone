@@ -111,31 +111,6 @@ BOOST_SANDBOX_SOURCES =							\
 	boost/circular_buffer_fwd.hpp					\
 	boost/circular_buffer.hpp
 
-SQLITE_SOURCES =							\
-	sqlite/alter.c sqlite/attach.c sqlite/auth.c sqlite/btree.c	\
-	sqlite/build.c sqlite/date.c sqlite/delete.c sqlite/expr.c	\
-	sqlite/func.c sqlite/hash.c sqlite/insert.c			\
-	sqlite/legacy.c	sqlite/main.c sqlite/opcodes.c			\
-	sqlite/os.c sqlite/os_unix.c sqlite/os_win.c sqlite/os_os2.c	\
-	sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c	\
-	sqlite/random.c sqlite/select.c					\
-	sqlite/table.c sqlite/tokenize.c				\
-	sqlite/trigger.c sqlite/update.c sqlite/utf.c			\
-	sqlite/util.c sqlite/vacuum.c					\
-	sqlite/vdbe.c sqlite/vdbeapi.c sqlite/vdbeaux.c			\
-	sqlite/vdbemem.c sqlite/where.c					\
-	sqlite/prepare.c sqlite/callback.c				\
-	sqlite/analyze.c sqlite/vdbefifo.c				\
-	sqlite/complete.c sqlite/malloc.c sqlite/vdbeblob.c		\
-	sqlite/loadext.c sqlite/vtab.c					\
-									\
-	sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h	\
-	sqlite/os_common.h sqlite/os_os2.h				\
-	sqlite/parse.h sqlite/sqlite3.h	sqlite/sqlite3ext.h		\
-	sqlite/sqliteInt.h						\
-	sqlite/vdbe.h sqlite/vdbeInt.h					\
-	sqlite/pager.h sqlite/btreeInt.h sqlite/sqliteLimit.h
-
 IDNA_SOURCES =								\
 	idna/gunibreak.h idna/gunidecomp.h idna/idna.h idna/nfkc.c	\
 	idna/punycode.c idna/rfc3454.c idna/stringprep.h idna/version.c	\
@@ -218,8 +193,7 @@ noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(IDNA_SOURCES) \
-			$(NETXX_SOURCES) \
-			$(SQLITE_SOURCES)
+			$(NETXX_SOURCES) 
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -254,7 +228,8 @@ endif
 SUFFIXES = .gch
 
 AM_CPPFLAGS =
-AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DSQLITE_OMIT_CURSOR -DSQLITE_OMIT_LOAD_EXTENSION -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
+# is/was NDEBUG here just for sqlite?
+AM_CFLAGS = $(AM_CPPFLAGS) -DNDEBUG
 AM_CXXFLAGS = $(AM_CPPFLAGS)
 AM_LDFLAGS =
 
@@ -267,20 +242,20 @@ mtn_CPPFLAGS = -I$(top_srcdir)/lua $(PCRE_FLAGS) $(BOTAN_CPPFLAGS) $(LUA_CFLAGS)
 mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
 mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
 mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
-	    $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS)
+	    $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS) $(SQLITE_LIBS)
 
 unit_tester_LDFLAGS =
 unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua $(PCRE_FLAGS) $(BOTAN_CPPFLAGS) $(LUA_CFLAGS)
 unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
 unit_tester_LDADD += libplatform.a lib3rdparty.a \
 		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) $(PCRE_LIBS) \
-		     $(BOTAN_LIBS) $(LUA_LIBS)
+		     $(BOTAN_LIBS) $(LUA_LIBS) $(SQLITE_LIBS)
 
 tester_LDFLAGS =
 tester_CPPFLAGS = -I$(top_srcdir)/lua $(PCRE_FLAGS) $(BOTAN_CPPFLAGS) $(LUA_CFLAGS)
 tester_CXXFLAGS = $(AM_CXXFLAGS)
 tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) \
-		$(LIBINTL) $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS)
+		$(LIBINTL) $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS) $(SQLITE_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
@@ -349,7 +324,7 @@ EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
 	tester-testsuite.lua $(srcdir)/tester-tests			\
 	unit-testsuite.lua package.m4 package_revision.txt		\
 	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	sqlite/keywordhash.h contrib/README contrib/monoprof.sh		\
+	contrib/README contrib/monoprof.sh		\
 	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
 	contrib/monotone.el contrib/monotone-nav.el			\
 	contrib/monotone.bash_completion				\
