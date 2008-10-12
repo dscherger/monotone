@@ -1,6 +1,3 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1
-ACLOCAL_AMFLAGS = -I m4
-
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
 	simplestring_xform.cc simplestring_xform.hh 			\
