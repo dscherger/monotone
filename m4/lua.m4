@@ -37,12 +37,13 @@ AC_DEFUN([MTN_FIND_LUA],
    LUA_CFLAGS="`echo :$LUA_CFLAGS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
    LUA_LIBS="`echo :$LUA_LIBS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
 
-   AC_MSG_NOTICE([using lua compile flags: "$LUA_CFLAGS"])
-   AC_MSG_NOTICE([using lua link flags: "$LUA_LIBS"])
+   #AC_MSG_NOTICE([using lua compile flags: "$LUA_CFLAGS"])
+   #AC_MSG_NOTICE([using lua link flags: "$LUA_LIBS"])
 
    AC_CACHE_CHECK([whether the lua library is usable], ac_cv_lib_lua_works,
     [save_LIBS="$LIBS"
      save_CFLAGS="$CFLAGS"
+     save_CPPFLAGS="$CPPFLAGS"
      LIBS="$LIBS $LUA_LIBS"
      CFLAGS="$CFLAGS $LUA_CFLAGS"
      CPPFLAGS="$CFLAGS $LUA_CFLAGS"
@@ -66,7 +67,8 @@ st = luaL_newstate();
       ])],
       [ac_cv_lib_lua_works=yes], [ac_cv_lib_lua_works=no])
      LIBS="$save_LIBS"
-     CFLAGS="$save_CFLAGS"])
+     CFLAGS="$save_CFLAGS"
+     CPPFLAGS="$save_CPPFLAGS"])
    if test $ac_cv_lib_lua_works = no; then
       AC_MSG_ERROR([Your lua library is not usable.])
    fi

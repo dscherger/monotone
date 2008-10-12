@@ -25,10 +25,9 @@
 #include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
+#include <sqlite3.h>
 
 #include "lexical_cast.hh"
-
-#include "sqlite/sqlite3.h"
 
 #include "app_state.hh"
 #include "cert.hh"

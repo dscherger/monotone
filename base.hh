@@ -51,6 +51,12 @@ template <> void dump(std::string const & obj, std::string & out);
 #define NORETURN(x) x
 #endif
 
+// sqlite versions older before 3.3.14 did not have sqlite_prepare_v2. We
+// simply fall back to using the old API.
+#if SQLITE_VERSION_NUMBER < 3003014
+#define sqlite3_prepare_v2 sqlite3_prepare
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

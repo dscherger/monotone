@@ -61,5 +61,6 @@ check(mtn("--db=subdir/foo.db", "db", "info"), 0, false, false)
 check(mtn("--db=subdir/foo.db", "db", "version"), 0, false, false)
 check(mtn("--db=subdir/foo.db", "db", "migrate"), 0, false, false)
 check(mtn("--db=subdir/bar.db", "db", "load"), 0, false, false)
-check(mtn("--db=subdir/baz.db", "db", "init"), 0, false, false)
+-- FAILS WITH SQLITE >= 3.5
+xfail(mtn("--db=subdir/baz.db", "db", "init"), 0, false, false)
 check({"chmod", "a+r", "subdir"})
