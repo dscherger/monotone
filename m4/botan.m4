@@ -43,12 +43,13 @@ AC_DEFUN([MTN_FIND_BOTAN],
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])
-    if test $botan_version_match = no; then
-      AC_MSG_WARN([Your botan library version ($BOTAN_VERSION) is newer than expected. Monotone might not build cleanly.])
-    fi
 
     CPPFLAGS="$save_CPPFLAGS"
     AC_MSG_RESULT([yes (version $BOTAN_VERSION)])
+
+    if test $botan_version_match = no; then
+      AC_MSG_WARN([Your botan library version ($BOTAN_VERSION) is newer than expected. Monotone might not build cleanly.])
+    fi
 
     # AC_MSG_NOTICE([using botan compile flags: "$BOTAN_CPPFLAGS"])
     # AC_MSG_NOTICE([using botan link flags: "$BOTAN_LIBS"])
