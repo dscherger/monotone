@@ -393,9 +393,8 @@ private:
                                       query & q);
 };
 
-#if SQLITE_VERSION_NUMBER < 3003013
-// sqlite before version 3.3.13 didn't have the hex() function.
-
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+// SQLite versions up to and including 3.3.12 didn't have the hex() function
 void
 sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 {
@@ -449,8 +448,12 @@ database_impl::~database_impl()
 }
 
 database::database(app_state & app)
-  : lua(app.lua), rng(app.rng)
+  : lua(app.lua)
 {
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  rng = app.rng;
+#endif
+
   boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
   if (!i)
     {
@@ -2796,9 +2799,16 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
     encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
 
   SecureVector<Botan::byte> ct;
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size(), *rng);
+#else
+  ct = encryptor->encrypt(
+          reinterpret_cast<Botan::byte const *>(plaintext.data()),
+          plaintext.size());
+#endif
   ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
                                         ct.size()));
 }
@@ -2919,11 +2929,12 @@ database_impl::results_to_certs(results const & res,
 void
 database_impl::install_functions()
 {
-#if SQLITE_VERSION_NUMBER < 3003013
-  I(sqlite3_create_function(sql(), "hex", -1,
-                            SQLITE_UTF8, NULL,
-                            &sqlite3_hex_fn,
-                            NULL, NULL) == 0);
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+  if (sqlite3_libversion_number() < 3003013)
+    I(sqlite3_create_function(sql(), "hex", -1,
+                              SQLITE_UTF8, NULL,
+                              &sqlite3_hex_fn,
+                              NULL, NULL) == 0);
 #endif
 
   // register any functions we're going to use

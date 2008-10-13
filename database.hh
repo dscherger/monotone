@@ -13,7 +13,11 @@
 #include "vector.hh"
 #include <set>
 #include <boost/shared_ptr.hpp>
+
+#include <botan/botan.h>
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 #include <botan/rng.h>
+#endif
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -437,7 +441,9 @@ public:
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+#endif
 };
 
 // not a member function, defined in database_check.cc

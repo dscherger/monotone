@@ -1,4 +1,4 @@
-# Currently we accept botan version 1.7.8 and newer, limited to the
+# Currently we accept botan version 1.6.3 and newer, limited to the
 # development branch 1.7, emitting a warning if the found botan is
 # newer than 1.7.18.
 
@@ -24,8 +24,12 @@ AC_DEFUN([MTN_FIND_BOTAN],
     AC_PREPROC_IFELSE([
 #include <botan/version.h>
 
-#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,7,8)
+#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,6,3)
 #error "Botan is too old"
+#endif
+
+#if BOTAN_VERSION_CODE == BOTAN_VERSION_CODE_FOR(1,7,14)
+#error "Botan 1.7.14 is unusable"
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])

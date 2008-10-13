@@ -81,20 +81,21 @@ get_full_version(string & out)
            "C++ compiler        : %s\n"
            "C++ standard library: %s\n"
            "Boost version       : %s\n"
-           "SQLite version      : %s\n"
+           "SQLite version      : %s (compiled against %s)\n"
            "Lua version         : %s\n"
            "PCRE version        : %d.%d\n"
-           "Botan version       : %d.%d.%d\n"
+           "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
     % s
     % BOOST_COMPILER
     % BOOST_STDLIB
     % BOOST_LIB_VERSION
-    % SQLITE_VERSION
+    % sqlite3_libversion() % SQLITE_VERSION
     % LUA_RELEASE
     % PCRE_MAJOR % PCRE_MINOR
-    % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
+    % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
+        % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
     % string(package_full_revision_constant);
   out = oss.str();
 }

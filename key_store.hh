@@ -2,7 +2,13 @@
 #define __KEY_STORE_H__
 
 #include <boost/scoped_ptr.hpp>
+
+#include <botan/botan.h>
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 #include <botan/rng.h>
+#else
+#include <botan/libstate.h>
+#endif
 
 #include "vector.hh"
 #include "vocab.hh"
@@ -37,7 +43,10 @@ public:
   explicit key_store(app_state & a);
   ~key_store();
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   Botan::RandomNumberGenerator & get_rng();
+#endif
+
   system_path const & get_key_dir();
 
   // Basic key I/O
