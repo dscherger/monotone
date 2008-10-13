@@ -183,16 +183,27 @@ validate_paths(set<file_path> const & included_paths,
   N(bad == 0, FP("%d unknown path", "%d unknown paths", bad) % bad);
 }
 
-restriction::restriction(std::vector<file_path> const & includes,
-                         std::vector<file_path> const & excludes,
+restriction::restriction(vector<file_path> const & includes,
+                         vector<file_path> const & excludes,
                          long depth)
   : included_paths(includes.begin(), includes.end()),
     excluded_paths(excludes.begin(), excludes.end()),
     depth(depth)
 {}
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+void
+restriction::add_persistent_restriction(workspace & work)
+{
+  vector<file_path> includes, excludes;
+  work.get_persistent_includes(includes);
+  work.get_persistent_excludes(excludes);
+
+  included_paths.insert(includes.begin(), includes.end());
+  excluded_paths.insert(excludes.begin(), excludes.end());
+}
+
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster) :
   restriction(includes, excludes, depth)
@@ -201,8 +212,8 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   validate_paths(included_paths, excluded_paths, unknown_node(known_paths));
 }
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2) :
@@ -213,8 +224,8 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
   validate_paths(included_paths, excluded_paths, unknown_node(known_paths));
 }
 
-node_restriction::node_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+node_restriction::node_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    parent_map const & rosters1,
                                    roster_t const & roster2) :
@@ -229,8 +240,8 @@ node_restriction::node_restriction(std::vector<file_path> const & includes,
 }
 
 
-path_restriction::path_restriction(std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+path_restriction::path_restriction(vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    validity_check vc) :
   restriction(includes, excludes, depth)
@@ -247,25 +258,28 @@ path_restriction::path_restriction(std::vector<file_path> const & includes,
 // leave work.o out of the unit_tester binary.
 #ifndef BUILD_UNIT_TESTS
 node_restriction::node_restriction(workspace & work,
-                                   std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+                                   vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster) :
   restriction(includes, excludes, depth)
 {
+  add_persistent_restriction(work);
   map_nodes(node_map, roster, included_paths, excluded_paths, known_paths);
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, work));
 }
 
 node_restriction::node_restriction(workspace & work,
-                                   std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+                                   vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2) :
   restriction(includes, excludes, depth)
 {
+  add_persistent_restriction(work);
+
   map_nodes(node_map, roster1, included_paths, excluded_paths, known_paths);
   map_nodes(node_map, roster2, included_paths, excluded_paths, known_paths);
 
@@ -274,13 +288,15 @@ node_restriction::node_restriction(workspace & work,
 }
 
 node_restriction::node_restriction(workspace & work,
-                                   std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+                                   vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    parent_map const & rosters1,
                                    roster_t const & roster2) :
   restriction(includes, excludes, depth)
 {
+  add_persistent_restriction(work);
+
   for (parent_map::const_iterator i = rosters1.begin();
        i != rosters1.end(); i++)
     map_nodes(node_map, parent_roster(i),
@@ -292,12 +308,14 @@ node_restriction::node_restriction(workspace & work,
 
 
 path_restriction::path_restriction(workspace & work,
-                                   std::vector<file_path> const & includes,
-                                   std::vector<file_path> const & excludes,
+                                   vector<file_path> const & includes,
+                                   vector<file_path> const & excludes,
                                    long depth,
                                    validity_check vc) :
   restriction(includes, excludes, depth)
 {
+  add_persistent_restriction(work);
+
   map_paths(path_map, included_paths, restricted_path::included);
   map_paths(path_map, excluded_paths, restricted_path::excluded);
 

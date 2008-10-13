@@ -72,6 +72,8 @@ class restriction
               std::vector<file_path> const & excludes,
               long depth);
 
+  void add_persistent_restriction(workspace & work);
+
   std::set<file_path> included_paths, excluded_paths;
   long depth;
 };

@@ -154,6 +154,14 @@ public:
 
   bool has_changes(database & db);
 
+
+  void get_persistent_includes(std::vector<file_path> & includes);
+  void get_persistent_excludes(std::vector<file_path> & excludes);
+
+  void put_persistent_includes(std::vector<file_path> const & includes);
+  void put_persistent_excludes(std::vector<file_path> const & excludes);
+
+
   // write out a new (partial) revision describing the current workspace;
   // the important pieces of this are the base revision id and the "shape"
   // changeset (representing tree rearrangements).

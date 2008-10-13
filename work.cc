@@ -10,7 +10,7 @@
 #include "base.hh"
 #include "work.hh"
 
-#include <ostream>
+#include <iostream>
 #include <sstream>
 #include <cstring>
 #include <cerrno>
@@ -35,10 +35,12 @@
 #include "roster.hh"
 #include "transforms.hh"
 
+using std::cout;
 using std::deque;
 using std::exception;
 using std::make_pair;
 using std::map;
+using std::ostringstream;
 using std::pair;
 using std::set;
 using std::string;
@@ -53,6 +55,8 @@ static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
 static char const revision_file_name[] = "revision";
+static char const includes_file_name[] = "includes";
+static char const excludes_file_name[] = "excludes";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -87,6 +91,20 @@ get_user_log_path(bookkeeping_path & ul_path)
 {
   ul_path = bookkeeping_root / user_log_file_name;
   L(FL("user log path is %s") % ul_path);
+}
+
+static void
+get_includes_path(bookkeeping_path & includes)
+{
+  includes = bookkeeping_root / includes_file_name;
+  L(FL("includes path is %s") % includes);
+}
+
+static void
+get_excludes_path(bookkeeping_path & excludes)
+{
+  excludes = bookkeeping_root / excludes_file_name;
+  L(FL("excludes path is %s") % excludes);
 }
 
 //
@@ -190,6 +208,92 @@ workspace::workspace(options const & opts, lua_hooks & lua,
 }
 
 // routines for manipulating the bookkeeping directory
+
+// persistent restriction in _MTN/includes and _MTN/excludes
+
+static void
+read_persistent_restriction(bookkeeping_path const & file, vector<file_path> & paths)
+{
+  if (path_exists(file))
+    {
+      L(FL("reading %s") % file);
+      data dat;
+      read_data(file, dat);
+      vector<string> lines;
+      split_into_lines(dat(), lines);
+      for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+        {
+          paths.push_back(file_path_internal(*i));
+        }
+    }
+}
+
+static void
+write_persistent_restriction(bookkeeping_path const & file, vector<file_path> const & paths)
+{
+  if (paths.empty())
+    {
+      if (file_exists(file))
+        {
+          L(FL("removing %s") % file);
+          delete_file(file);
+        }
+    }
+  else
+    {
+      L(FL("writing %s") % file);
+      vector<file_path> combined(paths);
+      read_persistent_restriction(file, combined);
+      ostringstream stream;
+      for (vector<file_path>::const_iterator i = combined.begin(); i != combined.end(); ++i)
+        {
+          cout << "  " << *i << "\n";
+          stream << *i << "\n";
+        }
+      data dat(stream.str());
+      write_data(file, dat);
+    }
+}
+
+void
+workspace::get_persistent_includes(vector<file_path> & includes)
+{
+  bookkeeping_path includes_path;
+  get_includes_path(includes_path);
+  read_persistent_restriction(includes_path, includes);
+}
+
+void
+workspace::get_persistent_excludes(vector<file_path> & excludes)
+{
+  bookkeeping_path excludes_path;
+  get_excludes_path(excludes_path);
+  read_persistent_restriction(excludes_path, excludes);
+}
+
+void
+workspace::put_persistent_includes(vector<file_path> const & includes)
+{
+  bookkeeping_path includes_path;
+  get_includes_path(includes_path);
+  if (includes.empty())
+    cout << "Includes cleared\n";
+  else
+    cout << "Includes:\n";
+  write_persistent_restriction(includes_path, includes);
+}
+
+void
+workspace::put_persistent_excludes(vector<file_path> const & excludes)
+{
+  bookkeeping_path excludes_path;
+  get_excludes_path(excludes_path);
+  if (excludes.empty())
+    cout << "Excludes cleared\n";
+  else
+    cout << "Excludes:\n";
+  write_persistent_restriction(excludes_path, excludes);
+}
 
 // revision file contains a partial revision describing the workspace
 void

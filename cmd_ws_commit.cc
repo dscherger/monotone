@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <iostream>
+#include <iterator>
 #include <map>
 
 #include "cmd.hh"
@@ -32,6 +33,7 @@
 
 using std::cout;
 using std::make_pair;
+using std::ostream_iterator;
 using std::pair;
 using std::make_pair;
 using std::map;
@@ -565,6 +567,26 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
                               app.opts.bookkeep_only);
 }
 
+CMD(include, "include", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Update or clear the workspace include list"),
+    "",
+    options::opts::none)
+{
+  workspace work(app);
+  vector<file_path> paths = args_to_paths(args);
+  work.put_persistent_includes(paths);
+}
+
+CMD(exclude, "exclude", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Update or clear the workspace exclude list"),
+    "",
+    options::opts::none)
+{
+  workspace work(app);
+  vector<file_path> paths = args_to_paths(args);
+  work.put_persistent_excludes(paths);
+}
+
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows workspace's status information"),
     "",
@@ -587,6 +609,27 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, rev);
+
+  vector<file_path> includes, excludes;
+  work.get_persistent_includes(includes);
+  work.get_persistent_excludes(excludes);
+
+  if (!includes.empty())
+    {
+      cout << "Including:\n";
+      for (vector<file_path>::const_iterator i = includes.begin(); i != includes.end(); ++i)
+        {
+          cout << "  " << *i << "\n";
+        }
+    }
+  if (!excludes.empty())
+    {
+      cout << "Excluding:\n";
+      for (vector<file_path>::const_iterator i = excludes.begin(); i != excludes.end(); ++i)
+        {
+          cout << "  " << *i << "\n";
+        }
+    }
 
   utf8 summary;
   revision_summary(rev, app.opts.branchname, summary);
