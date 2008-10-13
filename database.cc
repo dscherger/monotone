@@ -393,6 +393,36 @@ private:
                                       query & q);
 };
 
+#if SQLITE_VERSION_NUMBER < 3003013
+// sqlite before version 3.3.13 didn't have the hex() function.
+
+void
+sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
+{
+  if (nargs != 1)
+    {
+      sqlite3_result_error(f, "need exactly 1 arg to hex()", -1);
+      return;
+    }
+  string decoded;
+
+  // This operation may throw informative_failure.  We must intercept that
+  // and turn it into a call to sqlite3_result_error, or rollback will fail.
+  try
+    {
+      decoded = encode_hexenc(reinterpret_cast<char const *>(
+        sqlite3_value_text(args[0])));
+    }
+  catch (informative_failure & e)
+    {
+      sqlite3_result_error(f, e.what(), -1);
+      return;
+    }
+
+  sqlite3_result_blob(f, decoded.data(), decoded.size(), SQLITE_TRANSIENT);
+}
+#endif
+
 database_impl::database_impl(system_path const & f) :
   filename(f),
   __sql(NULL),
@@ -2889,6 +2919,13 @@ database_impl::results_to_certs(results const & res,
 void
 database_impl::install_functions()
 {
+#if SQLITE_VERSION_NUMBER < 3003013
+  I(sqlite3_create_function(sql(), "hex", -1,
+                            SQLITE_UTF8, NULL,
+                            &sqlite3_hex_fn,
+                            NULL, NULL) == 0);
+#endif
+
   // register any functions we're going to use
   I(sqlite3_create_function(sql(), "gunzip", -1,
                            SQLITE_UTF8, NULL,
