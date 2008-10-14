@@ -13,8 +13,10 @@ AC_DEFUN([MTN_FIND_BOTAN],
     # -L switches for directories that the compiler will search
     # automatically.
     BOTAN_LIBS="`botan-config --libs | \
-	       sed -e 's:-L */usr/lib/*::' -e 's:-R */usr/lib/*::' \
-	           -e 's:-L */lib/*::' -e 's:-R */lib/*::'`"
+	       sed -e 's:-L */usr/lib\(64\)\?/*::' \
+	       	   -e 's:-R */usr/lib\(64\)\?/*::' \
+	           -e 's:-L */lib\(64\)\?/*::' \
+		   -e 's:-R */lib\(64\)\?/*::'`"
 
     found_botan=yes
 
