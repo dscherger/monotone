@@ -83,7 +83,7 @@ get_full_version(string & out)
            "Boost version       : %s\n"
            "SQLite version      : %s (compiled against %s)\n"
            "Lua version         : %s\n"
-           "PCRE version        : %s (compiled against) %d.%d\n"
+           "PCRE version        : %s (compiled against %d.%d)\n"
            "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
@@ -92,7 +92,7 @@ get_full_version(string & out)
     % BOOST_STDLIB
     % BOOST_LIB_VERSION
     % sqlite3_libversion() % SQLITE_VERSION
-    % LUA_RELEASE
+    % LUA_VERSION
     % pcre_version() % PCRE_MAJOR % PCRE_MINOR
     % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
         % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
