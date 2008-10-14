@@ -111,12 +111,6 @@ BOOST_SANDBOX_SOURCES =							\
 	boost/circular_buffer_fwd.hpp					\
 	boost/circular_buffer.hpp
 
-IDNA_SOURCES =								\
-	idna/gunibreak.h idna/gunidecomp.h idna/idna.h idna/nfkc.c	\
-	idna/punycode.c idna/rfc3454.c idna/stringprep.h idna/version.c	\
-	idna/gunicomp.h idna/idna.c idna/idn-int.h idna/profiles.c	\
-	idna/punycode.h idna/stringprep.c idna/toutf8.c
-
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
@@ -192,7 +186,6 @@ txt2c_SOURCES = txt2c.cc
 noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(IDNA_SOURCES) \
 			$(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
