@@ -8,15 +8,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
   if test -n "`type -p botan-config`"; then
     BOTAN_VERSION="`botan-config --version`"
     BOTAN_CPPFLAGS="`botan-config --cflags`"
-
-    # botan-config has the annoying habit of telling us to use
-    # -L switches for directories that the compiler will search
-    # automatically.
-    BOTAN_LIBS="`botan-config --libs | \
-	       sed -e 's:-L */usr/lib\(64\)\?/*::' \
-	       	   -e 's:-R */usr/lib\(64\)\?/*::' \
-	           -e 's:-L */lib\(64\)\?/*::' \
-		   -e 's:-R */lib\(64\)\?/*::'`"
+    BOTAN_LIBS="`botan-config --libs`"
 
     found_botan=yes
 

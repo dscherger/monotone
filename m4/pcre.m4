@@ -18,12 +18,7 @@ AC_DEFUN([MTN_FIND_PCRE],
      AC_MSG_CHECKING([for PCRE using pcre-config])
      if test -n "`type -p pcre-config`"; then
        PCRE_CFLAGS="`pcre-config --cflags`"
-       # pcre-config has the annoying habit of telling us to use
-       # -L switches for directories that the compiler will search
-       # automatically.
-       PCRE_LIBS="`pcre-config --libs | \
-                   sed -e 's:-L */usr/lib/*::' -e 's:-R */usr/lib/*::' \
-                       -e 's:-L */lib/*::' -e 's:-R */lib/*::'`"
+       PCRE_LIBS="`pcre-config --libs`"
        found_libpcre=yes
        AC_MSG_RESULT([yes])
      fi
