@@ -23,6 +23,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
+#include <botan/botan.h>
+#include <botan/rng.h>
+
 #include "lua_hooks.hh"
 #include "key_store.hh"
 #include "project.hh"
@@ -48,8 +51,6 @@
 #include "globish.hh"
 #include "uri.hh"
 #include "options.hh"
-
-#include "botan/botan.h"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
@@ -798,8 +799,14 @@ session::mk_nonce()
 {
   I(this->saved_nonce().empty());
   char buf[constants::merkle_hash_length_in_bytes];
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                             constants::merkle_hash_length_in_bytes);
+                           constants::merkle_hash_length_in_bytes);
+#else
+  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+                               constants::merkle_hash_length_in_bytes);
+#endif
   this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes));
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;

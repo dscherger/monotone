@@ -11500,8 +11500,8 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 * Regexp Details::  Details of regular expression syntax and semantics.
 @end menu
 
-@include pcre/pcresyntax.texi
-@include pcre/pcrepattern.texi
+@include pcresyntax.texi
+@include pcrepattern.texi
 
 @node Default hooks, General Index, Special Topics, Top
 @appendix Default hooks

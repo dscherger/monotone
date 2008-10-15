@@ -16,7 +16,9 @@
 #include <locale.h>
 #include <stdlib.h>
 
-#include "botan/botan.h"
+#include <sqlite3.h>
+#include <botan/botan.h>
+
 #include "i18n.h"
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"
@@ -202,6 +204,39 @@ cpp_main(int argc, char ** argv)
         ui.prog_name = prog_name;
         I(!ui.prog_name.empty());
       }
+
+      // check the SQLite library version we got dynamically linked against.
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+      N(sqlite3_libversion_number() >= 3003008,
+        F("This monotone binary requires at least SQLite 3.3.8 to run."));
+#else
+      N(sqlite3_libversion_number() >= 3003014,
+        F("This monotone binary requires at least SQLite 3.3.14 to run."));
+#endif
+
+      // check the botan library version we got linked against.
+#if BOTAN_VERSION_MAJOR == 1 && BOTAN_VERSION_MINOR == 6
+      N(Botan::version_major() == 1 && Botan::version_minor() == 6,
+        F("This monotone binary requires Botan 1.6.x."));
+
+#elif BOTAN_VERSION_MAJOR == 1 && BOTAN_VERSION_MINOR == 7
+      N(Botan::version_major() == 1 && Botan::version_minor() == 7,
+        F("This monotone binary requires Botan 1.7.x."));
+
+      // Remember that botan 1.7 is a development branch, so its API might
+      // be changing. However, besides the glitch of 1.7.14, no API changes
+      // affect monotone.
+      N(Botan::version_patch() != 14,
+        F("This monotone binary does not support Botan 1.7.14."));
+
+#if BOTAN_VERSION_PATCH < 7
+      N(Botan::version_patch() < 7,
+        F("This monotone binary requires Botan 1.7.6 or before."));
+#else
+      N(Botan::version_patch() >= 7,
+        F("This monotone binary requires Botan 1.7.7 or newer."));
+#endif
+#endif
 
       app_state app;
       try
