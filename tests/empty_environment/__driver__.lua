@@ -7,9 +7,14 @@ function noenv_mtn(...)
   -- we can link against libraries in non-standard locations. So far I've
   -- only tested that on Linux.
   save_LD_LIBRARY_PATH = os.getenv("LD_LIBRARY_PATH")
-  return {"env", "-i",
-          "LD_LIBRARY_PATH="..save_LD_LIBRARY_PATH,
-          unpack(mtn(unpack(arg)))}
+  if save_LD_LIBRARY_PATH then
+    return {"env", "-i",
+            "LD_LIBRARY_PATH="..save_LD_LIBRARY_PATH,
+            unpack(mtn(unpack(arg)))}
+  else
+    return {"env", "-i",
+            unpack(mtn(unpack(arg)))}
+  end
 end
 
 if ostype == "Windows" then
