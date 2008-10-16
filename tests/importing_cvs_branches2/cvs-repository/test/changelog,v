@@ -1,0 +1,113 @@
+head	1.3;
+access;
+symbols
+	D:1.2.2.1.4.1.0.2
+	C:1.2.2.1.0.4
+	B:1.2.2.1.0.2
+	A:1.2.0.2;
+locks; strict;
+comment	@# @;
+
+
+1.3
+date	2007.03.10.12.10.06;	author markus;	state Exp;
+branches;
+next	1.2;
+commitid	ebGW0koTXumUsx9s;
+
+1.2
+date	2007.03.10.12.10.01;	author markus;	state Exp;
+branches
+	1.2.2.1;
+next	1.1;
+commitid	DQfi38SuodxSsx9s;
+
+1.1
+date	2007.03.10.12.10.00;	author markus;	state Exp;
+branches;
+next	;
+commitid	ypY9fBLqgi5Ssx9s;
+
+1.2.2.1
+date	2007.03.10.12.10.02;	author markus;	state Exp;
+branches
+	1.2.2.1.4.1;
+next	;
+commitid	ZhregeBAQcJSsx9s;
+
+1.2.2.1.4.1
+date	2007.03.10.12.10.03;	author markus;	state Exp;
+branches
+	1.2.2.1.4.1.2.1;
+next	;
+commitid	LQlRD0MAMXhTsx9s;
+
+1.2.2.1.4.1.2.1
+date	2007.03.10.12.10.04;	author markus;	state Exp;
+branches;
+next	;
+commitid	JwFdTHp8EAzTsx9s;
+
+
+desc
+@@
+
+
+1.3
+log
+@commit on mainline after branch
+@
+text
+@first changelog entry
+second changelog entry
+third changelog -not on branch-
+@
+
+
+1.2
+log
+@first commit
+@
+text
+@d3 1
+@
+
+
+1.2.2.1
+log
+@commit on branch A
+@
+text
+@a2 1
+third changelog -on branch A-
+@
+
+
+1.2.2.1.4.1
+log
+@commit on branch C
+@
+text
+@a3 1
+fourth changelog -on branch C-
+@
+
+
+1.2.2.1.4.1.2.1
+log
+@commit on branch D
+@
+text
+@a4 1
+fifth changelog -on branch D-
+@
+
+
+1.1
+log
+@initial import
+@
+text
+@d2 1
+@
+

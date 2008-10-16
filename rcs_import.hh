@@ -11,16 +11,18 @@
 // PURPOSE.
 
 class system_path;
-class database;
+struct options;
+class lua_hooks;
 class key_store;
 class project_t;
 class branch_name;
 
-void test_parse_rcs_file(system_path const & filename);
-void import_cvs_repo(project_t & project,
+void test_parse_rcs_file(project_t & project, system_path const & filename);
+void import_cvs_repo(options & opts,
+                     lua_hooks & lua,
+                     project_t & project,
                      key_store & keys,
-                     system_path const & cvsroot,
-                     branch_name const & branchname);
+                     system_path const & cvsroot);
 
 // Local Variables:
 // mode: C++
