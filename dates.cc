@@ -150,6 +150,10 @@ date_t::from_unix_epoch(u64 t)
   // certainly uses a signed tm_year; it is best to be consistent.
   I(t <= u64_C(67767976233532799));
 
+  // enforce an even lower limit of year 9999 for the sake of our string
+  // handling routines.
+  I(t <= u64_C(253402300799));
+
   // There are 31556952 seconds (365d 5h 43m 12s) in the average Gregorian
   // year.  This will therefore approximate the correct year (minus 1970).
   // It may be off in either direction, but by no more than one year
@@ -324,6 +328,8 @@ date_t::from_string(string const & s)
 
       N(year >= 1970,
         F("date too early (monotone only goes back to 1970-01-01T00:00:00)"));
+      N(year < 9999,
+        F("date too late (monotone only goes forward to year 9999)"));
 
       u8 mdays;
       if (month == 2 && is_leap_year(year))
@@ -360,8 +366,9 @@ UNIT_TEST(date, from_string)
   OK("2007-03-01 18:41:13", "2007-03-01T18:41:13");
   // squashed, space
   OK("20070301 184113", "2007-03-01T18:41:13");
+
   // more than four digits in the year
-  OK("120070301T184113", "12007-03-01T18:41:13");
+  NO("120070301T184113");   // equals 12007-03-01T18:41:13
 
   // inappropriate character at every possible position
   NO("x007-03-01T18:41:13");
@@ -561,10 +568,10 @@ UNIT_TEST(date, from_unix_epoch)
   OK(u64_C(4131302400), "2100-12-01T00:00:00");
   OK(u64_C(4133980799), "2100-12-31T23:59:59");
 
-  // limit of a (signed) 32-bit year counter
-  OK(u64_C(67767976233532799), "2147483647-12-31T23:59:59");
-  UNIT_TEST_CHECK_THROW(date_t::from_unix_epoch(u64_C(67768036191676800)),
-                    std::logic_error);
+  // year 9999 limit
+  OK(u64_C(253402300799), "9999-12-31T23:59:59");
+  UNIT_TEST_CHECK_THROW(date_t::from_unix_epoch(u64_C(253402300800)),
+                        std::logic_error);
 
 #undef OK
 }
