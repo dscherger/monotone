@@ -19,9 +19,15 @@
 
 struct date_t
 {
-  // For the benefit of the --date option.
-  date_t() : d("") {}
-  bool valid() const { return d != ""; }
+  date_t()      : d(0) {}
+
+  // initialize from a unix timestamp
+  date_t(u64 d);
+
+  // initialize from multiple values
+  date_t(int sec, int min, int hour, int day, int month, int year);
+
+  bool valid() const { return d != 0; }
 
   // Return the local system's idea of the current date.
   static date_t now();
@@ -35,15 +41,17 @@ struct date_t
   static date_t from_string(std::string const &);
 
   // Write out date as a string.
-  std::string const & as_iso_8601_extended() const;
+  std::string as_iso_8601_extended() const;
 
 private:
-  // For what we do with dates, it is most convenient to store them as
-  // strings in the ISO 8601 extended time format.
-  std::string d;
+  // The date as an unsigned 64-bit count of seconds since the Unix epoch
+  // (1970-01-01T00:00:00).
+  u64 d;
 
-  // used by the above factory functions
-  date_t(std::string const & s) : d(s) {};
+  // Our own gmtime function which converts the internal Unix epoch
+  // into a struct tm.
+  void gmtime(struct tm & tm) const;
+  void mktime(struct tm const & tm);
 };
 
 std::ostream & operator<< (std::ostream & o, date_t const & d);

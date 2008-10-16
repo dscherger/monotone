@@ -36,11 +36,35 @@ using std::string;
   #error "How do I write a constant of type u64?"
 #endif
 
-const string &
-date_t::as_iso_8601_extended() const
+date_t::date_t(u64 d)
+  : d(d)
 {
-  I(this->valid());
-  return d;
+  using std::tm;
+
+  struct tm tm;
+  gmtime(tm);
+  I(tm.tm_year + 1900 < 10000);
+}
+
+date_t::date_t(int sec, int min, int hour, int day, int month, int year)
+{
+  // general validity checks
+  I((year >= 1970) && (year <= 9999));
+  I((month >= 1) && (month <= 12));
+  I((day >= 1) && (day <= 31));
+  I((hour >= 0) && (hour < 24));
+  I((min >= 0) && (min < 60));
+  I((sec >= 0) && (sec < 60));
+
+  struct tm t;
+  t.tm_sec = sec;
+  t.tm_min = min;
+  t.tm_hour = hour;
+  t.tm_mday = day;
+  t.tm_mon = month - 1;
+  t.tm_year = year - 1900;
+
+  mktime(t);
 }
 
 std::ostream &
@@ -58,21 +82,8 @@ dump(date_t const & d, std::string & s)
 date_t
 date_t::now()
 {
-  using std::time_t;
   using std::time;
-  using std::tm;
-  using std::gmtime;
-  using std::strftime;
-
-  time_t t = time(0);
-  struct tm b = *gmtime(&t);
-
-  // in CE 10000, you will need to increase the size of 'buf'.
-  I(b.tm_year <= 9999);
-
-  char buf[20];
-  strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%S", &b);
-  return date_t(string(buf));
+  return date_t(static_cast<u64>(time(0)));
 }
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
@@ -131,6 +142,22 @@ secs_in_year(unsigned int year)
 date_t
 date_t::from_unix_epoch(u64 t)
 {
+  return date_t(t);
+}
+
+string
+date_t::as_iso_8601_extended() const
+{
+  struct tm tm;
+  gmtime(tm);
+  return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
+             % (tm.tm_year + 1900) % (tm.tm_mon + 1) % tm.tm_mday
+             % tm.tm_hour % tm.tm_min % tm.tm_sec).str();
+}
+
+void
+date_t::gmtime(struct tm & tm) const
+{
   // these types hint to the compiler that narrowing divides are safe
   u64 yearbeg;
   u32 year;
@@ -141,6 +168,9 @@ date_t::from_unix_epoch(u64 t)
   u16 secofhour;
   u8 min;
   u8 sec;
+
+  // the temp variable to calculate with
+  u64 t = d;
 
   // validate our assumptions about which basic type is u64 (see above).
   I(PROBABLE_U64_MAX == std::numeric_limits<u64>::max());
@@ -195,7 +225,7 @@ date_t::from_unix_epoch(u64 t)
 
       t -= this_month;
       month++;
-      L(FL("from_unix_epoch: month >= %u, t now %llu") % month % t);
+      L(FL("gmtime: month >= %u, t now %llu") % month % t);
       I(month < 12);
     }
 
@@ -209,11 +239,42 @@ date_t::from_unix_epoch(u64 t)
   min = secofhour / MIN;
   sec = secofhour % MIN;
 
-  // the widen<>s here are necessary because boost::format *ignores the
-  // format specification* and prints u8s as characters.
-  return date_t((FL("%u-%02u-%02uT%02u:%02u:%02u")
-                 % year % (month + 1) % (day + 1)
-                 % hour % widen<u32,u8>(min) % widen<u32,u8>(sec)).str());
+  // fill in the result
+  tm.tm_sec = sec;
+  tm.tm_min = min;
+  tm.tm_hour = hour;
+  tm.tm_mday = day + 1;
+  tm.tm_mon = month;
+  tm.tm_year = year - 1900;
+}
+
+void
+date_t::mktime(struct tm const & tm)
+{
+  d = tm.tm_sec;
+  d += tm.tm_min * MIN;
+  d += tm.tm_hour * HOUR;
+  d += tm.tm_mday * DAY;
+
+  // add months
+  for (int m = 0; m < tm.tm_mon; ++m)
+    {
+      d += MONTHS[m] * DAY;
+      if ((m == 1) && (is_leap_year(tm.tm_year)))
+        d += DAY;
+    }
+
+  // add years (which begin at 1900 for struct tm)
+  d += YEAR * static_cast<u64>(tm.tm_year - 70);
+
+  // add leap days for every fourth year (since 1968)
+  d += DAY * (static_cast<u64>(tm.tm_year - 68 - 1) / 4);
+
+  // subtract leap days for every 100th year (since 1900)
+  d -= DAY * (static_cast<u64>(tm.tm_year - 1) / 100);
+
+  // add leap days for every 400th year (since 2000), subtracting one again
+  d += DAY * ((static_cast<u64>(tm.tm_year + 300 - 1) / 400) - 1);
 }
 
 // We might want to consider teaching this routine more time formats.
@@ -340,7 +401,7 @@ date_t::from_string(string const & s)
       N(day >= 1 && day <= mdays,
         F("day out of range for its month in '%s'") % d);
 
-      return date_t(d);
+      return date_t(sec, min, hour, day, month, year);
     }
   catch (std::out_of_range)
     {
@@ -360,6 +421,27 @@ UNIT_TEST(date, from_string)
 
   // canonical format
   OK("2007-03-01T18:41:13", "2007-03-01T18:41:13");
+  OK("2007-03-01T00:41:13", "2007-03-01T00:41:13");
+  OK("2007-03-01T01:41:13", "2007-03-01T01:41:13");
+  OK("2007-03-01T23:41:13", "2007-03-01T23:41:13");
+
+  // test dates around leap years
+  OK("1999-12-31T12:00:00", "1999-12-31T12:00:00");
+  OK("1999-12-31T23:59:59", "1999-12-31T23:59:59");
+  OK("2000-01-01T00:00:00", "2000-01-01T00:00:00");
+  OK("2000-01-01T12:00:00", "2000-01-01T12:00:00");
+  OK("2003-12-31T12:00:00", "2003-12-31T12:00:00");
+  OK("2003-12-31T23:59:59", "2003-12-31T23:59:59");
+  OK("2004-01-01T00:00:00", "2004-01-01T00:00:00");
+  OK("2004-01-01T12:00:00", "2004-01-01T12:00:00");
+
+  // test dates around the leap day in february
+  OK("2003-02-28T23:59:59", "2003-02-28T23:59:59");
+  NO("2003-02-29T00:00:00");
+  OK("2004-02-28T23:59:59", "2004-02-28T23:59:59");
+  OK("2004-02-29T00:00:00", "2004-02-29T00:00:00");
+
+
   // squashed format
   OK("20070301T184113", "2007-03-01T18:41:13");
   // space between date and time
@@ -570,8 +652,7 @@ UNIT_TEST(date, from_unix_epoch)
 
   // year 9999 limit
   OK(u64_C(253402300799), "9999-12-31T23:59:59");
-  UNIT_TEST_CHECK_THROW(date_t::from_unix_epoch(u64_C(253402300800)),
-                        std::logic_error);
+  UNIT_TEST_CHECK_THROW(date_t(u64_C(253402300800)), std::logic_error);
 
 #undef OK
 }
