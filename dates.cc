@@ -657,6 +657,25 @@ UNIT_TEST(date, from_unix_epoch)
 #undef OK
 }
 
+UNIT_TEST(date, comparisons)
+{
+  date_t may = date_t::from_string("2000-05-01T00:00:00"),
+         jun = date_t::from_string("2000-06-01T00:00:00"),
+         jul = date_t::from_string("2000-07-01T00:00:00");
+
+  // testing all comparisons operators
+  UNIT_TEST_CHECK(may < jun);
+  UNIT_TEST_CHECK(jun < jul);
+  UNIT_TEST_CHECK(may < jul);
+
+  UNIT_TEST_CHECK(jul > may);
+
+  UNIT_TEST_CHECK(may == date_t::from_string("2000-05-01T00:00:00"));
+  UNIT_TEST_CHECK(may != date_t::from_string("2000-05-01T00:00:01"));
+  UNIT_TEST_CHECK(may != date_t::from_string("2000-09-01T00:00:00"));
+  UNIT_TEST_CHECK(may != date_t::from_string("1999-05-01T00:00:00"));
+}
+
 #endif
 
 // Local Variables:

@@ -43,6 +43,20 @@ struct date_t
   // Write out date as a string.
   std::string as_iso_8601_extended() const;
 
+  // Date comparison operators
+  bool operator <(struct date_t const & other) const
+    { return d < other.d; };
+  bool operator <=(struct date_t const & other) const
+    { return d <= other.d; };
+  bool operator >(struct date_t const & other) const
+    { return d > other.d; };
+  bool operator >=(struct date_t const & other) const
+    { return d >= other.d; };
+  bool operator ==(struct date_t const & other) const
+    { return d == other.d; };
+  bool operator !=(struct date_t const & other) const
+    { return d != other.d; };
+
 private:
   // The date as an unsigned 64-bit count of seconds since the Unix epoch
   // (1970-01-01T00:00:00).
