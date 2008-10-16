@@ -182,6 +182,9 @@ public:
                              size_t revs_in, size_t revs_out,
                              size_t keys_in, size_t keys_out);
   bool hook_note_mtn_startup(args_vector const & args);
+
+  // cvs_import hooks
+  bool hook_ignore_cvs_symbol(std::string const & symbol_name);
 };
 
 // Local Variables:

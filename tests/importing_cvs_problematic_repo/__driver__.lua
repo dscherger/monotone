@@ -10,4 +10,4 @@ mtn_setup()
 -- This rcs file fails to be imported correctly by monotone
 check(get("cvs-repository"))
 
-xfail_if(true, mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, ignore, ignore)
+check(mtn("--branch=test", "cvs_import", "cvs-repository/test"), 0, false, false)
