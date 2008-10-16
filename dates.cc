@@ -383,7 +383,7 @@ date_t::from_string(string const & s)
 
       N(year >= 1970,
         F("date too early (monotone only goes back to 1970-01-01T00:00:00)"));
-      N(year < 9999,
+      N(year <= 9999,
         F("date too late (monotone only goes forward to year 9999)"));
 
       u8 mdays;
@@ -708,9 +708,9 @@ UNIT_TEST(date, comparisons)
   UNIT_TEST_CHECK_THROW(v -= 1, std::logic_error);
 
   // check limits for additions
-  v = date_t::from_string("9999-12-13T23-59-00");
+  v = date_t::from_string("9999-12-31T23:59:00");
   v += 59;
-  UNIT_TEST_CHECK(v == date_t::from_string("9999-12-31T23-59-59"));
+  UNIT_TEST_CHECK(v == date_t::from_string("9999-12-31T23:59:59"));
   UNIT_TEST_CHECK_THROW(v += 1, std::logic_error);
 }
 
