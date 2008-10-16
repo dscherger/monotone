@@ -1,0 +1,44 @@
+head	1.1;
+access;
+symbols
+	CONFLICTING_BRANCH:1.1;
+locks; strict;
+comment	@# @;
+
+
+1.2
+date	2008.04.29.19.18.49;	author markus;	state Exp;
+branches
+	1.1.2.1;
+next	;
+
+1.1
+date	2008.04.29.19.18.49;	author markus;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@COMMIT A
+@
+text
+@version 1.2 of test file1
+@
+
+
+1.1
+log
+@COMMIT B
+@
+text
+@d1 1
+a1 1
+version 1.1 of test file1
+@
+
+

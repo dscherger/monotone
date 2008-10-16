@@ -49,6 +49,6 @@ check(samefile("file2.1", "branchdir/file2"))
 check(samefile("changelog.3", "branchdir/changelog"))
 
 -- get the log of the branch to check for correct branchpoint
-check(indir("branchdir", mtn("log")), 0, true, false)
+check(indir("branchdir", mtn("log", "--no-graph")), 0, true, false)
 check(grep("commit on branch", "stdout"), 0, false, false)
-xfail_if(true, grep("initial import", "stdout"), 0, false, false)
+check(grep("initial import", "stdout"), 0, false, false)
