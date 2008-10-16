@@ -404,6 +404,29 @@ date_t::from_string(string const & s)
     }
 }
 
+date_t &
+date_t::operator +=(u64 const & other)
+{
+  // prevent overflows
+  I(other <= u64_C(253402300799));
+
+  d += other;
+
+  // make sure we are still before year 10'000
+  I(d <= u64_C(253402300799));
+
+  return *this;
+}
+
+date_t &
+date_t::operator -=(u64 const & other)
+{
+  // prevent underflows
+  I(d >= other);
+  d -= other;
+  return *this;
+}
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
@@ -655,7 +678,8 @@ UNIT_TEST(date, comparisons)
 {
   date_t may = date_t::from_string("2000-05-01T00:00:00"),
          jun = date_t::from_string("2000-06-01T00:00:00"),
-         jul = date_t::from_string("2000-07-01T00:00:00");
+         jul = date_t::from_string("2000-07-01T00:00:00"),
+         v;
 
   // testing all comparisons operators
   UNIT_TEST_CHECK(may < jun);
@@ -668,6 +692,26 @@ UNIT_TEST(date, comparisons)
   UNIT_TEST_CHECK(may != date_t::from_string("2000-05-01T00:00:01"));
   UNIT_TEST_CHECK(may != date_t::from_string("2000-09-01T00:00:00"));
   UNIT_TEST_CHECK(may != date_t::from_string("1999-05-01T00:00:00"));
+
+  v = may;
+  v += DAY * 31;
+  UNIT_TEST_CHECK(v == jun);
+
+  v = jul;
+  v -= DAY * 30;
+  UNIT_TEST_CHECK(v == jun);
+
+  // check limits for subtractions
+  v = date_t(12345);
+  v -= 12345;
+  UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:00"));
+  UNIT_TEST_CHECK_THROW(v -= 1, std::logic_error);
+
+  // check limits for additions
+  v = date_t::from_string("9999-12-13T23-59-00");
+  v += 59;
+  UNIT_TEST_CHECK(v == date_t::from_string("9999-12-31T23-59-59"));
+  UNIT_TEST_CHECK_THROW(v += 1, std::logic_error);
 }
 
 #endif
