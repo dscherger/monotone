@@ -426,13 +426,6 @@ date_t::operator -=(u64 const & other)
   return *this;
 }
 
-u64
-date_t::as_unix_epoch() const
-{
-  return 100;
-}
-
-
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
