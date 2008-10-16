@@ -82,8 +82,24 @@ dump(date_t const & d, std::string & s)
 date_t
 date_t::now()
 {
+  using std::time_t;
   using std::time;
-  return date_t(static_cast<u64>(time(0)));
+  using std::tm;
+  using std::gmtime;
+
+  // This is the only place we rely on the system's time and date function
+  // which might operate on different epochs (i.e. 1980-01-01, as some
+  // Windows, old MacOS and VMS systems used). We immediately transform that
+  // to a struct tm representation, which is independent of the system's
+  // epoch.
+  time_t t = time(0);
+  struct tm b = *gmtime(&t);
+
+  // in CE 10000, you will need to increase the size of 'buf'.
+  I(b.tm_year <= 9999);
+
+  return date_t(b.tm_sec, b.tm_min, b.tm_hour,
+                b.tm_mday, b.tm_mon + 1, b.tm_year + 1900);
 }
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
