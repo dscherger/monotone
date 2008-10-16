@@ -32,10 +32,6 @@ struct date_t
   // Return the local system's idea of the current date.
   static date_t now();
 
-  // Return the date corresponding to an unsigned 64-bit count of seconds
-  // since the Unix epoch (1970-01-01T00:00:00).
-  static date_t from_unix_epoch(u64);
-
   // Return the date corresponding to a string.  Presently this recognizes
   // only ISO 8601 "basic" and "extended" time formats.
   static date_t from_string(std::string const &);

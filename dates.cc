@@ -21,8 +21,8 @@ using std::string;
 // cannot be used directly, so we have to resort to #ifdef chains on the old
 // skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
 // doesn't let us use std::numeric_limits<u64>::max(), so we have to
-// postpone checking it until runtime (date_t::from_unix_epoch), bleah.
-// However, the check will be optimized out, and the unit tests exercise it.
+// postpone checking it until runtime (date_t::gmtime), bleah. However, the
+// check will be optimized out, and the unit tests exercise it.
 #if defined ULONG_MAX && ULONG_MAX > UINT_MAX
   #define PROBABLE_U64_MAX ULONG_MAX
   #define u64_C(x) x##UL
@@ -137,12 +137,6 @@ inline u32
 secs_in_year(unsigned int year)
 {
   return is_leap_year(year) ? LEAP : YEAR;
-}
-
-date_t
-date_t::from_unix_epoch(u64 t)
-{
-  return date_t(t);
 }
 
 string
@@ -536,8 +530,8 @@ UNIT_TEST(date, from_string)
 UNIT_TEST(date, from_unix_epoch)
 {
 #define OK(x,y) do {                                                    \
-    string s_ = date_t::from_unix_epoch(x).as_iso_8601_extended();      \
-    L(FL("from_unix_epoch: %lu -> %s") % (x) % s_);                     \
+    string s_ = date_t(x).as_iso_8601_extended();      \
+    L(FL("date_t: %lu -> %s") % (x) % s_);                     \
     UNIT_TEST_CHECK(s_ == (y));                                             \
   } while (0)
 
