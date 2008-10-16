@@ -535,14 +535,13 @@ cvs_history
   bool deps_sorted;
 
   // the upper limit of what to import
-  time_t upper_time_limit;
+  date_t upper_time_limit;
 
   cvs_history(project_t & project)
     : project(project),
       unnamed_branch_counter(0),
       step_no(0),
-      deps_sorted(false),
-      upper_time_limit(0)
+      deps_sorted(false)
     { };
 
   void set_filename(string const & file,
@@ -948,7 +947,7 @@ log_path(cvs_history & cvs, const string & msg,
   for (T i = begin; i != end; ++i)
     L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n        %s")
       % *i
-      % date_t::from_unix_epoch(cvs.blobs[*i].get_avg_time() / 100)
+      % date_t(cvs.blobs[*i].get_avg_time() / 100)
       % cvs.blobs[*i].height
       % cvs.blobs[*i].get_events().size()
       % get_event_repr(cvs, *cvs.blobs[*i].begin()));
@@ -1666,8 +1665,9 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
       // Check if we are still within our time limit, if there is one.
       // Note that we add six months worth of events, for which we do
       // additional processing, but don't use the data afterwards.
-      if ((cvs.upper_time_limit > 0) &&
-          (commit_time >= cvs.upper_time_limit + (60 * 60 * 24 * 30 * 6)))
+      if (cvs.upper_time_limit.valid() &&
+          ((date_t(commit_time - (60 * 60 * 24 * 30 * 6)) >
+            cvs.upper_time_limit)))
         {
           commits_over_time++;
           if (commits_over_time > 1)
@@ -3528,7 +3528,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
     {
       L(FL("  blob: %d\n        %s\n        height:%d, size:%d\n")
         % *cc
-        % date_t::from_unix_epoch(cvs.blobs[*cc].get_avg_time() / 100)
+        % date_t(cvs.blobs[*cc].get_avg_time() / 100)
         % cvs.blobs[*cc].height
         % cvs.blobs[*cc].get_events().size());
 
@@ -3566,7 +3566,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
             deps_to++;
 
           L(FL("    %s\t%s\tfrom:%d\tto:%d") % get_event_repr(cvs, *ity)
-            % date_t::from_unix_epoch((*ity)->adj_time / 100)
+            % date_t((*ity)->adj_time / 100)
             % deps_from % deps_to);
 
           if (deps_from == 0)
@@ -3905,7 +3905,7 @@ split_cycle(cvs_history & cvs, vector<cvs_blob_index> const & cycle_members)
 
       L(FL("splitting %d blobs by time %s")
         % largest_gap_candidates.size()
-        % date_t::from_unix_epoch(largest_gap_at / 100));
+        % date_t(largest_gap_at / 100));
 
       split_by_time func(largest_gap_at);
       for (set<cvs_blob_index>::iterator i = largest_gap_candidates.begin();
@@ -4687,7 +4687,7 @@ import_cvs_repo(options & opts,
   N(opts.branchname() != "", F("need base --branch argument for importing"));
 
   if (opts.until_given)
-    cvs.upper_time_limit = opts.until.as_unix_epoch();
+    cvs.upper_time_limit = opts.until;
 
   // add the trunk branch name
   string bn = opts.branchname();
@@ -5390,7 +5390,7 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
               new_rid,
               branch_name(bn),
               utf8(changelog),
-              date_t::from_unix_epoch(commit_time),
+              date_t(commit_time),
               author);
 
         ++n_revisions;
@@ -5509,7 +5509,7 @@ blob_consumer::operator()(cvs_blob_index bi)
                 new_rid,
                 branch_name(bn),
                 utf8(changelog),
-                date_t::from_unix_epoch(commit_time),
+                date_t(commit_time),
                 author);
 
         // add the RCS information
