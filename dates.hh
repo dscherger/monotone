@@ -39,6 +39,9 @@ struct date_t
   // Write out date as a string.
   std::string as_iso_8601_extended() const;
 
+  // Retrieve the Unix epoch timestamp itself
+  u64 as_unix_epoch() const;
+
   // Date comparison operators
   bool operator <(struct date_t const & other) const
     { return d < other.d; };

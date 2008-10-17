@@ -39,11 +39,8 @@ using std::string;
 date_t::date_t(u64 d)
   : d(d)
 {
-  using std::tm;
-
-  struct tm tm;
-  gmtime(tm);
-  I(tm.tm_year + 1900 < 10000);
+  // year 10000 limit
+  I(d < u64_C(253402300800));
 }
 
 date_t::date_t(int sec, int min, int hour, int day, int month, int year)
@@ -165,6 +162,12 @@ date_t::as_iso_8601_extended() const
              % tm.tm_hour % tm.tm_min % tm.tm_sec).str();
 }
 
+u64
+date_t::as_unix_epoch() const
+{
+  return d;
+}
+
 void
 date_t::gmtime(struct tm & tm) const
 {
@@ -235,7 +238,6 @@ date_t::gmtime(struct tm & tm) const
 
       t -= this_month;
       month++;
-      L(FL("gmtime: month >= %u, t now %llu") % month % t);
       I(month < 12);
     }
 
