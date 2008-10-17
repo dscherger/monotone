@@ -301,6 +301,17 @@ date_t::from_string(string const & s)
       string d = s;
       size_t i = d.size() - 1;  // last character of the array
 
+      // check the first character which is not a digit
+      while (d.at(i) >= '0' && d.at(i) <= '9')
+        i--;
+
+      // ignore milliseconds, if present, or go back to the end of the date
+      // string to parse the digits for seconds.
+      if (d.at(i) == '.')
+        i--;
+      else
+        i = d.size() - 1;
+
       // seconds
       u8 sec;
       N(d.at(i) >= '0' && d.at(i) <= '9'
