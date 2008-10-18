@@ -937,7 +937,7 @@ void anc_graph::write_certs()
         epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes));
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);
-        db.set_epoch(branch_name(*i), new_epoch);
+        db.set_epoch(branch_uid(*i), new_epoch);
       }
   }
 
