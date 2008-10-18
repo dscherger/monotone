@@ -26,6 +26,7 @@ MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
 	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
 	app_state.cc app_state.hh					\
+	automate_ostream.hh						\
 	botan_pipe_cache.hh						\
 	commands.cc commands.hh $(CMD_SOURCES)				\
 	diff_patch.cc diff_patch.hh					\
@@ -515,7 +516,7 @@ EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
 	contrib/colorize contrib/color-logs.sh contrib/color-logs.conf	\
 	contrib/get_stdio.pl contrib/ciabot_monotone_hookversion.py	\
 	contrib/Monotone.pm $(wildcard $(srcdir)/contrib/*.lua)		\
-	$(wildcard $(srcdir)/contrib/command/*.lua)			\	
+	$(wildcard $(srcdir)/contrib/command/*.lua)			\
 	contrib/command/README $(wildcard $(srcdir)/examples/*)		\
 	win32/monotone.iss win32/modpath.iss $(wildcard			\
 	$(srcdir)/debian/*) mac/monotone-pkg-logo.gif			\

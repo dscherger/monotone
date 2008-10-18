@@ -233,7 +233,7 @@ CMD(push, "push", "", CMD_REF(network),
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
@@ -255,7 +255,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (app.opts.signing_key() == "")
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 }
 
@@ -281,7 +281,7 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace work(app, true);
     }
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
 
@@ -388,7 +388,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 
   change_current_working_dir(workspace_dir);
@@ -482,7 +482,8 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  N_("Serves the database to connecting clients"),
                  "",
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth |
+                 options::opts::bind_automate_uris)
 {
   if (!args.empty())
     throw usage(execid);
@@ -513,7 +514,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        server_voice, source_and_sink_role, info);
 }
 
