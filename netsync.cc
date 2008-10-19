@@ -3462,10 +3462,14 @@ serve_connections(app_state & app,
   shared_ptr<listener> listen(new listener(opts, lua, project, keys,
                                            react, role, addresses,
                                            guard, use_ipv6));
-  shared_ptr<automate_listener> al(new automate_listener(app, guard,
-                                                         react, use_ipv6));
   react.add(listen, *guard);
-  react.add(al, *guard);
+
+  if (!app.opts.bind_automate_uris.empty())
+    {
+      shared_ptr<automate_listener> al(new automate_listener(app, guard,
+                                                             react, use_ipv6));
+      react.add(al, *guard);
+    }
 
 
   while (true)
