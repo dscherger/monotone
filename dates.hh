@@ -19,7 +19,8 @@
 
 struct date_t
 {
-  date_t()      : d(0) {}
+  // initialize to an invalid date
+  date_t() : d(-1) {}
 
   // initialize from a unix timestamp
   date_t(u64 d);
@@ -27,7 +28,7 @@ struct date_t
   // initialize from multiple values
   date_t(int sec, int min, int hour, int day, int month, int year);
 
-  bool valid() const { return d != 0; }
+  bool valid() const;
 
   // Return the local system's idea of the current date.
   static date_t now();
@@ -57,11 +58,13 @@ struct date_t
     { return d != other.d; };
 
   // Addition and subtraction of millisecond amounts
-  date_t & operator +=(u64 const & addend);
-  date_t & operator -=(u64 const & addend);
+  date_t & operator +=(s64 const other);
+  date_t & operator -=(s64 const other);
+  date_t operator +(s64 const other) const;
+  date_t operator -(s64 const other) const;
 
   // Difference between two dates in milliseconds
-  s64 operator -(date_t const & other);
+  s64 operator -(date_t const & other) const;
 
 private:
   // The date as an unsigned 64-bit count of milliseconds since
