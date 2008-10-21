@@ -310,11 +310,10 @@ date_t::mktime(struct tm const & tm)
 // (not even just yacc).
 
 date_t
-date_t::from_string(string const & s)
+date_t::from_string(string const & d)
 {
   try
     {
-      const string d = s;
       size_t i = d.size() - 1;  // last character of the array
 
       // check the first character which is not a digit
