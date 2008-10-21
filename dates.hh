@@ -57,11 +57,13 @@ struct date_t
     { return d != other.d; };
 
   // Addition and subtraction of millisecond amounts
-  date_t & operator +=(u64 const & addend);
-  date_t & operator -=(u64 const & addend);
+  date_t & operator +=(s64 const other);
+  date_t & operator -=(s64 const other);
+  date_t operator +(s64 const other) const;
+  date_t operator -(s64 const other) const;
 
   // Difference between two dates in milliseconds
-  s64 operator -(date_t const & other);
+  s64 operator -(date_t const & other) const;
 
 private:
   // The date as an unsigned 64-bit count of milliseconds since

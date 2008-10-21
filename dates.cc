@@ -437,30 +437,47 @@ date_t::from_string(string const & s)
 }
 
 date_t &
-date_t::operator +=(u64 const & other)
+date_t::operator +=(s64 const other)
 {
-  // prevent overflows
-  I(other < u64_C(253402300800000));
+  // only operate on vaild dates (i..e. d != 0)
+  I(valid());
 
   d += other;
 
   // make sure we are still before year 10'000
   I(d < u64_C(253402300800000));
 
+  // make sure the date is still valid
+  I(valid());
+
   return *this;
 }
 
 date_t &
-date_t::operator -=(u64 const & other)
+date_t::operator -=(s64 const other)
 {
-  // prevent underflows
-  I(d >= other);
-  d -= other;
-  return *this;
+  // simply use the addition operator with inversed sign
+  return operator+=(-other);
+}
+
+date_t
+date_t::operator +(s64 const other) const
+{
+  date_t result(d);
+  result += other;
+  return result;
+}
+
+date_t
+date_t::operator -(s64 const other) const
+{
+  date_t result(d);
+  result += -other;
+  return result;
 }
 
 s64
-date_t::operator -(date_t const & other)
+date_t::operator -(date_t const & other) const
 {
   return d - other.d;
 }
@@ -740,9 +757,9 @@ UNIT_TEST(date, comparisons)
   UNIT_TEST_CHECK(v == jun);
 
   // check limits for subtractions
-  v = date_t(12345000);
+  v = date_t(12345000 + 1000);
   v -= 12345000;
-  UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:00"));
+  UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:01"));
   UNIT_TEST_CHECK_THROW(v -= 1000, std::logic_error);
 
   // check limits for additions
