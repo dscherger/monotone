@@ -314,7 +314,7 @@ date_t::from_string(string const & s)
 {
   try
     {
-      string d = s;
+      const string d = s;
       size_t i = d.size() - 1;  // last character of the array
 
       // check the first character which is not a digit
@@ -341,8 +341,6 @@ date_t::from_string(string const & s)
       // optional colon
       if (d.at(i) == ':')
         i--;
-      else
-        d.insert(i+1, 1, ':');
 
       // minutes
       u8 min;
@@ -357,8 +355,6 @@ date_t::from_string(string const & s)
       // optional colon
       if (d.at(i) == ':')
         i--;
-      else
-        d.insert(i+1, 1, ':');
 
       // hours
       u8 hour;
@@ -371,12 +367,9 @@ date_t::from_string(string const & s)
       N(hour < 24,
         F("hour out of range"));
 
-      // 'T' is required at this point; we also accept a space
+      // We accept 'T' as well as spaces between the date and the time
       N(d.at(i) == 'T' || d.at(i) == ' ',
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-
-      if (d.at(i) == ' ')
-        d.at(i) = 'T';
       i--;
 
       // day
@@ -390,8 +383,6 @@ date_t::from_string(string const & s)
       // optional dash
       if (d.at(i) == '-')
         i--;
-      else
-        d.insert(i+1, 1, '-');
 
       // month
       u8 month;
@@ -406,8 +397,6 @@ date_t::from_string(string const & s)
       // optional dash
       if (d.at(i) == '-')
         i--;
-      else
-        d.insert(i+1, 1, '-');
 
       // year
       N(i >= 3,
