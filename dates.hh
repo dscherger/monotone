@@ -56,13 +56,13 @@ struct date_t
   bool operator !=(struct date_t const & other) const
     { return d != other.d; };
 
-  // Addition and subtraction of second amounts
+  // Addition and subtraction of millisecond amounts
   date_t & operator +=(u64 const & addend);
   date_t & operator -=(u64 const & addend);
 
 private:
-  // The date as an unsigned 64-bit count of seconds since the Unix epoch
-  // (1970-01-01T00:00:00).
+  // The date as an unsigned 64-bit count of milliseconds since
+  // the Unix epoch (1970-01-01T00:00:00.000).
   u64 d;
 
   // Our own gmtime function which converts the internal Unix epoch
