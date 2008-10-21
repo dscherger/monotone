@@ -60,6 +60,9 @@ struct date_t
   date_t & operator +=(u64 const & addend);
   date_t & operator -=(u64 const & addend);
 
+  // Difference between two dates in milliseconds
+  s64 operator -(date_t const & other);
+
 private:
   // The date as an unsigned 64-bit count of milliseconds since
   // the Unix epoch (1970-01-01T00:00:00.000).

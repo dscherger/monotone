@@ -459,6 +459,12 @@ date_t::operator -=(u64 const & other)
   return *this;
 }
 
+s64
+date_t::operator -(date_t const & other)
+{
+  return d - other.d;
+}
+
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
@@ -744,6 +750,17 @@ UNIT_TEST(date, comparisons)
   v += 59000;
   UNIT_TEST_CHECK(v == date_t::from_string("9999-12-31T23:59:59"));
   UNIT_TEST_CHECK_THROW(v += 1000, std::logic_error);
+
+  // check date differences
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T00:00:01") -
+                  date_t::from_string("2000-05-05T00:00:00")
+                  == 1000);
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T00:00:01") -
+                  date_t::from_string("2000-05-05T00:00:02")
+                  == -1000);
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T01:00:00") -
+                  date_t::from_string("2000-05-05T00:00:00")
+                  == 3600000);
 }
 
 #endif
