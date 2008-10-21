@@ -39,11 +39,8 @@ using std::string;
 date_t::date_t(u64 d)
   : d(d)
 {
-  using std::tm;
-
-  struct tm tm;
-  gmtime(tm);
-  I(tm.tm_year + 1900 < 10000);
+  // year 10000 limit
+  I(d < u64_C(253402300800000));
 }
 
 date_t::date_t(int sec, int min, int hour, int day, int month, int year)
@@ -82,13 +79,24 @@ dump(date_t const & d, std::string & s)
 date_t
 date_t::now()
 {
+  using std::time_t;
   using std::time;
-  return date_t(static_cast<u64>(time(0)));
+  using std::tm;
+  using std::gmtime;
+
   // This is the only place we rely on the system's time and date function
   // which might operate on different epochs (i.e. 1980-01-01, as some
   // Windows, old MacOS and VMS systems used). We immediately transform that
   // to a struct tm representation, which is independent of the system's
   // epoch.
+  time_t t = time(0);
+  struct tm b = *gmtime(&t);
+
+  // in CE 10000, you will need to increase the size of 'buf'.
+  I(b.tm_year <= 9999);
+
+  return date_t(b.tm_sec, b.tm_min, b.tm_hour,
+                b.tm_mday, b.tm_mon + 1, b.tm_year + 1900);
 }
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
@@ -110,11 +118,12 @@ date_t::now()
 //  The last two rules are the Gregorian correction to the Julian calendar.
 //  We make no attempt to handle leap seconds.
 
-unsigned int const MIN = 60;
-unsigned int const HOUR = MIN * 60;
-unsigned int const DAY = HOUR * 24;
-unsigned int const YEAR = DAY * 365;
-unsigned int const LEAP = DAY * 366;
+u64 const SEC = u64_C(1000);
+u64 const MIN = 60 * SEC;
+u64 const HOUR = 60 * MIN;
+u64 const DAY = 24 * HOUR;
+u64 const YEAR = 365 * DAY;
+u64 const LEAP = 366 * DAY;
 
 unsigned char const MONTHS[] = {
   31, // jan
@@ -138,8 +147,8 @@ is_leap_year(unsigned int year)
   return (year % 4 == 0
     && (year % 100 != 0 || year % 400 == 0));
 }
-inline u32
-secs_in_year(unsigned int year)
+inline u64
+millisecs_in_year(unsigned int year)
 {
   return is_leap_year(year) ? LEAP : YEAR;
 }
@@ -165,14 +174,16 @@ date_t::gmtime(struct tm & tm) const
 {
   // these types hint to the compiler that narrowing divides are safe
   u64 yearbeg;
-  u32 year;
+  u16 year;
   u32 month;
   u32 day;
-  u32 secofday;
+  u32 msofday;
   u16 hour;
-  u16 secofhour;
+  u32 msofhour;
   u8 min;
+  u16 msofmin;
   u8 sec;
+  u16 msec;
 
   // the temp variable to calculate with
   u64 t = d;
@@ -180,41 +191,38 @@ date_t::gmtime(struct tm & tm) const
   // validate our assumptions about which basic type is u64 (see above).
   I(PROBABLE_U64_MAX == std::numeric_limits<u64>::max());
 
-  // time_t values after this point will overflow a signed 32-bit year
-  // counter.  'year' above is unsigned, but the system's struct tm almost
-  // certainly uses a signed tm_year; it is best to be consistent.
-  I(t <= u64_C(67767976233532799));
-
-  // enforce an even lower limit of year 9999 for the sake of our string
-  // handling routines.
-  I(t <= u64_C(253402300799));
+  // enforce a limit of year 9999 so that we remain within the range of a
+  // four digit year.
+  I(t < u64_C(253402300800000));
 
   // There are 31556952 seconds (365d 5h 43m 12s) in the average Gregorian
   // year.  This will therefore approximate the correct year (minus 1970).
   // It may be off in either direction, but by no more than one year
   // (empirically tested for every year from 1970 to 2**32 - 1).
-  year = t / 31556952;
+  year = t / u64_C(31556592000);
 
   // Given the above approximation, recalculate the _exact_ number of
-  // seconds to the beginning of that year.  For this to work correctly
+  // milliseconds to the beginning of that year.  For this to work correctly
   // (i.e. for the year/4, year/100, year/400 terms to increment exactly
   // when they ought to) it is necessary to count years from 1601 (as if the
   // Gregorian calendar had been in effect at that time) and then correct
-  // the final number of seconds back to the 1970 epoch.
+  // the final number of milliseconds back to the 1970 epoch.
   year += 369;
 
-  yearbeg = (widen<u64,u32>(year)*365 + year/4 - year/100 + year/400)*DAY;
-  yearbeg -= (widen<u64,u32>(369)*365 + 369/4 - 369/100 + 369/400)*DAY;
+  yearbeg = (widen<u64,u32>(year)*365 + year/4 - year/100 + year/400) * DAY;
+  yearbeg -= (widen<u64,u32>(369)*365 +  369/4 -  369/100 +  369/400) * DAY;
 
   // *now* we want year to have its true value.
   year += 1601;
 
-  // Linear search for the range of seconds that really contains t.
-  // At most one of these loops should iterate, and only once.
-  while (yearbeg > t)
-    yearbeg -= secs_in_year(--year);
-  while (yearbeg + secs_in_year(year) <= t)
-    yearbeg += secs_in_year(year++);
+  // Linear search for the range of milliseconds that really contains t.
+  // Due to the above approximation it's sufficient to correct only once
+  // in one or the other direction.
+  if (yearbeg > t)
+    yearbeg -= millisecs_in_year(--year);
+  else if (yearbeg + millisecs_in_year(year) <= t)
+    yearbeg += millisecs_in_year(year++);
+  I((yearbeg <= t) && (yearbeg + millisecs_in_year(year) > t));
 
   t -= yearbeg;
 
@@ -222,7 +230,7 @@ date_t::gmtime(struct tm & tm) const
   month = 0;
   for (;;)
     {
-      unsigned int this_month = MONTHS[month] * DAY;
+      u64 this_month = MONTHS[month] * DAY;
       if (month == 1 && is_leap_year(year))
         this_month += DAY;
       if (t < this_month)
@@ -235,13 +243,16 @@ date_t::gmtime(struct tm & tm) const
 
   // the rest is straightforward.
   day = t / DAY;
-  secofday = t % DAY;
+  msofday = t % DAY;
 
-  hour = secofday / HOUR;
-  secofhour = secofday % HOUR;
+  hour = msofday / HOUR;
+  msofhour = msofday % HOUR;
 
-  min = secofhour / MIN;
-  sec = secofhour % MIN;
+  min = msofhour / MIN;
+  msofmin = msofhour % MIN;
+
+  sec = msofmin / SEC;
+  msec = msofmin % SEC;
 
   // fill in the result
   tm.tm_sec = sec;
@@ -255,7 +266,7 @@ date_t::gmtime(struct tm & tm) const
 void
 date_t::mktime(struct tm const & tm)
 {
-  d = tm.tm_sec;
+  d = tm.tm_sec * SEC;
   d += tm.tm_min * MIN;
   d += tm.tm_hour * HOUR;
   d += tm.tm_mday * DAY;
@@ -269,16 +280,16 @@ date_t::mktime(struct tm const & tm)
     }
 
   // add years (which begin at 1900 for struct tm)
-  d += YEAR * static_cast<u64>(tm.tm_year - 70);
+  d += YEAR * (tm.tm_year - 70);
 
   // add leap days for every fourth year (since 1968)
-  d += DAY * (static_cast<u64>(tm.tm_year - 68 - 1) / 4);
+  d += DAY * ((tm.tm_year - 68 - 1) / 4);
 
   // subtract leap days for every 100th year (since 1900)
-  d -= DAY * (static_cast<u64>(tm.tm_year - 1) / 100);
+  d -= DAY * ((tm.tm_year - 1) / 100);
 
   // add leap days for every 400th year (since 2000), subtracting one again
-  d += DAY * ((static_cast<u64>(tm.tm_year + 300 - 1) / 400) - 1);
+  d += DAY * (((tm.tm_year + 300 - 1) / 400) - 1);
 }
 
 // We might want to consider teaching this routine more time formats.
@@ -429,12 +440,12 @@ date_t &
 date_t::operator +=(u64 const & other)
 {
   // prevent overflows
-  I(other <= u64_C(253402300799));
+  I(other < u64_C(253402300800000));
 
   d += other;
 
   // make sure we are still before year 10'000
-  I(d <= u64_C(253402300799));
+  I(d < u64_C(253402300800000));
 
   return *this;
 }
@@ -446,6 +457,12 @@ date_t::operator -=(u64 const & other)
   I(d >= other);
   d -= other;
   return *this;
+}
+
+s64
+date_t::operator -(date_t const & other)
+{
+  return d - other.d;
 }
 
 #ifdef BUILD_UNIT_TESTS
@@ -573,124 +590,124 @@ UNIT_TEST(date, from_string)
 
 UNIT_TEST(date, from_unix_epoch)
 {
-#define OK(x,y) do {                                                    \
-    string s_ = date_t(x).as_iso_8601_extended();      \
-    L(FL("date_t: %lu -> %s") % (x) % s_);                     \
-    UNIT_TEST_CHECK(s_ == (y));                                             \
+#define OK(x,y) do {                                      \
+    string s_ = date_t(u64_C(x)).as_iso_8601_extended();  \
+    L(FL("date_t: %lu -> %s") % u64_C(x) % s_);           \
+    UNIT_TEST_CHECK(s_ == (y));                           \
   } while (0)
 
   // every month boundary in 1970
-  OK(0,       "1970-01-01T00:00:00");
-  OK(2678399, "1970-01-31T23:59:59");
-  OK(2678400, "1970-02-01T00:00:00");
-  OK(5097599, "1970-02-28T23:59:59");
-  OK(5097600, "1970-03-01T00:00:00");
-  OK(7775999, "1970-03-31T23:59:59");
-  OK(7776000, "1970-04-01T00:00:00");
-  OK(10367999, "1970-04-30T23:59:59");
-  OK(10368000, "1970-05-01T00:00:00");
-  OK(13046399, "1970-05-31T23:59:59");
-  OK(13046400, "1970-06-01T00:00:00");
-  OK(15638399, "1970-06-30T23:59:59");
-  OK(15638400, "1970-07-01T00:00:00");
-  OK(18316799, "1970-07-31T23:59:59");
-  OK(18316800, "1970-08-01T00:00:00");
-  OK(20995199, "1970-08-31T23:59:59");
-  OK(20995200, "1970-09-01T00:00:00");
-  OK(23587199, "1970-09-30T23:59:59");
-  OK(23587200, "1970-10-01T00:00:00");
-  OK(26265599, "1970-10-31T23:59:59");
-  OK(26265600, "1970-11-01T00:00:00");
-  OK(28857599, "1970-11-30T23:59:59");
-  OK(28857600, "1970-12-01T00:00:00");
-  OK(31535999, "1970-12-31T23:59:59");
-  OK(31536000, "1971-01-01T00:00:00");
+  OK(0,          "1970-01-01T00:00:00");
+  OK(2678399000, "1970-01-31T23:59:59");
+  OK(2678400000, "1970-02-01T00:00:00");
+  OK(5097599000, "1970-02-28T23:59:59");
+  OK(5097600000, "1970-03-01T00:00:00");
+  OK(7775999000, "1970-03-31T23:59:59");
+  OK(7776000000, "1970-04-01T00:00:00");
+  OK(10367999000, "1970-04-30T23:59:59");
+  OK(10368000000, "1970-05-01T00:00:00");
+  OK(13046399000, "1970-05-31T23:59:59");
+  OK(13046400000, "1970-06-01T00:00:00");
+  OK(15638399000, "1970-06-30T23:59:59");
+  OK(15638400000, "1970-07-01T00:00:00");
+  OK(18316799000, "1970-07-31T23:59:59");
+  OK(18316800000, "1970-08-01T00:00:00");
+  OK(20995199000, "1970-08-31T23:59:59");
+  OK(20995200000, "1970-09-01T00:00:00");
+  OK(23587199000, "1970-09-30T23:59:59");
+  OK(23587200000, "1970-10-01T00:00:00");
+  OK(26265599000, "1970-10-31T23:59:59");
+  OK(26265600000, "1970-11-01T00:00:00");
+  OK(28857599000, "1970-11-30T23:59:59");
+  OK(28857600000, "1970-12-01T00:00:00");
+  OK(31535999000, "1970-12-31T23:59:59");
+  OK(31536000000, "1971-01-01T00:00:00");
 
   // every month boundary in 1972 (an ordinary leap year)
-  OK(63071999, "1971-12-31T23:59:59");
-  OK(63072000, "1972-01-01T00:00:00");
-  OK(65750399, "1972-01-31T23:59:59");
-  OK(65750400, "1972-02-01T00:00:00");
-  OK(68255999, "1972-02-29T23:59:59");
-  OK(68256000, "1972-03-01T00:00:00");
-  OK(70934399, "1972-03-31T23:59:59");
-  OK(70934400, "1972-04-01T00:00:00");
-  OK(73526399, "1972-04-30T23:59:59");
-  OK(73526400, "1972-05-01T00:00:00");
-  OK(76204799, "1972-05-31T23:59:59");
-  OK(76204800, "1972-06-01T00:00:00");
-  OK(78796799, "1972-06-30T23:59:59");
-  OK(78796800, "1972-07-01T00:00:00");
-  OK(81475199, "1972-07-31T23:59:59");
-  OK(81475200, "1972-08-01T00:00:00");
-  OK(84153599, "1972-08-31T23:59:59");
-  OK(84153600, "1972-09-01T00:00:00");
-  OK(86745599, "1972-09-30T23:59:59");
-  OK(86745600, "1972-10-01T00:00:00");
-  OK(89423999, "1972-10-31T23:59:59");
-  OK(89424000, "1972-11-01T00:00:00");
-  OK(92015999, "1972-11-30T23:59:59");
-  OK(92016000, "1972-12-01T00:00:00");
-  OK(94694399, "1972-12-31T23:59:59");
-  OK(94694400, "1973-01-01T00:00:00");
+  OK(63071999000, "1971-12-31T23:59:59");
+  OK(63072000000, "1972-01-01T00:00:00");
+  OK(65750399000, "1972-01-31T23:59:59");
+  OK(65750400000, "1972-02-01T00:00:00");
+  OK(68255999000, "1972-02-29T23:59:59");
+  OK(68256000000, "1972-03-01T00:00:00");
+  OK(70934399000, "1972-03-31T23:59:59");
+  OK(70934400000, "1972-04-01T00:00:00");
+  OK(73526399000, "1972-04-30T23:59:59");
+  OK(73526400000, "1972-05-01T00:00:00");
+  OK(76204799000, "1972-05-31T23:59:59");
+  OK(76204800000, "1972-06-01T00:00:00");
+  OK(78796799000, "1972-06-30T23:59:59");
+  OK(78796800000, "1972-07-01T00:00:00");
+  OK(81475199000, "1972-07-31T23:59:59");
+  OK(81475200000, "1972-08-01T00:00:00");
+  OK(84153599000, "1972-08-31T23:59:59");
+  OK(84153600000, "1972-09-01T00:00:00");
+  OK(86745599000, "1972-09-30T23:59:59");
+  OK(86745600000, "1972-10-01T00:00:00");
+  OK(89423999000, "1972-10-31T23:59:59");
+  OK(89424000000, "1972-11-01T00:00:00");
+  OK(92015999000, "1972-11-30T23:59:59");
+  OK(92016000000, "1972-12-01T00:00:00");
+  OK(94694399000, "1972-12-31T23:59:59");
+  OK(94694400000, "1973-01-01T00:00:00");
 
   // every month boundary in 2000 (a leap year per rule 5)
-  OK(946684799, "1999-12-31T23:59:59");
-  OK(946684800, "2000-01-01T00:00:00");
-  OK(949363199, "2000-01-31T23:59:59");
-  OK(949363200, "2000-02-01T00:00:00");
-  OK(951868799, "2000-02-29T23:59:59");
-  OK(951868800, "2000-03-01T00:00:00");
-  OK(954547199, "2000-03-31T23:59:59");
-  OK(954547200, "2000-04-01T00:00:00");
-  OK(957139199, "2000-04-30T23:59:59");
-  OK(957139200, "2000-05-01T00:00:00");
-  OK(959817599, "2000-05-31T23:59:59");
-  OK(959817600, "2000-06-01T00:00:00");
-  OK(962409599, "2000-06-30T23:59:59");
-  OK(962409600, "2000-07-01T00:00:00");
-  OK(965087999, "2000-07-31T23:59:59");
-  OK(965088000, "2000-08-01T00:00:00");
-  OK(967766399, "2000-08-31T23:59:59");
-  OK(967766400, "2000-09-01T00:00:00");
-  OK(970358399, "2000-09-30T23:59:59");
-  OK(970358400, "2000-10-01T00:00:00");
-  OK(973036799, "2000-10-31T23:59:59");
-  OK(973036800, "2000-11-01T00:00:00");
-  OK(975628799, "2000-11-30T23:59:59");
-  OK(975628800, "2000-12-01T00:00:00");
-  OK(978307199, "2000-12-31T23:59:59");
-  OK(978307200, "2001-01-01T00:00:00");
+  OK(946684799000, "1999-12-31T23:59:59");
+  OK(946684800000, "2000-01-01T00:00:00");
+  OK(949363199000, "2000-01-31T23:59:59");
+  OK(949363200000, "2000-02-01T00:00:00");
+  OK(951868799000, "2000-02-29T23:59:59");
+  OK(951868800000, "2000-03-01T00:00:00");
+  OK(954547199000, "2000-03-31T23:59:59");
+  OK(954547200000, "2000-04-01T00:00:00");
+  OK(957139199000, "2000-04-30T23:59:59");
+  OK(957139200000, "2000-05-01T00:00:00");
+  OK(959817599000, "2000-05-31T23:59:59");
+  OK(959817600000, "2000-06-01T00:00:00");
+  OK(962409599000, "2000-06-30T23:59:59");
+  OK(962409600000, "2000-07-01T00:00:00");
+  OK(965087999000, "2000-07-31T23:59:59");
+  OK(965088000000, "2000-08-01T00:00:00");
+  OK(967766399000, "2000-08-31T23:59:59");
+  OK(967766400000, "2000-09-01T00:00:00");
+  OK(970358399000, "2000-09-30T23:59:59");
+  OK(970358400000, "2000-10-01T00:00:00");
+  OK(973036799000, "2000-10-31T23:59:59");
+  OK(973036800000, "2000-11-01T00:00:00");
+  OK(975628799000, "2000-11-30T23:59:59");
+  OK(975628800000, "2000-12-01T00:00:00");
+  OK(978307199000, "2000-12-31T23:59:59");
+  OK(978307200000, "2001-01-01T00:00:00");
 
   // every month boundary in 2100 (a normal year per rule 4)
-  OK(u64_C(4102444800), "2100-01-01T00:00:00");
-  OK(u64_C(4105123199), "2100-01-31T23:59:59");
-  OK(u64_C(4105123200), "2100-02-01T00:00:00");
-  OK(u64_C(4107542399), "2100-02-28T23:59:59");
-  OK(u64_C(4107542400), "2100-03-01T00:00:00");
-  OK(u64_C(4110220799), "2100-03-31T23:59:59");
-  OK(u64_C(4110220800), "2100-04-01T00:00:00");
-  OK(u64_C(4112812799), "2100-04-30T23:59:59");
-  OK(u64_C(4112812800), "2100-05-01T00:00:00");
-  OK(u64_C(4115491199), "2100-05-31T23:59:59");
-  OK(u64_C(4115491200), "2100-06-01T00:00:00");
-  OK(u64_C(4118083199), "2100-06-30T23:59:59");
-  OK(u64_C(4118083200), "2100-07-01T00:00:00");
-  OK(u64_C(4120761599), "2100-07-31T23:59:59");
-  OK(u64_C(4120761600), "2100-08-01T00:00:00");
-  OK(u64_C(4123439999), "2100-08-31T23:59:59");
-  OK(u64_C(4123440000), "2100-09-01T00:00:00");
-  OK(u64_C(4126031999), "2100-09-30T23:59:59");
-  OK(u64_C(4126032000), "2100-10-01T00:00:00");
-  OK(u64_C(4128710399), "2100-10-31T23:59:59");
-  OK(u64_C(4128710400), "2100-11-01T00:00:00");
-  OK(u64_C(4131302399), "2100-11-30T23:59:59");
-  OK(u64_C(4131302400), "2100-12-01T00:00:00");
-  OK(u64_C(4133980799), "2100-12-31T23:59:59");
+  OK(4102444800000, "2100-01-01T00:00:00");
+  OK(4105123199000, "2100-01-31T23:59:59");
+  OK(4105123200000, "2100-02-01T00:00:00");
+  OK(4107542399000, "2100-02-28T23:59:59");
+  OK(4107542400000, "2100-03-01T00:00:00");
+  OK(4110220799000, "2100-03-31T23:59:59");
+  OK(4110220800000, "2100-04-01T00:00:00");
+  OK(4112812799000, "2100-04-30T23:59:59");
+  OK(4112812800000, "2100-05-01T00:00:00");
+  OK(4115491199000, "2100-05-31T23:59:59");
+  OK(4115491200000, "2100-06-01T00:00:00");
+  OK(4118083199000, "2100-06-30T23:59:59");
+  OK(4118083200000, "2100-07-01T00:00:00");
+  OK(4120761599000, "2100-07-31T23:59:59");
+  OK(4120761600000, "2100-08-01T00:00:00");
+  OK(4123439999000, "2100-08-31T23:59:59");
+  OK(4123440000000, "2100-09-01T00:00:00");
+  OK(4126031999000, "2100-09-30T23:59:59");
+  OK(4126032000000, "2100-10-01T00:00:00");
+  OK(4128710399000, "2100-10-31T23:59:59");
+  OK(4128710400000, "2100-11-01T00:00:00");
+  OK(4131302399000, "2100-11-30T23:59:59");
+  OK(4131302400000, "2100-12-01T00:00:00");
+  OK(4133980799000, "2100-12-31T23:59:59");
 
   // year 9999 limit
-  OK(u64_C(253402300799), "9999-12-31T23:59:59");
-  UNIT_TEST_CHECK_THROW(date_t(u64_C(253402300800)), std::logic_error);
+  OK(253402300799000, "9999-12-31T23:59:59");
+  UNIT_TEST_CHECK_THROW(date_t(u64_C(253402300800000)), std::logic_error);
 
 #undef OK
 }
@@ -723,16 +740,27 @@ UNIT_TEST(date, comparisons)
   UNIT_TEST_CHECK(v == jun);
 
   // check limits for subtractions
-  v = date_t(12345);
-  v -= 12345;
+  v = date_t(12345000);
+  v -= 12345000;
   UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:00"));
-  UNIT_TEST_CHECK_THROW(v -= 1, std::logic_error);
+  UNIT_TEST_CHECK_THROW(v -= 1000, std::logic_error);
 
   // check limits for additions
   v = date_t::from_string("9999-12-31T23:59:00");
-  v += 59;
+  v += 59000;
   UNIT_TEST_CHECK(v == date_t::from_string("9999-12-31T23:59:59"));
-  UNIT_TEST_CHECK_THROW(v += 1, std::logic_error);
+  UNIT_TEST_CHECK_THROW(v += 1000, std::logic_error);
+
+  // check date differences
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T00:00:01") -
+                  date_t::from_string("2000-05-05T00:00:00")
+                  == 1000);
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T00:00:01") -
+                  date_t::from_string("2000-05-05T00:00:02")
+                  == -1000);
+  UNIT_TEST_CHECK(date_t::from_string("2000-05-05T01:00:00") -
+                  date_t::from_string("2000-05-05T00:00:00")
+                  == 3600000);
 }
 
 #endif
