@@ -39,8 +39,10 @@ using std::string;
 date_t::date_t(u64 d)
   : d(d)
 {
-  // year 10000 limit
-  I(d < u64_C(253402300800000));
+  // When initialized from a millisecods since Unix epoch value, we require
+  // that to be in a valid range. Use the constructor without any argument
+  // to generate an invalid date.
+  I(valid());
 }
 
 date_t::date_t(int sec, int min, int hour, int day, int month, int year)
@@ -62,6 +64,15 @@ date_t::date_t(int sec, int min, int hour, int day, int month, int year)
   t.tm_year = year - 1900;
 
   mktime(t);
+
+  I(valid());
+}
+
+bool
+date_t::valid() const
+{
+  // year 10000 limit
+  return d < u64_C(253402300800000);
 }
 
 std::ostream &
@@ -290,6 +301,8 @@ date_t::mktime(struct tm const & tm)
 
   // add leap days for every 400th year (since 2000), subtracting one again
   d += DAY * (((tm.tm_year + 300 - 1) / 400) - 1);
+
+  I(valid());
 }
 
 // We might want to consider teaching this routine more time formats.
@@ -439,15 +452,13 @@ date_t::from_string(string const & s)
 date_t &
 date_t::operator +=(s64 const other)
 {
-  // only operate on vaild dates (i..e. d != 0)
+  // only operate on vaild dates, prevent turning an invalid
+  // date into a valid one.
   I(valid());
 
   d += other;
 
   // make sure we are still before year 10'000
-  I(d < u64_C(253402300800000));
-
-  // make sure the date is still valid
   I(valid());
 
   return *this;
@@ -757,10 +768,10 @@ UNIT_TEST(date, comparisons)
   UNIT_TEST_CHECK(v == jun);
 
   // check limits for subtractions
-  v = date_t(12345000 + 1000);
+  v = date_t(12345000);
   v -= 12345000;
-  UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:01"));
-  UNIT_TEST_CHECK_THROW(v -= 1000, std::logic_error);
+  UNIT_TEST_CHECK(v == date_t::from_string("1970-01-01T00:00:00"));
+  UNIT_TEST_CHECK_THROW(v -= 1, std::logic_error);
 
   // check limits for additions
   v = date_t::from_string("9999-12-31T23:59:00");
