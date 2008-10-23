@@ -19,8 +19,15 @@
 #include <boost/version.hpp>
 #include <boost/config.hpp>
 
+/* Include third party headers needed for version info */
+#include <botan/version.h>
+#include <sqlite3.h>
+// Lua assumed included by lua.hh
+#include <pcre.h>
+
 #include "app_state.hh"
 #include "cmd.hh"
+#include "lua.hh"
 #include "platform.hh"
 #include "mt_version.hh"
 #include "package_revision.h"
@@ -74,12 +81,21 @@ get_full_version(string & out)
            "C++ compiler        : %s\n"
            "C++ standard library: %s\n"
            "Boost version       : %s\n"
+           "SQLite version      : %s (compiled against %s)\n"
+           "Lua version         : %s\n"
+           "PCRE version        : %s (compiled against %d.%d)\n"
+           "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
     % s
     % BOOST_COMPILER
     % BOOST_STDLIB
     % BOOST_LIB_VERSION
+    % sqlite3_libversion() % SQLITE_VERSION
+    % LUA_VERSION
+    % pcre_version() % PCRE_MAJOR % PCRE_MINOR
+    % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
+        % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
     % string(package_full_revision_constant);
   out = oss.str();
 }
