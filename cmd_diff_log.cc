@@ -492,7 +492,7 @@ void dump_header(std::string const & revs,
 
   vector<string> lines;
   split_into_lines(summary(), lines);
-  cout << "#\n";
+  out << "#\n";
   if (!summary().empty())
     {
       out << revs << "#\n";
@@ -574,7 +574,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
   if (app.opts.with_header)
     {
-      dump_header(dummy_header, included, cout, false);
+      dump_header(dummy_header, included, output, false);
     }
 
   dump_diffs(app.lua, db, included, output,
