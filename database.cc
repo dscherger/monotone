@@ -1027,7 +1027,6 @@ database::info(ostream & out, bool analyze)
       missing = 0;
 
   vector<s64> diffs;
-  u64 diff_sum = 0;
 
   for (gi i = graph.begin(); i != graph.end(); ++i)
     {
@@ -1068,9 +1067,7 @@ database::info(ostream & out, bool analyze)
                 % anc_date.as_iso_8601_extended()
                 % desc_date.as_iso_8601_extended());
               L(FL("   (difference: %d seconds)")
-                % (anc_date.as_unix_epoch() - desc_date.as_unix_epoch()));
-              diff_sum += anc_date.as_unix_epoch() -
-                          desc_date.as_unix_epoch();
+                % (anc_date - desc_date));
               incorrect++;
             }
         }
