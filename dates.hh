@@ -17,6 +17,16 @@
 #include "numeric_vocab.hh"
 #include "sanity.hh"
 
+// Our own "struct tm"-like struct to represent broken-down times
+struct broken_down_time {
+  int sec;         /* seconds */
+  int min;         /* minutes */
+  int hour;        /* hours */
+  int day;         /* day of the month */
+  int month;       /* month */
+  int year;        /* year */
+};
+
 struct date_t
 {
   // initialize to an invalid date
@@ -25,7 +35,7 @@ struct date_t
   // initialize from a unix timestamp
   date_t(u64 d);
 
-  // initialize from multiple values
+  // Initialize from broken-down time
   date_t(int sec, int min, int hour, int day, int month, int year);
 
   bool valid() const;
@@ -40,21 +50,21 @@ struct date_t
   // Write out date as a string.
   std::string as_iso_8601_extended() const;
 
-  // Retrieve the Unix epoch timestamp itself
-  u64 as_unix_epoch() const;
+  // Retrieve the internal milliseconds count since the Unix epoch.
+  u64 millisecs_since_unix_epoch() const;
 
   // Date comparison operators
-  bool operator <(struct date_t const & other) const
+  bool operator <(date_t const & other) const
     { return d < other.d; };
-  bool operator <=(struct date_t const & other) const
+  bool operator <=(date_t const & other) const
     { return d <= other.d; };
-  bool operator >(struct date_t const & other) const
+  bool operator >(date_t const & other) const
     { return d > other.d; };
-  bool operator >=(struct date_t const & other) const
+  bool operator >=(date_t const & other) const
     { return d >= other.d; };
-  bool operator ==(struct date_t const & other) const
+  bool operator ==(date_t const & other) const
     { return d == other.d; };
-  bool operator !=(struct date_t const & other) const
+  bool operator !=(date_t const & other) const
     { return d != other.d; };
 
   // Addition and subtraction of millisecond amounts
@@ -72,9 +82,9 @@ private:
   u64 d;
 
   // Our own gmtime function which converts the internal Unix epoch
-  // into a struct tm.
-  void gmtime(struct tm & tm) const;
-  void mktime(struct tm const & tm);
+  // into a broken-down representation.
+  void our_gmtime(broken_down_time & tm) const;
+  void our_mktime(broken_down_time const & tm);
 };
 
 std::ostream & operator<< (std::ostream & o, date_t const & d);

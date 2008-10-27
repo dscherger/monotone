@@ -21,8 +21,8 @@ using std::string;
 // cannot be used directly, so we have to resort to #ifdef chains on the old
 // skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
 // doesn't let us use std::numeric_limits<u64>::max(), so we have to
-// postpone checking it until runtime (date_t::gmtime), bleah. However, the
-// check will be optimized out, and the unit tests exercise it.
+// postpone checking it until runtime (date_t::our_gmtime), bleah. However,
+// the check will be optimized out, and the unit tests exercise it.
 #if defined ULONG_MAX && ULONG_MAX > UINT_MAX
   #define PROBABLE_U64_MAX ULONG_MAX
   #define u64_C(x) x##UL
@@ -55,15 +55,15 @@ date_t::date_t(int sec, int min, int hour, int day, int month, int year)
   I((min >= 0) && (min < 60));
   I((sec >= 0) && (sec < 60));
 
-  struct tm t;
-  t.tm_sec = sec;
-  t.tm_min = min;
-  t.tm_hour = hour;
-  t.tm_mday = day;
-  t.tm_mon = month - 1;
-  t.tm_year = year - 1900;
+  broken_down_time t;
+  t.sec = sec;
+  t.min = min;
+  t.hour = hour;
+  t.day = day;
+  t.month = month - 1;
+  t.year = year - 1900;
 
-  mktime(t);
+  our_mktime(t);
 
   I(valid());
 }
@@ -103,7 +103,7 @@ date_t::now()
   time_t t = time(0);
   struct tm b = *gmtime(&t);
 
-  // in CE 10000, you will need to increase the size of 'buf'.
+  // We currently limit to before year 10,000.
   I(b.tm_year <= 9999);
 
   return date_t(b.tm_sec, b.tm_min, b.tm_hour,
@@ -167,21 +167,21 @@ millisecs_in_year(unsigned int year)
 string
 date_t::as_iso_8601_extended() const
 {
-  struct tm tm;
-  gmtime(tm);
+  broken_down_time tm;
+  our_gmtime(tm);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
-             % (tm.tm_year + 1900) % (tm.tm_mon + 1) % tm.tm_mday
-             % tm.tm_hour % tm.tm_min % tm.tm_sec).str();
+             % (tm.year + 1900) % (tm.month + 1) % tm.day
+             % tm.hour % tm.min % tm.sec).str();
 }
 
 u64
-date_t::as_unix_epoch() const
+date_t::millisecs_since_unix_epoch() const
 {
   return d;
 }
 
 void
-date_t::gmtime(struct tm & tm) const
+date_t::our_gmtime(broken_down_time & tm) const
 {
   // these types hint to the compiler that narrowing divides are safe
   u64 yearbeg;
@@ -266,41 +266,41 @@ date_t::gmtime(struct tm & tm) const
   msec = msofmin % SEC;
 
   // fill in the result
-  tm.tm_sec = sec;
-  tm.tm_min = min;
-  tm.tm_hour = hour;
-  tm.tm_mday = day + 1;
-  tm.tm_mon = month;
-  tm.tm_year = year - 1900;
+  tm.sec = sec;
+  tm.min = min;
+  tm.hour = hour;
+  tm.day = day + 1;
+  tm.month = month;
+  tm.year = year - 1900;
 }
 
 void
-date_t::mktime(struct tm const & tm)
+date_t::our_mktime(broken_down_time const & tm)
 {
-  d = tm.tm_sec * SEC;
-  d += tm.tm_min * MIN;
-  d += tm.tm_hour * HOUR;
-  d += tm.tm_mday * DAY;
+  d = tm.sec * SEC;
+  d += tm.min * MIN;
+  d += tm.hour * HOUR;
+  d += tm.day * DAY;
 
   // add months
-  for (int m = 0; m < tm.tm_mon; ++m)
+  for (int m = 0; m < tm.month; ++m)
     {
       d += MONTHS[m] * DAY;
-      if ((m == 1) && (is_leap_year(tm.tm_year)))
+      if ((m == 1) && (is_leap_year(tm.year)))
         d += DAY;
     }
 
-  // add years (which begin at 1900 for struct tm)
-  d += YEAR * (tm.tm_year - 70);
+  // add years (which begin at 1900)
+  d += YEAR * (tm.year - 70);
 
   // add leap days for every fourth year (since 1968)
-  d += DAY * ((tm.tm_year - 68 - 1) / 4);
+  d += DAY * ((tm.year - 68 - 1) / 4);
 
   // subtract leap days for every 100th year (since 1900)
-  d -= DAY * ((tm.tm_year - 1) / 100);
+  d -= DAY * ((tm.year - 1) / 100);
 
   // add leap days for every 400th year (since 2000), subtracting one again
-  d += DAY * (((tm.tm_year + 300 - 1) / 400) - 1);
+  d += DAY * (((tm.year + 300 - 1) / 400) - 1);
 
   I(valid());
 }
@@ -320,8 +320,8 @@ date_t::from_string(string const & d)
       while (d.at(i) >= '0' && d.at(i) <= '9')
         i--;
 
-      // ignore milliseconds, if present, or go back to the end of the date
-      // string to parse the digits for seconds.
+      // ignore fractional seconds, if present, or go back to the end of the
+      // date string to parse the digits for seconds.
       if (d.at(i) == '.')
         i--;
       else
@@ -446,7 +446,7 @@ date_t::operator +=(s64 const other)
 
   d += other;
 
-  // make sure we are still before year 10'000
+  // make sure we are still before year 10,000
   I(valid());
 
   return *this;
