@@ -21,8 +21,8 @@ using std::string;
 // cannot be used directly, so we have to resort to #ifdef chains on the old
 // skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
 // doesn't let us use std::numeric_limits<u64>::max(), so we have to
-// postpone checking it until runtime (date_t::our_gmtime), bleah. However,
-// the check will be optimized out, and the unit tests exercise it.
+// postpone checking it until runtime (our_gmtime), bleah. However, the check
+// will be optimized out, and the unit tests exercise it.
 #if defined ULONG_MAX && ULONG_MAX > UINT_MAX
   #define PROBABLE_U64_MAX ULONG_MAX
   #define u64_C(x) x##UL
@@ -36,6 +36,10 @@ using std::string;
   #error "How do I write a constant of type u64?"
 #endif
 
+// Forward declarations required so as to not have to shuffle around code.
+static s64 our_mktime(broken_down_time const & tm);
+static void our_gmtime(const s64 d, broken_down_time & tm);
+
 date_t::date_t(u64 d)
   : d(d)
 {
@@ -45,13 +49,8 @@ date_t::date_t(u64 d)
   I(valid());
 }
 
-date_t::date_t(int sec, int min, int hour, int day, int month, int year)
-{
-  date_t(0, sec, min, hour, day, month, year);
-}
-
-date_t::date_t(int millisecs, int sec, int min, int hour, int day, int month,
-               int year)
+date_t::date_t(int year, int month, int day,
+               int hour, int min, int sec, int millisec)
 {
   // general validity checks
   I((year >= 1970) && (year <= 9999));
@@ -60,10 +59,10 @@ date_t::date_t(int millisecs, int sec, int min, int hour, int day, int month,
   I((hour >= 0) && (hour < 24));
   I((min >= 0) && (min < 60));
   I((sec >= 0) && (sec < 60));
-  I((millisecs >= 0) && (millisecs < 1000));
+  I((millisec >= 0) && (millisec < 1000));
 
   broken_down_time t;
-  t.millisecs = millisecs;
+  t.millisec = millisec;
   t.sec = sec;
   t.min = min;
   t.hour = hour;
@@ -71,8 +70,7 @@ date_t::date_t(int millisecs, int sec, int min, int hour, int day, int month,
   t.month = month - 1;
   t.year = year - 1900;
 
-  our_mktime(t);
-
+  d = our_mktime(t);
   I(valid());
 }
 
@@ -93,29 +91,6 @@ template <> void
 dump(date_t const & d, std::string & s)
 {
   s = d.as_iso_8601_extended();
-}
-
-date_t
-date_t::now()
-{
-  using std::time_t;
-  using std::time;
-  using std::tm;
-  using std::gmtime;
-
-  // This is the only place we rely on the system's time and date function
-  // which might operate on different epochs (i.e. 1980-01-01, as some
-  // Windows, old MacOS and VMS systems used). We immediately transform that
-  // to a struct tm representation, which is independent of the system's
-  // epoch.
-  time_t t = time(0);
-  struct tm b = *gmtime(&t);
-
-  // We currently limit to before year 10,000.
-  I(b.tm_year <= 9999);
-
-  return date_t(b.tm_sec, b.tm_min, b.tm_hour,
-                b.tm_mday, b.tm_mon + 1, b.tm_year + 1900);
 }
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
@@ -143,6 +118,7 @@ u64 const HOUR = 60 * MIN;
 u64 const DAY = 24 * HOUR;
 u64 const YEAR = 365 * DAY;
 u64 const LEAP = 366 * DAY;
+u64 const FOUR_HUNDRED_YEARS = 400 * YEAR + (100 - 4 + 1) * DAY;
 
 unsigned char const MONTHS[] = {
   31, // jan
@@ -159,6 +135,41 @@ unsigned char const MONTHS[] = {
   31, // dec
 };
 
+static s64
+get_epoch_offset()
+{
+  static s64 epoch_offset;
+  static bool know_epoch_offset = false;
+  broken_down_time our_t;
+
+  if (know_epoch_offset)
+    return epoch_offset;
+
+  std::time_t epoch = 0;
+  std::tm t = *std::gmtime(&epoch);
+
+  our_t.millisec = 0;
+  our_t.sec = t.tm_sec;
+  our_t.min = t.tm_min;
+  our_t.hour = t.tm_hour;
+  our_t.day = t.tm_mday;
+  our_t.month = t.tm_mon;
+  our_t.year = t.tm_year;
+
+  epoch_offset = our_mktime(our_t);
+
+  know_epoch_offset = true;
+  return epoch_offset;
+}
+
+date_t
+date_t::now()
+{
+  std::time_t t = std::time(0);
+  date_t d;
+  d.d = u64(t) * 1000 + get_epoch_offset();
+  return d;
+}
 
 inline bool
 is_leap_year(unsigned int year)
@@ -176,7 +187,8 @@ string
 date_t::as_iso_8601_extended() const
 {
   broken_down_time tm;
-  our_gmtime(tm);
+  I(valid());
+  our_gmtime(d, tm);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
              % (tm.year + 1900) % (tm.month + 1) % tm.day
              % tm.hour % tm.min % tm.sec).str();
@@ -188,8 +200,8 @@ date_t::millisecs_since_unix_epoch() const
   return d;
 }
 
-void
-date_t::our_gmtime(broken_down_time & tm) const
+static void
+our_gmtime(const s64 d, broken_down_time & tm)
 {
   // these types hint to the compiler that narrowing divides are safe
   u64 yearbeg;
@@ -274,7 +286,7 @@ date_t::our_gmtime(broken_down_time & tm) const
   msec = msofmin % SEC;
 
   // fill in the result
-  tm.millisecs = msec;
+  tm.millisec = msec;
   tm.sec = sec;
   tm.min = min;
   tm.hour = hour;
@@ -283,14 +295,16 @@ date_t::our_gmtime(broken_down_time & tm) const
   tm.year = year - 1900;
 }
 
-void
-date_t::our_mktime(broken_down_time const & tm)
+static s64
+our_mktime(broken_down_time const & tm)
 {
-  d = tm.millisecs;
+  s64 d;
+
+  d = tm.millisec;
   d += tm.sec * SEC;
   d += tm.min * MIN;
   d += tm.hour * HOUR;
-  d += tm.day * DAY;
+  d += (tm.day - 1) * DAY;
 
   // add months
   for (int m = 0; m < tm.month; ++m)
@@ -300,19 +314,20 @@ date_t::our_mktime(broken_down_time const & tm)
         d += DAY;
     }
 
-  // add years (which begin at 1900)
-  d += YEAR * (tm.year - 70);
+  int year = tm.year + 1900;
+  I(year >= 0);
 
-  // add leap days for every fourth year (since 1968)
-  d += DAY * ((tm.year - 68 - 1) / 4);
+  // add years (since 1970)
+  d += YEAR * (year - 1970);
 
-  // subtract leap days for every 100th year (since 1900)
-  d -= DAY * ((tm.year - 1) / 100);
+  // calculate leap days to add (or subtract)
+  int add_leap_days = (year - 1) / 4 - 492;
+  add_leap_days -= (year - 1) / 100 - 19;
+  add_leap_days += (year - 1) / 400 - 4;
 
-  // add leap days for every 400th year (since 2000), subtracting one again
-  d += DAY * (((tm.year + 300 - 1) / 400) - 1);
+  d += DAY * add_leap_days;
 
-  I(valid());
+  return d;
 }
 
 // We might want to consider teaching this routine more time formats.
@@ -438,7 +453,7 @@ date_t::from_string(string const & d)
       N(day >= 1 && day <= mdays,
         F("day out of range for its month in '%s'") % d);
 
-      return date_t(sec, min, hour, day, month, year);
+      return date_t(year, month, day, hour, min, sec);
     }
   catch (std::out_of_range)
     {
@@ -493,6 +508,57 @@ date_t::operator -(date_t const & other) const
 
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
+
+UNIT_TEST(date, our_mktime)
+{
+
+#define OK(x) UNIT_TEST_CHECK(our_mktime(t) == (x))
+
+  broken_down_time t = {0, 0, 0, 0, 1, 0, 70};
+  OK(0);
+
+  t.year = 100; /* year 2000 */
+  OK(u64_C(946684800000));
+
+  // Make sure our_mktime works for years before 1970 as well.
+  t.year = 60;  /* year 1960 */
+  OK(-10 * YEAR - 3 * DAY);
+
+  t.year = -331; /* year 1569 */
+  OK(-FOUR_HUNDRED_YEARS - YEAR);
+
+  t.year = -330; /* year 1570 */
+  OK(-FOUR_HUNDRED_YEARS);
+
+  t.year = -329; /* year 1571 */
+  OK(-FOUR_HUNDRED_YEARS + YEAR);
+
+  t.year = -328; /* year 1572 */
+  OK(-FOUR_HUNDRED_YEARS + 2 * YEAR);
+
+  t.year = -327; /* year 1573 */
+  OK(-FOUR_HUNDRED_YEARS + 3 * YEAR + DAY);
+
+  t.year = -326; /* year 1574 */
+  OK(-FOUR_HUNDRED_YEARS + 4 * YEAR + DAY);
+
+  t.year = -730; /* year 1170 */
+  OK(-2 * FOUR_HUNDRED_YEARS);
+
+  t.year = -1130; /* year 770 AC */
+  OK(-3 * FOUR_HUNDRED_YEARS);
+
+  t.year = -1530; /* year 370 AC */
+  OK(-4 * FOUR_HUNDRED_YEARS);
+
+  t.year = -1900; /* year 0 anno Domini */
+  OK(-1970 * YEAR - (492 - 19 + 4) * DAY);
+
+  t.year = -1901; /* year 1 BC */
+  UNIT_TEST_CHECK_THROW(our_mktime(t), std::logic_error);
+
+#undef OK
+}
 
 UNIT_TEST(date, from_string)
 {

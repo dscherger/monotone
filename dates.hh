@@ -19,13 +19,13 @@
 
 // Our own "struct tm"-like struct to represent broken-down times
 struct broken_down_time {
-  int millisecs;   /* milliseconds */
-  int sec;         /* seconds */
-  int min;         /* minutes */
-  int hour;        /* hours */
-  int day;         /* day of the month */
-  int month;       /* month */
-  int year;        /* year */
+  int millisec;    /* milliseconds (0 - 999) */
+  int sec;         /* seconds (0 - 59) */
+  int min;         /* minutes (0 - 59) */
+  int hour;        /* hours (0 - 23) */
+  int day;         /* day of the month (1 - 31) */
+  int month;       /* month (0 - 11) */
+  int year;        /* years (since 1900) */
 };
 
 struct date_t
@@ -37,9 +37,8 @@ struct date_t
   date_t(u64 d);
 
   // Initialize from broken-down time
-  date_t(int sec, int min, int hour, int day, int month, int year);
-  date_t(int millisecs, int sec, int min, int hour, int day, int month,
-         int year);
+  date_t(int year, int month, int day,
+         int hour=0, int min=0, int sec=0, int millisec=0);
 
   bool valid() const;
 
@@ -83,11 +82,6 @@ private:
   // The date as an unsigned 64-bit count of milliseconds since
   // the Unix epoch (1970-01-01T00:00:00.000).
   u64 d;
-
-  // Our own gmtime function which converts the internal Unix epoch
-  // into a broken-down representation.
-  void our_gmtime(broken_down_time & tm) const;
-  void our_mktime(broken_down_time const & tm);
 };
 
 std::ostream & operator<< (std::ostream & o, date_t const & d);
