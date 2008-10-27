@@ -10,8 +10,9 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include <botan/pipe.h>
+#include <botan/botan.h>
 #include <boost/scoped_ptr.hpp>
+
 #include "sanity.hh"
 
 // This file defines a simple lifetime-of-the-program caching strategy for

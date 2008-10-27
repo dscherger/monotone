@@ -18,8 +18,8 @@
 #include <cerrno>
 
 #include <boost/function.hpp>
+#include <botan/botan.h>
 
-#include "botan/botan.h"
 #include "option.hh"
 #include "unit_tests.hh"
 #include "sanity.hh"
