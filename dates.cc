@@ -47,6 +47,12 @@ date_t::date_t(u64 d)
 
 date_t::date_t(int sec, int min, int hour, int day, int month, int year)
 {
+  date_t(0, sec, min, hour, day, month, year);
+}
+
+date_t::date_t(int millisecs, int sec, int min, int hour, int day, int month,
+               int year)
+{
   // general validity checks
   I((year >= 1970) && (year <= 9999));
   I((month >= 1) && (month <= 12));
@@ -54,8 +60,10 @@ date_t::date_t(int sec, int min, int hour, int day, int month, int year)
   I((hour >= 0) && (hour < 24));
   I((min >= 0) && (min < 60));
   I((sec >= 0) && (sec < 60));
+  I((millisecs >= 0) && (millisecs < 1000));
 
   broken_down_time t;
+  t.millisecs = millisecs;
   t.sec = sec;
   t.min = min;
   t.hour = hour;
@@ -266,6 +274,7 @@ date_t::our_gmtime(broken_down_time & tm) const
   msec = msofmin % SEC;
 
   // fill in the result
+  tm.millisecs = msec;
   tm.sec = sec;
   tm.min = min;
   tm.hour = hour;
@@ -277,7 +286,8 @@ date_t::our_gmtime(broken_down_time & tm) const
 void
 date_t::our_mktime(broken_down_time const & tm)
 {
-  d = tm.sec * SEC;
+  d = tm.millisecs;
+  d += tm.sec * SEC;
   d += tm.min * MIN;
   d += tm.hour * HOUR;
   d += tm.day * DAY;

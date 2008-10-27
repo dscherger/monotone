@@ -19,6 +19,7 @@
 
 // Our own "struct tm"-like struct to represent broken-down times
 struct broken_down_time {
+  int millisecs;   /* milliseconds */
   int sec;         /* seconds */
   int min;         /* minutes */
   int hour;        /* hours */
@@ -37,6 +38,8 @@ struct date_t
 
   // Initialize from broken-down time
   date_t(int sec, int min, int hour, int day, int month, int year);
+  date_t(int millisecs, int sec, int min, int hour, int day, int month,
+         int year);
 
   bool valid() const;
 
