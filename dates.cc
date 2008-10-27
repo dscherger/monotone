@@ -67,7 +67,7 @@ date_t::date_t(int year, int month, int day,
   t.min = min;
   t.hour = hour;
   t.day = day;
-  t.month = month - 1;
+  t.month = month;
   t.year = year;
 
   d = our_mktime(t);
@@ -153,7 +153,7 @@ get_epoch_offset()
   our_t.min = t.tm_min;
   our_t.hour = t.tm_hour;
   our_t.day = t.tm_mday;
-  our_t.month = t.tm_mon;
+  our_t.month = t.tm_mon + 1;
   our_t.year = t.tm_year + 1900;
 
   epoch_offset = our_mktime(our_t);
@@ -190,7 +190,7 @@ date_t::as_iso_8601_extended() const
   I(valid());
   our_gmtime(d, tm);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
-             % tm.year % (tm.month + 1) % tm.day
+             % tm.year % tm.month % tm.day
              % tm.hour % tm.min % tm.sec).str();
 }
 
@@ -258,22 +258,22 @@ our_gmtime(const s64 d, broken_down_time & tm)
   t -= yearbeg;
 
   // <yakko> Now, the months digit!
-  month = 0;
+  month = 1;
   for (;;)
     {
-      u64 this_month = MONTHS[month] * DAY;
-      if (month == 1 && is_leap_year(year))
+      u64 this_month = MONTHS[month-1] * DAY;
+      if (month == 2 && is_leap_year(year))
         this_month += DAY;
       if (t < this_month)
         break;
 
       t -= this_month;
       month++;
-      I(month < 12);
+      I(month <= 12);
     }
 
   // the rest is straightforward.
-  day = t / DAY;
+  day = t / DAY + 1;
   msofday = t % DAY;
 
   hour = msofday / HOUR;
@@ -290,7 +290,7 @@ our_gmtime(const s64 d, broken_down_time & tm)
   tm.sec = sec;
   tm.min = min;
   tm.hour = hour;
-  tm.day = day + 1;
+  tm.day = day;
   tm.month = month;
   tm.year = year;
 }
@@ -307,10 +307,10 @@ our_mktime(broken_down_time const & tm)
   d += (tm.day - 1) * DAY;
 
   // add months
-  for (int m = 0; m < tm.month; ++m)
+  for (int m = 1; m < tm.month; ++m)
     {
-      d += MONTHS[m] * DAY;
-      if ((m == 1) && (is_leap_year(tm.year)))
+      d += MONTHS[m-1] * DAY;
+      if ((m == 2) && (is_leap_year(tm.year)))
         d += DAY;
     }
 
@@ -513,7 +513,7 @@ UNIT_TEST(date, our_mktime)
 
 #define OK(x) UNIT_TEST_CHECK(our_mktime(t) == (x))
 
-  broken_down_time t = {0, 0, 0, 0, 1, 0, 1970};
+  broken_down_time t = {0, 0, 0, 0, 1, 1, 1970};
   OK(0);
 
   t.year = 2000;

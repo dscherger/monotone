@@ -24,7 +24,7 @@ struct broken_down_time {
   int min;         /* minutes (0 - 59) */
   int hour;        /* hours (0 - 23) */
   int day;         /* day of the month (1 - 31) */
-  int month;       /* month (0 - 11) */
+  int month;       /* month (1 - 12) */
   int year;        /* years (anno Domini, i.e. 1999) */
 };
 
