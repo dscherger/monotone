@@ -68,7 +68,7 @@ date_t::date_t(int year, int month, int day,
   t.hour = hour;
   t.day = day;
   t.month = month - 1;
-  t.year = year - 1900;
+  t.year = year;
 
   d = our_mktime(t);
   I(valid());
@@ -154,7 +154,7 @@ get_epoch_offset()
   our_t.hour = t.tm_hour;
   our_t.day = t.tm_mday;
   our_t.month = t.tm_mon;
-  our_t.year = t.tm_year;
+  our_t.year = t.tm_year + 1900;
 
   epoch_offset = our_mktime(our_t);
 
@@ -190,7 +190,7 @@ date_t::as_iso_8601_extended() const
   I(valid());
   our_gmtime(d, tm);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
-             % (tm.year + 1900) % (tm.month + 1) % tm.day
+             % tm.year % (tm.month + 1) % tm.day
              % tm.hour % tm.min % tm.sec).str();
 }
 
@@ -292,7 +292,7 @@ our_gmtime(const s64 d, broken_down_time & tm)
   tm.hour = hour;
   tm.day = day + 1;
   tm.month = month;
-  tm.year = year - 1900;
+  tm.year = year;
 }
 
 static s64
@@ -314,16 +314,15 @@ our_mktime(broken_down_time const & tm)
         d += DAY;
     }
 
-  int year = tm.year + 1900;
-  I(year >= 0);
+  I(tm.year >= 0);
 
   // add years (since 1970)
-  d += YEAR * (year - 1970);
+  d += YEAR * (tm.year - 1970);
 
   // calculate leap days to add (or subtract)
-  int add_leap_days = (year - 1) / 4 - 492;
-  add_leap_days -= (year - 1) / 100 - 19;
-  add_leap_days += (year - 1) / 400 - 4;
+  int add_leap_days = (tm.year - 1) / 4 - 492;
+  add_leap_days -= (tm.year - 1) / 100 - 19;
+  add_leap_days += (tm.year - 1) / 400 - 4;
 
   d += DAY * add_leap_days;
 
@@ -514,47 +513,47 @@ UNIT_TEST(date, our_mktime)
 
 #define OK(x) UNIT_TEST_CHECK(our_mktime(t) == (x))
 
-  broken_down_time t = {0, 0, 0, 0, 1, 0, 70};
+  broken_down_time t = {0, 0, 0, 0, 1, 0, 1970};
   OK(0);
 
-  t.year = 100; /* year 2000 */
+  t.year = 2000;
   OK(u64_C(946684800000));
 
   // Make sure our_mktime works for years before 1970 as well.
-  t.year = 60;  /* year 1960 */
+  t.year = 1960;
   OK(-10 * YEAR - 3 * DAY);
 
-  t.year = -331; /* year 1569 */
+  t.year = 1569;
   OK(-FOUR_HUNDRED_YEARS - YEAR);
 
-  t.year = -330; /* year 1570 */
+  t.year = 1570;
   OK(-FOUR_HUNDRED_YEARS);
 
-  t.year = -329; /* year 1571 */
+  t.year = 1571;
   OK(-FOUR_HUNDRED_YEARS + YEAR);
 
-  t.year = -328; /* year 1572 */
+  t.year = 1572;
   OK(-FOUR_HUNDRED_YEARS + 2 * YEAR);
 
-  t.year = -327; /* year 1573 */
+  t.year = 1573;
   OK(-FOUR_HUNDRED_YEARS + 3 * YEAR + DAY);
 
-  t.year = -326; /* year 1574 */
+  t.year = 1574;
   OK(-FOUR_HUNDRED_YEARS + 4 * YEAR + DAY);
 
-  t.year = -730; /* year 1170 */
+  t.year = 1170;
   OK(-2 * FOUR_HUNDRED_YEARS);
 
-  t.year = -1130; /* year 770 AC */
+  t.year = 770;
   OK(-3 * FOUR_HUNDRED_YEARS);
 
-  t.year = -1530; /* year 370 AC */
+  t.year = 370;
   OK(-4 * FOUR_HUNDRED_YEARS);
 
-  t.year = -1900; /* year 0 anno Domini */
+  t.year = 0;  /* year 0 anno Domini */
   OK(-1970 * YEAR - (492 - 19 + 4) * DAY);
 
-  t.year = -1901; /* year 1 BC */
+  t.year = -1; /* year 1 BC */
   UNIT_TEST_CHECK_THROW(our_mktime(t), std::logic_error);
 
 #undef OK
