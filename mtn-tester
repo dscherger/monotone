@@ -4,7 +4,7 @@ use lib "/home/aecoope/perl";
 
 use strict;
 use integer;
-use Carp;
+use Carp qw(cluck);
 use File::Basename;
 use POSIX qw(strftime);
 use Storable;
@@ -14,6 +14,13 @@ use IO::File;
 use IO::Handle;
 use Monotone::AutomateStdio qw(:capabilities :severities);
 use Data::Dumper;
+
+use constant RAW         => 0;
+use constant LIST        => 1;
+use constant RECORD_LIST => 2;
+use constant RECORD      => 3;
+use constant CODE        => 4;
+use constant VARIABLE    => 5;
 
 my($data,
    %hash,
@@ -25,520 +32,642 @@ Monotone::AutomateStdio->register_error_handler
      sub
      {
 	 my($severity, $message) = @_;
-	 printf(STDERR "PROBLEM (%s): %s\n", $severity, $message);
-	 die() if ($severity eq "error");
+	 printf(STDERR "\n\n====================\nPROBLEM (%s): %s\n",
+		$severity, $message);
+	 cluck(); #die() if ($severity eq "error");
      });
-# Monotone::AutomateStdio::register_error_handler("both");
 
-$mtn = Monotone::AutomateStdio->new("/home/aecoope/perl/test.mtn");
-# $mtn = Monotone::AutomateStdio->new();
-if (0)
-{
-    if (! $mtn->branches(\@list))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->certs(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->cert("ae65e53a3beca7841a87eb4525f39e3369107b82", "status",
-		     "EXTERMINATE"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    if (! $mtn->children(\@list, "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-	printf("Largest valid index = %d\n", $#list);
-    }
-    if (! $mtn->children(\@list, "ae65e53a3beca7841a87eb4525f39e3369107b82"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->ancestry_difference(\@list,
-				    "ed89ce366c3316f189f01229adc863b3285130e2",
-				    "65e51cd2a00b4ee60b9fcc356e8e503d1e690414"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print "DIFF\n";
-	print Dumper(\@list);
-    }
-    if (! $mtn->common_ancestors(\@list,
-				 "ae65e53a3beca7841a87eb4525f39e3369107b82",
-				 "78bfd27c26a0c8ac249f30293e6ef6d5f44e6084",
-				 "ff7e085fab7385fbaabc57c1f53a9bbea59bf132"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->content_diff(\$data,
-			     "ae65e53a3beca7841a87eb4525f39e3369107b82",
-			     "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\$data);
-    }
-    if (! $mtn->content_diff(\$data,
-			     "ae65e53a3beca7841a87eb4525f39e3369107b82",
-			     "d612b1ed732ea565085eede32bb2a1fae2ca8804",
-			     "Makefile"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\$data);
-    }
-    if (! $mtn->descendents(\@list, "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->erase_ancestors(\@list,
-				"ae65e53a3beca7841a87eb4525f39e3369107b82",
-				"d612b1ed732ea565085eede32bb2a1fae2ca8804"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->get_base_revision_id(\$data))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\$data);
-    }
-    if (! $mtn->get_content_changed(\@list,
-				    "ae65e53a3beca7841a87eb4525f39e3369107b82",
-				    "Makefile"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\@list);
-    }
-    if (! $mtn->get_corresponding_path
-	(\$data,
-	 "ae65e53a3beca7841a87eb4525f39e3369107b82",
-	 "Makefile",
-	 "d612b1ed732ea565085eede32bb2a1fae2ca8804"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\$data);
-    }
-    if (! $mtn->get_current_revision_id(\$data))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\$data);
-    }
-    if (! $mtn->get_file(\$data, "f7bec98218953adbb833865ccc52ea74d410b24e"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print $data;
-    }
-    if (! $mtn->get_file_of(\$data, "Makefile"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print $data;
-    }
-    if (! $mtn->get_option(\$data, "database"))
-    {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print $data;
-    }
-}
+my @test_list =
+    ({fn   => \&Monotone::AutomateStdio::ancestors,
+      desc => "ancestors",
+      type => LIST,
+      args => ["f06e40cb1d2b4f5c0db387e7a6c37681f1f89294",
+	       "b8e6b77245cf29caa1f69bfb13749d785b13eac7"]},
 
-if (! $mtn->get_attributes(\$data, "script2"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print $data;
-}
+     {fn   => \&Monotone::AutomateStdio::ancestry_difference,
+      desc => "ancestry_difference",
+      type => LIST,
+      args => ["f06e40cb1d2b4f5c0db387e7a6c37681f1f89294",
+	       "b8e6b77245cf29caa1f69bfb13749d785b13eac7"]},
 
-if (! $mtn->get_attributes(\@list, "script2"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::branches,
+      desc => "branches",
+      type => LIST,
+      args => []},
 
-if (! $mtn->branches(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => undef,
+      desc => "cert",
+      type => CODE,
+      code => sub {
+	          $mtn->cert("f06e40cb1d2b4f5c0db387e7a6c37681f1f89294",
+			     "daleks",
+			     "exterminate!");
+		  printf("Added the daleks cert\n");
+	      }},
 
-if (! $mtn->get_option(\$data, "database"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print $data . "\n";
-}
+     {fn   => \&Monotone::AutomateStdio::certs,
+      desc => "certs",
+      type => RECORD_LIST,
+      args => ["f06e40cb1d2b4f5c0db387e7a6c37681f1f89294"]},
 
-if (! $mtn->get_revision(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print $data;
-}
+     {fn   => \&Monotone::AutomateStdio::children,
+      desc => "children",
+      type => LIST,
+      args => ["95c9125530ea297d244b522426997942635d3891"]},
 
-if (! $mtn->get_revision(\$data,))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print $data;
-}
+     {fn   => \&Monotone::AutomateStdio::common_ancestors,
+      desc => "common_ancestors",
+      type => LIST,
+      args => ["f06e40cb1d2b4f5c0db387e7a6c37681f1f89294",
+	       "b8e6b77245cf29caa1f69bfb13749d785b13eac7"]},
 
-if (! $mtn->get_manifest_of(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::content_diff,
+      desc => "content_diff (revision)",
+      type => RAW,
+      args => [[],
+	       "9b264ec9247ce99cd1fdc5293e869c1a60b01c4c",
+	       "f06e40cb1d2b4f5c0db387e7a6c37681f1f89294"]},
 
-if (! $mtn->get_manifest_of(\$data))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::content_diff,
+      desc => "content_diff (file)",
+      type => RAW,
+      args => [[],
+	       "9b264ec9247ce99cd1fdc5293e869c1a60b01c4c",
+	       "f06e40cb1d2b4f5c0db387e7a6c37681f1f89294",
+	       "Makefile.am"]},
 
-if (! $mtn->certs(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::content_diff,
+      desc => "content_diff (file - options excluding options.cc)",
+      type => RAW,
+      args => [[exclude => "options.cc"],
+	       "9b264ec9247ce99cd1fdc5293e869c1a60b01c4c",
+	       "f06e40cb1d2b4f5c0db387e7a6c37681f1f89294"]},
 
-if (! $mtn->certs(\$data, "d83907887a2a35229ef361a74e98bd296d84e60c"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::db_get,
+      desc => "db_get",
+      feat => MTN_DB_GET,
+      type => CODE,
+      code => sub {
+	          my $value;
+	          print("Adding database default-server variable.\n");
+		  $mtn->db_set("database", "default-server", "www.test.com");
+		  $mtn->db_get(\$value, "database", "default-server");
+		  printf("database default-server = `%s'\n", $value);
+	      }},
 
-if (! $mtn->db_set("database", "default-server", "www.test.com"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
+     {fn   => \&Monotone::AutomateStdio::descendents,
+      desc => "descendents",
+      type => LIST,
+      args => ["95c9125530ea297d244b522426997942635d3891"]},
 
-if (! $mtn->db_get(\$data, "database", "default-server"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::drop_attribute,
+      desc => "drop_attribute",
+      feat => MTN_DROP_ATTRIBUTE,
+      type => CODE,
+      code => sub {
+	          $mtn->drop_attribute("contrib/dtrace2calltree.py",
+				       "mtn:execute");
+		  $mtn->drop_attribute("contrib/colorize");
+		  print("Dropped attributes on contrib/dtrace2calltree.py and "
+			. "contrib/colorize\n");
+	      }},
 
-if (! $mtn->graph(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::drop_db_variables,
+      desc => "drop_db_variables",
+      feat => MTN_DROP_DB_VARIABLES,
+      type => CODE,
+      code => sub {
+	          print("Adding test variables.\n");
+		  $mtn->set_db_variable("test-vars", "var1", "hello");
+		  $mtn->set_db_variable("test-vars", "var2", "good bye");
+		  $mtn->set_db_variable("TST-vars",
+					"greeting",
+					"good day");
+		  system("mtn ls vars");
+		  print("Removing all TST-vars variables and "
+			. "test-vars:var1.\n");
+		  $mtn->drop_db_variables("TST-vars");
+		  $mtn->drop_db_variables("test-vars", "var1");
+		  system("mtn ls vars");
+		  print("Removing all test-vars variables.\n");
+		  $mtn->drop_db_variables("test-vars");
+		  system("mtn ls vars");
+	      }},
 
-if (! $mtn->graph(\$data))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::erase_ancestors,
+      desc => "erase_ancestors",
+      type => LIST,
+      args => ["05cb265ad778107218701fa76a91bdf4770b85a8",
+	       "110816e646d42ca45e8205778255cece9c8f2159",
+	       "95c9125530ea297d244b522426997942635d3891"]},
 
-if (! $mtn->heads(\@list, "net.venge.monotone.www"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::genkey,
+      desc => "genkey",
+      type => RECORD,
+      args => ["pooh.bear_$$\@test-id.com",
+	       "little brain"]},
 
-if (! $mtn->identify(\$data, "Makefile.am"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_attributes,
+      desc => "get_attributes (on a file that has none)",
+      type => RECORD_LIST,
+      args => ["NEWS"]},
 
-if (! $mtn->interface_version(\$data))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_attributes,
+      desc => "get_attributes (on a file that now has none)",
+      type => RECORD_LIST,
+      args => ["contrib/dtrace2calltree.py"]},
 
-if (! $mtn->inventory(\$data))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_attributes,
+      desc => "get_attributes (on a file that has a few)",
+      feat => MTN_DROP_DB_VARIABLES,
+      type => RECORD_LIST,
+      args => ["snowdonia.xcf"]},
 
-if (! $mtn->inventory(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_base_revision_id,
+      desc => "get_base_revision_id",
+      type => VARIABLE,
+      args => []},
 
-if (! $mtn->keys(\$data))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_content_changed,
+      desc => "get_content_changed",
+      type => LIST,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60",
+	       "Makefile.am"]},
 
-if (! $mtn->keys(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_corresponding_path,
+      desc => "get_corresponding_path",
+      type => VARIABLE,
+      args => ["3db17c6db8b05b11950caec36116e5f0cc518f82",
+	       "work.cc",
+	       "95c9125530ea297d244b522426997942635d3891"]},
 
-if (! $mtn->leaves(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision,
+      desc => "get_current_revision (no options)",
+      feat => MTN_GET_CURRENT_REVISION,
+      prec => sub {
+	          system("mtn rm work.hh");
+	          system("mtn rm unix/README");
+		  system("cp /etc/hosts vocab.hh");
+		  system("cp /etc/hosts NEW.txt");
+		  system("mtn add NEW.txt");
+	      },
+      posc => sub {
+	          system("mtn revert .");
+		  system("rm NEW.txt");
+	      },
+      type => RECORD_LIST,
+      args => []},
 
-if (! $mtn->parents(\@list, "d83907887a2a35229ef361a74e98bd296d84e60c"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision,
+      desc => "get_current_revision (file restriction)",
+      feat => MTN_GET_CURRENT_REVISION,
+      prec => sub {
+	          system("mtn rm work.hh");
+	          system("mtn rm unix/README");
+		  system("cp /etc/hosts vocab.hh");
+		  system("cp /etc/hosts NEW.txt");
+		  system("mtn add NEW.txt");
+	      },
+      posc => sub {
+	          system("mtn revert .");
+		  system("rm NEW.txt");
+	      },
+      type => RECORD_LIST,
+      args => [[],
+	       "NEW.txt"]},
 
-if (! $mtn->roots(\@list))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision,
+      desc => "get_current_revision (file restriction and depth option)",
+      feat => MTN_GET_CURRENT_REVISION,
+      prec => sub {
+	          system("mtn rm work.hh");
+	          system("mtn rm unix/README");
+		  system("cp /etc/hosts vocab.hh");
+		  system("cp /etc/hosts NEW.txt");
+		  system("mtn add NEW.txt");
+	      },
+      posc => sub {
+	          system("mtn revert .");
+		  system("rm NEW.txt");
+	      },
+      type => RECORD_LIST,
+      args => [["depth" => 1],
+	       "NEW.txt"]},
 
-if (! $mtn->select(\@list, "l:2007-01-01/b:net.venge.monotone"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision,
+      desc => "get_current_revision (exclude option)",
+      feat => MTN_GET_CURRENT_REVISION,
+      prec => sub {
+	          system("mtn rm work.hh");
+	          system("mtn rm unix/README");
+		  system("cp /etc/hosts vocab.hh");
+		  system("cp /etc/hosts NEW.txt");
+		  system("mtn add NEW.txt");
+	      },
+      posc => sub {
+	          system("mtn revert .");
+		  system("rm NEW.txt");
+	      },
+      type => RECORD_LIST,
+      args => [["exclude" => "vocab.hh"]]},
 
-if (! $mtn->tags(\$data, "net.venge.monotone"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision,
+      desc => "get_current_revision (depth and exclude option)",
+      feat => MTN_GET_CURRENT_REVISION,
+      prec => sub {
+	          system("mtn rm work.hh");
+	          system("mtn rm unix/README");
+		  system("cp /etc/hosts vocab.hh");
+		  system("cp /etc/hosts NEW.txt");
+		  system("mtn add NEW.txt");
+	      },
+      posc => sub {
+	          system("mtn revert .");
+		  system("rm NEW.txt");
+	      },
+      type => RECORD_LIST,
+      args => [["depth"   => 1,
+		"exclude" => "vocab.hh"]]},
 
-if (! $mtn->tags(\@list, "net.venge.monotone"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_current_revision_id,
+      desc => "get_current_revision_id",
+      type => VARIABLE,
+      args => []},
 
-if (! $mtn->get_revision(\$data, "492d55d26d09e8358bc239eaf2bf422350bf2d13"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_db_name,
+      desc => "get_db_name",
+      type => CODE,
+      code => sub {
+	          printf("Database name = `%s'\n",
+			 defined($mtn->get_db_name())
+			     ? $mtn->get_db_name() : "<Workspace>");
+	      }},
 
-if (! $mtn->get_revision(\@list, "492d55d26d09e8358bc239eaf2bf422350bf2d13"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\@list);
-}
+     {fn   => \&Monotone::AutomateStdio::get_db_variables,
+      desc => "get_db_variables",
+      feat => MTN_GET_DB_VARIABLES,
+      type => RECORD_LIST,
+      prec => sub {
+	          print("Adding test variables.\n");
+		  $mtn->set_db_variable("test-vars", "var1", "hello");
+		  $mtn->set_db_variable("test-vars", "var2", "good bye");
+		  $mtn->set_db_variable("TST-vars",
+					"greeting",
+					"good day");
+		  system("mtn ls vars");
+	      },
+      posc => sub {
+		  print("Removing all test-vars and TST-vars variables.\n");
+		  $mtn->drop_db_variables("test-vars");
+		  $mtn->drop_db_variables("TST-vars");
+	      }},
 
-if (! $mtn->packet_for_fdata(\$data,
-			     "38d8ad417471d7ac2724e477eaafd1a59581ca8a"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_file,
+      desc => "get_file (fetching the COPYING file)",
+      type => RAW,
+      args => ["7d7e3bd4448ca5450c1a211675734ed6a5eae18a"]},
 
-if (! $mtn->packet_for_fdelta(\$data,
-			      "a152991b3936bd8b49e9392fd908e882a7c13c4b",
-			      "38d8ad417471d7ac2724e477eaafd1a59581ca8a"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_file_of,
+      desc => "get_file_of (fetching the INSTALL file)",
+      type => RAW,
+      args => ["INSTALL",
+	       "ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
 
-if (! $mtn->packet_for_rdata(\$data,
-			      "d7cfaacc152a049d004587192cc5a8979d051c14"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_manifest_of,
+      desc => "get_manifest_of",
+      type => RECORD_LIST,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
 
-if (! $mtn->packets_for_certs(\$data,
-			      "d7cfaacc152a049d004587192cc5a8979d051c14"))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
+     {fn   => \&Monotone::AutomateStdio::get_option,
+      desc => "get_option (getting the branch option value)",
+      type => VARIABLE,
+      args => ["branch"]},
 
-if (1 == 0)
+     {fn   => \&Monotone::AutomateStdio::get_pid,
+      desc => "get_pid",
+      type => CODE,
+      code => sub {
+	          printf("MTN process id = `%d'\n", $mtn->get_pid());
+	      }},
+
+     {fn   => \&Monotone::AutomateStdio::get_revision,
+      desc => "get_revision",
+      type => LIST,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
+
+     {fn   => \&Monotone::AutomateStdio::get_workspace_root,
+      desc => "get_workspace_root",
+      feat => MTN_GET_WORKSPACE_ROOT,
+      type => VARIABLE,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::graph,
+      desc => "graph",
+      type => RECORD_LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::heads,
+      desc => "heads",
+      type => LIST,
+      args => ["net.venge.monotone.contrib.lib.automate-stdio.test"]},
+
+     {fn   => \&Monotone::AutomateStdio::identify,
+      desc => "identify (file database.cc)",
+      type => VARIABLE,
+      args => ["database.cc"]},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (no options)",
+      type => RECORD_LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (depth option)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [["depth" => 1]]},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (depth + exclude play.cc options)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [["depth"   => 1,
+		"exclude" => "play.cc"]]},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (most options)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [["depth"   => 1,
+		"exclude" => "play.cc",
+		"no-corresponding-renames",
+		"no-ignored",
+		"no-unknown"]]},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (all options generates nothing)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [["depth"   => 1,
+		"exclude" => "play.cc",
+		"no-corresponding-renames",
+		"no-ignored",
+		"no-unknown",
+		"no-unchanged"],
+	       "unix"]},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (just changed unknown files)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [["no-unchanged"]],
+      prec => sub {
+	          system("ls -la > log");
+	          system("cp /etc/hosts another-file");
+	      },
+      posc => sub {
+	          system("rm log another-file");
+	      }},
+
+     {fn   => \&Monotone::AutomateStdio::inventory,
+      desc => "inventory (restrict output to those files under unix)",
+      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      type => RECORD_LIST,
+      args => [[],
+	       "unix"]},
+
+     {fn   => \&Monotone::AutomateStdio::keys,
+      desc => "keys",
+      type => RECORD_LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::leaves,
+      desc => "leaves",
+      type => LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::packet_for_fdata,
+      desc => "packet_for_fdata",
+      type => RAW,
+      args => ["8d87e9368e3f3ebd63df11e12610ac90ac2ee4e5"]},
+
+     {fn   => \&Monotone::AutomateStdio::packet_for_fdelta,
+      desc => "packet_for_fdelta",
+      type => RAW,
+      args => ["0682f911f2598d229d218fd28cc5964534bd3c65",
+	       "8d87e9368e3f3ebd63df11e12610ac90ac2ee4e5"]},
+
+     {fn   => \&Monotone::AutomateStdio::packet_for_rdata,
+      desc => "packet_for_rdata",
+      type => RAW,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
+
+     {fn   => \&Monotone::AutomateStdio::packets_for_certs,
+      desc => "packets_for_certs",
+      type => RAW,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
+
+     {fn   => \&Monotone::AutomateStdio::parents,
+      desc => "parents",
+      type => RAW,
+      args => ["ec5d40149421cbd1b6984de0806d323f9e1e6e60"]},
+
+     {fn   => \&Monotone::AutomateStdio::put_file,
+      desc => "put_file",
+      type => CODE,
+      code => sub {
+                  my $data_file = IO::File->new("../mtn-tester", "r");
+		  my($base_rev,
+		     $fdata,
+		     $file_id,
+		     $old_file_id,
+		     $rev_data,
+		     $rev_id);
+
+		  $data_file->sysread($fdata, 64000);
+		  $data_file = undef;
+
+		  $mtn->put_file(\$file_id, undef, $fdata);
+		  printf("Put mtn-tester, file id = %s\n", $file_id);
+		  $mtn->get_base_revision_id(\$base_rev);
+		  $rev_data = "format_version \"1\"\n\n"
+		      . "new_manifest "
+		          . "[0000000000000000000000000000000000000000]\n\n"
+		      . "old_revision [" . $base_rev . "]\n\n"
+		      . "add_file \"mtn-tester\"\n"
+		      . " content [" . $file_id . "]\n";
+		  $mtn->put_revision(\$rev_id, $rev_data);
+		  $mtn->cert($rev_id, "author", "aecooper\@coosoft.plus.com");
+		  $mtn->cert($rev_id,
+			     "branch",
+			     "net.venge.monotone.contrib.lib.automate-stdio."
+			         . "test");
+		  $mtn->cert($rev_id, "changelog", "Automated checkin.");
+		  $mtn->cert($rev_id, "date", "2008-10-16T18:42:30");
+		  printf("Put revision, revision id = %s\n", $rev_id);
+
+		  $fdata = substr($fdata, 5);
+		  $old_file_id = $file_id;
+		  $mtn->put_file(\$file_id, $old_file_id, $fdata);
+		  printf("Put modified mtn-tester, file id = %s\n", $file_id);
+		  $base_rev = $rev_id;
+		  $rev_data = "format_version \"1\"\n\n"
+		      . "new_manifest "
+		          . "[0000000000000000000000000000000000000000]\n\n"
+		      . "old_revision [" . $base_rev . "]\n\n"
+		      . "patch \"mtn-tester\"\n"
+		      . " from [" . $old_file_id . "]\n"
+		      . "   to [" . $file_id . "]\n";
+		  $mtn->put_revision(\$rev_id, $rev_data);
+		  $mtn->cert($rev_id, "author", "aecooper\@coosoft.plus.com");
+		  $mtn->cert($rev_id,
+			     "branch",
+			     "net.venge.monotone.contrib.lib.automate-stdio."
+			         . "test");
+		  $mtn->cert($rev_id, "changelog", "Automated checkin #2.");
+		  $mtn->cert($rev_id, "date", "2008-10-16T18:42:35");
+		  printf("Put revision, revision id = %s\n", $rev_id);
+
+		  print("Displaying revision change log:\n");
+		  system("mtn update");
+		  system("mtn log --last 5 --no-graph | less -S");
+	      }},
+
+     {fn   => \&Monotone::AutomateStdio::roots,
+      desc => "roots",
+      type => LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::select,
+      desc => "select",
+      type => LIST,
+      args => ["b:net.venge.monotone.contrib.lib.automate-stdio.test"]},
+
+     {fn   => \&Monotone::AutomateStdio::set_attribute,
+      desc => "set_attribute",
+      feat => MTN_SET_ATTRIBUTE,
+      type => CODE,
+      code => sub {
+	          $mtn->set_attribute("database.cc",
+				      "mtn:test-attr",
+				      "this-is-a-test-value");
+		  print("Added mtn:test-attr to file database.cc.\n");
+	      }},
+
+     {fn   => \&Monotone::AutomateStdio::show_conflicts,
+      desc => "show_conflicts",
+      feat => MTN_SHOW_CONFLICTS,
+      type => RECORD_LIST,
+      args => ["26cfbb87b400321bda71277e1d2c0ba1d5e9898f",
+	       "15db9bc261c01c4ca5cdb052aec69d29f3bec58a"]},
+
+     {fn   => \&Monotone::AutomateStdio::tags,
+      desc => "tags (no branch restrictions)",
+      type => RECORD_LIST,
+      args => []},
+
+     {fn   => \&Monotone::AutomateStdio::tags,
+      desc => "tags (with branch restriction)",
+      type => RECORD_LIST,
+      args => ["net.venge.monotone.contrib.lib.automate-stdio.test"]},
+
+     {fn   => \&Monotone::AutomateStdio::toposort,
+      desc => "toposort",
+      type => LIST,
+      args => ["b8e6b77245cf29caa1f69bfb13749d785b13eac7",
+	       "805c482bc9bb80cd393be7d3ba01a65377d91d9c",
+	       "afd43cf2ce01fa4513fb1673eae47be3b48008f6"]});
+
+$mtn = Monotone::AutomateStdio->new(["--key" => "aecooper\@coosoft.plus.com"]);
+
+foreach my $test (@test_list)
 {
-    if (! $mtn->genkey(\%hash, 'whinnie@the.pooh', "bear of little brain"))
+    if (! exists($test->{feat}) || $mtn->can($test->{feat}))
     {
-	printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-    }
-    else
-    {
-	print Dumper(\%hash);
-    }
-}
+	printf(" ========== %s ==========\n", $test->{desc});
+	if (exists($test->{prec}))
+	{
+	    $test->{prec}();
+	}
+	if ($test->{type} == RAW)
+	{
+	    if (! $test->{fn}($mtn, \$data, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print($data);
+	    }
+	}
+	elsif ($test->{type} == LIST)
+	{
+	    if (! $test->{fn}($mtn, \@list, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print(Dumper(\@list));
+	    }
+	}
+	elsif ($test->{type} == RECORD)
+	{
+	    if (! $test->{fn}($mtn, \%hash, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print(Dumper(\%hash));
 
-my $data_file = IO::File->new("../mtn-tester", "r");
-my $fdata;
-$data_file->sysread($fdata, 64000);
-$data_file = undef;
-if (! $mtn->put_file(\$data, undef, $fdata))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	}
+	elsif ($test->{type} == RECORD_LIST)
+	{
+	    printf("  ---------- Raw Data ----------\n");
+	    if (! $test->{fn}($mtn, \$data, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print($data);
+
+	    }
+	    printf("  ---------- Structured Data ----------\n");
+	    if (! $test->{fn}($mtn, \@list, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print(Dumper(\@list));
+
+	    }
+	}
+	elsif ($test->{type} == VARIABLE)
+	{
+	    if (! $test->{fn}($mtn, \$data, @{$test->{args}}))
+	    {
+		printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
+	    }
+	    else
+	    {
+		print("Variable = `" . $data . "'\n");
+
+	    }
+	}
+	elsif ($test->{type} == CODE)
+	{
+	    $test->{code}();
+	}
+	if (exists($test->{posc}))
+	{
+	    $test->{posc}();
+	}
+    }
 }
-else
-{
-    print Dumper(\$data);
-}
-my $base_rev;
-$mtn->get_base_revision_id(\$base_rev);
-$fdata = "format_version \"1\"\n\n"
-    . "new_manifest [0000000000000000000000000000000000000000]\n\n"
-    . "old_revision [" . $base_rev . "]\n\n"
-    . "add_file \"mtn-tester\"\n"
-    . " content [" . $data . "]\n";
-print $fdata;
-if (! $mtn->put_revision(\$data, $fdata))
-{
-    printf(STDERR "OOPS: %s\n", $mtn->get_error_message());
-}
-else
-{
-    print Dumper(\$data);
-}
-$mtn->cert($data, "author", "aecooper\@coosoft.plus.com");
-$mtn->cert($data, "branch", "net.venge.monotone");
-$mtn->cert($data, "changelog", "Automated checkin.");
-$mtn->cert($data, "date", "2008-08-31T18:42:30");
 
 printf("Last error message `%s'\n", $mtn->get_error_message());
 print Dumper (\$mtn);

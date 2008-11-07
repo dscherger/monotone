@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.7
+0.8
 
 =head1 SYNOPSIS
 
@@ -33,25 +33,40 @@ subprocess is started, if necessary, when anything that requires it is
 called. The subprocess is terminated on object destruction or when
 $mtn-E<gt>closedown() is called.
 
-All 0.35 automate commands have been implemented in this class except for the
-`stdio' command, which hopefully is obvious. :-) I am currently working on
-supporting versions of Monotone from 0.35 onwards (0.40 works with this
-library, it is just that you will not be able to use the new features).
+All automate commands have been implemented in this class except for the
+`stdio' command, hopefully the reason is obvious. :-) Versions of Monotone that
+are supported by this class range from 0.35 up to and including the latest
+version (currently 0.41). If you happen to be using a newer version of Monotone
+then this class will hopefully largely work but without the support for new or
+changed features.
 
 =head1 CONSTRUCTORS
 
 =over 4
 
-=item B<$mtn = Monotone::AutomateStdio-E<gt>new()>
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new([\@options])>
 
 Creates a new Monotone::AutomateStdio object, using the current workspace's
 database.
 
-=item B<$mtn = Monotone::AutomateStdio-E<gt>new($db)>
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new($db[, \@options])>
 
 Creates a new Monotone::AutomateStdio object, using the database named in $db.
 
 =back
+
+The @options parameter specifies what options are to be passed to the mtn
+subprocess. The currently supported list (in vaguely the format in which it
+would be passed to the constructor) is:
+
+    ["--confdir"            => <Directory>,
+     "--key"                => <Key To Be Used For Signatures>,
+     "--keydir"             => <Key Store Location>,
+     "--no-default-confdir",
+     "--norc",
+     "--nostd",
+     "--root"               => <Root Directory>,
+     "--ssh-sign"           => One of "check", "no" or "yes"]
 
 =head1 CLASS METHODS
 
@@ -173,9 +188,9 @@ automate commands.
 Methods that return data from the mtn subprocess do so via their first
 argument. This argument is a reference to either a scalar or a list depending
 upon whether the data returned by the method is raw data or a list of items
-respectively. Methods that return lists of records also provide the option of
-returning the data as one raw chunk if the reference points to a scalar rather
-than a list. Therefore:
+respectively. Methods that return lists of records, rather than a simple list
+of scalar items, also provide the option of returning the data as one raw chunk
+if the reference points to a scalar rather than a list. Therefore:
 
     $mtn->get_manifest_of(\$buffer);
 
@@ -206,7 +221,7 @@ The following methods are provided:
 
 =over 4
 
-=item B<$mtn-E<gt>ancestors(\@list, @revision_ids)>
+=item B<$mtn-E<gt>ancestors(\@list, $revision_id ...)>
 
 Get a list of ancestors for the specified revisions.
 
@@ -225,9 +240,21 @@ Get a list of branches.
 Determine whether a certain feature is available with the version of Monotone
 that is currently being used by this object. The list of valid features are:
 
+    MTN_DB_GET
+    MTN_DROP_ATTRIBUTE
+    MTN_DROP_DB_VARIABLES
+    MTN_GET_ATTRIBUTES
+    MTN_GET_CURRENT_REVISION
+    MTN_GET_DB_VARIABLES
+    MTN_GET_WORKSPACE_ROOT
     MTN_IGNORE_SUSPEND_CERTS
-    MTN_INVENTORY_IO_STANZA_FORMAT
-    MTN_P_SELECTOR
+    MTN_INVENTORY_IN_IO_STANZA_FORMAT
+    MTN_INVENTORY_INCLUDE_BIRTH_ID
+    MTN_INVENTORY_TAKE_OPTIONS
+    MTN_USE_P_SELECTOR
+    MTN_SET_ATTRIBUTE
+    MTN_SET_DB_VARIABLE
+    MTN_SHOW_CONFLICTS
 
 In order to get these constants into your namespace you need to use the
 following to load in this library.
@@ -272,28 +299,49 @@ subprocess is active.
 
 Get a list of revisions that are all ancestors of the specified revision(s).
 
-=item B<$mtn-E<gt>content_diff(\$buffer, $revision_id1, $revision_id2
-[, $file_name ...])>
+=item B<$mtn-E<gt>content_diff(\$buffer[, \@options[, $revision_id1,
+$revision_id2[, $file_name ...]]])>
 
-Get the difference between the two specified revisions, optionally limiting
-it to the specified list of files. If the second revision id is undefined
-then the workspace's revision is used. If both revision ids are undefined
-then the workspace's and base revisions are used. If no file names are
-listed then differences in all files are reported.
+Get the difference between the two specified revisions, optionally limiting the
+output by using the specified options and file restrictions. If the second
+revision id is undefined then the workspace's current revision is used. If both
+revision ids are undefined then the workspace's current and base revisions are
+used. If no file names are listed then differences in all files are reported.
+
+The $options argument is a list of valid options, with some having
+arguments. For example, one could call this method specifying all of the
+options like this:
+
+    $mtn->content_diff(\@result,
+                       ["depth"   => 1,
+                        "exclude" => "work.cc"],
+                       "unix");
 
 =item B<$mtn-E<gt>db_get(\$buffer, $domain, $name)>
 
 Get the value of a database variable.
 
-=item B<$mtn-E<gt>db_set($domain, $name, $value)>
-
-Set the value of a database variable.
+(feature: MTN_DB_GET, obsolete: replaced by $mtn-E<gt>get_db_variables())
 
 =item B<$mtn-E<gt>descendents(\@list, $revision_id ...)>
 
 Get a list of descendants for the specified revision(s).
 
-=item B<$mtn-E<gt>erase_ancestors(\@list, $revision_id ...)>
+=item B<$mtn-E<gt>drop_attribute($path[, $key])>
+
+Drop attributes from the specified file or directory, optionally limiting it to
+the specified attribute.
+
+(feature: MTN_DROP_ATTRIBUTE)
+
+=item B<$mtn-E<gt>drop_db_variables($domain[, $name])>
+
+Drop variables from the specified domain, optionally limiting it to the
+specified variable.
+
+(feature: MTN_DROP_DB_VARIABLES)
+
+=item B<$mtn-E<gt>erase_ancestors(\@list[, $revision_id ...])>
 
 For a given list of revisions, weed out those that are ancestors to other
 revisions specified within the list.
@@ -315,7 +363,7 @@ following fields:
                         code. Values can be one of "database" or
                         "keystore".
 
-=item B<$mtn-E<gt>get_attributes(\$buffer, $file_name)>
+=item B<$mtn-E<gt>get_attributes(\$buffer | \@list, $file_name)>
 
 Get the attributes of the specified file. If \$buffer is passed then the output
 from the command is simply placed into the variable. However if \@list is
@@ -326,6 +374,10 @@ containing the following fields:
     value     - The value of the attribute.
     state     - The status of the attribute. Values can be one of
                 "added", "changed", "dropped" or "unchanged".
+
+Also known as $mtn-E<gt>attributes().
+
+(feature: MTN_GET_ATTRIBUTES)
 
 =item B<$mtn-E<gt>get_base_revision_id(\$buffer)>
 
@@ -342,6 +394,26 @@ $file_name, $target_revision_id)>
 For the specified file name in the specified source revision, return the
 corresponding file name for the specified target revision.
 
+=item B<$mtn-E<gt>get_current_revision(\$buffer | \@list[, \@options[, $path
+...]])>
+
+Get the revision information for the current revision, optionally limiting the
+output by using the specified options and file restrictions. If \$buffer is
+passed then the output from the command is simply placed into the
+variable. However if \@list is passed then the output is returned in exactly
+the same format as for the $mtn-E<gt>get_current_revision() method.
+
+The $options argument is a list of valid options, with some having
+arguments. For example, one could call this method specifying all of the
+options like this:
+
+    $mtn->get_current_revision(\@result,
+                               ["depth"   => 1,
+                                "exclude" => "work.cc"],
+                               "unix");
+
+(feature: MTN_GET_CURRENT_REVISION)
+
 =item B<$mtn-E<gt>get_current_revision_id(\$buffer)>
 
 Get the revision that would be created if an unrestricted commit was done
@@ -352,10 +424,30 @@ in the workspace.
 Return the the file name of the Monotone database as given to the
 constructor. If no such name was given then undef is returned.
 
+=item B<$mtn-E<gt>get_db_variables(\$buffer | \@list[, $domain])>
+
+Get the variables stored in the database, optionally limiting it to the
+specified domain. If \$buffer is passed then the output from the command is
+simply placed into the variable. However if \@list is passed then the output is
+returned as a list of anonymous hashes, each one containing the following
+fields:
+
+    domain - The domain name to which the variable belongs.
+    name   - The name of the variable.
+    value  - The value of the variable.
+
+(feature: MTN_GET_DB_VARIABLES)
+
 =item B<$mtn-E<gt>get_error_message()>
 
 Return the last error message received from the mtn subprocess. An empty string
 is returned if no error has occurred yet.
+
+Please note that the error message is never cleared but just overwritten.
+Therefore one can use this method to determinate the nature of an error once it
+has been discovered but not to actually detect it in the first place. Use
+either an error handler or check the return status of methods to detect error
+conditions.
 
 =item B<$mtn-E<gt>get_file(\$buffer, $file_id)>
 
@@ -373,11 +465,15 @@ passed then the output from the command is simply placed into the
 variable. However if \@list is passed then the output is returned as a list
 of anonymous hashes, each one containing the following fields:
 
-    type    - The type of entry. Values can be one of "file" or
-              "directory".
-    name    - The name of the directory or file.
-    file_id - The id of the file. This field is only present if type
-              is set to "file".
+    type       - The type of entry. Values can be one of "file" or
+                 "directory".
+    name       - The name of the directory or file.
+    file_id    - The id of the file. This field is only present if
+                 type is set to "file".
+    attributes - A list of attributes for the file or directory. Each
+                 entry has the following fields:
+                     attribute - The name of the attribute.
+                     value     - The value of the attribute.
 
 =item B<$mtn-E<gt>get_option(\$buffer, $option_name)>
 
@@ -437,6 +533,12 @@ type of entry:
         attribute - The name of the attribute that was set.
         value     - The value that the attribute was set to.
 
+=item B<$mtn-E<gt>get_workspace_root(\$buffer)>
+
+Get the absolute path for the current workspace's root directory.
+
+(feature: MTN_GET_WORKSPACE_ROOT)
+
 =item B<$mtn-E<gt>graph(\$buffer | \@list)>
 
 Get a complete ancestry graph of the database. If \$buffer is passed then the
@@ -462,18 +564,21 @@ Determine whether revisions with a suspend certificate are to be ignored or
 not. If $ignore is true then suspend certificates are ignored, otherwise they
 are honoured (in which case any suspended revisions and branches that only have
 suspended revisions on their heads will not be listed). The default behaviour
-is to honour suspend certificates. (feature: MTN_IGNORE_SUSPEND_CERTS)
+is to honour suspend certificates.
+
+(feature: MTN_IGNORE_SUSPEND_CERTS)
 
 =item B<$mtn-E<gt>interface_version(\$buffer)>
 
 Get the version of the mtn automate interface.
 
-=item B<$mtn-E<gt>inventory(\$buffer | \@list)>
+=item B<$mtn-E<gt>inventory(\$buffer | \@list[, \@options[, $path ...]])>
 
-Get the inventory for the current workspace. If \$buffer is passed then the
-output from the command is simply placed into the variable. However if \@list
-is passed then the output is returned as a list of anonymous hashes, each one
-containing the following fields:
+Get the inventory for the current workspace, optionally limiting the output by
+using the specified options and file restrictions. If \$buffer is passed then
+the output from the command is simply placed into the variable. However if
+\@list is passed then the output is returned as a list of anonymous hashes,
+each one containing one or more of the following fields:
 
     Prior to version 0.37 of Monotone:
         status       - The three inventory status characters for the
@@ -483,7 +588,7 @@ containing the following fields:
         name         - The name of the file or directory.
 
     From version 0.37 of Monotone onwards
-    (feature: MTN_INVENTORY_IO_STANZA_FORMAT):
+    (feature: MTN_INVENTORY_IN_IO_STANZA_FORMAT):
         path     - The name of the file or directory.
         old_type - The type of the entry in the base manifest. Values
                    can be one of "directory", "file" or "none".
@@ -496,15 +601,32 @@ containing the following fields:
                    been renamed in the revision manifest.
         new_path - The new name of the file or directory if it has
                    been renamed in the revision manifest.
+        birth_id - The revision id in which the node was first
+                   added. Only from version 0.41 of Monotone
+                   onwards. (feature: MTN_INVENTORY_INCLUDE_BIRTH_ID)
         status   - A list of status flags. Values can be one of
                    "added", "dropped", "ignored", "invalid", "known",
                    "missing", "rename_source", "rename_target" or
                    "unknown".
-        changes - A list of change flags. Values can be one of
-                  "attrs" or "content".
+        changes  - A list of change flags. Values can be one of
+                   "attrs" or "content".
 
-        Please note that some fields are not used by all entries, in
-        which case they are set to undef.
+            Please note that some fields are not used by all entries,
+            in which case they are not present (use Perl's exists()
+            function to determine their presence and not defined()).
+
+The $options argument is a list of valid options, with some having
+arguments. For example, one could call this method specifying all of the
+options like this (feature: MTN_INVENTORY_TAKE_OPTIONS):
+
+    $mtn->inventory(\@result,
+                    ["depth"   => 1,
+                     "exclude" => "work.cc",
+                     "no-corresponding-renames",
+                     "no-ignored",
+                     "no-unknown",
+                     "no-unchanged"],
+                    "unix");
 
 =item B<$mtn-E<gt>keys(\$buffer | \@list)>
 
@@ -586,6 +708,76 @@ Get a list of root revisions, i.e. revisions with no parents.
 
 Get a list of revision ids that match the specified selector.
 
+=item B<$mtn-E<gt>set_attribute($path, $key, $value)>
+
+Set an attribute on the specified file or directory.
+
+(feature: MTN_SET_ATTRIBUTE)
+
+=item B<$mtn-E<gt>set_db_variable($domain, $name, $value)>
+
+Set the value of a database variable.
+
+Also known as $mtn-E<gt>db_set().
+
+(feature: MTN_SET_DB_VARIABLE)
+
+=item B<$mtn-E<gt>show_conflicts(\$buffer | \@list[, $branch][,
+$left_revision_id, $right_revision_id])>
+
+Get a list of conflicts between the first two head revisions on the current
+branch, optionally one can specify both head revision ids and the name of the
+branch that they reside on. If \$buffer is passed then the output from the
+command is simply placed into the variable. However if \@list is passed then
+the output is returned as a list of anonymous hashes, each one containing one
+or more of the following fields:
+
+    ancestor         - The id of the common ancestor revision for
+                       both revisions in conflict.
+    ancestor_file_id - The common ancestor file id for both files in
+                       conflict.
+    ancestor_name    - The name of the ancestor file or directory.
+    attr_name        - The name of the Monotone file or directory
+                       attribute that is in conflict.
+    conflict         - The nature of the conflict. Values can be one
+                       of "attribute", "content",
+                       "directory_loop_created", "duplicate_name",
+                       "invalid_name", "missing_root",
+                       "multiple_names", "orphaned_directory" or
+                       "orphaned_file".
+    left             - The id of the left hand revision that is in
+                       conflict.
+    left_attr_value  - The value of the attribute on the file or
+                       directory in the left hand revision.
+    left_file_id     - The id of the file in the left hand revision.
+    left_name        - The name of the file or directory in the left
+                       hand revision.
+    left_type        - The type of conflict relating to the file or
+                       directory in the left hand revision. Values
+                       can be one of "added directory", "added file",
+                       "deleted directory", "pivoted root",
+                       "renamed directory" or "renamed file".
+    node_type        - The type of manifest node. Values can be one
+                       of "file" or "directory".
+    right            - The id of the right hand revision that is in
+                       conflict.
+    right_attr_state - The state of the attribute in the right hand
+                       revision. Values can only be "dropped".
+    right_attr_value - The value of the attribute on the file or
+                       directory in the right hand revision.
+    right_file_id    - The id of the file in the right hand revision.
+    right_name       - The name of the file or directory in the right
+                       hand revision.
+    right_type       - The type of conflict relating to the file or
+                       directory in the left revision. Values are as
+                       documented for left_type.
+
+        Please note that some fields are not used by all entries, in
+        which case they are not present (use Perl's exists() function
+        to determine their presence and not defined()).
+
+(feature: MTN_SHOW_CONFLICTS)
+
 =item B<$mtn-E<gt>tags(\$buffer | \@list[, $branch_pattern])>
 
 Get all the tags attached to revisions on branches that match the specified
@@ -624,14 +816,19 @@ $mtn-E<gt>closedown() do not return anything.
 
 =head1 NOTES
 
-There are situations where this class does legitimately terminate or even
-restart the mtn subprocess (for example when a database locked condition is
-detected). Therefore if you wish to detect and handle SIGCHLD signals in your
-application then please make sure that any process ids that you reap are
-checked against the $mtn-E<gt>get_pid() method. If the process id does not
-match anything returned from $mtn-E<gt>get_pid() and is unknown to your
-application then it is likely that the exited child process was an old mtn
-subprocess that has been restarted.
+There are situations where this class does legitimately terminate the mtn
+subprocess (for example when a database locked condition is detected). When
+this happens the subprocess is reaped and its id is reset, i.e. the
+$mtn-E<gt>get_pid() method returns 0. However if the subprocess should exit
+unexpectedly then an exception is raised but no reaping or process id resetting
+takes place. Therefore the application using this class may wish to have a
+signal handler registered for SIGCHILD signals that can trigger a call to the
+$mtn-E<gt>closedown() method or destroy the object concerned in the event of an
+error. In order to distinguish between legitimate terminations of the mtn
+subprocess and failures, simply compare the reaped process id against that
+returned by the $mtn-E<gt>closedown() method. If there is a match then there is
+a problem, otherwise, as far as this class is concerned, there is nothing to
+worry about.
 
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used
 and will consequently reset any SIGALRM timers. In C I would obviously use
@@ -648,6 +845,16 @@ from those changes. This class is a convenience wrapper rather than something
 that will totally divorce you from the automate stdio interface. Also the
 chances are you will want the new type of output anyway.
 
+No work will be done to support versions of Monotone older than 0.35, so if you
+are in that position then I strongly suggest that you upgrade to a later
+version of Monotone (you will get all the new features and bug fixes, go on you
+know want them :-)). Also once the automate stdio interface has remained stable
+for some time, support may be dropped for older versions in order to aid
+maintenance and regression testing.
+
+The $mtn-E<gt>get_content_changed() method is very slow since Monotone version
+0.40. Hopefully this will be fixed in version 0.42.
+
 =head1 SEE ALSO
 
 http://monotone.ca
@@ -659,8 +866,10 @@ than 0.35 (automate stdio interface version 4.3).
 
 No doubt other bugs will crawl out of the wood-work.
 
-=head1 HISTORY
+=head1 COPYRIGHT
 
-An original by Anthony Cooper <aecooper@coosoft.plus.com>.
+Copyright (C) 2008 by Anthony Cooper <aecooper@coosoft.plus.com>.
+
+This software is licensed under the LGPL.
 
 =cut

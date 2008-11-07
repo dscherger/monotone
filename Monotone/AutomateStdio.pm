@@ -67,9 +67,21 @@ use Symbol qw(gensym);
 # Constants used to represent the different types of capability Monotone may or
 # may not provide depending upon its version.
 
-use constant MTN_IGNORE_SUSPEND_CERTS       => 0;
-use constant MTN_INVENTORY_IO_STANZA_FORMAT => 1;
-use constant MTN_P_SELECTOR                 => 2;
+use constant MTN_DB_GET                           => 0;
+use constant MTN_DROP_ATTRIBUTE                   => 1;
+use constant MTN_DROP_DB_VARIABLES                => 2;
+use constant MTN_GET_ATTRIBUTES                   => 3;
+use constant MTN_GET_CURRENT_REVISION             => 4;
+use constant MTN_GET_DB_VARIABLES                 => 5;
+use constant MTN_GET_WORKSPACE_ROOT               => 6;
+use constant MTN_IGNORE_SUSPEND_CERTS             => 7;
+use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT    => 8;
+use constant MTN_INVENTORY_INCLUDE_BIRTH_ID       => 9;
+use constant MTN_INVENTORY_TAKE_OPTIONS           => 10;
+use constant MTN_USE_P_SELECTOR                   => 11;
+use constant MTN_SET_ATTRIBUTE                    => 12;
+use constant MTN_SET_DB_VARIABLE                  => 13;
+use constant MTN_SHOW_CONFLICTS                   => 14;
 
 # Constants used to represent the different error levels.
 
@@ -77,16 +89,100 @@ use constant MTN_SEVERITY_ALL     => 0x03;
 use constant MTN_SEVERITY_ERROR   => 0x01;
 use constant MTN_SEVERITY_WARNING => 0x02;
 
-# A pre-compiled regular expression for finding the end of a quoted string
-# possibly containing escaped quotes, i.e. " preceeded by a non-backslash
-# character or an even number of backslash characters.
+# Constants used to represent different value formats.
+
+use constant BARE_PHRASE     => 0x01;  # E.g. orphaned_directory.
+use constant HEX_ID          => 0x02;  # E.g. [ab2 ... 1be].
+use constant OPTIONAL_HEX_ID => 0x04;  # As HEX_ID but also [].
+use constant STRING          => 0x08;  # Any quoted string, possibly escaped.
+use constant STRING_ENUM     => 0x10;  # E.g. "rename_source".
+use constant STRING_LIST     => 0x20;  # E.g. "..." "...", possibly escaped.
+
+# Pre-compiled regular expressions for: finding the end of a quoted string
+# possibly containing escaped quotes (i.e. " preceeded by a non-backslash
+# character or an even number of backslash characters), recognising data locked
+# conditions and detecting the beginning of an I/O stanza.
 
 my $closing_quote_re = qr/((^.*[^\\])|^)(\\{2})*\"$/;
-
-# A pre-compiled regular expression for recognising database locked conditions
-# in error output.
-
 my $database_locked_re = qr/.*sqlite error: database is locked.*/;
+my $io_stanza_re = qr/^ *[a-z_]+ \S/;
+
+# A map for quickly detecting valid mtn subprocess options and the number of
+# their arguements.
+
+my %valid_mtn_options = ("--confdir"            => 1,
+			 "--key"                => 1,
+			 "--keydir"             => 1,
+			 "--no-default-confdir" => 0,
+			 "--norc"               => 0,
+			 "--nostd"              => 0,
+			 "--root"               => 1,
+			 "--ssh-sign"           => 1);
+
+# Maps for quickly detecting valid keys and determining their value types.
+
+my %certs_keys = ("key"       => STRING,
+		  "name"      => STRING,
+		  "signature" => STRING,
+		  "trust"     => STRING_ENUM,
+		  "value"     => STRING);
+my %genkey_keys = ("name"             => STRING,
+		   "public_hash"      => HEX_ID,
+		   "private_hash"     => HEX_ID,
+		   "public_location"  => STRING_LIST,
+		   "private_location" => STRING_LIST);
+my %get_attributes_keys = ("attr"           => STRING_LIST,
+			   "format_version" => STRING_ENUM,
+			   "state"          => STRING_ENUM);
+my %get_db_variables_keys = ("domain" => STRING,
+			     "entry"  => STRING_LIST);
+my %inventory_keys = ("birth"    => HEX_ID,
+		      "changes"  => STRING_LIST,
+		      "fs_type"  => STRING_ENUM,
+		      "new_path" => STRING,
+		      "new_type" => STRING_ENUM,
+		      "old_path" => STRING,
+		      "old_type" => STRING_ENUM,
+		      "path"     => STRING,
+		      "status"   => STRING_LIST);
+my %keys_keys = %genkey_keys;
+my %revision_details_keys = ("add_dir"        => STRING,
+			     "add_file"       => STRING,
+			     "attr"           => STRING,
+			     "clear"          => STRING,
+			     "content"        => HEX_ID,
+			     "delete"         => STRING,
+			     "format_version" => STRING_ENUM,
+			     "from"           => HEX_ID,
+			     "new_manifest"   => HEX_ID,
+			     "old_revision"   => OPTIONAL_HEX_ID,
+			     "patch"          => STRING,
+			     "rename"         => STRING,
+			     "set"            => STRING,
+			     "to"             => HEX_ID | STRING,
+			     "value"          => STRING);
+my %show_conflicts_keys = ("ancestor"         => OPTIONAL_HEX_ID,
+			   "ancestor_file_id" => HEX_ID,
+			   "ancestor_name"    => STRING,
+			   "attr_name"        => STRING,
+			   "conflict"         => BARE_PHRASE,
+			   "left"             => HEX_ID,
+			   "left_attr_value"  => STRING,
+			   "left_file_id"     => HEX_ID,
+			   "left_name"        => STRING,
+			   "left_type"        => STRING,
+			   "node_type"        => STRING,
+			   "right"            => HEX_ID,
+			   "right_attr_state" => STRING,
+			   "right_attr_value" => STRING,
+			   "right_file_id"    => HEX_ID,
+			   "right_name"       => STRING,
+			   "right_type"       => STRING);
+my %tags_keys = ("branches"       => STRING_LIST,
+		 "format_version" => STRING_ENUM,
+		 "revision"       => HEX_ID,
+		 "signer"         => STRING,
+		 "tag"            => STRING);
 
 # Global error, database locked and io wait callback routine references and
 # associated client data.
@@ -107,65 +203,79 @@ my($db_locked_handler_data,
 
 # Public methods.
 
-sub ancestors($\@@);
-sub ancestry_difference($\@$;@);
-sub branches($\@);
+sub ancestors($$@);
+sub ancestry_difference($$$;@);
+sub branches($$);
 sub can($$);
 sub cert($$$$);
 sub certs($$$);
-sub children($\@$);
+sub children($$$);
 sub closedown($);
-sub common_ancestors($\@@);
-sub content_diff($\$$$;@);
-sub db_get($\$$$);
-sub db_set($$$$);
-sub descendents($\@@);
-sub erase_ancestors($\@@);
-sub genkey($\$$$);
-sub get_attributes($\$$);
-sub get_base_revision_id($\$);
-sub get_content_changed($\@$$);
-sub get_corresponding_path($\$$$$);
-sub get_current_revision_id($\$);
+sub common_ancestors($$@);
+sub content_diff($$;$$$@);
+sub db_get($$$$);
+sub descendents($$@);
+sub drop_attribute($$$);
+sub drop_db_variables($$;$);
+sub erase_ancestors($$;@);
+sub genkey($$$$);
+sub get_attributes($$$);
+sub get_base_revision_id($$);
+sub get_content_changed($$$$);
+sub get_corresponding_path($$$$$);
+sub get_current_revision($$;$@);
+sub get_current_revision_id($$);
 sub get_db_name($);
+sub get_db_variables($$;$);
 sub get_error_message($);
-sub get_file($\$$);
-sub get_file_of($\$$;$);
+sub get_file($$$);
+sub get_file_of($$$;$);
 sub get_manifest_of($$;$);
-sub get_option($\$$);
+sub get_option($$$);
 sub get_pid($);
-sub get_revision($\$$);
+sub get_revision($$$);
+sub get_workspace_root($$);
 sub graph($$);
-sub heads($\@;$);
-sub identify($\$$);
+sub heads($$;$);
+sub identify($$$);
 sub ignore_suspend_certs($$);
-sub interface_version($\$);
-sub inventory($$);
+sub interface_version($$);
+sub inventory($$;$@);
 sub keys($$);
-sub leaves($\@);
-sub new($;$);
-sub packet_for_fdata($\$$);
-sub packet_for_fdelta($\$$$);
-sub packet_for_rdata($\$$);
-sub packets_for_certs($\$$);
-sub parents($\@$);
-sub put_file($\$$\$);
-sub put_revision($\$\$);
+sub leaves($$);
+sub new($;$$);
+sub packet_for_fdata($$$);
+sub packet_for_fdelta($$$$);
+sub packet_for_rdata($$$);
+sub packets_for_certs($$$);
+sub parents($$$);
+sub put_file($$$$);
+sub put_revision($$$);
 sub register_db_locked_handler(;$$$);
 sub register_error_handler($;$$$);
 sub register_io_wait_handler(;$$$$);
-sub roots($\@);
-sub select($\@$);
+sub roots($$);
+sub select($$$);
+sub set_attribute($$$$);
+sub set_db_variable($$$$);
+sub show_conflicts($$;$$$);
 sub tags($$;$);
-sub toposort($\@@);
+sub toposort($$@);
+
+# Public aliased methods.
+
+*attributes = *get_attributes;
+*db_set = *set_db_variable;
 
 # Private methods and routines.
 
 sub error_handler_wrapper($);
-sub get_quoted_value(\@\$\$);
-sub mtn_command($$$@);
-sub mtn_command_with_options($$$\@@);
-sub mtn_read_output($\$);
+sub get_quoted_value($$$);
+sub mtn_command($$$;@);
+sub mtn_command_with_options($$$$;@);
+sub mtn_read_output($$);
+sub parse_kv_record($$$$);
+sub parse_revision_data($$);
 sub startup($);
 sub unescape($);
 sub warning_handler_wrapper($);
@@ -176,15 +286,27 @@ sub warning_handler_wrapper($);
 
 use base qw(Exporter);
 
-our %EXPORT_TAGS = (capabilities => [qw(MTN_IGNORE_SUSPEND_CERTS
-					MTN_INVENTORY_IO_STANZA_FORMAT
-					MTN_P_SELECTOR)],
+our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
+					MTN_DROP_ATTRIBUTE
+					MTN_DROP_DB_VARIABLES
+					MTN_GET_ATTRIBUTES
+					MTN_GET_CURRENT_REVISION
+					MTN_GET_DB_VARIABLES
+					MTN_GET_WORKSPACE_ROOT
+					MTN_IGNORE_SUSPEND_CERTS
+					MTN_INVENTORY_IN_IO_STANZA_FORMAT
+					MTN_INVENTORY_INCLUDE_BIRTH_ID
+					MTN_INVENTORY_TAKE_OPTIONS
+					MTN_USE_P_SELECTOR
+					MTN_SET_ATTRIBUTE
+					MTN_SET_DB_VARIABLE
+					MTN_SHOW_CONFLICTS)],
 		    severities   => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
 					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities));
-our $VERSION = 0.7;
+our $VERSION = 0.8;
 #
 ##############################################################################
 #
@@ -198,22 +320,46 @@ our $VERSION = 0.7;
 #                                 this is not provided then the database
 #                                 associated with the current workspace is
 #                                 used.
+#                  $options     : A reference to a list containing a list of
+#                                 options to use on the mtn subprocess.
 #                  Return Value : A reference to the newly created object.
 #
 ##############################################################################
 
 
 
-sub new($;$)
+sub new($;$$)
 {
 
 
     my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
-    my $db_name = $_[1];
+    shift();
+    my $db_name = (ref($_[0]) eq "ARRAY") ? undef : shift();
+    my $options = shift();
+    $options = [] if (! defined($options));
 
     my $this;
 
+    # Parse the options (don't allow indiscriminate passing of command line
+    # options to the subprocess!).
+
+    for (my $i = 0; $i < scalar(@$options); ++ $i)
+    {
+	if (! exists($valid_mtn_options{$$options[$i]}))
+	{
+	    &$croaker("Unrecognised option `" . $$options[$i]
+		      . "'passed to constructor");
+	}
+	else
+	{
+	    $i += $valid_mtn_options{$$options[$i]};
+	}
+    }
+
+    # Actually construct the object.
+
     $this = {db_name                 => $db_name,
+	     mtn_options             => $options,
 	     mtn_pid                 => 0,
 	     mtn_in                  => undef,
 	     mtn_out                 => undef,
@@ -230,6 +376,8 @@ sub new($;$)
 	     io_wait_handler_data    => undef,
 	     io_wait_handler_timeout => 1};
     bless($this, $class);
+
+    # Startup the mtn subprocess (also determining the interface version).
 
     startup($this);
 
@@ -252,7 +400,7 @@ sub new($;$)
 sub DESTROY
 {
 
-    my $this = shift();
+    my $this = $_[0];
 
     # Make sure the destructor doesn't throw any exceptions and that any
     # existing exception status is preserved, otherwise constructor
@@ -283,7 +431,7 @@ sub DESTROY
 #   Description  - Get a list of ancestors for the specified revisions.
 #
 #   Data         - $this         : The object.
-#                  \@list        : A reference to a list that is to contain
+#                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
 #                                  ancestors returned.
@@ -294,7 +442,7 @@ sub DESTROY
 
 
 
-sub ancestors($\@@)
+sub ancestors($$@)
 {
 
     my($this, $list, @revision_ids) = @_;
@@ -311,7 +459,7 @@ sub ancestors($\@@)
 #                  are not also ancestors for the specified old revisions.
 #
 #   Data         - $this             : The object.
-#                  \@list            : A reference to a list that is to
+#                  $list             : A reference to a list that is to
 #                                      contain the revision ids.
 #                  $new_revision_id  : The revision id that is to have its
 #                                      ancestors returned.
@@ -324,7 +472,7 @@ sub ancestors($\@@)
 
 
 
-sub ancestry_difference($\@$;@)
+sub ancestry_difference($$$;@)
 {
 
     my($this, $list, $new_revision_id, @old_revision_ids) = @_;
@@ -344,7 +492,7 @@ sub ancestry_difference($\@$;@)
 #   Description  - Get a list of branches.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 branch names.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -352,7 +500,7 @@ sub ancestry_difference($\@$;@)
 
 
 
-sub branches($\@)
+sub branches($$)
 {
 
     my($this, $list) = @_;
@@ -422,13 +570,7 @@ sub certs($$$)
     {
 
 	my($i,
-	   $j,
-	   $key,
-	   @lines,
-	   $name,
-	   $signature,
-	   $trust,
-	   $value);
+	   @lines);
 
 	if (! mtn_command($this, "certs", \@lines, $revision_id))
 	{
@@ -437,53 +579,26 @@ sub certs($$$)
 
 	# Reformat the data into a structured array.
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *key \"/)
+	    if ($lines[$i] =~ m/$io_stanza_re/)
 	    {
-		get_quoted_value(@lines, $i, $key);
-		if ($lines[++ $i] =~ m/^ *signature \"/)
+		my $kv_record;
+
+		# Get the next key-value record.
+
+		parse_kv_record(\@lines, \$i, \%certs_keys, \$kv_record);
+		-- $i;
+
+		# Validate it in terms of expected fields and store.
+
+		foreach my $key ("key", "name", "signature", "trust", "value")
 		{
-		    ($signature) =
-			($lines[$i] =~ m/^ *signature \"([^\"]+)\"$/);
+		    &$croaker("Corrupt certs list, expected " . $key
+			      . " field but didn't find it")
+			unless (exists($kv_record->{$key}));
 		}
-		else
-		{
-		    &$croaker("Corrupt certs list, expected signature field "
-			      . "but didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *name \"/)
-		{
-		    get_quoted_value(@lines, $i, $name);
-		}
-		else
-		{
-		    &$croaker("Corrupt certs list, expected name field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *value \"/)
-		{
-		    get_quoted_value(@lines, $i, $value);
-		}
-		else
-		{
-		    &$croaker("Corrupt certs list, expected value field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *trust \"/)
-		{
-		    ($trust) = ($lines[$i] =~ m/^ *trust \"([^\"]+)\"$/);
-		}
-		else
-		{
-		    &$croaker("Corrupt certs list, expected trust field but "
-			      . "didn't find it");
-		}
-		$$ref[$j ++] = {key       => unescape($key),
-				signature => $signature,
-				name      => unescape($name),
-				value     => unescape($value),
-				trust     => $trust};
+		push(@$ref, $kv_record);
 	    }
 	}
 
@@ -500,7 +615,7 @@ sub certs($$$)
 #   Description  - Get a list of children for the specified revision.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The revision id that is to have its children
 #                                 returned.
@@ -510,7 +625,7 @@ sub certs($$$)
 
 
 
-sub children($\@$)
+sub children($$$)
 {
 
     my($this, $list, @revision_ids) = @_;
@@ -527,7 +642,7 @@ sub children($\@$)
 #                  specified revision.
 #
 #   Data         - $this         : The object.
-#                  \@list        : A reference to a list that is to contain
+#                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
 #                                  common ancestors returned.
@@ -538,7 +653,7 @@ sub children($\@$)
 
 
 
-sub common_ancestors($\@@)
+sub common_ancestors($$@)
 {
 
     my($this, $list, @revision_ids) = @_;
@@ -552,16 +667,18 @@ sub common_ancestors($\@@)
 #   Routine      - content_diff
 #
 #   Description  - Get the difference between the two specified revisions,
-#                  optionally limiting it to the specified list of files. If
-#                  the second revision id is undefined then the workspace's
-#                  revision is used. If both revision ids are undefined then
-#                  the workspace's and base revisions are used. If no file
-#                  names are listed then differences in all files are
-#                  reported.
+#                  optionally limiting the output by using the specified
+#                  options and file restrictions. If the second revision id is
+#                  undefined then the workspace's current revision is used. If
+#                  both revision ids are undefined then the workspace's
+#                  current and base revisions are used. If no file names are
+#                  listed then differences in all files are reported.
 #
 #   Data         - $this         : The object.
-#                  \$buffer      : A reference to a buffer that is to contain
+#                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
+#                  $options      : A reference to a list containing the
+#                                  options to use.
 #                  $revision_id1 : The first revision id to compare against.
 #                  $revision_id2 : The second revision id to compare against.
 #                  @file_names   : The list of file names that are to be
@@ -573,22 +690,32 @@ sub common_ancestors($\@@)
 
 
 
-sub content_diff($\$$$;@)
+sub content_diff($$;$$$@)
 {
 
-    my($this, $buffer, $revision_id1, $revision_id2, @file_names) = @_;
+    my($this, $buffer, $options, $revision_id1, $revision_id2, @file_names)
+	= @_;
 
-    my @options;
+    my @opts;
 
-    push(@options, {key => "r", value => $revision_id1})
+    # Process any options.
+
+    if (defined($options))
+    {
+	for (my $i = 0; $i < scalar(@$options); ++ $i)
+	{
+	    push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	}
+    }
+    push(@opts, {key => "r", value => $revision_id1})
 	unless (! defined($revision_id1));
-    push(@options, {key => "r", value => $revision_id2})
+    push(@opts, {key => "r", value => $revision_id2})
 	unless (! defined($revision_id2));
 
     return mtn_command_with_options($this,
 				    "content_diff",
 				    $buffer,
-				    @options,
+				    \@opts,
 				    @file_names);
 
 }
@@ -600,7 +727,7 @@ sub content_diff($\$$$;@)
 #   Description  - Get the value of a database variable.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $domain      : The domain of the database variable.
 #                  $name        : The name of the variable to fetch.
@@ -610,7 +737,7 @@ sub content_diff($\$$$;@)
 
 
 
-sub db_get($\$$$)
+sub db_get($$$$)
 {
 
     my($this, $buffer, $domain, $name) = @_;
@@ -621,39 +748,12 @@ sub db_get($\$$$)
 #
 ##############################################################################
 #
-#   Routine      - db_set
-#
-#   Description  - Set the value of a database variable.
-#
-#   Data         - $this        : The object.
-#                  $domain      : The domain of the database variable.
-#                  $name        : The name of the variable to set.
-#                  $value       : The value to set the variable to.
-#                  Return Value : True on success, otherwise false on failure.
-#
-##############################################################################
-
-
-
-sub db_set($$$$)
-{
-
-    my($this, $domain, $name, $value) = @_;
-
-    my $dummy;
-
-    return mtn_command($this, "db_set", \$dummy, $domain, $name, $value);
-
-}
-#
-##############################################################################
-#
 #   Routine      - descendents
 #
 #   Description  - Get a list of descendents for the specified revisions.
 #
 #   Data         - $this         : The object.
-#                  \@list        : A reference to a list that is to contain
+#                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
 #                                  descendents returned.
@@ -664,12 +764,70 @@ sub db_set($$$$)
 
 
 
-sub descendents($\@@)
+sub descendents($$@)
 {
 
     my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "descendents", $list, @revision_ids);
+
+}
+#
+##############################################################################
+#
+#   Routine      - drop_attribute
+#
+#   Description  - Drop attributes from the specified file or directory,
+#                  optionally limiting it to the specified attribute.
+#
+#   Data         - $this        : The object.
+#                  $path        : The name of the file or directory that is to
+#                                 have an attribute dropped.
+#                  $key         : The name of the attribute that as to be
+#                                 dropped.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub drop_attribute($$$)
+{
+
+    my($this, $path, $key) = @_;
+
+    my $dummy;
+
+    return mtn_command($this, "drop_attribute", \$dummy, $path, $key);
+
+}
+#
+##############################################################################
+#
+#   Routine      - drop_db_variables
+#
+#   Description  - Drop variables from the specified domain, optionally
+#                  limiting it to the specified variable.
+#
+#   Data         - $this        : The object.
+#                  $domain      : The name of the domain that is to have one
+#                                 or all of its variables dropped.
+#                  $name        : The name of the variable that is to be
+#                                 dropped.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub drop_db_variables($$;$)
+{
+
+    my($this, $domain, $name) = @_;
+
+    my $dummy;
+
+    return mtn_command($this, "drop_db_variables", \$dummy, $domain, $name);
 
 }
 #
@@ -681,7 +839,7 @@ sub descendents($\@@)
 #                  ancestors to other revisions specified within the list.
 #
 #   Data         - $this         : The object.
-#                  \@list        : A reference to a list that is to contain
+#                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
 #                                  descendents returned.
@@ -692,7 +850,7 @@ sub descendents($\@@)
 
 
 
-sub erase_ancestors($\@@)
+sub erase_ancestors($$;@)
 {
 
     my($this, $list, @revision_ids) = @_;
@@ -718,7 +876,7 @@ sub erase_ancestors($\@@)
 
 
 
-sub genkey($\$$$)
+sub genkey($$$$)
 {
 
     my($this, $ref, $key_id, $pass_phrase) = @_;
@@ -734,8 +892,8 @@ sub genkey($\$$$)
     {
 
 	my($i,
-	   @lines,
-	   $value);
+	   $kv_record,
+	   @lines);
 
 	if (! mtn_command($this, "genkey", \@lines, $key_id, $pass_phrase))
 	{
@@ -744,33 +902,17 @@ sub genkey($\$$$)
 
 	# Reformat the data into a structured record.
 
-	for ($i = 0, %$ref = (); $i <= $#lines; ++ $i)
+	# Get the key-value record.
+
+	$i = 0;
+	parse_kv_record(\@lines, \$i, \%genkey_keys, \$kv_record);
+
+	# Copy across the fields.
+
+	%$ref = ();
+	foreach my $key (CORE::keys(%$kv_record))
 	{
-	    if ($lines[$i] =~ m/^ *name \"/)
-	    {
-		get_quoted_value(@lines, $i, $value);
-		$$ref{name} = unescape($value);
-	    }
-	    elsif ($lines[$i] =~ m/^ *public_hash \[[^\]]+\]$/)
-	    {
-		($value) = ($lines[$i] =~ m/^ *public_hash \[([^\]]+)\]$/);
-		$$ref{public_hash} = $value;
-	    }
-	    elsif ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/)
-	    {
-		($value) = ($lines[$i] =~ m/^ *private_hash \[([^\]]+)\]$/);
-		$$ref{private_hash} = $value;
-	    }
-	    elsif ($lines[$i] =~ m/^ *public_location \"/)
-	    {
-		get_quoted_value(@lines, $i, $value);
-		$$ref{public_location} = unescape($value);
-	    }
-	    elsif ($lines[$i] =~ m/^ *private_location \"/)
-	    {
-		get_quoted_value(@lines, $i, $value);
-		$$ref{private_location} = unescape($value);
-	    }
+	    $$ref{$key} = $kv_record->{$key};
 	}
 
 	return 1;
@@ -796,7 +938,7 @@ sub genkey($\$$$)
 
 
 
-sub get_attributes($\$$)
+sub get_attributes($$$)
 {
 
     my($this, $ref, $file_name) = @_;
@@ -805,7 +947,7 @@ sub get_attributes($\$$)
 
     # This command was renamed in version 0.36 (i/f version 5.x).
 
-    if ($this->{mtn_aif_major} >= 5)
+    if (can($this, MTN_GET_ATTRIBUTES))
     {
 	$cmd = "get_attributes";
     }
@@ -825,12 +967,7 @@ sub get_attributes($\$$)
     {
 
 	my($i,
-	   $j,
-	   $key,
-	   @lines,
-	   $list,
-	   $state,
-	   $value);
+	   @lines);
 
 	if (! mtn_command($this, $cmd, \@lines, $file_name))
 	{
@@ -839,24 +976,31 @@ sub get_attributes($\$$)
 
 	# Reformat the data into a structured array.
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *attr \"/)
+	    if ($lines[$i] =~ m/$io_stanza_re/)
 	    {
-		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
-		($key, $value) = split(/\" \"/, $list);
-		if ($lines[++ $i] =~ m/^ *state \"/)
-		{
-		    ($state) = ($lines[$i] =~ m/^ *state \"([^\"]+)\"$/);
-		}
-		else
+		my $kv_record;
+
+		# Get the next key-value record.
+
+		parse_kv_record(\@lines,
+				\$i,
+				\%get_attributes_keys,
+				\$kv_record);
+		-- $i;
+
+		# Validate it in terms of expected fields and store.
+
+		if (exists($kv_record->{attr}))
 		{
 		    &$croaker("Corrupt attributes list, expected state field "
-			      . "but didn't find it");
+			      . "but didn't find it")
+			unless (exists($kv_record->{state}));
+		    push(@$ref, {attribute => $kv_record->{attr}->[0],
+				 value     => $kv_record->{attr}->[1],
+				 state     => $kv_record->{state}});
 		}
-		$$ref[$j ++] = {attribute => unescape($key),
-				value     => unescape($value),
-				state     => $state};
 	    }
 	}
 
@@ -873,7 +1017,7 @@ sub get_attributes($\$$)
 #   Description  - Get the revision upon which the workspace is based.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -881,7 +1025,7 @@ sub get_attributes($\$$)
 
 
 
-sub get_base_revision_id($\$)
+sub get_base_revision_id($$)
 {
 
     my($this, $buffer) = @_;
@@ -907,7 +1051,7 @@ sub get_base_revision_id($\$)
 #                  recently changed, relative to the specified revision.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The id of the revision of the manifest that
 #                                 is to be returned.
@@ -919,13 +1063,12 @@ sub get_base_revision_id($\$)
 
 
 
-sub get_content_changed($\@$$)
+sub get_content_changed($$$$)
 {
 
     my($this, $list, $revision_id, $file_name) = @_;
 
     my($i,
-       $j,
        @lines);
 
     # Run the command and get the data.
@@ -940,11 +1083,11 @@ sub get_content_changed($\@$$)
 
     # Reformat the data into a list.
 
-    for ($i = $j = 0, @$list = (); $i <= $#lines; ++ $i)
+    for ($i = 0, @$list = (); $i < scalar(@lines); ++ $i)
     {
-	if ($lines[$i] =~ m/^ *content_mark \[[^\]]+\]$/)
+	if ($lines[$i] =~ m/^ *content_mark \[[0-9a-f]+\]$/)
 	{
-	    ($$list[$j ++]) = ($lines[$i] =~ m/^ *content_mark \[([^\]]+)\]$/);
+	    push(@$list, ($lines[$i] =~ m/^ *content_mark \[([0-9a-f]+)\]$/));
 	}
     }
 
@@ -961,7 +1104,7 @@ sub get_content_changed($\@$$)
 #                  specified target revision.
 #
 #   Data         - $this               : The object.
-#                  \$buffer            : A reference to a buffer that is to
+#                  $buffer             : A reference to a buffer that is to
 #                                        contain the output from this command.
 #                  $source_revision_id : The source revision id.
 #                  $file_name          : The name of the file that is to be
@@ -974,7 +1117,7 @@ sub get_content_changed($\@$$)
 
 
 
-sub get_corresponding_path($\$$$$)
+sub get_corresponding_path($$$$$)
 {
 
     my($this, $buffer, $source_revision_id, $file_name, $target_revision_id)
@@ -996,16 +1139,95 @@ sub get_corresponding_path($\$$$$)
 
     # Extract the file name.
 
-    for ($i = 0, $$buffer = ""; $i <= $#lines; ++ $i)
+    for ($i = 0, $$buffer = ""; $i < scalar(@lines); ++ $i)
     {
 	if ($lines[$i] =~ m/^ *file \"/)
 	{
-	    get_quoted_value(@lines, $i, $$buffer);
+	    get_quoted_value(\@lines, \$i, $buffer);
 	    $$buffer = unescape($$buffer);
 	}
     }
 
     return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_current_revision
+#
+#   Description  - Get the revision information for the current revision,
+#                  optionally limiting the output by using the specified
+#                  options and file restrictions.
+#
+#   Data         - $this        : The object.
+#                  $ref         : A reference to a buffer or an array that is
+#                                 to contain the output from this command.
+#                  $options     : A reference to a list containing the options
+#                                 to use.
+#                  @paths       : A list of files or directories that are to
+#                                 be reported on instead of the entire
+#                                 workspace.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub get_current_revision($$;$@)
+{
+
+    my($this, $ref, $options, @paths) = @_;
+
+    my($i,
+       @opts);
+
+    # Process any options.
+
+    if (defined($options))
+    {
+	for ($i = 0; $i < scalar(@$options); ++ $i)
+	{
+	    if ($$options[$i] eq "depth" || $$options[$i] eq "exclude")
+	    {
+		push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    }
+	    else
+	    {
+		push(@opts, {key => $$options[$i], value => ""});
+	    }
+	}
+    }
+
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command_with_options($this,
+					"get_current_revision",
+					$ref,
+					\@opts,
+					@paths);
+    }
+    else
+    {
+
+	my @lines;
+
+	if (! mtn_command_with_options($this,
+				       "get_current_revision",
+				       \@lines,
+				       \@opts,
+				       @paths))
+	{
+	    return;
+	}
+	parse_revision_data($ref, \@lines);
+
+	return 1;
+
+    }
 
 }
 #
@@ -1017,7 +1239,7 @@ sub get_corresponding_path($\$$$$)
 #                  commit was done in the workspace.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -1025,7 +1247,7 @@ sub get_corresponding_path($\$$$$)
 
 
 
-sub get_current_revision_id($\$)
+sub get_current_revision_id($$)
 {
 
     my($this, $buffer) = @_;
@@ -1045,13 +1267,92 @@ sub get_current_revision_id($\$)
 #
 ##############################################################################
 #
+#   Routine      - get_db_variables
+#
+#   Description  - Get the variables stored in the database, optionally
+#                  limiting it to the specified domain.
+#
+#   Data         - $this        : The object.
+#                  $ref         : A reference to a buffer or an array that is
+#                                 to contain the output from this command.
+#                  $domain      : The name of the domain that is to have its
+#                                 variables listed.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub get_db_variables($$;$)
+{
+
+    my($this, $ref, $domain) = @_;
+
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command($this, "get_db_variables", $ref, $domain);
+    }
+    else
+    {
+
+	my($domain_name,
+	   $i,
+	   @lines,
+	   $list,
+	   $name,
+	   $value);
+
+	if (! mtn_command($this, "get_db_variables", \@lines, $domain))
+	{
+	    return;
+	}
+
+	# Reformat the data into a structured array. We cannot use
+	# parse_kv_record here as we can have multiple `entry' fields in each
+	# record block.
+
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
+	{
+	    if ($lines[$i] =~ m/^ *domain \"/)
+	    {
+		get_quoted_value(\@lines, \$i, \$domain_name);
+	    }
+	    if ($lines[$i] =~ m/^ *entry \"/)
+	    {
+		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
+		($name, $value) = split(/\" \"/, $list);
+		if (defined($domain_name))
+		{
+		    push(@$ref, {domain => unescape($domain_name),
+				 name   => unescape($name),
+				 value  => unescape($value)});
+		}
+		else
+		{
+		    &$croaker("Corrupt variables list, expected domain field "
+			      . "but didn't find it");
+		}
+	    }
+	}
+
+	return 1;
+
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_file
 #
 #   Description  - Get the contents of the file referenced by the specified
 #                  file id.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_id     : The file id of the file that is to be
 #                                 returned.
@@ -1061,7 +1362,7 @@ sub get_current_revision_id($\$)
 
 
 
-sub get_file($\$$)
+sub get_file($$$)
 {
 
     my($this, $buffer, $file_id) = @_;
@@ -1079,7 +1380,7 @@ sub get_file($\$$)
 #                  workspace revision is used.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_name   : The name of the file to be fetched.
 #                  $revision_id : The revision id upon which the file contents
@@ -1090,20 +1391,20 @@ sub get_file($\$$)
 
 
 
-sub get_file_of($\$$;$)
+sub get_file_of($$$;$)
 {
 
     my($this, $buffer, $file_name, $revision_id) = @_;
 
-    my @options;
+    my @opts;
 
-    push(@options, {key => "r", value => $revision_id})
+    push(@opts, {key => "r", value => $revision_id})
 	unless (! defined($revision_id));
 
     return mtn_command_with_options($this,
 				    "get_file_of",
 				    $buffer,
-				    @options,
+				    \@opts,
 				    $file_name);
 
 }
@@ -1140,30 +1441,35 @@ sub get_manifest_of($$;$)
     else
     {
 
-	my($i,
+	my($attrs,
+	   $i,
 	   $id,
-	   $j,
+	   $key,
 	   @lines,
+	   $list,
 	   $name,
-	   $type);
+	   $type,
+	   $value);
 
 	if (! mtn_command($this, "get_manifest_of", \@lines, $revision_id))
 	{
 	    return;
 	}
 
-	# Reformat the data into a structured array.
+	# Reformat the data into a structured array. We cannot use
+	# parse_kv_record here as we can have multiple `attr' fields in each
+	# record block.
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
 	    $type = undef;
 	    if ($lines[$i] =~ m/^ *file \"/)
 	    {
 		$type = "file";
-		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/)
+		get_quoted_value(\@lines, \$i, \$name);
+		if ($lines[++ $i] =~ m/^ *content \[[0-9a-f]+\]$/)
 		{
-		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/);
+		    ($id) = ($lines[$i] =~ m/^ *content \[([0-9a-f]+)\]$/);
 		}
 		else
 		{
@@ -1174,20 +1480,30 @@ sub get_manifest_of($$;$)
 	    if ($lines[$i] =~ m/^ *dir \"/)
 	    {
 		$type = "directory";
-		get_quoted_value(@lines, $i, $name);
+		get_quoted_value(\@lines, \$i, \$name);
+	    }
+	    for ($attrs = [];
+		 ($i + 1) < scalar(@lines) && $lines[$i + 1] =~ m/^ *attr \"/;)
+	    {
+		($list) = ($lines[++ $i] =~ m/^ *\S+ \"(.+)\"$/);
+		($key, $value) = split(/\" \"/, $list);
+		push(@$attrs, {attribute => unescape($key),
+			       value     => unescape($value)});
 	    }
 	    if (defined($type))
 	    {
 		if ($type eq "file")
 		{
-		    $$ref[$j ++] = {type    => $type,
-				    name    => unescape($name),
-				    file_id => $id};
+		    push(@$ref, {type       => $type,
+				 name       => unescape($name),
+				 file_id    => $id,
+				 attributes => $attrs});
 		}
 		else
 		{
-		    $$ref[$j ++] = {type => $type,
-				    name => unescape($name)};
+		    push(@$ref, {type       => $type,
+				 name       => unescape($name),
+				 attributes => $attrs});
 		}
 	    }
 	}
@@ -1206,7 +1522,7 @@ sub get_manifest_of($$;$)
 #                  directory.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $option_name : The name of the option to be fetched.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1215,7 +1531,7 @@ sub get_manifest_of($$;$)
 
 
 
-sub get_option($\$$)
+sub get_option($$$)
 {
 
     my($this, $buffer, $option_name) = @_;
@@ -1248,7 +1564,7 @@ sub get_option($\$$)
 
 
 
-sub get_revision($\$$)
+sub get_revision($$$)
 {
 
     my($this, $ref, $revision_id) = @_;
@@ -1263,156 +1579,48 @@ sub get_revision($\$$)
     else
     {
 
-	my($attr,
-	   $from_id,
-	   $from_name,
-	   $i,
-	   $id,
-	   $j,
-	   @lines,
-	   $name,
-	   $to_id,
-	   $to_name,
-	   $value);
+	my @lines;
 
 	if (! mtn_command($this, "get_revision", \@lines, $revision_id))
 	{
 	    return;
 	}
-
-	# Reformat the data into a structured array.
-
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
-	{
-	    if ($lines[$i] =~ m/^ *add_dir \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		$$ref[$j ++] = {type => "add_dir",
-				name => unescape($name)};
-	    }
-	    elsif ($lines[$i] =~ m/^ *add_file \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *content \[[^\]]+\]$/)
-		{
-		    ($id) = ($lines[$i] =~ m/^ *content \[([^\]]+)\]$/);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected content field but "
-			      . "didn't find it");
-		}
-		$$ref[$j ++] = {type    => "add_file",
-				name    => unescape($name),
-				file_id => $id};
-	    }
-	    elsif ($lines[$i] =~ m/^ *clear \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *attr \"/)
-		{
-		    get_quoted_value(@lines, $i, $attr);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected attr field but "
-			      . "didn't find it");
-		}
-		$$ref[$j ++] = {type      => "clear",
-				name      => unescape($name),
-				attribute => unescape($attr)};
-	    }
-	    elsif ($lines[$i] =~ m/^ *delete \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		$$ref[$j ++] = {type => "delete",
-				name => unescape($name)};
-	    }
-	    elsif ($lines[$i] =~ m/^ *new_manifest \[[^\]]+\]$/)
-	    {
-		($id) = ($lines[$i] =~ m/^ *new_manifest \[([^\]]+)\]$/);
-		$$ref[$j ++] = {type        => "new_manifest",
-				manifest_id => $id};
-	    }
-	    elsif ($lines[$i] =~ m/^ *old_revision \[[^\]]*\]$/)
-	    {
-		($id) = ($lines[$i] =~ m/^ *old_revision \[([^\]]*)\]$/);
-		$$ref[$j ++] = {type        => "old_revision",
-				revision_id => $id};
-	    }
-	    elsif ($lines[$i] =~ m/^ *patch \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *from \[[^\]]+\]$/)
-		{
-		    ($from_id) = ($lines[$i] =~ m/^ *from \[([^\]]+)\]$/);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected from field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *to \[[^\]]+\]$/)
-		{
-		    ($to_id) = ($lines[$i] =~ m/^ *to \[([^\]]+)\]$/);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected to field but didn't "
-			      . "find it");
-		}
-		$$ref[$j ++] = {type         => "patch",
-				name         => unescape($name),
-				from_file_id => $from_id,
-				to_file_id   => $to_id};
-	    }
-	    elsif ($lines[$i] =~ m/^ *rename \"/)
-	    {
-		get_quoted_value(@lines, $i, $from_name);
-		if ($lines[++ $i] =~ m/^ *to \"/)
-		{
-		    get_quoted_value(@lines, $i, $to_name);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected to field but didn't "
-			      . "find it");
-		}
-		$$ref[$j ++] = {type      => "rename",
-				from_name => unescape($from_name),
-				to_name   => unescape($to_name)};
-	    }
-	    elsif ($lines[$i] =~ m/^ *set \"/)
-	    {
-		get_quoted_value(@lines, $i, $name);
-		if ($lines[++ $i] =~ m/^ *attr \"/)
-		{
-		    get_quoted_value(@lines, $i, $attr);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected attr field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *value \"/)
-		{
-		    get_quoted_value(@lines, $i, $value);
-		}
-		else
-		{
-		    &$croaker("Corrupt revision, expected value field but "
-			      . "didn't find it");
-		}
-		$$ref[$j ++] = {type      => "set",
-				name      => unescape($name),
-				attribute => unescape($attr),
-				value     => unescape($value)};
-	    }
-	}
+	parse_revision_data($ref, \@lines);
 
 	return 1;
 
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_workspace_root
+#
+#   Description  - Get the absolute path for the current workspace's root
+#                  directory.
+#
+#   Data         - $this        : The object.
+#                  $buffer      : A reference to a buffer that is to contain
+#                                 the output from this command.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub get_workspace_root($$)
+{
+
+    my($this, $buffer) = @_;
+
+    if (! mtn_command($this, "get_workspace_root", $buffer))
+    {
+	return;
+    }
+    chomp($$buffer);
+
+    return 1;
 
 }
 #
@@ -1448,18 +1656,16 @@ sub graph($$)
 
 	my($i,
 	   @lines,
-	   @parent_ids,
-	   $rev_id);
+	   @parent_ids);
 
 	if (! mtn_command($this, "graph", \@lines))
 	{
 	    return;
 	}
-	for ($i = 0, @$ref = (); $i <= $#lines; ++ $i)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
 	    @parent_ids = split(/ /, $lines[$i]);
-	    $rev_id = shift(@parent_ids);
-	    $$ref[$i] = {revision_id => $rev_id,
+	    $$ref[$i] = {revision_id => shift(@parent_ids),
 			 parent_ids  => [@parent_ids]};
 	}
 
@@ -1478,7 +1684,7 @@ sub graph($$)
 #                  is used.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $branch_name : The name of the branch that is to have its
 #                                 heads returned.
@@ -1488,7 +1694,7 @@ sub graph($$)
 
 
 
-sub heads($\@;$)
+sub heads($$;$)
 {
 
     my($this, $list, $branch_name) = @_;
@@ -1504,7 +1710,7 @@ sub heads($\@;$)
 #   Description  - Get the file id, i.e. hash, of the specified file.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_name   : The name of the file that is to have its id
 #                                 returned.
@@ -1514,7 +1720,7 @@ sub heads($\@;$)
 
 
 
-sub identify($\$$)
+sub identify($$$)
 {
 
     my($this, $buffer, $file_name) = @_;
@@ -1539,7 +1745,7 @@ sub identify($\$$)
 #   Description  - Get the version of the mtn automate interface.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -1547,7 +1753,7 @@ sub identify($\$$)
 
 
 
-sub interface_version($\$)
+sub interface_version($$)
 {
 
     my($this, $buffer) = @_;
@@ -1569,35 +1775,69 @@ sub interface_version($\$)
 #
 #   Routine      - inventory
 #
-#   Description  - Get the inventory for the current workspace.
+#   Description  - Get the inventory for the current workspace, optionally
+#                  limiting the output by using the specified options and file
+#                  restrictions.
 #
 #   Data         - $this        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
+#                  $options     : A reference to a list containing the options
+#                                 to use.
+#                  @paths       : A list of files or directories that are to
+#                                 be reported on instead of the entire
+#                                 workspace.
 #                  Return Value : True on success, otherwise false on failure.
 #
 ##############################################################################
 
 
 
-sub inventory($$)
+sub inventory($$;$@)
 {
 
-    my($this, $ref) = @_;
+    my($this, $ref, $options, @paths) = @_;
+
+    my @opts;
+
+    # Process any options.
+
+    if (defined($options))
+    {
+	for (my $i = 0; $i < scalar(@$options); ++ $i)
+	{
+	    if ($$options[$i] eq "depth" || $$options[$i] eq "exclude")
+	    {
+		push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    }
+	    else
+	    {
+		push(@opts, {key => $$options[$i], value => ""});
+	    }
+	}
+    }
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return mtn_command($this, "inventory", $ref);
+	return mtn_command_with_options($this,
+					"inventory",
+					$ref,
+					\@opts,
+					@paths);
     }
     else
     {
 
 	my @lines;
 
-	if (! mtn_command($this, "inventory", \@lines))
+	if (! mtn_command_with_options($this,
+				       "inventory",
+				       \@lines,
+				       \@opts,
+				       @paths))
 	{
 	    return;
 	}
@@ -1605,11 +1845,39 @@ sub inventory($$)
 	# The output format of this command was switched over to a basic_io
 	# stanza in 0.37 (i/f version 6.x).
 
-	if (! can($this, MTN_INVENTORY_IO_STANZA_FORMAT))
+	if (can($this, MTN_INVENTORY_IN_IO_STANZA_FORMAT))
+	{
+
+	    my $i;
+
+	    # Reformat the data into a structured array.
+
+	    for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
+	    {
+		if ($lines[$i] =~ m/$io_stanza_re/)
+		{
+		    my $kv_record;
+
+		    # Get the next key-value record and store it in the list.
+
+		    parse_kv_record(\@lines,
+				    \$i,
+				    \%inventory_keys,
+				    \$kv_record);
+		    -- $i;
+		    if (exists($kv_record->{birth}))
+		    {
+			$kv_record->{birth_id} = $kv_record->{birth};
+			delete($kv_record->{birth});
+		    }
+		    push(@$ref, $kv_record);
+		}
+	    }
+	}
+	else
 	{
 
 	    my($i,
-	       $j,
 	       $name,
 	       $ref1,
 	       $ref2,
@@ -1617,109 +1885,19 @@ sub inventory($$)
 
 	    # Reformat the data into a structured array.
 
-	    for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	    for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	    {
 		if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/)
 		{
 		    ($status, $ref1, $ref2, $name) =
 			($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/);
-		    $$ref[$j ++] = {status       => $status,
-				    crossref_one => $ref1,
-				    crossref_two => $ref2,
-				    name         => $name};
+		    push(@$ref, {status       => $status,
+				 crossref_one => $ref1,
+				 crossref_two => $ref2,
+				 name         => $name});
 		}
 	    }
 
-	}
-	else
-	{
-
-	    my(@changes,
-	       $fs_type,
-	       $i,
-	       $j,
-	       $list,
-	       $new_path,
-	       $new_type,
-	       $old_path,
-	       $old_type,
-	       $path,
-	       @status);
-
-	    # Reformat the data into a structured array.
-
-	    for ($i = $j = 0, $path = undef, @$ref = (); $i <= $#lines; ++ $i)
-	    {
-
-		# The `path' element always starts a new entry, the remaining
-		# lines may be in any order.
-
-		if ($lines[$i] =~ m/^ *path \"/)
-		{
-
-		    # Save any existing data to a new entry in the output list.
-
-		    if (defined($path))
-		    {
-			$$ref[$j ++] = {path     => unescape($path),
-					old_type => $old_type,
-					new_type => $new_type,
-					fs_type  => $fs_type,
-					old_path => unescape($old_path),
-					new_path => unescape($new_path),
-					status   => [@status],
-					changes  => [@changes]};
-		    }
-
-		    $fs_type = $new_path = $new_type = $old_path = $old_type =
-			$path = undef;
-		    @changes = @status = ();
-
-		    get_quoted_value(@lines, $i, $path);
-
-		}
-		elsif ($lines[$i] =~ m/^ *old_type \"/)
-		{
-		    ($old_type) = ($lines[$i] =~ m/^ *old_type \"([^\"]+)\"$/);
-		}
-		elsif ($lines[$i] =~ m/^ *new_type \"/)
-		{
-		    ($new_type) = ($lines[$i] =~ m/^ *new_type \"([^\"]+)\"$/);
-		}
-		elsif ($lines[$i] =~ m/^ *fs_type \"/)
-		{
-		    ($fs_type) = ($lines[$i] =~ m/^ *fs_type \"([^\"]+)\"$/);
-		}
-		elsif ($lines[$i] =~ m/^ *old_path \"/)
-		{
-		    get_quoted_value(@lines, $i, $old_path);
-		}
-		elsif ($lines[$i] =~ m/^ *new_path \"/)
-		{
-		    get_quoted_value(@lines, $i, $new_path);
-		}
-		elsif ($lines[$i] =~ m/^ *status \"/)
-		{
-		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
-		    @status = split(/\" \"/, $list);
-		}
-		elsif ($lines[$i] =~ m/^ *changes \"/)
-		{
-		    ($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
-		    @changes = split(/\" \"/, $list);
-		}
-	    }
-	    if (defined($path))
-	    {
-		$$ref[$j ++] = {path     => unescape($path),
-				old_type => $old_type,
-				new_type => $new_type,
-				fs_type  => $fs_type,
-				old_path => unescape($old_path),
-				new_path => unescape($new_path),
-				status   => [@status],
-				changes  => [@changes]};
-	    }
 	}
 
 	return 1;
@@ -1759,16 +1937,7 @@ sub keys($$)
     {
 
 	my($i,
-	   $id,
-	   $j,
-	   @lines,
-	   $list,
-	   $priv_hash,
-	   @priv_loc,
-	   $pub_hash,
-	   @pub_loc,
-	   $name,
-	   $type);
+	   @lines);
 
 	if (! mtn_command($this, "keys", \@lines))
 	{
@@ -1777,64 +1946,34 @@ sub keys($$)
 
 	# Reformat the data into a structured array.
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines;)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *name \"/)
+	    if ($lines[$i] =~ m/$io_stanza_re/)
 	    {
-		$priv_hash = $pub_hash = undef;
-		@priv_loc = @pub_loc = ();
-		get_quoted_value(@lines, $i, $name);
-		++ $i;
-		if ($lines[$i] =~ m/^ *public_hash \[[^\]]+\]$/)
+		my $kv_record;
+
+		# Get the next key-value record.
+
+		parse_kv_record(\@lines, \$i, \%keys_keys, \$kv_record);
+		-- $i;
+
+		# Validate it in terms of expected fields and store.
+
+		foreach my $key ("name", "public_hash", "public_location")
 		{
-		    ($pub_hash) =
-			($lines[$i ++] =~ m/^ *public_hash \[([^\]]+)\]$/);
+		    &$croaker("Corrupt keys list, expected " . $key
+			      . " field but didn't find it")
+			unless (exists($kv_record->{$key}));
+		}
+		if (exists($kv_record->{private_hash}))
+		{
+		    $kv_record->{type} = "public-private";
 		}
 		else
 		{
-		    &$croaker("Corrupt keys, expected public_hash field but "
-			      . "didn't find it");
+		    $kv_record->{type} = "public";
 		}
-		if ($lines[$i] =~ m/^ *private_hash \[[^\]]+\]$/)
-		{
-		    ($priv_hash) =
-			($lines[$i ++] =~ m/^ *private_hash \[([^\]]+)\]$/);
-		}
-		if ($lines[$i] =~ m/^ *public_location \"/)
-		{
-		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/);
-		    @pub_loc = split(/\" \"/, $list);
-		}
-		else
-		{
-		    &$croaker("Corrupt keys, expected public_location field "
-			      . "but didn't find it");
-		}
-		if ($i <= $#lines && $lines[$i] =~ m/^ *private_location \"/)
-		{
-		    ($list) = ($lines[$i ++] =~ m/^ *\S+ \"(.+)\"$/);
-		    @priv_loc = split(/\" \"/, $list);
-		}
-		if (defined($priv_hash))
-		{
-		    $$ref[$j ++] = {type              => "public-private",
-				    name              => unescape($name),
-				    public_hash       => $pub_hash,
-				    private_hash      => $priv_hash,
-				    public_locations  => [@pub_loc],
-				    private_locations => [@priv_loc]};
-		}
-		else
-		{
-		    $$ref[$j ++] = {type             => "public",
-				    name             => unescape($name),
-				    public_hash      => $pub_hash,
-				    public_locations => [@pub_loc]};
-		}
-	    }
-	    else
-	    {
-		++ $i;
+		push(@$ref, $kv_record);
 	    }
 	}
 
@@ -1851,7 +1990,7 @@ sub keys($$)
 #   Description  - Get a list of leaf revisions.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -1859,7 +1998,7 @@ sub keys($$)
 
 
 
-sub leaves($\@)
+sub leaves($$)
 {
 
     my($this, $list) = @_;
@@ -1876,7 +2015,7 @@ sub leaves($\@)
 #                  file id in packet format.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_id     : The file id of the file that is to be
 #                                 returned.
@@ -1886,7 +2025,7 @@ sub leaves($\@)
 
 
 
-sub packet_for_fdata($\$$)
+sub packet_for_fdata($$$)
 {
 
     my($this, $buffer, $file_id) = @_;
@@ -1903,7 +2042,7 @@ sub packet_for_fdata($\$$)
 #                  specified file ids in packet format.
 #
 #   Data         - $this         : The object.
-#                  \$buffer      : A reference to a buffer that is to contain
+#                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $from_file_id : The file id of the file that is to be used
 #                                  as the base in the delta operation.
@@ -1916,7 +2055,7 @@ sub packet_for_fdata($\$$)
 
 
 
-sub packet_for_fdelta($\$$$)
+sub packet_for_fdelta($$$$)
 {
 
     my($this, $buffer, $from_file_id, $to_file_id) = @_;
@@ -1934,7 +2073,7 @@ sub packet_for_fdelta($\$$$)
 #                  specified revision id in packet format.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $revision_id : The revision id of the revision that is to
 #                                 be returned.
@@ -1944,7 +2083,7 @@ sub packet_for_fdelta($\$$$)
 
 
 
-sub packet_for_rdata($\$$)
+sub packet_for_rdata($$$)
 {
 
     my($this, $buffer, $revision_id) = @_;
@@ -1961,7 +2100,7 @@ sub packet_for_rdata($\$$)
 #                  specified revision id in packet format.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $revision_id : The revision id of the revision that is to
 #                                 have its certs returned.
@@ -1971,7 +2110,7 @@ sub packet_for_rdata($\$$)
 
 
 
-sub packets_for_certs($\$$)
+sub packets_for_certs($$$)
 {
 
     my($this, $buffer, $revision_id) = @_;
@@ -1987,7 +2126,7 @@ sub packets_for_certs($\$$)
 #   Description  - Get a list of parents for the specified revision.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The revision id that is to have its parents
 #                                 returned.
@@ -1997,7 +2136,7 @@ sub packets_for_certs($\$$)
 
 
 
-sub parents($\@$)
+sub parents($$$)
 {
 
     my($this, $list, $revision_id) = @_;
@@ -2015,11 +2154,11 @@ sub parents($\@$)
 #                  for delta encoding).
 #
 #   Data         - $this         : The object.
-#                  \$buffer      : A reference to a buffer that is to contain
+#                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $base_file_id : The file id of the previous version of this
 #                                  file or undef if this is a new file.
-#                  \$contents    : A reference to a buffer containing the
+#                  $contents     : A reference to a buffer containing the
 #                                  file's contents.
 #                  Return Value  : True on success, otherwise false on
 #                                  failure.
@@ -2028,7 +2167,7 @@ sub parents($\@$)
 
 
 
-sub put_file($\$$\$)
+sub put_file($$$$)
 {
 
     my($this, $buffer, $base_file_id, $contents) = @_;
@@ -2066,9 +2205,9 @@ sub put_file($\$$\$)
 #   Description  - Put the specified revision data into the database.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to a buffer that is to contain
+#                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
-#                  \$contents   : A reference to a buffer containing the
+#                  $contents    : A reference to a buffer containing the
 #                                 revision's contents.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -2076,7 +2215,7 @@ sub put_file($\$$\$)
 
 
 
-sub put_revision($\$\$)
+sub put_revision($$$)
 {
 
     my($this, $buffer, $contents) = @_;
@@ -2101,7 +2240,7 @@ sub put_revision($\$\$)
 #                  parents.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -2109,7 +2248,7 @@ sub put_revision($\$\$)
 
 
 
-sub roots($\@)
+sub roots($$)
 {
 
     my($this, $list) = @_;
@@ -2126,7 +2265,7 @@ sub roots($\@)
 #                  selector.
 #
 #   Data         - $this        : The object.
-#                  \@list       : A reference to a list that is to contain the
+#                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $selector    : The selector that is to be used.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2135,12 +2274,203 @@ sub roots($\@)
 
 
 
-sub select($\@$)
+sub select($$$)
 {
 
     my($this, $list, $selector) = @_;
 
     return mtn_command($this, "select", $list, $selector);
+
+}
+#
+##############################################################################
+#
+#   Routine      - set_attribute
+#
+#   Description  - Set an attribute on the specified file or directory.
+#
+#   Data         - $this        : The object.
+#                  $path        : The name of the file or directory that is to
+#                                 have an attribute set.
+#                  $key         : The name of the attribute that as to be set.
+#                  $value       : The value that the attribute is to be set
+#                                 to.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub set_attribute($$$$)
+{
+
+    my($this, $path, $key, $value) = @_;
+
+    my $dummy;
+
+    return mtn_command($this, "set_attribute", \$dummy, $path, $key, $value);
+
+}
+#
+##############################################################################
+#
+#   Routine      - set_db_variable
+#
+#   Description  - Set the value of a database variable.
+#
+#   Data         - $this        : The object.
+#                  $domain      : The domain of the database variable.
+#                  $name        : The name of the variable to set.
+#                  $value       : The value to set the variable to.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub set_db_variable($$$$)
+{
+
+    my($this, $domain, $name, $value) = @_;
+
+    my($cmd,
+       $dummy);
+
+    # This command was renamed in version 0.39 (i/f version 7.x).
+
+    if (can($this, MTN_SET_DB_VARIABLE))
+    {
+	$cmd = "set_db_variable";
+    }
+    else
+    {
+	$cmd = "db_set";
+    }
+    return mtn_command($this, $cmd, \$dummy, $domain, $name, $value);
+
+}
+#
+##############################################################################
+#
+#   Routine      - show_conflicts
+#
+#   Description  - Get a list of conflicts between the first two head
+#                  revisions on the current branch, optionally one can specify
+#                  both head revision ids and the name of the branch that they
+#                  reside on.
+#
+#   Data         - $this              : The object.
+#                  $ref               : A reference to a buffer or an array
+#                                       that is to contain the output from
+#                                       this command.
+#                  $branch            : The name of the branch that the head
+#                                       revisions are on.
+#                  $left_revision_id  : The left hand head revision id.
+#                  $right_revision_id : The right hand head revision id.
+#                  Return Value       : True on success, otherwise false on
+#                                       failure.
+#
+##############################################################################
+
+
+
+sub show_conflicts($$;$$$)
+{
+
+    my($this, $ref, $branch, $left_revision_id, $right_revision_id) = @_;
+
+    my @opts;
+
+    # Validate the number of arguments and adjust them accordingly.
+
+    if (scalar(@_) == 4)
+    {
+
+	# Assume just the revision ids were given, so adjust the arguments
+	# accordingly.
+
+	$right_revision_id = $left_revision_id;
+	$left_revision_id = $branch;
+	$branch = undef;
+
+    }
+    elsif (scalar(@_) < 2 || scalar(@_) > 5)
+    {
+
+	# Wrong number of arguments.
+
+	$this->{error_msg} = "Wrong number of arguments given";
+	&$carper($this->{error_msg});
+	return;
+
+    }
+
+    # Process any options.
+
+    @opts = ({key => "branch", value => $branch}) if (defined($branch));
+
+    # Run the command and get the data, either as one lump or as a structured
+    # list.
+
+    if (ref($ref) eq "SCALAR")
+    {
+	return mtn_command_with_options($this,
+					"show_conflicts",
+					$ref,
+					\@opts,
+					$left_revision_id,
+					$right_revision_id);
+    }
+    else
+    {
+
+	my($i,
+	   @lines);
+
+	if (! mtn_command_with_options($this,
+				       "show_conflicts",
+				       \@lines,
+				       \@opts,
+				       $left_revision_id,
+				       $right_revision_id))
+	{
+	    return;
+	}
+
+	# Reformat the data into a structured array.
+
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
+	{
+	    if ($lines[$i] =~ m/$io_stanza_re/)
+	    {
+		my $kv_record;
+
+		# Get the next key-value record.
+
+		parse_kv_record(\@lines,
+				\$i,
+				\%show_conflicts_keys,
+				\$kv_record);
+		-- $i;
+
+		# Validate it in terms of expected fields and store.
+
+		if (exists($kv_record->{left}))
+		{
+		    foreach my $key ("ancestor", "right")
+		    {
+			&$croaker("Corrupt show_conflicts list, expected "
+				  . $key . " field but didn't find it")
+			    unless (exists($kv_record->{$key}));
+		    }
+		}
+		push(@$ref, $kv_record);
+	    }
+	}
+
+	return 1;
+
+    }
 
 }
 #
@@ -2180,15 +2510,8 @@ sub tags($$;$)
     else
     {
 
-	my(@branches,
-	   $i,
-	   $j,
-	   $k,
-	   @lines,
-	   $list,
-	   $rev,
-	   $signer,
-	   $tag);
+	my($i,
+	   @lines);
 
 	if (! mtn_command($this, "tags", \@lines, $branch_pattern))
 	{
@@ -2197,51 +2520,33 @@ sub tags($$;$)
 
 	# Reformat the data into a structured array.
 
-	for ($i = $j = 0, @$ref = (); $i <= $#lines; ++ $i)
+	for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	{
-	    if ($lines[$i] =~ m/^ *tag \"/)
+	    if ($lines[$i] =~ m/$io_stanza_re/)
 	    {
-		@branches = ();
-		get_quoted_value(@lines, $i, $tag);
-		if ($lines[++ $i] =~ m/^ *revision \[[^\]]+\]$/)
+		my $kv_record;
+
+		# Get the next key-value record.
+
+		parse_kv_record(\@lines, \$i, \%tags_keys, \$kv_record);
+		-- $i;
+
+		# Validate it in terms of expected fields and store.
+
+		if (exists($kv_record->{tag}))
 		{
-		    ($rev) = ($lines[$i] =~ m/^ *revision \[([^\]]+)\]$/);
-		}
-		else
-		{
-		    &$croaker("Corrupt tags list, expected revision field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *signer \"/)
-		{
-		    get_quoted_value(@lines, $i, $signer);
-		}
-		else
-		{
-		    &$croaker("Corrupt tags list, expected signer field but "
-			      . "didn't find it");
-		}
-		if ($lines[++ $i] =~ m/^ *branches/)
-		{
-		    if ($lines[$i] =~ m/^ *branches \".+\"$/)
+		    foreach my $key ("revision", "signer")
 		    {
-			($list) = ($lines[$i] =~ m/^ *branches \"(.+)\"$/);
-			@branches = split(/\" \"/, $list);
-			for ($k = 0; $k <= $#branches; ++ $k)
-			{
-			    $branches[$k] = unescape($branches[$k]);
-			}
+			&$croaker("Corrupt tags list, expected " . $key
+				  . " field but didn't find it")
+			    unless (exists($kv_record->{$key}));
 		    }
+		    $kv_record->{branches} = []
+			unless (exists($kv_record->{branches}));
+		    $kv_record->{revision_id} = $kv_record->{revision};
+		    delete($kv_record->{revision});
+		    push(@$ref, $kv_record);
 		}
-		else
-		{
-		    &$croaker("Corrupt tags list, expected branches field but "
-			      . "didn't find it");
-		}
-		$$ref[$j ++] = {tag         => unescape($tag),
-				revision_id => $rev,
-				signer      => unescape($signer),
-				branches    => [@branches]};
 	    }
 	}
 
@@ -2259,9 +2564,9 @@ sub tags($$;$)
 #                  out first.
 #
 #   Data         - $this         : The object.
-#                  \@list        : A reference to a list that is to contain
+#                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
-#                  $revision_ids : The revision ids that are to be sorted with
+#                  @revision_ids : The revision ids that are to be sorted with
 #                                  the ancestors coming first.
 #                  Return Value  : True on success, otherwise false on
 #                                  failure.
@@ -2270,7 +2575,7 @@ sub tags($$;$)
 
 
 
-sub toposort($\@@)
+sub toposort($$@)
 {
 
     my($this, $list, @revision_ids) = @_;
@@ -2301,28 +2606,54 @@ sub can($$)
 
     my($this, $feature) = @_;
 
-    if ($feature == MTN_IGNORE_SUSPEND_CERTS)
+    if ($feature == MTN_DROP_ATTRIBUTE
+	|| $feature == MTN_GET_ATTRIBUTES
+	|| $feature == MTN_SET_ATTRIBUTE)
     {
 
-	# This is only available from version 0.37 (i/f version 6.x).
+	# These are only available from version 0.36 (i/f version 5.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 5);
+
+    }
+    elsif ($feature == MTN_IGNORE_SUSPEND_CERTS
+	   || $feature == MTN_INVENTORY_IN_IO_STANZA_FORMAT
+	   || $feature == MTN_USE_P_SELECTOR)
+    {
+
+	# These are only available from version 0.37 (i/f version 6.x).
 
 	return 1 if ($this->{mtn_aif_major} >= 6);
 
     }
-    elsif ($feature == MTN_INVENTORY_IO_STANZA_FORMAT)
+    elsif ($feature == MTN_DROP_DB_VARIABLES
+	   || $feature == MTN_GET_CURRENT_REVISION
+	   || $feature == MTN_GET_DB_VARIABLES
+	   || $feature == MTN_INVENTORY_TAKE_OPTIONS
+	   || $feature == MTN_SET_DB_VARIABLE)
     {
 
-	# This is only available from version 0.37 (i/f version 6.x).
+	# These are only available from version 0.39 (i/f version 7.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 6);
+	return 1 if ($this->{mtn_aif_major} >= 7);
 
     }
-    elsif ($feature == MTN_P_SELECTOR)
+    elsif ($feature == MTN_DB_GET)
     {
 
-	# This is only available from version 0.37 (i/f version 6.x).
+	# This is only available prior version 0.39 (i/f version 7.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 6);
+	return 1 if ($this->{mtn_aif_major} < 7);
+
+    }
+    elsif ($feature == MTN_GET_WORKSPACE_ROOT
+	   || $feature == MTN_INVENTORY_INCLUDE_BIRTH_ID
+	   || $feature == MTN_SHOW_CONFLICTS)
+    {
+
+	# These are only available from version 0.41 (i/f version 8.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 8);
 
     }
     else
@@ -2336,6 +2667,154 @@ sub can($$)
     }
 
     return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - closedown
+#
+#   Description  - If started then stop the mtn subprocess.
+#
+#   Data         - $this : The object.
+#
+##############################################################################
+
+
+
+sub closedown($)
+{
+
+    my $this = $_[0];
+
+    my($err_msg,
+       $i,
+       $ret_val);
+
+    if ($this->{mtn_pid} != 0)
+    {
+	close($this->{mtn_in});
+	close($this->{mtn_out});
+	close($this->{mtn_err});
+	for ($i = 0; $i < 3; ++ $i)
+	{
+	    $ret_val = 0;
+
+	    # Make sure that the eval block below does not affect any existing
+	    # exception status.
+
+	    {
+		local $@;
+		eval
+		{
+		    local $SIG{ALRM} = sub { die("internal sigalarm"); };
+		    alarm(5);
+		    $ret_val = waitpid($this->{mtn_pid}, 0);
+		    alarm(0);
+		};
+	    }
+	    if ($ret_val == $this->{mtn_pid})
+	    {
+		last;
+	    }
+	    elsif ($ret_val == 0)
+	    {
+		if ($i == 0)
+		{
+		    kill("TERM", $this->{mtn_pid});
+		}
+		else
+		{
+		    kill("KILL", $this->{mtn_pid});
+		}
+	    }
+	    else
+	    {
+		if ($! != ECHILD)
+		{
+		    $err_msg = $!;
+		    kill("KILL", $this->{mtn_pid});
+		    &$croaker("waitpid failed: $err_msg");
+		}
+	    }
+	}
+	$this->{poll} = undef;
+	$this->{mtn_pid} = 0;
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_db_name
+#
+#   Description  - Return the the file name of the Monotone database as given
+#                  to the constructor.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The file name of the database as given to
+#                                 the constructor or undef if no database was
+#                                 given.
+#
+##############################################################################
+
+
+
+sub get_db_name($)
+{
+
+    my $this = $_[0];
+
+    return $this->{db_name};
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_error_message
+#
+#   Description  - Return the message for the last error reported by this
+#                  class.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The message for the last error detected, or
+#                                 an empty string if nothing has gone wrong
+#                                 yet.
+#
+##############################################################################
+
+
+
+sub get_error_message($)
+{
+
+    my $this = $_[0];
+
+    return $this->{error_msg};
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_pid
+#
+#   Description  - Return the process id of the mtn automate stdio process.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The process id of the mtn automate stdio
+#                                 process, or zero if no process is thought to
+#                                 be running.
+#
+##############################################################################
+
+
+
+sub get_pid($)
+{
+
+    my $this = $_[0];
+
+    return $this->{mtn_pid};
 
 }
 #
@@ -2390,6 +2869,74 @@ sub ignore_suspend_certs($$)
     }
 
     return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - register_db_locked_handler
+#
+#   Description  - Register the specified routine as a database locked handler
+#                  for this class. This is both a class as well as an object
+#                  method. When used as a class method, the specified database
+#                  locked handler is used as the default handler for all those
+#                  objects that do not specify their own handlers.
+#
+#   Data         - $this        : Either the object, the package name or not
+#                                 present depending upon how this method is
+#                                 called.
+#                  $handler     : A reference to the database locked handler
+#                                 routine. If this is not provided then the
+#                                 existing database locked handler routine is
+#                                 unregistered and database locking clashes
+#                                 are handled in the default way.
+#                  $client_data : The client data that is to be passed to the
+#                                 registered database locked handler when it
+#                                 is called.
+#
+##############################################################################
+
+
+
+sub register_db_locked_handler(;$$$)
+{
+
+    my $this;
+    if (ref($_[0]) eq __PACKAGE__)
+    {
+	$this = shift();
+    }
+    elsif ($_[0] eq __PACKAGE__)
+    {
+	shift();
+    }
+    my($handler, $client_data) = @_;
+
+    if (defined($this))
+    {
+	if (defined($handler))
+	{
+	    $this->{db_locked_handler} = $handler;
+	    $this->{db_locked_handler_data} = $client_data;
+	}
+	else
+	{
+	    $this->{db_locked_handler} = $this->{db_locked_handler_data} =
+		undef;
+	}
+    }
+    else
+    {
+	if (defined($handler))
+	{
+	    $db_locked_handler = $handler;
+	    $db_locked_handler_data = $client_data;
+	}
+	else
+	{
+	    $db_locked_handler = $db_locked_handler_data = undef;
+	}
+    }
 
 }
 #
@@ -2477,75 +3024,6 @@ sub register_error_handler($;$$$)
 #
 ##############################################################################
 #
-#   Routine      - register_db_locked_handler
-#
-#   Description  - Register the specified routine as a database locked handler
-#                  for this class. This is both a class as well as an object
-#                  method. When used as a class method, the specified database
-#                  locked handler is used as the default handler for all those
-#                  objects that do not specify their own handlers.
-#
-#   Data         - $this        : Either the object, the package name or not
-#                                 present depending upon how this method is
-#                                 called.
-#                  $handler     : A reference to the database locked handler
-#                                 routine. If this is not provided then the
-#                                 existing database locked handler routine is
-#                                 unregistered and database locking clashes
-#                                 are handled in the default way.
-#                  $client_data : The client data that is to be passed to the
-#                                 registered database locked handler when it
-#                                 is called.
-#
-##############################################################################
-
-
-
-sub register_db_locked_handler(;$$$)
-{
-
-    my $this;
-    if (ref($_[0]) eq __PACKAGE__)
-    {
-	$this = $_[0];
-	shift();
-    }
-    elsif ($_[0] eq __PACKAGE__)
-    {
-	shift();
-    }
-    my($handler, $client_data) = @_;
-
-    if (defined($this))
-    {
-	if (defined($handler))
-	{
-	    $this->{db_locked_handler} = $handler;
-	    $this->{db_locked_handler_data} = $client_data;
-	}
-	else
-	{
-	    $this->{db_locked_handler} = $this->{db_locked_handler_data} =
-		undef;
-	}
-    }
-    else
-    {
-	if (defined($handler))
-	{
-	    $db_locked_handler = $handler;
-	    $db_locked_handler_data = $client_data;
-	}
-	else
-	{
-	    $db_locked_handler = $db_locked_handler_data = undef;
-	}
-    }
-
-}
-#
-##############################################################################
-#
 #   Routine      - register_io_wait_handler
 #
 #   Description  - Register the specified routine as an I/O wait handler for
@@ -2577,8 +3055,7 @@ sub register_io_wait_handler(;$$$$)
     my $this;
     if (ref($_[0]) eq __PACKAGE__)
     {
-	$this = $_[0];
-	shift();
+	$this = shift();
     }
     elsif ($_[0] eq __PACKAGE__)
     {
@@ -2633,149 +3110,210 @@ sub register_io_wait_handler(;$$$$)
 #
 ##############################################################################
 #
-#   Routine      - get_db_name
+#   Routine      - parse_revision_data
 #
-#   Description  - Return the the file name of the Monotone database as given
-#                  to the constructor.
+#   Description  - Parse the specified revision data into a list of records.
 #
-#   Data         - $this        : The object.
-#                  Return Value : The file name of the database as given to
-#                                 the constructor or undef if no database was
-#                                 given.
+#   Data         - $list : A reference to a list that is to contain the
+#                          records.
+#                  $data : A reference to a list containing the revision data,
+#                          line by line.
 #
 ##############################################################################
 
 
 
-sub get_db_name($)
+sub parse_revision_data($$)
 {
 
-    my $this = $_[0];
+    my($list, $data) = @_;
 
-    return $this->{db_name};
+    my $i;
 
-}
-#
-##############################################################################
-#
-#   Routine      - get_error_message
-#
-#   Description  - Return the message for the last error reported by this
-#                  class.
-#
-#   Data         - $this        : The object.
-#                  Return Value : The message for the last error detected, or
-#                                 an empty string if nothing has gone wrong
-#                                 yet.
-#
-##############################################################################
+    # Reformat the data into a structured array.
 
-
-
-sub get_error_message($)
-{
-
-    my $this = $_[0];
-
-    return $this->{error_msg};
-
-}
-#
-##############################################################################
-#
-#   Routine      - get_pid
-#
-#   Description  - Return the process id of the mtn automate stdio process.
-#
-#   Data         - $this        : The object.
-#                  Return Value : The process id of the mtn automate stdio
-#                                 process, or zero if no process is thought to
-#                                 be running.
-#
-##############################################################################
-
-
-
-sub get_pid($)
-{
-
-    my $this = $_[0];
-
-    return $this->{mtn_pid};
-
-}
-#
-##############################################################################
-#
-#   Routine      - closedown
-#
-#   Description  - If started then stop the mtn subprocess.
-#
-#   Data         - $this : The object.
-#
-##############################################################################
-
-
-
-sub closedown($)
-{
-
-    my $this = $_[0];
-
-    my($err_msg,
-       $i,
-       $ret_val);
-
-    if ($this->{mtn_pid} != 0)
+    for ($i = 0, @$list = (); $i < scalar(@$data); ++ $i)
     {
-	close($this->{mtn_in});
-	close($this->{mtn_out});
-	close($this->{mtn_err});
-	for ($i = 0; $i < 3; ++ $i)
+	if ($$data[$i] =~ m/$io_stanza_re/)
 	{
-	    $ret_val = 0;
+	    my $kv_record;
 
-	    # Make sure that the eval block below does not affect any existing
-	    # exception status.
+	    # Get the next key-value record.
 
+	    parse_kv_record($data, \$i, \%revision_details_keys, \$kv_record);
+	    -- $i;
+
+	    # Validate it in terms of expected fields and copy data across to
+	    # the correct revision fields.
+
+	    if (exists($kv_record->{add_dir}))
 	    {
-		local $@;
-		eval
-		{
-		    local $SIG{ALRM} = sub { die("internal sigalarm"); };
-		    alarm(5);
-		    $ret_val = waitpid($this->{mtn_pid}, 0);
-		    alarm(0);
-		};
+		push(@$list, {type => "add_dir",
+			      name => $kv_record->{add_dir}});
 	    }
-	    if ($ret_val == $this->{mtn_pid})
+	    elsif (exists($kv_record->{add_file}))
 	    {
-		last;
+		&$croaker("Corrupt revision, expected content field but "
+			  . "didn't find it")
+		    unless (exists($kv_record->{content}));
+		push(@$list, {type    => "add_file",
+			      name    => $kv_record->{add_file},
+			      file_id => $kv_record->{content}});
 	    }
-	    elsif ($ret_val == 0)
+	    elsif (exists($kv_record->{clear}))
 	    {
-		if ($i == 0)
+		&$croaker("Corrupt revision, expected attr field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{attr}));
+		push(@$list, {type      => "clear",
+			      name      => $kv_record->{clear},
+			      attribute => $kv_record->{attr}});
+	    }
+	    elsif (exists($kv_record->{delete}))
+	    {
+		push(@$list, {type => "delete",
+			      name => $kv_record->{delete}});
+	    }
+	    elsif (exists($kv_record->{new_manifest}))
+	    {
+		push(@$list, {type        => "new_manifest",
+			      manifest_id => $kv_record->{new_manifest}});
+	    }
+	    elsif (exists($kv_record->{old_revision}))
+	    {
+		push(@$list, {type        => "old_revision",
+			      revision_id => $kv_record->{old_revision}});
+	    }
+	    elsif (exists($kv_record->{patch}))
+	    {
+		&$croaker("Corrupt revision, expected from field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{from}));
+		&$croaker("Corrupt revision, expected to field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{to}));
+		push(@$list, {type         => "patch",
+			      name         => $kv_record->{patch},
+			      from_file_id => $kv_record->{from},
+			      to_file_id   => $kv_record->{to}});
+	    }
+	    elsif (exists($kv_record->{rename}))
+	    {
+		&$croaker("Corrupt revision, expected to field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{to}));
+		push(@$list, {type      => "rename",
+			      from_name => $kv_record->{rename},
+			      to_name   => $kv_record->{to}});
+	    }
+	    elsif (exists($kv_record->{set}))
+	    {
+		&$croaker("Corrupt revision, expected attr field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{attr}));
+		&$croaker("Corrupt revision, expected value field but didn't "
+			  . "find it")
+		    unless (exists($kv_record->{value}));
+		push(@$list, {type      => "set",
+			      name      => $kv_record->{set},
+			      attribute => $kv_record->{attr},
+			      value     => $kv_record->{value}});
+	    }
+	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - parse_kv_record
+#
+#   Description  - Parse the specified data for a key-value style record, with
+#                  each record being separated by a white space line,
+#                  returning the extracted record.
+#
+#   Data         - $list         : A reference to the list that contains the
+#                                  data.
+#                  $index        : A reference to a variable containing the
+#                                  index of the first line of the record in
+#                                  the array. It is updated with the index of
+#                                  the first line after the key value record.
+#                  $key_type_map : A reference to the key type map, this is a
+#                                  map indexed by key name and has an
+#                                  enumeration as its value that describes the
+#                                  type of value that is to be read in.
+#                  $record       : A reference to a variable that is to be
+#                                  updated with the reference to the newly
+#                                  created record.
+#
+##############################################################################
+
+
+
+sub parse_kv_record($$$$)
+{
+
+    my($list, $index, $key_type_map, $record) = @_;
+
+    my($i,
+       $key,
+       $type,
+       $value);
+
+    for ($i = $$index, $$record = {};
+	 $i < scalar(@$list) && $$list[$i] =~ m/$io_stanza_re/;
+	 ++ $i)
+    {
+	($key) = ($$list[$i] =~ m/^ *([a-z_]+) \S/);
+	if (exists($$key_type_map{$key}))
+	{
+	    $type = $$key_type_map{$key};
+	    $value = undef;
+	    if ($type & BARE_PHRASE && $$list[$i] =~ m/^ *[a-z_]+ [a-z_]+$/)
+	    {
+		($value) = ($$list[$i] =~ m/^ *[a-z_]+ ([a-z_]+)$/);
+	    }
+	    elsif ($type & HEX_ID
+		   && $$list[$i] =~ m/^ *[a-z_]+ \[[0-9a-f]+\]$/)
+	    {
+		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]+)\]$/);
+	    }
+	    elsif ($type & OPTIONAL_HEX_ID
+		   && $$list[$i] =~ m/^ *[a-z_]+ \[[0-9a-f]*\]$/)
+	    {
+		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]*)\]$/);
+	    }
+	    elsif ($type & STRING && $$list[$i] =~ m/^ *[a-z_]+ \"/)
+	    {
+		get_quoted_value($list, \$i, \$value);
+		$value = unescape($value);
+	    }
+	    elsif ($type & STRING_ENUM
+		   && $$list[$i] =~ m/^ *[a-z_]+ \"[^\"]+\"$/)
+	    {
+		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \"([^\"]+)\"$/);
+	    }
+	    elsif ($type & STRING_LIST && $$list[$i] =~ m/^ *[a-z_]+ \".+\"$/)
+	    {
+		my $strings;
+		($strings) = ($$list[$i] =~ m/^ *[a-z_]+ \"(.+)\"$/);
+		foreach my $string (split(/\" \"/, $strings))
 		{
-		    kill("TERM", $this->{mtn_pid});
-		}
-		else
-		{
-		    kill("KILL", $this->{mtn_pid});
+		    push(@$value, unescape($string));
 		}
 	    }
 	    else
 	    {
-		if ($! != ECHILD)
-		{
-		    $err_msg = $!;
-		    kill("KILL", $this->{mtn_pid});
-		    &$croaker("waitpid failed: $err_msg");
-		}
+		die("Internal: Unsupported key type detected");
 	    }
+	    $$record->{$key} = $value;
 	}
-	$this->{poll} = undef;
-	$this->{mtn_pid} = 0;
+	else
+	{
+	    &$croaker("Unrecognised field " . $key . " found");
+	}
     }
+    $$index = $i;
 
 }
 #
@@ -2800,14 +3338,12 @@ sub closedown($)
 
 
 
-sub mtn_command($$$@)
+sub mtn_command($$$;@)
 {
 
     my($this, $cmd, $ref, @parameters) = @_;
 
-    my @dummy;
-
-    return mtn_command_with_options($this, $cmd, $ref, @dummy, @parameters);
+    return mtn_command_with_options($this, $cmd, $ref, [], @parameters);
 
 }
 #
@@ -2824,7 +3360,7 @@ sub mtn_command($$$@)
 #                  $cmd         : The mtn automate command that is to be run.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
-#                  \@options    : A reference to a list containing key/value
+#                  $options     : A reference to a list containing key/value
 #                                 anonymous hashes.
 #                  @parameters  : A list of parameters to be applied to the
 #                                 command.
@@ -2834,7 +3370,7 @@ sub mtn_command($$$@)
 
 
 
-sub mtn_command_with_options($$$\@@)
+sub mtn_command_with_options($$$$;@)
 {
 
     my($this, $cmd, $ref, $options, @parameters) = @_;
@@ -2895,16 +3431,19 @@ sub mtn_command_with_options($$$\@@)
 	# Send the command.
 
 	$in = $this->{mtn_in};
-	printf($in "o") unless ($#$options < 0);
-	foreach $opt (@$options)
+	if (scalar(@$options) > 0)
 	{
-	    printf($in "%d:%s%d:%s",
-		   length($opt->{key}),
-		   $opt->{key},
-		   length($opt->{value}),
-		   $opt->{value});
+	    printf($in "o");
+	    foreach $opt (@$options)
+	    {
+		printf($in "%d:%s%d:%s",
+		       length($opt->{key}),
+		       $opt->{key},
+		       length($opt->{value}),
+		       $opt->{value});
+	    }
+	    printf($in "e ");
 	}
-	printf($in "e ") unless ($#$options < 0);
 	printf($in "l%d:%s", length($cmd), $cmd);
 	foreach $param (@parameters)
 	{
@@ -2935,7 +3474,7 @@ sub mtn_command_with_options($$$\@@)
 	$db_locked_exception = $read_ok = $retry = 0;
 	eval
 	{
-	    $read_ok = mtn_read_output($this, $$buffer_ref);
+	    $read_ok = mtn_read_output($this, $buffer_ref);
 	};
 	$exception = $@;
 	if ($exception ne "")
@@ -3007,7 +3546,7 @@ sub mtn_command_with_options($$$\@@)
 #   Description  - Reads the output from mtn, removing chunk headers.
 #
 #   Data         - $this        : The object.
-#                  \$buffer     : A reference to the buffer that is to contain
+#                  $buffer      : A reference to the buffer that is to contain
 #                                 the data.
 #                  Return Value : True on success, otherwise false on failure.
 #
@@ -3015,7 +3554,7 @@ sub mtn_command_with_options($$$\@@)
 
 
 
-sub mtn_read_output($\$)
+sub mtn_read_output($$)
 {
 
     my($this, $buffer) = @_;
@@ -3187,19 +3726,23 @@ sub startup($)
     my(@args,
        $version);
 
-    # Switch to the default locale. We only want to parse the output from
-    # Monotone in one language!
-
-    local $ENV{LC_ALL} = "C";
-    local $ENV{LANG} = "C";
-
     if ($this->{mtn_pid} == 0)
     {
+
+	# Switch to the default locale. We only want to parse the output from
+	# Monotone in one language!
+
+	local $ENV{LC_ALL} = "C";
+	local $ENV{LANG} = "C";
+
+	# Start up the mtn subprocess.
+
 	$this->{mtn_err} = gensym();
 	@args = ("mtn");
 	push(@args, "--db=" . $this->{db_name}) if ($this->{db_name});
 	push(@args, "--ignore-suspend-certs")
 	    if (! $this->{honour_suspend_certs});
+	push(@args, @{$this->{mtn_options}});
 	push(@args, "automate", "stdio");
 	$this->{mtn_pid} = open3($this->{mtn_in},
 				 $this->{mtn_out},
@@ -3209,9 +3752,13 @@ sub startup($)
 	$this->{poll} = IO::Poll->new();
 	$this->{poll}->mask($this->{mtn_out} => POLLIN,
 			    $this->{mtn_out} => POLLPRI);
-	interface_version($this, $version);
+
+	# Get the interface version.
+
+	interface_version($this, \$version);
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
 	    ($version =~ m/^(\d+)\.(\d+)$/);
+
     }
 
 }
@@ -3223,21 +3770,22 @@ sub startup($)
 #   Description  - Get the contents of a quoted value that may span several
 #                  lines and contain escaped quotes.
 #
-#   Data         - \@list       : The reference to the list that contains the
-#                                 quoted string.
-#                  \$index      : The index of the line in the array
-#                                 containing the opening quote (assumed to be
-#                                 the first quote encountered). It is updated
-#                                 with the index of the line containing the
-#                                 closing quote at the end of the line.
-#                  \$buffer     : A reference to a buffer that is to contain
-#                                 the contents of the quoted string.
+#   Data         - $list   : A reference to the list that contains the quoted
+#                            string.
+#                  $index  : A reference to a variable containing the index of
+#                            the line in the array containing the opening
+#                            quote (assumed to be the first quote
+#                            encountered). It is updated with the index of the
+#                            line containing the closing quote at the end of
+#                            the line.
+#                  $buffer : A reference to a buffer that is to contain the
+#                            contents of the quoted string.
 #
 ##############################################################################
 
 
 
-sub get_quoted_value(\@\$\$)
+sub get_quoted_value($$$)
 {
 
     my($list, $index, $buffer) = @_;
