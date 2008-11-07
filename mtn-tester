@@ -1,9 +1,14 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
+
+# <UPDATE> - You may need to comment the next line out or change it to where
+#            you have the Monotone::AutomateStdio library installed.
 
 use lib "/home/aecoope/perl";
 
 use strict;
 use integer;
+use warnings;
+
 use Carp qw(cluck);
 use File::Basename;
 use POSIX qw(strftime);
@@ -26,16 +31,6 @@ my($data,
    %hash,
    @list,
    $mtn);
-
-Monotone::AutomateStdio->register_error_handler
-    (MTN_SEVERITY_ALL,
-     sub
-     {
-	 my($severity, $message) = @_;
-	 printf(STDERR "\n\n====================\nPROBLEM (%s): %s\n",
-		$severity, $message);
-	 cluck(); #die() if ($severity eq "error");
-     });
 
 my @test_list =
     ({fn   => \&Monotone::AutomateStdio::ancestors,
@@ -308,7 +303,8 @@ my @test_list =
       feat => MTN_GET_DB_VARIABLES,
       type => RECORD_LIST,
       prec => sub {
-	          print("Adding test variables.\n");
+	          my @list;
+		  print("Adding test variables.\n");
 		  $mtn->set_db_variable("test-vars", "var1", "hello");
 		  $mtn->set_db_variable("test-vars", "var2", "good bye");
 		  $mtn->set_db_variable("TST-vars",
@@ -578,7 +574,67 @@ my @test_list =
 	       "805c482bc9bb80cd393be7d3ba01a65377d91d9c",
 	       "afd43cf2ce01fa4513fb1673eae47be3b48008f6"]});
 
+print <<EOF;
+Monotone::AutomateStdio Test Harness Script
+
+NOTE:
+1) This test harness needs a copy of the venge.net database and specifically
+   the net.venge.monotone.contrib.lib.automate-stdio.test branch.
+
+2) WARNING: This test harness does modify the database by adding some
+   revisions. Do not sync these changes back into any proper database. Please
+   take a copy of a good database and remove all database variables by using
+   the mtn unset command.
+
+3) This script will probably need to be modified to make it work in your
+   environment. Look for <UPDATE> tokens in the source code for pointers as to
+   what may need to change.
+
+4) Do not come complaining to me when you use this script and it trashes
+   something. You should always make backup copies anyway. :-).
+
+Ctrl-C now if you do not like the above!
+
+Tony Cooper.
+
+[Press <Return> to start the tests]
+EOF
+readline(STDIN);
+
+# <UPDATE> - Enter your key id in the line below.
+
 $mtn = Monotone::AutomateStdio->new(["--key" => "aecooper\@coosoft.plus.com"]);
+
+$data = undef;
+if ($mtn->can(MTN_DB_GET))
+{
+    $data = undef if (! $mtn->db_get(\$data, "database", "default-server"));
+}
+else
+{
+    my @list;
+    $mtn->get_db_variables(\@list, "database");
+    foreach my $entry (@list)
+    {
+	if ($entry->{name} eq "default-server")
+	{
+	    $data = $entry->{value};
+	    last;
+	}
+    }
+}
+die("Your test database will sync to `" . $data . "' - this is unsafe")
+    if (defined($data));
+
+Monotone::AutomateStdio->register_error_handler
+    (MTN_SEVERITY_ALL,
+     sub
+     {
+	 my($severity, $message) = @_;
+	 printf(STDERR "\n\n====================\nPROBLEM (%s): %s\n",
+		$severity, $message);
+	 cluck();
+     });
 
 foreach my $test (@test_list)
 {
@@ -620,7 +676,6 @@ foreach my $test (@test_list)
 	    else
 	    {
 		print(Dumper(\%hash));
-
 	    }
 	}
 	elsif ($test->{type} == RECORD_LIST)
@@ -633,7 +688,6 @@ foreach my $test (@test_list)
 	    else
 	    {
 		print($data);
-
 	    }
 	    printf("  ---------- Structured Data ----------\n");
 	    if (! $test->{fn}($mtn, \@list, @{$test->{args}}))
@@ -643,7 +697,6 @@ foreach my $test (@test_list)
 	    else
 	    {
 		print(Dumper(\@list));
-
 	    }
 	}
 	elsif ($test->{type} == VARIABLE)
@@ -655,7 +708,6 @@ foreach my $test (@test_list)
 	    else
 	    {
 		print("Variable = `" . $data . "'\n");
-
 	    }
 	}
 	elsif ($test->{type} == CODE)
