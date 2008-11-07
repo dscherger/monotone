@@ -2146,6 +2146,7 @@ sub update_browser_state($$)
 	# Update the directory tree view.
 
 	$browser->{appbar}->set_status(__("Populating file details"));
+	$wm->update_gui();
 	$counter = 1;
 	$taking_our_time = 0;
 	get_revision_ids($browser, \@revision_ids);

@@ -118,7 +118,7 @@ sub display_annotation($$$)
     $template = sprintf("a%da2a*", $instance->{prefix_length});
     for ($i = 0; $i < scalar(@lines); ++ $i)
     {
-	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0,2];
+	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0, 2];
 	$lines[$i] =~ s/\s+$//;
 	$lines[$i] = expand($lines[$i]);
 	$max_len = $len if (($len = length($lines[$i])) > $max_len);
