@@ -6,6 +6,7 @@ WriteMakefile(
     NAME              => 'Monotone::AutomateStdio',
     VERSION_FROM      => 'lib/Monotone/AutomateStdio.pm',
     PREREQ_PM         => {},
+    'dist'            => { COMPRESS => 'gzip -9f', SUFFIX => '.gz' },
     ($] >= 5.005 ?
       (ABSTRACT_FROM  => 'lib/Monotone/AutomateStdio.pod',
        AUTHOR         => 'Anthony E Cooper <aecooper@coosoft.plus.com>') : ()),
