@@ -1,6 +1,9 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+
+Monotone::AutomateStdio v0.1
+============================
+
 0.01  Sun Nov  9 12:48:46 2008
 	- original version; created by h2xs 1.23 with options
 		-X -n Monotone::AutomateStdio
-
