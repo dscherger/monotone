@@ -1,3 +1,0 @@
-1) Sort out a test database for use with a mtn-tester (use a script to generate
-   the database rather than use a static db).
-2) Do CPAN stuff.
