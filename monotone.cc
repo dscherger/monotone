@@ -30,7 +30,6 @@
 #include "mt_version.hh"
 #include "option.hh"
 #include "paths.hh"
-#include "sha1.hh"
 #include "simplestring_xform.hh"
 #include "platform.hh"
 #include "work.hh"

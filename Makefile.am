@@ -71,7 +71,7 @@ MOST_SOURCES = 								\
 	legacy.cc legacy.hh uri.cc uri.hh				\
 	graph.cc graph.hh						\
 	roster_delta.cc roster_delta.hh					\
-	sha1.hh sha1.cc sha1_engine.hh                                  \
+	sha1.cc								\
 	pcrewrap.cc pcrewrap.hh						\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
