@@ -33,6 +33,11 @@ building and installation process for monotone
                            libbotan1.7-dev libsqlite3-dev libpcre3-dev     \
                            liblua5.1-0-dev libidn11-dev g++
 
+        on gentoo:
+
+           emerge autoconf automake gettext \
+                  boost zlib botan sqlite libpcre lua libidn
+
         on fedora (incomplete):
 
            yum install autoconf
