@@ -1,0 +1,52 @@
+[[tag migration-auto]]
+
+
+This is about what we do during [[MergeViaWorkingDir]] or [[WorkspaceConflicts]] in order to turn the "insane" (technical term) roster into a "sane" one so we can actually write it out.  This is not a resolution to the conflict! This is only the mechanical, least-effort repair that lets us get out to where we can take user interaction.
+
+There are seven kinds of conflicts that roster merge can produce: each is a subsection below.
+
+## node\_name\_conflict
+
+Attach somewhere, i.e. make up a name that we know does not exist (because we checked)
+
+Record name in left, right
+
++ left: parent name and basename
+
++ right: parent name and basename
+
+## file\_content\_conflict
+
+make up some content (with <<<< in)
+
+"add" left, right, "L"CA tempfiles
+
+## node\_attr\_conflict
+
+need: key, value on left; value on right
+
+## orphaned\_node\_conflict
+
+make up name, maybe in a subdir, attach it
+
+record old name / parent
+
+## rename\_target\_conflict
+
+attach both somewhere
+
+want to know what the old name(s) were
+
+## directory\_loop\_conflict
+
+this occurs from two directories a and b by renaming a to b/a on one side, b to a/b on the other
+
+attach somewhere
+
+## illegal\_name\_conflict
+
+attach somewhere
+
+## missing\_root\_dir
+
+create one

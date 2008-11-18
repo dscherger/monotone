@@ -1,0 +1,13 @@
+[[!tag migration-done]]
+
+This page should probably be called "SPKIWontBeEnough", since it will probably work, just not provide quite as strong a formalism as we want (if we strip clocks from it).
+
+---
+
+Paul suggested we consider formulating policy branches in terms of SPKI, or a general SPKI-like certificate soup that is unioned between participating databases. We walked about this for most of the morning, then Paul got ill and went home. We felt that the discussion came tantalizingly close to showing the equivalence between our previous discussions on policy branches and SPKI, but we kept missing the point. Finally we stumbled on a key issue that differentiates the two: policy branches include a *causal* notion of time, via the partial order implied by the ancestry graph. SPKI normally has access to clocks and time as well, but we explicitly removed that in the discussion because we dislike relying on clocks. This means that policy branches retain machinery to talk about revocation (and checkpointing trusted-ness when trust-incompatible changes to the rules occur) that we explicitly denied by saying that our quasi-SPKI should be clockless.
+
+---
+
+Another attempt to explain reasoning (telegraphically): We want indirection by project -- i.e., some way to refer to "monotone", not just "graydon's project".  In practice, founders disappear!  (And even come back evil, a few years later.)  Our development practices should not have single points of failure like that, and once a founder has gone the community norms are more important than their personal opinions.  So we need some kind of object that refers to the Project, independent of the founder per se.
+
+This object can't be a Project Key.  Either only one person holds that key, and you have the founder problem again.  Or else, you share the key among admins -- but then it is truly not possible to throw out any admin, once an admin is admitted they always have full root access to the project.  

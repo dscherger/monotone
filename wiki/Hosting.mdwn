@@ -1,0 +1,7 @@
+[[!tag migration-auto]]
+
+You can easily host monotone anywhere you can run a daemon.  With the "dumb server" support, you don't even need that -- all that is required is standard web hosting -- but this option is more experimental, and needs more work to be fully supported (want to help?).
+
+If those two options don't work for you, here are some other options to consider:
+  * http://mtn-host.prjek.net provides **free public monotone hosting**, with an easy-to-use web management interface.
+  * Virtual servers quite capable of running monotone are easily available in the $15-20/month USD range -- for example, [here](http://prgmr.com/xen/), [here](http://www.tektonic.net/vds.php?op=budget_plans), [here](http://www.budgetdedicated.com/), or [here](http://www.slicehost.com/) (we have not used any of these services, and this is not a particular recommendation -- if you have recommendations, by all means add them here).  If going this route, note that the monotone server can be a bit cpu and memory hungry -- we're working on reducing this, but in the mean time, you probably don't want the very smallest servers available.

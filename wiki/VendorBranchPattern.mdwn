@@ -1,0 +1,19 @@
+[[!tag migration-done]]
+
+If you are working on a project that has been partitioned, give each partition a branch. A partition could be upstream code.
+
+Then `merge_into_dir` each partition into your project. Use `explicit_merge` to integrate releases. If you have made some local changes that didn't make sense to push back upstream, monotone will try to maintain them.
+
+For example, let's say your project 'com.example.foo' uses sqlite. Instead of dumping sqlite into /sqlite of your project and committing it, give sqlite into a branch of it's own. Perhaps 'org.sqlite' is a good name. You can use this branch to track the sqlite development: perhaps only tracking releases, perhaps pulling from the sqlite VCS using tailor or some other magic.  Tag releases that you are interested in with meaningful tags 'sqlite-3.2.5'.
+
+Now execute
+
+    $ mtn merge_into_dir org.sqlite com.example.foo sqlite
+
+You can use the org.sqlite branch to play around with sqlite, and when you find a new version that you want to try, you can use `explicit_merge` (or `propagate`) to bring it into com.example.foo.
+
+Back to [[BestPractices]].
+
+--------
+
+> ''A step-by-step example would be a nice enhancement to this page and to the explaination given in the manual.  A counter-example to doing nested checkouts with pro's and con's would help illustrate the benefits of `merge_into_dir`.'' -- [[People/ChadWalstrom]]

@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Matthew Nicholson
+
+ * uses monotone since late 2005
+ * works on monotone since early 2006
+ * involved in monotone debian packaging and scratching his own itches
+ * contact: <matt@matt-land.com>, <http://matt-land.com>

@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Larry Hastings (lch)
+
+ * uses monotone since October 2005
+ * mostly doesn't work on monotone
+ * author of [m7](http://www.midwinter.com/~lch/programming/m7/) monotone front-end
+ * contact: <larry@hastings.org>

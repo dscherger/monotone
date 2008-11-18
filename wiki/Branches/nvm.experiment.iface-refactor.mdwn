@@ -1,0 +1,13 @@
+[[!tag migration-done]]
+Contact: [[People/NathanielSmith]]
+
+Some experimental UI and doc tweaks, in attempt to make things more
+streamlined and friendly to new users.
+
+Current changes: `setup` is renamed to `new_project`.  `pull` and
+`setup` have `--new-db` switches, avoiding the need to `db init` in
+almost all cases.  Tempted to rename `genkey` too...
+
+Todo: get feedback; update docs accordingly; write tests
+
+Status: [[status/Work_in_Progress]]

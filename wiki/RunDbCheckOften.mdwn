@@ -1,0 +1,11 @@
+[[!tag migration-auto]]
+
+Monotone is careful about data integrity, but there are limits to what can be reasonably protected against in software.
+                                                                          
+Running 'db check' on your databases on a regular basis is probably a good idea. 'db check' does a careful check of the consistency of the database, one that takes far longer than would be reasonable to run during normal operations.
+
+A good way to do this is to set up a cron job that runs db check, although this will take a lock on the database while it runs.
+
+Monotone databases also make good canaries for hardware failures. All known occurances of datbase corruption have been due to flakey hardware (byte swizzling in raid controllers). 
+
+[NOTE: this recommendation is pure paranoia.  We never ever get reports of monotone corrupting its database while running, monotone does extensive consistency checking during all normal operation, and the whole system architecture is designed to make sure that if corruption were to somehow occur, it would still be recoverable.  But paranoia is good!]

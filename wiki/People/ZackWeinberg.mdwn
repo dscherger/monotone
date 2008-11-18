@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Zack Weinberg (zwol)
+
+ * uses monotone since Jun 2006
+ * works on monotone since Jun 2006
+ * involved in workspace merge and various random hacks
+ * contact: zackw AT panix DOT com

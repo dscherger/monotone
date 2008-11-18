@@ -1,0 +1,10 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Lapo Luchini (lapo)
+
+ * uses monotone since Sep 2005
+ * works on monotone since Jan 2006
+ * involved in translation into Italian
+ * contact: <lapo@lapo.it>
+ * residence: [Milano, Italy](http://www.frappr.com/lapo)

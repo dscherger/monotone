@@ -1,0 +1,41 @@
+[[!tag migration-done]]
+
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Automated and assisted merging of divergent revisions.
+
+# Supported
+
+Monotone has very robust and powerful merging capabilities, which work based on the DAG history structure, independent of branches. These capabilities work regardless of how developers choose to use branches.
+
+The merge, propagate and explicit_merge commands all access the same underlying merging capabilities, and differ only in how they select the revisions to be merged. merge picks multiple heads of the same branch, propagate merges the changes along one branch into another, and `explicit_merge` lets you pick whatever you like.
+
+The `update` command will use the same merge between a repository head and local changes in the workspace, but this is in general not recommended.  Instead, recommended practice is to commit local changes first (multiple heads and explicit branches are cheap) and then merge with incoming revisions from other developers separately.
+
+Each of these commands will invoke external merge assistance tools (defined with merge hooks) to help developers choose changes and resolve conficts.
+
+# Example Usage
+
+A very common developer loop:
+
+     <edit files>
+     $ mtn commit
+     $ mtn pull
+     <new revisions incoming>
+     $ mtn merge
+     $ mtn sync
+     <local commits and merge node(s) outgoing, maybe more revisions incoming>
+     $ mtn update
+
+# Further Reference
+
+Manual and Tutorial Sections:
+
+ * [Branching and Merging](http://monotone.ca/monotone.html#Branching-and-Merging)
+ * [[DaggyFixes]] and [[ZipperMerge]]
+
+Features and Requirements in other evaluations:
+
+ * [[FreeBSD]] [VCSFeatureMerging](http://wikitest.freebsd.org/VCSFeatureMerging)

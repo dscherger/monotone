@@ -1,0 +1,91 @@
+[[!tag migration-done]]
+[[!toc levels=2]]
+
+Several key operations are still prohibitively slow in monotone.
+
+# Particularly painful commands
+
+## pull
+
+The speed of an initial pull of the db is very painful on projects of moderate size (eg. monotone's itself.)  See discussion at <http://colabti.org/irclogger/irclogger_log/monotone?date=2006-01-25,Wed&sel=#l263> for various thoughts about ways to make this faster.
+
+Also discussion at <http://colabti.org/irclogger/irclogger_log/monotone?date=2006-01-31,Tue&sel=#l13> for ideas.
+
+> pull has gotten far faster in 0.26+, and again in 0.30 - but it is still too slow for very large histories
+
+## annotate
+
+Annotate is really too slow to be used.  Investigation underway in net.venge.monotone.annotate branch of storing per-file revision DAG in the database as well to avoid parsing all revision rosters out of db while doing history traversal.
+
+> annotate has gotten much faster in 0.32, and again in 0.33, and should be quite usable now. It is still slow when compared to other systems, though.
+
+## restricted log
+
+Parsing each and every roster from the revision in question to the beginning of time really hurts.  Would benefit from the same per-file-DAG in database that annotate could use.
+
+Restricted log in backwards direction (from newer to older revisions) can already be made much faster by exploiting the roster markings. (The markings hold interesting revision ids per file, i.e. revisions where the file was born, or changed it contents, name, or attributes.) However, for this to work properly, the traversal alogorithm used by the log command has to be fixed. Currently it does not always visit nodes in topological order.
+
+> restricted log (in backwards direction) has gotten much faster in 0.32, exploiting the markings and revision heights.
+
+
+## update on a workspace with a large history/number of files
+
+Updating a large tree sometimes seems to take a good amount of time on a large tree and/or workspace. Finding the branch and revision to update seems to take an inordinate amount of time.
+
+> `mtn up` on an [[OpenEmbedded]] database can take 80s or more to output "updating along branch xxx". That seems an awfully long time to figure out the branch of the current checkout. Selecting the output target and actually updating was 5-10s more. During the initial 80s my CPU was mostly waiting for IO so it seems most if not all of the 100MB DB was being read into memory.
+> 
+> This has been traced to a number of sources, and should have improved **significantly** in monotone 0.30.
+
+# Specific changes that could speed things up
+
+ * on client pull of nvm*, 17% of the time is spent in get_uncommon_ancestors.  Could easily add a revision ancestry cache to make this faster; if still more speed is needed, could use an iterative deepening trick to make it much cheaper again (ask njs for details).
+ * the majority of server cpu time on pull (and almost certainly IO time as well) is spend reconstructing and inverting deltas; a smaller but still significant portion of client time is spent likewise.  Storing forward deltas should make a huge difference here, but might have adverse effects on performance in other places (e.g., checkout, diff).  The .piece-cache branch begins to implement probably the most promising approach for this.
+ * quite a bit of time is spent copying rosters and marking_map's.  This could probably be sped up -- one easy possibility might be to use a specialized pool-allocator for them?
+ * 'annotate' and restricted 'log' have to find changes to particular nodes.  The roster_delta code makes this quite easy, without dragging around a whole roster.  Implement an enumerator/iterator type interface, that takes a starting revision (or several) and a set of one or more nodes (something like a node_restriction, perhaps), and then walks the history graph, using roster_delta's to find changes to those particular nodes.
+ * 'ls unknown' and 'ls missing' both rely on finding a complete list of files existing in the tree.  This can (obviously) only change when a file is created, deleted, or renamed.  All of these operations cause directory mtimes to be modified.  Enhance the inodeprints code so that we can enumerate changes to the set of unversioned files without having to call `readdir()` on every directory.
+ * 'heads' spends a great deal of time verifying RSA signatures.  The validity of an RSA signature never changes; we could just store this in the db.  Many other operations are also affected -- for instance, commit, update, etc., all get the list of heads so that they can print the "note: this branch is unmerged..." messages.  For some operations, this call to notify_if_multiple_heads is where they spend the vast majority of their total time!
+ * 'update's algorithm to find the right revision to update to could be much faster -- right now it always calls erase_ancestors here, even though it knows that only a very small portion of the revision graph is relevant.
+
+# SQLite
+
+See [[PerformanceWork/SQLiteAnalyzeDiscussion]].
+
+# <a name="automated-performance-testsuite">Automated Performance Test Suite</a>
+
+Timothy Brownawell created the beginnings of such a beast.  You can find it in branch net.venge.monotone, in the file contrib/monoprof.sh
+
+# The ideal
+
+What would a perfect automated suite have?
+
+  * Ability to generate standardized summary reports, so we can easily compare versions, make graphs, etc.
+  * Ability to easily add new tests -- much of the point is to be able to run tests of everything, so we will notice when a change to one place has an unexpected consequence in another part of the code
+  * Ability to flexibly choose what to run and how -- we need to be able to request individual tests be run, be able to see what commands are used and execute those by hand (in whatever environment the suite sets up), run things under various profilers, etc.
+  * ...(what else would people find useful?)
+
+What should it test?
+
+  * run tests across different scalability scenarios -- different sizes of history, different sizes of tree (in file size, in number of bytes, and possibly different directory layouts -- deep vs. shallow, files per directory, etc), different edit patterns through history (is every file changed in every rev, or some subset, are some files hotter than others...)
+  * run tests across different setups -- for instance, cold cache tests versus hot cache tests (on linux this requires a scratch partition, I think OS X has some simpler mechanism...)
+  * ...(what else would people find useful?)
+
+What should it measure?
+
+  * cpu time (user, system)
+  * wall clock time
+  * peak memory use (not directly measurable on linux)
+  * time spent blocked on IO (strace can measure some of this)
+
+# The reality
+
+Obviously we aren't going to start by sitting down in an afternoon and writing the perfect performance test suite.  But even something simple would be quite helpful, so long as it was extensible.  Perhaps a minimal framework to set up a db with some history, and run checkouts or something against it, and measure the time they take, and report that in some way... and then start factoring out each piece of this?
+
+`contrib/monoprof.sh` is a useful thing to look at, but I doubt this is really doable in shell in the long run.  Particular problems that ad hoc shell solutions like this run into:
+  * insufficient focus on setting up the environment -- honestly, monoprof is quirky enough to set up, that I (njs) never do.  environment management is a part of the core problem domain for this tool
+  * insufficient hackability/refactorability
+
+# Oprofile stuff
+
+Oprofile's callgraph mode gives very obscure output.  Here is the dark knowledge you need to interpret it: <http://colabti.org/irclogger/irclogger_log/monotone?date=2006-02-28,Tue&sel=23#l36>
+
+I wrote a little script to convert oprofile callstack output to the format kcachegrind can grok.  I'm not sure if I entirely trust it (I was seeing some numbers above 100%?), but anyway, here it is: <http://frances.vorpus.org/~njs/op2calltree.py>

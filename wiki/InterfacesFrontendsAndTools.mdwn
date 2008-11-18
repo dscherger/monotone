@@ -1,0 +1,80 @@
+[[!tag migration-done]]
+
+[[!toc levels=2]]
+
+
+# Other programs that work with monotone -- interfaces, frontends and tools
+
+## interfaces and tools
+
+ * **[monotone-viz](http://oandrieu.nerim.net/monotone-viz/)** : [GTK+](http://gtk.org) app for browsing and visualizing history
+ * **Emacs** integration:
+   * **monotone.el**: In `contrib/` directory of monotone's source tree. [Latest version](http://viewmtn.angrygoats.net/branch/head/file/net.venge.monotone/contrib/monotone.el) (via viewmtn).
+   * **[DVC](http://download.gna.org/dvc/)** (see also [DVC](http://gna.org/projects/dvc)) is a project to create a generic library for fancy Emacs interfaces to modern version control systems.  DVC includes monotone support.
+ * **[ViewMTN](http://grahame.angrygoats.net/viewmtn.shtml)**: a web interface to a monotone repository.
+ * **[TracMonotone](http://tracmtn.1erlei.de/)**: A version control system plugin for **[Trac](http://trac.edgewall.com)** a popular integrated history browser/wiki/bug tracker. Latest [stable](http://viewmtn.angrygoats.net/all/branch/changes/net.venge.monotone.trac-plugin)/[development](http://viewmtn.angrygoats.net/all/branch/changes/net.venge.monotone.trac-plugin.twisted) version. 
+ * **[guitone](http://guitone.thomaskeller.biz)**: A Qt-based, cross-platform frontend for monotone. [Latest version](http://viewmtn.angrygoats.net/branch/head/browse/net.venge.monotone.guitone) (via viewmtn).
+ * **[mtsh](http://mtn-host.prjek.net/projects/mtsh/)**: GTK+ wrapper for monotone focusing on working copy operations -- add, drop, revert, rename, commit, update, diff, and browsing.  Has a mechanism for per-file commit comments. *(This is a bit old and very much unmaintained.)*
+ * **Usher**: A server manager that can be used to serve several projects on the same IP/port, starting and stopping servers as needed. In branch `net.venge.monotone.contrib.usher`.
+ * **[meld](http://meld.sf.net)**: a general diff, merge, and history browsing tool written in [Python](http://python.org) for [Gnome](http://gnome.org). Has monotone support since 1.1.3.
+ * **shell completion**: monotone ships with completion scripts for both bash and zsh, in the `contrib/` directory of monotone's source tree. Latest versions for [bash](http://viewmtn.angrygoats.net/branch/head/file/net.venge.monotone/contrib/monotone.bash_completion) and [zsh](http://viewmtn.angrygoats.net/branch/head/file/net.venge.monotone/contrib/monotone.zsh_completion) (via viewmtn).
+ * "**dumb server**" support, for publishing repositories via ordinary ftp/http/sftp/local filesystem: in branch [net.venge.monotone.dumb](http://viewmtn.angrygoats.net/branch/changes/net.venge.monotone.dumb).
+ * **[m7](http://www.midwinter.com/~lch/programming/m7/)**: Experimental drop-in command-line wrapper for monotone. Adds simple local version numbers (no longer using certs) and an enhanced annotate front-end.
+ * **monotree**: Java app for browsing and visualizing history; more portable than monotone-viz. In branch `net.venge.monotone.contrib.monotree`.
+ * **[RSCM::Monotone](http://rscm.rubyforge.org/classes/RSCM/Monotone.html)**: a [Ruby](http://www.ruby-lang.org/) interface to monotone.
+ * **monotone-notify.pl**: A script to watch a monotone repository and, for example, send emails on commits.  In `contrib/` directory of monotone's source tree. [Latest version](http://viewmtn.angrygoats.net/branch/head/file/net.venge.monotone/contrib/monotone-notify.pl) (via viewmtn).
+ * **ciabot_monotone.py**: A notification script for [CIA](http://cia.navi.cx).  In `contrib/` directory of monotone's source tree. [Latest version](http://viewmtn.angrygoats.net/branch/head/file/net.venge.monotone/contrib/ciabot_monotone.py) (via viewmtn).
+ * Script for **importing maildir-format mailboxes** to monotone, for offline reading and syncing: [on the list](http://lists.gnu.org/archive/html/monotone-devel/2005-09/msg00234.html).
+ * **[Wireshark](http://www.wireshark.org)**: a fantastic network traffic analyzer, that has support for decoding monotone's 'netsync' protocol.
+ * **[Apso](http://aleph0.info/apso/)**: A system for encrypting version control system repositories/databases (currently a prototype; the first version control system supported is Monotone).
+ * **[Monotree](http://www.highscore.de/monotree/)**: A .NET based viewer for monotone's database (does not require to have monotone installed as it loads monotone's database directly and creates a report).
+ * **[Ikiwiki](http://ikiwiki.info/)** is a wiki that can use a revision control system, and in particular [monotone](http://ikiwiki.info/rcs/monotone/), as a backend.  As Monotone is distributed, Ikiwiki becomes distributed.  Ikiwiki also has a bug tracking plugin that then allows distributed bug tracking.  This website is generated with ikiwiki, edited by the distributed monotone developers.
+ * **[Qct](http://qct.sourceforge.net/)** is a commit tool that supports quite a few revision constrol systems, monotone included.
+
+## converting to monotone from other systems
+
+ * **CVS**: no external tool required or recommended; simply use monotone's `cvs_import` command. See [[MonotoneAndCVS]].
+ * **Subversion**, **Darcs**, many others: **[Tailor](http://progetti.arstecnica.it/tailor)** is an any-to-any version control system converter, with support for most free VCSes.  Note that as of July 2007, histories are linearized on the timestamp (so don't expect it to losslessly convert between systems with DAG histories, like monotone/git/mercurial/bzr, for instance).
+ * **Bitkeeper**: A patch and set of scripts for lossless BK->monotone conversion is available on the mailing list: <http://lists.gnu.org/archive/html/monotone-devel/2006-01/msg00314.html>
+
+
+# Integrated development environments
+
+ * **[PIDA](http://pida.berlios.de/)**: Integrated development environment supporting Monotone (among others)
+ * **[Eclipse](http://eclipse.org)**: Well known, extremely pluggable  IDE, with plugins e.g. for [Darcs](http://eclipsedarcs.org/doku.php) or [other VCs](http://www.eclipse.org/community/team.php).<br>
+ Development of a Monotone plugin called `MTTeam` has begun. There doesn't seem to be a webpage yet, but a [mailinglist](http://mail.siliconcircus.com/mailman/listinfo/mtteam-devel). 
+
+
+## merge tools
+
+When you do a merge in monotone, and run into conflicts, it will automatically start up a nice
+graphical merger for you to resolve them in.  These mergers (and possibly others) are supported
+out of the box.
+
+ * **[KDiff3](http://kdiff3.sourceforge.net/)**: Supported on Unix, Windows, OS X. (**recommended**)
+ * **[xxdiff](http://furius.ca/xxdiff/)**: Supported on Unix, maybe OS X. (**recommended**)
+ * **[TortoiseMerge](http://tortoisesvn.tigris.org/)**: Supported on Windows.  This is a stand-alone merge program that happens to be packaged with TortoiseSVN -- so you have to install the whole TortoiseSVN package, but you will only use TortoiseMerge. (**recommended**)
+ * **[emacs](http://www.gnu.org/software/emacs/emacs.html)**/**[xemacs](http://www.xemacs.org/)**: via [Ediff](http://www.delorie.com/gnu/docs/emacs/ediff.html). Supported pretty much everywhere.
+ * **[vim](http://www.vim.org/)**: via vimdiff.  Supported pretty much everywhere.
+ * **[meld](http://meld.sourceforge.net/)**: Supported on Unix (Gnome).
+ * FileMerge.app: Part of the OS X Developer Tools package.  Supported on OS X.
+
+
+# Other programs that *should* be taught to work with monotone, but haven't been
+
+ * [Commit Tool](http://repo.or.cz/w/hgct.git)  or (h)gct is a GUI enabled commit tool...It allows the user to view diffs, select which files to committed (or ignored / reverted) write commit messages and perform the commit itself. (python)
+ * [IDEA](http://www.jetbrains.com IntelliJ) is a commercial java IDE with strong support for analysis and refactoring, and an open plugin API allowing integration of new version control systems. Derek Scherger [claims](http://www.mail-archive.com/monotone-devel@nongnu.org/msg05443.html) to have fiddled with a monotone plugin. Someone on the [IntelliJ Community Wiki](http://intellij.org) claimed to be developing a monotone plugin, but did not want to publish the source yet.
+ * "git-cvsserver": some crazy people have written a perl script that implements a usable subset of cvs's network protocol, backed against a git repo.  the mapping is bidirectional, so people who like cvs, can do both checkout and *commit* using cvs, and it shows up in git.  There is no reason this could not be taught to work against a monotone backend.  `git clone http://mirrors.catalyst.net.nz/git/gitcvs.git/`
+ * Xcode, the Apple Mac OS X IDE
+ * *your request here*
+
+
+# Other programs that don't exist at all, but if they did they would make using monotone just that much more awesome
+
+ * tools to manage code reviews, integration workflows, and such things
+   * one possibly relevant thing: vim plugin for doing code reviews: <http://www.vim.org/scripts/script.php?script_id=1563>
+ * "Tortoise Monotone" -- a windows interface to monotone, integrated with the file explorer.  This approach works *very* well for subversion...
+   * the work on TortoiseMtn has been [started on the last summit](http://viewmtn.angrygoats.net/branch/head/browse/net.venge.monotone.tortoise) - based on [TortoiseHg](http://tortoisehg.sf.net) and [guitone](http://guitone.thomaskeller.biz)
+ * `mtnpatch`, a small, standalone, slightly smarter version/wrapper of `patch(1)` that understands and can apply the additional cset operations (eg, `drop` and `rename`) listed in `mtn diff` comments.  Useful for end-users tracking monotone sources without actually using monotone or a db.  Bonus points for a `mtnfollow` that combines this patch tool with a web client to fetch diffs as needed from ViewMTN, and keeps a `_MTN` directory up to date so its easy for a user to switch to using full monotone once they need it (eg, for local changes).
+ * A Visual Studio plugin for Monotone.
+ * *your wished-for tool here*

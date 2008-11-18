@@ -1,0 +1,15 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Thomas Keller (tommyd)
+
+ * uses monotone since Jan 2006
+ * works on monotone since Mar 2006
+ * involved in the UI translation into German and mtn automate extensions
+ * contact: me AT thomaskeller DOT biz
+ * IRC: OFTC and Freenode networks (Nick: tommyd)
+ * Homepage: http://www.thomaskeller.biz
+
+Frontend developer - mostly hacks on the automation interface in
+monotone and provides small bugfixes and enhancements for
+long-standing annoyances.

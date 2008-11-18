@@ -1,0 +1,163 @@
+[[!toc levels=2]]
+[[!tag migration-done]]
+
+Zipper Merge is a [[BestPractices]] workflow pattern that uses the DAG
+structure to help simplify large complex merges.
+
+It's an application of the same principles used by the [[DaggyFixes]]
+pattern, but for the scenario where you want to merge two branches
+together, rather than make the same change to two branches that must
+remain separate otherwise. 
+
+# Scenario
+
+You're trying to merge two paths of
+development that diverged some time ago, and that have
+had significant changes along each path in the meantime.
+
+        A
+       / \
+      /   \
+    B1     C1
+     |     |
+    B2     C2
+     :     :
+    Bn     Cn
+
+
+For one reason or another, these development paths haven't had
+the series of intermediate smaller merges that
+might otherwise have happened.
+Perhaps they were done by developers who were offline for some time,
+perhaps they were actually different development branches that now need to be
+propagated back together - it doesn't really matter.
+
+The key point is that you have a lot of merging work to do.
+
+# Problems with an all-at-once merge
+
+A simple `merge` or `propagate` command isn't ideal here, largely because the merging to be done isn't simple.
+These commands are most useful for smaller, simpler merges that might occur more often.  They happen all the time within a single development branch, and they're usually very easy or trivial to do, because the heads being merged haven't diverged much since their most recent common ancestor.
+
+When there's much more significant divergence, attempts to use these commands to do all the merging in one hit can be frustrating:
+
+ * lots of files are involved, and `merge` will prompt you
+ for interactive merging assistance for each file where
+ there are conflicts, in apparently random order.
+ *There's no easy way to order and organise your merging work.*
+
+ * if something goes wrong (such as one of these interactive merges failing)
+ the entire merge will fail, and you'll have to start again from the beginning.
+ *There's no easy way to save and resume your merging work.*
+
+ * if you get through all the content merges, the new revision will
+ be created, even if some of the merges were wrong or buggy.
+ *There's no easy way to preview and test the result of the merge before committing it.*
+
+You're trying a big-bang approach of merging all of the changes in a single step:
+
+        A
+       / \
+      /   \
+    B1     C1
+     |     |
+    B2     C2
+     :     :
+    Bn     Cn
+      \   /
+       \ /
+        M
+
+
+You want an easy way to do the things that there's no easy way to do in the above points. What you need is a way to break up the merging work into manageable chunks.
+
+# Zipper Merge
+
+The key point about Zipper Merge is that that you don't actually need to do all the merging at once in the one revision.
+
+You could go back up the two development lines finding revisions where
+important changes were made, and use `explicit_merge` to bring those revisions together a
+few changes at a time, progressively zippering together the
+development lines with smaller merges until you catch up to the
+present.
+
+This is essentially an effort in recreating the intermediate merging
+nodes that didn't happen previously along the way:
+
+        A
+       / \
+      /   \
+    B1     C1
+     |\  / |
+    B2 M1  C2
+     :  | /:
+    Bn  M2 Cn
+      \ :  |
+       Mn /
+        |/
+        M
+
+DAG history is DAG history - it doesn't really
+matter what calendar time each node in the graph was 
+actually created, what matters is the placement of the changes in the tree.
+
+## Benefits
+
+You get to work incrementally, saving (and, ideally, testing) your
+work as you go. You could take as much time as you like progressively 
+working down between the two development lines in a local database, 
+and pushing all your work with the final merged head at the end. Or for a 
+really big and difficult merge, you could even push your work and 
+share the task of zippering together changes amongst several developers.
+
+You also get the added benefit
+of being able to carefully choose the revisions you merge to minimise
+the overall work: deferring merges in this way effectively allows you to avoid some
+unnecessary merges with the benefit of 'hindsight' which you wouldn't have had at the
+time. By only picking 'important' nodes for merges, you can summarise a string 
+of consecurtive nondisruptive changes on
+one line into a single merge to the other, for example.
+
+This is one of several reasons we encourage developers not to
+be scared of unmerged heads, even ones that persist for some time.
+
+## Using a separate branch
+
+It might be convenient to use a special zipper branch name
+for this purpose if you like.  In this case, you could 
+`approve` revisions from each side onto the zipper branch, 
+one at a time, and `merge` that branch to produce the 
+intermediate zipper merge nodes `M1`, `M2`, `M3`, etc.
+
+Otherwise, if you're happy just using `explicit_merge` and 
+revision id's, that will produce the same DAG structure result.
+
+## Tools
+
+Whether or not you use a separate branch, a graph visualisation tool (like monotone-viz) 
+can be **very** helpful to look at diffs along each side, 
+pick useful nodes to zipper together, and follow your progress.
+
+A good interactive merge assistance tool is also invaluable for 
+each of the small merges. 
+
+See [[InterfacesFrontendsAndTools]] for tools that can help with both.
+
+# Usage comments and notes for further development
+
+(please add comments of your own here, too)
+
+There is another style of merging under development that will allow 
+a different approach to the same problem. This is known as a workspace merge, or [[MergeViaWorkingDir]]
+and is a different user interface to the underlying merge algorithms.
+
+Zipper Merge has the advantage of being available now. But even when we 
+have a WorkspaceMerge, the Zipper Merge usage pattern will retain its other advantages. Whichever user interface you prefer, large merges will probably still be best handled in this progressive
+incremental style within the DAG structure.
+
+Enhancements could be made to add a reasonable amount of smarts
+in the tool to support a zipper_merge workflow or commmand - for
+example, helping to automate the process of picking intermediate nodes to merge, rather than using manual inspection of the tree with a viualisation tool. When a conflict is detected, monotone could find the nodes that
+introduced the conflict higher up the tree, rather than trying to
+merge the current heads that have inherited this conflict as well as
+others.

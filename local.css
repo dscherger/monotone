@@ -1,0 +1,271 @@
+body {
+    margin: 0;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 0.625em;
+    background: url(res/bg.png);
+}
+
+a {
+    color: #4627B4;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+code {
+    font-weight: bold
+}
+
+.clearfloat {
+    clear: both;
+}
+
+.header {
+    background: url(res/logo_small.png) no-repeat 10px 10px;
+    padding-top: 35px;
+    padding-left: 95px;
+    height: 55px;
+    font-size: 2.5em;
+    color: white;
+    border-bottom: 1px solid #474747;
+}
+
+.header span a {
+    color: white;
+    text-decoration: none;
+    border-bottom: 1px dotted white;
+    margin-right: 0.3em;
+}
+
+.actions {
+    background: white;
+    text-align: right;
+}
+
+.actions ul {
+    border: 0;
+    padding: 0;
+    padding-right: 2em;
+    padding-top: 0.4em;
+}
+
+.actions ul li {
+    border-left: 1px solid #474747;
+    border-right: 1px solid #474747;
+    border-bottom: 1px solid #474747;
+    margin-left: 1em;
+    padding-top: 0.4em;
+    padding-left: 0.8em;
+    padding-right: 0.8em;
+    padding-bottom: 0.4em;
+    background: #727272;
+    -moz-border-radius-bottomleft: 0.8em;
+    -moz-border-radius-bottomright: 0.8em;
+    -webkit-border-bottom-left-radius: 0.8em;
+    -webkit-border-bottom-right-radius: 0.8em;
+}
+
+.actions ul li:hover {
+    background: #AAAAAA;
+}
+
+.actions ul li a {
+    color: white;
+}
+
+.actions ul li a:hover {
+    text-decoration: none;
+}
+
+/* global margin */
+#content p,
+#content ul,
+#content ol,
+#content hr,
+#content div.toc,
+#content pre,
+#content blockquote,
+#content table,
+#content div.inlinepage {
+    margin-top: 1em;
+    margin-bottom: 0;
+}
+
+/* less top margin for certain consecutive elements */
+#content p + ul,
+#content p + ol,
+#content p + blockquote,
+#content h1 + h2,
+#content h3 + * {
+    margin-top: 0.5em;
+}
+
+#content > *:first-child,
+#content blockquote > *:first-child {
+    margin-top: 0;
+}
+
+#content .inlinepage .header {
+    display: block;
+    background: none;
+    padding: 0;
+    height: auto;
+    font-size: 2em;
+    margin-bottom: 1em;
+}
+
+#content .inlinepage .pagedate,
+#content .inlinepage .tags {
+    display: none;
+}
+
+#content {
+    padding: 2em;
+    background: white;
+    min-height: 500px;
+}
+
+#content h1,
+#content h2,
+#content h3 {
+    color: black;
+    line-height: 1.2em;
+    margin-top: 1.5em;
+    margin-bottom: 0;
+}
+
+#content h1,
+#content h2 {
+    border-bottom: 1px dotted #474747;
+    padding-bottom: 0.2em;
+    margin-bottom: 1em;
+}
+
+#content p {
+    line-height: 1.5em;
+}
+
+#content > p,
+#content blockquote > p {
+    font-size: 1.4em;
+}
+
+#content ul,
+#content ol {
+    font-size: 1.3em;
+    line-height: 1.75em;
+}
+
+#content ol li *,
+#content ul li * {
+    margin-bottom: auto;
+    font-size: 1em;
+}
+
+#content ul ol,
+#content ol ol,
+#content ul ul,
+#content ol ul {
+    margin-top: 0;
+    padding-left: 2em;
+    font-size: 1em;
+}
+
+#content hr {
+    border: 0;
+    border-top: 1px dotted #474747;
+}
+
+#content .toc {
+    margin-top: 1em;
+    border: 1px dotted #474747;
+    background: url(res/toc.png) no-repeat 10px 10px #FAFAFA;
+    padding: 10px;
+    padding-top: 50px;
+}
+
+#content .toc > ol {
+    margin-top: 0;
+}
+
+#content pre {
+    background: #F0F0F0;
+    border: 1px dotted #474747;
+    font-family: monospace, courier;
+    padding: 0.5em;
+    margin-left: 3em;
+    margin-right: 3em;
+    white-space: -moz-pre-wrap;
+    white-space: pre-wrap;
+    overflow: auto;
+}
+
+#content > pre {
+    font-size: 1.4em;
+}
+
+#content blockquote {
+    border: 1px dotted #474747;
+    padding: 1em;
+    padding-top: 25px;
+    padding-left: 25px;
+    margin-left: 2em;
+    margin-right: 2em;
+    background: url(res/blockquote.png) no-repeat 10px 10px;
+}
+
+#content blockquote,
+#content blockquote blockquote blockquote,
+#content blockquote blockquote blockquote blockquote blockquote {
+    background-color: #FAFAFA;
+}
+
+#content blockquote blockquote,
+#content blockquote blockquote blockquote blockquote,
+#content blockquote blockquote blockquote blockquote blockquote blockquote {
+    background-color: #F0F0F0;
+}
+
+#content table {
+    border-collapse: collapse;
+}
+
+#content table th,
+#content table td {
+    border: 1px solid #474747;
+    padding: 0.3em;
+}
+
+#content > table th,
+#content > table td {
+    font-size: 1.3em;
+}
+
+#content table th {
+    background: #E0E0E0;
+}
+
+#content table tr:nth-child(even) {
+    background-color: #F0F0F0;
+}
+
+#content table tr:nth-child(odd) td:nth-child(even) {
+    background-color: #FAFAFA;
+}
+
+#pageinfo {
+    border: 0;
+    color: white;
+}
+
+#pageinfo a {
+    color: white;
+    border-bottom: 1px dotted white;
+    text-decoration: none;
+}
+
+#footer {
+    text-align: center;
+}

@@ -1,0 +1,10 @@
+[[!tag migration-wip]]
+
+## Chad Walstrom
+
+GNU Arch refugee since monotone 0.18.
+
+  * e-mail: chewie AT wookimus DOT net
+  * <http://wookimus.net/~chewie>
+  * Debian Developer (chewie AT debian DOT org)
+  * GNU GNATS Maintainer (chewie AT gnu DOT org)

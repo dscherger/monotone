@@ -1,0 +1,23 @@
+[[!tag migration-auto]]
+
+### When to Use
+
+    You are acting as an integrator and need a mechanism to manage deliveries to customers. This delivery could come from several vendor branches (see above). This delivery could have all of the files rearranged.                              
+                   
+### How to Use
+                                                                
+    Create a working branch 'com.example.foo' using the [[VendorBranchPattern]]. Pick the revisions of the sub-branches that you want to deliver, and merge them into your work branch.                                                             
+                                                                                   
+    Create a branch off of your work branch that you will deliver 'com.example.foo.deliverables' (a simple way of doing this is to commit with the --branch option)                                                               
+                                                                                   
+    In the 'com.example.foo.deliverables' branch, drop all of the files and directories that you don't want to deliver. Rename the files that you do wish to deliver as you see fit.                                                         
+                                                                                   
+    When it is time for a new release, do an explicit merge from the sub-branches to your 'com.example.foo.work' branch, run your integration scripts, and then propagate from 'com.example.foo' to 'com.example.foo.deliverables'. Monotone will remember and understand all of your deletes and renames and propagate changes through them.                       
+                                                                                   
+### NOTES
+                                                                                   
+ * if one of the sub-branches added a file to a directory that was dropped in the 'example.com.foo.deliverables' branch, then you'll get a non merge conflict when you do the propagate. These are a pain to solve, at least until the [[MergeViaWorkingDir]] is integrated into mainline monotone.
+
+ * you have created a release branch, and massaged the release branch to contain only what you want to deliver. Be careful not to merge or propagate from the release branch to the work branch. Doing so would be what I call an ["Oedipus Rex"](http://en.wikipedia.org/wiki/Oedipus_rex) merge -- it will propagate all of the massaging you did on the release branch back to the work branch. In this pattern, release branches are not intended to be merged back to trunk.                     
+
+ * ''DC: I don't think the content of this page describes what I would think of as a release branch.  It sounds to me more like something I'd call an [[IntegrationBranch]] or and [[AssemblyBranch]], and seems to be more about using merge_into_dir than about the branch itself.  That doesn't mean it's bad or wrong, I just think its in the wrong place...  My view of what a release branch means is something similar to what's shown on http://www.netbsd.org/Releases/release-map.html, and that's the meaning I used when talking about release branches in the [[DaggyFixes]] page.

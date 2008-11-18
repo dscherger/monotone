@@ -1,0 +1,73 @@
+[[tag migration-auto]]
+
+
+## What features are missing from Monotone?
+
+*and what is being done to fix them...*
+
+Other pages that are relevant include the [[QuickieTasks]], [wiki:Self:[[InterfacesFrontendsAndTools]]#wishes [[InterfacesFrontendsAndTools]]], [[AutomateWishlist]], [wiki:Self:[[LogUI]] [[LogUI]]], [[NetsyncTodo]], [[DocTodo]], [[MergeViaWorkingDir]] and [[MtnSummitWishes]] pages.
+
+### UI improvements
+
+If you look at the [CVS Phrasebook](http://monotone.ca/docs/CVS-Phrasebook.html) in the monotone manual you'll see a bunch of places where a single CVS command corresponds to multiple mtn commands.  Convenience commands could help here:
+
+ * mtn remote-commit or rcommit or rci == mtn commit && mtn pull *branch* && mtn merge && mtn push *branch*
+ * mtn remote-update or rupdate or rup == mtn pull *branch* && mtn merge && mtn update
+
+And/Or
+
+ * Add a --merge and --update options to pull and sync
+ * Just use scripts to achieve the same effect
+
+The net.venge.monotone.lua-cmds branch (and the contrib/extra-commands.lua monotonerc code) implements these extra commands.
+
+==== Other UI stuff ====
+
+mtn status should include mtn ls unknown.  See [this email](http://lists.gnu.org/archive/html/monotone-devel/2007-02/msg00336.html) for a description of what is planned.
+
+Why isn't a -b <branch> argument to mtn log a synonym for -r h:<branch>? See [wiki:Self:[[LogUI]] [[LogUI]]].
+
+Why does mtn pull allow anonymous pull, but mtn sync doesn't fall back to the anonymous case?
+
+There should be an option for pull and sync to print out the log entries of revisions received.  This can be achived with the `note\_netsync\_revision\_received` hook.
+
+Monotone could use a subcommand such as "newbranch", with the only purpose to change _MTN/options with the name of the new branch.
+
+The ability to mark branches as "unused".  i.e. abandonded or merged.  If you go to the main monotone [viewmtn](http://viewmtn.angrygoats.net/) web page you see 165 branches with 'monotone' in the name.  I suspect that a number of those have been merged and/or abandoned.  It would be nice to know which.
+
+It would be good if there were a convention that branches of the monotone repository had a readme.branchname file describing the branch.
+
+Transformations on source.  This includes EOLN conversion, Keyword expansion (e.g. $Id$), archive explosion (so that files in the archive get versioned separately) and decompression (you should always diff decompressed versions of files).  Some comments on this are [here](http://lists.gnu.org/archive/html/monotone-devel/2006-12/msg00079.html), [here](http://lists.gnu.org/archive/html/monotone-devel/2007-02/msg00318.html) and [here](http://lists.gnu.org/archive/html/monotone-devel/2007-02/msg00322.html).  The comments revolve around whether the transformation should be done in monotone or external to monotone.
+Notes:
+
+ * Keywords should be stored in a canonical form (e.g. $Rev: $, not $Rev: ab34...$) and re-expanded on checkout
+   * You can't put a file's hash inside the file itself
+   * It stops spurious conflicts on merge
+ * Needs to be efficient.  Needs to be consistent across users in a project.  Needs to be secure (no plugins read from the workspace).
+
+### Backing store / database improvements
+
+Anonymous pull over http.  The ability to export from a database to a set of files and back again is in the `net.venge.monotone.dumb` branch.  Unfortunately this is a separate python wrapper around the `mtn automate` command.  You cannot pull from the filedir/http server using a normal client.  It was noted in the discussion about this on the mailing list that there is no obvious C++ http library.  libcurl was best and it doesn't support pipelining.  Maybe the solution is to not have pipelining to begin with.
+
+Anonymous push over email attachments.  Something like `mtn push-email repos > attachment`.  Then you email the attachment.  The receiver uses `mtn read < attachment`.  The push-email command needs to be in the standard client.  `mtn push-email` should figure out what to push just like a normal push, but then write the packets to std-out rather than netsync.
+
+Extend db kill\_rev\_locally so that you can kill anything not in a remote repository.  This is related to push, but instead of pushing, it kills the local revisions.  Much faster than re-downloading the entire remote db.
+
+Moving back and forth to a cvs repository.  See the `net.venge.monotone.cvssync.refactor` branch and [[CvsSync]].
+
+Moving back and forth to a svn repository.
+
+A *first class* ssh:// syncing protocol.  At the moment only the netsync server can handle high concurrency, and there is a bug that sometimes causes deadlock piping to sub-processes on windows.  See [[DatabaseLocking]].
+
+Partial pull.  At the moment it takes too long to grab a whole repository for a simple checkout of head.  See [[PartialPull]].  Partial pull should have an option to seamlessly fall back to a parent repository for missing information.  Bonus points for making the parent repository selectable by branch.
+
+Speed improvements.  See [[PerformanceWork]].
+
+Stabilize [Trac](http://trac.edgewall.org/) plugin.  See [TracMtn](http://tracmtn.1erlei.de/) for the current plugin.
+
+Pre-sync checks so you could make a netsync server that checked whether after the sync it would have multiple heads on any branch, and reject any such syncs.  To use such a server, you'd have to do a pull and a local merge before you push.  If someone else commits before you push, you might have to pull and merge again (just like a commit on cvs or svn).  Or: a hook script that turns off 'push-only' syncs.  If you introduce multiple heads in the remote server, you must end up with them too.
+
+Your suggestion or suggestions here...
+
+### Improve source code build system
+Use cross platform build system. Currently VC8 project files are almost always out of date. By switching CMake we'll be able to build on any system from the same source. In addition CMake will eliminate the need for ./configure scripts and automake tools.

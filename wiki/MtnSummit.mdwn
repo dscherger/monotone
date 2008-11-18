@@ -1,0 +1,15 @@
+[[!tag migration-done]]
+
+# Monotone Summits
+
+Monotone developers try to get together regularly for a hackfest,
+chatfest, bugfest, keysigningfest and occasional beerfest we call
+the **MtnSummit**.
+
+Our bar is strict but low: if you're willing to work, you're welcome
+to come.  Even if you haven't worked with monotone source before,
+we'll help you get started -- or help with the docs, or
+testing... plenty of work for everyone. 
+
+ * [[2007]] at Google in Mtn View, California USA
+ * [[2008]] at w-tec in Wuppertal, NRW Germany
