@@ -34,6 +34,7 @@ Project |notes |revisions |files |commits/month |First commit |Last update |Othe
 [Clarens](http://clarens.sourceforge.net)                                                                            |4  | ?    | ?    | ?  |2005-08-09|2006-12-13| 
 [NetCrypto](http://www.netcrypto.org/index-FileAccess.html)                                                          |   | ?    | ?    | ?  |?         |?         | 
 [Peter Todd's Art Projects](http://petertodd.org/art/source-code)                                                    |   | ±1500| ?    |±100|2007-05-01|2007-09-09| 
+[Neurospaces](http://www.neurospaces.org/)                                                                           |6  | ±2000| ±2000| ±30|2006-09-07|2008-10-14|
 """ ]]
 
 Notes:
@@ -43,6 +44,7 @@ Notes:
 3. Only the main branch of the main app
 4. Refuses connections; server down?
 5. mtn.bonsai.com
+6. switched from prcs to mtn, 5 active databases, see also <http://code.google.com/p/neurospaces/wiki/NeurospacesRepository>
 
 ## Tips
 
