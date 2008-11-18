@@ -214,27 +214,23 @@ cpp_main(int argc, char ** argv)
 #endif
 
       // check the botan library version we got linked against.
-#if BOTAN_VERSION_MAJOR == 1 && BOTAN_VERSION_MINOR == 6
-      N(Botan::version_major() == 1 && Botan::version_minor() == 6,
-        F("This monotone binary requires Botan 1.6.x."));
+      u32 linked_botan_version = BOTAN_VERSION_CODE_FOR(
+        Botan::version_major(), Botan::version_minor(),
+        Botan::version_patch());
 
-#elif BOTAN_VERSION_MAJOR == 1 && BOTAN_VERSION_MINOR == 7
-      N(Botan::version_major() == 1 && Botan::version_minor() == 7,
-        F("This monotone binary requires Botan 1.7.x."));
+      // Botan 1.7.14 has an incompatible API change, which got reverted
+      // again in 1.7.15. Thus we do not care to support 1.7.14.
+      N(linked_botan_version != BOTAN_VERSION_CODE_FOR(1,7,14),
+        F("Monotone does not support Botan 1.7.14."));
 
-      // Remember that botan 1.7 is a development branch, so its API might
-      // be changing. However, besides the glitch of 1.7.14, no API changes
-      // affect monotone.
-      N(Botan::version_patch() != 14,
-        F("This monotone binary does not support Botan 1.7.14."));
-
-#if BOTAN_VERSION_PATCH < 7
-      N(Botan::version_patch() < 7,
-        F("This monotone binary requires Botan 1.7.6 or before."));
+#if BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,6)
+      N(linked_botan_version >= BOTAN_VERSION_CODE_FOR(1,6,3),
+        F("This monotone binary requires Botan 1.6.3 or newer."));
+      N(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1,7,6),
+        F("This monotone binary does not work with Botan newer than 1.7.6.");
 #else
-      N(Botan::version_patch() >= 7,
-        F("This monotone binary requires Botan 1.7.7 or newer."));
-#endif
+      N(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22),
+        F("This monotone binary requires Botan 1.7.22 or newer."));
 #endif
 
       app_state app;

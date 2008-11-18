@@ -1,6 +1,6 @@
-# Currently we accept botan version 1.6.3 and newer, limited to the
-# development branch 1.7, emitting a warning if the found botan is
-# newer than 1.7.23.
+# We accept botan versions 1.6.3 and newer, including most of the
+# (unstable) 1.7.x branch, preferrably 1.8.x. The next development
+# branch 1.9.x is not supported for now.
 
 AC_DEFUN([MTN_FIND_BOTAN],
 [
@@ -12,7 +12,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
 
     found_botan=yes
 
-    # make sure we have to do with botan version 1.7
+    # make sure we have to do with a supported botan version
     save_CPPFLAGS="$CPPFLAGS"
     CPPFLAGS="$CPPFLAGS $BOTAN_CPPFLAGS"
     AC_PREPROC_IFELSE([
@@ -23,7 +23,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
 #endif
 
 #if BOTAN_VERSION_CODE == BOTAN_VERSION_CODE_FOR(1,7,14)
-#error "Botan 1.7.14 is unusable"
+#error "Botan 1.7.14 is unusable for monotone"
 #endif],
     [botan_version_match=yes],
     [botan_version_match=no])
@@ -36,7 +36,7 @@ AC_DEFUN([MTN_FIND_BOTAN],
     AC_PREPROC_IFELSE([
 #include <botan/version.h>
 
-#if BOTAN_VERSION_CODE > BOTAN_VERSION_CODE_FOR(1,7,23)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,9,0)
 #error "Botan from the future"
 #endif],
     [botan_version_match=yes],
