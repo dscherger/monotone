@@ -21,7 +21,8 @@
 #include <boost/dynamic_bitset.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "botan/botan.h"
+#include <botan/botan.h>
+#include <botan/rng.h>
 
 #include "basic_io.hh"
 #include "cert.hh"
@@ -934,7 +935,13 @@ void anc_graph::write_certs()
     for (set<string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
+                                 constants::epochlen_bytes);
+#else
+        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+                                     constants::epochlen_bytes);
+#endif
         epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes));
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);

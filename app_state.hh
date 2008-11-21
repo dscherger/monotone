@@ -11,7 +11,13 @@
 // PURPOSE.
 
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+
+#include <botan/botan.h>
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#include <botan/rng.h>
+#else
+#include <botan/libstate.h>
+#endif
 
 #include "options.hh"
 #include "lua_hooks.hh"
@@ -35,7 +41,10 @@ public:
   options opts;
   lua_hooks lua;
   bool mtn_automate_allowed;
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+#endif
 };
 
 // Local Variables:

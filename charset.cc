@@ -11,9 +11,8 @@
 #include "vector.hh"
 
 #include <boost/tokenizer.hpp>
-
-#include "idna/idna.h"
-#include "idna/stringprep.h"
+#include <idna.h>
+#include <stringprep.h>
 
 #include "charset.hh"
 #include "numeric_vocab.hh"
@@ -48,13 +47,19 @@ charset_convert(string const & src_charset,
     dst = src;
   else
     {
+      string tmp_charset(dst_charset);
+
+#ifdef ICONV_TRANSLIT
+      if (best_effort)
+        tmp_charset += "//TRANSLIT";
+#endif
+
       char * converted = stringprep_convert(src.c_str(),
-                                            dst_charset.c_str(),
-                                            src_charset.c_str(),
-                                            best_effort);
+                                            tmp_charset.c_str(),
+                                            src_charset.c_str());
       E(converted != NULL,
         F("failed to convert string from %s to %s: '%s'")
-         % src_charset % dst_charset % src);
+         % src_charset % tmp_charset % src);
       dst = string(converted);
       free(converted);
     }

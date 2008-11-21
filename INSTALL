@@ -21,17 +21,24 @@ building and installation process for monotone
       supported.
     - zlib 1.1.4 or later.
     - libiconv if the iconv() function is missing.
+    - Botan 1.7.8 or later
+    - PCRE 7.6 or later
+    - SQLite 3.3.8 or later
+    - Lua 5.1
+    - GNU IDN Library
 
         on debian: 
 
-           apt-get install autoconf
-           apt-get install automake
-           apt-get install gettext
-           apt-get install libboost-dev
-           apt-get install libz-dev
-           apt-get install g++
+           apt-get install autoconf automake gettext libboost-dev libz-dev \
+                           libbotan1.7-dev libsqlite3-dev libpcre3-dev     \
+                           liblua5.1-0-dev libidn11-dev g++
 
-        on fedora: 
+        on gentoo:
+
+           emerge autoconf automake gettext \
+                  boost zlib botan sqlite libpcre lua libidn
+
+        on fedora (incomplete):
 
            yum install autoconf
            yum install automake
@@ -50,8 +57,13 @@ building and installation process for monotone
            build some of these from source. if your package repository
            does not contain the libraries, see:
 
-                http://gcc.gnu.org/      for g++
-                http://www.boost.org/    for boost
+                http://gcc.gnu.org/                  for g++
+                http://www.boost.org/                for Boost
+                http://www.pcre.org/                 for PCRE
+                http://www.lua.org/                  for Lua
+                http://www.sqlite.org/               for SQLite
+                http://botan.randombit.net/          for Botan
+                http://www.gnu.org/software/libidn/  for GNU IDN
 
 1.1 using boost in the build process:
 
@@ -125,11 +137,6 @@ building and installation process for monotone
        build a version of monotone without support for local message
        catalogs. you might like to do this if you do not have a
        working installation of GNU gettext.
-
-     --disable-large-file
-
-       this will disable large file support from the builtin sqlite, to
-       achieve maximum binary compatibility with old systems.
 
      --enable-pch
 
