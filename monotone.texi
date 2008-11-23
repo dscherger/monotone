@@ -7898,13 +7898,19 @@ workspace is needed in this case.
 
 4.0
 
+@item Updated in:
+
+8.1
+
+Added @option{--with-header} option.
+
 @item Purpose:
 
 Prints the content changes between two revisions or a revision and the current
 workspace. This command differs from @command{mtn diff} in that way that it only
-outputs content changes and keeps quite on renames or drops, as the header of
-@command{mtn diff} is omitted (this is what @command{mtn automate get_revision}
-already provides).
+outputs content changes and keeps quiet on renames or drops by default, as the
+header of @command{mtn diff} is omitted unless @option{--with-header} is given
+and is omitted regardless if there are no changes.
 
 @item Sample output:
 
@@ -8896,6 +8902,32 @@ A path.
 
 If the current directory isn't part of a workspace, prints an error to
 stderr and exits with status 1.
+
+@end table
+
+@item mtn automate read_packets @var{packet-data}
+
+@table @strong
+@item Arguments:
+
+A data packet, @var{packet-data}, as produced by @command{mtn pubkey @var{keyname}}.
+
+@item Added in:
+
+8.1
+
+@item Purpose:
+
+Store public keys (and incidentally anything else that can be represented as
+a packet) into the database.
+
+@item Output format:
+
+No output.
+
+@item Error conditions:
+
+An error will be produced if the argument is not a valid packet.
 
 @end table
 
