@@ -44,10 +44,10 @@ require 5.008;
 
 BEGIN
 {
-    use constant LIB_PATH       => "/home/aecoope/perl";
-    use constant MIME_GLOB_FILE => "/usr/share/mime/globs";
+    use constant LIB_PATH       => "{INST:LIB_PATH}";
+    use constant MIME_GLOB_FILE => "{INST:GLOBS_FILE}";
 }
-use lib LIB_PATH;
+use lib LIB_PATH . "/perl";
 use locale;
 use strict;
 use warnings;
@@ -176,9 +176,9 @@ sub view_button_clicked_cb($$);
 
     Gnome2::Program->init("mtn-browse", 0.51);
     setup_sigchld_handler(\&sigchld_handler);
-    $glade_file = LIB_PATH . "/UI/mtn-browse.glade";
+    $glade_file = LIB_PATH . "/ui/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
-    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/UI/line.png");
+    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/ui/line.png");
 
     # Set up the default database locked and I/O wait handlers for the Monotone
     # class.
