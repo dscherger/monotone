@@ -1,31 +1,60 @@
-dnl checks only done because the bundled sqlite needs them.
-AC_DEFUN([MTN_SQLITE_DEPENDENCIES],
-[SQLITE_CPPFLAGS=
+AC_DEFUN([MTN_FIND_SQLITE],
+[  PKG_PROG_PKG_CONFIG
 
-# sqlite does not read our config.h so we have to shove all this on the
-# command line.
+   # We manually test the variables here because we want them to work
+   # even if pkg-config isn't installed.  The use of + instead of :+ is
+   # deliberate; the user should be able to tell us that the empty string
+   # is the correct set of flags.  (PKG_CHECK_MODULES gets this wrong!)
+   if test -n "${SQLITE3_CFLAGS+set}" || test -n "${SQLITE3_LIBS+set}"; then
+     found_sqlite3=yes
+   else
+     PKG_CHECK_MODULES([SQLITE3], [sqlite3],
+                       [found_sqlite3=yes], [found_sqlite3=no])
+   fi
 
-AC_SEARCH_LIBS([fdatasync], [rt],
- [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DHAVE_FDATASYNC=1"])
+   if test $found_sqlite3 = no; then
+     AC_MSG_RESULT([no; guessing])
+     AC_CHECK_LIB([sqlite3], [sqlite_open], 
+                  [SQLITE3_LIBS=-lsqlite3])
+     SQLITE3_CFLAGS=
+   fi
 
-AC_SEARCH_LIBS([usleep], [rt],
- [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DHAVE_USLEEP=1"])
+   SQLITE3_CPPFLAGS="$SQLITE3_CFLAGS"
 
-AC_CHECK_FUNC([pread],
-  [AC_CHECK_FUNC([pwrite],
-    [SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DUSE_PREAD=1"])])
+    # AC_MSG_NOTICE([using sqlite3 compile flags: "$SQLITE3_CPPFLAGS"])
+    # AC_MSG_NOTICE([using sqlite3 link flags: "$SQLITE3_LIBS"])
 
-# Let the user specify whether he wants large file support or not in sqlite.
-AC_ARG_ENABLE([large-file],
-   AS_HELP_STRING(
-      [--disable-large-file],
-      [Disable large file support in builtin sqlite]
-   ), , enable_large_file=yes
-)
+   AC_SUBST(SQLITE3_CPPFLAGS)
+   AC_SUBST(SQLITE3_LIBS)
 
-if test "x$enable_large_file" = "xno"; then
-   SQLITE_CPPFLAGS="$SQLITE_CPPFLAGS -DSQLITE_DISABLE_LFS"
-fi
+   AC_CACHE_CHECK([whether the sqlite3 library is usable], ac_cv_lib_sqlite3_works,
+    [save_LIBS="$LIBS"
+     save_CPPFLAGS="$CPPFLAGS"
+     LIBS="$LIBS $SQLITE3_LIBS"
+     CPPFLAGS="$CPPFLAGS $SQLITE3_CPPFLAGS"
+     AC_LINK_IFELSE([AC_LANG_PROGRAM(
+      [
+extern "C"
+{
+  #include <sqlite3.h>
+}
+      ],
+      [
+sqlite3 *st;
 
-AC_SUBST(SQLITE_CPPFLAGS)
+#if SQLITE_VERSION_NUMBER < 3003000
+#error Sqlite3 version mismatch
+#endif
+
+sqlite3_open("testfile.db", &st);
+sqlite3_close(st);
+      ])],
+      [ac_cv_lib_sqlite3_works=yes], [ac_cv_lib_sqlite3_works=no])
+     LIBS="$save_LIBS"
+     CPPFLAGS="$save_CPPFLAGS"])
+   if test $ac_cv_lib_sqlite3_works = no; then
+      AC_MSG_ERROR([Your sqlite3 library is not usable.])
+   fi
+
 ])
+

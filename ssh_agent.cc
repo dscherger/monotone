@@ -10,15 +10,16 @@
 #include "base.hh"
 #include <stdlib.h>
 
+#include <boost/shared_ptr.hpp>
+#include <botan/botan.h>
+#include <botan/rsa.h>
+
 #include "ssh_agent.hh"
 #include "sanity.hh"
 #include "netio.hh"
 #include "botan/numthry.h"
 #include "numeric_vocab.hh"
 #include "netxx/stream.h"
-#include "botan/rsa.h"
-#include "botan/bigint.h"
-#include <boost/shared_ptr.hpp>
 #include "platform.hh"
 #include "key_store.hh"
 
