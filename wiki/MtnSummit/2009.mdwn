@@ -1,0 +1,47 @@
+﻿[[!tag migration-done]]
+[[!toc]]
+
+January Mini Summit
+===================
+
+The January 2009 Mini Summit is currently scheduled for January 17 and 18, 2009 
+and will be held via IRC and the mailing list.
+
+Summit Agenda
+-------------
+
+Until January 12, 2009, consider this list to be subject to change.  Feel free 
+to add your own ideas.
+
+### Finish Wiki Migration and Reorganization ###
+
+We need to come up with a way to reorganize the new wiki and finish up the 
+migration.
+
+#### Reorganize [[QuickieTasks]] into a "Tasks" section ####
+
+The [[QuickieTasks]] section should be reorganized into a larger Tasks section 
+of the wiki.  The idea here is to give people with time and skills a direction 
+to move towards.  Ideally this new section would contain implementation ideas 
+for all of the features we discuss on the mailing list.  For an example, see 
+[[PartialPull]].
+
+### Concurrent Access to a Single Monotone Database ####
+
+This has been discussed a few times, I'm not sure if a solution has already 
+come up. A few ideas on this topic have been floating around for a while. As 
+far as I'm concerned, I'd like to have one database file to which I sync from 
+my workstation or laptop, and have another process (viewmtn or a self written 
+PHP equivalent) accessing that database at the same time. Maybe for this 
+specific problem there could be other solutions (besides mtn automate) than 
+concurrently accessing the repository on the database/sqlite level.
+
+#### Integrating a 'branch rename' Command ####
+
+Currently I have a shell script available which was posted on the Monotone Wiki 
+some time ago. With future changes to monotone it maybe uncertain how long that 
+script will keep working. Next point is, one does always need to have that 
+script available, since renamings must happen on all affected locations. 
+Therefore, and as I have to use branch renaming quite often, it would be nice 
+if that function could be integrated into the mtn binary.
+
