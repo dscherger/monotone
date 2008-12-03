@@ -1,5 +1,5 @@
 ﻿[[!tag migration-done]]
-[[!toc]]
+[[!toc levels=3]]
 
 January Mini Summit
 ===================
@@ -18,7 +18,7 @@ to add your own ideas.
 We need to come up with a way to reorganize the new wiki and finish up the 
 migration.
 
-#### Reorganize [[QuickieTasks]] into a "Tasks" section ####
+### Reorganize [[QuickieTasks]] into a "Tasks" section ###
 
 The [[QuickieTasks]] section should be reorganized into a larger Tasks section 
 of the wiki.  The idea here is to give people with time and skills a direction 
@@ -36,7 +36,7 @@ PHP equivalent) accessing that database at the same time. Maybe for this
 specific problem there could be other solutions (besides mtn automate) than 
 concurrently accessing the repository on the database/sqlite level.
 
-#### Integrating a 'branch rename' Command ####
+### Integrating a 'branch rename' Command ###
 
 Currently I have a shell script available which was posted on the Monotone Wiki 
 some time ago. With future changes to monotone it maybe uncertain how long that 
