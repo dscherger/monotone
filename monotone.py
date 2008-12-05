@@ -76,7 +76,7 @@ class Feeder:
             self.process = None
 
 class Monotone:
-    def __init__(self, db, executable="mtn"):
+    def __init__(self, db, executable="mtn-auto-certs"):
         self.db = db
         self.executable = executable
         self.process = None
@@ -148,6 +148,16 @@ class Monotone:
         assert not curr_packet
         return packets
 
+    def get_cert_packet(self, cert_id):
+        #print "get_cert_packet(%s)" % cert_id
+        return check_packet("rcert", self.automate("packet_for_cert", cert_id))
+
+    def get_cert_ids(self, revisions_selector):
+        output = self.automate("select_cert", revisions_selector)        
+        for line in output.splitlines():
+            t = line.split(" ")
+            yield t[0],t[1]
+        
     def branches(self):
         return self.automate("branches").split("\n")
         

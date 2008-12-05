@@ -109,6 +109,12 @@ class Dumbtone:
         rdata.write(self.monotone.get_revision_packet(rid))
         return rdata.getvalue()
         
+    def create_all_cert_map(self):
+        result = {}
+        for rid,cid in  self.monotone.get_cert_ids("i:"):
+            result.setdefault(rid,[]).append(cid)
+        return result
+            
     def do_export(self, url, branch_pattern = None, callback = None):
         if url is None:
             md = MemoryMerkleDir()
@@ -131,33 +137,25 @@ class Dumbtone:
                     key_packets[keyid] = (id, kp) # keys are queued for export
                                                   # and are exported only if used 
                                                   # to sign some exported cert
-
+                    # currently we export ALL keys :(
+                    md.add(id, kp)
             if branch_pattern:
                 revision_list = self.monotone.revisions_for_pattern(branch_pattern)
             else:
                 revision_list = self.monotone.revisions_list()
+                
+            all_certs_map = self.create_all_cert_map()
             for rid in self.monotone.toposort(revision_list):
                 if rid not in curr_ids:
                     md.add(rid, DelegateFunctor(self.__make_revision_packet,rid))
                     if callback: callback(id, "", None)
-                certs = self.monotone.get_cert_packets(rid)
-                if self.verbosity > 0:
-                    print "rev ", rid, " certs:",certs
-                for cert in certs:
-                    cert_parts = decode_cert_packet_info(cert)
-                    key_name = cert_parts[2]
-                    if key_name not in exported_keys:
-                        if self.verbosity > 0:
-                            print "key: %s" % key_name
-                        # add key only if needed by any cert
-                        id, kp = key_packets[key_name]
-                        if id not in curr_ids:
-                            md.add(id, kp)
-                            if callback: callback(id, "", None)
-                        exported_keys.add(key_name)
-                    id = sha.new(cert).hexdigest()
-                    if id not in curr_ids:
-                        md.add(id, ConstantValueFunctor(cert) )
+                cert_ids = all_certs_map[rid]
+                
+                #print "rev ", rid, " certs:", cert_ids
+                for cert_id in cert_ids:                    
+                    if cert_id not in curr_ids:
+                        #print "rev ", rid, " cert:", cert_id
+                        md.add(cert_id, DelegateFunctor(self.monotone.get_cert_packet, cert_id) )
                         if callback: callback(id, "", None)
             md.commit()
             return md
