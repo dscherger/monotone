@@ -87,12 +87,13 @@ sub display_revision_change_history($$$);
 sub compare_button_clicked_cb($$);
 sub compare_revisions($$$;$);
 sub comparison_revision_change_log_button_clicked_cb($$);
+sub external_diffs($$$$$);
 sub external_diffs_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
 sub get_file_history_helper($$$);
 sub get_history_window();
 sub get_revision_comparison_window();
-sub get_revision_history_helper($$$);
+sub get_revision_history_helper($$);
 sub history_list_button_clicked_cb($$);
 sub mtn_diff($$$$;$);
 sub save_differences_button_clicked_cb($$);
@@ -125,7 +126,6 @@ sub display_revision_change_history($$$)
     my($button,
        @certs_list,
        $counter,
-       %history_hash,
        $instance);
     my $wm = WindowManager->instance();
 
@@ -153,8 +153,8 @@ sub display_revision_change_history($$$)
 
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $wm->update_gui();
-    $history_hash{$revision_id} = 1;
-    get_revision_history_helper($instance, \%history_hash, $revision_id);
+    $instance->{revision_hits} = {};
+    get_revision_history_helper($instance, $revision_id);
 
     # Sort the list.
 
@@ -162,8 +162,9 @@ sub display_revision_change_history($$$)
     $instance->{appbar}->set_status(__("Sorting revision list"));
     $wm->update_gui();
     $instance->{history} = [];
-    $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
-    %history_hash = ();
+    $instance->{mtn}->toposort($instance->{history},
+			       keys(%{$instance->{revision_hits}}));
+    $instance->{revision_hits} = undef;
     @{$instance->{history}} = reverse(@{$instance->{history}});
     $instance->{appbar}->set_progress_percentage(1);
     $wm->update_gui();
@@ -328,7 +329,6 @@ sub display_file_change_history($$$)
     my($button,
        @certs_list,
        $counter,
-       %history_hash,
        $instance);
     my $wm = WindowManager->instance();
 
@@ -355,8 +355,9 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_status(__("Fetching revision list"));
     $instance->{stop_button}->set_sensitive(TRUE);
     $wm->update_gui();
+    $instance->{revision_hits} = {};
     Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_WARNING);
-    get_file_history_helper($instance, \%history_hash, $revision_id);
+    get_file_history_helper($instance, $revision_id, \$instance->{file_name});
     Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
 						    \&mtn_error_handler);
     $instance->{stop_button}->set_sensitive(FALSE);
@@ -367,8 +368,8 @@ sub display_file_change_history($$$)
     $instance->{appbar}->set_status(__("Sorting revision list"));
     $wm->update_gui();
     $instance->{history} = [];
-    $instance->{mtn}->toposort($instance->{history}, keys(%history_hash));
-    %history_hash = ();
+    $instance->{mtn}->toposort($instance->{history},
+			       keys(%{$instance->{revision_hits}}));
     @{$instance->{history}} = reverse(@{$instance->{history}});
     $instance->{appbar}->set_progress_percentage(1);
     $wm->update_gui();
@@ -593,7 +594,8 @@ sub history_list_button_clicked_cb($$)
 	my($branch,
 	   @certs_list,
 	   $dir,
-	   $file);
+	   $file,
+	   $path_ref);
 
 	# First find out what branch the revision is on (take the first one).
 
@@ -610,9 +612,10 @@ sub history_list_button_clicked_cb($$)
 
 	# Split the file name into directory and file components.
 
-	$dir = dirname($instance->{file_name});
+	$path_ref = $instance->{revision_hits}->{$revision_id};
+	$dir = dirname($$path_ref);
 	$dir = "" if ($dir eq ".");
-	$file = basename($instance->{file_name});
+	$file = basename($$path_ref);
 
 	# Get a new browser window preloaded with the desired file.
 
@@ -665,12 +668,106 @@ sub compare_button_clicked_cb($$)
 		     $instance->{second_revision_id});
     $instance->{mtn}->toposort(\@revision_ids, @revision_ids);
 
-    # Now compare them.
+    # If a file is being compared and it has been renamed between the two
+    # comparison revisions then we have to fall back on the external helper
+    # application, otherwise we can use Monotone's comparison feature.
 
-    compare_revisions($instance->{mtn},
-		      $revision_ids[0],
-		      $revision_ids[1],
-		      $instance->{file_name});
+    if (defined($instance->{file_name})
+	&& $instance->{revision_hits}->{$revision_ids[0]}
+	!= $instance->{revision_hits}->{$revision_ids[1]})
+    {
+
+	my($answer,
+	   $dialog,
+	   @manifest,
+	   $new_file_id,
+	   $old_file_id);
+
+	$dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "question",
+	     "yes-no",
+	     __("The name of the selected file has changed\n"
+		. "between the two selected revisions and cannot\n"
+		. "be compared internally. Would you like to do\n"
+		. "the comparison using the external helper application?"));
+	$dialog->set_title(__("External Comparison"));
+	$answer = $dialog->run();
+	$dialog->destroy();
+
+	# Only continue if asked to do so.
+
+	if ($answer eq "yes")
+	{
+
+	    # Get the manifests of the two revisions and look for the files in
+	    # order to get their file ids.
+
+	    $instance->{mtn}->get_manifest_of(\@manifest, $revision_ids[0]);
+	    foreach my $entry (@manifest)
+	    {
+		if ($entry->{name}
+		    eq ${$instance->{revision_hits}->{$revision_ids[0]}})
+		{
+		    $old_file_id = $entry->{file_id};
+		    last;
+		}
+	    }
+	    $instance->{mtn}->get_manifest_of(\@manifest, $revision_ids[1]);
+	    foreach my $entry (@manifest)
+	    {
+		if ($entry->{name}
+		    eq ${$instance->{revision_hits}->{$revision_ids[1]}})
+		{
+		    $new_file_id = $entry->{file_id};
+		    last;
+		}
+	    }
+
+	    # Make sure we have the file ids.
+
+	    if (! defined($old_file_id) || ! defined ($new_file_id))
+	    {
+		my $dialog;
+		$dialog = Gtk2::MessageDialog->new
+		    ($instance->{window},
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __("The file contents cannot be\n"
+			. "found in the select revisions.\n"
+			. "This should not be happening."));
+		$dialog->run();
+		$dialog->destroy();
+		return;
+	    }
+
+	    # Use the external helper application to compare the files.
+
+	    external_diffs($instance,
+			   ${$instance->{revision_hits}->{$revision_ids[0]}},
+			   $old_file_id,
+			   ${$instance->{revision_hits}->{$revision_ids[1]}},
+			   $new_file_id);
+
+	}
+
+    }
+    else
+    {
+
+	# Use Monotone's comparison feature.
+
+	compare_revisions($instance->{mtn},
+			  $revision_ids[0],
+			  $revision_ids[1],
+			  defined($instance->{file_name})
+			      ? ${$instance->{revision_hits}->
+				  {$revision_ids[0]}}
+			      : undef);
+
+    }
 
 }
 #
@@ -1203,16 +1300,10 @@ sub external_diffs_button_clicked_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($cmd,
-       $data,
-       $file_id_1,
+    my($file_id_1,
        $file_id_2,
        $file_name,
-       $iter,
-       $new_fh,
-       $new_file,
-       $old_fh,
-       $old_file);
+       $iter);
 
     # Get the details associated with the currently selected file.
 
@@ -1224,55 +1315,9 @@ sub external_diffs_button_clicked_cb($$)
     $file_id_2 = $instance->{file_comparison_combobox}->get_model()->
 	get($iter, CLS_FILE_ID_2_COLUMN);
 
-    # Generate temporary disk file names.
+    # Use the external helper application to compare the files.
 
-    if (! defined($old_file = generate_tmp_path(__("OLDER_") . $file_name))
-	|| ! defined($new_file = generate_tmp_path(__("NEWER_") . $file_name)))
-    {
-	my $dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
-	     ["modal"],
-	     "warning",
-	     __x("Cannot generate temporary file name:\n{error_message}.",
-		 error_message => $!));
-	$dialog->run();
-	$dialog->destroy();
-	return;
-    }
-
-    # Attempt to save the contents to the files.
-
-    if (! defined($old_fh = IO::File->new($old_file, "w"))
-	|| ! defined($new_fh = IO::File->new($new_file, "w")))
-    {
-	my $dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("{error_message}.", error_message => $!));
-	$dialog->run();
-	$dialog->destroy();
-	return;
-    }
-    $instance->{mtn}->get_file(\$data, $file_id_1);
-    $old_fh->print($data);
-    $instance->{mtn}->get_file(\$data, $file_id_2);
-    $new_fh->print($data);
-    $old_fh->close();
-    $new_fh->close();
-    $old_fh = $new_fh = undef;
-
-    # Use the specified differences application, replacing `{file1}' and
-    # `{file2}' with the real file names.
-
-    $cmd = $user_preferences->{diffs_application};
-    $cmd =~ s/\{file1\}/$old_file/g;
-    $cmd =~ s/\{file2\}/$new_file/g;
-
-    # Launch it.
-
-    system($cmd . " &");
+    external_diffs($instance, $file_name, $file_id_1, $file_name, $file_id_2);
 
 }
 #
@@ -1434,6 +1479,8 @@ sub get_history_window()
 		 hide_find_text($instance->{history_textview});
 		 $widget->hide();
 		 $instance->{history_buffer}->set_text("");
+		 $instance->{history} = undef;
+		 $instance->{revision_hits} = undef;
 		 $instance->{mtn} = undef;
 		 return TRUE;
 	     },
@@ -1490,11 +1537,11 @@ sub get_history_window()
 #   Description  - Recursive routine for getting the revisions in a file's
 #                  change history.
 #
-#   Data         - $instance    : The file history window instance.
-#                  $hash        : A reference to a hash that is to contain the
-#                                 list of revision ids.
-#                  $revision_id : The revision id from where the search is to
-#                                 commence.
+#   Data         - $instance      : The file history window instance.
+#                  $revision_id   : The revision id from where the search is
+#                                   to commence.
+#                  $file_name_ref : A reference to the name of the file that
+#                                   is to have its history returned.
 #
 ##############################################################################
 
@@ -1503,30 +1550,63 @@ sub get_history_window()
 sub get_file_history_helper($$$)
 {
 
-    my($instance, $hash, $revision_id) = @_;
+    my($instance, $revision_id, $file_name_ref) = @_;
 
     return if ($instance->{stop});
 
-    my(@change_parents,
-       @parents);
+    my(@changed_ancestors);
 
-    $instance->{mtn}->get_content_changed(\@change_parents,
+    $instance->{mtn}->get_content_changed(\@changed_ancestors,
 					  $revision_id,
-					  $instance->{file_name});
-    foreach my $revision (@change_parents)
+					  $$file_name_ref);
+    foreach my $revision (@changed_ancestors)
     {
-	if (! exists($hash->{$revision}))
+	if (! exists($instance->{revision_hits}->{$revision}))
 	{
-	    $hash->{$revision} = 1;
+
+	    my @parents;
+
+	    # Track file renames in the changed ancestor revisions (no need to
+	    # bother if the ancestor revision is the same as the current one as
+	    # we were passed the file name).
+
+	    if ($revision ne $revision_id)
+	    {
+		my $file_name;
+		$instance->{mtn}->
+		    get_corresponding_path(\$file_name,
+					   $revision_id,
+					   $$file_name_ref,
+					   $revision);
+		$file_name_ref = \$file_name
+		    if ($file_name ne $$file_name_ref);
+	    }
+
+	    # Store a reference to the current file name in the revision hit
+	    # hash, this can be used later to refer to the correct file name
+	    # for a given changed ancestor revision.
+
+	    $instance->{revision_hits}->{$revision} = $file_name_ref;
+
 	    set_label_value($instance->{numbers_value_label},
-			    scalar(keys(%$hash)));
+			    scalar(keys(%{$instance->{revision_hits}})));
 	    WindowManager->update_gui();
-	    @parents = ();
+
+	    # Now repeat for each parent, remembering to track file renames.
+
 	    $instance->{mtn}->parents(\@parents, $revision);
 	    foreach my $parent (@parents)
 	    {
-		get_file_history_helper($instance, $hash, $parent);
+		my $file_name;
+		$instance->{mtn}->get_corresponding_path(\$file_name,
+							 $revision,
+							 $$file_name_ref,
+							 $parent);
+		$file_name_ref = \$file_name
+		    if ($file_name ne $$file_name_ref);
+		get_file_history_helper($instance, $parent, $file_name_ref);
 	    }
+
 	}
     }
 
@@ -1540,8 +1620,6 @@ sub get_file_history_helper($$$)
 #                  change history.
 #
 #   Data         - $instance    : The revision history window instance.
-#                  $hash        : A reference to a hash that is to contain the
-#                                 list of revision ids.
 #                  $revision_id : The revision id from where the search is to
 #                                 commence.
 #
@@ -1549,26 +1627,24 @@ sub get_file_history_helper($$$)
 
 
 
-sub get_revision_history_helper($$$)
+sub get_revision_history_helper($$)
 {
 
-    my($instance, $hash, $revision_id) = @_;
+    my($instance, $revision_id) = @_;
 
     return if ($instance->{stop});
 
     my @parents;
 
+    $instance->{revision_hits}->{$revision_id} = 1;
+    set_label_value($instance->{numbers_value_label},
+		    scalar(keys(%{$instance->{revision_hits}})));
+    WindowManager->update_gui();
     $instance->{mtn}->parents(\@parents, $revision_id);
     foreach my $parent (@parents)
     {
-	if (! exists($hash->{$parent}))
-	{
-	    $hash->{$parent} = 1;
-	    set_label_value($instance->{numbers_value_label},
-			    scalar(keys(%$hash)));
-	    WindowManager->update_gui();
-	    get_revision_history_helper($instance, $hash, $parent);
-	}
+	get_revision_history_helper($instance, $parent)
+	    if (! exists($instance->{revision_hits}->{$parent}));
     }
 
 }
@@ -1730,6 +1806,93 @@ sub get_revision_comparison_window()
     $instance->{stop} = 0;
 
     return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - external_diffs
+#
+#   Description  - Launch the external differences helper program, loading in
+#                  the contents of the specified files.
+#
+#   Data         - $instance      : The revision history window instance.
+#                  $old_file_name : The file name of the older version of the
+#                                   file.
+#                  $old_file_id   : Monotone's file id for the older version
+#                                   of the file.
+#                  $new_file_name : The file name of the newer version of the
+#                                   file.
+#                  $new_file_id   : Monotone's file id for the newer version
+#                                   of the file.
+#
+##############################################################################
+
+
+
+sub external_diffs($$$$$)
+{
+
+    my($instance, $old_file_name, $old_file_id, $new_file_name, $new_file_id)
+	= @_;
+
+    my($cmd,
+       $data,
+       $new_fh,
+       $new_file,
+       $old_fh,
+       $old_file);
+
+    # Generate temporary disk file names.
+
+    if (! defined($old_file = generate_tmp_path(__("OLDER_") . $old_file_name))
+	|| ! defined($new_file = generate_tmp_path(__("NEWER_")
+						   . $new_file_name)))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     __x("Cannot generate temporary file name:\n{error_message}.",
+		 error_message => $!));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+
+    # Attempt to save the contents to the files.
+
+    if (! defined($old_fh = IO::File->new($old_file, "w"))
+	|| ! defined($new_fh = IO::File->new($new_file, "w")))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("{error_message}.", error_message => $!));
+	$dialog->run();
+	$dialog->destroy();
+	return;
+    }
+    $instance->{mtn}->get_file(\$data, $old_file_id);
+    $old_fh->print($data);
+    $instance->{mtn}->get_file(\$data, $new_file_id);
+    $new_fh->print($data);
+    $old_fh->close();
+    $new_fh->close();
+    $old_fh = $new_fh = undef;
+
+    # Use the specified differences application, replacing `{file1}' and
+    # `{file2}' with the real file names.
+
+    $cmd = $user_preferences->{diffs_application};
+    $cmd =~ s/\{file1\}/$old_file/g;
+    $cmd =~ s/\{file2\}/$new_file/g;
+
+    # Launch it.
+
+    system($cmd . " &");
 
 }
 #

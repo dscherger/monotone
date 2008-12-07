@@ -1,0 +1,237 @@
+#!/usr/bin/perl
+##############################################################################
+#
+#   File Name    - linux-install
+#
+#   Description  - Perl Linux installer for mtn-browse
+#
+#   Author       - A.E.Cooper.
+#
+#   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
+#                  <aecooper@coosoft.plus.com>.
+#
+#                  This program is free software; you can redistribute it
+#                  and/or modify it under the terms of the GNU General Public
+#                  License as published by the Free Software Foundation;
+#                  either version 3 of the License, or (at your option) any
+#                  later version.
+#
+#                  This program is distributed in the hope that it will be
+#                  useful, but WITHOUT ANY WARRANTY; without even the implied
+#                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#                  PURPOSE. See the GNU General Public License for more
+#                  details.
+#
+#                  You should have received a copy of the GNU General Public
+#                  License along with this software; if not, write to the Free
+#                  Software Foundation, Inc., 59 Temple Place - Suite 330,
+#                  Boston, MA 02111-1307 USA.
+#
+##############################################################################
+#
+##############################################################################
+#
+#   Global Data For This Module
+#
+##############################################################################
+
+
+
+# ***** DIRECTIVES *****
+
+require 5.008;
+
+use strict;
+use warnings;
+
+# ***** REQUIRED PACKAGES *****
+
+# Standard Perl and CPAN modules.
+
+use IO::Dir;
+use IO::File;
+#
+##############################################################################
+#
+#   Routine      - Main Body Of Code
+#
+#   Description  - This is the main body of code for the install script.
+#
+#   Data         - @_           : The command line arguments.
+#                  Return Value : Unix exit code.
+#
+##############################################################################
+
+
+
+{
+
+    my($dir,
+       $file,
+       $globs_file,
+       $infile,
+       $input,
+       $install,
+       $install_bin,
+       $lib_dir,
+       $mas_path,
+       $outfile,
+       $prefix_dir,
+       $use_dist_mas_lib);
+
+    print("Linux installer for mtn-browse\n\n");
+
+    $globs_file = "/usr/share/mime/globs";
+    $prefix_dir = "/usr";
+    while (1)
+    {
+	print("Where is your MIME globs file? [" . $globs_file . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (! -f $input)
+	    {
+		print("Error: File `" . $input . "' is unreadable.\n");
+		next;
+	    }
+	    $globs_file = $input;
+	}
+
+	print("Where do you want to install it? [" . $prefix_dir . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (-e $input && (! -d $input || ! -w $input))
+	    {
+		print("Error: Directory `" . $input . "' is unwritable or not "
+		      . "a directory.\n");
+		next;
+	    }
+	    $prefix_dir = $input;
+	}
+
+	$lib_dir = $prefix_dir . "/lib/mtn-browse";
+	print("Where should the libraries go? [" . $lib_dir . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (-e $input && (! -d $input || ! -w $input))
+	    {
+		print("Error: Directory `" . $input . "' is unwritable or not "
+		      . "a directory.\n");
+		next;
+	    }
+	    $lib_dir = $input;
+	}
+
+	print("Use the Monotone::AutomateStdio (MAS) library that came with "
+	      . "this package? [Y]: ");
+	chomp($input = <STDIN>);
+	if ($input =~ m/^\s*[nN]\s*$/)
+	{
+	    $use_dist_mas_lib = 0;
+	}
+	else
+	{
+	    $use_dist_mas_lib = 1;
+	}
+
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (-e $input && (! -d $input || ! -w $input))
+	    {
+		print("Error: Directory `" . $input . "' is unwritable or not "
+		      . "a directory.\n");
+		next;
+	    }
+	    $lib_dir = $input;
+	}
+
+	print("\nInstallation options are:\n");
+	print("GLOBS_FILE = " . $globs_file . "\n");
+	print("PREFIX_DIR = " . $prefix_dir . "\n");
+	print("LIB_DIR    = " . $lib_dir . "\n");
+	print("Use my MAS = " . ($use_dist_mas_lib ? "Yes" : "No") . "\n");
+	print("\nAccept these? [N]: ");
+	chomp($input = <STDIN>);
+	if ($input =~ m/^\s*[yY]\s*$/)
+	{
+	    last;
+	}
+    }
+
+    # Install `executable'.
+
+    die("IO::File failed with $!")
+	if (! defined($infile = IO::File->new("mtn-browse", "r")));
+    die("IO::File failed with $!")
+	if (! defined($outfile = IO::File->new("mtn-browse.out", "w")));
+    while (defined($input = $infile->getline()))
+    {
+	$input =~ s/\@INST:LIB_DIR\@/$lib_dir/g;
+	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
+	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
+	$outfile->print($input);
+    }
+    $infile->close();
+    $outfile->close();
+    $infile = $outfile = undef;
+    $install_bin = "install -D -o 0 -g 0";
+    $install = "install -D -o 0 -g 0 -m 644";
+    system("$install_bin mtn-browse.out ${prefix_dir}/bin/mtn-browse");
+    unlink("mtn-browse.out");
+
+    # Install modules and libraries.
+
+    die("IO::Dir failed with $!")
+	if (! defined($dir = IO::Dir->new("lib/perl")));
+    while (defined($file = $dir->read()))
+    {
+	system("$install lib/perl/$file ${lib_dir}/perl/$file")
+	    if ($file =~ m/.*\.pm$/);
+    }
+    $dir->close();
+    if ($use_dist_mas_lib)
+    {
+	my $mas_dir;
+	if (-r "lib/perl/Monotone/AutomateStdio.pm")
+	{
+	    $mas_dir = "lib/perl/Monotone";
+	}
+	elsif (-r "../automate-stdio/lib/Monotone/AutomateStdio.pm")
+	{
+	    $mas_dir = "../automate-stdio/lib/Monotone";
+	}
+	else
+	{
+	    die("Been asked to use my MAS library but cannot find it.");
+	}
+	die("IO::Dir failed with $!")
+	    if (! defined($dir = IO::Dir->new($mas_dir)));
+	while (defined($file = $dir->read()))
+	{
+	    system("$install ${mas_dir}/$file ${lib_dir}/perl/Monotone/$file")
+		if ($file =~ m/.*\.pm$/ || $file =~ m/.*\.pod$/);
+	}
+	$dir->close();
+    }
+
+    # Install GUI components.
+
+    system("$install lib/ui/mtn-browse.glade ${lib_dir}/ui/mtn-browse.glade");
+    die("IO::Dir failed with $!")
+	if (! defined($dir = IO::Dir->new("lib/ui/pixmaps")));
+    while (defined($file = $dir->read()))
+    {
+	system("$install lib/ui/pixmaps/$file ${lib_dir}/ui/$file")
+	    if ($file =~ m/.*\.png$/);
+    }
+    $dir->close();
+
+    exit(0);
+
+}

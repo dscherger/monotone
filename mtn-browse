@@ -44,10 +44,11 @@ require 5.008;
 
 BEGIN
 {
-    use constant LIB_PATH       => "{INST:LIB_PATH}";
-    use constant MIME_GLOB_FILE => "{INST:GLOBS_FILE}";
+    use constant LIB_DIR        => "@INST:LIB_DIR@";
+    use constant MIME_GLOB_FILE => "@INST:GLOBS_FILE@";
+    use constant PREFIX_DIR     => "@INST:PREFIX_DIR@";
 }
-use lib LIB_PATH . "/perl";
+use lib LIB_DIR . "/perl";
 use locale;
 use strict;
 use warnings;
@@ -69,7 +70,7 @@ use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
-use Locale::TextDomain ("mtn-browse", LIB_PATH . "/share/locale");
+use Locale::TextDomain ("mtn-browse", PREFIX_DIR . "/share/locale");
 use IO::File;
 use IPC::Open3;
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
@@ -176,9 +177,9 @@ sub view_button_clicked_cb($$);
 
     Gnome2::Program->init("mtn-browse", 0.51);
     setup_sigchld_handler(\&sigchld_handler);
-    $glade_file = LIB_PATH . "/ui/mtn-browse.glade";
+    $glade_file = LIB_DIR . "/ui/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
-    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_PATH . "/ui/line.png");
+    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_DIR . "/ui/line.png");
 
     # Set up the default database locked and I/O wait handlers for the Monotone
     # class.
@@ -412,7 +413,7 @@ sub about_activate_cb($$)
     local $browser->{in_cb} = 1;
 
     $large_logo = Gtk2::Gdk::Pixbuf->new_from_file
-	(LIB_PATH . "/UI/mtn-browse-large.png")
+	(LIB_DIR . "/UI/mtn-browse-large.png")
 	if (! defined($large_logo));
     Gnome2::About->new
 	("mtn-browse",
