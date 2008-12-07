@@ -1,0 +1,175 @@
+#!/usr/bin/perl
+##############################################################################
+#
+#   File Name    - devl-install
+#
+#   Description  - Perl Linux development `installer' for mtn-browse
+#
+#   Author       - A.E.Cooper.
+#
+#   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
+#                  <aecooper@coosoft.plus.com>.
+#
+#                  This program is free software; you can redistribute it
+#                  and/or modify it under the terms of the GNU General Public
+#                  License as published by the Free Software Foundation;
+#                  either version 3 of the License, or (at your option) any
+#                  later version.
+#
+#                  This program is distributed in the hope that it will be
+#                  useful, but WITHOUT ANY WARRANTY; without even the implied
+#                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#                  PURPOSE. See the GNU General Public License for more
+#                  details.
+#
+#                  You should have received a copy of the GNU General Public
+#                  License along with this software; if not, write to the Free
+#                  Software Foundation, Inc., 59 Temple Place - Suite 330,
+#                  Boston, MA 02111-1307 USA.
+#
+##############################################################################
+#
+##############################################################################
+#
+#   Global Data For This Module
+#
+##############################################################################
+
+
+
+# ***** DIRECTIVES *****
+
+require 5.008;
+
+use strict;
+use warnings;
+
+# ***** REQUIRED PACKAGES *****
+
+# Standard Perl and CPAN modules.
+
+use Cwd;
+use File::Basename;
+use IO::Dir;
+use IO::File;
+#
+##############################################################################
+#
+#   Routine      - Main Body Of Code
+#
+#   Description  - This is the main body of code for the install script.
+#
+#   Data         - @_           : The command line arguments.
+#                  Return Value : Unix exit code.
+#
+##############################################################################
+
+
+
+{
+
+    my($globs_file,
+       $infile,
+       $input,
+       $lib_dir,
+       $mas_dir,
+       $outfile,
+       $prefix_dir);
+
+    print("Linux development in-place installer for mtn-browse\n\n");
+
+    $globs_file = "/usr/share/mime/globs";
+    $prefix_dir = getcwd();
+    while (1)
+    {
+	print("Where is your MIME globs file? [" . $globs_file . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (! -f $input)
+	    {
+		print("Error: File `" . $input . "' is unreadable.\n");
+		next;
+	    }
+	    $globs_file = $input;
+	}
+
+	print("Where is your mtn-browse workspace? [" . $prefix_dir . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (-e $input && (! -d $input || ! -w $input))
+	    {
+		print("Error: Directory `" . $input . "' is unwritable or not "
+		      . "a directory.\n");
+		next;
+	    }
+	    $prefix_dir = $input;
+	}
+
+	$lib_dir = $prefix_dir . "/lib";
+
+	$mas_dir = dirname(getcwd()) . "/automate-stdio/lib/Monotone";
+	print("Where is the Monotone::AutomateStdio (MAS) library? ["
+	      . $mas_dir . "]: ");
+	chomp($input = <STDIN>);
+	($input) = ($input =~ m/^\s*(.*)\s*$/);
+	if ($input ne "")
+	{
+	    if (-e $input && (! -d $input || ! -w $input))
+	    {
+		print("Error: Directory `" . $input . "' is unwritable or not "
+		      . "a directory.\n");
+		next;
+	    }
+	    $mas_dir = $input;
+	}
+
+	print("\nInstallation options are:\n");
+	print("GLOBS_FILE = " . $globs_file . "\n");
+	print("PREFIX_DIR = " . $prefix_dir . "\n");
+	print("LIB_DIR    = " . $lib_dir . "\n");
+	print("MAS DIR    = " . $mas_dir . "\n");
+	print("\nAccept these? [N]: ");
+	chomp($input = <STDIN>);
+	if ($input =~ m/^\s*[yY]\s*$/)
+	{
+	    last;
+	}
+    }
+
+    # Install `executable'.
+
+    die("IO::File failed with $!")
+	if (! defined($infile = IO::File->new("mtn-browse", "r")));
+    die("IO::File failed with $!")
+	if (! defined($outfile = IO::File->new("mtn-browse.out", "w")));
+    while (defined($input = $infile->getline()))
+    {
+	my $orig = $input;
+	$input =~ s/\@INST:LIB_DIR\@/$lib_dir/g;
+	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
+	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
+	$outfile->print("#" . $orig) if ($orig ne $input);
+	$outfile->print($input);
+    }
+    $infile->close();
+    $outfile->close();
+    $infile = $outfile = undef;
+    unlink("mtn-browse");
+    rename("mtn-browse.out", "mtn-browse");
+    chmod(0755, "mtn-browse");
+
+    # Do the pixmap symlinks.
+
+    system("cd ${lib_dir}/ui ; ln -s pixmaps/*.png .");
+
+    # Link in Monotone::AutomateStdio.
+
+    system("cd ${lib_dir}/perl ; ln -s $mas_dir .");
+
+    exit(0);
+
+}
