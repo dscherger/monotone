@@ -1,0 +1,6 @@
+[[!tag migration-done]]
+Contact: [[People/MarkusSchiltknecht]]
+
+Adds a --with-system-botan configure switch, to allow using the system provided copy of botan. Especially note, that the system provided library most probably features the assembler optimizations for SHA1, where as the bundled botan currently does not.
+
+Status: [[status/Experimental]]

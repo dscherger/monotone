@@ -1,0 +1,6 @@
+[[!tag migration-done]]
+Contact: [[People/PetrBaudis]]
+
+Adds two-way syncing with git repositories (unix only).
+
+Status: I'm not quite sure.  Petr?  (ms) hasn't been touched for awhile, [[status/Stalled]].

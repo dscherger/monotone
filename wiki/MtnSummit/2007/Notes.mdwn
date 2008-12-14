@@ -1,0 +1,62 @@
+[[!tag migration-done]]
+
+# Done
+
+ * ssh-agent support
+   * support for passphrase-less keys (monotone internal and ssh_agent_export)
+   * added check for valid signature right after signing data
+ * detecting workspace collision (update/checkout/pluck/...)
+ * asciik (for log)
+ * annotate zoooooom
+ * finish it translation
+ * workspace merge (.nocornflakes)
+ * po/ file fix
+ * [[ChangeLog]] die-die-died
+ * testsuite.lua giant list gone
+ * cygwin tests pass now
+ * line-ending/charset conversion stuff gone
+ * Markus found another line-merging bug :-(
+ * some workspace handling bugs
+ * more [[CvsImport]]
+ * checkout is using editable_tree now
+ * some initial work on TortoiseMTN
+ * new concept: locked workspace
+ * learn our crypto all sucks
+ * audit #include <iostream>'s
+ * fix `ls unknown` in subdir regression
+ * some charset fixes for `log` and friends
+ * passphraseless monotone keys
+
+# Decisions/plans
+
+ * [[PartialPull]]
+ * policy branches
+ * [[LogUI]]
+ * [[DatabaseCompaction]]
+ * get rid of regular expressions in the UI
+ * minimize dependencies on boost (esp., get rid of boost:re, boost::fs, boost::date_time)
+ * fix stupid GFDL
+ * the workspace collision-detection stuff really does need to go through roster_merge; update can bring in conflicts on attrs as well as filename.
+ * `attach`/`detach`
+ * cvssync: almost ready to merge automate improvements
+ * need to reorder tests into classes
+ * remove all regexen
+
+# Todo today
+
+ * review
+   * annotate:
+     * propagate from mainline
+     * fix annotate for changed file in workspace
+     * factor out some stuff in database.cc -- need some help
+     * review: Nathaniel
+   * asciik
+     * review: Derek
+   * ssh-agent
+     * need tests
+     * need review: Zack
+ * any more planning/discussion now?
+ * [[WorkspaceConflicts]]
+ * asciik in status
+ * public presentation of project and work
+ * paths relative to what

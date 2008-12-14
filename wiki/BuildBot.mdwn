@@ -1,0 +1,163 @@
+[[!tag migration-done]]
+
+The buildbot helps us make sure monotone continues to work on lots of platforms and configurations, and debug what's going wrong when things break.
+
+General information: <http://buildbot.net/>
+
+Our buildbot: <http://monotone.ca/buildbot/>
+
+The way it works is that there is a single "buildmaster" that runs on a central server (`monotone.ca` in this case), that watches for new changes in the repo, and allocates work to "buildslaves".  Buildslaves are run by helpful people out on the internet who have access to whatever weird configuration they'd like to make sure keeps being supported, and the cycles to spare on these boxes to do continuous rebuilds.
+
+We are always interested in getting new buildslaves; send a note to the list if you have one to offer, and we'll help you get it set up!
+
+Currently, a patch for the buildbot is required to support monotone. It has already been sent to the buildbot developers and will hopefully be applied to their mainstream code, soon. In the meantime, you can get the patch here: <http://www.pastebin.ca/612470>
+
+An alternative is to grab the latest `buildbot_*.tar.gz` in <http://guardian.lp.se/debian/testing/>. That's the version used for <http://monotone.ca/buildbot/> and contains all patches that were needed to make it run properly with monotone (including the patches mentioned above).
+For those running Debian, there's also the Debian package, built from the tar archive mentioned here, easily reachable with an appropriate choice between the following two sources.list lines:
+
+    deb http://guardian.lp.se/debian testing/
+
+    deb http://guardian.lp.se/debian unstable/
+
+See [[BuildBot/Windows]] for setting up a Buildslave on Windows
+
+# Setting up a Buildslave for Monotone
+
+1. Install Twisted from <http://twistedmatrix.com/trac/> and buildbot from <http://buildbot.sourceforge.net/> (and apply the above patch)
+
+2. Create a new user to run the builds (very important):
+
+    On debian this is:
+
+        # adduser --disabled-login --disabled-password mtbuildbot
+
+    On gentoo it is:
+
+        # adduser -s /bin/false -d /home/mtbuildbot -m mtbuildbot
+
+    Other systems, I don't know, probably something like the above.
+
+    NOTE: The above seems wrong, in that later you'll need to 'su' to the user and you can't do that if it's disabled.  I enabled mine and disabled it after everything was working.
+
+3. Install a monotone binary into the new user's home directory; this is better than using the system-installed one, because it means that you don't have to worry about accidentally breaking the buildbot when upgrading.  (On the other hand, it also means that whenever the netsync server protocol changes, you'll have to upgrade the copy of monotone installed here.)
+
+        # cp /path/to/working/mtn mtn
+
+    You should let me know where the binary you want to use is located, since the path to the binary has to be set on the server side.
+
+4. Create a buildbot instance:
+
+        $ buildbot create-slave slave-dir monotone.ca:9001 <NAME> <PASSWORD>
+
+    (replacing <NAME> and <PASSWORD> by the name of this slave and the password that it was assigned).  Note that you MUST run this command as the buildbot user you have created. The name and password have to come from the buildbot master admin, so ask on the list for a bot name and password.
+
+5. Make sure that permissions are correct.  The mtbuildbot user needs write access to slave-dir, and should not have write access to anything else.
+
+## Running the Buildslave
+
+There are several ways to run a buildslave.  Here are a few examples:
+
+### Running the Buildslave with cron
+
+1. Start the slave now:
+
+        # su mtbuildbot -c 'buildbot start slave-dir'
+
+2. Check `slave-dir/twistd.log` to see it starting up and check for errors.
+
+3. Set up the slave to be automatically started at boot:
+
+        # echo '@reboot buildbot start slave-dir' | su mtbuildbot -c 'crontab -e -'
+
+### Running the Buildslave with runit
+
+1. Install runit, http://smarden.org/runit or apt-get install runit or whatever.
+
+2. Create a file called ~mtbuildbot/run:
+
+        #!/bin/sh
+        cd $HOME/slave-dir
+        exec nice twistd --nodaemon --no_save -y buildbot.tac -l twistd.log
+
+    and make it executable.  (If you're on win32, you may need to add a `--reactor=win32` argument to that command line.  But then, you're probably not using runit in that case anyway, I guess...)
+
+3. Make sure that permissions are correct.  The mtbuildbot user needs write access to slave-dir, and should not have write access to anything else.
+
+4. Start the slave now:
+
+        # su mtbuildbot -c 'runsv .' &
+
+5. Check `slave-dir/twistd.log` to see it starting up and check for errors.
+
+6. Set up the slave to be automatically started at boot:
+
+        # echo '@reboot runsv .' | su mtbuildbot -c 'crontab -e -'
+
+# Monotone Buildbot Wishlist
+
+* cygwin
+* better BSD coverage
+* better architecture coverage -- arm, m68k, hppa, ia64, ...?  even another slave on ppc or x86-64 would be nice.
+* better solaris coverage
+* better windows coverage -- win95?  win nt 4?  there are many strange variations to this genus.
+* a way to run the whole testsuite under valgrind and collect the results
+* any other systems we don't have, but where you think monotone should work -- AIX?  HP-UX?  QNX?  ReactOS?  you tell me...
+
+
+# Setting up a Buildbot for your own Project using Monotone
+
+Currently, you will need the above patch for buildbot to work with monotone. Make sure to make yourself familiar with the buildbot infrastructure, they have a nice manual: <http://buildbot.sourceforge.net/manual-0.7.5.html>
+
+You will most probably want to try the netsync hooks to notify the buildbot upon changes, see the monotone sources: `contrib/monotone-buildbot-notification.lua`
+
+Maybe, an example of a working configuration helps, here is what the master.cfg for the monotone.ca buildbot could look like:
+
+    # -*- python -*-
+
+    c = BuildmasterConfig = {}
+    c['bots'] = [("i386-debian-testing", "YOU-CHOOSE-A-PASSWORD-HERE")]
+    c['slavePortnum'] = 9001
+
+    from buildbot.changes.pb import PBChangeSource
+    c['sources'] = [PBChangeSource()]
+
+    from buildbot.scheduler import Scheduler
+    c['schedulers'] = []
+    c['schedulers'].append(Scheduler(name="all", branch="net.venge.monotone",
+				     treeStableTimer=2*60,
+				     builderNames=["i386-debian-testing"]))
+
+    builders = []
+
+    from buildbot.process import factory
+    from buildbot.steps.source import Monotone
+    from buildbot.steps.shell import ShellCommand
+    from buildbot.steps.shell import Configure
+    from buildbot.steps.shell import Compile
+    from buildbot.steps.shell import Test
+
+    f_unix_general = factory.BuildFactory()
+    f_unix_general.addStep(Monotone,
+			   server_addr="monotone.ca", branch="net.venge.monotone",
+			   monotone="mtn")
+    f_unix_general.addStep(ShellCommand, command=["autoreconf", "-i"])
+    f_unix_general.addStep(Configure)
+    f_unix_general.addStep(Compile)
+    f_unix_general.addStep(Test, command=["make", "check"])
+
+    b_i386_debian_testing = {'name': "i386-debian-testing",
+			     'slavename': "i386-debian-testing",
+			     'builddir': "full-i386-debian-testing",
+			     'factory': f_unix_general,
+			    }
+    c['builders'] = [b_i386_debian_testing]
+
+
+    from buildbot.status import html
+    c['status'] = [html.Waterfall(http_port=9000)]
+
+
+    c['projectName'] = "Monotone"
+    c['projectURL'] = "http://monotone.ca/"
+
+    c['buildbotURL'] = "http://monotone.ca:9000/"

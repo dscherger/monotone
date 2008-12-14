@@ -1,0 +1,14 @@
+[[!tag migration-done]]
+(outdated)
+
+Contact: [[People/ChristofPetig]]
+
+Adds two-way syncing with (remote) CVS servers
+
+Christof (and his collegues) use this branch for their daily work against their CVS servers, so it's definitely usable. Documentation is available.
+
+Open issues: the data structure (map<time,...>) has difficulties and is inefficient for large (>1000 changesets) repositories; propagates gather too much changelog info; most problems arise when $Id$ tags get expanded differently; not yet reindented with GNU style.
+
+See also [[CvsSyncHints]].
+
+Status:  [[status/Work_in_Progress]]

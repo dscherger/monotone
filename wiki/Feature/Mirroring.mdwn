@@ -1,0 +1,36 @@
+[[!tag migration-done]]
+
+This page is one of many describing [[EvaluationFeatures]] that may be useful when comparing monotone to other similar (and not-so-similar) VCS systems.
+
+# Description
+
+Support replication or mirroring of the repository to remote sites, for load distribution and/or backup purposes.
+
+# Supported
+
+This feature is fundamental to monotone, as a distributed VCS.  There is essentially no other way of working, because every developer works with their own repository replica.
+
+Not all repositories are used for the same purpose, though.  A project may choose to set up several servers, distributed geographically, to spread the load of software distribution and the risk of hardware or network failure.  It is easy to set up automated replication between servers, or to rely on users to relay new revisions between servers.
+
+
+# Example Usage
+
+If independent monotone servers are running at `server1` and `server2`, a developer with write privileges to both servers can replicate content between them simply by syncing with each server:
+
+     $ mtn sync server1
+     $ mtn sync server2
+     $ mtn sync server1
+
+If either of these servers had new revisions, those revisions will be transferred to the developer's database, and then to the other server if it was not yet aware of them. In order to make them identical mirrors, use the branch pattern `'*'` for all syncs, otherwise more selective patterns can be used for partial replicas.
+
+These servers are inherently peers, there is no particular need for any of them to be considered the master repository.  There is no particular need to back up either of these servers, their content can be restored from the other server, or from developer's databases - anything in a server database will also exist in one or more other databases where it was originally committed, at least.
+
+# Further Reference
+
+Manual and Tutorial Sections:
+
+ * [Network Service Revisited](http://monotone.ca/monotone.html#Network-Service-Revisited)
+
+Features and Requirements in other evaluations:
+
+ * [[FreeBSD]] [VCSFeatureMirroring](http://wikitest.freebsd.org/VCSFeatureMirroring)

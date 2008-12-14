@@ -1,0 +1,9 @@
+[[!tag migration-done]]
+
+The officially supported build environment for monotone on Windows is [MinGW](http://mingw.org/).  The exact requirements are listed [[in_the_specific_page|MinGW]].
+
+Building monotone under [Cygwin](http://cygwin.com/) is also known to work.  monotone is also included as a package in all Cygwin mirrors and can be easily installed using Cygwin's [setup.exe](http://cygwin.com/setup.exe).
+
+Building with Microsoft [Services For Unix](http://www.microsoft.com/windowsserversystem/sfu/default.mspx) is untested, but would probably work without too much difficulty.
+
+Support for [[building_using_Visual_Studio_8|VisualC8]] is available, but we don't have a VC8 buildbot so sometimes the build is broken.

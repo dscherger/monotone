@@ -1,0 +1,8 @@
+[[!tag migration-done]]
+[[!tag MtnSummit/2008]]
+Contact: [[People/ThomasKeller]]
+
+Implements the `netsync` commands `push`, `pull` and `sync` in automate, especially for use within `automate stdio`. Enforces and checks the usage of a running ssh-agent instance to avoid password prompting.
+
+Status: Documentation is in place, [[status/Needs_Tests]]
+

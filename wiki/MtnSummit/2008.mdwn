@@ -1,0 +1,11 @@
+﻿[[!tag migration-done]]
+
+# Europe 2008
+
+Our 2008 summit took place from April 28 to May 4 in Wuppertal, Germany.
+
+See [[2008/InterestDatesAndLogistics]] for the old organizational page.
+
+The branches which we've worked upon on the 2008 summit and which should be reviewed by others:
+
+[[!inline pages="wiki/Branches/* and link(MtnSummit/2008)" sort=title]]

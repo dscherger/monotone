@@ -1,0 +1,6 @@
+[[!tag migration-wip]]
+
+## Emile Snyder
+
+ * Email: <mailto:emile@alumni.reed.edu>
+ * IRC nick: esnyder

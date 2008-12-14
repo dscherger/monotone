@@ -1,0 +1,41 @@
+[[!tag migration-auto]]
+
+What is the bare minimum command set needed to use monotone?
+
+For read-only/"anonymous" tracking of an existing project:
+
+  Initial setup:
+
+    `mtn pull --new-db --db `*project*`.mtn `*host* *branch*wildcard*: do an initial fetch
+
+    `mtn checkout -b `*branch* *directory*: check out latest source
+
+  Updating:
+
+    `mtn pull && monotone up`: pull latest source and update working copy
+
+  See [Self Hosting](http://venge.net/monotone/self-hosting.html) for further details on doing this for monotone itself.
+
+For contributing:
+
+  Initial setup:
+
+    `mtn genkey` *email@address*: introduce yourself to monotone (only run this once ever, then copy around the file ~/.monotone/keys/*email@address*)
+
+    `mtn pull --new-db --db `*project*`.mtn `*host* *branch*wildcard**: do an initial fetch
+
+    `mtn checkout -b `*branch* *directory*: check out latest source
+
+  Commiting:
+
+    `mtn commit`
+
+  Publishing:
+
+    `mtn sync`
+
+  Merging:
+
+    `mtn merge`, `mtn propagate`
+
+(FIXME: fold this into the manual)

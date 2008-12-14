@@ -1,0 +1,10 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Markus Schiltknecht
+
+ * email: <mailto:markus@bluegap.ch>
+ * personal webpage, which certainly needs some work: <http://www.bluegap.ch>
+
+Besides monotone, I'm also working on replication solutions for
+PostgreSQL, see <http://www.postgres-r.org> for that.

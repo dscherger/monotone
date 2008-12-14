@@ -1,0 +1,83 @@
+[[!tag migration-done]]
+
+# Importing CVS repositories with Graph Based Algorithms
+
+The cvs2svn people, mainly Michael Haggerty have come up with a new algorithm (see his [mail](http://cvs2svn.tigris.org/servlets/ReadMsg?list=dev&msgNo=1451)) for cvs2svn 2.0, which is based on [GraphTheory](http://en.wikipedia.org/wiki/Graph_theory). In the branch [[net.venge.monotone.cvsimport-branch-reconstruction|Branches/nvm.cvsimport-branch-reconstruction]], [[People/MarkusSchiltknecht]] maintains an implementation in C++, with some monotone specific modifications.
+
+## Overview
+
+An import consists of three steps:
+
+ * parsing the RCS files to collect all events into blobs
+ * split dependency cycles between those blobs
+ * streamline the graph, to resolve branch affiliation
+ * consuming the blobs in the graph to create monotone revisions
+
+## Parsing the RCS files
+
+In a first step, the RCS files are parsed to generate file deltas and hashes. In all subsequent steps, files are only referred to by the hash, which allows us to do most CVS conversions in memory (as an example, importing the mozilla repository peaked at around 1.8 gb memory usage, last time I tried). Additionally, we also collect all `cvs_event`s into blobs. Such `cvs_event`s (which should probably better be called `rcs_event`s) can be:
+
+ * `cvs_commit`: the commit action for this single file
+ * `cvs_symbol`: a symbol on a specific commit
+ * `cvs_tag`: a tag for the file at the underlying symbol
+ * `cvs_branch_start`: a branchpoint or start of a branch at the underlying symbol
+ * `cvs_branch_end`: end of a branch
+
+According to the RCS version numbers, dependencies between those events are recorded, i.e.:
+
+ * a commit of revision 1.2 depends on revision 1.1
+ * symbol `MY_TAG` depends on the commit of revision 1.4, the `cvs_tag` for `MY_TAG` then depends on that symbol
+
+Depending on the type of these `cvs_event`s, they are collected in blobs: `cvs_commit`s with the same author and changelog end up in the same blob, obviously all equally named symbols also get their own blob. And based on the underlying symbol, all `cvs_tag`, `cvs_branch_start` and `cvs_branch_end` events are also collected in a separate blob.
+
+After this step, the dependency graph looks something like this one here, from the `importing_cvs_small_real_repo` unit test:
+
+[example dependency graph](http://www.bluegap.ch/samples/importing_cvs_small_real_repo/t1.png)
+
+
+## Splitting dependency cycles
+
+In a second step, we check the graph for dependency cycles using a depth first search. Upon discovery of such a cycle, we try to find the best split point, to split one blob of that cycle into two. The simplest, and currently used method is splitting at the largest gap in time. This is repeated until no more cycles are left, we then have an acyclic graph, but not a tree - meaning there can still be cross or forward edges.
+
+See such a dependency cycle highlighted in red below, from the `importing_cvs_cycle_splitter2` unit test. As commit "blob A" has the largest gap in time, it's the one to get split up into two independent blobs in that sample. The example above does not have any cycles.
+
+[dependency cycle example](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter2/t2.png)
+
+
+## Streamlining the graph
+
+To figure out in what branch a certain blob belongs to, we'd like to get a tree of branches. Additionally, as CVS - unlike monotone - cannot represent multiple heads and merges, we'd like to eliminate all cross or forward edges. We do that in various ways, ... to be described...
+
+A sample for such a cross or forward edge, from the `small_real_repo` test:
+
+[cross edge example](http://www.bluegap.ch/samples/importing_cvs_small_real_repo/t7.png)
+
+## Consuming the blobs
+
+As we now have a tree of blobs (revisions), it's trivial to import that into monotone. See the streamlined graphs from our two example unit tests, first the simpler `cycle_splitter2`:
+
+[`cycle_splitter2` graph after streamlining](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter2/t5.png)
+
+And here the `small_real_repo` in all its beauty:
+
+[`small_real_repo` graph after streamlining](http://www.bluegap.ch/samples/importing_cvs_small_real_repo/t8.png)
+
+
+## Another Sample, from `importing_cvs_cycle_splitter3`
+
+Involving cycles with branch starts:
+
+ * [all the graph before modifications](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.1.png)
+ * [all first cycle encountered](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.2.png)
+ * [all no more cycles, w/o weak deps](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.no-weak.3.png)
+ * [all streamlining 1](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.4.png)
+ * [all streamlining 2](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.splitter.5.png)
+ * [final graph, importable by monotone](http://www.bluegap.ch/samples/importing_cvs_cycle_splitter3/cvs_graph.all.6.png)
+
+
+## Real World test repositories, and how they are currently failing
+
+Tested with: `040f83b3bcd4c04adc7e3947d06a9ccffc223ad5` 2008-05-01T14:00:49
+
+ * netbsd/othersrc: creating monotone revs: `../nvm.cbr/rcs_import.cc:5,018: invariant 'I(parent_blobs.size() == 1)' violated`
+ * openssl/openssl: cycle splitting stage: `../nvm.cbr/rcs_import.cc:3,598: invariant 'I(false)' violated`

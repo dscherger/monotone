@@ -1,0 +1,66 @@
+[[!tag migration-done]]
+
+Monotone has a concept of branches that's internally quite different to some other VCS's.  While it's very powerful and flexible, this has confused some users getting used to monotone's world.  In particular:
+
+ * in monotone, the revision history / ancestry graph is totally unrelated to the branch information: branches are not "editing branches"
+ * monotone branches can have gaps, or be otherwise disjoint in the revision history / ancestry graph
+ * different users can see the same branch as having different memberships
+ * even very old revisions can be added to new branches at any time
+ * the same revision can be on several different branches at the same time
+ * revisions can be on no branches at all
+
+This is because, in monotone, branches are represented by certificates on revisions - nothing more, nothing less.  These certificates are assertions by monotone users about the branch membership status of the particular revisions. Because of the distributed nature of monotone, different users may be in posession of different branch certificates in their unsyncronised databases, or indeed they may wish to selectively trust only certain signers of branch certificates.  Monotone provides some commands that use these branch certificates in particular ways to help select relevant revisions for common development tasks.  Apart from these selection uses, branches are not in any way special to monotone.
+
+There are several important concepts in the above discussion.  The following analogy may help new users grasp them.
+
+
+# Ancestry
+
+The ancestry graph is like a family tree, documenting your genetic history. Each revision (person) has ancestors (parents).  Most people have two (genetic) parents. In monotone most revisions record only one parent - the other parent is the unnamed working copy that had the changes being committed; revisions that result from merges have two recorded parents in the ancestry graph.  
+
+The ancestry tree leading up to a revision is fixed.  Once your genetic heritage has been determined, you can't really change it. Your ancestry is a fundamental part of the definition of your identity: 
+
+ * in monotone, two revisions that took a different editing path to produce identical contents are different revisions, because they have different ancestors.
+ * However, if a new child is created by making the same changes to the same ancestor, this is the same revision - if identical changes are made to the same ancestor separately by several people, they produce identical clones (which are all the same revision).
+ * You can't really exist without your parents, either - in monotone, in order for a database to contain a revision, it has to also have copies of all of its ancestors, for a full genetic history. 
+
+However, new children can be created from any revision at any time, and will be added to the ancestry tree.
+
+Children tend to look a lot like their parents, usually inheriting most of their genetic characteristics, plus a few changes (good or bad or otherwise).  In software development, as in genetics, it's often very important to know the ancestry, because it tells you where certain characteristics and changes (mutations) came from, and which children are likely to have inherited those changes further down the family tree.
+
+Usually, when a new person is born, the doctor will sign a birth certificate containing various information about the person, such as the time and date of birth, and other similar things.  In monotone, there are usually several certificates created on a new revision by default, and these certificates make similar statements about the new revision.
+
+# Branch Membership
+
+One of the certificates created by default in a new commit is a branch certificate, which is a statement about membership of the revision in a particular branch (which has a name). Branches are typically used to make statements about the suitability of particular revisions for particular purposes (such as being release-quality or experimental code, for example).  Some commands in monotone look at branch certificates to help users select revisions for various purposes; these commands make working with monotone and common code-development practices more convenient, however you are not limited to only those common practices.
+
+Branch membership is like a nationality, or membership of a secret society:
+
+ * In normal practice, it tends to run along ancestral lines: children often inherit the nationality of their parents.  
+ * You can be a member of multiple societies, or hold several nationalities - even a nationality that neither of your parents hold, such as if you were born in another country.
+ * Not all of the members of a society are related to eachother, at least in recent history, though they may in fact share some long-distant ancestor.
+ * You can join a society long after you are born, if someone chooses to approve you as a member.
+ * When you join a new society, it might take some time for the membership records of distant chapters of that society to be updated to include you, so they might not recognise you as a member when you first turn up for a meeting.  In fact, some remote chapters might not even recognise your chapter, and won't trust the membership records even when they do arrive - though they can always issue you a local membership certificate as well, if you satisfy them of your worthiness.
+ * it's quite possible (though perhaps a little unusual in practice) for people to not belong to any recognised nationality or secret society.
+
+In monotone, unlike some other systems, there is no requirement that branches follow ancestry lines.  It's a common convenience to remember the branch name used to check out a revision, and use that as the default certificate when committing new children of that revision. Like above, this tends to result in most children being in the same branch as their parents, but this is a convenience only.  
+
+You can start a whole new secret society of your own at any time by making a new branch certificate, either on an existing revision or as the initial branch certificate on your new child revision at commit time.  Or you can leave off the branch certificate entirely and create a revision with no branch membership.
+
+# Heads
+
+In monotone, the "heads" of a branch are all the revisions with a trusted branch certificate for that branch, and with no descendents also in that branch (even if they do have non-member children elsewhere).  
+
+These are the people who stand to inherit the secret society's treasured collection of ancient artifacts, which are passed down along family lines -- but only amongst society members!  There can be multiple heads, because different members all around the world can each produce children whenever they like, and induct them into the society. As above, news of new children or memberships sometimes travels slowly, and it's often the case that two different local chapters each think two different people are the sole heir until news of others arrives.
+
+# Merge
+
+Just like for code development, it gets confusing for the society when there are too many inheritors, because the treasures really should stay together.  It is best if the multiple inheritors can get together and produce a single heir with their combined genetic history to resolve this conundrum, though this doesn't have to happen immediately.  
+
+Monotone includes a convenient command, `merge`, to find these heads and produce a rightful heir, complete with handy membership certificate. 
+
+# Propagate
+
+Secret societies can be very focussed on a particular purpose, and if they stay isolated from developments in the wider world, they sometimes get a little in-bred; it's often a good idea for them to bring in some fresh genetic material from other parts of the ecosystem.  This can happen when a society member produces a child with an outsider - the outsider might not join the society, but if the child is granted membership then their contribution has been added to the genetic pool of society members (and the child will be a new head for the branch, standing to inherit the ancient treasures).
+
+There is a similar command to `merge`, called `propagate`, to do exactly this.  It works just like `merge`, except it looks in different places when selecting potential parents: `propagate` takes the names of two branches (societies), and takes the heads of those societies to create a new child. The child will, by default, be granted membership of only one of the societies - but can of course join any others as well. 

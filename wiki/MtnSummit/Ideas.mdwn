@@ -1,0 +1,92 @@
+[[!tag migration-done]]
+
+Brainstorming ideas to be worked on at the MtnSummit2008 (or in general, really!):
+
+## Things we would like to work on
+
+ * ikiWiki
+ * daggy fix UI
+ * bring cvssync back to work
+ * branch reconstruction, cvssync <- cvs_import
+ * generic import infrastructure? (e.g. by generalizing cvs and svn sync)
+ * tortoiseMTN with guitone backend and stealing code from tortoiseHg
+ * automate improvements
+  * unification of c++ interfaces
+  * error handling/representation
+  * implement new Stuff
+  * automate show_conflict
+
+
+## Internals
+
+ * Make [DieDieDie](http://revctrl.org/DieDieDieMerge) finally Die (file resurrection or a delete-blocking cset op for merge) ([ This IRC conversation](http://colabti.de/irclogger/irclogger_log/monotone?date=2007-03-20,Tue#l239) may help explain this, or it may not).
+
+ * Workspace
+  * Workspace merge
+  * workspace (tree layout) conflict resolution
+  * suspend/resume workspace changes (local only commits)
+  * revert via editable_working_tree?
+  * handle dropped dirs with unversioned paths properly (still an issue?)
+
+ * Selectors
+  * redo selectors
+  * extend selectors so that one can specify ranges (what is now done with --from and --to for mtn log)
+  * branch filters as selectors? --exclude "foo*" -> !b:foo*
+
+ * Hashes
+  * store sha1 sums binary in database (speed, size)
+  * Think about hash function migration (what we'd need to do, what if anything ought to be done now to prepare)
+
+ * Certs
+  * rework cert format
+  * un-base64 internal cert representation
+
+ * come to some resolution on the line-ending mess
+ * unified inodeprints/unknown/missing cache, possibly with dir-order scanning
+ * something like cvs modules to support workspaces drawn from multiple branches
+ * symbolic link support (revision control of symlinks, not the targets)
+ * large file support
+
+## Networking
+
+ * add a --preview/--readonly option to push/pull/sync which previews the changes that are pushed or pulled (i.e. grouped by branch) but doesn't do anything else
+ * Partial pull (killer feature for OSS projects e.g. OpenEmbedded, Gaim)
+ * Pull over HTTP, even if it wastes more bandwith to get things right than Netsync. (See `net.venge.monotone.contrib.dumb` for a basically working implementation.)
+ * Policy branches!
+ * think about how to rework netsync into something supportable long term
+ * find some kind of solution to the pulling-to-a-database-in-use problem (important for automatic pulls of all kinds -- cron jobs, viewmtn, tracmtn...)
+
+## Cleaning up stuff
+
+ * .mtn-ignore cleanup -- make it possible to cancel ignore rules, probably move everything into c++
+ * edit comment cleanup -- this code is a mess, the c++ has hard-coded instructions about how the lua code works, etc...
+ * cleanup and big enhancements in the automation interface
+ * clean up filesystem charset handling
+
+## UI / integration
+
+ * Eclipse Plugin
+ * A multi-platform GUI (guitone, ...)
+ * A visual studio plugin like <http://ankhsvn.tigris.org/>)
+ * Monotone-viz on Win32
+ * cvs import/sync (data fidelity, branch reconstruction and other correctness)
+ * importers from other tools (svn, especially; maybe git, hg...)
+ * Log UI stuff (see mailing list -- finer-grained selection of revisions, graph reduction, ascii graph display...)
+ * relative path output from ls unknown/ignored/missing/known
+ * formatting support for automate
+ * Rehaul the i18n stuff (right now, e.g., names from the file system are not translated correctly)
+ * color each branch differently in ASCII-k
+ * monotone URIs, like mtn://venge.net/h:net.venge.monotone for push/pull/clone
+
+## Tools, Documentation, and other things
+
+ * Speed, Performance analysis, large project benchmarking
+ * put together another user survey? (SurveyQuestions)
+ * port buildbot support forward to buildbot trunk, make it work better, get it integrated upstream
+ * documentation and presentation tidyup
+ * generation of manpage from internal docstrings (and possibly fleshing those out too)
+ * sample monotonerc file?  (possibly also available as monotonerc(5), etc.)
+ * merge_into_dir monontone dependencies (Botan, lua, etc) into net.venge.monotone 
+ * advocacy, promotion and tools to help OSS projects to switch to monotone
+
+Add more wishes!

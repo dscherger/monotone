@@ -1,0 +1,22 @@
+[[!tag migration-done]]
+Contact: [[People/ChristofPetig]]
+
+Connected to [[Branches/nvm.gaps]].
+
+Both branches are about partial pulls, i.e. storing only revisions
+newer than those of a certain horizon (including them). See
+[[PartialPull]] for more information and a nice illustration. Both
+branches introduce some form of a sentinel, which covers an inexistant
+or incomplete revision. The difference for n.v.m.gaps is, that these
+sentinels don't just cover all revisions from the covered one until
+the root (null revision), but to any arbitrary revision, from which we
+have the revision data again.
+
+For more information, see this mailing list thread here:
+<http://lists.gnu.org/archive/html/monotone-devel/2007-05/msg00185.html>
+
+Status: [[status/Experimentatal]]
+
+
+
+

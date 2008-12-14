@@ -1,0 +1,12 @@
+[[!tag migration-done]]
+Contact: [[People/StephenLeake]]
+
+Second attempt to fix `mtn sync file:` and `mtn sync ssh:` on Windows [[MinGW]].
+
+See [[nvm.experimental.win32_pipes]]
+
+This branch attempts to fix the named pipe solution that is in the main branch.
+
+See comments in netxx_pipe.hh
+
+Status: [[status/Stalled]] no actual work beyond planning done.

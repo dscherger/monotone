@@ -1,0 +1,12 @@
+[[!tag migration-done]]
+
+If you have a lot of big branches (maybe you need to version control a library of some sort), you can get a large db file. sqlite and monotone are paranoid about data integrity, but it is possible that a hardware failure during an operation can hose parts of the database.                                
+                                                                                   
+It is better to have a db file for each branch, and use Usher (net.venge.monotone.contrib.usher) to proxy connections to a server running for each branch.    
+
+## Note about usher
+
+Depending on how usher is used, you may or may not have a surprise.  If you configure it with each database being served by separate virtual hosts, you're absolutely safe.  However, if you configure it with each database being served by branch patterns, the users will have to make sure not to try to get several collections at once.  For example, the following will get the contents of first or last (depending on usher version, IIRC) configured database and nothing more:
+
+    mtn pull *yourhost* "*"
+

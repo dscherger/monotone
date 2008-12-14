@@ -1,0 +1,20 @@
+[[tag migration-auto]]
+
+
+Seriously, `mtn status` doesn't really have the friendliest UI.
+
+Things it should tell:
+
+  * what's changed in the current working copy (in concise, human-friendly, i18nized form)
+    * when we have [[MergeViaWorkingDir]]: versus both parents
+  * what branch we're on
+  * what the base revision is (?)
+  * unknown files (listing them if just a few, suppressing the list to say "<n> unknown files" if there are lots)
+  * missing files (currently status will fail if there are missing files)
+  * if there are other heads (maybe only if we're at the head?  i.e., hint about running `merge`)
+  * if update would do anything (maybe details on what it would do, if they're short?  i.e., listing files that would be affected if you hit `update` now?)
+  * when we have [[MergeViaWorkingDir]]: unresolved conflicts
+
+Other cool status things
+
+  * status -r ... to compare the current workspace with an arbitrary revision (this will probably require status to handle missing files better)
