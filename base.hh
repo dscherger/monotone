@@ -20,6 +20,10 @@
 #define BOOST_SP_DISABLE_THREADS
 #define BOOST_MULTI_INDEX_DISABLE_SERIALIZATION
 
+// Undefine this if you do not want to support SQLite versions older
+// than 3.3.14.
+#define SUPPORT_SQLITE_BEFORE_3003014
+
 #include <iosfwd>
 #include <string>  // it would be nice if there were a <stringfwd>
 
@@ -49,6 +53,12 @@ template <> void dump(std::string const & obj, std::string & out);
 #define NORETURN(x) __declspec(noreturn) x
 #else
 #define NORETURN(x) x
+#endif
+
+// SQLite versions before 3.3.14 did not have sqlite_prepare_v2. To support
+// those SQLite libraries, we must use the old API.
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+#define sqlite3_prepare_v2 sqlite3_prepare
 #endif
 
 // Local Variables:
