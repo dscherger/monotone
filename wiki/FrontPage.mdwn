@@ -1,7 +1,7 @@
 [[!tag migration-wip]]
 # monotone wiki
 
-This is the wiki for the version control system 
+This is the wiki for the version control system
 [monotone](http://monotone.ca/).
 
 monotone is a free distributed version control system. it provides a simple, single-file transactional version store, with fully disconnected operation and an efficient peer-to-peer synchronization protocol. it understands history-sensitive merging, lightweight branches, integrated code review and 3rd party testing. it uses cryptographic version naming and client-side RSA certificates. it has good internationalization support, few external dependencies, and runs on unix, OSX, windows, and is licensed under the GNU GPL.
@@ -32,13 +32,13 @@ a useful collection of brokenlinks at [[wiki]].*
 ### Using Monotone
  * [[InterfacesFrontendsAndTools]] -- other programs that work with monotone
  * [[EssentialMonotone]] -- the minimal commands needed to get anything done
- * [[AlternativeOverview]] -- a different order than the [Tutorial](http://venge.net/monotone/docs/Tutorial.html) for introducing monotone capabilites
+ * [[AlternativeOverview]] -- a different order than the [Tutorial](http://monotone.ca/docs/Tutorial.html) for introducing monotone capabilites
  * [[BestPractices]] -- best practices for using monotone
  * [[MasterRepository]] -- Master Repositories you might be used to with a centralised VCS, and why you don't need one with monotone.
  * [[MonotoneAndCVS]] -- different ways of working with CVS and monotone.
  * [[UsingCerts]] -- how certs work, and don't, in practice.
  * [[TrustFoundations]] -- the basics of monotone's trust model, and how it works with certs
- * [[BranchAnalogy]] -- understanding how monotone's branches work, and might be different to other tools.  
+ * [[BranchAnalogy]] -- understanding how monotone's branches work, and might be different to other tools.
  * [[BranchNamingConventions]] and [[BranchRenaming]] -- discussions about how to name your branches and what to do when you change your mind.
  * [[DaggyFixes]] -- handling bug fixes, backports, and cherry picking
  * [[TipsTricksScripts]] -- useful snippets for getting more out of monotone

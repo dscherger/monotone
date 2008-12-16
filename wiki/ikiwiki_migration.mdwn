@@ -4,6 +4,8 @@
    markup style, into the workspace, and commit it as is for
    reference. (adjust as needed for some other tool, like wget or curl).
 
+   ATTENTION: The moinmoin wiki was shutdown on 2008-12-16, so this no longer works
+
         ftp -o ZipperMerge.moin "http://www.venge.net/mtn-wiki/ZipperMerge?action=raw"
         mtn add ZipperMerge.moin
         mtn commit
@@ -43,7 +45,7 @@
       of single-quotes
 
     * Links are done with `\[[SquareBrackets]]` rather than bare
-      `[[CamelCaseWords]]` 
+      `[[CamelCaseWords]]`
 
     * preformatted code blocks are done with 4 more spaces (inside the
       current level of indentation, say when inside nested lists),
@@ -53,7 +55,7 @@
       rather than `[http://url link text]`
 
       An exception: when the URL is the link text as well, it can be
-      simplified like this: `<http://url>`  
+      simplified like this: `<http://url>`
       The angle brackets are *required* in this case.  Ikiwiki and
       markdown do not make any attempt to interpret URLs otherwise.
 

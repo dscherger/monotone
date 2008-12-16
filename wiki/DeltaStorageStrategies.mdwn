@@ -32,13 +32,13 @@ Netsync also wants to send exactly what is in the source's db, to minimize load 
 
 ## Forward versus Reverse Linear Chains
 
-The advantage of reverse linear chains seems to be that the most common accesses (check-outs) 
-are against the end of the chain which in a reverse linear chain means there are no deltas to 
+The advantage of reverse linear chains seems to be that the most common accesses (check-outs)
+are against the end of the chain which in a reverse linear chain means there are no deltas to
 apply.  But a reverse linear chain makes netsync difficult.  A forward linear chain would
 help out netsync, but it has the disadvantage that you have to follow the whole chain of
 deltas from beginning to end in order to get the latest version.
 
-Perhaps one can meet both needs by keeping a forward linear chain 
+Perhaps one can meet both needs by keeping a forward linear chain
 but also keeping a cache of fulltext of the N most recently accessed files.  Or perhaps
 the cache just contains a copy of the end of each chain. In this way, netsync gets
 the benefit of a forward chain and check-outs can usually be fulfilled from
@@ -48,7 +48,7 @@ cache and thus avoid the long delta chains.
 
 To counteract increased netsync traffic using against-base deltas, applying zlib to the entire stream (rather than per-packet) seems to make against-base deltas comparable to linear deltas.  (I think this requires the assumption that we send related deltas together at netsync time, i.e. sort by file.)
 
-See the au.asn.ucc.matt.monotone.test-deltas branch in the main venge.net repository for a test script and [sample output](http://matt.ucc.asn.au/monotone/delta-screenshot.txt).
+See the au.asn.ucc.matt.monotone.test-deltas branch in the main monotone.ca repository for a test script and [sample output](http://matt.ucc.asn.au/monotone/delta-screenshot.txt).
 
 ## Size comparison for against-base deltas
 
