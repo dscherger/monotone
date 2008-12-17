@@ -1054,7 +1054,7 @@ CMD(store, "store", "", CMD_REF(conflicts),
     options::opts::branch | options::opts::conflicts_opts)
 {
   database    db(app);
-  project_t   project(db);
+  project_t   project(db, app.lua, app.opts);
   revision_id left_id, right_id;
 
   get_conflicts_rids(args, db, project, app, left_id, right_id);
@@ -1083,7 +1083,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
     F("wrong argument count"));
 
   database  db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   revision_id left_rid;
   complete(app.opts, app.lua, project, idx(args,0)(), left_rid);
