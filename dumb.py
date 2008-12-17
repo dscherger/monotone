@@ -170,14 +170,19 @@ class Dumbtone:
     class PushCallback:
         def __init__(self, message):
             self._message = message
-            self._count = 0            
+            self._count = 0
+            self._ignored_total = None
             
         def callback(self, id, data, total):
             pass
             
         def __call__(self, id, data, total):
             self._count += 1
-            self.printProgress(total)
+            if self._count % 50 == 0:
+                self.printProgress(total)
+                self._ignored_total = None
+            else:
+                self._ignored_total = (total,)
             self.callback(id, data, total)           
             
         def printProgress(self, total = None):
@@ -191,6 +196,8 @@ class Dumbtone:
                 sys.stdout.write("\r" + self._message + " : %i / %i         " % ( self._count, int(total)))
                 
         def finish(self):
+            if self._ignored_total is not None:
+                self.printProgress(self._ignored_total[0])
             if self._message is None or self._count == 0: return
 	    self._count = 0
             sys.stdout.write("\n")
