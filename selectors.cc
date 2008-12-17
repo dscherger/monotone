@@ -262,7 +262,19 @@ complete_one_selector(project_t & project,
 
     case sel_branch:
       I(!value.empty());
-      project.db.select_cert(branch_cert_name(), value, completions);
+      {
+        set<branch_name> branches;
+        project.get_branch_list(globish(value), branches);
+        for (set<branch_name>::const_iterator i = branches.begin();
+             i != branches.end(); ++i)
+          {
+            set<revision_id> in_this_branch;
+            project.db.select_cert(branch_cert_name(), (*i)(), in_this_branch);
+            std::copy(in_this_branch.begin(),
+                      in_this_branch.end(),
+                      std::inserter(completions, completions.end()));
+          }
+      }
       break;
 
     case sel_unknown:

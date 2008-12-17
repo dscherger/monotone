@@ -64,6 +64,20 @@ OPTION(globals, positionals, true, "--", "")
 }
 #endif
 
+typedef std::map<branch_name, hexenc<id> > policy_revision_arg_map;
+GOPT(policy_revisions, "policy-revision", policy_revision_arg_map, ,
+     gettext_noop("prefix@REVISION_ID, use a specific policy revision"))
+#ifdef option_bodies
+{
+  size_t at = arg.find('@');
+  if (at == std::string::npos)
+    throw bad_arg_internal(F("no '@' found").str());
+  branch_name bn(arg.substr(0, at));
+  hexenc<id> rid(arg.substr(at+1));
+  policy_revisions.insert(std::make_pair(bn, rid));
+}
+#endif
+
 OPT(author, "author", utf8, , gettext_noop("override author for commit"))
 #ifdef option_bodies
 {
