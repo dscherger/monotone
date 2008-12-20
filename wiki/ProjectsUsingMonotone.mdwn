@@ -17,14 +17,13 @@ Project |notes |revisions |files |commits/month |First commit |Last update |Othe
 [Pidgin (formerly Gaim)](http://pidgin.im/)                                                                          |   |~23900| ±6500| 250|2000-03-23|2008-01-30| 
 [monotone](http://venge.net/monotone)                                                                                |2  |~15000| ~6980| 233|2003-09-04|2008-12-20|[Botan](http://botan.randombit.net/)
 [Remobo](http://www.remobo.com/)                                                                                     |   | ±1415|±39445| ~30|2005-11-23|2008-03-16| 
-[I2P](http://www.i2p2.de/monotone.html)                                                                              |7  | ±4000| ±6000|±100|2004-04-08|2008-10-27|
+[I2P](http://www.i2p2.de/monotone.html)                                                                              |7  | ±4000| ±6000|±100|2004-04-08|2008-10-27|[Syndie](http://syndie.i2p2.de/monotone_howto.html)
 [Trig](http://trig.com/)                                                                                             |3  | ±7948| ±2995|±637|2006-05-09|2007-01-30|
 [ConquerSpace](http://www.conquer-space.net/)                                                                        |   |  2392|  4449| ~88|2005-11-26|2008-01-30|private projects (total ~6717 revisions)
 [Neurospaces](http://www.neurospaces.org/)                                                                           |6  | ±2000| ±2000| ±30|2006-09-07|2008-10-14| 
 [Ada-France](http://www.ada-france.org/article130.html)                                                              |   | ~2170| ~1710|  73|2006-07-14|2008-12-20|[Lovelace OS](http://www.lovelace.fr/), [OpenToken](http://www.telepath.com/~dennison/Ted/OpenToken/OpenToken.html)
 [GoTT](http://gott.evilhackerdu.de/)                                                                                 |   | ±1716|  ±800|±100|2005-07-08|2007-01-13| 
 [Ajisai](http://www.randombit.net/projects/ajisai/monotone.html)                                                     |2  |   770|  1118|  45|2006-05-18|2007-10-14|[Botan](http://botan.randombit.net/)
-[Syndie](http://syndie.i2p2.de/monotone_howto.html)                                                                  |8  |   676|   696|  55|2006-10-12|2007-10-14|
 [PacketFence](http://www.packetfence.org/)                                                                           |   |   514|   564|  80|2006-10-02|2008-06-17|
 [ATF](http://www.NetBSD.org/~jmmv/atf/)                                                                              |   |   504|   409| ±60|2007-06-25|2008-02-06|
 [Dropbear SSH](http://matt.ucc.asn.au/dropbear/)                                                                     |   |  ±250|  ±600| few|          |          |
@@ -48,7 +47,6 @@ Notes:
 5. mtn.bonsai.com
 6. switched from prcs to mtn, 5 active databases, see also <http://code.google.com/p/neurospaces/wiki/NeurospacesRepository>
 7. switched from CVS to mtn about half a year ago
-8. can now be found in the i2p.syndie branch of the I2P repo
 
 ## Tips
 
