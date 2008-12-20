@@ -92,7 +92,7 @@ People still ask for version numbers, but we don't know of any way to assign the
 # Isn't there a paper that proves that SHA1 codes are no good for version identifiers?
 You probably mean [this paper](http://www.nmt.edu/~val/review/hash/index.html).
 
-We think that paper is wrong. We have written a more [detailed response](http://www.venge.net/monotone/docs/Hash-Integrity.html) in the manual, if you would like to examine it for yourself.
+We think that paper is wrong. We have written a more [detailed response](http://monotone.ca/docs/Hash-Integrity.html) in the manual, if you would like to examine it for yourself.
 
 # How do I work in "lock step" with other users?
 You don't. Like CVS, monotone acknowledges that users work in parallel, and that the task of a version control system is to help *manage* the divergence caused by parallelism, not eliminate it. Unlike CVS, there is no such thing as a "central" monotone server, which tracks the unique head state of a branch. Each branch can have multiple "parallel" heads.

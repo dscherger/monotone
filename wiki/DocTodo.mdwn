@@ -14,7 +14,7 @@ Some tasks for improvements to documents:
 
    * a quick worked-through example, with commands and output and very brief comments (links to more details) for a quick overview
    * someone getting started on a new, blank project (like juicebot)
-   * someone pulling down an existing monotone-hosted project (like monotone's [self-hosting](http://venge.net/monotone/self-hosting.html) page; even a template for other projects to stick on their sites to help get users started, with links back to monotone doc for more details)
+   * someone pulling down an existing monotone-hosted project (like monotone's [self-hosting](http://monotone.ca/wiki/SelfHostingInfo/) page; even a template for other projects to stick on their sites to help get users started, with links back to monotone doc for more details)
    * someone looking to migrate an existing project from other-VCS to monotone
    * someone looking to use multiple VCS's in parallel, perhaps while trialling them, via .cvssync or tailor
    * source-code tour (see http://opensolaris.org/os/community/zfs/source/ for a good example in another project)

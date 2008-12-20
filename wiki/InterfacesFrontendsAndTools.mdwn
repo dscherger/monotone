@@ -63,7 +63,7 @@ out of the box.
 # Other programs that *should* be taught to work with monotone, but haven't been
 
  * [Commit Tool](http://repo.or.cz/w/hgct.git)  or (h)gct is a GUI enabled commit tool...It allows the user to view diffs, select which files to committed (or ignored / reverted) write commit messages and perform the commit itself. (python)
- * [IDEA](http://www.jetbrains.com IntelliJ) is a commercial java IDE with strong support for analysis and refactoring, and an open plugin API allowing integration of new version control systems. Derek Scherger [claims](http://www.mail-archive.com/monotone-devel@nongnu.org/msg05443.html) to have fiddled with a monotone plugin. Someone on the [IntelliJ Community Wiki](http://intellij.org) claimed to be developing a monotone plugin, but did not want to publish the source yet.
+ * [IntilliJ IDEA](http://www.jetbrains.com) is a commercial java IDE with strong support for analysis and refactoring, and an open plugin API allowing integration of new version control systems. Derek Scherger [claims](http://www.mail-archive.com/monotone-devel@nongnu.org/msg05443.html) to have fiddled with a monotone plugin. Someone on the [IntelliJ Community Wiki](http://intellij.org) claimed to be developing a monotone plugin, but did not want to publish the source yet.
  * "git-cvsserver": some crazy people have written a perl script that implements a usable subset of cvs's network protocol, backed against a git repo.  the mapping is bidirectional, so people who like cvs, can do both checkout and *commit* using cvs, and it shows up in git.  There is no reason this could not be taught to work against a monotone backend.  `git clone http://mirrors.catalyst.net.nz/git/gitcvs.git/`
  * Xcode, the Apple Mac OS X IDE
  * *your request here*

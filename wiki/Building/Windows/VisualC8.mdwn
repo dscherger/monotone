@@ -35,8 +35,8 @@ zlib|1.2.3|<http://gnuwin32.sourceforge.net/downlinks/zlib.php>
 
 # Building monotone
 
- 1. Install a pre-built monotone binary from http://venge.net/monotone/downloads/
- 1. Follow the self-hosting instructions at http://venge.net/monotone/self-hosting.html to get a copy of the monotone repository.
+ 1. Install a pre-built monotone binary from http://monotone.ca/downloads/
+ 1. Follow the self-hosting instructions at http://monotone.ca/wiki/SelfHostingInfo/ to get a copy of the monotone repository.
  1. `monotone -d /path/to/monotone.db -b net.venge.monotone co monotone`
  1. In Visual C++ 2005 Express Edition, open monotone/visualc/monotone.sln
  1. Select either the 'debug' or 'release' target from the toolbar dropdown.

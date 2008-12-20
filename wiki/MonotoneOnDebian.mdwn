@@ -2,7 +2,7 @@
 
 # Using Monotone on Debian
 
-Monotone packages can currently be found in the Debian repositories. Monotone changes very rapidly and versions in sarge and etch may be slightly dated. It is recommend that you use the monotone package from the monotone [website](http://venge.net/monotone) or the version that is in sid/unstable which is generally kept up to date.
+Monotone packages can currently be found in the Debian repositories. Monotone changes very rapidly and versions in sarge and etch may be slightly dated. It is recommend that you use the monotone package from the monotone [website](http://monotone.ca) or the version that is in sid/unstable which is generally kept up to date.
 
     apt-get install monotone
 
