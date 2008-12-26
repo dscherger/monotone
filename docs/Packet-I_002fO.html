@@ -50,32 +50,32 @@ facility will remain in monotone as a utility for moving individual
 data items around manually.
 
      <dl>
-<dt><samp><span class="command">mtn automate packets_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packets_005ffor_005fcerts-_0040var_007bid_007d-118"></a><dd>
+<dt><samp><span class="command">mtn automate packets_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packets_005ffor_005fcerts-_0040var_007bid_007d-132"></a><dd>
 This command prints out an <code>rcert</code> packet for each cert in your
 database associated with <var>id</var>. These can be used to transport
 certificates safely between monotone databases.  See <a href="Automation.html#Automation">Automation</a>
 for details of this command.
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-119"></a><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-120"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-133"></a><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-134"></a><dd>
 These commands print out an <code>fdata</code> or <code>rdata</code> packet for
 the file, manifest or revision <var>id</var> in your database.  These can
 be used to transport files or revisions, in their entirety, safely
 between monotone databases.  See <a href="Automation.html#Automation">Automation</a> for details of these
 commands.
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>id1</var> <var>id2</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bid1_007d-_0040var_007bid2_007d-121"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>id1</var> <var>id2</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bid1_007d-_0040var_007bid2_007d-135"></a><dd>
 This command prints out an <code>fdelta</code> packet for the differences
 between file versions <var>id1</var> and <var>id2</var>, in your database. 
 These can be used to transport file differences safely between
 monotone databases.  See <a href="Automation.html#Automation">Automation</a> for details of this
 command.
 
-     <br><dt><samp><span class="command">mtn privkey </span><var>keyid</var></samp><a name="index-mtn-privkey-_0040var_007bkeyid_007d-122"></a><dt><samp><span class="command">mtn pubkey </span><var>keyid</var></samp><a name="index-mtn-pubkey-_0040var_007bkeyid_007d-123"></a><dd>
+     <br><dt><samp><span class="command">mtn privkey </span><var>keyid</var></samp><a name="index-mtn-privkey-_0040var_007bkeyid_007d-136"></a><dt><samp><span class="command">mtn pubkey </span><var>keyid</var></samp><a name="index-mtn-pubkey-_0040var_007bkeyid_007d-137"></a><dd>
 These commands print out an <code>keypair</code> or <code>pubkey</code> packet for
 the <span class="sc">rsa</span> key <var>keyid</var>. These can be used to transport public or
 private keys safely between monotone databases.
 
-     <br><dt><samp><span class="command">mtn read</span></samp><a name="index-mtn-read-124"></a><br><dt><samp><span class="command">mtn read </span><var>file1</var> <var>file2...</var></samp><a name="index-mtn-read-_0040var_007bfile1_007d-_0040var_007bfile2_002e_002e_002e_007d-125"></a><dd>
+     <br><dt><samp><span class="command">mtn read</span></samp><a name="index-mtn-read-138"></a><br><dt><samp><span class="command">mtn read </span><var>file1</var> <var>file2...</var></samp><a name="index-mtn-read-_0040var_007bfile1_007d-_0040var_007bfile2_002e_002e_002e_007d-139"></a><dd>
 This command reads packets from files or <code>stdin</code> and stores them
 in your database.
 

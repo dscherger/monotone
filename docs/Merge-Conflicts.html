@@ -46,6 +46,31 @@ which would be encountered by the database merge commands.
 Unfortunately, these commands can't yet list conflicts between a
 database revision and the current workspace.
 
+   <p>In addition, the <samp><span class="command">conflicts</span></samp> set of commands can be used to
+specify resolutions for some conflicts. The resolutions are stored in a
+file, and given to the <samp><span class="command">merge</span></samp> command via the
+<samp><span class="command">--resolve-conflicts-file=filename</span></samp> or
+<samp><span class="command">--resolve-conflicts</span></samp> option; see See <a href="Conflicts.html#Conflicts">Conflicts</a>.
+
+   <p>The <samp><span class="command">merge</span></samp> command normally will perform as many merges as
+necessary to merge all current heads of a branch. However, when
+<samp><span class="command">--resolve-conflicts-file</span></samp> is given, the conflicts and their
+resolutions apply only to the first merge, so the subsequent merges
+are not done; the <samp><span class="command">merge</span></samp> command must be repeated, possibly
+with new conflicts and resolutions, to merge the remaining heads.
+
+   <p>If <samp><span class="command">conflicts</span></samp> supports resolving a particular conflict, that
+is the simplest way to resolve it. Otherwise, resolving the different
+types of conflicts is accomplished by checking out one of the
+conflicting revisions, making changes as described below, committing
+these changes as a new revision and then running the merge again using
+this new revision as one of the merge parents. This process can be
+repeated as necessary to get two revisions into a state where they
+will merge cleanly, or with a minimum of file content conflicts.
+
+   <p>The possible conflict resolutions are discussed with each conflict in
+the following sections.
+
 <h4 class="subsection">3.6.1 Conflict Types</h4>
 
 <p>Monotone versions both files and directories explicitly and it tracks
@@ -65,8 +90,9 @@ versions of a single file.
 
    <p>Monotone does not generally use CVS style conflict markers for content
 conflicts. Instead it makes the content of both conflicting files and
-the content of their common ancestor available for use with your
-favorite merge tool. See the <code>merge3</code> hook for more information.
+the content of their common ancestor available for interactive use
+during the merge with your favorite merge tool. See the <code>merge3</code>
+hook for more information.
 
    <p>Alternatively, rather than using a merge tool it is possible to make
 further changes to one or both of the conflicting file versions so
@@ -76,7 +102,12 @@ moved from one location to another. Rather than struggling to merge
 such conflicting changes with a merge tool, similar rearrangements can
 be made to one of the conflicting files before redoing the merge.
 
-<h4 class="subheading">Duplicate Name Conflict</h4>
+   <p>Finally, you can use your favorite merge tool asychronously with the
+merge, and specify the result file in the conflicts file, using the
+<samp><span class="command">conflicts</span></samp> command (see <a href="Conflicts.html#Conflicts">Conflicts</a>):
+<pre class="smallexample">     mtn conflicts resolve_first user filename
+</pre>
+   <h4 class="subheading">Duplicate Name Conflict</h4>
 
 <p>A duplicate name conflict occurs when two distinct files or
 directories have been given the same name in the two merge parents. 
@@ -106,13 +137,13 @@ revisions containing the new files.
 
 <h5 class="subsubheading">Same file</h5>
 
-<p>For the first case, the conflict is resolved by <samp><span class="command">drop</span></samp>ing one
-file. The contents should be manually merged first, in case they are
-slightly different. Typically, a user will have one of the files in
-their current workspace; the other can be retrieved via
-<samp><span class="command">automate get_file_of</span></samp>; the revision id is shown in the merge
-error message. The process can be confusing; here's a detailed
-example.
+<p>For the first case, the conflict is resolved by dropping one file,
+using <samp><span class="command">conflicts</span></samp> commands. The contents should be manually
+merged, in case they are slightly different. Typically, a user will
+have one of the files in their current workspace; the other can be
+retrieved via <samp><span class="command">automate get_file_of</span></samp>; the revision id is shown
+in the merge error message. The process can be confusing; here's a
+detailed example.
 
    <p>Suppose Beth and Abe each commit a new file <samp><span class="file">checkout.sh</span></samp>. When
 Beth attempts to merge the two heads, she gets a message like:
@@ -126,32 +157,30 @@ Beth attempts to merge the two heads, she gets a message like:
      mtn: error: merge failed due to unresolved conflicts
 </pre>
    <p>The file labeled <code>right</code> is the file in Beth's workspace. To
-retrieve a copy of Abe's file, Beth executes:
+start the conflict resolution process, Beth first saves the list of
+conflicts:
+
+<pre class="smallexample">     mtn conflicts store
+</pre>
+   <p>In order to merge Beth's and Abe's file versions, Beth retrieves a
+copy of Abe's file:
 
 <pre class="smallexample">     mtn automate get_file_of checkout.sh \
      --revision=ae94e6677b8e31692c67d98744dccf5fa9ccffe5 \
-     &gt; checkout.sh-merge
+     &gt; _MTN/resolutions/checkout.sh-abe
 </pre>
    <p>Now Beth manually merges (using her favorite merge tool)
-<samp><span class="file">checkout.sh</span></samp> and <samp><span class="file">checkout.sh-merge</span></samp>, leaving the results in
-<samp><span class="file">checkout.sh-merge</span></samp> (<em>not</em> in her copy).
+<samp><span class="file">checkout.sh</span></samp> and <samp><span class="file">_MTN/resolutions/checkout.sh-abe</span></samp>,
+leaving the results in <samp><span class="file">_MTN/resolutions/checkout.sh-merge</span></samp>
+(<em>not</em> in her copy).
 
-   <p>Then Beth drops her copy, and commits that change:
+   <p>Then Beth specifies the conflict resolution, and finishes the merge:
 
-<pre class="smallexample">     mtn drop checkout.sh
-     mtn commit --message "resolving conflicting 'checkout.sh'"
-</pre>
-   <p>Now Beth can merge the two heads, and update her workspace:
-
-<pre class="smallexample">     mtn merge
+<pre class="smallexample">     mtn conflicts resolve_first_left drop
+     mtn conflicts resolve_first_right user _MTN/resolutions/checkout.sh-merge
+     mtn merge --resolve-conflicts-file=_MTN/conflicts
+     mtn conflicts clean
      mtn update
-</pre>
-   <p>This leaves a copy of Abe's original <samp><span class="file">checkout.sh</span></samp>. Beth
-overwrites it with her merged version, and commits again:
-
-<pre class="smallexample">     rm checkout.sh
-     mv checkout.sh-merge checkout.sh
-     mtn commit --message "resolving conflicting 'checkout.sh' - done"
 </pre>
    <p>When Abe later syncs and updates, he will get the merged version.
 
@@ -167,16 +196,15 @@ error message as in the first case. When she retrieves Abe's file, she
 will see that they should be different files. So she renames her file,
 merges, and updates:
 
-<pre class="smallexample">     mtn rename thermostat thermostat-honeywell
-     mtn merge
+<pre class="smallexample">     mtn conflicts store
+     mtn conflicts resolve_first_left rename thermostat-westinghouse
+     mtn conflicts resolve_first_right rename thermostat-honeywell
+     mtn merge --resolve-conflicts-file=_MTN/conflicts
+     mtn conflicts clean
      mtn update
 </pre>
    <p>Now she has her file in <samp><span class="file">thermostat-honeywell</span></samp>, and Abe's in
-<samp><span class="file">thermostat</span></samp>. She may rename Abe's file to
-<samp><span class="file">thermostat-westinghouse</span></samp>, or ask Abe to do that.
-
-   <p>If a project has a good file naming convention, this second case
-should be rare.
+<samp><span class="file">thermostat-westinghouse</span></samp>.
 
 <h4 class="subheading">Missing Root Conflict</h4>
 
@@ -205,6 +233,8 @@ root in the other merge parent.
    <p>See the <samp><span class="command">pivot_root</span></samp> command for more information on moving
 another directory to the project root.
 
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
+
 <h4 class="subheading">Invalid Name Conflict</h4>
 
 <p>Monotone reserves the name <samp><span class="file">_MTN</span></samp> in a workspace root directory
@@ -231,6 +261,8 @@ other subdirectory in the project.
    <p>See the <samp><span class="command">pivot_root</span></samp> command for more information on moving
 another directory to the project root.
 
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
+
 <h4 class="subheading">Directory Loop Conflict</h4>
 
 <p>A directory loop conflict occurs when one directory is moved under a
@@ -239,6 +271,8 @@ under the first in the other merge parent.
 
    <p>Directory loop conflicts should be rare but can be easily resolved by
 moving one of the conflicting directories out from under the other.
+
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
 
 <h4 class="subheading">Orphaned Node Conflict</h4>
 
@@ -253,6 +287,8 @@ directory that has been deleted and into another directory that exists
 in both merge parents, or that has been added in the revision
 containing the orphaned files or directories.
 
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
+
 <h4 class="subheading">Multiple Name Conflict</h4>
 
 <p>A multiple name conflict occurs when a single file or directory has
@@ -263,6 +299,8 @@ has exactly one unique name.
    <p>Multiple name conflicts do happen occasionally but can be easily
 resolved by renaming the conflicting file or directory in one or both
 of the merge parents so that both agree on the name.
+
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
 
    <p>In earlier versions of monotone (those before version 0.39) this type
 of conflict was referred to as a <em>name conflict</em>.
@@ -280,15 +318,7 @@ in both of the merge parents. Attributes are <em>not</em> merged using
 the die-die-die rules and may be resurrected by simply setting their
 values.
 
-<h4 class="subsection">3.6.2 Conflict Resolution</h4>
-
-<p>Resolving the different types of conflicts is accomplished by checking
-out one of the conflicting revisions, making changes as described
-above, committing these changes as a new revision and then running the
-merge again using this new revision as one of the merge parents. This
-process can be repeated as necessary to get two revisions into a state
-where they will merge cleanly, or with a minimum of file content
-conflicts.
+   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
 
    </body></html>
 

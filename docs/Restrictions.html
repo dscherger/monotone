@@ -109,7 +109,8 @@ directory is done by traversing parent directories until an
 <samp><span class="file">_MTN</span></samp> directory is found or the filesystem root is reached. Upon
 finding an <samp><span class="file">_MTN</span></samp> directory, the <samp><span class="file">_MTN/options</span></samp> file is read for
 default options. The <samp><span class="option">--root</span></samp> option may be used to stop the
-search early, before reaching the root of the physical filesystem.
+search early, before reaching the root of the physical filesystem. The
+<samp><span class="option">--no-workspace</span></samp> option may be used to prevent the search entirely.
 
    <p>Many monotone commands don't require a workspace and will simply
 proceed with no default options if no <samp><span class="file">_MTN</span></samp> directory is found. 
