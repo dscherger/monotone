@@ -419,8 +419,15 @@ database_impl::~database_impl()
 }
 
 database::database(app_state & app)
-  : imp(new database_impl(app.opts.dbname)), lua(app.lua)
-{}
+  : lua(app.lua), rng(app.rng)
+{
+  boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
+  if (!i)
+    {
+      i.reset(new database_impl(app.opts.dbname));
+    }
+  imp = i;
+}
 
 database::~database()
 {}
@@ -2295,7 +2302,7 @@ database::has_rev_height(rev_height const & height)
   imp->fetch(res, one_col, any_rows,
              query("SELECT height FROM heights WHERE height = ?")
              % blob(height()));
-  I((res.size() == 1) || (res.size() == 0));
+  I((res.size() == 1) || (res.empty()));
   return res.size() == 1;
 }
 
@@ -2507,6 +2514,7 @@ database::put_roster_for_revision(revision_id const & new_id,
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
   calculate_ident(*ros_writeable, roster_manifest_id);
+  made_from_t made_from(rev.made_from);
   I(rev.new_manifest == roster_manifest_id);
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
@@ -2659,7 +2667,7 @@ database::public_key_exists(id const & hash)
   imp->fetch(res, one_col, any_rows,
              query("SELECT id FROM public_keys WHERE hash = ?")
              % blob(hash()));
-  I((res.size() == 1) || (res.size() == 0));
+  I((res.size() == 1) || (res.empty()));
   if (res.size() == 1)
     return true;
   return false;
@@ -2672,7 +2680,7 @@ database::public_key_exists(rsa_keypair_id const & id)
   imp->fetch(res, one_col, any_rows,
              query("SELECT id FROM public_keys WHERE id = ?")
              % text(id()));
-  I((res.size() == 1) || (res.size() == 0));
+  I((res.size() == 1) || (res.empty()));
   if (res.size() == 1)
     return true;
   return false;
@@ -2761,7 +2769,7 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
   SecureVector<Botan::byte> ct;
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size());
+          plaintext.size(), *rng);
   ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
                                         ct.size()));
 }
@@ -2839,7 +2847,7 @@ database_impl::cert_exists(cert const & t,
 
   fetch(res, 1, any_rows, q);
 
-  I(res.size() == 0 || res.size() == 1);
+  I(res.empty() || res.size() == 1);
   return res.size() == 1;
 }
 
@@ -3158,7 +3166,7 @@ database::revision_cert_exists(revision_id const & hash)
                    "FROM revision_certs "
                    "WHERE hash = ?")
              % blob(hash.inner()()));
-  I(res.size() == 0 || res.size() == 1);
+  I(res.empty() || res.size() == 1);
   return (res.size() == 1);
 }
 
@@ -3215,7 +3223,7 @@ database_impl::add_prefix_matching_constraint(string const & colname,
           // 0xffffff...
           if (global_sanity.debug_p())
             L(FL("prefix_matcher: only lower bound ('%s')")
-              % encode_hexenc(lower_bound));
+              % lower_bound);
 
           q.sql_cmd += colname + " > ?";
           q.args.push_back(blob(lower_bound));
@@ -3224,8 +3232,8 @@ database_impl::add_prefix_matching_constraint(string const & colname,
         {
           if (global_sanity.debug_p())
             L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
-              % encode_hexenc(lower_bound)
-              % encode_hexenc(upper_bound));
+              % lower_bound
+              % upper_bound);
 
           q.sql_cmd += colname + " BETWEEN ? AND ?";
           q.args.push_back(blob(lower_bound));
@@ -3427,7 +3435,7 @@ database::epoch_exists(epoch_id const & eid)
   imp->fetch(res, one_col, any_rows,
              query("SELECT hash FROM branch_epochs WHERE hash = ?")
              % blob(eid.inner()()));
-  I(res.size() == 1 || res.size() == 0);
+  I(res.size() == 1 || res.empty());
   return res.size() == 1;
 }
 

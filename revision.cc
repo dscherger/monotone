@@ -42,6 +42,7 @@
 #include "database.hh"
 #include "roster.hh"
 #include "graph.hh"
+#include "key_store.hh"
 
 using std::back_inserter;
 using std::copy;
@@ -118,6 +119,7 @@ revision_t::is_nontrivial() const
 }
 
 revision_t::revision_t(revision_t const & other)
+  : origin_aware(other)
 {
   /* behave like normal constructor if other is empty */
   made_for = made_for_nobody;
@@ -640,7 +642,7 @@ make_revision(revision_id const & old_rev_id,
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
-      % encode_hexenc(rev.new_manifest.inner()()));
+      % rev.new_manifest);
 
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
   rev.made_for = made_for_database;
@@ -666,7 +668,7 @@ make_revision(revision_id const & old_rev_id,
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
-      % encode_hexenc(rev.new_manifest.inner()()));
+      % rev.new_manifest);
 
   safe_insert(rev.edges, make_pair(old_rev_id, cs));
   rev.made_for = made_for_database;
@@ -692,7 +694,7 @@ make_revision(parent_map const & old_rosters,
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
-      % encode_hexenc(rev.new_manifest.inner()()));
+      % rev.new_manifest);
 }
 
 static void
@@ -716,7 +718,7 @@ recalculate_manifest_id_for_restricted_rev(parent_map const & old_rosters,
 
   if (global_sanity.debug_p())
     L(FL("new manifest_id is %s")
-      % encode_hexenc(rev.new_manifest.inner()()));
+      % rev.new_manifest);
 }
 
 void
@@ -932,7 +934,7 @@ void anc_graph::write_certs()
     for (set<string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
+        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
         epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes));
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);
@@ -1821,7 +1823,7 @@ print_revision(basic_io::printer & printer,
 
 void
 parse_edge(basic_io::parser & parser,
-           edge_map & es)
+           revision_t & rev)
 {
   shared_ptr<cset> cs(new cset());
   MM(*cs);
@@ -1835,7 +1837,7 @@ parse_edge(basic_io::parser & parser,
 
   parse_cset(parser, *cs);
 
-  es.insert(make_pair(old_rev, cs));
+  rev.edges.insert(make_pair(old_rev, cs));
 }
 
 
@@ -1856,9 +1858,9 @@ parse_revision(basic_io::parser & parser,
     % tmp);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);
-  rev.new_manifest = manifest_id(decode_hexenc(tmp));
+  rev.new_manifest = manifest_id(decode_hexenc(tmp), made_from_network);
   while (parser.symp(syms::old_revision))
-    parse_edge(parser, rev.edges);
+    parse_edge(parser, rev);
   rev.check_sane();
 }
 
@@ -1868,6 +1870,9 @@ read_revision(data const & dat,
 {
   MM(rev);
   basic_io::input_source src(dat(), "revision");
+  rev.made_from = dat.made_from;
+  src.made_from = dat.made_from;
+  made_from_t made_from(rev.made_from);
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
   parse_revision(pars, rev);
@@ -1952,6 +1957,51 @@ UNIT_TEST(revision, find_old_new_path_for)
   I(foo_baz == find_new_path_for(renames, quux_baz));
   I(foo_baz == find_old_path_for(renames, foo_bar));
   I(foo_bar == find_new_path_for(renames, foo_baz));
+}
+
+UNIT_TEST(revision, from_network)
+{
+  char const * bad_revisions[] = {
+    "",
+
+    "format_version \"1\"\n",
+
+    "format_version \"1\"\n"
+    "\n"
+    "new_manifest [0000000000000000000000000000000000000000]\n",
+
+    "format_version \"1\"\n"
+    "\n"
+    "new_manifest [000000000000000]\n",
+
+    "format_version \"1\"\n"
+    "\n"
+    "new_manifest [0000000000000000000000000000000000000000]\n"
+    "\n"
+    "old_revision [66ff7f4640593afacdb056fefc069349e7d9ed9e]\n"
+    "\n"
+    "rename \"some_file\"\n"
+    "   foo \"x\"\n",
+
+    "format_version \"1\"\n"
+    "\n"
+    "new_manifest [0000000000000000000000000000000000000000]\n"
+    "\n"
+    "old_revision [66ff7f4640593afacdb056fefc069349e7d9ed9e]\n"
+    "\n"
+    "rename \"some_file\"\n"
+    "   foo \"some_file\"\n"
+  };
+  revision_t rev;
+  for (unsigned i = 0; i < sizeof(bad_revisions)/sizeof(char const*); ++i)
+    {
+      UNIT_TEST_CHECKPOINT((string("iteration ")
+                            + boost::lexical_cast<string>(i)).c_str());
+      UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
+                                               made_from_network),
+                                          rev),
+                            bad_decode);
+    }
 }
 
 #endif // BUILD_UNIT_TESTS

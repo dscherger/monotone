@@ -1,3 +1,4 @@
+// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
 // This is made available under the GNU GPL v2 or later.
 
@@ -234,6 +235,25 @@ OPTION(diff_options, no_show_encloser, false, "no-show-encloser",
 }
 #endif
 
+OPTVAR(diff_options, bool, without_header, false);
+OPTVAR(diff_options, bool, with_header, false);
+OPTION(diff_options, without_header, false, "without-header",
+       gettext_noop("show the matching cset in the diff header"))
+#ifdef option_bodies
+{
+  with_header = false;
+  without_header = true;
+}
+#endif
+OPTION(diff_options, with_header, false, "with-header",
+       gettext_noop("do not show the matching cset in the diff header"))
+#ifdef option_bodies
+{
+  with_header = true;
+  without_header = false;
+}
+#endif
+
 OPT(diffs, "diffs", bool, false, gettext_noop("print diffs along with logs"))
 #ifdef option_bodies
 {
@@ -385,6 +405,7 @@ OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
 OPTSET(messages)
 OPTVAR(messages, std::vector<std::string>, message, )
 OPTVAR(messages, utf8, msgfile, )
+OPTVAR(messages, bool, no_prefix, false)
 OPTION(messages, message, true, "message,m",
         gettext_noop("set commit changelog message"))
 #ifdef option_bodies
@@ -397,6 +418,13 @@ OPTION(messages, msgfile, true, "message-file",
 #ifdef option_bodies
 {
   msgfile = utf8(arg);
+}
+#endif
+OPTION(messages, no_prefix, false, "no-prefix",
+        gettext_noop("no prefix to message"))
+#ifdef option_bodies
+{
+  no_prefix = true;
 }
 #endif
 
@@ -527,6 +555,14 @@ GOPT(root, "root", std::string, ,
 }
 #endif
 
+GOPT(no_workspace, "no-workspace", bool, false,
+     gettext_noop("don't look for a workspace"))
+#ifdef option_bodies
+{
+  no_workspace = true;
+}
+#endif
+
 OPT(set_default, "set-default", bool, false,
      gettext_noop("use the current arguments as the future default"))
 #ifdef option_bodies
@@ -632,6 +668,47 @@ OPTION(automate_inventory_opts, no_corresponding_renames, false, "no-correspondi
 #ifdef option_bodies
 {
   no_corresponding_renames = true;
+}
+#endif
+
+OPTSET(resolve_conflicts_opts)
+OPTVAR(resolve_conflicts_opts, bookkeeping_path, resolve_conflicts_file, )
+OPTVAR(resolve_conflicts_opts, bool, resolve_conflicts, )
+
+OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-file",
+       gettext_noop("use file to resolve conflicts"))
+#ifdef option_bodies
+{
+  // we can't call  bookkeeping_path::external_string_is_bookkeeping_path
+  // here, because we haven't found the workspace yet.
+  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+    F("conflicts file must be under _MTN"));
+  resolve_conflicts_file = bookkeeping_path(arg);
+}
+#endif
+
+OPTION(resolve_conflicts_opts, resolve_conflicts, false, "resolve-conflicts",
+       gettext_noop("use _MTN/conflicts to resolve conflicts"))
+#ifdef option_bodies
+{
+  N(!resolve_conflicts_file_given,
+    F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
+  resolve_conflicts_file = bookkeeping_path("_MTN/conflicts");
+}
+#endif
+
+OPTSET(conflicts_opts)
+OPTVAR(conflicts_opts, bookkeeping_path, conflicts_file, bookkeeping_path("_MTN/conflicts"))
+
+OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
+       gettext_noop("file in which to store conflicts"))
+#ifdef option_bodies
+{
+  // we can't call bookkeeping_path::external_string_is_bookkeeping_path
+  // here, because we haven't found the workspace yet.
+  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+    F("conflicts file must be under _MTN"));
+  conflicts_file = bookkeeping_path(arg);
 }
 #endif
 

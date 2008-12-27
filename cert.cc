@@ -231,6 +231,11 @@ cert::cert(std::string const & s)
 {
   read_cert(s, *this);
 }
+cert::cert(std::string const & s, made_from_t m)
+  : origin_aware(m)
+{
+  read_cert(s, *this);
+}
 
 cert::cert(revision_id const & ident,
            cert_name const & name,
@@ -409,7 +414,7 @@ guess_branch(options & opts, project_t & project,
       set<branch_name> branches;
       project.get_revision_branches(ident, branches);
 
-      N(branches.size() != 0,
+      N(!branches.empty(),
         F("no branch certs found for revision %s, "
           "please provide a branch name") % ident);
 

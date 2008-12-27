@@ -68,9 +68,10 @@ namespace commands {
   }
 }
 
-static string const interface_version = "8.0";
-// Major or minor number only increments once for each monotone release;
-// check the most recent release before incrementing this.
+// This number is only raised once, during the process of releasing a new
+// version of monotone, by the release manager. For more details, see
+// point (2) in notes/release-checklist.txt
+static string const interface_version = "9.0";
 
 // Name: interface_version
 // Arguments: none
@@ -87,7 +88,7 @@ CMD_AUTOMATE(interface_version, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  N(args.empty(),
     F("no arguments needed"));
 
   output << interface_version << '\n';
@@ -343,7 +344,7 @@ CMD_AUTOMATE(stdio, "",
              "",
              options::opts::automate_stdio_size)
 {
-  N(args.size() == 0,
+  N(args.empty(),
     F("no arguments needed"));
 
   database db(app);
@@ -384,7 +385,7 @@ CMD_AUTOMATE(stdio, "",
               set< command_id > matches =
                 CMD_REF(automate)->complete_command(id);
 
-              if (matches.size() == 0)
+              if (matches.empty())
                 {
                   N(false, F("no completions for this command"));
                 }
@@ -475,7 +476,7 @@ LUAEXT(mtn_automate, )
       set< commands::command_id > matches =
         CMD_REF(automate)->complete_command(id);
 
-      if (matches.size() == 0)
+      if (matches.empty())
         {
           N(false, F("no completions for this command"));
         }
