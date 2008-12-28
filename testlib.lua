@@ -439,6 +439,10 @@ function samefile(left, right)
  end
 end
 
+function samefilestd(left, right)
+   return samefile(testdir .. "/" .. test.name .. "/" .. left, right)
+end
+
 function samelines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
@@ -602,6 +606,7 @@ function post_cmd(result, ret, stdout, stderr, ident)
   log_file_contents(ident .. "stdout")
   L("stderr:\n")
   log_file_contents(ident .. "stderr")
+  L("exit code: " .. result .. "\n")
   if result ~= ret and ret ~= false then
     err("Check failed (return value): wanted " .. ret .. " got " .. result, 3)
   end

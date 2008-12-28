@@ -68,9 +68,10 @@ namespace commands {
   }
 }
 
-static string const interface_version = "8.1";
-// Major or minor number only increments once for each monotone release;
-// check the most recent release before incrementing this.
+// This number is only raised once, during the process of releasing a new
+// version of monotone, by the release manager. For more details, see
+// point (2) in notes/release-checklist.txt
+static string const interface_version = "9.0";
 
 // Name: interface_version
 // Arguments: none
@@ -401,9 +402,7 @@ CMD_AUTOMATE(stdio, "",
 
               command const * cmd = CMD_REF(automate)->find_command(id);
               I(cmd != NULL);
-              automate const * acmd = reinterpret_cast< automate const * >(cmd);
-
-              opts = options::opts::globals() | acmd->opts();
+              opts = options::opts::globals() | cmd->opts();
 
               if (cmd->use_workspace_options())
                 {
@@ -415,6 +414,8 @@ CMD_AUTOMATE(stdio, "",
                 }
 
               opts.instantiate(&app.opts).from_key_value_pairs(params);
+
+              automate const * acmd = reinterpret_cast< automate const * >(cmd);
               acmd->exec_from_automate(app, id, args, os);
             }
           else
@@ -450,8 +451,6 @@ LUAEXT(mtn_automate, )
       // don't allow recursive calls
       app_p->mtn_automate_allowed = false;
 
-      // automate_ostream os(output, app_p->opts.automate_stdio_size);
-
       int n = lua_gettop(L);
 
       E(n > 0, F("Bad input to mtn_automate() lua extension: command name is missing"));
@@ -464,6 +463,17 @@ LUAEXT(mtn_automate, )
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
+
+      options::options_type opts;
+      opts = options::opts::all_options() - options::opts::globals();
+      opts.instantiate(&app_p->opts).reset();
+
+      // the arguments for a command are read from app.opts.args which
+      // is already cleaned from all options. this variable, however, still
+      // contains the original arguments with which the user function was
+      // called. Since we're already in lua context, it makes no sense to
+      // preserve them for the outside world, so we're just clearing them.
+      app_p->opts.args.clear();
 
       commands::command_id id;
       for (args_vector::const_iterator iter = args.begin();
@@ -492,9 +502,22 @@ LUAEXT(mtn_automate, )
 
       commands::command const * cmd = CMD_REF(automate)->find_command(id);
       I(cmd != NULL);
-      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      opts = options::opts::globals() | cmd->opts();
 
-      acmd->exec(*app_p, id, args, os);
+      if (cmd->use_workspace_options())
+        {
+          // Re-read the ws options file, rather than just copying
+          // the options from the previous apts.opts object, because
+          // the file may have changed due to user activity.
+          workspace::check_ws_format();
+          workspace::get_ws_options(app_p->opts);
+        }
+
+      opts.instantiate(&app_p->opts).from_command_line(args, false);
+      args_vector & parsed_args = app_p->opts.args;
+
+      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;
