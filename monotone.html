@@ -44,7 +44,7 @@ version control tools.
    <p>Complete table of contents
 
    <div class="contents">
-<h2>Inhaltsverzeichnis</h2>
+<h2>Table of Contents</h2>
 <ul>
 <li><a name="toc_Top" href="#Top">Top</a>
 <li><a name="toc_Concepts" href="#Concepts">1 Concepts</a>
@@ -150,7 +150,7 @@ version control tools.
 <li><a href="#Regexp-Details">7.5.2 Regexp Details</a>
 </li></ul>
 </li></ul>
-<li><a name="toc_Default-hooks" href="#Default-hooks">Anhang A Default hooks</a>
+<li><a name="toc_Default-hooks" href="#Default-hooks">Appendix A Default hooks</a>
 <li><a name="toc_General-Index" href="#General-Index">General Index</a>
 </li></ul>
 </div>
@@ -2267,7 +2267,7 @@ database revision and the current workspace.
 specify resolutions for some conflicts. The resolutions are stored in a
 file, and given to the <samp><span class="command">merge</span></samp> command via the
 <samp><span class="command">--resolve-conflicts-file=filename</span></samp> or
-<samp><span class="command">--resolve-conflicts</span></samp> option; see Siehe <a href="#Conflicts">Conflicts</a>.
+<samp><span class="command">--resolve-conflicts</span></samp> option; see See <a href="#Conflicts">Conflicts</a>.
 
    <p>The <samp><span class="command">merge</span></samp> command normally will perform as many merges as
 necessary to merge all current heads of a branch. However, when
@@ -2794,7 +2794,7 @@ in the future, but they will follow the patterns given above.
      <dl>
 <dt><samp><span class="file">.mtn-ignore</span></samp><dd>Contains a list of regular expression patterns, one per line. If it exists,
 any file with a name matching one of these patterns is
-ignored. Siehe <a href="#Regexps">Regexps</a>, for the syntax of these regular expressions. 
+ignored. See <a href="#Regexps">Regexps</a>, for the syntax of these regular expressions. 
 <br><dt><samp><span class="file">_MTN/wanted-testresults</span></samp><dd>Contains a list of testresult key names, one per line. If it exists, update
 will only select revisions that do not have regressions according to the given
 testresult keys. 
@@ -3670,7 +3670,7 @@ workspace root, or absolute.
 two heads that the <samp><span class="command">merge</span></samp> command would merge are used.
 
      <p>The conflicts file format is as output by the <samp><span class="command">automate
-show_conflicts</span></samp> command; see Siehe <a href="#Automation">Automation</a>.
+show_conflicts</span></samp> command; see See <a href="#Automation">Automation</a>.
 
      <p>Content conflicts that can be resolved by the internal line merger
 have resolutions, so they will not show up in subsequent
@@ -4264,7 +4264,7 @@ hunk for a line that matches a regular expression.  The default
 regular expression is correct for many programming languages.  You can
 adjust the expression used with the Lua hook
 <code>get_encloser_pattern</code>; <a href="#Hooks">Hooks</a>.  For the regular expression
-syntax, Siehe <a href="#Regexps">Regexps</a>.
+syntax, See <a href="#Regexps">Regexps</a>.
 
      <p><samp><span class="option">--unified</span></samp> requests the &ldquo;unified diff&rdquo; format, the default. 
 <samp><span class="option">--context</span></samp> requests the &ldquo;context diff&rdquo; format (analogous to
@@ -7431,7 +7431,7 @@ line merger, <code>resolved_internal</code> is output.
             resolved_user_right file
      </pre>
 
-          <p>Siehe <a href="#Conflicts">Conflicts</a>, for more information on conflict resolutions.
+          <p>See <a href="#Conflicts">Conflicts</a>, for more information on conflict resolutions.
 
           <br><dt><strong>Output format:</strong><dd>
 First the revision ids of the left and right revisions, and their
@@ -8291,7 +8291,7 @@ languages; a few text authoring packages, like Texinfo, have special
 regular expressions that match their particular syntax.  If you have a
 better regular expression for some language, you can add it to this
 hook; and if you send it to the monotone developers, we will likely
-make it the default for that language.  Siehe <a href="#Regexps">Regexps</a>, for the
+make it the default for that language.  See <a href="#Regexps">Regexps</a>, for the
 regular expression syntax.
 
      <br><dt><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code><a name="index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-234"></a><dd>
@@ -8619,7 +8619,7 @@ the arguments.
      </pre>
      <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-258"></a><dd>
 Returns true if a match for <var>regexp</var> is found in <var>str</var>, return
-false otherwise.  Siehe <a href="#Regexps">Regexps</a>, for the syntax of <var>regexp</var>.
+false otherwise.  See <a href="#Regexps">Regexps</a>, for the syntax of <var>regexp</var>.
 
      <br><dt><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code><a name="index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-259"></a><dd>
 Add a command named <var>name</var> to the <var>user</var> command group in monotone.  This function is
@@ -12527,7 +12527,7 @@ outside of any alternation, it acts exactly like <code>(*PRUNE)</code>.
 
 <p><a name="Default-hooks"></a>
 
-<h2 class="appendix">Anhang A Default hooks</h2>
+<h2 class="appendix">Appendix A Default hooks</h2>
 
 <p>This section contains the entire source code of the standard hook file,
 that is built in to the monotone executable, and read before any user
@@ -14136,7 +14136,7 @@ end
 <li><a href="#index-wait_0028_0040var_007bpid_007d_0029-265"><code>wait(</code><var>pid</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
    </ul><div class="footnote">
 <hr>
-<a name="texinfo-footnotes-in-document"></a><h4>Fu&szlig;noten</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> We
+<a name="texinfo-footnotes-in-document"></a><h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> We
 say <span class="sc">sha1</span> values are &ldquo;unique&rdquo; here, when in fact there is a
 small probability of two different versions having the same <span class="sc">sha1</span>
 value. This probability is very small, so we discount it.</p>
