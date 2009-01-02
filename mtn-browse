@@ -238,46 +238,20 @@ sub view_button_clicked_cb($$);
     # workspace's database. If this doesn't work or the default database is to
     # be used anyway then attempt to open that database instead.
 
-    eval
+    if ($user_preferences->{workspace}->{takes_precedence})
     {
-	$mtn = Monotone::AutomateStdio->new();
-	$mtn = undef;
-	while (! -d "_MTN")
+	eval
 	{
-	    if (! chdir(".."))
+	    $mtn = Monotone::AutomateStdio->new();
+	    if ($user_preferences->{workspace}->{auto_select})
 	    {
-		my $dialog = Gtk2::MessageDialog->new
-		    (undef,
-		     ["modal"],
-		     "error",
-		     "close",
-		     __("Started in a workspace but I cannot\n"
-			. "find _MTN, I am going to exit."));
-		$dialog->run();
-		$dialog->destroy();
-		exit(1);
+		$mtn->get_option(\$branch, "branch");
+		$mtn->get_base_revision_id(\$revision_id);
 	    }
-	}
-	$mtn = Monotone::AutomateStdio->new();
-	if ($user_preferences->{workspace}->{auto_select})
-	{
-	    $mtn->get_option(\$branch, "branch");
-	    $mtn->get_base_revision_id(\$revision_id);
-	}
-    };
-    if (! ($user_preferences->{workspace}->{takes_precedence}
-	   && defined($mtn))
-	&& $user_preferences->{default_mtn_db} ne "")
+	};
+    }
+    if (! defined($mtn) && $user_preferences->{default_mtn_db} ne "")
     {
-
-	# Before opening the default database, make sure we are not in any
-	# workspace.
-
-	if (defined($mtn))
-	{
-	    chdir("..");
-	    $mtn = $branch = $revision_id = undef;
-	}
 
 	# Attempt to open the default database.
 

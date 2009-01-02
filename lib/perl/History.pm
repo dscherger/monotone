@@ -1308,8 +1308,8 @@ sub external_diffs_button_clicked_cb($$)
     # Get the details associated with the currently selected file.
 
     $iter = $instance->{file_comparison_combobox}->get_active_iter();
-    $file_name = basename($instance->{file_comparison_combobox}->get_model()->
-			  get($iter, CLS_FILE_NAME_COLUMN));
+    $file_name = $instance->{file_comparison_combobox}->get_model()->
+	get($iter, CLS_FILE_NAME_COLUMN);
     $file_id_1 = $instance->{file_comparison_combobox}->get_model()->
 	get($iter, CLS_FILE_ID_1_COLUMN);
     $file_id_2 = $instance->{file_comparison_combobox}->get_model()->
@@ -1845,9 +1845,11 @@ sub external_diffs($$$$$)
 
     # Generate temporary disk file names.
 
-    if (! defined($old_file = generate_tmp_path(__("OLDER_") . $old_file_name))
-	|| ! defined($new_file = generate_tmp_path(__("NEWER_")
-						   . $new_file_name)))
+    if (! defined($old_file = generate_tmp_path(__("OLDER_")
+						. basename($old_file_name)))
+	|| ! defined($new_file =
+		     generate_tmp_path(__("NEWER_")
+				       . basename($new_file_name))))
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($instance->{window},

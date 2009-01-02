@@ -1,0 +1,13 @@
+^.emacs.desktop$
+^MTN$
+^MTN-0.40$
+^lib/perl/Monotone$
+^lib/ui/annotate.png$
+^lib/ui/diffs.png$
+^lib/ui/external-diffs.png$
+^lib/ui/line.png$
+^lib/ui/monotone-viz.png$
+^lib/ui/mtn-browse-large.png$
+^lib/ui/mtn-browse.png$
+^test-0_40.mtn$
+^test.mtn$
