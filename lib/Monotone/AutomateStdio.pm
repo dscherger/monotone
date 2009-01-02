@@ -5,7 +5,7 @@
 #   Description  - Class module that provides an interface to Monotone's
 #                  automate stdio interface.
 #
-#   Author       - A.E.Cooper.
+#   Authors      - A.E.Cooper. With contributions from T.Keller.
 #
 #   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
 #                  <aecooper@coosoft.plus.com>.
@@ -57,6 +57,10 @@ use warnings;
 # Standard Perl and CPAN modules.
 
 use Carp;
+use Cwd qw(abs_path getcwd);
+use File::Basename;
+use File::Spec;
+use IO::File;
 use IO::Poll qw(POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h);
@@ -146,6 +150,9 @@ my %inventory_keys = ("birth"    => HEX_ID,
 		      "path"     => STRING,
 		      "status"   => STRING_LIST);
 my %keys_keys = %genkey_keys;
+my %options_file_keys = ("branch"   => STRING,
+			 "database" => STRING,
+			 "keydir"   => STRING);
 my %revision_details_keys = ("add_dir"        => STRING,
 			     "add_file"       => STRING,
 			     "attr"           => STRING,
@@ -214,6 +221,7 @@ sub closedown($);
 sub common_ancestors($$@);
 sub content_diff($$;$$$@);
 sub db_get($$$$);
+sub db_locked_condition_detected($);
 sub descendents($$@);
 sub drop_attribute($$$);
 sub drop_db_variables($$;$);
@@ -235,6 +243,7 @@ sub get_option($$$);
 sub get_pid($);
 sub get_revision($$$);
 sub get_workspace_root($$);
+sub get_ws_path($);
 sub graph($$);
 sub heads($$;$);
 sub identify($$$);
@@ -243,7 +252,8 @@ sub interface_version($$);
 sub inventory($$;$@);
 sub keys($$);
 sub leaves($$);
-sub new($;$$);
+sub new_from_db($;$$);
+sub new_from_ws($;$$);
 sub packet_for_fdata($$$);
 sub packet_for_fdelta($$$$);
 sub packet_for_rdata($$$);
@@ -265,19 +275,24 @@ sub toposort($$@);
 # Public aliased methods.
 
 *attributes = *get_attributes;
+*new = *new_from_db;
 *db_set = *set_db_variable;
 
 # Private methods and routines.
 
+sub create_object_data();
 sub error_handler_wrapper($);
 sub get_quoted_value($$$);
+sub get_ws_details($$$);
 sub mtn_command($$$;@);
 sub mtn_command_with_options($$$$;@);
 sub mtn_read_output($$);
-sub parse_kv_record($$$$);
+sub parse_kv_record($$$$;$);
 sub parse_revision_data($$);
 sub startup($);
 sub unescape($);
+sub validate_database($);
+sub validate_mtn_options($);
 sub warning_handler_wrapper($);
 
 # ***** PACKAGE INFORMATION *****
@@ -310,9 +325,10 @@ our $VERSION = 0.1;
 #
 ##############################################################################
 #
-#   Routine      - new
+#   Routine      - new_from_db
 #
-#   Description  - Class constructor.
+#   Description  - Class constructor. Construct an object using the specified
+#                  Monotone database.
 #
 #   Data         - $class       : Either the name of the class that is to be
 #                                 created or an object of that class.
@@ -328,7 +344,7 @@ our $VERSION = 0.1;
 
 
 
-sub new($;$$)
+sub new_from_db($;$$)
 {
 
 
@@ -338,43 +354,87 @@ sub new($;$$)
     my $options = shift();
     $options = [] if (! defined($options));
 
-    my $this;
+    my($db,
+       $this,
+       $ws_path);
 
-    # Parse the options (don't allow indiscriminate passing of command line
-    # options to the subprocess!).
+    # Check all the arguments given to us.
 
-    for (my $i = 0; $i < scalar(@$options); ++ $i)
+    validate_mtn_options($options);
+    if (defined($db_name))
     {
-	if (! exists($valid_mtn_options{$$options[$i]}))
-	{
-	    &$croaker("Unrecognised option `" . $$options[$i]
-		      . "'passed to constructor");
-	}
-	else
-	{
-	    $i += $valid_mtn_options{$$options[$i]};
-	}
+	$db = $db_name;
     }
+    else
+    {
+	get_ws_details(getcwd(), \$db, \$ws_path);
+    }
+    validate_database($db);
 
     # Actually construct the object.
 
-    $this = {db_name                 => $db_name,
-	     mtn_options             => $options,
-	     mtn_pid                 => 0,
-	     mtn_in                  => undef,
-	     mtn_out                 => undef,
-	     mtn_err                 => undef,
-	     poll                    => undef,
-	     error_msg               => "",
-	     honour_suspend_certs    => 1,
-	     mtn_aif_major           => 0,
-	     mtn_aif_minor           => 0,
-	     cmd_cnt                 => 0,
-	     db_locked_handler       => undef,
-	     db_locked_handler_data  => undef,
-	     io_wait_handler         => undef,
-	     io_wait_handler_data    => undef,
-	     io_wait_handler_timeout => 1};
+    $this = create_object_data();
+    $this->{db_name} = $db_name;
+    $this->{ws_path} = $ws_path;
+    $this->{mtn_options} = $options;
+    bless($this, $class);
+
+    # Startup the mtn subprocess (also determining the interface version).
+
+    startup($this);
+
+    return $this;
+
+}
+#
+##############################################################################
+#
+#   Routine      - new_from_ws
+#
+#   Description  - Class constructor. Construct an object using the specified
+#                  Monotone workspace.
+#
+#   Data         - $class       : Either the name of the class that is to be
+#                                 created or an object of that class.
+#                  $ws_path     : The base directory of a Monotone workspace.
+#                                 If this is not provided then the current
+#                                 workspace is used.
+#                  $options     : A reference to a list containing a list of
+#                                 options to use on the mtn subprocess.
+#                  Return Value : A reference to the newly created object.
+#
+##############################################################################
+
+
+
+sub new_from_ws($;$$)
+{
+
+
+    my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
+    shift();
+    my $ws_path = (ref($_[0]) eq "ARRAY") ? undef : shift();
+    my $options = shift();
+    $options = [] if (! defined($options));
+
+    my($db_name,
+       $this);
+
+    # Check all the arguments given to us.
+
+    validate_mtn_options($options);
+    if (! defined($ws_path))
+    {
+	$ws_path = getcwd();
+    }
+    get_ws_details($ws_path, \$db_name, \$ws_path);
+    validate_database($db_name);
+
+    # Actually construct the object.
+
+    $this = create_object_data();
+    $this->{ws_path} = $ws_path;
+    $this->{mtn_options} = $options;
     bless($this, $class);
 
     # Startup the mtn subprocess (also determining the interface version).
@@ -1085,9 +1145,9 @@ sub get_content_changed($$$$)
 
     for ($i = 0, @$list = (); $i < scalar(@lines); ++ $i)
     {
-	if ($lines[$i] =~ m/^ *content_mark \[[0-9a-f]+\]$/)
+	if ($lines[$i] =~ m/^ *content_mark \[([0-9a-f]+)\]$/)
 	{
-	    push(@$list, ($lines[$i] =~ m/^ *content_mark \[([0-9a-f]+)\]$/));
+	    push(@$list, $1);
 	}
     }
 
@@ -1301,7 +1361,6 @@ sub get_db_variables($$;$)
 	my($domain_name,
 	   $i,
 	   @lines,
-	   $list,
 	   $name,
 	   $value);
 
@@ -1320,10 +1379,9 @@ sub get_db_variables($$;$)
 	    {
 		get_quoted_value(\@lines, \$i, \$domain_name);
 	    }
-	    if ($lines[$i] =~ m/^ *entry \"/)
+	    if ($lines[$i] =~ m/^ *entry \"(.+)\"$/)
 	    {
-		($list) = ($lines[$i] =~ m/^ *\S+ \"(.+)\"$/);
-		($name, $value) = split(/\" \"/, $list);
+		($name, $value) = split(/\" \"/, $1);
 		if (defined($domain_name))
 		{
 		    push(@$ref, {domain => unescape($domain_name),
@@ -1446,7 +1504,6 @@ sub get_manifest_of($$;$)
 	   $id,
 	   $key,
 	   @lines,
-	   $list,
 	   $name,
 	   $type,
 	   $value);
@@ -1467,9 +1524,9 @@ sub get_manifest_of($$;$)
 	    {
 		$type = "file";
 		get_quoted_value(\@lines, \$i, \$name);
-		if ($lines[++ $i] =~ m/^ *content \[[0-9a-f]+\]$/)
+		if ($lines[++ $i] =~ m/^ *content \[([0-9a-f]+)\]$/)
 		{
-		    ($id) = ($lines[$i] =~ m/^ *content \[([0-9a-f]+)\]$/);
+		    $id = $1;
 		}
 		else
 		{
@@ -1483,10 +1540,11 @@ sub get_manifest_of($$;$)
 		get_quoted_value(\@lines, \$i, \$name);
 	    }
 	    for ($attrs = [];
-		 ($i + 1) < scalar(@lines) && $lines[$i + 1] =~ m/^ *attr \"/;)
+		 ($i + 1) < scalar(@lines)
+		     && $lines[$i + 1] =~ m/^ *attr \"(.+)\"$/;)
 	    {
-		($list) = ($lines[++ $i] =~ m/^ *\S+ \"(.+)\"$/);
-		($key, $value) = split(/\" \"/, $list);
+		++ $i;
+		($key, $value) = split(/\" \"/, $1);
 		push(@$attrs, {attribute => unescape($key),
 			       value     => unescape($value)});
 	    }
@@ -1877,24 +1935,18 @@ sub inventory($$;$@)
 	else
 	{
 
-	    my($i,
-	       $name,
-	       $ref1,
-	       $ref2,
-	       $status);
+	    my $i;
 
 	    # Reformat the data into a structured array.
 
 	    for ($i = 0, @$ref = (); $i < scalar(@lines); ++ $i)
 	    {
-		if ($lines[$i] =~ m/^[A-Z ]{3} \d+ \d+ .+$/)
+		if ($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/)
 		{
-		    ($status, $ref1, $ref2, $name) =
-			($lines[$i] =~ m/^([A-Z ]{3}) (\d+) (\d+) (.+)$/);
-		    push(@$ref, {status       => $status,
-				 crossref_one => $ref1,
-				 crossref_two => $ref2,
-				 name         => $name});
+		    push(@$ref, {status       => $1,
+				 crossref_one => $2,
+				 crossref_two => $3,
+				 name         => $4});
 		}
 	    }
 
@@ -2746,6 +2798,30 @@ sub closedown($)
 #
 ##############################################################################
 #
+#   Routine      - db_locked_condition_detected
+#
+#   Description  - Check to see if the Monotone database was locked the last
+#                  time a command was issued.
+#
+#   Data         - $this        : The object.
+#                  Return Value : True if the database was locked the last
+#                                 time a command was issues, otherwise false.
+#
+##############################################################################
+
+
+
+sub db_locked_condition_detected($)
+{
+
+    my $this = $_[0];
+
+    return $this->{db_is_locked};
+
+}
+#
+##############################################################################
+#
 #   Routine      - get_db_name
 #
 #   Description  - Return the the file name of the Monotone database as given
@@ -2815,6 +2891,35 @@ sub get_pid($)
     my $this = $_[0];
 
     return $this->{mtn_pid};
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_ws_path
+#
+#   Description  - Return the the workspace's base directory as either given
+#                  to the constructor or deduced from the current workspace.
+#                  Please note that the workspace's base directory may differ
+#                  from that given to the constructor if the specified
+#                  workspace path is actually a subdirectory within that
+#                  workspace.
+#
+#   Data         - $this        : The object.
+#                  Return Value : The workspace's base directory as given to
+#                                 the constructor or undef if no workspace was
+#                                 given and there is no current workspace.
+#
+##############################################################################
+
+
+
+sub get_ws_path($)
+{
+
+    my $this = $_[0];
+
+    return $this->{ws_path};
 
 }
 #
@@ -3237,7 +3342,7 @@ sub parse_revision_data($$)
 #                  $index        : A reference to a variable containing the
 #                                  index of the first line of the record in
 #                                  the array. It is updated with the index of
-#                                  the first line after the key value record.
+#                                  the first line after the record.
 #                  $key_type_map : A reference to the key type map, this is a
 #                                  map indexed by key name and has an
 #                                  enumeration as its value that describes the
@@ -3245,15 +3350,19 @@ sub parse_revision_data($$)
 #                  $record       : A reference to a variable that is to be
 #                                  updated with the reference to the newly
 #                                  created record.
+#                  $no_errors    : True if this routine should not report
+#                                  errors relating to unknown fields,
+#                                  otherwise undef if these errors are to be
+#                                  reported. This is optional.
 #
 ##############################################################################
 
 
 
-sub parse_kv_record($$$$)
+sub parse_kv_record($$$$;$)
 {
 
-    my($list, $index, $key_type_map, $record) = @_;
+    my($list, $index, $key_type_map, $record, $no_errors) = @_;
 
     my($i,
        $key,
@@ -3269,19 +3378,19 @@ sub parse_kv_record($$$$)
 	{
 	    $type = $$key_type_map{$key};
 	    $value = undef;
-	    if ($type & BARE_PHRASE && $$list[$i] =~ m/^ *[a-z_]+ [a-z_]+$/)
+	    if ($type & BARE_PHRASE && $$list[$i] =~ m/^ *[a-z_]+ ([a-z_]+)$/)
 	    {
-		($value) = ($$list[$i] =~ m/^ *[a-z_]+ ([a-z_]+)$/);
+		$value = $1;
 	    }
 	    elsif ($type & HEX_ID
-		   && $$list[$i] =~ m/^ *[a-z_]+ \[[0-9a-f]+\]$/)
+		   && $$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]+)\]$/)
 	    {
-		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]+)\]$/);
+		$value = $1;
 	    }
 	    elsif ($type & OPTIONAL_HEX_ID
-		   && $$list[$i] =~ m/^ *[a-z_]+ \[[0-9a-f]*\]$/)
+		   && $$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]*)\]$/)
 	    {
-		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \[([0-9a-f]*)\]$/);
+		$value = $1;
 	    }
 	    elsif ($type & STRING && $$list[$i] =~ m/^ *[a-z_]+ \"/)
 	    {
@@ -3289,28 +3398,28 @@ sub parse_kv_record($$$$)
 		$value = unescape($value);
 	    }
 	    elsif ($type & STRING_ENUM
-		   && $$list[$i] =~ m/^ *[a-z_]+ \"[^\"]+\"$/)
+		   && $$list[$i] =~ m/^ *[a-z_]+ \"([^\"]+)\"$/)
 	    {
-		($value) = ($$list[$i] =~ m/^ *[a-z_]+ \"([^\"]+)\"$/);
+		$value = $1;
 	    }
-	    elsif ($type & STRING_LIST && $$list[$i] =~ m/^ *[a-z_]+ \".+\"$/)
+	    elsif ($type & STRING_LIST
+		   && $$list[$i] =~ m/^ *[a-z_]+ \"(.+)\"$/)
 	    {
-		my $strings;
-		($strings) = ($$list[$i] =~ m/^ *[a-z_]+ \"(.+)\"$/);
-		foreach my $string (split(/\" \"/, $strings))
+		foreach my $string (split(/\" \"/, $1))
 		{
 		    push(@$value, unescape($string));
 		}
 	    }
 	    else
 	    {
-		die("Internal: Unsupported key type detected");
+		&$croaker("Internal: Unsupported key type detected");
 	    }
 	    $$record->{$key} = $value;
 	}
 	else
 	{
-	    &$croaker("Unrecognised field " . $key . " found");
+	    &$croaker("Unrecognised field " . $key . " found")
+		unless ($no_errors);
 	}
     }
     $$index = $i;
@@ -3509,9 +3618,12 @@ sub mtn_command_with_options($$$$;@)
 
 	    # See if we are to retry on database locked conditions.
 
-	    $retry = &$handler($this, $handler_data)
-		if ($this->{error_msg} =~ m/$database_locked_re/
-		    || $db_locked_exception);
+	    if ($db_locked_exception
+		|| $this->{error_msg} =~ m/$database_locked_re/)
+	    {
+		$this->{db_is_locked} = 1;
+		$retry = &$handler($this, $handler_data);
+	    }
 
 	    # If we are to retry then close down the subordinate mtn process,
 	    # otherwise report the error to the caller.
@@ -3646,10 +3758,9 @@ sub mtn_read_output($$)
 
 	    # Break out the header into its separate fields.
 
-	    if ($header =~ m/^\d+:\d+:[lm]:\d+:$/)
+	    if ($header =~ m/^(\d+):(\d+):([lm]):(\d+):$/)
 	    {
-		($cmd_nr, $err_code, $last, $size) =
-		    ($header =~ m/^(\d+):(\d+):([lm]):(\d+):$/);
+		($cmd_nr, $err_code, $last, $size) = ($1, $2, $3, $4);
 		if ($cmd_nr != $this->{cmd_cnt})
 		{
 		    croak("Mtn command count is out of sequence");
@@ -3724,6 +3835,8 @@ sub startup($)
     my $this = $_[0];
 
     my(@args,
+       $cwd,
+       $err,
        $version);
 
     if ($this->{mtn_pid} == 0)
@@ -3735,19 +3848,46 @@ sub startup($)
 	local $ENV{LC_ALL} = "C";
 	local $ENV{LANG} = "C";
 
-	# Start up the mtn subprocess.
-
+	$this->{db_is_locked} = undef;
 	$this->{mtn_err} = gensym();
+
+	# Build up a list of command line arguments to pass to the mtn
+	# subprocess.
+
 	@args = ("mtn");
 	push(@args, "--db=" . $this->{db_name}) if ($this->{db_name});
 	push(@args, "--ignore-suspend-certs")
 	    if (! $this->{honour_suspend_certs});
 	push(@args, @{$this->{mtn_options}});
 	push(@args, "automate", "stdio");
-	$this->{mtn_pid} = open3($this->{mtn_in},
-				 $this->{mtn_out},
-				 $this->{mtn_err},
-				 @args);
+
+	# Actually start the mtn subprocess. If a database name has been
+	# provided then run the mtn subprocess in the system's root directory
+	# so as to avoid any database/workspace clash. Likewise if a workspace
+	# has been provided then run the mtn subprocess in the base directory
+	# of that workspace.
+
+	$cwd = getcwd();
+	eval
+	{
+	    if (defined($this->{db_name}))
+	    {
+		die("chdir failed: " . $!)
+		    unless (chdir(File::Spec->rootdir()));
+	    }
+	    elsif (defined($this->{ws_path}))
+	    {
+		die("chdir failed: " . $!) unless (chdir($this->{ws_path}));
+	    }
+	    $this->{mtn_pid} = open3($this->{mtn_in},
+				     $this->{mtn_out},
+				     $this->{mtn_err},
+				     @args);
+	};
+	$err = $@;
+	chdir($cwd);
+	&$croaker($err) if ($err ne "");
+
 	$this->{cmd_cnt} = 0;
 	$this->{poll} = IO::Poll->new();
 	$this->{poll}->mask($this->{mtn_out} => POLLIN,
@@ -3760,6 +3900,190 @@ sub startup($)
 	    ($version =~ m/^(\d+)\.(\d+)$/);
 
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_ws_details
+#
+#   Description  - Checks to see if the specified workspace is valid and, if
+#                  it is, extracts the workspace root directory and the full
+#                  path name of the associated database.
+#
+#   Data         - $ws_path : The path to the workspace or a subdirectory of
+#                             it.
+#                  $db_name : A reference to a buffer that is to contain the
+#                             name of the database relating to the specified
+#                             workspace.
+#                  $ws_base : A reference to a buffer that is to contain the
+#                             path of the workspace's base directory.
+#
+##############################################################################
+
+
+
+sub get_ws_details($$$)
+{
+
+    my($ws_path, $db_name, $ws_base) = @_;
+
+    my($i,
+       @lines,
+       $options_fh,
+       $options_file,
+       $path,
+       $record);
+
+    # Find the workspace's base directory.
+
+    &$croaker("`" . $ws_path . "' is not a directory") unless (-d $ws_path);
+    $path = abs_path($ws_path);
+    while (! -d File::Spec->catfile($path, "_MTN"))
+    {
+	&$croaker("Invalid workspace `" . $db_name
+		  . "', no _MTN directory found")
+	    if ($path eq File::Spec->rootdir());
+	$path = dirname($path);
+    }
+
+    # Get the name of the related database out of the _MTN/options file.
+
+    $options_file = File::Spec->catfile($path, "_MTN", "options");
+    &$croaker("Could not open `" . $options_file . "' for reading")
+	unless (defined($options_fh = IO::File->new($options_file, "r")));
+    @lines = $options_fh->getlines();
+    $options_fh->close();
+    chomp(@lines);
+    $i = 0;
+    parse_kv_record(\@lines, \$i, \%options_file_keys, \$record, 1);
+
+    # Return what we have found.
+
+    $$db_name = $record->{database};
+    $$ws_base = $path;
+
+}
+#
+##############################################################################
+#
+#   Routine      - validate_database
+#
+#   Description  - Checks to see if the specified file is a Monotone SQLite
+#                  database. Please note that this does not verify that the
+#                  schema of the database is compatible with the version of
+#                  Monotone being used.
+#
+#   Data         - $db_name : The file name of the database to check.
+#
+##############################################################################
+
+
+
+sub validate_database($)
+{
+
+    my $db_name = $_[0];
+
+    my($buffer,
+       $db);
+
+    # Open the database.
+
+    &$croaker("`" . $db_name . "' is not a file") unless (-f $db_name);
+    &$croaker("Could not open `" . $db_name . "' for reading")
+	unless (defined($db = IO::File->new($db_name, "r")));
+    &$croaker("binmode failed: " . $!) unless (binmode($db));
+
+    # Check that it is an SQLite version 3.x database.
+
+    &$croaker("File `" . $db_name . "' is not a SQLite 3 database")
+	if ($db->sysread($buffer, 15) != 15 || $buffer ne "SQLite format 3");
+
+    # Check that it is a Monotone database.
+
+    &$croaker("Database `" . $db_name . "' is not a monotone repository or an "
+	      . "older unsupported version")
+	if (! $db->sysseek(60, 0)
+	    || $db->sysread($buffer, 4) != 4
+	    || $buffer ne "_MTN");
+
+    $db->close();
+
+}
+#
+##############################################################################
+#
+#   Routine      - validate_mtn_options
+#
+#   Description  - Checks to see if the specified list of mtn command line
+#                  options are valid.
+#
+#   Data         - $options : A reference to a list containing a list of
+#                             options to use on the mtn subprocess.
+#
+##############################################################################
+
+
+
+sub validate_mtn_options($)
+{
+
+    my $options = $_[0];
+
+    # Parse the options (don't allow indiscriminate passing of command line
+    # options to the subprocess!).
+
+    for (my $i = 0; $i < scalar(@$options); ++ $i)
+    {
+	if (! exists($valid_mtn_options{$$options[$i]}))
+	{
+	    &$croaker("Unrecognised option `" . $$options[$i]
+		      . "'passed to constructor");
+	}
+	else
+	{
+	    $i += $valid_mtn_options{$$options[$i]};
+	}
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - create_object_data
+#
+#   Description  - Creates the record for the Monotone::AutomateStdio object.
+#
+#   Data         - Return Value : A reference to an anonymous hash containing
+#                                 a complete list of initialisd fields.
+#
+##############################################################################
+
+
+
+sub create_object_data()
+{
+
+    return {db_name                 => undef,
+	    ws_path                 => undef,
+	    mtn_options             => undef,
+	    mtn_pid                 => 0,
+	    mtn_in                  => undef,
+	    mtn_out                 => undef,
+	    mtn_err                 => undef,
+	    poll                    => undef,
+	    error_msg               => "",
+	    honour_suspend_certs    => 1,
+	    mtn_aif_major           => 0,
+	    mtn_aif_minor           => 0,
+	    cmd_cnt                 => 0,
+	    db_is_locked            => undef,
+	    db_locked_handler       => undef,
+	    db_locked_handler_data  => undef,
+	    io_wait_handler         => undef,
+	    io_wait_handler_data    => undef,
+	    io_wait_handler_timeout => 1};
 
 }
 #

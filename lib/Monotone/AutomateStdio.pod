@@ -49,11 +49,18 @@ changed features.
 Creates a new Monotone::AutomateStdio object, using the current workspace's
 database.
 
-=item B<$mtn = Monotone::AutomateStdio-E<gt>new($db[, \@options])>
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new_from_db($db[, \@options])>
 
 Creates a new Monotone::AutomateStdio object, using the database named in $db.
 
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new_from_ws($ws[, \@options])>
+
+Creates a new Monotone::AutomateStdio object, using the workspace named in $ws.
+
 =back
+
+Please note that $mtn-E<gt>new() is simply an alias for
+$mtn-E<gt>new_from_db().
 
 The @options parameter specifies what options are to be passed to the mtn
 subprocess. The currently supported list (in vaguely the format in which it
@@ -323,6 +330,11 @@ Get the value of a database variable.
 
 (feature: MTN_DB_GET, obsolete: replaced by $mtn-E<gt>get_db_variables())
 
+=item B<$mtn-E<gt>db_locked_condition_detected()>
+
+Check to see if the Monotone database was locked the last time a command was
+issued.
+
 =item B<$mtn-E<gt>descendents(\@list, $revision_id ...)>
 
 Get a list of descendants for the specified revision(s).
@@ -538,6 +550,13 @@ type of entry:
 Get the absolute path for the current workspace's root directory.
 
 (feature: MTN_GET_WORKSPACE_ROOT)
+
+=item B<$mtn-E<gt>get_ws_path()>
+
+Return the the workspace's base directory as either given to the constructor or
+deduced from the current workspace.  Please note that the workspace's base
+directory may differ from that given to the constructor if the specified
+workspace path is actually a subdirectory within that workspace.
 
 =item B<$mtn-E<gt>graph(\$buffer | \@list)>
 
@@ -799,20 +818,39 @@ Sort the specified revisions such that the ancestors come out first.
 
 =head1 RETURN VALUE
 
-Except for the constructor and the
-Monotone::AutomateStdio-E<gt>register_db_locked_handler(),
-Monotone::AutomateStdio-E<gt>register_error_handler(),
-Monotone::AutomateStdio-E<gt>register_io_wait_handler(), $mtn-E<gt>closedown(),
-$mtn-E<gt>get_db_name(), $mtn-E<gt>get_error_message() and $mtn-E<gt>get_pid()
-methods, all remaining methods return a boolean success indicator, true for
-success or false for failure (where true is 1 and false is undef). The
-constructor returns a newly created object, $mtn-E<gt>get_db_name() returns a
-string or undef, $mtn-E<gt>get_error_message() returns a string,
-$mtn-E<gt>get_pid() returns an integer and
-Monotone::AutomateStdio-E<gt>register_db_locked_handler(),
-Monotone::AutomateStdio-E<gt>register_error_handler(),
-Monotone::AutomateStdio-E<gt>register_io_wait_handler() and
-$mtn-E<gt>closedown() do not return anything.
+Except for those methods listed below, all remaining methods return a boolean
+success indicator, true for success or false for failure.
+
+The following constructors return Monotone::AutomateStdio objects:
+
+    Monotone::AutomateStdio->new()
+    Monotone::AutomateStdio->new_from_db()
+    Monotone::AutomateStdio->new_from_ws()
+
+The following method returns true or false (but it does not indicate success or
+failure):
+
+    $mtn->db_locked_condition_detected()
+
+The following method returns an integer:
+
+    $mtn->get_pid()
+
+The following methods return a string or undef:
+
+    $mtn->get_db_name()
+    $mtn->get_error_message()
+    $mtn->get_ws_path()
+
+The following methods do not return anything:
+
+    Monotone::AutomateStdio->register_db_locked_handler()
+    Monotone::AutomateStdio->register_error_handler()
+    Monotone::AutomateStdio->register_io_wait_handler()
+    $mtn->closedown()
+
+Please note that the boolean true and false values used by this class are
+defined as 1 and undef respectively.
 
 =head1 NOTES
 
@@ -826,8 +864,8 @@ signal handler registered for SIGCHILD signals that can trigger a call to the
 $mtn-E<gt>closedown() method or destroy the object concerned in the event of an
 error. In order to distinguish between legitimate terminations of the mtn
 subprocess and failures, simply compare the reaped process id against that
-returned by the $mtn-E<gt>closedown() method. If there is a match then there is
-a problem, otherwise, as far as this class is concerned, there is nothing to
+returned by the $mtn-E<gt>get_pid() method. If there is a match then there is a
+problem, otherwise, as far as this class is concerned, there is nothing to
 worry about.
 
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used
