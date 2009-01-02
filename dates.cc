@@ -1,4 +1,5 @@
-// Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
+// Copyright (C) 2007, 2008 Zack Weinberg <zackw@panix.com>
+//                          Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -13,6 +14,28 @@
 
 #include <ctime>
 #include <climits>
+
+// Generic date handling routines for Monotone.
+//
+// The routines in this file substantively duplicate functionality of the
+// standard C library, so one might wonder why they are needed.  There are
+// three fundamental portability problems which together force us to
+// implement our own date handling:
+//
+// 1. We want millisecond precision in our dates, and, at the same time, the
+//    ability to represent dates far in the future.  Support for dates far
+//    in the future (in particular, past 2038) is currently only common on
+//    64-bit systems.  Support for sub-second resolution is not available at
+//    all in the standard 'broken-down time' format (struct tm).
+//
+// 2. There is no standardized way to convert from 'struct tm' to 'time_t'
+//    without treating the 'struct tm' as local time.  Some systems do
+//    provide a 'timegm' function but it is not widespread.
+//
+// 3. Some (rare, nowadays) systems do not use the Unix epoch as the epoch
+//    for 'time_t'.  This is only a problem because we support reading
+//    CVS/RCS ,v files, which encode times as decimal seconds since the Unix
+//    epoch; so we must support that epoch regardless of what the system does.
 
 using std::string;
 
@@ -51,8 +74,6 @@ struct broken_down_time {
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
 //  assume that the system's epoch is the Unix epoch, we implement the
 //  conversion to broken-down time by hand instead of relying on gmtime().
-//  The algorithm below has been tested on one value from every day in the
-//  range [1970-01-01T00:00:00, 36812-02-20T00:36:16) -- that is, [0, 2**40).
 //
 // Unix time_t values are a linear count of seconds since the epoch,
 // and should be interpreted according to the Gregorian calendar:
@@ -65,7 +86,9 @@ struct broken_down_time {
 //  - Years divisible by 400 have 366 days.
 //
 //  The last two rules are the Gregorian correction to the Julian calendar.
-//  We make no attempt to handle leap seconds.
+//  Note that dates before 1582 are treated as if the Gregorian calendar had
+//  been in effect on that day in history (the 'proleptic' calendar).  Also,
+//  we make no attempt to handle leap seconds.
 
 s64 const INVALID = PROBABLE_S64_MAX;
 
@@ -122,34 +145,24 @@ valid_ms_count(s64 d)
 }
 
 static void
-our_gmtime(s64 t, broken_down_time & tm)
+our_gmtime(s64 ts, broken_down_time & tm)
 {
   // validate our assumptions about which basic type is u64 (see above).
   I(PROBABLE_S64_MAX == std::numeric_limits<s64>::max());
   I(LATEST_SUPPORTED_DATE < PROBABLE_S64_MAX);
 
-  I(valid_ms_count(t));
+  I(valid_ms_count(ts));
 
-  // There are exactly 31556952 seconds (365d 5h 43m 12s) in the average
-  // Gregorian year.  This will therefore approximate the correct year
-  // (minus 1970).
-  s32 year = t / MILLISEC(s64_C(31556592));
+  // All subsequent calculations are easier if 't' is always positive, so we
+  // make zero be EARLIEST_SUPPORTED_DATE, which happens to be
+  // 0001-01-01T00:00:00 and is thus a convenient fixed point for leap year
+  // calculations.
 
-  s32 ms_in_day;
-  if (t >= 0)
-    {
-      ms_in_day = t % MILLISEC(DAY);
-      t /= MILLISEC(DAY);
-    }
-  else
-    {
-      // this is '+' because t%MS(DAY) is negative
-      ms_in_day = MILLISEC(DAY) + (t % MILLISEC(DAY));
-      t = t/MILLISEC(DAY) - 1;
-    }
+  u64 t = u64(ts) - u64(EARLIEST_SUPPORTED_DATE);
 
-  // t is now a day count relative to the epoch, and ms_in_day is a positive
-  // count of milliseconds since the beginning of day 't'.
+  // sub-day components
+  u64 days = t / MILLISEC(DAY);
+  u32 ms_in_day = t % MILLISEC(DAY);
 
   tm.millisec = ms_in_day % 1000;
   ms_in_day /= 1000;
@@ -160,59 +173,48 @@ our_gmtime(s64 t, broken_down_time & tm)
   tm.min = ms_in_day % 60;
   tm.hour = ms_in_day / 60;
 
-  // edge case, only happens for negative input
-  if (tm.hour == 24)
-    {
-      tm.hour = 0;
-      t += 1;
-    }
+  // This is the result of inverting the equation
+  //    yb = y*365 + y/4 - y/100 + y/400
+  // it approximates years since the epoch for any day count.
+  u32 year = (400*days / 146097);
 
-  // t is now a day count relative to the epoch.
   // Compute the _exact_ number of days from the epoch to the beginning of
-  // the approximate year determined above.  For this to work correctly
-  // (i.e. for the year/4, year/100, year/400 terms to increment exactly
-  // when they ought to) it is necessary to count years from 1601 (as if the
-  // Gregorian calendar had been in effect at that time) and then correct
-  // the final number of days back to the 1970 epoch.
-  s64 yearbeg;
+  // the approximate year determined above.
+  u64 yearbeg;
+  yearbeg = widen<u64,u32>(year)*365 + year/4 - year/100 + year/400;
 
-  year += 369;
-  yearbeg = widen<s64,s32>(year)*365 + year/4 - year/100 + year/400;
-  yearbeg -= 369*365 +  369/4 -  369/100 +  369/400;
+  // Our epoch is year 1, not year 0 (there is no year 0).
+  year++;
 
-  // *now* we want year to have its true value.
-  year += 1601;
-
-  L(FL("guess year %d, delta %d") % year % (t - yearbeg));
-
-  // Linear search for the actual year containing 't'.
-  // At most one of these loops should iterate.
-  while (yearbeg > t)
-    yearbeg -= days_in_year(--year);
-  while (yearbeg + days_in_year(year) <= t)
-        yearbeg += days_in_year(year++);
+  s64 delta = days - yearbeg;
+  // The approximation above occasionally guesses the year before the
+  // correct one, but never the year after, or any further off than that.
+  if (delta >= days_in_year(year))
+    {
+      delta -= days_in_year(year);
+      year++;
+    }
+  I(0 <= delta && delta < days_in_year(year));
 
   tm.year = year;
-  t -= yearbeg;
-
-  L(FL("year %d yday %d") % year % t);
+  days = delta;
 
   // <yakko> Now, the months digit!
-  s32 month = 1;
+  u32 month = 1;
   for (;;)
     {
-      s32 this_month = DAYS_PER_MONTH[month-1];
+      u32 this_month = DAYS_PER_MONTH[month-1];
       if (month == 2 && is_leap_year(year))
         this_month += 1;
-      if (t < this_month)
+      if (days < this_month)
         break;
 
-      t -= this_month;
+      days -= this_month;
       month++;
       I(month <= 12);
     }
   tm.month = month;
-  tm.day = t + 1;
+  tm.day = days + 1;
 }
 
 static s64
@@ -911,6 +913,76 @@ UNIT_TEST(date, comparisons)
                   == 3600000);
 }
 
+// This test takes a long time to run and can create an enormous logfile
+// (if there are a lot of failures) so it is disabled by default.  If you
+// make substantial changes to our_gmtime or our_timegm you should run it.
+#if 0
+static void
+roundtrip_1(s64 t)
+{
+  if (!valid_ms_count(t))
+    return;
+
+  broken_down_time tm;
+  our_gmtime(t, tm);
+  s64 t1 = our_timegm(tm);
+  if (t != t1)
+    {
+      L(FL("%d -> %04u-%02u-%02uT%02u:%02u:%02u.%03u -> %d error %+d")
+        % t
+        % tm.year % tm.month % tm.day % tm.hour % tm.min % tm.sec % tm.millisec
+        % t1
+        % (t - t1));
+      UNIT_TEST_CHECK(t == t1);
+    }
+
+  // if possible check against the system gmtime() as well
+  if (std::numeric_limits<time_t>::max() >= std::numeric_limits<s64>::max())
+    {
+      time_t tsys = ((t - tm.millisec) / 1000) - get_epoch_offset();
+      std::tm tmsys = *std::gmtime(&tsys);
+      broken_down_time tmo;
+      tmo.millisec = 0;
+      tmo.sec = tmsys.tm_sec;
+      tmo.min = tmsys.tm_min;
+      tmo.hour = tmsys.tm_hour;
+      tmo.day = tmsys.tm_mday;
+      tmo.month = tmsys.tm_mon + 1;
+      tmo.year = tmsys.tm_year + 1900;
+
+      bool sys_match = (tm.year == tmo.year
+                        && tm.month == tmo.month
+                        && tm.day == tmo.day
+                        && tm.hour == tmo.hour
+                        && tm.min == tmo.min
+                        && tm.sec == tmo.sec);
+      if (!sys_match)
+        {
+          L(FL("ours: %04u-%02u-%02uT%02u:%02u:%02u.%03u")
+            % tm.year % tm.month % tm.day % tm.hour % tm.min
+            % tm.sec % tm.millisec);
+          L(FL("system: %04u-%02u-%02uT%02u:%02u:%02u")
+            % tmo.year % tmo.month % tmo.day % tmo.hour % tmo.min % tmo.sec);
+          UNIT_TEST_CHECK(sys_match);
+        }
+    }
+}
+
+UNIT_TEST(date, roundtrip_all_year_boundaries)
+{
+  s64 t = EARLIEST_SUPPORTED_DATE;
+  u32 year = 1;
+
+  while (t < LATEST_SUPPORTED_DATE)
+    {
+      roundtrip_1(t-1);
+      roundtrip_1(t);
+
+      t += MILLISEC(DAY * days_in_year(year));
+      year ++;
+    }
+}
+#endif
 #endif
 
 // Local Variables:
