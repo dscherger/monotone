@@ -228,9 +228,20 @@ cpp_main(int argc, char ** argv)
         F("This monotone binary requires Botan 1.6.3 or newer."));
       N(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1,7,6),
         F("This monotone binary does not work with Botan newer than 1.7.6.");
+#elif BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,22)
+      N(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,6),
+        F("This monotone binary requires Botan 1.7.7 or newer."));
+      // While compiling against 1.7.22 or newer is recommended, because
+      // it enables new features of Botan, the monotone binary compiled
+      // against Botan 1.7.21 and before should still work with newer Botan
+      // versions, including all of the stable branch 1.8.x.
+      N(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0),
+        F("This monotone binary does not work with Botan 1.9.x.");
 #else
       N(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22),
         F("This monotone binary requires Botan 1.7.22 or newer."));
+      N(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0),
+        F("This monotone binary does not work with Botan 1.9.x.");
 #endif
 
       app_state app;
