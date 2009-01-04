@@ -359,7 +359,7 @@ unsigned int reactable::count = 0;
 
 class session_base : public reactable
 {
-  bool read_some();
+  void read_some(bool & failed, bool & eof);
   bool write_some();
   void mark_recent_io()
   {
@@ -478,10 +478,12 @@ session_base::which_events()
   return ret;
 }
 
-bool
-session_base::read_some()
+void
+session_base::read_some(bool & failed, bool & eof)
 {
   I(inbuf.size() < constants::netcmd_maxsz);
+  eof = false;
+  failed = false;
   char tmp[constants::bufsz];
   Netxx::signed_size_type count = str->read(tmp, sizeof(tmp));
   if (count > 0)
@@ -489,17 +491,38 @@ session_base::read_some()
       L(FL("read %d bytes from fd %d (peer %s)")
         % count % str->get_socketfd() % peer_id);
       if (encountered_error)
-        {
-          L(FL("in error unwind mode, so throwing them into the bit bucket"));
-          return true;
-        }
+        L(FL("in error unwind mode, so throwing them into the bit bucket"));
+
       inbuf.append(tmp,count);
       mark_recent_io();
       note_bytes_in(count);
-      return true;
+    }
+  else if (count == 0)
+    {
+      // Returning 0 bytes after select() marks the file descriptor as
+      // ready for reading signifies EOF.
+
+      switch (protocol_state)
+        {
+        case working_state:
+          P(F("peer %s IO terminated connection in working state (error)")
+            % peer_id);
+          break;
+
+        case shutdown_state:
+          P(F("peer %s IO terminated connection in shutdown state "
+              "(possibly client misreported error)")
+            % peer_id);
+          break;
+
+        case confirmed_state:
+          break;
+        }
+
+      eof = true;
     }
   else
-    return false;
+    failed = true;
 }
 
 bool
@@ -541,11 +564,14 @@ bool
 session_base::do_io(Netxx::Probe::ready_type what)
 {
   bool ok = true;
+  bool eof = false;
   try
     {
       if (what & Netxx::Probe::ready_read)
         {
-          if (!read_some())
+          bool failed;
+          read_some(failed, eof);
+          if (failed)
             ok = false;
         }
       if (what & Netxx::Probe::ready_write)
@@ -588,7 +614,11 @@ session_base::do_io(Netxx::Probe::ready_type what)
         % peer_id);
       ok = false;
     }
-  return ok;
+
+  // Return false in case we reached EOF, so as to prevent further calls
+  // to select()s on this stream, as recommended by the select_tut man
+  // page.
+  return ok && !eof;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1817,7 +1847,7 @@ session::process_auth_cmd(protocol_role their_role,
                                       their_exclude_pattern);
           error(unknown_key,
                 (F("remote public key hash '%s' is unknown")
-                 % encode_hexenc(client())).str());
+                 % client).str());
           */
         }
     }
@@ -2206,7 +2236,7 @@ session::process_data_cmd(netcmd_item_type type,
         epoch_data epoch;
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s")
-          % encode_hexenc(epoch.inner()()) % branch);
+          % epoch % branch);
         map<branch_name, epoch_data> epochs;
         project.db.get_epochs(epochs);
         map<branch_name, epoch_data>::const_iterator i;
@@ -2214,7 +2244,7 @@ session::process_data_cmd(netcmd_item_type type,
         if (i == epochs.end())
           {
             L(FL("branch %s has no epoch; setting epoch to %s")
-              % branch % encode_hexenc(epoch.inner()()));
+              % branch % epoch);
             project.db.set_epoch(branch, epoch);
           }
         else
@@ -2235,10 +2265,8 @@ session::process_data_cmd(netcmd_item_type type,
                   (F("Mismatched epoch on branch %s."
                      " Server has '%s', client has '%s'.")
                    % branch
-                   % encode_hexenc((voice == server_voice
-                                    ? i->second: epoch).inner()())
-                   % encode_hexenc((voice == server_voice
-                                    ? epoch : i->second).inner()())).str());
+                   % (voice == server_voice ? i->second : epoch)
+                   % (voice == server_voice ? epoch : i->second)).str());
           }
       }
       maybe_note_epochs_finished();
@@ -2256,7 +2284,7 @@ session::process_data_cmd(netcmd_item_type type,
             throw bad_decode(F("hash check failed for public key '%s' (%s);"
                                " wanted '%s' got '%s'")
                                % hitem() % keyid % hitem()
-                               % encode_hexenc(tmp()));
+                               % tmp);
           }
         if (project.db.put_key(keyid, pub))
           written_keys.push_back(keyid);
@@ -2282,7 +2310,9 @@ session::process_data_cmd(netcmd_item_type type,
     case revision_item:
       {
         L(FL("received revision '%s'") % hitem());
-        if (project.db.put_revision(revision_id(item), revision_data(dat)))
+        revision_t rev;
+        read_revision(data(dat, made_from_network), rev);
+        if (project.db.put_revision(revision_id(item), rev))
           written_revisions.push_back(revision_id(item));
       }
       break;
@@ -2290,7 +2320,8 @@ session::process_data_cmd(netcmd_item_type type,
     case file_item:
       {
         L(FL("received file '%s'") % hitem());
-        project.db.put_file(file_id(item), file_data(dat));
+        project.db.put_file(file_id(item),
+                            file_data(dat, made_from_network));
       }
       break;
     }
@@ -3694,7 +3725,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
           if (global_sanity.debug_p())
             L(FL("noting key '%s' = '%s' to send")
               % *key
-              % encode_hexenc(keyhash()));
+              % keyhash);
 
           key_refiner.note_local_item(keyhash);
           ++keys_ticker;

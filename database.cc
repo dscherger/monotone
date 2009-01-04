@@ -2514,6 +2514,7 @@ database::put_roster_for_revision(revision_id const & new_id,
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
   calculate_ident(*ros_writeable, roster_manifest_id);
+  made_from_t made_from(rev.made_from);
   I(rev.new_manifest == roster_manifest_id);
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
@@ -3222,7 +3223,7 @@ database_impl::add_prefix_matching_constraint(string const & colname,
           // 0xffffff...
           if (global_sanity.debug_p())
             L(FL("prefix_matcher: only lower bound ('%s')")
-              % encode_hexenc(lower_bound));
+              % lower_bound);
 
           q.sql_cmd += colname + " > ?";
           q.args.push_back(blob(lower_bound));
@@ -3231,8 +3232,8 @@ database_impl::add_prefix_matching_constraint(string const & colname,
         {
           if (global_sanity.debug_p())
             L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
-              % encode_hexenc(lower_bound)
-              % encode_hexenc(upper_bound));
+              % lower_bound
+              % upper_bound);
 
           q.sql_cmd += colname + " BETWEEN ? AND ?";
           q.args.push_back(blob(lower_bound));

@@ -400,6 +400,8 @@ read_options_file(any_path const & optspath,
         W(F("unrecognized key '%s' in options file %s - ignored")
           % opt % optspath);
     }
+  E(src.lookahead == EOF,
+    F("Could not parse entire options file %s") % optspath);
 }
 
 static void
@@ -457,8 +459,8 @@ workspace::get_ws_options(options & opts)
       opts.dbname = database_option;
     }
 
-  if (!opts.key_dir_given && !opts.conf_dir_given)
-    {
+  if (!opts.key_dir_given && !opts.conf_dir_given && !keydir_option.empty())
+    { // if empty/missing, we want to keep the default
       opts.key_dir = keydir_option;
       opts.key_dir_given = true;
     }
@@ -825,18 +827,18 @@ addition_builder::visit_dir(file_path const & path)
 {
   if (!recursive) {
     bool warn = false;
-  
+
     // If the db can ever be stored in a dir
     // then revisit this logic
     I(!db.is_dbfile(path));
-  
+
     if (!respect_ignore)
       warn = !directory_empty(path);
     else if (respect_ignore && !work.ignore_file(path))
       {
         vector<path_component> children;
         read_directory(path, children, children);
-        
+
         for (vector<path_component>::const_iterator i = children.begin();
              i != children.end(); ++i)
           {
@@ -857,12 +859,12 @@ addition_builder::visit_dir(file_path const & path)
               }
           }
       }
-  
+
     if (warn)
       W(F("Non-recursive add: Files in the directory '%s' "
           "will not be added automatically.") % path);
   }
-  
+
   this->visit_file(path);
   return true;
 }
@@ -966,6 +968,11 @@ struct content_merge_empty_adaptor : public content_merge_adaptor
                             file_id const &,
                             file_data const &, file_data const &,
                             file_data const &)
+  { I(false); }
+  virtual void record_file(file_id const &,
+                           file_id const &,
+                           file_data const &,
+                           file_data const &)
   { I(false); }
   virtual void get_ancestral_roster(node_id, revision_id &, boost::shared_ptr<roster_t const> &)
   { I(false); }
