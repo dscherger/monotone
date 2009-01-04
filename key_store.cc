@@ -62,9 +62,10 @@ struct key_store_state
     : key_dir(app.opts.key_dir), ssh_sign_mode(app.opts.ssh_sign),
       have_read(false), lua(app.lua), rng(app.rng)
   {
-    N(app.opts.key_dir_given
+    E(app.opts.key_dir_given
       || app.opts.conf_dir_given
       || !app.opts.no_default_confdir,
+      origin::user,
       F("No available keystore found"));
   }
 
@@ -108,29 +109,29 @@ namespace
     keyreader(key_store_state & kss): kss(kss) {}
     virtual void consume_file_data(file_id const & ident,
                                    file_data const & dat)
-    {E(false, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("Extraneous data in key store."));}
     virtual void consume_file_delta(file_id const & id_old,
                                     file_id const & id_new,
                                     file_delta const & del)
-    {E(false, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("Extraneous data in key store."));}
 
     virtual void consume_revision_data(revision_id const & ident,
                                        revision_data const & dat)
-    {E(false, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("Extraneous data in key store."));}
     virtual void consume_revision_cert(revision<cert> const & t)
-    {E(false, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("Extraneous data in key store."));}
 
 
     virtual void consume_public_key(rsa_keypair_id const & ident,
                                     rsa_pub_key const & k)
-    {E(false, F("Extraneous data in key store."));}
+    {E(false, origin::system, F("Extraneous data in key store."));}
 
     virtual void consume_key_pair(rsa_keypair_id const & ident,
                                   keypair const & kp)
     {
       L(FL("reading key pair '%s' from key store") % ident);
 
-      E(kss.put_key_pair_memory(ident, kp),
+      E(kss.put_key_pair_memory(ident, kp), origin::system,
         F("Key store has multiple keys with id '%s'.") % ident);
 
       L(FL("successfully read key pair '%s' from key store") % ident);
@@ -340,6 +341,7 @@ key_store_state::put_key_pair_memory(rsa_keypair_id const & ident,
   else
     {
       E(keys_match(ident, res.first->second.pub, ident, kp.pub),
+        origin::system,
         F("Cannot store key '%s': a different key by that name exists.")
           % ident);
       L(FL("skipping existing key pair %s") % ident);
@@ -383,7 +385,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
     return cpk->second;
 
   keypair kp;
-  N(maybe_get_key_pair(id, kp),
+  E(maybe_get_key_pair(id, kp), origin::user,
     F("no key pair '%s' found in key store '%s'") % id % key_dir);
 
   L(FL("%d-byte private key") % kp.priv().size());
@@ -418,7 +420,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
           {
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
               % cycles % e.what());
-            E(cycles <= 3,
+            E(cycles <= 3, origin::no_fault,
               F("failed to decrypt old private RSA key, "
                 "probably incorrect passphrase"));
 
@@ -432,7 +434,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
 
   shared_ptr<RSA_PrivateKey> priv_key;
   priv_key = shared_dynamic_cast<RSA_PrivateKey>(pkcs8_key);
-  E(priv_key,
+  E(priv_key, origin::no_fault,
     F("failed to extract RSA private key from PKCS#8 keypair"));
 
   // Cache the decrypted key if we're allowed.
@@ -473,7 +475,7 @@ key_store::create_key_pair(database & db,
       guard.acquire();
       exists = exists || db.public_key_exists(id);
     }
-  N(!exists, F("key '%s' already exists") % id);
+  E(!exists, origin::user, F("key '%s' already exists") % id);
 
   utf8 prompted_passphrase;
   if (!maybe_passphrase)
@@ -587,7 +589,7 @@ key_store::make_signature(database & db,
   ssh_agent & agent = s->get_agent();
 
   //sign with ssh-agent (if connected)
-  N(agent.connected() || s->ssh_sign_mode != "only",
+  E(agent.connected() || s->ssh_sign_mode != "only", origin::user,
     F("You have chosen to sign only with ssh-agent but ssh-agent"
       " does not seem to be running."));
   if (s->ssh_sign_mode == "yes"
@@ -605,7 +607,8 @@ key_store::make_signature(database & db,
         shared_ptr<RSA_PublicKey> pub_key = shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
         if (!pub_key)
-          throw informative_failure("Failed to get monotone RSA public key");
+          throw recoverable_failure(origin::system,
+                                    "Failed to get monotone RSA public key");
 
         agent.sign_data(*pub_key, tosign, sig_string);
       }
@@ -616,7 +619,7 @@ key_store::make_signature(database & db,
 
   string ssh_sig = sig_string;
 
-  N(ssh_sig.length() > 0 || s->ssh_sign_mode != "only",
+  E(ssh_sig.length() > 0 || s->ssh_sign_mode != "only", origin::user,
     F("You don't seem to have your monotone key imported "));
 
   if (ssh_sig.length() <= 0
@@ -664,7 +667,7 @@ key_store::make_signature(database & db,
 
   if (s->ssh_sign_mode == "check" && ssh_sig.length() > 0)
     {
-      E(ssh_sig == sig_string,
+      E(ssh_sig == sig_string, origin::system,
         F("make_signature: ssh signature (%i) != monotone signature (%i)\n"
           "ssh signature     : %s\n"
           "monotone signature: %s")
@@ -681,7 +684,7 @@ key_store::make_signature(database & db,
 
   cert_status s = db.check_signature(id, tosign, signature);
   I(s != cert_unknown);
-  E(s == cert_ok, F("make_signature: signature is not valid"));
+  E(s == cert_ok, origin::system, F("make_signature: signature is not valid"));
 }
 
 //
@@ -692,7 +695,7 @@ void
 key_store::add_key_to_agent(rsa_keypair_id const & id)
 {
   ssh_agent & agent = s->get_agent();
-  N(agent.connected(),
+  E(agent.connected(), origin::user,
     F("no ssh-agent is available, cannot add key '%s'") % id);
 
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
@@ -768,7 +771,7 @@ key_store_state::migrate_old_key_pair
         L(FL("migrate_old_key_pair: failure %d to load old private key: %s")
           % cycles % e.what());
 
-        E(cycles <= 3,
+        E(cycles <= 3, origin::no_fault,
           F("failed to decrypt old private RSA key, "
             "probably incorrect passphrase"));
 

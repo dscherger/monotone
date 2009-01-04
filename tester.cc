@@ -251,7 +251,7 @@ void do_copy_recursive(string const & from, string to)
 // Therefore, there is no point accepting arguments higher than 777.
 LUAEXT(posix_umask, )
 {
-  unsigned int decmask = (unsigned int)luaL_checknumber(L, -1);
+  unsigned int decmask = (unsigned int)luaL_checknumber(LS, -1);
   E(decmask <= 777,
     F("invalid argument %d to umask") % decmask);
 
@@ -265,7 +265,7 @@ LUAEXT(posix_umask, )
   int oldmask = do_umask((a*8 + b)*8 + c);
   if (oldmask == -1)
     {
-      lua_pushinteger(L, 0);
+      lua_pushinteger(LS, 0);
       return 1;
     }
   else
@@ -274,7 +274,7 @@ LUAEXT(posix_umask, )
       b = ((unsigned int)oldmask) / 8  % 8;
       c = ((unsigned int)oldmask) / 1  % 8;
 
-      lua_pushinteger(L, (a*10 + b)*10 + c);
+      lua_pushinteger(LS, (a*10 + b)*10 + c);
       return 1;
     }
 }
@@ -284,13 +284,13 @@ LUAEXT(chdir, )
   try
     {
       string from = get_current_working_dir();
-      change_current_working_dir(luaL_checkstring(L, -1));
-      lua_pushstring(L, from.c_str());
+      change_current_working_dir(luaL_checkstring(LS, -1));
+      lua_pushstring(LS, from.c_str());
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
       return 1;
     }
 }
@@ -299,14 +299,14 @@ LUAEXT(remove_recursive, )
 {
   try
     {
-      do_remove_recursive(luaL_checkstring(L, -1));
-      lua_pushboolean(L, true);
+      do_remove_recursive(luaL_checkstring(LS, -1));
+      lua_pushboolean(LS, true);
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushboolean(L, false);
-      lua_pushstring(L, e.what());
+      lua_pushboolean(LS, false);
+      lua_pushstring(LS, e.what());
       return 2;
     }
 }
@@ -315,14 +315,14 @@ LUAEXT(make_tree_accessible, )
 {
   try
     {
-      do_make_tree_accessible(luaL_checkstring(L, -1));
-      lua_pushboolean(L, true);
+      do_make_tree_accessible(luaL_checkstring(LS, -1));
+      lua_pushboolean(LS, true);
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushboolean(L, false);
-      lua_pushstring(L, e.what());
+      lua_pushboolean(LS, false);
+      lua_pushstring(LS, e.what());
       return 2;
     }
 }
@@ -331,16 +331,16 @@ LUAEXT(copy_recursive, )
 {
   try
     {
-      string from(luaL_checkstring(L, -2));
-      string to(luaL_checkstring(L, -1));
+      string from(luaL_checkstring(LS, -2));
+      string to(luaL_checkstring(LS, -1));
       do_copy_recursive(from, to);
-      lua_pushboolean(L, true);
+      lua_pushboolean(LS, true);
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushboolean(L, false);
-      lua_pushstring(L, e.what());
+      lua_pushboolean(LS, false);
+      lua_pushstring(LS, e.what());
       return 2;
     }
 }
@@ -349,14 +349,14 @@ LUAEXT(mkdir, )
 {
   try
     {
-      char const * dirname = luaL_checkstring(L, -1);
+      char const * dirname = luaL_checkstring(LS, -1);
       do_mkdir(dirname);
-      lua_pushboolean(L, true);
+      lua_pushboolean(LS, true);
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
       return 1;
     }
 }
@@ -367,13 +367,13 @@ LUAEXT(make_temp_dir, )
     {
       char * tmpdir = make_temp_dir();
 
-      lua_pushstring(L, tmpdir);
+      lua_pushstring(LS, tmpdir);
       delete [] tmpdir;
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
       return 1;
     }
 }
@@ -383,18 +383,18 @@ LUAEXT(mtime, )
 {
   try
     {
-      char const * file = luaL_checkstring(L, -1);
+      char const * file = luaL_checkstring(LS, -1);
 
       time_t t = get_last_write_time(file);
       if (t == time_t(-1))
-        lua_pushnil(L);
+        lua_pushnil(LS);
       else
-        lua_pushnumber(L, t);
+        lua_pushnumber(LS, t);
       return 1;
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
       return 1;
     }
 }
@@ -403,17 +403,17 @@ LUAEXT(exists, )
 {
   try
     {
-      char const * name = luaL_checkstring(L, -1);
+      char const * name = luaL_checkstring(LS, -1);
       switch (get_path_status(name))
         {
-        case path::nonexistent:  lua_pushboolean(L, false); break;
+        case path::nonexistent:  lua_pushboolean(LS, false); break;
         case path::file:
-        case path::directory:    lua_pushboolean(L, true); break;
+        case path::directory:    lua_pushboolean(LS, true); break;
         }
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
     }
   return 1;
 }
@@ -422,17 +422,17 @@ LUAEXT(isdir, )
 {
   try
     {
-      char const * name = luaL_checkstring(L, -1);
+      char const * name = luaL_checkstring(LS, -1);
       switch (get_path_status(name))
         {
         case path::nonexistent:
-        case path::file:         lua_pushboolean(L, false); break;
-        case path::directory:    lua_pushboolean(L, true); break;
+        case path::file:         lua_pushboolean(LS, false); break;
+        case path::directory:    lua_pushboolean(LS, true); break;
         }
     }
   catch(informative_failure & e)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
     }
   return 1;
 }
@@ -459,23 +459,23 @@ namespace
 
 LUAEXT(read_directory, )
 {
-  int top = lua_gettop(L);
+  int top = lua_gettop(LS);
   try
     {
-      string path(luaL_checkstring(L, -1));
-      build_table tbl(L);
+      string path(luaL_checkstring(LS, -1));
+      build_table tbl(LS);
 
       do_read_directory(path, tbl, tbl, tbl);
     }
   catch(informative_failure &)
     {
       // discard the table and any pending path element
-      lua_settop(L, top);
-      lua_pushnil(L);
+      lua_settop(LS, top);
+      lua_pushnil(LS);
     }
   catch (...)
     {
-      lua_settop(L, top);
+      lua_settop(LS, top);
       throw;
     }
   return 1;
@@ -483,7 +483,7 @@ LUAEXT(read_directory, )
 
 LUAEXT(get_source_dir, )
 {
-  lua_pushstring(L, source_dir.c_str());
+  lua_pushstring(LS, source_dir.c_str());
   return 1;
 }
 
@@ -504,8 +504,8 @@ LUAEXT(restore_env, )
 
 LUAEXT(set_env, )
 {
-  char const * var = luaL_checkstring(L, -2);
-  char const * val = luaL_checkstring(L, -1);
+  char const * var = luaL_checkstring(LS, -2);
+  char const * val = luaL_checkstring(LS, -1);
   if (orig_env_vars.find(string(var)) == orig_env_vars.end()) {
     char const * old = getenv(var);
     if (old)
@@ -519,7 +519,7 @@ LUAEXT(set_env, )
 
 LUAEXT(unset_env, )
 {
-  char const * var = luaL_checkstring(L, -1);
+  char const * var = luaL_checkstring(LS, -1);
   if (orig_env_vars.find(string(var)) == orig_env_vars.end()) {
     char const * old = getenv(var);
     if (old)
@@ -533,13 +533,13 @@ LUAEXT(unset_env, )
 
 LUAEXT(timed_wait, )
 {
-  pid_t pid = static_cast<pid_t>(luaL_checknumber(L, -2));
-  int time = static_cast<int>(luaL_checknumber(L, -1));
+  pid_t pid = static_cast<pid_t>(luaL_checknumber(LS, -2));
+  int time = static_cast<int>(luaL_checknumber(LS, -1));
   int res;
   int ret;
   ret = process_wait(pid, &res, time);
-  lua_pushnumber(L, res);
-  lua_pushnumber(L, ret);
+  lua_pushnumber(LS, res);
+  lua_pushnumber(LS, ret);
   return 2;
 }
 
@@ -648,22 +648,22 @@ bool test_cleaner::operator()(test_to_run const & test,
 
 LUAEXT(run_tests_in_children, )
 {
-  if (lua_gettop(L) != 2)
-    return luaL_error(L, "wrong number of arguments");
+  if (lua_gettop(LS) != 2)
+    return luaL_error(LS, "wrong number of arguments");
 
-  luaL_argcheck(L, lua_istable(L, 1), 1, "expected a table");
-  luaL_argcheck(L, lua_isfunction(L, 2), 2, "expected a function");
+  luaL_argcheck(LS, lua_istable(LS, 1), 1, "expected a table");
+  luaL_argcheck(LS, lua_isfunction(LS, 2), 2, "expected a function");
 
-  int reporter_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  int table_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  int reporter_ref = luaL_ref(LS, LUA_REGISTRYINDEX);
+  int table_ref = luaL_ref(LS, LUA_REGISTRYINDEX);
 
-  run_tests_in_children(test_enumerator(L, table_ref),
-                        test_invoker(L),
-                        test_cleaner(L, reporter_ref),
+  run_tests_in_children(test_enumerator(LS, table_ref),
+                        test_invoker(LS),
+                        test_cleaner(LS, reporter_ref),
                         run_dir, argv0, testfile, firstdir);
 
-  luaL_unref(L, LUA_REGISTRYINDEX, table_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, reporter_ref);
+  luaL_unref(LS, LUA_REGISTRYINDEX, table_ref);
+  luaL_unref(LS, LUA_REGISTRYINDEX, reporter_ref);
   return 0;
 }
 

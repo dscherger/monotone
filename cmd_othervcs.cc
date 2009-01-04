@@ -45,7 +45,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   if (args.size() != 1)
     throw usage(execid);
 
-  N(app.opts.branchname() != "",
+  E(app.opts.branchname() != "", origin::user,
     F("need base --branch argument for importing"));
 
   system_path cvsroot(idx(args, 0)());

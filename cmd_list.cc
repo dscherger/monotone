@@ -169,7 +169,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   database db(app);
   project_t project(db);
 
-  N(app.opts.revision_selectors.size() <= 1,
+  E(app.opts.revision_selectors.size() <= 1, origin::user,
     F("more than one revision given"));
 
   if (app.opts.revision_selectors.empty())
@@ -183,7 +183,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     {
       complete(app.opts, app.lua, project,
                idx(app.opts.revision_selectors, 0)(), rev_id);
-      N(db.revision_exists(rev_id),
+      E(db.revision_exists(rev_id), origin::user,
         F("no revision %s found in database") % rev_id);
       db.get_roster(rev_id, roster);
     }
@@ -262,9 +262,9 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
 
   vector<rsa_keypair_id> pubs;
   vector<rsa_keypair_id> privkeys;
-  globish pattern("*");
+  globish pattern("*", origin::internal);
   if (args.size() == 1)
-    pattern = globish(idx(args, 0)());
+    pattern = globish(idx(args, 0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -372,9 +372,9 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
     "",
     options::opts::exclude)
 {
-  globish inc("*");
+  globish inc("*", origin::internal);
   if (args.size() == 1)
-    inc = globish(idx(args,0)());
+    inc = globish(idx(args,0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -405,7 +405,9 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << encode_hexenc(i->second.inner()()) << ' ' << i->first << '\n';
+          cout << encode_hexenc(i->second.inner()(),
+                                i->second.inner().made_from)
+               << ' ' << i->first << '\n';
         }
     }
   else
@@ -415,8 +417,10 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
            ++i)
         {
           map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
-          N(j != epochs.end(), F("no epoch for branch %s") % *i);
-          cout << encode_hexenc(j->second.inner()()) << ' ' << j->first << '\n';
+          E(j != epochs.end(), origin::user, F("no epoch for branch %s") % *i);
+          cout << encode_hexenc(j->second.inner()(),
+                                j->second.inner().made_from)
+               << ' ' << j->first << '\n';
         }
     }
 }
@@ -677,7 +681,7 @@ CMD_AUTOMATE(keys, "",
              "",
              options::opts::none)
 {
-  N(args.empty(),
+  E(args.empty(), origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -771,7 +775,7 @@ CMD_AUTOMATE(certs, N_("REV"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -781,10 +785,11 @@ CMD_AUTOMATE(certs, N_("REV"),
 
   transaction_guard guard(db, false);
 
-  hexenc<id> hrid(idx(args, 0)());
-  revision_id rid(decode_hexenc(hrid()));
+  hexenc<id> hrid(idx(args, 0)(), origin::user);
+  revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
 
-  N(db.revision_exists(rid), F("no such revision '%s'") % hrid);
+  E(db.revision_exists(rid), origin::user,
+    F("no such revision '%s'") % hrid);
 
   vector< revision<cert> > ts;
   // FIXME_PROJECTS: after projects are implemented,

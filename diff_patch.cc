@@ -737,7 +737,7 @@ content_merge_workspace_adaptor::get_version(file_id const & ident,
                            F("'%s' in workspace is a directory, not a file") % i->second);
       read_data(i->second, tmp);
       calculate_ident(file_data(tmp), fid);
-      E(fid == ident,
+      E(fid == ident, origin::system,
         F("file %s in workspace has id %s, wanted %s")
         % i->second
         % fid
@@ -1014,7 +1014,7 @@ struct hunk_consumer
       encloser_last_match(a.rend()), encloser_last_search(a.rend())
   {
     if (encloser_pattern != "")
-      encloser_re.reset(new pcre::regex(encloser_pattern));
+      encloser_re.reset(new pcre::regex(encloser_pattern, origin::user));
   }
 };
 
@@ -1044,7 +1044,7 @@ hunk_consumer::find_encloser(size_t pos, string & encloser)
 
   // i is a reverse_iterator, so this loop goes backward through the vector.
   for (; i != last; i++)
-    if (encloser_re->match(*i))
+    if (encloser_re->match(*i, origin::user))
       {
         encloser_last_match = i;
         break;

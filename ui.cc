@@ -538,6 +538,22 @@ user_interface::fatal(string const & fatal)
          % fatal % prog_name % PACKAGE_BUGREPORT);
   global_sanity.dump_buffer();
 }
+// just as above, but the error appears to have come from the database.
+// Of course, since the monotone is the only thing that should be
+// writing to the database, this still probably means there's a bug.
+void
+user_interface::fatal_db(string const & fatal)
+{
+  inform(F("fatal: %s\n"
+           "this is almost certainly a bug in monotone.\n"
+           "please send this error message, the output of '%s version --full',\n"
+           "and a description of what you were doing to %s.\n"
+           "This error appears to have been triggered by something in the\n"
+           "database you were using, so please preserve it in case it can\n"
+           "help in finding the bug.")
+         % fatal % prog_name % PACKAGE_BUGREPORT);
+  global_sanity.dump_buffer();
+}
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is from the std::exception hierarchy.  In this case we
@@ -636,7 +652,8 @@ user_interface::redirect_log_to(system_path const & filename)
   if (filestr.is_open())
     filestr.close();
   filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
-  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
+  E(filestr.is_open(), origin::system,
+    F("failed to open log file '%s'") % filename);
   clog.rdbuf(filestr.rdbuf());
 }
 

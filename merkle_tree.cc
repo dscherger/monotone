@@ -298,7 +298,7 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
           string slot_val = extract_substring(inbuf, pos,
                                               constants::merkle_hash_length_in_bytes,
                                               "slot value");
-          out.set_raw_slot(slot, id(slot_val, made_from_network));
+          out.set_raw_slot(slot, id(slot_val, origin::network));
         }
     }
 
@@ -306,7 +306,8 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
   out.check_invariants();
   if (hash != checkhash)
     throw bad_decode(F("mismatched node hash value %s, expected %s")
-		     % xform<Botan::Hex_Encoder>(checkhash) % xform<Botan::Hex_Encoder>(hash));
+		     % id(checkhash)
+                     % id(hash));
 }
 
 

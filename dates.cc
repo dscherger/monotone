@@ -226,12 +226,12 @@ date_t::from_string(string const & s)
 
       // seconds
       u8 sec;
-      N(d.at(i) >= '0' && d.at(i) <= '9'
-        && d.at(i-1) >= '0' && d.at(i-1) <= '5',
+      E(d.at(i) >= '0' && d.at(i) <= '9'
+        && d.at(i-1) >= '0' && d.at(i-1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
       sec = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
       i -= 2;
-      N(sec < 60,
+      E(sec < 60, origin::user,
         F("seconds out of range"));
 
       // optional colon
@@ -242,12 +242,12 @@ date_t::from_string(string const & s)
 
       // minutes
       u8 min;
-      N(d.at(i) >= '0' && d.at(i) <= '9'
-        && d.at(i-1) >= '0' && d.at(i-1) <= '5',
+      E(d.at(i) >= '0' && d.at(i) <= '9'
+        && d.at(i-1) >= '0' && d.at(i-1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
       min = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
       i -= 2;
-      N(min < 60,
+      E(min < 60, origin::user,
         F("minutes out of range"));
 
       // optional colon
@@ -258,17 +258,17 @@ date_t::from_string(string const & s)
 
       // hours
       u8 hour;
-      N((d.at(i-1) >= '0' && d.at(i-1) <= '1'
+      E((d.at(i-1) >= '0' && d.at(i-1) <= '1'
          && d.at(i) >= '0' && d.at(i) <= '9')
-        || (d.at(i-1) == '2' && d.at(i) >= '0' && d.at(i) <= '3'),
+        || (d.at(i-1) == '2' && d.at(i) >= '0' && d.at(i) <= '3'), origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
       hour = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
       i -= 2;
-      N(hour < 24,
+      E(hour < 24, origin::user,
         F("hour out of range"));
 
       // 'T' is required at this point; we also accept a space
-      N(d.at(i) == 'T' || d.at(i) == ' ',
+      E(d.at(i) == 'T' || d.at(i) == ' ', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
 
       if (d.at(i) == ' ')
@@ -277,8 +277,8 @@ date_t::from_string(string const & s)
 
       // day
       u8 day;
-      N(d.at(i-1) >= '0' && d.at(i-1) <= '3'
-        && d.at(i) >= '0' && d.at(i) <= '9',
+      E(d.at(i-1) >= '0' && d.at(i-1) <= '3'
+        && d.at(i) >= '0' && d.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
       day = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
       i -= 2;
@@ -291,11 +291,11 @@ date_t::from_string(string const & s)
 
       // month
       u8 month;
-      N(d.at(i-1) >= '0' && d.at(i-1) <= '1'
-        && d.at(i) >= '0' && d.at(i) <= '9',
+      E(d.at(i-1) >= '0' && d.at(i-1) <= '1'
+        && d.at(i) >= '0' && d.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
       month = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
-      N(month >= 1 && month <= 12,
+      E(month >= 1 && month <= 12, origin::user,
         F("month out of range in '%s'") % d);
       i -= 2;
 
@@ -306,7 +306,7 @@ date_t::from_string(string const & s)
         d.insert(i+1, 1, '-');
 
       // year
-      N(i >= 3,
+      E(i >= 3, origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
 
       // this counts down through zero and stops when it wraps around
@@ -315,14 +315,14 @@ date_t::from_string(string const & s)
       u32 digit = 1;
       while (i < d.size())
         {
-          N(d.at(i) >= '0' && d.at(i) <= '9',
+          E(d.at(i) >= '0' && d.at(i) <= '9', origin::user,
             F("unrecognized date (monotone only understands ISO 8601 format)"));
           year += (d.at(i) - '0')*digit;
           i--;
           digit *= 10;
         }
 
-      N(year >= 1970,
+      E(year >= 1970, origin::user,
         F("date too early (monotone only goes back to 1970-01-01T00:00:00)"));
 
       u8 mdays;
@@ -331,14 +331,14 @@ date_t::from_string(string const & s)
       else
         mdays = MONTHS[month-1];
 
-      N(day >= 1 && day <= mdays,
+      E(day >= 1 && day <= mdays, origin::user,
         F("day out of range for its month in '%s'") % d);
 
       return date_t(d);
     }
   catch (std::out_of_range)
     {
-      N(false,
+      E(false, origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
     }
 }

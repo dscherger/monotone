@@ -344,10 +344,11 @@ normalize_path(string const & in)
 
 LUAEXT(normalize_path, )
 {
-  const char *pathstr = luaL_checkstring(L, -1);
-  N(pathstr, F("%s called with an invalid parameter") % "normalize_path");
+  const char *pathstr = luaL_checkstring(LS, -1);
+  E(pathstr, origin::user,
+    F("%s called with an invalid parameter") % "normalize_path");
 
-  lua_pushstring(L, normalize_path(string(pathstr)).c_str());
+  lua_pushstring(LS, normalize_path(string(pathstr)).c_str());
   return 1;
 }
 
@@ -362,12 +363,13 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
       // enter a workspace
       initial_rel_path.may_not_initialize();
       normalized = path;
-      N(is_valid_internal(path),
+      E(is_valid_internal(path), origin::user,
         F("path '%s' is invalid") % path);
     }
   else
     {
-      N(!is_absolute_here(path), F("absolute path '%s' is invalid") % path);
+      E(!is_absolute_here(path), origin::user,
+        F("absolute path '%s' is invalid") % path);
       string base;
       try
         {
@@ -383,11 +385,11 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
         }
       catch (exception &)
         {
-          N(false, F("path '%s' is invalid") % path);
+          E(false, origin::user, F("path '%s' is invalid") % path);
         }
       if (normalized == ".")
         normalized = string("");
-      N(fully_normalized_path(normalized),
+      E(fully_normalized_path(normalized), origin::user,
         F("path '%s' is invalid") % normalized);
     }
 }
@@ -447,7 +449,7 @@ file_path::file_path(file_path::source_type type, string const & path, bool to_w
     {
       string normalized;
       normalize_external_path(path, normalized, to_workspace_root);
-      N(!in_bookkeeping_dir(normalized),
+      E(!in_bookkeeping_dir(normalized), origin::user,
         F("path '%s' is in bookkeeping dir") % normalized);
       data = normalized;
     }
@@ -465,7 +467,7 @@ file_path::file_path(file_path::source_type type, utf8 const & path, bool to_wor
     {
       string normalized;
       normalize_external_path(path(), normalized, to_workspace_root);
-      N(!in_bookkeeping_dir(normalized),
+      E(!in_bookkeeping_dir(normalized), origin::user,
         F("path '%s' is in bookkeeping dir") % normalized);
       data = normalized;
     }
@@ -491,7 +493,7 @@ bookkeeping_path::external_string_is_bookkeeping_path(utf8 const & path)
     {
       normalize_external_path(path(), normalized, false);
     }
-  catch (informative_failure &)
+  catch (recoverable_failure &)
     {
       return false;
     }
@@ -792,7 +794,7 @@ system_path::system_path(any_path const & other, bool in_true_workspace)
 
 static inline string const_system_path(utf8 const & path)
 {
-  N(!path().empty(), F("invalid path ''"));
+  E(!path().empty(), path.made_from, F("invalid path ''"));
   string expanded = tilde_expand(path());
   if (is_absolute_here(expanded))
     return normalize_path(expanded);
@@ -820,7 +822,7 @@ new_optimal_path(std::string path, bool to_workspace_root)
     {
       normalize_external_path(utf8_path(), normalized, to_workspace_root);
     }
-  catch (informative_failure &)
+  catch (recoverable_failure &)
     {
       // not in workspace
       return boost::shared_ptr<any_path>(new system_path(path));

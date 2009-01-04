@@ -18,7 +18,8 @@ void charset_convert(std::string const & src_charset,
                      std::string const & dst_charset,
                      std::string const & src,
                      std::string & dst,
-                     bool best_effort);
+                     bool best_effort,
+                     origin::type whence);
 void system_to_utf8(external const & system, utf8 & utf);
 void utf8_to_system_strict(utf8 const & utf, external & system);
 void utf8_to_system_strict(utf8 const & utf, std::string & system);

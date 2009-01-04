@@ -44,20 +44,21 @@ enum metachar {
 
 static string::const_iterator
 compile_charclass(string const & pat, string::const_iterator p,
-                  back_insert_iterator<string> & to)
+                  back_insert_iterator<string> & to,
+                  origin::type made_from)
 {
   string in_class;
   char bra = (char)META_CC_BRA;
 
   p++;
-  N(p != pat.end(),
+  E(p != pat.end(), made_from,
     F("invalid pattern '%s': unmatched '['") % pat);
 
   if (*p == '!' || *p == '^')
     {
       bra = (char)META_CC_INV_BRA;
       p++;
-      N(p != pat.end(),
+      E(p != pat.end(), made_from,
         F("invalid pattern '%s': unmatched '['") % pat);
     }
 
@@ -83,21 +84,21 @@ compile_charclass(string const & pat, string::const_iterator p,
 
           // the cast is needed because boost::format will not obey the %x
           // if given a 'char'.
-          N((widen<unsigned int, char>(*p)) >= ' ',
+          E((widen<unsigned int, char>(*p)) >= ' ', made_from,
             F("invalid pattern '%s': control character 0x%02x is not allowed")
             % pat % (widen<unsigned int, char>(*p)));
 
           unsigned int start = widen<unsigned int, char>(in_class.end()[-1]);
           unsigned int stop = widen<unsigned int, char>(*p);
 
-          N(start != stop,
+          E(start != stop, made_from,
             F("invalid pattern '%s': "
               "one-element character ranges are not allowed") % pat);
-          N(start < stop,
+          E(start < stop, made_from,
             F("invalid pattern '%s': "
               "endpoints of a character range must be in "
               "ascending numeric order") % pat);
-          N(start < 0x80 && stop < 0x80,
+          E(start < 0x80 && stop < 0x80, made_from,
             F("invalid pattern '%s': cannot use non-ASCII characters "
               "in classes") % pat);
 
@@ -108,14 +109,15 @@ compile_charclass(string const & pat, string::const_iterator p,
             in_class.push_back((char)r);
         }
       else
-        N(*p != '[', F("syntax error in '%s': "
-                       "character classes may not be nested") % pat);
+        E(*p != '[', made_from,
+          F("syntax error in '%s': "
+            "character classes may not be nested") % pat);
 
-      N((widen<unsigned int, char>(*p)) >= ' ',
+      E((widen<unsigned int, char>(*p)) >= ' ', made_from,
         F("invalid pattern '%s': control character 0x%02x is not allowed")
         % pat % (widen<unsigned int, char>(*p)));
 
-      N((widen<unsigned int, char>(*p)) < 0x80,
+      E((widen<unsigned int, char>(*p)) < 0x80, made_from,
         F("invalid pattern '%s': cannot use non-ASCII characters in classes")
         % pat);
 
@@ -123,10 +125,10 @@ compile_charclass(string const & pat, string::const_iterator p,
       p++;
     }
 
-  N(p != pat.end(),
+  E(p != pat.end(), made_from,
     F("invalid pattern '%s': unmatched '['") % pat);
 
-  N(!in_class.empty(),
+  E(!in_class.empty(), made_from,
     F("invalid pattern '%s': empty character class") % pat);
 
   // minor optimization: one-element non-inverted character class becomes
@@ -147,7 +149,7 @@ compile_charclass(string const & pat, string::const_iterator p,
 
 static void
 compile_frag(string const & pat, back_insert_iterator<string> & to,
-             made_from_t made_from = made_from_local)
+             origin::type made_from)
 {
   unsigned int brace_depth = 0;
 
@@ -155,7 +157,7 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
     switch (*p)
       {
       default:
-        N((widen<unsigned int, char>(*p)) >= ' ',
+        E((widen<unsigned int, char>(*p)) >= ' ', made_from,
           F("invalid pattern '%s': control character 0x%02x is not allowed")
           % pat % (widen<unsigned int, char>(*p)));
         
@@ -186,10 +188,10 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
         
       case '\\':
         p++;
-        N(p != pat.end(),
+        E(p != pat.end(), made_from,
           F("invalid pattern '%s': un-escaped \\ at end") % pat);
 
-        N((widen<unsigned int, char>(*p)) >= ' ',
+        E((widen<unsigned int, char>(*p)) >= ' ', made_from,
           F("invalid pattern '%s': control character 0x%02x is not allowed")
           % pat % (widen<unsigned int, char>(*p)));
 
@@ -197,11 +199,11 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
         break;
 
       case '[':
-        p = compile_charclass(pat, p, to);
+        p = compile_charclass(pat, p, to, made_from);
         break;
 
       case ']':
-        N(false, F("invalid pattern '%s': unmatched ']'") % pat);
+        E(false, made_from, F("invalid pattern '%s': unmatched ']'") % pat);
 
       case '{':
         // There's quite a bit of optimization we could be doing on
@@ -209,7 +211,7 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
         // nested alternatives; so we're not doing any of it now.
         // (Look at emacs's regexp-opt.el for inspiration.)
         brace_depth++;
-        N(brace_depth < 6,
+        E(brace_depth < 6, made_from,
           F("invalid pattern '%s': braces nested too deeply") % pat);
         *to++ = META_ALT_BRA;
         break;
@@ -222,21 +224,21 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
         break;
 
       case '}':
-        N(brace_depth > 0,
+        E(brace_depth > 0, made_from,
           F("invalid pattern '%s': unmatched '}'") % pat);
         brace_depth--;
         *to++ = META_ALT_KET;
         break;
       }
 
-  N(brace_depth == 0,
+  E(brace_depth == 0, made_from,
     F("invalid pattern '%s': unmatched '{'") % pat);
 }
 
 // common code used by the constructors.
 
 static inline string
-compile(string const & pat, made_from_t made_from = made_from_local)
+compile(string const & pat, origin::type made_from)
 {
   string s;
   back_insert_iterator<string> to = back_inserter(s);
@@ -251,7 +253,7 @@ compile(vector<arg_type>::const_iterator const & beg,
   if (end - beg == 0)
     return "";
   if (end - beg == 1)
-    return compile((*beg)());
+    return compile((*beg)(), origin::user);
 
   string s;
   back_insert_iterator<string> to = back_inserter(s);
@@ -260,7 +262,7 @@ compile(vector<arg_type>::const_iterator const & beg,
   vector<arg_type>::const_iterator i = beg;
   for (;;)
     {
-      compile_frag((*i)(), to);
+      compile_frag((*i)(), to, origin::user);
       i++;
       if (i == end)
         break;
@@ -270,9 +272,9 @@ compile(vector<arg_type>::const_iterator const & beg,
   return s;
 }
 
-globish::globish(string const & p, made_from_t made_from)
+globish::globish(string const & p, origin::type made_from)
   : compiled_pattern(compile(p, made_from)) {}
-globish::globish(char const * p, made_from_t made_from)
+globish::globish(char const * p, origin::type made_from)
   : compiled_pattern(compile(p, made_from)) {}
 
 globish::globish(vector<arg_type> const & p)

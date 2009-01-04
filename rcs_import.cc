@@ -1204,7 +1204,7 @@ import_cvs_repo(project_t & project,
                 branch_name const & branchname)
 
 {
-  N(!directory_exists(cvsroot / "CVSROOT"),
+  E(!directory_exists(cvsroot / "CVSROOT"), origin::user,
     F("%s appears to be a CVS repository root directory\n"
       "try importing a module instead, with 'cvs_import %s/<module_name>")
     % cvsroot % cvsroot);

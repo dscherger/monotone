@@ -681,7 +681,8 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
 {
   // we can't call  bookkeeping_path::external_string_is_bookkeeping_path
   // here, because we haven't found the workspace yet.
-  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+  E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+    origin::user,
     F("conflicts file must be under _MTN"));
   resolve_conflicts_file = bookkeeping_path(arg);
 }
@@ -691,7 +692,7 @@ OPTION(resolve_conflicts_opts, resolve_conflicts, false, "resolve-conflicts",
        gettext_noop("use _MTN/conflicts to resolve conflicts"))
 #ifdef option_bodies
 {
-  N(!resolve_conflicts_file_given,
+  E(!resolve_conflicts_file_given, origin::user,
     F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
   resolve_conflicts_file = bookkeeping_path("_MTN/conflicts");
 }
@@ -706,7 +707,8 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
 {
   // we can't call bookkeeping_path::external_string_is_bookkeeping_path
   // here, because we haven't found the workspace yet.
-  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+  E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+    origin::user,
     F("conflicts file must be under _MTN"));
   conflicts_file = bookkeeping_path(arg);
 }

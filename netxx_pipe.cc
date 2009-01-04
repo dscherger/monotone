@@ -249,7 +249,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
                                NULL, // Current directory
                                &siStartInfo,
                                &piProcInfo);
-  E(started,
+  E(started, origin::system,
     F("CreateProcess(%s,...) call failed: %s")
     % cmdline % err_msg());
 
@@ -266,7 +266,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
   int fd1[2], fd2[2];
   child = pipe_and_fork(fd1, fd2);
-  E(child >= 0, F("pipe/fork failed: %s") % strerror(errno));
+  E(child >= 0, origin::system, F("pipe/fork failed: %s") % strerror(errno));
   if (!child)
     {
       execvp(newargv[0], const_cast<char * const *>(newargv));

@@ -42,7 +42,8 @@ void
 epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
                 epoch_id & eid)
 {
-  string tmp(branch() + ":" + encode_hexenc(epoch.inner()()));
+  string tmp(branch() + ":" + encode_hexenc(epoch.inner()(),
+                                            epoch.inner().made_from));
   data tdat(tmp);
   id out;
   calculate_ident(tdat, out);

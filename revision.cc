@@ -770,7 +770,7 @@ make_restricted_revision(parent_map const & old_rosters,
         no_excludes = false;
     }
 
-  N(old_rosters.size() == 1 || no_excludes,
+  E(old_rosters.size() == 1 || no_excludes, origin::user,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
     % ui.prog_name % cmd_name);
 
@@ -1005,7 +1005,7 @@ anc_graph::kluge_for_bogus_merge_edges()
           if (j->first == i->first)
             {
               L(FL("considering old merge edge %s") %
-                encode_hexenc(safe_get(node_to_old_rev, i->first).inner()()));
+                safe_get(node_to_old_rev, i->first));
               u64 parent1 = i->second;
               u64 parent2 = j->second;
               if (is_ancestor (parent1, parent2, parent_to_child_map))
@@ -1246,7 +1246,7 @@ insert_parents_into_roster(roster_t & child_roster,
 {
   if (child_roster.has_node(pth))
     {
-      E(is_dir_t(child_roster.get_node(pth)),
+      E(is_dir_t(child_roster.get_node(pth)), origin::internal,
         F("Directory %s for path %s cannot be added, "
           "as there is a file in the way") % pth % full);
       return;
@@ -1267,10 +1267,10 @@ insert_into_roster(roster_t & child_roster,
   if (child_roster.has_node(pth))
     {
       node_t n = child_roster.get_node(pth);
-      E(is_file_t(n),
+      E(is_file_t(n), origin::internal,
         F("Path %s cannot be added, as there is a directory in the way") % pth);
       file_t f = downcast_to_file_t(n);
-      E(f->content == fid,
+      E(f->content == fid, origin::internal,
         F("Path %s added twice with differing content") % pth);
       return;
     }
@@ -1555,10 +1555,11 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                                                     attr_key("mtn:" + key),
                                                     attr_value(k->second));
                             else
-                              E(false, F("unknown attribute '%s' on path '%s'\n"
-                                         "please contact %s so we can work out the right way to migrate this\n"
-                                         "(if you just want it to go away, see the switch --drop-attr, but\n"
-                                         "seriously, if you'd like to keep it, we're happy to figure out how)")
+                              E(false, origin::no_fault,
+                                F("unknown attribute '%s' on path '%s'\n"
+                                  "please contact %s so we can work out the right way to migrate this\n"
+                                  "(if you just want it to go away, see the switch --drop-attr, but\n"
+                                  "seriously, if you'd like to keep it, we're happy to figure out how)")
                                 % key % j->first % PACKAGE_BUGREPORT);
                           }
                       }
@@ -1833,7 +1834,7 @@ parse_edge(basic_io::parser & parser,
 
   parser.esym(syms::old_revision);
   parser.hex(tmp);
-  old_rev = revision_id(decode_hexenc(tmp));
+  old_rev = decode_hexenc_as<revision_id>(tmp, parser.tok.in.made_from);
 
   parse_cset(parser, *cs);
 
@@ -1848,17 +1849,18 @@ parse_revision(basic_io::parser & parser,
   MM(rev);
   rev.edges.clear();
   rev.made_for = made_for_database;
+  rev.made_from = parser.tok.in.made_from;
   string tmp;
   parser.esym(syms::format_version);
   parser.str(tmp);
-  E(tmp == "1",
+  E(tmp == "1", parser.tok.in.made_from,
     F("encountered a revision with unknown format, version '%s'\n"
       "I only know how to understand the version '1' format\n"
       "a newer version of monotone is required to complete this operation")
     % tmp);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);
-  rev.new_manifest = manifest_id(decode_hexenc(tmp), made_from_network);
+  rev.new_manifest = decode_hexenc_as<manifest_id>(tmp, parser.tok.in.made_from);
   while (parser.symp(syms::old_revision))
     parse_edge(parser, rev);
   rev.check_sane();
@@ -1870,13 +1872,12 @@ read_revision(data const & dat,
 {
   MM(rev);
   basic_io::input_source src(dat(), "revision");
-  rev.made_from = dat.made_from;
   src.made_from = dat.made_from;
-  made_from_t made_from(rev.made_from);
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
   parse_revision(pars, rev);
-  I(src.lookahead == EOF);
+  E(src.lookahead == EOF, rev.made_from,
+    F("failed to parse revision"));
   rev.check_sane();
 }
 
@@ -1998,7 +1999,7 @@ UNIT_TEST(revision, from_network)
       UNIT_TEST_CHECKPOINT((string("iteration ")
                             + boost::lexical_cast<string>(i)).c_str());
       UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
-                                               made_from_network),
+                                               origin::network),
                                           rev),
                             bad_decode);
     }

@@ -61,7 +61,7 @@ assert_sqlite3_ok(sqlite3 * db)
   // sqlite error: error: " ugliness.
   char const *pfx = _("error: ");
   if (!std::strncmp(errmsg, pfx, strlen(pfx)))
-    throw informative_failure(errmsg);
+    throw recoverable_failure(origin::database, errmsg);
 
   // sometimes sqlite is not very helpful
   // so we keep a table of errors people have gotten and more helpful versions
@@ -98,7 +98,8 @@ assert_sqlite3_ok(sqlite3 * db)
     }
 
   // if the auxiliary message is empty, the \n will be stripped off too
-  E(false, F("sqlite error: %s\n%s") % errmsg % auxiliary_message);
+  E(false, origin::system,
+    F("sqlite error: %s\n%s") % errmsg % auxiliary_message);
 }
 
 
@@ -292,9 +293,10 @@ sqlite3_unbase64_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
   // and turn it into a call to sqlite3_result_error, or rollback will fail.
   try
     {
-      decoded = decode_base64_as<string>(sqlite3_value_cstr(args[0]));
+      decoded = decode_base64_as<string>(sqlite3_value_cstr(args[0]),
+                                         origin::no_fault);
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       sqlite3_result_error(f, e.what(), -1);
       return;
@@ -316,9 +318,9 @@ sqlite3_unhex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
   // and turn it into a call to sqlite3_result_error, or rollback will fail.
   try
     {
-      decoded = decode_hexenc(sqlite3_value_cstr(args[0]));
+      decoded = decode_hexenc(sqlite3_value_cstr(args[0]), origin::no_fault);
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       sqlite3_result_error(f, e.what(), -1);
       return;
@@ -858,7 +860,7 @@ calculate_schema_id(sqlite3 * db, string & ident)
 
   id tid;
   calculate_ident(data(schema), tid);
-  ident = encode_hexenc(tid());
+  ident = encode_hexenc(tid(), tid.made_from);
 }
 
 // Look through the migration_events table and return a pointer to the entry
@@ -965,16 +967,16 @@ static void
 diagnose_unrecognized_schema(schema_mismatch_case cat,
                              system_path const & filename)
 {
-  N(cat != SCHEMA_EMPTY,
+  E(cat != SCHEMA_EMPTY, origin::user,
     F("cannot use the empty sqlite database %s\n"
       "(monotone databases must be created with '%s db init')")
     % filename % ui.prog_name);
 
-  N(cat != SCHEMA_NOT_MONOTONE,
+  E(cat != SCHEMA_NOT_MONOTONE, origin::user,
     F("%s does not appear to be a monotone database\n")
     % filename);
 
-  N(cat != SCHEMA_TOO_NEW,
+  E(cat != SCHEMA_TOO_NEW, origin::user,
     F("%s appears to be a monotone database, but this version of\n"
       "monotone does not recognize its schema.\n"
       "you probably need a newer version of monotone.")
@@ -993,7 +995,7 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
  
   diagnose_unrecognized_schema(cat, filename);
  
-  N(cat != SCHEMA_MIGRATION_NEEDED,
+  E(cat != SCHEMA_MIGRATION_NEEDED, origin::user,
     F("database %s is laid out according to an old schema\n"
       "try '%s db migrate' to upgrade\n"
       "(this is irreversible; you may want to make a backup copy first)")
@@ -1119,10 +1121,10 @@ test_migration_step(sqlite3 * db, key_store & keys,
     if (schema == m->id)
       break;
 
-  N(m >= migration_events,
+  E(m >= migration_events, origin::user,
     F("cannot test migration from unknown schema %s") % schema);
 
-  N(m->migrator_sql || m->migrator_func,
+  E(m->migrator_sql || m->migrator_func, origin::user,
     F("schema %s is up to date") % schema);
 
   L(FL("testing migration from %s to %s\n in database %s")

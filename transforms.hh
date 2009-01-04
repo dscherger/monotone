@@ -29,7 +29,8 @@ namespace Botan {
 // this generic template cannot actually be used, except with the
 // specializations given below.  give a compile error instead of a link
 // error.
-template<typename XFM> std::string xform(std::string const & in)
+template<typename XFM> std::string
+xform(std::string const & in, origin::type made_from)
 {
   enum dummy { d = (sizeof(struct xform_must_be_specialized_for_this_type)
                     == sizeof(XFM)) };
@@ -37,58 +38,88 @@ template<typename XFM> std::string xform(std::string const & in)
 }
 
 // these specializations of the template are defined in transforms.cc
-template<> std::string xform<Botan::Base64_Encoder>(std::string const &);
-template<> std::string xform<Botan::Base64_Decoder>(std::string const &);
-template<> std::string xform<Botan::Hex_Encoder>(std::string const &);
-template<> std::string xform<Botan::Hex_Decoder>(std::string const &);
-template<> std::string xform<Botan::Gzip_Compression>(std::string const &);
-template<> std::string xform<Botan::Gzip_Decompression>(std::string const &);
+template<> std::string
+xform<Botan::Base64_Encoder>(std::string const &, origin::type);
+template<> std::string
+xform<Botan::Base64_Decoder>(std::string const &, origin::type);
+template<> std::string
+xform<Botan::Hex_Encoder>(std::string const &, origin::type);
+template<> std::string
+xform<Botan::Hex_Decoder>(std::string const &, origin::type);
+template<> std::string
+xform<Botan::Gzip_Compression>(std::string const &, origin::type);
+template<> std::string
+xform<Botan::Gzip_Decompression>(std::string const &, origin::type);
 
 // base64 encoding
 
 template <typename T>
 base64<T> encode_base64(T const & in)
-{ return base64<T>(xform<Botan::Base64_Encoder>(in())); }
+{
+  return base64<T>(xform<Botan::Base64_Encoder>(in(), in.made_from),
+                   in.made_from);
+}
 
 template <typename T>
 T decode_base64(base64<T> const & in)
-{ return T(xform<Botan::Base64_Decoder>(in()), in.made_from); }
+{
+  return T(xform<Botan::Base64_Decoder>(in(), in.made_from), in.made_from);
+}
 
 template <typename T>
-T decode_base64_as(std::string const & in)
+T decode_base64_as(std::string const & in, origin::type made_from)
 {
-  return T(xform<Botan::Base64_Decoder>(in));
+  return T(xform<Botan::Base64_Decoder>(in, made_from), made_from);
 }
 // hex encoding
 
 template <typename T>
 void encode_hexenc(T const & in, hexenc<T> & out)
-{ out = hexenc<T>(xform<Botan::Hex_Encoder>(in())); }
+{
+  out = hexenc<T>(xform<Botan::Hex_Encoder>(in(), in.made_from),
+                  in.made_from);
+}
 
 template <typename T>
 void decode_hexenc(hexenc<T> const & in, T & out)
-{ out = T(xform<Botan::Hex_Decoder>(in()), in.made_from); }
+{
+  out = T(xform<Botan::Hex_Decoder>(in(), in.made_from),
+          in.made_from);
+}
 
-inline std::string encode_hexenc(std::string const & in)
-{ return xform<Botan::Hex_Encoder>(in); }
-inline std::string decode_hexenc(std::string const & in)
-{ return xform<Botan::Hex_Decoder>(in); }
+inline std::string encode_hexenc(std::string const & in,
+                                 origin::type made_from)
+{ return xform<Botan::Hex_Encoder>(in, made_from); }
+//inline template<typename T> std::string encode_hexenc(T const & in)
+//{ return encode_hexenc(in(), in.made_from); }
+inline std::string decode_hexenc(std::string const & in,
+                                 origin::type made_from)
+{ return xform<Botan::Hex_Decoder>(in, made_from); }
+template<typename T> T decode_hexenc_as(std::string const & in,
+                                               origin::type made_from)
+{ return T(decode_hexenc(in, made_from), made_from); }
 
 
 // gzip
 
 template <typename T>
 void encode_gzip(T const & in, gzip<T> & out)
-{ out = gzip<T>(xform<Botan::Gzip_Compression>(in())); }
+{
+  out = gzip<T>(xform<Botan::Gzip_Compression>(in(), in.made_from),
+                in.made_from);
+}
 
 template <typename T>
 void decode_gzip(gzip<T> const & in, T & out)
-{ out = T(xform<Botan::Gzip_Decompression>(in()), in.made_from); }
+{
+  out = T(xform<Botan::Gzip_Decompression>(in(), in.made_from),
+          in.made_from);
+}
 
 // string variant for netsync
 template <typename T>
-void encode_gzip(std::string const & in, gzip<T> & out)
-{ out = xform<Botan::Gzip_Compression>(in); }
+void encode_gzip(std::string const & in, gzip<T> & out, origin::type made_from)
+{ out = xform<Botan::Gzip_Compression>(in, made_from); }
 
 // both at once (this is relatively common)
 // these are usable for T = data and T = delta

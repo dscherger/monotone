@@ -117,8 +117,9 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
           for (set<branch_name>::const_iterator i = branches.begin();
                i != branches.end(); i++)
             branch_list += "\n  " + (*i)();
-          N(false, F("target revision is in multiple branches:%s\n\n"
-                     "try again with explicit --branch") % branch_list);
+          E(false, origin::user,
+            F("target revision is in multiple branches:%s\n\n"
+              "try again with explicit --branch") % branch_list);
         }
       else if (branches.size() == 1)
         {
@@ -159,15 +160,15 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
-  N(parents.size() == 1,
+  E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   revision_id old_rid = parent_id(parents.begin());
-  N(!null_id(old_rid),
+  E(!null_id(old_rid), origin::user,
     F("this workspace is a new project; cannot update"));
 
   // Figure out where we're going
-  N(!app.opts.branchname().empty(),
+  E(!app.opts.branchname().empty(), origin::user,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
@@ -178,7 +179,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       pick_update_candidates(app.lua, project, candidates, old_rid,
                              app.opts.branchname,
                              app.opts.ignore_suspend_certs);
-      N(!candidates.empty(),
+      E(!candidates.empty(), origin::user,
         F("your request matches no descendents of the current revision\n"
           "in fact, it doesn't even match the current revision\n"
           "maybe you want something like --revision=h:%s")
@@ -191,7 +192,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
             P(i18n_format("  %s")
               % describe_revision(project, *i));
           P(F("choose one with '%s update -r<id>'") % ui.prog_name);
-          E(false, F("multiple update candidates remain after selection"));
+          E(false, origin::user,
+            F("multiple update candidates remain after selection"));
         }
       chosen_rid = *(candidates.begin());
     }
@@ -439,14 +441,15 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  N(app.opts.branchname() != "",
+  E(app.opts.branchname() != "", origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   set<revision_id> heads;
   project.get_branch_heads(app.opts.branchname, heads,
                            app.opts.ignore_suspend_certs);
 
-  N(!heads.empty(), F("branch '%s' is empty") % app.opts.branchname);
+  E(!heads.empty(), origin::user,
+    F("branch '%s' is empty") % app.opts.branchname);
   if (heads.size() == 1)
     {
       P(F("branch '%s' is already merged") % app.opts.branchname);
@@ -561,11 +564,15 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
   project.get_branch_heads(branch_name(idx(args, 1)()), dst_heads,
                            app.opts.ignore_suspend_certs);
 
-  N(src_heads.size() != 0, F("branch '%s' is empty") % idx(args, 0)());
-  N(src_heads.size() == 1, F("branch '%s' is not merged") % idx(args, 0)());
+  E(src_heads.size() != 0, origin::user,
+    F("branch '%s' is empty") % idx(args, 0)());
+  E(src_heads.size() == 1, origin::user,
+    F("branch '%s' is not merged") % idx(args, 0)());
 
-  N(dst_heads.size() != 0, F("branch '%s' is empty") % idx(args, 1)());
-  N(dst_heads.size() == 1, F("branch '%s' is not merged") % idx(args, 1)());
+  E(dst_heads.size() != 0, origin::user,
+    F("branch '%s' is empty") % idx(args, 1)());
+  E(dst_heads.size() == 1, origin::user,
+    F("branch '%s' is not merged") % idx(args, 1)());
 
   set<revision_id>::const_iterator src_i = src_heads.begin();
   set<revision_id>::const_iterator dst_i = dst_heads.begin();
@@ -624,7 +631,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
             MM(dir);
             pth.dirname_basename(dir, base);
 
-            N(right_roster.has_node(dir),
+            E(right_roster.has_node(dir), origin::user,
               F("Path %s not found in destination tree.") % pth);
             node_t parent = right_roster.get_node(dir);
             moved_root->parent = parent->self;
@@ -719,14 +726,14 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   {
     parent_map parents;
     work.get_parent_rosters(db, parents);
-    N(parents.size() == 1,
+    E(parents.size() == 1, origin::user,
       F("this command can only be used in a single-parent workspace"));
 
     temp_node_id_source nis;
     work.get_current_roster_shape(db, nis, *working_roster);
     work.update_current_roster_from_filesystem(*working_roster);
 
-    N(parent_roster(parents.begin()) == *working_roster,
+    E(parent_roster(parents.begin()) == *working_roster, origin::user,
       F("'%s' can only be used in a workspace with no pending changes") %
         join_words(execid)());
 
@@ -740,7 +747,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   complete(app.opts, app.lua, project, idx(args, 0)(), right_id);
   db.get_roster(right_id, right);
-  N(!(left_id == right_id),
+  E(!(left_id == right_id), origin::user,
     F("workspace is already at revision %s") % left_id);
 
   P(F("[left]  %s") % left_id);
@@ -821,13 +828,13 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
   complete(app.opts, app.lua, project, idx(args, 1)(), right);
   branch = branch_name(idx(args, 2)());
 
-  N(!(left == right),
+  E(!(left == right), origin::user,
     F("%s and %s are the same revision, aborting")
     % left % right);
-  N(!is_ancestor(db, left, right),
+  E(!is_ancestor(db, left, right), origin::user,
     F("%s is already an ancestor of %s")
     % left % right);
-  N(!is_ancestor(db, right, left),
+  E(!is_ancestor(db, right, left), origin::user,
     F("%s is already an ancestor of %s")
     % right % left);
 
@@ -995,14 +1002,14 @@ static void get_conflicts_rids(args_vector const & args,
   if (args.empty())
     {
       // get ids from heads
-      N(app.opts.branchname() != "",
+      E(app.opts.branchname() != "", origin::user,
         F("please specify a branch, with --branch=BRANCH"));
 
       set<revision_id> heads;
       project.get_branch_heads(app.opts.branchname, heads,
                                app.opts.ignore_suspend_certs);
 
-      N(heads.size() >= 2,
+      E(heads.size() >= 2, origin::user,
         F("branch '%s' has only 1 head; must be at least 2 for conflicts") % app.opts.branchname);
 
       revpair p = find_heads_to_merge (db, heads);
@@ -1016,7 +1023,7 @@ static void get_conflicts_rids(args_vector const & args,
       complete(app.opts, app.lua, project, idx(args,1)(), right_rid);
     }
   else
-    N(false, F("wrong argument count"));
+    E(false, origin::user, F("wrong argument count"));
 }
 
 // Name: show_conflicts
@@ -1083,7 +1090,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   // way to specify the ancestor id for a merge adaptor; why should we trust
   // the user?
 
-  N(args.size() == 4,
+  E(args.size() == 4, origin::user,
     F("wrong argument count"));
 
   database  db(app);
@@ -1119,9 +1126,10 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   content_merger cm(app.lua, *ancestor_roster, left_roster, right_roster, adaptor);
   file_data ancestor_data, left_data, right_data, merge_data;
 
-  N(cm.attempt_auto_merge(ancestor_path, left_path, right_path,
+  E(cm.attempt_auto_merge(ancestor_path, left_path, right_path,
                           ancestor_fid, left_n->content, right_n->content,
                           left_data, right_data, merge_data),
+    origin::user,
     F("internal line merger failed"));
 
   output << merge_data;
@@ -1151,7 +1159,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), to_rid);
       std::set<revision_id> parents;
       db.get_revision_parents(to_rid, parents);
-      N(parents.size() == 1,
+      E(parents.size() == 1, origin::user,
         F("revision %s is a merge\n"
           "to apply the changes relative to one of its parents, use:\n"
           "  %s pluck -r PARENT -r %s")
@@ -1168,7 +1176,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   else
     throw usage(execid);
 
-  N(!(from_rid == to_rid), F("no changes to apply"));
+  E(!(from_rid == to_rid), origin::user, F("no changes to apply"));
 
   // notionally, we have the situation
   //
@@ -1229,7 +1237,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
     make_cset(*from_roster, restricted_roster, from_to_to);
     make_cset(restricted_roster, to_true_roster, from_to_to_excluded);
   }
-  N(!from_to_to.empty(), F("no changes to be applied"));
+  E(!from_to_to.empty(), origin::user, F("no changes to be applied"));
   // ...and use it to create the TO roster
   shared_ptr<roster_t> to_roster = shared_ptr<roster_t>(new roster_t());
   MM(*to_roster);
@@ -1279,7 +1287,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   cset update;
   MM(update);
   make_cset(*working_roster, merged_roster, update);
-  E(!update.empty(), F("no changes were applied"));
+  E(!update.empty(), origin::no_fault, F("no changes were applied"));
   work.perform_content_update(db, update, wca);
 
   P(F("applied changes to workspace"));
@@ -1323,7 +1331,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  N(app.opts.branchname() != "",
+  E(app.opts.branchname() != "", origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   database db(app);

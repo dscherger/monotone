@@ -60,20 +60,20 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
     throw usage(execid);
 
   file_id 
-    anc_id(decode_hexenc(idx(args, 0)())), 
-    left_id(decode_hexenc(idx(args, 1)())), 
-    right_id(decode_hexenc(idx(args, 2)()));
+    anc_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user)),
+    left_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user)),
+    right_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user));
 
   file_data anc, left, right;
 
   database db(app);
-  N(db.file_version_exists (anc_id),
+  E(db.file_version_exists (anc_id), origin::user,
     F("ancestor file id does not exist"));
 
-  N(db.file_version_exists (left_id),
+  E(db.file_version_exists (left_id), origin::user,
     F("left file id does not exist"));
 
-  N(db.file_version_exists (right_id),
+  E(db.file_version_exists (right_id), origin::user,
     F("right file id does not exist"));
 
   db.get_file_version(anc_id, anc);
@@ -85,7 +85,8 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
   split_into_lines(anc.inner()(), anc_lines);
   split_into_lines(left.inner()(), left_lines);
   split_into_lines(right.inner()(), right_lines);
-  N(merge3(anc_lines, left_lines, right_lines, merged_lines), F("merge failed"));
+  E(merge3(anc_lines, left_lines, right_lines, merged_lines),
+    origin::user, F("merge failed"));
   copy(merged_lines.begin(), merged_lines.end(), ostream_iterator<string>(cout, "\n"));
 
 }
@@ -103,16 +104,16 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     & dst_name = idx(args, 1)();
 
   file_id 
-    src_id(decode_hexenc(idx(args, 2)())),
-    dst_id(decode_hexenc(idx(args, 3)()));
+    src_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user)),
+    dst_id(decode_hexenc_as<file_id>(idx(args, 3)(), origin::user));
 
   file_data src, dst;
 
   database db(app);
-  N(db.file_version_exists (src_id),
+  E(db.file_version_exists (src_id), origin::user,
     F("source file id does not exist"));
 
-  N(db.file_version_exists (dst_id),
+  E(db.file_version_exists (dst_id), origin::user,
     F("destination file id does not exist"));
 
   db.get_file_version(src_id, src);
@@ -161,7 +162,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
       workspace work(app);
       revision_t rev;
       work.get_work_rev(rev);
-      N(rev.edges.size() == 1,
+      E(rev.edges.size() == 1, origin::user,
         F("with no revision selected, this command can only be used in "
           "a single-parent workspace"));
 
@@ -179,11 +180,11 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
     }
 
   // find the version of the file requested
-  N(roster.has_node(file), 
+  E(roster.has_node(file), origin::user,
     F("no such file '%s' in revision '%s'")
       % file % rid);
   node_t node = roster.get_node(file);
-  N(is_file_t(node), 
+  E(is_file_t(node), origin::user,
     F("'%s' in revision '%s' is not a file")
       % file % rid);
 
@@ -228,12 +229,12 @@ CMD_AUTOMATE(identify, N_("PATH"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
   
   utf8 path = idx(args, 0);
   
-  N(path() != "-",
+  E(path() != "-", origin::user,
     F("Cannot read from stdin"));
   
   data dat;
@@ -247,7 +248,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
 static void
 dump_file(database & db, std::ostream & output, file_id & ident)
 {
-  N(db.file_version_exists(ident),
+  E(db.file_version_exists(ident), origin::user,
     F("no file version %s found in database") % ident);
 
   file_data dat;
@@ -259,7 +260,7 @@ dump_file(database & db, std::ostream & output, file_id & ident)
 static void
 dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
 {
-  N(db.revision_exists(rid), 
+  E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % rid);
 
   // Paths are interpreted as standard external ones when we're in a
@@ -269,11 +270,11 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
   roster_t roster;
   marking_map marks;
   db.get_roster(rid, roster, marks);
-  N(roster.has_node(fp), 
+  E(roster.has_node(fp), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);
   
   node_t node = roster.get_node(fp);
-  N((!null_node(node->self) && is_file_t(node)), 
+  E((!null_node(node->self) && is_file_t(node)), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);
 
   file_t file_node = downcast_to_file_t(node);
@@ -297,7 +298,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
       workspace work(app);
       parent_map parents;
       work.get_parent_rosters(db, parents);
-      N(parents.size() == 1,
+      E(parents.size() == 1, origin::user,
         F("this command can only be used in a single-parent workspace"));
       rid = parent_id(parents.begin());
     }
@@ -325,12 +326,12 @@ CMD_AUTOMATE(get_file, N_("FILEID"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
   hexenc<id> hident(idx(args, 0)());
-  file_id ident(decode_hexenc(hident()));
+  file_id ident(decode_hexenc_as<file_id>(hident(), hident.made_from));
   dump_file(db, output, ident);
 }
 
@@ -353,7 +354,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
              "",
              options::opts::revision)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -365,7 +366,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
 
       parent_map parents;
       work.get_parent_rosters(db, parents);
-      N(parents.size() == 1,
+      E(parents.size() == 1, origin::user,
         F("this command can only be used in a single-parent workspace"));
       rid = parent_id(parents.begin());
     }

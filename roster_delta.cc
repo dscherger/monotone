@@ -413,7 +413,7 @@ namespace
         std::string s;
         parser.hex(s);
         safe_insert(d.files_added,
-                    make_pair(loc, make_pair(nid, file_id(decode_hexenc(s)))));
+                    make_pair(loc, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from))));
       }
     while (parser.symp(syms::delta))
       {
@@ -422,7 +422,7 @@ namespace
         parser.esym(syms::content);
         std::string s;
         parser.hex(s);
-        safe_insert(d.deltas_applied, make_pair(nid, file_id(decode_hexenc(s))));
+        safe_insert(d.deltas_applied, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_cleared))
       {
@@ -431,7 +431,8 @@ namespace
         parser.esym(syms::attr);
         std::string key;
         parser.str(key);
-        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key)));
+        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key,
+                                                             parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_changed))
       {

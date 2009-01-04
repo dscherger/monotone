@@ -283,7 +283,7 @@ cpp_main(int argc, char ** argv)
         }
       catch (option::option_error const & e)
         {
-          N(false, i18n_format("%s") % e.what());
+          E(false, origin::user, i18n_format("%s") % e.what());
         }
       catch (usage & u)
         {
@@ -323,10 +323,18 @@ cpp_main(int argc, char ** argv)
 
         }
     }
-  catch (informative_failure & inf)
+  catch (recoverable_failure & inf)
     {
       ui.inform(inf.what());
       return 1;
+    }
+  catch (unrecoverable_failure & inf)
+    {
+      if (inf.caused_by() == origin::database)
+        ui.fatal_db(inf.what());
+      else
+        ui.fatal(inf.what());
+      return 3;
     }
   catch (ios_base::failure const & ex)
     {

@@ -52,7 +52,7 @@ map_nodes(map<node_id, restricted_path::status> & node_map,
           map<node_id, restricted_path::status>::iterator n
             = node_map.find(nid);
           if (n != node_map.end())
-            N(n->second == status,
+            E(n->second == status, origin::user,
               F("conflicting include/exclude on path '%s'") % *i);
           else
             node_map.insert(make_pair(nid, status));
@@ -82,7 +82,7 @@ map_paths(map<file_path, restricted_path::status> & path_map,
     {
       map<file_path, restricted_path::status>::iterator p = path_map.find(*i);
       if (p != path_map.end())
-        N(p->second == status,
+        E(p->second == status, origin::user,
           F("conflicting include/exclude on path '%s'") % *i);
       else
         path_map.insert(make_pair(*i, status));
@@ -180,7 +180,8 @@ validate_paths(set<file_path> const & included_paths,
         W(F("restriction excludes unknown path '%s'") % *i);
       }
 
-  N(bad == 0, FP("%d unknown path", "%d unknown paths", bad) % bad);
+  E(bad == 0, origin::user,
+    FP("%d unknown path", "%d unknown paths", bad) % bad);
 }
 
 restriction::restriction(std::vector<file_path> const & includes,

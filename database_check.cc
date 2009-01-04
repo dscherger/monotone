@@ -139,7 +139,7 @@ static void
 check_db_integrity_check(database & db)
 {
     L(FL("asking sqlite to check db integrity"));
-    E(db.check_integrity(),
+    E(db.check_integrity(), origin::database,
       F("file structure is corrupted; cannot check further"));
 }
 
@@ -1055,7 +1055,7 @@ check_db(database & db)
     % checked_heights.size());
   P(F("total problems detected: %d (%d serious)") % total % serious);
   if (serious)
-    E(false, F("serious problems detected"));
+    E(false, origin::database, F("serious problems detected"));
   else if (total)
     P(F("minor problems detected"));
   else

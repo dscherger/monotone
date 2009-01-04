@@ -555,7 +555,7 @@ namespace commands
 
     if (matches.empty())
       {
-        N(false,
+        E(false, origin::user,
           F("unknown command '%s'") % join_words(id)());
       }
     else if (matches.size() == 1)
@@ -571,7 +571,7 @@ namespace commands
         for (set< command_id >::const_iterator iter = matches.begin();
              iter != matches.end(); iter++)
           err += '\n' + join_words(*iter)();
-        N(false, i18n_format(err));
+        E(false, origin::user, i18n_format(err));
       }
 
     I(!id.empty());
@@ -754,13 +754,14 @@ namespace commands
                                                  ident.end()))();
 
     I(cmd->is_leaf() || cmd->is_group());
-    N(!(cmd->is_group() && cmd->parent() == CMD_REF(__root__)),
+    E(!(cmd->is_group() && cmd->parent() == CMD_REF(__root__)),
+      origin::user,
       F("command '%s' is invalid; it is a group") % join_words(ident));
 
-    N(!(!cmd->is_leaf() && args.empty()),
+    E(!(!cmd->is_leaf() && args.empty()), origin::user,
       F("no subcommand specified for '%s'") % visibleid);
 
-    N(!(!cmd->is_leaf() && !args.empty()),
+    E(!(!cmd->is_leaf() && !args.empty()), origin::user,
       F("could not match '%s' to a subcommand of '%s'") %
       join_words(args) % visibleid);
 
@@ -811,9 +812,9 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
     throw usage(execid);
   bool spoon_exists(false);
   if (idx(args,0)() == "N")
-    N(spoon_exists, i18n_format("There is no spoon."));
+    E(spoon_exists, origin::user, i18n_format("There is no spoon."));
   else if (idx(args,0)() == "E")
-    E(spoon_exists, i18n_format("There is no spoon."));
+    E(spoon_exists, origin::system, i18n_format("There is no spoon."));
   else if (idx(args,0)() == "I")
     {
       I(spoon_exists);
@@ -865,7 +866,7 @@ describe_revision(project_t & project, revision_id const & id)
 
   string description;
 
-  description += encode_hexenc(id.inner()());
+  description += encode_hexenc(id.inner()(), id.inner().made_from);
 
   // append authors and date of this revision
   vector< revision<cert> > tmp;
@@ -911,7 +912,7 @@ process_commit_message_args(options const & opts,
                             utf8 const & message_prefix)
 {
   // can't have both a --message and a --message-file ...
-  N(!opts.message_given || !opts.msgfile_given,
+  E(!opts.message_given || !opts.msgfile_given, origin::user,
     F("--message and --message-file are mutually exclusive"));
 
   if (opts.message_given)

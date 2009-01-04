@@ -231,7 +231,7 @@ cert::cert(std::string const & s)
 {
   read_cert(s, *this);
 }
-cert::cert(std::string const & s, made_from_t m)
+cert::cert(std::string const & s, origin::type m)
   : origin_aware(m)
 {
   read_cert(s, *this);
@@ -326,7 +326,8 @@ void
 cert_signable_text(cert const & t, string & out)
 {
   base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()()));
+  string ident_encoded(encode_hexenc(t.ident.inner()(),
+                                     t.ident.inner().made_from));
 
   out.clear();
   out.reserve(4 + t.name().size() + ident_encoded.size()
@@ -348,7 +349,8 @@ cert_hash_code(cert const & t, id & out)
 {
   base64<rsa_sha1_signature> sig_encoded(encode_base64(t.sig));
   base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()()));
+  string ident_encoded(encode_hexenc(t.ident.inner()(),
+                                     t.ident.inner().made_from));
   string tmp;
   tmp.reserve(4 + ident_encoded.size()
               + t.name().size() + val_encoded().size()
@@ -407,18 +409,18 @@ guess_branch(options & opts, project_t & project,
     branchname = opts.branchname;
   else
     {
-      N(!ident.inner()().empty(),
+      E(!ident.inner()().empty(), origin::user,
         F("no branch found for empty revision, "
           "please provide a branch name"));
 
       set<branch_name> branches;
       project.get_revision_branches(ident, branches);
 
-      N(!branches.empty(),
+      E(!branches.empty(), origin::user,
         F("no branch certs found for revision %s, "
           "please provide a branch name") % ident);
 
-      N(branches.size() == 1,
+      E(branches.size() == 1, origin::user,
         F("multiple branch certs found for revision %s, "
           "please provide a branch name") % ident);
 
@@ -529,7 +531,8 @@ cert_revision_testresult(database & db,
            results == "0")
     passed = false;
   else
-    throw informative_failure("could not interpret test results, "
+    throw recoverable_failure(origin::user,
+                              "could not interpret test results, "
                               "tried '0/1' 'yes/no', 'true/false', "
                               "'pass/fail'");
 

@@ -56,7 +56,7 @@ using Botan::Hash_Filter;
 NORETURN(static inline void error_in_transform(Botan::Exception & e));
 
 static inline void
-error_in_transform(Botan::Exception & e)
+error_in_transform(Botan::Exception & e, origin::type caused_by)
 {
   // these classes can all indicate data corruption
   if (typeid(e) == typeid(Botan::Encoding_Error)
@@ -79,7 +79,7 @@ error_in_transform(Botan::Exception & e)
             *p = ' ';
         }
 
-      E(false,
+      E(false, caused_by,
         F("%s\n"
           "this may be due to a memory glitch, data corruption during\n"
           "a network transfer, corruption of your database or workspace,\n"
@@ -96,7 +96,7 @@ error_in_transform(Botan::Exception & e)
 // full specializations for the usable cases of xform<XFM>()
 // use extra error checking in base64 and hex decoding
 #define SPECIALIZE_XFORM(T, carg)                               \
-  template<> string xform<T>(string const & in)                 \
+  template<> string xform<T>(string const & in, origin::type made_from) \
   {                                                             \
     string out;                                                 \
     try                                                         \
@@ -109,7 +109,7 @@ error_in_transform(Botan::Exception & e)
       }                                                         \
     catch (Botan::Exception & e)                                \
       {                                                         \
-        error_in_transform(e);                                  \
+        error_in_transform(e, made_from);                       \
       }                                                         \
     return out;                                                 \
   }
@@ -117,7 +117,8 @@ error_in_transform(Botan::Exception & e)
 SPECIALIZE_XFORM(Base64_Encoder,);
 SPECIALIZE_XFORM(Base64_Decoder, Botan::IGNORE_WS);
 //SPECIALIZE_XFORM(Hex_Encoder, Hex_Encoder::Lowercase);
-template<> string xform<Botan::Hex_Encoder>(string const & in)
+template<> string xform<Botan::Hex_Encoder>(string const & in,
+                                            origin::type made_from)
 {
   string out;
   out.reserve(in.size()<<1);
@@ -138,7 +139,8 @@ template<> string xform<Botan::Hex_Encoder>(string const & in)
   return out;
 }
 //SPECIALIZE_XFORM(Hex_Decoder, Botan::IGNORE_WS);
-template<> string xform<Botan::Hex_Decoder>(string const & in)
+template<> string xform<Botan::Hex_Decoder>(string const & in,
+                                            origin::type made_from)
 {
   string out;
   out.reserve(in.size()>>1);
@@ -172,7 +174,7 @@ template<> string xform<Botan::Hex_Decoder>(string const & in)
             }
           catch(Botan::Exception & e)
             {
-              error_in_transform(e);
+              error_in_transform(e, made_from);
             }
         }
       if (high)
@@ -207,11 +209,11 @@ void pack(T const & in, base64< gzip<T> > & out)
                                              new Base64_Encoder));
       pipe->process_msg(in());
       tmp = pipe->read_all_as_string(Pipe::LAST_MESSAGE);
-      out = base64< gzip<T> >(tmp);
+      out = base64< gzip<T> >(tmp, in.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      error_in_transform(e, in.made_from);
     }
 }
 
@@ -223,11 +225,11 @@ void unpack(base64< gzip<T> > const & in, T & out)
       static cached_botan_pipe pipe(new Pipe(new Base64_Decoder,
                                              new Gzip_Decompression));
       pipe->process_msg(in());
-      out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+      out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE), in.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      error_in_transform(e, in.made_from);
     }
 }
 
@@ -248,11 +250,11 @@ calculate_ident(data const & dat,
     {
       static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
       p->process_msg(dat());
-      ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE));
+      ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      error_in_transform(e, dat.made_from);
     }
 }
 
@@ -318,7 +320,7 @@ UNIT_TEST(transform, calculate_ident)
   id output;
   string ident("86e03bdb3870e2a207dfd0dcbfd4c4f2e3bc97bd");
   calculate_ident(input, output);
-  UNIT_TEST_CHECK(output() == decode_hexenc(ident));
+  UNIT_TEST_CHECK(output() == decode_hexenc(ident, origin::internal));
 }
 
 UNIT_TEST(transform, corruption_check)
@@ -334,9 +336,9 @@ UNIT_TEST(transform, corruption_check)
     i++;
   *i = 'k';
 
-  gzip<data> gzbad(gzs);
+  gzip<data> gzbad(gzs, origin::network);
   data output;
-  UNIT_TEST_CHECK_THROW(decode_gzip(gzbad, output), informative_failure);
+  UNIT_TEST_CHECK_THROW(decode_gzip(gzbad, output), recoverable_failure);
 }
 
 #endif // BUILD_UNIT_TESTS

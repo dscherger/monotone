@@ -150,7 +150,7 @@ args_to_paths(args_vector const & args)
   // behavior for empty path sets -- in particular, it is the same as having
   // no restriction at all.  "mtn revert _MTN" turning into "mtn revert"
   // would be bad.  (Or substitute diff, etc.)
-  N(!(!args.empty() && paths.empty()),
+  E(!(!args.empty() && paths.empty()), origin::user,
     F("all arguments given were bookkeeping paths; aborting"));
   return paths;
 }

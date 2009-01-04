@@ -77,28 +77,28 @@ build_client_connection_info(options & opts,
   // Use the default values if needed and available.
   if (!address_given)
     {
-      N(db.var_exists(default_server_key),
+      E(db.var_exists(default_server_key), origin::user,
         F("no server given and no default server set"));
       var_value addr_value;
       db.get_var(default_server_key, addr_value);
       info.client.unparsed = utf8(addr_value());
       L(FL("using default server address: %s") % info.client.unparsed);
     }
-  parse_uri(info.client.unparsed(), info.client.u);
+  parse_uri(info.client.unparsed(), info.client.u, origin::user);
   if (info.client.u.query.empty() && !include_or_exclude_given)
     {
       // No include/exclude given anywhere, use the defaults.
-      N(db.var_exists(default_include_pattern_key),
+      E(db.var_exists(default_include_pattern_key), origin::user,
         F("no branch pattern given and no default pattern set"));
       var_value pattern_value;
       db.get_var(default_include_pattern_key, pattern_value);
-      info.client.include_pattern = globish(pattern_value());
+      info.client.include_pattern = globish(pattern_value(), origin::user);
       L(FL("using default branch include pattern: '%s'")
         % info.client.include_pattern);
       if (db.var_exists(default_exclude_pattern_key))
         {
           db.get_var(default_exclude_pattern_key, pattern_value);
-          info.client.exclude_pattern = globish(pattern_value());
+          info.client.exclude_pattern = globish(pattern_value(), origin::user);
         }
       else
         info.client.exclude_pattern = globish();
@@ -106,7 +106,7 @@ build_client_connection_info(options & opts,
     }
   else if(!info.client.u.query.empty())
     {
-      N(!include_or_exclude_given,
+      E(!include_or_exclude_given, origin::user,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
 
       // Pull include/exclude from the query string
@@ -145,9 +145,9 @@ build_client_connection_info(options & opts,
             }
 
           if (is_exclude)
-            excludes.push_back(arg_type(urldecode(item)));
+            excludes.push_back(arg_type(urldecode(item, origin::user)));
           else
-            includes.push_back(arg_type(urldecode(item)));
+            includes.push_back(arg_type(urldecode(item, origin::user)));
         }
       info.client.include_pattern = globish(includes);
       info.client.exclude_pattern = globish(excludes);
@@ -207,7 +207,7 @@ extract_client_connection_info(options & opts,
     }
   if (args.size() >= 2 || opts.exclude_given)
     {
-      E(args.size() >= 2, F("no branch pattern given"));
+      E(args.size() >= 2, origin::user, F("no branch pattern given"));
 
       have_include_exclude = true;
       info.client.include_pattern = globish(args.begin() + 1, args.end());
@@ -330,7 +330,8 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   branch_name branchname(idx(args, 1)());
 
-  N(!branchname().empty(), F("you must specify a branch to clone"));
+  E(!branchname().empty(), origin::user,
+    F("you must specify a branch to clone"));
 
   if (args.size() == 2)
     {
@@ -376,7 +377,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   key_store keys(app);
   project_t project(db);
 
-  info.client.include_pattern = globish(branchname());
+  info.client.include_pattern = globish(branchname(), origin::user);
   info.client.exclude_pattern = globish(app.opts.exclude_patterns);
 
   build_client_connection_info(app.opts, app.lua, db, keys,
@@ -400,7 +401,7 @@ CMD(clone, "clone", "", CMD_REF(network),
       set<revision_id> heads;
       project.get_branch_heads(branchname, heads,
                                app.opts.ignore_suspend_certs);
-      N(!heads.empty(),
+      E(!heads.empty(), origin::user,
         F("branch '%s' is empty") % branchname);
       if (heads.size() > 1)
         {
@@ -409,7 +410,7 @@ CMD(clone, "clone", "", CMD_REF(network),
             P(i18n_format("  %s")
               % describe_revision(project, *i));
           P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % ui.prog_name);
-          E(false, F("branch %s has multiple heads") % branchname);
+          E(false, origin::user, F("branch %s has multiple heads") % branchname);
         }
       ident = *(heads.begin());
     }
@@ -418,7 +419,8 @@ CMD(clone, "clone", "", CMD_REF(network),
       // use specified revision
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), ident);
 
-      N(project.revision_is_in_branch(ident, branchname),
+      E(project.revision_is_in_branch(ident, branchname),
+        origin::user,
         F("revision %s is not a member of branch %s")
           % ident % branchname);
     }
@@ -456,7 +458,7 @@ struct pid_file
       return;
     require_path_is_nonexistent(path, F("pid file '%s' already exists") % path);
     file.open(path.as_external().c_str());
-    E(file.is_open(), F("failed to create pid file '%s'") % path);
+    E(file.is_open(), origin::system, F("failed to create pid file '%s'") % path);
     file << get_process_id() << '\n';
     file.flush();
   }
@@ -499,12 +501,12 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   if (app.opts.use_transport_auth)
     {
-      N(app.lua.hook_persist_phrase_ok(),
+      E(app.lua.hook_persist_phrase_ok(), origin::user,
         F("need permission to store persistent passphrase "
           "(see hook persist_phrase_ok())"));
 
-      info.client.include_pattern = globish("*");
-      info.client.exclude_pattern = globish("");
+      info.client.include_pattern = globish("*", origin::internal);
+      info.client.exclude_pattern = globish("", origin::internal);
       if (!app.opts.bind_uris.empty())
         info.client.unparsed = *app.opts.bind_uris.begin();
       find_key(app.opts, app.lua, db, keys, info);

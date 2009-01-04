@@ -87,7 +87,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   else
     fmt = F("public or private key '%s' does not exist "
             "in keystore, and no database was specified");
-  N(key_deleted, fmt % idx(args, 0)());
+  E(key_deleted, origin::user, fmt % idx(args, 0)());
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
@@ -296,7 +296,8 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument for approval"));
+  E(app.opts.branchname() != "", origin::user,
+    F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, db, keys);
   project.put_revision_in_branch(keys, r, app.opts.branchname);
@@ -317,7 +318,8 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument to suspend"));
+  E(app.opts.branchname() != "", origin::user,
+    F("need --branch argument to suspend"));
 
   cache_user_key(app.opts, app.lua, db, keys);
   project.suspend_revision_in_branch(keys, r, app.opts.branchname);
@@ -341,12 +343,14 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      N(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      E(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+        origin::user,
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
     }
 
-  N(comment().find_first_not_of("\n\r\t ") != string::npos,
+  E(comment().find_first_not_of("\n\r\t ") != string::npos,
+    origin::user,
     F("empty comment"));
 
   revision_id r;

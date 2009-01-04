@@ -367,7 +367,7 @@ refiner::process_refinement_command(refinement_type ty,
 
   if (ty == refinement_response)
     {
-      E((queries_in_flight > 0),
+      E((queries_in_flight > 0), origin::network,
         F("underflow on query-in-flight counter"));
       --queries_in_flight;
 

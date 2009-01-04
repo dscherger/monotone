@@ -64,7 +64,7 @@ get_ws_format()
       else if (directory_exists(file_path() / old_bookkeeping_root_component))
         format = 0;
       else
-        N(false, F("workspace required but not found"));
+        E(false, origin::user, F("workspace required but not found"));
     }
   else
     {
@@ -76,8 +76,9 @@ get_ws_format()
         }
       catch (exception & e)
         {
-          E(false, F("workspace is corrupt: %s is invalid")
-                   % f_path);
+          E(false, origin::system,
+            F("workspace is corrupt: %s is invalid")
+            % f_path);
         }
       if (format == 1)
         {
@@ -120,7 +121,7 @@ workspace::check_ws_format()
   unsigned int format = get_ws_format();
 
   // Don't give user false expectations about format 0.
-  E(format > 0,
+  E(format > 0, origin::system,
     F("this workspace's metadata is in format 0. to use this workspace\n"
       "with this version of monotone, you must delete it and check it\n"
       "out again (migration from format 0 is not possible).\n"
@@ -129,7 +130,7 @@ workspace::check_ws_format()
       "we apologize for the inconvenience.")
     % first_version_supporting_current_format);
 
-  E(format >= current_workspace_format,
+  E(format >= current_workspace_format, origin::system,
     F("to use this workspace with this version of monotone, its metadata\n"
       "must be migrated from format %d to format %d, using the command\n"
       "'%s migrate_workspace'.\n"
@@ -139,7 +140,7 @@ workspace::check_ws_format()
     % first_version_supporting_current_format);
 
   // keep this message in sync with the copy in migrate_ws_format
-  E(format <= current_workspace_format,
+  E(format <= current_workspace_format, origin::system,
     F("this version of monotone only understands workspace metadata\n"
       "in formats 0 through %d.  your workspace is in format %d.\n"
       "you need a newer version of monotone to use this workspace.") 
@@ -168,7 +169,7 @@ migrate_0_to_1()
   // number corresponding to what was cached.  Thus, even if we did convert
   // the workspace, it would still be unusable.
 
-  E(false,
+  E(false, origin::system,
     F("it is not possible to migrate from workspace format 0 to any\n"
       "later format.  you must delete this workspace and check it out\n"
       "again.  we apologize for the inconvenience."));
@@ -193,10 +194,11 @@ migrate_1_to_2()
     }
   catch (exception & e)
     {
-      E(false, F("workspace is corrupt: reading %s: %s")
+      E(false, origin::system, F("workspace is corrupt: reading %s: %s")
         % rev_path % e.what());
     }
-  revision_id base_rid(decode_hexenc(remove_ws(base_rev_data())));
+  revision_id base_rid(decode_hexenc_as<revision_id>(remove_ws(base_rev_data()),
+                                                     origin::system));
   MM(base_rid);
 
   cset workcs; 
@@ -213,7 +215,8 @@ migrate_1_to_2()
         }
       catch (exception & e)
         {
-          E(false, F("workspace is corrupt: reading %s: %s")
+          E(false, origin::system,
+            F("workspace is corrupt: reading %s: %s")
             % workcs_path % e.what());
         }
 
@@ -267,7 +270,7 @@ workspace::migrate_ws_format()
     default:
       I(format > current_workspace_format);
       // keep this message in sync with the copy in check_ws_format
-      E(false,
+      E(false, origin::system,
         F("this version of monotone only understands workspace metadata\n"
           "in formats 0 through %d.  your workspace is in format %d.\n"
           "you need a newer version of monotone to use this workspace.") 

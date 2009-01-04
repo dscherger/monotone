@@ -460,7 +460,7 @@ database::check_is_not_rosterified()
   results res;
   imp->fetch(res, one_col, any_rows,
              query("SELECT 1 FROM rosters LIMIT 1"));
-  N(res.empty(),
+  E(res.empty(), origin::user,
     F("this database already contains rosters"));
 }
 
@@ -486,6 +486,7 @@ database_impl::check_format()
       // Or else the database was just created.
       // Do we need to regenerate cached data?
       E(!have_revisions || (have_rosters && have_heights),
+        origin::no_fault,
         F("database %s lacks some cached data\n"
           "run '%s db regenerate_caches' to restore use of this database")
         % filename % ui.prog_name);
@@ -497,7 +498,7 @@ database_impl::check_format()
 
       // they need to either changesetify or rosterify.  which?
       if (have_revisions)
-        E(false,
+        E(false, origin::no_fault,
           F("database %s contains old-style revisions\n"
             "if you are a project leader or doing local testing:\n"
             "  see the file UPGRADE for instructions on upgrading.\n"
@@ -507,7 +508,7 @@ database_impl::check_format()
             "sorry about the inconvenience.")
           % filename);
       else
-        E(false,
+        E(false, origin::no_fault,
           F("database %s contains manifests but no revisions\n"
             "this is a very old database; it needs to be upgraded\n"
             "please see README.changesets for details")
@@ -600,7 +601,7 @@ dump_row(ostream &out, sqlite3_stmt *stmt, string const& table_name)
           out << "X'";
           const char *val = (const char*) sqlite3_column_blob(stmt, i);
           int bytes = sqlite3_column_bytes(stmt, i);
-          out << encode_hexenc(string(val,val+bytes));
+          out << encode_hexenc(string(val,val+bytes), origin::internal);
           out << '\'';
         }
       else
@@ -793,7 +794,7 @@ static bool longest_number(string a, string b)
 // error, either return a string version of the error message (if it was an
 // SQLite error) or rethrow the execption (if it wasn't).
 static string
-format_sqlite_error_for_info(informative_failure const & e)
+format_sqlite_error_for_info(recoverable_failure const & e)
 {
   string err(e.what());
   string prefix = _("error: ");
@@ -886,7 +887,7 @@ database::info(ostream & out)
             counts.push_back((F("%u") % n).str());
           }
       }
-    catch (informative_failure const & e)
+    catch (recoverable_failure const & e)
       {
         counts.push_back(format_sqlite_error_for_info(e));
       }
@@ -1047,13 +1048,13 @@ database_impl::fetch(results & res,
       L(FL("prepared statement %s") % query.sql_cmd);
 
       // no support for multiple statements here
-      E(*tail == 0,
+      E(*tail == 0, origin::internal,
         F("multiple statements in query: %s") % query.sql_cmd);
     }
 
   ncol = sqlite3_column_count(i->second.stmt());
 
-  E(want_cols == any_cols || want_cols == ncol,
+  E(want_cols == any_cols || want_cols == ncol, origin::database,
     F("wanted %d columns got %d in query: %s") % want_cols % ncol % query.sql_cmd);
 
   // bind parameters for this execution
@@ -1076,7 +1077,7 @@ database_impl::fetch(results & res,
           if (query.args[param-1].type == query_param::blob)
             {
               prefix = "x";
-              log = encode_hexenc(log);
+              log = encode_hexenc(log, origin::internal);
             }
 
           if (log.size() > constants::db_log_line_sz)
@@ -1118,7 +1119,8 @@ database_impl::fetch(results & res,
         {
           const char * value = (const char*)sqlite3_column_blob(i->second.stmt(), col);
           int bytes = sqlite3_column_bytes(i->second.stmt(), col);
-          E(value, F("null result in query: %s") % query.sql_cmd);
+          E(value, origin::database,
+            F("null result in query: %s") % query.sql_cmd);
           row.push_back(string(value, value + bytes));
           //L(FL("row %d col %d value='%s'") % nrow % col % value);
         }
@@ -1136,6 +1138,7 @@ database_impl::fetch(results & res,
   i->second.count++;
 
   E(want_rows == any_rows || want_rows == nrow,
+    origin::database,
     F("wanted %d rows got %d in query: %s") % want_rows % nrow % query.sql_cmd);
 }
 
@@ -1345,7 +1348,7 @@ database_impl::count(string const & table)
       fetch(res, one_col, one_row, q);
       return (F("%u") % lexical_cast<u64>(res[0][0])).str();
     }
-  catch (informative_failure const & e)
+  catch (recoverable_failure const & e)
     {
       return format_sqlite_error_for_info(e);
     }
@@ -1365,7 +1368,7 @@ database_impl::space(string const & table, string const & rowspace, u64 & total)
       total += bytes;
       return (F("%u") % bytes).str();
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       return format_sqlite_error_for_info(e);
     }
@@ -2514,8 +2517,8 @@ database::put_roster_for_revision(revision_id const & new_id,
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
   calculate_ident(*ros_writeable, roster_manifest_id);
-  made_from_t made_from(rev.made_from);
-  I(rev.new_manifest == roster_manifest_id);
+  E(rev.new_manifest == roster_manifest_id, rev.made_from,
+    F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
@@ -2761,7 +2764,8 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
   shared_ptr<RSA_PublicKey> pub_key
     = shared_dynamic_cast<RSA_PublicKey>(x509_key);
   if (!pub_key)
-    throw informative_failure("Failed to get RSA encrypting key");
+    throw recoverable_failure(origin::system,
+                              "Failed to get RSA encrypting key");
 
   shared_ptr<PK_Encryptor>
     encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
@@ -2802,7 +2806,7 @@ database::check_signature(rsa_keypair_id const & id,
       shared_ptr<RSA_PublicKey> pub_key
         = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
-      E(pub_key,
+      E(pub_key, id.made_from,
         F("Failed to get RSA verifying key for %s") % id);
 
       verifier.reset(get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
@@ -3204,7 +3208,7 @@ database_impl::add_prefix_matching_constraint(string const & colname,
     q.sql_cmd += "1";  // always true
   else
     {
-      string binary_prefix = decode_hexenc(prefix);
+      string binary_prefix = decode_hexenc(prefix, origin::internal);
       string lower_bound(binary_prefix);
       string upper_bound(binary_prefix);
 
@@ -3319,7 +3323,8 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", encode_hexenc(partial), q);
+  imp->add_prefix_matching_constraint("child", encode_hexenc(partial,
+                                                             origin::internal), q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3694,7 +3699,7 @@ database::next_node_id()
 void
 database_impl::check_filename()
 {
-  N(!filename.empty(), F("no database specified"));
+  E(!filename.empty(), origin::user, F("no database specified"));
 }
 
 
@@ -3707,18 +3712,19 @@ database_impl::check_db_exists()
       return;
 
     case path::nonexistent:
-      N(false, F("database %s does not exist") % filename);
+      E(false, origin::user, F("database %s does not exist") % filename);
 
     case path::directory:
       if (directory_is_workspace(filename))
         {
           system_path workspace_database;
           workspace::get_database_option(filename, workspace_database);
-          N(workspace_database.empty(),
+          E(workspace_database.empty(), origin::user,
             F("%s is a workspace, not a database\n"
               "(did you mean %s?)") % filename % workspace_database);
         }
-      N(false, F("%s is a directory, not a database") % filename);
+      E(false, origin::user,
+        F("%s is a directory, not a database") % filename);
     }
 }
 

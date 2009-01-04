@@ -91,9 +91,9 @@ ssh_agent_platform::read_data(u32 const len, string & out)
   while (get > 0)
     {
       ret = stream.read(read_buf, min(get, bufsize));
-      E(ret >= 0, F("stream read failed (%i)") % ret);
+      E(ret >= 0, origin::system, F("stream read failed (%i)") % ret);
       out.append(read_buf, ret);
       get -= ret;
     }
-  E(get == 0, F("%u extra bytes from ssh-agent") % -get);
+  E(get == 0, origin::system, F("%u extra bytes from ssh-agent") % -get);
 }

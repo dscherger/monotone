@@ -105,14 +105,14 @@ bool workspace::branch_is_sticky;
 void
 workspace::require_workspace()
 {
-  N(workspace::found,
+  E(workspace::found, origin::user,
     F("workspace required but not found"));
 }
 
 void
 workspace::require_workspace(i18n_format const & explanation)
 {
-  N(workspace::found,
+  E(workspace::found, origin::user,
     F("workspace required but not found\n%s") % explanation.str());
 }
 
@@ -121,7 +121,7 @@ workspace::create_workspace(options const & opts,
                             lua_hooks & lua,
                             system_path const & new_dir)
 {
-  N(!new_dir.empty(), F("invalid directory ''"));
+  E(!new_dir.empty(), origin::user, F("invalid directory ''"));
 
   L(FL("creating workspace in %s") % new_dir);
 
@@ -129,7 +129,7 @@ workspace::create_workspace(options const & opts,
   go_to_workspace(new_dir);
   mark_std_paths_used();
 
-  N(!directory_exists(bookkeeping_root),
+  E(!directory_exists(bookkeeping_root), origin::user,
     F("monotone bookkeeping directory '%s' already exists in '%s'")
     % bookkeeping_root % new_dir);
 
@@ -205,7 +205,8 @@ workspace::get_work_rev(revision_t & rev)
     }
   catch(exception & e)
     {
-      E(false, F("workspace is corrupt: reading %s: %s")
+      E(false, origin::system,
+        F("workspace is corrupt: reading %s: %s")
         % rev_path % e.what());
     }
 
@@ -247,7 +248,7 @@ get_roster_for_rid(database & db,
     }
   else
     {
-      N(db.revision_exists(rid),
+      E(db.revision_exists(rid), origin::user,
         F("base revision %s does not exist in database") % rid);
       db.get_roster(rid, cr);
     }
@@ -400,7 +401,7 @@ read_options_file(any_path const & optspath,
         W(F("unrecognized key '%s' in options file %s - ignored")
           % opt % optspath);
     }
-  E(src.lookahead == EOF,
+  E(src.lookahead == EOF, src.made_from,
     F("Could not parse entire options file %s") % optspath);
 }
 
@@ -495,7 +496,7 @@ workspace::get_database_option(system_path const & workspace,
 void
 workspace::set_ws_options(options const & opts, bool branch_is_sticky)
 {
-  N(workspace::found, F("workspace required but not found"));
+  E(workspace::found, origin::user, F("workspace required but not found"));
 
   bookkeeping_path o_path;
   get_options_path(o_path);
@@ -534,7 +535,7 @@ workspace::set_ws_options(options const & opts, bool branch_is_sticky)
 void
 workspace::print_ws_option(utf8 const & opt, std::ostream & output)
 {
-  N(workspace::found, F("workspace required but not found"));
+  E(workspace::found, origin::user, F("workspace required but not found"));
 
   bookkeeping_path o_path;
   get_options_path(o_path);
@@ -555,7 +556,7 @@ workspace::print_ws_option(utf8 const & opt, std::ostream & output)
   else if (opt() == "keydir")
     output << keydir_option << '\n';
   else
-    N(false, F("'%s' is not a recognized workspace option") % opt);
+    E(false, origin::user, F("'%s' is not a recognized workspace option") % opt);
 }
 
 // local dump file
@@ -563,7 +564,7 @@ workspace::print_ws_option(utf8 const & opt, std::ostream & output)
 void
 workspace::get_local_dump_path(bookkeeping_path & d_path)
 {
-  N(workspace::found, F("workspace required but not found"));
+  E(workspace::found, origin::user, F("workspace required but not found"));
 
   d_path = bookkeeping_root / local_dump_file_name;
   L(FL("local dump path is %s") % d_path);
@@ -789,7 +790,7 @@ addition_builder::add_nodes_for(file_path const & path,
   // that the roster has a root node, which will be a directory.
   if (ros.has_node(path))
     {
-      N(is_dir_t(ros.get_node(path)),
+      E(is_dir_t(ros.get_node(path)), origin::user,
         F("cannot add %s, because %s is recorded as a file "
           "in the workspace manifest") % goal % path);
       return;
@@ -1125,7 +1126,7 @@ editable_working_tree::apply_delta(file_path const & pth,
                        F("file '%s' is a directory") % pth);
   file_id curr_id;
   calculate_ident(pth, curr_id);
-  E(curr_id == old_id,
+  E(curr_id == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
   P(F("modifying %s") % pth);
 
@@ -1260,7 +1261,8 @@ simulated_working_tree::set_attr(file_path const & pth,
 void
 simulated_working_tree::commit()
 {
-  N(conflicts == 0, F("%d workspace conflicts") % conflicts);
+  E(conflicts == 0, origin::user,
+    F("%d workspace conflicts") % conflicts);
 }
 
 simulated_working_tree::~simulated_working_tree()
@@ -1363,7 +1365,7 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
 
     }
 
-  N(missing_items == 0,
+  E(missing_items == 0, origin::user,
     F("%d missing items; use '%s ls missing' to view\n"
       "To restore consistency, on each missing item run either\n"
       " '%s drop ITEM' to remove it permanently, or\n"
@@ -1454,7 +1456,8 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
           switch (get_path_status(*i))
             {
             case path::nonexistent:
-              N(false, F("no such file or directory: '%s'") % *i);
+              E(false, origin::user,
+                F("no such file or directory: '%s'") % *i);
               break;
             case path::file:
               build.visit_file(*i);
@@ -1521,7 +1524,7 @@ workspace::perform_deletions(database & db,
     {
       file_path const & name(todo.front());
 
-      E(!name.empty(),
+      E(!name.empty(), origin::user,
         F("unable to drop the root directory"));
 
       if (!new_roster.has_node(name))
@@ -1534,7 +1537,7 @@ workspace::perform_deletions(database & db,
               dir_t d = downcast_to_dir_t(n);
               if (!d->children.empty())
                 {
-                  N(recursive,
+                  E(recursive, origin::user,
                     F("cannot remove %s/, it is not empty") % name);
                   for (dir_map::const_iterator j = d->children.begin();
                        j != d->children.end(); ++j)
@@ -1606,10 +1609,10 @@ workspace::perform_rename(database & db,
       file_path const & src = *srcs.begin();
       file_path dpath = dst;
 
-      N(!src.empty(),
+      E(!src.empty(), origin::user,
         F("cannot rename the workspace root (try '%s pivot_root' instead)")
         % ui.prog_name);
-      N(new_roster.has_node(src),
+      E(new_roster.has_node(src), origin::user,
         F("source file %s is not versioned") % src);
 
       //this allows the 'magic add' of a non-versioned directory to happen in
@@ -1624,8 +1627,8 @@ workspace::perform_rename(database & db,
           // touch foo
           // mtn mv foo bar/foo where bar doesn't exist
           file_path parent = dst.dirname();
-            N(get_path_status(parent) == path::directory,
-              F("destination path's parent directory %s/ doesn't exist") % parent);
+          E(get_path_status(parent) == path::directory, origin::user,
+            F("destination path's parent directory %s/ doesn't exist") % parent);
         }
 
       renames.insert(make_pair(src, dpath));
@@ -1634,20 +1637,20 @@ workspace::perform_rename(database & db,
   else
     {
       // "rename SRC1 [SRC2 ...] DSTDIR" case
-      N(get_path_status(dst) == path::directory,
+      E(get_path_status(dst) == path::directory, origin::user,
         F("destination %s/ is not a directory") % dst);
 
       for (set<file_path>::const_iterator i = srcs.begin();
            i != srcs.end(); i++)
         {
-          N(!i->empty(),
+          E(!i->empty(), origin::user,
             F("cannot rename the workspace root (try '%s pivot_root' instead)")
             % ui.prog_name);
-          N(new_roster.has_node(*i),
+          E(new_roster.has_node(*i), origin::user,
             F("source file %s is not versioned") % *i);
 
           file_path d = dst / i->basename();
-          N(!new_roster.has_node(d),
+          E(!new_roster.has_node(d), origin::user,
             F("destination %s already exists in the workspace manifest") % d);
 
           renames.insert(make_pair(*i, d));
@@ -1716,13 +1719,13 @@ workspace::perform_pivot_root(database & db,
   get_current_roster_shape(db, nis, new_roster);
 
   I(new_roster.has_root());
-  N(new_roster.has_node(new_root),
+  E(new_roster.has_node(new_root), origin::user,
     F("proposed new root directory '%s' is not versioned or does not exist")
     % new_root);
-  N(is_dir_t(new_roster.get_node(new_root)),
+  E(is_dir_t(new_roster.get_node(new_root)), origin::user,
     F("proposed new root directory '%s' is not a directory") % new_root);
   {
-    N(!new_roster.has_node(new_root / bookkeeping_root_component),
+    E(!new_roster.has_node(new_root / bookkeeping_root_component), origin::user,
       F("proposed new root directory '%s' contains illegal path %s")
       % new_root % bookkeeping_root);
   }
@@ -1732,13 +1735,15 @@ workspace::perform_pivot_root(database & db,
     file_path current_path_to_put_old_parent
       = current_path_to_put_old.dirname();
 
-    N(new_roster.has_node(current_path_to_put_old_parent),
+    E(new_roster.has_node(current_path_to_put_old_parent), origin::user,
       F("directory '%s' is not versioned or does not exist")
       % current_path_to_put_old_parent);
-    N(is_dir_t(new_roster.get_node(current_path_to_put_old_parent)),
+    E(is_dir_t(new_roster.get_node(current_path_to_put_old_parent)),
+      origin::user,
       F("'%s' is not a directory")
       % current_path_to_put_old_parent);
-    N(!new_roster.has_node(current_path_to_put_old),
+    E(!new_roster.has_node(current_path_to_put_old),
+      origin::user,
       F("'%s' is in the way") % current_path_to_put_old);
   }
 
@@ -1779,7 +1784,7 @@ workspace::perform_content_update(database & db,
   roster_t new_roster;
   bookkeeping_path detached = path_for_detached_nids();
 
-  E(!directory_exists(detached),
+  E(!directory_exists(detached), origin::user,
     F("workspace is locked\n"
       "you must clean up and remove the %s directory")
     % detached);
