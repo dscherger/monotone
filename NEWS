@@ -29,6 +29,13 @@ Changes from nvm.stripped, please move down when landing on mainline:
 
         Bugs fixed
 
+        - In certain cases, especially also on FreeBSD, netsync called
+          select() even after read() returned 0 bytes to indicate the
+          end of the file, resulting in a confusing error message. This
+          is fixed by treating EOF specially and prevent further calls
+          to select() on the file handle, as recommended by the
+          select_tut man page.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets
