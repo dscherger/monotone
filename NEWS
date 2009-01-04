@@ -6,6 +6,15 @@
 
         Bugs fixed
 
+        - Several bugfixes to `mtn automate stdio':
+          * it now correctly distinguishs between syntax and command errors by
+            returning error code 1 for the former and error code 2 for the
+            latter - just as advertised in the documentation.
+          * the stdio event loop no longer quits if a syntax error occurs, but
+            rather discards the wrong state and accepts new (valid) commands.
+          * option errors haven't been catched properly and thus weren't encoded
+            in stdio either; this has been fixed as well.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets
