@@ -353,7 +353,7 @@ unsigned int reactable::count = 0;
 
 class session_base : public reactable
 {
-  bool read_some();
+  void read_some(bool & failed, bool & eof);
   bool write_some();
   void mark_recent_io()
   {
@@ -468,10 +468,12 @@ session_base::which_events()
   return ret;
 }
 
-bool
-session_base::read_some()
+void
+session_base::read_some(bool & failed, bool & eof)
 {
   I(inbuf.size() < constants::netcmd_maxsz);
+  eof = false;
+  failed = false;
   char tmp[constants::bufsz];
   Netxx::signed_size_type count = str->read(tmp, sizeof(tmp));
   if (count > 0)
@@ -479,17 +481,38 @@ session_base::read_some()
       L(FL("read %d bytes from fd %d (peer %s)")
         % count % str->get_socketfd() % peer_id);
       if (encountered_error)
-        {
-          L(FL("in error unwind mode, so throwing them into the bit bucket"));
-          return true;
-        }
+        L(FL("in error unwind mode, so throwing them into the bit bucket"));
+
       inbuf.append(tmp,count);
       mark_recent_io();
       note_bytes_in(count);
-      return true;
+    }
+  else if (count == 0)
+    {
+      // Returning 0 bytes after select() marks the file descriptor as
+      // ready for reading signifies EOF.
+
+      switch (protocol_state)
+        {
+        case working_state:
+          P(F("peer %s IO terminated connection in working state (error)")
+            % peer_id);
+          break;
+
+        case shutdown_state:
+          P(F("peer %s IO terminated connection in shutdown state "
+              "(possibly client misreported error)")
+            % peer_id);
+          break;
+
+        case confirmed_state:
+          break;
+        }
+
+      eof = true;
     }
   else
-    return false;
+    failed = true;
 }
 
 bool
@@ -531,11 +554,14 @@ bool
 session_base::do_io(Netxx::Probe::ready_type what)
 {
   bool ok = true;
+  bool eof = false;
   try
     {
       if (what & Netxx::Probe::ready_read)
         {
-          if (!read_some())
+          bool failed;
+          read_some(failed, eof);
+          if (failed)
             ok = false;
         }
       if (what & Netxx::Probe::ready_write)
@@ -578,7 +604,11 @@ session_base::do_io(Netxx::Probe::ready_type what)
         % peer_id);
       ok = false;
     }
-  return ok;
+
+  // Return false in case we reached EOF, so as to prevent further calls
+  // to select()s on this stream, as recommended by the select_tut man
+  // page.
+  return ok && !eof;
 }
 
 ////////////////////////////////////////////////////////////////////////
