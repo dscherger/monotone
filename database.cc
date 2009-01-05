@@ -993,7 +993,7 @@ database::info(ostream & out, bool analyze)
       date_t cert_date;
       try
         {
-          cert_date = date_t::from_string(i->value());
+          cert_date = date_t(i->value());
         }
       catch (informative_failure & e)
         {
