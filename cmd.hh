@@ -287,6 +287,7 @@ CMD_FWD_DECL(key_and_cert);
 CMD_FWD_DECL(network);
 CMD_FWD_DECL(packet_io);
 CMD_FWD_DECL(rcs);
+CMD_FWD_DECL(git);
 CMD_FWD_DECL(review);
 CMD_FWD_DECL(tree);
 CMD_FWD_DECL(variables);

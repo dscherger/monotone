@@ -80,6 +80,9 @@ CMD_GROUP(packet_io, "packet_io", "", CMD_REF(__root__),
 CMD_GROUP(rcs, "rcs", "", CMD_REF(__root__),
           N_("Commands for interaction with RCS and CVS"),
           "");
+CMD_GROUP(git, "git", "", CMD_REF(__root__),
+          N_("Commands for interaction with GIT"),
+          "");
 CMD_GROUP(review, "review", "", CMD_REF(__root__),
           N_("Commands to review revisions"),
           "");
