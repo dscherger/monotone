@@ -15,45 +15,33 @@
 // user's time zone.
 
 #include "numeric_vocab.hh"
-#include "sanity.hh"
-
-// Our own "struct tm"-like struct to represent broken-down times
-struct broken_down_time {
-  int millisec;    /* milliseconds (0 - 999) */
-  int sec;         /* seconds (0 - 59) */
-  int min;         /* minutes (0 - 59) */
-  int hour;        /* hours (0 - 23) */
-  int day;         /* day of the month (1 - 31) */
-  int month;       /* month (1 - 12) */
-  int year;        /* years (anno Domini, i.e. 1999) */
-};
 
 struct date_t
 {
   // initialize to an invalid date
-  date_t() : d(-1) {}
+  date_t();
 
-  // initialize from a unix timestamp
-  date_t(u64 d);
+  // initialize from milliseconds since the unix epoch
+  date_t(s64 d);
 
-  // Initialize from broken-down time
+  // initialize from broken-down time
   date_t(int year, int month, int day,
          int hour=0, int min=0, int sec=0, int millisec=0);
 
-  bool valid() const;
+  // initialize from a string; presently recognizes only
+  // ISO 8601 "basic" and "extended" time formats.
+  date_t(std::string const & s);
 
-  // Return the local system's idea of the current date.
+  // initialize to the current date and time
   static date_t now();
 
-  // Return the date corresponding to a string.  Presently this recognizes
-  // only ISO 8601 "basic" and "extended" time formats.
-  static date_t from_string(std::string const &);
+  bool valid() const;
 
-  // Write out date as a string.
+  // Retrieve the date as a string.
   std::string as_iso_8601_extended() const;
 
   // Retrieve the internal milliseconds count since the Unix epoch.
-  u64 millisecs_since_unix_epoch() const;
+  s64 as_millisecs_since_unix_epoch() const;
 
   // Date comparison operators
   bool operator <(date_t const & other) const
@@ -79,9 +67,9 @@ struct date_t
   s64 operator -(date_t const & other) const;
 
 private:
-  // The date as an unsigned 64-bit count of milliseconds since
+  // The date as a signed 64-bit count of milliseconds since
   // the Unix epoch (1970-01-01T00:00:00.000).
-  u64 d;
+  s64 d;
 };
 
 std::ostream & operator<< (std::ostream & o, date_t const & d);
