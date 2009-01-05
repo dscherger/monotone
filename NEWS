@@ -1,3 +1,11 @@
+New stuff from nvm.dates* (written on top so as to avoid tedious merge
+conflicts, move after landing on mainline):
+
+        Internal
+
+        - Using 64 bit integer values to represent dates internally. This
+          has no user visible effect.
+
 ??? ??? ?? ??:??:?? UTC 2009
 
         0.43 release.
