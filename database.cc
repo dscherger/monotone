@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iterator>
 #include <list>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include "vector.hh"
@@ -79,6 +80,7 @@ using std::pair;
 using std::set;
 using std::string;
 using std::vector;
+using std::accumulate;
 
 using boost::shared_ptr;
 using boost::shared_dynamic_cast;
@@ -840,7 +842,7 @@ format_creator_code(u32 code)
 
 
 void
-database::info(ostream & out)
+database::info(ostream & out, bool analyze)
 {
   // don't check the schema
   ensure_open_for_maintenance();
@@ -971,6 +973,154 @@ database::info(ostream & out)
   form = form % imp->cache_size();
 
   out << form.str() << '\n'; // final newline is kept out of the translation
+
+  // the following analyzation is only done for --full info
+  if (!analyze)
+    return;
+
+
+  typedef map<revision_id, date_t> rev_date;
+  rev_date rd;
+  vector<cert> certs;
+
+  L(FL("fetching revision dates"));
+  imp->get_certs(date_cert_name, certs, "revision_certs");
+
+  L(FL("analyzing revision dates"));
+  rev_date::iterator d;
+  for (vector<cert>::iterator i = certs.begin(); i != certs.end(); ++i)
+    {
+      date_t cert_date;
+      try
+        {
+          cert_date = date_t(i->value());
+        }
+      catch (informative_failure & e)
+        {
+          // simply skip dates we cannot parse
+          W(F("invalid date: %s for revision %s, skipped")
+            % i->value() % i->ident);
+        }
+
+      if (cert_date.valid())
+        {
+          if ((d = rd.find(i->ident)) == rd.end())
+            rd.insert(make_pair(i->ident, cert_date));
+          else
+            {
+              if (d->second > cert_date)
+                d->second = cert_date;
+            }
+        }
+    }
+
+  L(FL("fetching ancestry map"));
+  typedef multimap<revision_id, revision_id>::const_iterator gi;
+  rev_ancestry_map graph;
+  get_revision_ancestry(graph);
+
+  L(FL("checking timestamps differences of related revisions"));
+  int correct = 0,
+      equal = 0,
+      incorrect = 0,
+      root_anc = 0,
+      missing = 0;
+
+  vector<s64> diffs;
+
+  for (gi i = graph.begin(); i != graph.end(); ++i)
+    {
+      revision_id anc_rid = i->first,
+                  desc_rid = i->second;
+
+      if (null_id(anc_rid))
+        {
+          root_anc++;
+          continue;
+        }
+      I(!null_id(desc_rid));
+
+      date_t anc_date,
+             desc_date;
+
+      map<revision_id, date_t>::iterator j;
+      if ((j = rd.find(anc_rid)) != rd.end())
+        anc_date = j->second;
+
+      if ((j = rd.find(desc_rid)) != rd.end())
+        desc_date = j->second;
+
+      if (anc_date.valid() && desc_date.valid())
+        {
+          // we only need seconds precision here
+          s64 diff = (desc_date - anc_date) / 1000;
+          diffs.push_back(diff);
+
+          if (anc_date < desc_date)
+            correct++;
+          else if (anc_date == desc_date)
+            equal++;
+          else
+            {
+              L(FL("   rev %s -> rev %s") % anc_rid % desc_rid);
+              L(FL("   but date %s ! -> %s")
+                % anc_date.as_iso_8601_extended()
+                % desc_date.as_iso_8601_extended());
+              L(FL("   (difference: %d seconds)")
+                % (anc_date - desc_date));
+              incorrect++;
+            }
+        }
+      else
+        missing++;
+    }
+
+  form =
+    F("timestamp correctness between revisions\n"
+      "  correct dates   : %s edges\n"
+      "  equal dates     : %s edges\n"
+      "  incorrect dates : %s edges\n"
+      "  based on root   : %s edges\n"
+      "  missing date(s) : %s edges\n"
+      "\n"
+      "timestamp differences between revisions:\n"
+      "  mean            : %d sec\n"
+      "  min             : %d sec\n"
+      "  max             : %d sec\n"
+      "\n"
+      "  1st percentile  : %s sec\n"
+      "  5th percentile  : %s sec\n"
+      "  10th percentile : %s sec\n"
+      "  25th percentile : %s sec\n"
+      "  50th percentile : %s sec\n"
+      "  75th percentile : %s sec\n"
+      "  90th percentile : %s sec\n"
+      "  95th percentile : %s sec\n"
+      "  99th percentile : %s sec\n"
+      );
+
+  form = form % correct % equal % incorrect % root_anc % missing;
+
+  // sort, so that we can get percentile values
+  sort(diffs.begin(), diffs.end());
+
+  // calculate mean time difference, output that, min and max
+  s64 mean = accumulate(diffs.begin(), diffs.end(), 0);
+  mean /= diffs.size();
+  s64 median = *(diffs.begin() + diffs.size()/2);
+  form = form % mean % *diffs.begin() % *diffs.rbegin()
+    % *(diffs.begin() + int(diffs.size() * 0.01))
+    % *(diffs.begin() + int(diffs.size() * 0.05))
+    % *(diffs.begin() + int(diffs.size() * 0.10))
+    % *(diffs.begin() + int(diffs.size() * 0.25))
+    % *(diffs.begin() + int(diffs.size() * 0.50))
+    % *(diffs.begin() + int(diffs.size() * 0.75))
+    % *(diffs.begin() + int(diffs.size() * 0.90))
+    % *(diffs.begin() + int(diffs.size() * 0.95))
+    % *(diffs.begin() + int(diffs.size() * 0.99));
+
+  // output the string, with some newlines out of translation
+  out << '\n' << '\n' << form.str() << '\n';
 }
 
 void
