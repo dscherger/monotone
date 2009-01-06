@@ -1,16 +1,3 @@
-New stuff from nvm.dates* (written on top so as to avoid tedious merge
-conflicts, move after landing on mainline):
-
-        New features
-
-        - Additional '--full' option for 'mtn db info' to display some
-        statistic analysis of the date certs in the database.
-
-        Internal
-
-        - Using 64 bit integer values to represent dates internally. This
-          has no user visible effect.
-
 ??? ??? ?? ??:??:?? UTC 2009
 
         0.43 release.
@@ -40,7 +27,13 @@ conflicts, move after landing on mainline):
         - The `mtn_automate' lua function now correctly parses and sets
           options for executed automate commands.
 
+        - Additional '--full' option for 'mtn db info' to display some
+          statistic analysis of the date certs in the database.
+
         Internal
+
+        - Using 64 bit integer values to represent dates internally. This
+          has no user visible effect.
 
 
 Fri Dec 26 22:08:00 UTC 2008
