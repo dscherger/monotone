@@ -50,7 +50,13 @@ Changes from nvm.stripped, please move down when landing on mainline:
         - The `mtn_automate' lua function now correctly parses and sets
           options for executed automate commands.
 
+        - Additional '--full' option for 'mtn db info' to display some
+          statistic analysis of the date certs in the database.
+
         Internal
+
+        - Using 64 bit integer values to represent dates internally. This
+          has no user visible effect.
 
 
 Fri Dec 26 22:08:00 UTC 2008

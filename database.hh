@@ -384,7 +384,7 @@ public:
   void debug(std::string const & sql, std::ostream & out);
   void dump(std::ostream &);
   void load(std::istream &);
-  void info(std::ostream &);
+  void info(std::ostream &, bool analyze);
   void version(std::ostream &);
   void migrate(key_store &);
   void test_migration_step(key_store &, std::string const &);
