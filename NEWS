@@ -4,6 +4,11 @@
 
         Changes
 
+        - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
+          longer print global options, thus making the output of specific help
+          requests more compact. You still see all available global options
+          by executing 'mtn help' without any arguments.
+
         Bugs fixed
 
         - Several bugfixes to `mtn automate stdio':
@@ -15,7 +20,7 @@
           * option errors haven't been catched properly and thus weren't encoded
             in stdio either; this has been fixed as well.
 
-        - In certain cases, especially also on FreeBSD and Mac OS X, netsync 
+        - In certain cases, especially also on FreeBSD and Mac OS X, netsync
           called select() even after read() returned 0 bytes to indicate the
           end of the file, resulting in a confusing error message. This
           is fixed by treating EOF specially and prevent further calls
