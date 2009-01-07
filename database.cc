@@ -1076,12 +1076,12 @@ database::info(ostream & out, bool analyze)
     }
 
   form =
-    F("timestamp correctness between revisions\n"
+    F("timestamp correctness between revisions:\n"
       "  correct dates   : %s edges\n"
       "  equal dates     : %s edges\n"
       "  incorrect dates : %s edges\n"
       "  based on root   : %s edges\n"
-      "  missing date(s) : %s edges\n"
+      "  missing dates   : %s edges\n"
       "\n"
       "timestamp differences between revisions:\n"
       "  mean            : %d sec\n"
