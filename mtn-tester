@@ -555,7 +555,7 @@ my @test_list =
 
 		  print("Displaying revision change log:\n");
 		  system("mtn update");
-		  system("mtn log --last 5 --no-graph | less -S");
+		  system("mtn log --last 5 --no-graph");
 	      }},
 
      {fn   => undef,
