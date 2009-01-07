@@ -74,18 +74,21 @@ use Symbol qw(gensym);
 use constant MTN_DB_GET                           => 0;
 use constant MTN_DROP_ATTRIBUTE                   => 1;
 use constant MTN_DROP_DB_VARIABLES                => 2;
-use constant MTN_GET_ATTRIBUTES                   => 3;
-use constant MTN_GET_CURRENT_REVISION             => 4;
-use constant MTN_GET_DB_VARIABLES                 => 5;
-use constant MTN_GET_WORKSPACE_ROOT               => 6;
-use constant MTN_IGNORE_SUSPEND_CERTS             => 7;
-use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT    => 8;
-use constant MTN_INVENTORY_INCLUDE_BIRTH_ID       => 9;
-use constant MTN_INVENTORY_TAKE_OPTIONS           => 10;
-use constant MTN_USE_P_SELECTOR                   => 11;
-use constant MTN_SET_ATTRIBUTE                    => 12;
-use constant MTN_SET_DB_VARIABLE                  => 13;
-use constant MTN_SHOW_CONFLICTS                   => 14;
+use constant MTN_FILE_MERGE                       => 3;
+use constant MTN_GET_ATTRIBUTES                   => 4;
+use constant MTN_GET_CURRENT_REVISION             => 5;
+use constant MTN_GET_DB_VARIABLES                 => 6;
+use constant MTN_GET_WORKSPACE_ROOT               => 7;
+use constant MTN_IGNORE_SUSPEND_CERTS             => 8;
+use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT    => 9;
+use constant MTN_INVENTORY_INCLUDE_BIRTH_ID       => 10;
+use constant MTN_INVENTORY_TAKE_OPTIONS           => 11;
+use constant MTN_LUA                              => 12;
+use constant MTN_READ_PACKETS                     => 13;
+use constant MTN_SET_ATTRIBUTE                    => 14;
+use constant MTN_SET_DB_VARIABLE                  => 15;
+use constant MTN_SHOW_CONFLICTS                   => 16;
+use constant MTN_USE_P_SELECTOR                   => 17;
 
 # Constants used to represent the different error levels.
 
@@ -97,10 +100,11 @@ use constant MTN_SEVERITY_WARNING => 0x02;
 
 use constant BARE_PHRASE     => 0x01;  # E.g. orphaned_directory.
 use constant HEX_ID          => 0x02;  # E.g. [ab2 ... 1be].
-use constant OPTIONAL_HEX_ID => 0x04;  # As HEX_ID but also [].
-use constant STRING          => 0x08;  # Any quoted string, possibly escaped.
-use constant STRING_ENUM     => 0x10;  # E.g. "rename_source".
-use constant STRING_LIST     => 0x20;  # E.g. "..." "...", possibly escaped.
+use constant NULL            => 0x04;  # Nothing, i.e. we just have the key.
+use constant OPTIONAL_HEX_ID => 0x08;  # As HEX_ID but also [].
+use constant STRING          => 0x10;  # Any quoted string, possibly escaped.
+use constant STRING_ENUM     => 0x20;  # E.g. "rename_source".
+use constant STRING_LIST     => 0x40;  # E.g. "..." "...", possibly escaped.
 
 # Pre-compiled regular expressions for: finding the end of a quoted string
 # possibly containing escaped quotes (i.e. " preceeded by a non-backslash
@@ -109,15 +113,16 @@ use constant STRING_LIST     => 0x20;  # E.g. "..." "...", possibly escaped.
 
 my $closing_quote_re = qr/((^.*[^\\])|^)(\\{2})*\"$/;
 my $database_locked_re = qr/.*sqlite error: database is locked.*/;
-my $io_stanza_re = qr/^ *[a-z_]+ \S/;
+my $io_stanza_re = qr/^ *([a-z_]+)(?:(?: \S)|(?: ?$))/;
 
 # A map for quickly detecting valid mtn subprocess options and the number of
-# their arguements.
+# their arguments.
 
 my %valid_mtn_options = ("--confdir"            => 1,
 			 "--key"                => 1,
 			 "--keydir"             => 1,
 			 "--no-default-confdir" => 0,
+			 "--no-workspace"       => 0,
 			 "--norc"               => 0,
 			 "--nostd"              => 0,
 			 "--root"               => 1,
@@ -168,24 +173,25 @@ my %revision_details_keys = ("add_dir"        => STRING,
 			     "set"            => STRING,
 			     "to"             => HEX_ID | STRING,
 			     "value"          => STRING);
-my %show_conflicts_keys = ("ancestor"         => OPTIONAL_HEX_ID,
-			   "ancestor_file_id" => HEX_ID,
-			   "ancestor_name"    => STRING,
-			   "attr_name"        => STRING,
-			   "conflict"         => BARE_PHRASE,
-			   "left"             => HEX_ID,
-			   "left_attr_value"  => STRING,
-			   "left_file_id"     => HEX_ID,
-			   "left_name"        => STRING,
-			   "left_type"        => STRING,
-			   "node_type"        => STRING,
-			   "right"            => HEX_ID,
-			   "right_attr_state" => STRING,
-			   "right_attr_value" => STRING,
-			   "right_file_id"    => HEX_ID,
-			   "right_name"       => STRING,
-			   "right_type"       => STRING);
-my %tags_keys = ("branches"       => STRING_LIST,
+my %show_conflicts_keys = ("ancestor"          => OPTIONAL_HEX_ID,
+			   "ancestor_file_id"  => HEX_ID,
+			   "ancestor_name"     => STRING,
+			   "attr_name"         => STRING,
+			   "conflict"          => BARE_PHRASE,
+			   "left"              => HEX_ID,
+			   "left_attr_value"   => STRING,
+			   "left_file_id"      => HEX_ID,
+			   "left_name"         => STRING,
+			   "left_type"         => STRING,
+			   "node_type"         => STRING,
+			   "resolved_internal" => NULL,
+			   "right"             => HEX_ID,
+			   "right_attr_state"  => STRING,
+			   "right_attr_value"  => STRING,
+			   "right_file_id"     => HEX_ID,
+			   "right_name"        => STRING,
+			   "right_type"        => STRING);
+my %tags_keys = ("branches"       => NULL | STRING_LIST,
 		 "format_version" => STRING_ENUM,
 		 "revision"       => HEX_ID,
 		 "signer"         => STRING,
@@ -226,6 +232,7 @@ sub descendents($$@);
 sub drop_attribute($$$);
 sub drop_db_variables($$;$);
 sub erase_ancestors($$;@);
+sub file_merge($$$$$$);
 sub genkey($$$$);
 sub get_attributes($$$);
 sub get_base_revision_id($$);
@@ -252,6 +259,7 @@ sub interface_version($$);
 sub inventory($$;$@);
 sub keys($$);
 sub leaves($$);
+sub lua($$$;@);
 sub new_from_db($;$$);
 sub new_from_ws($;$$);
 sub packet_for_fdata($$$);
@@ -261,6 +269,7 @@ sub packets_for_certs($$$);
 sub parents($$$);
 sub put_file($$$$);
 sub put_revision($$$);
+sub read_packets($$);
 sub register_db_locked_handler(;$$$);
 sub register_error_handler($;$$$);
 sub register_io_wait_handler(;$$$$);
@@ -304,6 +313,7 @@ use base qw(Exporter);
 our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_DROP_ATTRIBUTE
 					MTN_DROP_DB_VARIABLES
+					MTN_FILE_MERGE
 					MTN_GET_ATTRIBUTES
 					MTN_GET_CURRENT_REVISION
 					MTN_GET_DB_VARIABLES
@@ -312,16 +322,18 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_INVENTORY_IN_IO_STANZA_FORMAT
 					MTN_INVENTORY_INCLUDE_BIRTH_ID
 					MTN_INVENTORY_TAKE_OPTIONS
-					MTN_USE_P_SELECTOR
+					MTN_LUA
+					MTN_READ_PACKETS
 					MTN_SET_ATTRIBUTE
 					MTN_SET_DB_VARIABLE
-					MTN_SHOW_CONFLICTS)],
-		    severities   => [qw(MTN_SEVERITY_ALL
+					MTN_SHOW_CONFLICTS
+					MTN_USE_P_SELECTOR)],
+		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
 					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities));
-our $VERSION = 0.1;
+our $VERSION = 0.2.0;
 #
 ##############################################################################
 #
@@ -916,6 +928,49 @@ sub erase_ancestors($$;@)
     my($this, $list, @revision_ids) = @_;
 
     return mtn_command($this, "erase_ancestors", $list, @revision_ids);
+
+}
+#
+##############################################################################
+#
+#   Routine      - file_merge
+#
+#   Description  - Get the result of merging two files, both of which are on
+#                  separate revisions.
+#
+#   Data         - $this              : The object.
+#                  $buffer            : A reference to a buffer that is to
+#                                       contain the output from this command.
+#                  $left_revision_id  : The left hand revision id.
+#                  $left_file_name    : The name of the file on the left hand
+#                                       revision.
+#                  $right_revision_id : The right hand revision id.
+#                  $right_file_name   : The name of the file on the right hand
+#                                       revision.
+#                  Return Value       : True on success, otherwise false on
+#                                       failure.
+#
+##############################################################################
+
+
+
+sub file_merge($$$$$$)
+{
+
+    my($this,
+       $buffer,
+       $left_revision_id,
+       $left_file_name,
+       $right_revision_id,
+       $right_file_name) = @_;
+
+    return mtn_command($this,
+		       "file_merge",
+		       $buffer,
+		       $left_revision_id,
+		       $left_file_name,
+		       $right_revision_id,
+		       $right_file_name);
 
 }
 #
@@ -2061,6 +2116,36 @@ sub leaves($$)
 #
 ##############################################################################
 #
+#   Routine      - lua
+#
+#   Description  - Call the specified LUA function with any required
+#                  arguments.
+#
+#   Data         - $this         : The object.
+#                  $buffer       : A reference to a buffer that is to contain
+#                                  the output from this command.
+#                  $lua_function : The name of the LUA function that is to be
+#                                  called.
+#                  @arguments    : A list of arguments that are to be passed
+#                                  to the LUA function.
+#                  Return Value  : True on success, otherwise false on
+#                                  failure.
+#
+##############################################################################
+
+
+
+sub lua($$$;@)
+{
+
+    my($this, $buffer, $lua_function, @arguments) = @_;
+
+    return mtn_command($this, "lua", $buffer, $lua_function, @arguments);
+
+}
+#
+##############################################################################
+#
 #   Routine      - packet_for_fdata
 #
 #   Description  - Get the contents of the file referenced by the specified
@@ -2281,6 +2366,32 @@ sub put_revision($$$)
     $$buffer = $list[0];
 
     return 1;
+
+}
+#
+##############################################################################
+#
+#   Routine      - read_packets
+#
+#   Description  - Decode and store the specified packet data in the database.
+#
+#   Data         - $this        : The object.
+#                  $packet_data : The packet data that is to be stored in the
+#                                 database.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub read_packets($$)
+{
+
+    my($this, $packet_data) = @_;
+
+    my $dummy;
+
+    return mtn_command($this, "read_packets", \$dummy, $packet_data);
 
 }
 #
@@ -2594,7 +2705,8 @@ sub tags($$;$)
 			    unless (exists($kv_record->{$key}));
 		    }
 		    $kv_record->{branches} = []
-			unless (exists($kv_record->{branches}));
+			unless (exists($kv_record->{branches})
+				&& defined($kv_record->{branches}));
 		    $kv_record->{revision_id} = $kv_record->{revision};
 		    delete($kv_record->{revision});
 		    push(@$ref, $kv_record);
@@ -2706,6 +2818,16 @@ sub can($$)
 	# These are only available from version 0.41 (i/f version 8.x).
 
 	return 1 if ($this->{mtn_aif_major} >= 8);
+
+    }
+    elsif ($feature == MTN_FILE_MERGE
+	   || $feature == MTN_LUA
+	   || $feature == MTN_READ_PACKETS)
+    {
+
+	# These are only available from version 0.42 (i/f version 9.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 9);
 
     }
     else
@@ -3373,7 +3495,7 @@ sub parse_kv_record($$$$;$)
 	 $i < scalar(@$list) && $$list[$i] =~ m/$io_stanza_re/;
 	 ++ $i)
     {
-	($key) = ($$list[$i] =~ m/^ *([a-z_]+) \S/);
+	$key = $1;
 	if (exists($$key_type_map{$key}))
 	{
 	    $type = $$key_type_map{$key};
@@ -3410,9 +3532,13 @@ sub parse_kv_record($$$$;$)
 		    push(@$value, unescape($string));
 		}
 	    }
+	    elsif ($type & NULL && $$list[$i] =~ m/^ *[a-z_]+ ?$/)
+	    {
+	    }
 	    else
 	    {
-		&$croaker("Internal: Unsupported key type detected");
+		&$croaker("Unsupported key type or corrupt field value "
+			  . "detected");
 	    }
 	    $$record->{$key} = $value;
 	}

@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.1
+0.2.0
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious. :-) Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.41). If you happen to be using a newer version of Monotone
+version (currently 0.42). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
@@ -70,6 +70,7 @@ would be passed to the constructor) is:
      "--key"                => <Key To Be Used For Signatures>,
      "--keydir"             => <Key Store Location>,
      "--no-default-confdir",
+     "--no-workspace",
      "--norc",
      "--nostd",
      "--root"               => <Root Directory>,
@@ -250,6 +251,7 @@ that is currently being used by this object. The list of valid features are:
     MTN_DB_GET
     MTN_DROP_ATTRIBUTE
     MTN_DROP_DB_VARIABLES
+    MTN_FILE_MERGE
     MTN_GET_ATTRIBUTES
     MTN_GET_CURRENT_REVISION
     MTN_GET_DB_VARIABLES
@@ -258,10 +260,12 @@ that is currently being used by this object. The list of valid features are:
     MTN_INVENTORY_IN_IO_STANZA_FORMAT
     MTN_INVENTORY_INCLUDE_BIRTH_ID
     MTN_INVENTORY_TAKE_OPTIONS
-    MTN_USE_P_SELECTOR
+    MTN_LUA
+    MTN_READ_PACKETS
     MTN_SET_ATTRIBUTE
     MTN_SET_DB_VARIABLE
     MTN_SHOW_CONFLICTS
+    MTN_USE_P_SELECTOR
 
 In order to get these constants into your namespace you need to use the
 following to load in this library.
@@ -357,6 +361,13 @@ specified variable.
 
 For a given list of revisions, weed out those that are ancestors to other
 revisions specified within the list.
+
+=item B<$mtn-E<gt>file_merge(\$buffer, $left_revision_id, $left_file_name,
+$right_revision_id, $right_file_name)>
+
+Get the result of merging two files, both of which are on separate revisions.
+
+(feature: MTN_FILE_MERGE)
 
 =item B<$mtn-E<gt>genkey(\$buffer | \%hash, $key_id, $pass_phrase)>
 
@@ -672,6 +683,12 @@ containing the following fields:
 
 Get a list of leaf revisions.
 
+=item B<$mtn-E<gt>lua(\$buffer, $lua_function[, $argument ...])>
+
+Call the specified LUA function with any required arguments.
+
+(feature: MTN_LUA)
+
 =item B<$mtn-E<gt>packet_for_fdata(\$buffer, $file_id)>
 
 Get the contents of the file referenced by the specified file id in packet
@@ -707,6 +724,12 @@ Put the specified revision data into the database. The revision id is
 returned. Please note that any newly created revisions have no certificates
 associated with them and so these have to be added using the $mtn-E<gt>cert()
 method.
+
+=item B<$mtn-E<gt>read_packets($packet_data)>
+
+Decode and store the specified packet data in the database.
+
+(feature: MTN_READ_PACKETS)
 
 =item B<$mtn-E<gt>register_db_locked_handler([$handler[, $client_data]])>
 
@@ -751,45 +774,50 @@ command is simply placed into the variable. However if \@list is passed then
 the output is returned as a list of anonymous hashes, each one containing one
 or more of the following fields:
 
-    ancestor         - The id of the common ancestor revision for
-                       both revisions in conflict.
-    ancestor_file_id - The common ancestor file id for both files in
-                       conflict.
-    ancestor_name    - The name of the ancestor file or directory.
-    attr_name        - The name of the Monotone file or directory
-                       attribute that is in conflict.
-    conflict         - The nature of the conflict. Values can be one
-                       of "attribute", "content",
-                       "directory_loop_created", "duplicate_name",
-                       "invalid_name", "missing_root",
-                       "multiple_names", "orphaned_directory" or
-                       "orphaned_file".
-    left             - The id of the left hand revision that is in
-                       conflict.
-    left_attr_value  - The value of the attribute on the file or
-                       directory in the left hand revision.
-    left_file_id     - The id of the file in the left hand revision.
-    left_name        - The name of the file or directory in the left
-                       hand revision.
-    left_type        - The type of conflict relating to the file or
-                       directory in the left hand revision. Values
-                       can be one of "added directory", "added file",
-                       "deleted directory", "pivoted root",
-                       "renamed directory" or "renamed file".
-    node_type        - The type of manifest node. Values can be one
-                       of "file" or "directory".
-    right            - The id of the right hand revision that is in
-                       conflict.
-    right_attr_state - The state of the attribute in the right hand
-                       revision. Values can only be "dropped".
-    right_attr_value - The value of the attribute on the file or
-                       directory in the right hand revision.
-    right_file_id    - The id of the file in the right hand revision.
-    right_name       - The name of the file or directory in the right
-                       hand revision.
-    right_type       - The type of conflict relating to the file or
-                       directory in the left revision. Values are as
-                       documented for left_type.
+    ancestor          - The id of the common ancestor revision for
+                        both revisions in conflict.
+    ancestor_file_id  - The common ancestor file id for both files in
+                        conflict.
+    ancestor_name     - The name of the ancestor file or directory.
+    attr_name         - The name of the Monotone file or directory
+                        attribute that is in conflict.
+    conflict          - The nature of the conflict. Values can be one
+                        of "attribute", "content",
+                        "directory_loop", "duplicate_name",
+                        "invalid_name", "missing_root",
+                        "multiple_names", "orphaned_directory" or
+                        "orphaned_file".
+    left              - The id of the left hand revision that is in
+                        conflict.
+    left_attr_value   - The value of the attribute on the file or
+                        directory in the left hand revision.
+    left_file_id      - The id of the file in the left hand revision.
+    left_name         - The name of the file or directory in the left
+                        hand revision.
+    left_type         - The type of conflict relating to the file or
+                        directory in the left hand revision. Values
+                        can be one of "added directory",
+                        "added file", "deleted directory",
+                        "pivoted root", "renamed directory" or
+                        "renamed file".
+    node_type         - The type of manifest node. Values can be one
+                        of "file" or "directory".
+    resolved_internal - Only present if the conflict can be resolved
+                        internally by Monotone during the merge
+                        process.
+    right             - The id of the right hand revision that is in
+                        conflict.
+    right_attr_state  - The state of the attribute in the right hand
+                        revision. Values can only be "dropped".
+    right_attr_value  - The value of the attribute on the file or
+                        directory in the right hand revision.
+    right_file_id     - The id of the file in the right hand
+                        revision.
+    right_name        - The name of the file or directory in the
+                        right hand revision.
+    right_type        - The type of conflict relating to the file or
+                        directory in the left revision. Values are as
+                        documented for left_type.
 
         Please note that some fields are not used by all entries, in
         which case they are not present (use Perl's exists() function
@@ -852,6 +880,68 @@ The following methods do not return anything:
 Please note that the boolean true and false values used by this class are
 defined as 1 and undef respectively.
 
+=head1 EXAMPLES
+
+=head2 Detecting Warnings And Errors
+
+Errors cause exceptions to be thrown. Warnings cause the responsible method to
+return false rather than true.
+
+Therefore warnings would typically be detected by using code like this:
+
+    $mtn->get_file(\$data, $file_id)
+        or die('$mtn->get_file() failed with: '
+               . $mtn->get_error_message());
+
+However this can get clumsy and cluttered after a while, especially when the
+calling application knows that there is very little likelihood of there being a
+problem. Having exceptions being thrown for warnings as well as errors may be a
+better approach. By doing:
+
+    Monotone::AutomateStdio->register_error_handler
+        (MTN_SEVERITY_ALL,
+         sub
+         {
+             my($severity, $message) = @_;
+             die($message);
+         });
+
+or more tersely:
+
+    Monotone::AutomateStdio->register_error_handler
+        (MTN_SEVERITY_ALL, sub { die($_[1]); });
+
+at the beginning of your application will mean that all errors and warnings
+detected by this class will generate an exception, thus making the checking of
+a method's return status redundant.
+
+=head2 Silently Retrying Operations When The Database Is Locked
+
+If the Monotone database is locked then, by default, this class will report
+that condition as a warning. However, it may be more convenient to ask this
+class to silently retry the operation until it succeeds. This can easily be
+done by using the database locked handler as follows:
+
+    Monotone::AutomateStdio->register_db_locked_handler
+        (sub { sleep(1); return 1; });
+
+This will mean that should any database locked conditions occur then this class
+will silently sleep for one second before retrying the operation.
+
+=head2 Dealing With Processing Lockouts And Delays
+
+Sometimes you may make a complex request to the mtn subprocess that takes a
+number of seconds to process. Consequently this class will take that amount of
+time, plus a very small processing overhead, to return. Whilst one can get
+around this by using threads, another way is to register an I/O wait
+handler. For example:
+
+    Monotone::AutomateStdio->register_io_wait_handler
+        (sub { WindowManager->instance()->update_gui(); }, 1);
+
+will instruct this class to update the user display every second whilst it is
+waiting for the mtn subprocess to finish processing a request.
+
 =head1 NOTES
 
 There are situations where this class does legitimately terminate the mtn
@@ -890,8 +980,8 @@ know want them :-)). Also once the automate stdio interface has remained stable
 for some time, support may be dropped for older versions in order to aid
 maintenance and regression testing.
 
-The $mtn-E<gt>get_content_changed() method is very slow since Monotone version
-0.40. Hopefully this will be fixed in version 0.42.
+The $mtn-E<gt>get_content_changed() method is very slow in Monotone versions
+0.40 and 0.41.
 
 =head1 SEE ALSO
 
@@ -902,7 +992,15 @@ http://monotone.ca
 Your mileage may vary if this class is used with versions of Monotone older
 than 0.35 (automate stdio interface version 4.3).
 
-No doubt other bugs will crawl out of the wood-work.
+This class is not thread safe. If you wish to use this class in a
+multi-threaded environment then you either need to use a separate object per
+thread or use threads::lock to protect each method call.
+
+=head1 AUTHORS
+
+Anthony Cooper with contributions and ideas from Thomas Keller. Currently
+maintained by Anthony Cooper. Please report all faults and suggestions to
+<support@coosoft.plus.com>.
 
 =head1 COPYRIGHT
 

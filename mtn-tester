@@ -3,7 +3,7 @@
 # <UPDATE> - You may need to comment the next line out or change it to where
 #            you have the Monotone::AutomateStdio library installed.
 
-use lib "/home/aecoope/perl";
+use lib "<Location Of Monotone::AutomateStdio>";
 
 use strict;
 use integer;
@@ -26,6 +26,10 @@ use constant RECORD_LIST => 2;
 use constant RECORD      => 3;
 use constant CODE        => 4;
 use constant VARIABLE    => 5;
+
+# <UPDATE> - Enter your key id in the line below.
+
+my $key_id = "<Key Id>";
 
 my($data,
    %hash,
@@ -155,6 +159,24 @@ my @test_list =
       args => ["05cb265ad778107218701fa76a91bdf4770b85a8",
 	       "110816e646d42ca45e8205778255cece9c8f2159",
 	       "95c9125530ea297d244b522426997942635d3891"]},
+
+     {fn   => \&Monotone::AutomateStdio::file_merge,
+      desc => "file_merge (on a mergeable conflict)",
+      feat => MTN_FILE_MERGE,
+      type => RAW,
+      args => ["05cb265ad778107218701fa76a91bdf4770b85a8",
+	       "Makefile.am",
+	       "110816e646d42ca45e8205778255cece9c8f2159",
+	       "Makefile.am"]},
+
+     {fn   => \&Monotone::AutomateStdio::file_merge,
+      desc => "file_merge (on an unmergeable conflict)",
+      feat => MTN_FILE_MERGE,
+      type => RAW,
+      args => ["5fee1e9c463d3cd7439bea9c483d9d88d0b057d5",
+	       "ui.cc",
+	       "b9a5862a8ba577538f27c69656d8a6bb60ecb777",
+	       "ui.cc"]},
 
      {fn   => \&Monotone::AutomateStdio::genkey,
       desc => "genkey",
@@ -442,6 +464,13 @@ my @test_list =
       type => LIST,
       args => []},
 
+     {fn   => \&Monotone::AutomateStdio::lua,
+      desc => "lua",
+      feat => MTN_LUA,
+      type => RAW,
+      args => ["ignore_file",
+	       "'Makefile.am'"]},
+
      {fn   => \&Monotone::AutomateStdio::packet_for_fdata,
       desc => "packet_for_fdata",
       type => RAW,
@@ -529,6 +558,24 @@ my @test_list =
 		  system("mtn log --last 5 --no-graph | less -S");
 	      }},
 
+     {fn   => undef,
+      desc => "read_packets",
+      feat => MTN_READ_PACKETS,
+      type => CODE,
+      code => sub {
+	          $mtn->read_packets
+		      ('[pubkey piglet@aamilne.com] '
+		       . 'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDKBEOCGipeYi1/'
+		           . 'dVI93aks2jMZbU4PBj2p '
+		       . '+gtncni0xEd8MffZ3Zx4FQOsI1PAqVPmNhxA18VKJ0kRg97IUj/'
+		           . 'GpsZMFemhEO96mp3tLT29 '
+		       . 'F8mW302RlfaXEk7BdP0MXHuRrpXyDJ30YDzUZ+tNqlcgkQTvS+'
+		           . 'LfUr/US71/blGDzwIDAQAB '
+		       . '[end]');
+		  print("Added the piglet\@aamilne.com key\n");
+	          system("mtn ls keys");
+	      }},
+
      {fn   => \&Monotone::AutomateStdio::roots,
       desc => "roots",
       type => LIST,
@@ -556,6 +603,13 @@ my @test_list =
       type => RECORD_LIST,
       args => ["26cfbb87b400321bda71277e1d2c0ba1d5e9898f",
 	       "15db9bc261c01c4ca5cdb052aec69d29f3bec58a"]},
+
+     {fn   => \&Monotone::AutomateStdio::show_conflicts,
+      desc => "show_conflicts (with internal merge resolution)",
+      feat => MTN_SHOW_CONFLICTS,
+      type => RECORD_LIST,
+      args => ["05cb265ad778107218701fa76a91bdf4770b85a8",
+	       "110816e646d42ca45e8205778255cece9c8f2159"]},
 
      {fn   => \&Monotone::AutomateStdio::tags,
       desc => "tags (no branch restrictions)",
@@ -601,9 +655,7 @@ Tony Cooper.
 EOF
 readline(STDIN);
 
-# <UPDATE> - Enter your key id in the line below.
-
-$mtn = Monotone::AutomateStdio->new(["--key" => "aecooper\@coosoft.plus.com"]);
+$mtn = Monotone::AutomateStdio->new(["--key" => $key_id]);
 
 $data = undef;
 if ($mtn->can(MTN_DB_GET))
@@ -625,6 +677,11 @@ else
 }
 die("Your test database will sync to `" . $data . "' - this is unsafe")
     if (defined($data));
+
+# Clear out any error state created from the above tests.
+
+$mtn = undef;
+$mtn = Monotone::AutomateStdio->new(["--key" => $key_id]);
 
 Monotone::AutomateStdio->register_error_handler
     (MTN_SEVERITY_ALL,
