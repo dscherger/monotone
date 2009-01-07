@@ -7489,7 +7489,7 @@ A packet looks like:
 <command number> is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-<err code> is 0 for success, 1 for a syntax error, and 2 for any other error.
+<err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
 
 <last?> is 'l' if this is the last piece of output for this command, and 'm'
 if there is more output to come.
