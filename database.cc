@@ -21,9 +21,14 @@
 #include <string.h>
 
 #include <boost/shared_ptr.hpp>
-#include "lexical_cast.hh"
+#include <botan/botan.h>
+#include <botan/rsa.h>
+#include <botan/keypair.h>
+#include <botan/pem.h>
+#include <botan/look_pk.h>
+#include <sqlite3.h>
 
-#include "sqlite/sqlite3.h"
+#include "lexical_cast.hh"
 
 #include "app_state.hh"
 #include "cert.hh"
@@ -54,11 +59,6 @@
 #include "lua_hooks.hh"
 #include "outdated_indicator.hh"
 #include "lru_writeback_cache.hh"
-
-#include "botan/botan.h"
-#include "botan/rsa.h"
-#include "botan/keypair.h"
-#include "botan/pem.h"
 
 // defined in schema.c, generated from schema.sql:
 extern char const schema_constant[];
@@ -395,6 +395,35 @@ private:
                                       query & q);
 };
 
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+// SQLite versions up to and including 3.3.12 didn't have the hex() function
+void
+sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
+{
+  if (nargs != 1)
+    {
+      sqlite3_result_error(f, "need exactly 1 arg to hex()", -1);
+      return;
+    }
+  string decoded;
+
+  // This operation may throw informative_failure.  We must intercept that
+  // and turn it into a call to sqlite3_result_error, or rollback will fail.
+  try
+    {
+      decoded = encode_hexenc(reinterpret_cast<char const *>(
+        sqlite3_value_text(args[0])));
+    }
+  catch (informative_failure & e)
+    {
+      sqlite3_result_error(f, e.what(), -1);
+      return;
+    }
+
+  sqlite3_result_blob(f, decoded.data(), decoded.size(), SQLITE_TRANSIENT);
+}
+#endif
+
 database_impl::database_impl(system_path const & f) :
   filename(f),
   __sql(NULL),
@@ -421,8 +450,12 @@ database_impl::~database_impl()
 }
 
 database::database(app_state & app)
-  : lua(app.lua), rng(app.rng)
+  : lua(app.lua)
 {
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  rng = app.rng;
+#endif
+
   boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
   if (!i)
     {
@@ -2917,9 +2950,16 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
     encryptor(get_pk_encryptor(*pub_key, "EME1(SHA-1)"));
 
   SecureVector<Botan::byte> ct;
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
           plaintext.size(), *rng);
+#else
+  ct = encryptor->encrypt(
+          reinterpret_cast<Botan::byte const *>(plaintext.data()),
+          plaintext.size());
+#endif
   ciphertext = rsa_oaep_sha_data(string(reinterpret_cast<char const *>(ct.begin()),
                                         ct.size()));
 }
@@ -3040,6 +3080,14 @@ database_impl::results_to_certs(results const & res,
 void
 database_impl::install_functions()
 {
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+  if (sqlite3_libversion_number() < 3003013)
+    I(sqlite3_create_function(sql(), "hex", -1,
+                              SQLITE_UTF8, NULL,
+                              &sqlite3_hex_fn,
+                              NULL, NULL) == 0);
+#endif
+
   // register any functions we're going to use
   I(sqlite3_create_function(sql(), "gunzip", -1,
                            SQLITE_UTF8, NULL,

@@ -1,6 +1,6 @@
 
 #include "base.hh"
-#include "botan/botan.h"
+#include <botan/botan.h>
 
 #include "sanity.hh"
 #include "hmac.hh"
