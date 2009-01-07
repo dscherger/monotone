@@ -998,7 +998,7 @@ database::info(ostream & out, bool analyze)
       catch (informative_failure & e)
         {
           // simply skip dates we cannot parse
-          W(F("invalid date: %s for revision %s, skipped")
+          W(F("invalid date '%s' for revision %s; skipped")
             % i->value() % i->ident);
         }
 
