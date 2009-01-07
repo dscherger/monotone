@@ -1,9 +1,36 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
-
-Monotone::AutomateStdio v0.1
-============================
-
-0.01  Sun Nov  9 12:48:46 2008
+0.01  Sun Nov  9 12:48:46 2008 Anthony Cooper
 	- original version; created by h2xs 1.23 with options
 		-X -n Monotone::AutomateStdio
+
+0.2.0  Wed Jan	7 16:00:00 2009 Anthony Cooper
+	- Updated to work with Monotone version 0.42 (added the
+	  $mtn->file_merge(), $mtn->lua() and $mtn->read_packets() methods and
+	  added support for the --no-workspace mtn command line switch).
+	- Added contributions and ideas from Thomas Keller:
+	  - Now have two constructors new_from_db() and new_from_ws(). The
+	    first is aliased to new() and does what the old constructor did.
+	    The second constructor uses the details from the specified
+	    workspace.
+	  - The databases are checked to see if they are Monotone SQLite v3
+	    databases before they are opened by the mtn subprocess.
+	  - The get_ws_path() method has been added.
+	  - The mtn subprocess is either started inside the root directory (if
+	    no workspace is being used) or in the top level directory inside
+	    the specified/current workspace. This helps avoid all sorts of
+	    confusion and weirdness with the mtn subprocess.
+	- Added the db_locked_condition_detected() method.
+	- Now support the NULL key type in parse_kv_record to allow for cases
+	  where there is a field key without a value.
+	- Revamped all of the regexp string extraction code to be more
+	  efficient.
+	- The $io_stanza_re regular expression now also extras the key name.
+	- Made an exception message more meaningful.
+	- mtn-tester has been updated to test the new features and now
+	  recreates the $mtn object after doing its initial tests so that any
+	  error messages are cleared out prior to the actual tests.
+	- Updated the documentation as a result of the new 0.42 features. I
+	  have included a new EXAMPLES section, which details some of the less
+	  obvious features, and an AUTHORS section. I have also revamped the
+	  RETURN VALUE section to make it more readable).
