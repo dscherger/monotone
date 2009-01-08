@@ -47,6 +47,6 @@ if that function could be integrated into the mtn binary.
 
 ### Scratch Your Itch Here ###
 
-Feel free to work on whatever you feel like working on during the summit.  
+Feel free to work on whatever you feel like working on during the summit. 
 Please make your intentions known here.
 
