@@ -2803,8 +2803,8 @@ void calculate_ident(roster_t const & ros,
   if (!ros.all_nodes().empty())
     {
       write_manifest_of_roster(ros, tmp);
-      calculate_ident(tmp, ident);
     }
+  calculate_ident(tmp, ident);
 }
 
 ////////////////////////////////////////////////////////////////////
