@@ -350,7 +350,7 @@ UNIT_TEST(date, from_string)
 {
 #define OK(x,y) UNIT_TEST_CHECK(date_t::from_string(x).as_iso_8601_extended() \
                             == (y))
-#define NO(x) UNIT_TEST_CHECK_THROW(date_t::from_string(x), informative_failure)
+#define NO(x) UNIT_TEST_CHECK_THROW(date_t::from_string(x), recoverable_failure)
 
   // canonical format
   OK("2007-03-01T18:41:13", "2007-03-01T18:41:13");

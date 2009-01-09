@@ -956,7 +956,7 @@ UNIT_TEST(restrictions, invalid_roster_paths)
   excludes.push_back(file_path_internal("bar"));
 
   UNIT_TEST_CHECK_THROW(node_restriction(includes, excludes, -1, roster),
-                        informative_failure);
+                        recoverable_failure);
 }
 
 UNIT_TEST(restrictions, invalid_workspace_paths)
@@ -969,7 +969,7 @@ UNIT_TEST(restrictions, invalid_workspace_paths)
   excludes.push_back(file_path_internal("bar"));
 
   UNIT_TEST_CHECK_THROW(path_restriction(includes, excludes, -1),
-                    informative_failure);
+                        recoverable_failure);
 }
 
 UNIT_TEST(restrictions, ignored_invalid_workspace_paths)

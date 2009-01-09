@@ -73,7 +73,7 @@ static void ensure_dir(string const & dir)
     {
       do_mkdir(dir);
     }
-  catch (informative_failure &)
+  catch (recoverable_failure &)
     {
       if (get_path_status(dir) != path::directory)
         throw;
@@ -205,7 +205,7 @@ void do_copy_recursive(string const & from, string to)
 {
   path::status fromstat = get_path_status(from);
 
-  E(fromstat != path::nonexistent,
+  E(fromstat != path::nonexistent, origin::user,
     F("Source '%s' for copy does not exist") % from);
 
   switch (get_path_status(to))
@@ -233,7 +233,8 @@ void do_copy_recursive(string const & from, string to)
       struct file_copier copy_files(from, to);
 
       do_read_directory(from, copy_files, get_subdirs, get_specials);
-      E(specials.empty(), F("cannot copy special files in '%s'") % from);
+      E(specials.empty(), origin::user,
+        F("cannot copy special files in '%s'") % from);
       for (vector<string>::const_iterator i = subdirs.begin();
            i != subdirs.end(); i++)
         do_copy_recursive(from + "/" + *i, to + "/" + *i);
@@ -252,14 +253,14 @@ void do_copy_recursive(string const & from, string to)
 LUAEXT(posix_umask, )
 {
   unsigned int decmask = (unsigned int)luaL_checknumber(LS, -1);
-  E(decmask <= 777,
+  E(decmask <= 777, origin::user,
     F("invalid argument %d to umask") % decmask);
 
   unsigned int a = decmask / 100  % 10;
   unsigned int b = decmask / 10   % 10;
   unsigned int c = decmask / 1    % 10;
 
-  E(a <= 7 && b <= 7 && c <= 7,
+  E(a <= 7 && b <= 7 && c <= 7, origin::user,
     F("invalid octal number %d in umask") % decmask);
 
   int oldmask = do_umask((a*8 + b)*8 + c);
@@ -288,7 +289,7 @@ LUAEXT(chdir, )
       lua_pushstring(LS, from.c_str());
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
       return 1;
@@ -303,7 +304,7 @@ LUAEXT(remove_recursive, )
       lua_pushboolean(LS, true);
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushboolean(LS, false);
       lua_pushstring(LS, e.what());
@@ -319,7 +320,7 @@ LUAEXT(make_tree_accessible, )
       lua_pushboolean(LS, true);
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushboolean(LS, false);
       lua_pushstring(LS, e.what());
@@ -337,7 +338,7 @@ LUAEXT(copy_recursive, )
       lua_pushboolean(LS, true);
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushboolean(LS, false);
       lua_pushstring(LS, e.what());
@@ -354,7 +355,7 @@ LUAEXT(mkdir, )
       lua_pushboolean(LS, true);
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
       return 1;
@@ -371,7 +372,7 @@ LUAEXT(make_temp_dir, )
       delete [] tmpdir;
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
       return 1;
@@ -392,7 +393,7 @@ LUAEXT(mtime, )
         lua_pushnumber(LS, t);
       return 1;
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
       return 1;
@@ -411,7 +412,7 @@ LUAEXT(exists, )
         case path::directory:    lua_pushboolean(LS, true); break;
         }
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
     }
@@ -430,7 +431,7 @@ LUAEXT(isdir, )
         case path::directory:    lua_pushboolean(LS, true); break;
         }
     }
-  catch(informative_failure & e)
+  catch(recoverable_failure & e)
     {
       lua_pushnil(LS);
     }
@@ -467,7 +468,7 @@ LUAEXT(read_directory, )
 
       do_read_directory(path, tbl, tbl, tbl);
     }
-  catch(informative_failure &)
+  catch(recoverable_failure &)
     {
       // discard the table and any pending path element
       lua_settop(LS, top);
@@ -617,7 +618,7 @@ int test_invoker::operator()(std::string const & testname) const
     }
   catch (std::exception & e)
     {
-      E(false, F("test %s: %s") % testname % e.what());
+      E(false, origin::no_fault, F("test %s: %s") % testname % e.what());
       retcode = 124;
     }
   return retcode;
@@ -985,6 +986,7 @@ parse_command_line(int argc, char const * const * argv,
 
   E(!run_one || (!want_help && !debugging && !list_only
                  && tests_to_run.size() == 3 && jobs == 0),
+    origin::user,
     F("incorrect self-invocation; -r <abs path to lua-testsuite.lua> <abs path to tester_dir> <test>"));
 
   if (tests_to_run.empty())
@@ -1066,7 +1068,8 @@ int main(int argc, char **argv)
           lua_lib st(tests_to_run[1], tests_to_run[0]);
           return test_invoker(st())(tests_to_run[2]);
 #else
-          E(false, F("self-invocation should not be used on Unix\n"));
+          E(false, origin::user,
+            F("self-invocation should not be used on Unix\n"));
 #endif
         }
       else
@@ -1135,7 +1138,7 @@ int main(int argc, char **argv)
             .extract_int(retcode);
         }
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       P(F("%s\n") % e.what());
       retcode = 1;

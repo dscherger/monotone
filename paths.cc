@@ -1171,7 +1171,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_null_prefix: trying baddie: %s") % *c);
-      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), recoverable_failure);
     }
 
   check_fp_normalizes_to("a", "a");
@@ -1208,9 +1208,9 @@ UNIT_TEST(paths, file_path_external_prefix__MTN)
   initial_rel_path.unset();
   initial_rel_path.set(string("_MTN"), true);
 
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), informative_failure);
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), informative_failure);
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8("./blah")), informative_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("./blah")), recoverable_failure);
   check_fp_normalizes_to("..", "");
   check_fp_normalizes_to("../foo", "foo");
 }
@@ -1252,7 +1252,7 @@ UNIT_TEST(paths, file_path_external_prefix_a_b)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_prefix_a_b: trying baddie: %s") % *c);
-      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), recoverable_failure);
     }
 
   check_fp_normalizes_to("foo", "a/b/foo");
@@ -1579,7 +1579,7 @@ UNIT_TEST(paths, system)
   initial_abs_path.unset();
   initial_abs_path.set(system_path("/a/b"), true);
 
-  UNIT_TEST_CHECK_THROW(system_path(""), informative_failure);
+  UNIT_TEST_CHECK_THROW(system_path(""), unrecoverable_failure);
 
   check_system_normalizes_to("foo", "/a/b/foo");
   check_system_normalizes_to("foo/bar", "/a/b/foo/bar");
@@ -1626,7 +1626,7 @@ UNIT_TEST(paths, system)
                   == "/a/b/~this_user_does_not_exist_anywhere");
 #else
   UNIT_TEST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"),
-                        informative_failure);
+                        unrecoverable_failure);
 #endif
 
   // finally, make sure that the copy-from-any_path constructor works right

@@ -37,7 +37,7 @@ namespace resolve_conflicts
     return boost::shared_ptr<any_path>(new file_path(file_path_external(utf8(path))));
   };
 
-  static char const * const
+  static char const *
   image(resolve_conflicts::resolution_t resolution)
   {
     switch (resolution)

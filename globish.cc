@@ -604,7 +604,7 @@ UNIT_TEST(globish, syntax)
 
   for (tcase const * p = good; p->in; p++)
     {
-      globish g(p->in);
+      globish g(p->in, origin::internal);
       string s;
       dump(g, s);
       L(FL("globish syntax: %s -> %s [expect %s]") % p->in % s % p->out);
@@ -614,7 +614,8 @@ UNIT_TEST(globish, syntax)
   for (char const * const * p = bad; *p; p++)
     {
       L(FL("globish syntax: invalid %s") % *p);
-      UNIT_TEST_CHECK_THROW(I(globish(*p).matches(dummy)), informative_failure);
+      UNIT_TEST_CHECK_THROW(I(globish(*p, origin::user).matches(dummy)), recoverable_failure);
+      UNIT_TEST_CHECK_THROW(I(globish(*p, origin::internal).matches(dummy)), unrecoverable_failure);
     }
 }
 
@@ -632,60 +633,61 @@ UNIT_TEST(globish, from_vector)
 
 UNIT_TEST(globish, simple_matches)
 {
-  UNIT_TEST_CHECK(globish("abc").matches("abc"));
-  UNIT_TEST_CHECK(!globish("abc").matches("aac"));
+  UNIT_TEST_CHECK(globish("abc", origin::internal).matches("abc"));
+  UNIT_TEST_CHECK(!globish("abc", origin::internal).matches("aac"));
 
-  UNIT_TEST_CHECK(globish("a[bc]d").matches("abd"));
-  UNIT_TEST_CHECK(globish("a[bc]d").matches("acd"));
-  UNIT_TEST_CHECK(!globish("a[bc]d").matches("and"));
-  UNIT_TEST_CHECK(!globish("a[bc]d").matches("ad"));
-  UNIT_TEST_CHECK(!globish("a[bc]d").matches("abbd"));
+  UNIT_TEST_CHECK(globish("a[bc]d", origin::internal).matches("abd"));
+  UNIT_TEST_CHECK(globish("a[bc]d", origin::internal).matches("acd"));
+  UNIT_TEST_CHECK(!globish("a[bc]d", origin::internal).matches("and"));
+  UNIT_TEST_CHECK(!globish("a[bc]d", origin::internal).matches("ad"));
+  UNIT_TEST_CHECK(!globish("a[bc]d", origin::internal).matches("abbd"));
 
-  UNIT_TEST_CHECK(globish("a[!bc]d").matches("and"));
-  UNIT_TEST_CHECK(globish("a[!bc]d").matches("a#d"));
-  UNIT_TEST_CHECK(!globish("a[!bc]d").matches("abd"));
-  UNIT_TEST_CHECK(!globish("a[!bc]d").matches("acd"));
-  UNIT_TEST_CHECK(!globish("a[!bc]d").matches("ad"));
-  UNIT_TEST_CHECK(!globish("a[!bc]d").matches("abbd"));
+  UNIT_TEST_CHECK(globish("a[!bc]d", origin::internal).matches("and"));
+  UNIT_TEST_CHECK(globish("a[!bc]d", origin::internal).matches("a#d"));
+  UNIT_TEST_CHECK(!globish("a[!bc]d", origin::internal).matches("abd"));
+  UNIT_TEST_CHECK(!globish("a[!bc]d", origin::internal).matches("acd"));
+  UNIT_TEST_CHECK(!globish("a[!bc]d", origin::internal).matches("ad"));
+  UNIT_TEST_CHECK(!globish("a[!bc]d", origin::internal).matches("abbd"));
 
-  UNIT_TEST_CHECK(globish("a?c").matches("abc"));
-  UNIT_TEST_CHECK(globish("a?c").matches("aac"));
-  UNIT_TEST_CHECK(globish("a?c").matches("a%c"));
-  UNIT_TEST_CHECK(!globish("a?c").matches("a%d"));
-  UNIT_TEST_CHECK(!globish("a?c").matches("d%d"));
-  UNIT_TEST_CHECK(!globish("a?c").matches("d%c"));
-  UNIT_TEST_CHECK(!globish("a?c").matches("a%%d"));
+  UNIT_TEST_CHECK(globish("a?c", origin::internal).matches("abc"));
+  UNIT_TEST_CHECK(globish("a?c", origin::internal).matches("aac"));
+  UNIT_TEST_CHECK(globish("a?c", origin::internal).matches("a%c"));
+  UNIT_TEST_CHECK(!globish("a?c", origin::internal).matches("a%d"));
+  UNIT_TEST_CHECK(!globish("a?c", origin::internal).matches("d%d"));
+  UNIT_TEST_CHECK(!globish("a?c", origin::internal).matches("d%c"));
+  UNIT_TEST_CHECK(!globish("a?c", origin::internal).matches("a%%d"));
 
-  UNIT_TEST_CHECK(globish("a*c").matches("ac"));
-  UNIT_TEST_CHECK(globish("a*c").matches("abc"));
-  UNIT_TEST_CHECK(globish("a*c").matches("abac"));
-  UNIT_TEST_CHECK(globish("a*c").matches("abbcc"));
-  UNIT_TEST_CHECK(globish("a*c").matches("abcbbc"));
-  UNIT_TEST_CHECK(!globish("a*c").matches("abcbb"));
-  UNIT_TEST_CHECK(!globish("a*c").matches("abcb"));
-  UNIT_TEST_CHECK(!globish("a*c").matches("aba"));
-  UNIT_TEST_CHECK(!globish("a*c").matches("ab"));
+  UNIT_TEST_CHECK(globish("a*c", origin::internal).matches("ac"));
+  UNIT_TEST_CHECK(globish("a*c", origin::internal).matches("abc"));
+  UNIT_TEST_CHECK(globish("a*c", origin::internal).matches("abac"));
+  UNIT_TEST_CHECK(globish("a*c", origin::internal).matches("abbcc"));
+  UNIT_TEST_CHECK(globish("a*c", origin::internal).matches("abcbbc"));
+  UNIT_TEST_CHECK(!globish("a*c", origin::internal).matches("abcbb"));
+  UNIT_TEST_CHECK(!globish("a*c", origin::internal).matches("abcb"));
+  UNIT_TEST_CHECK(!globish("a*c", origin::internal).matches("aba"));
+  UNIT_TEST_CHECK(!globish("a*c", origin::internal).matches("ab"));
 
-  UNIT_TEST_CHECK(globish("*.bak").matches(".bak"));
-  UNIT_TEST_CHECK(globish("*.bak").matches("a.bak"));
-  UNIT_TEST_CHECK(globish("*.bak").matches("foo.bak"));
-  UNIT_TEST_CHECK(globish("*.bak").matches(".bak.bak"));
-  UNIT_TEST_CHECK(globish("*.bak").matches("fwibble.bak.bak"));
+  UNIT_TEST_CHECK(globish("*.bak", origin::internal).matches(".bak"));
+  UNIT_TEST_CHECK(globish("*.bak", origin::internal).matches("a.bak"));
+  UNIT_TEST_CHECK(globish("*.bak", origin::internal).matches("foo.bak"));
+  UNIT_TEST_CHECK(globish("*.bak", origin::internal).matches(".bak.bak"));
+  UNIT_TEST_CHECK(globish("*.bak", origin::internal).matches("fwibble.bak.bak"));
 
-  UNIT_TEST_CHECK(globish("a*b*[cd]").matches("abc"));
-  UNIT_TEST_CHECK(globish("a*b*[cd]").matches("abcd"));
-  UNIT_TEST_CHECK(globish("a*b*[cd]").matches("aabrd"));
-  UNIT_TEST_CHECK(globish("a*b*[cd]").matches("abbbbbbbccd"));
-  UNIT_TEST_CHECK(!globish("a*b*[cd]").matches("ab"));
-  UNIT_TEST_CHECK(!globish("a*b*[cd]").matches("abde"));
-  UNIT_TEST_CHECK(!globish("a*b*[cd]").matches("aaaaaaab"));
-  UNIT_TEST_CHECK(!globish("a*b*[cd]").matches("axxxxd"));
-  UNIT_TEST_CHECK(!globish("a*b*[cd]").matches("adb"));
+  UNIT_TEST_CHECK(globish("a*b*[cd]", origin::internal).matches("abc"));
+  UNIT_TEST_CHECK(globish("a*b*[cd]", origin::internal).matches("abcd"));
+  UNIT_TEST_CHECK(globish("a*b*[cd]", origin::internal).matches("aabrd"));
+  UNIT_TEST_CHECK(globish("a*b*[cd]", origin::internal).matches("abbbbbbbccd"));
+  UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("ab"));
+  UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("abde"));
+  UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("aaaaaaab"));
+  UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("axxxxd"));
+  UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("adb"));
 }
 
 UNIT_TEST(globish, complex_matches)
 {  {
-    globish_matcher m(globish("{a,b}?*\\*|"), globish("*c*"));
+    globish_matcher m(globish("{a,b}?*\\*|", origin::internal),
+                      globish("*c*", origin::internal));
     UNIT_TEST_CHECK(m("aq*|"));
     UNIT_TEST_CHECK(m("bq*|"));
     UNIT_TEST_CHECK(!m("bc*|"));
@@ -694,7 +696,8 @@ UNIT_TEST(globish, complex_matches)
     UNIT_TEST_CHECK(!m(""));
   }
   {
-    globish_matcher m(globish("{a,\\\\,b*}"), globish("*c*"));
+    globish_matcher m(globish("{a,\\\\,b*}", origin::internal),
+                      globish("*c*", origin::internal));
     UNIT_TEST_CHECK(m("a"));
     UNIT_TEST_CHECK(!m("ab"));
     UNIT_TEST_CHECK(m("\\"));
@@ -704,12 +707,14 @@ UNIT_TEST(globish, complex_matches)
     UNIT_TEST_CHECK(!m("bfoobarcfoobar"));
   }
   {
-    globish_matcher m(globish("*"), globish(""));
+    globish_matcher m(globish("*", origin::internal),
+                      globish("", origin::internal));
     UNIT_TEST_CHECK(m("foo"));
     UNIT_TEST_CHECK(m(""));
   }
   {
-    globish_matcher m(globish("{foo}"), globish(""));
+    globish_matcher m(globish("{foo}", origin::internal),
+                      globish("", origin::internal));
     UNIT_TEST_CHECK(m("foo"));
     UNIT_TEST_CHECK(!m("bar"));
   }
@@ -717,7 +722,7 @@ UNIT_TEST(globish, complex_matches)
 
 UNIT_TEST(globish, nested_matches)
 {
-  globish g("a.{i.{x,y},j}");
+  globish g("a.{i.{x,y},j}", origin::internal);
   UNIT_TEST_CHECK(g.matches("a.i.x"));
   UNIT_TEST_CHECK(g.matches("a.i.y"));
   UNIT_TEST_CHECK(g.matches("a.j"));

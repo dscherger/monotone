@@ -681,8 +681,10 @@ UNIT_TEST(netcmd, functions)
         // total cheat, since we don't actually verify that rsa_oaep_sha_data
         // is sensible anywhere here...
         rsa_oaep_sha_data out_key("nonce start my heart"), in_key;
-        globish out_include_pattern("radishes galore!"), in_include_pattern;
-        globish out_exclude_pattern("turnips galore!"), in_exclude_pattern;
+        globish out_include_pattern("radishes galore!", origin::internal),
+          in_include_pattern;
+        globish out_exclude_pattern("turnips galore!", origin::internal),
+          in_exclude_pattern;
 
         out_cmd.write_anonymous_cmd(out_role, out_include_pattern, out_exclude_pattern, out_key);
         do_netcmd_roundtrip(out_cmd, in_cmd, buf);
@@ -706,8 +708,10 @@ UNIT_TEST(netcmd, functions)
         // is sensible anywhere here...
         rsa_oaep_sha_data out_key("nonce start my heart"), in_key;
         rsa_sha1_signature out_signature(raw_sha1("burble") + raw_sha1("gorby")), in_signature;
-        globish out_include_pattern("radishes galore!"), in_include_pattern;
-        globish out_exclude_pattern("turnips galore!"), in_exclude_pattern;
+        globish out_include_pattern("radishes galore!", origin::user),
+          in_include_pattern;
+        globish out_exclude_pattern("turnips galore!", origin::user),
+          in_exclude_pattern;
 
         out_cmd.write_auth_cmd(out_role, out_include_pattern, out_exclude_pattern
                                , out_client, out_nonce1, out_key, out_signature);

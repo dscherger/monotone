@@ -599,7 +599,7 @@ UNIT_TEST(charset, idna_encoding)
       UNIT_TEST_CHECK(a == lowercase(tace));
 
       utf8 tutf;
-      ace_to_utf8(a, tutf);
+      ace_to_utf8(a, tutf, origin::internal);
       L(FL("UTF-encoded %s: '%s'") % idna_vec[i].name % tutf);
       UNIT_TEST_CHECK(u == lowercase(tutf()));
     }

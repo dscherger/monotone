@@ -409,7 +409,7 @@ UNIT_TEST(packet, validators)
   ostringstream oss;
   packet_writer pw(oss);
   size_t count;
-  feed_packet_consumer f(count, pw);
+  feed_packet_consumer f(count, pw, origin::user);
 
 #define N_THROW(expr) UNIT_TEST_CHECK_NOT_THROW(expr, recoverable_failure)
 #define Y_THROW(expr) UNIT_TEST_CHECK_THROW(expr, recoverable_failure)
