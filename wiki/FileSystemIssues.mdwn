@@ -1,4 +1,6 @@
-﻿[[!tag migration-auto]]
+﻿[[!tag migration-done]]
+
+[[!toc levels=3]]
 
 # File System Issues in Monotone
 
@@ -11,7 +13,7 @@ I encountered some bugs and thought as it is my character: "I'm going to fix tha
 
 directoryname and filename can be used synonymous. I hope I always used the word filename.
 
-## The facts
+# The facts
 
   1. Monotones copy libidn's stringprep does not work on mingw (win32). Calling "mtn löl" causes following output: [[BR]][[BR]] ?: error: failed to convert string from ASCII to UTF-8: 'l?l'[[BR]]<br>
     a. There is a quick fix for that: call "chcp" get your current codepage and set it for example: "set CHARSET=CP850".
@@ -28,17 +30,17 @@ directoryname and filename can be used synonymous. I hope I always used the word
 
 Now for the speculation...
 
-## The speculations
+# The speculations
 
 This is a special problem, which probably only cross-platform SCM tools have. Even for tools like rsync this is not such a big problem, since the synced filename is possibly crap, but at least the contents are copied. And copying back will probably correct the filename again. But SCM Tools have to track these filenames on different platforms and file systems. Inconsistency will lead to errors in deltas, in merging...
 
-### File systems
+## File systems
 
 Most POSIX file sytems are transparent. They just accept the kind of encoding the user has set.
 
-  * http://www.j3e.de/linux/convmv/
+  * <http://www.j3e.de/linux/convmv/>
 
-==== Linux (most POSIX) ====
+### Linux (most POSIX)
 
 Assuming I'm on linux:
 
@@ -46,11 +48,11 @@ If I set the terminal to UTF-8 and call "touch löl" I create a file with UTF-8(
 
 This means on most POSIX systems filenames with different encoding (ie. UTF-8 and LATIN-1) can coexist in the same directory. This is what is going to make it hard to find the correct solution for monotone to handle filenames.
 
-==== Mac OSX (darwin) ====
+### Mac OSX (darwin)
 
 On OSX (UFS and HFS+) things are different. The VFS file system layer of OSX forces a filename always to be UTF-8 (NFD), which means you can create a file using UTF-8 (NFC) and read that filename (using readdir()) again and you'll get UTF-8 (NFD). You will also be able to open or find a file using UTF-8 (NFC), which explains why I was able to add the same file twice. You actually can open and find a file using NFC or NFD. Additionally HFS+ can be case insensitive.
 
-==== Windows win32 (NTFS / FAT) ====
+### Windows win32 (NTFS / FAT)
 
 NTFS enforces encoding to UTF-16 (or UCS2???), while FAT should not be used with UTF-8. It should not be possible to use FAT with UTF-8, since the file system layer of win32 will prevent that. There are linux implementations of FAT, which state that the file system is going to be case-sensitive when using UTF-8 with FAT. The file system layer of win32 will convert to current codepage when using ANSI versions of file system layer functions (at least my tests told me that).
 
@@ -60,34 +62,36 @@ Microsoft recommends to use the wide version of all file system layer accessing 
 
 *But it does not state how you achieve that, since there is no [[SetACP]](). So I think using the wide version of the functions should be save.*
 
-**Addition**: wilx found the setlocale() function, which will change the output of ANSI versions of function in the C Standard Library: [http://msdn2.microsoft.com/en-us/library/x99tb11d(VS.80).aspx]
+**Addition**: wilx found the setlocale() function, which will change the output of ANSI versions of function in the C Standard Library: <http://msdn2.microsoft.com/en-us/library/x99tb11d(VS.80).aspx>
 
-  * http://msdn2.microsoft.com/en-us/library/ms776442.aspx
-  * http://en.wikipedia.org/wiki/UTF-16
+  * <http://msdn2.microsoft.com/en-us/library/ms776442.aspx>
+  * <http://en.wikipedia.org/wiki/UTF-16>
 
 So you probably can't use cygwin/mingw anymore:
 
-  * http://www.cygwin.com/ml/cygwin/2006-11/msg00796.html
+  * <http://www.cygwin.com/ml/cygwin/2006-11/msg00796.html>
 
 -> Case insensitive, too!
 
-==== Some cases ====
+### Some cases
 
-Well, if you want to have different codepages going to at least sort of work, you probably have to guess what the best way is to solve some cases. Using the information: what platform are we on, which file system are we on. Some cases: 
+Well, if you want to have different codepages going to at least sort of work, you probably have to guess what the best way is to solve some cases. Using the information: what platform are we on, which file system are we on. Some cases:
 
-  1. Two different files fall together on a case-insensitive file system, 
-  2. a file is written to the file system but can't be found again (the file system does some conversion), 
-  3. a file can't be written to the local file system because it won't accept the some character encoded in the file, 
+  1. Two different files fall together on a case-insensitive file system,
+  2. a file is written to the file system but can't be found again (the file system does some conversion),
+  3. a file can't be written to the local file system because it won't accept the some character encoded in the file,
      * as an example you have a chinese letter encoded in UTF-8 and the local locale is LATIN-1 -> iconv will give you an error.
      * and different file systems have different reserved characters like /,
-  4. we have double UTF-8 encoding, 
+  4. we have double UTF-8 encoding,
   5. people change the locale while a workspace still exists,
   6. we convert from/to the wrong codepage to/from UTF-8 (can lead to wrong characters in filenames),
   7. filenames look ugly because the local locale can't represent characters in the name.
      * This could happen if we decide to just make monotone 8-bit aware but not doing conversions at all.
   8. The NFC -> NFD problem.
 
-==== Solutions for single cases ====
+# Solutions
+
+## Solutions for single cases
 
   1. Internally enforce lower case, plus nice error messages on adding existing files.
   2. Find the file by content. Tell the user what happened and prompt if he likes to rename the file.
@@ -96,7 +100,7 @@ Well, if you want to have different codepages going to at least sort of work, yo
   5. Save the current locale in the workspace. And reject commands on that workspace if the locale has changed.
   6. Can we detect what encoding a filename is in?
   7. Prompt the user to rename the file.
-  8. Internally enforce NF? or respect "Canonical Equivalence" in string routines. (http://www.unicode.org/unicode/reports/tr15/)
+  8. Internally enforce NF? or respect "Canonical Equivalence" in string routines. (<http://www.unicode.org/unicode/reports/tr15/>)
 
 If monotone does care about conversion, the locales are set correctly and the file system or the user enforces that there are no filenames in other codepages than the locale defines (which should be common practice), case 2. / 4. / 6. / 7. can be avoided. The rest of the cases seems solvable, too.
 
@@ -110,21 +114,21 @@ Not work will:
 
  * If conversion from the wrong locale leads to wrong but valid characters.
 
-==== The very restrictive solution ====
+## The very restrictive solution
 
 Let monotone only accept basic ASCII ([a-b], [A-B], [0-9], -, .) and always convert to lower case for comparing, store filename with case-information. Write nice error on non basic ASCII characters and if people try to add files which already exist, write a message that the problem might be that these only differ in case.
 
 This solution would even work if the file system converts characters to UPPER case, since we always convert them back on comparing. I have the feeling that this is the only solution, which possibly can reach a 100% correctness, also for futures changes and new platforms.
 
-==== The "we don't care" solution ====
+## The "we don't care" solution
 
 Make monotone 8-bit aware. All strings are saved as 8-bit, but we don't do any conversion. It is the same as most POSIX file systems do. Possible cases: 1. / 2. / 3. / 7. / 8.
 
-==== The unicode solution ====
+## The unicode solution
 
 Only accept unicode UTF-8 on unix systems and UTF-16 (or using setlocale()) on windows. Always write filenames as UTF-8 on unix and UTF-16 on windows, regardless of the codepage / locale a user has set. Possible cases: 1. / 2. / 3. / 7. / 8.
 
-==== The solution that supports codepages and handles all cases ====
+## The solution that supports codepages and handles all cases
 
 PLEASE INSERT HERE!
 
@@ -150,25 +154,25 @@ Write == A filename is written to local file system layer from monotone. (open()
  10. Good practice would be to check all possible conversion, read and write actions on a update, checkout and add command, write the corresponding error message and offer a way to fix the problem (mostly renaming the file). So the user will be informed about problems early.
  11. Writing unit-tests for 1-9.
  12. I added this "offer rename" statements because there are errors you can get on a checkout/update. So if you have no workspace (no update), you can't rename, if you can't rename you can get no workspace (no update). Therefore we need to offer some means of renaming while checking out or updating.
- 13. There must be a migration function if we really are going to do 4., files which only differ in case must be listed and means of renaming them must be provided, when updating to the monotone version which implements 4.. 
+ 13. There must be a migration function if we really are going to do 4., files which only differ in case must be listed and means of renaming them must be provided, when updating to the monotone version which implements 4..
 
 Alternative solutions for case-insensitive FS are in [[CaseInsensitiveFilesystems]], but I don't think they are conservative enough, on the other hand, if we really are going to only support the common subset, we need to implement "The very restrictive solution", which isn't nice, too. I'm glad I don't have to decide, but can just point out ideas.
 
-**Important:** This list is not thought as ALL OR NOTHING. Only the solutions that make sense for someone who knows the internals of monotone better than I do should be implemented. AND there are certainly variants of these solutions and some of them might make more sense. 
+**Important:** This list is not thought as ALL OR NOTHING. Only the solutions that make sense for someone who knows the internals of monotone better than I do should be implemented. AND there are certainly variants of these solutions and some of them might make more sense.
 
   A variant to 12.: Checkout/update new filenames that can't be converted to local locale or can't be written with a automatically chosen filename. Write a message to the user with the orginal and the automatic filename and tell him he should use "mtn rename" to set useful name. So checkout/update will not fail.
 
-==== What did other people do? ====
+# What did other people do?
 
 There are several dozens of SCM systems which are cross-platform. How did they solve that problem?
 
- * Here is an rfc about ftp and unicode: http://tools.ietf.org/html/rfc2640
- * And the IETF policy on charsets: http://tools.ietf.org/html/rfc2277
- * The UTF8 rfc itself: http://tools.ietf.org/html/rfc3629
+ * Here is an rfc about ftp and unicode: <http://tools.ietf.org/html/rfc2640>
+ * And the IETF policy on charsets: <http://tools.ietf.org/html/rfc2277>
+ * The UTF8 rfc itself: <http://tools.ietf.org/html/rfc3629>
 
- [[BR]]This is interesting (rfc2277):  Negotiating a charset may be regarded as an interim mechanism that is to be supported until support for interchange of UTF-8 is prevalent; however, the timeframe of "interim" may be at least 50 years, so there is every reason to think of it as permanent in practice.
+This is interesting (rfc2277):  Negotiating a charset may be regarded as an interim mechanism that is to be supported until support for interchange of UTF-8 is prevalent; however, the timeframe of "interim" may be at least 50 years, so there is every reason to think of it as permanent in practice.
 
-==== And the angry comment ====
+# And the angry comment
 
 Boost should actually solve that, but it does not. I compared it with Qt and that doesn't do much more.
 
@@ -176,52 +180,52 @@ Boost should actually solve that, but it does not. I compared it with Qt and tha
 
 Wrong guess!
 
-* http://doc.trolltech.com/4.2/qfile.html#decodeName
+* <http://doc.trolltech.com/4.2/qfile.html#decodeName>
 
-<sigh> How should it fix something that seems not fixable.
+<em>sigh</em> How should it fix something that seems not fixable.
 
-### The terminal/console
+# The terminal/console
 
 Well, here most problems are solved by locales and the libidn. Except that it doesn't work on windows. Which can hopefully be solved by updating libidn or hacking the copy of libidn using [[GetACP]]().
 
-http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.asp
+<http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.asp>
 
-## About UTF-8 normalization
+# About UTF-8 normalization
 
 There are two commonly used normalizations of UTF-8:
 
   1. NFC (mostly precomposed) used by the whole world. Except apple.
   2. NFD (decomposed) used by apple. <br>
--> http://developer.apple.com/qa/qa2001/qa1235.html <br>
--> http://developer.apple.com/qa/qa2001/qa1173.html
+-> <http://developer.apple.com/qa/qa2001/qa1235.html> <br>
+-> <http://developer.apple.com/qa/qa2001/qa1173.html>
 
   Apple states: You can find a lot more information about Unicode on the Unicode consortium web site. Specifically of interest is the Unicode Standard Annex #15 Unicode Normalization Forms. As used in this Q&A, the terms decomposed and precomposed correspond to Unicode Normal Forms D (NFD) and C (NFC), respectively.
 
-Which is NOT totally true. There are characters that don't have a precomposed form, so these will exist in NFC as decomposed form. (http://www.unicode.org/unicode/reports/tr15/)
+Which is NOT totally true. There are characters that don't have a precomposed form, so these will exist in NFC as decomposed form. (<http://www.unicode.org/unicode/reports/tr15/>)
 
-### Example
+## Example
 
  * precomposed is U+00[the latin-1 character] -> Á is U+00C1.
  * decomposed is U+00[base ASCII char] U+[combining ACCENT char] -> Á is U+0041 U+0301.
 
-## What to do at the moment?
+# What to do at the moment?
 
-I use this script (http://fangorn.ch/n/blog/2007/01/20/isnotasciipl/) to check that all filenames are ASCII before I do a "mtn add -R".
+I use this script (<http://fangorn.ch/n/blog/2007/01/20/isnotasciipl/>) to check that all filenames are ASCII before I do a "mtn add -R".
 
-## Pages
+# Pages
 
- * http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.asp
- * http://msdn2.microsoft.com/en-us/library/ms776442.aspx
- * http://support.microsoft.com/kb/147438/en
- * http://developer.apple.com/qa/qa2001/qa1235.html
- * http://developer.apple.com/qa/qa2001/qa1173.html
- * http://en.wikipedia.org/wiki/UTF-16
- * http://www.j3e.de/linux/convmv/
- * http://tools.ietf.org/html/rfc2640
- * http://tools.ietf.org/html/rfc2277
- * http://tools.ietf.org/html/rfc3629
- * http://www.unicode.org/unicode/reports/tr15/
- * [http://msdn2.microsoft.com/en-us/library/x99tb11d(VS.80).aspx]
- * http://fangorn.ch/n/blog/2007/01/20/isnotasciipl/
+ * <http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/nls_21bk.asp>
+ * <http://msdn2.microsoft.com/en-us/library/ms776442.aspx>
+ * <http://support.microsoft.com/kb/147438/en>
+ * <http://developer.apple.com/qa/qa2001/qa1235.html>
+ * <http://developer.apple.com/qa/qa2001/qa1173.html>
+ * <http://en.wikipedia.org/wiki/UTF-16>
+ * <http://www.j3e.de/linux/convmv/>
+ * <http://tools.ietf.org/html/rfc2640>
+ * <http://tools.ietf.org/html/rfc2277>
+ * <http://tools.ietf.org/html/rfc3629>
+ * <http://www.unicode.org/unicode/reports/tr15/>
+ * <http://msdn2.microsoft.com/en-us/library/x99tb11d(VS.80).aspx>
+ * <http://fangorn.ch/n/blog/2007/01/20/isnotasciipl/>
 
-- Initial version by Ganwell
+Initial version by Ganwell
