@@ -499,7 +499,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
     }
 
   if (heads.size() > 1)
-    P(F("note: branch '%s' still has %s heads; run merge again") % app.opts.branchname % heads.size());
+    P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branchname % heads.size());
 
   P(F("note: your workspaces have not been updated"));
 }
@@ -967,8 +967,8 @@ show_conflicts_core (database & db,
         {
           int const count = result.count_unsupported_resolution();
           if (count > 0)
-            P(FP("warning: %s conflict with no supported resolutions.",
-                 "warning: %s conflicts with no supported resolutions.",
+            P(FP("warning: %d conflict with no supported resolutions.",
+                 "warning: %d conflicts with no supported resolutions.",
                  count) % count);
         }
     }
@@ -1029,7 +1029,8 @@ static void get_conflicts_rids(args_vector const & args,
 // Name: show_conflicts
 // Arguments:
 //   Two revision ids (optional, determined from the workspace if not given; there must be exactly two heads)
-// Added in: 7.1
+// Added in: 8.0
+// Changed in: 9.0 (see monotone.texi for details)
 // Purpose: Prints the conflicts between two revisions, to aid in merging them.
 //
 // Output format: see monotone.texi

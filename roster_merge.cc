@@ -2183,7 +2183,7 @@ validate_file_content_conflicts(basic_io::parser & pars,
       read_file_content_conflict(pars, file_conflict, left_roster, right_roster);
 
       E(merge_conflict.nid == file_conflict.nid, origin::user,
-        F("conflicts_mismatch_msg"));
+        F(conflicts_mismatch_msg));
 
       merge_conflict.resolution = file_conflict.resolution;
 
@@ -3211,7 +3211,7 @@ void string_to_set(string const & from, set<revision_id> & to)
   to.clear();
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
-      char label = (*i - '0') << 4 + (*i - '0');
+      char label = ((*i - '0') << 4) + (*i - '0');
       to.insert(revision_id(string(constants::idlen_bytes, label)));
     }
 }

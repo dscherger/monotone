@@ -165,7 +165,7 @@ OPT(date, "date", date_t, ,
 {
   try
     {
-      date = date_t::from_string(arg);
+      date = date_t(arg);
     }
   catch (std::exception &e)
     {
@@ -333,7 +333,7 @@ GOPT(ssh_sign, "ssh-sign", std::string, "yes",
 #endif
 
 OPT(full, "full", bool, false,
-     gettext_noop("print detailed version number"))
+     gettext_noop("print detailed information"))
 #ifdef option_bodies
 {
   full = true;

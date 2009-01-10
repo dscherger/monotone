@@ -1368,7 +1368,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
   project.put_standard_certs(keys, p.rid,
                              branch_name(branchname),
                              utf8(cvs.changelog_interner.lookup(p.changelog)),
-                             date_t::from_unix_epoch(p.time),
+                             date_t(p.time),
                              cvs.author_interner.lookup(p.author));
 }
 

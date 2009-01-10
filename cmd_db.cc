@@ -50,13 +50,13 @@ CMD(db_init, "init", "", CMD_REF(db), "",
 CMD(db_info, "info", "", CMD_REF(db), "",
     N_("Shows information about the database"),
     "",
-    options::opts::none)
+    options::opts::full)
 {
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
-  db.info(cout);
+  db.info(cout, app.opts.full);
 }
 
 CMD(db_version, "version", "", CMD_REF(db), "",
