@@ -102,6 +102,7 @@
 //       it were a string
 
 #include <boost/shared_ptr.hpp>
+#include "origin_type.hh"
 
 class any_path;
 class file_path;
@@ -312,7 +313,8 @@ public:
   // path _should_ contain the leading _MTN/
   // and _should_ look like an internal path
   // usually you should just use the / operator as a constructor!
-  bookkeeping_path(std::string const &);
+  explicit bookkeeping_path(char const * const path);
+  bookkeeping_path(std::string const &, origin::type made_from);
   bookkeeping_path operator /(char const *) const;
   bookkeeping_path operator /(path_component const &) const;
 
@@ -366,8 +368,9 @@ public:
   // this path can contain anything, and it will be absolutified and
   // tilde-expanded.  it will considered to be relative to the directory
   // monotone started in.  it should be in utf8.
-  system_path(std::string const & path);
-  system_path(utf8 const & path);
+  explicit system_path(char const * const path);
+  system_path(std::string const & path, origin::type from);
+  explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
   { return data== other.data; }

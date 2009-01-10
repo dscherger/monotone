@@ -669,7 +669,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
         // No checkout dir specified, use branch name for dir.
         E(!app.opts.branchname().empty(), origin::user,
           F("you must specify a destination directory"));
-        dir = system_path(app.opts.branchname());
+        dir = system_path(app.opts.branchname(), origin::user);
       }
     else
       {
@@ -1362,7 +1362,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
   else
     dir = ".";
 
-  workspace::create_workspace(app.opts, app.lua, dir);
+  workspace::create_workspace(app.opts, app.lua, system_path(dir, origin::user));
   workspace work(app);
 
   revision_t rev;

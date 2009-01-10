@@ -17,6 +17,7 @@
 
 #include "i18n.h"
 #include "numeric_vocab.hh"
+#include "origin_type.hh"
 
 // our assertion / sanity / error logging system *was* based on GNU Nana,
 // but we're only using a small section of it, and have anyways rewritten
@@ -27,14 +28,6 @@
 // internal failure but a suggestion that they do something differently.
 
 namespace origin {
-  enum type {
-    internal,
-    network,
-    database,
-    system,
-    user,
-    no_fault
-  };
   std::string type_to_string(type t);
 }
 

@@ -84,7 +84,8 @@ void
 save_initial_path()
 {
   // FIXME: BUG: this only works if the current working dir is in utf8
-  initial_abs_path.set(system_path(get_current_working_dir()), false);
+  initial_abs_path.set(system_path(get_current_working_dir(),
+                                   origin::system), false);
   L(FL("initial abs path is: %s") % initial_abs_path.get_but_unused());
 }
 
@@ -287,7 +288,7 @@ normalize_path(string const & in)
 #ifdef WIN32
       else
         {
-          I(inT[1] == ':');
+          I(inT.size() > 1 && inT[1] == ':');
           if (inT.size() > 2 && inT[2] == '/')
             {
               leader = inT.substr(0, 3);
@@ -477,10 +478,18 @@ file_path::file_path(file_path::source_type type, utf8 const & path, bool to_wor
   I(is_valid_internal(data));
 }
 
-bookkeeping_path::bookkeeping_path(string const & path)
+bookkeeping_path::bookkeeping_path(char const * const path)
 {
   I(fully_normalized_path(path));
   I(in_bookkeeping_dir(path));
+  data = path;
+}
+
+bookkeeping_path::bookkeeping_path(string const & path, origin::type made_from)
+{
+  E(fully_normalized_path(path), made_from, F("Path is not normalized"));
+  E(in_bookkeeping_dir(path), made_from,
+    F("Bookkeeping path is not in bookkeeping dir"));
   data = path;
 }
 
@@ -759,7 +768,7 @@ bookkeeping_path::operator /(char const * to_append) const
   I(!is_absolute_somewhere(to_append));
   I(!empty());
   return bookkeeping_path(((*(data.end() - 1) == '/') ? data : data + "/")
-                          + to_append);
+                          + to_append, origin::internal);
 }
 
 system_path
@@ -768,7 +777,7 @@ system_path::operator /(char const * to_append) const
   I(!empty());
   I(!is_absolute_here(to_append));
   return system_path(((*(data.end() - 1) == '/') ? data : data + "/")
-                     + to_append);
+                     + to_append, origin::internal);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -803,9 +812,14 @@ static inline string const_system_path(utf8 const & path)
                           + "/" + path());
 }
 
-system_path::system_path(string const & path)
+system_path::system_path(string const & path, origin::type from)
 {
-  data = const_system_path(utf8(path));
+  data = const_system_path(utf8(path, from));
+}
+
+system_path::system_path(char const * const path)
+{
+  data = const_system_path(utf8(path, origin::internal));
 }
 
 system_path::system_path(utf8 const & path)
@@ -813,6 +827,8 @@ system_path::system_path(utf8 const & path)
   data = const_system_path(utf8(path));
 }
 
+// If this wasn't a user-supplied path, we should know
+// which kind it is.
 boost::shared_ptr<any_path>
 new_optimal_path(std::string path, bool to_workspace_root)
 {
@@ -825,11 +841,11 @@ new_optimal_path(std::string path, bool to_workspace_root)
   catch (recoverable_failure &)
     {
       // not in workspace
-      return boost::shared_ptr<any_path>(new system_path(path));
+      return boost::shared_ptr<any_path>(new system_path(path, origin::user));
     }
 
   if (in_bookkeeping_dir(normalized))
-    return boost::shared_ptr<any_path>(new bookkeeping_path(normalized));
+    return boost::shared_ptr<any_path>(new bookkeeping_path(normalized, origin::user));
   else
     return boost::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
 };
@@ -947,12 +963,12 @@ find_and_go_to_workspace(string const & search_root)
         }
       else I(false);
 #else
-      root = system_path("/");
+      root = system_path("/", origin::internal);
 #endif
     }
   else
     {
-      root = system_path(search_root);
+      root = system_path(search_root, origin::user);
       L(FL("limiting search for workspace to %s") % root);
 
       require_path_is_directory(root,
@@ -1521,7 +1537,8 @@ static void check_bk_normalizes_to(char const * before, char const * after)
   bookkeeping_path bp(bookkeeping_root / before);
   L(FL("normalizing %s to %s (got %s)") % before % after % bp);
   UNIT_TEST_CHECK(bp.as_external() == after);
-  UNIT_TEST_CHECK(bookkeeping_path(bp.as_internal()).as_internal() == bp.as_internal());
+  UNIT_TEST_CHECK(bookkeeping_path(bp.as_internal(),
+                                   origin::internal).as_internal() == bp.as_internal());
 }
 
 UNIT_TEST(paths, bookkeeping)
@@ -1548,9 +1565,10 @@ UNIT_TEST(paths, bookkeeping)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_bookkeeping_path baddie: trying '%s'") % *c);
-            UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c)),
-                                  logic_error);
-            UNIT_TEST_CHECK_THROW(bookkeeping_root / *c, logic_error);
+      UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c),
+                                             origin::internal),
+                            logic_error);
+      UNIT_TEST_CHECK_THROW(bookkeeping_root / *c, logic_error);
     }
 
   // these are legitimate as things to append to bookkeeping_root, but
@@ -1571,7 +1589,8 @@ static void check_system_normalizes_to(char const * before, char const * after)
   system_path sp(before);
   L(FL("normalizing '%s' to '%s' (got '%s')") % before % after % sp);
   UNIT_TEST_CHECK(sp.as_external() == after);
-  UNIT_TEST_CHECK(system_path(sp.as_internal()).as_internal() == sp.as_internal());
+  UNIT_TEST_CHECK(system_path(sp.as_internal(),
+                              origin::internal).as_internal() == sp.as_internal());
 }
 
 UNIT_TEST(paths, system)
@@ -1626,7 +1645,7 @@ UNIT_TEST(paths, system)
                   == "/a/b/~this_user_does_not_exist_anywhere");
 #else
   UNIT_TEST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"),
-                        unrecoverable_failure);
+                        recoverable_failure);
 #endif
 
   // finally, make sure that the copy-from-any_path constructor works right

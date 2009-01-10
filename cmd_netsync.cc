@@ -336,7 +336,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   if (args.size() == 2)
     {
       // No checkout dir specified, use branch name for dir.
-      workspace_dir = system_path(branchname());
+      workspace_dir = system_path(branchname(), origin::user);
     }
   else
     {
@@ -349,7 +349,7 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   // remember the initial working dir so that relative file://
   // db URIs will work
-  system_path start_dir(get_current_working_dir());
+  system_path start_dir(get_current_working_dir(), origin::system);
 
   bool internal_db = !app.opts.dbname_given || app.opts.dbname.empty();
 

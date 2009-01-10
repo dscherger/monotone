@@ -197,6 +197,13 @@ template<> string xform<Botan::Hex_Decoder>(string const & in,
 SPECIALIZE_XFORM(Gzip_Compression,);
 SPECIALIZE_XFORM(Gzip_Decompression,);
 
+template <>
+std::string decode_base64_as<std::string>(std::string const & in,
+                                          origin::type made_from)
+{
+  return xform<Botan::Base64_Decoder>(in, made_from);
+}
+
 template <typename T>
 void pack(T const & in, base64< gzip<T> > & out)
 {

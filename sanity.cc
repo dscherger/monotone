@@ -52,6 +52,8 @@ origin::type_to_string(origin::type t)
       return string("system");
     case user:
       return string("user");
+    case workspace:
+      return string("workspace");
     case no_fault:
       return string("general");
     default:
@@ -365,8 +367,10 @@ sanity::generic_failure(char const * expr,
     {
       prefix = _("error: ");
     }
+  string detection_msg((F("detected at %s:%d") % file % line).str());
   string message;
-  prefix_lines_with(prefix, do_format(explain, file, line), message);
+  prefix_lines_with(prefix, detection_msg + string("\n") +
+                    do_format(explain, file, line), message);
   switch (caused_by)
     {
     case origin::database:

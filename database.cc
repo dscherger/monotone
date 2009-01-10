@@ -3735,7 +3735,7 @@ database_impl::check_db_nonexistent()
                               F("database %s already exists")
                               % filename);
 
-  system_path journal(filename.as_internal() + "-journal");
+  system_path journal(filename.as_internal() + "-journal", origin::internal);
   require_path_is_nonexistent(journal,
                               F("existing (possibly stale) journal file '%s' "
                                 "has same stem as new database '%s'\n"

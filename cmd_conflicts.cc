@@ -296,7 +296,7 @@ set_first_conflict(database & db,
                   E(bookkeeping_path::external_string_is_bookkeeping_path(utf8(idx(args,1)())),
                     origin::user,
                     F("result path must be under _MTN"));
-                  bookkeeping_path const result_path(idx(args,1)());
+                  bookkeeping_path const result_path(idx(args,1)(), origin::user);
 
                   if (do_interactive_merge(db, lua, conflicts, conflict.nid,
                                            conflict.ancestor, conflict.left, conflict.right, result_path))

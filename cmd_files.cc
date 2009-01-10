@@ -330,7 +330,7 @@ CMD_AUTOMATE(get_file, N_("FILEID"),
     F("wrong argument count"));
 
   database db(app);
-  hexenc<id> hident(idx(args, 0)());
+  hexenc<id> hident(idx(args, 0)(), origin::user);
   file_id ident(decode_hexenc_as<file_id>(hident(), hident.made_from));
   dump_file(db, output, ident);
 }

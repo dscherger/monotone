@@ -75,7 +75,7 @@ void revision_t::check_sane() const
     {
       for (edge_map::const_iterator i = edges.begin();
            i != edges.end(); ++i)
-        I(null_id(edge_old_revision(i)));
+        E(null_id(edge_old_revision(i)), made_from, F("Revision has no manifest id"));
     }
 
   if (edges.size() == 1)
@@ -86,11 +86,12 @@ void revision_t::check_sane() const
     {
       // merge nodes cannot have null revisions
       for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
-        I(!null_id(edge_old_revision(i)));
+        E(!null_id(edge_old_revision(i)), made_from,
+          F("Merge revision has a null parent"));
     }
   else
     // revisions must always have either 1 or 2 edges
-    I(false);
+    E(false, made_from, F("Revision has %d edges, not 1 or 2") % edges.size());
 
   // we used to also check that if there were multiple edges that had patches
   // for the same file, then the new hashes on each edge matched each other.
@@ -2001,7 +2002,7 @@ UNIT_TEST(revision, from_network)
       UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
                                                origin::network),
                                           rev),
-                            bad_decode);
+                            recoverable_failure);
     }
 }
 

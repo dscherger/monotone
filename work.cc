@@ -379,7 +379,7 @@ read_options_file(any_path const & optspath,
       return;
     }
 
-  basic_io::input_source src(dat(), optspath.as_external());
+  basic_io::input_source src(dat(), optspath.as_external(), origin::workspace);
   basic_io::tokenizer tok(src);
   basic_io::parser parser(tok);
 
@@ -390,13 +390,13 @@ read_options_file(any_path const & optspath,
       parser.str(val);
 
       if (opt == "database")
-        database_option = system_path(val);
+        database_option = system_path(val, origin::workspace);
       else if (opt == "branch")
-        branch_option = branch_name(val);
+        branch_option = branch_name(val, origin::workspace);
       else if (opt == "key")
-        internalize_rsa_keypair_id(utf8(val), key_option);
+        internalize_rsa_keypair_id(utf8(val, origin::workspace), key_option);
       else if (opt == "keydir")
-        keydir_option = system_path(val);
+        keydir_option = system_path(val, origin::workspace);
       else
         W(F("unrecognized key '%s' in options file %s - ignored")
           % opt % optspath);

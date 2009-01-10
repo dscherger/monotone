@@ -71,6 +71,11 @@ T decode_base64_as(std::string const & in, origin::type made_from)
 {
   return T(xform<Botan::Base64_Decoder>(in, made_from), made_from);
 }
+
+template <>
+std::string decode_base64_as<std::string>(std::string const & in,
+                                          origin::type made_from);
+
 // hex encoding
 
 template <typename T>
