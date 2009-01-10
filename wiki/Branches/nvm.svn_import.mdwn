@@ -1,5 +1,5 @@
 [[!tag migration-done]]
-Contact: [[People/MarkusSchiltknecht]]
+Contact: [[People/MarkusWanner]]
 
 An initial attempt at importing subversion repositories into monotone. Didn't touch that for a while, as the CVS importer is still bugging me.
 

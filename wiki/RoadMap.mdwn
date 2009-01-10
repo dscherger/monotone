@@ -39,7 +39,7 @@ State: ?%
 
 ## CVS import with branch reconstruction
 
-Contact person(s): Markus Schiltknecht
+Contact person(s): Markus Wanner
 
 Branch(es): net.venge.monotone.cvsimport-branch-reconstruction
 

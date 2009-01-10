@@ -1,5 +1,5 @@
 [[!tag migration-done]]
-Contact: [[People/ChristofPetig]] and [[People/MarkusSchiltknecht]] respectively
+Contact: [[People/ChristofPetig]] and [[People/MarkusWanner]] respectively
 
 Connected to [[Branches/nvm.partialpull]].
 

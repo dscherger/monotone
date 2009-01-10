@@ -1,6 +1,6 @@
 [[!tag migration-done]]
-Contact: [[People/MarkusSchiltknecht]], [[People/DerekScherger]]
+Contact: [[People/MarkusWanner]], [[People/DerekScherger]]
 
-Goal: *to be filled out*
+The goal of the nuskool branch is to replace netsync with a faster, DAG based algorithm.
 
-Status: unfinished
+Status: [[status/Stalled]]

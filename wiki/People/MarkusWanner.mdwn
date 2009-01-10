@@ -1,0 +1,9 @@
+[[!tag migration-wip]]
+[[!tag developer]]
+
+## Markus Wanner
+
+ * email: <mailto:markus@bluegap.ch>
+ * personal webpage: <http://www.bluegap.ch>
+
+Besides monotone, I'm also working on replication solutions for Postgres, see <http://www.postgres-r.org> for that.
