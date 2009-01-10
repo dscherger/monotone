@@ -334,7 +334,7 @@ date_t::now()
 {
   std::time_t t = std::time(0);
   s64 tu = t * 1000 + get_epoch_offset();
-  E(valid_ms_count(tu),
+  E(valid_ms_count(tu), origin::system,
     F("current date '%s' is outside usable range\n"
       "(your system clock may not be set correctly)")
     % std::ctime(&t));
@@ -615,7 +615,7 @@ UNIT_TEST(date, from_string)
     L(FL("date_t: %s -> %s") % (x) % s_);               \
     UNIT_TEST_CHECK(s_ == (y));                         \
   } while (0)
-#define NO(x) UNIT_TEST_CHECK_THROW(date_t(x), informative_failure)
+#define NO(x) UNIT_TEST_CHECK_THROW(date_t(x), recoverable_failure)
 
   // canonical format
   OK("2007-03-01T18:41:13", "2007-03-01T18:41:13");

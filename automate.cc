@@ -2308,12 +2308,12 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
              "",
              options::opts::none)
 {
-    N(args.size() >= 1,
-      F("wrong argument count"));
+  E(args.size() >= 1, origin::user,
+    F("wrong argument count"));
 
     std::string func = idx(args, 0)();
 
-    N(app.lua.hook_exists(func),
+    E(app.lua.hook_exists(func), origin::user,
       F("lua function '%s' does not exist") % func);
 
     std::vector<std::string> func_args;
@@ -2326,7 +2326,7 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
       }
 
     std::string out;
-    N(app.lua.hook_hook_wrapper(func, func_args, out),
+    E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
       F("lua call '%s' failed") % func);
 
     // the output already contains a trailing newline, so we don't add

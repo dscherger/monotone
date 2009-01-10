@@ -996,7 +996,7 @@ database::info(ostream & out, bool analyze)
         {
           cert_date = date_t(i->value());
         }
-      catch (informative_failure & e)
+      catch (recoverable_failure & e)
         {
           // simply skip dates we cannot parse
           W(F("invalid date '%s' for revision %s; skipped")

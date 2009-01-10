@@ -238,7 +238,7 @@ public:
       {
         cmdline.push_back(item);
       }
-    E(cmdline.size() > 0,
+    E(cmdline.size() > 0, origin::user,
         F("Bad input to automate stdio: command name is missing"));
     return true;
   }
@@ -436,7 +436,7 @@ CMD_AUTOMATE(stdio, "",
           ar.reset();
           continue;
         }
-      catch (informative_failure & f)
+      catch (recoverable_failure & f)
         {
           os.set_err(1);
           os<<f.what();
