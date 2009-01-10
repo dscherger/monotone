@@ -5,7 +5,90 @@
         <link>http://monotone.ca/releases.xml</link>
         <description>monotone releases with links to the sources.</description>
         <language>en</language>
-        <pubDate>Wed, 3 Sep 2008 21:13:18 +0000</pubDate>
+        <pubDate>Fri, 26 Dec 2008 22:08:00 +0000</pubDate>
+    <item>
+            <title>monotone 0.41 released</title>
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<ul>
+<li>The output of 'automate show_conflicts' has been changed; a
+default resolution for file content conflicts and user resolutions
+for other conflict types has been added. 'directory_loop_created'
+changed to 'directory_loop'.</li>
+
+<li>The French, Brazilian-Portuguese and Japanese translations were
+outdated and thus have been removed from the distribution. In case
+you care about them and want them back, drop us a note at
+monotone-devel@nongnu.org.</li>
+</ul>
+
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>'mtn db kill_rev_locally' did not update the inodeprint
+cache when executed from a workspace on which the
+revision's changes where applied.</li>
+<li>Some recent performance issues have been corrected:
+<ul>
+<li>since 0.40, there is much more use of hex encoding/decoding.
+These functions have been sped up considerably.
+<li>since 0.40, every command in an 'automate stdio' session
+would reinitialize the database. This was rather slow, so
+monotone will now keep the database open between commands.</li>
+</ul></li>
+<li>The Lua-based contributed Monotone extension introduced in
+0.38 haven't been added to the tarball; this has been fixed.</li>
+<li>Monotone died if _MTN/options contained an empty / not-existing
+'keydir' entry. This has been fixed. Also, invalid options are now
+better detected and give a more useful error message.</li>
+<li>Monotone crashed if it was called with more than 2048 command
+line arguments. This has been fixed.</li>
+<li>If vim is used as merger, it no longer prompts the user for an
+enter key press.</li>
+<li>Decoding errors f.e. through to garbage from the network no longer
+results in informative failures, but in warning. This was made
+possible by introducing the concept of origin-aware sanity checks.</li>
+<li>Monotone crashed if it was called with nested wildcards such as
+'a.{i.{x,y},j}'. This has been fixed.</li>
+<li>The standard implementation of the 'ignore_file' hook now accepts
+windows and unix line endings in .mtn-ignore files.</li>
+</ul>
+
+<h2>New features</h2>
+
+<ul>
+<li>New 'mtn ls duplicates' command which lets you list
+duplicated files in a given revision or the workspace.</li>
+<li>New option --no-workspace, to make monotone ignore any
+workspace it might have been run in.</li>
+<li>New command group 'mtn conflicts *'; provides asynchronous
+conflict resolutions for merge and propagate.</li>
+<li>New 'automate file_merge' command which runs the internal line
+merger on two files from two revisions and outputs the result.</li>
+<li>New 'automate lua' command with which lua functions, like
+monotone hooks, can be called over automate. This is particularily
+useful to get user defaults, like ignorable files, branch keys and
+passwords, which are managed through one or more monotonerc files.</li>
+<li>New 'automate read_packets' command which reads data packets like
+public keys similar to 'mtn read'.</li>
+<li>'merge' and 'propagate' accept user commit messages; the
+'merge rev rev' or 'propagate branch branch' message will be
+prefixed to the user message. --no-prefix removes the prefix.</li>
+</ul>
+
+<h2>Internal</h2>
+
+<ul>
+<li>Update Botan to 1.7.12.</li>
+</ul>
+]]>
+            </description>
+            <pubDate>Fri, 26 Dec 2008 22:08:00 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.42/monotone-0.42.tar.gz" length="5182313" type="application/octet-stream"/>
+
+    </item>
     <item>
             <title>monotone 0.41 released</title>
             <description>
@@ -83,7 +166,7 @@ command executed with '-R' / '--recursive'.</li>
 
 <li>Add Lua hooks 'note_netsync_revision_sent',
 'note_netsync_cert_sent' and 'note_netsync_pubkey_sent'.</li>
-</h2>
+</ul>
 ]]>
             </description>
             <pubDate>Wed, 3 Sep 2008 21:13:18 +0000</pubDate>

@@ -118,6 +118,9 @@ multiple heads, and commits the results to the database, marking the
 resulting merged revision as a member of <var>branchname</var>. The merged
 revision will contain each of the head revision IDs as ancestors.
 
+     <p>A commit message may be provided. A message stating the revision ids
+that were merged will be prepended to any user commit message.
+
      <p>Merging is performed by repeated pairwise merges: two heads are
 selected, then their least common ancestor is located in the ancestry
 graph and these 3 revisions are provided to the built-in 3-way merge
@@ -130,6 +133,9 @@ ancestor of the two heads for a 3-way merge. The resulting revision is
 committed to <var>destbranch</var>. If
 either <var>sourcebranch</var> or <var>destbranch</var> has multiple heads,
 <samp><span class="command">propagate</span></samp> aborts, doing nothing.
+
+     <p>A commit message may be provided. A message stating the source and
+target branches will be prepended to any user commit message.
 
      <p>The purpose of <samp><span class="command">propagate</span></samp> is to copy all the changes on
 <var>sourcebranch</var>, since the last <samp><span class="command">propagate</span></samp>, to
@@ -186,6 +192,10 @@ files are added before committing.
 to be the given revision or the head of the given branch instead of the
 null revision. 
 </dl>
+
+<ul class="menu">
+<li><a accesskey="1" href="Conflicts.html#Conflicts">Conflicts</a>
+</ul>
 
    </body></html>
 

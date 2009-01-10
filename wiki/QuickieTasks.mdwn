@@ -14,8 +14,6 @@ So, here are some smaller tasks, that very much need doing, that fit the above b
 
  * `mtn rename --guess` -- try to figure out what files have been renamed by matching up missing and unknown files with the same checksums
 
- * `mtn list duplicates` -- list files that have the same checksum (duplicate content) in a given revision (or the workspace)
-
  * `mtn clean --unknown --ignored` to remove files of each type from the workspace; handy for a really aggressive "make clean", and for plaforms without xargs or where there might be spaces in filenames so that `mtn ls unknown | xargs rm` is hard or dangerous.
 
  * `mtn diff --ignore-whitespace`

@@ -35,33 +35,33 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.8 Database</h3>
 
      <dl>
-<dt><samp><span class="command">mtn set </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-set-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-126"></a><dd>
+<dt><samp><span class="command">mtn set </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-set-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-140"></a><dd>
 Associates the value <var>value</var> to <var>name</var> in domain <var>domain</var>. 
 See <a href="Vars.html#Vars">Vars</a> for more information.
 
-     <br><dt><samp><span class="command">mtn unset </span><var>domain</var> <var>name</var></samp><a name="index-mtn-unset-_0040var_007bdomain_007d-_0040var_007bname_007d-127"></a><dd>
+     <br><dt><samp><span class="command">mtn unset </span><var>domain</var> <var>name</var></samp><a name="index-mtn-unset-_0040var_007bdomain_007d-_0040var_007bname_007d-141"></a><dd>
 Deletes any value associated with <var>name</var> in <var>domain</var>.  See
 <a href="Vars.html#Vars">Vars</a> for more information.
 
-     <br><dt><samp><span class="command">mtn db init --db=</span><var>dbfile</var></samp><a name="index-mtn-db-init-_002d_002ddb_003d_0040var_007bdbfile_007d-128"></a><dd>
+     <br><dt><samp><span class="command">mtn db init --db=</span><var>dbfile</var></samp><a name="index-mtn-db-init-_002d_002ddb_003d_0040var_007bdbfile_007d-142"></a><dd>
 This command initializes a new monotone database at <var>dbfile</var>.
 
-     <br><dt><samp><span class="command">mtn db info --db=</span><var>dbfile</var></samp><a name="index-mtn-db-info-_002d_002ddb_003d_0040var_007bdbfile_007d-129"></a><dd>
+     <br><dt><samp><span class="command">mtn db info --db=</span><var>dbfile</var></samp><a name="index-mtn-db-info-_002d_002ddb_003d_0040var_007bdbfile_007d-143"></a><dd>
 This command prints information about the monotone database <var>dbfile</var>,
 including its schema version and various table size statistics.
 
-     <br><dt><samp><span class="command">mtn db version --db=</span><var>dbfile</var></samp><a name="index-mtn-db-version-_002d_002ddb_003d_0040var_007bdbfile_007d-130"></a><dd>
+     <br><dt><samp><span class="command">mtn db version --db=</span><var>dbfile</var></samp><a name="index-mtn-db-version-_002d_002ddb_003d_0040var_007bdbfile_007d-144"></a><dd>
 This command prints out just the schema version of the monotone
 database <var>dbfile</var>.
 
-     <br><dt><samp><span class="command">mtn db dump --db=</span><var>dbfile</var></samp><a name="index-mtn-db-dump-_002d_002ddb_003d_0040var_007bdbfile_007d-131"></a><dd>
+     <br><dt><samp><span class="command">mtn db dump --db=</span><var>dbfile</var></samp><a name="index-mtn-db-dump-_002d_002ddb_003d_0040var_007bdbfile_007d-145"></a><dd>
 This command dumps an SQL statement representing the entire state of
 <var>dbfile</var> to the standard output stream. It is a very low-level
 command, and produces the most &ldquo;recoverable&rdquo; dumps of your database
 possible. It is sometimes also useful when migrating databases between
 variants of the underlying SQLite database format.
 
-     <br><dt><samp><span class="command">mtn db load --db=</span><var>dbfile</var></samp><a name="index-mtn-db-load-_002d_002ddb_003d_0040var_007bdbfile_007d-132"></a><dd>
+     <br><dt><samp><span class="command">mtn db load --db=</span><var>dbfile</var></samp><a name="index-mtn-db-load-_002d_002ddb_003d_0040var_007bdbfile_007d-146"></a><dd>
 This command applies a raw SQL statement, read from the standard input
 stream, to the database <var>dbfile</var>. It is most useful when loading
 a database dumped with the <samp><span class="command">dump</span></samp> command.
@@ -70,7 +70,7 @@ a database dumped with the <samp><span class="command">dump</span></samp> comman
 database is <em>included</em> in the dump, so you should not try to
 <samp><span class="command">init</span></samp> your database before a <samp><span class="command">load</span></samp>.
 
-     <br><dt><samp><span class="command">mtn db migrate --db=</span><var>dbfile</var></samp><a name="index-mtn-db-migrate-_002d_002ddb_003d_0040var_007bdbfile_007d-133"></a><dd>
+     <br><dt><samp><span class="command">mtn db migrate --db=</span><var>dbfile</var></samp><a name="index-mtn-db-migrate-_002d_002ddb_003d_0040var_007bdbfile_007d-147"></a><dd>
 This command attempts to migrate the database <var>dbfile</var> to the
 newest schema known by the version of monotone you are currently
 running.  If the migration fails, no changes should be made to the
@@ -80,7 +80,7 @@ database.
 a copy of it before migrating, in case there is an untrapped error
 during migration.
 
-     <br><dt><samp><span class="command">mtn db check --db=</span><var>dbfile</var></samp><a name="index-mtn-db-check-_002d_002ddb_003d_0040var_007bdbfile_007d-134"></a><dd>
+     <br><dt><samp><span class="command">mtn db check --db=</span><var>dbfile</var></samp><a name="index-mtn-db-check-_002d_002ddb_003d_0040var_007bdbfile_007d-148"></a><dd>
 Monotone always works hard to verify the data it creates and accesses. 
 For instance, if you have hard drive problems that corrupt data in
 monotone's database, and you attempt to retrieve this data, then
@@ -210,7 +210,7 @@ which can be loaded into your database with <samp><span class="command">read</sp
      <p>This command also verifies that the <span class="sc">sha1</span> hash of every file, manifest,
 and revision is correct.
 
-     <br><dt><samp><span class="command">mtn db kill_rev_locally </span><var>id</var></samp><a name="index-mtn-db-kill_005frev_005flocally-_0040var_007bid_007d-135"></a><dd>
+     <br><dt><samp><span class="command">mtn db kill_rev_locally </span><var>id</var></samp><a name="index-mtn-db-kill_005frev_005flocally-_0040var_007bid_007d-149"></a><dd>
 This command &ldquo;kills&rdquo;, i.e., deletes, a given revision, as well as any
 certs attached to it.  It has an ugly name because it is a dangerous
 command; it permanently and irrevocably deletes historical information
@@ -243,7 +243,7 @@ you do, after all, need to retrieve the data in <var>id</var>, then
 work you can extract <var>id</var>'s data. 
 </ul>
 
-     <br><dt><samp><span class="command">mtn db kill_branch_certs_locally </span><var>branch</var></samp><a name="index-mtn-db-kill_005fbranch_005fcerts_005flocally-_0040var_007bbranch_007d-136"></a><dd>
+     <br><dt><samp><span class="command">mtn db kill_branch_certs_locally </span><var>branch</var></samp><a name="index-mtn-db-kill_005fbranch_005fcerts_005flocally-_0040var_007bbranch_007d-150"></a><dd>
 This command &ldquo;kills&rdquo; a branch by deleting all branch certs with that
 branch name. You should consider carefully whether you want to use it,
 because it can irrevocably delete important information. It does not
@@ -257,7 +257,7 @@ revisions in this branch, the branch certificates will reappear when
 you sync, unless the owners of those databases also delete those
 certificates locally.
 
-     <br><dt><samp><span class="command">mtn db kill_tag_locally </span><var>tag</var></samp><a name="index-mtn-db-kill_005ftag_005flocally-_0040var_007btag_007d-137"></a><dd>
+     <br><dt><samp><span class="command">mtn db kill_tag_locally </span><var>tag</var></samp><a name="index-mtn-db-kill_005ftag_005flocally-_0040var_007btag_007d-151"></a><dd>
 This command &ldquo;kills&rdquo; a tag by deleting all tag certs with that tag
 name. You should consider carefully whether you want to use it, because
 it can irrevocably delete important information. It does not modify or
@@ -269,7 +269,7 @@ with which have this tag, the tag certificates will reappear when you
 sync, unless the owners of those databases also delete those
 certificates locally.
 
-     <br><dt><samp><span class="command">mtn db execute </span><var>sql-statement</var></samp><a name="index-mtn-db-execute-_0040var_007bsql_002dstatement_007d-138"></a><dd>
+     <br><dt><samp><span class="command">mtn db execute </span><var>sql-statement</var></samp><a name="index-mtn-db-execute-_0040var_007bsql_002dstatement_007d-152"></a><dd>
 This is a debugging command which executes <var>sql-statement</var> against
 your database, and prints any results of the expression in a tabular
 form.  It can be used to investigate the state of your database, or

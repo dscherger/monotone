@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.5 Key and Cert Trust</h3>
 
      <dl>
-<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-103"></a><dd>
+<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-117"></a><dd>
 This command generates an <span class="sc">rsa</span> public/private key pair, using a
 system random number generator, and stores it in your keystore under
 the key name <var>keyid</var>.
@@ -61,17 +61,17 @@ commands executed in a workspace, or to
 the system default (<samp><span class="file">~/.monotone/keys</span></samp> on Unix and Cygwin,
 <samp><span class="file">%APPDATA%/monotone/keys</span></samp> on native Win32).
 
-     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-104"></a><dd>
+     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-118"></a><dd>
 This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped.
 
-     <br><dt><samp><span class="command">mtn passphrase </span><var>id</var></samp><a name="index-mtn-passphrase-_0040var_007bid_007d-105"></a><dd>
+     <br><dt><samp><span class="command">mtn passphrase </span><var>id</var></samp><a name="index-mtn-passphrase-_0040var_007bid_007d-119"></a><dd>
 This command lets you change the passphrase of the private half of the
 key <var>id</var>.
 
-     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-106"></a><dd>
+     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-120"></a><dd>
 This command lets you test your revision trust hook
 <code>get_revision_cert_trust</code> (see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
@@ -79,7 +79,7 @@ key IDs, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
 
-     <br><dt><samp><span class="command">mtn ssh_agent_add</span></samp><a name="index-mtn-ssh_005fagent_005fadd-107"></a><dd>
+     <br><dt><samp><span class="command">mtn ssh_agent_add</span></samp><a name="index-mtn-ssh_005fagent_005fadd-121"></a><dd>
 This command will add your monotone keys to your current ssh-agent session. 
 You will be asked for the passphrase for each of your monotone private keys
 and they will be added to the ssh-agent. Once this is done you should be able
@@ -103,7 +103,7 @@ following two examples are equivalent:
      <p>In the second example, monotone automatically added the key to ssh-agent, making
 entering the passphrase not needed during the push.
 
-     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-108"></a><dd>
+     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-122"></a><dd>
 This command will export your private key in a format that ssh-agent
 can read (PKCS8, PEM). You will be asked for your current key's password
 and a new password to encrypt the key with. The key will be printed to

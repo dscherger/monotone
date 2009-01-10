@@ -41,7 +41,7 @@ Questions we should consider asking the next time we do a user survey.  Some of 
 
   * How much memory and CPU speed do the machine(s) you normally run monotone on have?
 
-  * Where do you get your monotone binaries?  (E.g., by downloading source from venge.net, from the binary downloads on venge.net, from a distribution (if so, which?), etc.)
+  * Where do you get your monotone binaries?  (E.g., by downloading source from monotone.ca, from the binary downloads on monotone.ca, from a distribution (if so, which?), etc.)
 
   * Do you use inodeprints? Do you know that inodeprints exists?
 

@@ -19,7 +19,7 @@ instance lives.
 Developers `sync` with this server as an easy central
 point of reference, and to avoid long relay replication chains.
 
-In the [Tutorial](http://venge.net/monotone/docs/Tutorial.html), we saw Jim set up such a server for his work
+In the [Tutorial](http://monotone.ca/docs/Tutorial.html), we saw Jim set up such a server for his work
 with Abe and Beth, but this is primarily a convenience.
 Each person's replica of the repository is as good as any other's,
 so long as they contain the same information.
@@ -31,12 +31,12 @@ To decide whether it is a problem, the question of why you think you want a mast
 important.
 
 There are several things you might think you need a master
-copy to achieve, perhaps based on your established habits or expectations from other systems. 
+copy to achieve, perhaps based on your established habits or expectations from other systems.
 For at least *some* of these things, you actually
 don't -- monotone deals with the requirement differently.
 In other cases, maybe you really do need a centralised rather than a distributed VCS after all.
 
-In the following discussion, remember that there's no reason some repository instances can't be special if you want them to be, it's just that none of them really *needs* to be. 
+In the following discussion, remember that there's no reason some repository instances can't be special if you want them to be, it's just that none of them really *needs* to be.
 
 ### for backups?
 
@@ -49,23 +49,23 @@ To illustrate that it's not in any sense a master copy, this
 repository usually doesn't need to be backed up at all. Since nothing
 is committed locally on the server, and since people replicate with it
 frequently, it doesn't contain any revisions that ''aren't also
-elsewhere'' in individual developers' databases.  
-Because all the revisions are signed, the same trust evaluations 
-can be applied to these revisions, even if they've been sent to 
+elsewhere'' in individual developers' databases.
+Because all the revisions are signed, the same trust evaluations
+can be applied to these revisions, even if they've been sent to
 us by someone other than the original author (note that this is the normal
 case when getting revisions from such a server, because it only contains
-revisions that were first put there by someone else). 
+revisions that were first put there by someone else).
 See the [[TrustFoundations]] page for more details on cert-based trusts.
 
 Restoring the server is simply a matter of putting up an
 empty server and having people feed it back from their own replicas
 again.  Most people have a copy of most revisions, and for the very
 newest revisions that haven't propagated everywhere yet, everyone who
-cares about these revisions has a copy, at least.  We saw Jim take 
+cares about these revisions has a copy, at least.  We saw Jim take
 advantage of exactly this property when setting up his server, in the tutorial.
 
 Of course, that shouldn't prevent you taking backups of the server's, or
-your own, database as protection against the various gremlins that lurk 
+your own, database as protection against the various gremlins that lurk
 in dark places -- it just means that you can generally back up
 any of these databases pretty much interchangably for the same effect.
 
@@ -99,11 +99,11 @@ kinds.
 
 Many of these are just not really suited or even possible to centralise in
 any distributed system like monotone, and need to be addressed in
-other, distributed ways. 
+other, distributed ways.
 
 Monotone has sophisticated trust evaluation mechanisms, using the
 information published in certs, that let each
-person make their own decisions about who should be trusted to 
+person make their own decisions about who should be trusted to
 commit where, and how information will be used.
 
 Although very powerful, sometimes this is cumbersome to manage,
@@ -114,13 +114,13 @@ to allow users to delegate the specification of project policy to trusted
 authorities.  Note that this will allow centralised publication of
 those rules, for distributed enforcement.
 
-Monotone also has network access controls over who can copy information 
-out of, or into, a server - and again, no server is particular or 
-special. Everyone's database can be a server when needed. 
-If you have confidentiality concerns over the content, 
-you need to trust the people and protect the places that information is copied. 
-Once someone has a copy of some information, there's nothing in 
-particular you can do centrally to control where else the information 
+Monotone also has network access controls over who can copy information
+out of, or into, a server - and again, no server is particular or
+special. Everyone's database can be a server when needed.
+If you have confidentiality concerns over the content,
+you need to trust the people and protect the places that information is copied.
+Once someone has a copy of some information, there's nothing in
+particular you can do centrally to control where else the information
 can be copied, either with monotone or with other tools.
 
 Some of these things you either need to let go of and accept that the
