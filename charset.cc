@@ -371,7 +371,7 @@ internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
       else
         {
           string a;
-          utf8_to_ace(utf8(*i), a);
+          utf8_to_ace(utf8(*i, utf.made_from), a);
           tmp += a;
         }
       if (*i == "@")

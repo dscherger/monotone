@@ -1055,7 +1055,11 @@ check_db(database & db)
     % checked_heights.size());
   P(F("total problems detected: %d (%d serious)") % total % serious);
   if (serious)
-    E(false, origin::database, F("serious problems detected"));
+    {
+      // should be origin::database, but that gives the "almost certainly a bug"
+      // message, which we don't want.
+      E(false, origin::no_fault, F("serious problems detected"));
+    }
   else if (total)
     P(F("minor problems detected"));
   else
