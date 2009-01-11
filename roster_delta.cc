@@ -16,6 +16,7 @@
 
 #include "lexical_cast.hh"
 
+#include "netio.hh"
 #include "safe_map.hh"
 #include "parallel_iter.hh"
 #include "roster.hh"
@@ -25,10 +26,14 @@
 #include "transforms.hh"
 
 using boost::lexical_cast;
-using std::pair;
-using std::make_pair;
 
-namespace 
+using std::make_pair;
+using std::map;
+using std::pair;
+using std::set;
+using std::string;
+
+namespace
 {
 
   struct roster_delta_t
@@ -206,17 +211,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted
               safe_insert(d.nodes_deleted, i.left_key());
               break;
-            
+
             case parallel::in_right:
               // added
               do_delta_for_node_only_in_dest(i.right_data(), d);
               break;
-            
+
             case parallel::in_both:
               // moved/patched/attribute changes
               do_delta_for_node_in_both(i.left_data(), i.right_data(), d);
@@ -233,17 +238,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted; don't need to do anything (will be handled by
               // nodes_deleted set
               break;
-            
+
             case parallel::in_right:
               // added
               safe_insert(d.markings_changed, i.right_value());
               break;
-            
+
             case parallel::in_both:
               // maybe changed
               if (!(i.left_data() == i.right_data()))
@@ -264,100 +269,11 @@ namespace
     symbol const attr_cleared("attr_cleared");
     symbol const attr_changed("attr_changed");
     symbol const marking("marking");
-    
+
     symbol const content("content");
     symbol const location("location");
     symbol const attr("attr");
     symbol const value("value");
-  }
-
-  void
-  push_nid(symbol const & sym, node_id nid, basic_io::stanza & st)
-  {
-    st.push_str_pair(sym, lexical_cast<std::string>(nid));
-  }
-
-  static void
-  push_loc(pair<node_id, path_component> const & loc,
-           basic_io::stanza & st)
-  {
-    st.push_str_triple(syms::location,
-                       lexical_cast<std::string>(loc.first),
-                       loc.second());
-  }
-
-  void
-  print_roster_delta_t(basic_io::printer & printer,
-                       roster_delta_t & d)
-  {
-    for (roster_delta_t::nodes_deleted_t::const_iterator
-           i = d.nodes_deleted.begin(); i != d.nodes_deleted.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::deleted, *i, st);
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::nodes_renamed_t::const_iterator
-           i = d.nodes_renamed.begin(); i != d.nodes_renamed.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::rename, i->first, st);
-        push_loc(i->second, st);
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::dirs_added_t::const_iterator
-           i = d.dirs_added.begin(); i != d.dirs_added.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::add_dir, i->second, st);
-        push_loc(i->first, st);
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::files_added_t::const_iterator
-           i = d.files_added.begin(); i != d.files_added.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::add_file, i->second.first, st);
-        push_loc(i->first, st);
-        st.push_binary_pair(syms::content, i->second.second.inner());
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::deltas_applied_t::const_iterator
-           i = d.deltas_applied.begin(); i != d.deltas_applied.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::delta, i->first, st);
-        st.push_binary_pair(syms::content, i->second.inner());
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::attrs_cleared_t::const_iterator
-           i = d.attrs_cleared.begin(); i != d.attrs_cleared.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::attr_cleared, i->first, st);
-        st.push_str_pair(syms::attr, i->second());
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::attrs_changed_t::const_iterator
-           i = d.attrs_changed.begin(); i != d.attrs_changed.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::attr_changed, i->first, st);
-        st.push_str_pair(syms::attr, i->second.first());
-        st.push_str_triple(syms::value,
-                           lexical_cast<std::string>(i->second.second.first),
-                           i->second.second.second());
-        printer.print_stanza(st);
-      }
-    for (roster_delta_t::markings_changed_t::const_iterator
-           i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
-      {
-        basic_io::stanza st;
-        push_nid(syms::marking, i->first, st);
-        // ...this second argument is a bit odd...
-        push_marking(st, !i->second.file_content.empty(), i->second);
-        printer.print_stanza(st);
-      }
   }
 
   node_id
@@ -459,7 +375,371 @@ namespace
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
   }
-  
+
+  namespace header
+  {
+    string const binary_roster_delta("\0x00\0x01 roster delta");
+  };
+
+  namespace tags
+  {
+    char const node_deleted = 0x01;
+    char const node_renamed = 0x02;
+    char const dir_added = 0x03;
+    char const file_added = 0x04;
+    char const delta_applied = 0x05;
+    char const attr_cleared = 0x06;
+    char const attr_changed = 0x07;
+    char const marking_changed = 0x08;
+
+    // these belong in roster.cc with encode_marking
+    char const birth_mark = 0x22;
+    char const path_mark = 0x23;
+    char const content_mark = 0x24;
+    char const attr_mark = 0x25;
+  };
+
+  class roster_delta_encoder
+  {
+
+  public:
+    roster_delta_encoder(roster_delta_t const & d) :
+      d(d) {}
+
+    roster_delta encode()
+    {
+      encode_header(header::binary_roster_delta);
+
+      for (roster_delta_t::nodes_deleted_t::const_iterator
+             i = d.nodes_deleted.begin(); i != d.nodes_deleted.end(); ++i)
+        {
+          encode_tag(tags::node_deleted);
+          encode_node_id(*i);
+        }
+      for (roster_delta_t::nodes_renamed_t::const_iterator
+             i = d.nodes_renamed.begin(); i != d.nodes_renamed.end(); ++i)
+        {
+          encode_tag(tags::node_renamed);
+          encode_node_id(i->first);
+          encode_loc(i->second);
+        }
+      for (roster_delta_t::dirs_added_t::const_iterator
+             i = d.dirs_added.begin(); i != d.dirs_added.end(); ++i)
+        {
+          encode_tag(tags::dir_added);
+          encode_loc(i->first);
+          encode_node_id(i->second);
+        }
+      for (roster_delta_t::files_added_t::const_iterator
+             i = d.files_added.begin(); i != d.files_added.end(); ++i)
+        {
+          encode_tag(tags::file_added);
+          encode_loc(i->first);
+          encode_node_id(i->second.first);
+          encode_file_id(i->second.second);
+        }
+      for (roster_delta_t::deltas_applied_t::const_iterator
+             i = d.deltas_applied.begin(); i != d.deltas_applied.end(); ++i)
+        {
+          encode_tag(tags::delta_applied);
+          encode_node_id(i->first);
+          encode_file_id(i->second);
+        }
+      for (roster_delta_t::attrs_cleared_t::const_iterator
+             i = d.attrs_cleared.begin(); i != d.attrs_cleared.end(); ++i)
+        {
+          encode_tag(tags::attr_cleared);
+          encode_node_id(i->first);
+          encode_string(i->second()); // attr key
+        }
+      for (roster_delta_t::attrs_changed_t::const_iterator
+             i = d.attrs_changed.begin(); i != d.attrs_changed.end(); ++i)
+        {
+          encode_tag(tags::attr_changed);
+          encode_node_id(i->first);
+          encode_string(i->second.first()); // attr key
+          encode_bool(i->second.second.first); // attr live flag
+          encode_string(i->second.second.second()); // attr value
+        }
+      for (roster_delta_t::markings_changed_t::const_iterator
+             i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
+        {
+          encode_tag(tags::marking_changed);
+          encode_node_id(i->first);
+          encode_marking(i->second);
+        }
+
+      return roster_delta(bytes);
+    }
+
+  private:
+    roster_delta_t const & d;
+    string bytes;
+
+    void encode_header(string const & header)
+    {
+      bytes += header;
+    }
+
+    void encode_tag(char const tag)
+    {
+      bytes += tag;
+    }
+
+    void encode_string(string const & s)
+    {
+      insert_datum_uleb128(s.size(), bytes);
+      bytes += s;
+    }
+
+    void encode_bool(bool const b)
+    {
+      insert_datum_uleb128(b, bytes);
+    }
+
+    void encode_file_id(file_id const & fid)
+    {
+      I(fid.inner()().size() == 20);
+      bytes += fid.inner()();
+    }
+
+    void encode_rev_id(revision_id const & rid)
+    {
+      I(rid.inner()().size() == 20);
+      bytes += rid.inner()();
+    }
+
+    void encode_node_id(node_id const nid)
+    {
+      insert_datum_uleb128(nid, bytes);
+    }
+
+    void encode_loc(pair<node_id, path_component> const & loc)
+    {
+      encode_node_id(loc.first);
+      encode_string(loc.second());
+    }
+
+    // this ultimately belongs in roster.cc
+    void encode_marking(marking_t const & marking)
+    {
+      bool is_file = !marking.file_content.empty();
+
+      I(!null_id(marking.birth_revision));
+      encode_tag(tags::birth_mark);
+      encode_rev_id(marking.birth_revision);
+
+      for (set<revision_id>::const_iterator
+             i = marking.parent_name.begin(); i != marking.parent_name.end(); ++i)
+        {
+          encode_tag(tags::path_mark);
+          encode_rev_id(*i);
+        }
+
+      if (is_file)
+        {
+          for (set<revision_id>::const_iterator
+                 i = marking.file_content.begin(); i != marking.file_content.end(); ++i)
+            {
+              encode_tag(tags::content_mark);
+              encode_rev_id(*i);
+            }
+        }
+      else
+        I(marking.file_content.empty());
+
+      for (map<attr_key, set<revision_id> >::const_iterator
+             i = marking.attrs.begin(); i != marking.attrs.end(); ++i)
+        {
+          for (set<revision_id>::const_iterator
+                 j = i->second.begin(); j != i->second.end(); ++j)
+            {
+              encode_tag(tags::attr_mark);
+              encode_string(i->first());
+              encode_rev_id(*j);
+            }
+        }
+    }
+
+  };
+
+  class roster_delta_decoder
+  {
+
+  public:
+    roster_delta_decoder(roster_delta const & del) :
+      bytes(del.inner()()), pos(0), name("roster delta decoder") {}
+
+    roster_delta_t decode()
+    {
+      if (!decode_header(header::binary_roster_delta))
+        {
+          // this is not a binary roster delta
+          // fall back to the old basic_io parser
+          basic_io::input_source src(bytes, "roster_delta");
+          basic_io::tokenizer tok(src);
+          basic_io::parser pars(tok);
+          parse_roster_delta_t(pars, d);
+          return d;
+        }
+
+      while (decode_tag(tags::node_deleted))
+        {
+          node_id nid = decode_node_id();
+          safe_insert(d.nodes_deleted, nid);
+        }
+      while (decode_tag(tags::node_renamed))
+        {
+          node_id nid = decode_node_id();
+          pair<node_id, path_component> loc = decode_loc();
+          safe_insert(d.nodes_renamed, make_pair(nid, loc));
+        }
+      while (decode_tag(tags::dir_added))
+        {
+          pair<node_id, path_component> loc = decode_loc();
+          node_id nid = decode_node_id();
+          safe_insert(d.dirs_added, make_pair(loc, nid));
+        }
+      while (decode_tag(tags::file_added))
+        {
+          pair<node_id, path_component> loc = decode_loc();
+          node_id nid = decode_node_id();
+          file_id fid = decode_file_id();
+          safe_insert(d.files_added,
+                      make_pair(loc, make_pair(nid, fid)));
+        }
+      while (decode_tag(tags::delta_applied))
+        {
+          node_id nid = decode_node_id();
+          file_id fid = decode_file_id();
+          safe_insert(d.deltas_applied, make_pair(nid, fid));
+        }
+      while (decode_tag(tags::attr_cleared))
+        {
+          node_id nid = decode_node_id();
+          string key = decode_string();
+          safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key)));
+        }
+      while (decode_tag(tags::attr_changed))
+        {
+          node_id nid = decode_node_id();
+          string key = decode_string();
+          bool live = decode_bool();
+          string value = decode_string();
+          pair<bool, attr_value> full_value(live, attr_value(value));
+          safe_insert(d.attrs_changed,
+                      make_pair(nid,
+                                make_pair(attr_key(key), full_value)));
+        }
+      while (decode_tag(tags::marking_changed))
+        {
+          node_id nid = decode_node_id();
+          marking_t m;
+          decode_marking(m);
+          safe_insert(d.markings_changed, make_pair(nid, m));
+        }
+
+      return d;
+    }
+
+
+  private:
+    roster_delta_t d;
+    string const & bytes;
+    size_t pos;
+    string const name;
+
+    bool decode_header(string const & header)
+    {
+      I(pos == 0);
+      if (bytes.size() < header.size())
+        return false;
+      return bytes.substr(0, header.size()) == header;
+    }
+
+    bool decode_tag(char const tag)
+    {
+
+      if (pos < bytes.size() && bytes[pos] == tag)
+        {
+          pos++;
+          return true;
+        }
+      return false;
+    }
+
+    string decode_string()
+    {
+      size_t len = extract_datum_uleb128<size_t>(bytes, pos, name);
+      I(pos + len <= bytes.size());
+      string s = bytes.substr(pos, len);
+      pos += len;
+      return s;
+    }
+
+    bool decode_bool()
+    {
+      bool b = extract_datum_uleb128<bool>(bytes, pos, name);
+      return b;
+    }
+
+    file_id decode_file_id()
+    {
+      I(pos + 20 <= bytes.size());
+      file_id fid(bytes.substr(pos, 20));
+      pos += 20;
+      return fid;
+    }
+
+    revision_id decode_rev_id()
+    {
+      I(pos + 20 <= bytes.size());
+      revision_id rid(bytes.substr(pos, 20));
+      pos += 20;
+      return rid;
+    }
+
+    node_id decode_node_id()
+    {
+      node_id nid = extract_datum_uleb128<node_id>(bytes, pos, name);
+      return nid;
+    }
+
+    pair<node_id, path_component> decode_loc()
+    {
+      node_id nid = decode_node_id();
+      string s = decode_string();
+      return make_pair(nid, s);
+    }
+
+    // this ultimately belongs in roster.cc
+    void decode_marking(marking_t & marking)
+    {
+
+      I(decode_tag(tags::birth_mark));
+      marking.birth_revision = decode_rev_id();
+
+      while (decode_tag(tags::path_mark))
+        {
+          revision_id rid = decode_rev_id();
+          safe_insert(marking.parent_name, rid);
+        }
+      while (decode_tag(tags::content_mark))
+        {
+          revision_id rid = decode_rev_id();
+          safe_insert(marking.file_content, rid);
+        }
+      while (decode_tag(tags::attr_mark))
+        {
+          attr_key key(decode_string());
+          revision_id rid = decode_rev_id();
+          safe_insert(marking.attrs[key], rid);
+        }
+    }
+
+  };
+
+
 } // end anonymous namespace
 
 void
@@ -473,19 +753,17 @@ delta_rosters(roster_t const & from, marking_map const & from_markings,
   MM(to_markings);
   roster_delta_t d;
   make_roster_delta_t(from, from_markings, to, to_markings, d);
-  basic_io::printer printer;
-  print_roster_delta_t(printer, d);
-  del = roster_delta(printer.buf);
+
+  roster_delta_encoder encoder(d);
+  del = encoder.encode();
 }
 
 static
 void read_roster_delta(roster_delta const & del,
                        roster_delta_t & d)
 {
-  basic_io::input_source src(del.inner()(), "roster_delta");
-  basic_io::tokenizer tok(src);
-  basic_io::parser pars(tok);
-  parse_roster_delta_t(pars, d);
+  roster_delta_decoder decoder(del);
+  d = decoder.decode();
 }
 
 void
@@ -531,12 +809,12 @@ try_get_markings_from_roster_delta(roster_delta const & del,
 // -- in this case content is left undefined.
 bool
 try_get_content_from_roster_delta(roster_delta const & del,
-                              node_id const & nid,
-                              file_id & content)
+                                  node_id const & nid,
+                                  file_id & content)
 {
   roster_delta_t d;
   read_roster_delta(del, d);
-  
+
   roster_delta_t::deltas_applied_t::const_iterator i = d.deltas_applied.find(nid);
   if (i != d.deltas_applied.end())
     {
@@ -563,7 +841,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
           return true;
         }
     }
-   
+
   return false;
 }
 
@@ -611,4 +889,3 @@ void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
