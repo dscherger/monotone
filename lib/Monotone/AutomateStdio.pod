@@ -918,7 +918,7 @@ a method's return status redundant.
 =head2 Silently Retrying Operations When The Database Is Locked
 
 If the Monotone database is locked then, by default, this class will report
-that condition as a warning. However, it may be more convenient to ask this
+that condition as a warning. However it may be more convenient to ask this
 class to silently retry the operation until it succeeds. This can easily be
 done by using the database locked handler as follows:
 
@@ -930,11 +930,10 @@ will silently sleep for one second before retrying the operation.
 
 =head2 Dealing With Processing Lockouts And Delays
 
-Sometimes you may make a complex request to the mtn subprocess that takes a
-number of seconds to process. Consequently this class will take that amount of
-time, plus a very small processing overhead, to return. Whilst one can get
-around this by using threads, another way is to register an I/O wait
-handler. For example:
+Some requests sent to the mtn subprocess can take several seconds to complete
+and consequently this class will take that amount of time, plus a very small
+processing overhead, to return. Whilst one can get around this by using
+threads, another way is to register an I/O wait handler. For example:
 
     Monotone::AutomateStdio->register_io_wait_handler
         (sub { WindowManager->instance()->update_gui(); }, 1);
