@@ -10,5 +10,5 @@ child = base_revision()
 
 check(mtn("merge_into_workspace", parent), 1, nil, false)
 
-check(mtn("update", "--revision", parent), 0, false)
+check(mtn("update", "--revision", parent), 0, false, false)
 check(mtn("merge_into_workspace", child), 1, nil, false)
