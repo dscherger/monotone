@@ -232,6 +232,24 @@ use IO::File;
     }
     $dir->close();
 
+    # Install translation files.
+
+    die("IO::Dir failed with $!")
+	if (! defined($dir = IO::Dir->new("translations")));
+    while (defined($file = $dir->read()))
+    {
+	if ($file =~ m/(.*)\.po$/)
+	{
+	    my $locale = $1;
+	    system("msgfmt --output-file=translations/${locale}.mo "
+		   . "translations/$file");
+	    system("$install translations/${locale}.mo "
+		   . "${prefix_dir}/share/locale/${locale}/LC_MESSAGES/"
+		   . "mtn-browse.mo");
+	}
+    }
+    $dir->close();
+
     exit(0);
 
 }

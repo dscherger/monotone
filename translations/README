@@ -1,0 +1,13 @@
+Copy the mtn-browse.pot file to <Locale>.po, e.g. de_DE.po, and then edit as
+appropriate. The installer will convert the po files to mo format and store them
+under:
+
+    .../share/locale/<Locale>/LC_MESSAGES/mtn-browse.mo
+
+e.g.
+
+    .../share/locale/de_DE/LC_MESSAGES/mtn-browse.mo
+
+Thank you.
+
+Tony Cooper.
