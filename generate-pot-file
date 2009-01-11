@@ -1,0 +1,67 @@
+#!/bin/sh
+##############################################################################
+#
+#   File Name    - generate-pot-file
+#
+#   Description  - Generate the POT file for mtn-browse.
+#
+#   Author       - A.E.Cooper.
+#
+#   Legal Stuff  - Copyright (c) 2008 Anthony Edward Cooper
+#                  <aecooper@coosoft.plus.com>.
+#
+#                  This program is free software; you can redistribute it
+#                  and/or modify it under the terms of the GNU General Public
+#                  License as published by the Free Software Foundation;
+#                  either version 3 of the License, or (at your option) any
+#                  later version.
+#
+#                  This program is distributed in the hope that it will be
+#                  useful, but WITHOUT ANY WARRANTY; without even the implied
+#                  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+#                  PURPOSE. See the GNU General Public License for more
+#                  details.
+#
+#                  You should have received a copy of the GNU General Public
+#                  License along with this software; if not, write to the Free
+#                  Software Foundation, Inc., 59 Temple Place - Suite 330,
+#                  Boston, MA 02111-1307 USA.
+#
+##############################################################################
+#
+##############################################################################
+#
+#   Routine      - Main Body Of Code
+#
+#   Description  - This is the main body of code for the generate-pot-file
+#                  script.
+#
+##############################################################################
+
+
+
+PATH=/usr/bin:/bin:/usr/X11R6/bin:/usr/sbin:/sbin
+export PATH
+
+xgettext  -L Perl -k__ -k\$__ -k%__ -k__x -k__n:1,2 -k__nx:1,2 -k__xn:1,2 \
+    -kN__ -k \
+    --default-domain=mtn-browse \
+    --copyright-holder="Anthony Cooper" \
+    --msgid-bugs-address='support@coosoft.plus.com' \
+    mtn-browse lib/perl/*.pm
+xgettext \
+    --default-domain=mtn-browse \
+    --copyright-holder="Anthony Cooper" \
+    --msgid-bugs-address='support@coosoft.plus.com' \
+    -j lib/ui/mtn-browse.glade
+sed -e 's/^# SOME DESCRIPTIVE TITLE/# mtn-browse POT (template) file/' \
+    -e '/^#/s/YEAR/2008/g' \
+    -e '/^#/s/PACKAGE/mtn-browse/g' \
+    -e '/^#/s/FIRST AUTHOR/Anthony Cooper/g' \
+    -e '/^#/s/EMAIL@ADDRESS/aecooper@coosoft.plus.com/g' \
+    -e '/^"Project-Id-Version:/s/PACKAGE VERSION/mtn-browse 0.1/g' \
+    < mtn-browse.po > mtn-browse.pot
+
+rm -f mtn-browse.po
+
+exit 0

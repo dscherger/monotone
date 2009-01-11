@@ -524,6 +524,7 @@ sub save_as_file($$$)
 		}
 		else
 		{
+		    binmode($fh);
 		    $fh->print($$data);
 		    $fh->close();
 		    $done = 1;

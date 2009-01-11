@@ -537,7 +537,9 @@ sub get_advanced_find_window($)
 	   $tv_column);
 
 	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
 	$instance->{mtn} = $browser->{mtn};
 
 	# Flag to stop recursive calling of callbacks.

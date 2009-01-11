@@ -1442,7 +1442,9 @@ sub get_history_window()
     if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -1679,7 +1681,9 @@ sub get_revision_comparison_window()
     if (! defined($instance = $wm->find_unused($window_type)))
     {
 	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -1877,6 +1881,8 @@ sub external_diffs($$$$$)
 	$dialog->destroy();
 	return;
     }
+    binmode($old_fh);
+    binmode($new_fh);
     $instance->{mtn}->get_file(\$data, $old_file_id);
     $old_fh->print($data);
     $instance->{mtn}->get_file(\$data, $new_file_id);

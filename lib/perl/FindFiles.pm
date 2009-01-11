@@ -840,7 +840,9 @@ sub get_find_files_window()
 	   $tv_column);
 
 	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
 
 	# Flag to stop recursive calling of callbacks.
 

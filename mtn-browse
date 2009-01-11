@@ -1089,6 +1089,7 @@ sub view_button_clicked_cb($$)
 	$dialog->destroy();
 	return;
     }
+    binmode($fh);
     $browser->{mtn}->get_file(\$data,
 			      $browser->{file_being_viewed}->
 			          {manifest_entry}->{file_id});
@@ -1449,7 +1450,9 @@ sub get_browser_window(;$$$$$)
 
 	$browser = {};
 	$browser->{mtn} = $mtn;
-	$browser->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$browser->{glade} = Gtk2::GladeXML->new($glade_file,
+						$window_type,
+						APPLICATION_NAME);
 
 	# Flag to stop recursive calling of callbacks.
 

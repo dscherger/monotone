@@ -53,6 +53,10 @@ use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
+# Constant for the name of this application.
+
+use constant APPLICATION_NAME => "mtn-browse";
+
 # Constants used to represent the different groups of widgets.
 
 use constant BRANCH           => 0x01;
@@ -110,6 +114,7 @@ our $mime_match_table;
 use base qw(Exporter);
 
 our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
+				     APPLICATION_NAME
 				     BRANCH
 				     BRANCH_CHANGED
 				     DATABASE_CHANGED

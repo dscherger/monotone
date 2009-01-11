@@ -674,7 +674,9 @@ sub get_find_text_window($$)
     {
 	$new = 1;
 	$instance = {};
-	$instance->{glade} = Gtk2::GladeXML->new($glade_file, $window_type);
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
 
 	# Flag to stop recursive calling of callbacks.
 
