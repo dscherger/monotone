@@ -179,7 +179,8 @@ key_hash_code(rsa_keypair_id const & ident,
               rsa_pub_key const & pub,
               id & out)
 {
-  data tdat(ident() + ":" + remove_ws(encode_base64(pub)()));
+  data tdat(ident() + ":" + remove_ws(encode_base64(pub)()),
+            origin::internal);
   calculate_ident(tdat, out);
 }
 
@@ -188,7 +189,8 @@ key_hash_code(rsa_keypair_id const & ident,
               rsa_priv_key const & priv,
               id & out)
 {
-  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()));
+  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()),
+            origin::internal);
   calculate_ident(tdat, out);
 }
 

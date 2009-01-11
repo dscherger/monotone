@@ -958,7 +958,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
             last--;
 
           string out_system;
-          utf8_to_system_best_effort(utf8(out.str()), out_system);
+          utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
           if (app.opts.no_graph)
             cout << out_system;
           else

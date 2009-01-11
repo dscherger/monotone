@@ -154,7 +154,7 @@ fake_id()
   ++counter;
   I(counter >= 1); // detect overflow
   string s((FL("00000000000000000000000000000000%08x") % counter).str());
-  return id(decode_hexenc(s, origin::internal));
+  return id(decode_hexenc(s, origin::internal), origin::internal);
 }
 
 // instantiation of various vocab functions

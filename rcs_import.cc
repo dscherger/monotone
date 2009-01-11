@@ -490,7 +490,7 @@ insert_into_db(database & db, data const & curr_data,
   {
     string tmp;
     global_pieces.build_string(next_lines, tmp);
-    next_data = data(tmp);
+    next_data = data(tmp, origin::internal);
   }
   delta del;
   diff(curr_data, next_data, del);
@@ -677,7 +677,8 @@ import_rcs_file_with_cvs(database & db, string const & filename,
     I(r.deltas.find(r.admin.head) != r.deltas.end());
 
     file_id fid;
-    file_data dat(r.deltatexts.find(r.admin.head)->second->text);
+    file_data dat(r.deltatexts.find(r.admin.head)->second->text,
+                  origin::user);
     calculate_ident(dat, fid);
 
     cvs.set_filename(filename, fid);
@@ -1366,8 +1367,9 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
     }
 
   project.put_standard_certs(keys, p.rid,
-                             branch_name(branchname),
-                             utf8(cvs.changelog_interner.lookup(p.changelog)),
+                             branch_name(branchname, origin::user),
+                             utf8(cvs.changelog_interner.lookup(p.changelog),
+                                  origin::internal),
                              date_t(p.time),
                              cvs.author_interner.lookup(p.author));
 }
@@ -1394,7 +1396,8 @@ cluster_consumer::build_cset(cvs_cluster const & c,
     {
       file_path pth = file_path_internal(cvs.path_interner.lookup(i->first));
 
-      file_id fid(cvs.file_version_interner.lookup(i->second.version));
+      file_id fid(cvs.file_version_interner.lookup(i->second.version),
+                  origin::internal);
       if (i->second.live)
         {
           map<cvs_path, cvs_version>::const_iterator e = live_files.find(i->first);
@@ -1408,7 +1411,8 @@ cluster_consumer::build_cset(cvs_cluster const & c,
             }
           else if (e->second != i->second.version)
             {
-              file_id old_fid(cvs.file_version_interner.lookup(e->second));
+              file_id old_fid(cvs.file_version_interner.lookup(e->second),
+                              origin::internal);
               L(FL("applying state delta on '%s' : '%s' -> '%s'")
                 % pth
                 % old_fid

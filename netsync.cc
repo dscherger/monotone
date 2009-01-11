@@ -48,6 +48,7 @@
 #include "globish.hh"
 #include "uri.hh"
 #include "options.hh"
+#include "vocab_cast.hh"
 
 #include "botan/botan.h"
 
@@ -293,8 +294,8 @@ read_pubkey(string const & in,
   size_t pos = 0;
   extract_variable_length_string(in, tmp_id, pos, "pubkey id");
   extract_variable_length_string(in, tmp_key, pos, "pubkey value");
-  id = rsa_keypair_id(tmp_id);
-  pub = rsa_pub_key(tmp_key);
+  id = rsa_keypair_id(tmp_id, origin::network);
+  pub = rsa_pub_key(tmp_key, origin::network);
 }
 
 static void
@@ -1081,7 +1082,8 @@ session::mk_nonce()
   char buf[constants::merkle_hash_length_in_bytes];
   keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
                              constants::merkle_hash_length_in_bytes);
-  this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes));
+  this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes),
+                         origin::internal);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
 }
@@ -1089,7 +1091,7 @@ session::mk_nonce()
 void
 session::set_session_key(string const & key)
 {
-  session_key = netsync_session_key(key);
+  session_key = netsync_session_key(key, origin::internal);
   read_hmac.set_key(session_key);
   write_hmac.set_key(session_key);
 }
@@ -1584,11 +1586,12 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       {
         hexenc<id> encoded_key_hash;
         encode_hexenc(their_key_hash, encoded_key_hash);
-        printable_key_hash = var_value(encoded_key_hash());
+        printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
       }
       L(FL("server key has name %s, hash %s")
         % their_keyname % printable_key_hash);
-      var_key their_key_key(known_servers_domain, var_name(peer_id));
+      var_key their_key_key(known_servers_domain,
+                            var_name(peer_id, origin::internal));
       if (project.db.var_exists(their_key_key))
         {
           var_value expected_key_hash;
@@ -2365,7 +2368,8 @@ session::process_usher_cmd(utf8 const & msg)
         L(FL("Received greeting from usher: %s") % msg().substr(1));
     }
   netcmd cmdout;
-  cmdout.write_usher_reply_cmd(utf8(peer_id), our_include_pattern);
+  cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
+                               our_include_pattern);
   write_netcmd_and_try_flush(cmdout);
   L(FL("Sent reply."));
   return true;
@@ -3150,7 +3154,7 @@ session_from_server_sync_item(options & opts,
                               server_initiated_sync_request const & request)
 {
   netsync_connection_info info;
-  info.client.unparsed = utf8(request.address);
+  info.client.unparsed = utf8(request.address, origin::user);
   info.client.include_pattern = globish(request.include, origin::user);
   info.client.exclude_pattern = globish(request.exclude, origin::user);
   info.client.use_argv = false;
@@ -3354,7 +3358,8 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
     map<branch_name, epoch_data> epochs;
     project.db.get_epochs(epochs);
 
-    epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'));
+    epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'),
+                          origin::internal);
     for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {

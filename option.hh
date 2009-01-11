@@ -28,7 +28,7 @@
 class arg_type : public utf8 {
 public:
   explicit arg_type(void) : utf8() {}
-  explicit arg_type(std::string const & s) : utf8(s) {}
+  //explicit arg_type(std::string const & s) : utf8(s) {}
   arg_type(std::string const & s, origin::type f) : utf8(s, f) {}
   explicit arg_type(utf8 const & u) : utf8(u) {}
 };

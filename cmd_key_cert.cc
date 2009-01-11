@@ -21,6 +21,7 @@
 #include "keys.hh"
 #include "key_store.hh"
 #include "transforms.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::ostream_iterator;
@@ -59,7 +60,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   if (db.database_specified())
     {
       transaction_guard guard(db);
@@ -173,12 +174,12 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   cert_value val;
   if (args.size() == 3)
-    val = cert_value(idx(args, 2)());
+    val = typecast_vocab<cert_value>(idx(args, 2));
   else
     {
       data dat;
       read_data_stdin(dat);
-      val = cert_value(dat());
+      val = typecast_vocab<cert_value>(dat);
     }
 
   project.put_cert(keys, rid, cname, val);
@@ -208,7 +209,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
 
-  cert_value value(idx(args, 2)());
+  cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
   set<rsa_keypair_id> signers;
   for (unsigned int i = 3; i != args.size(); ++i)

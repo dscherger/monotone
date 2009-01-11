@@ -14,6 +14,15 @@ namespace origin {
   };
 }
 
+// Something that knows where it came from.
+class origin_aware
+{
+public:
+  origin::type made_from;
+  origin_aware() : made_from(origin::internal) {}
+  origin_aware(origin::type m) : made_from(m) {}
+};
+
 // Local Variables:
 // mode: C++
 // c-file-style: "gnu"

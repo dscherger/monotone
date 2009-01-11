@@ -17,6 +17,7 @@
 #include "work.hh"
 #include "database.hh"
 #include "roster.hh"
+#include "vocab_cast.hh"
 
 #include <fstream>
 
@@ -53,7 +54,7 @@ find_key(options & opts,
 
   utf8 host(info.client.unparsed);
   if (!info.client.u.host.empty())
-    host = utf8(info.client.u.host);
+    host = utf8(info.client.u.host, origin::user);
 
   if (!lua.hook_get_netsync_key(host,
                                 info.client.include_pattern,
@@ -81,7 +82,7 @@ build_client_connection_info(options & opts,
         F("no server given and no default server set"));
       var_value addr_value;
       db.get_var(default_server_key, addr_value);
-      info.client.unparsed = utf8(addr_value());
+      info.client.unparsed = typecast_vocab<utf8>(addr_value);
       L(FL("using default server address: %s") % info.client.unparsed);
     }
   parse_uri(info.client.unparsed(), info.client.u, origin::user);
@@ -145,9 +146,11 @@ build_client_connection_info(options & opts,
             }
 
           if (is_exclude)
-            excludes.push_back(arg_type(urldecode(item, origin::user)));
+            excludes.push_back(arg_type(urldecode(item, origin::user),
+                                        origin::user));
           else
-            includes.push_back(arg_type(urldecode(item, origin::user)));
+            includes.push_back(arg_type(urldecode(item, origin::user),
+                                        origin::user));
         }
       info.client.include_pattern = globish(includes);
       info.client.exclude_pattern = globish(excludes);
@@ -157,7 +160,8 @@ build_client_connection_info(options & opts,
   if (!db.var_exists(default_server_key) || opts.set_default)
     {
       P(F("setting default server to %s") % info.client.unparsed());
-      db.set_var(default_server_key, var_value(info.client.unparsed()));
+      db.set_var(default_server_key,
+                 typecast_vocab<var_value>(info.client.unparsed));
     }
     if (!db.var_exists(default_include_pattern_key)
         || opts.set_default)
@@ -165,7 +169,7 @@ build_client_connection_info(options & opts,
         P(F("setting default branch include pattern to '%s'")
           % info.client.include_pattern);
         db.set_var(default_include_pattern_key,
-                   var_value(info.client.include_pattern()));
+                   typecast_vocab<var_value>(info.client.include_pattern));
       }
     if (!db.var_exists(default_exclude_pattern_key)
         || opts.set_default)
@@ -173,7 +177,7 @@ build_client_connection_info(options & opts,
         P(F("setting default branch exclude pattern to '%s'")
           % info.client.exclude_pattern);
         db.set_var(default_exclude_pattern_key,
-                   var_value(info.client.exclude_pattern()));
+                   typecast_vocab<var_value>(info.client.exclude_pattern));
       }
 
   info.client.use_argv =
@@ -328,7 +332,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   netsync_connection_info info;
   info.client.unparsed = idx(args, 0);
 
-  branch_name branchname(idx(args, 1)());
+  branch_name branchname = typecast_vocab<branch_name>(idx(args, 1));
 
   E(!branchname().empty(), origin::user,
     F("you must specify a branch to clone"));

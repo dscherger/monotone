@@ -121,7 +121,9 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
 
   string pattern("");
   if (!app.opts.no_show_encloser)
-    app.lua.hook_get_encloser_pattern(file_path_external(utf8(src_name)), pattern);
+    app.lua.hook_get_encloser_pattern(file_path_external(utf8(src_name,
+                                                              origin::user)),
+                                      pattern);
 
   make_diff(src_name, dst_name,
             src_id, dst_id,

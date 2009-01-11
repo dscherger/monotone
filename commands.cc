@@ -26,6 +26,7 @@
 #include "app_state.hh"
 #include "project.hh"
 #include "work.hh"
+#include "vocab_cast.hh"
 
 #ifndef _WIN32
 #include "lexical_cast.hh"
@@ -157,13 +158,13 @@ namespace commands {
                    bool use_workspace_options,
                    options::options_type const & opts,
                    bool _allow_completion)
-    : m_primary_name(utf8(primary_name)),
+    : m_primary_name(utf8(primary_name, origin::internal)),
       m_parent(parent),
       m_is_group(is_group),
       m_hidden(hidden),
-      m_params(utf8(params)),
-      m_abstract(utf8(abstract)),
-      m_desc(utf8(desc)),
+      m_params(utf8(params, origin::internal)),
+      m_abstract(utf8(abstract, origin::internal)),
+      m_desc(utf8(desc, origin::internal)),
       m_use_workspace_options(use_workspace_options),
       m_opts(opts),
       m_allow_completion(_allow_completion)
@@ -183,7 +184,7 @@ namespace commands {
 
     m_names.insert(m_primary_name);
 
-    vector< utf8 > onv = split_into_words(utf8(other_names));
+    vector< utf8 > onv = split_into_words(utf8(other_names, origin::internal));
     m_names.insert(onv.begin(), onv.end());
   }
 
@@ -421,7 +422,7 @@ namespace commands {
                      allow_completion() && completion_ok)
               {
                 string temp((*iter2)(), 0, prefix().length());
-                utf8 p(temp);
+                utf8 p(temp, origin::internal);
                 if (prefix == p)
                   matches[caux] = child;
               }
@@ -516,7 +517,7 @@ namespace commands
     command_id id;
     for (args_vector::const_iterator iter = args.begin();
          iter != args.end(); iter++)
-      id.push_back(utf8((*iter)()));
+      id.push_back(*iter);
 
     set< command_id > matches;
 
@@ -556,7 +557,7 @@ namespace commands
     if (matches.empty())
       {
         E(false, origin::user,
-          F("unknown command '%s'") % join_words(id)());
+          F("unknown command '%s'") % join_words(id));
       }
     else if (matches.size() == 1)
       {
@@ -602,7 +603,7 @@ namespace commands
 
     size_t col = 0;
     out << "  " << tag << " ";
-    col += display_width(utf8(tag + "   "));
+    col += display_width(utf8(tag + "   ", origin::internal));
 
     out << string(colabstract - col, ' ');
     col = colabstract;
@@ -721,7 +722,7 @@ namespace commands
 
   command_id make_command_id(std::string const & path)
   {
-    return split_into_words(utf8(path));
+    return split_into_words(utf8(path, origin::user));
   }
 
   void explain_usage(command_id const & ident, ostream & out)
@@ -922,19 +923,21 @@ process_commit_message_args(options const & opts,
     {
       string msg;
       join_lines(opts.message, msg);
-      log_message = utf8(msg);
+      log_message = utf8(msg, origin::user);
       if (!opts.no_prefix && message_prefix().length() != 0)
-        log_message = utf8(message_prefix() + "\n\n" + log_message());
+        log_message = utf8(message_prefix() + "\n\n" + log_message(),
+                           origin::user);
       given = true;
     }
   else if (opts.msgfile_given)
     {
       data dat;
       read_data_for_command_line(opts.msgfile, dat);
-      external dat2 = external(dat());
+      external dat2 = typecast_vocab<external>(dat);
       system_to_utf8(dat2, log_message);
       if (!opts.no_prefix && message_prefix().length() != 0)
-        log_message = utf8(message_prefix() + "\n\n" + log_message());
+        log_message = utf8(message_prefix() + "\n\n" + log_message(),
+                           origin::user);
       given = true;
     }
   else if (message_prefix().length() != 0)
@@ -972,7 +975,7 @@ CMD_HIDDEN(testg3, "testg3", "", CMD_REF(testg),
 static args_vector
 mkargs(const char *words)
 {
-  return split_into_words(arg_type(words));
+  return split_into_words(arg_type(words, origin::user));
 }
 
 UNIT_TEST(commands, make_command_id)

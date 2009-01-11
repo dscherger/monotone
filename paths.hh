@@ -115,12 +115,12 @@ class utf8;
 // for the basename of the root directory.  It resembles, but is not, a
 // vocab type.
 
-class path_component
+class path_component : public origin_aware
 {
 public:
   path_component() : data() {}
   explicit path_component(utf8 const &);
-  explicit path_component(std::string const &);
+  path_component(std::string const &, origin::type);
   explicit path_component(char const *);
 
   std::string const & operator()() const { return data; }
@@ -154,7 +154,7 @@ template <> void dump(path_component const &, std::string &);
 // It's possible this will become a proper virtual interface in the future,
 // but since the implementation is exactly the same in all cases, there isn't
 // much point ATM...
-class any_path
+class any_path : public origin_aware
 {
 public:
   // converts to native charset and path syntax
@@ -174,13 +174,14 @@ public:
   any_path dirname() const;
 
   any_path(any_path const & other)
-    : data(other.data) {}
+    : origin_aware(other.made_from), data(other.data) {}
   any_path & operator=(any_path const & other)
-  { data = other.data; return *this; }
+  { made_from = other.made_from; data = other.data; return *this; }
 
 protected:
   std::string data;
   any_path() {}
+  any_path(origin::type whence) : origin_aware(whence) {}
 
 private:
   any_path(std::string const & path,

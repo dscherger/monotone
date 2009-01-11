@@ -404,17 +404,17 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
 // but is not acceptable to bad_component (above) and therefore we have
 // to open-code most of those checks.
 path_component::path_component(utf8 const & d)
-  : data(d())
+  : origin_aware(d.made_from), data(d())
 {
   MM(data);
   I(!has_bad_component_chars(data) && data != "." && data != "..");
 }
 
-path_component::path_component(string const & d)
-  : data(d)
+path_component::path_component(string const & d, origin::type whence)
+  : origin_aware(whence), data(d)
 {
   MM(data);
-  I(utf8_validate(utf8(data))
+  I(utf8_validate(utf8(data, origin::internal))
     && !has_bad_component_chars(data)
     && data != "." && data != "..");
 }
@@ -423,7 +423,7 @@ path_component::path_component(char const * d)
   : data(d)
 {
   MM(data);
-  I(utf8_validate(utf8(data))
+  I(utf8_validate(utf8(data, origin::internal))
     && !has_bad_component_chars(data)
     && data != "." && data != "..");
 }
@@ -445,7 +445,7 @@ template <> void dump(path_component const & pc, std::string & to)
 file_path::file_path(file_path::source_type type, string const & path, bool to_workspace_root)
 {
   MM(path);
-  I(utf8_validate(utf8(path)));
+  I(utf8_validate(utf8(path, origin::internal)));
   if (type == external)
     {
       string normalized;
@@ -460,10 +460,12 @@ file_path::file_path(file_path::source_type type, string const & path, bool to_w
   I(is_valid_internal(data));
 }
 
-file_path::file_path(file_path::source_type type, utf8 const & path, bool to_workspace_root)
+file_path::file_path(file_path::source_type type, utf8 const & path,
+                     bool to_workspace_root)
+  : any_path(path.made_from)
 {
   MM(path);
-  I(utf8_validate(path));
+  E(utf8_validate(path), made_from, F("Invalid utf8"));
   if (type == external)
     {
       string normalized;
@@ -506,7 +508,7 @@ bookkeeping_path::external_string_is_bookkeeping_path(utf8 const & path)
     {
       return false;
     }
-  return internal_string_is_bookkeeping_path(utf8(normalized));
+  return internal_string_is_bookkeeping_path(utf8(normalized, path.made_from));
 }
 bool bookkeeping_path::internal_string_is_bookkeeping_path(utf8 const & path)
 {
@@ -659,7 +661,7 @@ any_path::as_external() const
   // not much, though, because utf8_to_system_string does all the hard work.
   // it is carefully optimized.  do not screw it up.
   external out;
-  utf8_to_system_strict(utf8(data), out);
+  utf8_to_system_strict(utf8(data, made_from), out);
   return out();
 #endif
 }
@@ -832,7 +834,7 @@ system_path::system_path(utf8 const & path)
 boost::shared_ptr<any_path>
 new_optimal_path(std::string path, bool to_workspace_root)
 {
-  utf8 const utf8_path = utf8(path);
+  utf8 const utf8_path = utf8(path, origin::user);
   string normalized;
   try
     {
@@ -1911,10 +1913,12 @@ UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::internal_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::internal_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
@@ -1933,10 +1937,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
@@ -1957,10 +1963,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
@@ -1985,10 +1993,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 #endif // BUILD_UNIT_TESTS

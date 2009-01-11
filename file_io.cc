@@ -20,6 +20,7 @@
 #include "charset.hh"
 #include "platform-wrapped.hh"
 #include "numeric_vocab.hh"
+#include "vocab_cast.hh"
 
 // this file deals with talking to the filesystem, loading and
 // saving files.
@@ -340,7 +341,11 @@ read_data(any_path const & p, data & dat)
   unfiltered_pipe->start_msg();
   file >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  origin::type data_from = p.made_from;
+  if (data_from != origin::internal || data_from == origin::database)
+    data_from = origin::system;
+  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+             data_from);
 }
 
 void read_directory(any_path const & path,
@@ -365,7 +370,8 @@ read_data_stdin(data & dat)
   unfiltered_pipe->start_msg();
   cin >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+             origin::user);
 }
 
 void
@@ -459,9 +465,9 @@ safe_compose(file_path const & path, path_component const & pc, bool isdir,
       // sort of diagnostic to issue.
       utf8 badpth;
       if (path.empty())
-        badpth = utf8(pc());
+        badpth = typecast_vocab<utf8>(pc);
       else
-        badpth = utf8(path.as_internal() + "/" + pc());
+        badpth = utf8(path.as_internal() + "/" + pc(), pc.made_from);
 
       if (!isdir)
         W(F("skipping file '%s' with unsupported name") % badpth);
@@ -570,7 +576,8 @@ calculate_ident(file_path const & file,
   Botan::DataSource_Stream infile(file.as_external(), true);
   p->process_msg(infile);
 
-  ident = file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  ident = file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+                  origin::internal);
 }
 
 // Local Variables:

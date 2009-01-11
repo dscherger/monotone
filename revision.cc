@@ -43,6 +43,7 @@
 #include "roster.hh"
 #include "graph.hh"
 #include "key_store.hh"
+#include "vocab_cast.hh"
 
 using std::back_inserter;
 using std::copy;
@@ -208,7 +209,8 @@ find_common_ancestor_for_merge(database & db,
           else
             {
               curr_leaf_ancestors = shared_bitmap(new bitmap());
-              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(curr_leaf)),
+              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(curr_leaf),
+                                                                 origin::internal),
                                              inverse_graph, ancestors,
                                              curr_leaf_ancestors);
             }
@@ -232,7 +234,8 @@ find_common_ancestor_for_merge(database & db,
         {
           if (isect->test(i))
             {
-              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(i)),
+              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(i),
+                                                                 origin::internal),
                                              inverse_graph, ancestors, isect_ancs);
             }
         }
@@ -251,7 +254,7 @@ find_common_ancestor_for_merge(database & db,
     }
 
   I(leaves.size() == 1);
-  anc = revision_id(intern.lookup(*leaves.begin()));
+  anc = revision_id(intern.lookup(*leaves.begin()), origin::internal);
 }
 
 // FIXME: this algorithm is incredibly inefficient; it's O(n) where n is the
@@ -333,7 +336,7 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
   while (! stk.empty())
     {
       ctx us = stk.top();
-      revision_id rev(intern.lookup(us));
+      revision_id rev(intern.lookup(us), origin::internal);
 
       pair<gi,gi> parents = graph.equal_range(rev);
       bool pushed = false;
@@ -586,7 +589,7 @@ ancestry_difference(database & db, revision_id const & a,
   {
     if (au->test(i))
       {
-        revision_id rid(intern.lookup(i));
+        revision_id rid(intern.lookup(i), origin::internal);
         if (!null_id(rid))
           new_stuff.insert(rid);
       }
@@ -925,10 +928,11 @@ void anc_graph::write_certs()
       {
         char buf[constants::epochlen_bytes];
         keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
-        epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes));
+        epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes),
+                             origin::internal);
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);
-        db.set_epoch(branch_name(*i), new_epoch);
+        db.set_epoch(branch_name(*i, origin::internal), new_epoch);
       }
   }
 
@@ -1542,8 +1546,10 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                               }
                             else if (key == "execute" || key == "manual_merge")
                               child_roster.set_attr(j->first,
-                                                    attr_key("mtn:" + key),
-                                                    attr_value(k->second));
+                                                    attr_key("mtn:" + key,
+                                                             origin::internal),
+                                                    attr_value(k->second,
+                                                               origin::internal));
                             else
                               E(false, origin::no_fault,
                                 F("unknown attribute '%s' on path '%s'\n"
@@ -1705,7 +1711,7 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
     {
       manifest_id child, parent;
       child = manifest_id(i->inner().ident.inner());
-      parent = manifest_id(i->inner().value());
+      parent = typecast_vocab<manifest_id>(i->inner().value);
 
       u64 parent_node = graph.add_node_for_old_manifest(parent);
       u64 child_node = graph.add_node_for_old_manifest(child);
@@ -1884,7 +1890,7 @@ static void write_insane_revision(revision_t const & rev,
 {
   basic_io::printer pr;
   print_insane_revision(pr, rev);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 template <> void

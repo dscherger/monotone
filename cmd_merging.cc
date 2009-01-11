@@ -31,6 +31,7 @@
 #include "keys.hh"
 #include "key_store.hh"
 #include "database.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::make_pair;
@@ -101,7 +102,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
   set< branch_name > branches;
   for (vector< revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); i++)
-    branches.insert(branch_name(i->inner().value()));
+    branches.insert(typecast_vocab<branch_name>(i->inner().value));
 
   if (branches.find(opts.branchname) != branches.end())
     {
@@ -346,7 +347,8 @@ merge_two(options & opts, lua_hooks & lua, project_t & project,
   if (branch != opts.branchname)
     log << setw(fieldwidth) << "to branch '" << branch << "'\n";
 
-  process_commit_message_args(opts, log_message_given, log_message, utf8(log.str()));
+  process_commit_message_args(opts, log_message_given, log_message,
+                              utf8(log.str(), origin::internal));
 
   // Now it's time for the real work.
   if (automate)
@@ -559,9 +561,9 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
   if (args.size() != 3)
     throw usage(execid);
 
-  project.get_branch_heads(branch_name(idx(args, 0)()), src_heads,
+  project.get_branch_heads(typecast_vocab<branch_name>(idx(args, 0)), src_heads,
                            app.opts.ignore_suspend_certs);
-  project.get_branch_heads(branch_name(idx(args, 1)()), dst_heads,
+  project.get_branch_heads(typecast_vocab<branch_name>(idx(args, 1)), dst_heads,
                            app.opts.ignore_suspend_certs);
 
   E(src_heads.size() != 0, origin::user,
@@ -598,7 +600,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         % *src_i % idx(args, 1)());
       transaction_guard guard(db);
       project.put_revision_in_branch(keys, *src_i,
-                                     branch_name(idx(args, 1)()));
+                                     typecast_vocab<branch_name>(idx(args, 1)));
       guard.commit();
     }
   else
@@ -678,17 +680,18 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       utf8 log_message;
       utf8 log_prefix = utf8((FL("propagate from branch '%s' (head %s)\n"
                                "            to branch '%s' (head %s)\n")
-                            % idx(args, 0)
-                            % *src_i
-                            % idx(args, 1)
-                            % *dst_i).str());
+                              % idx(args, 0)
+                              % *src_i
+                              % idx(args, 1)
+                              % *dst_i).str(),
+                             origin::internal);
 
       process_commit_message_args(app.opts, log_message_given, log_message, log_prefix);
 
       project.put_standard_certs_from_options(app.opts, app.lua,
                                               keys,
                                               merged,
-                                              branch_name(idx(args, 1)()),
+                                              typecast_vocab<branch_name>(idx(args, 1)),
                                               log_message);
 
       guard.commit();
@@ -826,7 +829,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
 
   complete(app.opts, app.lua, project, idx(args, 0)(), left);
   complete(app.opts, app.lua, project, idx(args, 1)(), right);
-  branch = branch_name(idx(args, 2)());
+  branch = typecast_vocab<branch_name>(idx(args, 2));
 
   E(!(left == right), origin::user,
     F("%s and %s are the same revision, aborting")
@@ -1074,7 +1077,7 @@ CMD(store, "store", "", CMD_REF(conflicts),
   std::ostringstream output;
   show_conflicts_core(db, app.lua, left_id, right_id, true, true, output);
 
-  data dat(output.str());
+  data dat(output.str(), origin::internal);
   write_data(app.opts.conflicts_file, dat);
 }
 
@@ -1319,7 +1322,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
                      "                     through %s\n")
                   % from_rid
                   % to_rid).str();
-    work.write_user_log(utf8(log_str));
+    work.write_user_log(utf8(log_str, origin::internal));
   }
 }
 

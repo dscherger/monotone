@@ -273,15 +273,19 @@ compile(vector<arg_type>::const_iterator const & beg,
 }
 
 globish::globish(string const & p, origin::type made_from)
-  : compiled_pattern(compile(p, made_from)) {}
+  : origin_aware(made_from),
+    compiled_pattern(compile(p, made_from)) {}
 globish::globish(char const * p, origin::type made_from)
-  : compiled_pattern(compile(p, made_from)) {}
+  : origin_aware(made_from),
+    compiled_pattern(compile(p, made_from)) {}
 
 globish::globish(vector<arg_type> const & p)
-  : compiled_pattern(compile(p.begin(), p.end())) {}
+  : origin_aware(origin::user),
+    compiled_pattern(compile(p.begin(), p.end())) {}
 globish::globish(vector<arg_type>::const_iterator const & beg,
                  vector<arg_type>::const_iterator const & end)
-  : compiled_pattern(compile(beg, end)) {}
+  : origin_aware(origin::user),
+    compiled_pattern(compile(beg, end)) {}
 
 // Debugging.
 
@@ -622,9 +626,9 @@ UNIT_TEST(globish, syntax)
 UNIT_TEST(globish, from_vector)
 {
   vector<arg_type> v;
-  v.push_back(arg_type("a"));
-  v.push_back(arg_type("b"));
-  v.push_back(arg_type("c"));
+  v.push_back(arg_type("a", origin::internal));
+  v.push_back(arg_type("b", origin::internal));
+  v.push_back(arg_type("c", origin::internal));
   globish combined(v);
   string s;
   dump(combined, s);

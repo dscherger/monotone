@@ -381,8 +381,8 @@ CMD_AUTOMATE(stdio, "",
           vector<string>::iterator i = cmdline.begin();
           for (; i != cmdline.end(); ++i)
             {
-              args.push_back(arg_type(*i));
-              id.push_back(utf8(*i));
+              args.push_back(arg_type(*i, origin::user));
+              id.push_back(utf8(*i, origin::user));
             }
 
           set< command_id > matches =
@@ -487,7 +487,7 @@ LUAEXT(mtn_automate, )
 
       for (int i=1; i<=n; i++)
         {
-          arg_type next_arg(luaL_checkstring(LS, i));
+          arg_type next_arg(luaL_checkstring(LS, i), origin::user);
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
@@ -506,7 +506,7 @@ LUAEXT(mtn_automate, )
       commands::command_id id;
       for (args_vector::const_iterator iter = args.begin();
            iter != args.end(); iter++)
-        id.push_back(utf8((*iter)()));
+        id.push_back(*iter);
 
       E(!id.empty(), origin::user, F("no command found"));
 

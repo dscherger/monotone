@@ -44,6 +44,7 @@
 #include "work.hh"
 #include "xdelta.hh"
 #include "database.hh"
+#include "vocab_cast.hh"
 
 using std::allocator;
 using std::basic_ios;
@@ -86,7 +87,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
   branch_name branch;
   if (args.size() == 1)
     // branchname was explicitly given, use that
-    branch = branch_name(idx(args, 0)());
+    branch = typecast_vocab<branch_name>(idx(args, 0));
   else
     {
       workspace::require_workspace(F("with no argument, this command prints the heads of the workspace's branch"));
@@ -1993,14 +1994,14 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
   transaction_guard tr(db);
   if (args.size() == 1)
     {
-      file_data dat(idx(args, 0)());
+      file_data dat = typecast_vocab<file_data>(idx(args, 0));
       calculate_ident(dat, sha1sum);
 
       db.put_file(sha1sum, dat);
     }
   else if (args.size() == 2)
     {
-      file_data dat(idx(args, 1)());
+      file_data dat = typecast_vocab<file_data>(idx(args, 1));
       calculate_ident(dat, sha1sum);
       file_id base_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
       E(db.file_version_exists(base_id), origin::user,
@@ -2045,7 +2046,7 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
   database db(app);
 
   revision_t rev;
-  read_revision(revision_data(idx(args, 0)()), rev);
+  read_revision(typecast_vocab<revision_data>(idx(args, 0)), rev);
 
   // recalculate manifest
   temp_node_id_source nis;
@@ -2111,8 +2112,9 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
     F("no such revision '%s'") % hrid);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  put_simple_revision_cert(db, keys, rid, cert_name(idx(args, 1)()),
-                           cert_value(idx(args, 2)()));
+  put_simple_revision_cert(db, keys, rid,
+                           typecast_vocab<cert_name>(idx(args, 1)),
+                           typecast_vocab<cert_value>(idx(args, 2)));
 }
 
 // Name: get_db_variables
@@ -2141,7 +2143,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
   if (args.size() == 1)
     {
       filter_by_domain = true;
-      filter = var_domain(idx(args, 0)());
+      filter = typecast_vocab<var_domain>(idx(args, 0));
     }
 
   map<var_key, var_value> vars;
@@ -2207,11 +2209,11 @@ CMD_AUTOMATE(set_db_variable, N_("DOMAIN NAME VALUE"),
 
   database db(app);
 
-  var_domain domain = var_domain(idx(args, 0)());
+  var_domain domain = typecast_vocab<var_domain>(idx(args, 0));
   utf8 name = idx(args, 1);
   utf8 value = idx(args, 2);
-  var_key key(domain, var_name(name()));
-  db.set_var(key, var_value(value()));
+  var_key key(domain, typecast_vocab<var_name>(name));
+  db.set_var(key, typecast_vocab<var_value>(value));
 }
 
 // Name: drop_db_variables
@@ -2237,11 +2239,11 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
 
   database db(app);
 
-  var_domain domain(idx(args, 0)());
+  var_domain domain = typecast_vocab<var_domain>(idx(args, 0));
 
   if (args.size() == 2)
     {
-      var_name name(idx(args, 1)());
+      var_name name = typecast_vocab<var_name>(idx(args, 1));
       var_key  key(domain, name);
       E(db.var_exists(key), origin::user,
         F("no var with name %s in domain %s") % name % domain);

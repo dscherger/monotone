@@ -311,8 +311,10 @@ UNIT_TEST(transform, enc)
 
 UNIT_TEST(transform, rdiff)
 {
-  data dat1(string("the first day of spring\nmakes me want to sing\n"));
-  data dat2(string("the first day of summer\nis a major bummer\n"));
+  data dat1(string("the first day of spring\nmakes me want to sing\n"),
+            origin::internal);
+  data dat2(string("the first day of summer\nis a major bummer\n"),
+            origin::internal);
   delta del;
   diff(dat1, dat2, del);
 
@@ -323,7 +325,8 @@ UNIT_TEST(transform, rdiff)
 
 UNIT_TEST(transform, calculate_ident)
 {
-  data input(string("the only blender which can be turned into the most powerful vaccum cleaner"));
+  data input(string("the only blender which can be turned into the most powerful vaccum cleaner"),
+             origin::internal);
   id output;
   string ident("86e03bdb3870e2a207dfd0dcbfd4c4f2e3bc97bd");
   calculate_ident(input, output);
@@ -332,7 +335,7 @@ UNIT_TEST(transform, calculate_ident)
 
 UNIT_TEST(transform, corruption_check)
 {
-  data input(string("i'm so fragile, fragile when you're here"));
+  data input(string("i'm so fragile, fragile when you're here"), origin::internal);
   gzip<data> gzd;
   encode_gzip(input, gzd);
 

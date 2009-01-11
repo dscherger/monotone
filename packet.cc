@@ -195,7 +195,7 @@ namespace
       id src_hash(decode_hexenc_as<id>(src_id, made_from)),
         dst_hash(decode_hexenc_as<id>(dst_id, made_from));
       delta contents;
-      unpack(base64<gzip<delta> >(body), contents);
+      unpack(base64<gzip<delta> >(body, made_from), contents);
       cons.consume_file_delta(file_id(src_hash),
                               file_id(dst_hash),
                               file_delta(contents));
@@ -239,7 +239,7 @@ namespace
       validate_key(args);
       validate_base64(body);
 
-      cons.consume_public_key(rsa_keypair_id(args),
+      cons.consume_public_key(rsa_keypair_id(args, made_from),
                               decode_base64_as<rsa_pub_key>(body, made_from));
     }
 
@@ -401,6 +401,7 @@ read_packets(istream & in, packet_consumer & cons)
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 #include "xdelta.hh"
+#include "vocab_cast.hh"
 
 using std::ostringstream;
 
@@ -514,7 +515,7 @@ UNIT_TEST(packet, roundabout)
 
     // cert now accepts revision_id exclusively, so we need to cast the
     // file_id to create a cert to test the packet writer with.
-    cert c(revision_id(fid.inner()()), cert_name("smell"), val,
+    cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
            rsa_keypair_id("fun@moonman.com"), sig);
     pw.consume_revision_cert(revision<cert>(c));
 

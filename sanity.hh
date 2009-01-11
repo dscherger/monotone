@@ -31,15 +31,6 @@ namespace origin {
   std::string type_to_string(type t);
 }
 
-// Something that knows where it came from.
-class origin_aware
-{
-public:
-  origin::type made_from;
-  origin_aware() : made_from(origin::internal) {}
-  origin_aware(origin::type m) : made_from(m) {}
-};
-
 // An error that may have had an external source.
 class recoverable_failure : public std::runtime_error {
   origin::type _caused_by;

@@ -34,7 +34,7 @@ namespace resolve_conflicts
   boost::shared_ptr<any_path>
   new_file_path(std::string path)
   {
-    return boost::shared_ptr<any_path>(new file_path(file_path_external(utf8(path))));
+    return boost::shared_ptr<any_path>(new file_path(file_path_external(utf8(path, origin::user))));
   };
 
   static char const *
@@ -380,7 +380,7 @@ get_nid_name_pair(roster_t const & roster,
                   node_id & nid,
                   std::pair<node_id, path_component> & name)
 {
-  node_t const node = roster.get_node(file_path_external(utf8(path)));
+  node_t const node = roster.get_node(file_path_external(utf8(path, origin::internal)));
   nid = node->self;
   name = make_pair (node->parent, node->name);
 }
@@ -2000,7 +2000,7 @@ read_attr_state_left(basic_io::parser & pars,
       pars.sym();
       value.first = true;
       pars.str(tmp);
-      value.second = attr_value(tmp);
+      value.second = attr_value(tmp, pars.tok.in.made_from);
     }
   else
     {
@@ -2022,7 +2022,7 @@ read_attr_state_right(basic_io::parser & pars,
       pars.sym();
       value.first = true;
       pars.str(tmp);
-      value.second = attr_value(tmp);
+      value.second = attr_value(tmp, pars.tok.in.made_from);
     }
   else
     {
@@ -2048,11 +2048,11 @@ read_attribute_conflict(basic_io::parser & pars,
   if (tmp == "file")
     {
       pars.esym(syms::attr_name); pars.str(tmp);
-      conflict.key = attr_key(tmp);
+      conflict.key = attr_key(tmp, pars.tok.in.made_from);
       pars.esym(syms::ancestor_name); pars.str();
       pars.esym(syms::ancestor_file_id); pars.hex();
       pars.esym(syms::left_name); pars.str(tmp);
-      conflict.nid = left_roster.get_node(file_path_external(utf8(tmp)))->self;
+      conflict.nid = left_roster.get_node(file_path_external(utf8(tmp, pars.tok.in.made_from)))->self;
       pars.esym(syms::left_file_id); pars.hex();
       read_attr_state_left(pars, conflict.left);
       pars.esym(syms::right_name); pars.str();
@@ -2062,10 +2062,10 @@ read_attribute_conflict(basic_io::parser & pars,
   else if (tmp == "directory")
     {
       pars.esym(syms::attr_name); pars.str(tmp);
-      conflict.key = attr_key(tmp);
+      conflict.key = attr_key(tmp, pars.tok.in.made_from);
       pars.esym(syms::ancestor_name); pars.str();
       pars.esym(syms::left_name); pars.str(tmp);
-      conflict.nid = left_roster.get_node(file_path_external(utf8(tmp)))->self;
+      conflict.nid = left_roster.get_node(file_path_external(utf8(tmp, pars.tok.in.made_from)))->self;
       read_attr_state_left(pars, conflict.left);
       pars.esym(syms::right_name); pars.str();
       read_attr_state_right(pars, conflict.right);
@@ -2332,7 +2332,7 @@ roster_merge_result::write_conflict_file(database & db,
   report_attribute_conflicts(*left_roster, *right_roster, adaptor, true, output);
   report_file_content_conflicts(lua, *left_roster, *right_roster, adaptor, true, output);
 
-  data dat(output.str());
+  data dat(output.str(), origin::internal);
   write_data(file_name, dat);
 
 } // roster_merge_result::write_conflict_file
@@ -3212,7 +3212,7 @@ void string_to_set(string const & from, set<revision_id> & to)
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
       char label = ((*i - '0') << 4) + (*i - '0');
-      to.insert(revision_id(string(constants::idlen_bytes, label)));
+      to.insert(revision_id(string(constants::idlen_bytes, label), origin::internal));
     }
 }
 
@@ -3268,8 +3268,8 @@ test_a_scalar_merge_impl(scalar_val left_val, string const & left_marks_str,
   scalar.check_result(left_val, right_val, result, expected_outcome);
 }
 
-static const revision_id root_rid(string(constants::idlen_bytes, '\0'));
-static const file_id arbitrary_file(string(constants::idlen_bytes, '\0'));
+static const revision_id root_rid(string(constants::idlen_bytes, '\0'), origin::internal);
+static const file_id arbitrary_file(string(constants::idlen_bytes, '\0'), origin::internal);
 
 struct base_scalar
 {
@@ -3498,7 +3498,8 @@ struct file_content_scalar : public virtual file_scalar
   {
     I(val != scalar_conflict);
     return file_id(string(constants::idlen_bytes,
-                          (val == scalar_a) ? '\xaa' : '\xbb'));
+                          (val == scalar_a) ? '\xaa' : '\xbb'),
+                   origin::internal);
   }
 
   void
@@ -3530,7 +3531,7 @@ struct file_content_scalar : public virtual file_scalar
         I(null_id(content));
         // resolve the conflict, thus making sure that resolution works and
         // that this was the only conflict signaled
-        content = file_id(string(constants::idlen_bytes, '\xff'));
+        content = file_id(string(constants::idlen_bytes, '\xff'), origin::internal);
         result.file_content_conflicts.pop_back();
         break;
       }
@@ -3681,15 +3682,15 @@ UNIT_TEST(roster_merge, scalar_merges)
 
 namespace
 {
-  const revision_id a_uncommon1(string(constants::idlen_bytes, '\xaa'));
-  const revision_id a_uncommon2(string(constants::idlen_bytes, '\xbb'));
-  const revision_id b_uncommon1(string(constants::idlen_bytes, '\xcc'));
-  const revision_id b_uncommon2(string(constants::idlen_bytes, '\xdd'));
-  const revision_id common1(string(constants::idlen_bytes, '\xee'));
-  const revision_id common2(string(constants::idlen_bytes, '\xff'));
+  const revision_id a_uncommon1(string(constants::idlen_bytes, '\xaa'), origin::internal);
+  const revision_id a_uncommon2(string(constants::idlen_bytes, '\xbb'), origin::internal);
+  const revision_id b_uncommon1(string(constants::idlen_bytes, '\xcc'), origin::internal);
+  const revision_id b_uncommon2(string(constants::idlen_bytes, '\xdd'), origin::internal);
+  const revision_id common1(string(constants::idlen_bytes, '\xee'), origin::internal);
+  const revision_id common2(string(constants::idlen_bytes, '\xff'), origin::internal);
 
-  const file_id fid1(string(constants::idlen_bytes, '\x11'));
-  const file_id fid2(string(constants::idlen_bytes, '\x22'));
+  const file_id fid1(string(constants::idlen_bytes, '\x11'), origin::internal);
+  const file_id fid2(string(constants::idlen_bytes, '\x22'), origin::internal);
 }
 
 static void

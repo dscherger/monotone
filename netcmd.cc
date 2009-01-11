@@ -463,7 +463,7 @@ netcmd::write_data_cmd(netcmd_item_type type,
   if (dat.size() > constants::netcmd_minimum_bytes_to_bother_with_gzip)
     {
       gzip<data> zdat;
-      encode_gzip(data(dat), zdat);
+      encode_gzip(data(dat, origin::internal), zdat);
       payload += static_cast<char>(1); // compressed flag
       insert_variable_length_string(zdat(), payload);
     }
@@ -648,7 +648,7 @@ UNIT_TEST(netcmd, functions)
         string buf;
         rsa_keypair_id out_server_keyname("server@there"), in_server_keyname;
         rsa_pub_key out_server_key("9387938749238792874"), in_server_key;
-        id out_nonce(raw_sha1("nonce it up")), in_nonce;
+        id out_nonce(raw_sha1("nonce it up"), origin::internal), in_nonce;
         out_cmd.write_hello_cmd(out_server_keyname, out_server_key, out_nonce);
         do_netcmd_roundtrip(out_cmd, in_cmd, buf);
         in_cmd.read_hello_cmd(in_server_keyname, in_server_key, in_nonce);
@@ -702,12 +702,14 @@ UNIT_TEST(netcmd, functions)
         netcmd out_cmd, in_cmd;
         protocol_role out_role = source_and_sink_role, in_role;
         string buf;
-        id out_client(raw_sha1("happy client day")), out_nonce1(raw_sha1("nonce me amadeus")),
-          in_client, in_nonce1;
+        id out_client(raw_sha1("happy client day"), origin::internal);
+        id out_nonce1(raw_sha1("nonce me amadeus"), origin::internal);
+        id in_client, in_nonce1;
         // total cheat, since we don't actually verify that rsa_oaep_sha_data
         // is sensible anywhere here...
         rsa_oaep_sha_data out_key("nonce start my heart"), in_key;
-        rsa_sha1_signature out_signature(raw_sha1("burble") + raw_sha1("gorby")), in_signature;
+        rsa_sha1_signature out_signature(raw_sha1("burble") + raw_sha1("gorby"),
+                                         origin::internal), in_signature;
         globish out_include_pattern("radishes galore!", origin::user),
           in_include_pattern;
         globish out_exclude_pattern("turnips galore!", origin::user),
@@ -747,10 +749,10 @@ UNIT_TEST(netcmd, functions)
         refinement_type out_ty (refinement_query), in_ty(refinement_response);
         merkle_node out_node, in_node;
 
-        out_node.set_raw_slot(0, id(raw_sha1("The police pulled Kris Kringle over")));
-        out_node.set_raw_slot(3, id(raw_sha1("Kris Kringle tried to escape from the police")));
-        out_node.set_raw_slot(8, id(raw_sha1("He was arrested for auto theft")));
-        out_node.set_raw_slot(15, id(raw_sha1("He was whisked away to jail")));
+        out_node.set_raw_slot(0, id(raw_sha1("The police pulled Kris Kringle over"), origin::internal));
+        out_node.set_raw_slot(3, id(raw_sha1("Kris Kringle tried to escape from the police"), origin::internal));
+        out_node.set_raw_slot(8, id(raw_sha1("He was arrested for auto theft"), origin::internal));
+        out_node.set_raw_slot(15, id(raw_sha1("He was whisked away to jail"), origin::internal));
         out_node.set_slot_state(0, subtree_state);
         out_node.set_slot_state(3, leaf_state);
         out_node.set_slot_state(8, leaf_state);
@@ -785,7 +787,7 @@ UNIT_TEST(netcmd, functions)
         L(FL("checking i/o round trip on data_cmd"));
         netcmd out_cmd, in_cmd;
         netcmd_item_type out_type(file_item), in_type(key_item);
-        id out_id(raw_sha1("tuna is not yummy")), in_id;
+        id out_id(raw_sha1("tuna is not yummy"), origin::internal), in_id;
         string out_dat("thank you for flying northwest"), in_dat;
         string buf;
         out_cmd.write_data_cmd(out_type, out_id, out_dat);
@@ -801,8 +803,8 @@ UNIT_TEST(netcmd, functions)
         L(FL("checking i/o round trip on delta_cmd"));
         netcmd out_cmd, in_cmd;
         netcmd_item_type out_type(file_item), in_type(key_item);
-        id out_head(raw_sha1("your seat cusion can be reused")), in_head;
-        id out_base(raw_sha1("as a floatation device")), in_base;
+        id out_head(raw_sha1("your seat cusion can be reused"), origin::internal), in_head;
+        id out_base(raw_sha1("as a floatation device"), origin::internal), in_base;
         delta out_delta("goodness, this is not an xdelta"), in_delta;
         string buf;
 

@@ -103,7 +103,8 @@ workspace::write_ws_format()
     }
   else
     {
-      data f_dat(lexical_cast<string>(current_workspace_format) + "\n");
+      data f_dat(lexical_cast<string>(current_workspace_format) + "\n",
+                 origin::workspace);
       write_data(f_path, f_dat);
     }
 }

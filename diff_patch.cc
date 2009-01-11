@@ -860,7 +860,7 @@ content_merger::attempt_auto_merge(file_path const & anc_path, // inputs
       string tmp;
 
       join_lines(merged_lines, tmp);
-      merge_data = file_data(tmp);
+      merge_data = file_data(tmp, origin::internal);
       return true;
     }
 

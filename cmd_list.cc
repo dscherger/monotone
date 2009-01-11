@@ -33,6 +33,7 @@
 #include "vocab_cast.hh"
 #include "app_state.hh"
 #include "project.hh"
+#include "vocab_cast.hh"
 #include "work.hh"
 
 using std::cout;
@@ -102,7 +103,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   if (colon_pos != string::npos)
     {
       string substr(str, 0, colon_pos);
-      colon_pos = display_width(utf8(substr));
+      colon_pos = display_width(utf8(substr, origin::internal));
       extra_str = string(colon_pos, ' ') + ": %s\n";
     }
 
@@ -416,7 +417,8 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
            i != args.end();
            ++i)
         {
-          map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
+          map<branch_name, epoch_data>::const_iterator j =
+            epochs.find(typecast_vocab<branch_name>((*i)));
           E(j != epochs.end(), origin::user, F("no epoch for branch %s") % *i);
           cout << encode_hexenc(j->second.inner()(),
                                 j->second.inner().made_from)

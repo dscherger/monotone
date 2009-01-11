@@ -29,6 +29,7 @@
 #include "simplestring_xform.hh"
 #include "database.hh"
 #include "roster.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::make_pair;
@@ -97,7 +98,7 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
                    "      attr %s")
                  % (i->first) % (i->second)).str() += "\n";
     }
-    summary = utf8(out);
+  summary = utf8(out, origin::internal);
 }
 
 static void
@@ -111,7 +112,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
 
-  utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % branchname).str());
+  utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % branchname).str(),
+                             branchname.made_from);
   external branch_external;
   utf8_to_system_best_effort(branch_comment, branch_external);
 
@@ -125,7 +127,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   commentary_str += summary_external();
   commentary_str += string(70, '-') + "\n";
 
-  external commentary(commentary_str);
+  external commentary(commentary_str, origin::internal);
 
   utf8 user_log_message;
   work.read_user_log(user_log_message);
@@ -133,7 +135,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   //if the _MTN/log file was non-empty, we'll append the 'magic' line
   utf8 user_log;
   if (user_log_message().length() > 0)
-    user_log = utf8( magic_line + "\n" + user_log_message());
+    user_log = utf8( magic_line + "\n" + user_log_message(), origin::internal);
   else
     user_log = user_log_message;
 
@@ -371,7 +373,8 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
 
   process_commit_message_args(app.opts, log_message_given, log_message,
                               utf8((FL("disapproval of revision '%s'")
-                                    % r).str()));
+                                    % r).str(),
+                                   origin::internal));
 
   cache_user_key(app.opts, app.lua, db, keys);
 
@@ -746,7 +749,7 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   else
     {
       I(args.size() == 2);
-      attr_key a_key = attr_key(idx(args, 1)());
+      attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
       E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
         F("Path '%s' does not have attribute '%s'")
         % path % a_key);
@@ -802,7 +805,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   else
     {
       I(args.size() == 2);
-      attr_key a_key = attr_key(idx(args, 1)());
+      attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
       full_attr_map_t::const_iterator i = node->attrs.find(a_key);
       if (i != node->attrs.end() && i->second.first)
         cout << path << " : "
@@ -836,8 +839,8 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
     F("Unknown path '%s'") % path);
   node_t node = new_roster.get_node(path);
 
-  attr_key a_key = attr_key(idx(args, 1)());
-  attr_value a_value = attr_value(idx(args, 2)());
+  attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
+  attr_value a_value = typecast_vocab<attr_value>(idx(args, 2));
 
   node->attrs[a_key] = make_pair(true, a_value);
 
@@ -1010,8 +1013,8 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
     F("Unknown path '%s'") % path);
   node_t node = new_roster.get_node(path);
 
-  attr_key a_key = attr_key(idx(args,1)());
-  attr_value a_value = attr_value(idx(args,2)());
+  attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
+  attr_value a_value = typecast_vocab<attr_value>(idx(args,2));
 
   node->attrs[a_key] = make_pair(true, a_value);
 
@@ -1065,7 +1068,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
     }
   else
     {
-      attr_key a_key = attr_key(idx(args,1)());
+      attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
       E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
         F("Path '%s' does not have attribute '%s'")
         % path % a_key);

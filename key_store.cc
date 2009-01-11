@@ -286,7 +286,7 @@ key_store_state::get_key_file(rsa_keypair_id const & ident,
     if (leaf.at(i) == '+')
       leaf.at(i) = '_';
 
-  file = key_dir / path_component(leaf);
+  file = key_dir / path_component(leaf, origin::internal);
 }
 
 void
@@ -296,7 +296,7 @@ key_store_state::write_key(rsa_keypair_id const & ident,
   ostringstream oss;
   packet_writer pw(oss);
   pw.consume_key_pair(ident, kp);
-  data dat(oss.str());
+  data dat(oss.str(), ident.made_from);
 
   system_path file;
   get_key_file(ident, file);
@@ -404,7 +404,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
       string lua_phrase;
           // See whether a lua hook will tell us the passphrase.
       if (!force_from_user && lua.hook_get_passphrase(id, lua_phrase))
-        phrase = utf8(lua_phrase);
+        phrase = utf8(lua_phrase, origin::user);
       else
         get_passphrase(phrase, id, false, false);
 
@@ -501,13 +501,15 @@ key_store::create_key_pair(database & db,
   else
     Botan::PKCS8::encode(priv, *unfiltered_pipe);
   unfiltered_pipe->end_msg();
-  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
+                         origin::internal);
 
   // serialize the public key
   unfiltered_pipe->start_msg();
   Botan::X509::encode(priv, *unfiltered_pipe, Botan::RAW_BER);
   unfiltered_pipe->end_msg();
-  kp.pub = rsa_pub_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+  kp.pub = rsa_pub_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
+                       origin::internal);
 
   // convert to storage format
   L(FL("generated %d-byte public key\n"
@@ -547,7 +549,8 @@ key_store::change_key_passphrase(rsa_keypair_id const & id)
                             "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
                             Botan::RAW_BER);
   unfiltered_pipe->end_msg();
-  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
+                         origin::internal);
 
   delete_key(id);
   put_key_pair(id, kp);
@@ -680,7 +683,7 @@ key_store::make_signature(database & db,
     }
 
   L(FL("make_signature: produced %d-byte signature") % sig_string.size());
-  signature = rsa_sha1_signature(sig_string);
+  signature = rsa_sha1_signature(sig_string, origin::internal);
 
   cert_status s = db.check_signature(id, tosign, signature);
   I(s != cert_unknown);
@@ -743,7 +746,7 @@ key_store_state::migrate_old_key_pair
   // See whether a lua hook will tell us the passphrase.
   string lua_phrase;
   if (lua.hook_get_passphrase(id, lua_phrase))
-    phrase = utf8(lua_phrase);
+    phrase = utf8(lua_phrase, origin::user);
   else
     get_passphrase(phrase, id, false, false);
 
@@ -789,7 +792,8 @@ key_store_state::migrate_old_key_pair
                             "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
                             Botan::RAW_BER);
   unfiltered_pipe->end_msg();
-  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+  kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
+                         origin::internal);
 
   // also the public key (which is derivable from the private key; asking
   // Botan for the X.509 encoding of the private key implies that we want
@@ -797,7 +801,8 @@ key_store_state::migrate_old_key_pair
   unfiltered_pipe->start_msg();
   Botan::X509::encode(*priv_key, *unfiltered_pipe, Botan::RAW_BER);
   unfiltered_pipe->end_msg();
-  kp.pub = rsa_pub_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+  kp.pub = rsa_pub_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
+                       origin::internal);
 
   // if the database had a public key entry for this key, make sure it
   // matches what we derived from the private key entry, but don't abort the

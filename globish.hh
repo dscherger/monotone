@@ -44,11 +44,12 @@
 // empty string.  this hardly ever matters, but it's nice to have some way
 // to say "don't exclude anything", for instance.
 
+#include "origin_type.hh"
 #include "vector.hh"
 
 class arg_type;
 
-struct globish
+struct globish : origin_aware
 {
   globish() : compiled_pattern() {}
   globish(char const * pat, origin::type made_from);

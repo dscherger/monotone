@@ -179,7 +179,7 @@ make_random_reconstruction_graph(size_t num_nodes, size_t num_random_edges,
     {
       id hash;
       string s(lexical_cast<string>(i));
-      calculate_ident(data(s), hash);
+      calculate_ident(data(s, origin::internal), hash);
       all_nodes.push_back(hash);
     }
   // We put a single long chain of edges in, to make sure that everything is

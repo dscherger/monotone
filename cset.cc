@@ -421,7 +421,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1, parser.tok.in.made_from));
       I(prev_pair.first.empty() || new_pair > prev_pair);
       prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -434,12 +434,12 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1, parser.tok.in.made_from));
       I(prev_pair.first.empty() || new_pair > prev_pair);
       prev_pair = new_pair;
       parser.esym(syms::value);
       parser.str(t2);
-      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2)));
+      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2, parser.tok.in.made_from)));
     }
 }
 
@@ -448,7 +448,7 @@ write_cset(cset const & cs, data & dat)
 {
   basic_io::printer pr;
   print_cset(pr, cs);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 void
@@ -517,7 +517,7 @@ UNIT_TEST(cset, cset_written)
              " content [0000000000000000000000000000000000000000]\n"
              "\n"
              "add_dir \"pling\"\n");
-    data d1(s);
+    data d1(s, origin::internal);
     cset cs;
     UNIT_TEST_CHECK_THROW(read_cset(d1, cs), logic_error);
     // check that it still fails if there's extra stanzas past the
@@ -525,7 +525,8 @@ UNIT_TEST(cset, cset_written)
     data d2(s + "\n"
                 "  set \"bar\"\n"
                 " attr \"flavoursome\"\n"
-                "value \"mostly\"\n");
+                "value \"mostly\"\n",
+            origin::internal);
     UNIT_TEST_CHECK_THROW(read_cset(d2, cs), logic_error);
   }
 

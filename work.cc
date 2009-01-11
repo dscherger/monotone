@@ -34,6 +34,7 @@
 #include "database.hh"
 #include "roster.hh"
 #include "transforms.hh"
+#include "vocab_cast.hh"
 
 using std::deque;
 using std::exception;
@@ -327,7 +328,7 @@ workspace::read_user_log(utf8 & dat)
     {
       data tmp;
       read_data(ul_path, tmp);
-      system_to_utf8(external(tmp()), dat);
+      system_to_utf8(typecast_vocab<external>(tmp), dat);
     }
 }
 
@@ -339,7 +340,7 @@ workspace::write_user_log(utf8 const & dat)
 
   external tmp;
   utf8_to_system_best_effort(dat, tmp);
-  write_data(ul_path, data(tmp()));
+  write_data(ul_path, typecast_vocab<data>(tmp));
 }
 
 void
@@ -430,7 +431,7 @@ write_options_file(bookkeeping_path const & optspath,
   pr.print_stanza(st);
   try
     {
-      write_data(optspath, data(pr.buf));
+      write_data(optspath, data(pr.buf, origin::internal));
     }
   catch(exception & e)
     {
@@ -678,7 +679,8 @@ workspace::init_attributes(file_path const & path, editable_roster_base & er)
   if (!attrs.empty())
     for (map<string, string>::const_iterator i = attrs.begin();
          i != attrs.end(); ++i)
-      er.set_attr(path, attr_key(i->first), attr_value(i->second));
+      er.set_attr(path, attr_key(i->first, origin::user),
+                  attr_value(i->second, origin::user));
 }
 
 // objects and routines for manipulating the workspace itself
@@ -990,7 +992,8 @@ path_for_detached_nids()
 static inline bookkeeping_path
 path_for_detached_nid(node_id nid)
 {
-  return path_for_detached_nids() / path_component(lexical_cast<string>(nid));
+  return path_for_detached_nids() / path_component(lexical_cast<string>(nid),
+                                                   origin::internal);
 }
 
 // Attaching/detaching the root directory:
@@ -1029,8 +1032,11 @@ editable_working_tree::detach_node(file_path const & src_pth)
         move_file(src_pth / *i, dst_pth / *i);
       for (vector<path_component>::const_iterator i = dirs.begin();
            i != dirs.end(); ++i)
-        if (!bookkeeping_path::internal_string_is_bookkeeping_path(utf8((*i)())))
-          move_dir(src_pth / *i, dst_pth / *i);
+        {
+          utf8 item = typecast_vocab<utf8>(*i);
+          if (!bookkeeping_path::internal_string_is_bookkeeping_path(item))
+            move_dir(src_pth / *i, dst_pth / *i);
+        }
       root_dir_attached = false;
     }
   else
@@ -1099,13 +1105,15 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
       for (vector<path_component>::const_iterator i = files.begin();
            i != files.end(); ++i)
         {
-          I(!bookkeeping_path::internal_string_is_bookkeeping_path(utf8((*i)())));
+          utf8 item = typecast_vocab<utf8>(*i);
+          I(!bookkeeping_path::internal_string_is_bookkeeping_path(item));
           move_file(src_pth / *i, dst_pth / *i);
         }
       for (vector<path_component>::const_iterator i = dirs.begin();
            i != dirs.end(); ++i)
         {
-          I(!bookkeeping_path::internal_string_is_bookkeeping_path(utf8((*i)())));
+          utf8 item = typecast_vocab<utf8>(*i);
+          I(!bookkeeping_path::internal_string_is_bookkeeping_path(item));
           move_dir(src_pth / *i, dst_pth / *i);
         }
       delete_dir_shallow(src_pth);

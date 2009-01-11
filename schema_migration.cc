@@ -275,7 +275,7 @@ sqlite_sha1_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
     }
 
   id hash;
-  calculate_ident(data(tmp), hash);
+  calculate_ident(data(tmp, origin::database), hash);
   sqlite3_result_blob(f, hash().c_str(), hash().size(), SQLITE_TRANSIENT);
 }
 
@@ -534,12 +534,14 @@ migrate_to_external_privkeys(sqlite3 * db, key_store & keys)
 
     while (stmt.step())
       {
-        rsa_keypair_id ident(stmt.column_string(0));
-        base64<old_arc4_rsa_priv_key> old_priv(stmt.column_string(1));
+        rsa_keypair_id ident(stmt.column_string(0), origin::database);
+        base64<old_arc4_rsa_priv_key> old_priv(stmt.column_string(1),
+                                               origin::database);
         base64<rsa_pub_key> pub;
 
         if (stmt.column_nonnull(2))
-          pub = base64<rsa_pub_key>(stmt.column_string(2));
+          pub = base64<rsa_pub_key>(stmt.column_string(2),
+                                    origin::database);
 
         P(F("moving key '%s' from database to %s")
           % ident % keys.get_key_dir());
@@ -859,7 +861,7 @@ calculate_schema_id(sqlite3 * db, string & ident)
     }
 
   id tid;
-  calculate_ident(data(schema), tid);
+  calculate_ident(data(schema, origin::database), tid);
   ident = encode_hexenc(tid(), tid.made_from);
 }
 

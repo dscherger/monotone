@@ -293,7 +293,7 @@ set_first_conflict(database & db,
                 {
                   E(args.size() == 2, origin::user,
                     F("wrong number of arguments"));
-                  E(bookkeeping_path::external_string_is_bookkeeping_path(utf8(idx(args,1)())),
+                  E(bookkeeping_path::external_string_is_bookkeeping_path(idx(args,1)),
                     origin::user,
                     F("result path must be under _MTN"));
                   bookkeeping_path const result_path(idx(args,1)(), origin::user);

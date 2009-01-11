@@ -16,6 +16,7 @@
 #include "database.hh"
 #include "key_store.hh"
 #include "packet.hh"
+#include "vocab_cast.hh"
 
 using std::cin;
 using std::cout;
@@ -33,7 +34,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))
@@ -65,7 +66,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());

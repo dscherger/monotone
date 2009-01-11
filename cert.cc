@@ -31,6 +31,7 @@
 #include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh"
+#include "vocab_cast.hh"
 
 using std::make_pair;
 using std::map;
@@ -284,10 +285,12 @@ read_cert(string const & in, cert & t)
   size_t pos = 0;
   id hash = id(extract_substring(in, pos,
                                  constants::merkle_hash_length_in_bytes,
-                                 "cert hash"));
+                                 "cert hash"),
+               origin::network);
   revision_id ident = revision_id(extract_substring(in, pos,
                                   constants::merkle_hash_length_in_bytes,
-                                  "cert ident"));
+                                                    "cert ident"),
+                                  origin::network);
   string name, val, key, sig;
   extract_variable_length_string(in, name, pos, "cert name");
   extract_variable_length_string(in, val, pos, "cert val");
@@ -295,8 +298,10 @@ read_cert(string const & in, cert & t)
   extract_variable_length_string(in, sig, pos, "cert sig");
   assert_end_of_buffer(in, pos, "cert");
 
-  cert tmp(ident, cert_name(name), cert_value(val), rsa_keypair_id(key),
-           rsa_sha1_signature(sig));
+  cert tmp(ident, cert_name(name, origin::network),
+           cert_value(val, origin::network),
+           rsa_keypair_id(key, origin::network),
+           rsa_sha1_signature(sig, origin::network));
 
   id check;
   cert_hash_code(tmp, check);
@@ -365,7 +370,7 @@ cert_hash_code(cert const & t, id & out)
   tmp += ':';
   append_without_ws(tmp, sig_encoded());
 
-  data tdat(tmp);
+  data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);
 }
 
@@ -447,7 +452,7 @@ cert_revision_in_branch(database & db,
                         branch_name const & branch)
 {
   put_simple_revision_cert(db, keys, rev, branch_cert_name,
-                           cert_value(branch()));
+                           typecast_vocab<cert_value>(branch));
 }
 
 void
@@ -457,7 +462,7 @@ cert_revision_suspended_in_branch(database & db,
                                   branch_name const & branch)
 {
   put_simple_revision_cert(db, keys, rev, suspend_cert_name,
-                           cert_value(branch()));
+                           typecast_vocab<cert_value>(branch));
 }
 
 
@@ -469,7 +474,7 @@ cert_revision_date_time(database & db,
                         revision_id const & rev,
                         date_t const & t)
 {
-  cert_value val = cert_value(t.as_iso_8601_extended());
+  cert_value val = cert_value(t.as_iso_8601_extended(), origin::internal);
   put_simple_revision_cert(db, keys, rev, date_cert_name, val);
 }
 
@@ -480,7 +485,7 @@ cert_revision_author(database & db,
                      string const & author)
 {
   put_simple_revision_cert(db, keys, rev, author_cert_name,
-                           cert_value(author));
+                           cert_value(author, origin::user));
 }
 
 void
@@ -490,7 +495,7 @@ cert_revision_tag(database & db,
                   string const & tagname)
 {
   put_simple_revision_cert(db, keys, rev, tag_cert_name,
-                           cert_value(tagname));
+                           cert_value(tagname, origin::user));
 }
 
 void
@@ -500,7 +505,7 @@ cert_revision_changelog(database & db,
                         utf8 const & log)
 {
   put_simple_revision_cert(db, keys, rev, changelog_cert_name,
-                           cert_value(log()));
+                           typecast_vocab<cert_value>(log));
 }
 
 void
@@ -510,7 +515,7 @@ cert_revision_comment(database & db,
                       utf8 const & comment)
 {
   put_simple_revision_cert(db, keys, rev, comment_cert_name,
-                           cert_value(comment()));
+                           typecast_vocab<cert_value>(comment));
 }
 
 void
@@ -537,7 +542,8 @@ cert_revision_testresult(database & db,
                               "'pass/fail'");
 
   put_simple_revision_cert(db, keys, rev, testresult_cert_name,
-                           cert_value(lexical_cast<string>(passed)));
+                           cert_value(lexical_cast<string>(passed),
+                                      origin::internal));
 }
 
 // Local Variables:

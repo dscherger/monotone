@@ -512,22 +512,22 @@ namespace
   node_id nid_yyf;
   node_id nid_yyg;
 
-  file_id fid_f  (string(constants::idlen_bytes, '\x11'));
-  file_id fid_g  (string(constants::idlen_bytes, '\x22'));
+  file_id fid_f  (string(constants::idlen_bytes, '\x11'), origin::internal);
+  file_id fid_g  (string(constants::idlen_bytes, '\x22'), origin::internal);
 
-  file_id fid_xf (string(constants::idlen_bytes, '\x33'));
-  file_id fid_xg (string(constants::idlen_bytes, '\x44'));
-  file_id fid_xxf(string(constants::idlen_bytes, '\x55'));
-  file_id fid_xxg(string(constants::idlen_bytes, '\x66'));
-  file_id fid_xyf(string(constants::idlen_bytes, '\x77'));
-  file_id fid_xyg(string(constants::idlen_bytes, '\x88'));
+  file_id fid_xf (string(constants::idlen_bytes, '\x33'), origin::internal);
+  file_id fid_xg (string(constants::idlen_bytes, '\x44'), origin::internal);
+  file_id fid_xxf(string(constants::idlen_bytes, '\x55'), origin::internal);
+  file_id fid_xxg(string(constants::idlen_bytes, '\x66'), origin::internal);
+  file_id fid_xyf(string(constants::idlen_bytes, '\x77'), origin::internal);
+  file_id fid_xyg(string(constants::idlen_bytes, '\x88'), origin::internal);
 
-  file_id fid_yf (string(constants::idlen_bytes, '\x99'));
-  file_id fid_yg (string(constants::idlen_bytes, '\xaa'));
-  file_id fid_yxf(string(constants::idlen_bytes, '\xbb'));
-  file_id fid_yxg(string(constants::idlen_bytes, '\xcc'));
-  file_id fid_yyf(string(constants::idlen_bytes, '\xdd'));
-  file_id fid_yyg(string(constants::idlen_bytes, '\xee'));
+  file_id fid_yf (string(constants::idlen_bytes, '\x99'), origin::internal);
+  file_id fid_yg (string(constants::idlen_bytes, '\xaa'), origin::internal);
+  file_id fid_yxf(string(constants::idlen_bytes, '\xbb'), origin::internal);
+  file_id fid_yxg(string(constants::idlen_bytes, '\xcc'), origin::internal);
+  file_id fid_yyf(string(constants::idlen_bytes, '\xdd'), origin::internal);
+  file_id fid_yyg(string(constants::idlen_bytes, '\xee'), origin::internal);
 }
 
 static void setup(roster_t & roster)

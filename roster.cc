@@ -30,6 +30,7 @@
 #include "restrictions.hh"
 #include "safe_map.hh"
 #include "ui.hh"
+#include "vocab_cast.hh"
 
 using std::inserter;
 using std::make_pair;
@@ -717,7 +718,7 @@ roster_t::get_name(node_id nid, file_path & p) const
       return;
     }
 
-  I(!bookkeeping_path::internal_string_is_bookkeeping_path(utf8(sp.top()->name())));
+  I(!bookkeeping_path::internal_string_is_bookkeeping_path(typecast_vocab<utf8>(sp.top()->name)));
 
   string tmp;
   tmp.reserve(size);
@@ -2556,7 +2557,7 @@ parse_marking(basic_io::parser & pa,
           pa.sym();
           pa.str(k);
           pa.hex(rev);
-          attr_key key = attr_key(k);
+          attr_key key = attr_key(k, pa.tok.in.made_from);
           safe_insert(marking.attrs[key],
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
@@ -2728,8 +2729,9 @@ roster_t::parse_from(basic_io::parser & pa,
           string k, v;
           pa.str(k);
           pa.str(v);
-          safe_insert(n->attrs, make_pair(attr_key(k),
-                                          make_pair(true, attr_value(v))));
+          safe_insert(n->attrs, make_pair(attr_key(k, pa.tok.in.made_from),
+                                          make_pair(true,
+                                                    attr_value(v, pa.tok.in.made_from))));
         }
 
       // Dormant attrs
@@ -2738,7 +2740,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.sym();
           string k;
           pa.str(k);
-          safe_insert(n->attrs, make_pair(attr_key(k),
+          safe_insert(n->attrs, make_pair(attr_key(k, pa.tok.in.made_from),
                                           make_pair(false, attr_value())));
         }
 
@@ -2776,7 +2778,7 @@ write_roster_and_marking(roster_t const & ros,
     ros.check_sane(true);
   basic_io::printer pr;
   ros.print_to(pr, mm, print_local_parts);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 
@@ -3059,7 +3061,7 @@ file_id new_ident(randomizer & rng)
 
 path_component new_component(randomizer & rng)
 {
-  return path_component(new_word(rng));
+  return path_component(new_word(rng), origin::internal);
 }
 
 
@@ -3210,22 +3212,24 @@ void perform_random_action(roster_t & r, node_id_source & nis, randomizer & rng)
                     {
                       // L(FL("changing attr on '%s'\n") % pth);
                       safe_insert(c.attrs_set,
-                                  make_pair(make_pair(pth, k), new_word(rng)));
+                                  make_pair(make_pair(pth, k),
+                                            attr_value(new_word(rng), origin::internal)));
                     }
                 }
               else
                 {
                   // L(FL("setting previously set attr on '%s'") % pth);
                   safe_insert(c.attrs_set,
-                              make_pair(make_pair(pth, k), new_word(rng)));
+                              make_pair(make_pair(pth, k),
+                                        attr_value(new_word(rng), origin::internal)));
                 }
             }
           else
             {
               // L(FL("setting attr on '%s'") % pth);
               safe_insert(c.attrs_set,
-                          make_pair(make_pair(pth, new_word(rng)),
-                                    new_word(rng)));
+                          make_pair(make_pair(pth, attr_key(new_word(rng), origin::internal)),
+                                    attr_value(new_word(rng), origin::internal)));
             }
           break;
         }
@@ -3530,10 +3534,10 @@ namespace
     return s;
   }
 
-  revision_id old_rid(string(constants::idlen_bytes, '\x00'));
-  revision_id left_rid(string(constants::idlen_bytes, '\x11'));
-  revision_id right_rid(string(constants::idlen_bytes, '\x22'));
-  revision_id new_rid(string(constants::idlen_bytes, '\x44'));
+  revision_id old_rid(string(constants::idlen_bytes, '\x00'), origin::internal);
+  revision_id left_rid(string(constants::idlen_bytes, '\x11'), origin::internal);
+  revision_id right_rid(string(constants::idlen_bytes, '\x22'), origin::internal);
+  revision_id new_rid(string(constants::idlen_bytes, '\x44'), origin::internal);
 
 ////////////////
 // These classes encapsulate information about all the different scalars
@@ -3607,7 +3611,7 @@ namespace
                          roster_t & roster, marking_map & markings)
     {
       make_file(scalar_origin_rid, nid,
-                file_id(string(constants::idlen_bytes, '\xaa')),
+                file_id(string(constants::idlen_bytes, '\xaa'), origin::internal),
                 roster, markings);
     }
     static void make_file(revision_id const & scalar_origin_rid, node_id nid,
@@ -3645,13 +3649,16 @@ namespace
     {
       safe_insert(values,
                   make_pair(scalar_a,
-                            file_id(string(constants::idlen_bytes, '\xaa'))));
+                            file_id(string(constants::idlen_bytes, '\xaa'),
+                                    origin::internal)));
       safe_insert(values,
                   make_pair(scalar_b,
-                            file_id(string(constants::idlen_bytes, '\xbb'))));
+                            file_id(string(constants::idlen_bytes, '\xbb'),
+                                    origin::internal)));
       safe_insert(values,
                   make_pair(scalar_c,
-                            file_id(string(constants::idlen_bytes, '\xcc'))));
+                            file_id(string(constants::idlen_bytes, '\xcc'),
+                                    origin::internal)));
     }
     virtual void
     set(revision_id const & scalar_origin_rid, scalar_val val,
@@ -4525,8 +4532,8 @@ UNIT_TEST(roster, write_roster)
   file_path fo = file_path_internal("fo");
   file_path xx = file_path_internal("xx");
 
-  file_id f1(string(constants::idlen_bytes, '\x11'));
-  revision_id rid(string(constants::idlen_bytes, '\x44'));
+  file_id f1(string(constants::idlen_bytes, '\x11'), origin::internal);
+  revision_id rid(string(constants::idlen_bytes, '\x44'), origin::internal);
   node_id nid;
 
   // if adding new nodes, add them at the end to keep the node_id order
@@ -4595,7 +4602,7 @@ UNIT_TEST(roster, write_roster)
                       "\n"
                       " dir \"xx\"\n"
                       "attr \"say\" \"hello\"\n"
-                      ));
+                      ), origin::internal);
     MM(expected);
 
     UNIT_TEST_CHECK_NOT_THROW( I(expected == mdat), logic_error);
@@ -4653,7 +4660,7 @@ UNIT_TEST(roster, write_roster)
                       "    birth [4444444444444444444444444444444444444444]\n"
                       "path_mark [4444444444444444444444444444444444444444]\n"
                       "attr_mark \"say\" [4444444444444444444444444444444444444444]\n"
-                      ));
+                      ), origin::internal);
     MM(expected);
 
     UNIT_TEST_CHECK_NOT_THROW( I(expected == rdat), logic_error);

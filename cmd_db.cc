@@ -23,6 +23,7 @@
 #include "work.hh"
 #include "rev_height.hh"
 #include "transforms.hh"
+#include "vocab_cast.hh"
 
 using std::cin;
 using std::cout;
@@ -209,7 +210,7 @@ CMD(db_kill_branch_certs_locally, "kill_branch_certs_locally", "", CMD_REF(db),
     throw usage(execid);
 
   database db(app);
-  db.delete_branch_named(cert_value(idx(args, 0)()));
+  db.delete_branch_named(typecast_vocab<cert_value>(idx(args, 0)));
 }
 
 CMD(db_kill_tag_locally, "kill_tag_locally", "", CMD_REF(db), "TAG",
@@ -221,7 +222,7 @@ CMD(db_kill_tag_locally, "kill_tag_locally", "", CMD_REF(db), "TAG",
     throw usage(execid);
 
   database db(app);
-  db.delete_tag_named(cert_value(idx(args, 0)()));
+  db.delete_tag_named(typecast_vocab<cert_value>(idx(args, 0)));
 }
 
 CMD(db_check, "check", "", CMD_REF(db), "",
@@ -299,7 +300,7 @@ CMD_HIDDEN(clear_epoch, "clear_epoch", "", CMD_REF(db), "BRANCH",
     throw usage(execid);
 
   database db(app);
-  db.clear_epoch(branch_name(idx(args, 0)()));
+  db.clear_epoch(typecast_vocab<branch_name>(idx(args, 0)));
 }
 
 CMD(db_set_epoch, "set_epoch", "", CMD_REF(db), "BRANCH EPOCH",
@@ -332,8 +333,8 @@ CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
   var_name n;
   var_value v;
   internalize_var_domain(idx(args, 0), d);
-  n = var_name(idx(args, 1)());
-  v = var_value(idx(args, 2)());
+  n = typecast_vocab<var_name>(idx(args, 1));
+  v = typecast_vocab<var_value>(idx(args, 2));
 
   database db(app);
   db.set_var(make_pair(d, n), v);
@@ -351,7 +352,7 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   var_domain d;
   var_name n;
   internalize_var_domain(idx(args, 0), d);
-  n = var_name(idx(args, 1)());
+  n = typecast_vocab<var_name>(idx(args, 1));
   var_key k(d, n);
 
   database db(app);
@@ -436,7 +437,7 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 {
   if (args.size() != 1)
     throw usage(execid);
-  revision_id rid(idx(args, 0)());
+  revision_id rid = typecast_vocab<revision_id>(idx(args, 0));
   database db(app);
   E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % rid);

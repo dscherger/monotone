@@ -292,7 +292,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .extract_str(key)
     .ok();
 
-  k = rsa_keypair_id(key);
+  k = rsa_keypair_id(key, origin::user);
   return ok;
 }
 
@@ -323,7 +323,7 @@ lua_hooks::hook_edit_comment(external const & commentary,
                  .call(2,1)
                  .extract_str(result_str)
                  .ok();
-  result = external(result_str);
+  result = external(result_str, origin::user);
   return is_ok;
 }
 
@@ -500,7 +500,7 @@ lua_hooks::hook_merge3(file_path const & anc_path,
     .call(7,1)
     .extract_str(res)
     .ok();
-  result = data(res);
+  result = data(res, origin::user);
   return ok;
 }
 
@@ -589,7 +589,7 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
     {
       std::string arg;
       ll.extract_str(arg).pop();
-      args.push_back(arg_type(arg));
+      args.push_back(arg_type(arg, origin::user));
     }
   return ll.ok() && !args.empty();
 }
@@ -645,7 +645,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
 
   if (!exec_ok)
     key_id = "";
-  k = rsa_keypair_id(key_id);
+  k = rsa_keypair_id(key_id, origin::user);
   return exec_ok;
 }
 
@@ -1196,7 +1196,7 @@ LUAEXT(alias_command, )
     F("%s called with an invalid parameter") % "alias_command");
 
   args_vector args;
-  args.push_back(arg_type(old_cmd));
+  args.push_back(arg_type(old_cmd, origin::user));
   commands::command_id id = commands::complete_command(args);
   commands::command *old_cmd_p = CMD_REF(__root__)->find_command(id);
 

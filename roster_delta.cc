@@ -376,7 +376,7 @@ namespace
     loc.first = parse_nid(parser);
     std::string name;
     parser.str(name);
-    loc.second = path_component(name);
+    loc.second = path_component(name, parser.tok.in.made_from);
   }
 
   void
@@ -446,10 +446,12 @@ namespace
         parser.str(value_bool);
         parser.str(value_value);
         pair<bool, attr_value> full_value(lexical_cast<bool>(value_bool),
-                                          attr_value(value_value));
+                                          attr_value(value_value,
+                                                     parser.tok.in.made_from));
         safe_insert(d.attrs_changed,
                     make_pair(nid,
-                              make_pair(attr_key(key), full_value)));
+                              make_pair(attr_key(key, parser.tok.in.made_from),
+                                        full_value)));
       }
     while (parser.symp(syms::marking))
       {
@@ -476,7 +478,7 @@ delta_rosters(roster_t const & from, marking_map const & from_markings,
   make_roster_delta_t(from, from_markings, to, to_markings, d);
   basic_io::printer printer;
   print_roster_delta_t(printer, d);
-  del = roster_delta(printer.buf);
+  del = roster_delta(printer.buf, origin::internal);
 }
 
 static
