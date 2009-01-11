@@ -435,7 +435,8 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 {
   if (args.size() != 1)
     throw usage(execid);
-  revision_id rid(idx(args, 0)());
+
+  revision_id rid(decode_hexenc(idx(args, 0)()));
   database db(app);
   N(db.revision_exists(rid), F("no such revision '%s'") % rid);
   rev_height height;
