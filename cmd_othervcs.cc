@@ -21,12 +21,12 @@
 #include "simplestring_xform.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "ui.hh"
 
 #include <time.h>
 #include <iostream>
 #include <sstream>
 
-using std::cerr;
 using std::cout;
 using std::map;
 using std::ostringstream;
@@ -236,6 +236,9 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   vector<revision_id> revisions;
   toposort(db, revision_set, revisions);
 
+  ticker exported(_("revisions"), "r", 1);
+  exported.set_total(revisions.size());
+
   size_t revnum = 0;
   size_t revmax = revisions.size();
 
@@ -249,7 +252,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   setenv("TZ", "UTC", 1);
   tzset();
 
-  for (vector<revision_id>::const_iterator r = revisions.begin(); r != revisions.end(); ++r)
+  for (vector<revision_id>::const_iterator 
+         r = revisions.begin(); r != revisions.end(); ++r)
     {
       revnum++;
 
@@ -308,8 +312,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
           author_date = mktime(&tm);
         }
 
-      // default to master branch if no branch certs exist
-      string branchname = "master";
+      // default to unknown branch if no branch certs exist
+      string branchname = "unknown";
 
       if (!branches.empty())
         branchname = branches.begin()->inner().value();
@@ -456,21 +460,17 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
                  << "from :" << marked_revs[*r] << "\n";
         }
 
-      // FIXME: posibly create refs/mtn/revid
-
       // create tag refs
       for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
         cout << "reset refs/tags/" << tag->inner().value() << "\n"
              << "from :" << marked_revs[*r] << "\n";
 
-      // report progress to stderr
-      cerr << "progress revision " << *r 
-           << " (" << revnum << "/" << revmax << ")\n";
-
       // report progress to the export file which will be reported during import
       cout << "progress revision " << *r 
            << " (" << revnum << "/" << revmax << ")\n"
            << "#############################################################\n";
+
+      ++exported;
 
       // since this creates a fast-import data stream one option for users
       // that encounter problems, is to save the data to a text file, split
@@ -480,6 +480,23 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       // been exported from monotone.
 
     }
+
+  set<revision_id> roots;
+  revision_id nullid;
+  db.get_revision_children(nullid, roots);
+  for (set<revision_id>::const_iterator 
+         i = roots.begin(); i != roots.end(); ++i)
+    cout << "reset refs/mtn/roots/" << *i << "\n"
+         << "from :" << marked_revs[*i] << "\n";
+
+  set<revision_id> leaves;
+  db.get_leaves(leaves);
+  for (set<revision_id>::const_iterator 
+         i = leaves.begin(); i != leaves.end(); ++i)
+    cout << "reset refs/mtn/leaves/" << *i << "\n"
+         << "from :" << marked_revs[*i] << "\n";
+
+  // FIXME: would it be useful to have refs/mtn/revs/<revid> as well?
 
   // FIXME: add an option to write out the revision marks to a file
   // then use of git fast-import --export-marks will give a corresponding file
