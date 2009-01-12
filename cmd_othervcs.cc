@@ -13,6 +13,7 @@
 #include "app_state.hh"
 #include "cert.hh"
 #include "database.hh"
+#include "dates.hh"
 #include "project.hh"
 #include "parallel_iter.hh"
 #include "rcs_import.hh"
@@ -23,7 +24,6 @@
 #include "key_store.hh"
 #include "ui.hh"
 
-#include <time.h>
 #include <iostream>
 #include <sstream>
 
@@ -247,11 +247,6 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
   size_t mark_id = 1;
 
-  // this is done to ensure mktime below produces UTC times
-  // according to timegm(3) this is the portable way to do it
-  setenv("TZ", "UTC", 1);
-  tzset();
-
   for (vector<revision_id>::const_iterator 
          r = revisions.begin(); r != revisions.end(); ++r)
     {
@@ -276,7 +271,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
       string author_name = "unknown";
       string author_email = "<unknown>";
-      time_t author_date = 0;
+      date_t author_date = date_t::now();
 
       cert_iterator author = authors.begin();
 
@@ -304,13 +299,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       cert_iterator date = dates.begin();
 
       if (date != dates.end())
-        {
-          // FIXME: do something better here (would nvm.dates help?)
-          struct tm tm;
-          string datestr = date->inner().value();
-          strptime(datestr.c_str(), "%Y-%m-%dT%H:%M:%S", &tm);
-          author_date = mktime(&tm);
-        }
+        author_date = date_t(date->inner().value());
 
       // default to unknown branch if no branch certs exist
       string branchname = "unknown";
@@ -427,7 +416,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
       cout << "commit refs/heads/" << branchname << "\n"
            << "mark :" << marked_revs[*r] << "\n"
-           << "committer " << author_name << author_email << " " << author_date << " +0000\n"
+           << "committer " << author_name << author_email << " " 
+           << (author_date.as_millisecs_since_unix_epoch() / 1000) << " +0000\n"
            << "data " << data.size() << "\n" << data << "\n";
 
       if (!null_id(parent1))
