@@ -49,7 +49,7 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
 }
 
 
-CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"), 
+CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"), 
     N_("Imports all versions in a CVS repository"),
     "",
     options::opts::branch)
@@ -220,7 +220,7 @@ namespace
 
 };
 
-CMD(git_export, "git_export", "", CMD_REF(git), N_(""),
+CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
     N_("Produces a git fast-export data stream on stdout"),
     N_(""),
     options::opts::none)
