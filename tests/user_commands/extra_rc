@@ -1,5 +1,5 @@
 function check_head(...)
-    mtn_automate("get_option", "branch")	-- make sure we have a valid workspace
+    ok, branch = mtn_automate("get_option", "branch")	-- make sure we have a valid workspace
     ok, heads = mtn_automate("heads")
     if not ok then
       print("automate call failed")
@@ -17,3 +17,16 @@ end
 register_command("check_head", "", "Check that the heads of the branch are what is passed in",
       "This is a bogus command used to demonstrate user commands.", "check_head")
 
+
+function diff_two_revs(rev_a, rev_b)
+    ok, out = mtn_automate("content_diff", "-r", rev_a, "-r", rev_b)
+    if not ok then
+        print("automate call failed: " .. out)
+        return 1
+    end
+    return 0
+end
+
+
+register_command("diff_two_revs", "", "Outputs the differences between two revs",
+      "This is a bogus command used to demonstrate user commands with options.", "diff_two_revs")

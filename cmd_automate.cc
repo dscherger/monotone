@@ -68,9 +68,10 @@ namespace commands {
   }
 }
 
+// This number is only raised once, during the process of releasing a new
+// version of monotone, by the release manager. For more details, see
+// point (2) in notes/release-checklist.txt
 static string const interface_version = "9.0";
-// Major or minor number only increments once for each monotone release;
-// check the most recent release before incrementing this.
 
 // Name: interface_version
 // Arguments: none
@@ -235,7 +236,13 @@ public:
       {
         cmdline.push_back(item);
       }
+    E(cmdline.size() > 0,
+        F("Bad input to automate stdio: command name is missing"));
     return true;
+  }
+  void reset()
+  {
+    loc = none;
   }
 };
 
@@ -356,75 +363,92 @@ CMD_AUTOMATE(stdio, "",
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
   vector<string> cmdline;
-  while(ar.get_command(params, cmdline))//while(!EOF)
+  while (true)
     {
+      command const * cmd = 0;
+      command_id id;
       args_vector args;
-      vector<string>::iterator i = cmdline.begin();
-      E(i != cmdline.end(),
-        F("Bad input to automate stdio: command name is missing"));
-      for (; i != cmdline.end(); ++i)
-        {
-          args.push_back(arg_type(*i));
-        }
+
+      // stdio decoding errors should be noted with errno 1,
+      // errno 2 is reserved for errors coming from the commands itself
       try
         {
+          if (!ar.get_command(params, cmdline))
+            break;
+
+          vector<string>::iterator i = cmdline.begin();
+          for (; i != cmdline.end(); ++i)
+            {
+              args.push_back(arg_type(*i));
+              id.push_back(utf8(*i));
+            }
+
+          set< command_id > matches =
+            CMD_REF(automate)->complete_command(id);
+
+          if (matches.empty())
+            {
+              N(false, F("no completions for this command"));
+            }
+          else if (matches.size() > 1)
+            {
+              N(false, F("multiple completions possible for this command"));
+            }
+
+          id = *matches.begin();
+
+          I(args.size() >= id.size());
+          for (command_id::size_type i = 0; i < id.size(); i++)
+            args.erase(args.begin());
+
+          cmd = CMD_REF(automate)->find_command(id);
+          I(cmd != NULL);
+
+          // reset the application's global options
           options::options_type opts;
           opts = options::opts::all_options() - options::opts::globals();
           opts.instantiate(&app.opts).reset();
 
-          command_id id;
-          for (args_vector::const_iterator iter = args.begin();
-               iter != args.end(); iter++)
-            id.push_back(utf8((*iter)()));
-
-          if (!id.empty())
+          if (cmd->use_workspace_options())
             {
-              I(!args.empty());
-
-              set< command_id > matches =
-                CMD_REF(automate)->complete_command(id);
-
-              if (matches.empty())
-                {
-                  N(false, F("no completions for this command"));
-                }
-              else if (matches.size() > 1)
-                {
-                  N(false, F("multiple completions possible for this command"));
-                }
-
-              id = *matches.begin();
-
-              I(args.size() >= id.size());
-              for (command_id::size_type i = 0; i < id.size(); i++)
-                args.erase(args.begin());
-
-              command const * cmd = CMD_REF(automate)->find_command(id);
-              I(cmd != NULL);
-              automate const * acmd = reinterpret_cast< automate const * >(cmd);
-
-              opts = options::opts::globals() | acmd->opts();
-
-              if (cmd->use_workspace_options())
-                {
-                  // Re-read the ws options file, rather than just copying
-                  // the options from the previous apts.opts object, because
-                  // the file may have changed due to user activity.
-                  workspace::check_ws_format();
-                  workspace::get_ws_options(app.opts);
-                }
-
-              opts.instantiate(&app.opts).from_key_value_pairs(params);
-              acmd->exec_from_automate(app, id, args, os);
+              // Re-read the ws options file, rather than just copying
+              // the options from the previous apts.opts object, because
+              // the file may have changed due to user activity.
+              workspace::check_ws_format();
+              workspace::get_ws_options(app.opts);
             }
-          else
-            opts.instantiate(&app.opts).from_key_value_pairs(params);
+
+          opts = options::opts::globals() | cmd->opts();
+          opts.instantiate(&app.opts).from_key_value_pairs(params);
+
         }
-      catch(informative_failure & f)
+      // FIXME: we need to re-package and rethrow this special exception
+      // since it is not based on informative_failure
+      catch (option::option_error & e)
+        {
+          os.set_err(1);
+          os<<e.what();
+          os.end_cmd();
+          ar.reset();
+          continue;
+        }
+      catch (informative_failure & f)
+        {
+          os.set_err(1);
+          os<<f.what();
+          os.end_cmd();
+          ar.reset();
+          continue;
+        }
+
+      try
+        {
+          automate const * acmd = reinterpret_cast< automate const * >(cmd);
+          acmd->exec_from_automate(app, id, args, os);
+        }
+      catch (informative_failure & f)
         {
           os.set_err(2);
-          //Do this instead of printing f.what directly so the output
-          //will be split into properly-sized blocks automatically.
           os<<f.what();
         }
       os.end_cmd();
@@ -450,8 +474,6 @@ LUAEXT(mtn_automate, )
       // don't allow recursive calls
       app_p->mtn_automate_allowed = false;
 
-      // automate_ostream os(output, app_p->opts.automate_stdio_size);
-
       int n = lua_gettop(L);
 
       E(n > 0, F("Bad input to mtn_automate() lua extension: command name is missing"));
@@ -464,6 +486,17 @@ LUAEXT(mtn_automate, )
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
+
+      options::options_type opts;
+      opts = options::opts::all_options() - options::opts::globals();
+      opts.instantiate(&app_p->opts).reset();
+
+      // the arguments for a command are read from app.opts.args which
+      // is already cleaned from all options. this variable, however, still
+      // contains the original arguments with which the user function was
+      // called. Since we're already in lua context, it makes no sense to
+      // preserve them for the outside world, so we're just clearing them.
+      app_p->opts.args.clear();
 
       commands::command_id id;
       for (args_vector::const_iterator iter = args.begin();
@@ -492,9 +525,22 @@ LUAEXT(mtn_automate, )
 
       commands::command const * cmd = CMD_REF(automate)->find_command(id);
       I(cmd != NULL);
-      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      opts = options::opts::globals() | cmd->opts();
 
-      acmd->exec(*app_p, id, args, os);
+      if (cmd->use_workspace_options())
+        {
+          // Re-read the ws options file, rather than just copying
+          // the options from the previous apts.opts object, because
+          // the file may have changed due to user activity.
+          workspace::check_ws_format();
+          workspace::get_ws_options(app_p->opts);
+        }
+
+      opts.instantiate(&app_p->opts).from_command_line(args, false);
+      args_vector & parsed_args = app_p->opts.args;
+
+      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;
