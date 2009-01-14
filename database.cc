@@ -321,11 +321,6 @@ private:
   void put_roster_delta(revision_id const & ident,
                         revision_id const & base,
                         roster_delta const & del);
-  void put_version(file_id const & old_id,
-                   file_id const & new_id,
-                   delta const & del,
-                   string const & data_table,
-                   string const & delta_table);
 
   //
   // --== The ancestry graph ==--
