@@ -28,12 +28,18 @@ building and installation process for monotone
     - Lua 5.1
     - GNU IDN Library
 
-        on debian: 
+        on debian:
 
            apt-get install autoconf automake gettext libboost-dev libz-dev \
                            libbotan1.7-dev libsqlite3-dev libpcre3-dev     \
                            liblua5.1-0-dev libidn11-dev g++
            apt-get install texinfo
+
+        on freebsd:
+
+           install the following packages from the ports collection:
+             databases/sqlite3, devel/automake1.9, devel/boost, devel/gettext,
+             devel/gmake, devel/pcre, lang/lua, security/botan
 
         on gentoo:
 

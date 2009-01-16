@@ -12,6 +12,13 @@ AC_DEFUN([MTN_FIND_LUA],
    else
      PKG_CHECK_MODULES([LUA], [lua5.1],
                        [found_liblua=yes], [found_liblua=no])
+
+     # if that has not been found, we also try lua-5.1, as used on FreeBSD
+     # for example.
+     if test $found_liblua = no; then
+       PKG_CHECK_MODULES([LUA], [lua-5.1],
+                         [found_liblua=yes], [found_liblua=no])
+     fi
    fi
 
    if test $found_liblua = no; then
