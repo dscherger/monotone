@@ -4,33 +4,55 @@
 --
 -- Released as public domain
 
-netsync_branches = {}
-function note_netsync_start(nonce)
-   netsync_branches[nonce] = {}
-end
+do
+   netsync_branches = {}
 
-function note_netsync_revision_received(new_id,revision,certs,nonce)
-   for _, item in pairs(certs)
-   do
-      note_netsync_cert_received(new_id,item.key,item.name,item.value,nonce)
-   end
-end
-
-function note_netsync_cert_received(rev_id,key,name,value,nonce)
-   if name == "branch" then
-      netsync_branches[nonce][value] = 1
-   end
-end
-
-function note_netsync_end(nonce)
-   local first = true
-   for item, _ in pairs(netsync_branches[nonce])
-   do
-      if first then
-	 io.stderr:write("Affected branches:\n")   
-	 first = false
+   function RL_note_netsync_cert_received(rev_id,key,name,value,nonce)
+      if name == "branch" then
+	 if netsync_branches[nonce][value] == nil then
+	    netsync_branches[nonce][value] = 1
+	 else
+	    netsync_branches[nonce][value] = netsync_branches[nonce][value] + 1
+	 end
       end
-      io.stderr:write("  "..item.."\n")   
    end
-   netsync_branches[nonce] = nil
+
+   notifier = {
+      start = function(session_id,...)
+		 netsync_branches[session_id] = {}
+	      end,
+      revision_received = function(new_id,revision,certs,session_id)
+			     for _, item in pairs(certs) do
+				RL_note_netsync_cert_received(new_id,
+							      item.key,
+							      item.name,
+							      item.value,
+							      session_id)
+			     end
+			  end,
+      cert_received = function(rev_id,key,name,value,session_id)
+			 RL_note_netsync_cert_received(rev_id,
+						       key,name,value,
+						       session_id)
+		      end,
+      ["end"] = function(session_id)
+		   local first = true
+		   for item, amount in pairs(netsync_branches[session_id])
+		   do
+		      if first then
+			 io.stderr:write("Affected branches:\n")   
+			 first = false
+		      end
+		      io.stderr:write("  ",item,"  (",amount,")\n")   
+		   end
+		   netsync_branches[session_id] = nil
+		end
+   }
+
+   local v,m = push_netsync_notifier(notifier)
+   if not v then
+      error(m)
+   elseif m then
+      io.stderr:write("Warning: ",m,"\n")
+   end
 end
