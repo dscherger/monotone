@@ -66,7 +66,6 @@ using boost::shared_ptr;
 
 void revision_t::check_sane() const
 {
-  I(!null_id(new_manifest));
   E(!null_id(new_manifest), made_from, F("Revision has no manifest id"));
 
   if (edges.size() == 1)
