@@ -333,7 +333,7 @@ date_t
 date_t::now()
 {
   std::time_t t = std::time(0);
-  s64 tu = t * 1000 + get_epoch_offset();
+  s64 tu = s64(t) * 1000 + get_epoch_offset();
   E(valid_ms_count(tu),
     F("current date '%s' is outside usable range\n"
       "(your system clock may not be set correctly)")

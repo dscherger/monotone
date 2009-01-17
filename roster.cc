@@ -3062,11 +3062,6 @@ attr_key pick_attr(full_attr_map_t const & attrs, randomizer & rng)
   return random_element(attrs, rng)->first;
 }
 
-attr_key pick_attr(attr_map_t const & attrs, randomizer & rng)
-{
-  return random_element(attrs, rng)->first;
-}
-
 bool parent_of(file_path const & p,
                file_path const & c)
 {

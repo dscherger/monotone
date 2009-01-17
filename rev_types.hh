@@ -31,7 +31,6 @@ namespace basic_io
 }
 
 // full definitions in cset.hh 
-typedef std::map<attr_key, attr_value> attr_map_t;
 typedef u32 node_id;
 struct cset;
 struct editable_tree;
