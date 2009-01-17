@@ -50,6 +50,10 @@ use warnings;
 
 use IO::Dir;
 use IO::File;
+
+# Modules specific to this application.
+
+use Installer;
 #
 ##############################################################################
 #
@@ -71,8 +75,7 @@ use IO::File;
        $globs_file,
        $infile,
        $input,
-       $install,
-       $install_bin,
+       $installer,
        $lib_dir,
        $mas_path,
        $outfile,
@@ -164,6 +167,8 @@ use IO::File;
 	}
     }
 
+    $installer = Installer->new(0, 0, 0755, 0755, 0644);
+
     # Install `executable'.
 
     die("IO::File failed with $!")
@@ -180,9 +185,7 @@ use IO::File;
     $infile->close();
     $outfile->close();
     $infile = $outfile = undef;
-    $install_bin = "install -D -o 0 -g 0";
-    $install = "install -D -o 0 -g 0 -m 644";
-    system("$install_bin mtn-browse.out ${prefix_dir}/bin/mtn-browse");
+    $installer->install("mtn-browse.out", "${prefix_dir}/bin/mtn-browse");
     unlink("mtn-browse.out");
 
     # Install modules and libraries.
@@ -191,7 +194,7 @@ use IO::File;
 	if (! defined($dir = IO::Dir->new("lib/perl")));
     while (defined($file = $dir->read()))
     {
-	system("$install lib/perl/$file ${lib_dir}/perl/$file")
+	$installer->install("lib/perl/$file",  "${lib_dir}/perl/$file")
 	    if ($file =~ m/.*\.pm$/);
     }
     $dir->close();
@@ -214,7 +217,8 @@ use IO::File;
 	    if (! defined($dir = IO::Dir->new($mas_dir)));
 	while (defined($file = $dir->read()))
 	{
-	    system("$install ${mas_dir}/$file ${lib_dir}/perl/Monotone/$file")
+	    $installer->install("${mas_dir}/$file",
+				"${lib_dir}/perl/Monotone/$file")
 		if ($file =~ m/.*\.pm$/ || $file =~ m/.*\.pod$/);
 	}
 	$dir->close();
@@ -222,12 +226,13 @@ use IO::File;
 
     # Install GUI components.
 
-    system("$install lib/ui/mtn-browse.glade ${lib_dir}/ui/mtn-browse.glade");
+    $installer->install("lib/ui/mtn-browse.glade",
+			"${lib_dir}/ui/mtn-browse.glade");
     die("IO::Dir failed with $!")
 	if (! defined($dir = IO::Dir->new("lib/ui/pixmaps")));
     while (defined($file = $dir->read()))
     {
-	system("$install lib/ui/pixmaps/$file ${lib_dir}/ui/$file")
+	$installer->install("lib/ui/pixmaps/$file", "${lib_dir}/ui/$file")
 	    if ($file =~ m/.*\.png$/);
     }
     $dir->close();
@@ -243,9 +248,9 @@ use IO::File;
 	    my $locale = $1;
 	    system("msgfmt --output-file=translations/${locale}.mo "
 		   . "translations/$file");
-	    system("$install translations/${locale}.mo "
-		   . "${prefix_dir}/share/locale/${locale}/LC_MESSAGES/"
-		   . "mtn-browse.mo");
+	    $installer->install("translations/${locale}.mo",
+				"${prefix_dir}/share/locale/${locale}/"
+				. "LC_MESSAGES/mtn-browse.mo");
 	}
     }
     $dir->close();
