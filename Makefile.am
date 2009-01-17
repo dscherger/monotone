@@ -405,7 +405,7 @@ AM_CXXFLAGS = $(AM_CPPFLAGS)
 AM_LDFLAGS =
 
 lib3rdparty_a_CPPFLAGS =
-lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS) -fpermissive
+lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
 lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS) -fpermissive
 
 mtn_LDFLAGS =
