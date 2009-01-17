@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: it\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2009-01-16 11:35+0100\n"
-"PO-Revision-Date: 2009-01-17 11:46+0100\n"
+"PO-Revision-Date: 2009-01-17 18:47+0100\n"
 "Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: Lapo Luchini <lapo@lapo.it>\n"
 "MIME-Version: 1.0\n"
@@ -3041,7 +3041,7 @@ msgstr "cancella certificato"
 #: database.cc:3842
 #, c-format
 msgid "no database specified"
-msgstr "nessuna database specificato"
+msgstr "nessun database specificato"
 
 #: database.cc:3855
 #, c-format
