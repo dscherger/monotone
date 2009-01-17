@@ -99,8 +99,6 @@ namespace
     return quoted;
   }
 
-  // FIXME: perhaps add lua hooks for fixing branch names, author strings, etc.
-
   struct file_delete
   {
     file_path path;
@@ -220,15 +218,56 @@ namespace
 
 };
 
+static void
+read_mappings(system_path const & path, map<string, string> & mappings)
+{
+  data names;
+  vector<string> lines;
+
+  read_data(path, names);
+  split_into_lines(names(), lines);
+
+  for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
+    {
+      string line = trim_ws(*i);
+      size_t index = line.find('=');
+      if (index != string::npos || index < line.length()-1)
+        {
+          string key = trim_ws(line.substr(0, index));
+          string value = trim_ws(line.substr(index+1));
+          mappings[key] = value;
+        }
+      else if (!line.empty())
+        W(F("ignored invalid mapping '%s'") % line);
+    }
+}
+
 CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
     N_("Produces a git fast-export data stream on stdout"),
     N_(""),
-    options::opts::none)
+    options::opts::authors_file | options::opts::branches_file | 
+    options::opts::log_revids | options::opts::log_certs | 
+    options::opts::refs)
 {
   database db(app);
 
   if (args.size() != 0)
     throw usage(execid);
+
+  map<string, string> author_map;
+  map<string, string> branch_map;
+
+  if (!app.opts.authors_file.empty())
+    {
+      P(F("reading author mappings from '%s'") % app.opts.authors_file);
+      read_mappings(app.opts.authors_file, author_map);
+    }
+
+  if (!app.opts.branches_file.empty())
+    {
+      P(F("reading branch mappings from '%s'") % app.opts.branches_file);
+      read_mappings(app.opts.branches_file, branch_map);
+    }
 
   set<revision_id> revision_set;
   db.get_revision_ids(revision_set);
@@ -269,6 +308,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       db.get_revision_certs(*r, date_cert_name, dates);
       db.get_revision_certs(*r, tag_cert_name, tags);
 
+      // default to unknown author if no author certs exist
+      // this may be mapped to a different value with the authors-file option
       string author_name = "unknown";
       string author_email = "<unknown>";
       date_t author_date = date_t::now();
@@ -278,17 +319,25 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       if (author != authors.end())
         author_name = author->inner().value();
 
+      author_name = trim_ws(author_name);
+
+      if (author_map.find(author_name) != author_map.end())
+        author_name = author_map[author_name];
+
       size_t lt = author_name.find('<');
       size_t gt = author_name.find('>');
       size_t at = author_name.find('@');
 
-      // FIXME: parsing of author/email could be better
+      // FIXME: parsing of author/email here could be better
 
       if (lt != string::npos && gt != string::npos && lt < gt)
         {
+          if (gt < author_name.length()-1)
+            W(F("ignoring extraneous characters following author email '%s'")
+              % author_name);
+
           author_email = author_name.substr(lt, gt-lt+1);
           author_name = trim_ws(author_name.substr(0, lt)) + " ";
-          // FIXME: ensure remainder of cert value after > is empty
         }
       else if (lt == string::npos && gt == string::npos && at != string::npos)
         {
@@ -302,10 +351,16 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
         author_date = date_t(date->inner().value());
 
       // default to unknown branch if no branch certs exist
-      string branchname = "unknown";
+      // this may be mapped to a different value with the branches-file option
+      string branch_name = "unknown";
 
       if (!branches.empty())
-        branchname = branches.begin()->inner().value();
+        branch_name = branches.begin()->inner().value();
+
+      branch_name = trim_ws(branch_name);
+
+      if (branch_map.find(branch_name) != branch_map.end())
+        branch_name = branch_map[branch_name];
 
       ostringstream message;
       set<string> messages;
@@ -386,35 +441,40 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
             }
         }
 
-      // FIXME: optionally include these in the commit message
+      if (app.opts.log_revids)
+        {
+          message << "\n";
+      
+          if (!null_id(parent1))
+            message << "Monotone-Parent: " << parent1 << "\n";
 
-      message << "\n";
+          if (!null_id(parent2))
+            message << "Monotone-Parent: " << parent2 << "\n";
 
-      if (!null_id(parent1))
-        message << "Monotone-Parent: " << parent1 << "\n";
+          message << "Monotone-Revision: " << *r << "\n";
+        }
 
-      if (!null_id(parent2))
-        message << "Monotone-Parent: " << parent2 << "\n";
+      if (app.opts.log_certs)
+        {
+          message << "\n";
+          for ( ; author != authors.end(); ++author)
+            message << "Monotone-Author: " << author->inner().value() << "\n";
 
-      message << "Monotone-Revision: " << *r << "\n";
+          for ( ; date != dates.end(); ++date)
+            message << "Monotone-Date: " << date->inner().value() << "\n";
 
-      for ( ; author != authors.end(); ++author)
-        message << "Monotone-Author: " << author->inner().value() << "\n";
+          for (cert_iterator branch = branches.begin() ; branch != branches.end(); ++branch)
+            message << "Monotone-Branch: " << branch->inner().value() << "\n";
 
-      for ( ; date != dates.end(); ++date)
-        message << "Monotone-Date: " << date->inner().value() << "\n";
-
-      for (cert_iterator branch = branches.begin() ; branch != branches.end(); ++branch)
-        message << "Monotone-Branch: " << branch->inner().value() << "\n";
-
-      for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
-        message << "Monotone-Tag: " << tag->inner().value() << "\n";
+          for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
+            message << "Monotone-Tag: " << tag->inner().value() << "\n";
+        }
 
       string data = message.str();
 
       marked_revs[*r] = mark_id++;
 
-      cout << "commit refs/heads/" << branchname << "\n"
+      cout << "commit refs/heads/" << branch_name << "\n"
            << "mark :" << marked_revs[*r] << "\n"
            << "committer " << author_name << author_email << " " 
            << (author_date.as_millisecs_since_unix_epoch() / 1000) << " +0000\n"
@@ -446,8 +506,15 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
           cert_iterator branch = branches.begin();
           branch++;
           for ( ; branch != branches.end(); ++branch)
-            cout << "reset refs/heads/" << branch->inner().value() << "\n"
-                 << "from :" << marked_revs[*r] << "\n";
+            {
+              branch_name = trim_ws(branch->inner().value());
+
+              if (branch_map.find(branch_name) != branch_map.end())
+                branch_name = branch_map[branch_name];
+
+              cout << "reset refs/heads/" << branch_name << "\n"
+                   << "from :" << marked_revs[*r] << "\n";
+            }
         }
 
       // create tag refs
@@ -461,36 +528,36 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
            << "#############################################################\n";
 
       ++exported;
-
-      // since this creates a fast-import data stream one option for users
-      // that encounter problems, is to save the data to a text file, split
-      // it into smaller files as required -- see split(1), and edit the
-      // offending commands in the file. this technique could also be used
-      // to fix up various author names, etc. once the basic information has
-      // been exported from monotone.
-
     }
 
-  set<revision_id> roots;
-  revision_id nullid;
-  db.get_revision_children(nullid, roots);
-  for (set<revision_id>::const_iterator 
-         i = roots.begin(); i != roots.end(); ++i)
-    cout << "reset refs/mtn/roots/" << *i << "\n"
-         << "from :" << marked_revs[*i] << "\n";
+  if (app.opts.refs.find("revs") != app.opts.refs.end())
+    {
+      for (vector<revision_id>::const_iterator 
+             i = revisions.begin(); i != revisions.end(); ++i)
+        cout << "reset refs/mtn/revs/" << *i << "\n"
+             << "from :" << marked_revs[*i] << "\n";
+    }
 
-  set<revision_id> leaves;
-  db.get_leaves(leaves);
-  for (set<revision_id>::const_iterator 
-         i = leaves.begin(); i != leaves.end(); ++i)
-    cout << "reset refs/mtn/leaves/" << *i << "\n"
-         << "from :" << marked_revs[*i] << "\n";
+  if (app.opts.refs.find("roots") != app.opts.refs.end())
+    {
+      set<revision_id> roots;
+      revision_id nullid;
+      db.get_revision_children(nullid, roots);
+      for (set<revision_id>::const_iterator 
+             i = roots.begin(); i != roots.end(); ++i)
+        cout << "reset refs/mtn/roots/" << *i << "\n"
+             << "from :" << marked_revs[*i] << "\n";
+    }
 
-  // FIXME: would it be useful to have refs/mtn/revs/<revid> as well?
-
-  // FIXME: add an option to write out the revision marks to a file
-  // then use of git fast-import --export-marks will give a corresponding file
-  // of git revision ids
+  if (app.opts.refs.find("leaves") != app.opts.refs.end())
+    {
+      set<revision_id> leaves;
+      db.get_leaves(leaves);
+      for (set<revision_id>::const_iterator 
+             i = leaves.begin(); i != leaves.end(); ++i)
+        cout << "reset refs/mtn/leaves/" << *i << "\n"
+             << "from :" << marked_revs[*i] << "\n";
+    }
 }
 
 // Local Variables:
