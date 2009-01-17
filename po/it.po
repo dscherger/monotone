@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: it\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2009-01-16 11:35+0100\n"
-"PO-Revision-Date: 2009-01-16 11:49+0100\n"
+"PO-Revision-Date: 2009-01-17 11:46+0100\n"
 "Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: Lapo Luchini <lapo@lapo.it>\n"
 "MIME-Version: 1.0\n"
@@ -870,7 +870,7 @@ msgstr ""
 #: cmd_conflicts.cc:111
 #, c-format
 msgid "possible resolutions:"
-msgstr ""
+msgstr "possibili risoluzioni:"
 
 #: cmd_conflicts.cc:77
 #, c-format
@@ -3374,20 +3374,23 @@ msgstr ""
 msgid "unrecognized date (monotone only understands ISO 8601 format)"
 msgstr "data non riconosciuta (monotone comprende solo le date in formato ISO 8601)"
 
+# #TODO: range/intervallo?
 #: dates.cc:402
 #, c-format
 msgid "seconds out of range"
-msgstr ""
+msgstr "secondi fuori intervallo"
 
+# #TODO: range/intervallo?
 #: dates.cc:416
 #, c-format
 msgid "minutes out of range"
-msgstr ""
+msgstr "minuti fuori intervallo"
 
+# #TODO: range/intervallo?
 #: dates.cc:431
 #, c-format
 msgid "hour out of range"
-msgstr ""
+msgstr "ore fuori intervallo"
 
 #: dates.cc:457
 #, c-format
@@ -4746,13 +4749,13 @@ msgstr ""
 
 #: options_list.hh:679
 msgid "use file to resolve conflicts"
-msgstr ""
+msgstr "usa un file per risolvere i conflitti"
 
 #: options_list.hh:685
 #: options_list.hh:710
 #, c-format
 msgid "conflicts file must be under _MTN"
-msgstr ""
+msgstr "il file con i conflitti deve essere sotto ‘_MTN’"
 
 #: options_list.hh:691
 msgid "use _MTN/conflicts to resolve conflicts"
@@ -4761,11 +4764,11 @@ msgstr ""
 #: options_list.hh:695
 #, c-format
 msgid "only one of --resolve-conflicts or --resolve-conflicts-file may be given"
-msgstr ""
+msgstr "si può utilizzare solo uno tra ‘--resolve-conflicts’ e ‘--resolve-conflicts-file’"
 
 #: options_list.hh:704
 msgid "file in which to store conflicts"
-msgstr ""
+msgstr "file dove porre i conflitti"
 
 # TODO: valido/valido
 #: packet.cc:128
@@ -5403,7 +5406,7 @@ msgstr ""
 #: roster_merge.cc:2241
 #, c-format
 msgid "extra data in file"
-msgstr ""
+msgstr "il file contiene dati di troppo"
 
 # TODO: specificare "il certificato della"?
 #: roster_merge.cc:2357
@@ -5420,7 +5423,7 @@ msgstr ""
 #: roster_merge.cc:2386
 #, c-format
 msgid "%s already exists"
-msgstr ""
+msgstr "‘%s’ esiste già"
 
 #: roster_merge.cc:2388
 #, c-format
