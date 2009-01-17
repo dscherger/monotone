@@ -1,7 +1,7 @@
 building and installation process for monotone
 ==============================================
 
-1. prerequisites: 
+1. prerequisites:
 
   * hardware prerequisites:
 
@@ -51,10 +51,23 @@ building and installation process for monotone
            yum install autoconf
            yum install automake
            yum install gettext
-           yum install boost-devel 
+           yum install boost-devel
            yum install zlib-devel
            yum install gcc-c++
            yum install texinfo texinfo-tex
+
+        on mac os x:
+
+           use MacPorts (http://www.macports.org) to install the following
+           packages:
+
+             autoconf, automake, gettext, boost, zlib, lua, pcre, botan,
+             sqlite3, libidn, libiconv, texinfo
+
+           monotone only uses header-only libraries from boost, so if you don't
+           like to spend a lot of time building boost via MacPorts, you can also
+           download and extract it manually and let CXXFLAGS point to the
+           include/ directory of the extracted version.
 
         on Windows (incomplete):
 
@@ -62,7 +75,7 @@ building and installation process for monotone
 
         on other systems:
 
-           check your system package repository, you may need to 
+           check your system package repository, you may need to
            build some of these from source. if your package repository
            does not contain the libraries, see:
 
@@ -122,7 +135,7 @@ building and installation process for monotone
 2. configuring monotone:
 
   * if there is no ./configure script in your source tree you'll need
-    to create one before proceeding to the next step. one of the 
+    to create one before proceeding to the next step. one of the
     following auto* commands should work:
 
         $ aclocal-1.9 && autoreconf --install
@@ -156,7 +169,7 @@ building and installation process for monotone
 3. building monotone
 
   * type "make". this should produce a mtn binary in your current
-    directory. if not, please send a build log to 
+    directory. if not, please send a build log to
     monotone-devel@nongnu.org with a description of the failure.
 
 4. testing monotone
