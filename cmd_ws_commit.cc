@@ -42,13 +42,17 @@ using std::vector;
 using boost::shared_ptr;
 
 static void
-revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summary)
+revision_summary(revision_t const & rev,
+                 branch_name const & branch, branch_name const & newbranch,
+                 utf8 & summary)
 {
   string out;
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
   // other format strings.
   out += (F("Current branch: %s") % branch).str() += '\n';
+  if (!newbranch().empty() && branch != newbranch)
+    out += (F("New branch: %s") % newbranch).str() += '\n';
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
@@ -104,14 +108,15 @@ static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_t const & cs,
                               branch_name const & branchname,
+                              branch_name const & newbranchname,
                               utf8 & log_message)
 {
   utf8 summary;
-  revision_summary(cs, branchname, summary);
+  revision_summary(cs, branchname, newbranchname, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
 
-  utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % branchname).str());
+  utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % newbranchname).str());
   external branch_external;
   utf8_to_system_best_effort(branch_comment, branch_external);
 
@@ -589,7 +594,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   make_restricted_revision(old_rosters, new_roster, mask, rev);
 
   utf8 summary;
-  revision_summary(rev, app.opts.branchname, summary);
+  revision_summary(rev, app.opts.branchname, app.opts.newbranchname, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
   cout << summary_external;
@@ -1070,10 +1075,109 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   work.update_any_attrs(db);
 }
 
+CMD(branch, "branch", "", CMD_REF(workspace), N_("[BRANCHNAME]"),
+    N_("changes the branch of the current workspace or "
+       "displays the current branch"),
+    "",
+    options::opts::none)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+
+  // Cache the new branch, making it the same as the current if not already
+  // present in _MTN/options.  This simplifies a number of tests below.
+  branch_name cache_current_newbranch(app.opts.newbranchname);
+  if (cache_current_newbranch().empty())
+    cache_current_newbranch = app.opts.branchname;
+
+  if (args.size() == 0)
+    {
+      if (cache_current_newbranch == app.opts.branchname)
+        cout << app.opts.branchname << '\n';
+      else
+        cout << app.opts.branchname << " -> " << app.opts.newbranchname << '\n';
+      return;
+    }
+
+  branch_name newbranch(idx(args, 0)());
+
+  E(newbranch != cache_current_newbranch,
+    F("branch of the current workspace is already set to %s") % newbranch);
+
+  if (app.opts.branchname == newbranch)
+    {
+      P(F("moving back to the original branch %s") % newbranch);
+    }
+  else
+    {
+      std::set<branch_name> branches;
+      project.get_branch_list(branches);
+
+      bool existing_branch = false;
+      for (set<branch_name>::const_iterator i = branches.begin();
+           i != branches.end(); ++i)
+        {
+          if (newbranch == *i)
+            {
+              existing_branch = true;
+              break;
+            }
+        }
+
+      parent_map parents;
+      work.get_parent_rosters(db, parents);
+
+      set<revision_id> parent_revisions;
+      for (parent_map::iterator i = parents.begin();
+           i != parents.end(); i++)
+        {
+          if (!null_id(i->first))
+            parent_revisions.insert(i->first);
+        }
+
+      // if this is an existing branch (and we're not inside a freshly created
+      // workspace), check if this branch's head revs and the current workspace
+      // parent share any common ancestors, if not warn the user about it
+      if (existing_branch && parent_revisions.size() > 0)
+        {
+          set<revision_id> branch_heads, revs, common_ancestors;
+          project.get_branch_heads(newbranch, branch_heads,
+                                   app.opts.ignore_suspend_certs);
+
+          set_union(parent_revisions.begin(), parent_revisions.end(),
+                    branch_heads.begin(), branch_heads.end(),
+                    inserter(revs, revs.begin()));
+
+          db.get_common_ancestors(revs, common_ancestors);
+
+          if (common_ancestors.size() == 0)
+            {
+              W(F("the new branch has no common ancestors with the current branch;\n"
+                  "any next commit could therefor create two unmergable heads in\n"
+                  "%s") % newbranch);
+            }
+        }
+
+      if (existing_branch)
+        P(F("next commit will use the existing branch %s") % newbranch);
+      else
+        P(F("next commit will use the new branch %s") % newbranch);
+    }
+
+  app.opts.newbranchname = newbranch;
+
+  // the workspace should remember the branch we just committed to.
+  work.set_ws_options(app.opts, true);
+}
+
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",
-    options::opts::branch | options::opts::message | options::opts::msgfile
+    options::opts::message | options::opts::msgfile
     | options::opts::date | options::opts::author | options::opts::depth
     | options::opts::exclude)
 {
@@ -1107,23 +1211,43 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   revision_id restricted_rev_id;
   calculate_ident(restricted_rev, restricted_rev_id);
 
-  // We need the 'if' because guess_branch will try to override any branch
-  // picked up from _MTN/options.
-  if (app.opts.branchname().empty())
+  //
+  // FIXME: Obviously this command no longer accepts a --branch option,
+  // app.opts.branchname is set to _MTN/options branchname by default in
+  // app_state::process_options (which is called before the command is executed).
+  //
+  // While it would certainly be cleaner here to read app.work.get_ws_options()
+  // I hesistate to do that _again_ because it has already been done. Also
+  // referencing the branchname via app.opts.branchname is a bit backwards
+  // since it was never an option for this command actually. Still, I'm open
+  // for ideas how to clean up this mess =)
+  //
+  // So in the end only if no branch is set in _MTN/options we try to detect a
+  // valid one here by looking at the ancestor revisions of the workspace.
+  //
+  if (!app.opts.newbranchname().empty())
     {
+      app.opts.branchname = app.opts.newbranchname;
+    }
+  else if (app.opts.branchname().empty())
+    {
+      W(F("workspace has no branch name set; trying to detect one "
+          "by looking at the parent revisions"));
+
       branch_name branchname, bn_candidate;
       for (edge_map::iterator i = restricted_rev.edges.begin();
            i != restricted_rev.edges.end();
            i++)
         {
-          // this will prefer --branch if it was set
+          // this will prefer --branch if it was set, but since 'commit'
+          // doesn't take the --branch, this isn't an issue.
           guess_branch(app.opts, project, edge_old_revision(i),
                        bn_candidate);
           N(branchname() == "" || branchname == bn_candidate,
-            F("parent revisions of this commit are in different branches:\n"
+            F("parent revisions of this workspace are in different branches:\n"
               "'%s' and '%s'.\n"
-              "please specify a branch name for the commit, with --branch.")
-            % branchname % bn_candidate);
+              "please specify a branch name with '%s branch BRANCHNAME'.")
+            % branchname % bn_candidate % ui.prog_name);
           branchname = bn_candidate;
         }
 
@@ -1152,7 +1276,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     {
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, restricted_rev,
-                                    app.opts.branchname, log_message);
+                                    app.opts.branchname, app.opts.newbranchname,
+                                    log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly

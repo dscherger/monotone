@@ -20,14 +20,14 @@ mkdir("alicewd")
 copy("initial", "alicewd/initial")
 check(mtn("--branch=testbranch", "setup", "alicewd"), 0, false, false)
 check(indir("alicewd", mtn("--root=.", "add", "initial")), 0, false, false)
-check(indir("alicewd", mtn("--branch=testbranch", "--root=.", "commit", "-m", 'initial commit')), 0, false, false)
+check(indir("alicewd", mtn("--root=.", "commit", "-m", 'initial commit')), 0, false, false)
 copy("foo.alice", "alicewd/foo")
 
 -- Bob does add of file foo, and commits
 check(mtn("--branch=testbranch", "checkout", "bobwd"), 0, false, false)
 copy("foo.bob", "bobwd/foo")
 check(indir("bobwd", mtn("--root=.", "add", "foo")), 0, false, false)
-check(indir("bobwd", mtn("--branch=testbranch", "--root=.", "commit", "-m", 'bob commit')), 0, false, false)
+check(indir("bobwd", mtn("--root=.", "commit", "-m", 'bob commit')), 0, false, false)
 rev = indir("bobwd", {base_revision})[1]()
 
 -- Alice does her update, discovers foo has been stomped!

@@ -7,11 +7,11 @@ check(get("persist.lua"))
 addfile("input.txt", "version 0 of the file")
 writefile("input.txt", "version 1 of the file")
 
-check(mtn("--ssh-sign=no", "--branch=testbranch", "--rcfile=persist.lua",
+check(mtn("--ssh-sign=no", "--rcfile=persist.lua",
           "commit", "--message=blah-blah"),
       1, false, false, "tester@test.net\n")
 
-check(mtn("--ssh-sign=no", "--branch=testbranch", "--rcfile=persist.lua",
+check(mtn("--ssh-sign=no", "--rcfile=persist.lua",
           "commit", "--message=blah-blah"),
       0, false, false, string.rep("tester@test.net\n", 4))
 

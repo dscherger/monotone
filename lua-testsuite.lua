@@ -88,7 +88,12 @@ function commit(branch, message, mt)
   if branch == nil then branch = "testbranch" end
   if message == nil then message = "blah-blah" end
   if mt == nil then mt = mtn end
-  check(mt("commit", "--message", message, "--branch", branch), 0, false, false)
+  check(mt("automate", "get_option", "branch"), 0, true, false)
+  current_branch = trim(readfile("stdout"))
+  if branch ~= current_branch then
+    check(mt("branch", branch), 0, false, false)
+  end
+  check(mt("commit", "--message", message), 0, false, false)
 end
 
 function sha1(what)

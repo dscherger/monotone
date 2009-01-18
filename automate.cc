@@ -1602,7 +1602,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
 
   for (set<revision_id>::const_iterator i = common_ancestors.begin();
        i != common_ancestors.end(); ++i)
-      output << *i << "\n";
+      output << *i << '\n';
 }
 
 // Name: branches

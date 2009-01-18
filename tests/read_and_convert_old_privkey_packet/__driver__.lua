@@ -31,13 +31,15 @@ check(not qgrep("privkey", "keys/foo@bar.com"))
 -- 1) without a --key= switch, it should give us the multiple
 --    available keys message and error out
 remove("_MTN/options")
-check(nokey_mtn("ci", "-bfoo", "-mbar"), 1, nil, true)
+check(nokey_mtn("branch", "foo"), 0, false, false)
+check(nokey_mtn("ci", "-mbar"), 1, nil, true)
 check(qgrep("multiple private keys", "stderr"))
 
 -- 2) --key=foo@bar.com should work
 
 remove("_MTN/options")
-check(nokey_mtn("ci", "-bfoo", "-mbar", "--key=foo@bar.com"), 0, nil, true)
+check(mtn("branch", "foo"), 0, false, false)
+check(nokey_mtn("ci", "-mbar", "--key=foo@bar.com"), 0, nil, true)
 check(qgrep("committed revision", "stderr"))
 
 -- 3) that should have actually signed the certs with that key
