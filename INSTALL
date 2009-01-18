@@ -161,13 +161,13 @@ building and installation process for monotone
 
     You might also like to try fetching monotone's sources from our
     monotone server. this process will transfer the complete development
-    history (about 40 megabytes) to your database, and you will then
+    history (about 70 megabytes) to your database, and you will then
     be free to share it with others or make changes and submit them to
     us:
 
         mtn --db=mt.mtn db init
 
-        mtn --db=mt.mtn pull monotone.ca "net.venge.monotone*"
+        mtn --db=mt.mtn pull monotone.ca net.venge.monotone
 
         mtn --db=mt.mtn --branch=net.venge.monotone checkout monotone-sources
 
