@@ -175,7 +175,10 @@ sub view_button_clicked_cb($$);
 
     # Initialise stuff.
 
-    Gnome2::Program->init("mtn-browse", 0.51);
+    Gnome2::Program->init("mtn-browse",
+			  0.51,
+			  undef,
+			  app_datadir => PREFIX_DIR . "/share");
     setup_sigchld_handler(\&sigchld_handler);
     $glade_file = LIB_DIR . "/ui/mtn-browse.glade";
     $tooltips = Gtk2::Tooltips->new();
@@ -281,34 +284,36 @@ sub view_button_clicked_cb($$);
 						    \&mtn_error_handler);
 
     # Create the browser window and display it. Please note that updating the
-    # browser to reflect the current workspace is done in an idle handler so
-    # that control can be handed over to Gtk2 before updating the display.
+    # browser to reflect the current database or workspace is done in an idle
+    # handler so that control can be handed over to Gtk2 before updating the
+    # display.
 
-    $browser = get_browser_window($mtn);
+    $browser = get_browser_window();
     if (defined($mtn))
     {
 	setup_mtn_object($mtn, $browser->{window});
-	if (defined($branch))
-	{
-	    Glib::Idle->add
-		(sub {
-		     my $browser = $_[0];
+	$browser->{mtn} = $mtn;
+	Glib::Idle->add
+	    (sub {
+		 my $browser = $_[0];
 
-		     return if ($browser->{in_cb});
-		     local $browser->{in_cb} = 1;
+		 return if ($browser->{in_cb});
+		 local $browser->{in_cb} = 1;
 
+		 if (defined($branch))
+		 {
 		     $browser->{branch_combo_details}->{preset} = 1;
 		     $browser->{branch_combo_details}->{value} = $branch;
 		     $browser->{revision_combo_details}->{preset} = 1;
 		     $browser->{revision_combo_details}->{value} =
 			 $revision_id;
 		     $browser->{tagged_checkbutton}->set_active(FALSE);
-		     &{$browser->{update_handler}}($browser, ALL_CHANGED);
+		 }
+		 &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
 
-		     return FALSE;
-		 },
-		 $browser);
-	}
+		 return FALSE;
+	     },
+	     $browser);
     }
     $mtn = undef;
 
