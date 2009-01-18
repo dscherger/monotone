@@ -41,8 +41,10 @@ AC_DEFUN([MTN_FIND_PCRE],
    AC_CACHE_CHECK([whether the PCRE library is usable], ac_cv_lib_pcre_works,
     [save_LIBS="$LIBS"
      save_CFLAGS="$CFLAGS"
+     save_CPPFLAGS="$CPPFLAGS"
      LIBS="$LIBS $PCRE_LIBS"
      CFLAGS="$CFLAGS $PCRE_CFLAGS"
+     CPPFLAGS="$CFLAGS $LUA_CFLAGS"
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
       [#include <pcre.h>],
       [const char *e;
@@ -54,7 +56,8 @@ AC_DEFUN([MTN_FIND_PCRE],
        pcre *re = pcre_compile("foo", 0, &e, &o, 0);])],
       [ac_cv_lib_pcre_works=yes], [ac_cv_lib_pcre_works=no])
      LIBS="$save_LIBS"
-     CFLAGS="$save_CFLAGS"])
+     CFLAGS="$save_CFLAGS"
+     CPPFLAGS="$save_CPPFLAGS"])
    if test $ac_cv_lib_pcre_works = no; then
       AC_MSG_ERROR([Your PCRE library is not usable.])
    fi
@@ -65,7 +68,9 @@ AC_DEFUN([MTN_FIND_PCRE],
           -e 's/#define REQUIRED_PCRE_MINOR[ 	]*/#define REQUIRED_PCRE_MINOR /p' \
           $srcdir/pcrewrap.hh > conftest.h
    save_CFLAGS="$CFLAGS"
+   save_CPPFLAGS="$CPPFLAGS"
    CFLAGS="$CFLAGS $PCRE_CFLAGS"
+   CPPFLAGS="$CFLAGS $LUA_CFLAGS"
    AC_PREPROC_IFELSE([
 #include "conftest.h"
 #include <pcre.h>
@@ -76,7 +81,9 @@ AC_DEFUN([MTN_FIND_PCRE],
    [pcre_version_match=yes],
    [pcre_version_match=no])
    AC_MSG_RESULT($pcre_version_match)
-   if test $pcre_version_match = no; then
-     AC_MSG_ERROR([Your PCRE library is too old, please upgrade it.])
-   fi
-])
+   CFLAGS="$save_CFLAGS"
+   CPPFLAGS="$save_CPPFLAGS"])
+ if test $pcre_version_match = no; then
+   AC_MSG_ERROR([Your PCRE library is too old, please upgrade it.])
+ fi
+
