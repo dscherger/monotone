@@ -2650,6 +2650,39 @@ bool session::process(transaction_guard & guard)
     }
 }
 
+void
+add_address_names(Netxx::Address & addr,
+                  std::list<utf8> const & addresses,
+                  Netxx::port_type default_port)
+{
+  if (addresses.empty())
+    addr.add_all_addresses(default_port);
+  else
+    {
+      for (std::list<utf8>::const_iterator 
+             it = addresses.begin(); it != addresses.end(); ++it)
+        {
+          const utf8 & address = *it;
+          if (!address().empty())
+            {
+              size_t l_colon = address().find(':');
+              size_t r_colon = address().rfind(':');
+
+              if (l_colon == r_colon && l_colon == 0)
+                {
+                  // can't be an IPv6 address as there is only one colon
+                  // must be a : followed by a port
+                  string port_str = address().substr(1);
+                  addr.add_all_addresses(std::atoi(port_str.c_str()));
+                }
+              else
+                addr.add_address(address().c_str(), default_port);
+            }
+        }
+    }
+}
+
+
 static shared_ptr<Netxx::StreamServer>
 make_server(std::list<utf8> const & addresses,
             Netxx::port_type default_port,
@@ -2660,32 +2693,7 @@ make_server(std::list<utf8> const & addresses,
   try
     {
       addr = Netxx::Address(use_ipv6);
-
-      if (addresses.empty())
-        addr.add_all_addresses(default_port);
-      else
-        {
-          for (std::list<utf8>::const_iterator it = addresses.begin();
-               it != addresses.end(); ++it)
-            {
-              const utf8 & address = *it;
-              if (!address().empty())
-                {
-                  size_t l_colon = address().find(':');
-                  size_t r_colon = address().rfind(':');
-
-                  if (l_colon == r_colon && l_colon == 0)
-                    {
-                      // can't be an IPv6 address as there is only one colon
-                      // must be a : followed by a port
-                      string port_str = address().substr(1);
-                      addr.add_all_addresses(std::atoi(port_str.c_str()));
-                    }
-                  else
-                    addr.add_address(address().c_str(), default_port);
-                }
-            }
-        }
+      add_address_names(addr, addresses, default_port);
       shared_ptr<Netxx::StreamServer> ret(new Netxx::StreamServer(addr, timeout));
 
       char const * name;
@@ -3186,37 +3194,6 @@ session_from_server_sync_item(options & opts,
     }
 }
 
-void
-add_address_names(Netxx::Address & addr,
-                  std::list<utf8> const & addresses,
-                  Netxx::port_type default_port)
-{
-  if (addresses.empty())
-    addr.add_all_addresses(default_port);
-  else
-    {
-      for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
-        {
-          const utf8 & address = *it;
-          if (!address().empty())
-            {
-              size_t l_colon = address().find(':');
-              size_t r_colon = address().rfind(':');
-
-              if (l_colon == r_colon && l_colon == 0)
-                {
-                  // can't be an IPv6 address as there is only one colon
-                  // must be a : followed by a port
-                  string port_str = address().substr(1);
-                  addr.add_all_addresses(std::atoi(port_str.c_str()));
-                }
-              else
-                addr.add_address(address().c_str(), default_port);
-            }
-        }
-    }
-}
-
 static void
 serve_connections(options & opts,
                   lua_hooks & lua,
@@ -3238,8 +3215,6 @@ serve_connections(options & opts,
                                            react, role, addresses,
                                            guard, use_ipv6));
   react.add(listen, *guard);
-          Netxx::Address addr(use_ipv6);
-          add_address_names(addr, addresses, default_port);
 
 
   while (true)

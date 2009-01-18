@@ -18,9 +18,9 @@ scgi.server = (
 
    $ /etc/init.d/lighttpd start
 
-4. start a gserve server for lighttpd to proxy to
+4. start an scgi server for lighttpd to proxy to
 
-   $ mtn gserve --db server.db
+   $ mtn scgi --db server.db
 
 5. run the gsync client
 

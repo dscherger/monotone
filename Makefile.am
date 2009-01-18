@@ -4,8 +4,8 @@ ACLOCAL_AMFLAGS = -I m4
 CMD_SOURCES =								\
 	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
 	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_conflicts.cc
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_scgi.cc
+	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_conflicts.cc	\
+	cmd_scgi.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
@@ -20,8 +20,8 @@ LUAEXT_SOURCES = 							\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
-	globish.cc globish.hh basic_io.cc basic_io.hh json_io.cc	\
-	json_io.hh json_msgs.cc json_msgs.hh				\
+	globish.cc globish.hh basic_io.cc basic_io.hh			\
+	json_io.cc json_io.hh json_msgs.cc json_msgs.hh			\
 	char_classifiers.hh
 
 MOST_SOURCES = 								\
