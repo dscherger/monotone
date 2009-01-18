@@ -85,7 +85,12 @@ building and installation process for monotone
 
         on Windows (using Cygwin):
 
-           FIXME
+           FIXME: add exact name of needed packages
+
+           currently every prerequisite is avaialble as packages except
+           lua and botan; lua is available on Cygwin Ports though
+
+           an official Cygwin package for monotone will be available soon
 
         on other systems:
 
