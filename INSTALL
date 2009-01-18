@@ -21,6 +21,7 @@ building and installation process for monotone
       supported.
     - zlib 1.1.4 or later.
     - libiconv if the iconv() function is missing.
+    - texinfo (to build the documentation).
 
         on debian: 
 
@@ -30,6 +31,7 @@ building and installation process for monotone
            apt-get install libboost-dev
            apt-get install libz-dev
            apt-get install g++
+           apt-get install texinfo
 
         on fedora: 
 
@@ -39,6 +41,7 @@ building and installation process for monotone
            yum install boost-devel 
            yum install zlib-devel
            yum install gcc-c++
+           yum install texinfo texinfo-tex
 
         on Windows (incomplete):
 

@@ -1239,12 +1239,12 @@ do
       local s = "continue"
       local v = nil
       for _,n in pairs(hook_functions) do
-     if n[f] then
-        s,v = n[f](...)
-     end
-     if s ~= "continue" then
-        break
-     end
+         if n[f] then
+            s,v = n[f](...)
+         end
+         if s ~= "continue" then
+            break
+         end
       end
       return v
    end
@@ -1278,38 +1278,38 @@ do
 
    function add_hook_functions(functions, precedence)
       if type(functions) ~= "table" or type(precedence) ~= "number" then
-     return false, "Invalid type"
+         return false, "Invalid type"
       end
       if hook_functions[precedence] then
-     return false, "Precedence already taken"
+         return false, "Precedence already taken"
       end
 
       local unknown_items = ""
       local warning = nil
       local is_member =
-     function (s,t)
-        for k,v in pairs(t) do if s == v then return true end end
-        return false
-     end
+         function (s,t)
+            for k,v in pairs(t) do if s == v then return true end end
+            return false
+         end
 
       for n,f in pairs(functions) do
-     if type(n) == "string" then
-        if not is_member(n, supported_items) then
-           if unknown_items ~= "" then
-          unknown_items = unknown_items .. ","
-           end
-           unknown_items = unknown_items .. n
-        end
-        if type(f) ~= "function" then
-           return false, "Value for functions item "..n.." isn't a function"
-        end
-     else
-        warning = "Non-string item keys found in functions table"
-     end
+         if type(n) == "string" then
+            if not is_member(n, supported_items) then
+               if unknown_items ~= "" then
+                  unknown_items = unknown_items .. ","
+               end
+               unknown_items = unknown_items .. n
+            end
+            if type(f) ~= "function" then
+               return false, "Value for functions item "..n.." isn't a function"
+            end
+         else
+            warning = "Non-string item keys found in functions table"
+         end
       end
 
       if warning == nil and unknown_items ~= "" then
-     warning = "Unknown item(s) " .. unknown_items .. " in functions table"
+         warning = "Unknown item(s) " .. unknown_items .. " in functions table"
       end
 
       hook_functions[precedence] = functions

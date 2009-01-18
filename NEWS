@@ -1,3 +1,46 @@
+??? ??? ?? ??:??:?? UTC 2009
+
+        0.43 release.
+
+        Changes
+
+        - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
+          longer print global options, thus making the output of specific help
+          requests more compact. You still see all available global options
+          by executing 'mtn help' without any arguments.
+
+        Bugs fixed
+
+        - Several bugfixes to `mtn automate stdio':
+          * it now correctly distinguishs between syntax and command errors by
+            returning error code 1 for the former and error code 2 for the
+            latter - just as advertised in the documentation.
+          * the stdio event loop no longer quits if a syntax error occurs, but
+            rather discards the wrong state and accepts new (valid) commands.
+          * option errors haven't been catched properly and thus weren't encoded
+            in stdio either; this has been fixed as well.
+
+        - In certain cases, especially also on FreeBSD and Mac OS X, netsync
+          called select() even after read() returned 0 bytes to indicate the
+          end of the file, resulting in a confusing error message. This
+          is fixed by treating EOF specially and prevent further calls
+          to select() on the file handle, as recommended by the
+          select_tut man page.
+
+        New features
+
+        - The `mtn_automate' lua function now correctly parses and sets
+          options for executed automate commands.
+
+        - Additional '--full' option for 'mtn db info' to display some
+          statistic analysis of the date certs in the database.
+
+        Internal
+
+        - Using 64 bit integer values to represent dates internally. This
+          has no user visible effect.
+
+
 Fri Dec 26 22:08:00 UTC 2008
 
         0.42 release.

@@ -2803,8 +2803,8 @@ void calculate_ident(roster_t const & ros,
   if (!ros.all_nodes().empty())
     {
       write_manifest_of_roster(ros, tmp);
-      calculate_ident(tmp, ident);
     }
+  calculate_ident(tmp, ident);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -3058,11 +3058,6 @@ path_component new_component(randomizer & rng)
 
 
 attr_key pick_attr(full_attr_map_t const & attrs, randomizer & rng)
-{
-  return random_element(attrs, rng)->first;
-}
-
-attr_key pick_attr(attr_map_t const & attrs, randomizer & rng)
 {
   return random_element(attrs, rng)->first;
 }

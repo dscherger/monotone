@@ -14,6 +14,7 @@
 #include "charset.hh"
 #include "cmd.hh"
 #include "revision.hh"
+#include "roster.hh"
 #include "constants.hh"
 #include "app_state.hh"
 #include "database.hh"
@@ -23,6 +24,7 @@
 #include "work.hh"
 #include "rev_height.hh"
 #include "transforms.hh"
+#include "ui.hh"
 
 using std::cin;
 using std::cout;
@@ -30,6 +32,7 @@ using std::make_pair;
 using std::pair;
 using std::set;
 using std::string;
+using std::vector;
 
 CMD_GROUP(db, "db", "", CMD_REF(database),
           N_("Deals with the database"),
@@ -50,13 +53,13 @@ CMD(db_init, "init", "", CMD_REF(db), "",
 CMD(db_info, "info", "", CMD_REF(db), "",
     N_("Shows information about the database"),
     "",
-    options::opts::none)
+    options::opts::full)
 {
   N(args.size() == 0,
     F("no arguments needed"));
 
   database db(app);
-  db.info(cout);
+  db.info(cout, app.opts.full);
 }
 
 CMD(db_version, "version", "", CMD_REF(db), "",
@@ -435,12 +438,112 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 {
   if (args.size() != 1)
     throw usage(execid);
-  revision_id rid(idx(args, 0)());
+
+  revision_id rid(decode_hexenc(idx(args, 0)()));
   database db(app);
   N(db.revision_exists(rid), F("no such revision '%s'") % rid);
   rev_height height;
   db.get_rev_height(rid, height);
   P(F("cached height: %s") % height);
+}
+
+// loading revisions is relatively fast
+
+CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), N_(""),
+    N_("load all revisions from the database"),
+    N_("This command loads all revisions from the database and is "
+       "intended to be used for timing revision loading performance."),
+    options::opts::none)
+{
+  database db(app);
+  set<revision_id> ids;
+  vector<revision_id> revisions;
+
+  db.get_revision_ids(ids);
+  toposort(db, ids, revisions);
+
+  P(F("loading revisions"));
+  ticker loaded(_("revisions"), "r", 64);
+  loaded.set_total(revisions.size());
+
+  typedef vector<revision_id>::const_iterator revision_iterator;
+
+  for (revision_iterator i = revisions.begin(); i != revisions.end(); ++i)
+    {
+      revision_t revision;
+      db.get_revision(*i, revision);
+      ++loaded;
+    }
+}
+
+// loading rosters is slow compared with files, revisions or certs
+
+CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), N_(""),
+    N_("load all roster versions from the database"),
+    N_("This command loads all roster versions from the database and is "
+       "intended to be used for timing roster reconstruction performance."),
+    options::opts::none)
+{
+  database db(app);
+  set<revision_id> ids;
+  vector<revision_id> rosters;
+
+  db.get_revision_ids(ids);
+  toposort(db, ids, rosters);
+
+  P(F("loading rosters"));
+  ticker loaded(_("rosters"), "r", 1);
+  loaded.set_total(rosters.size());
+  typedef vector<revision_id>::const_iterator roster_iterator;
+
+  for (roster_iterator i = rosters.begin(); i != rosters.end(); ++i)
+    {
+      roster_t roster;
+      db.get_roster(*i, roster);
+      ++loaded;
+    }
+}
+
+// loading files is slower than revisions but faster than rosters
+
+CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), N_(""),
+    N_("load all file versions from the database"),
+    N_("This command loads all files versions from the database and is "
+       "intended to be used for timing file reconstruction performance."),
+    options::opts::none)
+{
+  database db(app);
+  set<file_id> files;
+  db.get_file_ids(files);
+
+  P(F("loading files"));
+  ticker loaded(_("files"), "f", 1);
+  loaded.set_total(files.size());
+
+  typedef set<file_id>::const_iterator file_iterator;
+
+  for (file_iterator i = files.begin(); i != files.end(); ++i)
+    {
+      file_data file;
+      db.get_file_version(*i, file);
+      ++loaded;
+    }
+}
+
+// loading certs is fast
+
+CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), N_(""),
+    N_("load all certs from the database"),
+    N_("This command loads all certs from the database and is "
+       "intended to be used for timing cert loading performance."),
+    options::opts::none)
+{
+  database db(app);
+  vector< revision<cert> > certs;
+
+  P(F("loading certs"));
+  db.get_revision_certs(certs);
+  P(F("loaded %d certs") % certs.size());
 }
 
 // Local Variables:

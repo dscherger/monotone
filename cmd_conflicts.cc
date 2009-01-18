@@ -411,7 +411,7 @@ CMD(resolve_first_right, "resolve_first_right", "", CMD_REF(conflicts),
 }
 
 CMD(clean, "clean", "", CMD_REF(conflicts),
-    N_(""),
+    "",
     N_("Delete any bookkeeping files related to conflict resolution"),
     "",
     options::opts::none)
