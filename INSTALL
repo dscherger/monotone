@@ -22,55 +22,68 @@ building and installation process for monotone
     - zlib 1.1.4 or later.
     - libiconv if the iconv() function is missing.
     - texinfo (to build the documentation).
-    - Botan 1.7.8 or later
+    - Botan 1.6.3 or later
     - PCRE 7.6 or later
     - SQLite 3.3.8 or later
     - Lua 5.1
     - GNU IDN Library
 
-        on debian:
+        on debian and ubuntu:
 
-           apt-get install autoconf automake gettext libboost-dev libz-dev \
-                           libbotan1.7-dev libsqlite3-dev libpcre3-dev     \
-                           liblua5.1-0-dev libidn11-dev g++
-           apt-get install texinfo
+           install the following packages:
+             autoconf automake gettext g++ libboost-dev libz-dev
+             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev texinfo
+
+           (On etch, you may need to use libbotan1.8 from lenny.)
 
         on freebsd:
 
            install the following packages from the ports collection:
-             databases/sqlite3, devel/automake1.9, devel/boost, devel/gettext,
-             devel/gmake, devel/pcre, lang/lua, security/botan
+             databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
+             devel/gmake devel/pcre lang/lua security/botan
 
         on gentoo:
 
-           emerge autoconf automake gettext \
-                  boost zlib botan sqlite libpcre lua libidn
+           emerge the following packages:
+             autoconf automake boost botan gettext libpcre libidn lua sqlite
+             zlib
 
-        on fedora (incomplete):
+        on fedora:
 
-           yum install autoconf
-           yum install automake
-           yum install gettext
-           yum install boost-devel
-           yum install zlib-devel
-           yum install gcc-c++
-           yum install texinfo texinfo-tex
+           install the following packages:
+             autoconf automake gettext boost boost-devel zlib zlib-devel
+             lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
+             libidn-devel gcc-c++ texinfo texinfo-tex
+
+           For Fedora 9, you need to get botan packages from the project
+           website.
+
+           (FIXME: we currently don't support PCRE 7.3!)
+
+        on Solaris 10 (using packages from opencsw.org):
+
+           Either compile the required packages from source or use these
+           from opencsw.org:
+
+             autoconf automake boost_devel gcc4g++ ggettext gmake libidn
+             lua pcre sqlite3 zlib
 
         on mac os x:
 
            use MacPorts (http://www.macports.org) to install the following
            packages:
-
-             autoconf, automake, gettext, boost, zlib, lua, pcre, botan,
-             sqlite3, libidn, libiconv, texinfo
+             autoconf automake gettext boost zlib lua pcre botan
+             sqlite3 libidn libiconv texinfo
 
            monotone only uses header-only libraries from boost, so if you don't
            like to spend a lot of time building boost via MacPorts, you can also
            download and extract it manually and let CXXFLAGS point to the
            include/ directory of the extracted version.
 
-        on Windows (incomplete):
+        on Windows (using Cygwin):
 
+           FIXME
            libiconv (http://gnuwin32.sourceforge.net/packages/libiconv.htm)
 
         on other systems:
