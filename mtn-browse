@@ -175,8 +175,8 @@ sub view_button_clicked_cb($$);
 
     # Initialise stuff.
 
-    Gnome2::Program->init("mtn-browse",
-			  0.51,
+    Gnome2::Program->init(APPLICATION_NAME,
+			  APPLICATION_VERSION,
 			  undef,
 			  app_datadir => PREFIX_DIR . "/share");
     setup_sigchld_handler(\&sigchld_handler);
@@ -392,11 +392,11 @@ sub about_activate_cb($$)
     local $browser->{in_cb} = 1;
 
     $large_logo = Gtk2::Gdk::Pixbuf->new_from_file
-	(LIB_DIR . "/UI/mtn-browse-large.png")
+	(LIB_DIR . "/ui/mtn-browse-large.png")
 	if (! defined($large_logo));
     Gnome2::About->new
-	("mtn-browse",
-	 "0.51",
+	(APPLICATION_NAME,
+	 APPLICATION_VERSION,
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],

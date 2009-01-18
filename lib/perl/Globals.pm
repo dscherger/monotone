@@ -53,9 +53,10 @@ use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# Constant for the name of this application.
+# Constants for the name and version of this application.
 
-use constant APPLICATION_NAME => "mtn-browse";
+use constant APPLICATION_NAME    => "mtn-browse";
+use constant APPLICATION_VERSION => 0.51;
 
 # Constants used to represent the different groups of widgets.
 
@@ -115,6 +116,7 @@ use base qw(Exporter);
 
 our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     APPLICATION_NAME
+				     APPLICATION_VERSION
 				     BRANCH
 				     BRANCH_CHANGED
 				     DATABASE_CHANGED
