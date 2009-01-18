@@ -15,7 +15,6 @@
 #include "json_io.hh"
 #include "json_msgs.hh"
 #include "netcmd.hh"
-#include "net_common.hh"
 #include "sanity.hh"
 #include "lexical_cast.hh"
 #include "constants.hh"

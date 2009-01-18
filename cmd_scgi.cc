@@ -26,7 +26,7 @@
 #include "lexical_cast.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
-#include "net_common.hh"
+#include "netcmd.hh"
 #include "transforms.hh"
 #include "ui.hh"
 

@@ -32,7 +32,6 @@
 #include "lua.hh"
 #include "merkle_tree.hh"
 #include "netcmd.hh"
-#include "net_common.hh"
 #include "netio.hh"
 #include "numeric_vocab.hh"
 #include "refiner.hh"
@@ -2368,6 +2367,41 @@ bool session::process(transaction_guard & guard)
 }
 
 
+shared_ptr<Netxx::StreamBase>
+build_stream_to_server(options & opts, lua_hooks & lua,
+                       netsync_connection_info info,
+                       Netxx::port_type default_port,
+                       Netxx::Timeout timeout)
+{
+  shared_ptr<Netxx::StreamBase> server;
+
+  if (info.client.use_argv)
+    {
+      I(info.client.argv.size() > 0);
+      string cmd = info.client.argv[0];
+      info.client.argv.erase(info.client.argv.begin());
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::PipeStream(cmd, info.client.argv));
+    }
+  else
+    {
+#ifdef USE_IPV6
+      bool use_ipv6=true;
+#else
+      bool use_ipv6=false;
+#endif
+      string host(info.client.u.host);
+      if (host.empty())
+        host = info.client.unparsed();
+      if (!info.client.u.port.empty())
+        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
+      Netxx::Address addr(info.client.unparsed().c_str(),
+                          default_port, use_ipv6);
+      return shared_ptr<Netxx::StreamBase>
+        (new Netxx::Stream(addr, timeout));
+    }
+}
+
 static void
 call_server(options & opts,
             lua_hooks & lua,
@@ -2727,6 +2761,37 @@ reap_dead_sessions(map<Netxx::socket_type, shared_ptr<session> > & sessions,
        i != dead_clients.end(); ++i)
     {
       drop_session_associated_with_fd(sessions, *i);
+    }
+}
+
+void
+add_address_names(Netxx::Address & addr,
+                  std::list<utf8> const & addresses,
+                  Netxx::port_type default_port)
+{
+  if (addresses.empty())
+    addr.add_all_addresses(default_port);
+  else
+    {
+      for (std::list<utf8>::const_iterator it = addresses.begin(); it != addresses.end(); ++it)
+        {
+          const utf8 & address = *it;
+          if (!address().empty())
+            {
+              size_t l_colon = address().find(':');
+              size_t r_colon = address().rfind(':');
+
+              if (l_colon == r_colon && l_colon == 0)
+                {
+                  // can't be an IPv6 address as there is only one colon
+                  // must be a : followed by a port
+                  string port_str = address().substr(1);
+                  addr.add_all_addresses(std::atoi(port_str.c_str()));
+                }
+              else
+                addr.add_address(address().c_str(), default_port);
+            }
+        }
     }
 }
 

@@ -47,7 +47,6 @@ MOST_SOURCES = 								\
 	schema_migration.cc schema_migration.hh				\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
-	net_common.cc net_common.hh					\
 	netsync.cc            						\
 	gsync.cc gsync.hh            					\
 	netxx_pipe.cc netxx_pipe.hh					\
