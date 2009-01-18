@@ -142,8 +142,10 @@ building and installation process for monotone
 
 3. building monotone
 
-  * type "make". this should produce a mtn binary in your current
-    directory. if not, please send a build log to 
+  * type "make" to invoke GNU make (please notice it might be named
+    "gmake" on systems where system make is not GNU make).
+    this should produce a mtn binary in your current directory.
+    if not, please send a build log to 
     monotone-devel@nongnu.org with a description of the failure.
 
 4. testing monotone
