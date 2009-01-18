@@ -69,6 +69,8 @@ building and installation process for monotone
              autoconf automake boost_devel gcc4g++ ggettext gmake libidn
              lua pcre sqlite3 zlib
 
+           (FIXME: yet to be confirmed)
+
         on mac os x:
 
            use MacPorts (http://www.macports.org) to install the following
@@ -84,7 +86,6 @@ building and installation process for monotone
         on Windows (using Cygwin):
 
            FIXME
-           libiconv (http://gnuwin32.sourceforge.net/packages/libiconv.htm)
 
         on other systems:
 
