@@ -94,6 +94,14 @@ OPTION(bind_opts, bind, true, "bind",
   bind_stdio = false;
 }
 #endif
+OPTION(bind_opts, scgi_bind, true, "bind",
+       gettext_noop("address:port to listen on (default :3000)"))
+#ifdef option_bodies
+{
+  bind_uris.push_back(utf8(arg));
+  bind_stdio = false;
+}
+#endif
 OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
        gettext_noop("disable transport authentication"))
 #ifdef option_bodies

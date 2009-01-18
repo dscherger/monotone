@@ -4,6 +4,8 @@
 #include "diff_patch.hh"
 #include "netcmd.hh"
 #include "globish.hh"
+#include "gsync.hh"
+#include "http_client.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "cert.hh"
@@ -516,6 +518,26 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
   run_netsync_protocol(app.opts, app.lua, project, keys,
                        server_voice, source_and_sink_role, info);
 }
+
+CMD(gsync, "gsync", "", CMD_REF(network),
+    N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+    N_("Synchronizes branches with a gsync server"),
+    N_("This synchronizes branches that match the pattern given in PATTERN "
+       "with the gsync server at the address ADDRESS."),
+    options::opts::set_default | options::opts::exclude |
+    options::opts::key_to_push | options::opts::dryrun)
+{
+  database db(app);
+  key_store keys(app);
+
+  netsync_connection_info info;
+  extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
+
+  http_client h(app.opts, app.lua, info);
+  run_gsync_protocol(app.lua, db, http_channel(h),
+                     app.opts.dryrun);
+}
+
 
 // Local Variables:
 // mode: C++
