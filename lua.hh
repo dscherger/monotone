@@ -1,9 +1,7 @@
 #ifndef __LUA_HH__
 #define __LUA_HH__
 
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
+#include <lua.hpp>
 
 #include <map>
 #include <set>
