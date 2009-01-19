@@ -37,6 +37,17 @@
 //    CVS/RCS ,v files, which encode times as decimal seconds since the Unix
 //    epoch; so we must support that epoch regardless of what the system does.
 
+
+// On Solaris, these macros are already defined by system includes. We want
+// to use our own, so we undef them here.
+#ifdef SEC
+#undef SEC
+#endif
+
+#ifdef MILLISEC
+#undef MILLISEC
+#endif
+
 using std::string;
 
 // Writing a 64-bit constant is tricky.  We cannot use the macros that
