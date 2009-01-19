@@ -5,21 +5,24 @@ AC_DEFUN([MTN_FIND_IDNA],
    # even if pkg-config isn't installed.  The use of + instead of :+ is
    # deliberate; the user should be able to tell us that the empty string
    # is the correct set of flags.  (PKG_CHECK_MODULES gets this wrong!)
-   if test -n "${LIBIDN_CFLAGS+set}" || test -n "${LIBIDN_LIBS+set}"; then
+   if test -n "${LIBIDN_CPPFLAGS+set}" || test -n "${LIBIDN_LIBS+set}"; then
      found_libidn=yes
    else
      PKG_CHECK_MODULES([LIBIDN], [libidn],
                        [found_libidn=yes], [found_libidn=no])
+
+     if test $found_libidn = yes; then
+       # PKG_CHECK_MODULES adds LIBIDN_CFLAGS, but we want LIBIDN_CPPFLAGS
+       LIBIDN_CPPFLAGS="$LIBIDN_CFLAGS"
+     fi
    fi
 
    if test $found_libidn = no; then
      AC_MSG_RESULT([no; guessing])
      AC_CHECK_LIB([libidn], [idna_strerror], 
                   [LIBIDN_LIBS=-lidn])
-     LIBIDN_CFLAGS=
+     LIBIDN_CPPFLAGS=
    fi
-
-   LIBIDN_CPPFLAGS="$LIBIDN_CFLAGS"
 
     # AC_MSG_NOTICE([using libidn compile flags: "$LIBIDN_CPPFLAGS"])
     # AC_MSG_NOTICE([using libidn link flags: "$LIBIDN_LIBS"])
