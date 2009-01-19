@@ -40,13 +40,8 @@
 
 // On Solaris, these macros are already defined by system includes. We want
 // to use our own, so we undef them here.
-#ifdef SEC
 #undef SEC
-#endif
-
-#ifdef MILLISEC
 #undef MILLISEC
-#endif
 
 using std::string;
 
