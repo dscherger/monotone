@@ -46,7 +46,7 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 #endif
 {
 #ifdef WIN32
-  E(0, F("this transport not supported on native Win32; use Cygwin"));
+  E(0, origin::system, F("this transport not supported on native Win32; use Cygwin"));
 
   // keeping code in case someone wants to try fixing it
 
@@ -58,7 +58,7 @@ Netxx::PipeStream::PipeStream(int _readfd, int _writefd)
 
   named_pipe = (HANDLE)_get_osfhandle(_readfd);
 
-  E(named_pipe != INVALID_HANDLE_VALUE,
+  E(named_pipe != INVALID_HANDLE_VALUE, origin::system,
     F("pipe handle is invalid"));
 
   // Create infrastructure for overlapping I/O
@@ -178,7 +178,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
 #ifdef WIN32
 
-  E(0, F("this transport not supported on native Win32; use Cygwin"));
+  E(0, origin::system, F("this transport not supported on native Win32; use Cygwin"));
 
   // keeping code in case someone wants to try fixing it
 
@@ -201,7 +201,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
                                1000,
                                0);
 
-  E(named_pipe != INVALID_HANDLE_VALUE,
+  E(named_pipe != INVALID_HANDLE_VALUE, origin::system,
     F("CreateNamedPipe(%s,...) call failed: %s")
     % pipename % err_msg());
 
@@ -218,7 +218,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
                             OPEN_EXISTING,
                             FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,0);
 
-  E(hpipe != INVALID_HANDLE_VALUE,
+  E(hpipe != INVALID_HANDLE_VALUE, origin::system,
     F("CreateFile(%s,...) call failed: %s")
     % pipename % err_msg());
 
@@ -249,7 +249,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
                                NULL, // Current directory
                                &siStartInfo,
                                &piProcInfo);
-  E(started,
+  E(started, origin::system,
     F("CreateProcess(%s,...) call failed: %s")
     % cmdline % err_msg());
 
@@ -266,7 +266,7 @@ Netxx::PipeStream::PipeStream (const string & cmd,
 
   int fd1[2], fd2[2];
   child = pipe_and_fork(fd1, fd2);
-  E(child >= 0, F("pipe/fork failed: %s") % strerror(errno));
+  E(child >= 0, origin::system, F("pipe/fork failed: %s") % strerror(errno));
   if (!child)
     {
       execvp(newargv[0], const_cast<char * const *>(newargv));
@@ -312,7 +312,7 @@ Netxx::PipeStream::write(const void *buffer, size_type length)
 #ifdef WIN32
   DWORD written = 0;
   BOOL ok = WriteFile(named_pipe, buffer, length, &written, NULL);
-  E(ok, F("WriteFile call failed: %s") % err_msg());
+  E(ok, origin::system, F("WriteFile call failed: %s") % err_msg());
 #else
   size_t written = ::write(writefd, buffer, length);
 #endif
@@ -403,7 +403,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
           // Issue an async request to fill our buffer.
           BOOL ok = ReadFile(pipe->named_pipe, pipe->readbuf,
                              sizeof(pipe->readbuf), NULL, &pipe->overlap);
-          E(ok || GetLastError() == ERROR_IO_PENDING,
+          E(ok || GetLastError() == ERROR_IO_PENDING, origin::system,
             F("ReadFile call failed: %s") % err_msg());
           pipe->read_in_progress = true;
         }
@@ -438,7 +438,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
                                                FALSE,
                                                milliseconds);
 
-              E(wstatus != WAIT_FAILED,
+              E(wstatus != WAIT_FAILED, origin::system,
                 F("WaitForMultipleObjects call failed: %s") % err_msg());
 
               if (wstatus == WAIT_OBJECT_0 + 1)
@@ -448,7 +448,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
             {
               wstatus = WaitForSingleObject(pipe->overlap.hEvent,
                                             milliseconds);
-              E(wstatus != WAIT_FAILED,
+              E(wstatus != WAIT_FAILED, origin::system,
                 F("WaitForSingleObject call failed: %s") % err_msg());
             }
 
@@ -468,7 +468,7 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
           else
             {
               // We did not complete our read.
-              E(GetLastError() == ERROR_IO_INCOMPLETE,
+              E(GetLastError() == ERROR_IO_INCOMPLETE, origin::system,
                 F("GetOverlappedResult call failed: %s")
                 % err_msg());
             }
@@ -594,7 +594,8 @@ UNIT_TEST(pipe, simple_pipe)
           probe.clear();
           probe.add(pipe, Netxx::Probe::ready_read);
           res = probe.ready(timeout);
-          E(res.second & Netxx::Probe::ready_read, F("timeout reading data %d") % c);
+          E(res.second & Netxx::Probe::ready_read, origin::system,
+            F("timeout reading data %d") % c);
 #ifdef WIN32
           I(res.first == pipe.get_socketfd());
 #else
@@ -611,7 +612,7 @@ UNIT_TEST(pipe, simple_pipe)
   pipe.close();
 
   }
-catch (informative_failure &e)
+catch (recoverable_failure &e)
   // for some reason boost does not provide
   // enough information
   {

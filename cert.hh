@@ -34,7 +34,7 @@ struct cert : public origin_aware
 
   // This is to make revision<cert> and manifest<cert> work.
   explicit cert(std::string const & s);
-  cert(std::string const & s, made_from_t m);
+  cert(std::string const & s, origin::type m);
 
   cert(revision_id const & ident,
       cert_name const & name,

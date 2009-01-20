@@ -138,7 +138,7 @@ get_long(char const * buf)
 static u32
 get_long_from_buf(string const & buf, u32 & loc)
 {
-  E(buf.length() >= loc + 4,
+  E(buf.length() >= loc + 4, origin::system,
     F("string not long enough to get a long"));
   u32 ret = get_long(buf.data() + loc);
   loc += 4;
@@ -156,7 +156,7 @@ get_string_from_buf(string const & buf,
     % loc);
   len = get_long_from_buf(buf, loc);
   L(FL("ssh_agent: get_string_from_buf: len: %u" ) % len);
-  E(loc + len <= buf.length(),
+  E(loc + len <= buf.length(), origin::system,
     F("ssh_agent: length (%i) of buf less than loc (%u) + len (%u)")
     % buf.length()
     % loc
@@ -260,7 +260,8 @@ ssh_agent_state::read_packet(string & packet)
   read_data(4, len_buf);
   u32 l = 0;
   len = get_long_from_buf(len_buf, l);
-  E(len > 0, F("ssh_agent: fetch_packet: zero-length packet from ssh-agent"));
+  E(len > 0, origin::system,
+    F("ssh_agent: fetch_packet: zero-length packet from ssh-agent"));
 
   L(FL("ssh_agent: fetch_packet: response len %u") % len);
 
@@ -310,7 +311,8 @@ ssh_agent::get_keys()
 
   //first byte is packet type
   u32 packet_loc = 0;
-  E(packet.at(0) == 12, F("ssh_agent: packet type (%u) != 12")
+  E(packet.at(0) == 12, origin::system,
+    F("ssh_agent: packet type (%u) != 12")
     % (u32)packet.at(0));
   packet_loc += 1;
 
@@ -347,7 +349,7 @@ ssh_agent::get_keys()
                                     BigInt::Binary);
           L(FL("ssh_agent: n: %s, len %u") % n % slen);
 
-          E(key.length() == key_loc,
+          E(key.length() == key_loc, origin::system,
             F("ssh_agent: get_keys: not all or too many key bytes consumed,"
               " location (%u), length (%i)")
             % key_loc
@@ -371,7 +373,7 @@ ssh_agent::get_keys()
       get_string_from_buf(packet, packet_loc, comment_len, comment);
       L(FL("ssh_agent: comment_len: %u, comment: %s") % comment_len % comment);
     }
-  E(packet.length() == packet_loc,
+  E(packet.length() == packet_loc, origin::system,
     F("ssh_agent: get_keys: not all or too many packet bytes consumed,"
       " location (%u), length (%i)")
     % packet_loc
@@ -393,7 +395,8 @@ ssh_agent::has_key(const keypair & key)
   shared_ptr<RSA_PublicKey> pub_key = shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
   if (!pub_key)
-    throw informative_failure("has_key: Failed to get monotone RSA public key");
+    throw recoverable_failure(origin::system,
+                              "has_key: Failed to get monotone RSA public key");
   
   vector<RSA_PublicKey> ssh_keys = get_keys();
   for (vector<RSA_PublicKey>::const_iterator
@@ -414,7 +417,7 @@ ssh_agent::sign_data(RSA_PublicKey const & key,
                      string const & data,
                      string & out)
 {
-  E(connected(),
+  E(connected(), origin::system,
     F("ssh_agent: get_keys: attempted to sign data when not connected"));
 
   L(FL("ssh_agent: sign_data: key e: %s, n: %s, data len: %i")
@@ -460,13 +463,13 @@ ssh_agent::sign_data(RSA_PublicKey const & key,
   L(FL("ssh_agent: sign_data: type (%u), '%s'") % type_len % type);
   get_string_from_buf(full_sig, full_sig_loc, out_len, out);
   L(FL("ssh_agent: sign_data: output length %u") % out_len);
-  E(full_sig.length() == full_sig_loc,
+  E(full_sig.length() == full_sig_loc, origin::system,
     (F("ssh_agent: sign_data: not all or too many signature bytes consumed,"
        " location (%u), length (%i)")
      % full_sig_loc
      % full_sig.length()));
 
-  E(packet_in.length() == packet_in_loc,
+  E(packet_in.length() == packet_in_loc, origin::system,
     (F("ssh_agent: sign_data: not all or too many packet bytes consumed,"
        " location (%u), length (%i)")
      % packet_in_loc
@@ -476,7 +479,7 @@ ssh_agent::sign_data(RSA_PublicKey const & key,
 void
 ssh_agent::add_identity(RSA_PrivateKey const & key, string const & comment)
 {
-  E(s->connected(),
+  E(s->connected(), origin::system,
     F("ssh_agent: add_identity: attempted to add a key when not connected"));
 
   L(FL("ssh_agent: add_identity: key e: %s, n: %s, comment len: %i")
@@ -492,10 +495,11 @@ ssh_agent::add_identity(RSA_PrivateKey const & key, string const & comment)
 
   string packet_in;
   s->read_packet(packet_in);
-  E(packet_in.length() == 1,
+  E(packet_in.length() == 1, origin::system,
     F("ssh_agent: add_identity: response packet of unexpected size (%u)")
     % packet_in.length());
-  E(packet_in.at(0) == 6, F("ssh_agent: packet type (%u) != 6")
+  E(packet_in.at(0) == 6, origin::system,
+    F("ssh_agent: packet type (%u) != 6")
     % (u32)packet_in.at(0));
 }
 

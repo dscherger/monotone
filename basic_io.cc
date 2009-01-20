@@ -26,7 +26,7 @@ using std::vector;
 
 void basic_io::input_source::err(string const & s)
 {
-  E(false,
+  E(false, made_from,
     F("parsing a %s at %d:%d:E: %s") % name % line % col % s);
 }
 
@@ -66,7 +66,7 @@ basic_io::stanza::stanza() : indent(0)
 
 void basic_io::stanza::push_binary_pair(symbol const & k, id const & v)
 {
-  push_hex_pair(k, hexenc<id>(encode_hexenc(v())));
+  push_hex_pair(k, hexenc<id>(encode_hexenc(v(), v.made_from), v.made_from));
 }
 
 void
@@ -93,7 +93,7 @@ void basic_io::stanza::push_binary_triple(symbol const & k,
                                           string const & n,
                                           id const & v)
 {
-  string const & s(encode_hexenc(v()));
+  string const & s(encode_hexenc(v(), v.made_from));
   entries.push_back(make_pair(k, escape(n) + " " + "[" + s + "]"));
   if (k().size() > indent)
     indent = k().size();

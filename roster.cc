@@ -30,6 +30,7 @@
 #include "restrictions.hh"
 #include "safe_map.hh"
 #include "ui.hh"
+#include "vocab_cast.hh"
 
 using std::inserter;
 using std::make_pair;
@@ -88,7 +89,7 @@ dump(set<revision_id> const & revids, string & out)
       if (!first)
         out += ", ";
       first = false;
-      out += encode_hexenc(i->inner()());
+      out += encode_hexenc(i->inner()(), i->inner().made_from);
     }
 }
 
@@ -717,7 +718,7 @@ roster_t::get_name(node_id nid, file_path & p) const
       return;
     }
 
-  I(!bookkeeping_path::internal_string_is_bookkeeping_path(utf8(sp.top()->name())));
+  I(!bookkeeping_path::internal_string_is_bookkeeping_path(typecast_vocab<utf8>(sp.top()->name)));
 
   string tmp;
   tmp.reserve(size);
@@ -2372,7 +2373,7 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
      problems++;
    }
 
-  N(problems == 0, F("invalid restriction"));
+  E(problems == 0, origin::user, F("invalid restriction"));
 
   if (!restricted.all_nodes().empty())
     restricted.check_sane(true);
@@ -2533,19 +2534,22 @@ parse_marking(basic_io::parser & pa,
         {
           pa.sym();
           pa.hex(rev);
-          marking.birth_revision = revision_id(decode_hexenc(rev));
+          marking.birth_revision =
+            decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from);
         }
       else if (pa.symp(syms::path_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.parent_name, revision_id(decode_hexenc(rev)));
+          safe_insert(marking.parent_name,
+                      decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(basic_io::syms::content_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.file_content, revision_id(decode_hexenc(rev)));
+          safe_insert(marking.file_content,
+                      decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(syms::attr_mark))
         {
@@ -2553,8 +2557,9 @@ parse_marking(basic_io::parser & pa,
           pa.sym();
           pa.str(k);
           pa.hex(rev);
-          attr_key key = attr_key(k);
-          safe_insert(marking.attrs[key], revision_id(decode_hexenc(rev)));
+          attr_key key = attr_key(k, pa.tok.in.made_from);
+          safe_insert(marking.attrs[key],
+                      decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else break;
     }
@@ -2689,7 +2694,8 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.esym(syms::ident);
           pa.str(ident);
           n = file_t(new file_node(read_num(ident),
-                                   file_id(decode_hexenc(content))));
+                                   decode_hexenc_as<file_id>(content,
+                                                             pa.tok.in.made_from)));
         }
       else if (pa.symp(basic_io::syms::dir))
         {
@@ -2723,8 +2729,9 @@ roster_t::parse_from(basic_io::parser & pa,
           string k, v;
           pa.str(k);
           pa.str(v);
-          safe_insert(n->attrs, make_pair(attr_key(k),
-                                          make_pair(true, attr_value(v))));
+          safe_insert(n->attrs, make_pair(attr_key(k, pa.tok.in.made_from),
+                                          make_pair(true,
+                                                    attr_value(v, pa.tok.in.made_from))));
         }
 
       // Dormant attrs
@@ -2733,7 +2740,7 @@ roster_t::parse_from(basic_io::parser & pa,
           pa.sym();
           string k;
           pa.str(k);
-          safe_insert(n->attrs, make_pair(attr_key(k),
+          safe_insert(n->attrs, make_pair(attr_key(k, pa.tok.in.made_from),
                                           make_pair(false, attr_value())));
         }
 
@@ -2771,7 +2778,7 @@ write_roster_and_marking(roster_t const & ros,
     ros.check_sane(true);
   basic_io::printer pr;
   ros.print_to(pr, mm, print_local_parts);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 
@@ -2831,7 +2838,8 @@ static void
 make_fake_marking_for(roster_t const & r, marking_map & mm)
 {
   mm.clear();
-  revision_id rid(decode_hexenc("0123456789abcdef0123456789abcdef01234567"));
+  revision_id rid(decode_hexenc_as<revision_id>("0123456789abcdef0123456789abcdef01234567",
+                                                origin::internal));
   for (node_map::const_iterator i = r.all_nodes().begin(); i != r.all_nodes().end();
        ++i)
     {
@@ -3048,12 +3056,12 @@ file_id new_ident(randomizer & rng)
   tmp.reserve(constants::idlen);
   for (unsigned i = 0; i < constants::idlen; ++i)
     tmp += tab[rng.uniform(tab.size())];
-  return file_id(decode_hexenc(tmp));
+  return decode_hexenc_as<file_id>(tmp, origin::internal);
 }
 
 path_component new_component(randomizer & rng)
 {
-  return path_component(new_word(rng));
+  return path_component(new_word(rng), origin::internal);
 }
 
 
@@ -3199,22 +3207,24 @@ void perform_random_action(roster_t & r, node_id_source & nis, randomizer & rng)
                     {
                       // L(FL("changing attr on '%s'\n") % pth);
                       safe_insert(c.attrs_set,
-                                  make_pair(make_pair(pth, k), new_word(rng)));
+                                  make_pair(make_pair(pth, k),
+                                            attr_value(new_word(rng), origin::internal)));
                     }
                 }
               else
                 {
                   // L(FL("setting previously set attr on '%s'") % pth);
                   safe_insert(c.attrs_set,
-                              make_pair(make_pair(pth, k), new_word(rng)));
+                              make_pair(make_pair(pth, k),
+                                        attr_value(new_word(rng), origin::internal)));
                 }
             }
           else
             {
               // L(FL("setting attr on '%s'") % pth);
               safe_insert(c.attrs_set,
-                          make_pair(make_pair(pth, new_word(rng)),
-                                    new_word(rng)));
+                          make_pair(make_pair(pth, attr_key(new_word(rng), origin::internal)),
+                                    attr_value(new_word(rng), origin::internal)));
             }
           break;
         }
@@ -3310,7 +3320,8 @@ check_sane_roster_do_tests(int to_run, int& total)
   file_path fp_foo_bar = file_path_internal("foo/bar");
   file_path fp_foo_baz = file_path_internal("foo/baz");
 
-  node_id nid_f = r.create_file_node(file_id(decode_hexenc("0000000000000000000000000000000000000000")),
+  node_id nid_f = r.create_file_node(decode_hexenc_as<file_id>("0000000000000000000000000000000000000000",
+                                                               origin::internal),
                                      nis);
   // root must be a directory, not a file
   MAYBE(UNIT_TEST_CHECK_THROW(r.attach_node(nid_f, fp_), logic_error));
@@ -3518,10 +3529,10 @@ namespace
     return s;
   }
 
-  revision_id old_rid(string(constants::idlen_bytes, '\x00'));
-  revision_id left_rid(string(constants::idlen_bytes, '\x11'));
-  revision_id right_rid(string(constants::idlen_bytes, '\x22'));
-  revision_id new_rid(string(constants::idlen_bytes, '\x44'));
+  revision_id old_rid(string(constants::idlen_bytes, '\x00'), origin::internal);
+  revision_id left_rid(string(constants::idlen_bytes, '\x11'), origin::internal);
+  revision_id right_rid(string(constants::idlen_bytes, '\x22'), origin::internal);
+  revision_id new_rid(string(constants::idlen_bytes, '\x44'), origin::internal);
 
 ////////////////
 // These classes encapsulate information about all the different scalars
@@ -3595,7 +3606,7 @@ namespace
                          roster_t & roster, marking_map & markings)
     {
       make_file(scalar_origin_rid, nid,
-                file_id(string(constants::idlen_bytes, '\xaa')),
+                file_id(string(constants::idlen_bytes, '\xaa'), origin::internal),
                 roster, markings);
     }
     static void make_file(revision_id const & scalar_origin_rid, node_id nid,
@@ -3633,13 +3644,16 @@ namespace
     {
       safe_insert(values,
                   make_pair(scalar_a,
-                            file_id(string(constants::idlen_bytes, '\xaa'))));
+                            file_id(string(constants::idlen_bytes, '\xaa'),
+                                    origin::internal)));
       safe_insert(values,
                   make_pair(scalar_b,
-                            file_id(string(constants::idlen_bytes, '\xbb'))));
+                            file_id(string(constants::idlen_bytes, '\xbb'),
+                                    origin::internal)));
       safe_insert(values,
                   make_pair(scalar_c,
-                            file_id(string(constants::idlen_bytes, '\xcc'))));
+                            file_id(string(constants::idlen_bytes, '\xcc'),
+                                    origin::internal)));
     }
     virtual void
     set(revision_id const & scalar_origin_rid, scalar_val val,
@@ -4513,8 +4527,8 @@ UNIT_TEST(roster, write_roster)
   file_path fo = file_path_internal("fo");
   file_path xx = file_path_internal("xx");
 
-  file_id f1(string(constants::idlen_bytes, '\x11'));
-  revision_id rid(string(constants::idlen_bytes, '\x44'));
+  file_id f1(string(constants::idlen_bytes, '\x11'), origin::internal);
+  revision_id rid(string(constants::idlen_bytes, '\x44'), origin::internal);
   node_id nid;
 
   // if adding new nodes, add them at the end to keep the node_id order
@@ -4583,7 +4597,7 @@ UNIT_TEST(roster, write_roster)
                       "\n"
                       " dir \"xx\"\n"
                       "attr \"say\" \"hello\"\n"
-                      ));
+                      ), origin::internal);
     MM(expected);
 
     UNIT_TEST_CHECK_NOT_THROW( I(expected == mdat), logic_error);
@@ -4641,7 +4655,7 @@ UNIT_TEST(roster, write_roster)
                       "    birth [4444444444444444444444444444444444444444]\n"
                       "path_mark [4444444444444444444444444444444444444444]\n"
                       "attr_mark \"say\" [4444444444444444444444444444444444444444]\n"
-                      ));
+                      ), origin::internal);
     MM(expected);
 
     UNIT_TEST_CHECK_NOT_THROW( I(expected == rdat), logic_error);
@@ -4655,8 +4669,10 @@ UNIT_TEST(roster, check_sane_against)
   file_path foo = file_path_internal("foo");
   file_path bar = file_path_internal("bar");
 
-  file_id f1(decode_hexenc("1111111111111111111111111111111111111111"));
-  revision_id rid(decode_hexenc("1234123412341234123412341234123412341234"));
+  file_id f1(decode_hexenc_as<file_id>("1111111111111111111111111111111111111111",
+                                       origin::internal));
+  revision_id rid(decode_hexenc_as<revision_id>("1234123412341234123412341234123412341234",
+                                                origin::internal));
   node_id nid;
 
   {
@@ -4955,7 +4971,8 @@ UNIT_TEST(roster, unify_rosters_end_to_end_ids)
   L(FL("TEST: begin checking unification of rosters (end to end, ids)"));
   revision_id has_rid = left_rid;
   revision_id has_not_rid = right_rid;
-  file_id my_fid(decode_hexenc("9012901290129012901290129012901290129012"));
+  file_id my_fid(decode_hexenc_as<file_id>("9012901290129012901290129012901290129012",
+                                           origin::internal));
 
   testing_node_id_source nis;
 
@@ -5034,7 +5051,8 @@ UNIT_TEST(roster, unify_rosters_end_to_end_attr_corpses)
   L(FL("TEST: begin checking unification of rosters (end to end, attr corpses)"));
   revision_id first_rid = left_rid;
   revision_id second_rid = right_rid;
-  file_id my_fid(decode_hexenc("9012901290129012901290129012901290129012"));
+  file_id my_fid(decode_hexenc_as<file_id>("9012901290129012901290129012901290129012",
+                                           origin::internal));
 
   testing_node_id_source nis;
 

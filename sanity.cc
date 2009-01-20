@@ -31,10 +31,35 @@ using std::ofstream;
 using std::ostream;
 using std::ostream_iterator;
 using std::ostringstream;
+using std::out_of_range;
 using std::string;
 using std::vector;
 
 using boost::format;
+
+string
+origin::type_to_string(origin::type t)
+{
+  switch (t)
+    {
+    case internal:
+      return string("internal");
+    case network:
+      return string("network");
+    case database:
+      return string("database");
+    case system:
+      return string("system");
+    case user:
+      return string("user");
+    case workspace:
+      return string("workspace");
+    case no_fault:
+      return string("general");
+    default:
+      return string("invalid error type");
+    }
+}
 
 struct sanity::impl
 {
@@ -270,7 +295,7 @@ sanity::warning(i18n_format const & i18nfmt,
 
   inform_warning(str);
 }
-
+/*
 void
 sanity::naughty_failure(char const * expr, i18n_format const & explain,
                         char const * file, int line)
@@ -315,6 +340,46 @@ sanity::invariant_failure(char const * expr, char const * file, int line)
   gasp();
   throw logic_error((F(pattern) % file % line % expr).str());
 }
+*/
+void
+sanity::generic_failure(char const * expr,
+                        origin::type caused_by,
+                        i18n_format const & explain,
+                        char const * file, int line)
+{
+  if (!imp)
+    throw std::logic_error("sanity::generic_failure occured "
+                           "before sanity::initialize");
+  if (imp->debug)
+    {
+      log(FL("%s:%d: detected %s error, '%s' violated")
+          % file % line % origin::type_to_string(caused_by) % expr,
+          file, line);
+    }
+  gasp();
+
+  string prefix;
+  if (caused_by == origin::user)
+    {
+      prefix = _("misuse: ");
+    }
+  else
+    {
+      prefix = _("error: ");
+    }
+  string detection_msg((F("detected at %s:%d") % file % line).str());
+  string message;
+  prefix_lines_with(prefix, detection_msg + string("\n") +
+                    do_format(explain, file, line), message);
+  switch (caused_by)
+    {
+    case origin::database:
+    case origin::internal:
+      throw unrecoverable_failure(caused_by, message);
+    default:
+      throw recoverable_failure(caused_by, message);
+    }
+}
 
 void
 sanity::index_failure(char const * vec_expr,
@@ -332,8 +397,8 @@ sanity::index_failure(char const * vec_expr,
     log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
         file, line);
   gasp();
-  throw logic_error((F(pattern)
-                     % file % line % idx_expr % idx % vec_expr % sz).str());
+  throw out_of_range((F(pattern)
+                      % file % line % idx_expr % idx % vec_expr % sz).str());
 }
 
 // Last gasp dumps
@@ -388,7 +453,7 @@ sanity::gasp()
           out << "<caught logic_error>\n";
           L(FL("ignoring error trigged by saving work set to debug log"));
         }
-      catch (informative_failure)
+      catch (recoverable_failure)
         {
           out << tmp;
           out << "<caught informative_failure>\n";

@@ -25,8 +25,9 @@ read_epoch(string const & in,
   data raw_epoch;
   extract_variable_length_string(in, raw_branch, pos, "epoch, branch name");
   raw_epoch = data(extract_substring(in, pos, constants::epochlen_bytes,
-                                     "epoch, epoch data"));
-  branch = branch_name(raw_branch);
+                                     "epoch, epoch data"),
+                   origin::network);
+  branch = branch_name(raw_branch, origin::network);
   epoch = epoch_data(raw_epoch);
 }
 
@@ -42,8 +43,9 @@ void
 epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
                 epoch_id & eid)
 {
-  string tmp(branch() + ":" + encode_hexenc(epoch.inner()()));
-  data tdat(tmp);
+  string tmp(branch() + ":" + encode_hexenc(epoch.inner()(),
+                                            epoch.inner().made_from));
+  data tdat(tmp, origin::internal);
   id out;
   calculate_ident(tdat, out);
   eid = epoch_id(out);

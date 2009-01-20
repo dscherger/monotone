@@ -247,7 +247,8 @@ void tick_write_count::write_ticks()
               // spurious re-issuing of the tick titles as we expand to
               // the goal.
               tick->set_count_size(display_width(utf8(compose_count(tick,
-                                                                    tick->total))));
+                                                                    tick->total),
+                                                      origin::internal)));
               tick->previous_total = tick->total;
             }
           else
@@ -258,14 +259,15 @@ void tick_write_count::write_ticks()
               // size of the returned count string as an initial size for
               // this tick.
               tick->set_count_size(display_width(utf8(compose_count(tick,
-                                                                    1048575))));
+                                                                    1048575),
+                                                      origin::internal)));
             }
         }
 
       string count(compose_count(tick));
 
-      size_t title_width = display_width(utf8(tick->name));
-      size_t count_width = display_width(utf8(count));
+      size_t title_width = display_width(utf8(tick->name, origin::internal));
+      size_t count_width = display_width(utf8(count, origin::internal));
 
       if (count_width > tick->count_size)
         {
@@ -319,7 +321,7 @@ void tick_write_count::write_ticks()
       tickline2 += ui.imp->tick_trailer;
     }
 
-  size_t curr_sz = display_width(utf8(tickline2));
+  size_t curr_sz = display_width(utf8(tickline2, origin::internal));
   if (curr_sz < last_tick_len)
     tickline2.append(last_tick_len - curr_sz, ' ');
   last_tick_len = curr_sz;
@@ -330,7 +332,7 @@ void tick_write_count::write_ticks()
       if (ui.imp->last_write_was_a_tick)
         clog << '\n';
 
-      if (tw && display_width(utf8(tickline1)) > tw)
+      if (tw && display_width(utf8(tickline1, origin::internal)) > tw)
         {
           // FIXME: may chop off more than necessary (because we chop by
           // bytes, not by characters)
@@ -338,7 +340,7 @@ void tick_write_count::write_ticks()
         }
       clog << tickline1 << '\n';
     }
-  if (tw && display_width(utf8(tickline2)) > tw)
+  if (tw && display_width(utf8(tickline2, origin::internal)) > tw)
     {
       // FIXME: may chop off more than necessary (because we chop by
       // bytes, not by characters)
@@ -538,6 +540,22 @@ user_interface::fatal(string const & fatal)
          % fatal % prog_name % PACKAGE_BUGREPORT);
   global_sanity.dump_buffer();
 }
+// just as above, but the error appears to have come from the database.
+// Of course, since the monotone is the only thing that should be
+// writing to the database, this still probably means there's a bug.
+void
+user_interface::fatal_db(string const & fatal)
+{
+  inform(F("fatal: %s\n"
+           "this is almost certainly a bug in monotone.\n"
+           "please send this error message, the output of '%s version --full',\n"
+           "and a description of what you were doing to %s.\n"
+           "This error appears to have been triggered by something in the\n"
+           "database you were using, so please preserve it in case it can\n"
+           "help in finding the bug.")
+         % fatal % prog_name % PACKAGE_BUGREPORT);
+  global_sanity.dump_buffer();
+}
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is from the std::exception hierarchy.  In this case we
@@ -636,7 +654,8 @@ user_interface::redirect_log_to(system_path const & filename)
   if (filestr.is_open())
     filestr.close();
   filestr.open(filename.as_external().c_str(), ofstream::out | ofstream::app);
-  E(filestr.is_open(), F("failed to open log file '%s'") % filename);
+  E(filestr.is_open(), origin::system,
+    F("failed to open log file '%s'") % filename);
   clog.rdbuf(filestr.rdbuf());
 }
 
@@ -666,7 +685,9 @@ class string_adaptor : public string
 {
 public:
   string_adaptor(string const & str) : string(str) {}
+  string_adaptor(string const & str, origin::type) : string(str) {}
   string const & operator()(void) const { return *this; }
+  origin::type made_from;
 };
 
 // See description for format_text below for more details.
@@ -691,7 +712,7 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
       string const & word = (*iter)();
 
       if (iter != words.begin() &&
-          curcol + display_width(utf8(word)) + 1 > maxcol)
+          curcol + display_width(utf8(word, origin::no_fault)) + 1 > maxcol)
         {
           formatted += '\n' + string(col, ' ');
           curcol = col;
@@ -703,7 +724,7 @@ format_paragraph(string const & text, size_t const col, size_t curcol)
         }
 
       formatted += word;
-      curcol += display_width(utf8(word));
+      curcol += display_width(utf8(word, origin::no_fault));
     }
 
   return formatted;

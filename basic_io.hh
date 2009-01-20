@@ -66,6 +66,10 @@ namespace basic_io
       : line(1), col(1), in(in), curr(in.begin()),
 	name(nm), lookahead(0), c('\0')
     {}
+    input_source(std::string const & in, std::string const & nm, origin::type w)
+      : origin_aware(w), line(1), col(1), in(in), curr(in.begin()),
+	name(nm), lookahead(0), c('\0')
+    {}
 
     inline void peek()
     {

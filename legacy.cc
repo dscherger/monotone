@@ -82,7 +82,7 @@ namespace legacy
     string tmp;
     parser.esym(syms::old_revision);
     parser.hex(tmp);
-    old_rev = revision_id(decode_hexenc(tmp));
+    old_rev = decode_hexenc_as<revision_id>(tmp, origin::internal);
     parser.esym(syms::old_manifest);
     parser.hex();
 
@@ -137,7 +137,7 @@ namespace legacy
     pars.esym(syms::new_manifest);
     string tmp;
     pars.hex(tmp);
-    mid = manifest_id(decode_hexenc(tmp));
+    mid = decode_hexenc_as<manifest_id>(tmp, origin::internal);
     while (pars.symp(syms::old_revision))
       extract_renames(pars, renames);
   }
@@ -164,7 +164,7 @@ namespace legacy
         else
           file_name = dat().substr(file_name_begin, pos - file_name_begin);
         man.insert(make_pair(file_path_internal(file_name),
-                             file_id(decode_hexenc(ident))));
+                             decode_hexenc_as<file_id>(ident, origin::internal)));
         // skip past the '\n'
         ++pos;
       }

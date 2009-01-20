@@ -29,7 +29,7 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
 
   for (args_vector::const_iterator i = args.begin();
        i != args.end(); ++i)
-    test_parse_rcs_file(system_path((*i)()));
+    test_parse_rcs_file(system_path((*i)(), origin::user));
 }
 
 
@@ -45,10 +45,10 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   if (args.size() != 1)
     throw usage(execid);
 
-  N(app.opts.branchname() != "",
+  E(app.opts.branchname() != "", origin::user,
     F("need base --branch argument for importing"));
 
-  system_path cvsroot(idx(args, 0)());
+  system_path cvsroot(idx(args, 0)(), origin::user);
   require_path_is_directory(cvsroot,
                             F("path %s does not exist") % cvsroot,
                             F("'%s' is not a directory") % cvsroot);
