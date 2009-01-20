@@ -138,6 +138,7 @@ OPT(revs_only, "revs-only", bool, false,
 }
 #endif
 
+// Remember COMMA doesn't work with GOPT, use long form.
 //GOPT(conf_dir, "confdir", system_path, get_default_confdir() COMMA origin::user,
 //     gettext_noop("set location of configuration directory"))
 OPTVAR(globals, system_path, conf_dir, get_default_confdir() COMMA origin::user)
@@ -373,6 +374,7 @@ OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
 }
 #endif
 
+// Remember COMMA doesn't work with GOPT, use long form.
 //GOPT(key_dir, "keydir", system_path, get_default_keydir() COMMA origin::user,
 //     gettext_noop("set location of key store"))
 OPTVAR(globals, system_path, key_dir, get_default_keydir() COMMA origin::user)

@@ -95,8 +95,6 @@ void decode_hexenc(hexenc<T> const & in, T & out)
 inline std::string encode_hexenc(std::string const & in,
                                  origin::type made_from)
 { return xform<Botan::Hex_Encoder>(in, made_from); }
-//inline template<typename T> std::string encode_hexenc(T const & in)
-//{ return encode_hexenc(in(), in.made_from); }
 inline std::string decode_hexenc(std::string const & in,
                                  origin::type made_from)
 { return xform<Botan::Hex_Decoder>(in, made_from); }
