@@ -295,52 +295,7 @@ sanity::warning(i18n_format const & i18nfmt,
 
   inform_warning(str);
 }
-/*
-void
-sanity::naughty_failure(char const * expr, i18n_format const & explain,
-                        char const * file, int line)
-{
-  string message;
-  if (!imp)
-    throw std::logic_error("sanity::naughty_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL("%s:%d: usage constraint '%s' violated") % file % line % expr,
-        file, line);
-  prefix_lines_with(_("misuse: "), do_format(explain, file, line), message);
-  gasp();
-  throw informative_failure(message);
-}
 
-void
-sanity::error_failure(char const * expr, i18n_format const & explain,
-                      char const * file, int line)
-{
-  string message;
-  if (!imp)
-    throw std::logic_error("sanity::error_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL("%s:%d: detected error '%s' violated") % file % line % expr,
-        file, line);
-  gasp();
-  prefix_lines_with(_("error: "), do_format(explain, file, line), message);
-  throw informative_failure(message);
-}
-
-void
-sanity::invariant_failure(char const * expr, char const * file, int line)
-{
-  char const * pattern = N_("%s:%d: invariant '%s' violated");
-  if (!imp)
-    throw std::logic_error("sanity::invariant_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL(pattern) % file % line % expr, file, line);
-  gasp();
-  throw logic_error((F(pattern) % file % line % expr).str());
-}
-*/
 void
 sanity::generic_failure(char const * expr,
                         origin::type caused_by,

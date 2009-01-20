@@ -85,14 +85,6 @@ struct sanity {
                 char const * file, int line);
   void warning(i18n_format const & fmt,
                char const * file, int line);
-  /*
-  NORETURN(void naughty_failure(char const * expr, i18n_format const & explain,
-                       char const * file, int line));
-  NORETURN(void error_failure(char const * expr, i18n_format const & explain,
-                     char const * file, int line));
-  NORETURN(void invariant_failure(char const * expr,
-                         char const * file, int line));
-  */
   NORETURN(void generic_failure(char const * expr,
                                 origin::type caused_by,
                                 i18n_format const & explain,
@@ -361,23 +353,7 @@ struct bad_decode {
                                       __FILE__, __LINE__);              \
       }                                                                 \
   } while (0)
-/*
-// N is for naughtyness on behalf of the user
-// (if they are wrong, the user just did something wrong)
-#define N(e, explain)                                                   \
-  do {                                                                  \
-    if (UNLIKELY(!(e)))                                                 \
-      {                                                                 \
-        if (made_from == made_from_network)                             \
-          throw bad_decode(F("%s:%s : %s")                              \
-                           % __FILE__ % __LINE__ % (explain));          \
-        else                                                            \
-          global_sanity.naughty_failure("N("#e")",                      \
-                                        (explain),                      \
-                                        __FILE__, __LINE__);            \
-      }                                                                 \
-  } while (0)
-*/
+
 // E is for errors; they are normal (i.e., not a bug), but not necessarily
 // attributable to user naughtiness
 #define E(e, whence, explain)                                          \
