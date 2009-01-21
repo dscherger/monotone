@@ -82,9 +82,9 @@ AC_DEFUN([MTN_FIND_PCRE],
    [pcre_version_match=no])
    AC_MSG_RESULT($pcre_version_match)
    CPPFLAGS="$save_CPPFLAGS"
+
+   if test $pcre_version_match = no; then
+      AC_MSG_ERROR([Your PCRE library is too old, please upgrade it.])
+   fi
+
 ])
-
-if test $pcre_version_match = no; then
-  AC_MSG_ERROR([Your PCRE library is too old, please upgrade it.])
-fi
-
