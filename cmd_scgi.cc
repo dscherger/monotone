@@ -76,11 +76,16 @@ using boost::lexical_cast;
 // This response format is not specified by the SCGI "spec".
 //
 
+namespace
+{
+  enum connection_type { http, scgi };
+};
 
-struct scgi_error
+
+struct gserve_error
 {
   string msg;
-  scgi_error(string const & s): msg(s) {}
+  gserve_error(string const & s): msg(s) {}
 };
 
 // Consume string until null or EOF. Consumes trailing null.
@@ -108,9 +113,8 @@ eat(istream & in, char c)
 }
 
 static bool
-parse_scgi(istream & in, string & data)
+parse_scgi_headers(istream & in, string & data)
 {
-
   if (!in.good()) return false;
 
   size_t netstring_len;
@@ -165,6 +169,47 @@ parse_scgi(istream & in, string & data)
 
   return (content_length == 0);
 }
+
+static bool
+parse_http_headers(istream &in, string & data)
+{
+  if (!in.good()) return false;
+
+  size_t content_length = 0;
+
+  while (in.good() && in.peek() != '\r')
+    {
+      string key, val, rest;
+      in >> key >> val;
+      std::getline(in, rest);
+      L(FL("http: got header: %s -> %s") % key % val);
+      if (key == "Content-Length:" ||
+          key == "Content-length:" ||
+          key == "content-length:")
+        {
+          content_length = lexical_cast<size_t>(val);
+          L(FL("http: content length: %d") % content_length);
+        }
+    }
+
+  if (!eat(in, '\r')) return false;
+  if (!eat(in, '\n')) return false;
+
+  data.clear();
+  data.reserve(content_length);
+  L(FL("reading %d bytes") % content_length);
+
+  while (in.good() && (content_length > 0))
+    {
+      data += static_cast<char>(in.get());
+      content_length--;
+    }
+
+  L(FL("read %d bytes, content_length now %d") % data.size() % content_length);
+
+  return (content_length == 0);
+}
+
 
 static json_io::json_value_t
 do_cmd(database & db, json_io::json_object_t cmd_obj)
@@ -275,22 +320,36 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
 
 
 void
-process_scgi_transaction(database & db,
-                         std::istream & in,
-                         std::ostream & out)
+process_transaction(connection_type type,
+                    database & db,
+                    std::istream & in,
+                    std::ostream & out)
 {
   string data;
-
+  string name;
   try
     {
-      if (!parse_scgi(in, data))
-        throw scgi_error("unable to parse SCGI request");
+      switch (type)
+        {
+        case scgi:
+          if (!parse_scgi_headers(in, data))
+            throw gserve_error("unable to parse SCGI headers");
 
-      L(FL("read %d-byte SCGI request") % data.size());
+          L(FL("read %d-byte SCGI request") % data.size());
+          name = "scgi";
+          break;
 
-      // std::cerr << "request" << std::endl << data << std::endl;
+        case http:
+          if (!parse_http_headers(in, data))
+            throw gserve_error("unable to parse HTTP headers");
 
-      json_io::input_source in(data, "scgi");
+          L(FL("read %d-byte HTTP request") % data.size());
+          name = "http";
+          break;
+
+        }
+
+      json_io::input_source in(data, name);
       json_io::tokenizer tok(in);
       json_io::parser p(tok);
       json_io::json_object_t obj = p.parse_object();
@@ -305,11 +364,15 @@ process_scgi_transaction(database & db,
             {
               json_io::printer out_data;
               res->write(out_data);
-
-              // std::cerr << "response" << std::endl << out_data.buf.data() << std::endl;
-
               L(FL("sending JSON %d-byte response") % (out_data.buf.size() + 1));
 
+              if (type == http)
+                out << "HTTP/1.1 200\r\n"
+                    << "Connection: close\r\n";
+
+              // presumably the +1 in content-length below is for the final
+              // trailing newline?  does the client side reader account for
+              // this?
               out << "Status: 200 OK\r\n"
                   << "Content-Length: " << (out_data.buf.size() + 1) << "\r\n"
                   << "Content-Type: application/jsonrequest\r\n"
@@ -327,7 +390,7 @@ process_scgi_transaction(database & db,
           std::cerr << "parse error" << std::endl;
         }
     }
-  catch (scgi_error & e)
+  catch (gserve_error & e)
     {
       std::cerr << "scgi error -- " << e.msg << std::endl;
       out << "Status: 400 Bad request\r\n"
@@ -347,16 +410,17 @@ process_scgi_transaction(database & db,
 }
 
 
-CMD_NO_WORKSPACE(scgi,             // C
-                 "scgi",           // name
+CMD_NO_WORKSPACE(gserve,           // C
+                 "gserve",         // name
                  "",               // aliases
                  CMD_REF(network), // parent
                  N_(""),                              // params
-                 N_("Serves SCGI+JSON connections"),  // abstract
+                 N_("Serves JSON connections over SCGI or HTTP"),  // abstract
                  "",                                  // desc
-                 options::opts::scgi_bind |
                  options::opts::pidfile |
+                 options::opts::bind |
                  options::opts::bind_stdio |
+                 options::opts::bind_http |
                  options::opts::no_transport_auth
                  )
 {
@@ -365,6 +429,14 @@ CMD_NO_WORKSPACE(scgi,             // C
 
   database db(app);
   key_store keys(app);
+
+  connection_type type = scgi;
+  size_t default_port = constants::default_scgi_port;
+  if (app.opts.bind_http) 
+    {
+      type = http;
+      default_port = constants::default_http_port;
+    }
 
   if (app.opts.signing_key() == "")
     {
@@ -384,7 +456,7 @@ CMD_NO_WORKSPACE(scgi,             // C
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
 
   if (app.opts.bind_stdio)
-    process_scgi_transaction(db, std::cin, std::cout);
+    process_transaction(type, db, std::cin, std::cout);
   else
     {
 
@@ -405,7 +477,7 @@ CMD_NO_WORKSPACE(scgi,             // C
 
               Netxx::Address addr(use_ipv6);
 
-              add_address_names(addr, app.opts.bind_uris, constants::default_scgi_port);
+              add_address_names(addr, app.opts.bind_uris, default_port);
 
               // If we use IPv6 and the initialisation of server fails, we want
               // to try again with IPv4.  The reason is that someone may have
@@ -426,15 +498,19 @@ CMD_NO_WORKSPACE(scgi,             // C
                   Netxx::Peer peer = server.accept_connection();
                   if (peer)
                     {
+                      P(F("connection from %s:%d:%d") 
+                        % peer.get_address() % peer.get_port() % peer.get_local_port());
                       Netxx::Stream stream(peer.get_socketfd());
                       Netxx::Netbuf<constants::bufsz>  buf(stream);
                       std::iostream io(&buf);
-                      process_scgi_transaction(db, io, io);
+                      process_transaction(type, db, io, io);
+                      stream.close();
                     }
                   else
                     break;
                 }
             }
+
           // Possibly loop around if we get exceptions from Netxx and we're
           // attempting to use ipv6, or have some other reason to try again.
           catch (Netxx::NetworkException &)

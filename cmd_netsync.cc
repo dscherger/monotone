@@ -530,6 +530,7 @@ CMD(gsync, "gsync", "", CMD_REF(network),
   database db(app);
   key_store keys(app);
 
+  // FIXME: allow this to connect to a server over stdio
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
 

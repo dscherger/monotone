@@ -108,7 +108,7 @@ namespace constants
   std::size_t const default_scgi_port = 3000;
 
   // standard HTTP port number
-  std::size_t const default_http_port = 80;
+  std::size_t const default_http_port = 8008;
 
   // remaining constants are related to netsync protocol
 

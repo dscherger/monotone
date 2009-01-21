@@ -16,6 +16,7 @@
 #include "json_msgs.hh"
 #include "netcmd.hh"
 #include "sanity.hh"
+#include "simplestring_xform.hh"
 #include "lexical_cast.hh"
 #include "constants.hh"
 #include "uri.hh"
@@ -84,19 +85,18 @@ http_client::transact_json(json_value_t v)
 
   json_io::printer out;
   v->write(out);
-  string header = (F("POST %s HTTP/1.0\r\n"
+  string header = (F("POST %s HTTP/1.1\r\n"
                      "Host: %s\r\n"
                      "Content-Length: %s\r\n"
                      "Content-Type: application/jsonrequest\r\n"
                      "Accept: application/jsonrequest\r\n"
                      "Accept-Encoding: identity\r\n"
-                     "Connection: Keep-Alive\r\n"
                      "\r\n")
                    % (info.client.u.path.empty() ? "/" : info.client.u.path)
                    % info.client.u.host
                    % lexical_cast<string>(out.buf.size())).str();
 
-  L(FL("http_client: sending request [[POST %s HTTP/1.0]]")
+  L(FL("http_client: sending request [[POST %s HTTP/1.1]]")
     % (info.client.u.path.empty() ? "/" : info.client.u.path));
   L(FL("http_client: to [[Host: %s]]") % info.client.u.host);
   L(FL("http_client: sending %d-byte body") % out.buf.size());
@@ -127,29 +127,40 @@ http_client::parse_http_status_line()
 {
   // We're only interested in 200-series responses
   string tmp;
-  string pat("HTTP/1.0 200");
+  string pat("HTTP/1.1 200");
   L(FL("http_client: reading response..."));
   while (io->good() && tmp.empty())
     std::getline(*io, tmp);
+
+  // sometimes we seem to get eof when reading the response -- not sure why yet
+  if (io->good())
+    L(FL("connection is good"));
+  if (io->bad())
+    L(FL("connection is bad"));
+  if (io->fail())
+    L(FL("connection is fail"));
+  if (io->eof())
+    L(FL("connection is eof"));
+
   L(FL("http_client: response: [[%s]]") % tmp);
   E(tmp.substr(0,pat.size()) == pat, F("HTTP status line: %s") % tmp);
 }
 
 void
 http_client::parse_http_header_line(size_t & content_length,
-                                    bool & keepalive)
+                                    bool & connection_close)
 {
   string k, v, rest;
   (*io) >> k >> v;
   L(FL("http_client: header: [[%s %s]]") % k % v);
   std::getline(*io, rest);
 
-  if (k == "Content-Length:" || k == "Content-length:" ||
-      k == "content-length:")
+  k = lowercase(k);
+  v = lowercase(v);
+  if (k == "content-length:")
     content_length = lexical_cast<size_t>(v);
-  else if (k == "Connection:" || k == "connection:")
-    keepalive = (v == "Keep-Alive" || v == "Keep-alive" ||
-                 v == "keep-alive");
+  else if (k == "connection:" && v == "close")
+    connection_close = true;
 }
 
 
@@ -165,11 +176,11 @@ void
 http_client::parse_http_response(std::string & data)
 {
   size_t content_length = 0;
-  bool keepalive = false;
+  bool connection_close = false;
   data.clear();
   parse_http_status_line();
   while (io->good() && io->peek() != '\r')
-    parse_http_header_line(content_length, keepalive);
+    parse_http_header_line(content_length, connection_close);
   crlf();
 
   L(FL("http_client: receiving %d-byte body") % content_length);
@@ -181,11 +192,33 @@ http_client::parse_http_response(std::string & data)
     }
 
   io->flush();
+  
+  // something is wrong and the connection is sometimes closed by the server
+  // even though it did not issue a Connection: close header
+  if (io->good())
+    L(FL("connection is good"));
+  if (io->bad())
+    L(FL("connection is bad"));
+  if (io->fail())
+    L(FL("connection is fail"));
+  if (io->eof())
+    L(FL("connection is eof"));
 
   // if we keep the connection alive, and we're limited to a single active
   // connection (as in the sample lighttpd.conf and required by the sqlite
   // database locking scheme) this will probably block all other clients.
-  if (!keepalive)
+
+  // According to the scgi spec the server side will close the connection
+  // after processing each request. However, the connection being closed is
+  // the SCGI connection between the webserver and the monotone server, not
+  // the HTTP connection between the monotone client and the webserver,
+  // which may allow for connections to be kept alive.
+
+  // something is not working right so for now close the connection after
+  // every request/response cycle
+  connection_close = true;
+
+  if (connection_close)
     {
       L(FL("http_client: closing connection"));
       stream->close();
