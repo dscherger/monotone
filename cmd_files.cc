@@ -139,7 +139,7 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
 {
   revision_id rid;
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if ((args.size() != 1) || (app.opts.revision_selectors.size() > 1))
     throw usage(execid);
@@ -306,7 +306,7 @@ CMD(cat, "cat", "", CMD_REF(informative),
     }
   else
     {
-      project_t project(db);
+      project_t project(db, app.lua, app.opts);
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
     }
 
@@ -374,7 +374,7 @@ CMD_AUTOMATE(get_file_of, N_("FILENAME"),
     }
   else
     {
-      project_t project(db);
+      project_t project(db, app.lua, app.opts);
       complete(app.opts, app.lua, project, idx(app.opts.revision_selectors, 0)(), rid);
     }
 

@@ -53,6 +53,46 @@ function execute_confirm(path, ...)
    return ret
 end
 
+function write_to_temporary_file(data, namehint)
+   tmp, filename = temp_file(namehint)
+   if (tmp == nil) then
+      return nil
+   end;
+   tmp:write(data)
+   io.close(tmp)
+   return filename
+end
+
+function copy_text_file(srcname, destname)
+   src = io.open(srcname, "r")
+   if (src == nil) then return nil end
+   dest = io.open(destname, "w")
+   if (dest == nil) then return nil end
+
+   while true do
+      local line = src:read()
+      if line == nil then break end
+      dest:write(line, "\n")
+   end
+
+   io.close(dest)
+   io.close(src)
+end
+
+function read_contents_of_file(filename, mode)
+   tmp = io.open(filename, mode)
+   if (tmp == nil) then
+      return nil
+   end
+   local data = tmp:read("*a")
+   io.close(tmp)
+   return data
+end
+
+function program_exists_in_path(program)
+   return existsonpath(program) == 0
+end
+
 -- attributes are persistent metadata about files (such as execute
 -- bit, ACLs, various special flags) which we want to have set and
 -- re-set any time the files are modified. the attributes themselves
@@ -371,6 +411,18 @@ function accept_testresult_change(old_results, new_results)
       end
    end
    return true
+end
+
+function get_projects()
+   local project_dir = get_confdir() .. "/projects"
+   local ret = {}
+   if isdir(project_dir) then
+      local projects = read_directory(project_dir)
+      for i, file in pairs(projects) do
+	 ret[file] = read_contents_of_file(project_dir .. "/" .. file, "r")
+      end
+   end
+   return ret
 end
 
 -- merger support
@@ -741,46 +793,6 @@ mergers.opendiff = {
    available = function () return program_exists_in_path("opendiff") end,
    wanted = function () return true end
 }
-
-function write_to_temporary_file(data, namehint)
-   tmp, filename = temp_file(namehint)
-   if (tmp == nil) then
-      return nil
-   end;
-   tmp:write(data)
-   io.close(tmp)
-   return filename
-end
-
-function copy_text_file(srcname, destname)
-   src = io.open(srcname, "r")
-   if (src == nil) then return nil end
-   dest = io.open(destname, "w")
-   if (dest == nil) then return nil end
-
-   while true do
-      local line = src:read()
-      if line == nil then break end
-      dest:write(line, "\n")
-   end
-
-   io.close(dest)
-   io.close(src)
-end
-
-function read_contents_of_file(filename, mode)
-   tmp = io.open(filename, mode)
-   if (tmp == nil) then
-      return nil
-   end
-   local data = tmp:read("*a")
-   io.close(tmp)
-   return data
-end
-
-function program_exists_in_path(program)
-   return existsonpath(program) == 0
-end
 
 function get_preferred_merge3_command (tbl)
    local default_order = {"kdiff3", "xxdiff", "opendiff", "tortoise", "emacs", "vim", "meld", "diffutils"}
