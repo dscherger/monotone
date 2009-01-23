@@ -1,30 +1,21 @@
-# This is a separate macro primarily to trick autoconf into not looking
-# for pkg-config if we are using the bundled pcre.
 AC_DEFUN([MTN_FIND_PCRE],
-[  PKG_PROG_PKG_CONFIG
-
-   # We manually test the variables here because we want them to work
+[  # We manually test the variables here because we want them to work
    # even if pkg-config isn't installed.  The use of + instead of :+ is
    # deliberate; the user should be able to tell us that the empty string
    # is the correct set of flags.  (PKG_CHECK_MODULES gets this wrong!)
-   if test -n "${PCRE_CPPFLAGS+set}" || test -n "${PCRE_LIBS+set}"; then
+   if test -n "${pcre_CFLAGS+set}" || test -n "${pcre_LIBS+set}"; then
      found_libpcre=yes
    else
-     PKG_CHECK_MODULES([PCRE], [libpcre],
+     PKG_CHECK_MODULES([pcre], [libpcre],
                        [found_libpcre=yes], [found_libpcre=no])
-
-     if test $found_libpcre = yes; then
-       # PKG_CHECK_MODULES adds PCRE_CFLAGS, but we want PCRE_CPPFLAGS
-       PCRE_CPPFLAGS="$PCRE_CFLAGS";
-     fi
    fi
 
    if test $found_libpcre = no; then
      # try pcre-config, in case we're on a system with no pkg-config
-     AC_MSG_CHECKING([for PCRE using pcre-config])
+     AC_MSG_CHECKING([for pcre using pcre-config])
      if test -n "`type -p pcre-config`"; then
-       PCRE_CPPFLAGS="`pcre-config --cflags`"
-       PCRE_LIBS="`pcre-config --libs`"
+       pcre_CFLAGS="`pcre-config --cflags`"
+       pcre_LIBS="`pcre-config --libs`"
        found_libpcre=yes
        AC_MSG_RESULT([yes])
      fi
@@ -32,22 +23,20 @@ AC_DEFUN([MTN_FIND_PCRE],
 
    if test $found_libpcre = no; then
      AC_MSG_RESULT([no; guessing])
-     PCRE_CPPFLAGS=
-     PCRE_LIBS=-lpcre
+     pcre_CFLAGS=
+     pcre_LIBS=-lpcre
    fi
 
+   # AC_MSG_NOTICE([using pcre compile flags: "$pcre_CFLAGS"])
+   # AC_MSG_NOTICE([using pcre link flags: "$pcre_LIBS"])
+
    # Wherever we got the settings from, make sure they work.
-   PCRE_CPPFLAGS="`echo :$PCRE_CPPFLAGS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
-   PCRE_LIBS="`echo :$PCRE_LIBS | sed -e 's/^:@<:@	 @:>@*//; s/@<:@	 @:>@*$//'`"
-
-   # AC_MSG_NOTICE([using PCRE compile flags: "$PCRE_CPPFLAGS"])
-   # AC_MSG_NOTICE([using PCRE link flags: "$PCRE_LIBS"])
-
-   AC_CACHE_CHECK([whether the PCRE library is usable], ac_cv_lib_pcre_works,
+   AC_LANG_ASSERT([C])
+   AC_CACHE_CHECK([whether the pcre library is usable], ac_cv_lib_pcre_works,
     [save_LIBS="$LIBS"
      save_CPPFLAGS="$CPPFLAGS"
-     LIBS="$LIBS $PCRE_LIBS"
-     CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+     LIBS="$LIBS $pcre_LIBS"
+     CPPFLAGS="$CPPFLAGS $pcre_CFLAGS"
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
       [#include <pcre.h>],
       [const char *e;
@@ -61,16 +50,16 @@ AC_DEFUN([MTN_FIND_PCRE],
      LIBS="$save_LIBS"
      CPPFLAGS="$save_CPPFLAGS"])
    if test $ac_cv_lib_pcre_works = no; then
-      AC_MSG_ERROR([Your PCRE library is not usable.])
+      AC_MSG_ERROR([Your pcre library is not usable.])
    fi
 
    # This is deliberately not cached.
-   AC_MSG_CHECKING([whether the PCRE library is new enough])
+   AC_MSG_CHECKING([whether the pcre library is new enough])
    sed -n -e 's/#define REQUIRED_PCRE_MAJOR[ 	]*/#define REQUIRED_PCRE_MAJOR /p' \
           -e 's/#define REQUIRED_PCRE_MINOR[ 	]*/#define REQUIRED_PCRE_MINOR /p' \
           $srcdir/pcrewrap.hh > conftest.h
    save_CPPFLAGS="$CPPFLAGS"
-   CPPFLAGS="$CPPFLAGS $PCRE_CPPFLAGS"
+   CPPFLAGS="$CPPFLAGS $pcre_CFLAGS"
    AC_PREPROC_IFELSE([
 #include "conftest.h"
 #include <pcre.h>
@@ -84,7 +73,6 @@ AC_DEFUN([MTN_FIND_PCRE],
    CPPFLAGS="$save_CPPFLAGS"
 
    if test $pcre_version_match = no; then
-      AC_MSG_ERROR([Your PCRE library is too old, please upgrade it.])
+      AC_MSG_ERROR([Your pcre library is too old, please upgrade it.])
    fi
-
 ])

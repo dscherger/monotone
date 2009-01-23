@@ -187,6 +187,7 @@ noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
+lib3rdparty_a_CPPFLAGS = # may be augmented in conditionals
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -220,42 +221,22 @@ endif
 
 SUFFIXES = .gch
 
-AM_CPPFLAGS =
-# is/was NDEBUG here just for sqlite?
-AM_CFLAGS = $(AM_CPPFLAGS) -DNDEBUG
-AM_CXXFLAGS = $(AM_CPPFLAGS)
-AM_LDFLAGS =
+EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
+		    $(lua_CFLAGS) $(sqlite3_CFLAGS) $(libidn_CFLAGS)
+EXTERNAL_LIBS = $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
+	        $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS) $(sqlite3_LIBS) \
+	        $(libidn_LIBS)
 
-lib3rdparty_a_CPPFLAGS =
-lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS)
+mtn_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
+mtn_CXXFLAGS = $(PCH_FLAGS)
+mtn_LDADD = libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
 
-mtn_LDFLAGS =
-mtn_CPPFLAGS = -I$(top_srcdir)/lua $(PCRE_FLAGS) $(BOTAN_CPPFLAGS) \
-	       $(LUA_CFLAGS) $(SQLITE3_CPPFLAGS) $(LIBIDN_CPPFLAGS)
-mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
-mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
-mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
-	    $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS) $(SQLITE3_LIBS) \
-	    $(LIBIDN_LIBS)
+unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS $(EXTERNAL_CPPFLAGS)
+unit_tester_CXXFLAGS = $(PCH_FLAGS)
+unit_tester_LDADD += libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
 
-unit_tester_LDFLAGS =
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua $(PCRE_FLAGS) \
-		       $(BOTAN_CPPFLAGS) $(LUA_CFLAGS) $(SQLITE3_CPPFLAGS) \
-		       $(LIBIDN_CPPFLAGS)
-unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a \
-		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) $(PCRE_LIBS) \
-		     $(BOTAN_LIBS) $(LUA_LIBS) $(SQLITE3_LIBS) \
-		     $(LIBIDN_LIBS)
-
-tester_LDFLAGS =
-tester_CPPFLAGS = -I$(top_srcdir)/lua $(PCRE_FLAGS) $(BOTAN_CPPFLAGS) \
-		  $(LUA_CFLAGS) $(SQLITE3_CPPFLAGS) $(LIBIDN_CPPFLAGS)
-tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) \
-		$(LIBINTL) $(PCRE_LIBS) $(BOTAN_LIBS) $(LUA_LIBS) \
-		$(SQLITE3_LIBS) $(LIBIDN_LIBS)
+tester_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
+tester_LDADD += libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)

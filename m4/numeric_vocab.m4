@@ -28,8 +28,7 @@ AC_DEFUN([MTN_COMPUTE_SIZEOF],
 AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])],
   [AC_COMPUTE_INT([AS_TR_SH([ac_cv_sizeof_$1])], 
     [(long int)(sizeof (ac__type_sizeof_))],
-    [AC_INCLUDES_DEFAULT()
-     typedef $1 ac__type_sizeof_;],
+    [typedef $1 ac__type_sizeof_;],
     [AC_MSG_FAILURE([cannot compute sizeof ($1)], 77)])])])
 
 AC_DEFUN([MTN_CHOOSE_USE_OF_TYPE], [

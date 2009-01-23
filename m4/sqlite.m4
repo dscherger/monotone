@@ -1,63 +1,45 @@
 AC_DEFUN([MTN_FIND_SQLITE],
-[  PKG_PROG_PKG_CONFIG
-
-   # We manually test the variables here because we want them to work
+[  # We manually test the variables here because we want them to work
    # even if pkg-config isn't installed.  The use of + instead of :+ is
    # deliberate; the user should be able to tell us that the empty string
    # is the correct set of flags.  (PKG_CHECK_MODULES gets this wrong!)
-   if test -n "${SQLITE3_CPPFLAGS+set}" || test -n "${SQLITE3_LIBS+set}"; then
+   if test -n "${sqlite3_CFLAGS+set}" || test -n "${sqlite3_LIBS+set}"; then
      found_sqlite3=yes
    else
-     PKG_CHECK_MODULES([SQLITE3], [sqlite3],
+     PKG_CHECK_MODULES([sqlite3], [sqlite3],
                        [found_sqlite3=yes], [found_sqlite3=no])
-
-     if test $found_sqlite3 = yes; then
-       # PKG_CHECK_MODULES adds SQLITE_CFLAGS, but we want SQLITE_CPPFLAGS
-       SQLITE3_CPPFLAGS="$SQLITE3_CFLAGS"
-     fi
    fi
 
    if test $found_sqlite3 = no; then
      AC_MSG_RESULT([no; guessing])
-     AC_CHECK_LIB([sqlite3], [sqlite_open], 
-                  [SQLITE3_LIBS=-lsqlite3])
-     SQLITE3_CPPFLAGS=
+     sqlite3_CFLAGS=
+     sqlite3_LIBS=-lsqlite3
    fi
 
-   # AC_MSG_NOTICE([using sqlite3 compile flags: "$SQLITE3_CPPFLAGS"])
-   # AC_MSG_NOTICE([using sqlite3 link flags: "$SQLITE3_LIBS"])
+   # AC_MSG_NOTICE([using sqlite3 compile flags: "$sqlite3_CFLAGS"])
+   # AC_MSG_NOTICE([using sqlite3 link flags: "$sqlite3_LIBS"])
 
-   AC_SUBST(SQLITE3_CPPFLAGS)
-   AC_SUBST(SQLITE3_LIBS)
-
-   AC_CACHE_CHECK([whether the sqlite3 library is usable], ac_cv_lib_sqlite3_works,
+   AC_LANG_ASSERT([C])
+   AC_CACHE_CHECK([whether the sqlite3 library is usable],
+   	          ac_cv_lib_sqlite3_works,
     [save_LIBS="$LIBS"
      save_CPPFLAGS="$CPPFLAGS"
-     LIBS="$LIBS $SQLITE3_LIBS"
-     CPPFLAGS="$CPPFLAGS $SQLITE3_CPPFLAGS"
+     LIBS="$LIBS $sqlite3_LIBS"
+     CPPFLAGS="$CPPFLAGS $sqlite3_CFLAGS"
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
-      [
-extern "C"
-{
-  #include <sqlite3.h>
-}
-      ],
-      [
-sqlite3 *st;
+      [#include <sqlite3.h>],
+[sqlite3 *st;
 
 #if SQLITE_VERSION_NUMBER < 3003000
-#error Sqlite3 version mismatch
+#error Sqlite3 too old
 #endif
 
 sqlite3_open("testfile.db", &st);
-sqlite3_close(st);
-      ])],
+sqlite3_close(st);])],
       [ac_cv_lib_sqlite3_works=yes], [ac_cv_lib_sqlite3_works=no])
      LIBS="$save_LIBS"
      CPPFLAGS="$save_CPPFLAGS"])
    if test $ac_cv_lib_sqlite3_works = no; then
       AC_MSG_ERROR([Your sqlite3 library is not usable.])
    fi
-
 ])
-
