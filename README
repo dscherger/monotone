@@ -69,15 +69,15 @@ place using the following directory structure:
 The only file that needs to be executable is the mtn-browse file under the bin
 directory.
 
-1) The Monotone directory is only needed if the Monotone::AutomateStdion
-package from CPAN has not already been installed.
-
 Once the files are in place then edit the mtn-browse executable and change the
 constants at the top containing the "@INST:LIB_DIR@", "@INST:GLOBS_FILE@" and
 "@INST:PREFIX_DIR@" values so that they contain the correct values. It is
 probably best that you actually run the installer as a non-privileged user and
 install it somewhere under your home directory and then change the paths
 accordingly.
+
+1) The Monotone directory is only needed if the Monotone::AutomateStdio package
+   from CPAN has not already been installed.
 
 
 DEPENDENCIES
