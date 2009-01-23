@@ -162,7 +162,6 @@ monotone_mkstemp(string & tmpl)
 }
 
 #ifdef BUILD_UNIT_TESTS
-#include "base.hh"
 #include "sanity.hh"
 #include "unit_tests.hh"
 

@@ -83,8 +83,8 @@ MOST_SOURCES = 								\
 	cycle_detector.hh randomfile.hh adler32.hh			\
 	randomizer.cc randomizer.hh					\
 	netio.hh gettext.h						\
-	package_revision.c package_revision.h				\
-	package_full_revision.c package_full_revision.h			\
+	package_revision.cc package_revision.h				\
+	package_full_revision.cc package_full_revision.h		\
 	option.cc option.hh options.cc options.hh options_list.hh	\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
@@ -170,13 +170,13 @@ EXTRA_PROGRAMS =
 dist_bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
-nodist_mtn_SOURCES = std_hooks.c schema.c
+nodist_mtn_SOURCES = std_hooks.cc schema.cc
 
 unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
 unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
 
 tester_SOURCES = tester.cc transforms.cc gzip.cc
-nodist_tester_SOURCES = testlib.c
+nodist_tester_SOURCES = testlib.cc
 tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
 		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
 		 	  	pcrewrap.cc)))
@@ -245,12 +245,12 @@ if WIN32_PLATFORM
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   lib3rdparty_a_CPPFLAGS += -DWIN32
   tester_SOURCES += win32/tester-plaf.cc
-  check_net_SOURCES = win32/tester-check-net.c
+  check_net_SOURCES = win32/tester-check-net.cc
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
   tester_SOURCES += unix/tester-plaf.cc
-  check_net_SOURCES = unix/tester-check-net.c
+  check_net_SOURCES = unix/tester-check-net.cc
 endif
 
 if MISSING_INET_PTON
@@ -480,8 +480,8 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SOURCES = std_hooks.c testlib.c schema.c \
-	package_revision.c package_full_revision.c \
+CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
+	package_revision.cc package_full_revision.cc \
 	package_revision_raw.txt \
 	package_full_revision.txt package_full_revision_raw.txt
 
@@ -494,17 +494,17 @@ txt2c: txt2c.cc
 	chmod 0755 $@$(EXEEXT)
 
 # FIXME: should use stamp files.
-%.c: %.sql txt2c
+%.cc: %.sql txt2c
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.c: %.lua txt2c
+%.cc: %.lua txt2c
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.c: %.txt txt2c
+%.cc: %.txt txt2c
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
@@ -514,9 +514,9 @@ txt2c: txt2c.cc
 	cp $< $@
 
 # This construct causes --strip-trailing to be applied only when
-# generating package_revision.c.
+# generating package_revision.cc.
 TXT2CFLAGS =
-package_revision.c : TXT2CFLAGS = --strip-trailing
+package_revision.cc : TXT2CFLAGS = --strip-trailing
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its

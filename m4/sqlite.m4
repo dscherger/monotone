@@ -19,7 +19,6 @@ AC_DEFUN([MTN_FIND_SQLITE],
    # AC_MSG_NOTICE([using sqlite3 compile flags: "$sqlite3_CFLAGS"])
    # AC_MSG_NOTICE([using sqlite3 link flags: "$sqlite3_LIBS"])
 
-   AC_LANG_ASSERT([C])
    AC_CACHE_CHECK([whether the sqlite3 library is usable],
    	          ac_cv_lib_sqlite3_works,
     [save_LIBS="$LIBS"

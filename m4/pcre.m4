@@ -31,7 +31,6 @@ AC_DEFUN([MTN_FIND_PCRE],
    # AC_MSG_NOTICE([using pcre link flags: "$pcre_LIBS"])
 
    # Wherever we got the settings from, make sure they work.
-   AC_LANG_ASSERT([C])
    AC_CACHE_CHECK([whether the pcre library is usable], ac_cv_lib_pcre_works,
     [save_LIBS="$LIBS"
      save_CPPFLAGS="$CPPFLAGS"

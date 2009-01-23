@@ -45,11 +45,7 @@ AC_DEFUN([MTN_FIND_LUA],
      LIBS="$LIBS $lua_LIBS"
      CPPFLAGS="$CPPFLAGS $lua_CFLAGS"
      AC_LINK_IFELSE([AC_LANG_PROGRAM(
-      [
-  #include <lua.h>
-  #include <lualib.h>
-  #include <lauxlib.h>
-      ],
+      [#include <lua.hpp>],
       [
 lua_State *st;
 

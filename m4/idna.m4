@@ -19,7 +19,6 @@ AC_DEFUN([MTN_FIND_IDNA],
    # AC_MSG_NOTICE([using libidn compile flags: "$libidn_CFLAGS"])
    # AC_MSG_NOTICE([using libidn link flags: "$libidn_LIBS"])
 
-   AC_LANG_ASSERT([C])
    AC_CACHE_CHECK([whether the libidn library is usable],
                   ac_cv_lib_libidn_works,
     [save_LIBS="$LIBS"

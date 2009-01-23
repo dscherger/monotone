@@ -6,19 +6,44 @@ AC_INIT([monotone], [0.43dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([util/mtnopt])
+AC_CONFIG_FILES([Makefile po/Makefile.in util/mtnopt])
+AC_LANG([C++])
+
+# Operating system categorization.  Don't add more entries to this
+# case statement if you can possibly avoid it.
+AC_CANONICAL_HOST
+AC_MSG_CHECKING([category of operating system])
+
+case "$host" in 
+  # Unclear what should be done with Interix and Cygwin.
+  # The old test would have succeeded on both so I'm including both.
+  *-mingw32 | *-pc-pw32 | *-pc-mks | *-winnt | *-cygwin | *-interix )
+    AC_MSG_RESULT([Windows])
+
+    AM_CONDITIONAL(WIN32_PLATFORM, true)
+    AC_DEFINE(os_err_t, unsigned int, 
+             [Define as the best type to hold an OS error code.])
+  ;;
+
+  *-aix* )
+    AC_MSG_RESULT([AIX])
+
+    AM_CONDITIONAL(WIN32_PLATFORM, false)
+    AC_DEFINE(os_err_t, int, 
+             [Define as the best type to hold an OS error code.])
+    LDFLAGS="$LDFLAGS -Wl,-bexpfull"
+  ;;
+
+  * )
+    AC_MSG_RESULT([Unix])
+
+    AM_CONDITIONAL(WIN32_PLATFORM, false)
+    AC_DEFINE(os_err_t, int, 
+             [Define as the best type to hold an OS error code.])
+  ;;
+esac
 
 # Checks for programs.
-dnl Note: AC_PROG_CC is implied by AM_PROG_CC_C_O and in any case has
-dnl already been done by AM_INIT_AUTOMAKE.
-AM_PROG_CC_C_O
-AC_CC_FEXCEPTIONS
-
-# ??? Shouldn't be necessary (anymore).
-test "z$GCC" = "zyes" && CFLAGS="$CFLAGS -fno-strict-aliasing"
-test "z$GXX" = "zyes" && CXXFLAGS="$CXXFLAGS -fno-strict-aliasing"
-
 AC_PROG_CXX
 AC_PROG_CXXCPP
 AC_PROG_CXX_WARNINGS
@@ -26,85 +51,35 @@ AC_PROG_CXX_PCH
 
 AC_PROG_RANLIB
 
-AM_GNU_GETTEXT([external])
-AC_PROG_XGETTEXT_FLAG_OPTION
-AM_GNU_GETTEXT_VERSION(0.11.5)
-AM_ICONV
+dnl Note: the gettext checks do not work if AC_LANG(C++) is in effect,
+dnl due to the C++ compiler objecting to the very sloppy code that is
+dnl used to generate link-time references to gettext functions.  This
+dnl is the only remaining use of the C compiler in the entire package.
+dnl Note 2: if you *don't* put AM_ICONV in here then AM_GNU_GETTEXT
+dnl thinks it needs to stick -liconv in LIBS!
 
-# Stick some logic into config.status, after the logic that
-# AM_GNU_GETTEXT sticks into config.status, to annul the UPDATEPOFILES
-# variable in po/Makefile.  This prevents auto-regeneration of the
-# .po files when the sources change, which the translators do not want.
-AC_CONFIG_COMMANDS([default-2], [[
-for ac_file in $CONFIG_FILES; do
-  # Support "outfile[:infile[:infile...]]"
-  case "$ac_file" in
-    *:*) ac_file=`echo "$ac_file"|sed 's%:.*%%'` ;;
-  esac
-  # PO directories have a Makefile.in generated from Makefile.in.in.
-  case "$ac_file" in */Makefile.in)
-    target="`echo x$ac_file | sed -e 's/.in$//' -e 's/^x//'`"
-    test -n "$as_me" && echo "$as_me: fixing $target" || echo "fixing $target"
-    mtn_tmp="${target}.tmp"
-    sed -e 's/^MSGMERGE =.*$/MSGMERGE = false/' \
-            -e 's/^MSGMERGE_UPDATE =.*$/MSGMERGE_UPDATE = true/' \
-               "$target" > "$mtn_tmp"
-    mv -f "$mtn_tmp" "$target" ;;
-  esac
-done
-]], [[]])
+AC_LANG([C])
+AM_ICONV
+AM_GNU_GETTEXT([external], [need-ngettext])
+AM_GNU_GETTEXT_VERSION(0.11.5)
+AC_PROG_XGETTEXT_FLAG_OPTION
+AC_LANG([C++])
 
 # Do library checks as early as possible so we bail out quickly if
 # one is missing.
 
 AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
 
+BOOST_VERSION_CHECK
+BOOST_VERSION_SPECIFIC_BUGS
+
+MTN_FIND_BOTAN
+MTN_FIND_IDNA
 MTN_FIND_LUA
 MTN_FIND_PCRE
 MTN_FIND_SQLITE
-MTN_FIND_IDNA
 
-AC_LANG([C++])
-MTN_FIND_BOTAN
-BOOST_VERSION_CHECK
-BOOST_VERSION_SPECIFIC_BUGS
 MTN_NETXX_DEPENDENCIES
-
-AC_LANG([C])
-# C language features
-
-AC_CACHE_CHECK([whether this is Windows],
-       ac_win32, [
-       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifdef WIN32
-                       #include <windows.h>
-                       #endif]],
-                      [[HANDLE h; DWORD d;]])],
-                      [ac_win32=yes],
-                      [ac_win32=no])
-])
-if test "$ac_win32" = "yes"; then
-   AM_CONDITIONAL(WIN32_PLATFORM, true)
-   AC_DEFINE(os_err_t, unsigned int, [OS-specific error type])
-else
-   AM_CONDITIONAL(WIN32_PLATFORM, false)
-   AC_DEFINE(os_err_t, int, [OS-specific error type])
-fi
-
-AC_CACHE_CHECK([whether this is AIX],
-       ac_aix, [
-       AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef _AIX
-                       #error "This is not AIX"
-                       #endif]],
-                      [[int i;]])],
-                      [ac_aix=yes],
-                      [ac_aix=no])
-])
-if test "$ac_aix" = "yes"; then
-   AM_CONDITIONAL(AIX_PLATFORM, true)
-   LDFLAGS="$LDFLAGS -Wl,-bexpfull"
-else
-   AM_CONDITIONAL(AIX_PLATFORM, false)
-fi
 
 # Checks for header files.
 dnl It's hard these days to get AC_CHECK_HEADERS to check for just one
@@ -113,11 +88,7 @@ dnl Using AC_INCLUDES_DEFAULT triggers a whole bunch of tests that are
 dnl pointless nowadays.  This is the best thing I can come up with.
 dnl (A line with nothing but a # on it is ignored by the preprocessor.)
 
-AC_CHECK_HEADERS([fcntl.h netinet/in.h],,, [#])
-
-AC_LANG([C++])
-# This header may not be visible to the C compiler.
-AC_CHECK_HEADERS([cxxabi.h],,, [#])
+AC_CHECK_HEADERS([cxxabi.h fcntl.h netinet/in.h],,, [#])
 
 # check for language features and compiler bugs
 AC_CXX_TYPEOF
@@ -159,8 +130,6 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 # Checks for library functions.
 # We don't do anything especially clever with mmap so we don't need the
 # complicated check for it.
-AC_FUNC_LOCALE_WORKS
-AC_FUNC_ICONV_TRANSLIT
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
                 fstatat mkdtemp mmap putenv setenv strptime unsetenv])
