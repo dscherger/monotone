@@ -1,0 +1,125 @@
+mtn-browse Version 0.60
+=======================
+
+mtn-browse is an application for browsing Monotone VCS databases without the
+need of a workspace. The interface allows one to:
+
+    * Easily select a revision from within a branch.
+    * Find a revision using complex queries.
+    * Navigate the contents of a revision using a built in file manager.
+    * Display file contents, either using the internal viewer or an external
+      helper application.
+    * Compare the changes between different revisions or versions of a file
+      either using the internal difference viewer or an external application.
+    * Find files within a revision based on detailed search criteria.
+    * Display file annotations and easily refer back to the corresponding
+      change documentation.
+    * Save files to disk.
+
+For further details on Monotone see http://monotone.ca. For further details on
+mtn-browse see http://www.coosoft.plus.com/software.html.
+
+
+INSTALLATION
+------------
+
+As root simply unpack the tar file and run the installer by doing:
+
+    tar xvpzf mtn-browse-<Version Number>.tgz
+    cd mtn-browse-<Version Number>
+    chmod +x linux-install
+    ./linux-install
+
+and then follow the prompts.
+
+If you prefer to install this application manually then copy the files into
+place using the following directory structure:
+
+    <Install Location>
+    |-- bin
+    |   `-- mtn-browse
+    `-- lib
+        `-- mtn-browse
+            |-- perl
+            |   |-- AdvancedFind.pm
+            |   |-- Annotate.pm
+            |   |-- ChangeLog.pm
+            |   |-- ComboAutoCompletion.pm
+            |   |-- Common.pm
+            |   |-- Completion.pm
+            |   |-- FindFiles.pm
+            |   |-- FindText.pm
+            |   |-- Globals.pm
+            |   |-- History.pm
+            |   |-- Monotone               <- 1)
+            |   |   |-- AutomateStdio.pm
+            |   |   `-- AutomateStdio.pod
+            |   |-- Preferences.pm
+            |   `-- WindowManager.pm
+            `-- ui
+                |-- annotate.png
+                |-- diffs.png
+                |-- external-diffs.png
+                |-- line.png
+                |-- monotone-viz.png
+                |-- mtn-browse-large.png
+                |-- mtn-browse.glade
+                `-- mtn-browse.png
+
+The only file that needs to be executable is the mtn-browse file under the bin
+directory.
+
+1) The Monotone directory is only needed if the Monotone::AutomateStdion
+package from CPAN has not already been installed.
+
+Once the files are in place then edit the mtn-browse executable and change the
+constants at the top containing the "@INST:LIB_DIR@", "@INST:GLOBS_FILE@" and
+"@INST:PREFIX_DIR@" values so that they contain the correct values. It is
+probably best that you actually run the installer as a non-privileged user and
+install it somewhere under your home directory and then change the paths
+accordingly.
+
+
+DEPENDENCIES
+------------
+
+This module requires these other modules and libraries:
+
+    * Perl 5.8.5 or later
+    * Gnome and Gtk2
+    * The following Perl CPAN modules:
+          - Glib (1.144) *
+          - Gnome2 (1.042) *
+          - Gnome2-Canvas (1.002) *
+          - Gnome2-Print (1.000) *
+          - Gnome2-VFS (1.080) *
+          - Gtk2 (1.146) *
+          - Gtk2-GladeXML (1.006) *
+          - Gtk2-SourceView (1.000) *
+          - libintl-perl (1.16)
+          - Monotone::AutomateStdio
+
+Please note that the Gtk2 CPAN bundle will probably satisfy all of the
+dependencies marked with * at the end of the line.
+
+Older versions of Perl may work but these have not been tested at this point in
+time.
+
+
+COPYRIGHT AND LICENCE
+---------------------
+
+Copyright (c) 2007 Anthony Edward Cooper <aecooper@coosoft.plus.com>.
+
+This library is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation; either version 3 of the License, or (at your option) any
+later version.
+
+This library is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this library; if not, write to the Free Software Foundation, Inc., 59
+Temple Place - Suite 330, Boston, MA 02111-1307 USA.

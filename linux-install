@@ -185,7 +185,9 @@ use Installer;
     $infile->close();
     $outfile->close();
     $infile = $outfile = undef;
-    $installer->install("mtn-browse.out", "${prefix_dir}/bin/mtn-browse");
+    $installer->install("mtn-browse.out",
+			"${prefix_dir}/bin/mtn-browse",
+			0755);
     unlink("mtn-browse.out");
 
     # Install modules and libraries.

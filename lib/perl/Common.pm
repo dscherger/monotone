@@ -943,7 +943,7 @@ sub file_glob_to_regexp($)
 #                                  updated or loaded.
 #                  $value        : The new value that is to be added to the
 #                                  specified history list and comboboxentry or
-#                                  undef if the comboboxentry is just to
+#                                  undef if the comboboxentry is just to be
 #                                  updated with the current history list. This
 #                                  is optional. 
 #
@@ -970,7 +970,7 @@ sub handle_comboxentry_history($$;$)
 		if ($entry eq $value)
 		{
 		    $update_history = 0;
-		last;
+		    last;
 		}
 	    }
 	}
@@ -1006,11 +1006,13 @@ sub handle_comboxentry_history($$;$)
 
     if ($update_history)
     {
+	my $text_entry_value = $widget->child()->get_text();
 	$widget->get_model()->clear();
 	foreach my $entry (@$history_ref)
 	{
 	    $widget->append_text($entry);
 	}
+	$widget->child()->set_text($text_entry_value);
     }
 
 }

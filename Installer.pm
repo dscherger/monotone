@@ -62,7 +62,7 @@ use File::Spec;
 
 # Public methods.
 
-sub install($$$);
+sub install($$$;$);
 sub new($$$$$$);
 
 # ***** PACKAGE INFORMATION *****
@@ -88,9 +88,9 @@ our $VERSION = 0.1;
 #                  $group       : The group id for any destination files and
 #                                 directories.
 #                  $dir_perms   : Permissions for any created directories.
-#                  $nexec_perms : Permissions for any created non-executable
-#                                 files.
 #                  $exec_perms  : Permissions for any created executable
+#                                 files.
+#                  $nexec_perms : Permissions for any created non-executable
 #                                 files.
 #                  Return Value : A reference to the newly created object.
 #
@@ -104,13 +104,13 @@ sub new($$$$$$)
 
     my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
     shift();
-    my($owner, $group, $dir_perms, $nexec_perms, $exec_perms) = @_;
+    my($owner, $group, $dir_perms, $exec_perms, $nexec_perms) = @_;
 
     my $this = {owner          => $owner,
 		group          => $group,
 		dir_perms      => $dir_perms,
-		non_exec_perms => $nexec_perms,
-		exec_perms     => $exec_perms};
+		exec_perms     => $exec_perms,
+		non_exec_perms => $nexec_perms};
     bless($this, $class);
 
     return $this;
@@ -128,15 +128,18 @@ sub new($$$$$$)
 #                  $dest_file : The name of where the file is to be installed
 #                               to. Single `.' file names are allowed and are
 #                               taken to mean same file name.
+#                  $perms     : The file permissions for the target file or
+#                               undef the default file permssions should be
+#                               used. This is optional.
 #
 ##############################################################################
 
 
 
-sub install($$$)
+sub install($$$;$)
 {
 
-    my($this, $src_file, $dest_file) = @_;
+    my($this, $src_file, $dest_file, $perms) = @_;
 
     my($file,
        $full_path,
@@ -176,16 +179,19 @@ sub install($$$)
     copy($src_file, $full_path)
 	or croak("copy " . $src_file . " " . $full_path . " failed with: "
 		 . $!);
-    if (-x $src_file)
+    if (! defined($perms))
     {
-	chmod($this->{exec_perms}, $full_path)
-	    or croak ("chmod " . $full_path . "failed with: " . $!);
+	if (-x $src_file)
+	{
+	    $perms = $this->{exec_perms};
+	}
+	else
+	{
+	    $perms = $this->{non_exec_perms};
+	}
     }
-    else
-    {
-	chmod($this->{non_exec_perms}, $full_path)
-	    or croak ("chmod " . $full_path . "failed with: " . $!);
-    }
+    chmod($perms, $full_path)
+	or croak ("chmod " . $full_path . "failed with: " . $!);
     chown($this->{owner}, $this->{group}, $full_path);
 
 }
