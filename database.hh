@@ -13,11 +13,7 @@
 #include "vector.hh"
 #include <set>
 #include <boost/shared_ptr.hpp>
-
-#include <botan/botan.h>
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-#include <botan/rng.h>
-#endif
+#include <botan/version.h>
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -29,6 +25,7 @@ struct globish;
 class key_store;
 class outdated_indicator;
 class rev_height;
+class lazy_rng;
 
 typedef std::pair<var_domain, var_name> var_key;
 
@@ -442,7 +439,7 @@ private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+  boost::shared_ptr<lazy_rng> rng;
 #endif
 };
 

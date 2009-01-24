@@ -77,7 +77,7 @@ MOST_SOURCES = 								\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
 									\
-	lru_writeback_cache.hh hybrid_map.hh				\
+	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\

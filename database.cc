@@ -19,13 +19,15 @@
 #include "vector.hh"
 
 #include <string.h>
-
 #include <boost/shared_ptr.hpp>
+
 #include <botan/botan.h>
 #include <botan/rsa.h>
 #include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
+#include "lazy_rng.hh"
+
 #include <sqlite3.h>
 
 #include "lexical_cast.hh"
@@ -446,10 +448,10 @@ database_impl::~database_impl()
 
 database::database(app_state & app)
   : lua(app.lua)
-{
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  rng = app.rng;
+  , rng(app.rng)
 #endif
+{
 
   boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
   if (!i)
@@ -2949,7 +2951,7 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), *rng);
+          plaintext.size(), rng->get());
 #else
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),

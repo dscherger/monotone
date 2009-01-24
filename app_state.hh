@@ -11,13 +11,7 @@
 // PURPOSE.
 
 #include <boost/shared_ptr.hpp>
-
-#include <botan/botan.h>
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-#include <botan/rng.h>
-#else
-#include <botan/libstate.h>
-#endif
+#include <botan/version.h>
 
 #include "options.hh"
 #include "lua_hooks.hh"
@@ -28,6 +22,8 @@
 
 class app_state_private;
 class database_impl;
+class lazy_rng;
+
 class app_state
 {
   boost::shared_ptr<app_state_private> _hidden;
@@ -43,7 +39,7 @@ public:
   bool mtn_automate_allowed;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+  boost::shared_ptr<lazy_rng> rng;
 #endif
 };
 
