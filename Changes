@@ -1,6 +1,6 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
-0.02  Wed Jan 7 16:00:00 2009 Anthony Cooper
+0.02  Wed Jan 7 16:00:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Updated to work with Monotone version 0.42 (added the
 	  $mtn->file_merge(), $mtn->lua() and $mtn->read_packets() methods and
 	  added support for the --no-workspace mtn command line switch).
@@ -31,6 +31,6 @@ Revision history for Perl extension Monotone::AutomateStdio.
 	  obvious features, and an AUTHORS section. I have also revamped the
 	  RETURN VALUE section to make it more readable).
 
-0.01  Sun Nov 9 12:48:46 2008 Anthony Cooper
+0.01  Sun Nov 9 12:48:46 2008 Anthony Cooper <support@coosoft.plus.com>
 	- original version; created by h2xs 1.23 with options
 		-X -n Monotone::AutomateStdio
