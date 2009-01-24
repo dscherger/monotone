@@ -45,7 +45,6 @@ esac
 
 # Checks for programs.
 AC_PROG_CXX
-AC_PROG_CXXCPP
 AC_PROG_CXX_WARNINGS
 AC_PROG_CXX_PCH
 
@@ -56,7 +55,7 @@ dnl due to the C++ compiler objecting to the very sloppy code that is
 dnl used to generate link-time references to gettext functions.  This
 dnl is the only remaining use of the C compiler in the entire package.
 dnl Note 2: if you *don't* put AM_ICONV in here then AM_GNU_GETTEXT
-dnl thinks it needs to stick -liconv in LIBS!
+dnl thinks it needs to stick -liconv in LIBS, even when iconv is in libc!
 
 AC_LANG([C])
 AM_ICONV
@@ -133,13 +132,5 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
                 fstatat mkdtemp mmap putenv setenv strptime unsetenv])
-
-# allow compiling with different flags/optimisation
-# for monotone versus libs, useful for testing.
-# only makes sense if CFLAGS="" or CXXFLAGS=""
-AC_SUBST(MONOTONE_CFLAGS)
-AC_SUBST(MONOTONE_CXXFLAGS)
-AC_SUBST(LIB3RDPARTY_CFLAGS)
-AC_SUBST(LIB3RDPARTY_CXXFLAGS)
 
 AC_OUTPUT

@@ -222,10 +222,10 @@ endif
 SUFFIXES = .gch
 
 EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
-		    $(lua_CFLAGS) $(sqlite3_CFLAGS) $(libidn_CFLAGS)
+		    $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
 EXTERNAL_LIBS = $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
-	        $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS) $(sqlite3_LIBS) \
-	        $(libidn_LIBS)
+	        $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) \
+	        $(idn_LIBS)
 
 mtn_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
 mtn_CXXFLAGS = $(PCH_FLAGS)
