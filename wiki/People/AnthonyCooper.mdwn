@@ -5,7 +5,7 @@
 
  * uses monotone since May 2007
  * I haven't actually worked on monotone yet
- * author of the mtn-browse applocation and the Monotone::AutomateStdio Perl CPAN library module
+ * author of the mtn-browse application and the Monotone::AutomateStdio Perl CPAN library module
  * contact: aecooper AT coosoft DOT plus DOT com
- * IRC: OFTC network (rarely) (Nick: aecooper)
+ * IRC: OFTC network (rarely logged in) (Nick: aecooper)
  * Homepage: http://www.coosoft.plus.com/index.html
