@@ -105,12 +105,6 @@ NETXX_SOURCES =								\
 	netxx/streambase.h netxx/streamserver.h netxx/timeout.h		\
 	netxx/types.h
 
-BOOST_SANDBOX_SOURCES =							\
-	boost/circular_buffer_adaptor.hpp				\
-	boost/circular_buffer_base.hpp					\
-	boost/circular_buffer_fwd.hpp					\
-	boost/circular_buffer.hpp
-
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
@@ -185,8 +179,7 @@ txt2c_SOURCES = txt2c.cc
 
 noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
-lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(NETXX_SOURCES)
+lib3rdparty_a_SOURCES = $(NETXX_SOURCES)
 lib3rdparty_a_CPPFLAGS = # may be augmented in conditionals
 
 htmldir = $(datadir)/doc/monotone
@@ -223,9 +216,8 @@ SUFFIXES = .gch
 
 EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
 		    $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
-EXTERNAL_LIBS = $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
-	        $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) \
-	        $(idn_LIBS)
+EXTERNAL_LIBS = $(botan_LIBS) $(lua_LIBS) $(pcre_LIBS) $(sqlite_LIBS) \
+	        $(idn_LIBS) $(LIBINTL) $(LIBICONV)
 
 mtn_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
 mtn_CXXFLAGS = $(PCH_FLAGS)
