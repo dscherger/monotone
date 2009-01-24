@@ -8,4 +8,4 @@
  * author of the mtn-browse application and the Monotone::AutomateStdio Perl CPAN library module
  * contact: <support@coosoft.plus.com>
  * IRC: OFTC network (rarely logged in) (Nick: aecoope)
- * Homepage: <http://www.coosoft.plus.com>
+ * homepage: <http://www.coosoft.plus.com>
