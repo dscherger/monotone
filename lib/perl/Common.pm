@@ -73,6 +73,8 @@ sub open_database($$$);
 sub run_command($@);
 sub save_as_file($$$);
 sub set_label_value($$);
+sub treeview_column_searcher($$$$);
+sub treeview_setup_search_column_selection($@);
 #
 ##############################################################################
 #
@@ -541,6 +543,163 @@ sub save_as_file($$$)
     while (! $done);
 
     $chooser_dialog->destroy();
+
+}
+#
+##############################################################################
+#
+#   Routine      - treeview_setup_search_column_selection
+#
+#   Description  - Setup the specified treeview column headers so that the
+#                  user can select which column to search in.
+#
+#   Data         - $treeview  : The treeview widget that is to have this
+#                               feature enabled on it.
+#                  @columns   : A list of column numbers that are to be setup.
+#
+##############################################################################
+
+
+
+sub treeview_setup_search_column_selection($@)
+{
+
+    my($treeview, @columns) = @_;
+
+    foreach my $col_nr (@columns)
+    {
+
+	my($button,
+	   $col,
+	   $label);
+
+	next unless (defined($col = $treeview->get_column($col_nr)));
+
+	# We need to add a widget if we are going to get back a button widget
+	# from $treeview->get_parent() (this is just how Gtk2 works, I guess
+	# the header widgets are by default some sort of cut down affair).
+
+	$label = Gtk2::Label->new($col->get_title());
+	$col->set_widget($label);
+	$label->show();
+
+	# Find the header button widget.
+
+	for ($button = $col->get_widget();
+	     defined($button) && ! $button->isa("Gtk2::Button");
+	     $button = $button->get_parent())
+	{
+	}
+	next unless (defined($button));
+
+	# Attach a mouse button press event callback to the column header
+	# button.
+
+	$button->signal_connect
+	    ("button_press_event",
+	     sub {
+
+		 my($widget, $event, $data) = @_;
+
+		 # We are only interested in right button mouse clicks.
+
+		 return FALSE unless ($event->button() == 3);
+
+		 my($menu,
+		    $menu_item);
+
+		 # Create a popup menu with the search option in it.
+
+		 $menu = Gtk2::Menu->new();
+		 $menu_item = Gtk2::MenuItem->new("Select As Search Column");
+		 $menu->append($menu_item);
+		 $menu_item->show();
+
+		 # Setup a callback that will set up that column for searchin
+		 # if the user should select the option.
+
+		 $menu_item->signal_connect
+		     ("activate",
+		      sub {
+
+			  my($widget, $data) = @_;
+
+			  $data->{treeview}->
+			      set_search_column($data->{col_nr});
+
+		      },
+		      $data);
+
+		 # Display the popup menu.
+
+		 $menu->popup(undef,
+			      undef,
+			      undef,
+			      undef,
+			      $event->button(),
+			      $event->time());
+
+		 return TRUE;
+
+	     },
+	     {treeview => $treeview,
+	      col_nr   => $col_nr});
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - treeview_column_searcher
+#
+#   Description  - Callback routine used for comparing search terms with data
+#                  inside a particular treeview's cell.
+#
+#   Data         - $model       : The underlying data model used by the
+#                                 treeview.
+#                  $column      : The number of the search column.
+#                  $key         : The data that is to be searched for.
+#                  $iter        : The treeview iterator for the row that is to
+#                                 be compared.
+#                  Return Value : TRUE if there is no match, otherwise FALSE
+#                                 if there is.
+#
+##############################################################################
+
+
+
+sub treeview_column_searcher($$$$)
+{
+
+    my($model, $column, $key, $iter) = @_;
+
+    my($re,
+       $value);
+
+    # Get the value in the treeview's cell.
+
+    $value = $model->get($iter, $column);
+
+    # Compile the user's regular expression and return a no-match if it doesn't
+    # compile.
+
+    eval
+    {
+	$re = qr/$key/;
+    };
+    return TRUE if ($@ ne "");
+
+    # Actually do the match.
+
+    if ($value =~ m/$re/)
+    {
+	return FALSE;
+    }
+    else
+    {
+	return TRUE;
+    }
 
 }
 #

@@ -901,7 +901,7 @@ or more search criteria</property>
 		</widget>
 		<packing>
 		  <property name="shrink">False</property>
-		  <property name="resize">True</property>
+		  <property name="resize">False</property>
 		</packing>
 	      </child>
 
@@ -2835,7 +2835,7 @@ Tag</property>
 		</widget>
 		<packing>
 		  <property name="shrink">False</property>
-		  <property name="resize">True</property>
+		  <property name="resize">False</property>
 		</packing>
 	      </child>
 
@@ -7291,7 +7291,7 @@ of the command</property>
 		</widget>
 		<packing>
 		  <property name="shrink">False</property>
-		  <property name="resize">True</property>
+		  <property name="resize">False</property>
 		</packing>
 	      </child>
 	    </widget>

@@ -665,8 +665,12 @@ sub get_advanced_find_window($)
 	$tv_column->set_attributes($renderer, "text" => AFLS_AUTHOR_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
 
+	treeview_setup_search_column_selection
+	    ($instance->{revisions_treeview}, 0 .. 3);
 	$instance->{revisions_treeview}->
 	    set_search_column(AFLS_REVISION_ID_COLUMN);
+	$instance->{revisions_treeview}->
+	    set_search_equal_func(\&treeview_column_searcher);
 
 	# Setup the revision details viewer.
 
@@ -715,6 +719,8 @@ sub get_advanced_find_window($)
 	$instance->{revision_combo_details}->{preset} = 0;
 	$instance->{appbar}->set_progress_percentage(0);
 	$instance->{appbar}->clear_stack();
+	$instance->{revisions_treeview}->
+	    set_search_column(AFLS_REVISION_ID_COLUMN);
 	&{$instance->{update_handler}}($instance, NEW_FIND);
 	$instance->{window}->show_all();
 

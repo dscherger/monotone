@@ -1111,7 +1111,11 @@ sub get_preferences_window($$)
 	$tv_column->set_attributes($renderer, "text" => MTLS_HELPER_COLUMN);
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
+	treeview_setup_search_column_selection
+	    ($instance->{mime_types_treeview}, 0 .. 2);
 	$instance->{mime_types_treeview}->set_search_column(MTLS_NAME_COLUMN);
+	$instance->{mime_types_treeview}->
+	    set_search_equal_func(\&treeview_column_searcher);
 
 	# Setup the file name patterns list.
 
@@ -1128,6 +1132,8 @@ sub get_preferences_window($$)
 	$instance->{file_name_patterns_treeview}->append_column($tv_column);
 
 	$instance->{file_name_patterns_treeview}->set_search_column(0);
+	$instance->{file_name_patterns_treeview}->
+	    set_search_equal_func(\&treeview_column_searcher);
 
 	# Reparent the preferences window to the specified parent.
 
@@ -1162,6 +1168,7 @@ sub get_preferences_window($$)
 	$instance->{mime_types_hpaned}->set_position(700);
 	$instance->{window}->set_transient_for($parent);
 	$instance->{preferences} = $preferences;
+	$instance->{mime_types_treeview}->set_search_column(MTLS_NAME_COLUMN);
 	load_preferences_into_gui($instance);
 	$instance->{window}->show_all();
 

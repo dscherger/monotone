@@ -971,8 +971,10 @@ sub get_find_files_window()
 	$tv_column->set_attributes($renderer, "text" => 0);
 	$instance->{results_treeview}->append_column($tv_column);
 	$instance->{results_treeview}->set_search_column(0);
+	$instance->{results_treeview}->
+	    set_search_equal_func(\&treeview_column_searcher);
 
-	# Disable the approprate widgets by default.
+	# Disable the appropriate widgets by default.
 
 	for my $widget (@{$instance->{date_sensitive_group}},
 			@{$instance->{size_sensitive_group}})
