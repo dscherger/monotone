@@ -308,42 +308,34 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       db.get_revision_certs(*r, date_cert_name, dates);
       db.get_revision_certs(*r, tag_cert_name, tags);
 
-      // default to unknown author if no author certs exist
+      // default to <unknown> committer and author if no author certs exist
       // this may be mapped to a different value with the authors-file option
-      string author_name = "unknown";
-      string author_email = "<unknown>";
+      string author_name = "<unknown>"; // used as the git author
+      string author_key  = "<unknown>"; // used as the git committer
       date_t author_date = date_t::now();
 
       cert_iterator author = authors.begin();
 
       if (author != authors.end())
-        author_name = author->inner().value();
+        {
+          author_name = trim_ws(author->inner().value());
+          author_key  = trim_ws(author->inner().key());
+        }
 
-      author_name = trim_ws(author_name);
+      // all monotone keys and authors that don't follow the "Name <email>"
+      // convention used by git must be mapped or they may cause the import
+      // to fail. the full list of these values is available from monotone
+      // using the 'db execute' command. the following queries will list all
+      // author keys and author cert values.
+      //
+      // 'select distinct keypair from revision_certs'
+      // 'select distinct value from revision_certs where name = "author"'
+
+      if (author_map.find(author_key) != author_map.end())
+        author_key = author_map[author_key];
 
       if (author_map.find(author_name) != author_map.end())
         author_name = author_map[author_name];
-
-      size_t lt = author_name.find('<');
-      size_t gt = author_name.find('>');
-      size_t at = author_name.find('@');
-
-      // FIXME: parsing of author/email here could be better
-
-      if (lt != string::npos && gt != string::npos && lt < gt)
-        {
-          if (gt < author_name.length()-1)
-            W(F("ignoring extraneous characters following author email '%s'")
-              % author_name);
-
-          author_email = author_name.substr(lt, gt-lt+1);
-          author_name = trim_ws(author_name.substr(0, lt)) + " ";
-        }
-      else if (lt == string::npos && gt == string::npos && at != string::npos)
-        {
-          author_email = "<" + trim_ws(author_name) + ">";
-          author_name = "";
-        }
 
       cert_iterator date = dates.begin();
 
@@ -476,7 +468,9 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
       cout << "commit refs/heads/" << branch_name << "\n"
            << "mark :" << marked_revs[*r] << "\n"
-           << "committer " << author_name << author_email << " " 
+           << "author " << author_name << " "
+           << (author_date.as_millisecs_since_unix_epoch() / 1000) << " +0000\n"
+           << "committer " << author_key << " "
            << (author_date.as_millisecs_since_unix_epoch() / 1000) << " +0000\n"
            << "data " << data.size() << "\n" << data << "\n";
 
