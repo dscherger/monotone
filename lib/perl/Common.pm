@@ -1104,7 +1104,7 @@ sub file_glob_to_regexp($)
 #                                  specified history list and comboboxentry or
 #                                  undef if the comboboxentry is just to be
 #                                  updated with the current history list. This
-#                                  is optional. 
+#                                  is optional.
 #
 ##############################################################################
 
