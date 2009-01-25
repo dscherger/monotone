@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mtn-browse 0.1\n"
 "Report-Msgid-Bugs-To: support@coosoft.plus.com\n"
-"POT-Creation-Date: 2009-01-11 10:45+0000\n"
+"POT-Creation-Date: 2009-01-25 00:49+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,95 +17,104 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: mtn-browse:211
+#: mtn-browse:214
 #, perl-brace-format
 msgid ""
 "Your preferences cannot be loaded:\n"
 "{error_message}"
 msgstr ""
 
-#: mtn-browse:233
+#: mtn-browse:236
 #, perl-brace-format
 msgid ""
 "{error_message}\n"
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:273
+#: mtn-browse:276
 #, perl-brace-format
 msgid "Cannot open database {database_name}."
 msgstr ""
 
-#: mtn-browse:398
+#: mtn-browse:403
 msgid "Copyright © 2007-2009 Anthony Cooper"
 msgstr ""
 
-#: mtn-browse:399
+#: mtn-browse:404
 msgid "A graphical front-end browser for Monotone VCS databases"
 msgstr ""
 
-#: mtn-browse:401 mtn-browse:402
+#: mtn-browse:406 mtn-browse:407
 msgid "TBD"
 msgstr ""
 
-#: mtn-browse:660
+#: mtn-browse:665
 msgid "Not implemented."
 msgstr ""
 
-#: mtn-browse:1074 lib/perl/History.pm:1858
+#: mtn-browse:1079 lib/perl/History.pm:1862
 #, perl-brace-format
 msgid ""
 "Cannot generate temporary file name:\n"
 "{error_message}."
 msgstr ""
 
-#: mtn-browse:1090 lib/perl/Common.pm:521 lib/perl/History.pm:1875
+#: mtn-browse:1095 lib/perl/Common.pm:523 lib/perl/History.pm:1879
 #, perl-brace-format
 msgid "{error_message}."
 msgstr ""
 
-#: mtn-browse:1149
+#: mtn-browse:1155
 msgid "Unknown file type, not viewing."
 msgstr ""
 
-#: mtn-browse:1167
+#: mtn-browse:1172
+#, perl-brace-format
+msgid ""
+"Gnome cannot launch the helper application\n"
+"for MIME type {mime_type}.\n"
+"Gnome gave:\n"
+"<b><i>{gnome_error_message}</i></b>"
+msgstr ""
+
+#: mtn-browse:1188
 #, perl-brace-format
 msgid ""
 "No application is associated with\n"
-"Mime type {mime_type},\n"
+"MIME type {mime_type},\n"
 "using Vi instead."
 msgstr ""
 
-#: mtn-browse:1553
+#: mtn-browse:1578
 msgid "File Name"
 msgstr ""
 
-#: mtn-browse:1568
+#: mtn-browse:1593
 msgid "Last Update"
 msgstr ""
 
-#: mtn-browse:1578 lib/perl/AdvancedFind.pm:305 lib/perl/AdvancedFind.pm:657
+#: mtn-browse:1603 lib/perl/AdvancedFind.pm:305 lib/perl/AdvancedFind.pm:659
 msgid "Author"
 msgstr ""
 
-#: mtn-browse:1764
+#: mtn-browse:1795
 #, perl-brace-format
 msgid "<WorkSpace> ({database_name})"
 msgstr ""
 
-#: mtn-browse:1806 lib/perl/AdvancedFind.pm:790
+#: mtn-browse:1837 lib/perl/AdvancedFind.pm:798
 msgid "Fetching branch list"
 msgstr ""
 
-#: mtn-browse:1813 lib/perl/AdvancedFind.pm:798
+#: mtn-browse:1844 lib/perl/AdvancedFind.pm:806
 msgid "Populating branch list"
 msgstr ""
 
-#: mtn-browse:1855
+#: mtn-browse:1886
 msgid "Auto selecting head revision"
 msgstr ""
 
-#: mtn-browse:1870
+#: mtn-browse:1901
 #, perl-brace-format
 msgid ""
 "The `{branch}' branch has multiple heads\n"
@@ -114,20 +123,20 @@ msgid ""
 "The head revision ids are:"
 msgstr ""
 
-#: mtn-browse:1906 lib/perl/AdvancedFind.pm:847 lib/perl/History.pm:154
+#: mtn-browse:1937 lib/perl/AdvancedFind.pm:855 lib/perl/History.pm:154
 #: lib/perl/History.pm:355
 msgid "Fetching revision list"
 msgstr ""
 
-#: mtn-browse:1919 lib/perl/AdvancedFind.pm:862
+#: mtn-browse:1950 lib/perl/AdvancedFind.pm:870
 msgid "Populating revision list"
 msgstr ""
 
-#: mtn-browse:1975
+#: mtn-browse:2006
 msgid "Fetching manifest"
 msgstr ""
 
-#: mtn-browse:1985
+#: mtn-browse:2016
 #, perl-brace-format
 msgid ""
 "The `{tag_name}' tag is not unique on this branch.\n"
@@ -136,40 +145,40 @@ msgid ""
 "The matching revision ids are:"
 msgstr ""
 
-#: mtn-browse:2054
+#: mtn-browse:2085
 msgid "Populating directory list"
 msgstr ""
 
-#: mtn-browse:2126
+#: mtn-browse:2157
 msgid "Populating file details"
 msgstr ""
 
-#: mtn-browse:2363
+#: mtn-browse:2394
 msgid "Unknown Contents"
 msgstr ""
 
-#: mtn-browse:2420
+#: mtn-browse:2451
 msgid "Hex dump:\n"
 msgstr ""
 
-#: mtn-browse:2575
+#: mtn-browse:2606
 msgid ""
 "Your version of Monotone does not support\n"
 "suspend certificates. I will adjusted your\n"
 "preferences accordingly."
 msgstr ""
 
-#: mtn-browse:2593 lib/perl/Common.pm:997 lib/perl/Preferences.pm:250
+#: mtn-browse:2624 lib/perl/Common.pm:1157 lib/perl/Preferences.pm:250
 msgid "Your preferences could not be saved:\n"
 msgstr ""
 
-#: mtn-browse:2634
+#: mtn-browse:2665
 msgid ""
 "The Monotone database is currently locked, please\n"
 "dismiss this dialog when this is no longer the case."
 msgstr ""
 
-#: mtn-browse:2672
+#: mtn-browse:2703
 #, perl-brace-format
 msgid ""
 "Problem with monotone request, got:\n"
@@ -177,7 +186,7 @@ msgid ""
 "This should not be happening!"
 msgstr ""
 
-#: mtn-browse:2688
+#: mtn-browse:2719
 #, perl-brace-format
 msgid ""
 "Monotone process unexpectedly exiting with:\n"
@@ -185,17 +194,17 @@ msgid ""
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:2740
+#: mtn-browse:2771
 #, perl-brace-format
 msgid "terminated by signal {number}"
 msgstr ""
 
-#: mtn-browse:2745
+#: mtn-browse:2776
 #, perl-brace-format
 msgid "exited with status {number}"
 msgstr ""
 
-#: mtn-browse:2753
+#: mtn-browse:2784
 #, perl-brace-format
 msgid ""
 "The mtn subprocess just unexpectedly\n"
@@ -204,12 +213,12 @@ msgid ""
 "It will be restarted when needed."
 msgstr ""
 
-#: mtn-browse:2768
+#: mtn-browse:2799
 #, perl-brace-format
 msgid "waitpid failed: {error_message}"
 msgstr ""
 
-#: mtn-browse:2799
+#: mtn-browse:2830
 #, perl-brace-format
 msgid "pipe failed: {error_message}"
 msgstr ""
@@ -218,7 +227,7 @@ msgstr ""
 msgid "<Author>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:309 lib/perl/AdvancedFind.pm:637
+#: lib/perl/AdvancedFind.pm:309 lib/perl/AdvancedFind.pm:639
 msgid "Branch"
 msgstr ""
 
@@ -274,41 +283,41 @@ msgstr ""
 msgid "<Tag Name>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:625
+#: lib/perl/AdvancedFind.pm:627
 msgid "Revision Id"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:647
+#: lib/perl/AdvancedFind.pm:649
 msgid "Date"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:902
+#: lib/perl/AdvancedFind.pm:910
 msgid "Finding revisions"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:934
+#: lib/perl/AdvancedFind.pm:942
 #, perl-brace-format
 msgid ""
 "There is a problem with your query, Monotone gave:\n"
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:962
+#: lib/perl/AdvancedFind.pm:970
 msgid "No revisions matched your query."
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:980
+#: lib/perl/AdvancedFind.pm:988
 msgid "Populating revision details"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:1153
+#: lib/perl/AdvancedFind.pm:1161
 #, perl-brace-format
 msgid "Found 1 revision"
 msgid_plural "Found {revisions_found} revisions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/perl/AdvancedFind.pm:1160 lib/perl/FindFiles.pm:656
+#: lib/perl/AdvancedFind.pm:1168 lib/perl/FindFiles.pm:656
 msgid "Nothing found"
 msgstr ""
 
@@ -396,7 +405,7 @@ msgstr ""
 msgid "Invalid {name} name `{value}'"
 msgstr ""
 
-#: lib/perl/Common.pm:171
+#: lib/perl/Common.pm:173
 #, perl-brace-format
 msgid ""
 "The {name} subprocess could not start,\n"
@@ -404,14 +413,14 @@ msgid ""
 "<b><i>{error_message}</b></i>"
 msgstr ""
 
-#: lib/perl/Common.pm:228
+#: lib/perl/Common.pm:230
 #, perl-brace-format
 msgid ""
 "waitpid failed with:\n"
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/Common.pm:243
+#: lib/perl/Common.pm:245
 #, perl-brace-format
 msgid ""
 "The {name} subprocess failed with an exit status\n"
@@ -419,30 +428,30 @@ msgid ""
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/Common.pm:260
+#: lib/perl/Common.pm:262
 #, perl-brace-format
 msgid "The {name} subprocess was terminated by signal {number}."
 msgstr ""
 
-#: lib/perl/Common.pm:358
+#: lib/perl/Common.pm:360
 msgid "Open Database"
 msgstr ""
 
-#: lib/perl/Common.pm:416
+#: lib/perl/Common.pm:418
 msgid "Not a valid Monotone database."
 msgstr ""
 
-#: lib/perl/Common.pm:474
+#: lib/perl/Common.pm:476
 msgid "Save As"
 msgstr ""
 
-#: lib/perl/Common.pm:503
+#: lib/perl/Common.pm:505
 msgid ""
 "File already exists.\n"
 "Do you want to replace it?"
 msgstr ""
 
-#: lib/perl/Common.pm:504
+#: lib/perl/Common.pm:506
 msgid "Confirm"
 msgstr ""
 
@@ -466,32 +475,32 @@ msgstr[1] ""
 msgid "No files matched your query."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1060 lib/perl/Preferences.pm:845
+#: lib/perl/FindFiles.pm:1064 lib/perl/Preferences.pm:845
 #, perl-brace-format
 msgid ""
 "`{pattern}' is an invalid\n"
 "file name pattern."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1083 lib/perl/FindText.pm:401
+#: lib/perl/FindFiles.pm:1087 lib/perl/FindText.pm:401
 #, perl-brace-format
 msgid ""
 "`{pattern}' is an invalid\n"
 "content search pattern."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1101
+#: lib/perl/FindFiles.pm:1105
 msgid ""
 "The `between' dates are either\n"
 "the same or the wrong way round."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1121
+#: lib/perl/FindFiles.pm:1125
 #, perl-brace-format
 msgid "A duration of {months} months is too long."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1135
+#: lib/perl/FindFiles.pm:1139
 #, perl-brace-format
 msgid "A duration of {years} years is too long."
 msgstr ""
@@ -649,23 +658,23 @@ msgstr ""
 msgid "unified_diff.patch"
 msgstr ""
 
-#: lib/perl/History.pm:1763 lib/perl/History.pm:1770
+#: lib/perl/History.pm:1767 lib/perl/History.pm:1774
 msgid "Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1776
+#: lib/perl/History.pm:1780
 msgid "- Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1778
+#: lib/perl/History.pm:1782
 msgid "+ Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1848
+#: lib/perl/History.pm:1852
 msgid "OLDER_"
 msgstr ""
 
-#: lib/perl/History.pm:1851
+#: lib/perl/History.pm:1855
 msgid "NEWER_"
 msgstr ""
 
@@ -723,25 +732,25 @@ msgid ""
 "`{mime_type}'."
 msgstr ""
 
-#: lib/perl/Preferences.pm:1083
+#: lib/perl/Preferences.pm:1085
 msgid "Mime Type"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1093
+#: lib/perl/Preferences.pm:1095
 msgid "File Name Patterns"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1103
+#: lib/perl/Preferences.pm:1105
 msgid "Helper Application"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1502
+#: lib/perl/Preferences.pm:1511
 msgid ""
 "The external file comparison application field is\n"
 "invalid, please correct before attempting to resave."
 msgstr ""
 
-#: lib/perl/Preferences.pm:1590
+#: lib/perl/Preferences.pm:1599
 msgid "Cannot load system MIME types.\n"
 msgstr ""
 

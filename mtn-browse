@@ -1158,7 +1158,22 @@ sub view_button_clicked_cb($$)
 	    if (defined($mime_obj = Gnome2::VFS::Mime::Type->new($mime_type)));
 	if (defined($app))
 	{
-	    $app->launch("file://" . $file_name);
+	    my $status;
+	    if (($status = $app->launch("file://" . $file_name)) ne "ok")
+	    {
+		my $dialog = Gtk2::MessageDialog->new_with_markup
+		    ($browser->{window},
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __x("Gnome cannot launch the helper application\n"
+			     . "for MIME type {mime_type}.\nGnome gave:\n"
+			     . "<b><i>{gnome_error_message}</i></b>",
+			 mime_type           => $mime_type,
+			 gnome_error_message => $status));
+		$dialog->run();
+		$dialog->destroy();
+	    }
 	}
 	else
 	{
@@ -1168,8 +1183,10 @@ sub view_button_clicked_cb($$)
 		 "info",
 		 "close",
 		 __x("No application is associated with\n"
-		         . "Mime type {mime_type},\nusing Vi instead.",
+		         . "MIME type {mime_type},\nusing Vi instead.",
 		     mime_type => $mime_type));
+	    $dialog->run();
+	    $dialog->destroy();
 	    system("xterm -e vi " . $file_name . " &");
 	}
 
