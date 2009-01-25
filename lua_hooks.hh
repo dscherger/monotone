@@ -53,8 +53,7 @@ public:
   bool hook_get_author(branch_name const & branchname,
                        rsa_keypair_id const & k,
                        std::string & author);
-  bool hook_edit_comment(external const & commentary,
-                         external const & user_log_message,
+  bool hook_edit_comment(external const & user_log_message,
                          external & result);
   bool hook_persist_phrase_ok();
   bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,

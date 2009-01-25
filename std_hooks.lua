@@ -265,7 +265,7 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
    local exe = nil
    if (program_exists_in_path("vi")) then exe = "vi" end
    if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
@@ -287,12 +287,10 @@ function edit_comment(basetext, user_log_message)
 
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
-   basetext = "MTN: " .. string.gsub(basetext, "\n", "\nMTN: ") .. "\n"
    tmp:write(user_log_message)
    if user_log_message == "" or string.sub(user_log_message, -1) ~= "\n" then
       tmp:write("\n")
    end
-   tmp:write(basetext)
    io.close(tmp)
 
    if (execute(exe, tname) ~= 0) then
@@ -304,14 +302,7 @@ function edit_comment(basetext, user_log_message)
 
    tmp = io.open(tname, "r")
    if (tmp == nil) then os.remove(tname); return nil end
-   local res = ""
-   local line = tmp:read()
-   while(line ~= nil) do
-      if (not string.find(line, "^MTN:")) then
-         res = res .. line .. "\n"
-      end
-      line = tmp:read()
-   end
+   local res = tmp:read("*a")
    io.close(tmp)
    os.remove(tname)
    return res

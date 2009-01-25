@@ -341,7 +341,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      N(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      N(app.lua.hook_edit_comment(external(""), comment_external),
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
     }

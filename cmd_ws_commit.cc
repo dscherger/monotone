@@ -10,6 +10,7 @@
 #include "base.hh"
 #include <iostream>
 #include <map>
+#include <sstream>
 
 #include "cmd.hh"
 #include "diff_patch.hh"
@@ -32,9 +33,10 @@
 
 using std::cout;
 using std::make_pair;
-using std::pair;
 using std::make_pair;
 using std::map;
+using std::ostringstream;
+using std::pair;
 using std::set;
 using std::string;
 using std::vector;
@@ -42,24 +44,48 @@ using std::vector;
 using boost::shared_ptr;
 
 static void
-revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summary)
+revision_header(revision_id rid, revision_t const & rev, string const & author, 
+                date_t const date, branch_name const & branch, utf8 & header)
 {
-  string out;
-  // We intentionally do not collapse the final \n into the format
-  // strings here, for consistency with newline conventions used by most
-  // other format strings.
-  out += (F("Current branch: %s") % branch).str() += '\n';
+  ostringstream out;
+  out << string(70, '-') << "\n"
+      << "Revision: " << rid << "       (uncommitted)\n";
+
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
-      // A colon at the end of this string looked nicer, but it made
-      // double-click copying from terminals annoying.
-      out += (F("Changes against parent %s") % parent).str() += '\n';
+      out << "Parent: " << parent << "\n";
+    }
+  out << "Author: " << author << "\n"
+      << "Date: " << date << "\n"
+      << "Branch: " << branch << "\n"
+      << "Changelog: \n\n";
 
+  header = utf8(out.str());
+}
+
+static void
+revision_summary(revision_t const & rev, utf8 & summary)
+{
+  // We intentionally do not collapse the final \n into the format
+  // strings here, for consistency with newline conventions used by most
+  // other format strings.
+
+  string out;
+  // FIXME: use an ostringstream here too?
+  for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
+    {
+      revision_id parent = edge_old_revision(*i);
       cset const & cs = edge_changes(*i);
 
+      // A colon at the end of this string looked nicer, but it made
+      // double-click copying from terminals annoying.
+      // FIXME: this is not great for root commits, with no parent rev id
+      out += (F("Changes against parent %s") % parent).str() += '\n';
+
+      // presumably a merge rev could have an empty edge if one side won
       if (cs.empty())
-        out += F("  no changes").str() += '\n';
+        out += F("no changes").str() += '\n';
 
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
             i != cs.nodes_deleted.end(); ++i)
@@ -69,7 +95,7 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
             i = cs.nodes_renamed.begin();
             i != cs.nodes_renamed.end(); ++i)
         out += (F("  renamed  %s\n"
-                   "       to  %s") % i->first % i->second).str() += '\n';
+                  "       to  %s") % i->first % i->second).str() += '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
             i != cs.dirs_added.end(); ++i)
@@ -86,15 +112,21 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
              i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
         out += (F("  attr on  %s\n"
-                   "    attr   %s\n"
-                   "    value  %s")
+                  "      set  %s\n"
+                  "       to  %s")
                  % (i->first.first) % (i->first.second) % (i->second)
                  ).str() += "\n";
 
+      // FIXME: naming here could not be more inconsistent
+      // the cset calls it attrs_cleared
+      // the command is attr drop
+      // here it is called unset
+      // the revision text uses attr clear 
+
       for (set<pair<file_path, attr_key> >::const_iterator
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
-        out += (F("  unset on %s\n"
-                   "      attr %s")
+        out += (F("  attr on  %s\n"
+                  "    unset  %s")
                  % (i->first) % (i->second)).str() += "\n";
     }
     summary = utf8(out);
@@ -102,53 +134,119 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
 
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
-                              revision_t const & cs,
-                              branch_name const & branchname,
+                              revision_id const rid, revision_t const & rev,
+                              string & author, date_t & date, branch_name & branch,
                               utf8 & log_message)
 {
+  external instructions(
+    _("Ensure the values for Author, Date and Branch are correct, then enter\n"
+      "a description of this change following the Changelog line. Any other\n"
+      "modifications to the lines below or to the summary of changes will\n"
+      "cause the commit to fail.\n"));
+
+  utf8 header;
+  utf8 message;
   utf8 summary;
-  revision_summary(cs, branchname, summary);
-  external summary_external;
-  utf8_to_system_best_effort(summary, summary_external);
 
-  utf8 branch_comment = utf8((F("branch \"%s\"\n\n") % branchname).str());
-  external branch_external;
-  utf8_to_system_best_effort(branch_comment, branch_external);
+  revision_header(rid, rev, author, date, branch, header);
+  work.read_user_log(message);
+  revision_summary(rev, summary);
 
-  string magic_line = _("*****DELETE THIS LINE TO CONFIRM YOUR COMMIT*****");
-  string commentary_str;
-  commentary_str += string(70, '-') + "\n";
-  commentary_str += _("Enter a description of this change.\n"
-                      "Lines beginning with `MTN:' "
-                      "are removed automatically.");
-  commentary_str += "\n\n";
-  commentary_str += summary_external();
-  commentary_str += string(70, '-') + "\n";
+  string text = message();
+  if (text.empty() || text.substr(text.length()-1) != "\n")
+    {
+      text += "\n";
+      message = utf8(text);
+    }
 
-  external commentary(commentary_str);
-
-  utf8 user_log_message;
-  work.read_user_log(user_log_message);
-
-  //if the _MTN/log file was non-empty, we'll append the 'magic' line
-  utf8 user_log;
-  if (user_log_message().length() > 0)
-    user_log = utf8( magic_line + "\n" + user_log_message());
-  else
-    user_log = user_log_message;
-
-  external user_log_message_external;
-  utf8_to_system_best_effort(user_log, user_log_message_external);
-
-  external log_message_external;
-  N(lua.hook_edit_comment(commentary, user_log_message_external,
-                          log_message_external),
+  utf8 full_message(instructions() + header() + message() + summary());
+  
+  external input_message;
+  external output_message;
+  utf8_to_system_best_effort(full_message, input_message);
+  
+  N(lua.hook_edit_comment(input_message, output_message),
     F("edit of log message failed"));
 
-  N(log_message_external().find(magic_line) == string::npos,
-    F("failed to remove magic line; commit cancelled"));
+  system_to_utf8(output_message, full_message);
 
-  system_to_utf8(log_message_external, log_message);
+  string raw(full_message());
+
+  // Check the message carefully to make sure the user didn't edit somewhere
+  // outside of the author, date, branch or changelog values. The section
+  // between the "Changelog: " line from the header and the "Changes against
+  // parent ..." line from the summary is where they should be adding
+  // lines. Ideally, there is a blank line following "Changelog:"
+  // (preceeding the changelog message) and another blank line preceeding
+  // "Changes against parent ..." (following the changelog message) but both
+  // of these are optional.
+
+  N(raw.find(instructions()) == 0,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing instructions)."));
+
+  if (!summary().empty())
+    {
+      // ignore the initial blank line when looking for the summary
+      size_t pos = raw.find(summary().substr(1));
+
+      // ignore the trailing blank line from the header as well
+      N(pos >= instructions().length() + header().length() - 1,
+        F("Modifications outside of Author, Date, Branch or Changelog.\n"
+          "Commit failed (missing summary)."));
+      raw.resize(pos); // remove the change summary
+    }
+
+  raw = raw.substr(instructions().length()); // remove the instructions
+
+  // ensure the first 3 or 4 lines from the header still match
+  size_t pos = header().find("Author: ");
+  N(header().substr(0, pos) == raw.substr(0, pos),
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing revision or parent header)."));
+
+  raw = raw.substr(pos); // remove the leading unchanged header lines
+
+  vector<string> lines;
+  split_into_lines(raw, lines);
+
+  N(lines.size() >= 4,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing lines)."));
+
+  vector<string>::const_iterator line = lines.begin();
+  N(line->find("Author: ") == 0,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing author)."));
+
+  author = trim_ws(line->substr(8));
+  
+  ++line;
+  N(line->find("Date: ") == 0,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing date)."));
+
+  date = trim_ws(line->substr(6));
+
+  ++line;
+  N(line->find("Branch: ") == 0,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing branch)."));
+
+  branch = branch_name(trim_ws(line->substr(8)));
+
+  ++line;
+  N(line->find("Changelog: ") == 0,
+    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+      "Commit failed (missing changelog)."));
+
+  // now pointing at the optional blank line after Changelog
+  ++line;
+  join_lines(line, lines.end(), raw);
+
+  raw = trim_ws(raw) + "\n";
+
+  log_message = utf8(raw);
 }
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
@@ -588,11 +686,43 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, rev);
 
+  revision_id rid;
+  string author;
+  key_store keys(app);
+  rsa_keypair_id key;
+
+  calculate_ident(rev, rid);
+
+  get_user_key(app.opts, app.lua, db, keys, key);
+  if (!app.lua.hook_get_author(app.opts.branchname, key, author))
+    author = key();
+
+  utf8 header;
+  utf8 message;
   utf8 summary;
-  revision_summary(rev, app.opts.branchname, summary);
+
+  revision_header(rid, rev, author, date_t::now(), app.opts.branchname, header);
+  work.read_user_log(message);
+  revision_summary(rev, summary);
+
+  string text = message();
+  if (text.empty() || text.substr(text.length()-1) != "\n")
+    {
+      text += "\n";
+      message = utf8(text);
+    }
+
+  external header_external;
+  external message_external;
   external summary_external;
+
+  utf8_to_system_best_effort(header, header_external);
+  utf8_to_system_best_effort(message, message_external);
   utf8_to_system_best_effort(summary, summary_external);
-  cout << summary_external;
+
+  cout << header_external 
+       << message_external
+       << summary_external;
 }
 
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
@@ -1148,11 +1278,30 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       "perhaps move or delete _MTN/log,\n"
       "or remove --message/--message-file from the command line?"));
 
+  date_t date;
+  date_t now = date_t::now();
+  string author = app.opts.author();
+
+  if (app.opts.date_given)
+    date = app.opts.date;
+  else
+    date = now;
+
+  if (author.empty())
+    {
+      rsa_keypair_id key;
+      get_user_key(app.opts, app.lua, db, keys, key);
+      if (!app.lua.hook_get_author(app.opts.branchname, key, author))
+        author = key();
+    }
+
   if (!log_message_given)
     {
       // This call handles _MTN/log.
-      get_log_message_interactively(app.lua, work, restricted_rev,
-                                    app.opts.branchname, log_message);
+      get_log_message_interactively(app.lua, work, 
+                                    restricted_rev_id, restricted_rev,
+                                    author, date, app.opts.branchname, 
+                                    log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
@@ -1279,10 +1428,18 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         db.put_revision(restricted_rev_id, rdat);
       }
 
-    project.put_standard_certs_from_options(app.opts, app.lua, keys,
-                                            restricted_rev_id,
-                                            app.opts.branchname,
-                                            log_message);
+    // if no --date option was specified and the user didn't edit the date
+    // update it to reflect the current time.
+
+    if (date == now && !app.opts.date_given)
+      date = date_t::now();
+
+    project.put_standard_certs(keys,
+                               restricted_rev_id,
+                               app.opts.branchname,
+                               log_message,
+                               date,
+                               author);
     guard.commit();
   }
 

@@ -311,16 +311,14 @@ lua_hooks::hook_get_author(branch_name const & branchname,
 }
 
 bool
-lua_hooks::hook_edit_comment(external const & commentary,
-                             external const & user_log_message,
+lua_hooks::hook_edit_comment(external const & user_log_message,
                              external & result)
 {
   string result_str;
   bool is_ok = Lua(st)
                  .func("edit_comment")
-                 .push_str(commentary())
                  .push_str(user_log_message())
-                 .call(2,1)
+                 .call(1,1)
                  .extract_str(result_str)
                  .ok();
   result = external(result_str);
