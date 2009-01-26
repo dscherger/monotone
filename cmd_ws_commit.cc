@@ -603,12 +603,12 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   cout << summary_external;
 }
 
-CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
-    N_("Checks out a revision from the database into a directory"),
-    N_("If a revision is given, that's the one that will be checked out.  "
-       "Otherwise, it will be the head of the branch (given or implicit).  "
-       "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision)
+CMD_NO_WORKSPACE(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
+                 N_("Checks out a revision from the database into a directory"),
+                 N_("If a revision is given, that's the one that will be checked out.  "
+                    "Otherwise, it will be the head of the branch (given or implicit).  "
+                    "If no directory is given, the branch name will be used as directory."),
+                 options::opts::branch | options::opts::revision)
 {
   revision_id revid;
   system_path dir;

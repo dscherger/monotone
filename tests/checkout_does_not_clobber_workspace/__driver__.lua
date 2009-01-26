@@ -7,7 +7,7 @@ commit()
 
 -- checkout to clean workspace
 mkdir("test1")
-check(indir("test1", mtn("checkout", ".")))
+check(indir("test1", raw_mtn("checkout", "--db=../test.db", "--branch=testbranch", ".")))
 
 -- checkout to workspace with an unversioned file blocking a versioned file
 mkdir("test2")
