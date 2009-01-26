@@ -1,4 +1,4 @@
-Here's what you need to do to try out the nuskool sync protocol
+Here's what you need to do to try out the nuskool sync protocol using SCGI
 
 1. install lighttpd (apache should work too but the config below is for lighty)
 
@@ -18,10 +18,23 @@ scgi.server = (
 
    $ /etc/init.d/lighttpd start
 
-4. start an scgi server for lighttpd to proxy to
+4. start the gsync server for lighttpd to proxy to
 
-   $ mtn scgi --db server.db
+   $ mtn gserve --db server.db
 
 5. run the gsync client
 
    $ mtn --db client.db gsync http://localhost/monotone '*' --debug
+
+
+
+Here's what you need to do to try out the nuskool sync protocol using raw HTTP
+
+1. start the gsync server listening for direct http connections on port 8008
+
+   $ mtn gserve --db server.db --http
+
+2. run the gsync client and specify the alternate http port 8008
+
+   $ mtn --db client.db gsync http://localhost:8008 '*' --debug
+

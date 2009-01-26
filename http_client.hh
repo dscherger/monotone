@@ -26,9 +26,9 @@ struct options;
 struct netsync_connection_info;
 class lua_hooks;
 
-struct
-http_client
+struct http_client
 {
+
   options & opts;
   lua_hooks & lua;
   netsync_connection_info const & info;
@@ -41,7 +41,8 @@ http_client
   http_client(options & opts, lua_hooks & lua,
               netsync_connection_info const & info);
 
-  json_io::json_value_t transact_json(json_io::json_value_t v);
+  void execute(std::string const & request, std::string & response);
+
   void parse_http_status_line();
   void parse_http_header_line(size_t & content_length,
                               bool & keepalive);
@@ -49,14 +50,17 @@ http_client
   void crlf();
 };
 
-class http_channel
+class json_channel
   : public channel
 {
   http_client & client;
 public:
-  http_channel(http_client & c)
+  json_channel(http_client & c)
     : client(c)
     { };
+
+  json_io::json_value_t transact(json_io::json_value_t v) const;
+  
   virtual void inquire_about_revs(std::set<revision_id> const & query_set,
                                     std::set<revision_id> & theirs) const;
   virtual void get_descendants(std::set<revision_id> const & common_revs,

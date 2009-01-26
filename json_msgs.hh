@@ -22,6 +22,9 @@
 #include "revision.hh"
 #include "vocab.hh"
 
+struct file_data_record;
+struct file_delta_record;
+
 json_io::json_value_t encode_msg_error(std::string const & note);
 bool decode_msg_error(json_io::json_value_t val, std::string & note);
 
@@ -65,23 +68,6 @@ json_io::json_value_t encode_msg_put_rev_response();
 bool decode_msg_put_rev_response(json_io::json_value_t val);
 
 // full revs with all file data and deltas in one request/response
-
-struct file_data_record
-{
-  file_id id;
-  file_data dat;
-  file_data_record(file_id id, file_data dat) :
-    id(id), dat(dat) {}
-};
-
-struct file_delta_record
-{
-  file_id src_id;
-  file_id dst_id;
-  file_delta del;
-  file_delta_record(file_id src_id, file_id dst_id, file_delta del) :
-    src_id(src_id), dst_id(dst_id), del(del) {}
-};
 
 json_io::json_value_t encode_msg_get_full_rev_request(revision_id const & rid);
 bool decode_msg_get_full_rev_request(json_io::json_value_t val,

@@ -18,8 +18,23 @@
 
 struct uri;
 struct globish;
-struct file_data_record;
-struct file_delta_record;
+
+struct file_data_record
+{
+  file_id id;
+  file_data dat;
+  file_data_record(file_id id, file_data dat) :
+    id(id), dat(dat) {}
+};
+
+struct file_delta_record
+{
+  file_id src_id;
+  file_id dst_id;
+  file_delta del;
+  file_delta_record(file_id src_id, file_id dst_id, file_delta del) :
+    src_id(src_id), dst_id(dst_id), del(del) {}
+};
 
 class lua_hooks;
 class database;

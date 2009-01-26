@@ -62,8 +62,8 @@ http_client::http_client(options & opts, lua_hooks & lua,
     open(true)
 {}
 
-json_value_t
-http_client::transact_json(json_value_t v)
+void
+http_client::execute(string const & request, string & response)
 {
   if (!open)
     {
@@ -83,44 +83,35 @@ http_client::transact_json(json_value_t v)
   I(io);
   I(open);
 
-  json_io::printer out;
-  v->write(out);
   string header = (F("POST %s HTTP/1.1\r\n"
                      "Host: %s\r\n"
                      "Content-Length: %s\r\n"
-                     "Content-Type: application/jsonrequest\r\n"
-                     "Accept: application/jsonrequest\r\n"
+                     "Content-Type: application/octet-stream\r\n"
+                     "Accept: application/octet-stream\r\n"
                      "Accept-Encoding: identity\r\n"
                      "\r\n")
                    % (info.client.u.path.empty() ? "/" : info.client.u.path)
                    % info.client.u.host
-                   % lexical_cast<string>(out.buf.size())).str();
+                   % lexical_cast<string>(request.size())).str();
 
   L(FL("http_client: sending request [[POST %s HTTP/1.1]]")
     % (info.client.u.path.empty() ? "/" : info.client.u.path));
   L(FL("http_client: to [[Host: %s]]") % info.client.u.host);
-  L(FL("http_client: sending %d-byte body") % out.buf.size());
+  L(FL("http_client: sending %d-byte body") % request.size());
   io->write(header.data(), header.size());
-  io->write(out.buf.data(), out.buf.length());
+  io->write(request.data(), request.size());
   io->flush();
-  L(FL("http_client: sent %d-byte body") % out.buf.size());
+  L(FL("http_client: sent %d-byte body") % request.size());
 
-//   std::cerr << "json request" << std::endl
+//   std::cerr << "http request" << std::endl
 //             << out.buf.data() << std::endl;
 
   // Now read back the result
-  string data;
-  parse_http_response(data);
+  parse_http_response(response);
 
-//   std::cerr << "json response" << std::endl
+//   std::cerr << "http response" << std::endl
 //             << data << std::endl;
-
-  json_io::input_source in(data, "scgi");
-  json_io::tokenizer tok(in);
-  json_io::parser p(tok);
-  return p.parse_object();
 }
-
 
 void
 http_client::parse_http_status_line()
@@ -232,34 +223,50 @@ http_client::parse_http_response(std::string & data)
 
 
 /////////////////////////////////////////////////////////////////////
-// http_channel adaptor
+// json_channel adaptor
 /////////////////////////////////////////////////////////////////////
 
+json_value_t
+json_channel::transact(json_value_t v) const
+{
+  json_io::printer out;
+  v->write(out);
+
+  string request(out.buf);
+  string response;
+  client.execute(request, response);
+
+  json_io::input_source in(response, "json");
+  json_io::tokenizer tok(in);
+  json_io::parser p(tok);
+  return p.parse_object();
+}
+
 void
-http_channel::inquire_about_revs(set<revision_id> const & query_set,
+json_channel::inquire_about_revs(set<revision_id> const & query_set,
                                  set<revision_id> & theirs) const
 {
   theirs.clear();
   json_value_t request = encode_msg_inquire_request(query_set);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_inquire_response(response, theirs),
     F("received unexpected reply to 'inquire_request' message"));
 }
 
 void
-http_channel::get_descendants(set<revision_id> const & common_revs,
+json_channel::get_descendants(set<revision_id> const & common_revs,
                               vector<revision_id> & inbound_revs) const
 {
   inbound_revs.clear();
   json_value_t request = encode_msg_descendants_request(common_revs);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_descendants_response(response, inbound_revs),
     F("received unexpected reply to 'descendants_request' message"));
 }
 
 
 void
-http_channel::push_full_rev(revision_id const & rid,
+json_channel::push_full_rev(revision_id const & rid,
                             revision_t const & rev,
                             vector<file_data_record> const & data_records,
                             vector<file_delta_record> const & delta_records) const
@@ -267,82 +274,82 @@ http_channel::push_full_rev(revision_id const & rid,
   json_value_t request = encode_msg_put_full_rev_request(rid, rev,
                                                          data_records,
                                                          delta_records);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_put_full_rev_response(response),
     F("received unexpected reply to 'put_full_rev_request' message"));
 }
 
 void
-http_channel::pull_full_rev(revision_id const & rid,
+json_channel::pull_full_rev(revision_id const & rid,
                             revision_t & rev,
                             vector<file_data_record> & data_records,
                             vector<file_delta_record> & delta_records) const
 {
   json_value_t request = encode_msg_get_full_rev_request(rid);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_get_full_rev_response(response, rev,
                                      data_records, delta_records),
     F("received unexpected reply to 'get_full_rev_request' message"));
 }
 
 void
-http_channel::push_file_data(file_id const & id,
+json_channel::push_file_data(file_id const & id,
                              file_data const & data) const
 {
   json_value_t request = encode_msg_put_file_data_request(id, data);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_put_file_data_response(response),
     F("received unexpected reply to 'put_file_data_request' message"));
 }
 
 void
-http_channel::push_file_delta(file_id const & old_id,
+json_channel::push_file_delta(file_id const & old_id,
                               file_id const & new_id,
                               file_delta const & delta) const
 {
   json_value_t request = encode_msg_put_file_delta_request(
                                                   old_id, new_id, delta);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_put_file_delta_response(response),
     F("received unexpected reply to 'put_file_delta_request' message"));
 }
 
 void
-http_channel::push_rev(revision_id const & rid,
+json_channel::push_rev(revision_id const & rid,
                        revision_t const & rev) const
 {
   json_value_t request = encode_msg_put_rev_request(rid, rev);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_put_rev_response(response),
     F("received unexpected reply to 'put_rev_request' message"));
 }
 
 void
-http_channel::pull_rev(revision_id const & rid, revision_t & rev) const
+json_channel::pull_rev(revision_id const & rid, revision_t & rev) const
 {
   json_value_t request = encode_msg_get_rev_request(rid);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_get_rev_response(response, rev),
     F("received unexpected reply to 'get_rev_request' message"));
 }
 
 void
-http_channel::pull_file_data(file_id const & id,
+json_channel::pull_file_data(file_id const & id,
                              file_data & data) const
 {
   json_value_t request = encode_msg_get_file_data_request(id);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_get_file_data_response(response, data),
     F("received unexpected reply to 'get_file_data_request' message"));
 }
 
 void
-http_channel::pull_file_delta(file_id const & old_id,
+json_channel::pull_file_delta(file_id const & old_id,
                               file_id const & new_id,
                               file_delta & delta) const
 {
   json_value_t request = encode_msg_get_file_delta_request(old_id, new_id);
-  json_value_t response = client.transact_json(request);
+  json_value_t response = transact(request);
   E(decode_msg_get_file_delta_response(response, delta),
     F("received unexpected reply to 'get_file_delta_request' message"));
 }
