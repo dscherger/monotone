@@ -15,9 +15,7 @@ AC_CANONICAL_HOST
 AC_MSG_CHECKING([category of operating system])
 
 case "$host" in 
-  # Unclear what should be done with Interix and Cygwin.
-  # The old test would have succeeded on both so I'm including both.
-  *-mingw32 | *-pc-pw32 | *-pc-mks | *-winnt | *-cygwin | *-interix )
+  *-mingw32 | *-pc-pw32 | *-pc-mks | *-winnt )
     AC_MSG_RESULT([Windows])
 
     AM_CONDITIONAL(WIN32_PLATFORM, true)
@@ -25,7 +23,7 @@ case "$host" in
              [Define as the best type to hold an OS error code.])
   ;;
 
-  *-aix* )
+  *-ibm-aix* )
     AC_MSG_RESULT([AIX])
 
     AM_CONDITIONAL(WIN32_PLATFORM, false)
