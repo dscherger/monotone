@@ -17,7 +17,7 @@ check(mtn_ws_opts("add", "."), 0, false, false)
 -- FIXME: this silently succeeds in a newly created workspace and should
 -- fail as soon as there is at least one ancestor, but this is another
 -- cup of tea
-check(mtn_ws_opts("status", "-d", "baz"), 0, false, false)
+check(mtn_ws_opts("status", "-d", "baz"), 1, false, false)
 
 -- this should succeed if the original database is still set
 check(mtn_ws_opts("commit", "-m", "test"), 0, false, false)
@@ -29,7 +29,7 @@ check(mtn_ws_opts("commit", "-m", "test"), 0, false, false)
 check(mtn_ws_opts("attr", "set", ".", "foo", "bar"), 0, false, false)
 
 writefile("not_a_dir", "bla")
-check(mtn_ws_opts("status", "--keydir", "not_a_dir"), 0, false, false)
+check(mtn_ws_opts("status", "--keydir", "not_a_dir"), 1, false, false)
 
 check(mtn_ws_opts("commit", "-m", "another test"), 0, false, false)
 

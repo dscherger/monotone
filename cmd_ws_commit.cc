@@ -59,7 +59,7 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
   out << "Author: " << author << "\n"
       << "Date: " << date << "\n"
       << "Branch: " << branch << "\n"
-      << "Changelog: \n\n";
+      << "Changelog:\n\n";
 
   header = utf8(out.str());
 }
@@ -77,6 +77,8 @@ revision_summary(revision_t const & rev, utf8 & summary)
     {
       revision_id parent = edge_old_revision(*i);
       cset const & cs = edge_changes(*i);
+
+      out += "\n";
 
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
@@ -163,8 +165,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   
   external input_message;
   external output_message;
+
   utf8_to_system_best_effort(full_message, input_message);
-  
+
   N(lua.hook_edit_comment(input_message, output_message),
     F("edit of log message failed"));
 
@@ -236,7 +239,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   branch = branch_name(trim_ws(line->substr(8)));
 
   ++line;
-  N(line->find("Changelog: ") == 0,
+  N(*line == "Changelog:",
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing changelog)."));
 

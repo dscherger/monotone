@@ -4,6 +4,10 @@ mtn_setup()
 
 addfile("testfile", "blah blah")
 
+-- ensure that the public key this test uses exists in the database
+-- before making it unwriteable
+check(mtn("status"), 0, false, false)
+
 -- Make it unwriteable, so our  edit_comment hook will have a chance to
 -- run, but  the overall commit  will fail.  (How  do I know  this will
 -- work?  Well, it did...)
