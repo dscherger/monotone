@@ -511,36 +511,165 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
 
 CMD(rename, "rename", "mv", CMD_REF(workspace),
     N_("SRC DEST\n"
-       "SRC1 [SRC2 [...]] DEST_DIR"),
+       "SRC1 [SRC2 [...]] DEST_DIR\n"
+       "--guess"),
     N_("Renames entries in the workspace"),
     "",
-    options::opts::bookkeep_only)
+    options::opts::bookkeep_only | options::opts::guess)
 {
-  if (args.size() < 2)
+  if (!app.opts.guess && (args.size() < 2))
     throw usage(execid);
 
   database db(app);
   workspace work(app);
 
-  utf8 dstr = args.back();
-  file_path dst_path = file_path_external(dstr);
-
-  set<file_path> src_paths;
-  for (size_t i = 0; i < args.size()-1; i++)
+  if (app.opts.guess)
     {
-      file_path s = file_path_external(idx(args, i));
-      src_paths.insert(s);
+      // this algorithm compares the list of missing files with the list of
+      // unknown files and renames any files that exist exactly once in both
+      // the missing and unknown lists
+
+      set<file_path> missing, unknown, ignored;
+      vector<file_path> roots = args_to_paths(args);
+      temp_node_id_source nis;
+      roster_t roster;
+
+      if (roots.empty())
+        roots.push_back(file_path());
+
+      work.get_current_roster_shape(db, nis, roster);
+      node_restriction node_mask(work, args_to_paths(args),
+                            args_to_paths(app.opts.exclude_patterns),
+                            app.opts.depth,
+                            roster);
+      path_restriction path_mask(work, roots,
+                            args_to_paths(app.opts.exclude_patterns),
+                            app.opts.depth);
+
+      work.find_missing(roster, node_mask, missing);
+      work.find_unknown_and_ignored(db, path_mask, roots, true, unknown, ignored);
+
+      N(!missing.empty() && !unknown.empty(), F("there are no missing or unknown to guess about"));
+      N(!missing.empty(), F("there are no missing files to guess about"));
+      N(!unknown.empty(), F("there are no unknown files to guess about"));
+
+      // calculate file_ids for all of the unknown files and store them
+      typedef map<file_id, file_path> file_id_map;
+      file_id_map unknown_ids;
+
+      for (set<file_path>::iterator i = unknown.begin(); i != unknown.end(); ++i)
+        {
+          if (get_path_status(*i) == path::file)
+            {
+              file_id id;
+              calculate_ident(*i, id);
+              unknown_ids.insert(make_pair(id, *i));
+            }
+        }
+
+      typedef std::list<std::pair<file_path, file_path> > rename_map;
+      rename_map renames;
+      set<dir_t> dirs;
+      for (set<file_path>::iterator i = missing.begin(); i != missing.end(); ++i)
+        {
+          node_t missing_node = roster.get_node(*i);
+          if (is_dir_t(missing_node))
+            {
+              // for each directory, find each missing file in the unknown list
+              // and store the names of the directories the missing files are
+              // located in.  If we found every single missing file, and we
+              // found a single directory containing all missing files, rename
+              // the directory we just searched.
+              bool found_all = true;
+              set<file_path> potential_matches;
+              dir_t missing_dir = downcast_to_dir_t(missing_node);
+              for (dir_map::iterator k = missing_dir->children.begin();
+                   k != missing_dir->children.end(); ++k)
+                {
+                  if (is_file_t(k->second))
+                    {
+                      file_t missing_file = downcast_to_file_t(k->second);
+                      file_id_map::iterator j = unknown_ids.find(missing_file->content);
+                      if (j != unknown_ids.end())
+                        potential_matches.insert(j->second.dirname());
+                      else
+                        {
+                          found_all = false;
+                          break;
+                        }
+                    }
+                }
+
+              if (found_all and potential_matches.size() == 1)
+                {
+                  renames.push_back(make_pair(*i, *potential_matches.begin()));
+                  dirs.insert(missing_dir);
+                }
+            }
+          else if (is_file_t(missing_node))
+            {
+              // skip any paths in dirs we have already handled
+              bool already_renamed = false;
+              for (set<dir_t>::iterator k = dirs.begin();
+                   k != dirs.end(); ++k)
+                {
+                  if ((*k)->has_child(missing_node->name))
+                    {
+                      already_renamed = true;
+                      break;
+                    }
+                }
+
+              if (already_renamed)
+                continue;
+              
+              // attempt to rename this file
+              file_t missing_file = downcast_to_file_t(missing_node);
+              file_id_map::iterator j = unknown_ids.find(missing_file->content);
+
+              if (j != unknown_ids.end())
+                renames.push_back(make_pair(*i, j->second));
+            }
+
+        }
+
+      // perform our renames
+      for (rename_map::iterator i = renames.begin(); i != renames.end(); ++i)
+        {
+          set<file_path> src_path;
+          src_path.insert(i->first);
+
+          bool ignore_dpath = false;
+          if (get_path_status(i->second) == path::directory)
+            ignore_dpath = true;
+
+          work.perform_rename(db, src_path, i->second, app.opts.bookkeep_only, ignore_dpath);
+        }
     }
+  else
+    {
+      // perform a standard rename operation
 
-  //this catches the case where the user specifies a directory 'by convention'
-  //that doesn't exist.  the code in perform_rename already handles the proper
-  //cases for more than one source item.
-  if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
-    if (get_path_status(*src_paths.begin()) != path::directory)
-        N(get_path_status(dst_path) == path::directory,
-          F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+      utf8 dstr = args.back();
+      file_path dst_path = file_path_external(dstr);
 
-  work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
+      set<file_path> src_paths;
+      for (size_t i = 0; i < args.size()-1; i++)
+        {
+          file_path s = file_path_external(idx(args, i));
+          src_paths.insert(s);
+        }
+
+      //this catches the case where the user specifies a directory 'by convention'
+      //that doesn't exist.  the code in perform_rename already handles the proper
+      //cases for more than one source item.
+      if (src_paths.size() == 1 && dstr()[dstr().size() -1] == '/')
+        if (get_path_status(*src_paths.begin()) != path::directory)
+            N(get_path_status(dst_path) == path::directory,
+              F(_("The specified target directory %s/ doesn't exist.")) % dst_path);
+
+      work.perform_rename(db, src_paths, dst_path, app.opts.bookkeep_only);
+    }
 }
 
 

@@ -687,16 +687,18 @@ struct file_itemizer : public tree_walker
 {
   database & db;
   workspace & work;
+  bool recursive;
   set<file_path> & known;
   set<file_path> & unknown;
   set<file_path> & ignored;
   path_restriction const & mask;
   file_itemizer(database & db, workspace & work,
+                bool rec,
                 set<file_path> & k,
                 set<file_path> & u,
                 set<file_path> & i,
                 path_restriction const & r)
-    : db(db), work(work), known(k), unknown(u), ignored(i), mask(r) {}
+    : db(db), work(work), recursive(rec), known(k), unknown(u), ignored(i), mask(r) {}
   virtual bool visit_dir(file_path const & path);
   virtual void visit_file(file_path const & path);
 };
@@ -706,7 +708,10 @@ bool
 file_itemizer::visit_dir(file_path const & path)
 {
   this->visit_file(path);
-  return known.find(path) != known.end();
+  if (recursive)
+    return true;
+  else
+    return known.find(path) != known.end();
 }
 
 void
@@ -1403,6 +1408,17 @@ workspace::find_unknown_and_ignored(database & db,
                                     set<file_path> & unknown,
                                     set<file_path> & ignored)
 {
+  find_unknown_and_ignored(db, mask, roots, false, unknown, ignored);
+}
+
+void
+workspace::find_unknown_and_ignored(database & db,
+                                    path_restriction const & mask,
+                                    vector<file_path> const & roots,
+                                    bool recursive,
+                                    set<file_path> & unknown,
+                                    set<file_path> & ignored)
+{
   set<file_path> known;
   roster_t new_roster;
   temp_node_id_source nis;
@@ -1410,7 +1426,7 @@ workspace::find_unknown_and_ignored(database & db,
   get_current_roster_shape(db, nis, new_roster);
   new_roster.extract_path_set(known);
 
-  file_itemizer u(db, *this, known, unknown, ignored, mask);
+  file_itemizer u(db, *this, recursive, known, unknown, ignored, mask);
   for (vector<file_path>::const_iterator
          i = roots.begin(); i != roots.end(); ++i)
     {
@@ -1586,7 +1602,8 @@ void
 workspace::perform_rename(database & db,
                           set<file_path> const & srcs,
                           file_path const & dst,
-                          bool bookkeep_only)
+                          bool bookkeep_only,
+                          bool ignore_dpath)
 {
   temp_node_id_source nis;
   roster_t new_roster;
@@ -1616,7 +1633,7 @@ workspace::perform_rename(database & db,
       //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
       //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
       //and then reparent fileA.
-      if (get_path_status(dst) == path::directory)
+      if (get_path_status(dst) == path::directory and not ignore_dpath)
         dpath = dst / src.basename();
       else
         {

@@ -610,6 +610,14 @@ OPT(unknown, "unknown", bool, false,
 
 #endif
 
+OPT(guess, "guess", bool, false,
+     gettext_noop("detect renamed files and directories by comparing missing and unknown files"))
+#ifdef option_bodies
+{
+  guess = true;
+}
+#endif
+
 OPT(verbose, "verbose", bool, false,
      gettext_noop("verbose completion output"))
 #ifdef option_bodies

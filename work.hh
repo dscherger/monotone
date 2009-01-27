@@ -124,6 +124,13 @@ public:
                                 std::set<file_path> & unknown,
                                 std::set<file_path> & ignored);
 
+  void find_unknown_and_ignored(database & db,
+                                path_restriction const & mask,
+                                std::vector<file_path> const & roots,
+                                bool recursive,
+                                std::set<file_path> & unknown,
+                                std::set<file_path> & ignored);
+
   void perform_additions(database & db,
                          std::set<file_path> const & targets,
                          bool recursive = false,
@@ -137,7 +144,8 @@ public:
   void perform_rename(database & db,
                       std::set<file_path> const & src_paths,
                       file_path const & dst_dir,
-                      bool bookkeep_only);
+                      bool bookkeep_only,
+                      bool ignore_dpath = false);
 
   void perform_pivot_root(database & db,
                           file_path const & new_root,
