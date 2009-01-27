@@ -1,3 +1,11 @@
+Changes from nvm.asio, please move down when landing on mainline:
+
+        Changes
+
+	- Monotone now requires at least version 1.35.0 of the Boost
+          headers.  This enables us to get rid of even more bundled
+	  copies of externally maintained source.
+
 Changes from nvm.stripped, please move down when landing on mainline:
 
         Changes
