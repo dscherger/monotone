@@ -12,12 +12,12 @@ using std::string;
 
 LUAEXT(guess_binary_file_contents, )
 {
-  const char *path = luaL_checkstring(L, 1);
+  const char *path = luaL_checkstring(LS, 1);
 
   ifstream file(path, ios_base::binary);
   if (!file)
     {
-      lua_pushnil(L);
+      lua_pushnil(LS);
       return 1;
     }
   const int bufsize = 8192;
@@ -29,11 +29,11 @@ LUAEXT(guess_binary_file_contents, )
       buf.assign(tmpbuf, file.gcount());
       if (guess_binary(buf))
         {
-          lua_pushboolean(L, true);
+          lua_pushboolean(LS, true);
           return 1;
         }
     }
-  lua_pushboolean(L, false);
+  lua_pushboolean(LS, false);
   return 1;
 }
 

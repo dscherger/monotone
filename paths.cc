@@ -84,7 +84,8 @@ void
 save_initial_path()
 {
   // FIXME: BUG: this only works if the current working dir is in utf8
-  initial_abs_path.set(system_path(get_current_working_dir()), false);
+  initial_abs_path.set(system_path(get_current_working_dir(),
+                                   origin::system), false);
   L(FL("initial abs path is: %s") % initial_abs_path.get_but_unused());
 }
 
@@ -287,7 +288,7 @@ normalize_path(string const & in)
 #ifdef WIN32
       else
         {
-          I(inT[1] == ':');
+          I(inT.size() > 1 && inT[1] == ':');
           if (inT.size() > 2 && inT[2] == '/')
             {
               leader = inT.substr(0, 3);
@@ -344,10 +345,11 @@ normalize_path(string const & in)
 
 LUAEXT(normalize_path, )
 {
-  const char *pathstr = luaL_checkstring(L, -1);
-  N(pathstr, F("%s called with an invalid parameter") % "normalize_path");
+  const char *pathstr = luaL_checkstring(LS, -1);
+  E(pathstr, origin::user,
+    F("%s called with an invalid parameter") % "normalize_path");
 
-  lua_pushstring(L, normalize_path(string(pathstr)).c_str());
+  lua_pushstring(LS, normalize_path(string(pathstr)).c_str());
   return 1;
 }
 
@@ -362,12 +364,13 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
       // enter a workspace
       initial_rel_path.may_not_initialize();
       normalized = path;
-      N(is_valid_internal(path),
+      E(is_valid_internal(path), origin::user,
         F("path '%s' is invalid") % path);
     }
   else
     {
-      N(!is_absolute_here(path), F("absolute path '%s' is invalid") % path);
+      E(!is_absolute_here(path), origin::user,
+        F("absolute path '%s' is invalid") % path);
       string base;
       try
         {
@@ -383,11 +386,11 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
         }
       catch (exception &)
         {
-          N(false, F("path '%s' is invalid") % path);
+          E(false, origin::user, F("path '%s' is invalid") % path);
         }
       if (normalized == ".")
         normalized = string("");
-      N(fully_normalized_path(normalized),
+      E(fully_normalized_path(normalized), origin::user,
         F("path '%s' is invalid") % normalized);
     }
 }
@@ -401,17 +404,17 @@ normalize_external_path(string const & path, string & normalized, bool to_worksp
 // but is not acceptable to bad_component (above) and therefore we have
 // to open-code most of those checks.
 path_component::path_component(utf8 const & d)
-  : data(d())
+  : origin_aware(d.made_from), data(d())
 {
   MM(data);
   I(!has_bad_component_chars(data) && data != "." && data != "..");
 }
 
-path_component::path_component(string const & d)
-  : data(d)
+path_component::path_component(string const & d, origin::type whence)
+  : origin_aware(whence), data(d)
 {
   MM(data);
-  I(utf8_validate(utf8(data))
+  I(utf8_validate(utf8(data, origin::internal))
     && !has_bad_component_chars(data)
     && data != "." && data != "..");
 }
@@ -420,7 +423,7 @@ path_component::path_component(char const * d)
   : data(d)
 {
   MM(data);
-  I(utf8_validate(utf8(data))
+  I(utf8_validate(utf8(data, origin::internal))
     && !has_bad_component_chars(data)
     && data != "." && data != "..");
 }
@@ -442,12 +445,12 @@ template <> void dump(path_component const & pc, std::string & to)
 file_path::file_path(file_path::source_type type, string const & path, bool to_workspace_root)
 {
   MM(path);
-  I(utf8_validate(utf8(path)));
+  I(utf8_validate(utf8(path, origin::internal)));
   if (type == external)
     {
       string normalized;
       normalize_external_path(path, normalized, to_workspace_root);
-      N(!in_bookkeeping_dir(normalized),
+      E(!in_bookkeeping_dir(normalized), origin::user,
         F("path '%s' is in bookkeeping dir") % normalized);
       data = normalized;
     }
@@ -457,15 +460,17 @@ file_path::file_path(file_path::source_type type, string const & path, bool to_w
   I(is_valid_internal(data));
 }
 
-file_path::file_path(file_path::source_type type, utf8 const & path, bool to_workspace_root)
+file_path::file_path(file_path::source_type type, utf8 const & path,
+                     bool to_workspace_root)
+  : any_path(path.made_from)
 {
   MM(path);
-  I(utf8_validate(path));
+  E(utf8_validate(path), made_from, F("Invalid utf8"));
   if (type == external)
     {
       string normalized;
       normalize_external_path(path(), normalized, to_workspace_root);
-      N(!in_bookkeeping_dir(normalized),
+      E(!in_bookkeeping_dir(normalized), origin::user,
         F("path '%s' is in bookkeeping dir") % normalized);
       data = normalized;
     }
@@ -475,10 +480,18 @@ file_path::file_path(file_path::source_type type, utf8 const & path, bool to_wor
   I(is_valid_internal(data));
 }
 
-bookkeeping_path::bookkeeping_path(string const & path)
+bookkeeping_path::bookkeeping_path(char const * const path)
 {
   I(fully_normalized_path(path));
   I(in_bookkeeping_dir(path));
+  data = path;
+}
+
+bookkeeping_path::bookkeeping_path(string const & path, origin::type made_from)
+{
+  E(fully_normalized_path(path), made_from, F("Path is not normalized"));
+  E(in_bookkeeping_dir(path), made_from,
+    F("Bookkeeping path is not in bookkeeping dir"));
   data = path;
 }
 
@@ -491,11 +504,11 @@ bookkeeping_path::external_string_is_bookkeeping_path(utf8 const & path)
     {
       normalize_external_path(path(), normalized, false);
     }
-  catch (informative_failure &)
+  catch (recoverable_failure &)
     {
       return false;
     }
-  return internal_string_is_bookkeeping_path(utf8(normalized));
+  return internal_string_is_bookkeeping_path(utf8(normalized, path.made_from));
 }
 bool bookkeeping_path::internal_string_is_bookkeeping_path(utf8 const & path)
 {
@@ -648,7 +661,7 @@ any_path::as_external() const
   // not much, though, because utf8_to_system_string does all the hard work.
   // it is carefully optimized.  do not screw it up.
   external out;
-  utf8_to_system_strict(utf8(data), out);
+  utf8_to_system_strict(utf8(data, made_from), out);
   return out();
 #endif
 }
@@ -757,7 +770,7 @@ bookkeeping_path::operator /(char const * to_append) const
   I(!is_absolute_somewhere(to_append));
   I(!empty());
   return bookkeeping_path(((*(data.end() - 1) == '/') ? data : data + "/")
-                          + to_append);
+                          + to_append, origin::internal);
 }
 
 system_path
@@ -766,7 +779,7 @@ system_path::operator /(char const * to_append) const
   I(!empty());
   I(!is_absolute_here(to_append));
   return system_path(((*(data.end() - 1) == '/') ? data : data + "/")
-                     + to_append);
+                     + to_append, origin::internal);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -792,7 +805,7 @@ system_path::system_path(any_path const & other, bool in_true_workspace)
 
 static inline string const_system_path(utf8 const & path)
 {
-  N(!path().empty(), F("invalid path ''"));
+  E(!path().empty(), path.made_from, F("invalid path ''"));
   string expanded = tilde_expand(path());
   if (is_absolute_here(expanded))
     return normalize_path(expanded);
@@ -801,9 +814,14 @@ static inline string const_system_path(utf8 const & path)
                           + "/" + path());
 }
 
-system_path::system_path(string const & path)
+system_path::system_path(string const & path, origin::type from)
 {
-  data = const_system_path(utf8(path));
+  data = const_system_path(utf8(path, from));
+}
+
+system_path::system_path(char const * const path)
+{
+  data = const_system_path(utf8(path, origin::internal));
 }
 
 system_path::system_path(utf8 const & path)
@@ -811,23 +829,25 @@ system_path::system_path(utf8 const & path)
   data = const_system_path(utf8(path));
 }
 
+// If this wasn't a user-supplied path, we should know
+// which kind it is.
 boost::shared_ptr<any_path>
 new_optimal_path(std::string path, bool to_workspace_root)
 {
-  utf8 const utf8_path = utf8(path);
+  utf8 const utf8_path = utf8(path, origin::user);
   string normalized;
   try
     {
       normalize_external_path(utf8_path(), normalized, to_workspace_root);
     }
-  catch (informative_failure &)
+  catch (recoverable_failure &)
     {
       // not in workspace
-      return boost::shared_ptr<any_path>(new system_path(path));
+      return boost::shared_ptr<any_path>(new system_path(path, origin::user));
     }
 
   if (in_bookkeeping_dir(normalized))
-    return boost::shared_ptr<any_path>(new bookkeeping_path(normalized));
+    return boost::shared_ptr<any_path>(new bookkeeping_path(normalized, origin::user));
   else
     return boost::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
 };
@@ -924,7 +944,7 @@ find_and_go_to_workspace(string const & search_root)
     {
 #ifdef WIN32
       std::string cur_str = get_current_working_dir();
-      current = cur_str;
+      current = system_path(cur_str, origin::system);
       if (cur_str[0] == '/' || cur_str[0] == '\\')
         {
           if (cur_str.size() > 1 && (cur_str[1] == '/' || cur_str[1] == '\\'))
@@ -932,25 +952,25 @@ find_and_go_to_workspace(string const & search_root)
               // UNC name
               string::size_type uncend = cur_str.find_first_of("\\/", 2);
               if (uncend == string::npos)
-                root = system_path(cur_str + "/");
+                root = system_path(cur_str + "/", origin::system);
               else
-                root = system_path(cur_str.substr(0, uncend));
+                root = system_path(cur_str.substr(0, uncend), origin::system);
             }
           else
             root = system_path("/");
         }
       else if (cur_str.size() > 1 && cur_str[1] == ':')
         {
-          root = system_path(cur_str.substr(0,2) + "/");
+          root = system_path(cur_str.substr(0,2) + "/", origin::system);
         }
       else I(false);
 #else
-      root = system_path("/");
+      root = system_path("/", origin::internal);
 #endif
     }
   else
     {
-      root = system_path(search_root);
+      root = system_path(search_root, origin::user);
       L(FL("limiting search for workspace to %s") % root);
 
       require_path_is_directory(root,
@@ -1169,7 +1189,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_null_prefix: trying baddie: %s") % *c);
-      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), recoverable_failure);
     }
 
   check_fp_normalizes_to("a", "a");
@@ -1206,9 +1226,9 @@ UNIT_TEST(paths, file_path_external_prefix__MTN)
   initial_rel_path.unset();
   initial_rel_path.set(string("_MTN"), true);
 
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), informative_failure);
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), informative_failure);
-  UNIT_TEST_CHECK_THROW(file_path_external(utf8("./blah")), informative_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("foo")), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8(".")), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(file_path_external(utf8("./blah")), recoverable_failure);
   check_fp_normalizes_to("..", "");
   check_fp_normalizes_to("../foo", "foo");
 }
@@ -1250,7 +1270,7 @@ UNIT_TEST(paths, file_path_external_prefix_a_b)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_file_path_external_prefix_a_b: trying baddie: %s") % *c);
-      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), informative_failure);
+      UNIT_TEST_CHECK_THROW(file_path_external(utf8(*c)), recoverable_failure);
     }
 
   check_fp_normalizes_to("foo", "a/b/foo");
@@ -1519,7 +1539,8 @@ static void check_bk_normalizes_to(char const * before, char const * after)
   bookkeeping_path bp(bookkeeping_root / before);
   L(FL("normalizing %s to %s (got %s)") % before % after % bp);
   UNIT_TEST_CHECK(bp.as_external() == after);
-  UNIT_TEST_CHECK(bookkeeping_path(bp.as_internal()).as_internal() == bp.as_internal());
+  UNIT_TEST_CHECK(bookkeeping_path(bp.as_internal(),
+                                   origin::internal).as_internal() == bp.as_internal());
 }
 
 UNIT_TEST(paths, bookkeeping)
@@ -1546,9 +1567,10 @@ UNIT_TEST(paths, bookkeeping)
   for (char const * const * c = baddies; *c; ++c)
     {
       L(FL("test_bookkeeping_path baddie: trying '%s'") % *c);
-            UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c)),
-                                  logic_error);
-            UNIT_TEST_CHECK_THROW(bookkeeping_root / *c, logic_error);
+      UNIT_TEST_CHECK_THROW(bookkeeping_path(tmp_path_string.assign(*c),
+                                             origin::internal),
+                            logic_error);
+      UNIT_TEST_CHECK_THROW(bookkeeping_root / *c, logic_error);
     }
 
   // these are legitimate as things to append to bookkeeping_root, but
@@ -1569,7 +1591,8 @@ static void check_system_normalizes_to(char const * before, char const * after)
   system_path sp(before);
   L(FL("normalizing '%s' to '%s' (got '%s')") % before % after % sp);
   UNIT_TEST_CHECK(sp.as_external() == after);
-  UNIT_TEST_CHECK(system_path(sp.as_internal()).as_internal() == sp.as_internal());
+  UNIT_TEST_CHECK(system_path(sp.as_internal(),
+                              origin::internal).as_internal() == sp.as_internal());
 }
 
 UNIT_TEST(paths, system)
@@ -1577,7 +1600,7 @@ UNIT_TEST(paths, system)
   initial_abs_path.unset();
   initial_abs_path.set(system_path("/a/b"), true);
 
-  UNIT_TEST_CHECK_THROW(system_path(""), informative_failure);
+  UNIT_TEST_CHECK_THROW(system_path(""), unrecoverable_failure);
 
   check_system_normalizes_to("foo", "/a/b/foo");
   check_system_normalizes_to("foo/bar", "/a/b/foo/bar");
@@ -1624,7 +1647,7 @@ UNIT_TEST(paths, system)
                   == "/a/b/~this_user_does_not_exist_anywhere");
 #else
   UNIT_TEST_CHECK_THROW(system_path("~this_user_does_not_exist_anywhere"),
-                        informative_failure);
+                        recoverable_failure);
 #endif
 
   // finally, make sure that the copy-from-any_path constructor works right
@@ -1890,10 +1913,12 @@ UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::internal_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::internal_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::internal_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
@@ -1912,10 +1937,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
@@ -1936,10 +1963,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
@@ -1964,10 +1993,12 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
                        0 };
   for (char const * const * c = yes; *c; ++c)
     UNIT_TEST_CHECK(bookkeeping_path
-                ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
   for (char const * const * c = no; *c; ++c)
     UNIT_TEST_CHECK(!bookkeeping_path
-                 ::external_string_is_bookkeeping_path(utf8(std::string(*c))));
+                    ::external_string_is_bookkeeping_path(utf8(std::string(*c),
+                                                               origin::internal)));
 }
 
 #endif // BUILD_UNIT_TESTS

@@ -12,10 +12,10 @@
 void make_accessible(std::string const & name)
 {
   DWORD attrs = GetFileAttributes(name.c_str());
-  E(attrs != INVALID_FILE_ATTRIBUTES,
+  E(attrs != INVALID_FILE_ATTRIBUTES, origin::system,
     F("GetFileAttributes(%s) failed: %s") % name % os_strerror(GetLastError()));
 
-  E(SetFileAttributes(name.c_str(), attrs & ~FILE_ATTRIBUTE_READONLY),
+  E(SetFileAttributes(name.c_str(), attrs & ~FILE_ATTRIBUTE_READONLY), origin::system,
     F("SetFileAttributes(%s) failed: %s") % name % os_strerror(GetLastError()));
 }
 
@@ -23,11 +23,11 @@ time_t get_last_write_time(char const * name)
 {
   HANDLE h = CreateFile(name, GENERIC_READ, FILE_SHARE_READ, NULL,
                         OPEN_EXISTING, 0, NULL);
-  E(h != INVALID_HANDLE_VALUE,
+  E(h != INVALID_HANDLE_VALUE, origin::system,
     F("CreateFile(%s) failed: %s") % name % os_strerror(GetLastError()));
 
   FILETIME ft;
-  E(GetFileTime(h, NULL, NULL, &ft),
+  E(GetFileTime(h, NULL, NULL, &ft), origin::system,
     F("GetFileTime(%s) failed: %s") % name % os_strerror(GetLastError()));
 
   CloseHandle(h);
@@ -44,7 +44,7 @@ time_t get_last_write_time(char const * name)
 void do_copy_file(std::string const & from, std::string const & to)
 {
   // For once something is easier with Windows.
-  E(CopyFile(from.c_str(), to.c_str(), true),
+  E(CopyFile(from.c_str(), to.c_str(), true), origin::system,
     F("copy %s to %s: %s") % from % to % os_strerror(GetLastError()));
 }
 
@@ -99,7 +99,7 @@ char * make_temp_dir()
   // GetTempFileName wants 14 characters at the end of the path.
   {
     DWORD ret = GetTempPath(DIR_MAX_SIZE - 14, dir);
-    E(ret > 0 && ret <= DIR_MAX_SIZE - 14,
+    E(ret > 0 && ret <= DIR_MAX_SIZE - 14, origin::system,
       F("GetTempPath failed: %s") % os_strerror(GetLastError()));
   }
 
@@ -112,16 +112,16 @@ char * make_temp_dir()
       if (base + i == 0)
         continue;
 
-      E(GetTempFileName(dir, "MTN", base + i, name) != 0,
+      E(GetTempFileName(dir, "MTN", base + i, name) != 0, origin::system,
         F("GetTempFileName failed: %s") % os_strerror(GetLastError()));
 
       if (CreateDirectory(name, NULL))
         return name;
 
-      E(GetLastError() == ERROR_ALREADY_EXISTS,
+      E(GetLastError() == ERROR_ALREADY_EXISTS, origin::system,
         F("CreateDirectory(%s) failed: %s") % name % GetLastError());
     }
-  E(false, F("All temporary directory names are already in use."));
+  E(false, origin::system, F("All temporary directory names are already in use."));
 }
 
 bool running_as_root()

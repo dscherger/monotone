@@ -215,26 +215,28 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
 {
   if ("drop" == idx(args, 0)())
     {
-      N(args.size() == 1, F("too many arguments"));
+      E(args.size() == 1, origin::user, F("too many arguments"));
       resolution.first = resolve_conflicts::drop;
     }
   else if ("rename" == idx(args, 0)())
     {
-      N(args.size() == 2, F("wrong number of arguments"));
+      E(args.size() == 2, origin::user, F("wrong number of arguments"));
       resolution.first  = resolve_conflicts::rename;
       resolution.second = resolve_conflicts::new_file_path(idx(args,1)());
     }
   else if ("user" == idx(args, 0)())
     {
-      N(args.size() == 2, F("wrong number of arguments"));
-      N(other_resolution.first != resolve_conflicts::content_user,
+      E(args.size() == 2, origin::user, F("wrong number of arguments"));
+      E(other_resolution.first != resolve_conflicts::content_user,
+        origin::user,
         F("left and right resolutions cannot both be 'user'"));
 
       resolution.first  = resolve_conflicts::content_user;
       resolution.second = new_optimal_path(idx(args,1)(), false);
     }
   else
-    N(false, F(conflict_resolution_not_supported_msg) % idx(args,0) % "duplicate_name");
+    E(false, origin::user,
+      F(conflict_resolution_not_supported_msg) % idx(args,0) % "duplicate_name");
 
 } //set_duplicate_name_conflict
 
@@ -289,10 +291,12 @@ set_first_conflict(database & db,
             {
               if ("interactive" == idx(args,0)())
                 {
-                  N(args.size() == 2, F("wrong number of arguments"));
-                  N(bookkeeping_path::external_string_is_bookkeeping_path(utf8(idx(args,1)())),
+                  E(args.size() == 2, origin::user,
+                    F("wrong number of arguments"));
+                  E(bookkeeping_path::external_string_is_bookkeeping_path(idx(args,1)),
+                    origin::user,
                     F("result path must be under _MTN"));
-                  bookkeeping_path const result_path(idx(args,1)());
+                  bookkeeping_path const result_path(idx(args,1)(), origin::user);
 
                   if (do_interactive_merge(db, lua, conflicts, conflict.nid,
                                            conflict.ancestor, conflict.left, conflict.right, result_path))
@@ -303,7 +307,7 @@ set_first_conflict(database & db,
                 }
               else if ("user" == idx(args,0)())
                 {
-                  N(args.size() == 2, F("wrong number of arguments"));
+                  E(args.size() == 2, origin::user, F("wrong number of arguments"));
 
                   conflict.resolution.first  = resolve_conflicts::content_user;
                   conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
@@ -312,7 +316,8 @@ set_first_conflict(database & db,
                 {
                   // We don't allow the user to specify 'resolved_internal'; that
                   // is only done by automate show_conflicts.
-                  N(false, F(conflict_resolution_not_supported_msg) % idx(args,0) % "file_content");
+                  E(false, origin::user,
+                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "file_content");
                 }
               return;
             }
@@ -322,15 +327,15 @@ set_first_conflict(database & db,
   switch (side)
     {
     case left:
-      N(false, F("no resolvable yet unresolved left side conflicts"));
+      E(false, origin::user, F("no resolvable yet unresolved left side conflicts"));
       break;
 
     case right:
-      N(false, F("no resolvable yet unresolved right side conflicts"));
+      E(false, origin::user, F("no resolvable yet unresolved right side conflicts"));
       break;
 
     case neither:
-      N(false, F("no resolvable yet unresolved single-file conflicts"));
+      E(false, origin::user, F("no resolvable yet unresolved single-file conflicts"));
       break;
     }
 
@@ -351,7 +356,7 @@ CMD(show_first, "show_first", "", CMD_REF(conflicts),
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
-  N(args.size() == 0, F("wrong number of arguments"));
+  E(args.size() == 0, origin::user, F("wrong number of arguments"));
   show_conflicts(db, conflicts, first);
 }
 
@@ -364,7 +369,7 @@ CMD(show_remaining, "show_remaining", "", CMD_REF(conflicts),
   database db(app);
   conflicts_t conflicts (db, app.opts.conflicts_file);
 
-  N(args.size() == 0, F("wrong number of arguments"));
+  E(args.size() == 0, origin::user, F("wrong number of arguments"));
   show_conflicts(db, conflicts, remaining);
 }
 

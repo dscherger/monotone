@@ -22,6 +22,7 @@
 #include "transforms.hh"
 #include "constants.hh"
 #include "basic_io.hh"
+#include "vocab_cast.hh"
 
 using std::ostream;
 using std::ostringstream;
@@ -78,7 +79,8 @@ read_inodeprint_map(data const & dat,
       pa.hex(print);
 
       ipm.insert(inodeprint_entry(file_path_internal(path),
-                                  hexenc<inodeprint>(print)));
+                                  hexenc<inodeprint>(print,
+                                                     origin::workspace)));
     }
   I(src.lookahead == EOF);
 }
@@ -98,10 +100,10 @@ write_inodeprint_map(inodeprint_map const & ipm,
     {
       basic_io::stanza st;
       st.push_file_pair(syms::file, i->first);
-      st.push_hex_pair(syms::print, hexenc<id>(i->second()));
+      st.push_hex_pair(syms::print, typecast_vocab<hexenc<id> >(i->second));
       pr.print_stanza(st);
     }
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 class my_iprint_calc : public inodeprint_calculator
@@ -143,7 +145,7 @@ bool inodeprint_file(file_path const & file, hexenc<inodeprint> & ip)
 {
   my_iprint_calc calc;
   bool ret = inodeprint_file(file.as_external(), calc);
-  inodeprint ip_raw(calc.str());
+  inodeprint ip_raw(calc.str(), origin::internal);
   if (!ret)
     ip_raw = inodeprint("");
   encode_hexenc(ip_raw, ip);

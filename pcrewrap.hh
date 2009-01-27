@@ -13,6 +13,8 @@
 #define REQUIRED_PCRE_MAJOR 7
 #define REQUIRED_PCRE_MINOR 6
 
+#include "sanity.hh"
+
 // This is a sensible C++ wrapper interface around the bare C API exported
 // by pcre.h.  Note that pcre.h is a very "noisy" header in terms of macro
 // definitions and so we don't actually expose it here. Unfortunately, this
@@ -67,12 +69,15 @@ namespace pcre
     // used by constructors
     void init(char const *, pcre::flags);
 
+    origin::type made_from;
   public:
-    regex(char const * pattern, pcre::flags options = DEFAULT);
-    regex(std::string const & pattern, pcre::flags options = DEFAULT);
+    regex(char const * pattern, origin::type whence,
+          pcre::flags options = DEFAULT);
+    regex(std::string const & pattern, origin::type whence,
+          pcre::flags options = DEFAULT);
     ~regex();
 
-    bool match(std::string const & subject,
+    bool match(std::string const & subject, origin::type subject_origin,
                pcre::flags options = DEFAULT) const;
   };
 } // namespace pcre

@@ -133,12 +133,18 @@ resolve_merge_conflicts(lua_hooks & lua,
           // resolutions, give a nice error message.
           char const * const msg = "conflict resolution for %s not yet supported";
 
-          N(!result.missing_root_conflict, F(msg) % "missing_root_dir");
-          N(result.invalid_name_conflicts.size() == 0, F(msg) % "invalid_name_conflicts");
-          N(result.directory_loop_conflicts.size() == 0, F(msg) % "directory_loop_conflicts");
-          N(result.orphaned_node_conflicts.size() == 0, F(msg) % "orphaned_node_conflicts");
-          N(result.multiple_name_conflicts.size() == 0, F(msg) % "multiple_name_conflicts");
-          N(result.attribute_conflicts.size() == 0, F(msg) % "attribute_conflicts");
+          E(!result.missing_root_conflict, origin::user,
+            F(msg) % "missing_root_dir");
+          E(result.invalid_name_conflicts.size() == 0, origin::user,
+            F(msg) % "invalid_name_conflicts");
+          E(result.directory_loop_conflicts.size() == 0, origin::user,
+            F(msg) % "directory_loop_conflicts");
+          E(result.orphaned_node_conflicts.size() == 0, origin::user,
+            F(msg) % "orphaned_node_conflicts");
+          E(result.multiple_name_conflicts.size() == 0, origin::user,
+            F(msg) % "multiple_name_conflicts");
+          E(result.attribute_conflicts.size() == 0, origin::user,
+            F(msg) % "attribute_conflicts");
 
           // resolve the ones we can.
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
@@ -182,7 +188,7 @@ resolve_merge_conflicts(lua_hooks & lua,
         }
     }
 
-  E(result.is_clean(),
+  E(result.is_clean(), origin::user,
     F("merge failed due to unresolved conflicts"));
 }
 

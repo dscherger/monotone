@@ -75,7 +75,7 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
 #else
   int mebibytes = 100;
   string test_str(mebibytes << 20, 'a');
-  data test_data(test_str);
+  data test_data(test_str, origin::internal);
   id foo;
   double start = cpu_now();
   calculate_ident(test_data, foo);

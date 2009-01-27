@@ -57,9 +57,9 @@ static map<lua_State*, app_state*> map_of_lua_to_app;
 extern "C"
 {
   static int
-  monotone_get_confdir_for_lua(lua_State *L)
+  monotone_get_confdir_for_lua(lua_State *LS)
   {
-    map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(L);
+    map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(LS);
     if (i != map_of_lua_to_app.end())
       {
         if (i->second->opts.conf_dir_given
@@ -67,21 +67,21 @@ extern "C"
           {
             system_path dir = i->second->opts.conf_dir;
             string confdir = dir.as_external();
-            lua_pushstring(L, confdir.c_str());
+            lua_pushstring(LS, confdir.c_str());
           }
         else
-          lua_pushnil(L);
+          lua_pushnil(LS);
       }
     else
-      lua_pushnil(L);
+      lua_pushnil(LS);
     return 1;
   }
 }
 
 app_state*
-get_app_state(lua_State *L)
+get_app_state(lua_State *LS)
 {
-  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(L);
+  map<lua_State*, app_state*>::iterator i = map_of_lua_to_app.find(LS);
   if (i != map_of_lua_to_app.end())
     return i->second;
   else
@@ -150,7 +150,7 @@ lua_hooks::load_rcfile(utf8 const & rc)
       data dat;
       L(FL("opening rcfile '%s'") % rc);
       read_data_for_command_line(rc, dat);
-      N(run_string(st, dat().c_str(), rc().c_str()),
+      E(run_string(st, dat().c_str(), rc().c_str()), origin::user,
         F("lua error while loading rcfile '%s'") % rc);
       L(FL("'%s' is ok") % rc);
     }
@@ -165,7 +165,7 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
     {
       exists = path_exists(rc);
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       if (!required)
         {
@@ -179,13 +179,13 @@ lua_hooks::load_rcfile(any_path const & rc, bool required)
   if (exists)
     {
       L(FL("opening rcfile '%s'") % rc);
-      N(run_file(st, rc.as_external().c_str()),
+      E(run_file(st, rc.as_external().c_str()), origin::user,
         F("lua error while loading '%s'") % rc);
       L(FL("'%s' is ok") % rc);
     }
   else
     {
-      N(!required, F("rcfile '%s' does not exist") % rc);
+      E(!required, origin::user, F("rcfile '%s' does not exist") % rc);
       L(FL("skipping nonexistent rcfile '%s'") % rc);
     }
 }
@@ -289,7 +289,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .extract_str(key)
     .ok();
 
-  k = rsa_keypair_id(key);
+  k = rsa_keypair_id(key, origin::user);
   return ok;
 }
 
@@ -320,7 +320,7 @@ lua_hooks::hook_edit_comment(external const & commentary,
                  .call(2,1)
                  .extract_str(result_str)
                  .ok();
-  result = external(result_str);
+  result = external(result_str, origin::user);
   return is_ok;
 }
 
@@ -388,7 +388,7 @@ shared_trust_function_body(Lua & ll,
                            cert_name const & name,
                            cert_value const & val)
 {
-  hexenc<id> hid(encode_hexenc(hash()));
+  hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
   return shared_trust_function_body(ll, signers, hid, name, val);
 };
 
@@ -497,7 +497,7 @@ lua_hooks::hook_merge3(file_path const & anc_path,
     .call(7,1)
     .extract_str(res)
     .ok();
-  result = data(res);
+  result = data(res, origin::user);
   return ok;
 }
 
@@ -586,7 +586,7 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
     {
       std::string arg;
       ll.extract_str(arg).pop();
-      args.push_back(arg_type(arg));
+      args.push_back(arg_type(arg, origin::user));
     }
   return ll.ok() && !args.empty();
 }
@@ -642,7 +642,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
 
   if (!exec_ok)
     key_id = "";
-  k = rsa_keypair_id(key_id);
+  k = rsa_keypair_id(key_id, origin::user);
   return exec_ok;
 }
 
@@ -901,7 +901,7 @@ lua_hooks::hook_note_commit(revision_id const & new_id,
   Lua ll(st);
   ll
     .func("note_commit")
-    .push_str(encode_hexenc(new_id.inner()()))
+    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
     .push_str(rdat.inner()());
 
   ll.push_table();
@@ -966,7 +966,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
   Lua ll(st);
   ll
     .func("note_netsync_revision_received")
-    .push_str(encode_hexenc(new_id.inner()()))
+    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
     .push_str(rdat.inner()());
 
   ll.push_table();
@@ -1003,7 +1003,7 @@ lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
   Lua ll(st);
   ll
     .func("note_netsync_revision_sent")
-    .push_str(encode_hexenc(new_id.inner()()))
+    .push_str(encode_hexenc(new_id.inner()(), new_id.inner().made_from))
     .push_str(rdat.inner()());
 
   ll.push_table();
@@ -1067,7 +1067,7 @@ lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
   Lua ll(st);
   ll
     .func("note_netsync_cert_received")
-    .push_str(encode_hexenc(rid.inner()()))
+    .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from))
     .push_str(kid())
     .push_str(name())
     .push_str(value())
@@ -1087,7 +1087,7 @@ lua_hooks::hook_note_netsync_cert_sent(revision_id const & rid,
   Lua ll(st);
   ll
     .func("note_netsync_cert_sent")
-    .push_str(encode_hexenc(rid.inner()()))
+    .push_str(encode_hexenc(rid.inner()(), rid.inner().made_from))
     .push_str(kid())
     .push_str(name())
     .push_str(value())
@@ -1181,42 +1181,44 @@ void commands::cmd_lua::exec(app_state & app,
 
   app.mtn_automate_allowed = false;
 
-  E(ll.ok(), F("Call to user command %s (lua command: %s) failed.") % primary_name() % f_name);
+  E(ll.ok(), origin::user,
+    F("Call to user command %s (lua command: %s) failed.") % primary_name() % f_name);
 }
 
 LUAEXT(alias_command, )
 {
-  const char *old_cmd = luaL_checkstring(L, -2);
-  const char *new_cmd = luaL_checkstring(L, -1);
-  N(old_cmd && new_cmd,
+  const char *old_cmd = luaL_checkstring(LS, -2);
+  const char *new_cmd = luaL_checkstring(LS, -1);
+  E(old_cmd && new_cmd, origin::user,
     F("%s called with an invalid parameter") % "alias_command");
 
   args_vector args;
-  args.push_back(arg_type(old_cmd));
+  args.push_back(arg_type(old_cmd, origin::user));
   commands::command_id id = commands::complete_command(args);
   commands::command *old_cmd_p = CMD_REF(__root__)->find_command(id);
 
   old_cmd_p->add_alias(utf8(new_cmd));
 
-  lua_pushboolean(L, true);
+  lua_pushboolean(LS, true);
   return 1;
 }
 
 
 LUAEXT(register_command, )
 {
-  const char *cmd_name = luaL_checkstring(L, -5);
-  const char *cmd_params = luaL_checkstring(L, -4);
-  const char *cmd_abstract = luaL_checkstring(L, -3);
-  const char *cmd_desc = luaL_checkstring(L, -2);
-  const char *cmd_func = luaL_checkstring(L, -1);
+  const char *cmd_name = luaL_checkstring(LS, -5);
+  const char *cmd_params = luaL_checkstring(LS, -4);
+  const char *cmd_abstract = luaL_checkstring(LS, -3);
+  const char *cmd_desc = luaL_checkstring(LS, -2);
+  const char *cmd_func = luaL_checkstring(LS, -1);
 
-  N(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
+  E(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
+    origin::user,
     F("%s called with an invalid parameter") % "register_command");
 
-  new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc, L, cmd_func);  // leak this - commands can't be removed anyway
+  new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc, LS, cmd_func);  // leak this - commands can't be removed anyway
 
-  lua_pushboolean(L, true);
+  lua_pushboolean(LS, true);
   return 1;
 }
 

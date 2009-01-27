@@ -376,7 +376,7 @@ namespace
     loc.first = parse_nid(parser);
     std::string name;
     parser.str(name);
-    loc.second = path_component(name);
+    loc.second = path_component(name, parser.tok.in.made_from);
   }
 
   void
@@ -413,7 +413,7 @@ namespace
         std::string s;
         parser.hex(s);
         safe_insert(d.files_added,
-                    make_pair(loc, make_pair(nid, file_id(decode_hexenc(s)))));
+                    make_pair(loc, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from))));
       }
     while (parser.symp(syms::delta))
       {
@@ -422,7 +422,7 @@ namespace
         parser.esym(syms::content);
         std::string s;
         parser.hex(s);
-        safe_insert(d.deltas_applied, make_pair(nid, file_id(decode_hexenc(s))));
+        safe_insert(d.deltas_applied, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_cleared))
       {
@@ -431,7 +431,8 @@ namespace
         parser.esym(syms::attr);
         std::string key;
         parser.str(key);
-        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key)));
+        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key,
+                                                             parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_changed))
       {
@@ -445,10 +446,12 @@ namespace
         parser.str(value_bool);
         parser.str(value_value);
         pair<bool, attr_value> full_value(lexical_cast<bool>(value_bool),
-                                          attr_value(value_value));
+                                          attr_value(value_value,
+                                                     parser.tok.in.made_from));
         safe_insert(d.attrs_changed,
                     make_pair(nid,
-                              make_pair(attr_key(key), full_value)));
+                              make_pair(attr_key(key, parser.tok.in.made_from),
+                                        full_value)));
       }
     while (parser.symp(syms::marking))
       {
@@ -475,7 +478,7 @@ delta_rosters(roster_t const & from, marking_map const & from_markings,
   make_roster_delta_t(from, from_markings, to, to_markings, d);
   basic_io::printer printer;
   print_roster_delta_t(printer, d);
-  del = roster_delta(printer.buf);
+  del = roster_delta(printer.buf, origin::internal);
 }
 
 static

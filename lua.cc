@@ -473,57 +473,59 @@ void add_functions(lua_State * st)
 
 LUAEXT(include, )
 {
-  const char *path = luaL_checkstring(L, -1);
-  N(path, F("%s called with an invalid parameter") % "Include");
+  const char *path = luaL_checkstring(LS, -1);
+  E(path, origin::user,
+    F("%s called with an invalid parameter") % "Include");
 
-  bool res = run_file(L, path);
+  bool res = run_file(LS, path);
 
-  lua_pushboolean(L, res);
+  lua_pushboolean(LS, res);
   return 1;
 }
 
 LUAEXT(includedir, )
 {
-  const char *pathstr = luaL_checkstring(L, -1);
-  N(pathstr, F("%s called with an invalid parameter") % "IncludeDir");
+  const char *pathstr = luaL_checkstring(LS, -1);
+  E(pathstr, origin::user,
+    F("%s called with an invalid parameter") % "IncludeDir");
 
-  run_directory(L, pathstr, "*");
-  lua_pushboolean(L, true);
+  run_directory(LS, pathstr, "*");
+  lua_pushboolean(LS, true);
   return 1;
 }
 
 LUAEXT(includedirpattern, )
 {
-  const char *pathstr = luaL_checkstring(L, -2);
-  const char *pattern = luaL_checkstring(L, -1);
-  N(pathstr && pattern,
+  const char *pathstr = luaL_checkstring(LS, -2);
+  const char *pattern = luaL_checkstring(LS, -1);
+  E(pathstr && pattern, origin::user,
     F("%s called with an invalid parameter") % "IncludeDirPattern");
 
-  run_directory(L, pathstr, pattern);
-  lua_pushboolean(L, true);
+  run_directory(LS, pathstr, pattern);
+  lua_pushboolean(LS, true);
   return 1;
 }
 
 LUAEXT(search, regex)
 {
-  const char *re = luaL_checkstring(L, -2);
-  const char *str = luaL_checkstring(L, -1);
+  const char *re = luaL_checkstring(LS, -2);
+  const char *str = luaL_checkstring(LS, -1);
 
   bool result = false;
   try {
-    result = pcre::regex(re).match(str);
-  } catch (informative_failure & e) {
-    lua_pushstring(L, e.what());
-    return lua_error(L);
+    result = pcre::regex(re, origin::user).match(str, origin::user);
+  } catch (recoverable_failure & e) {
+    lua_pushstring(LS, e.what());
+    return lua_error(LS);
   }
-  lua_pushboolean(L, result);
+  lua_pushboolean(LS, result);
   return 1;
 }
 
 LUAEXT(gettext, )
 {
-  const char *msgid = luaL_checkstring(L, -1);
-  lua_pushstring(L, gettext(msgid));
+  const char *msgid = luaL_checkstring(LS, -1);
+  lua_pushstring(LS, gettext(msgid));
   return 1;
 }
 
@@ -557,7 +559,7 @@ namespace
   {
     record_if_matches(string const & b, char const * p,
                       vector<string> & t)
-      : base(b + "/"), glob(p), target(t)
+      : base(b + "/"), glob(p, origin::user), target(t)
     { target.clear(); }
 
     virtual void consume(const char * component)
@@ -580,9 +582,9 @@ run_directory(lua_State * st, char const * pathstr, char const * pattern)
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      N(false, F("Directory '%s' does not exist") % pathstr);
+      E(false, origin::user, F("Directory '%s' does not exist") % pathstr);
     case path::file:
-      N(false, F("'%s' is not a directory") % pathstr);
+      E(false, origin::user, F("'%s' is not a directory") % pathstr);
     case path::directory:
       break;
     }
@@ -604,7 +606,7 @@ run_directory(lua_State * st, char const * pathstr, char const * pattern)
         .loadfile(i->c_str())
         .call(0,1)
         .ok();
-      N(res, F("lua error while loading rcfile '%s'") % *i);
+      E(res, origin::user, F("lua error while loading rcfile '%s'") % *i);
       L(FL("'%s' is ok") % *i);
     }
 }

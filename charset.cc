@@ -18,6 +18,7 @@
 #include "numeric_vocab.hh"
 #include "sanity.hh"
 #include "simplestring_xform.hh"
+#include "vocab_cast.hh"
 
 using std::string;
 using std::vector;
@@ -41,7 +42,8 @@ charset_convert(string const & src_charset,
                 string const & dst_charset,
                 string const & src,
                 string & dst,
-                bool best_effort)
+                bool best_effort,
+                origin::type whence)
 {
   if (src_charset == dst_charset)
     dst = src;
@@ -57,7 +59,7 @@ charset_convert(string const & src_charset,
       char * converted = stringprep_convert(src.c_str(),
                                             tmp_charset.c_str(),
                                             src_charset.c_str());
-      E(converted != NULL,
+      E(converted != NULL, whence,
         F("failed to convert string from %s to %s: '%s'")
          % src_charset % tmp_charset % src);
       dst = string(converted);
@@ -160,7 +162,8 @@ utf8_to_system_strict(utf8 const & utf, string & ext)
            && is_all_ascii(utf()))
     ext = utf();
   else
-    charset_convert("UTF-8", system_charset(), utf(), ext, false);
+    charset_convert("UTF-8", system_charset(), utf(), ext, false,
+                    utf.made_from);
 }
 
 // this function must be fast.  do not make it slow.
@@ -173,7 +176,8 @@ utf8_to_system_best_effort(utf8 const & utf, string & ext)
            && is_all_ascii(utf()))
     ext = utf();
   else
-    charset_convert("UTF-8", system_charset(), utf(), ext, true);
+    charset_convert("UTF-8", system_charset(), utf(), ext, true,
+                    utf.made_from);
 }
 
 void
@@ -181,7 +185,7 @@ utf8_to_system_strict(utf8 const & utf, external & ext)
 {
   string out;
   utf8_to_system_strict(utf, out);
-  ext = external(out);
+  ext = external(out, utf.made_from);
 }
 
 void
@@ -189,22 +193,23 @@ utf8_to_system_best_effort(utf8 const & utf, external & ext)
 {
   string out;
   utf8_to_system_best_effort(utf, out);
-  ext = external(out);
+  ext = external(out, utf.made_from);
 }
 
 void
 system_to_utf8(external const & ext, utf8 & utf)
 {
   if (system_charset_is_utf8())
-    utf = utf8(ext());
+    utf = typecast_vocab<utf8>(ext);
   else if (system_charset_is_ascii_extension()
            && is_all_ascii(ext()))
-    utf = utf8(ext());
+    utf = typecast_vocab<utf8>(ext);
   else
     {
       string out;
-      charset_convert(system_charset(), "UTF-8", ext(), out, false);
-      utf = utf8(out);
+      charset_convert(system_charset(), "UTF-8", ext(), out, false,
+                      ext.made_from);
+      utf = utf8(out, ext.made_from);
       I(utf8_validate(utf));
     }
 }
@@ -313,16 +318,16 @@ decode_idna_error(int err)
 }
 
 static void
-ace_to_utf8(string const & a, utf8 & utf)
+ace_to_utf8(string const & a, utf8 & utf, origin::type whence)
 {
   char *out = NULL;
   L(FL("converting %d bytes from IDNA ACE to UTF-8") % a.size());
   int res = idna_to_unicode_8z8z(a.c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
-  N(res == IDNA_SUCCESS || res == IDNA_NO_ACE_PREFIX,
+  E(res == IDNA_SUCCESS || res == IDNA_NO_ACE_PREFIX, whence,
     F("error converting %d UTF-8 bytes to IDNA ACE: %s")
     % a.size()
     % decode_idna_error(res));
-  utf = utf8(string(out));
+  utf = utf8(string(out), whence);
   free(out);
 }
 
@@ -332,7 +337,7 @@ utf8_to_ace(utf8 const & utf, string & a)
   char *out = NULL;
   L(FL("converting %d bytes from UTF-8 to IDNA ACE") % utf().size());
   int res = idna_to_ascii_8z(utf().c_str(), &out, IDNA_USE_STD3_ASCII_RULES);
-  N(res == IDNA_SUCCESS,
+  E(res == IDNA_SUCCESS, utf.made_from,
     F("error converting %d UTF-8 bytes to IDNA ACE: %s")
     % utf().size()
     % decode_idna_error(res));
@@ -345,7 +350,7 @@ internalize_cert_name(utf8 const & utf, cert_name & c)
 {
   string a;
   utf8_to_ace(utf, a);
-  c = cert_name(a);
+  c = cert_name(a, utf.made_from);
 }
 
 void
@@ -372,13 +377,13 @@ internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
       else
         {
           string a;
-          utf8_to_ace(utf8(*i), a);
+          utf8_to_ace(utf8(*i, utf.made_from), a);
           tmp += a;
         }
       if (*i == "@")
         in_domain = true;
     }
-  key = rsa_keypair_id(tmp);
+  key = rsa_keypair_id(tmp, utf.made_from);
 }
 
 void
@@ -405,13 +410,13 @@ externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
       else
         {
           utf8 u;
-          ace_to_utf8(*i, u);
+          ace_to_utf8(*i, u, key.made_from);
           tmp += u();
         }
       if (*i == "@")
         in_domain = true;
     }
-  utf = utf8(tmp);
+  utf = utf8(tmp, key.made_from);
 }
 
 void
@@ -427,7 +432,7 @@ internalize_var_domain(utf8 const & utf, var_domain & d)
 {
   string a;
   utf8_to_ace(utf, a);
-  d = var_domain(a);
+  d = var_domain(a, utf.made_from);
 }
 
 void
@@ -441,7 +446,7 @@ internalize_var_domain(external const & ext, var_domain & d)
 void
 externalize_var_domain(var_domain const & d, utf8 & utf)
 {
-  ace_to_utf8(d(), utf);
+  ace_to_utf8(d(), utf, d.made_from);
 }
 
 void
@@ -595,12 +600,12 @@ UNIT_TEST(charset, idna_encoding)
       string u = lowercase(idna_vec[i].utf);
       string a = lowercase(idna_vec[i].ace);
       string tace;
-      utf8_to_ace(utf8(u), tace);
+      utf8_to_ace(utf8(u, origin::internal), tace);
       L(FL("ACE-encoded %s: '%s'") % idna_vec[i].name % tace);
       UNIT_TEST_CHECK(a == lowercase(tace));
 
       utf8 tutf;
-      ace_to_utf8(a, tutf);
+      ace_to_utf8(a, tutf, origin::internal);
       L(FL("UTF-encoded %s: '%s'") % idna_vec[i].name % tutf);
       UNIT_TEST_CHECK(u == lowercase(tutf()));
     }

@@ -55,7 +55,8 @@ bool is_executable(const char *path)
   if (rc == -1)
     {
       const int err = errno;
-      N(false, F("error getting status of file %s: %s") % path % os_strerror(err));
+      E(false, origin::user,
+        F("error getting status of file %s: %s") % path % os_strerror(err));
     }
 
   return (s.st_mode & S_IXUSR) && !(s.st_mode & S_IFDIR);
@@ -78,7 +79,8 @@ int make_executable(const char *path)
   if (fd == -1)
     {
       const int err = errno;
-      N(false, F("error opening file %s: %s") % path % os_strerror(err));
+      E(false, origin::user,
+        F("error opening file %s: %s") % path % os_strerror(err));
     }
   if (fstat(fd, &s))
     return -1;
@@ -88,7 +90,8 @@ int make_executable(const char *path)
   if (close(fd) != 0)
     {
       const int err = errno;
-      N(false, F("error closing file %s: %s") % path % os_strerror(err));
+      E(false, origin::system,
+        F("error closing file %s: %s") % path % os_strerror(err));
     }
   return ret;
 }

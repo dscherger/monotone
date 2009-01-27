@@ -461,7 +461,7 @@ diff(data const & olddata,
 {
   string unpacked;
   compute_delta(olddata(), newdata(), unpacked);
-  del = delta(unpacked);
+  del = delta(unpacked, newdata.made_from);
 }
 
 void
@@ -471,7 +471,7 @@ patch(data const & olddata,
 {
   string result;
   apply_delta(olddata(), del(), result);
-  newdata = data(result);
+  newdata = data(result, del.made_from);
 }
 
 

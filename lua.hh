@@ -76,7 +76,8 @@ namespace luaext
   extern ftmap *fns;
   struct extfn
   {
-    extfn(std::string const & name, std::string const & table, int (*func) (lua_State *));
+    extfn(std::string const & name, std::string const & table,
+          int (*func) (lua_State *));
   };
 }
 
@@ -89,19 +90,19 @@ namespace luaext
 namespace luaext { \
   struct extfn_ ## NAME ## _ ## TABLE : public extfn { \
     extfn_ ## NAME ## _ ## TABLE (); \
-    int call(lua_State * L); \
+    int call(lua_State * LS); \
   }; \
   extfn_ ## NAME ## _ ## TABLE TABLE ## _ ## NAME ## _extfn; \
   extern "C" { \
-    static int TABLE ## _ ## NAME ## _for_lua(lua_State * L) \
+    static int TABLE ## _ ## NAME ## _for_lua(lua_State * LS) \
     { \
-      return TABLE ## _ ## NAME ## _extfn . call(L); \
+      return TABLE ## _ ## NAME ## _extfn . call(LS); \
     } \
   } \
   extfn_ ## NAME ## _ ## TABLE :: extfn_ ## NAME ## _ ## TABLE () \
    : extfn( #NAME , #TABLE , & TABLE ## _## NAME ## _for_lua ) {} \
 } \
-int luaext :: extfn_ ## NAME ## _ ## TABLE :: call(lua_State * L)
+int luaext :: extfn_ ## NAME ## _ ## TABLE :: call(lua_State * LS)
 
 // Local Variables:
 // mode: C++
