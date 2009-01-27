@@ -53,7 +53,7 @@ assert_sqlite3_ok(sqlite3 * db)
   // errno's.
   L(FL("sqlite error: %d: %s") % errcode % errmsg);
 
-  // Check the string to see if it looks like an informative_failure
+  // Check the string to see if it looks like a recoverable_failure
   // thrown from within an SQL extension function, caught, and turned
   // into a call to sqlite3_result_error.  (Extension functions have to
   // do this to avoid corrupting sqlite's internal state.)  If it is,

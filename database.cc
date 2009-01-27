@@ -404,14 +404,19 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
     }
   string decoded;
 
-  // This operation may throw informative_failure.  We must intercept that
+  // This operation may throw (un)recoverable_failure.  We must intercept that
   // and turn it into a call to sqlite3_result_error, or rollback will fail.
   try
     {
       decoded = encode_hexenc(reinterpret_cast<char const *>(
-        sqlite3_value_text(args[0])));
+        sqlite3_value_text(args[0])), origin::database);
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
+    {
+      sqlite3_result_error(f, e.what(), -1);
+      return;
+    }
+  catch (unrecoverable_failure & e)
     {
       sqlite3_result_error(f, e.what(), -1);
       return;

@@ -10,9 +10,6 @@
 #ifndef _PCREWRAP_HH
 #define _PCREWRAP_HH
 
-#define REQUIRED_PCRE_MAJOR 7
-#define REQUIRED_PCRE_MINOR 6
-
 #include "sanity.hh"
 
 // This is a sensible C++ wrapper interface around the bare C API exported
