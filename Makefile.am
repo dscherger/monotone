@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1
+AUTOMAKE_OPTIONS=subdir-objects 1.7.1 -Wno-portability
 ACLOCAL_AMFLAGS = -I m4
 
 CMD_SOURCES =								\
@@ -194,6 +194,11 @@ html_DATA = monotone.html
 
 # flags
 
+# sets DEFS for just this object
+# the variable prevents this from overriding automake's unix/fs.o rule
+UNIX=unix/
+$(UNIX)fs.$(OBJEXT) : DEFS += -DLOCALEDIR="\"$(localedir)\""
+
 if BUILD_PCH
 
 PCH_SOURCE = $(srcdir)/pch.hh
@@ -219,7 +224,7 @@ pch-file:
 	|| rm "./$(PCH_FILE).Tdep"
 endif
 
-SUFFIXES = .gch
+SUFFIXES = .gch .merged.po .gmo
 
 EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
 		    $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
@@ -272,13 +277,6 @@ endif
 if MISSING_INET6
   lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
 endif
-
-# i18n support
-
-SUBDIRS = po
-datadir = @datadir@
-localedir = $(datadir)/locale
-DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
 
 # extra files
 
@@ -343,6 +341,86 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 	mkdir -p $(top_builddir)/figures
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
+
+
+# Message translation support
+# INST_LINGUAS is set by configure, based on the po/LINGUAS file and
+# the user's LINGUAS env. variable.  Additional settings are in
+# po/Makevars.
+#
+# Only the foo.po-update target will overwrite a file in the source 
+# po/ directory.
+
+include $(srcdir)/po/Makevars
+ALL_POFILES := $(wildcard $(srcdir)/po/*.po)
+ALL_LINGUAS := $(basename $(notdir $(ALL_POFILES)))
+ALL_GMOFILES := $(addsuffix .gmo, $(ALL_LINGUAS))
+CLEAN_POFILES := $(ALL_GMOFILES) $(addsuffix .merged.po, $(ALL_LINGUAS)) \
+		 $(PACKAGE).pot
+
+EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
+
+if USE_NLS
+# for installation
+GMOFILES := $(addsuffix .gmo, $(INST_LINGUAS))
+
+all-local: $(GMOFILES)
+
+install-data-local: all-local
+	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+	  $(MKDIR_P) $$dir; \
+	  $(INSTALL_DATA) $$lang.gmo $$dir/$(PACKAGE).mo; \
+	done
+
+uninstall-local:
+	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	  rm -f $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo; \
+	  rmdir $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES || :; \
+	  rmdir $(DESTDIR)$(localedir)/$$lang || :; \
+	done
+endif
+
+if REBUILD_NLS
+%.gmo: %.merged.po
+	$(MSGFMT) -c --statistics -o $@ $<
+
+%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot 
+	$(MSGMERGE) $^ -o $@
+
+# for translators' use
+UPDATEPOFILES = $(addsuffix .po-update, $(ALL_LINGUAS))
+
+%.po-update: $(srcdir)/po/%.po $(PACKAGE).pot
+	$(MSGMERGE) --update $^
+
+update-po: $(UPDATEPOFILES)
+
+# for the template file
+POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
+	$(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
+	monotone.cc std_hooks.lua
+
+$(PACKAGE).pot: $(POTFILES)
+	$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
+	  --package-name=$(PACKAGE) --package-version=$(VERSION) \
+	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
+	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
+	  $(XGETTEXT_OPTS) \
+	  $(POTFILES)
+
+dist-hook: $(ALL_GMOFILES)
+	cp $^ $(distdir)/po
+
+else
+
+%.gmo: $(srcdir)/po/%.gmo
+	cp $< $@
+
+dist-hook:
+	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
+
+endif
 
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
@@ -487,11 +565,11 @@ CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES)
+CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES) $(CLEAN_POFILES)
 
-txt2c: txt2c.cc
-	$(CXX) $(CXXFLAGS) -o $@ $<
-	chmod 0755 $@$(EXEEXT)
+# override compiler for txt2c
+txt2c$(EXEEXT): txt2c.cc
+	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $<
 
 # FIXME: should use stamp files.
 %.cc: %.sql txt2c

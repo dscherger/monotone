@@ -6,7 +6,7 @@ AC_INIT([monotone], [0.43dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile po/Makefile.in util/mtnopt])
+AC_CONFIG_FILES([Makefile util/mtnopt])
 AC_LANG([C++])
 
 # Operating system categorization.  Don't add more entries to this
@@ -14,53 +14,47 @@ AC_LANG([C++])
 AC_CANONICAL_HOST
 AC_MSG_CHECKING([category of operating system])
 
-case "$host" in 
+WIN32_PLATFORM=false
+os_err_t="int"
+case "$host" in
   *-mingw32 | *-pc-pw32 | *-pc-mks | *-winnt )
     AC_MSG_RESULT([Windows])
-
-    AM_CONDITIONAL(WIN32_PLATFORM, true)
-    AC_DEFINE(os_err_t, unsigned int, 
-             [Define as the best type to hold an OS error code.])
+    WIN32_PLATFORM="true"
+    os_err_t="unsigned int"
   ;;
 
   *-ibm-aix* )
     AC_MSG_RESULT([AIX])
-
-    AM_CONDITIONAL(WIN32_PLATFORM, false)
-    AC_DEFINE(os_err_t, int, 
-             [Define as the best type to hold an OS error code.])
     LDFLAGS="$LDFLAGS -Wl,-bexpfull"
   ;;
 
   * )
     AC_MSG_RESULT([Unix])
-
-    AM_CONDITIONAL(WIN32_PLATFORM, false)
-    AC_DEFINE(os_err_t, int, 
-             [Define as the best type to hold an OS error code.])
   ;;
 esac
+AM_CONDITIONAL(WIN32_PLATFORM, $WIN32_PLATFORM)
+AC_DEFINE_UNQUOTED(os_err_t, $os_err_t,
+		   [Define as the best type to hold an OS error code.])
+
 
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CXX_WARNINGS
 AC_PROG_CXX_PCH
 
+dnl needed for 'txt2c'
+dnl There ought to be an AC_PROG_CXX_FOR_BUILD, but there isn't.
+AC_ARG_VAR([CXX_FOR_BUILD],
+	   [C++ compiler command for programs to run on build machine])
+if test $cross_compiling = yes; then
+  CXX_FOR_BUILD='c++'
+else
+  CXX_FOR_BUILD="$CXX"
+fi
+
 AC_PROG_RANLIB
 
-dnl Note: the gettext checks do not work if AC_LANG(C++) is in effect,
-dnl due to the C++ compiler objecting to the very sloppy code that is
-dnl used to generate link-time references to gettext functions.  This
-dnl is the only remaining use of the C compiler in the entire package.
-dnl Note 2: if you *don't* put AM_ICONV in here then AM_GNU_GETTEXT
-dnl thinks it needs to stick -liconv in LIBS, even when iconv is in libc!
-
-AC_LANG([C])
-AM_ICONV
-AM_GNU_GETTEXT([external], [need-ngettext])
-AM_GNU_GETTEXT_VERSION(0.11.5)
-AC_PROG_XGETTEXT_FLAG_OPTION
-AC_LANG([C++])
+MTN_GNU_GETTEXT
 
 # Do library checks as early as possible so we bail out quickly if
 # one is missing.
@@ -106,22 +100,22 @@ dnl problem described above.
 AC_CHECK_TYPE([off_t],
   [],
   [AC_DEFINE([off_t], [long int],
-             [Define to `long int' if <sys/types.h does not define.])],
+	     [Define to `long int' if <sys/types.h> does not define.])],
   [#include <sys/types.h>])
 
 AC_CHECK_TYPE([pid_t],
   [],
   [AC_DEFINE([pid_t], [int],
-             [Define to `int' if <sys/types.h does not define.])],
+	     [Define to `int' if <sys/types.h> does not define.])],
   [#include <sys/types.h>])
 
 AC_CHECK_MEMBERS([struct stat.st_ctim.tv_nsec,
-                  struct stat.st_mtim.tv_nsec,
-                  struct stat.st_ctimespec.tv_nsec,
-                  struct stat.st_mtimespec.tv_nsec,
-                  struct stat.st_ctimensec,
-                  struct stat.st_mtimensec],
-                  [], [], [#include <sys/stat.h>])
+		  struct stat.st_mtim.tv_nsec,
+		  struct stat.st_ctimespec.tv_nsec,
+		  struct stat.st_mtimespec.tv_nsec,
+		  struct stat.st_ctimensec,
+		  struct stat.st_mtimensec],
+		  [], [], [#include <sys/stat.h>])
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 
 # Checks for library functions.
@@ -129,6 +123,6 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 # complicated check for it.
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
-                fstatat mkdtemp mmap putenv setenv strptime unsetenv])
+		fstatat mkdtemp mmap putenv setenv strptime unsetenv])
 
 AC_OUTPUT
