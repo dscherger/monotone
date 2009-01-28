@@ -105,8 +105,17 @@ void append_without_ws(std::string & appendto, std::string const & s);
 // remove all whitespace
 std::string remove_ws(std::string const & s);
 
-// remove leading and trailing whitespace
-std::string trim_ws(std::string const & s);
+// remove leading chars from string
+std::string trim_left(std::string const & s, 
+                      std::string const & chars = "\n\r\t ");
+
+// remove trailing chars from string 
+std::string trim_right(std::string const & s, 
+                       std::string const & chars = "\n\r\t ");
+
+// remove leading and trailing chars from string
+std::string trim(std::string const & s, 
+                 std::string const & chars = "\n\r\t ");
 
 // Local Variables:
 // mode: C++
