@@ -26,7 +26,7 @@ uri::parse_port(size_t const default_port) const
 }
 
 static void
-parse_authority(string const & in, uri & u)
+parse_authority(string const & in, uri & u, origin::type made_from)
 {
   L(FL("matched URI authority: '%s'") % in);
 
@@ -50,7 +50,7 @@ parse_authority(string const & in, uri & u)
     {
       p++;
       stringpos ipv6_end = in.find(']', p);
-      N(ipv6_end != string::npos,
+      E(ipv6_end != string::npos, made_from,
         F("IPv6 address in URI has no closing ']'"));
 
       u.host.assign(in, p, ipv6_end - p);
@@ -70,10 +70,10 @@ parse_authority(string const & in, uri & u)
   if (p < in.size() && in.at(p) == ':')
     {
       p++;
-      N(p < in.size(),
+      E(p < in.size(), made_from,
         F("explicit port-number specification in URI has no digits"));
 
-      N(in.find_first_not_of("0123456789", p) == string::npos,
+      E(in.find_first_not_of("0123456789", p) == string::npos, made_from,
         F("explicit port-number specification in URI contains nondigits"));
 
       u.port.assign(in, p, string::npos);
@@ -82,7 +82,7 @@ parse_authority(string const & in, uri & u)
 }
 
 void
-parse_uri(string const & in, uri & u)
+parse_uri(string const & in, uri & u, origin::type made_from)
 {
   u.scheme.clear();
   u.user.clear();
@@ -116,7 +116,7 @@ parse_uri(string const & in, uri & u)
       stringpos authority_end = in.find_first_of("/?#", p);
       if (authority_end != p)
         {
-          parse_authority(string(in, p, authority_end - p), u);
+          parse_authority(string(in, p, authority_end - p), u, made_from);
           p = authority_end;
         }
       if (p >= in.size())
@@ -156,7 +156,7 @@ parse_uri(string const & in, uri & u)
 }
 
 string
-urldecode(string const & in)
+urldecode(string const & in, origin::type made_from)
 {
   string out;
   
@@ -168,10 +168,10 @@ urldecode(string const & in)
         {
           char d1, d2;
           ++i;
-          E(i != in.end(), F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
           d1 = *i;
           ++i;
-          E(i != in.end(), F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
           d2 = *i;
           
           char c = 0;
@@ -193,7 +193,7 @@ urldecode(string const & in)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
             }
           c *= 16;
           switch(d2)
@@ -214,7 +214,7 @@ urldecode(string const & in)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
             }
           out += c;
         }
@@ -292,7 +292,7 @@ test_one_uri(string scheme,
 
   L(FL("testing parse of URI '%s'") % built);
   uri u;
-  UNIT_TEST_CHECK_NOT_THROW(parse_uri(built, u), informative_failure);
+  UNIT_TEST_CHECK_NOT_THROW(parse_uri(built, u, origin::user), recoverable_failure);
   UNIT_TEST_CHECK(u.scheme == scheme);
   UNIT_TEST_CHECK(u.user == user);
   if (!normal_host.empty())
@@ -331,18 +331,18 @@ UNIT_TEST(uri, invalid)
 {
   uri u;
 
-  UNIT_TEST_CHECK_THROW(parse_uri("http://[f3:03:21/foo/bar", u), informative_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:/foo/bar", u), informative_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", u), informative_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://[f3:03:21/foo/bar", u, origin::internal), unrecoverable_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:/foo/bar", u, origin::user), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", u, origin::user), recoverable_failure);
 }
 
 UNIT_TEST(uri, urldecode)
 {
-  UNIT_TEST_CHECK(urldecode("foo%20bar") == "foo bar");
-  UNIT_TEST_CHECK(urldecode("%61") == "a");
-  UNIT_TEST_CHECK_THROW(urldecode("%xx"), informative_failure);
-  UNIT_TEST_CHECK_THROW(urldecode("%"), informative_failure);
-  UNIT_TEST_CHECK_THROW(urldecode("%5"), informative_failure);
+  UNIT_TEST_CHECK(urldecode("foo%20bar", origin::internal) == "foo bar");
+  UNIT_TEST_CHECK(urldecode("%61", origin::user) == "a");
+  UNIT_TEST_CHECK_THROW(urldecode("%xx", origin::internal), unrecoverable_failure);
+  UNIT_TEST_CHECK_THROW(urldecode("%", origin::user), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(urldecode("%5", origin::user), recoverable_failure);
 }
 
 #endif // BUILD_UNIT_TESTS

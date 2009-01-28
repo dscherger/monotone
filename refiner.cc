@@ -367,7 +367,7 @@ refiner::process_refinement_command(refinement_type ty,
 
   if (ty == refinement_response)
     {
-      E((queries_in_flight > 0),
+      E((queries_in_flight > 0), origin::network,
         F("underflow on query-in-flight counter"));
       --queries_in_flight;
 
@@ -622,7 +622,7 @@ build_random_set(set<id> & s, size_t sz, bool clumpy, randomizer & rng)
       string str(constants::merkle_hash_length_in_bytes, ' ');
       for (size_t i = 0; i < constants::merkle_hash_length_in_bytes; ++i)
         str[i] = static_cast<char>(rng.uniform(0xff));
-      s.insert(id(str));
+      s.insert(id(str, origin::internal));
       if (clumpy && rng.flip())
         {
           size_t clumpsz = rng.uniform(7) + 1;
@@ -634,7 +634,7 @@ build_random_set(set<id> & s, size_t sz, bool clumpy, randomizer & rng)
                 break;
               ++c;
               str[pos] = c;
-              s.insert(id(str));
+              s.insert(id(str, origin::internal));
             }
         }
     }

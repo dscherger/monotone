@@ -43,6 +43,7 @@
 #include "roster.hh"
 #include "graph.hh"
 #include "key_store.hh"
+#include "vocab_cast.hh"
 
 using std::back_inserter;
 using std::copy;
@@ -65,7 +66,7 @@ using boost::shared_ptr;
 
 void revision_t::check_sane() const
 {
-  I(!null_id(new_manifest));
+  E(!null_id(new_manifest), made_from, F("Revision has no manifest id"));
 
   if (edges.size() == 1)
     {
@@ -75,11 +76,12 @@ void revision_t::check_sane() const
     {
       // merge nodes cannot have null revisions
       for (edge_map::const_iterator i = edges.begin(); i != edges.end(); ++i)
-        I(!null_id(edge_old_revision(i)));
+        E(!null_id(edge_old_revision(i)), made_from,
+          F("Merge revision has a null parent"));
     }
   else
     // revisions must always have either 1 or 2 edges
-    I(false);
+    E(false, made_from, F("Revision has %d edges, not 1 or 2") % edges.size());
 
   // we used to also check that if there were multiple edges that had patches
   // for the same file, then the new hashes on each edge matched each other.
@@ -206,7 +208,8 @@ find_common_ancestor_for_merge(database & db,
           else
             {
               curr_leaf_ancestors = shared_bitmap(new bitmap());
-              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(curr_leaf)),
+              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(curr_leaf),
+                                                                 origin::internal),
                                              inverse_graph, ancestors,
                                              curr_leaf_ancestors);
             }
@@ -230,7 +233,8 @@ find_common_ancestor_for_merge(database & db,
         {
           if (isect->test(i))
             {
-              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(i)),
+              calculate_ancestors_from_graph(intern, revision_id(intern.lookup(i),
+                                                                 origin::internal),
                                              inverse_graph, ancestors, isect_ancs);
             }
         }
@@ -249,7 +253,7 @@ find_common_ancestor_for_merge(database & db,
     }
 
   I(leaves.size() == 1);
-  anc = revision_id(intern.lookup(*leaves.begin()));
+  anc = revision_id(intern.lookup(*leaves.begin()), origin::internal);
 }
 
 // FIXME: this algorithm is incredibly inefficient; it's O(n) where n is the
@@ -331,7 +335,7 @@ calculate_ancestors_from_graph(interner<ctx> & intern,
   while (! stk.empty())
     {
       ctx us = stk.top();
-      revision_id rev(intern.lookup(us));
+      revision_id rev(intern.lookup(us), origin::internal);
 
       pair<gi,gi> parents = graph.equal_range(rev);
       bool pushed = false;
@@ -584,7 +588,7 @@ ancestry_difference(database & db, revision_id const & a,
   {
     if (au->test(i))
       {
-        revision_id rid(intern.lookup(i));
+        revision_id rid(intern.lookup(i), origin::internal);
         if (!null_id(rid))
           new_stuff.insert(rid);
       }
@@ -759,7 +763,7 @@ make_restricted_revision(parent_map const & old_rosters,
         no_excludes = false;
     }
 
-  N(old_rosters.size() == 1 || no_excludes,
+  E(old_rosters.size() == 1 || no_excludes, origin::user,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
     % ui.prog_name % cmd_name);
 
@@ -923,10 +927,11 @@ void anc_graph::write_certs()
       {
         char buf[constants::epochlen_bytes];
         keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
-        epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes));
+        epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes),
+                             origin::internal);
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);
-        db.set_epoch(branch_name(*i), new_epoch);
+        db.set_epoch(branch_name(*i, origin::internal), new_epoch);
       }
   }
 
@@ -993,7 +998,7 @@ anc_graph::kluge_for_bogus_merge_edges()
           if (j->first == i->first)
             {
               L(FL("considering old merge edge %s") %
-                encode_hexenc(safe_get(node_to_old_rev, i->first).inner()()));
+                safe_get(node_to_old_rev, i->first));
               u64 parent1 = i->second;
               u64 parent2 = j->second;
               if (is_ancestor (parent1, parent2, parent_to_child_map))
@@ -1234,7 +1239,7 @@ insert_parents_into_roster(roster_t & child_roster,
 {
   if (child_roster.has_node(pth))
     {
-      E(is_dir_t(child_roster.get_node(pth)),
+      E(is_dir_t(child_roster.get_node(pth)), origin::internal,
         F("Directory %s for path %s cannot be added, "
           "as there is a file in the way") % pth % full);
       return;
@@ -1255,10 +1260,10 @@ insert_into_roster(roster_t & child_roster,
   if (child_roster.has_node(pth))
     {
       node_t n = child_roster.get_node(pth);
-      E(is_file_t(n),
+      E(is_file_t(n), origin::internal,
         F("Path %s cannot be added, as there is a directory in the way") % pth);
       file_t f = downcast_to_file_t(n);
-      E(f->content == fid,
+      E(f->content == fid, origin::internal,
         F("Path %s added twice with differing content") % pth);
       return;
     }
@@ -1540,13 +1545,16 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
                               }
                             else if (key == "execute" || key == "manual_merge")
                               child_roster.set_attr(j->first,
-                                                    attr_key("mtn:" + key),
-                                                    attr_value(k->second));
+                                                    attr_key("mtn:" + key,
+                                                             origin::internal),
+                                                    attr_value(k->second,
+                                                               origin::internal));
                             else
-                              E(false, F("unknown attribute '%s' on path '%s'\n"
-                                         "please contact %s so we can work out the right way to migrate this\n"
-                                         "(if you just want it to go away, see the switch --drop-attr, but\n"
-                                         "seriously, if you'd like to keep it, we're happy to figure out how)")
+                              E(false, origin::no_fault,
+                                F("unknown attribute '%s' on path '%s'\n"
+                                  "please contact %s so we can work out the right way to migrate this\n"
+                                  "(if you just want it to go away, see the switch --drop-attr, but\n"
+                                  "seriously, if you'd like to keep it, we're happy to figure out how)")
                                 % key % j->first % PACKAGE_BUGREPORT);
                           }
                       }
@@ -1702,7 +1710,7 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
     {
       manifest_id child, parent;
       child = manifest_id(i->inner().ident.inner());
-      parent = manifest_id(i->inner().value());
+      parent = typecast_vocab<manifest_id>(i->inner().value);
 
       u64 parent_node = graph.add_node_for_old_manifest(parent);
       u64 child_node = graph.add_node_for_old_manifest(child);
@@ -1821,7 +1829,7 @@ parse_edge(basic_io::parser & parser,
 
   parser.esym(syms::old_revision);
   parser.hex(tmp);
-  old_rev = revision_id(decode_hexenc(tmp));
+  old_rev = decode_hexenc_as<revision_id>(tmp, parser.tok.in.made_from);
 
   parse_cset(parser, *cs);
 
@@ -1836,17 +1844,18 @@ parse_revision(basic_io::parser & parser,
   MM(rev);
   rev.edges.clear();
   rev.made_for = made_for_database;
+  rev.made_from = parser.tok.in.made_from;
   string tmp;
   parser.esym(syms::format_version);
   parser.str(tmp);
-  E(tmp == "1",
+  E(tmp == "1", parser.tok.in.made_from,
     F("encountered a revision with unknown format, version '%s'\n"
       "I only know how to understand the version '1' format\n"
       "a newer version of monotone is required to complete this operation")
     % tmp);
   parser.esym(syms::new_manifest);
   parser.hex(tmp);
-  rev.new_manifest = manifest_id(decode_hexenc(tmp), made_from_network);
+  rev.new_manifest = decode_hexenc_as<manifest_id>(tmp, parser.tok.in.made_from);
   while (parser.symp(syms::old_revision))
     parse_edge(parser, rev);
   rev.check_sane();
@@ -1858,13 +1867,12 @@ read_revision(data const & dat,
 {
   MM(rev);
   basic_io::input_source src(dat(), "revision");
-  rev.made_from = dat.made_from;
   src.made_from = dat.made_from;
-  made_from_t made_from(rev.made_from);
   basic_io::tokenizer tok(src);
   basic_io::parser pars(tok);
   parse_revision(pars, rev);
-  I(src.lookahead == EOF);
+  E(src.lookahead == EOF, rev.made_from,
+    F("failed to parse revision"));
   rev.check_sane();
 }
 
@@ -1881,7 +1889,7 @@ static void write_insane_revision(revision_t const & rev,
 {
   basic_io::printer pr;
   print_insane_revision(pr, rev);
-  dat = data(pr.buf);
+  dat = data(pr.buf, origin::internal);
 }
 
 template <> void
@@ -1986,9 +1994,9 @@ UNIT_TEST(revision, from_network)
       UNIT_TEST_CHECKPOINT((string("iteration ")
                             + boost::lexical_cast<string>(i)).c_str());
       UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
-                                               made_from_network),
+                                               origin::network),
                                           rev),
-                            bad_decode);
+                            recoverable_failure);
     }
 }
 

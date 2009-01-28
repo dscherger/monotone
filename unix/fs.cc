@@ -40,7 +40,8 @@ get_current_working_dir()
   if (!getcwd(buffer, 4096))
     {
       const int err = errno;
-      E(false, F("cannot get working directory: %s") % os_strerror(err));
+      E(false, origin::system,
+        F("cannot get working directory: %s") % os_strerror(err));
     }
   return string(buffer);
 }
@@ -51,7 +52,8 @@ change_current_working_dir(string const & to)
   if (chdir(to.c_str()))
     {
       const int err = errno;
-      E(false, F("cannot change to directory %s: %s") % to % os_strerror(err));
+      E(false, origin::system,
+        F("cannot change to directory %s: %s") % to % os_strerror(err));
     }
 }
 
@@ -72,7 +74,8 @@ get_homedir()
     return string(home);
 
   struct passwd * pw = getpwuid(getuid());
-  N(pw != NULL, F("could not find home directory for uid %d") % getuid());
+  E(pw != NULL, origin::user,
+    F("could not find home directory for uid %d") % getuid());
   return string(pw->pw_dir);
 }
 
@@ -104,7 +107,7 @@ tilde_expand(string const & in)
   // treating system-provided data as utf8, but it's probably in the
   // filesystem charset)
   pw = getpwnam(user.c_str());
-  N(pw != NULL,
+  E(pw != NULL, origin::user,
     F("could not find home directory for user %s") % user);
 
   return string(pw->pw_dir) + after;
@@ -122,7 +125,8 @@ get_path_status(string const & path)
       if (err == ENOENT)
         return path::nonexistent;
       else
-        E(false, F("error accessing file %s: %s") % path % os_strerror(err));
+        E(false, origin::system,
+          F("error accessing file %s: %s") % path % os_strerror(err));
     }
   if (S_ISREG(buf.st_mode))
     return path::file;
@@ -131,7 +135,7 @@ get_path_status(string const & path)
   else
     {
       // fifo or device or who knows what...
-      E(false, F("cannot handle special file %s") % path);
+      E(false, origin::system, F("cannot handle special file %s") % path);
     }
 }
 
@@ -146,7 +150,8 @@ namespace
       if (!d)
         {
           const int err = errno;
-          E(false, F("could not open directory '%s': %s") % path % os_strerror(err));
+          E(false, origin::system,
+            F("could not open directory '%s': %s") % path % os_strerror(err));
         }
     }
     // technically closedir can fail, but there's nothing we could do about it.
@@ -236,7 +241,7 @@ do_read_directory(string const & path,
 
       int err = errno;
 
-      E(st_result == 0,
+      E(st_result == 0, origin::system,
         F("error accessing '%s/%s': %s") % p % d->d_name % os_strerror(err));
 
       if (S_ISREG(st.st_mode))
@@ -259,7 +264,8 @@ rename_clobberingly(string const & from, string const & to)
   if (rename(from.c_str(), to.c_str()))
     {
       const int err = errno;
-      E(false, F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(err));
+      E(false, origin::system,
+        F("renaming '%s' to '%s' failed: %s") % from % to % os_strerror(err));
     }
 }
 
@@ -271,7 +277,8 @@ do_remove(string const & path)
   if (remove(path.c_str()))
     {
       const int err = errno;
-      E(false, F("could not remove '%s': %s") % path % os_strerror(err));
+      E(false, origin::system,
+        F("could not remove '%s': %s") % path % os_strerror(err));
     }
 }
 
@@ -283,7 +290,8 @@ do_mkdir(string const & path)
   if (mkdir(path.c_str(), 0777))
     {
       const int err = errno;
-      E(false, F("could not create directory '%s': %s") % path % os_strerror(err));
+      E(false, origin::system,
+        F("could not create directory '%s': %s") % path % os_strerror(err));
     }
 }
 
@@ -348,7 +356,7 @@ make_temp_file(string const & dir, string & name, mode_t mode)
       // fact a directory to which we can write - but we get better
       // diagnostics from this E() than we would from an I().)
 
-      E(err == EEXIST,
+      E(err == EEXIST, origin::system,
         F("cannot create temp file %s: %s") % tmp % os_strerror(err));
 
       // This increment is relatively prime to 'limit', therefore 'value'
@@ -358,7 +366,8 @@ make_temp_file(string const & dir, string & name, mode_t mode)
     }
 
   // we really should never get here.
-  E(false, F("all %d possible temporary file names are in use") % limit);
+  E(false, origin::no_fault,
+    F("all %d possible temporary file names are in use") % limit);
 }
 
 
@@ -398,12 +407,12 @@ write_data_worker(string const & fname,
       {
         ssize_t written = write(fd, ptr, remaining);
         const int err = errno;
-        E(written >= 0,
+        E(written >= 0, origin::system,
           F("error writing to temp file %s: %s") % tmp % os_strerror(err));
         if (written == 0)
           {
             deadcycles++;
-            E(deadcycles < 4,
+            E(deadcycles < 4, origin::system,
               FP("giving up after four zero-length writes to %s "
                  "(%d byte written, %d left)",
                  "giving up after four zero-length writes to %s "

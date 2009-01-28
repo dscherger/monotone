@@ -28,7 +28,7 @@ struct lua_State;
 struct globish;
 struct options;
 
-extern app_state* get_app_state(lua_State *L);
+extern app_state* get_app_state(lua_State *LS);
 
 class lua_hooks
 {

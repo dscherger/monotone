@@ -42,7 +42,7 @@ packet_writer::consume_file_data(file_id const & ident,
   base64<gzip<data> > packed;
   pack(dat.inner(), packed);
   ost << "[fdata " << ident << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
@@ -55,7 +55,7 @@ packet_writer::consume_file_delta(file_id const & old_id,
   pack(del.inner(), packed);
   ost << "[fdelta " << old_id << '\n'
       << "        " << new_id << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
@@ -66,18 +66,19 @@ packet_writer::consume_revision_data(revision_id const & ident,
   base64<gzip<data> > packed;
   pack(dat.inner(), packed);
   ost << "[rdata " << ident << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
 void
 packet_writer::consume_revision_cert(revision<cert> const & t)
 {
-  ost << "[rcert " << encode_hexenc(t.inner().ident.inner()()) << '\n'
+  ost << "[rcert " << encode_hexenc(t.inner().ident.inner()(),
+                                    t.inner().ident.inner().made_from) << '\n'
       << "       " << t.inner().name() << '\n'
       << "       " << t.inner().key() << '\n'
-      << "       " << trim_ws(encode_base64(t.inner().value)()) << "]\n"
-      << trim_ws(encode_base64(t.inner().sig)()) << '\n'
+      << "       " << trim(encode_base64(t.inner().value)()) << "]\n"
+      << trim(encode_base64(t.inner().sig)()) << '\n'
       << "[end]\n";
 }
 
@@ -86,7 +87,7 @@ packet_writer::consume_public_key(rsa_keypair_id const & ident,
                                   rsa_pub_key const & k)
 {
   ost << "[pubkey " << ident() << "]\n"
-      << trim_ws(encode_base64(k)()) << '\n'
+      << trim(encode_base64(k)()) << '\n'
       << "[end]\n";
 }
 
@@ -95,8 +96,8 @@ packet_writer::consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp)
 {
   ost << "[keypair " << ident() << "]\n"
-      << trim_ws(encode_base64(kp.pub)()) << "#\n"
-      << trim_ws(encode_base64(kp.priv)()) << '\n'
+      << trim(encode_base64(kp.pub)()) << "#\n"
+      << trim(encode_base64(kp.priv)()) << '\n'
       << "[end]\n";
 }
 
@@ -105,7 +106,7 @@ packet_writer::consume_old_private_key(rsa_keypair_id const & ident,
                                        old_arc4_rsa_priv_key const & k)
 {
   ost << "[privkey " << ident() << "]\n"
-      << trim_ws(encode_base64(k)()) << '\n'
+      << trim(encode_base64(k)()) << '\n'
       << "[end]\n";
 }
 
@@ -114,47 +115,53 @@ packet_writer::consume_old_private_key(rsa_keypair_id const & ident,
 namespace
 {
   struct
-  feed_packet_consumer
+  feed_packet_consumer : public origin_aware
   {
     size_t & count;
     packet_consumer & cons;
-    feed_packet_consumer(size_t & count, packet_consumer & c)
-      : count(count), cons(c)
+    feed_packet_consumer(size_t & count, packet_consumer & c,
+                         origin::type whence)
+      : origin_aware(whence), count(count), cons(c)
     {}
     void validate_id(string const & id) const
     {
       E(id.size() == constants::idlen
         && id.find_first_not_of(constants::legal_id_bytes) == string::npos,
+        made_from,
         F("malformed packet: invalid identifier"));
     }
     void validate_base64(string const & s) const
     {
       E(!s.empty()
         && s.find_first_not_of(constants::legal_base64_bytes) == string::npos,
+        made_from,
         F("malformed packet: invalid base64 block"));
     }
     void validate_arg_base64(string const & s) const
     {
       E(s.find_first_not_of(constants::legal_base64_bytes) == string::npos,
+        made_from,
         F("malformed packet: invalid base64 block"));
     }
     void validate_key(string const & k) const
     {
       E(!k.empty()
         && k.find_first_not_of(constants::legal_key_name_bytes) == string::npos,
+        made_from,
         F("malformed packet: invalid key name"));
     }
     void validate_certname(string const & cn) const
     {
       E(!cn.empty()
         && cn.find_first_not_of(constants::legal_cert_name_bytes) == string::npos,
+        made_from,
         F("malformed packet: invalid cert name"));
     }
     void validate_no_more_args(istringstream & iss) const
     {
       string next;
       iss >> next;
-      E(next.empty(),
+      E(next.empty(), made_from,
         F("malformed packet: too many arguments in header"));
     }
 
@@ -165,9 +172,9 @@ namespace
       validate_id(args);
       validate_base64(body);
 
-      id hash(decode_hexenc(args));
+      id hash(decode_hexenc_as<id>(args, made_from));
       data contents;
-      unpack(base64<gzip<data> >(body), contents);
+      unpack(base64<gzip<data> >(body, made_from), contents);
       if (is_revision)
         cons.consume_revision_data(revision_id(hash),
                                    revision_data(contents));
@@ -185,10 +192,10 @@ namespace
       validate_no_more_args(iss);
       validate_base64(body);
 
-      id src_hash(decode_hexenc(src_id)),
-         dst_hash(decode_hexenc(dst_id));
+      id src_hash(decode_hexenc_as<id>(src_id, made_from)),
+        dst_hash(decode_hexenc_as<id>(dst_id, made_from));
       delta contents;
-      unpack(base64<gzip<delta> >(body), contents);
+      unpack(base64<gzip<delta> >(body, made_from), contents);
       cons.consume_file_delta(file_id(src_hash),
                               file_id(dst_hash),
                               file_delta(contents));
@@ -214,15 +221,15 @@ namespace
       string val;    
       read_rest(iss,val);           validate_arg_base64(val);    
 
-      revision_id hash(decode_hexenc(certid));
+      revision_id hash(decode_hexenc_as<revision_id>(certid, made_from));
       validate_base64(body);
 
       // canonicalize the base64 encodings to permit searches
       cert t = cert(hash,
-                    cert_name(name),
-                    decode_base64_as<cert_value>(val),
-                    rsa_keypair_id(keyid),
-                    decode_base64_as<rsa_sha1_signature>(body));
+                    cert_name(name, made_from),
+                    decode_base64_as<cert_value>(val, made_from),
+                    rsa_keypair_id(keyid, made_from),
+                    decode_base64_as<rsa_sha1_signature>(body, made_from));
       cons.consume_revision_cert(revision<cert>(t));
     }
 
@@ -232,8 +239,8 @@ namespace
       validate_key(args);
       validate_base64(body);
 
-      cons.consume_public_key(rsa_keypair_id(args),
-                              decode_base64_as<rsa_pub_key>(body));
+      cons.consume_public_key(rsa_keypair_id(args, made_from),
+                              decode_base64_as<rsa_pub_key>(body, made_from));
     }
 
     void keypair_packet(string const & args, string const & body) const
@@ -246,9 +253,9 @@ namespace
       validate_key(args);
       validate_base64(pub);
       validate_base64(priv);
-      cons.consume_key_pair(rsa_keypair_id(args),
-                            keypair(decode_base64_as<rsa_pub_key>(pub),
-                                    decode_base64_as<rsa_priv_key>(priv)));
+      cons.consume_key_pair(rsa_keypair_id(args, made_from),
+                            keypair(decode_base64_as<rsa_pub_key>(pub, made_from),
+                                    decode_base64_as<rsa_priv_key>(priv, made_from)));
     }
 
     void privkey_packet(string const & args, string const & body) const
@@ -256,8 +263,8 @@ namespace
       L(FL("read privkey packet"));
       validate_key(args);
       validate_base64(body);
-      cons.consume_old_private_key(rsa_keypair_id(args),
-                                   decode_base64_as<old_arc4_rsa_priv_key>(body));
+      cons.consume_old_private_key(rsa_keypair_id(args, made_from),
+                                   decode_base64_as<old_arc4_rsa_priv_key>(body, made_from));
     }
   
     void operator()(string const & type,
@@ -292,7 +299,7 @@ static size_t
 extract_packets(string const & s, packet_consumer & cons)
 {
   size_t count = 0;
-  feed_packet_consumer feeder(count, cons);
+  feed_packet_consumer feeder(count, cons, origin::user);
 
   string::const_iterator p, tbeg, tend, abeg, aend, bbeg, bend;
 
@@ -394,6 +401,7 @@ read_packets(istream & in, packet_consumer & cons)
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 #include "xdelta.hh"
+#include "vocab_cast.hh"
 
 using std::ostringstream;
 
@@ -402,10 +410,10 @@ UNIT_TEST(packet, validators)
   ostringstream oss;
   packet_writer pw(oss);
   size_t count;
-  feed_packet_consumer f(count, pw);
+  feed_packet_consumer f(count, pw, origin::user);
 
-#define N_THROW(expr) UNIT_TEST_CHECK_NOT_THROW(expr, informative_failure)
-#define Y_THROW(expr) UNIT_TEST_CHECK_THROW(expr, informative_failure)
+#define N_THROW(expr) UNIT_TEST_CHECK_NOT_THROW(expr, recoverable_failure)
+#define Y_THROW(expr) UNIT_TEST_CHECK_THROW(expr, recoverable_failure)
 
   // validate_id
   N_THROW(f.validate_id("5d7005fadff386039a8d066684d22d369c1e6c94"));
@@ -489,12 +497,12 @@ UNIT_TEST(packet, roundabout)
 
     // a rdata packet
     revision_t rev;
-    rev.new_manifest = manifest_id(decode_hexenc(
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    rev.new_manifest = decode_hexenc_as<manifest_id>(
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", origin::internal);
     shared_ptr<cset> cs(new cset);
     cs->dirs_added.insert(file_path_internal(""));
-    rev.edges.insert(make_pair(revision_id(decode_hexenc(
-      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")), cs));
+    rev.edges.insert(make_pair(decode_hexenc_as<revision_id>(
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", origin::internal), cs));
     revision_data rdat;
     write_revision(rev, rdat);
     revision_id rid;
@@ -507,7 +515,7 @@ UNIT_TEST(packet, roundabout)
 
     // cert now accepts revision_id exclusively, so we need to cast the
     // file_id to create a cert to test the packet writer with.
-    cert c(revision_id(fid.inner()()), cert_name("smell"), val,
+    cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
            rsa_keypair_id("fun@moonman.com"), sig);
     pw.consume_revision_cert(revision<cert>(c));
 

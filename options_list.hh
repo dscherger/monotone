@@ -54,20 +54,24 @@
   OPTVAR(globals, type, name, default_)					\
   OPTION(globals, name, has_arg<type >(), string, description)
 
+// because 'default_' is constructor arguments, and may need to be a list
+// This doesn't work if fed through the OPT / GOPT shorthand versions
+#define COMMA ,
+
 OPTSET(globals)
 
 OPTVAR(globals, args_vector, args, )
 OPTION(globals, positionals, true, "--", "")
 #ifdef option_bodies
 {
-  args.push_back(arg_type(arg));
+  args.push_back(arg_type(arg, origin::user));
 }
 #endif
 
 OPT(author, "author", utf8, , gettext_noop("override author for commit"))
 #ifdef option_bodies
 {
-  author = utf8(arg);
+  author = utf8(arg, origin::user);
 }
 #endif
 
@@ -91,7 +95,7 @@ OPTION(bind_opts, bind, true, "bind",
        gettext_noop("address:port to listen on (netsync default :4691; scgi default :3000; http default :8008)"))
 #ifdef option_bodies
 {
-  bind_uris.push_back(utf8(arg));
+  bind_uris.push_back(utf8(arg, origin::user));
   bind_stdio = false;
 }
 #endif
@@ -122,7 +126,7 @@ OPTION(branch, branch, true, "branch,b",
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
-  branchname = branch_name(arg);
+  branchname = branch_name(arg, origin::user);
 }
 #endif
 
@@ -142,11 +146,15 @@ OPT(revs_only, "revs-only", bool, false,
 }
 #endif
 
-GOPT(conf_dir, "confdir", system_path, get_default_confdir(),
-     gettext_noop("set location of configuration directory"))
+// Remember COMMA doesn't work with GOPT, use long form.
+//GOPT(conf_dir, "confdir", system_path, get_default_confdir() COMMA origin::user,
+//     gettext_noop("set location of configuration directory"))
+OPTVAR(globals, system_path, conf_dir, get_default_confdir() COMMA origin::user)
+OPTION(globals, conf_dir, true, "confdir",
+       gettext_noop("set location of configuration directory"))
 #ifdef option_bodies
 {
-  conf_dir = system_path(arg);
+  conf_dir = system_path(arg, origin::user);
   if (!key_dir_given)
     key_dir = (conf_dir / "keys");
 }
@@ -178,7 +186,7 @@ OPT(date, "date", date_t, ,
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
-  dbname = system_path(arg);
+  dbname = system_path(arg, origin::user);
 }
 #endif
 
@@ -290,7 +298,7 @@ OPTION(globals, dump, true, "dump",
         gettext_noop("file to dump debugging log to, on failure"))
 #ifdef option_bodies
 {
-  global_sanity.set_dump_path(system_path(arg).as_external());
+  global_sanity.set_dump_path(system_path(arg, origin::user).as_external());
 }
 #endif
 
@@ -299,7 +307,7 @@ OPTION(exclude, exclude, true, "exclude",
         gettext_noop("leave out anything described by its argument"))
 #ifdef option_bodies
 {
-  exclude_patterns.push_back(arg_type(arg));
+  exclude_patterns.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -353,7 +361,7 @@ OPTION(include, include, true, "include",
         gettext_noop("include anything described by its argument"))
 #ifdef option_bodies
 {
-  include_patterns.push_back(arg_type(arg));
+  include_patterns.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -370,15 +378,18 @@ OPTVAR(key, rsa_keypair_id, signing_key, )
 OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
 #ifdef option_bodies
 {
-  internalize_rsa_keypair_id(utf8(arg), signing_key);
+  internalize_rsa_keypair_id(utf8(arg, origin::user), signing_key);
 }
 #endif
 
-GOPT(key_dir, "keydir", system_path, get_default_keydir(),
-     gettext_noop("set location of key store"))
+// Remember COMMA doesn't work with GOPT, use long form.
+//GOPT(key_dir, "keydir", system_path, get_default_keydir() COMMA origin::user,
+//     gettext_noop("set location of key store"))
+OPTVAR(globals, system_path, key_dir, get_default_keydir() COMMA origin::user)
+OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store"))
 #ifdef option_bodies
 {
-  key_dir = system_path(arg);
+  key_dir = system_path(arg, origin::user);
 }
 #endif
 
@@ -388,7 +399,7 @@ OPTION(key_to_push, key_to_push, true, "key-to-push",
 #ifdef option_bodies
 {
   rsa_keypair_id keyid;
-  internalize_rsa_keypair_id(utf8(arg), keyid);
+  internalize_rsa_keypair_id(utf8(arg, origin::user), keyid);
   keys_to_push.push_back(keyid);
 }
 #endif
@@ -406,7 +417,7 @@ OPT(last, "last", long, -1,
 OPTION(globals, log, true, "log", gettext_noop("file to write the log to"))
 #ifdef option_bodies
 {
-  ui.redirect_log_to(system_path(arg));
+  ui.redirect_log_to(system_path(arg, origin::user));
 }
 #endif
 
@@ -425,7 +436,7 @@ OPTION(messages, msgfile, true, "message-file",
         gettext_noop("set filename containing commit changelog message"))
 #ifdef option_bodies
 {
-  msgfile = utf8(arg);
+  msgfile = utf8(arg, origin::user);
 }
 #endif
 OPTION(messages, no_prefix, false, "no-prefix",
@@ -506,7 +517,7 @@ OPT(pidfile, "pid-file", system_path, ,
      gettext_noop("record process id of server"))
 #ifdef option_bodies
 {
-  pidfile = system_path(arg);
+  pidfile = system_path(arg, origin::user);
 }
 #endif
 
@@ -524,7 +535,7 @@ GOPT(extra_rcfiles, "rcfile", args_vector, ,
      gettext_noop("load extra rc file"))
 #ifdef option_bodies
 {
-  extra_rcfiles.push_back(arg_type(arg));
+  extra_rcfiles.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -551,7 +562,7 @@ OPTION(revision, revision, true, "revision,r",
      gettext_noop("select revision id for operation"))
 #ifdef option_bodies
 {
-  revision_selectors.push_back(arg_type(arg));
+  revision_selectors.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -598,14 +609,14 @@ GOPT(ticker, "ticker", std::string, ,
 OPT(from, "from", args_vector, , gettext_noop("revision(s) to start logging at"))
 #ifdef option_bodies
 {
-  from.push_back(arg_type(arg));
+  from.push_back(arg_type(arg, origin::user));
 }
 #endif
 
 OPT(to, "to", args_vector, , gettext_noop("revision(s) to stop logging at"))
 #ifdef option_bodies
 {
-  to.push_back(arg_type(arg));
+  to.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -689,9 +700,10 @@ OPTION(resolve_conflicts_opts, resolve_conflicts_file, true, "resolve-conflicts-
 {
   // we can't call  bookkeeping_path::external_string_is_bookkeeping_path
   // here, because we haven't found the workspace yet.
-  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+  E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg, origin::user)),
+    origin::user,
     F("conflicts file must be under _MTN"));
-  resolve_conflicts_file = bookkeeping_path(arg);
+  resolve_conflicts_file = bookkeeping_path(arg, origin::user);
 }
 #endif
 
@@ -699,7 +711,7 @@ OPTION(resolve_conflicts_opts, resolve_conflicts, false, "resolve-conflicts",
        gettext_noop("use _MTN/conflicts to resolve conflicts"))
 #ifdef option_bodies
 {
-  N(!resolve_conflicts_file_given,
+  E(!resolve_conflicts_file_given, origin::user,
     F("only one of --resolve-conflicts or --resolve-conflicts-file may be given"));
   resolve_conflicts_file = bookkeeping_path("_MTN/conflicts");
 }
@@ -714,9 +726,10 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
 {
   // we can't call bookkeeping_path::external_string_is_bookkeeping_path
   // here, because we haven't found the workspace yet.
-  N(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg)),
+  E(bookkeeping_path::internal_string_is_bookkeeping_path(utf8(arg, origin::user)),
+    origin::user,
     F("conflicts file must be under _MTN"));
-  conflicts_file = bookkeeping_path(arg);
+  conflicts_file = bookkeeping_path(arg, origin::user);
 }
 #endif
 

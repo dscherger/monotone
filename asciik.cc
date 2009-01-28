@@ -375,7 +375,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     "",
     options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   set<revision_id> revs;
@@ -395,6 +395,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
       set<revision_id> parents;
       db.get_revision_parents(*rev, parents);
       parents.erase(ghost); // remove the fake parent that root nodes have
-      graph.print(*rev, parents, encode_hexenc(rev->inner()()));
+      graph.print(*rev, parents, encode_hexenc(rev->inner()(),
+                                               rev->inner().made_from));
     }
 }

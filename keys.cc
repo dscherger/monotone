@@ -70,7 +70,7 @@ get_passphrase(utf8 & phrase,
           if (strcmp(pass1, pass2) == 0)
             break;
 
-          N(i++ < 2, F("too many failed passphrases"));
+          E(i++ < 2, origin::user, F("too many failed passphrases"));
           P(F("passphrases do not match, try again"));
         }
 
@@ -93,7 +93,7 @@ get_passphrase(utf8 & phrase,
 void
 load_key_pair(key_store & keys, rsa_keypair_id const & id)
 {
-  N(keys.key_pair_exists(id),
+  E(keys.key_pair_exists(id), origin::user,
     F("no key pair '%s' found in key store '%s'")
     % id % keys.get_key_dir());
 }
@@ -129,10 +129,10 @@ get_user_key(options const & opts, lua_hooks & lua,
     {
       vector<rsa_keypair_id> all_privkeys;
       keys.get_key_ids(all_privkeys);
-      N(!all_privkeys.empty(), 
+      E(!all_privkeys.empty(), origin::user,
         F("you have no private key to make signatures with\n"
           "perhaps you need to 'genkey <your email>'"));
-      N(all_privkeys.size() < 2,
+      E(all_privkeys.size() < 2, origin::user,
         F("you have multiple private keys\n"
           "pick one to use for signatures by adding "
           "'-k<keyname>' to your command"));
@@ -154,7 +154,7 @@ get_user_key(options const & opts, lua_hooks & lua,
         {
           rsa_pub_key pub_key;
           db.get_key(key, pub_key);
-          E(keys_match(key, pub_key, key, priv_key.pub),
+          E(keys_match(key, pub_key, key, priv_key.pub), origin::no_fault,
             F("The key '%s' stored in your database does\n"
               "not match the version in your local key store!") % key);
         }
@@ -179,7 +179,8 @@ key_hash_code(rsa_keypair_id const & ident,
               rsa_pub_key const & pub,
               id & out)
 {
-  data tdat(ident() + ":" + remove_ws(encode_base64(pub)()));
+  data tdat(ident() + ":" + remove_ws(encode_base64(pub)()),
+            origin::internal);
   calculate_ident(tdat, out);
 }
 
@@ -188,7 +189,8 @@ key_hash_code(rsa_keypair_id const & ident,
               rsa_priv_key const & priv,
               id & out)
 {
-  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()));
+  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()),
+            origin::internal);
   calculate_ident(tdat, out);
 }
 

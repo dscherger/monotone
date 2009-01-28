@@ -10,6 +10,7 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include "sanity.hh"
 
 struct uri
 {
@@ -27,10 +28,10 @@ struct uri
 };
 
 void
-parse_uri(std::string const & in, uri & out);
+parse_uri(std::string const & in, uri & out, origin::type made_from);
 
 std::string
-urldecode(std::string const & in);
+urldecode(std::string const & in, origin::type made_from);
 
 // Local Variables:
 // mode: C++

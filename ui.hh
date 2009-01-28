@@ -53,6 +53,8 @@ public:
   void warn(format_base const & fmt) { warn(fmt.str()); }
   void fatal(std::string const & fatal);
   void fatal(format_base const & fmt) { fatal(fmt.str()); }
+  void fatal_db(std::string const & fatal);
+  void fatal_db(format_base const & fmt) { fatal_db(fmt.str()); }
   void inform(std::string const & line);
   void inform(format_base const & fmt) { inform(fmt.str()); }
   void fatal_exception(std::exception const & ex);
