@@ -16,6 +16,7 @@
 #include "base.hh"
 #include "constants.hh"
 #include "gsync.hh"
+#include "http.hh"
 #include "json_io.hh"
 
 #include <iostream>
@@ -41,12 +42,11 @@ struct http_client
   http_client(options & opts, lua_hooks & lua,
               netsync_connection_info const & info);
 
-  void execute(std::string const & request, std::string & response);
+  void execute(http::request const & request, http::response & response);
 
-  void parse_http_status_line();
-  void parse_http_header_line(size_t & content_length,
-                              bool & keepalive);
-  void parse_http_response(std::string & data);
+  void parse_http_status_line(http::response & response);
+  void parse_http_header_line(http::response & response);
+  void parse_http_response(http::response & response);
   void crlf();
 };
 
@@ -62,7 +62,7 @@ public:
   json_io::json_value_t transact(json_io::json_value_t v) const;
   
   virtual void inquire_about_revs(std::set<revision_id> const & query_set,
-                                    std::set<revision_id> & theirs) const;
+                                  std::set<revision_id> & theirs) const;
   virtual void get_descendants(std::set<revision_id> const & common_revs,
                                std::vector<revision_id> & inbound_revs) const;
 

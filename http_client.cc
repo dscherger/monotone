@@ -11,6 +11,7 @@
 // micro http client implementation
 #include "base.hh"
 #include "globish.hh"
+#include "http.hh"
 #include "http_client.hh"
 #include "json_io.hh"
 #include "json_msgs.hh"
@@ -27,19 +28,26 @@
 #include "netxx/timeout.h"
 #include "netxx_pipe.hh"
 
+#include <map>
 #include <vector>
 #include <set>
 #include <string>
+#include <sstream>
 
 #include <boost/shared_ptr.hpp>
 
-using json_io::json_value_t;
 using boost::shared_ptr;
 using boost::lexical_cast;
+
+using json_io::json_value_t;
+
+using std::map;
 using std::vector;
 using std::set;
 using std::string;
 using std::iostream;
+using std::istringstream;
+using std::ostringstream;
 
 using Netxx::Netbuf;
 using Netxx::Timeout;
@@ -63,7 +71,7 @@ http_client::http_client(options & opts, lua_hooks & lua,
 {}
 
 void
-http_client::execute(string const & request, string & response)
+http_client::execute(http::request const & request, http::response & response)
 {
   if (!open)
     {
@@ -83,25 +91,27 @@ http_client::execute(string const & request, string & response)
   I(io);
   I(open);
 
-  string header = (F("POST %s HTTP/1.1\r\n"
-                     "Host: %s\r\n"
-                     "Content-Length: %s\r\n"
-                     "Content-Type: application/octet-stream\r\n"
-                     "Accept: application/octet-stream\r\n"
-                     "Accept-Encoding: identity\r\n"
-                     "\r\n")
-                   % (info.client.u.path.empty() ? "/" : info.client.u.path)
-                   % info.client.u.host
-                   % lexical_cast<string>(request.size())).str();
-
   L(FL("http_client: sending request [[POST %s HTTP/1.1]]")
-    % (info.client.u.path.empty() ? "/" : info.client.u.path));
-  L(FL("http_client: to [[Host: %s]]") % info.client.u.host);
-  L(FL("http_client: sending %d-byte body") % request.size());
-  io->write(header.data(), header.size());
-  io->write(request.data(), request.size());
+    % (info.client.u.path));
+
+  (*io) << request.method << " " 
+        << info.client.u.path << " "
+        << request.version << "\r\n";
+
+  for (map<string, string>::const_iterator i = request.headers.begin();
+       i != request.headers.end(); ++i)
+    (*io) << i->first << ": " << i->second << "\r\n";
+
+  (*io) << "\r\n";
+
+  // FIXME: this used to set a Host header
+  //L(FL("http_client: to [[Host: %s]]") % request.headers["Host"]);
+
+  L(FL("http_client: sending %d-byte body") % request.body.size());
+  (*io) << request.body;
+
   io->flush();
-  L(FL("http_client: sent %d-byte body") % request.size());
+  L(FL("http_client: sent %d byte request") % request.body.size());
 
 //   std::cerr << "http request" << std::endl
 //             << out.buf.data() << std::endl;
@@ -109,19 +119,20 @@ http_client::execute(string const & request, string & response)
   // Now read back the result
   parse_http_response(response);
 
+  L(FL("http_client: received %d byte response") % response.body.size());
+
 //   std::cerr << "http response" << std::endl
 //             << data << std::endl;
 }
 
 void
-http_client::parse_http_status_line()
+http_client::parse_http_status_line(http::response & response)
 {
   // We're only interested in 200-series responses
-  string tmp;
-  string pat("HTTP/1.1 200");
   L(FL("http_client: reading response..."));
-  while (io->good() && tmp.empty())
-    std::getline(*io, tmp);
+  (*io) >> response.version >> response.status_code;
+  std::getline(*io, response.status_message);
+  response.status_message = trim(response.status_message, " \r\n");
 
   // sometimes we seem to get eof when reading the response -- not sure why yet
   if (io->good())
@@ -133,26 +144,23 @@ http_client::parse_http_status_line()
   if (io->eof())
     L(FL("connection is eof"));
 
-  L(FL("http_client: response: [[%s]]") % tmp);
-  E(tmp.substr(0,pat.size()) == pat, origin::network, 
-    F("HTTP status line: %s") % tmp);
+  L(FL("http_client: response: [[%s %d %s]]") 
+    % response.version % response.status_code % response.status_message);
 }
 
 void
-http_client::parse_http_header_line(size_t & content_length,
-                                    bool & connection_close)
+http_client::parse_http_header_line(http::response & response)
 {
-  string k, v, rest;
-  (*io) >> k >> v;
-  L(FL("http_client: header: [[%s %s]]") % k % v);
-  std::getline(*io, rest);
+  string key, val;
+  (*io) >> key;
+  std::getline(*io, val);
 
-  k = lowercase(k);
-  v = lowercase(v);
-  if (k == "content-length:")
-    content_length = lexical_cast<size_t>(v);
-  else if (k == "connection:" && v == "close")
-    connection_close = true;
+  key = trim_right(key, ":");
+  val = trim(val, " \r\n");
+
+  L(FL("http_client: header: [[%s %s]]") % key % val);
+
+  response.headers[key] = val;
 }
 
 
@@ -165,21 +173,26 @@ http_client::crlf()
 
 
 void
-http_client::parse_http_response(std::string & data)
+http_client::parse_http_response(http::response & response)
 {
   size_t content_length = 0;
-  bool connection_close = false;
-  data.clear();
-  parse_http_status_line();
+
+  response.headers.clear();
+  response.body.clear();
+
+  parse_http_status_line(response);
   while (io->good() && io->peek() != '\r')
-    parse_http_header_line(content_length, connection_close);
+    parse_http_header_line(response);
   crlf();
+
+  content_length = lexical_cast<size_t>(response.headers["Content-Length"]);
 
   L(FL("http_client: receiving %d-byte body") % content_length);
 
+  response.body.reserve(content_length);
   while (io->good() && content_length > 0)
     {
-      data += static_cast<char>(io->get());
+      response.body += static_cast<char>(io->get());
       content_length--;
     }
 
@@ -208,9 +221,8 @@ http_client::parse_http_response(std::string & data)
 
   // something is not working right so for now close the connection after
   // every request/response cycle
-  connection_close = true;
 
-  if (connection_close)
+  if (true || response.headers["Connection"] == "close")
     {
       L(FL("http_client: closing connection"));
       stream->close();
@@ -220,8 +232,6 @@ http_client::parse_http_response(std::string & data)
       open = false;
     }
 }
-
-
 
 /////////////////////////////////////////////////////////////////////
 // json_channel adaptor
@@ -233,11 +243,23 @@ json_channel::transact(json_value_t v) const
   json_io::printer out;
   v->write(out);
 
-  string request(out.buf);
-  string response;
+  http::request request;
+  http::response response;
+
+  request.method = http::post;
+  request.uri = "";
+  request.version = http::version;
+  request.headers["Content-Type"] = "application/jsonrequest";
+  request.headers["Content-Length"] = lexical_cast<string>(out.buf.size());
+  request.headers["Accept"] = "application/jsonrequest";
+  request.headers["Accept-Encoding"] = "identity";
+  // FIXME: put a real host value in here (lighttpd seems to require a host header)
+  request.headers["Host"] = "localhost";
+  request.body = out.buf;
+
   client.execute(request, response);
 
-  json_io::input_source in(response, "json");
+  json_io::input_source in(response.body, "json");
   json_io::tokenizer tok(in);
   json_io::parser p(tok);
   return p.parse_object();
