@@ -398,7 +398,7 @@ process_transaction(connection_type type,
           << "\r\n";
       out.flush();
     }
-  catch (informative_failure & e)
+  catch (recoverable_failure & e)
     {
       std::cerr << "informative failure -- " << e.what() << std::endl;
       out << "Status: 400 Bad request\r\n"
@@ -448,7 +448,7 @@ CMD_NO_WORKSPACE(gserve,           // C
   rsa_keypair_id key;  // still unused...
   if (app.opts.use_transport_auth)
     {
-      N(app.lua.hook_persist_phrase_ok(),
+      E(app.lua.hook_persist_phrase_ok(), origin::user,
         F("need permission to store persistent passphrase (see hook persist_phrase_ok())"));
       get_user_key(app.opts, app.lua, db, keys, key);
     }

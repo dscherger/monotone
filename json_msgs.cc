@@ -156,7 +156,7 @@ encode_msg_inquire_request(set<revision_id> const & revs)
   b[syms::vers].str("1");
   builder r = b[syms::revs].arr();
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
-    r.add_str(encode_hexenc(i->inner()()));
+    r.add_str(encode_hexenc(i->inner()(), origin::database));
   return b.v;
 }
 
@@ -175,7 +175,8 @@ decode_msg_inquire_request(json_value_t val,
           std::string s;
           for (size_t i = 0; i < nargs; ++i)
             if (q[syms::revs][i].get(s))
-              revs.insert(revision_id(decode_hexenc(s)));
+              revs.insert(revision_id(decode_hexenc(s, origin::network), 
+                                      origin::network));
           return true;
         }
     }
@@ -197,7 +198,7 @@ encode_msg_inquire_response(set<revision_id> const & revs)
   for (set<revision_id>::const_iterator i = revs.begin();
        i != revs.end(); ++i)
     {
-      r.add_str(encode_hexenc(i->inner()()));
+      r.add_str(encode_hexenc(i->inner()(), origin::database));
     }
   return b.v;
 }
@@ -217,7 +218,9 @@ decode_msg_inquire_response(json_value_t val,
       if (r.len(nrevs))
         for (size_t i = 0; i < nrevs; ++i)
           if (r[i].get(tmp))
-            revs.insert(revision_id(decode_hexenc(tmp)));
+
+            revs.insert(revision_id(decode_hexenc(tmp, origin::network), 
+                                    origin::network));
       return true;
     }
   return false;
@@ -235,7 +238,7 @@ encode_msg_descendants_request(set<revision_id> const & revs)
   b[syms::vers].str("1");
   builder r = b[syms::revs].arr();
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
-    r.add_str(encode_hexenc(i->inner()()));
+    r.add_str(encode_hexenc(i->inner()(), origin::database));
   return b.v;
 }
 
@@ -254,7 +257,8 @@ decode_msg_descendants_request(json_value_t val,
           std::string s;
           for (size_t i = 0; i < nargs; ++i)
             if (q[syms::revs][i].get(s))
-              revs.insert(revision_id(decode_hexenc(s)));
+              revs.insert(revision_id(decode_hexenc(s, origin::network), 
+                                      origin::network));
           return true;
         }
     }
@@ -274,7 +278,7 @@ encode_msg_descendants_response(vector<revision_id> const & revs)
   b[syms::vers].str("1");
   builder r = b[syms::revs].arr();
   for (vector<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
-    r.add_str(encode_hexenc(i->inner()()));
+    r.add_str(encode_hexenc(i->inner()(), origin::database));
   return b.v;
 }
 
@@ -293,7 +297,8 @@ decode_msg_descendants_response(json_value_t val,
           std::string s;
           for (size_t i = 0; i < nargs; ++i)
             if (q[syms::revs][i].get(s))
-              revs.push_back(revision_id(decode_hexenc(s)));
+              revs.push_back(revision_id(decode_hexenc(s, origin::network),
+                                         origin::network));
           return true;
         }
     }
@@ -342,8 +347,10 @@ encode_cset(builder b, cset const & cs)
     {
       builder tmp = b.add_obj();
       tmp[syms::patch].str(i->first.as_internal());
-      tmp[syms::from].str(encode_hexenc(i->second.first.inner()()));
-      tmp[syms::to].str(encode_hexenc(i->second.second.inner()()));
+      tmp[syms::from].str(encode_hexenc(i->second.first.inner()(), 
+                                        origin::database));
+      tmp[syms::to].str(encode_hexenc(i->second.second.inner()(), 
+                                      origin::database));
     }
 
   for (set<pair<file_path, attr_key> >::const_iterator
@@ -393,7 +400,7 @@ decode_cset(query q, cset & cs)
           string content;
           I(change[syms::content].get(content));
           cs.files_added.insert(make_pair(file_path_internal(path),
-                                          file_id(content)));
+                                          file_id(content, origin::network)));
         }
       else if (change[syms::patch].get(path))
         {
@@ -401,15 +408,17 @@ decode_cset(query q, cset & cs)
           I(change[syms::from].get(from));
           I(change[syms::to].get(to));
           cs.deltas_applied.insert(make_pair(file_path_internal(path),
-                                             make_pair(file_id(decode_hexenc(from)),
-                                                       file_id(decode_hexenc(to)))));
+                                             make_pair(file_id(decode_hexenc(from, origin::network),
+                                                               origin::network),
+                                                       file_id(decode_hexenc(to, origin::network),
+                                                               origin::network))));
         }
       else if (change[syms::clear].get(path))
         {
           string key;
           I(change[syms::attr].get(key));
           cs.attrs_cleared.insert(make_pair(file_path_internal(path),
-                                            attr_key(key)));
+                                            attr_key(key, origin::network)));
         }
       else if (change[syms::set].get(path))
         {
@@ -417,8 +426,8 @@ decode_cset(query q, cset & cs)
           I(change[syms::attr].get(key));
           I(change[syms::value].get(val));
           cs.attrs_set.insert(make_pair(make_pair(file_path_internal(path),
-                                                  attr_key(key)),
-                                        attr_value(val)));
+                                                  attr_key(key, origin::network)),
+                                        attr_value(val, origin::network)));
         }
       else
         I(false);
@@ -440,7 +449,8 @@ encode_rev(builder b, revision_t const & rev)
        e != rev.edges.end(); ++e)
     {
       builder edge = edges.add_obj();
-      edge[syms::old_revision].str(encode_hexenc(edge_old_revision(e).inner()()));
+      edge[syms::old_revision].str(encode_hexenc(edge_old_revision(e).inner()(), 
+                                                 origin::database));
       builder changes = edge[syms::changes].arr();
       encode_cset(changes, edge_changes(e));
     }
@@ -454,7 +464,7 @@ decode_rev(query q, revision_t & rev)
   I(q[syms::vers].get(vers));
   I(vers == "1");
 
-  rev.new_manifest = manifest_id(new_manifest);
+  rev.new_manifest = manifest_id(new_manifest, origin::network);
   size_t nargs = 0;
   query edges = q[syms::edges];
   I(edges.len(nargs));
@@ -467,7 +477,8 @@ decode_rev(query q, revision_t & rev)
       query changes = edge[syms::changes];
       shared_ptr<cset> cs(new cset());
       decode_cset(changes, *cs);
-      rev.edges.insert(make_pair(revision_id(decode_hexenc(old_revision)), cs));
+      rev.edges.insert(make_pair(revision_id(decode_hexenc(old_revision, origin::network), 
+                                             origin::network), cs));
     }
   rev.made_for = made_for_database;
 }
@@ -500,8 +511,9 @@ decode_data_records(query q, vector<file_data_record> & data_records)
       string id, dat;
       d[syms::id].get(id);
       d[syms::data].get(dat);
-      file_data data(decode_base64_as<string>(dat));
-      data_records.push_back(file_data_record(file_id(id),
+      file_data data(decode_base64_as<string>(dat, origin::network),
+                     origin::network);
+      data_records.push_back(file_data_record(file_id(id, origin::network),
                                               data));
     }
 }
@@ -536,9 +548,10 @@ decode_delta_records(query q, vector<file_delta_record> & delta_records)
       d[syms::src_id].get(src_id);
       d[syms::dst_id].get(dst_id);
       d[syms::delta].get(del);
-      file_delta delta(decode_base64_as<string>(del));
-      delta_records.push_back(file_delta_record(file_id(src_id),
-                                                file_id(dst_id),
+      file_delta delta(decode_base64_as<string>(del, origin::network), 
+                       origin::network);
+      delta_records.push_back(file_delta_record(file_id(src_id, origin::network),
+                                                file_id(dst_id, origin::network),
                                                 delta));
     }
 }
@@ -553,7 +566,7 @@ encode_msg_get_full_rev_request(revision_id const & rid)
   builder b;
   b[syms::type].str(syms::get_full_rev_request());
   b[syms::vers].str("1");
-  b[syms::id].str(encode_hexenc(rid.inner()()));
+  b[syms::id].str(encode_hexenc(rid.inner()(), origin::database));
   return b.v;
 }
 
@@ -567,7 +580,7 @@ decode_msg_get_full_rev_request(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(decode_hexenc(id));
+      rid = revision_id(decode_hexenc(id, origin::network), origin::network);
       return true;
     }
   return false;
@@ -651,7 +664,7 @@ decode_msg_put_full_rev_request(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id);
+      rid = revision_id(id, origin::network);
       query rq = q[syms::rev];
       decode_rev(rq, rev);
       query dat = q[syms::data_records];
@@ -713,7 +726,7 @@ decode_msg_get_rev_request(json_value_t val, revision_id & rid)
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id);
+      rid = revision_id(id, origin::network);
       return true;
     }
   return false;
@@ -774,7 +787,7 @@ decode_msg_put_rev_request(json_value_t val, revision_id & rid, revision_t & rev
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id);
+      rid = revision_id(id, origin::network);
       query rq = q[syms::rev];
       decode_rev(rq, rev);
       return true;
@@ -834,7 +847,7 @@ decode_msg_get_file_data_request(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      fid = file_id(id);
+      fid = file_id(id, origin::network);
       return true;
     }
   return false;
@@ -864,7 +877,8 @@ decode_msg_get_file_data_response(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::data].get(dat))
     {
-      data = file_data(decode_base64_as<string>(dat));
+      data = file_data(decode_base64_as<string>(dat, origin::network),
+                       origin::network);
       return true;
     }
   return false;
@@ -898,8 +912,9 @@ decode_msg_put_file_data_request(json_value_t val,
       q[syms::id].get(id) &&
       q[syms::data].get(dat))
     {
-      fid = file_id(id);
-      data = file_data(decode_base64_as<string>(dat));
+      fid = file_id(id, origin::network);
+      data = file_data(decode_base64_as<string>(dat, origin::network),
+                       origin::network);
       return true;
     }
   return false;
@@ -961,8 +976,8 @@ decode_msg_get_file_delta_request(json_value_t val,
       q[syms::src_id].get(src) &&
       q[syms::dst_id].get(dst))
     {
-      src_id = file_id(src);
-      dst_id = file_id(dst);
+      src_id = file_id(src, origin::network);
+      dst_id = file_id(dst, origin::network);
       return true;
     }
   return false;
@@ -992,7 +1007,8 @@ decode_msg_get_file_delta_response(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::delta].get(del))
     {
-      delta = file_delta(decode_base64_as<string>(del));
+      delta = file_delta(decode_base64_as<string>(del, origin::network),
+                         origin::network);
       return true;
     }
   return false;
@@ -1030,9 +1046,10 @@ decode_msg_put_file_delta_request(json_value_t val,
       q[syms::src_id].get(src) &&
       q[syms::delta].get(del))
     {
-      src_id = file_id(src);
-      dst_id = file_id(dst);
-      delta = file_delta(decode_base64_as<string>(del));
+      src_id = file_id(src, origin::network);
+      dst_id = file_id(dst, origin::network);
+      delta = file_delta(decode_base64_as<string>(del, origin::network),
+                         origin::network);
       return true;
     }
   return false;

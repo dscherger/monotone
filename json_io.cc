@@ -26,7 +26,7 @@ using std::vector;
 void 
 json_io::input_source::err(string const & s)
 {
-  E(false,
+  E(false, origin::network,
     F("parsing a %s at %d:%d:E: %s") % name % line % col % s);
 }
 

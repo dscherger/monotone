@@ -134,7 +134,8 @@ http_client::parse_http_status_line()
     L(FL("connection is eof"));
 
   L(FL("http_client: response: [[%s]]") % tmp);
-  E(tmp.substr(0,pat.size()) == pat, F("HTTP status line: %s") % tmp);
+  E(tmp.substr(0,pat.size()) == pat, origin::network, 
+    F("HTTP status line: %s") % tmp);
 }
 
 void
@@ -158,8 +159,8 @@ http_client::parse_http_header_line(size_t & content_length,
 void
 http_client::crlf()
 {
-  E(io->get() == '\r', F("expected CR in HTTP response"));
-  E(io->get() == '\n', F("expected LF in HTTP response"));
+  E(io->get() == '\r', origin::network, F("expected CR in HTTP response"));
+  E(io->get() == '\n', origin::network, F("expected LF in HTTP response"));
 }
 
 
@@ -250,6 +251,7 @@ json_channel::inquire_about_revs(set<revision_id> const & query_set,
   json_value_t request = encode_msg_inquire_request(query_set);
   json_value_t response = transact(request);
   E(decode_msg_inquire_response(response, theirs),
+    origin::network,
     F("received unexpected reply to 'inquire_request' message"));
 }
 
@@ -261,6 +263,7 @@ json_channel::get_descendants(set<revision_id> const & common_revs,
   json_value_t request = encode_msg_descendants_request(common_revs);
   json_value_t response = transact(request);
   E(decode_msg_descendants_response(response, inbound_revs),
+    origin::network,
     F("received unexpected reply to 'descendants_request' message"));
 }
 
@@ -276,6 +279,7 @@ json_channel::push_full_rev(revision_id const & rid,
                                                          delta_records);
   json_value_t response = transact(request);
   E(decode_msg_put_full_rev_response(response),
+    origin::network,
     F("received unexpected reply to 'put_full_rev_request' message"));
 }
 
@@ -289,6 +293,7 @@ json_channel::pull_full_rev(revision_id const & rid,
   json_value_t response = transact(request);
   E(decode_msg_get_full_rev_response(response, rev,
                                      data_records, delta_records),
+    origin::network,
     F("received unexpected reply to 'get_full_rev_request' message"));
 }
 
@@ -299,6 +304,7 @@ json_channel::push_file_data(file_id const & id,
   json_value_t request = encode_msg_put_file_data_request(id, data);
   json_value_t response = transact(request);
   E(decode_msg_put_file_data_response(response),
+    origin::network,
     F("received unexpected reply to 'put_file_data_request' message"));
 }
 
@@ -311,6 +317,7 @@ json_channel::push_file_delta(file_id const & old_id,
                                                   old_id, new_id, delta);
   json_value_t response = transact(request);
   E(decode_msg_put_file_delta_response(response),
+    origin::network,
     F("received unexpected reply to 'put_file_delta_request' message"));
 }
 
@@ -321,6 +328,7 @@ json_channel::push_rev(revision_id const & rid,
   json_value_t request = encode_msg_put_rev_request(rid, rev);
   json_value_t response = transact(request);
   E(decode_msg_put_rev_response(response),
+    origin::network,
     F("received unexpected reply to 'put_rev_request' message"));
 }
 
@@ -330,6 +338,7 @@ json_channel::pull_rev(revision_id const & rid, revision_t & rev) const
   json_value_t request = encode_msg_get_rev_request(rid);
   json_value_t response = transact(request);
   E(decode_msg_get_rev_response(response, rev),
+    origin::network,
     F("received unexpected reply to 'get_rev_request' message"));
 }
 
@@ -340,6 +349,7 @@ json_channel::pull_file_data(file_id const & id,
   json_value_t request = encode_msg_get_file_data_request(id);
   json_value_t response = transact(request);
   E(decode_msg_get_file_data_response(response, data),
+    origin::network,
     F("received unexpected reply to 'get_file_data_request' message"));
 }
 
@@ -351,6 +361,7 @@ json_channel::pull_file_delta(file_id const & old_id,
   json_value_t request = encode_msg_get_file_delta_request(old_id, new_id);
   json_value_t response = transact(request);
   E(decode_msg_get_file_delta_response(response, delta),
+    origin::network,
     F("received unexpected reply to 'get_file_delta_request' message"));
 }
 
