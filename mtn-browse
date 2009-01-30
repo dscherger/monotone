@@ -57,6 +57,7 @@ use warnings;
 
 # Standard Perl and CPAN modules.
 
+use Cwd qw(getcwd);
 use Data::Dumper;
 use File::Basename;
 use File::Spec;
@@ -237,26 +238,46 @@ sub view_button_clicked_cb($$);
 	exit(1);
     }
 
-    # Open a Monotone database. First attempt to open the current Monotone
-    # workspace's database. If this doesn't work or the default database is to
-    # be used anyway then attempt to open that database instead.
+    # Open a Monotone database. First attempt to open the current workspace's
+    # database. If this doesn't work or the database listed in the user's
+    # preferences file is to be used anyway then attempt to open that database
+    # instead.
 
     if ($user_preferences->{workspace}->{takes_precedence})
     {
+
+	# Attempt to open the current workspace's database. If this works then
+	# get the workspace's details and then re-open the database but this
+	# time explicitly specifying the database itself. When given a database
+	# name, Monotone::AutomateStdio will make sure any current workspace
+	# will not `interfere' the  with the mtn subprocess. One could use the
+	# "--no-workspace" option but this is only supported on later versions.
+
 	eval
 	{
+	    my $db;
 	    $mtn = Monotone::AutomateStdio->new();
 	    if ($user_preferences->{workspace}->{auto_select})
 	    {
+		$mtn->get_option(\$db, "database");
 		$mtn->get_option(\$branch, "branch");
 		$mtn->get_base_revision_id(\$revision_id);
+
+		# Unset the branch name if there is no revision associated with
+		# it (this can happen if we are in a new workspace on a new
+		# branch that doesn't exist in the database yet).
+
+		$branch = undef if (! defined($revision_id));
 	    }
+	    $mtn = undef;
+	    $mtn = Monotone::AutomateStdio->new($db);
 	};
+
     }
     if (! defined($mtn) && $user_preferences->{default_mtn_db} ne "")
     {
 
-	# Attempt to open the default database.
+	# Attempt to open the database specified in the user's preferences.
 
 	eval
 	{
@@ -2586,7 +2607,6 @@ sub setup_mtn_object($$)
 
     my($mtn, $parent) = @_;
 
-    $mtn->register_db_locked_handler(\&mtn_db_locked_handler, $parent);
     if ($user_preferences->{show_suspended})
     {
 	if ($mtn->can(MTN_IGNORE_SUSPEND_CERTS))

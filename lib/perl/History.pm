@@ -1937,9 +1937,12 @@ sub mtn_diff($$$$;$)
     my($list, $mtn_db, $revision_id_1, $revision_id_2, $file_name) = @_;
 
     my($buffer,
-       @cmd);
+       @cmd,
+       $cwd,
+       $err);
 
-    # Run mtn diff.
+    # Run mtn diff in the root directory so as to avoid any workspace
+    # conflicts.
 
     @$list = ();
     push(@cmd, "mtn");
@@ -1950,7 +1953,29 @@ sub mtn_diff($$$$;$)
     push(@cmd, "-r");
     push(@cmd, "i:" . $revision_id_2);
     push(@cmd, $file_name) if (defined($file_name));
-    run_command(\$buffer, @cmd) or return;
+    $cwd = getcwd();
+    eval
+    {
+	die("chdir failed: " . $!) unless (chdir(File::Spec->rootdir()));
+	run_command(\$buffer, @cmd) or return;
+    };
+    $err = $@;
+    chdir($cwd);
+    if ($err ne "")
+    {
+	my $dialog = Gtk2::MessageDialog->new_with_markup
+	    (undef,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("Problem running mtn diff, got:\n"
+		     . "<b><i>{error_message}</i></b>\n"
+		     . "This should not be happening!",
+		 error_message => Glib::Markup::escape_text($err)));
+	WindowManager->instance()->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+	return;
+    }
 
     # Break up the input into a list of lines.
 
