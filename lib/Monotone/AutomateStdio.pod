@@ -59,8 +59,8 @@ Creates a new Monotone::AutomateStdio object, using the workspace named in $ws.
 
 =back
 
-Please note that $mtn-E<gt>new() is simply an alias for
-$mtn-E<gt>new_from_db().
+Please note that Monotone::AutomateStdio-E<gt>new() is simply an alias for
+Monotone::AutomateStdio-E<gt>new_from_db().
 
 The @options parameter specifies what options are to be passed to the mtn
 subprocess. The currently supported list (in vaguely the format in which it
@@ -79,6 +79,29 @@ would be passed to the constructor) is:
 =head1 CLASS METHODS
 
 =over 4
+
+=item B<Monotone::AutomateStdio-E<gt>register_db_locked_handler([$handler[,
+$client_data]])>
+
+Registers the handler specified as a subroutine reference in $handler for
+database locked conditions. The value of $client_data is simply passed to the
+handler and can be used by the caller to provide a context. This is both a
+class method as well as an object one. When used as a class method, the
+specified database locked handler is used for all Monotone::AutomateStdio
+objects that do not specify their own handlers. If no handler is given then the
+database locked condition handling is reset to the default behaviour.
+
+The handler subroutine is given two arguments, the first one is the
+Monotone::AutomateStdio object that encountered the locked database and the
+second is the value passed in as $client_data when the hander was
+registered. If the handler returns true then the request that failed is
+retried, if false is returned (undef) then the default behaviour is performed,
+which is to treat it like any other error.
+
+Typically one would register a database locked handler when you are using this
+class in a long running application where it is quite possible that a user
+might do an mtn sync in the background. For example, mtn-browse uses this
+handler to display a `Database is locked, please retry...' dialog window.
 
 =item B<Monotone::AutomateStdio-E<gt>register_error_handler($severity[,
 $handler[, $client_data]])>
@@ -140,29 +163,6 @@ following to load in this library.
 
 =back
 
-=item B<Monotone::AutomateStdio-E<gt>register_db_locked_handler([$handler[,
-$client_data]])>
-
-Registers the handler specified as a subroutine reference in $handler for
-database locked conditions. The value of $client_data is simply passed to the
-handler and can be used by the caller to provide a context. This is both a
-class method as well as an object one. When used as a class method, the
-specified database locked handler is used for all Monotone::AutomateStdio
-objects that do not specify their own handlers. If no handler is given then the
-database locked condition handling is reset to the default behaviour.
-
-The handler subroutine is given two arguments, the first one is the
-Monotone::AutomateStdio object that encountered the locked database and the
-second is the value passed in as $client_data when the hander was
-registered. If the handler returns true then the request that failed is
-retried, if false is returned (undef) then the default behaviour is performed,
-which is to treat it like any other error.
-
-Typically one would register a database locked handler when you are using this
-class in a long running application where it is quite possible that a user
-might do an mtn sync in the background. For example, mtn-browse uses this
-handler to display a `Database is locked, please retry...' dialog window.
-
 =item B<Monotone::AutomateStdio-E<gt>register_io_wait_handler([$handler,
 $timeout[, $client_data]])>
 
@@ -185,6 +185,17 @@ in an interactive application where it may be necessary to do some periodic
 background processing whilst waiting for the mtn subprocess to do
 something. For example, mtn-browse uses this handler to process any outstanding
 Gtk2 events so that the application can keep its windows up to date.
+
+=item B<Monotone::AutomateStdio-E<gt>switch_to_ws_root($switch)>
+
+Controls whether this class automatically switches to a workspace's root
+directory before running the mtn subprocess. The default action is to do so as
+this is generally safer. This setting only affects objects constructed from
+calling Monotone::AutomateStdio-E<gt>new() and
+Monotone::AutomateStdio-E<gt>new_from_db(). This is both a class method as well
+as an object one. When used as a class method, the setting is used for all
+applicable Monotone::AutomateStdio objects that do not specify their own
+setting.
 
 =back
 
@@ -565,9 +576,10 @@ Get the absolute path for the current workspace's root directory.
 =item B<$mtn-E<gt>get_ws_path()>
 
 Return the the workspace's base directory as either given to the constructor or
-deduced from the current workspace.  Please note that the workspace's base
-directory may differ from that given to the constructor if the specified
-workspace path is actually a subdirectory within that workspace.
+deduced from the current workspace. If neither condition holds true then undef
+is returned. Please note that the workspace's base directory may differ from
+that given to the constructor if the specified workspace path is actually a
+subdirectory within that workspace.
 
 =item B<$mtn-E<gt>graph(\$buffer | \@list)>
 
@@ -943,6 +955,33 @@ waiting for the mtn subprocess to finish processing a request.
 
 =head1 NOTES
 
+=head2 Using This Class With Monotone Workspaces
+
+Certain features are only available when used inside a Monotone workspace, so
+consequently this class does support the use of workspaces. However certain
+aspects of a workspace can affect the mtn subprocess. For example, when you run
+mtn in a workspace's subdirectory then all file name arguments get translated
+into paths relative to the workspace's root directory (i.e. given a path of
+/home/freddy/workspace/include/system.h when one runs C<mtn log system.h> in
+the include directory the file name gets changed to include/system.h).
+
+This makes perfect sense on the command line but possibly less so when using
+mtn from inside an application. This is why this class runs the mtn subprocess
+in specific directories depending upon how the object is constructed. If the
+object is constructed by calling Monotone::AutomateStdio-E<gt>new() or
+Monotone::AutomateStdio-E<gt>new_from_db() with the name of a database, then
+the mtn subprocess is run in the root directory, otherwise it is run in the
+workspace's root directory. This guarantees correct behaviour.
+
+If however you want the mtn subprocess to run in the current directory within a
+workspace then simply use the Monotone::AutomateStdio-E<gt>switch_to_ws_root()
+method to before calling Monotone::AutomateStdio-E<gt>new() without specifying
+a database.
+
+Any changing of directory does not affect the caller.
+
+=head2 Process Handling
+
 There are situations where this class does legitimately terminate the mtn
 subprocess (for example when a database locked condition is detected). When
 this happens the subprocess is reaped and its id is reset, i.e. the
@@ -957,6 +996,8 @@ returned by the $mtn-E<gt>get_pid() method. If there is a match then there is a
 problem, otherwise, as far as this class is concerned, there is nothing to
 worry about.
 
+=head2 Use Of SIGALRM
+
 In order to reliably shutdown the mtn subprocess, the alarm() routine is used
 and will consequently reset any SIGALRM timers. In C I would obviously use
 setitimer() to set up any timeout timers and then restore their previous state,
@@ -965,6 +1006,8 @@ that on balance it would be nicer not to introduce this dependency and use
 alarm(). Anyway if you want to do something periodically it is usually better
 to have a thread do that for you rather than use signals. If you have different
 opinions on this then please let me know.
+
+==head2 General
 
 When the output of a command from the automate stdio interface changes
 dramatically, it will probably not be possible to protect Perl applications

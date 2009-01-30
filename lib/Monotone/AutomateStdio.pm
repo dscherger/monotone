@@ -197,8 +197,13 @@ my %tags_keys = ("branches"       => NULL | STRING_LIST,
 		 "signer"         => STRING,
 		 "tag"            => STRING);
 
-# Global error, database locked and io wait callback routine references and
-# associated client data.
+# Flag for determining whether the mtn subprocess should be started in a
+# workspace's root directory.
+
+my $cd_to_ws_root = 1;
+
+# Error, database locked and io wait callback routine references and associated
+# client data.
 
 my $carper = sub { return; };
 my $croaker = \&croak;
@@ -278,6 +283,7 @@ sub select($$$);
 sub set_attribute($$$$);
 sub set_db_variable($$$$);
 sub show_conflicts($$;$$$);
+sub switch_to_ws_root($$);
 sub tags($$;$);
 sub toposort($$@);
 
@@ -446,6 +452,7 @@ sub new_from_ws($;$$)
 
     $this = create_object_data();
     $this->{ws_path} = $ws_path;
+    $this->{ws_constructed} = 1;
     $this->{mtn_options} = $options;
     bless($this, $class);
 
@@ -2952,7 +2959,7 @@ sub db_locked_condition_detected($)
 #   Data         - $this        : The object.
 #                  Return Value : The file name of the database as given to
 #                                 the constructor or undef if no database was
-#                                 given.
+#                                 specified.
 #
 ##############################################################################
 
@@ -3022,15 +3029,16 @@ sub get_pid($)
 #
 #   Description  - Return the the workspace's base directory as either given
 #                  to the constructor or deduced from the current workspace.
+#                  If neither condition holds true then undef is returned.
 #                  Please note that the workspace's base directory may differ
 #                  from that given to the constructor if the specified
 #                  workspace path is actually a subdirectory within that
 #                  workspace.
 #
 #   Data         - $this        : The object.
-#                  Return Value : The workspace's base directory as given to
-#                                 the constructor or undef if no workspace was
-#                                 given and there is no current workspace.
+#                  Return Value : The workspace's base directory or undef if
+#                                 no workspace was specified and there is no
+#                                 current workspace.
 #
 ##############################################################################
 
@@ -3053,13 +3061,12 @@ sub get_ws_path($)
 #                  ignored or not. If the head revisions on a branch are all
 #                  suspended then that branch is also ignored.
 #
-#   Data         - $this         : The object.
-#                  $ignore       : True if suspend certs are to be ignored
-#                                  (i.e. all revisions are `visible'),
-#                                  otherwise false if suspend certs are to be
-#                                  honoured.
-#                  Return Value  : True on success, otherwise false on
-#                                  failure.
+#   Data         - $this        : The object.
+#                  $ignore      : True if suspend certs are to be ignored
+#                                 (i.e. all revisions are `visible'),
+#                                 otherwise false if suspend certs are to be
+#                                 honoured.
+#                  Return Value : True on success, otherwise false on failure.
 #
 ##############################################################################
 
@@ -3076,7 +3083,7 @@ sub ignore_suspend_certs($$)
     {
 	if (can($this, MTN_IGNORE_SUSPEND_CERTS))
 	{
-	    $this->{honour_suspend_certs} = 0;
+	    $this->{honour_suspend_certs} = undef;
 	    closedown($this);
 	    startup($this);
 	}
@@ -3332,6 +3339,74 @@ sub register_io_wait_handler(;$$$$)
 	    $io_wait_handler = $io_wait_handler_data = undef;
 	}
     }
+
+}
+#
+##############################################################################
+#
+#   Routine      - switch_to_ws_root
+#
+#   Description  - Control whether this class automatically switches to a
+#                  workspace's root directory before running the mtn
+#                  subprocess. The default action is to do so as this is
+#                  generally safer.
+#
+#   Data         - $this        : The object.
+#                  $switch      : True if the mtn subprocess should be started
+#                                 in a workspace's root directory, otherwise
+#                                 false if it should be started in the current
+#                                 working directory.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub switch_to_ws_root($$)
+{
+
+    my $this;
+    if (ref($_[0]) eq __PACKAGE__)
+    {
+	$this = shift();
+    }
+    elsif ($_[0] eq __PACKAGE__)
+    {
+	shift();
+    }
+    my $switch = $_[0];
+
+    if (defined($this))
+    {
+	if (! $this->{ws_constructed})
+	{
+	    if ($this->{cd_to_ws_root} && ! $switch)
+	    {
+		$this->{cd_to_ws_root} = undef;
+		closedown($this);
+		startup($this);
+	    }
+	    elsif (! $this->{cd_to_ws_root} && $switch)
+	    {
+		$this->{cd_to_ws_root} = 1;
+		closedown($this);
+		startup($this);
+	    }
+	}
+	else
+	{
+	    $this->{error_msg} = "Cannot call $mtn->switch_to_ws_root() on "
+		. "objects constructed with new_from_ws()";
+	    &$carper($this->{error_msg});
+	    return;
+	}
+    }
+    else
+    {
+	$cd_to_ws_root = $switch ? 1 : undef;
+    }
+
+    return 1;
 
 }
 #
@@ -3991,7 +4066,8 @@ sub startup($)
 	# provided then run the mtn subprocess in the system's root directory
 	# so as to avoid any database/workspace clash. Likewise if a workspace
 	# has been provided then run the mtn subprocess in the base directory
-	# of that workspace.
+	# of that workspace (although in this case the caller can override this
+	# feature if it wishes to do so).
 
 	$cwd = getcwd();
 	eval
@@ -4001,7 +4077,7 @@ sub startup($)
 		die("chdir failed: " . $!)
 		    unless (chdir(File::Spec->rootdir()));
 	    }
-	    elsif (defined($this->{ws_path}))
+	    elsif ($this->{cd_to_ws_root} && defined($this->{ws_path}))
 	    {
 		die("chdir failed: " . $!) unless (chdir($this->{ws_path}));
 	    }
@@ -4193,6 +4269,8 @@ sub create_object_data()
 
     return {db_name                 => undef,
 	    ws_path                 => undef,
+	    ws_constructed          => undef,
+	    cd_to_ws_root           => $cd_to_ws_root,
 	    mtn_options             => undef,
 	    mtn_pid                 => 0,
 	    mtn_in                  => undef,
