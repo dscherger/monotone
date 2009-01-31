@@ -42,7 +42,7 @@ packet_writer::consume_file_data(file_id const & ident,
   base64<gzip<data> > packed;
   pack(dat.inner(), packed);
   ost << "[fdata " << ident << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
@@ -55,7 +55,7 @@ packet_writer::consume_file_delta(file_id const & old_id,
   pack(del.inner(), packed);
   ost << "[fdelta " << old_id << '\n'
       << "        " << new_id << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
@@ -66,7 +66,7 @@ packet_writer::consume_revision_data(revision_id const & ident,
   base64<gzip<data> > packed;
   pack(dat.inner(), packed);
   ost << "[rdata " << ident << "]\n"
-      << trim_ws(packed()) << '\n'
+      << trim(packed()) << '\n'
       << "[end]\n";
 }
 
@@ -77,8 +77,8 @@ packet_writer::consume_revision_cert(revision<cert> const & t)
                                     t.inner().ident.inner().made_from) << '\n'
       << "       " << t.inner().name() << '\n'
       << "       " << t.inner().key() << '\n'
-      << "       " << trim_ws(encode_base64(t.inner().value)()) << "]\n"
-      << trim_ws(encode_base64(t.inner().sig)()) << '\n'
+      << "       " << trim(encode_base64(t.inner().value)()) << "]\n"
+      << trim(encode_base64(t.inner().sig)()) << '\n'
       << "[end]\n";
 }
 
@@ -87,7 +87,7 @@ packet_writer::consume_public_key(rsa_keypair_id const & ident,
                                   rsa_pub_key const & k)
 {
   ost << "[pubkey " << ident() << "]\n"
-      << trim_ws(encode_base64(k)()) << '\n'
+      << trim(encode_base64(k)()) << '\n'
       << "[end]\n";
 }
 
@@ -96,8 +96,8 @@ packet_writer::consume_key_pair(rsa_keypair_id const & ident,
                                 keypair const & kp)
 {
   ost << "[keypair " << ident() << "]\n"
-      << trim_ws(encode_base64(kp.pub)()) << "#\n"
-      << trim_ws(encode_base64(kp.priv)()) << '\n'
+      << trim(encode_base64(kp.pub)()) << "#\n"
+      << trim(encode_base64(kp.priv)()) << '\n'
       << "[end]\n";
 }
 
@@ -106,7 +106,7 @@ packet_writer::consume_old_private_key(rsa_keypair_id const & ident,
                                        old_arc4_rsa_priv_key const & k)
 {
   ost << "[privkey " << ident() << "]\n"
-      << trim_ws(encode_base64(k)()) << '\n'
+      << trim(encode_base64(k)()) << '\n'
       << "[end]\n";
 }
 
