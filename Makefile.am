@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1 -Wno-portability
+AUTOMAKE_OPTIONS=1.7.1 -Wno-portability
 ACLOCAL_AMFLAGS = -I m4
 
 CMD_SOURCES =								\

@@ -1,72 +1,119 @@
-This file should give you some basic information
-to start on a new translation for monotone.
+This file gives instructions to get you started translating monotone's
+diagnostic messages into a new language.  We do not use the usual
+(gettext-provided) Makefile logic for .po files, so some of the
+commands below may be different from what you are used to.  Note
+especially that all "make" commands are done from the top level of the
+tree, *not* from the po subdirectory.  Also, with one exception noted
+below, nothing writes to the po subdirectory; the .pot file and the
+.merged.po and .gmo files created during a build appear at the top
+level.
 
-You should meet the following prerequisites:
+Before you begin:
 
-a) You've pulled and checked out net.venge.monotone
-b) You have a text editor with UTF-8 support
-c) You can deal with the shell...
+a) You should be comfortable with shell commands.
+b) You need a text editor with UTF-8 support, and maybe one of the
+   specialized PO-file editors mentioned below.
+c) You need a working "mtn" executable and the command line tools from
+   the "gettext" package (xgettext, msgfmt, msgmerge).
 
 Now the step-by-step HOWTO:
 
-1) Edit the file po/LINGUAS a new entry for your language.
-   The language code has the format ISO 639-1 (e.g. "en" 
-   for English, "de" for German, aso.) - if your language 
-   differs by region, you can also expand the language code 
-   with the country code to reflect these differences. 
-   F.e. "en_GB" stands for English as spoken (and written) 
-   in Great Britain (BE), while "en_US" determines 
-   American English (AE).
+0) Pull a local copy of monotone's version control database from
+   monotone.ca (you only need the main branch, net.venge.monotone)
+   and check out the main branch.  If you're reading this, you have
+   probably done this already :-)
 
-2) Add an entry for the translation into win32/monotone.iss
-   so that it is included in future Win32 installer
-   packages.
+1) Add an line for your language to the file po/LINGUAS.  This file
+   simply lists the ISO 639-1 codes for supported translations, one
+   per line (e.g. "en" for English, "de" for German, etc.)  If your
+   language differs by region, you can append an underscore and an
 
-3) Configure monotone
+   ISO 3166-1 country code to the language code for each regional
+   variant you wish to support.  For instance, monotone currently has
+   a translation file for Brazilian Portuguese (pt_BR) but not
+   Portugal Portuguese (pt_PT).  (Note: the pt_BR translation has not
+   been updated for some time, so it is not included in po/LINGUAS.)
+
+2) Add a line for the compiled translation file to win32/monotone.iss
+   so that it is included in future Win32 installer packages.  The
+   line needs to look like this:
+
+Source: "..\po\CODE.gmo"; DestDir: "{app}\locale\CODE\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
+
+   Everything on this line should be copied into monotone.iss exactly
+   as it appears except the word CODE, which you should replace with
+   the code you added to po/LINGUAS.
+
+3) Create a template file:
   
-   $ cd net.venge.monotone
+   $ cd <your source directory>
    $ autoreconf --install
    $ ./configure
-   $ ( cd po; make monotone.pot-update )
-   
-   This will create an untranslated monotone.pot file in po/.
-   Copy this file to <yourlang>.po (where <yourlang> is the
-   language code you've entered in LINGUAS), and continue 
-   with III).
-    
-4) Edit the header of your new language po according to
-   the excellent HOWTO here [0]. Of particular interest
-   are mainly two things:
-     
-   a) The encoding of the file (Content-Type: ...)
-      Set this to the encoding you'll use in your text
-      editor to translate the file. UTF-8 is recommended
-      here.
-   b) The Plural forms configuration (Plural-Forms: ...)
-      The Entries here differ from language to language,
-      some might have more complex plural forms (e.g.
-      Slavic languages), others have simple ones (e.g.
-      most Romanian languages). If you don't know exactly
-      what to write here, take a look at the gettext manual
-      here [1].
+   $ make monotone.pot
 
-5) Start translating the entries. If you like to update your
-   *.po file, trigger the following command (here for the
-   German translation):
-	
-   $ cd po
-   $ make monotone.pot-update && make MSGMERGE=msgmerge de.po-update
+   This will create the file monotone.pot, which lists every message
+   that you need to translate.  Copy this file to po/CODE.po (again,
+   replace CODE with the code you added to po/LINGUAS).
+   
+4) Fill out the header of your new .po file.  This mailing list post
+   gives excellent advice on how to do so:
+
+     http://mail.gnome.org/archives/gnome-i18n/2004-July/msg00073.html
+
+   and you may also wish to consult the relevant section of the
+   gettext manual:
+
+     http://www.gnu.org/software/gettext/manual/html_node/Header-Entry.html
+
+   Two of the fields in the header deserve special attention:
+
+   a) The encoding of the file (Content-Type: ...)  Set this to the
+      encoding you'll use in your text editor to translate the
+      file. We strongly recommend the use of UTF-8.
+
+   b) The pluralization rules (Plural-Forms: ...)  In English, nouns
+      have different endings when there is only one object mentioned
+      ("1 frog") than when there are more than one ("10 frogs").  All
+      the messages that need to vary like this should be listed in the
+      template with both a "msgid" and a "msgid_plural", and you can
+      provide as many variations on the translation as you need for
+      proper grammar.  The Plural-Forms: header tells the library
+      which variation to use when.  For instruction in writing this
+      header, please see the gettext manual:
+
+        http://www.gnu.org/software/gettext/manual/html_node/Plural-forms.html
+
+      (By the way, if you find a message that should vary this way but
+      doesn't list a plural form in the template file, please tell us
+      about it on monotone-dev.)
+
+5) Start translating the entries.  When finished, commit the new .po
+   file and push your changes to monotone.ca.  Don't forget to commit
+   po/LINGUAS and win32/monotone.iss as well.
+
+   If you're looking for a nice GUI to edit language files, we
+   recommend KBabel, which comes with the kdesdk module of KDE, or
+   poedit.  See these websites:
+
+     http://kbabel.kde.org/
+     http://www.poedit.net/
+
+6) To update your template when the sources change, you can use this
+   command:
+
+   $ make CODE.po-update
+
+   This will update monotone.pot from the sources and then use the
+   "msgmerge" utility to update your translation.  It updates
+   po/CODE.po in place.  If you prefer for this not to happen, you can
+   instead do
+
+   $ make CODE.merged.po
+
+   which will drop the new .po file, with a ".merged.po" extension, in
+   the directory where you ran "make".  You can then edit that file
+   and copy it to po/CODE.po when you like.
 
    To check if new or fuzzy strings have arrived, use msgfmt:
 
-   $ msgfmt -cv po/de.po
-
-
-Thats it basically. If you're looking for a nice GUI to edit
-language files, I can recommend KBabel[2], which comes with the kdesdk 
-module of KDE, or poedit[3].
-
-[0] http://mail.gnome.org/archives/gnome-i18n/2004-July/msg00073.html
-[1] http://www.gnu.org/software/gettext/manual/html_node/gettext_150.html
-[2] http://kbabel.kde.org/
-[3] http://www.poedit.net
+   $ msgfmt -cv po/CODE.po  # or CODE.merged.po
