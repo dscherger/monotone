@@ -201,13 +201,33 @@ remove_ws(string const & s)
 }
 
 string
-trim_ws(string const & s)
+trim_left(string const & s, string const & chars)
 {
   string tmp = s;
-  string::size_type pos = tmp.find_last_not_of("\n\r\t ");
+  string::size_type pos = tmp.find_first_not_of(chars);
+  if (pos < string::npos)
+    tmp = tmp.substr(pos);
+  return tmp;
+}
+
+string
+trim_right(string const & s, string const & chars)
+{
+  string tmp = s;
+  string::size_type pos = tmp.find_last_not_of(chars);
   if (pos < string::npos)
     tmp.erase(++pos);
-  pos = tmp.find_first_not_of("\n\r\t ");
+  return tmp;
+}
+
+string
+trim(string const & s, string const & chars)
+{
+  string tmp = s;
+  string::size_type pos = tmp.find_last_not_of(chars);
+  if (pos < string::npos)
+    tmp.erase(++pos);
+  pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
   return tmp;
@@ -319,11 +339,16 @@ UNIT_TEST(simplestring_xform, split_into_words)
   UNIT_TEST_CHECK(words[2]() == "bar");
 }
 
-UNIT_TEST(simplestring_xform, strip_ws)
+UNIT_TEST(simplestring_xform, trimming)
 {
-  UNIT_TEST_CHECK(trim_ws("\n  leading space") == "leading space");
-  UNIT_TEST_CHECK(trim_ws("trailing space  \n") == "trailing space");
-  UNIT_TEST_CHECK(trim_ws("\t\n both \r \n\r\n") == "both");
+  UNIT_TEST_CHECK(trim_right(":foobar:", ":") == ":foobar");
+  UNIT_TEST_CHECK(trim_left(":foobar:", ":") == "foobar:");
+  UNIT_TEST_CHECK(trim(":foobar:", ":") == "foobar");
+
+  UNIT_TEST_CHECK(trim("\n  leading space") == "leading space");
+  UNIT_TEST_CHECK(trim("trailing space  \n") == "trailing space");
+  UNIT_TEST_CHECK(trim("\t\n both \r \n\r\n") == "both");
+
   UNIT_TEST_CHECK(remove_ws("  I like going\tfor walks\n  ")
               == "Ilikegoingforwalks");
 }

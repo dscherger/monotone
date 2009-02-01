@@ -452,7 +452,7 @@ CMD_HIDDEN(rev_height, "rev_height", "", CMD_REF(informative), N_("REV"),
 
 // loading revisions is relatively fast
 
-CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), N_(""),
+CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), "",
     N_("load all revisions from the database"),
     N_("This command loads all revisions from the database and is "
        "intended to be used for timing revision loading performance."),
@@ -481,7 +481,7 @@ CMD_HIDDEN(load_revisions, "load_revisions", "", CMD_REF(db), N_(""),
 
 // loading rosters is slow compared with files, revisions or certs
 
-CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), N_(""),
+CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), "",
     N_("load all roster versions from the database"),
     N_("This command loads all roster versions from the database and is "
        "intended to be used for timing roster reconstruction performance."),
@@ -509,7 +509,7 @@ CMD_HIDDEN(load_rosters, "load_rosters", "", CMD_REF(db), N_(""),
 
 // loading files is slower than revisions but faster than rosters
 
-CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), N_(""),
+CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), "",
     N_("load all file versions from the database"),
     N_("This command loads all files versions from the database and is "
        "intended to be used for timing file reconstruction performance."),
@@ -535,7 +535,7 @@ CMD_HIDDEN(load_files, "load_files", "", CMD_REF(db), N_(""),
 
 // loading certs is fast
 
-CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), N_(""),
+CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), "",
     N_("load all certs from the database"),
     N_("This command loads all certs from the database and is "
        "intended to be used for timing cert loading performance."),
