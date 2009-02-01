@@ -3395,7 +3395,8 @@ sub switch_to_ws_root($$)
 	}
 	else
 	{
-	    $this->{error_msg} = "Cannot call $mtn->switch_to_ws_root() on "
+	    $this->{error_msg} =
+		"Cannot call Monotone::AutomateStdio->switch_to_ws_root() on "
 		. "objects constructed with new_from_ws()";
 	    &$carper($this->{error_msg});
 	    return;
