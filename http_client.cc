@@ -70,6 +70,12 @@ http_client::http_client(options & opts, lua_hooks & lua,
     open(true)
 {}
 
+string
+http_client::resolve(string const & relative_uri)
+{
+  return info.client.u.path + relative_uri;
+}
+
 void
 http_client::execute(http::request const & request, http::response & response)
 {
@@ -91,50 +97,10 @@ http_client::execute(http::request const & request, http::response & response)
   I(io);
   I(open);
 
-  L(FL("http_client: sending request [[POST %s HTTP/1.1]]")
-    % (info.client.u.path));
+  // the uri in this request is relative to the server uri and needs to be adjusted
+  http::connection connection(*io);
+  connection.write(request);
 
-  (*io) << request.method << " " 
-        << info.client.u.path << " "
-        << request.version << "\r\n";
-
-  for (map<string, string>::const_iterator i = request.headers.begin();
-       i != request.headers.end(); ++i)
-    (*io) << i->first << ": " << i->second << "\r\n";
-
-  (*io) << "\r\n";
-
-  // FIXME: this used to set a Host header
-  //L(FL("http_client: to [[Host: %s]]") % request.headers["Host"]);
-
-  L(FL("http_client: sending %d-byte body") % request.body.size());
-  (*io) << request.body;
-
-  io->flush();
-  L(FL("http_client: sent %d byte request") % request.body.size());
-
-//   std::cerr << "http request" << std::endl
-//             << out.buf.data() << std::endl;
-
-  // Now read back the result
-  parse_http_response(response);
-
-  L(FL("http_client: received %d byte response") % response.body.size());
-
-//   std::cerr << "http response" << std::endl
-//             << data << std::endl;
-}
-
-void
-http_client::parse_http_status_line(http::response & response)
-{
-  // We're only interested in 200-series responses
-  L(FL("http_client: reading response..."));
-  (*io) >> response.version >> response.status_code;
-  std::getline(*io, response.status_message);
-  response.status_message = trim(response.status_message, " \r\n");
-
-  // sometimes we seem to get eof when reading the response -- not sure why yet
   if (io->good())
     L(FL("connection is good"));
   if (io->bad())
@@ -144,62 +110,8 @@ http_client::parse_http_status_line(http::response & response)
   if (io->eof())
     L(FL("connection is eof"));
 
-  L(FL("http_client: response: [[%s %d %s]]") 
-    % response.version % response.status_code % response.status_message);
-}
+  I(connection.read(response));
 
-void
-http_client::parse_http_header_line(http::response & response)
-{
-  string key, val;
-  (*io) >> key;
-  std::getline(*io, val);
-
-  key = trim_right(key, ":");
-  val = trim(val, " \r\n");
-
-  L(FL("http_client: header: [[%s %s]]") % key % val);
-
-  response.headers[key] = val;
-}
-
-
-void
-http_client::crlf()
-{
-  E(io->get() == '\r', origin::network, F("expected CR in HTTP response"));
-  E(io->get() == '\n', origin::network, F("expected LF in HTTP response"));
-}
-
-
-void
-http_client::parse_http_response(http::response & response)
-{
-  size_t content_length = 0;
-
-  response.headers.clear();
-  response.body.clear();
-
-  parse_http_status_line(response);
-  while (io->good() && io->peek() != '\r')
-    parse_http_header_line(response);
-  crlf();
-
-  content_length = lexical_cast<size_t>(response.headers["Content-Length"]);
-
-  L(FL("http_client: receiving %d-byte body") % content_length);
-
-  response.body.reserve(content_length);
-  while (io->good() && content_length > 0)
-    {
-      response.body += static_cast<char>(io->get());
-      content_length--;
-    }
-
-  io->flush();
-  
-  // something is wrong and the connection is sometimes closed by the server
-  // even though it did not issue a Connection: close header
   if (io->good())
     L(FL("connection is good"));
   if (io->bad())
@@ -231,6 +143,10 @@ http_client::parse_http_response(http::response & response)
       stream.reset();
       open = false;
     }
+
+  E(response.status_code == 200, origin::network,
+    F("request failed: %s %d %s") 
+    % response.version % response.status_code % response.status_message);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -247,7 +163,7 @@ json_channel::transact(json_value_t v) const
   http::response response;
 
   request.method = http::post;
-  request.uri = "";
+  request.uri = client.resolve("/");
   request.version = http::version;
   request.headers["Content-Type"] = "application/jsonrequest";
   request.headers["Content-Length"] = lexical_cast<string>(out.buf.size());

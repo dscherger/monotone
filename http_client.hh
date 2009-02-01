@@ -42,12 +42,8 @@ struct http_client
   http_client(options & opts, lua_hooks & lua,
               netsync_connection_info const & info);
 
+  std::string resolve(std::string const & relative_uri);
   void execute(http::request const & request, http::response & response);
-
-  void parse_http_status_line(http::response & response);
-  void parse_http_header_line(http::response & response);
-  void parse_http_response(http::response & response);
-  void crlf();
 };
 
 class json_channel

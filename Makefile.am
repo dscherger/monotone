@@ -79,7 +79,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
-	http.hh http_client.cc http_client.hh				\
+	http.cc http.hh http_client.cc http_client.hh			\
 									\
 	lru_writeback_cache.hh hybrid_map.hh				\
 									\

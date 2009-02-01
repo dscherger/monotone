@@ -54,7 +54,7 @@ using boost::lexical_cast;
 // SCGI interface is pretty straightforward
 //
 // When we accept a connection, we read a netstring out of it covering the
-// header, and then a body consisting of a JSON object.
+// header, and then a body with the specified content length.
 //
 // The format of the headers is:
 //
@@ -73,14 +73,86 @@ using boost::lexical_cast;
 // digits giving the length of [string] in decimal.
 //
 // The response is a sequence of CRLF-separated of HTTP headers, followed by
-// a bare CRLF, and a JSON object.
+// a bare CRLF, and the response body.
 //
 // This response format is not specified by the SCGI "spec".
 //
 
-namespace connection
+namespace scgi
 {
-  enum type { http, scgi };
+  static const string version("SCGI/1");
+
+  class connection : public http::connection
+  {
+  public:
+    connection(std::iostream & io) : http::connection(io) {}
+    virtual ~connection() {}
+
+    string version()
+    {
+      return scgi::version;
+    }
+
+    bool read(string & value)
+    {
+      while (io.good())
+        {
+          char ch = static_cast<char>(io.get());
+          if (ch == '\0')
+            break;
+          value += ch;
+        }
+      return io.good();
+    }
+
+    bool read(http::request & r)
+    {
+      size_t len;
+      if (!http::connection::read(len, ":")) return false;
+      L(FL("read scgi netstring length: %d") % len);
+      while (len > 0)
+        {
+          string key, val;
+          if (!read(key)) return false;
+          if (!read(val)) return false;
+          len -= key.size();
+          len -= val.size();
+          len -= 2;
+
+          L(FL("read scgi header: %s: %s") % key % val);
+
+          if (key == "CONTENT_LENGTH")
+            r.headers["Content-Length"] = val;
+          else if (key == "SCGI" && val == "1")
+            r.version = "SCGI/1";
+          else if (key == "REQUEST_METHOD")
+            r.method = val;
+          else if (key == "REQUEST_URI")
+            r.uri = val;
+          else if (key == "CONTENT_TYPE")
+            r.headers["Content-Type"] = val;
+        }
+
+      L(FL("read scgi request: %s %s %s") % r.method % r.uri % r.version);
+
+      // this is a loose interpretation of the scgi "spec"
+      if (r.version != scgi::version) return false;
+      if (r.headers.find("Content-Length") == r.headers.end()) return false;
+
+      if (!io.good()) return false;
+
+      char comma = static_cast<char>(io.get());
+
+      return http::connection::read_body(r);
+    }
+
+    void write(http::response const & r)
+    {
+      http::connection::write_headers(r);
+      http::connection::write_body(r);
+    }
+
+  };
 };
 
 
@@ -89,167 +161,6 @@ struct gserve_error
   string msg;
   gserve_error(string const & s): msg(s) {}
 };
-
-// Consume string until null or EOF. Consumes trailing null.
-static string
-parse_str(istream & in)
-{
-  string s;
-  while (in.good())
-    {
-      char ch = static_cast<char>(in.get());
-      if (ch == '\0')
-        break;
-      s += ch;
-    }
-  return s;
-}
-
-static inline bool
-eat(istream & in, char c)
-{
-  if (!in.good())
-    return false;
-  int i = in.get();
-  return c == static_cast<char>(i);
-}
-
-static bool
-parse_scgi_request(istream & in, http::request & request)
-{
-  if (!in.good()) return false;
-
-  size_t netstring_len;
-  in >> netstring_len;
-  if (!in.good()) return false;
-
-  L(FL("scgi: netstring length: %d") % netstring_len);
-  if (!eat(in, ':')) return false;
-
-  // although requirements of the scgi spec,
-  // the code below will allow requests that:
-  // - don't have CONTENT_LENGTH as the first header
-  // - don't have a CONTENT_LENGTH header at all
-  // - don't have an SCGI header
-  // perhaps this is just to "be liberal in what you accept"
-  // but we may want to tighten it up a bit. at the very least
-  // this is relying on the CONTENT_LENGTH header.
-
-  size_t content_length = 0;
-  while (netstring_len > 0)
-    {
-      string key = parse_str(in);
-      string val = parse_str(in);
-
-      L(FL("scgi: got header: %s -> %s") % key % val);
-
-      if (key == "CONTENT_LENGTH")
-        {
-          content_length = lexical_cast<size_t,string>(val);
-          request.headers["Content-Length"] = val;
-          L(FL("scgi: content length: %d") % content_length);
-        }
-      else if (key == "SCGI" && val == "1")
-        request.version = "SCGI/1";
-      else if (key == "SCGI" && val != "1")
-        return false;
-      else if (key == "REQUEST_METHOD")
-        {
-          L(FL("scgi request method: %s") % val);
-          request.method = val;
-        }
-      else if (key == "REQUEST_URI")
-        {
-          L(FL("scgi request uri: %s") % val);
-          request.uri = val;
-        }
-      else if (key == "CONTENT_TYPE")
-        {
-          L(FL("scgi request content-type: %s") % val);
-          request.headers["Content-Type"] = val;
-        }
-
-      netstring_len -= key.size();
-      netstring_len -= val.size();
-      netstring_len -= 2;
-    }
-
-  if(!eat(in, ',')) return false;
-
-  request.body.clear();
-  request.body.reserve(content_length);
-  L(FL("reading %d bytes") % content_length);
-
-  while (in.good() && (content_length > 0))
-    {
-      request.body += static_cast<char>(in.get());
-      content_length--;
-    }
-
-  L(FL("read %d bytes, content_length now %d") % request.body.size() % content_length);
-
-  return (content_length == 0);
-}
-
-static bool
-parse_http_request(istream &in, http::request & request)
-{
-  if (!in.good()) return false;
-
-  size_t content_length = 0;
-
-  // first line should be
-  // <method> <uri> HTTP/1.1 CR LF
-  // following header lines are
-  // <name>: value CR LF
-  // final header ending line is empty
-  // CR LF
-
-  string rest;
-  in >> request.method >> request.uri >> request.version;
-  std::getline(in, rest);
-
-  L(FL("http request method: %s") % request.method);
-  L(FL("http request uri: %s") % request.uri);
-  L(FL("http request version: %s") % request.version);
-
-  while (in.good() && in.peek() != '\r')
-    {
-      string key, val;
-      in >> key;
-      std::getline(in, val);
-      key = trim_right(key, ":");
-      val = trim(val, " \r\n");
-
-      request.headers[key] = val;
-
-      L(FL("http: got header: %s -> %s") % key % val);
-      if (lowercase(key) == "content-length")
-        {
-          content_length = lexical_cast<size_t>(val);
-          L(FL("http: content length: %d") % content_length);
-        }
-    }
-
-  if (!eat(in, '\r')) return false;
-  if (!eat(in, '\n')) return false;
-
-  request.body.clear();
-  request.body.reserve(content_length);
-  L(FL("reading %d bytes") % content_length);
-
-  while (in.good() && (content_length > 0))
-    {
-      request.body += static_cast<char>(in.get());
-      content_length--;
-    }
-
-  L(FL("read %d bytes, content_length now %d") 
-    % request.body.size() % content_length);
-
-  return (content_length == 0);
-}
-
 
 static json_io::json_value_t
 do_cmd(database & db, json_io::json_object_t cmd_obj)
@@ -399,76 +310,49 @@ process_json_request(database & db,
 }
 
 void
-process_request(connection::type type,
-                database & db,
-                istream & in,
-                ostream & out)
+process_request(database & db, http::connection & connection)
 {
   http::request request;
   http::response response;
 
-  try
+  if (connection.read(request))
     {
-      switch (type)
+      try
         {
-        case connection::scgi:
-          if (!parse_scgi_request(in, request))
-            throw gserve_error("unable to parse SCGI headers");
-
-          L(FL("read %d-byte SCGI request") % request.body.size());
-          break;
-
-        case connection::http:
-          if (!parse_http_request(in, request))
-            throw gserve_error("unable to parse HTTP headers");
-
-          L(FL("read %d-byte HTTP request") % request.body.size());
-          break;
+          if (request.method == http::post && 
+              request.headers["Content-Type"] == "application/jsonrequest")
+            process_json_request(db, request, response);
+          else
+            I(false);
         }
-
-      if (request.method == http::post && 
-          request.headers["Content-Type"] == "application/jsonrequest")
-        process_json_request(db, request, response);
-      else
-        I(false);
-
-      if (type == connection::http)
+      catch (gserve_error & e)
         {
-          out << response.version << " "
-              << response.status_code << " " 
-              << response.status_message << "\r\n";
+          std::cerr << "gserve error -- " << e.msg << std::endl;
+          response.version = connection.version();
+          response.status_code = 500;
+          response.status_message = "Internal Server Error";
+          response.headers["Status"] = "500 Internal Server Error";
         }
-
-      // FIXME: this will always write the Connection: close header
-      // which may not make sense for scgi connections
-      for (map<string, string>::const_iterator i = response.headers.begin();
-           i != response.headers.end(); ++i)
-        out << i->first << ": " << i->second << "\r\n";
-
-      out << "\r\n";
-      out << response.body;
-      out.flush();
-      // the old code set content-length to body.size()+1 and wrote a final "\n" here
-      // does that do anything useful or important?
+      catch (recoverable_failure & e)
+        {
+          std::cerr << "recoverable failure -- " << e.what() << std::endl;
+          response.version = connection.version();
+          response.status_code = 500;
+          response.status_message = "Internal Server Error";
+          response.headers["Status"] = "500 Internal Server Error";
+        } 
     }
-  catch (gserve_error & e)
+  else
     {
-      // FIXME: move these into the response and write it out in one place
-      std::cerr << "gserve error -- " << e.msg << std::endl;
-      out << "Status: 400 Bad request\r\n"
-          << "Content-Type: application/jsonrequest\r\n"
-          << "\r\n";
-      out.flush();
+      std::cerr << "bad request" << std::endl;
+
+      response.version = connection.version();
+      response.status_code = 400;
+      response.status_message = "Bad Request";
+      response.headers["Status"] = "400 Bad Request";
     }
-  catch (recoverable_failure & e)
-    {
-      // FIXME: move these into the response and write it out in one place
-      std::cerr << "recoverable failure -- " << e.what() << std::endl;
-      out << "Status: 400 Bad request\r\n"
-          << "Content-Type: application/jsonrequest\r\n"
-          << "\r\n";
-      out.flush();
-    } 
+
+  connection.write(response);
 
 }
 
@@ -493,11 +377,9 @@ CMD_NO_WORKSPACE(gserve,           // C
   database db(app);
   key_store keys(app);
 
-  connection::type type = connection::scgi;
   size_t default_port = constants::default_scgi_port;
   if (app.opts.bind_http) 
     {
-      type = connection::http;
       default_port = constants::default_http_port;
     }
 
@@ -518,9 +400,9 @@ CMD_NO_WORKSPACE(gserve,           // C
   else if (!app.opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
 
-  if (app.opts.bind_stdio)
-    process_request(type, db, std::cin, std::cout);
-  else
+//   if (app.opts.bind_stdio)
+//     process_request(type, db, std::cin, std::cout);
+//   else
     {
 
 #ifdef USE_IPV6
@@ -566,11 +448,21 @@ CMD_NO_WORKSPACE(gserve,           // C
                       Netxx::Stream stream(peer.get_socketfd());
                       Netxx::Netbuf<constants::bufsz>  buf(stream);
                       std::iostream io(&buf);
-                      // this could be an http or scgi transaction
-                      // with either raw data or json data
-                      // possibly this should loop until a Connection: close header is received
-                      // although that's probably not right for scgi connections
-                      process_request(type, db, io, io);
+
+                      // possibly this should loop until a Connection: close
+                      // header is received although that's probably not
+                      // right for scgi connections
+
+                      if (app.opts.bind_http)
+                        {
+                          http::connection connection(io);
+                          process_request(db, connection);
+                        }
+                      else
+                        {
+                          scgi::connection connection(io);
+                          process_request(db, connection);
+                        }
                       stream.close();
                     }
                   else
