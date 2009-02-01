@@ -17,7 +17,6 @@
 #include "vocab.hh"
 
 class database;
-class project_t;
 
 // The revision_enumerator struct acts as a cursor which emits files,
 // deltas, revisions and certs in dependency-correct order. This is
@@ -52,7 +51,7 @@ enumerator_item
 class
 revision_enumerator
 {
-  project_t & project;
+  database & db;
   enumerator_callbacks & cb;
   std::set<revision_id> terminal_nodes;
   std::set<revision_id> enumerated_nodes;
@@ -70,7 +69,7 @@ revision_enumerator
 			  std::vector<id> & certs);
 
 public:
-  revision_enumerator(project_t & project,
+  revision_enumerator(database & db,
                       enumerator_callbacks & cb);
   void get_revision_parents(revision_id const & rid,
 			    std::vector<revision_id> & parents);
