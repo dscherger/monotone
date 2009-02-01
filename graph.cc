@@ -264,10 +264,11 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
   typedef map<revision_id, int>::iterator pi;
   
   revisions.clear();
+  revisions.reserve(graph.size());
   // determine the number of parents for each rev
   map<revision_id, int> pcount;
   for (gi i = graph.begin(); i != graph.end(); ++i)
-    pcount.insert(make_pair(i->first, 0));
+    pcount.insert(pcount.end(), make_pair(i->first, 0));
   for (gi i = graph.begin(); i != graph.end(); ++i)
     ++(pcount[i->second]);
 
@@ -284,8 +285,9 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
       if (!null_id(cur))
         revisions.push_back(cur);
       
-      for(gi i = graph.lower_bound(cur);
-          i != graph.upper_bound(cur); i++)
+      std::pair<gi, gi> bounds = graph.equal_range(cur);
+      for(gi i = bounds.first;
+          i != bounds.second; i++)
         if(--(pcount[i->second]) == 0)
           roots.push_back(i->second);
     }
@@ -679,7 +681,7 @@ UNIT_TEST(graph, get_uncommon_ancestors_randomly)
   randomizer rng;
   run_a_get_uncommon_ancestors_random_test(100, 100, rng);
   run_a_get_uncommon_ancestors_random_test(1000, 100, rng);
-  run_a_get_uncommon_ancestors_random_test(10000, 1000, rng);
+  run_a_get_uncommon_ancestors_random_test(10000, 100, rng);
 }
 
 
