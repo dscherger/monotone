@@ -138,7 +138,7 @@ if test x"$USE_NLS" != xno; then
     save_LIBS="$LIBS"
     save_CFLAGS="$CFLAGS"
     CFLAGS="$save_CFLAGS $intl_CFLAGS"
-    for try in "$@"; do
+    for try in "$[]@"; do
       LIBS="$save_LIBS $try"
       AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <libintl.h>], [[
 	const char *a = textdomain("");

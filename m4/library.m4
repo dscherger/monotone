@@ -122,7 +122,7 @@ if $_notfound; then
 
   echo "$as_me: candidate -config programs are:" >&AS_MESSAGE_LOG_FD
   sed 's/^/| /' conftest.candcfg >&AS_MESSAGE_LOG_FD
-  for f in `cat conftest.candcfg`; do
+  for c in `cat conftest.candcfg`; do
     n=`AS_BASENAME([$c])`
     AC_MSG_CHECKING([for $1 using $n])
     if _ccflg=`$c --cflags 2>&AS_MESSAGE_LOG_FD` &&
@@ -131,7 +131,7 @@ if $_notfound; then
       $1[]_CFLAGS="$_ccflg"
       $1[]_LIBS="$_clibs"
       AC_MSG_RESULT([yes])
-      notfound=false
+      _notfound=false
       break
     else
       AC_MSG_RESULT([no])
