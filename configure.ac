@@ -77,13 +77,14 @@ AC_SEARCH_LIBS([deflate], [z], , AC_MSG_FAILURE([zlib is required]))
 BOOST_VERSION_CHECK
 BOOST_VERSION_SPECIFIC_BUGS
 
+ASIO_VERSION_CHECK
+ASIO_VERSION_SPECIFIC_BUGS
+
 MTN_FIND_BOTAN
 MTN_FIND_IDNA
 MTN_FIND_LUA
 MTN_FIND_PCRE
 MTN_FIND_SQLITE
-
-MTN_NETXX_DEPENDENCIES
 
 # Checks for header files.
 dnl It's hard these days to get AC_CHECK_HEADERS to check for just one
@@ -92,7 +93,7 @@ dnl Using AC_INCLUDES_DEFAULT triggers a whole bunch of tests that are
 dnl pointless nowadays.  This is the best thing I can come up with.
 dnl (A line with nothing but a # on it is ignored by the preprocessor.)
 
-AC_CHECK_HEADERS([cxxabi.h fcntl.h netinet/in.h],,, [#])
+AC_CHECK_HEADERS([cxxabi.h],,, [#])
 
 # check for language features and compiler bugs
 AC_CXX_TYPEOF

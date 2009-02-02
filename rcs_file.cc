@@ -9,10 +9,9 @@
 
 
 #include "base.hh"
-#include <fstream>
-#include "vector.hh"
 
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
@@ -26,11 +25,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#endif
 
+#include <fstream>
+#include "vector.hh"
 #include "rcs_file.hh"
 #include "sanity.hh"
 #include "char_classifiers.hh"

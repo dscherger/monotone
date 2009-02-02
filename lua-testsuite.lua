@@ -358,35 +358,14 @@ function prepare_to_run_tests (P)
    end
    unlogged_remove(d)
 
-   -- Several tests require the ability to run a network server on
-   -- the loopback interface, and connect to it from another process
-   -- on this computer.  Unlike the above, we just skip those tests
-   -- (loudly) if we can't do that.  Verifying that this is possible
-   -- requires a helper program.
+   -- Several tests require the ability to run a network server on the
+   -- loopback interface, and connect to it from another process on
+   -- this computer.  Some environments don't permit that.  Provide a
+   -- mechanism to skip those tests if necessary.
 
-   local checknet = getpathof("check_net")
    if os.getenv("DISABLE_NETWORK_TESTS") ~= nil then
       P("warning: DISABLE_NETWORK_TESTS set, skipping network server tests\n")
       no_network_tests = true
-   elseif checknet == nil then
-      P("warning: check_net helper is missing, skipping network server tests\n")
-      no_network_tests = true
-   else
-      writefile_q("in", nil)
-      prepare_redirect("in", "out", "err")
-      local status = execute(checknet)
-      local out = readfile_q("out")
-      local err = readfile_q("err")
-
-      if status == 0 and err == "" and out == "" then
-	 logfile:write("check_net: Can use the loopback interface.\n")
-      else
-	 logfile:write(string.format("check_net: failed with status %d\n"..
-				     "stdout:\n%s\nstderr:\n%s\n",
-				     status, out, err))
-	 P("warning: network unavailable, skipping network server tests\n")
-	 no_network_tests = true
-      end
    end
 
    -- Record the full version of monotone under test in the logfile.
