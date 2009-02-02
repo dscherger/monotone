@@ -11,107 +11,78 @@
 // benchmark them.
 
 #include "base.hh"
-#include <map>
-#include <botan/engine.h>
-#include <botan/libstate.h>
+#include <botan/botan.h>
+#include <botan/sha160.h>
 
-#include "sha1.hh"
-#include "sha1_engine.hh"
-#include "safe_map.hh"
+// Botan 1.7.22 and 1.8.x specific sha1 benchmarking code uses botan's
+// own timer and measures botan's different SHA1 providers, instead of
+// only measuring one.
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,22)
+  #include <botan/libstate.h>
+  #include <botan/benchmark.h>
+
+  // Choose a timer implementation
+  #if defined(BOTAN_HAS_TIMER_POSIX)
+    #include <botan/tm_posix.h>
+    typedef Botan::POSIX_Timer benchmark_timer_class;
+  #elif defined(BOTAN_HAS_TIMER_UNIX)
+    #include <botan/tm_unix.h>
+    typedef Botan::Unix_Timer benchmark_timer_class;
+  #elif defined(BOTAN_HAS_TIMER_WIN32)
+    #include <botan/tm_win32.h>
+    typedef Botan::Win32_Timer benchmark_timer_class;
+  #elif
+    /* This uses ANSI clock and gives somewhat bogus results
+       due to the poor resolution
+    */
+    typedef Botan::Timer benchmark_timer_class;
+  #endif
+
+#endif
+
 #include "sanity.hh"
 #include "ui.hh"
 #include "platform.hh"
 #include "cmd.hh"
 #include "transforms.hh"
 
-using std::map;
-using std::pair;
-using std::make_pair;
 using std::string;
 
-namespace
-{
-  map<int, pair<string, sha1_maker *> > & registry()
-  {
-    static map<int, pair<string, sha1_maker *> > the_registry;
-    return the_registry;
-  }
-
-  void
-  register_sha1(int priority, std::string const & name, sha1_maker * maker)
-  {
-    // invert priority, so that high priority sorts first (could override the
-    // comparison function too, but this takes 1 character...)
-    safe_insert(registry(), make_pair(-priority, make_pair(name, maker)));
-  }
-
-  sha1_maker * maker_to_be_benchmarked = 0;
-
-  class Monotone_SHA1_Engine : public Botan::Engine
-  {
-  public:
-    Botan::HashFunction * find_hash(const std::string& name) const
-    {
-      if (name == "SHA-160")
-        {
-          if (maker_to_be_benchmarked)
-            {
-              // We are in the middle of a benchmark run, so call the maker we
-              // are supposed to be benchmarking.
-              Botan::HashFunction * retval = maker_to_be_benchmarked();
-              maker_to_be_benchmarked = 0;
-              return retval;
-            }
-          else
-            {
-              I(!registry().empty());
-              // Call the highest priority maker.
-              return registry().begin()->second.second();
-            }
-        }
-      return 0;
-    }
-  };
-
-  // returning 0 from find_hash means that we don't want to handle this, and
-  // causes Botan to drop through to its built-in, portable engine.
-  Botan::HashFunction * botan_default_maker()
-  {
-    return 0;
-  }
-  sha1_registerer botan_default(0, "botan", &botan_default_maker);
-}
-
-sha1_registerer::sha1_registerer(int priority, string const & name, sha1_maker * maker)
-{
-  register_sha1(priority, name, maker);
-}
-
-void hook_botan_sha1()
-{
-  Botan::global_state().add_engine(new Monotone_SHA1_Engine);
-}
-
 CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
-           N_("Benchmarks SHA-1 cores"),
+           N_("Benchmarks botan's SHA-1 core"),
            "",
            options::opts::none)
 {
-  P(F("Benchmarking %s SHA-1 cores") % registry().size());
+  P(F("Benchmarking botan's SHA-1 core"));
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,22)
+  benchmark_timer_class timer;
+  Botan::AutoSeeded_RNG rng;
+  Botan::Algorithm_Factory& af =
+    Botan::global_state().algorithm_factory();
+
+  const int milliseconds = 5000;
+
+  std::map<std::string, double> results =
+    Botan::algorithm_benchmark("SHA-1",  milliseconds, timer, rng, af);
+
+  for(std::map<std::string, double>::const_iterator i = results.begin();
+      i != results.end(); ++i)
+    {
+      P(F("SHA-1 provider '%s': %s MiB/s") % i->first % i->second);
+    }
+
+#else
   int mebibytes = 100;
   string test_str(mebibytes << 20, 'a');
   data test_data(test_str, origin::internal);
-  for (map<int, pair<string, sha1_maker*> >::const_iterator i = registry().begin();
-       i != registry().end(); ++i)
-    {
-      maker_to_be_benchmarked = i->second.second;
-      id foo;
-      double start = cpu_now();
-      calculate_ident(test_data, foo);
-      double end = cpu_now();
-      double mebibytes_per_sec = mebibytes / (end - start);
-      P(F("%s: %s MiB/s") % i->second.first % mebibytes_per_sec);
-    }
+  id foo;
+  double start = cpu_now();
+  calculate_ident(test_data, foo);
+  double end = cpu_now();
+  double mebibytes_per_sec = mebibytes / (end - start);
+  P(F("%s MiB/s") % mebibytes_per_sec);
+#endif
 }
 
 

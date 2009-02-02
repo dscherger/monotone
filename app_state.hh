@@ -11,7 +11,7 @@
 // PURPOSE.
 
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/version.h>
 
 #include "options.hh"
 #include "lua_hooks.hh"
@@ -22,6 +22,8 @@
 
 class app_state_private;
 class database_impl;
+class lazy_rng;
+
 class app_state
 {
   boost::shared_ptr<app_state_private> _hidden;
@@ -35,7 +37,10 @@ public:
   options opts;
   lua_hooks lua;
   bool mtn_automate_allowed;
-  boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  boost::shared_ptr<lazy_rng> rng;
+#endif
 };
 
 // Local Variables:

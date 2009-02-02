@@ -10,7 +10,7 @@
 #include "base.hh"
 #include <boost/tokenizer.hpp>
 #include "lexical_cast.hh"
-#include "sqlite/sqlite3.h"
+#include <sqlite3.h>
 #include <cstring>
 
 #include "sanity.hh"
@@ -53,7 +53,7 @@ assert_sqlite3_ok(sqlite3 * db)
   // errno's.
   L(FL("sqlite error: %d: %s") % errcode % errmsg);
 
-  // Check the string to see if it looks like an informative_failure
+  // Check the string to see if it looks like a recoverable_failure
   // thrown from within an SQL extension function, caught, and turned
   // into a call to sqlite3_result_error.  (Extension functions have to
   // do this to avoid corrupting sqlite's internal state.)  If it is,
@@ -1004,6 +1004,11 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
     % filename % ui.prog_name);
 }
 
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+// import the hex function for old sqlite libraries from database.cc
+void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
+#endif
+
 void
 migrate_sql_schema(sqlite3 * db, key_store & keys,
                    system_path const & filename)
@@ -1039,6 +1044,12 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
         P(F("no migration performed; database schema already up-to-date"));
         return;
       }
+
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+    // SQLite up to and including 3.3.12 didn't have a hex() function
+    if (sqlite3_libversion_number() <= 3003012)
+      sql::create_function(db, "hex", sqlite3_hex_fn);
+#endif
 
     sql::create_function(db, "sha1", sqlite_sha1_fn);
     sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
@@ -1111,6 +1122,13 @@ test_migration_step(sqlite3 * db, key_store & keys,
                     string const & schema)
 {
   I(db != NULL);
+
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+  // SQLite up to and including 3.3.12 didn't have a hex() function
+  if (sqlite3_libversion_number() <= 3003012)
+    sql::create_function(db, "hex", sqlite3_hex_fn);
+#endif
+
   sql::create_function(db, "sha1", sqlite_sha1_fn);
   sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
   sql::create_function(db, "unhex", sqlite3_unhex_fn);

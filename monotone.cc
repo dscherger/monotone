@@ -16,7 +16,9 @@
 #include <locale.h>
 #include <stdlib.h>
 
-#include "botan/botan.h"
+#include <sqlite3.h>
+#include <botan/botan.h>
+
 #include "i18n.h"
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"
@@ -28,7 +30,6 @@
 #include "mt_version.hh"
 #include "option.hh"
 #include "paths.hh"
-#include "sha1.hh"
 #include "simplestring_xform.hh"
 #include "platform.hh"
 #include "work.hh"
@@ -202,6 +203,46 @@ cpp_main(int argc, char ** argv)
         ui.prog_name = prog_name;
         I(!ui.prog_name.empty());
       }
+
+      // check the SQLite library version we got dynamically linked against.
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+      E(sqlite3_libversion_number() >= 3003008, origin::system,
+        F("This monotone binary requires at least SQLite 3.3.8 to run."));
+#else
+      E(sqlite3_libversion_number() >= 3003014, origin::system,
+        F("This monotone binary requires at least SQLite 3.3.14 to run."));
+#endif
+
+      // check the botan library version we got linked against.
+      u32 linked_botan_version = BOTAN_VERSION_CODE_FOR(
+        Botan::version_major(), Botan::version_minor(),
+        Botan::version_patch());
+
+      // Botan 1.7.14 has an incompatible API change, which got reverted
+      // again in 1.7.15. Thus we do not care to support 1.7.14.
+      E(linked_botan_version != BOTAN_VERSION_CODE_FOR(1,7,14), origin::system,
+        F("Monotone does not support Botan 1.7.14."));
+
+#if BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,6)
+      E(linked_botan_version >= BOTAN_VERSION_CODE_FOR(1,6,3), origin::system,
+        F("This monotone binary requires Botan 1.6.3 or newer."));
+      E(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+        F("This monotone binary does not work with Botan newer than 1.7.6."));
+#elif BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,22)
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+        F("This monotone binary requires Botan 1.7.7 or newer."));
+      // While compiling against 1.7.22 or newer is recommended, because
+      // it enables new features of Botan, the monotone binary compiled
+      // against Botan 1.7.21 and before should still work with newer Botan
+      // versions, including all of the stable branch 1.8.x.
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+        F("This monotone binary does not work with Botan 1.9.x.");
+#else
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22), origin::system,
+        F("This monotone binary requires Botan 1.7.22 or newer."));
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+        F("This monotone binary does not work with Botan 1.9.x."));
+#endif
 
       app_state app;
       try
