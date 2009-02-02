@@ -15,7 +15,6 @@
 #include "netio.hh"
 #include "botan/numthry.h"
 #include "numeric_vocab.hh"
-#include "netxx/stream.h"
 #include "botan/rsa.h"
 #include "botan/bigint.h"
 #include <boost/shared_ptr.hpp>
@@ -39,7 +38,6 @@ using Botan::RSA_PrivateKey;
 using Botan::BigInt;
 using Botan::SecureVector;
 using Botan::X509_PublicKey;
-using Netxx::Stream;
 
 struct ssh_agent_state : ssh_agent_platform
 {

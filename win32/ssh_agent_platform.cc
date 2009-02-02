@@ -8,9 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
-
-#include "../sanity.hh"
-
+#include "sanity.hh"
 #include "ssh_agent_platform.hh"
 
 using std::string;

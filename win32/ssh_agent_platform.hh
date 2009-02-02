@@ -7,7 +7,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "../numeric_vocab.hh"
+#ifndef __SSH_AGENT_PLATFORM_HH__
+#define __SSH_AGENT_PLATFORM_HH__
+
+#include "numeric_vocab.hh"
 #define WIN32_LEAN_AND_MEAN // no gui definitions
 #include <windows.h>
 
@@ -26,3 +29,5 @@ public:
   void write_data(std::string const & data);
   void read_data(u32 const len, std::string & out);
 };
+
+#endif
