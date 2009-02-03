@@ -47,7 +47,6 @@ MOST_SOURCES = 								\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
-	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
@@ -89,28 +88,6 @@ MOST_SOURCES = 								\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
-NETXX_SOURCES =								\
-	netxx/accept.cxx netxx/accept.h netxx/address.cxx		\
-	netxx/common.h netxx/compat.h netxx/datagram.cxx		\
-	netxx/datagramserver.cxx netxx/osutil.cxx netxx/osutil.h	\
-	netxx/peer.cxx netxx/probe.cxx netxx/probe_impl.h		\
-	netxx/probe_select.cxx netxx/recvfrom.cxx netxx/recvfrom.h	\
-	netxx/resolve.h netxx/serverbase.cxx netxx/serverbase.h		\
-	netxx/sockaddr.cxx netxx/sockaddr.h netxx/socket.cxx 		\
-	netxx/socket.h netxx/sockopt.cxx netxx/stream.cxx		\
-	netxx/streambase.cxx netxx/streamserver.cxx			\
-	netxx/address.h netxx/datagram.h netxx/datagramserver.h		\
-	netxx/netbuf.h netxx/netxx.h netxx/peer.h netxx/probe.h 	\
-	netxx/probeinfo.h netxx/sockopt.h netxx/stream.h		\
-	netxx/streambase.h netxx/streamserver.h netxx/timeout.h		\
-	netxx/types.h
-
-BOOST_SANDBOX_SOURCES =							\
-	boost/circular_buffer_adaptor.hpp				\
-	boost/circular_buffer_base.hpp					\
-	boost/circular_buffer_fwd.hpp					\
-	boost/circular_buffer.hpp
-
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
 	unix/process.cc unix/terminal.cc unix/inodeprint.cc		\
@@ -129,7 +106,7 @@ WIN32_PLATFORM_SOURCES =						\
 UNIT_TEST_SOURCES =							\
 	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
 	dates.cc diff_patch.cc globish.cc graph.cc mkstemp.cc netcmd.cc	\
-	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
+	numeric_vocab.cc option.cc outdated_indicator.cc		\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
 	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
@@ -183,11 +160,8 @@ tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
 
 txt2c_SOURCES = txt2c.cc
 
-noinst_LIBRARIES = libplatform.a lib3rdparty.a
+noinst_LIBRARIES = libplatform.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
-lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(NETXX_SOURCES)
-lib3rdparty_a_CPPFLAGS = # may be augmented in conditionals
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -228,54 +202,30 @@ SUFFIXES = .gch .merged.po .gmo
 
 EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
 		    $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
-EXTERNAL_LIBS = $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) \
-	        $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) \
-	        $(idn_LIBS)
+EXTERNAL_LIBS = $(botan_LIBS) $(lua_LIBS) $(pcre_LIBS) $(sqlite_LIBS) \
+	        $(idn_LIBS) $(LIBINTL) $(LIBICONV)
 
 mtn_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
 mtn_CXXFLAGS = $(PCH_FLAGS)
-mtn_LDADD = libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
+mtn_LDADD = libplatform.a $(EXTERNAL_LIBS)
 
 unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS $(EXTERNAL_CPPFLAGS)
 unit_tester_CXXFLAGS = $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
+unit_tester_LDADD += libplatform.a $(EXTERNAL_LIBS)
 
 tester_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(EXTERNAL_LIBS)
+tester_LDADD += libplatform.a $(EXTERNAL_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  lib3rdparty_a_CPPFLAGS += -DWIN32
   tester_SOURCES += win32/tester-plaf.cc
-  check_net_SOURCES = win32/tester-check-net.cc
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
   tester_SOURCES += unix/tester-plaf.cc
-  check_net_SOURCES = unix/tester-check-net.cc
-endif
-
-if MISSING_INET_PTON
-  lib3rdparty_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_PTON
-endif
-
-if MISSING_INET_NTOP
-  lib3rdparty_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_NTOP
-endif
-
-if MISSING_GETADDRINFO
-  lib3rdparty_a_SOURCES += netxx/resolve_gethostbyname.cxx netxx/resolve_getservbyname.cxx
-else
-  lib3rdparty_a_SOURCES += netxx/resolve_getaddrinfo.cxx
-endif
-
-if MISSING_INET6
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
 endif
 
 # extra files
@@ -519,8 +469,8 @@ run_%_tests: Makefile
 	+./run_$*_tests
 
 unit_tests.status : unit_tester$(EXEEXT)
-lua_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
-check_PROGRAMS = unit_tester tester check_net
+lua_tests.status : mtn$(EXEEXT)
+check_PROGRAMS = unit_tester tester
 
 # We want the tests re-run even if the .status files already exist.
 # .PHONY does not work for that (bad interaction with pattern rules),
