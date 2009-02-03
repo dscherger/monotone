@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
