@@ -339,7 +339,8 @@ encode_cset(builder b, cset const & cs)
     {
       builder tmp = b.add_obj();
       tmp[syms::add_file].str(i->first.as_internal());
-      tmp[syms::content].str(i->second.inner()());
+      tmp[syms::content].str(encode_hexenc(i->second.inner()(),
+                                           origin::database));
     }
 
   for (map<file_path, pair<file_id, file_id> >::const_iterator
@@ -400,7 +401,8 @@ decode_cset(query q, cset & cs)
           string content;
           I(change[syms::content].get(content));
           cs.files_added.insert(make_pair(file_path_internal(path),
-                                          file_id(content, origin::network)));
+                                          file_id(decode_hexenc(content, origin::network),
+                                                  origin::network)));
         }
       else if (change[syms::patch].get(path))
         {
@@ -443,7 +445,8 @@ static void
 encode_rev(builder b, revision_t const & rev)
 {
   b[syms::vers].str("1");
-  b[syms::new_manifest].str(rev.new_manifest.inner()());
+  b[syms::new_manifest].str(encode_hexenc(rev.new_manifest.inner()(), 
+                                          origin::database));
   builder edges = b[syms::edges].arr();
   for (edge_map::const_iterator e = rev.edges.begin();
        e != rev.edges.end(); ++e)
@@ -464,7 +467,8 @@ decode_rev(query q, revision_t & rev)
   I(q[syms::vers].get(vers));
   I(vers == "1");
 
-  rev.new_manifest = manifest_id(new_manifest, origin::network);
+  rev.new_manifest = manifest_id(decode_hexenc(new_manifest, origin::network),
+                                 origin::network);
   size_t nargs = 0;
   query edges = q[syms::edges];
   I(edges.len(nargs));
@@ -494,7 +498,7 @@ encode_data_records(builder b, vector<file_data_record> const & data_records)
          i = data_records.begin(); i != data_records.end(); ++i)
     {
       builder tmp = b.add_obj();
-      tmp[syms::id].str(i->id.inner()());
+      tmp[syms::id].str(encode_hexenc(i->id.inner()(), origin::database));
       tmp[syms::data].str(encode_base64(i->dat.inner())());
     }
 }
@@ -513,7 +517,8 @@ decode_data_records(query q, vector<file_data_record> & data_records)
       d[syms::data].get(dat);
       file_data data(decode_base64_as<string>(dat, origin::network),
                      origin::network);
-      data_records.push_back(file_data_record(file_id(id, origin::network),
+      data_records.push_back(file_data_record(file_id(decode_hexenc(id, origin::network),
+                                                      origin::network),
                                               data));
     }
 }
@@ -529,8 +534,8 @@ encode_delta_records(builder b, vector<file_delta_record> const & delta_records)
          i = delta_records.begin(); i != delta_records.end(); ++i)
     {
       builder tmp = b.add_obj();
-      tmp[syms::src_id].str(i->src_id.inner()());
-      tmp[syms::dst_id].str(i->dst_id.inner()());
+      tmp[syms::src_id].str(encode_hexenc(i->src_id.inner()(), origin::database));
+      tmp[syms::dst_id].str(encode_hexenc(i->dst_id.inner()(), origin::database));
       tmp[syms::delta].str(encode_base64(i->del.inner())());
     }
 }
@@ -550,8 +555,10 @@ decode_delta_records(query q, vector<file_delta_record> & delta_records)
       d[syms::delta].get(del);
       file_delta delta(decode_base64_as<string>(del, origin::network), 
                        origin::network);
-      delta_records.push_back(file_delta_record(file_id(src_id, origin::network),
-                                                file_id(dst_id, origin::network),
+      delta_records.push_back(file_delta_record(file_id(decode_hexenc(src_id, origin::network),
+                                                        origin::network),
+                                                file_id(decode_hexenc(dst_id, origin::network),
+                                                        origin::network),
                                                 delta));
     }
 }
@@ -641,7 +648,7 @@ json_value_t encode_msg_put_full_rev_request(revision_id const & rid,
   builder b;
   b[syms::type].str(syms::put_full_rev_request());
   b[syms::vers].str("1");
-  b[syms::id].str(rid.inner()());
+  b[syms::id].str(encode_hexenc(rid.inner()(), origin::database));
   builder rb = b[syms::rev].obj();
   encode_rev(rb, rev);
   builder dat = b[syms::data_records].arr();
@@ -664,7 +671,7 @@ decode_msg_put_full_rev_request(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id, origin::network);
+      rid = revision_id(decode_hexenc(id, origin::network), origin::network);
       query rq = q[syms::rev];
       decode_rev(rq, rev);
       query dat = q[syms::data_records];
@@ -713,7 +720,7 @@ encode_msg_get_rev_request(revision_id const & rid)
   builder b;
   b[syms::type].str(syms::get_rev_request());
   b[syms::vers].str("1");
-  b[syms::id].str(rid.inner()());
+  b[syms::id].str(encode_hexenc(rid.inner()(), origin::database));
   return b.v;
 }
 
@@ -726,7 +733,7 @@ decode_msg_get_rev_request(json_value_t val, revision_id & rid)
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id, origin::network);
+      rid = revision_id(decode_hexenc(id, origin::network), origin::network);
       return true;
     }
   return false;
@@ -772,7 +779,7 @@ encode_msg_put_rev_request(revision_id const & rid, revision_t const & rev)
   builder b;
   b[syms::type].str(syms::put_rev_request());
   b[syms::vers].str("1");
-  b[syms::id].str(rid.inner()());
+  b[syms::id].str(encode_hexenc(rid.inner()(), origin::database));
   builder rb = b[syms::rev].obj();
   encode_rev(rb, rev);
   return b.v;
@@ -787,7 +794,7 @@ decode_msg_put_rev_request(json_value_t val, revision_id & rid, revision_t & rev
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      rid = revision_id(id, origin::network);
+      rid = revision_id(decode_hexenc(id, origin::network), origin::network);
       query rq = q[syms::rev];
       decode_rev(rq, rev);
       return true;
@@ -833,7 +840,7 @@ encode_msg_get_file_data_request(file_id const & fid)
   builder b;
   b[syms::type].str(syms::get_file_data_request());
   b[syms::vers].str("1");
-  b[syms::id].str(fid.inner()());
+  b[syms::id].str(encode_hexenc(fid.inner()(), origin::database));
   return b.v;
 }
 
@@ -847,7 +854,7 @@ decode_msg_get_file_data_request(json_value_t val,
       q[syms::vers].get(vers) && vers == "1" &&
       q[syms::id].get(id))
     {
-      fid = file_id(id, origin::network);
+      fid = file_id(decode_hexenc(id, origin::network), origin::network);
       return true;
     }
   return false;
@@ -895,7 +902,7 @@ encode_msg_put_file_data_request(file_id const & fid,
   builder b;
   b[syms::type].str(syms::put_file_data_request());
   b[syms::vers].str("1");
-  b[syms::id].str(fid.inner()());
+  b[syms::id].str(encode_hexenc(fid.inner()(), origin::database));
   b[syms::data].str(encode_base64(data.inner())());
   return b.v;
 }
@@ -912,7 +919,7 @@ decode_msg_put_file_data_request(json_value_t val,
       q[syms::id].get(id) &&
       q[syms::data].get(dat))
     {
-      fid = file_id(id, origin::network);
+      fid = file_id(decode_hexenc(id, origin::network), origin::network);
       data = file_data(decode_base64_as<string>(dat, origin::network),
                        origin::network);
       return true;
@@ -959,8 +966,8 @@ encode_msg_get_file_delta_request(file_id const & src_id,
   builder b;
   b[syms::type].str(syms::get_file_delta_request());
   b[syms::vers].str("1");
-  b[syms::src_id].str(src_id.inner()());
-  b[syms::dst_id].str(dst_id.inner()());
+  b[syms::src_id].str(encode_hexenc(src_id.inner()(), origin::database));
+  b[syms::dst_id].str(encode_hexenc(dst_id.inner()(), origin::database));
   return b.v;
 }
 
@@ -976,8 +983,8 @@ decode_msg_get_file_delta_request(json_value_t val,
       q[syms::src_id].get(src) &&
       q[syms::dst_id].get(dst))
     {
-      src_id = file_id(src, origin::network);
-      dst_id = file_id(dst, origin::network);
+      src_id = file_id(decode_hexenc(src, origin::network), origin::network);
+      dst_id = file_id(decode_hexenc(dst, origin::network), origin::network);
       return true;
     }
   return false;
@@ -1026,8 +1033,8 @@ encode_msg_put_file_delta_request(file_id const & src_id,
   builder b;
   b[syms::type].str(syms::put_file_delta_request());
   b[syms::vers].str("1");
-  b[syms::src_id].str(src_id.inner()());
-  b[syms::dst_id].str(dst_id.inner()());
+  b[syms::src_id].str(encode_hexenc(src_id.inner()(), origin::database));
+  b[syms::dst_id].str(encode_hexenc(dst_id.inner()(), origin::database));
   b[syms::delta].str(encode_base64(delta.inner())());
   return b.v;
 }
@@ -1046,8 +1053,8 @@ decode_msg_put_file_delta_request(json_value_t val,
       q[syms::src_id].get(src) &&
       q[syms::delta].get(del))
     {
-      src_id = file_id(src, origin::network);
-      dst_id = file_id(dst, origin::network);
+      src_id = file_id(decode_hexenc(src, origin::network), origin::network);
+      dst_id = file_id(decode_hexenc(dst, origin::network), origin::network);
       delta = file_delta(decode_base64_as<string>(del, origin::network),
                          origin::network);
       return true;
