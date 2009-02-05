@@ -34,6 +34,6 @@ TESTS_ENVIRONMENT=AUTOTEST_PATH="."
 run_lua_tests: Makefile
 	echo '#!/bin/sh' > $@ ; \
 	echo 'PATH=$(top_builddir):$$PATH' >> $@ ; \
-	echo 'exec $(top_builddir)/tester $(srcdir)/testsuite.lua "$$@"' >> $@ ; \
+	echo 'exec $(top_builddir)/tester $(srcdir)/lua-testsuite.lua "$$@"' >> $@ ; \
 	chmod 755 $@
 
