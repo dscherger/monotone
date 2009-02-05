@@ -82,7 +82,7 @@ process_one_hunk(piece::piece_table const & source,
       char code;
       int pos, len;
       if (sscanf(directive.c_str(), " %c %d %d", &code, &pos, &len) != 3)
-              E(false, F("illformed directive '%s'\n") % directive);
+              E(false, origin::internal, F("illformed directive '%s'\n") % directive);
 
       if (code == 'a')
         {
@@ -104,11 +104,11 @@ process_one_hunk(piece::piece_table const & source,
           cursor += len;
         }
       else
-        E(false,F("unknown directive '%s'\n") % directive);
+        E(false,origin::internal, F("unknown directive '%s'\n") % directive);
     } 
   catch (std::out_of_range & oor)
     {
-      E(false, F("out_of_range while processing '%s' with source.size() == %d and cursor == %d")
+      E(false, origin::internal, F("out_of_range while processing '%s' with source.size() == %d and cursor == %d")
           % directive % source.size() % cursor);
     }  
 }

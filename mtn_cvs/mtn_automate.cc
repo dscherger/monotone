@@ -20,7 +20,7 @@ using std::pair;
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
-  N(present>=minimum,
+  E(present>=minimum, origin::user,
       F("your monotone automate interface revision %s does not match the "
           "requirements %s") % present % minimum);
 }
@@ -81,22 +81,22 @@ parse_path(basic_io::parser & parser, file_path & sp)
 file_id mtn_automate::put_file(file_data const& d, file_id const& base)
 { std::vector<std::string> args;
   if (!null_id(base.inner())) 
-    args.push_back(encode_hexenc(base.inner()()));
+    args.push_back(encode_hexenc(base.inner()(),origin::internal));
   args.push_back(d.inner()());
-  return file_id(decode_hexenc(automate("put_file",args).substr(0,constants::idlen)));
+  return file_id(decode_hexenc(automate("put_file",args).substr(0,constants::idlen),origin::network),origin::network);
 }
 
 file_data mtn_automate::get_file(file_id const& fid)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(fid.inner()()));
-  return file_data(automate("get_file",args));
+  args.push_back(encode_hexenc(fid.inner()(),origin::internal));
+  return file_data(automate("get_file",args),origin::network);
 }
 
 #include <piece_table.hh>
 
 std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(rid.inner()()));
+  args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   std::string children=automate("children",args);
   std::vector<revision_id> result;
   piece::piece_table lines;
@@ -104,7 +104,7 @@ std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& 
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
   { // L(FL("child '%s'") % (**p).substr(0,constants::idlen));
-    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen),origin::network),origin::network));
   }
   piece::reset();
   return result;
@@ -112,14 +112,14 @@ std::vector<revision_id> mtn_automate::get_revision_children(revision_id const& 
 
 std::vector<revision_id> mtn_automate::get_revision_parents(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(rid.inner()()));
+  args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   std::string children=automate("parents",args);
   std::vector<revision_id> result;
   piece::piece_table lines;
   piece::index_deltatext(children,lines);
   result.reserve(children.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen),origin::network),origin::network));
   piece::reset();
   return result;
 }
@@ -132,7 +132,7 @@ std::vector<revision_id> mtn_automate::heads(std::string const& branch)
   piece::index_deltatext(heads,lines);
   result.reserve(heads.size());
   for (piece::piece_table::const_iterator p=lines.begin();p!=lines.end();++p)
-    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen))));
+    result.push_back(revision_id(decode_hexenc((**p).substr(0,constants::idlen),origin::internal),origin::network));
   piece::reset();
   return result;
 }
@@ -168,7 +168,7 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::add_file, i->first);
-      st.push_hex_pair(syms::content, hexenc<id>(encode_hexenc(i->second.inner()())));
+      st.push_hex_pair(syms::content, hexenc<id>(encode_hexenc(i->second.inner()(),origin::internal),origin::internal));
       printer.print_stanza(st);
     }
 
@@ -177,8 +177,8 @@ static void print_cset(basic_io::printer &printer, mtn_automate::cset const& cs)
     {
       basic_io::stanza st;
       st.push_file_pair(syms::patch, i->first);
-      st.push_hex_pair(syms::from, hexenc<id>(encode_hexenc(i->second.first.inner()())));
-      st.push_hex_pair(syms::to, hexenc<id>(encode_hexenc(i->second.second.inner()())));
+      st.push_hex_pair(syms::from, hexenc<id>(encode_hexenc(i->second.first.inner()(),origin::internal),origin::internal));
+      st.push_hex_pair(syms::to, hexenc<id>(encode_hexenc(i->second.second.inner()(),origin::internal),origin::internal));
       printer.print_stanza(st);
     }
 
@@ -214,15 +214,15 @@ revision_id mtn_automate::put_revision(revision_id const& parent, cset const& ch
 
 // changeset stanza  
   basic_io::stanza st;
-  st.push_hex_pair(syms::old_revision, hexenc<id>(encode_hexenc(parent.inner()())));
+  st.push_hex_pair(syms::old_revision, hexenc<id>(encode_hexenc(parent.inner()(),origin::internal),origin::internal));
   printer.print_stanza(st);
   print_cset(printer, changes);
   std::vector<std::string> args(1,printer.buf);
-  return revision_id(decode_hexenc(automate("put_revision",args).substr(0,constants::idlen)));
+  return revision_id(decode_hexenc(automate("put_revision",args).substr(0,constants::idlen),origin::network),origin::network);
 }
 
 mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
-{ std::vector<std::string> args(1,encode_hexenc(rid.inner()()));
+{ std::vector<std::string> args(1,encode_hexenc(rid.inner()(),origin::internal));
   std::string aresult=automate("get_manifest_of",args);
   
   basic_io::input_source source(aresult,"automate get_manifest_of result");
@@ -249,7 +249,7 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
           pa.str(pth);
           pa.esym(syms::content);
           pa.hex(content);
-          result[file_path_internal(pth)].first=file_id(decode_hexenc(content));
+          result[file_path_internal(pth)].first=file_id(decode_hexenc(content,origin::network),origin::network);
         }
       else if (pa.symp(syms::dir))
         {
@@ -268,25 +268,27 @@ mtn_automate::manifest_map mtn_automate::get_manifest_of(revision_id const& rid)
           pa.str(k);
           pa.str(v);
           safe_insert(result[file_path_internal(pth)].second, 
-                    make_pair(attr_key(k),attr_value(v)));
+                    make_pair(attr_key(k,origin::network),attr_value(v,origin::network)));
         }
         
-      // Dormant attrs
+#if 0
+      // Dormant attrs ??
       while(pa.symp(basic_io::syms::dormant_attr))
         {
           pa.sym();
           string k;
           pa.str(k);
           safe_insert(result[file_path_internal(pth)].second, 
-                    make_pair(attr_key(k),attr_value()));
+                    make_pair(attr_key(k,origin::network),attr_value()));
         }
+#endif
     }
   return result;
 }
 
 void mtn_automate::cert_revision(revision_id const& rid, std::string const& name, std::string const& value)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(rid.inner()()));
+  args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   args.push_back(name);
   args.push_back(value);
   automate("cert",args);
@@ -294,7 +296,7 @@ void mtn_automate::cert_revision(revision_id const& rid, std::string const& name
 
 std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(rid.inner()()));
+  args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   std::string aresult=automate("certs",args);
 
   basic_io::input_source source(aresult,"automate get_revision_certs result");
@@ -406,7 +408,7 @@ parse_cset(basic_io::parser & parser,
 //      prev_path = p1;
       parser.esym(syms::content);
       parser.hex(t1);
-      safe_insert(cs.files_added, make_pair(p1, file_id(decode_hexenc(t1))));
+      safe_insert(cs.files_added, make_pair(p1, file_id(decode_hexenc(t1,origin::network),origin::network)));
     }
 
 //  prev_path.clear();
@@ -421,7 +423,8 @@ parse_cset(basic_io::parser & parser,
       parser.esym(syms::to);
       parser.hex(t2);
       safe_insert(cs.deltas_applied,
-                  make_pair(p1, make_pair(file_id(decode_hexenc(t1)), file_id(decode_hexenc(t2)))));
+                  make_pair(p1, make_pair(file_id(decode_hexenc(t1,origin::network),origin::network), 
+                                file_id(decode_hexenc(t2,origin::network),origin::network))));
     }
 
 //  prev_pair.first.clear();
@@ -431,7 +434,7 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1,origin::network));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       safe_insert(cs.attrs_cleared, new_pair);
@@ -444,12 +447,12 @@ parse_cset(basic_io::parser & parser,
       parse_path(parser, p1);
       parser.esym(syms::attr);
       parser.str(t1);
-      pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+      pair<file_path, attr_key> new_pair(p1, attr_key(t1,origin::network));
 //      I(prev_pair.first.empty() || new_pair > prev_pair);
 //      prev_pair = new_pair;
       parser.esym(syms::value);
       parser.str(t2);
-      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2)));
+      safe_insert(cs.attrs_set, make_pair(new_pair, attr_value(t2,origin::network)));
     }
 }
 
@@ -464,7 +467,7 @@ parse_edge(basic_io::parser & parser,
 
   parser.esym(syms::old_revision);
   parser.hex(tmp);
-  old_rev = revision_id(decode_hexenc(tmp));
+  old_rev = revision_id(decode_hexenc(tmp,origin::network),origin::network);
 
   parse_cset(parser, *cs);
 
@@ -473,7 +476,7 @@ parse_edge(basic_io::parser & parser,
 
 mtn_automate::revision_t mtn_automate::get_revision(revision_id const& rid)
 { std::vector<std::string> args;
-  args.push_back(encode_hexenc(rid.inner()()));
+  args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   std::string aresult=automate("get_revision",args);
   
   basic_io::input_source source(aresult,"automate get_revision result");
@@ -486,7 +489,7 @@ mtn_automate::revision_t mtn_automate::get_revision(revision_id const& rid)
   string tmp;
   parser.esym(syms::format_version);
   parser.str(tmp);
-  E(tmp == "1",
+  E(tmp == "1", origin::workspace,
     F("encountered a revision with unknown format, version '%s'\n"
       "I only know how to understand the version '1' format\n"
       "a newer version of mtn_cvs is required to complete this operation")
@@ -548,7 +551,7 @@ bool mtn_automate::is_synchronized(revision_id const& rid,
   
   // look for a certificate
   std::vector<certificate> certs;
-  certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
+  certs=get_revision_certs(rid,cert_name(sync_prefix+domain,origin::internal));
   return !certs.empty();
 }
 
@@ -594,7 +597,7 @@ revision_id mtn_automate::find_newest_sync(std::string const& domain, std::strin
       if (!null_id(e->first))
         heads.push_back(e->first);
     }
-    N(!heads.empty(), F("no synchronized revision found in branch %s for domain %s")
+    E(!heads.empty(), origin::user, F("no synchronized revision found in branch %s for domain %s")
         % branch % domain);
   }
 
@@ -630,7 +633,7 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+    pair<file_path, attr_key> new_pair(p1, attr_key(t1,origin::network));
     safe_erase(result, new_pair);
   }
   while (parser.symp(syms::set))
@@ -639,10 +642,10 @@ static void parse_attributes(std::string const& in, sync_map_t& result)
     parse_path(parser, p1);
     parser.esym(syms::attr);
     parser.str(t1);
-    pair<file_path, attr_key> new_pair(p1, attr_key(t1));
+    pair<file_path, attr_key> new_pair(p1, attr_key(t1,origin::network));
     parser.esym(syms::value);
     parser.str(t2);
-    safe_insert(result, make_pair(new_pair, attr_value(t2)));
+    safe_insert(result, make_pair(new_pair, attr_value(t2,origin::network)));
   }
 }
 
@@ -658,14 +661,14 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
   
   L(FL("get_sync_info: checking revision certificates %s") % rid);
   std::vector<certificate> certs;
-  certs=get_revision_certs(rid,cert_name(sync_prefix+domain));
+  certs=get_revision_certs(rid,cert_name(sync_prefix+domain,origin::internal));
   I(certs.size()<=1); // FIXME: what to do with multiple certs ...
   if (certs.size()==1) 
-  { std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(idx(certs,0).value);
+  { std::string decomp_cert_val=xform<Botan::Gzip_Decompression>(idx(certs,0).value,origin::network);
     I(decomp_cert_val.size()>constants::idlen+1);
     I(decomp_cert_val[constants::idlen]=='\n');
     if (decomp_cert_val[0]!=' ')
-    { revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen));
+    { revision_id old_rid=revision_id(decomp_cert_val.substr(0,constants::idlen),origin::network);
       result=get_sync_info(old_rid,domain,depth);
       ++depth;
     }
@@ -695,7 +698,7 @@ sync_map_t mtn_automate::get_sync_info(revision_id const& rid, string const& dom
     }
     depth=0;
   }
-  N(!result.empty(), F("no sync cerficate found in revision %s for domain %s")
+  E(!result.empty(), origin::user, F("no sync cerficate found in revision %s for domain %s")
         % rid % domain);
   return result;
 }
@@ -743,7 +746,7 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
             /*|| (o->first==n->first && o->second!=n->second)*/)
         { basic_io::stanza st;
           st.push_file_pair(syms::clear, file_path(o->first.first));
-          st.push_str_pair(syms::attr, encode_hexenc(o->first.second()));
+          st.push_str_pair(syms::attr, encode_hexenc(o->first.second(),origin::internal));
           printer.print_stanza(st);
           if (o->first==n->first) ++n;
           ++o;
@@ -756,8 +759,8 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
             || (o->first==n->first && o->second!=n->second))
         { basic_io::stanza st;
           st.push_file_pair(syms::set, file_path(n->first.first));
-          st.push_str_pair(syms::attr, encode_hexenc(n->first.second()));
-          st.push_str_pair(syms::value, encode_hexenc(n->second()));
+          st.push_str_pair(syms::attr, encode_hexenc(n->first.second(),origin::internal));
+          st.push_str_pair(syms::value, encode_hexenc(n->second(),origin::internal));
           printer.print_stanza(st);
           if (o->first==n->first) ++o;
           ++n;
@@ -767,15 +770,16 @@ void mtn_automate::put_sync_info(revision_id const& rid, std::string const& doma
       if (printer.buf.size()>=new_data.size()) continue; // look for a shorter form
       
       I(e->first.inner()().size()==constants::idlen);
-      std::string cv=xform<Botan::Gzip_Compression>(encode_hexenc(e->first.inner()())+"\n"+printer.buf);
+      std::string cv=xform<Botan::Gzip_Compression>(encode_hexenc(e->first.inner()(),origin::internal)+"\n"+printer.buf,origin::internal);
       cert_revision(rid,sync_prefix+domain,cv);
       L(FL("sync info encoded as delta from %s") % e->first);
       return;
     }
-    catch (informative_failure &er) {}
+    catch (recoverable_failure &er) {}
+    catch (unrecoverable_failure &er) {}
     catch (std::runtime_error &er) {}
   }
-  std::string cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data);
+  std::string cv=xform<Botan::Gzip_Compression>(string(constants::idlen,' ')+"\n"+new_data,origin::internal);
   cert_revision(rid,sync_prefix+domain,cv);
   L(FL("sync info attached to %s") % rid);
 }

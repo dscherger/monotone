@@ -96,26 +96,26 @@ std::string debug_manifest(const cvs_manifest &mf)
   { result+= i->first + " " + i->second->cvs_version;
     if (!i->second->keyword_substitution.empty()) 
       result+="/"+i->second->keyword_substitution;
-    result+=" " + std::string(i->second->dead?"dead ":"") + encode_hexenc(i->second->sha1sum.inner()()) + "\n";
+    result+=" " + std::string(i->second->dead?"dead ":"") + encode_hexenc(i->second->sha1sum.inner()(),origin::internal) + "\n";
   }
   return result;
 }
 
 template <> void
-static dump(cvs_sync::file_state const& fs, std::string& result)
+dump(cvs_sync::file_state const& fs, std::string& result)
 { 
     result="since "+cvs_repository::time_t2human(fs.since_when);
     result+=" V"+fs.cvs_version+" ";
     if (fs.dead) result+= "dead";
     else if (fs.size) result+= boost::lexical_cast<string>(fs.size);
     else if (fs.patchsize) result+= "p" + boost::lexical_cast<string>(fs.patchsize);
-    else if (!fs.sha1sum.inner()().empty()) result+= encode_hexenc(fs.sha1sum.inner()()).substr(0,4) + fs.keyword_substitution;
+    else if (!fs.sha1sum.inner()().empty()) result+= encode_hexenc(fs.sha1sum.inner()(),origin::internal).substr(0,4) + fs.keyword_substitution;
     result+=" "+fs.log_msg.substr(0,20)+"\n";
 }
 
 std::string cvs_repository::debug_file(std::string const& name)
 { std::map<std::string,file_history>::const_iterator i=files.find(name);
-  E(i!=files.end(),F("file '%s' not found\n") % name);
+  E(i!=files.end(),origin::internal,F("file '%s' not found\n") % name);
   std::string result;
   for (std::set<file_state>::const_iterator j=i->second.known_states.begin();
         j!=i->second.known_states.end();++j)
@@ -156,27 +156,27 @@ void cvs_repository::parse_cvs_cert_header(
 { 
 //  MM(value);
   file_path sp=file_path_internal("");
-  repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root")))();
-  module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module")))();
-  branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch")))();
+  repository=const_map_access(value,std::make_pair(sp,attr_key(domain+":root",origin::internal)))();
+  module=const_map_access(value,std::make_pair(sp,attr_key(domain+":module",origin::internal)))();
+  branch=const_map_access(value,std::make_pair(sp,attr_key(domain+":branch",origin::internal)))();
 }
 
 mtn_automate::sync_map_t cvs_repository::create_cvs_cert_header() const
 { 
   mtn_automate::sync_map_t result;
   file_path sp=file_path_internal("");
-  result[std::make_pair(sp,attr_key(app.opts.domain+":root"))]= attr_value(host+":"+root);
-  result[std::make_pair(sp,attr_key(app.opts.domain+":module"))]= attr_value(module);
+  result[std::make_pair(sp,attr_key(app.opts.domain+":root",origin::internal))]= attr_value(host+":"+root,origin::internal);
+  result[std::make_pair(sp,attr_key(app.opts.domain+":module",origin::internal))]= attr_value(module,origin::internal);
   if (!branch.empty())
-    result[std::make_pair(sp,attr_key(app.opts.domain+":branch"))]= attr_value(branch);
+    result[std::make_pair(sp,attr_key(app.opts.domain+":branch",origin::internal))]= attr_value(branch,origin::internal);
   return result;
 }
 
 template <> void
-static dump(cvs_sync::cvs_edge const& e, std::string& result)
+dump(cvs_sync::cvs_edge const& e, std::string& result)
 { result= "[" + cvs_repository::time_t2human(e.time);
     if (e.time!=e.time2) result+= "+" + boost::lexical_cast<string>(e.time2-e.time);
-    if (!e.revision.inner()().empty()) result+= "," + encode_hexenc(e.revision.inner()()).substr(0,4);
+    if (!e.revision.inner()().empty()) result+= "," + encode_hexenc(e.revision.inner()(),origin::internal).substr(0,4);
     if (!e.xfiles.empty()) 
       result+= "," + boost::lexical_cast<string>(e.xfiles.size()) 
          + (e.delta_base.inner()().empty()?"files":"deltas");
@@ -303,7 +303,7 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
     }
     file_path sp=file_path_internal(dirname);
     if (!dirname.empty() || i->second!=root+"/"+module+"/")
-      state[std::make_pair(sp,attr_key(app.opts.domain+":path"))]=attr_value(i->second);
+      state[std::make_pair(sp,attr_key(app.opts.domain+":path",origin::internal))]=attr_value(i->second,origin::internal);
   }
   
   for (cvs_manifest::const_iterator i=e.xfiles.begin(); i!=e.xfiles.end(); ++i)
@@ -324,15 +324,15 @@ mtn_automate::sync_map_t cvs_repository::create_sync_state(cvs_edge const& e)
     I(!i->second->cvs_version.empty());
 #endif
     file_path sp=file_path_internal(i->first);
-    state[std::make_pair(sp,attr_key(app.opts.domain+":revision"))]
-        =attr_value(i->second->cvs_version);
+    state[std::make_pair(sp,attr_key(app.opts.domain+":revision",origin::internal))]
+        =attr_value(i->second->cvs_version,origin::internal);
     if (!i->second->keyword_substitution.empty())
-      state[std::make_pair(sp,attr_key(app.opts.domain+":keyword"))]
-          =attr_value(i->second->keyword_substitution);
+      state[std::make_pair(sp,attr_key(app.opts.domain+":keyword",origin::internal))]
+          =attr_value(i->second->keyword_substitution,origin::internal);
 // FIXME: How to flag locally modified files? add the synched sha1sum?
     if (!i->second->sha1sum.inner()().empty())
-      state[std::make_pair(sp,attr_key(app.opts.domain+":sha1"))]
-            =attr_value(encode_hexenc(i->second->sha1sum.inner()()).substr(0,6));
+      state[std::make_pair(sp,attr_key(app.opts.domain+":sha1",origin::internal))]
+            =attr_value(encode_hexenc(i->second->sha1sum.inner()(),origin::internal).substr(0,6),origin::internal);
   }
   return state;
 }
@@ -347,7 +347,7 @@ cvs_repository::cvs_repository(mtncvs_state &_app, const std::string &repository
   remove_state=remove_set.insert(file_state(0,"-",true)).first;
   if (!app.opts.since.empty())
   { sync_since=posix2time_t(app.opts.since);
-    N(sync_since<=time(0), F("Since lies in the future. Remember to specify time in UTC\n"));
+    E(sync_since<=time(0), origin::user, F("Since lies in the future. Remember to specify time in UTC\n"));
   }
 }
 
@@ -391,7 +391,7 @@ static void guess_repository(std::string &repository, std::string &module,
                 % branch % module % repository);
   }
   catch (std::runtime_error)
-  { N(false, F("can not guess repository (in domain %s), "
+  { E(false, origin::internal, F("can not guess repository (in domain %s), "
         "please specify on first pull") % app.opts.domain);
   }
 }
@@ -406,11 +406,11 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   revision_id lastid;
   if (app.opts.branchname().empty())
   {
-    app.opts.branchname=branch_name(app.get_option("branch"));
+    app.opts.branchname=branch_name(app.get_option("branch"),origin::user);
     if (!app.opts.branchname().empty() && app.opts.branchname()[app.opts.branchname().size()-1]=='\n')
-      app.opts.branchname=branch_name(app.opts.branchname().substr(0,app.opts.branchname().size()-1));
+      app.opts.branchname=branch_name(app.opts.branchname().substr(0,app.opts.branchname().size()-1),origin::user);
   }
-  N(!app.opts.branchname().empty(), F("no destination branch specified\n"));
+  E(!app.opts.branchname().empty(), origin::user, F("no destination branch specified\n"));
   { std::string rep,mod,br;
     // search for module and last revision
     guess_repository(rep, mod, br, last_sync_info, lastid, app);
@@ -435,8 +435,8 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
         W(F("Branches do not match: '%s' != '%s'\n") % branch % br);
     }
   }
-  N(!repository.empty(), F("you must name a repository, I can't guess"));
-  N(!module.empty(), F("you must name a module, I can't guess"));
+  E(!repository.empty(), origin::user, F("you must name a repository, I can't guess"));
+  E(!module.empty(), origin::user, F("you must name a module, I can't guess"));
    
   cvs_repository *repo = new cvs_repository(app,repository,module,branch);
 // turn compression on when not DEBUGGING
@@ -455,9 +455,9 @@ revision_id cvs_sync::last_sync(mtncvs_state &app)
 	app.open();
 	  mtn_automate::sync_map_t last_sync_info;
 	  revision_id lastid;
-	  app.opts.branchname=branch_name(app.get_option("branch"));
+	  app.opts.branchname=branch_name(app.get_option("branch"),origin::user);
 	  if (!app.opts.branchname().empty() && app.opts.branchname()[app.opts.branchname().size()-1]=='\n')
-	      app.opts.branchname=branch_name(app.opts.branchname().substr(0,app.opts.branchname().size()-1));
+	      app.opts.branchname=branch_name(app.opts.branchname().substr(0,app.opts.branchname().size()-1),origin::user);
 	  std::string rep,mod,br;
 	    // search for module and last revision
 	  guess_repository(rep, mod, br, last_sync_info, lastid, app);
@@ -505,9 +505,9 @@ void cvs_repository::process_sync_info(mtn_automate::sync_map_t const& sync_info
         
         file_state fs;
         fs.since_when=e.time;
-        fs.cvs_version=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":revision")))();
-        fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":sha1")))();
-        fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":keywords")))();
+        fs.cvs_version=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":revision",origin::internal)))();
+        fs.cvssha1sum=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":sha1",origin::internal)))();
+        fs.keyword_substitution=const_map_access(sync_info,std::make_pair(sp,attr_key(app.opts.domain+":keywords",origin::internal)))();
         
         fs.sha1sum=i->second.first;
         if (fs.sha1sum.inner()().empty()) continue; // directory node
@@ -581,7 +581,7 @@ void cvs_sync::debug(const std::string &command, const std::string &arg,
     std::vector< revision<cert> > certs;
     app.db.get_revision_certs(rid,cvs_cert_name,certs);
     // erase_bogus_certs ?
-    N(!certs.empty(),F("revision has no 'cvs-revisions' certificates\n"));
+    E(!certs.empty(),origin::user,F("revision has no 'cvs-revisions' certificates\n"));
     
     std::string repository,module,branch;
     cvs_repository::parse_cvs_cert_header(certs.front(), repository, module, branch);

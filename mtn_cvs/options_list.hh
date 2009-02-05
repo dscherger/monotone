@@ -16,7 +16,7 @@ OPTVAR(globals, args_vector, args, )
 OPTION(globals, positionals, true, "--", "")
 #ifdef option_bodies
 {
-  args.push_back(arg_type(arg));
+  args.push_back(arg_type(arg, origin::user));
 }
 #endif
 
@@ -24,7 +24,7 @@ OPTVAR(branch, branch_name, branchname, )
 OPTION(branch, branch, true, "branch,b", N_("select branch cert for operation"))
 #ifdef option_bodies
 {
-  branchname = branch_name(arg);
+  branchname = branch_name(arg, origin::user);
 }
 #endif
 
@@ -61,7 +61,7 @@ OPTION(revision, revision, true, "revision,r",
       N_("select revision id(s) for operation"))
 #ifdef option_bodies
 {
-  revisions.push_back(revision_id(decode_hexenc(arg)));
+  revisions.push_back(revision_id(decode_hexenc(arg, origin::user),origin::user));
 }
 #endif
 
@@ -150,7 +150,7 @@ OPTION(globals, dump, true, "dump",
         gettext_noop("file to dump debugging log to, on failure"))
 #ifdef option_bodies
 {
-  global_sanity.set_dump_path(system_path(arg).as_external());
+  global_sanity.set_dump_path(system_path(arg, origin::user).as_external());
 }
 #endif
 

@@ -139,7 +139,7 @@ CMD(takeover, "takeover", "", CMD_REF(workspace),
   std::string module;
   if (args.size() == 1) module = idx(args, 0)();
   mtncvs_state &myapp=mtncvs_state::upcast(app);
-  N(!myapp.opts.branchname().empty(), F("no destination branch specified\n"));
+  E(!myapp.opts.branchname().empty(), origin::user, F("no destination branch specified\n"));
   cvs_sync::takeover(myapp, module);
 }
 
@@ -376,7 +376,7 @@ cpp_main(int argc, char ** argv)
     }
   catch (option::option_error const & e)
     {
-      N(false, i18n_format("%s") % e.what());
+      E(false, origin::user, i18n_format("%s") % e.what());
     }
   catch (usage & u)
     {
@@ -411,14 +411,27 @@ cpp_main(int argc, char ** argv)
 
     }
   }
-  catch (informative_failure & inf)
+  catch (recoverable_failure & inf)
     {
       ui.inform(inf.what());
       return 1;
     }
+  catch (unrecoverable_failure & inf)
+    {
+      if (inf.caused_by() == origin::database)
+        ui.fatal_db(inf.what());
+      else
+        ui.fatal(inf.what());
+      return 3;
+    }
   catch (ios_base::failure const & ex)
     {
       // an error has already been printed
+      return 1;
+    }
+  catch (std::bad_alloc)
+    {
+      ui.inform(_("error: memory exhausted"));
       return 1;
     }
   catch (std::exception const & ex)

@@ -34,7 +34,7 @@ static void read_file(std::string const& name, file_data &result)
     is.read(buf,sizeof buf);
     if (is.gcount()) dest+=std::string(buf,buf+is.gcount());
   }
-  result=file_data(dest);
+  result=file_data(dest,origin::system);
 }
 
 void cvs_repository::takeover_dir(const std::string &path)
@@ -42,14 +42,14 @@ void cvs_repository::takeover_dir(const std::string &path)
   MM(path);
   { std::string repository;
     std::ifstream cvs_repository((path+"CVS/Repository").c_str());
-    N(cvs_repository.good(), F("can't open %sCVS/Repository\n") % path);
+    E(cvs_repository.good(), origin::workspace, F("can't open %sCVS/Repository\n") % path);
     std::getline(cvs_repository,repository);
     I(!repository.empty());
     if (repository[0]!='/') repository=root+"/"+repository;
     validate_path(path,repository+"/");
   }
   std::ifstream cvs_Entries((path+"CVS/Entries").c_str());
-  N(cvs_Entries.good(),
+  E(cvs_Entries.good(),origin::workspace,
       F("can't open %s\n") % (path+"CVS/Entries"));
   L(FL("takeover_dir %s\n") % path);
   static hexenc<id> empty_file;
@@ -83,7 +83,7 @@ void cvs_repository::takeover_dir(const std::string &path)
         try
         { modtime=cvs_client::Entries2time_t(parts[3]);
         } 
-        catch (informative_failure &e) {}
+        catch (recoverable_failure &e) {}
         catch (std::exception &e) {}
         
         I(files.find(filename)==files.end());
@@ -184,7 +184,7 @@ void cvs_repository::takeover()
     I(!(--edges.end())->revision.inner()().empty());
     of << "format_version \"1\"\n\n"
       "new_manifest [0000000000000000000000000000000000000001]\n\n"
-      "old_revision [" << encode_hexenc((--edges.end())->revision.inner()()) << "]\n";
+      "old_revision [" << encode_hexenc((--edges.end())->revision.inner()(),origin::internal) << "]\n";
   }
 // like in commit ?
 //  update_any_attrs(app);
@@ -197,9 +197,9 @@ void cvs_repository::takeover()
 void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
 { std::string root,module=_module,branch;
 
-  N(access("_MTN",F_OK),F("Found a _MTN file or directory, already under monotone's control?"));
+  E(access("_MTN",F_OK),origin::workspace,F("Found a _MTN file or directory, already under monotone's control?"));
   { fstream cvs_root("CVS/Root");
-    N(cvs_root.good(),
+    E(cvs_root.good(),origin::workspace,
       F("can't open ./CVS/Root, please change into the working directory\n"));
     std::getline(cvs_root,root);
   }
@@ -214,7 +214,7 @@ void cvs_sync::takeover(mtncvs_state &app, const std::string &_module)
   }
   if (module.empty())
   { fstream cvs_repository("CVS/Repository");
-    N(cvs_repository.good(),
+    E(cvs_repository.good(),origin::workspace,
       F("can't open ./CVS/Repository\n"));
     std::getline(cvs_repository,module);
     W(F("Guessing '%s' as the module name\n") % module);

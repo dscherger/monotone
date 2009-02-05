@@ -1,4 +1,4 @@
-AM_CXXFLAGS=-I. -I.. -DLIBMTN_COMPILE
+AM_CXXFLAGS=-I. -I.. -DLIBMTN_COMPILE -I../lua
 
 noinst_LIBRARIES=libmtn.a
 

@@ -74,27 +74,27 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
     }
     // check md5
     Botan::MD5 hash;
-    std::string md5sum=xform<Botan::Hex_Decoder>(u.checksum);
+    std::string md5sum=xform<Botan::Hex_Decoder>(u.checksum,origin::internal);
     I(md5sum.size()==hash.OUTPUT_LENGTH);
     Botan::SecureVector<Botan::byte> hashval=hash.process(contents);
     I(hashval.size()==hash.OUTPUT_LENGTH);
     unsigned hashidx=hash.OUTPUT_LENGTH;
     for (;hashidx && hashval[hashidx-1]==Botan::byte(md5sum[hashidx-1]);--hashidx) ;
     if (!hashidx)
-    { store_delta(file_data(contents), file_data(old_contents), s->sha1sum, 
+    { store_delta(file_data(contents,origin::internal), file_data(old_contents,origin::internal), s->sha1sum, 
 			const_cast<file_id&>(s2->sha1sum));
     }
     else
-    { E(false, F("MD5 sum %s<>%s") % u.checksum 
-          % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end())));
+    { E(false, origin::internal, F("MD5 sum %s<>%s") % u.checksum 
+          % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end()),origin::internal));
     }
   }
   else
   { if (!s->sha1sum.inner()().empty()) 
     // we default to patch if it's at all possible
-      store_delta(file_data(u.contents), file_data(contents), s->sha1sum, const_cast<file_id&>(s2->sha1sum));
+      store_delta(file_data(u.contents,origin::internal), file_data(contents,origin::internal), s->sha1sum, const_cast<file_id&>(s2->sha1sum));
     else
-      store_contents(file_data(u.contents), const_cast<file_id&>(s2->sha1sum));
+      store_contents(file_data(u.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=u.contents.size();
     contents=u.contents;
     const_cast<std::string&>(s2->keyword_substitution)=u.keyword_substitution;
@@ -125,7 +125,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+    store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -137,7 +137,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
   { cvs_client::update u=Update(file,s->cvs_version,s2->cvs_version,s->keyword_substitution);
     try 
     { store_update(s,s2,u,contents);
-    } catch (informative_failure &e)
+    } catch (recoverable_failure &e)
     { W(F("Update: patching failed with %s\n") % e.what());
       cvs_client::update c=Update(file,s2->cvs_version);
       if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
@@ -145,7 +145,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+      store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -157,7 +157,7 @@ void cvs_repository::update(std::set<file_state>::const_iterator s,
       }
       const_cast<std::string&>(s2->md5sum)="";
       const_cast<unsigned&>(s2->patchsize)=0;
-      store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+      store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
       const_cast<unsigned&>(s2->size)=c.contents.size();
       contents=c.contents;
       const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -173,7 +173,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+    store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -189,7 +189,7 @@ void cvs_repository::store_checkout(std::set<file_state>::iterator s2,
     if (c.mod_time!=s2->since_when && c.mod_time!=-1 && s2->since_when!=sync_since)
     { W(F("checkout time %s and log time %s disagree\n") % time_t2human(c.mod_time) % time_t2human(s2->since_when));
     }
-    store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+    store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
     const_cast<unsigned&>(s2->size)=c.contents.size();
     file_contents=c.contents;
     const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
@@ -247,14 +247,14 @@ void cvs_repository::attach_sync_state(cvs_edge & e,mtn_automate::manifest_map c
   }
   // delete old dummy attribute if present
   { mtn_automate::manifest_map::const_iterator f=oldmanifest.find(file_path_internal(""));
-    if (f!=oldmanifest.end() && f->second.second.find(attr_key(app.opts.domain+":touch"))!=f->second.second.end())
-    { cs.attrs_cleared.insert(std::make_pair(file_path_internal(""),attr_key(app.opts.domain+":touch")));
+    if (f!=oldmanifest.end() && f->second.second.find(attr_key(app.opts.domain+":touch",origin::internal))!=f->second.second.end())
+    { cs.attrs_cleared.insert(std::make_pair(file_path_internal(""),attr_key(app.opts.domain+":touch",origin::internal)));
       any_change=true;
     }
   }
   if (!any_change) // this happens if only deletions happened
-  { cs.attrs_set[std::make_pair(file_path_internal(""),attr_key(app.opts.domain+":touch"))]
-        =attr_value("synchronized");
+  { cs.attrs_set[std::make_pair(file_path_internal(""),attr_key(app.opts.domain+":touch",origin::internal))]
+        =attr_value("synchronized",origin::internal);
   }
 }
 
@@ -482,7 +482,7 @@ void cvs_repository::prime()
     
     if (!branch.empty())
     { args.push_back("-r"+branch);
-      N(sync_since==-1, F("--since does not work on a side branch"));
+      E(sync_since==-1, origin::user, F("--since does not work on a side branch"));
     }
     else 
       args.push_back("-b");
@@ -707,13 +707,13 @@ void cvs_repository::update()
       { // we do not need to ask the host, we already did ...
         try
         { store_update(last,s2,*i,initial_contents);
-        } catch (informative_failure &e)
+        } catch (recoverable_failure &e)
         { W(F("error during update: %s\n") % e.what());
           // we _might_ try to use store delta ...
           cvs_client::update c=Update(i->file,s2->cvs_version);
           const_cast<std::string&>(s2->md5sum)="";
           const_cast<unsigned&>(s2->patchsize)=0;
-          store_contents(file_data(c.contents), const_cast<file_id&>(s2->sha1sum));
+          store_contents(file_data(c.contents,origin::internal), const_cast<file_id&>(s2->sha1sum));
           const_cast<unsigned&>(s2->size)=c.contents.size();
           const_cast<std::string&>(s2->keyword_substitution)=c.keyword_substitution;
         }

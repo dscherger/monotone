@@ -32,7 +32,7 @@ void cvs_client::writestr(const std::string &s, bool flush)
   { compress.next_out=(Bytef*)outbuf;
     compress.avail_out=sizeof outbuf;
     int err=deflate(&compress,flush?Z_SYNC_FLUSH:Z_NO_FLUSH);
-    E(err==Z_OK || err==Z_BUF_ERROR, F("deflate error %d") % err);
+    E(err==Z_OK || err==Z_BUF_ERROR, origin::network, F("deflate error %d") % err);
     unsigned written=sizeof(outbuf)-compress.avail_out;
     if (written && byte_out_ticker.get())
       (*byte_out_ticker)+=stream->write(outbuf,written);
@@ -48,7 +48,7 @@ std::string cvs_client::readline()
   std::string result;
   for (;;)
   { if (inputbuffer.empty()) underflow(); 
-    E(!inputbuffer.empty(),F("no data avail"));
+    E(!inputbuffer.empty(),origin::network, F("no data avail"));
     std::string::size_type eol=inputbuffer.find('\n');
     if (eol==std::string::npos)
     { result+=inputbuffer;
@@ -85,9 +85,9 @@ void cvs_client::underflow()
 try_again:
   Netxx::Probe::result_type res = probe.ready(Netxx::Timeout(60L),
                       Netxx::Probe::ready_read); // 60 seconds
-  E((res.second&Netxx::Probe::ready_read),F("timeout reading from CVS server"));
+  E((res.second&Netxx::Probe::ready_read),origin::network, F("timeout reading from CVS server"));
   ssize_t avail_in=stream->read(buf,sizeof buf);
-  E(avail_in>0, F("read error %s") % strerror(errno));
+  E(avail_in>0, origin::network, F("read error %s") % strerror(errno));
   if (byte_in_ticker.get())
     (*byte_in_ticker)+=avail_in;
   if (!gzip_level)
@@ -100,7 +100,7 @@ try_again:
   { decompress.next_out=(Bytef*)buf2;
     decompress.avail_out=sizeof(buf2);
     int err=inflate(&decompress,Z_NO_FLUSH);
-    E(err==Z_OK || err==Z_BUF_ERROR, F("inflate error %d") % err);
+    E(err==Z_OK || err==Z_BUF_ERROR, origin::network, F("inflate error %d") % err);
     unsigned bytes_in=sizeof(buf2)-decompress.avail_out;
     if (bytes_in) inputbuffer+=std::string(buf2,buf2+bytes_in);
     else break;
@@ -195,7 +195,7 @@ std::string cvs_client::localhost_name()
 #ifdef WIN32
   strcpy(domainname,"localhost"); // gethostname does not work here ...
 #else
-  E(!gethostname(domainname,sizeof domainname),
+  E(!gethostname(domainname,sizeof domainname),origin::internal,
     F("gethostname %s\n") % strerror(errno));
   domainname[sizeof(domainname)-1]=0;
 #endif
@@ -205,7 +205,7 @@ std::string cvs_client::localhost_name()
   { domainname[len]='.';
     domainname[++len]=0;
   }
-  E(!getdomainname(domainname+len,sizeof(domainname)-len),
+  E(!getdomainname(domainname+len,sizeof(domainname)-len),origin::internal,
     F("getdomainname %s\n") % strerror(errno));
   domainname[sizeof(domainname)-1]=0;
 #endif
@@ -230,7 +230,7 @@ void cvs_client::connect()
     writestr(pserver_password(":pserver:"+user+"@"+host+":"+root)+"\n");
     writestr("END AUTH REQUEST\n");
     std::string answer=readline();
-    E(answer=="I LOVE YOU", F("pserver Authentification failed\n"));
+    E(answer=="I LOVE YOU", origin::network, F("pserver Authentification failed\n"));
   }
   else // rsh
   { std::string local_name=localhost_name();
@@ -284,13 +284,13 @@ void cvs_client::connect()
   std::string answer=readline();
   MM(answer);
   E(begins_with(answer,"Valid-requests "),
-      F("CVS server answered '%s' to Valid-requests\n") % answer);
+      origin::network, F("CVS server answered '%s' to Valid-requests\n") % answer);
   // boost::tokenizer does not provide the needed functionality (e.g. preserve -)
   push_back2insert<stringset_t> adaptor(Valid_requests);
   stringtok(adaptor,answer.substr(15));
   answer=readline();
   E(answer=="ok",
-      F("CVS server did not answer ok to Valid-requests: %s\n") % answer);
+      origin::network, F("CVS server did not answer ok to Valid-requests: %s\n") % answer);
   
   I(CommandValid("UseUnchanged"));
   writestr("UseUnchanged\n");
@@ -318,9 +318,9 @@ void cvs_client::reconnect()
 
 void cvs_client::InitZipStream(int level)
 { int error=deflateInit(&compress,level);
-  E(error==Z_OK,F("deflateInit %d\n") % error);
+  E(error==Z_OK,origin::internal,F("deflateInit %d\n") % error);
   error=inflateInit(&decompress);
-  E(error==Z_OK,F("inflateInit %d\n") % error);
+  E(error==Z_OK,origin::internal,F("inflateInit %d\n") % error);
 }
 
 void cvs_client::GzipStream(int level)
@@ -330,7 +330,7 @@ void cvs_client::GzipStream(int level)
   cmd+='\n';
   writestr(cmd);
   int error=deflateParams(&compress,level,Z_DEFAULT_STRATEGY);
-  E(error==Z_OK,F("deflateParams %d\n") % error);
+  E(error==Z_OK,origin::internal,F("deflateParams %d\n") % error);
   gzip_level=level;
 }
 
@@ -562,7 +562,7 @@ static time_t timezone2time_t(const struct tm &tm, int offset_min)
 static time_t cvs111date2time_t(const std::string &t)
 { // 2000/11/10 14:43:25
   MM(t);
-  E(t.size()==19, F("cvs111date2time_t unknown format '%s'\n") % t);
+  E(t.size()==19, origin::internal,F("cvs111date2time_t unknown format '%s'\n") % t);
   I(t[4]=='/' && t[7]=='/');
   I(t[10]==' ' && t[13]==':');
   I(t[16]==':');
@@ -581,7 +581,7 @@ static time_t cvs111date2time_t(const std::string &t)
 static time_t rls_l2time_t(const std::string &t)
 { // 2003-11-26 09:20:57 +0000
   MM(t);
-  E(t.size()==25, F("rls_l2time_t unknown format '%s'\n") % t);
+  E(t.size()==25, origin::internal,F("rls_l2time_t unknown format '%s'\n") % t);
   I(t[4]=='-' && t[7]=='-');
   I(t[10]==' ' && t[13]==':');
   I(t[16]==':' && t[19]==' ');
@@ -646,7 +646,7 @@ static time_t mod_time2time_t(const std::string &t)
 
 time_t cvs_client::Entries2time_t(const std::string &t)
 { MM(t);
-  E(t.size()==24, F("Entries2time_t unknown format '%s'\n") % t);
+  E(t.size()==24, origin::workspace,F("Entries2time_t unknown format '%s'\n") % t);
   I(t[3]==' ');
   I(t[7]==' ');
   std::vector<std::string> parts;
@@ -863,7 +863,7 @@ void cvs_client::processLogOutput(const rlog_callbacks &cb)
     I(!lresult.empty());
     MM(lresult[0].first);
     MM(lresult[0].second);
-    E(lresult[0].first!="CMD" || lresult[0].second!="error", F("log failed"));
+    E(lresult[0].first!="CMD" || lresult[0].second!="error", origin::network,F("log failed"));
     switch(state)
     { case st_head:
       { std::string result=combine_result(lresult);
@@ -1025,7 +1025,7 @@ cvs_client::checkout cvs_client::CheckOut(const std::string &_file, const std::s
     { case st_co:
       { I(!lresult.empty());
         if (lresult[0].first=="CMD")
-        { E(lresult[0].second!="error", F("failed to check out %s\n") % file);
+        { E(lresult[0].second!="error", origin::network,F("failed to check out %s\n") % file);
           if (lresult[0].second=="Clear-sticky")
           { I(lresult.size()==3);
             I(lresult[1].first=="dir");
@@ -1299,7 +1299,7 @@ void cvs_client::Update(const std::vector<update_args> &file_revisions,
         result.contents=lresult[6].second; // strictly this is unnecessary ...
         parse_entry(lresult[3].second,result.new_revision,result.keyword_substitution);
         result.mode=permissions2int(lresult[4].second);
-        E(false, F("Update ->%s of %s exposed CVS bug\n") 
+        E(false, origin::network,F("Update ->%s of %s exposed CVS bug\n") 
             % result.new_revision % result.file);
         cb(result);
         result=update();
@@ -1512,7 +1512,7 @@ std::vector<std::string> cvs_client::ExpandModules()
   std::vector<std::pair<std::string,std::string> > lresult;
   while (fetch_result(lresult))
   { if (lresult.size()==1 && lresult[0].first=="CMD" && lresult[0].second=="error")
-      E(false, F("error accessing CVS module %s\n") % module);
+      E(false, origin::network,F("error accessing CVS module %s\n") % module);
     I(lresult.size()==2);
     I(lresult[0].second=="Module-expansion");
     result.push_back(lresult[1].second);
