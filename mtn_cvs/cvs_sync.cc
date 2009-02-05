@@ -414,6 +414,7 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   { std::string rep,mod,br;
     // search for module and last revision
     guess_repository(rep, mod, br, last_sync_info, lastid, app);
+    L(FL("prepare_sync: last id %s\n") % lastid);
     if (repository.empty() || module.empty())
     { repository=rep;
       module=mod;
@@ -448,6 +449,21 @@ cvs_sync::cvs_repository *cvs_sync::prepare_sync(const std::string &_repository,
   }
   return repo;
 }
+
+revision_id cvs_sync::last_sync(mtncvs_state &app)
+{
+	app.open();
+	  mtn_automate::sync_map_t last_sync_info;
+	  revision_id lastid;
+	  app.opts.branchname=branch_name(app.get_option("branch"));
+	  if (!app.opts.branchname().empty() && app.opts.branchname()[app.opts.branchname().size()-1]=='\n')
+	      app.opts.branchname=branch_name(app.opts.branchname().substr(0,app.opts.branchname().size()-1));
+	  std::string rep,mod,br;
+	    // search for module and last revision
+	  guess_repository(rep, mod, br, last_sync_info, lastid, app);
+	  return lastid;	
+}
+
 #endif
 
 #if 1 // used by process_sync_info

@@ -156,6 +156,14 @@ CMD(test, "test", "", CMD_REF(debug), "",
   cvs_sync::test(myapp);
 }
 
+CMD(last_sync, "last_sync", "", CMD_REF(debug), "", 
+      N_("find last synced revision"), "",
+      options::opts::none)
+{
+  mtncvs_state &myapp=mtncvs_state::upcast(app);
+  std::cout << cvs_sync::last_sync(myapp) << '\n';
+}
+
 #include <package_revision.h>
 
 using std::cout;
