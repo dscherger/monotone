@@ -6,7 +6,7 @@ AC_INIT(monotone, 0.43dev, monotone-devel@nongnu.org)
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AM_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile mtn_cvs/Makefile])
 AC_CONFIG_FILES([util/mtnopt])
 
 # Checks for programs.

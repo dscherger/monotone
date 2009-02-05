@@ -1,0 +1,88 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([pull of CVS side branch])
+
+MTN_SETUP
+
+AT_DATA(d_import, [initial import
+])
+AT_DATA(d_add, [file added
+])
+AT_DATA(d_change, [something different
+])
+AT_DATA(d_subdir, [some subdir
+])
+AT_DATA(d_readd, [revived
+])
+
+TSHA0=`SHA1(d_import)`
+TSHA1=`SHA1(d_add)`
+TSHA2=`SHA1(d_change)`
+TSHA3=`SHA1(d_subdir)`
+TSHA4=`SHA1(d_readd)`
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+# import a test project
+
+AT_CHECK(mkdir cvstemp)
+AT_CHECK(cp d_import cvstemp/A)
+AT_CHECK(cp d_import cvstemp/A2)
+AT_CHECK([cd cvstemp ; cvs -q -d $CVSROOT import -m 'initial import' test vendor_tag initial_import], [], [ignore], [ignore])
+
+# change the repository in various ways
+
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK([cd test;cvs -Q tag -b branch])
+AT_CHECK(cp d_add test/B)
+AT_CHECK(cp d_add test/B2)
+AT_CHECK([cd test;cvs -Q add B])
+AT_CHECK([cd test;cvs -Q add B2])
+AT_CHECK([sleep 1;cd test;cvs -Q ci -m 'B added to HEAD'])
+
+AT_CHECK([cd test;cvs update -r branch], [], [ignore], [ignore])
+AT_CHECK([cd test;cvs -Q delete -f A])
+AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A removed'])
+
+AT_CHECK(cp d_change test/B)
+AT_CHECK([cd test;cvs -Q add B])
+AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'B changed'])
+
+AT_CHECK(mkdir test/dir)
+AT_CHECK([cd test;cvs -Q add dir])
+AT_CHECK(cp d_subdir test/dir/D)
+AT_CHECK([cd test;cvs -Q add dir/D])
+AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'dir/D added'])
+
+AT_CHECK(cp d_readd test/A)
+AT_CHECK([cd test;cvs -Q add A])
+AT_CHECK([cd test;sleep 1;cvs -Q ci -m 'A readded'])
+
+# pull into monotone
+
+AT_CHECK(MTN --branch=testbranch cvs_pull $CVSROOT test branch, [], [ignore], [ignore])
+
+# check presence of files
+
+AT_CHECK(MTN automate get_file $TSHA0, [], [ignore])
+#AT_CHECK(MTN automate get_file $TSHA1, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA2, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA3, [], [ignore])
+AT_CHECK(MTN automate get_file $TSHA4, [], [ignore])
+
+# also check that history is okay -- has a unique head, and it's the
+# right one.
+
+AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+AT_CHECK(cmp d_import mtcodir/A2)
+AT_CHECK(cmp d_readd mtcodir/A)
+AT_CHECK(cmp d_change mtcodir/B)
+AT_CHECK(cmp d_subdir mtcodir/dir/D)
+
+AT_CLEANUP

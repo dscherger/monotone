@@ -43,6 +43,7 @@ using std::string;
 using std::strlen;
 using std::vector;
 
+#ifndef LIBMTN_COMPILE
 CMD_GROUP(__root__, "__root__", "", NULL, "", "");
 
 //
@@ -96,6 +97,7 @@ CMD_GROUP(workspace, "workspace", "", CMD_REF(__root__),
 CMD_GROUP(user, "user", "", CMD_REF(__root__),
           N_("Commands defined by the user"),
           "");
+#endif
 
 // this file defines the task-oriented "top level" commands which can be
 // issued as part of a monotone command line. the command line can only
@@ -771,6 +773,7 @@ namespace commands
 
     L(FL("executing command '%s'") % visibleid);
 
+#ifndef LIBMTN_COMPILE
     // at this point we process the data from _MTN/options if
     // the command needs it.
     if (cmd->use_workspace_options())
@@ -778,6 +781,7 @@ namespace commands
         workspace::check_ws_format();
         workspace::get_ws_options(app.opts);
       }
+#endif
 
     cmd->exec(app, ident, args);
   }
@@ -862,6 +866,7 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
 #undef maybe_throw_bare
 }
 
+#ifndef LIBMTN_COMPILE
 string
 describe_revision(project_t & project, revision_id const & id)
 {
@@ -1216,7 +1221,7 @@ UNIT_TEST(commands, command_find_command)
   }
 }
 #endif // BUILD_UNIT_TESTS
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76
