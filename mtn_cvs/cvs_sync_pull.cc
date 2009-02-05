@@ -85,7 +85,7 @@ void cvs_repository::store_update(std::set<file_state>::const_iterator s,
 			const_cast<file_id&>(s2->sha1sum));
     }
     else
-    { E(false, origin::internal, F("MD5 sum %s<>%s") % u.checksum 
+    { E(false, origin::network, F("MD5 sum %s<>%s") % u.checksum 
           % xform<Botan::Hex_Encoder>(std::string(hashval.begin(),hashval.end()),origin::internal));
     }
   }
