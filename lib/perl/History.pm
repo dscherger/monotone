@@ -80,14 +80,15 @@ my $__select_id_rev_2_ttip  = __("Select this revision for comparison\n"
 # Public routines.
 
 sub display_file_change_history($$$);
+sub display_renamed_file_comparison($$$$$$);
 sub display_revision_change_history($$$);
+sub display_revision_comparison($$$;$);
 
 # Private routines.
 
 sub compare_button_clicked_cb($$);
-sub compare_revisions($$$;$);
 sub comparison_revision_change_log_button_clicked_cb($$);
-sub external_diffs($$$$$);
+sub external_diffs($$$$$$);
 sub external_diffs_button_clicked_cb($$);
 sub file_comparison_combobox_changed_cb($$);
 sub get_file_history_helper($$$);
@@ -356,10 +357,12 @@ sub display_file_change_history($$$)
     $instance->{stop_button}->set_sensitive(TRUE);
     $wm->update_gui();
     $instance->{revision_hits} = {};
-    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_WARNING);
-    get_file_history_helper($instance, $revision_id, \$instance->{file_name});
-    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
-						    \&mtn_error_handler);
+    {
+	local $suppress_mtn_warnings = 1;
+	get_file_history_helper($instance,
+				$revision_id,
+				\$instance->{file_name});
+    }
     $instance->{stop_button}->set_sensitive(FALSE);
 
     # Sort the list.
@@ -500,282 +503,9 @@ sub display_file_change_history($$$)
 #
 ##############################################################################
 #
-#   Routine      - history_list_button_clicked_cb
+#   Routine      - display_revision_comparison
 #
-#   Description  - Callback routine called when the user clicks on any of the
-#                  buttons displayed in the history list in a history window.
-#
-#   Data         - $widget  : The widget object that received the signal.
-#                  $details : A reference to an anonymous hash containing the
-#                             window instance, revision and action that is
-#                             associated with this widget.
-#
-##############################################################################
-
-
-
-sub history_list_button_clicked_cb($$)
-{
-
-    my($widget, $details) = @_;
-
-    my($instance,
-       $revision_id);
-
-    $instance = $details->{instance};
-    $revision_id = $details->{revision_id};
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
-
-    if ($details->{button_type} eq "1" || $details->{button_type} eq "2")
-    {
-	if ($details->{button_type} eq "1")
-	{
-	    $instance->{first_revision_id} = $revision_id;
-	    set_label_value($instance->{revision_id_1_value_label},
-			    $revision_id);
-	    if ($instance->{first_revision_id}
-		eq $instance->{second_revision_id})
-	    {
-		$instance->{second_revision_id} = "";
-		set_label_value($instance->{revision_id_2_value_label}, "");
-	    }
-	}
-	else
-	{
-	    $instance->{second_revision_id} = $revision_id;
-	    set_label_value($instance->{revision_id_2_value_label},
-			    $revision_id);
-	    if ($instance->{second_revision_id}
-		eq $instance->{first_revision_id})
-	    {
-		$instance->{first_revision_id} = "";
-		set_label_value($instance->{revision_id_1_value_label}, "");
-	    }
-	}
-	if ($instance->{first_revision_id} ne ""
-	    && $instance->{second_revision_id} ne "")
-	{
-	    $instance->{compare_button}->set_sensitive(TRUE);
-	}
-	else
-	{
-	    $instance->{compare_button}->set_sensitive(FALSE);
-	}
-    }
-    elsif ($details->{button_type} eq "browse-revision")
-    {
-
-	my($branch,
-	   @certs_list);
-
-	# First find out what branch the revision is on (take the first one).
-
-	$instance->{mtn}->certs(\@certs_list, $revision_id);
-	$branch = "";
-	foreach my $cert (@certs_list)
-	{
-	    if ($cert->{name} eq "branch")
-	    {
-		$branch = $cert->{value};
-		last;
-	    }
-	}
-
-	# Get a new browser window preloaded with the desired file.
-
-	get_browser_window($instance->{mtn}, $branch, $revision_id);
-
-    }
-    elsif ($details->{button_type} eq "browse-file")
-    {
-
-	my($branch,
-	   @certs_list,
-	   $dir,
-	   $file,
-	   $path_ref);
-
-	# First find out what branch the revision is on (take the first one).
-
-	$instance->{mtn}->certs(\@certs_list, $revision_id);
-	$branch = "";
-	foreach my $cert (@certs_list)
-	{
-	    if ($cert->{name} eq "branch")
-	    {
-		$branch = $cert->{value};
-		last;
-	    }
-	}
-
-	# Split the file name into directory and file components.
-
-	$path_ref = $instance->{revision_hits}->{$revision_id};
-	$dir = dirname($$path_ref);
-	$dir = "" if ($dir eq ".");
-	$file = basename($$path_ref);
-
-	# Get a new browser window preloaded with the desired file.
-
-	get_browser_window($instance->{mtn},
-			   $branch,
-			   $revision_id,
-			   $dir,
-			   $file);
-
-    }
-    else
-    {
-
-	# Display the full revision change log.
-
-	display_change_log($instance->{mtn}, $revision_id);
-
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - compare_button_clicked_cb
-#
-#   Description  - Callback routine called when the user clicks on the
-#                  revision comparison button in a history window.
-#
-#   Data         - $widget   : The widget object that received the signal.
-#                  $instance : The window instance that is associated with
-#                              this widget.
-#
-##############################################################################
-
-
-
-sub compare_button_clicked_cb($$)
-{
-
-    my($widget, $instance) = @_;
-
-    return if ($instance->{in_cb});
-    local $instance->{in_cb} = 1;
-
-    my @revision_ids;
-
-    # Sort the revisions by date, oldest first.
-
-    @revision_ids = ($instance->{first_revision_id},
-		     $instance->{second_revision_id});
-    $instance->{mtn}->toposort(\@revision_ids, @revision_ids);
-
-    # If a file is being compared and it has been renamed between the two
-    # comparison revisions then we have to fall back on the external helper
-    # application, otherwise we can use Monotone's comparison feature.
-
-    if (defined($instance->{file_name})
-	&& $instance->{revision_hits}->{$revision_ids[0]}
-	!= $instance->{revision_hits}->{$revision_ids[1]})
-    {
-
-	my($answer,
-	   $dialog,
-	   @manifest,
-	   $new_file_id,
-	   $old_file_id);
-
-	$dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
-	     ["modal"],
-	     "question",
-	     "yes-no",
-	     __("The name of the selected file has changed\n"
-		. "between the two selected revisions and cannot\n"
-		. "be compared internally. Would you like to do\n"
-		. "the comparison using the external helper application?"));
-	$dialog->set_title(__("External Comparison"));
-	$answer = $dialog->run();
-	$dialog->destroy();
-
-	# Only continue if asked to do so.
-
-	if ($answer eq "yes")
-	{
-
-	    # Get the manifests of the two revisions and look for the files in
-	    # order to get their file ids.
-
-	    $instance->{mtn}->get_manifest_of(\@manifest, $revision_ids[0]);
-	    foreach my $entry (@manifest)
-	    {
-		if ($entry->{name}
-		    eq ${$instance->{revision_hits}->{$revision_ids[0]}})
-		{
-		    $old_file_id = $entry->{file_id};
-		    last;
-		}
-	    }
-	    $instance->{mtn}->get_manifest_of(\@manifest, $revision_ids[1]);
-	    foreach my $entry (@manifest)
-	    {
-		if ($entry->{name}
-		    eq ${$instance->{revision_hits}->{$revision_ids[1]}})
-		{
-		    $new_file_id = $entry->{file_id};
-		    last;
-		}
-	    }
-
-	    # Make sure we have the file ids.
-
-	    if (! defined($old_file_id) || ! defined ($new_file_id))
-	    {
-		my $dialog;
-		$dialog = Gtk2::MessageDialog->new
-		    ($instance->{window},
-		     ["modal"],
-		     "warning",
-		     "close",
-		     __("The file contents cannot be\n"
-			. "found in the select revisions.\n"
-			. "This should not be happening."));
-		$dialog->run();
-		$dialog->destroy();
-		return;
-	    }
-
-	    # Use the external helper application to compare the files.
-
-	    external_diffs($instance,
-			   ${$instance->{revision_hits}->{$revision_ids[0]}},
-			   $old_file_id,
-			   ${$instance->{revision_hits}->{$revision_ids[1]}},
-			   $new_file_id);
-
-	}
-
-    }
-    else
-    {
-
-	# Use Monotone's comparison feature.
-
-	compare_revisions($instance->{mtn},
-			  $revision_ids[0],
-			  $revision_ids[1],
-			  defined($instance->{file_name})
-			      ? ${$instance->{revision_hits}->
-				  {$revision_ids[0]}}
-			      : undef);
-
-    }
-
-}
-#
-##############################################################################
-#
-#   Routine      - compare_revisions
-#
-#   Description  - Compares and then displays the differeneces between the two
+#   Description  - Compares and then displays the differences between the two
 #                  specified revisions, optionally restricting it to the
 #                  specified file.
 #
@@ -794,7 +524,7 @@ sub compare_button_clicked_cb($$)
 
 
 
-sub compare_revisions($$$;$)
+sub display_revision_comparison($$$;$)
 {
 
     my($mtn, $revision_id_1, $revision_id_2, $file_name) = @_;
@@ -1216,6 +946,321 @@ sub compare_revisions($$$;$)
 #
 ##############################################################################
 #
+#   Routine      - display_renamed_file_comparison
+#
+#   Description  - Compares and then displays the differences between two
+#                  versions of a file that has either been renamed or moved
+#                  somewhere between the specified revisions. The comparison
+#                  has to be done with the external helper application.
+#
+#   Data         - $parent          : The parent window widget for any dialogs
+#                                     that may appear.
+#                  $mtn             : The Monotone::AutomateStdio object that
+#                                     is to be used to get the files' details.
+#                  $old_revision_id : The revision id for the older revision.
+#                  $old_file_name   : The name of the file on the older
+#                  $new_revision_id : The revision id for the newer revision.
+#                  $new_file_name   : The name of the file on the newer
+#                                     revision.
+#
+##############################################################################
+
+
+
+sub display_renamed_file_comparison($$$$$$)
+{
+
+    my($parent,
+       $mtn,
+       $old_revision_id,
+       $old_file_name,
+       $new_revision_id,
+       $new_file_name) = @_;
+
+    my($answer,
+       $dialog,
+       @manifest,
+       $new_file_id,
+       $old_file_id);
+    my $wm = WindowManager->instance();
+
+    $dialog = Gtk2::MessageDialog->new
+	($parent,
+	 ["modal"],
+	 "question",
+	 "yes-no",
+	 __("The name of the selected file has changed\n"
+	    . "between the two selected revisions and cannot\n"
+	    . "be compared internally. Would you like to do\n"
+	    . "the comparison using the external helper application?"));
+    $dialog->set_title(__("External Comparison"));
+    $wm->allow_input(sub { $answer = $dialog->run(); });
+    $dialog->destroy();
+
+    # Only continue if asked to do so.
+
+    if ($answer eq "yes")
+    {
+
+	# Get the manifests of the two revisions and look for the files in
+	# order to get their file ids.
+
+	$mtn->get_manifest_of(\@manifest, $old_revision_id);
+	foreach my $entry (@manifest)
+	{
+	    if ($entry->{name} eq $old_file_name)
+	    {
+		$old_file_id = $entry->{file_id};
+		last;
+	    }
+	}
+	$mtn->get_manifest_of(\@manifest, $new_revision_id);
+	foreach my $entry (@manifest)
+	{
+	    if ($entry->{name} eq $new_file_name)
+	    {
+		$new_file_id = $entry->{file_id};
+		last;
+	    }
+	}
+
+	# Make sure we have the file ids.
+
+	if (! defined($old_file_id) || ! defined ($new_file_id))
+	{
+	    my $dialog;
+	    $dialog = Gtk2::MessageDialog->new
+		($parent,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __("The file contents cannot be\n"
+		    . "found in the selected revisions.\n"
+		    . "This should not be happening."));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+	}
+
+	# Use the external helper application to compare the files.
+
+	external_diffs($parent,
+		       $mtn,
+		       $old_file_name,
+		       $old_file_id,
+		       $new_file_name,
+		       $new_file_id);
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - history_list_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on any of the
+#                  buttons displayed in the history list in a history window.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, revision and action that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub history_list_button_clicked_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    my($instance,
+       $revision_id);
+
+    $instance = $details->{instance};
+    $revision_id = $details->{revision_id};
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    if ($details->{button_type} eq "1" || $details->{button_type} eq "2")
+    {
+	if ($details->{button_type} eq "1")
+	{
+	    $instance->{first_revision_id} = $revision_id;
+	    set_label_value($instance->{revision_id_1_value_label},
+			    $revision_id);
+	    if ($instance->{first_revision_id}
+		eq $instance->{second_revision_id})
+	    {
+		$instance->{second_revision_id} = "";
+		set_label_value($instance->{revision_id_2_value_label}, "");
+	    }
+	}
+	else
+	{
+	    $instance->{second_revision_id} = $revision_id;
+	    set_label_value($instance->{revision_id_2_value_label},
+			    $revision_id);
+	    if ($instance->{second_revision_id}
+		eq $instance->{first_revision_id})
+	    {
+		$instance->{first_revision_id} = "";
+		set_label_value($instance->{revision_id_1_value_label}, "");
+	    }
+	}
+	if ($instance->{first_revision_id} ne ""
+	    && $instance->{second_revision_id} ne "")
+	{
+	    $instance->{compare_button}->set_sensitive(TRUE);
+	}
+	else
+	{
+	    $instance->{compare_button}->set_sensitive(FALSE);
+	}
+    }
+    elsif ($details->{button_type} eq "browse-revision")
+    {
+
+	my($branch,
+	   @certs_list);
+
+	# First find out what branch the revision is on (take the first one).
+
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	$branch = "";
+	foreach my $cert (@certs_list)
+	{
+	    if ($cert->{name} eq "branch")
+	    {
+		$branch = $cert->{value};
+		last;
+	    }
+	}
+
+	# Get a new browser window preloaded with the desired file.
+
+	get_browser_window($instance->{mtn}, $branch, $revision_id);
+
+    }
+    elsif ($details->{button_type} eq "browse-file")
+    {
+
+	my($branch,
+	   @certs_list,
+	   $dir,
+	   $file,
+	   $path_ref);
+
+	# First find out what branch the revision is on (take the first one).
+
+	$instance->{mtn}->certs(\@certs_list, $revision_id);
+	$branch = "";
+	foreach my $cert (@certs_list)
+	{
+	    if ($cert->{name} eq "branch")
+	    {
+		$branch = $cert->{value};
+		last;
+	    }
+	}
+
+	# Split the file name into directory and file components.
+
+	$path_ref = $instance->{revision_hits}->{$revision_id};
+	$dir = dirname($$path_ref);
+	$dir = "" if ($dir eq ".");
+	$file = basename($$path_ref);
+
+	# Get a new browser window preloaded with the desired file.
+
+	get_browser_window($instance->{mtn},
+			   $branch,
+			   $revision_id,
+			   $dir,
+			   $file);
+
+    }
+    else
+    {
+
+	# Display the full revision change log.
+
+	display_change_log($instance->{mtn}, $revision_id);
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_button_clicked_cb
+#
+#   Description  - Callback routine called when the user clicks on the
+#                  revision comparison button in a history window.
+#
+#   Data         - $widget   : The widget object that received the signal.
+#                  $instance : The window instance that is associated with
+#                              this widget.
+#
+##############################################################################
+
+
+
+sub compare_button_clicked_cb($$)
+{
+
+    my($widget, $instance) = @_;
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my @revision_ids;
+
+    # Sort the revisions by date, oldest first.
+
+    @revision_ids = ($instance->{first_revision_id},
+		     $instance->{second_revision_id});
+    $instance->{mtn}->toposort(\@revision_ids, @revision_ids);
+
+    # If a file is being compared and it has been renamed between the two
+    # comparison revisions then we have to fall back on the external helper
+    # application, otherwise we can use Monotone's comparison feature.
+
+    if (defined($instance->{file_name})
+	&& $instance->{revision_hits}->{$revision_ids[0]}
+	!= $instance->{revision_hits}->{$revision_ids[1]})
+    {
+	display_renamed_file_comparison($instance->{window},
+					$instance->{mtn},
+					$revision_ids[0],
+					${$instance->{revision_hits}->
+					  {$revision_ids[0]}},
+					$revision_ids[1],
+					${$instance->{revision_hits}->
+					  {$revision_ids[1]}});
+    }
+    else
+    {
+
+	# Use Monotone's comparison feature.
+
+	display_revision_comparison($instance->{mtn},
+				    $revision_ids[0],
+				    $revision_ids[1],
+				    defined($instance->{file_name})
+				        ? ${$instance->{revision_hits}->
+					    {$revision_ids[0]}}
+				        : undef);
+
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - file_comparison_combobox_changed_cb
 #
 #   Description  - Callback routine called when the user changes the value of
@@ -1317,7 +1362,12 @@ sub external_diffs_button_clicked_cb($$)
 
     # Use the external helper application to compare the files.
 
-    external_diffs($instance, $file_name, $file_id_1, $file_name, $file_id_2);
+    external_diffs($instance->{window},
+		   $instance->{mtn},
+		   $file_name,
+		   $file_id_1,
+		   $file_name,
+		   $file_id_2);
 
 }
 #
@@ -1556,14 +1606,14 @@ sub get_file_history_helper($$$)
 
     return if ($instance->{stop});
 
-    my(@changed_ancestors);
+    my @changed_ancestors;
 
     $instance->{mtn}->get_content_changed(\@changed_ancestors,
 					  $revision_id,
 					  $$file_name_ref);
-    foreach my $revision (@changed_ancestors)
+    foreach my $chg_ancestor (@changed_ancestors)
     {
-	if (! exists($instance->{revision_hits}->{$revision}))
+	if (! exists($instance->{revision_hits}->{$chg_ancestor}))
 	{
 
 	    my @parents;
@@ -1572,14 +1622,14 @@ sub get_file_history_helper($$$)
 	    # bother if the ancestor revision is the same as the current one as
 	    # we were passed the file name).
 
-	    if ($revision ne $revision_id)
+	    if ($chg_ancestor ne $revision_id)
 	    {
 		my $file_name;
 		$instance->{mtn}->
 		    get_corresponding_path(\$file_name,
 					   $revision_id,
 					   $$file_name_ref,
-					   $revision);
+					   $chg_ancestor);
 		$file_name_ref = \$file_name
 		    if ($file_name ne $$file_name_ref);
 	    }
@@ -1588,7 +1638,7 @@ sub get_file_history_helper($$$)
 	    # hash, this can be used later to refer to the correct file name
 	    # for a given changed ancestor revision.
 
-	    $instance->{revision_hits}->{$revision} = $file_name_ref;
+	    $instance->{revision_hits}->{$chg_ancestor} = $file_name_ref;
 
 	    set_label_value($instance->{numbers_value_label},
 			    scalar(keys(%{$instance->{revision_hits}})));
@@ -1596,12 +1646,12 @@ sub get_file_history_helper($$$)
 
 	    # Now repeat for each parent, remembering to track file renames.
 
-	    $instance->{mtn}->parents(\@parents, $revision);
+	    $instance->{mtn}->parents(\@parents, $chg_ancestor);
 	    foreach my $parent (@parents)
 	    {
 		my $file_name;
 		$instance->{mtn}->get_corresponding_path(\$file_name,
-							 $revision,
+							 $chg_ancestor,
 							 $$file_name_ref,
 							 $parent);
 		$file_name_ref = \$file_name
@@ -1820,7 +1870,10 @@ sub get_revision_comparison_window()
 #   Description  - Launch the external differences helper program, loading in
 #                  the contents of the specified files.
 #
-#   Data         - $instance      : The revision history window instance.
+#   Data         - $parent        : The parent window widget for any dialogs
+#                                   that may appear.
+#                  $mtn           : The Monotone::AutomateStdio object that is
+#                                   to be used to get the files' details.
 #                  $old_file_name : The file name of the older version of the
 #                                   file.
 #                  $old_file_id   : Monotone's file id for the older version
@@ -1834,11 +1887,15 @@ sub get_revision_comparison_window()
 
 
 
-sub external_diffs($$$$$)
+sub external_diffs($$$$$$)
 {
 
-    my($instance, $old_file_name, $old_file_id, $new_file_name, $new_file_id)
-	= @_;
+    my($parent,
+       $mtn,
+       $old_file_name,
+       $old_file_id,
+       $new_file_name,
+       $new_file_id) = @_;
 
     my($cmd,
        $data,
@@ -1846,6 +1903,26 @@ sub external_diffs($$$$$)
        $new_file,
        $old_fh,
        $old_file);
+    my $wm = WindowManager->instance();
+
+    # Just check that we do actually have an external helper application to
+    # call.
+
+    if (! defined($user_preferences->{diffs_application})
+	|| $user_preferences->{diffs_application} =~ m/^\s*$/)
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($parent,
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __("Cannot call the external helper application\n"
+		. "to do the comparison as one has not been\n"
+		. "specified in the user's preferences."));
+	$wm->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+	return;
+    }
 
     # Generate temporary disk file names.
 
@@ -1856,12 +1933,12 @@ sub external_diffs($$$$$)
 				       . basename($new_file_name))))
     {
 	my $dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
+	    ($parent,
 	     ["modal"],
 	     "warning",
 	     __x("Cannot generate temporary file name:\n{error_message}.",
 		 error_message => $!));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -1872,20 +1949,20 @@ sub external_diffs($$$$$)
 	|| ! defined($new_fh = IO::File->new($new_file, "w")))
     {
 	my $dialog = Gtk2::MessageDialog->new
-	    ($instance->{window},
+	    ($parent,
 	     ["modal"],
 	     "warning",
 	     "close",
 	     __x("{error_message}.", error_message => $!));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
     binmode($old_fh);
     binmode($new_fh);
-    $instance->{mtn}->get_file(\$data, $old_file_id);
+    $mtn->get_file(\$data, $old_file_id);
     $old_fh->print($data);
-    $instance->{mtn}->get_file(\$data, $new_file_id);
+    $mtn->get_file(\$data, $new_file_id);
     $new_fh->print($data);
     $old_fh->close();
     $new_fh->close();

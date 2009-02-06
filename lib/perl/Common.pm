@@ -611,7 +611,8 @@ sub treeview_setup_search_column_selection($@)
 		 # Create a popup menu with the search option in it.
 
 		 $menu = Gtk2::Menu->new();
-		 $menu_item = Gtk2::MenuItem->new("Select As Search Column");
+		 $menu_item =
+		     Gtk2::MenuItem->new(__("Select As Search Column"));
 		 $menu->append($menu_item);
 		 $menu_item->show();
 
@@ -1155,7 +1156,8 @@ sub handle_comboxentry_history($$;$)
 		     "warning",
 		     "close",
 		     __("Your preferences could not be saved:\n") . $@);
-		$dialog->run();
+		WindowManager->instance()->allow_input
+		    (sub { $dialog->run(); });
 		$dialog->destroy();
 	    }
 	}

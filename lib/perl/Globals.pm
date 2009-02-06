@@ -110,6 +110,10 @@ our $user_preferences;
 
 our $mime_match_table;
 
+# Whether Monotone warnings should be suppressed or not.
+
+our $suppress_mtn_warnings;
+
 # ***** PACKAGE INFORMATION *****
 
 use base qw(Exporter);
@@ -135,6 +139,7 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     $line_image
 				     $mime_match_table
 				     $mono_font
+				     $suppress_mtn_warnings
 				     $tmp_dir
 				     $tooltips
 				     $user_preferences)]);

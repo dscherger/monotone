@@ -1510,7 +1510,7 @@ sub validate_preferences($)
 		 "close",
 		 __("The external file comparison application field is\n"
 		    . "invalid, please correct before attempting to resave."));
-	    $dialog->run();
+	    WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    return;
 	}

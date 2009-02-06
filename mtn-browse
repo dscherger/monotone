@@ -2607,6 +2607,8 @@ sub setup_mtn_object($$)
 
     my($mtn, $parent) = @_;
 
+    my $wm = WindowManager->instance();
+
     if ($user_preferences->{show_suspended})
     {
 	if ($mtn->can(MTN_IGNORE_SUSPEND_CERTS))
@@ -2623,7 +2625,7 @@ sub setup_mtn_object($$)
 		    __("Your version of Monotone does not support\n"
 		       . "suspend certificates. I will adjusted your\n"
 		       . "preferences accordingly."));
-	    $dialog->run();
+	    $wm->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    $user_preferences->{show_suspended} = 0;
 	    eval
@@ -2639,7 +2641,7 @@ sub setup_mtn_object($$)
 		     "warning",
 		     "close",
 		     __("Your preferences could not be saved:\n") . $@);
-		$dialog->run();
+		$wm->allow_input(sub { $dialog->run(); });
 		$dialog->destroy();
 	    }
 	}
@@ -2712,19 +2714,22 @@ sub mtn_error_handler($$)
 
     if ($severity == MTN_SEVERITY_WARNING)
     {
-	$dialog = Gtk2::MessageDialog->new_with_markup
-	    (undef,
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("Problem with monotone request, got:\n"
-		     . "<b><i>{error_message}</i></b>\n"
-		     . "This should not be happening!",
-		 error_message => Glib::Markup::escape_text($message)));
-	$wm->allow_input(sub { $dialog->run(); });
-	$dialog->destroy();
-	$wm->reset_state();
-	die($message);
+	if (! $suppress_mtn_warnings)
+	{
+	    $dialog = Gtk2::MessageDialog->new_with_markup
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __x("Problem with monotone request, got:\n"
+			 . "<b><i>{error_message}</i></b>\n"
+			 . "This should not be happening!",
+		     error_message => Glib::Markup::escape_text($message)));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    $wm->reset_state();
+	    die($message);
+	}
     }
     else
     {

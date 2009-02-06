@@ -1045,7 +1045,8 @@ sub validate_query($$)
 
     my($instance, $query) = @_;
 
-    my($re_text);
+    my $re_text;
+    my $wm = WindowManager->instance();
 
     # Check that the file name glob is valid.
 
@@ -1063,7 +1064,7 @@ sub validate_query($$)
 	     "close",
 	     __x("`{pattern}' is an invalid\nfile name pattern.",
 		 pattern => $query->{file_glob}));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -1086,7 +1087,7 @@ sub validate_query($$)
 		 "close",
 		 __x("`{pattern}' is an invalid\ncontent search pattern.",
 		     pattern => $query->{contents_pattern}));
-	    $dialog->run();
+	    $wm->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    return;
 	}
@@ -1104,7 +1105,7 @@ sub validate_query($$)
 	     "close",
 	     __("The `between' dates are either\n"
 		. "the same or the wrong way round."));
-	$dialog->run();
+	$wm->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;
     }
@@ -1124,7 +1125,7 @@ sub validate_query($$)
 		 "close",
 		 __x("A duration of {months} months is too long.",
 		     months => $query->{period}));
-	    $dialog->run();
+	    $wm->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    return;
 	}
@@ -1138,7 +1139,7 @@ sub validate_query($$)
 		 "close",
 		 __x("A duration of {years} years is too long.",
 		     years => $query->{period}));
-	    $dialog->run();
+	    $wm->allow_input(sub { $dialog->run(); });
 	    $dialog->destroy();
 	    return;
 	}

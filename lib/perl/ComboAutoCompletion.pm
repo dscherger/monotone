@@ -174,21 +174,21 @@ sub comboboxentry_key_release_event_cb($$$)
 	$combo = $instance->{branch_comboboxentry};
 	$change_state = BRANCH_CHANGED;
 	$combo_details = $instance->{branch_combo_details};
-	$name = "branch";
+	$name = __("branch");
     }
     elsif ($widget == $instance->{revision_comboboxentry})
     {
 	$combo = $instance->{revision_comboboxentry};
 	$change_state = REVISION_CHANGED;
 	$combo_details = $instance->{revision_combo_details};
-	$name = "revision";
+	$name = __("revision");
     }
     elsif ($widget == $instance->{directory_comboboxentry})
     {
 	$combo = $instance->{directory_comboboxentry};
 	$change_state = DIRECTORY_CHANGED;
 	$combo_details = $instance->{directory_combo_details};
-	$name = "directory";
+	$name = __("directory");
     }
     else
     {

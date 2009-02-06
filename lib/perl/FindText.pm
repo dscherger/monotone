@@ -169,7 +169,7 @@ sub enable_find_text($$)
 	}
     }
 
-    # Ammend the textview object to reflect its file text enabled/disabled
+    # Amend the textview object to reflect its file text enabled/disabled
     # state.
 
     if ($enable)
@@ -241,7 +241,7 @@ sub find_text_textview_populate_popup_cb($$$)
     # Add a `Find' option to the right-click menu that displays the find text
     # dialog.
 
-    $menu_item = Gtk2::MenuItem->new("_Find");
+    $menu_item = Gtk2::MenuItem->new(__("_Find"));
     if ($widget->{find_text_disabled})
     {
 	$menu_item->set_sensitive(FALSE);

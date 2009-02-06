@@ -54,6 +54,9 @@ sub display_annotation($$$);
 # Private routines.
 
 sub annotation_textview_populate_popup_cb($$$);
+sub annotation_textview_popup_menu_item_cb($$);
+sub compare_file_with_previous($$);
+sub compare_revision_with_parent($$);
 sub get_annotation_window();
 sub mtn_annotate($$$$);
 #
@@ -96,8 +99,10 @@ sub display_annotation($$$)
     local $instance->{in_cb} = 1;
 
     $instance->{mtn} = $mtn;
+    $instance->{file_name} = $file_name;
+    $instance->{revision_id} = $revision_id;
     $instance->{window}->set_title(__x("Annotated Listing Of {file}",
-				       file => $file_name));
+				       file => $instance->{file_name}));
     $instance->{window}->show_all();
 
     $wm->make_busy($instance, 1);
@@ -108,7 +113,10 @@ sub display_annotation($$$)
 
     $instance->{appbar}->set_status(__("Annotating file"));
     $wm->update_gui();
-    mtn_annotate(\@lines, $mtn->get_db_name(), $revision_id, $file_name);
+    mtn_annotate(\@lines,
+		 $mtn->get_db_name(),
+		 $revision_id,
+		 $instance->{file_name});
 
     # Find the longest line for future padding and also split each line into
     # their prefix and text parts.
@@ -276,7 +284,11 @@ sub annotation_textview_populate_popup_cb($$$)
     # the change log of the revision responsible for the text directly under
     # the mouse cursor.
 
-    $menu_item = Gtk2::MenuItem->new("Display Change _Log");
+    $separator = Gtk2::SeparatorMenuItem->new();
+    $separator->show();
+    $menu->append($separator);
+
+    $menu_item = Gtk2::MenuItem->new(__("Display Change _Log"));
     if (! defined($revision_part))
     {
 	$menu_item->set_sensitive(FALSE);
@@ -285,55 +297,380 @@ sub annotation_textview_populate_popup_cb($$$)
     {
 	$menu_item->signal_connect
 	    ("activate",
-	     sub {
-
-		 my($widget, $details) = @_;
-
-		 return if ($details->{instance}->{in_cb});
-		 local $details->{instance}->{in_cb} = 1;
-
-		 my @revision_ids;
-		 my $wm = WindowManager->instance();
-
-		 $wm->make_busy($details->{instance}, 1);
-		 $instance->{appbar}->
-		     push($instance->{appbar}->get_status()->get_text());
-		 $instance->{appbar}->set_status(__("Finding change log"));
-		 $wm->update_gui();
-
-		 $details->{instance}->{mtn}->
-		     select(\@revision_ids, "i:" . $details->{revision_part});
-		 if (scalar(@revision_ids) == 1)
-		 {
-		     display_change_log($details->{instance}->{mtn},
-					$revision_ids[0],
-					"",
-					undef);
-		 }
-		 else
-		 {
-		     my $dialog = Gtk2::MessageDialog->new
-			 ($instance->{window},
-			  ["modal"],
-			  "warning",
-			  "close",
-			  __("Cannot access unique revision id."));
-		     $dialog->run();
-		     $dialog->destroy();
-		 }
-
-		 $instance->{appbar}->pop();
-		 $wm->make_busy($details->{instance}, 0);
-
-	     },
-	     {instance      => $instance,
-	      revision_part => $revision_part});
+	     \&annotation_textview_popup_menu_item_cb,
+	     {instance         => $instance,
+	      cb               => sub {
+		                      my($instance, $revision_id) = @_;
+				      display_change_log($instance->{mtn},
+							 $revision_id,
+							 "",
+							 undef);
+				  },
+	      progress_message => __("Displaying change log"),
+	      revision_part    => $revision_part});
     }
     $menu_item->show();
+    $menu->append($menu_item);
+
+    $menu_item = Gtk2::MenuItem->new(__("Display File _History"));
+    if (! defined($revision_part))
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     \&annotation_textview_popup_menu_item_cb,
+	     {instance         => $instance,
+	      cb               => sub {
+		                      my($instance, $revision_id) = @_;
+				      my $old_file_name;
+				      $instance->{mtn}->get_corresponding_path
+					  (\$old_file_name,
+					   $instance->{revision_id},
+					   $instance->{file_name},
+					   $revision_id);
+				      display_file_change_history
+					  ($instance->{mtn},
+					   $revision_id,
+					   $old_file_name);
+				  },
+	      progress_message => __("Displaying file history"),
+	      revision_part    => $revision_part});
+    }
+    $menu_item->show();
+    $menu->append($menu_item);
+
+    $menu_item = Gtk2::MenuItem->new(__("Display _Revision History"));
+    if (! defined($revision_part))
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     \&annotation_textview_popup_menu_item_cb,
+	     {instance         => $instance,
+	      cb               => sub {
+		                      my($instance, $revision_id) = @_;
+				      display_revision_change_history
+					  ($instance->{mtn},
+					   undef,
+					   $revision_id);
+				  },
+	      progress_message => __("Displaying revision history"),
+	      revision_part    => $revision_part});
+    }
+    $menu_item->show();
+    $menu->append($menu_item);
+
     $separator = Gtk2::SeparatorMenuItem->new();
     $separator->show();
     $menu->append($separator);
+
+    $menu_item =
+	Gtk2::MenuItem->new(__("Compare File With Previous _Version"));
+    if (! defined($revision_part))
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     \&annotation_textview_popup_menu_item_cb,
+	     {instance         => $instance,
+	      cb               => sub {
+		                      my($instance, $revision_id) = @_;
+				      compare_file_with_previous($instance,
+								 $revision_id);
+				  },
+	      progress_message => __("Doing file comparison"),
+	      revision_part    => $revision_part});
+    }
+    $menu_item->show();
     $menu->append($menu_item);
+
+    $menu_item =
+	Gtk2::MenuItem->new(__("Compare Revision _With Parent"));
+    if (! defined($revision_part))
+    {
+	$menu_item->set_sensitive(FALSE);
+    }
+    else
+    {
+	$menu_item->signal_connect
+	    ("activate",
+	     \&annotation_textview_popup_menu_item_cb,
+	     {instance         => $instance,
+	      cb               => sub {
+		                      my($instance, $revision_id) = @_;
+				      compare_revision_with_parent
+					  ($instance, $revision_id);
+				  },
+	      progress_message => __("Doing revision comparison"),
+	      revision_part    => $revision_part});
+    }
+    $menu_item->show();
+    $menu->append($menu_item);
+
+}
+#
+##############################################################################
+#
+#   Routine      - annotation_textview_popup_menu_item_cb
+#
+#   Description  - Callback routine called when the user selects an item on
+#                  the annotation textview's popup menu.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $menu    : The Gtk2::Menu widget that is to be updated.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, callback routine, progress
+#                             message and the revision start string that is
+#                             associated with this widget.
+#
+##############################################################################
+
+
+
+sub annotation_textview_popup_menu_item_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    return if ($details->{instance}->{in_cb});
+    local $details->{instance}->{in_cb} = 1;
+
+    my @revision_ids;
+    my $wm = WindowManager->instance();
+
+    $wm->make_busy($details->{instance}, 1);
+    $details->{instance}->{appbar}->
+	push($details->{instance}->{appbar}->get_status()->get_text());
+    $details->{instance}->{appbar}->set_status($details->{progress_message});
+    $wm->update_gui();
+
+    $details->{instance}->{mtn}->
+	select(\@revision_ids, "i:" . $details->{revision_part});
+    if (scalar(@revision_ids) == 1)
+    {
+	$details->{cb}($details->{instance}, $revision_ids[0]);
+    }
+    else
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($details->{instance}->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __("Cannot access unique revision id."));
+	$wm->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+    }
+
+    $details->{instance}->{appbar}->pop();
+    $wm->make_busy($details->{instance}, 0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_file_with_previous
+#
+#   Description  - Compare the annotate file at the specified version with the
+#                  previous version of the file.
+#
+#   Data         - $instance    : The window instance that is associated with
+#                                 the annotation window.
+#                  $revision_id : The revision id on which this file changed.
+#
+##############################################################################
+
+
+
+sub compare_file_with_previous($$)
+{
+
+    my($instance, $revision_id) = @_;
+
+    my(@chg_ancestors,
+       $file_name,
+       $old_file_name,
+       @parents);
+    my $wm = WindowManager->instance();
+
+    # Remember that a warning is generated when one goes back beyond a file's
+    # addition revision, so temporarily disable the warning handler.
+
+    {
+
+	local $suppress_mtn_warnings = 1;
+
+	# First get the name of the file at the specified revision (it might
+	# have been moved or renamed).
+
+	$instance->{mtn}->get_corresponding_path(\$file_name,
+						 $instance->{revision_id},
+						 $instance->{file_name},
+						 $revision_id);
+
+	# Get the revision's parent and then find out when the file last
+	# changed.
+
+	$instance->{mtn}->parents(\@parents, $revision_id);
+	if (scalar(@parents) > 1)
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($instance->{window},
+		 ["modal"],
+		 "info",
+		 "close",
+		 __("The selected revision has more than one parent.\n"
+		    . "I will display the file's history so you can select\n"
+		    . "the specific parent revision."));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    display_file_change_history($instance->{mtn},
+					$revision_id,
+					$file_name);
+	    return;
+	}
+	elsif (scalar(@parents) == 0)
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($instance->{window},
+		 ["modal"],
+		 "info",
+		 "close",
+		 __("The selected revision has no parents."));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+	}
+	$instance->{mtn}->get_content_changed(\@chg_ancestors,
+					      $parents[0],
+					      $file_name);
+	if (scalar(@chg_ancestors) > 1)
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($instance->{window},
+		 ["modal"],
+		 "info",
+		 "close",
+		 __("The current version of the file probably\n"
+		    . "resulted from a merge as it is directly\n"
+		    . "descended from multiple versions.\n"
+		    . "I will display the file's history so you\n"
+		    . "can select the specific parent revision."));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    display_file_change_history($instance->{mtn},
+					$revision_id,
+					$file_name);
+	    return;
+	}
+	elsif (scalar(@chg_ancestors) == 0)
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		($instance->{window},
+		 ["modal"],
+		 "info",
+		 "close",
+		 __("The selected file version has no ancestors."));
+	    $wm->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+	}
+
+    }
+
+    # Ok now make sure the file name hasn't changed. If it has then use the
+    # external differences tool.
+
+    $instance->{mtn}->get_corresponding_path(\$old_file_name,
+					     $revision_id,
+					     $file_name,
+					     $chg_ancestors[0]);
+    if ($old_file_name ne $file_name)
+    {
+	display_renamed_file_comparison($instance->{window},
+					$instance->{mtn},
+					$chg_ancestors[0],
+					$old_file_name,
+					$revision_id,
+					$file_name);
+    }
+    else
+    {
+	display_revision_comparison($instance->{mtn},
+				    $chg_ancestors[0],
+				    $revision_id,
+				    $file_name);
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - compare_revision_with_parent
+#
+#   Description  - Compare the revision at the specified version with its
+#                  parent.
+#
+#   Data         - $instance    : The window instance that is associated with
+#                                 the annotation window.
+#                  $revision_id : The revision id that is to be compared
+#                                 against its parent.
+#
+##############################################################################
+
+
+
+sub compare_revision_with_parent($$)
+{
+
+    my($instance, $revision_id) = @_;
+
+    my @parents;
+    my $wm = WindowManager->instance();
+
+    # First get the revision's parent(s).
+
+    $instance->{mtn}->parents(\@parents, $revision_id);
+    if (scalar(@parents) > 1)
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "info",
+	     "close",
+	     __("The selected revision has more than one parent.\n"
+		. "I will display the revision's history so you can select\n"
+		. "the specific parent revision."));
+	$wm->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+	display_revision_change_history($instance->{mtn}, undef, $revision_id);
+	return;
+    }
+    elsif (scalar(@parents) == 0)
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($instance->{window},
+	     ["modal"],
+	     "info",
+	     "close",
+	     __("The selected revision has no parents."));
+	$wm->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+	return;
+    }
+
+    # Ok now compare the revisions and display the results.
+
+    display_revision_comparison($instance->{mtn}, $parents[0], $revision_id);
 
 }
 #
