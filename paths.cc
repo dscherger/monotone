@@ -829,6 +829,24 @@ system_path::system_path(utf8 const & path)
   data = const_system_path(utf8(path));
 }
 
+// Constant path predicates.
+#define IMPLEMENT_CONST_PRED(cls, ret)                  \
+  template <> bool                                      \
+  path_always_##ret<cls>::operator()(cls const &) const \
+  { return ret; }
+
+IMPLEMENT_CONST_PRED(any_path, false)
+IMPLEMENT_CONST_PRED(system_path, false)
+IMPLEMENT_CONST_PRED(file_path, false)
+IMPLEMENT_CONST_PRED(bookkeeping_path, false)
+
+IMPLEMENT_CONST_PRED(any_path, true)
+IMPLEMENT_CONST_PRED(system_path, true)
+IMPLEMENT_CONST_PRED(file_path, true)
+IMPLEMENT_CONST_PRED(bookkeeping_path, true)
+
+#undef IMPLEMENT_CONST_PRED
+
 // If this wasn't a user-supplied path, we should know
 // which kind it is.
 boost::shared_ptr<any_path>

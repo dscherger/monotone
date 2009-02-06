@@ -1055,11 +1055,13 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
            inserter(excludes, excludes.end()));
     }
 
-  node_restriction nmask(work, includes, excludes, app.opts.depth, old_roster, new_roster);
+  node_restriction nmask(includes, excludes, app.opts.depth,
+                         old_roster, new_roster, ignored_file(work));
   // skip the check of the workspace paths because some of them might
   // be missing and the user might want to query the recorded structure
   // of them anyways
-  path_restriction pmask(work, includes, excludes, app.opts.depth, path_restriction::skip_check);
+  path_restriction pmask(includes, excludes, app.opts.depth,
+                         path_restriction::skip_check);
 
   inventory_rosters(old_roster, new_roster, nmask, pmask, inventory);
   inventory_filesystem(work, pmask, inventory);

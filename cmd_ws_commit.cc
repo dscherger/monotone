@@ -182,10 +182,10 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
     work.get_current_roster_shape(db, nis, new_roster);
   }
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        old_roster, new_roster);
+                        old_roster, new_roster, ignored_file(work));
 
   if (app.opts.missing)
     {
@@ -209,9 +209,9 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
           missing_files.push_back(*i);
         }
       // replace the original mask with a more restricted one
-      mask = node_restriction(work, missing_files,
+      mask = node_restriction(missing_files,
                               std::vector<file_path>(), app.opts.depth,
-                              old_roster, new_roster);
+                              old_roster, new_roster, ignored_file(work));
     }
 
   // We want the restricted roster to include all the changes
@@ -463,9 +463,8 @@ CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
   bool add_recursive = app.opts.recursive;
   if (app.opts.unknown)
     {
-      path_restriction mask(work, roots,
-                            args_to_paths(app.opts.exclude_patterns),
-                            app.opts.depth);
+      path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+                            app.opts.depth, ignored_file(work));
       set<file_path> ignored;
 
       // if no starting paths have been specified use the workspace root
@@ -500,10 +499,10 @@ CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
       temp_node_id_source nis;
       roster_t current_roster_shape;
       work.get_current_roster_shape(db, nis, current_roster_shape);
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            current_roster_shape);
+                            current_roster_shape, ignored_file(work));
       work.find_missing(current_roster_shape, mask, paths);
     }
   else
@@ -588,10 +587,10 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        old_rosters, new_roster);
+                        old_rosters, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, rev);
@@ -1107,10 +1106,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        old_rosters, new_roster);
+                        old_rosters, new_roster, ignored_file(work));
 
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, restricted_rev,

@@ -246,6 +246,17 @@ public:
   bool ignore_file(file_path const & path);
 };
 
+// This object turns the workspace ignore_file method into a path predicate,
+// suitable for passing to restriction constructors (for instance).
+struct ignored_file : public path_predicate<file_path>
+{
+  ignored_file(workspace & work) : work(work) {}
+  bool operator()(file_path const &) const;
+
+private:
+  workspace & work;
+};
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

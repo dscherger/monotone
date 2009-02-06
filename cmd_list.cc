@@ -492,10 +492,10 @@ CMD(known, "known", "", CMD_REF(list), "",
   temp_node_id_source nis;
   work.get_current_roster_shape(db, nis, new_roster);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        new_roster);
+                        new_roster, ignored_file(work));
 
   // to be printed sorted
   vector<file_path> print_paths;
@@ -529,8 +529,8 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
   workspace work(app);
 
   vector<file_path> roots = args_to_paths(args);
-  path_restriction mask(work, roots, args_to_paths(app.opts.exclude_patterns),
-                        app.opts.depth);
+  path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+                        app.opts.depth, ignored_file(work));
   set<file_path> unknown, ignored;
 
   // if no starting paths have been specified use the workspace root
@@ -561,10 +561,10 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   temp_node_id_source nis;
   roster_t current_roster_shape;
   work.get_current_roster_shape(db, nis, current_roster_shape);
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        current_roster_shape);
+                        current_roster_shape, ignored_file(work));
 
   set<file_path> missing;
   work.find_missing(current_roster_shape, mask, missing);
@@ -590,10 +590,10 @@ CMD(changed, "changed", "", CMD_REF(list), "",
 
   work.get_parent_rosters(db, parents);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        parents, new_roster);
+                        parents, new_roster, ignored_file(work));
 
   revision_t rrev;
   make_restricted_revision(parents, new_roster, mask, rrev);

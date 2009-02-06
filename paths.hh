@@ -102,6 +102,7 @@
 //       it were a string
 
 #include <boost/shared_ptr.hpp>
+#include <boost/concept_check.hpp>
 #include "origin_type.hh"
 
 class any_path;
@@ -395,6 +396,30 @@ private:
 template <> void dump(file_path const & sp, std::string & out);
 template <> void dump(bookkeeping_path const & sp, std::string & out);
 template <> void dump(system_path const & sp, std::string & out);
+
+// Base class for predicate functors on paths.  T must be one of the path
+// classes.
+template <class T>
+struct path_predicate
+{
+  BOOST_CLASS_REQUIRE2(T, any_path, boost, ConvertibleConcept);
+  virtual bool operator()(T const &) const = 0;
+protected:
+  path_predicate() {}
+  virtual ~path_predicate() {}
+};
+
+// paths.cc provides always-true and always-false predicates.
+template <class T>
+struct path_always_true : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+template <class T>
+struct path_always_false : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};  
 
 // Return a file_path, bookkeeping_path, or system_path, as appropriate.
 // 'path' is an external path. If to_workspace_root, path is relative to

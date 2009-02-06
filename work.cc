@@ -671,6 +671,12 @@ workspace::ignore_file(file_path const & path)
   return lua.hook_ignore_file(path);
 }
 
+bool
+ignored_file::operator()(file_path const & f) const
+{
+  return work.ignore_file(f);
+}
+
 void
 workspace::init_attributes(file_path const & path, editable_roster_base & er)
 {

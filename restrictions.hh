@@ -30,28 +30,26 @@
 #include <set>
 #include "vocab.hh"
 #include "rev_types.hh"
-// XXX needed for gcc 3.3 which will otherwise complain that struct file_path
-// is just a forward in rev_types.hh and therefor leads to an incomplete type
 #include "paths.hh"
 
-class workspace;
-
 // between any two related revisions, A and B, there is a set of changes (a
-// cset) that describes the operations required to get from A to B. for example:
+// cset) that describes the operations required to get from A to B. for
+// example:
 //
 // revision A ... changes ... revision B
 //
-// a restriction is a means of masking off some of these changes to produce a
-// third revision, X that lies somewhere between A and B.  changes included by
-// the restriction when applied to revision A would produce revision X.  changes
-// excluded by the restriction when applied to revision X would produce revision
-// B.
+// a restriction is a means of masking off some of these changes to produce
+// a third revision, X that lies somewhere between A and B.  changes
+// included by the restriction when applied to revision A would produce
+// revision X.  changes excluded by the restriction when applied to revision
+// X would produce revision B.
 //
-// conceptually, a restriction allows for something like a sliding control for
-// selecting the changes between revisions A and B. when the control is "all the
-// way to the right" all changes are included and X == B. when then control is
-// "all the way to the left" no changes are included and X == A. when the
-// control is somewhere between these extremes X is a new revision.
+// conceptually, a restriction allows for something like a sliding control
+// for selecting the changes between revisions A and B. when the control is
+// "all the way to the right" all changes are included and X == B. when then
+// control is "all the way to the left" no changes are included and
+// X == A. when the control is somewhere between these extremes X is a new
+// revision.
 //
 // revision A ... included ... revision X ... excluded ... revision B
 
@@ -63,7 +61,8 @@ namespace restricted_path
 class restriction
 {
  public:
-  bool empty() const { return included_paths.empty() && excluded_paths.empty(); }
+  bool empty() const
+  { return included_paths.empty() && excluded_paths.empty(); }
 
  protected:
   restriction() : depth(-1) {}
@@ -84,42 +83,26 @@ class node_restriction : public restriction
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
-                   roster_t const & roster);
+                   roster_t const & roster,
+                   path_predicate<file_path> const & ignore_file
+                   = path_always_false<file_path>());
 
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
                    roster_t const & roster1,
-                   roster_t const & roster2);
+                   roster_t const & roster2,
+                   path_predicate<file_path> const & ignore_file
+                   = path_always_false<file_path>());
 
   node_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
                    parent_map const & rosters1,
-                   roster_t const & roster2);
+                   roster_t const & roster2,
+                   path_predicate<file_path> const & ignore_file
+                   = path_always_false<file_path>());
 
-#ifndef BUILD_UNIT_TESTS
-  node_restriction(workspace & work,
-                   std::vector<file_path> const & includes,
-                   std::vector<file_path> const & excludes,
-                   long depth,
-                   roster_t const & roster);
-
-  node_restriction(workspace & work,
-                   std::vector<file_path> const & includes,
-                   std::vector<file_path> const & excludes,
-                   long depth,
-                   roster_t const & roster1,
-                   roster_t const & roster2);
-
-  node_restriction(workspace & work,
-                   std::vector<file_path> const & includes,
-                   std::vector<file_path> const & excludes,
-                   long depth,
-                   parent_map const & rosters1,
-                   roster_t const & roster2);
-#endif
-  
   bool includes(roster_t const & roster, node_id nid) const;
 
   node_restriction & operator=(node_restriction const & other)
@@ -140,22 +123,21 @@ class node_restriction : public restriction
 class path_restriction : public restriction
 {
  public:
-  enum validity_check { check_paths = 0, skip_check };
+  enum skip_check_t { skip_check };
 
   path_restriction() : restriction() {}
 
   path_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
-                   validity_check vc = check_paths);
+                   path_predicate<file_path> const & ignore_file
+                   = path_always_false<file_path>());
 
-#ifndef BUILD_UNIT_TESTS
-  path_restriction(workspace & work,
-                   std::vector<file_path> const & includes,
+  // Skipping validity checks makes the path_predicate irrelevant.
+  path_restriction(std::vector<file_path> const & includes,
                    std::vector<file_path> const & excludes,
                    long depth,
-                   validity_check vc = check_paths);
-#endif
+                   skip_check_t);
 
   bool includes(file_path const & sp) const;
 

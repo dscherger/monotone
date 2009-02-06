@@ -385,10 +385,10 @@ prepare_diff(app_state & app,
       old_roster = parent_roster(parents.begin());
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
@@ -412,10 +412,10 @@ prepare_diff(app_state & app,
       db.get_roster(r_old_id, old_roster);
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
@@ -714,9 +714,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           work.get_parent_rosters(db, parents);
           work.get_current_roster_shape(db, nis, new_roster);
 
-          mask = node_restriction(work, args_to_paths(args),
+          mask = node_restriction(args_to_paths(args),
                                   args_to_paths(app.opts.exclude_patterns), 
-                                  app.opts.depth, parents, new_roster);
+                                  app.opts.depth, parents, new_roster,
+                                  ignored_file(work));
         }
       else
         {

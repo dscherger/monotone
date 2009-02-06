@@ -1235,10 +1235,11 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   {
     roster_t to_true_roster;
     db.get_roster(to_rid, to_true_roster);
-    node_restriction mask(work, args_to_paths(args),
+    node_restriction mask(args_to_paths(args),
                           args_to_paths(app.opts.exclude_patterns),
                           app.opts.depth,
-                          *from_roster, to_true_roster);
+                          *from_roster, to_true_roster,
+                          ignored_file(work));
 
     roster_t restricted_roster;
     make_restricted_roster(*from_roster, to_true_roster,
