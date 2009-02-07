@@ -432,7 +432,7 @@ void tick_write_dot::clear_line()
 // global, and we don't want global constructors/destructors doing
 // any real work.  see monotone.cc for how this is handled.
 
-user_interface::user_interface() : prog_name("?"), imp(0) {}
+user_interface::user_interface() : imp(0) {}
 
 void user_interface::initialize()
 {

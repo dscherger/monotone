@@ -19,7 +19,6 @@
 #include "transforms.hh"
 #include "work.hh"
 #include "charset.hh"
-#include "ui.hh"
 #include "app_state.hh"
 #include "project.hh"
 #include "basic_io.hh"
@@ -636,7 +635,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s checkout -r<id>'") % ui.prog_name);
+          P(F("choose one with '%s checkout -r<id>'") % prog_name);
           E(false, origin::user,
             F("branch %s has multiple heads") % app.opts.branchname);
         }
@@ -1320,7 +1319,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   if (heads.size() > old_head_size && old_head_size > 0) {
     P(F("note: this revision creates divergence\n"
         "note: you may (or may not) wish to run '%s merge'")
-      % ui.prog_name);
+      % prog_name);
   }
 
   work.update_any_attrs(db);
@@ -1418,7 +1417,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s import -r<id>'") % ui.prog_name);
+          P(F("choose one with '%s import -r<id>'") % prog_name);
           E(false, origin::user,
             F("branch %s has multiple heads") % app.opts.branchname);
         }

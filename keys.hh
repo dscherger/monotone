@@ -23,12 +23,6 @@ struct keypair;
 // could in theory be in transforms.cc too, but that file's already kinda
 // big and this stuff "feels" different, imho.
 
-void
-get_passphrase(utf8 & phrase,
-               rsa_keypair_id const & keyid,
-               bool confirm_phrase,
-               bool generating_key);
-
 // N()'s out if there is no unique key for us to use
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys, 

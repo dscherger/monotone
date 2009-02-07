@@ -69,7 +69,6 @@ public:
   void redirect_log_to(system_path const & filename);
 
   std::string output_prefix();
-  std::string prog_name;
 
 private:
   void finish_ticking();

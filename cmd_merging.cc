@@ -24,7 +24,6 @@
 #include "update.hh"
 #include "work.hh"
 #include "safe_map.hh"
-#include "ui.hh"
 #include "app_state.hh"
 #include "project.hh"
 #include "simplestring_xform.hh"
@@ -192,7 +191,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
                i != candidates.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s update -r<id>'") % ui.prog_name);
+          P(F("choose one with '%s update -r<id>'") % prog_name);
           E(false, origin::user,
             F("multiple update candidates remain after selection"));
         }
@@ -1174,7 +1173,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
           "to apply the changes relative to one of its parents, use:\n"
           "  %s pluck -r PARENT -r %s")
         % to_rid
-        % ui.prog_name
+        % prog_name
         % to_rid);
       from_rid = *parents.begin();
     }

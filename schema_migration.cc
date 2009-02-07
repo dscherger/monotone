@@ -17,7 +17,6 @@
 #include "schema_migration.hh"
 #include "key_store.hh"
 #include "transforms.hh"
-#include "ui.hh"
 #include "constants.hh"
 
 using std::string;
@@ -972,7 +971,7 @@ diagnose_unrecognized_schema(schema_mismatch_case cat,
   E(cat != SCHEMA_EMPTY, origin::user,
     F("cannot use the empty sqlite database %s\n"
       "(monotone databases must be created with '%s db init')")
-    % filename % ui.prog_name);
+    % filename % prog_name);
 
   E(cat != SCHEMA_NOT_MONOTONE, origin::user,
     F("%s does not appear to be a monotone database\n")
@@ -1001,7 +1000,7 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
     F("database %s is laid out according to an old schema\n"
       "try '%s db migrate' to upgrade\n"
       "(this is irreversible; you may want to make a backup copy first)")
-    % filename % ui.prog_name);
+    % filename % prog_name);
 }
 
 void
@@ -1086,13 +1085,13 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
         P(F("NOTE: because this database was last used by a rather old version\n"
             "of monotone, you're not done yet.  If you're a project leader, then\n"
             "see the file UPGRADE for instructions on running '%s db %s'")
-          % ui.prog_name % command_str);
+          % prog_name % command_str);
       }
       break;
     case upgrade_regen_caches:
       P(F("NOTE: this upgrade cleared monotone's caches\n"
           "you should now run '%s db regenerate_caches'")
-        % ui.prog_name);
+        % prog_name);
       break;
     case upgrade_none:
       break;

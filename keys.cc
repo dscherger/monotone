@@ -12,7 +12,6 @@
 
 #include "keys.hh"
 #include "sanity.hh"
-#include "ui.hh"
 #include "constants.hh"
 #include "platform.hh"
 #include "transforms.hh"
@@ -29,63 +28,6 @@ using std::memset;
 
 // there will probably forever be bugs in this file. it's very
 // hard to get right, portably and securely. sorry about that.
-
-// "raw" passphrase prompter; unaware of passphrase caching or the laziness
-// hook.  KEYID is used only in prompts.  CONFIRM_PHRASE causes the user to
-// be prompted to type the same thing twice, and will loop if they don't
-// match.  Prompts are worded slightly differently if GENERATING_KEY is true.
-void
-get_passphrase(utf8 & phrase,
-               rsa_keypair_id const & keyid,
-               bool confirm_phrase,
-               bool generating_key)
-{
-  string prompt1, prompt2;
-  char pass1[constants::maxpasswd];
-  char pass2[constants::maxpasswd];
-  int i = 0;
-
-  if (confirm_phrase && !generating_key)
-    prompt1 = (F("enter new passphrase for key ID [%s]: ") % keyid).str();
-  else
-    prompt1 = (F("enter passphrase for key ID [%s]: ") % keyid).str();
-
-  if (confirm_phrase)
-    prompt2 = (F("confirm passphrase for key ID [%s]: ") % keyid).str();
-  
-  try
-    {
-      for (;;)
-        {
-          memset(pass1, 0, constants::maxpasswd);
-          memset(pass2, 0, constants::maxpasswd);
-          ui.ensure_clean_line();
-
-          read_password(prompt1, pass1, constants::maxpasswd);
-          if (!confirm_phrase)
-            break;
-
-          ui.ensure_clean_line();
-          read_password(prompt2, pass2, constants::maxpasswd);
-          if (strcmp(pass1, pass2) == 0)
-            break;
-
-          E(i++ < 2, origin::user, F("too many failed passphrases"));
-          P(F("passphrases do not match, try again"));
-        }
-
-      external ext_phrase(pass1);
-      system_to_utf8(ext_phrase, phrase);
-    }
-  catch (...)
-    {
-      memset(pass1, 0, constants::maxpasswd);
-      memset(pass2, 0, constants::maxpasswd);
-      throw;
-    }
-  memset(pass1, 0, constants::maxpasswd);
-  memset(pass2, 0, constants::maxpasswd);
-}
 
 // Loads a key pair for a given key id, considering it a user error
 // if that key pair is not available.

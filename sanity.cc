@@ -37,6 +37,10 @@ using std::vector;
 
 using boost::format;
 
+extern string const & prog_name;
+static string real_prog_name;
+string const & prog_name = real_prog_name;
+
 string
 origin::type_to_string(origin::type t)
 {
@@ -118,6 +122,15 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
     lc_all = "n/a";
   PERM_MM(string(lc_all));
   L(FL("set locale: LC_ALL=%s") % lc_all);
+
+  // find base name of executable and save in the prog_name global note that
+  // this does not bother with conversion to utf8.
+  real_prog_name = argv[0];
+  if (real_prog_name.rfind(".exe") == prog_name.size() - 4)
+    real_prog_name = real_prog_name.substr(0, prog_name.size() - 4);
+  string::size_type last_slash = real_prog_name.find_last_of("/\\");
+  if (last_slash != string::npos)
+    real_prog_name.erase(0, last_slash);
 }
 
 void

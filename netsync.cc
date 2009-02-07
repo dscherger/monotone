@@ -1608,7 +1608,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
                   "'%s unset %s %s' overrides this check")
                 % printable_key_hash
                 % expected_key_hash
-                % ui.prog_name % their_key_key.first % their_key_key.second);
+                % prog_name % their_key_key.first % their_key_key.second);
               E(false, origin::network, F("server key changed"));
             }
         }
@@ -1635,7 +1635,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
               "on your local database before you run this command again,\n"
               "assuming that key currently present in your database does NOT have\n"
               "a private counterpart (or in other words, is one of YOUR keys)")
-            % their_keyname % ui.prog_name % their_keyname);
+            % their_keyname % prog_name % their_keyname);
         }
       else
         {

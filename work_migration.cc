@@ -9,7 +9,6 @@
 
 #include "base.hh"
 #include "sanity.hh"
-#include "ui.hh"
 #include "cset.hh"
 #include "simplestring_xform.hh"
 #include "revision.hh"
@@ -137,7 +136,7 @@ workspace::check_ws_format()
       "'%s migrate_workspace'.\n"
       "once you have done this, you will not be able to use the workspace\n"
       "with versions of monotone older than %s.")
-    % format % current_workspace_format % ui.prog_name
+    % format % current_workspace_format % prog_name
     % first_version_supporting_current_format);
 
   // keep this message in sync with the copy in migrate_ws_format

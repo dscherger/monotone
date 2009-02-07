@@ -39,7 +39,6 @@
 #include "sanity.hh"
 #include "schema_migration.hh"
 #include "transforms.hh"
-#include "ui.hh"
 #include "vocab.hh"
 #include "vocab_cast.hh"
 #include "xdelta.hh"
@@ -493,7 +492,7 @@ database_impl::check_format()
         origin::no_fault,
         F("database %s lacks some cached data\n"
           "run '%s db regenerate_caches' to restore use of this database")
-        % filename % ui.prog_name);
+        % filename % prog_name);
     }
   else
     {

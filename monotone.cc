@@ -161,6 +161,8 @@ get_usage_str(options::options_type const & optset, options & opts)
 int
 cpp_main(int argc, char ** argv)
 {
+  string real_prog_name;
+
   // go-go gadget i18n
   localize_monotone();
 
@@ -173,7 +175,8 @@ cpp_main(int argc, char ** argv)
   try
     {
       // Set up the global sanity object.  No destructor is needed and
-      // therefore no wrapper object is needed either.
+      // therefore no wrapper object is needed either.  This has the
+      // side effect of making the 'prog_name' global usable.
       global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
 
       // Set up secure memory allocation etc
@@ -199,18 +202,6 @@ cpp_main(int argc, char ** argv)
           system_to_utf8(ex, ut);
           args.push_back(arg_type(ut));
         }
-
-      // find base name of executable, convert to utf8, and save it in the
-      // global ui object
-      {
-        utf8 argv0_u;
-        system_to_utf8(external(argv[0]), argv0_u);
-        string prog_name = system_path(argv0_u).basename()();
-        if (prog_name.rfind(".exe") == prog_name.size() - 4)
-          prog_name = prog_name.substr(0, prog_name.size() - 4);
-        ui.prog_name = prog_name;
-        I(!ui.prog_name.empty());
-      }
 
       app_state app;
       try
@@ -301,7 +292,7 @@ cpp_main(int argc, char ** argv)
                                                   u.which.end()))();
 
           usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
-                          ui.prog_name << "\n\n";
+                          prog_name << "\n\n";
 
           if (u.which.empty())
             usage_stream << get_usage_str(options::opts::globals(), app.opts);
@@ -315,7 +306,7 @@ cpp_main(int argc, char ** argv)
               usage_stream
                 << F("Options specific to '%s %s' "
                      "(run '%s help' to see global options):")
-                    % ui.prog_name % visibleid % ui.prog_name
+                    % prog_name % visibleid % prog_name
                 << "\n\n";
               usage_stream << get_usage_str(cmd_options, app.opts);
             }

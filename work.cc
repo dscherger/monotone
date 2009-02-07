@@ -28,7 +28,6 @@
 #include "revision.hh"
 #include "inodeprint.hh"
 #include "diff_patch.hh"
-#include "ui.hh"
 #include "charset.hh"
 #include "app_state.hh"
 #include "database.hh"
@@ -1387,8 +1386,8 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
       "To handle all at once, simply use\n"
       " '%s drop --missing' or\n"
       " '%s revert --missing'")
-    % missing_items % ui.prog_name % ui.prog_name % ui.prog_name
-    % ui.prog_name % ui.prog_name);
+    % missing_items % prog_name % prog_name % prog_name
+    % prog_name % prog_name);
 }
 
 void
@@ -1625,7 +1624,7 @@ workspace::perform_rename(database & db,
 
       E(!src.empty(), origin::user,
         F("cannot rename the workspace root (try '%s pivot_root' instead)")
-        % ui.prog_name);
+        % prog_name);
       E(new_roster.has_node(src), origin::user,
         F("source file %s is not versioned") % src);
 
@@ -1659,7 +1658,7 @@ workspace::perform_rename(database & db,
         {
           E(!i->empty(), origin::user,
             F("cannot rename the workspace root (try '%s pivot_root' instead)")
-            % ui.prog_name);
+            % prog_name);
           E(new_roster.has_node(*i), origin::user,
             F("source file %s is not versioned") % *i);
 

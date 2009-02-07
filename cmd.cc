@@ -212,11 +212,11 @@ namespace commands {
       {
         if (!cmd->children().empty())
           out << format_text(F("Subcommands of '%s %s':") %
-                             ui.prog_name % visibleid)
+                             prog_name % visibleid)
               << "\n\n";
         else if (!lines.empty())
           out << format_text(F("Syntax specific to '%s %s':") %
-                             ui.prog_name % visibleid)
+                             prog_name % visibleid)
               << "\n\n";
       }
 
@@ -244,7 +244,7 @@ namespace commands {
           << "\n\n";
     else
       out << format_text(F("Description for '%s %s':") %
-                         ui.prog_name % visibleid)
+                         prog_name % visibleid)
           << "\n\n";
     out << format_text(cmd->desc(), 2) << "\n\n";
 

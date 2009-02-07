@@ -8,7 +8,6 @@
 #include "key_store.hh"
 #include "cert.hh"
 #include "revision.hh"
-#include "ui.hh"
 #include "uri.hh"
 #include "vocab_cast.hh"
 #include "platform-wrapped.hh"
@@ -413,7 +412,7 @@ CMD(clone, "clone", "", CMD_REF(network),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % ui.prog_name);
+          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
           E(false, origin::user, F("branch %s has multiple heads") % branchname);
         }
       ident = *(heads.begin());

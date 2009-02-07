@@ -33,7 +33,6 @@
 #include "sanity.hh"
 #include "transforms.hh"
 #include "simplestring_xform.hh"
-#include "ui.hh"
 #include "vocab.hh"
 #include "safe_map.hh"
 #include "legacy.hh"
@@ -44,6 +43,7 @@
 #include "graph.hh"
 #include "key_store.hh"
 #include "vocab_cast.hh"
+#include "ui.hh"
 
 using std::back_inserter;
 using std::copy;
@@ -765,7 +765,7 @@ make_restricted_revision(parent_map const & old_rosters,
 
   E(old_rosters.size() == 1 || no_excludes, origin::user,
     F("the command '%s %s' cannot be restricted in a two-parent workspace")
-    % ui.prog_name % cmd_name);
+    % prog_name % cmd_name);
 
   recalculate_manifest_id_for_restricted_rev(old_rosters, edges, rev);
 }

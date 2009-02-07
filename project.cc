@@ -12,7 +12,6 @@
 #include "lua_hooks.hh"
 #include "keys.hh"
 #include "options.hh"
-#include "ui.hh"
 #include "vocab_cast.hh"
 #include "simplestring_xform.hh"
 
@@ -416,7 +415,7 @@ notify_if_multiple_heads(project_t & project,
                       _("branch '%s' has multiple heads\n"
                         "perhaps consider '%s merge'"),
                       prefixedline);
-    P(i18n_format(prefixedline) % branchname % ui.prog_name);
+    P(i18n_format(prefixedline) % branchname % prog_name);
   }
 }
 

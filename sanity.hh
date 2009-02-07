@@ -111,6 +111,7 @@ private:
 };
 
 extern sanity & global_sanity;
+extern std::string const & prog_name;
 
 typedef std::runtime_error oops;
 
