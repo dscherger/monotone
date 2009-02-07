@@ -161,8 +161,6 @@ get_usage_str(options::options_type const & optset, options & opts)
 int
 cpp_main(int argc, char ** argv)
 {
-  string real_prog_name;
-
   // go-go gadget i18n
   localize_monotone();
 
@@ -321,7 +319,7 @@ cpp_main(int argc, char ** argv)
   catch (option::option_error const & inf)
     {
       ui.inform(inf.what());
-      return 2;
+      return 1;
     }
   catch (recoverable_failure & inf)
     {

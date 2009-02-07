@@ -130,7 +130,7 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
     real_prog_name = real_prog_name.substr(0, prog_name.size() - 4);
   string::size_type last_slash = real_prog_name.find_last_of("/\\");
   if (last_slash != string::npos)
-    real_prog_name.erase(0, last_slash);
+    real_prog_name.erase(0, last_slash+1);
 }
 
 void

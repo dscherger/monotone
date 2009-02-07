@@ -33,7 +33,7 @@ MOST_SOURCES = 								\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
-	work.cc migrate_worksp.cc work.hh				\
+	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
@@ -324,7 +324,7 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-migrate_worksp.$(OBJEXT)
+	mtn-migrate_work.$(OBJEXT)
 
 # primaries
 
