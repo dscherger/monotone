@@ -53,7 +53,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
-	revision.cc revision.hh						\
+	revision.cc ancestry.cc revision.hh				\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
 	mt_version.cc mt_version.hh					\
@@ -313,11 +313,11 @@ UNIT_TEST_SRC_SUPPORT =							\
 # testing, but can be used "as is" from the main build.  (many of
 # these _should_ have unit tests, but they haven't been written yet.)
 UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-cert.$(OBJEXT) mtn-constants.$(OBJEXT)			\
-	mtn-database.$(OBJEXT) mtn-epoch.$(OBJEXT)			\
-	mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT) mtn-hmac.$(OBJEXT)	\
-	mtn-inodeprint.$(OBJEXT) mtn-key_store.$(OBJEXT)		\
-	mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT) mtn-legacy.$(OBJEXT)	\
+	mtn-ancestry.$(OBJEXT) mtn-cert.$(OBJEXT)			\
+	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
+	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
+	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
+	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
 	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
 	mtn-merkle_tree.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
 	mtn-project.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
