@@ -9,15 +9,15 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "merge.hh"
+#include "merge_content.hh"
 
 #include "constants.hh"
 #include "database.hh"
-#include "diff_patch.hh"
+#include "diff_output.hh"
 #include "file_io.hh"
 #include "lua_hooks.hh"
 #include "revision.hh"
-#include "roster_merge.hh"
+#include "merge_roster.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "xdelta.hh"

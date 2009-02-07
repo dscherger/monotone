@@ -263,6 +263,15 @@ store_roster_merge_result(database & db,
                           revision_id const & right_rid,
                           revision_id & merged_rid);
 
+// Do a three-way merge on file content, expressed as vectors of
+// strings (one per line).
+
+bool merge3(std::vector<std::string> const & ancestor,
+            std::vector<std::string> const & left,
+            std::vector<std::string> const & right,
+            std::vector<std::string> & merged);
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

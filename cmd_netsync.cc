@@ -1,7 +1,7 @@
 #include "base.hh"
 #include "cmd.hh"
 
-#include "merge.hh"
+#include "merge_content.hh"
 #include "netcmd.hh"
 #include "globish.hh"
 #include "keys.hh"

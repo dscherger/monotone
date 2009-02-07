@@ -13,7 +13,7 @@
 #include "app_state.hh"
 #include "cmd.hh"
 #include "database.hh"
-#include "roster_merge.hh"
+#include "merge_roster.hh"
 
 CMD_GROUP(conflicts, "conflicts", "", CMD_REF(tree),
           N_("Commands for conflict resolutions"),

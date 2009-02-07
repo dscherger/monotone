@@ -17,7 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
-#include "diff_patch.hh"
+#include "diff_output.hh"
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"

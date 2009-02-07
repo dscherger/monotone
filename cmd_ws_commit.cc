@@ -12,7 +12,7 @@
 #include <map>
 
 #include "cmd.hh"
-#include "merge.hh"
+#include "merge_content.hh"
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"

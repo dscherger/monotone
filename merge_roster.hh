@@ -15,7 +15,7 @@
 
 #include "rev_types.hh"
 #include "database.hh"
-#include "merge.hh"
+#include "merge_content.hh"
 #include "roster.hh" // needs full definition of roster_t available
 
 // interactions between conflict types:

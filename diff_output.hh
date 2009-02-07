@@ -14,9 +14,7 @@
 // this file is to contain some stripped down, in-process implementations
 // of GNU-diffutils-like things (diff, diff3, maybe patch..)
 
-#include "vector.hh"
 #include "vocab.hh"
-
 
 void make_diff(std::string const & filename1,
                std::string const & filename2,
@@ -27,11 +25,6 @@ void make_diff(std::string const & filename1,
                std::ostream & ost,
                diff_type type,
                std::string const & pattern);
-
-bool merge3(std::vector<std::string> const & ancestor,
-            std::vector<std::string> const & left,
-            std::vector<std::string> const & right,
-            std::vector<std::string> & merged);
 
 // Local Variables:
 // mode: C++

@@ -29,7 +29,7 @@ MOST_SOURCES = 								\
 	app_state.cc app_state.hh					\
 	botan_pipe_cache.hh						\
 	commands.cc commands.hh $(CMD_SOURCES)				\
-	diff_patch.cc diff_patch.hh					\
+	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
@@ -67,8 +67,8 @@ MOST_SOURCES = 								\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
 	string_queue.cc string_queue.hh					\
-	roster_merge.cc roster_merge.hh					\
-	merge.cc merge.hh						\
+	merge_roster.cc merge_roster.hh					\
+	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
 	graph.cc graph.hh						\
 	roster_delta.cc roster_delta.hh					\
@@ -298,10 +298,10 @@ WIN32_PLATFORM_SOURCES =						\
 # these files contain unit tests
 UNIT_TEST_SOURCES =							\
 	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc diff_patch.cc globish.cc graph.cc netcmd.cc		\
+	dates.cc merge_3way.cc globish.cc graph.cc netcmd.cc		\
 	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
-	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
+	revision.cc roster.cc merge_roster.cc simplestring_xform.cc	\
 	string_queue.cc transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
@@ -318,10 +318,11 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
 	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
 	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT) mtn-merge.$(OBJEXT)	\
-	mtn-merkle_tree.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
-	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\
+	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
+	mtn-merge_content.$(OBJEXT) mtn-merkle_tree.$(OBJEXT)		\
+	mtn-pcrewrap.$(OBJEXT) mtn-project.$(OBJEXT)			\
+	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
+	mtn-migrate_schema.$(OBJEXT)					\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
 	mtn-migrate_work.$(OBJEXT)

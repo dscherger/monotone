@@ -16,7 +16,7 @@
 #include "lua_hooks.hh"
 #include "options.hh"
 #include "parallel_iter.hh"
-#include "roster_merge.hh"
+#include "merge_roster.hh"
 #include "safe_map.hh"
 #include "transforms.hh"
 #include "vocab.hh"
