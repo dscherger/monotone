@@ -5,7 +5,6 @@
 #include "file_io.hh"
 #include "option.hh"
 #include "sanity.hh"
-#include "ui.hh"
 
 using std::map;
 using std::pair;
@@ -437,47 +436,24 @@ static string usagestr(concrete_option const & opt)
     return out;
 }
 
-std::string concrete_option_set::get_usage_str() const
+void
+concrete_option_set::get_usage_strings(vector<string> & names,
+                                       vector<string> & descriptions,
+                                       unsigned int & maxnamelen) const
 {
   unsigned int namelen = 0; // the longest option name string
+  names.clear();
+  descriptions.clear();
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
-      string names = usagestr(*i);
-      if (names.size() > namelen)
-        namelen = names.size();
+      string name = usagestr(*i);
+      if (name.size() > namelen)
+        namelen = name.size();
+      names.push_back(name);
+      descriptions.push_back(i->description);
     }
-
-  // "    --long [ -s ] <arg>    description goes here"
-  //  ^  ^^                 ^^  ^^                          ^
-  //  |  | \    namelen    / |  | \        descwidth       /| <- edge of screen
-  //  ^^^^                   ^^^^
-  // pre_indent              space
-  string result;
-  int pre_indent = 2; // empty space on the left
-  int space = 2; // space after the longest option, before the description
-  int termwidth = guess_terminal_width();
-  int descindent = pre_indent + namelen + space;
-  int descwidth = termwidth - descindent;
-  for (std::set<concrete_option>::const_iterator i = options.begin();
-       i != options.end(); ++i)
-    {
-      string names = usagestr(*i);
-      if (names.empty())
-        continue;
-
-      result += string(pre_indent, ' ')
-              + names + string(namelen - names.size(), ' ');
-
-      if (!i->description.empty())
-        {
-          result += string(space, ' ');
-          result += format_text(i->description, descindent, descindent);
-        }
-
-      result += '\n';
-    }
-  return result;
+  maxnamelen = namelen;
 }
 
 } // namespace option

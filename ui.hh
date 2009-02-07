@@ -14,6 +14,8 @@
 // interface. the global user_interface object 'ui' owns cerr, so
 // no writing to it directly!
 
+#include "vector.hh"
+
 struct i18n_format;
 class system_path;
 
@@ -91,6 +93,11 @@ std::string format_text(std::string const & text,
                         size_t const col = 0, size_t curcol = 0);
 std::string format_text(i18n_format const & text,
                         size_t const col = 0, size_t curcol = 0);
+
+std::string
+format_usage_strings(std::vector<std::string> const & names,
+                     std::vector<std::string> const & descriptions,
+                     unsigned int namelen);
 
 // Local Variables:
 // mode: C++

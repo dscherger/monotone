@@ -15,7 +15,6 @@
 #include "gzip.hh"
 
 #include "transforms.hh"
-#include "xdelta.hh"
 #include "char_classifiers.hh"
 
 using std::string;
@@ -307,20 +306,6 @@ UNIT_TEST(transform, enc)
   UNIT_TEST_CHECK(gzd2 == gzd1);
   decode_gzip(gzd2, d2);
   UNIT_TEST_CHECK(d2 == d1);
-}
-
-UNIT_TEST(transform, rdiff)
-{
-  data dat1(string("the first day of spring\nmakes me want to sing\n"),
-            origin::internal);
-  data dat2(string("the first day of summer\nis a major bummer\n"),
-            origin::internal);
-  delta del;
-  diff(dat1, dat2, del);
-
-  data dat3;
-  patch(dat1, del, dat3);
-  UNIT_TEST_CHECK(dat3 == dat2);
 }
 
 UNIT_TEST(transform, calculate_ident)

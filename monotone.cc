@@ -147,11 +147,20 @@ commands::command_id read_options(options & opts, option::concrete_option_set & 
   return cmd;
 }
 
+string
+get_usage_str(options::options_type const & optset, options & opts)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  return format_usage_strings(names, descriptions, maxnamelen);
+}
+
 int
 cpp_main(int argc, char ** argv)
 {
-  int ret = 0;
-
   // go-go gadget i18n
   localize_monotone();
 
@@ -209,7 +218,8 @@ cpp_main(int argc, char ** argv)
           // read global options first
           // command specific options will be read below
           args_vector opt_args(args);
-          option::concrete_option_set optset = read_global_options(app.opts, opt_args);
+          option::concrete_option_set optset
+            = read_global_options(app.opts, opt_args);
 
           if (app.opts.version_given)
             {
@@ -240,7 +250,8 @@ cpp_main(int argc, char ** argv)
 
           // check if the user specified default arguments for this command
           args_vector default_args;
-          if (!cmd.empty() && app.lua.hook_get_default_command_options(cmd, default_args))
+          if (!cmd.empty()
+              && app.lua.hook_get_default_command_options(cmd, default_args))
             optset.from_command_line(default_args, false);
 
           if (workspace::found)
@@ -262,28 +273,19 @@ cpp_main(int argc, char ** argv)
 
           // stop here if they asked for help
           if (app.opts.help)
-            {
-              throw usage(cmd);
-            }
+            throw usage(cmd);
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
           if (cmd.empty())
-            {
-              throw usage(commands::command_id());
-            }
-          else
-            {
-              commands::process(app, cmd, app.opts.args);
-              // The command will raise any problems itself through
-              // exceptions.  If we reach this point, it is because it
-              // worked correctly.
-              return 0;
-            }
-        }
-      catch (option::option_error const & e)
-        {
-          E(false, origin::user, i18n_format("%s") % e.what());
+            throw usage(commands::command_id());
+
+
+          commands::process(app, cmd, app.opts.args);
+          // The command will raise any problems itself through
+          // exceptions.  If we reach this point, it is because it
+          // worked correctly.
+          return 0;
         }
       catch (usage & u)
         {
@@ -302,10 +304,7 @@ cpp_main(int argc, char ** argv)
                           ui.prog_name << "\n\n";
 
           if (u.which.empty())
-            {
-              usage_stream << options::opts::globals().instantiate(&app.opts).
-                get_usage_str() << '\n';
-            }
+            usage_stream << get_usage_str(options::opts::globals(), app.opts);
 
           // Make sure to hide documentation that's not part of
           // the current command.
@@ -314,11 +313,11 @@ cpp_main(int argc, char ** argv)
           if (!cmd_options.empty())
             {
               usage_stream
-                << F("Options specific to '%s %s' (run '%s help' to see global options):")
+                << F("Options specific to '%s %s' "
+                     "(run '%s help' to see global options):")
                     % ui.prog_name % visibleid % ui.prog_name
                 << "\n\n";
-              usage_stream << cmd_options.instantiate(&app.opts).
-                              get_usage_str() << '\n';
+              usage_stream << get_usage_str(cmd_options, app.opts);
             }
 
           commands::explain_usage(u.which, usage_stream);
@@ -326,8 +325,12 @@ cpp_main(int argc, char ** argv)
             return 0;
           else
             return 2;
-
         }
+    }
+  catch (option::option_error const & inf)
+    {
+      ui.inform(inf.what());
+      return 2;
     }
   catch (recoverable_failure & inf)
     {

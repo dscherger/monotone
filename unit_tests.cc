@@ -23,7 +23,6 @@
 #include "option.hh"
 #include "unit_tests.hh"
 #include "sanity.hh"
-#include "ui.hh"
 #include "current_exception.hh"
 #include "botan_pipe_cache.hh"
 
@@ -160,8 +159,6 @@ int main(int argc, char * argv[])
   bool help(false);
   string test_to_run;
 
-  ui.initialize();
-  ui.prog_name = argv[0];
   global_sanity.initialize(argc, argv, "C");  // we didn't call setlocale
 
   try
@@ -284,6 +281,21 @@ void
 localize_monotone()
 {
 }
+
+// Global sanity object.  We don't want to depend on ui.
+struct unit_tester_sanity : public sanity
+{
+  void inform_log(std::string const &msg)
+  { cout << msg; }
+  void inform_message(std::string const &msg)
+  { cout << msg; }
+  void inform_warning(std::string const &msg)
+  { cerr << "warning: " << msg; }
+  void inform_error(std::string const &msg)
+  { cerr << "error: " << msg; }
+};
+unit_tester_sanity real_sanity;
+sanity & global_sanity = real_sanity;
 
 // These are tests of the unit testing mechanism itself.  They would all
 // fail, but we make use of a special mechanism to convert that failure

@@ -762,12 +762,56 @@ format_text(string const & text, size_t const col, size_t curcol)
   return formatted;
 }
 
-// See description for the other format_text below for more details.
+// See description for the other format_text above for more details.
 string
 format_text(i18n_format const & text, size_t const col, size_t curcol)
 {
   return format_text(text.str(), col, curcol);
 }
+
+// Format a block of options and their descriptions.
+string
+format_usage_strings(vector<string> const & names,
+                     vector<string> const & descriptions,
+                     unsigned int namelen)
+{
+  // "    --long [ -s ] <arg>    description goes here"
+  //  ^  ^^                 ^^  ^^                          ^
+  //  |  | \    namelen    / |  | \        descwidth       /| <- edge of screen
+  //  ^^^^                   ^^^^
+  // pre_indent              space
+  string result;
+  int pre_indent = 2; // empty space on the left
+  int space = 2; // space after the longest option, before the description
+  int termwidth = guess_terminal_width();
+  int descindent = pre_indent + namelen + space;
+  int descwidth = termwidth - descindent;
+
+  I(names.size() == descriptions.size());
+
+  vector<string>::const_iterator name;
+  vector<string>::const_iterator desc;
+  for (name = names.begin(), desc = descriptions.begin(); name != names.end();
+       ++name, ++desc)
+    {
+      if (name->empty())
+        continue;
+
+      result += string(pre_indent, ' ')
+                + *name + string(namelen - name->size(), ' ');
+
+      if (!desc->empty())
+        {
+          result += string(space, ' ');
+          result += format_text(*desc, descindent, descindent);
+        }
+
+      result += '\n';
+    }
+  result += '\n';
+  return result;
+}
+
 
 // Local Variables:
 // mode: C++

@@ -13,14 +13,12 @@
 
 
 #include "base.hh"
-#include <iostream>
-#include <sstream>
 
 #include <boost/version.hpp>
 #include <boost/config.hpp>
+#include <iostream>
 
 #include "app_state.hh"
-#include "cmd.hh"
 #include "platform.hh"
 #include "mt_version.hh"
 #include "package_revision.h"
@@ -28,24 +26,7 @@
 #include "sanity.hh"
 
 using std::cout;
-using std::ostringstream;
 using std::string;
-
-CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
-    N_("Shows the program version"),
-    "",
-    options::opts::full)
-{
-  E(args.empty(), origin::user,
-    F("no arguments allowed"));
-
-  string version;
-  if (app.opts.full)
-    get_full_version(version);
-  else
-    get_version(version);
-  cout << version << '\n';
-}
 
 void
 get_version(string & out)
@@ -59,29 +40,30 @@ print_version()
 {
   string s;
   get_version(s);
-  cout << s << '\n';
+  cout << s;
 }
 
 void
 get_full_version(string & out)
 {
-  ostringstream oss;
-  string s;
-  get_version(s);
-  oss << s << '\n';
-  get_system_flavour(s);
-  oss << F("Running on          : %s\n"
+  string base_version;
+  get_version(base_version);
+  string flavour;
+  get_system_flavour(flavour);
+  out = (F("%s\n"
+           "Running on          : %s\n"
            "C++ compiler        : %s\n"
            "C++ standard library: %s\n"
            "Boost version       : %s\n"
            "Changes since base revision:\n"
            "%s")
-    % s
-    % BOOST_COMPILER
-    % BOOST_STDLIB
-    % BOOST_LIB_VERSION
-    % string(package_full_revision_constant);
-  out = oss.str();
+         % base_version
+         % flavour
+         % BOOST_COMPILER
+         % BOOST_STDLIB
+         % BOOST_LIB_VERSION
+         % package_full_revision_constant)
+    .str();
 }
 
 void
@@ -89,7 +71,7 @@ print_full_version()
 {
   string s;
   get_full_version(s);
-  cout << s << '\n';
+  cout << s;
 }
 
 // Local Variables:

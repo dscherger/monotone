@@ -488,6 +488,16 @@ LUAEXT(get_source_dir, )
   return 1;
 }
 
+LUAEXT(normalize_path, )
+{
+  const char *pathstr = luaL_checkstring(LS, -1);
+  E(pathstr, origin::user,
+    F("%s called with an invalid parameter") % "normalize_path");
+
+  lua_pushstring(LS, system_path(pathstr).as_external().c_str());
+  return 1;
+}
+
 LUAEXT(save_env, )
 {
   orig_env_vars.clear();

@@ -20,22 +20,18 @@
 // commands, or be accessible to the lua hooks (which includes anything
 // needed by mtn_automate()).
 
-class app_state_private;
-class database_impl;
+struct database_cache;
 class app_state
 {
-  boost::shared_ptr<app_state_private> _hidden;
 public:
   explicit app_state();
   ~app_state();
-
-  boost::shared_ptr<database_impl> &
-  lookup_db(system_path const & f);
 
   options opts;
   lua_hooks lua;
   bool mtn_automate_allowed;
   boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+  boost::shared_ptr<database_cache> dbcache;
 };
 
 // Local Variables:

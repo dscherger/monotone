@@ -2,9 +2,10 @@ AUTOMAKE_OPTIONS=subdir-objects 1.7.1 -Wno-portability
 ACLOCAL_AMFLAGS = -I m4
 
 CMD_SOURCES =								\
-	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
-	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_conflicts.cc
+	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
+	cmd_key_cert.cc cmd_merging.cc cmd_db.cc cmd_diff_log.cc	\
+	cmd_ws_commit.cc cmd_othervcs.cc cmd_automate.cc cmd_files.cc	\
+	cmd_conflicts.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
@@ -81,7 +82,6 @@ MOST_SOURCES = 								\
 									\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
-	randomizer.cc randomizer.hh					\
 	netio.hh gettext.h						\
 	package_revision.c package_revision.h				\
 	package_full_revision.c package_full_revision.h			\
@@ -302,31 +302,26 @@ UNIT_TEST_SOURCES =							\
 	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
-	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc
+	string_queue.cc transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
 UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc
+	roster_delta.cc randomizer.cc randomizer.hh unit_tests.cc
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
 # these _should_ have unit tests, but they haven't been written yet.)
 UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-app_state.$(OBJEXT) mtn-cert.$(OBJEXT)			\
-	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
-	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
-	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)	\
-	mtn-merkle_tree.$(OBJEXT) mtn-mt_version.$(OBJEXT)		\
-	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
-	mtn-package_full_revision.$(OBJEXT)				\
-	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
-	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
-	mtn-schema_migration.$(OBJEXT)					\
+	mtn-cert.$(OBJEXT) mtn-constants.$(OBJEXT)			\
+	mtn-database.$(OBJEXT) mtn-epoch.$(OBJEXT)			\
+	mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT) mtn-hmac.$(OBJEXT)	\
+	mtn-inodeprint.$(OBJEXT) mtn-key_store.$(OBJEXT)		\
+	mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT) mtn-legacy.$(OBJEXT)	\
+	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
+	mtn-merkle_tree.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
+	mtn-project.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
+	mtn-schema.$(OBJEXT) mtn-schema_migration.$(OBJEXT)		\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
 	mtn-work_migration.$(OBJEXT)

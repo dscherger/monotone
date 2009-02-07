@@ -118,7 +118,9 @@ namespace option {
 
     concrete_option_set operator | (concrete_option_set const & other) const;
     void reset() const;
-    std::string get_usage_str() const;
+    void get_usage_strings(std::vector<std::string> & names,
+                           std::vector<std::string> & descriptions,
+                           unsigned int & maxnamelen) const;
     void from_command_line(args_vector & args, bool allow_xargs = true);
     void from_command_line(int argc, char const * const * argv);
     void from_key_value_pairs(std::vector<std::pair<std::string, std::string> > const & keyvals);

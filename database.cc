@@ -415,14 +415,21 @@ database_impl::~database_impl()
     close();
 }
 
+struct database_cache
+{
+  map<system_path, boost::shared_ptr<database_impl> > dbs;
+};
+
 database::database(app_state & app)
   : lua(app.lua), rng(app.rng)
 {
-  boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
+  if (!app.dbcache)
+    app.dbcache.reset(new database_cache);
+
+  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
-    {
-      i.reset(new database_impl(app.opts.dbname));
-    }
+    i.reset(new database_impl(app.opts.dbname));
+
   imp = i;
 }
 

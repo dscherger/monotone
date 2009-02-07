@@ -16,12 +16,8 @@
 #include "commands.hh"
 #include "selectors.hh"
 #include "options.hh"
-#include "sanity.hh"
 
 class app_state;
-class database;
-class project_t;
-struct workspace;
 
 namespace commands
 {
@@ -132,7 +128,7 @@ namespace commands
               command_id const & execid,
               args_vector const & args) const;
   };
-};
+}
 
 inline std::vector<file_path>
 args_to_paths(args_vector const & args)
@@ -154,13 +150,6 @@ args_to_paths(args_vector const & args)
     F("all arguments given were bookkeeping paths; aborting"));
   return paths;
 }
-
-std::string
-describe_revision(project_t & project, revision_id const & id);
-
-void
-notify_if_multiple_heads(project_t & project, branch_name const & branchname,
-                         bool ignore_suspend_certs);
 
 void
 process_commit_message_args(options const & opts,

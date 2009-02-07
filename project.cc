@@ -12,7 +12,9 @@
 #include "lua_hooks.hh"
 #include "keys.hh"
 #include "options.hh"
+#include "ui.hh"
 #include "vocab_cast.hh"
+#include "simplestring_xform.hh"
 
 using std::string;
 using std::set;
@@ -367,6 +369,55 @@ project_t::put_cert(key_store & keys,
                     cert_value const & value)
 {
   put_simple_revision_cert(db, keys, id, name, value);
+}
+
+// These should maybe be converted to member functions.
+
+string
+describe_revision(project_t & project, revision_id const & id)
+{
+  cert_name author_name(author_cert_name);
+  cert_name date_name(date_cert_name);
+
+  string description;
+
+  description += encode_hexenc(id.inner()(), id.inner().made_from);
+
+  // append authors and date of this revision
+  vector< revision<cert> > tmp;
+  project.get_revision_certs_by_name(id, author_name, tmp);
+  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+       i != tmp.end(); ++i)
+    {
+      description += " ";
+      description += i->inner().value();
+    }
+  project.get_revision_certs_by_name(id, date_name, tmp);
+  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+       i != tmp.end(); ++i)
+    {
+      description += " ";
+      description += i->inner().value();
+    }
+
+  return description;
+}
+
+void
+notify_if_multiple_heads(project_t & project,
+                         branch_name const & branchname,
+                         bool ignore_suspend_certs)
+{
+  set<revision_id> heads;
+  project.get_branch_heads(branchname, heads, ignore_suspend_certs);
+  if (heads.size() > 1) {
+    string prefixedline;
+    prefix_lines_with(_("note: "),
+                      _("branch '%s' has multiple heads\n"
+                        "perhaps consider '%s merge'"),
+                      prefixedline);
+    P(i18n_format(prefixedline) % branchname % ui.prog_name);
+  }
 }
 
 
