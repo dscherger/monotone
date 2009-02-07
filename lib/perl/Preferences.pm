@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 6;
+use constant PREFERENCES_FORMAT_VERSION => 7;
 
 # Text viewable application mime types.
 
@@ -440,6 +440,8 @@ sub defaults_button_clicked_cb($$)
 		   "history_size",
 		   "show_suspended",
 		   "show_file_details",
+		   "show_line_numbers",
+		   "static_lists",
 		   "diffs_application");
     }
     elsif ($page_nr == 1)
@@ -1012,6 +1014,8 @@ sub get_preferences_window($$)
 			    "history_size_spinbutton",
 			    "show_suspended_revisions_checkbutton",
 			    "detailed_file_listing_checkbutton",
+			    "show_line_numbers_checkbutton",
+			    "static_lists_checkbutton",
 			    "external_diffs_app_entry",
 
 			    # Appearance pane widgets.
@@ -1244,6 +1248,11 @@ sub load_preferences_into_gui($)
     $instance->{detailed_file_listing_checkbutton}->
 	set_active($instance->{preferences}->{show_file_details} ?
 		   TRUE : FALSE);
+    $instance->{show_line_numbers_checkbutton}->
+	set_active($instance->{preferences}->{show_line_numbers} ?
+		   TRUE : FALSE);
+    $instance->{static_lists_checkbutton}->
+	set_active($instance->{preferences}->{static_lists} ? TRUE : FALSE);
     $instance->{external_diffs_app_entry}->
 	set_text($instance->{preferences}->{diffs_application});
 
@@ -1409,6 +1418,10 @@ sub save_preferences_from_gui($)
 	1 : 0;
     $instance->{preferences}->{show_file_details} =
 	$instance->{detailed_file_listing_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{show_line_numbers} =
+	$instance->{show_line_numbers_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{static_lists} =
+	$instance->{static_lists_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{diffs_application} =
 	$instance->{external_diffs_app_entry}->get_text();
 
@@ -1570,6 +1583,12 @@ sub upgrade_preferences($)
 	$preferences->{history_size} = 20;
 	$preferences->{version} = 6;
     }
+    if ($preferences->{version} == 6)
+    {
+	$preferences->{show_line_numbers} = 0;
+	$preferences->{static_lists} = 0;
+	$preferences->{version} = 7;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1610,6 +1629,8 @@ sub initialise_preferences()
 	 history_size      => 20,
 	 show_suspended    => 0,
 	 show_file_details => 1,
+	 show_line_numbers => 0,
+	 static_lists      => 0,
 	 diffs_application => "kompare '{file1}' '{file2}'",
 	 fixed_font        => "monospace 10",
 	 coloured_diffs    => 1,

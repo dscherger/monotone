@@ -71,7 +71,8 @@ use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
-use Locale::TextDomain ("mtn-browse", PREFIX_DIR . "/share/locale");
+use Locale::TextDomain ("mtn-browse",
+			File::Spec->catfile(PREFIX_DIR, "share", "locale"));
 use IO::File;
 use IPC::Open3;
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
@@ -176,14 +177,16 @@ sub view_button_clicked_cb($$);
 
     # Initialise stuff.
 
-    Gnome2::Program->init(APPLICATION_NAME,
-			  APPLICATION_VERSION,
-			  undef,
-			  app_datadir => PREFIX_DIR . "/share");
+    Gnome2::Program->init
+	(APPLICATION_NAME,
+	 APPLICATION_VERSION,
+	 undef,
+	 app_datadir => File::Spec->catfile(PREFIX_DIR, "share"));
     setup_sigchld_handler(\&sigchld_handler);
-    $glade_file = LIB_DIR . "/ui/mtn-browse.glade";
+    $glade_file = File::Spec->catfile(LIB_DIR, "ui", "mtn-browse.glade");
     $tooltips = Gtk2::Tooltips->new();
-    $line_image = Gtk2::Gdk::Pixbuf->new_from_file(LIB_DIR . "/ui/line.png");
+    $line_image = Gtk2::Gdk::Pixbuf->new_from_file
+	(File::Spec->catfile(LIB_DIR, "ui", "line.png"));
 
     # Set up the default database locked and I/O wait handlers for the Monotone
     # class.
@@ -413,7 +416,7 @@ sub about_activate_cb($$)
     local $browser->{in_cb} = 1;
 
     $large_logo = Gtk2::Gdk::Pixbuf->new_from_file
-	(LIB_DIR . "/ui/mtn-browse-large.png")
+	(File::Spec->catfile(LIB_DIR, "ui", "mtn-browse-large.png"))
 	if (! defined($large_logo));
     Gnome2::About->new
 	(APPLICATION_NAME,
@@ -1662,6 +1665,15 @@ sub get_browser_window(;$$$$$)
 		 $browser);
 	$browser->{file_view_sv}->show_all();
 
+	# Enable the showing of line numbers by default if that is what the
+	# user wants.
+
+	if ($user_preferences->{show_line_numbers})
+	{
+	    $browser->{show_line_numbers_togglebutton}->set_active(TRUE);
+	    $browser->{file_view_sv}->set_show_line_numbers(TRUE);
+	}
+
 	local $browser->{in_cb} = 1;
 	$browser->{window}->show_all();
 
@@ -1705,8 +1717,16 @@ sub get_browser_window(;$$$$$)
 	$browser->{file_being_viewed_preset_value} = "";
 	$browser->{manifest_browser_treeview}->
 	    set_search_column(MLS_NAME_COLUMN);
-	$browser->{show_line_numbers_togglebutton}->set_active(FALSE);
-	$browser->{file_view_sv}->set_show_line_numbers(FALSE);
+	if ($user_preferences->{show_line_numbers})
+	{
+	    $browser->{show_line_numbers_togglebutton}->set_active(TRUE);
+	    $browser->{file_view_sv}->set_show_line_numbers(TRUE);
+	}
+	else
+	{
+	    $browser->{show_line_numbers_togglebutton}->set_active(FALSE);
+	    $browser->{file_view_sv}->set_show_line_numbers(FALSE);
+	}
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 	$browser->{window}->show_all();
 

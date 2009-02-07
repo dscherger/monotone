@@ -21,7 +21,7 @@
   <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
-  <property name="enable_layout_config">True</property>
+  <property name="enable_layout_config">False</property>
   <signal name="delete_event" handler="main_window_delete_event_cb" last_modification_time="Sat, 12 Apr 2008 11:07:39 GMT"/>
 
   <child internal-child="dock">
@@ -3453,7 +3453,7 @@ Tag</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 376 10 338.4 376</property>
+				  <property name="hadjustment">0 0 375 10 337.5 375</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -3515,7 +3515,7 @@ Tag</property>
 				  <property name="visible">True</property>
 				  <property name="width">1</property>
 				  <property name="height">1</property>
-				  <property name="hadjustment">0 0 376 10 338.4 376</property>
+				  <property name="hadjustment">0 0 375 10 337.5 375</property>
 				  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 				  <child>
@@ -4267,7 +4267,7 @@ selected file in an external viewer</property>
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="find_button">
+	    <widget class="GtkButton" id="find_text_button">
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
@@ -4276,7 +4276,7 @@ selected file in an external viewer</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
 	      <property name="response_id">0</property>
-	      <signal name="clicked" handler="find_button_clicked_cb" last_modification_time="Sun, 16 Mar 2008 11:46:28 GMT"/>
+	      <signal name="clicked" handler="find_text_button_clicked_cb" last_modification_time="Sat, 07 Feb 2009 14:29:38 GMT"/>
 	    </widget>
 	  </child>
 	</widget>
@@ -5345,6 +5345,53 @@ upon the version of Monotone
 that you are using</property>
 			      <property name="can_focus">True</property>
 			      <property name="label" translatable="yes">Detailed file listings</property>
+			      <property name="use_underline">True</property>
+			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
+			      <property name="active">False</property>
+			      <property name="inconsistent">False</property>
+			      <property name="draw_indicator">True</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkCheckButton" id="show_line_numbers_checkbutton">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Select Show line numbers if you
+want line numbers to be shown
+in file listings by default</property>
+			      <property name="can_focus">True</property>
+			      <property name="label" translatable="yes">Show line numbers</property>
+			      <property name="use_underline">True</property>
+			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
+			      <property name="active">False</property>
+			      <property name="inconsistent">False</property>
+			      <property name="draw_indicator">True</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkCheckButton" id="static_lists_checkbutton">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Select Static branch and revision
+lists if you do not want the branch
+and revision combobox entry lists
+to update as you type in values
+(can help with speed when dealing
+with large lists)</property>
+			      <property name="can_focus">True</property>
+			      <property name="label" translatable="yes">Static branch and revision lists</property>
 			      <property name="use_underline">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
 			      <property name="focus_on_click">True</property>

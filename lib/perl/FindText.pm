@@ -66,6 +66,7 @@ sub reset_find_text($);
 
 sub find_comboboxentry_changed_cb($$);
 sub find_current_window($);
+sub find_text_button_clicked_cb($$);
 sub get_find_text_window($$);
 #
 ##############################################################################
@@ -157,7 +158,7 @@ sub enable_find_text($$)
 	if ($enable)
 	{
 	    $instance->{main_vbox}->set_sensitive(TRUE);
-	    $instance->{find_button}->set_sensitive
+	    $instance->{find_text_button}->set_sensitive
 		((length($instance->{find_comboboxentry}->child()->get_text())
 		  > 0) ?
 		 TRUE : FALSE);
@@ -165,7 +166,7 @@ sub enable_find_text($$)
 	else
 	{
 	    $instance->{main_vbox}->set_sensitive(FALSE);
-	    $instance->{find_button}->set_sensitive(FALSE);
+	    $instance->{find_text_button}->set_sensitive(FALSE);
 	}
     }
 
@@ -330,7 +331,7 @@ sub find_text_textview_key_press_event_cb($$$)
 #
 ##############################################################################
 #
-#   Routine      - find_button_clicked_cb
+#   Routine      - find_text_button_clicked_cb
 #
 #   Description  - Callback routine called when the user clicks on the find
 #                  button in the find text window.
@@ -343,7 +344,7 @@ sub find_text_textview_key_press_event_cb($$$)
 
 
 
-sub find_button_clicked_cb($$)
+sub find_text_button_clicked_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -559,8 +560,8 @@ sub find_button_clicked_cb($$)
 	    get_iter_at_offset($instance->{match_offset_end});
 	$instance->{text_buffer}->select_range($start_iter, $end_iter);
 	$instance->{text_view}->scroll_to_iter
-	    ($start_line_iter, 0, FALSE, 0, 0);
-	$instance->{text_view}->scroll_to_iter($end_iter, 0, FALSE, 0, 0);
+	    ($start_line_iter, 0.05, FALSE, 0, 0);
+	$instance->{text_view}->scroll_to_iter($end_iter, 0.05, FALSE, 0, 0);
     }
     else
     {
@@ -606,7 +607,7 @@ sub find_comboboxentry_changed_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    $instance->{find_button}->set_sensitive
+    $instance->{find_text_button}->set_sensitive
 	((length($instance->{find_comboboxentry}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
 
@@ -694,7 +695,7 @@ sub get_find_text_window($$)
 			    "case_sensitive_checkbutton",
 			    "search_backwards_checkbutton",
 			    "regular_expression_checkbutton",
-			    "find_button")
+			    "find_text_button")
 	{
 	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
 	}
@@ -754,7 +755,7 @@ sub get_find_text_window($$)
     # Make sure the find button is only enabled when there is something entered
     # into the comboboxentry widget.
 
-    $instance->{find_button}->set_sensitive
+    $instance->{find_text_button}->set_sensitive
 	((length($instance->{find_comboboxentry}->child()->get_text()) > 0) ?
 	 TRUE : FALSE);
 

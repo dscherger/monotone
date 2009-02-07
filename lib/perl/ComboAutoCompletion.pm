@@ -256,13 +256,22 @@ sub comboboxentry_key_release_event_cb($$$)
 	$combo_details->{value} = $value;
 	$combo_details->{complete} = $complete;
 
-	# Update the pulldown choices.
+	# Update the pulldown choices if that is what the user wants.
 
-	$combo->get_model()->clear();
-	foreach $item (@{$combo_details->{list}})
+	if (! $user_preferences->{static_lists})
 	{
-	    $combo->append_text($item) if ($value eq substr($item, 0, $len));
-	    $combo_details->{complete} = 1 if (! $complete && $value eq $item);
+	    $combo->get_model()->clear();
+	    foreach $item (@{$combo_details->{list}})
+	    {
+		$combo->append_text($item)
+		    if ($value eq substr($item, 0, $len));
+
+		# The following check is needed in the case when the user is
+		# simply deleting characters from the right.
+
+		$combo_details->{complete} = 1
+		    if (! $complete && $value eq $item);
+	    }
 	}
 
 	# Update the window state on a significant change.

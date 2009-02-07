@@ -105,17 +105,17 @@ sub generate_tmp_path($)
 
     for ($i = 0; ; ++ $i)
     {
-	if (-d ($tmp_dir . "/" . $i))
+	if (-d File::Spec->catfile($tmp_dir, $i))
 	{
-	    if (! -e ($path = $tmp_dir . "/" . $i . "/" . $file_name))
+	    if (! -e ($path = File::Spec->catfile($tmp_dir, $i, $file_name)))
 	    {
 		return $path;
 	    }
 	}
 	else
 	{
-	    return unless mkdir($tmp_dir . "/" . $i);
-	    return $tmp_dir . "/" . $i . "/" . $file_name;
+	    return unless mkdir(File::Spec->catfile($tmp_dir, $i));
+	    return File::Spec->catfile($tmp_dir, $i, $file_name);
 	}
     }
 
@@ -916,9 +916,11 @@ sub get_revision_ids($$;$)
     return unless ($instance->{revision_combo_details}->{complete});
     if ($instance->{tagged_checkbutton}->get_active())
     {
-	$instance->{mtn}->
-	    select($revision_ids,
-		   "t:" . $instance->{revision_combo_details}->{value});
+	my $query = "";
+	$query = "b:" . $instance->{branch_combo_details}->{value} . "/"
+	    if ($instance->{branch_combo_details}->{complete});
+	$query .= "t:" . $instance->{revision_combo_details}->{value};
+	$instance->{mtn}->select($revision_ids, $query);
 	$$tag = $instance->{revision_combo_details}->{value}
 	    if (defined($tag));
     }
