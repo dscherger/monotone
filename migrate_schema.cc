@@ -14,7 +14,7 @@
 #include <cstring>
 
 #include "sanity.hh"
-#include "schema_migration.hh"
+#include "migration.hh"
 #include "key_store.hh"
 #include "transforms.hh"
 #include "constants.hh"

@@ -104,6 +104,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/concept_check.hpp>
 #include "origin_type.hh"
+#include <map>
 
 class any_path;
 class file_path;
@@ -442,6 +443,10 @@ void
 go_to_workspace(system_path const & new_workspace);
 
 void mark_std_paths_used(void);
+
+file_path
+find_new_path_for(std::map<file_path, file_path> const & renames,
+                  file_path const & old_path);
 
 // Local Variables:
 // mode: C++

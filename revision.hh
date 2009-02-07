@@ -209,17 +209,6 @@ make_restricted_revision(parent_map const & old_rosters,
                          cset & excluded,
                          utf8 const & cmd_name);
 
-void
-build_changesets_from_manifest_ancestry(database & db, key_store & keys,
-                                        std::set<std::string> const & attrs_to_drop);
-
-void
-build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys,
-                                                 std::set<std::string> const & attrs_to_drop);
-
-void
-regenerate_caches(database & db);
-
 // basic_io access to printers and parsers
 void
 print_revision(basic_io::printer & printer,

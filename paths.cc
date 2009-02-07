@@ -14,12 +14,15 @@
 #include "paths.hh"
 #include "file_io.hh"
 #include "charset.hh"
+#include "safe_map.hh"
 
 using std::exception;
 using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::vector;
+using std::map;
+using std::make_pair;
 
 // some structure to ensure we aren't doing anything broken when resolving
 // filenames.  the idea is to make sure
@@ -1019,6 +1022,43 @@ mark_std_paths_used(void)
 }
 
 ///////////////////////////////////////////////////////////////////////////
+// utility used by migrate_ancestry
+///////////////////////////////////////////////////////////////////////////
+
+
+static file_path
+find_old_path_for(map<file_path, file_path> const & renames,
+                  file_path const & new_path)
+{
+  map<file_path, file_path>::const_iterator i = renames.find(new_path);
+  if (i != renames.end())
+    return i->second;
+
+  // ??? root directory rename possible in the old schema?
+  // if not, do this first.
+  if (new_path.empty())
+    return new_path;
+
+  file_path dir;
+  path_component base;
+  new_path.dirname_basename(dir, base);
+  return find_old_path_for(renames, dir) / base;
+}
+
+file_path
+find_new_path_for(map<file_path, file_path> const & renames,
+                  file_path const & old_path)
+{
+  map<file_path, file_path> reversed;
+  for (map<file_path, file_path>::const_iterator i = renames.begin();
+       i != renames.end(); ++i)
+    reversed.insert(make_pair(i->second, i->first));
+  // this is a hackish kluge.  seems to work, though.
+  return find_old_path_for(reversed, old_path);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 // tests
 ///////////////////////////////////////////////////////////////////////////
 
@@ -2006,6 +2046,30 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
     UNIT_TEST_CHECK(!bookkeeping_path
                     ::external_string_is_bookkeeping_path(utf8(std::string(*c),
                                                                origin::internal)));
+}
+
+UNIT_TEST(paths, find_old_new_path_for)
+{
+  map<file_path, file_path> renames;
+  file_path foo = file_path_internal("foo");
+  file_path foo_bar = file_path_internal("foo/bar");
+  file_path foo_baz = file_path_internal("foo/baz");
+  file_path quux = file_path_internal("quux");
+  file_path quux_baz = file_path_internal("quux/baz");
+  I(foo == find_old_path_for(renames, foo));
+  I(foo == find_new_path_for(renames, foo));
+  I(foo_bar == find_old_path_for(renames, foo_bar));
+  I(foo_bar == find_new_path_for(renames, foo_bar));
+  I(quux == find_old_path_for(renames, quux));
+  I(quux == find_new_path_for(renames, quux));
+  renames.insert(make_pair(foo, quux));
+  renames.insert(make_pair(foo_bar, foo_baz));
+  I(quux == find_old_path_for(renames, foo));
+  I(foo == find_new_path_for(renames, quux));
+  I(quux_baz == find_old_path_for(renames, foo_baz));
+  I(foo_baz == find_new_path_for(renames, quux_baz));
+  I(foo_baz == find_old_path_for(renames, foo_bar));
+  I(foo_bar == find_new_path_for(renames, foo_baz));
 }
 
 #endif // BUILD_UNIT_TESTS

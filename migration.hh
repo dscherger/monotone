@@ -1,5 +1,5 @@
-#ifndef __SCHEMA_MIGRATION__
-#define __SCHEMA_MIGRATION__
+#ifndef __MIGRATION__
+#define __MIGRATION__
 
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
@@ -18,8 +18,11 @@
 // then runs all the migration functions between that point and the target
 // of the migration.
 
+#include <set>
+
 struct sqlite3;
 class key_store;
+class database;
 class system_path;
 
 std::string describe_sql_schema(sqlite3 * db);
@@ -46,6 +49,22 @@ void test_migration_step(sqlite3 * db, key_store & keys,
 
 const unsigned int mtn_creator_code = ((('_'*256 + 'M')*256 + 'T')*256 + 'N');
 
+
+
+// migrations of ancestry format and so on
+
+void
+build_changesets_from_manifest_ancestry(database & db, key_store & keys,
+                                        std::set<std::string> const & attrs_to_drop);
+
+void
+build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys,
+                                                 std::set<std::string> const & attrs_to_drop);
+
+void
+regenerate_caches(database & db);
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -54,4 +73,4 @@ const unsigned int mtn_creator_code = ((('_'*256 + 'M')*256 + 'T')*256 + 'N');
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
 
-#endif // __SCHEMA_MIGRATION__
+#endif // __MIGRATION__

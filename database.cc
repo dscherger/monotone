@@ -37,7 +37,7 @@
 #include "revision.hh"
 #include "safe_map.hh"
 #include "sanity.hh"
-#include "schema_migration.hh"
+#include "migration.hh"
 #include "transforms.hh"
 #include "vocab.hh"
 #include "vocab_cast.hh"

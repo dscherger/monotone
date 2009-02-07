@@ -26,6 +26,7 @@
 #include "transforms.hh"
 #include "ui.hh"
 #include "vocab_cast.hh"
+#include "migration.hh"
 
 using std::cin;
 using std::cout;

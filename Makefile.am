@@ -33,7 +33,7 @@ MOST_SOURCES = 								\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
-	work.cc work_migration.cc work.hh				\
+	work.cc migrate_worksp.cc work.hh				\
 	cert.cc cert.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
@@ -44,7 +44,7 @@ MOST_SOURCES = 								\
 	packet.cc packet.hh						\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
-	schema_migration.cc schema_migration.hh				\
+	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
@@ -321,10 +321,10 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
 	mtn-merkle_tree.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
 	mtn-project.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
-	mtn-schema.$(OBJEXT) mtn-schema_migration.$(OBJEXT)		\
+	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-work_migration.$(OBJEXT)
+	mtn-migrate_worksp.$(OBJEXT)
 
 # primaries
 
