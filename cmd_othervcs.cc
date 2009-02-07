@@ -20,6 +20,7 @@
 #include "revision.hh"
 #include "roster.hh"
 #include "simplestring_xform.hh"
+#include "transforms.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "ui.hh"
@@ -29,6 +30,7 @@
 
 using std::cout;
 using std::map;
+using std::istringstream;
 using std::ostringstream;
 using std::set;
 using std::string;
@@ -247,6 +249,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
     N_(""),
     options::opts::authors_file | options::opts::branches_file | 
     options::opts::log_revids | options::opts::log_certs | 
+    options::opts::import_marks | options::opts::export_marks |
     options::opts::refs)
 {
   database db(app);
@@ -269,8 +272,49 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       read_mappings(app.opts.branches_file, branch_map);
     }
 
+  map<revision_id, size_t> marked_revs;
+  map<file_id, size_t> marked_files;
+
+  size_t mark_id = 1;
+
+  if (!app.opts.import_marks.empty())
+    {
+      P(F("importing revision marks from '%s'") % app.opts.import_marks);
+      data mark_data;
+      read_data(app.opts.import_marks, mark_data);
+      istringstream marks(mark_data());
+      while (!marks.eof())
+        {
+          char c;
+          size_t mark;
+          string tmp;
+          
+          marks.get(c);
+          N(c == ':', F("missing leading ':' in marks file"));
+          marks >> mark;
+
+          marks.get(c);
+          N(c == ' ', F("missing space after mark"));
+          marks >> tmp;
+          N(tmp.size() == 40, F("bad revision id in marks file"));
+          revision_id revid(decode_hexenc(tmp));
+
+          marks.get(c);
+          N(c == '\n', F("incomplete line in marks file"));
+
+          marked_revs[revid] = mark;
+          if (mark_id <= mark) mark_id = mark+1;
+          marks.peek();
+        }
+    }
+
   set<revision_id> revision_set;
   db.get_revision_ids(revision_set);
+
+  // remove marked revs from the set to be exported
+  for (map<revision_id, size_t>::const_iterator 
+         i = marked_revs.begin(); i != marked_revs.end(); ++i)
+    revision_set.erase(i->first);
 
   vector<revision_id> revisions;
   toposort(db, revision_set, revisions);
@@ -280,11 +324,6 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
   size_t revnum = 0;
   size_t revmax = revisions.size();
-
-  map<revision_id, size_t> marked_revs;
-  map<file_id, size_t> marked_files;
-
-  size_t mark_id = 1;
 
   for (vector<revision_id>::const_iterator 
          r = revisions.begin(); r != revisions.end(); ++r)
@@ -551,6 +590,19 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
              i = leaves.begin(); i != leaves.end(); ++i)
         cout << "reset refs/mtn/leaves/" << *i << "\n"
              << "from :" << marked_revs[*i] << "\n";
+    }
+
+  if (!app.opts.export_marks.empty())
+    {
+      P(F("exporting revision marks to '%s'") % app.opts.export_marks);
+      ostringstream marks;
+      for (map<revision_id, size_t>::const_iterator 
+             i = marked_revs.begin(); i != marked_revs.end(); ++i)
+        marks << ":" << i->second << " " << i->first << "\n";
+
+      data mark_data(marks.str());
+      system_path tmp("."); // use the current directory for tmp
+      write_data(app.opts.export_marks, mark_data, tmp);
     }
 }
 

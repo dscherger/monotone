@@ -756,6 +756,22 @@ OPT(log_certs, "log-certs", bool, false,
 }
 #endif
 
+OPT(import_marks, "import-marks", system_path, ,
+    gettext_noop("load the internal marks table before exporting revisions"))
+#ifdef option_bodies
+{
+  import_marks = system_path(arg);
+}
+#endif
+
+OPT(export_marks, "export-marks", system_path, ,
+    gettext_noop("save the internal marks table after exporting revisions"))
+#ifdef option_bodies
+{
+  export_marks = system_path(arg);
+}
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
