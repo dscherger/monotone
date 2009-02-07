@@ -480,30 +480,30 @@ key_store::cache_decrypted_key(const rsa_keypair_id & id)
 
 void
 key_store::create_key_pair(database & db,
-                           rsa_keypair_id const & id,
+                           rsa_keypair_id const & ident,
                            utf8 const * maybe_passphrase,
                            id * maybe_pubhash,
                            id * maybe_privhash)
 {
   conditional_transaction_guard guard(db);
 
-  bool exists = key_pair_exists(id);
+  bool exists = key_pair_exists(ident);
   if (db.database_specified())
     {
       guard.acquire();
-      exists = exists || db.public_key_exists(id);
+      exists = exists || db.public_key_exists(ident);
     }
-  E(!exists, origin::user, F("key '%s' already exists") % id);
+  E(!exists, origin::user, F("key '%s' already exists") % ident);
 
   utf8 prompted_passphrase;
   if (!maybe_passphrase)
     {
-      get_passphrase(prompted_passphrase, id, true, true);
+      get_passphrase(prompted_passphrase, ident, true, true);
       maybe_passphrase = &prompted_passphrase;
     }
 
   // okay, now we can create the key
-  P(F("generating key-pair '%s'") % id);
+  P(F("generating key-pair '%s'") % ident);
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   RSA_PrivateKey priv(s->rng->get(),
                       static_cast<Botan::u32bit>(constants::keylen));
@@ -544,20 +544,20 @@ key_store::create_key_pair(database & db,
     % kp.priv().size());
 
   // and save it.
-  P(F("storing key-pair '%s' in %s/") % id % get_key_dir());
-  put_key_pair(id, kp);
+  P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+  put_key_pair(ident, kp);
 
   if (db.database_specified())
     {
-      P(F("storing public key '%s' in %s") % id % db.get_filename());
-      db.put_key(id, kp.pub);
+      P(F("storing public key '%s' in %s") % ident % db.get_filename());
+      db.put_key(ident, kp.pub);
       guard.commit();
     }
 
   if (maybe_pubhash)
-    key_hash_code(id, kp.pub, *maybe_pubhash);
+    key_hash_code(ident, kp.pub, *maybe_pubhash);
   if (maybe_privhash)
-    key_hash_code(id, kp.priv, *maybe_privhash);
+    key_hash_code(ident, kp.priv, *maybe_privhash);
 }
 
 void

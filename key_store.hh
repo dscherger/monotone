@@ -74,7 +74,7 @@ public:
 
   void cache_decrypted_key(rsa_keypair_id const & id);
 
-  void create_key_pair(database & db, rsa_keypair_id const & id,
+  void create_key_pair(database & db, rsa_keypair_id const & ident,
                        utf8 const * maybe_passphrase = NULL,
                        id * maybe_pubhash = NULL,
                        id * maybe_privhash = NULL);
