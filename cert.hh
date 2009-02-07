@@ -30,21 +30,28 @@ struct options;
 
 struct cert : public origin_aware
 {
-  cert();
-
-  // This is to make revision<cert> and manifest<cert> work.
-  explicit cert(std::string const & s);
-  cert(std::string const & s, origin::type m);
+  cert() {}
 
   cert(revision_id const & ident,
       cert_name const & name,
       cert_value const & value,
-      rsa_keypair_id const & key);
+      rsa_keypair_id const & key)
+    : ident(ident), name(name), value(value), key(key)
+  {}
+
   cert(revision_id const & ident,
       cert_name const & name,
       cert_value const & value,
       rsa_keypair_id const & key,
-      rsa_sha1_signature const & sig);
+      rsa_sha1_signature const & sig)
+    : ident(ident), name(name), value(value), key(key), sig(sig)
+  {}
+
+  // These understand the netsync serialization.
+  // They also make revision<cert> and manifest<cert> work.
+  explicit cert(std::string const & s);
+  cert(std::string const & s, origin::type m);
+
   revision_id ident;
   cert_name name;
   cert_value value;

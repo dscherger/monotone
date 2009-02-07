@@ -120,7 +120,7 @@ namespace
     virtual void consume_revision_data(revision_id const & ident,
                                        revision_data const & dat)
     {E(false, origin::system, F("Extraneous data in key store."));}
-    virtual void consume_revision_cert(revision<cert> const & t)
+    virtual void consume_revision_cert(cert const & t)
     {E(false, origin::system, F("Extraneous data in key store."));}
 
 

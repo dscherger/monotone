@@ -46,7 +46,7 @@ public:
 
   virtual void consume_revision_data(revision_id const & ident,
                                      revision_data const & dat) = 0;
-  virtual void consume_revision_cert(revision<cert> const & t) = 0;
+  virtual void consume_revision_cert(cert const & t) = 0;
 
 
   virtual void consume_public_key(rsa_keypair_id const & ident,
@@ -72,7 +72,7 @@ struct packet_writer : public packet_consumer
 
   virtual void consume_revision_data(revision_id const & ident,
                                      revision_data const & dat);
-  virtual void consume_revision_cert(revision<cert> const & t);
+  virtual void consume_revision_cert(cert const & t);
 
   virtual void consume_public_key(rsa_keypair_id const & ident,
                                   rsa_pub_key const & k);

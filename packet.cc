@@ -71,14 +71,14 @@ packet_writer::consume_revision_data(revision_id const & ident,
 }
 
 void
-packet_writer::consume_revision_cert(revision<cert> const & t)
+packet_writer::consume_revision_cert(cert const & t)
 {
-  ost << "[rcert " << encode_hexenc(t.inner().ident.inner()(),
-                                    t.inner().ident.inner().made_from) << '\n'
-      << "       " << t.inner().name() << '\n'
-      << "       " << t.inner().key() << '\n'
-      << "       " << trim(encode_base64(t.inner().value)()) << "]\n"
-      << trim(encode_base64(t.inner().sig)()) << '\n'
+  ost << "[rcert " << encode_hexenc(t.ident.inner()(),
+                                    t.ident.inner().made_from) << '\n'
+      << "       " << t.name() << '\n'
+      << "       " << t.key() << '\n'
+      << "       " << trim(encode_base64(t.value)()) << "]\n"
+      << trim(encode_base64(t.sig)()) << '\n'
       << "[end]\n";
 }
 
@@ -230,7 +230,7 @@ namespace
                     decode_base64_as<cert_value>(val, made_from),
                     rsa_keypair_id(keyid, made_from),
                     decode_base64_as<rsa_sha1_signature>(body, made_from));
-      cons.consume_revision_cert(revision<cert>(t));
+      cons.consume_revision_cert(t);
     }
 
     void pubkey_packet(string const & args, string const & body) const
@@ -517,7 +517,7 @@ UNIT_TEST(packet, roundabout)
     // file_id to create a cert to test the packet writer with.
     cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
            rsa_keypair_id("fun@moonman.com"), sig);
-    pw.consume_revision_cert(revision<cert>(c));
+    pw.consume_revision_cert(c);
 
     keypair kp;
     // a public key packet

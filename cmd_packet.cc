@@ -117,10 +117,10 @@ namespace
       guard.commit();
     }
     
-    virtual void consume_revision_cert(revision<cert> const & t)
+    virtual void consume_revision_cert(cert const & t)
     {
       transaction_guard guard(db);
-      db.put_revision_cert(t);
+      db.put_revision_cert(revision<cert>(t));
       guard.commit();
     }
 

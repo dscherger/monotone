@@ -1509,7 +1509,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
 
   for (vector< revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); i++)
-    pw.consume_revision_cert(*i);
+    pw.consume_revision_cert(i->inner());
 }
 
 // Name: packet_for_fdata

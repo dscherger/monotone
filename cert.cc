@@ -224,34 +224,16 @@ erase_bogus_certs(database & db,
 
 
 // cert-managing routines
-
-cert::cert()
-{}
-
 cert::cert(std::string const & s)
 {
   read_cert(s, *this);
 }
+
 cert::cert(std::string const & s, origin::type m)
   : origin_aware(m)
 {
   read_cert(s, *this);
 }
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key)
-  : ident(ident), name(name), value(value), key(key)
-{}
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key,
-           rsa_sha1_signature const & sig)
-  : ident(ident), name(name), value(value), key(key), sig(sig)
-{}
 
 bool
 cert::operator<(cert const & other) const
