@@ -12,7 +12,7 @@
 #include <map>
 
 #include "cmd.hh"
-#include "diff_patch.hh"
+#include "merge.hh"
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"

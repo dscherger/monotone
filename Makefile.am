@@ -318,7 +318,7 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
 	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
 	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
+	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT) mtn-merge.$(OBJEXT)	\
 	mtn-merkle_tree.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
 	mtn-project.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
 	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\

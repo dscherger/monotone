@@ -27,7 +27,7 @@
 #include "simplestring_xform.hh"
 #include "revision.hh"
 #include "inodeprint.hh"
-#include "diff_patch.hh"
+#include "merge.hh"
 #include "charset.hh"
 #include "app_state.hh"
 #include "database.hh"
