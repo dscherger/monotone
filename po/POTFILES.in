@@ -85,6 +85,7 @@ lua.hh
 lua_hooks.cc
 lua_hooks.hh
 merge_3way.cc
+merge_conflict.cc
 merge_content.cc
 merge_content.hh
 merge_roster.cc

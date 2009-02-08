@@ -67,7 +67,7 @@ MOST_SOURCES = 								\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
 	string_queue.cc string_queue.hh					\
-	merge_roster.cc merge_roster.hh					\
+	merge_roster.cc merge_conflict.cc merge_roster.hh		\
 	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
 	graph.cc graph.hh						\
@@ -298,34 +298,25 @@ WIN32_PLATFORM_SOURCES =						\
 # these files contain unit tests
 UNIT_TEST_SOURCES =							\
 	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc merge_3way.cc globish.cc graph.cc netcmd.cc		\
-	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
-	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
-	revision.cc roster.cc merge_roster.cc simplestring_xform.cc	\
-	string_queue.cc transforms.cc uri.cc vocab.cc xdelta.cc
+	dates.cc globish.cc graph.cc merge_3way.cc merge_roster.cc	\
+	netcmd.cc netxx_pipe.cc numeric_vocab.cc option.cc		\
+	outdated_indicator.cc packet.cc paths.cc refiner.cc		\
+	restrictions.cc rev_height.cc revision.cc roster.cc		\
+	simplestring_xform.cc string_queue.cc transforms.cc		\
+	unit_tests.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and are not used by the main program
 UNIT_TEST_SRC_SUPPORT =							\
-	randomizer.cc randomizer.hh roster_tests.hh unit_tests.cc 
+	randomizer.cc randomizer.hh roster_tests.hh
 
 # these files do not contain unit tests; they are required for unit
-# testing, but can be used "as is" from the main build.  (many of
-# these _should_ have unit tests, but they haven't been written yet.)
+# testing, but can be used "as is" from the main build.
 UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-ancestry.$(OBJEXT) mtn-cert.$(OBJEXT)			\
-	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
-	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
-	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
-	mtn-merge_content.$(OBJEXT) mtn-merkle_tree.$(OBJEXT)		\
-	mtn-pcrewrap.$(OBJEXT) mtn-project.$(OBJEXT)			\
-	mtn-roster_delta.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
-	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\
-	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
-	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-migrate_work.$(OBJEXT)
+	mtn-constants.$(OBJEXT) mtn-file_io.$(OBJEXT)			\
+	mtn-gzip.$(OBJEXT) mtn-hmac.$(OBJEXT) mtn-lcs.$(OBJEXT)		\
+	mtn-merkle_tree.$(OBJEXT) mtn-roster_delta.$(OBJEXT)		\
+	mtn-sanity.$(OBJEXT) mtn-specialized_lexical_cast.$(OBJEXT)
 
 # primaries
 
