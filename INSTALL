@@ -1,2 +1,11 @@
 See the INSTALLATION section in the README file, or if you are feeling lucky
-just run linux-installer :-).
+just do:
+
+    tar xvpzf mtn-browse-<Version Number>.tgz
+    cd mtn-browse-<Version Number>
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+:-).

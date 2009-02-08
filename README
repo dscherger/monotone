@@ -23,26 +23,57 @@ mtn-browse see http://www.coosoft.plus.com/software.html.
 INSTALLATION
 ------------
 
-Using linux-install
--------------------
+Using Makefile.PL
+-----------------
+
+Simply unpack the tar file and use Makefile.PL by doing:
+
+    tar xvpzf mtn-browse-<Version Number>.tgz
+    cd mtn-browse-<Version Number>
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+To install to a custom location use:
+
+    perl Makefile.PL PREFIX=<PATH>
+
+To configure the software to run in a custom location but have the installation
+location prepended by an additional path (useful for package maintainers) use:
+
+    perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH>
+
+Those of you familiar with CPAN will recognise the above as the standard
+mechanism for installing Perl modules (or libraries). However, there does not
+seem to be a standard way of installing a Perl application. Since Perl is
+largely platform independent, the ./configure; make; make install approach of
+automake does not seem right so I have decided to write a custom Makefile.PL
+script that supports some basic installation capability. Please note that
+Makefile.PL only supports those arguments documented above.
+
+Alternatively one can run the installer directly. See the next subsection.
+
+Using linux-installer
+---------------------
 
 As root simply unpack the tar file and run the installer by doing:
 
     tar xvpzf mtn-browse-<Version Number>.tgz
     cd mtn-browse-<Version Number>
-    chmod +x linux-install
-    ./linux-install -i
+    chmod +x linux-installer
+    ./linux-installer -i
 
 and then follow the prompts.
 
 If you wish to do an automated install then all of the options can be specified
 on the command line. To get more information on what options are available do:
 
-    ./linux-install --man
+    ./linux-installer --man
 
-In particular, package maintainers may find the following particularly useful:
+In particular, package maintainers may find the following useful:
 
-    ./linux-install --prefix=/opt/mtn-browse --destdir=/tmp/install-dir
+    ./linux-installer --prefix=/opt/mtn-browse --destdir=/tmp/install-dir
 
 This tells the installer to configure the installation as if it were going
 under /opt/mtn-browse but actually installs it under /tmp/install-dir (i.e. the
@@ -98,6 +129,18 @@ accordingly.
 1) The Monotone directory is only needed if the Monotone::AutomateStdio package
    from CPAN has not already been installed.
 
+Monotone::AutomateStdio Library
+-------------------------------
+
+This library module is a Perl interface to Monotone's automate stdio interface
+and is heavily used by mtn-browse. As such it is probably best to upgrade this
+library each time you upgrade Monotone itself. For this reason you may decide
+to just install this library as a part of mtn-browse. If you need to upgrade
+the library then all you need do is just copy the new version into place.
+
+The installation process will, by default, install a copy of this library in
+mtn-browse's lib directory.
+
 
 DEPENDENCIES
 ------------
@@ -116,7 +159,7 @@ This module requires these other modules and libraries:
           - Gtk2-GladeXML (1.006) *
           - Gtk2-SourceView (1.000) *
           - libintl-perl (1.16)
-          - Monotone::AutomateStdio
+          - Monotone::AutomateStdio (0.02 or later)
 
 Please note that the Gtk2 CPAN bundle will probably satisfy all of the
 dependencies marked with * at the end of the line.

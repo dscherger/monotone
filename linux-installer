@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 ##############################################################################
 #
-#   File Name    - linux-install
+#   File Name    - linux-installer
 #
 #   Description  - Perl Linux installer for mtn-browse
 #
@@ -41,6 +41,7 @@
 
 require 5.008005;
 
+use lib "installer-files";
 use strict;
 use warnings;
 
@@ -55,13 +56,8 @@ use Pod::Usage;
 
 # Modules specific to this application.
 
+use DependencyChecker;
 use Installer;
-
-# ***** FUNCTIONAL PROTOTYPES *****
-
-# Private routines.
-
-sub check_dependencies($);
 #
 ##############################################################################
 #
@@ -154,7 +150,7 @@ sub check_dependencies($);
 
 	# Do the check.
 
-	$met = check_dependencies(\%deps);
+	$met = DependencyChecker::check(\%deps);
 
 	# Deal with the result depending upon what the user wants.
 
@@ -376,85 +372,6 @@ sub check_dependencies($);
 #
 ##############################################################################
 #
-#   Routine      - check_dependencies
-#
-#   Description  - Checks that the specified Perl package dependencies are
-#                  met. The code was taken/stolen from ExtUtils::MakeMaker.
-#
-#   Data         - $dependencies : A reference to a hash containing the
-#                                  dependencies, where the key is the package
-#                                  name and the value is the required version
-#                                  number. If the version number is zero then
-#                                  only the presence of the package is tested.
-#                  Return Value  : True if the dependencies are met, otherwise
-#                                  false if they are not.
-#
-##############################################################################
-
-
-
-sub check_dependencies($)
-{
-
-    my $dependencies = $_[0];
-
-    my $met = 1;
-
-    foreach my $dep (sort(keys(%$dependencies)))
-    {
-
-        # Attempt to eval the package in. Perl 5.8.0 has a bug with require
-	# Foo::Bar alone in an eval, so an extra statement is a workaround.
-
-        eval "require $dep; 0";
-
-	# What was the outcome?
-
-	if ($@ ne "")
-	{
-
-	    # Not installed.
-
-	    printf(STDERR "Warning: prerequisite %s %s not found.\n",
-		   $dep,
-		   $dependencies->{$dep});
-	    $met = undef;
-
-	}
-	elsif ($dependencies->{$dep} > 0)
-	{
-
-	    my $version;
-
-	    # Installed, and we need to check the version number.
-
-	    # Get the version number, converting X.Y_Z alpha version #s to X.YZ
-	    # for easier comparisons.
-
-	    $version = defined($dep->VERSION) ? $dep->VERSION : 0;
-	    $version =~ s/(\d+)\.(\d+)_(\d+)/$1.$2$3/;
-
-	    # Now check the version numbers.
-
-	    if ($version < $dependencies->{$dep})
-	    {
-		printf(STDERR
-		       "Warning: prerequisite %s %s not found. We have %s.\n",
-		       $dep,
-		       $dependencies->{$dep},
-		       $version);
-		$met = undef;
-	    }
-
-	}
-
-    }
-
-    return $met;
-
-}
-##############################################################################
-#
 #   Embedded Documentation For This Module
 #
 ##############################################################################
@@ -463,13 +380,13 @@ sub check_dependencies($)
 
 __END__
 
-=head1 linux-install
+=head1 linux-installer
 
-linux-install - Linux installer for the mtn-browse application
+linux-installer - Linux installer for the mtn-browse application
 
 =head1 SYNOPSIS
 
-linux-install [options]
+linux-installer [options]
 
   Options:
     --confirm            -c           Print out what will happen first
