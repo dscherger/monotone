@@ -23,14 +23,33 @@ mtn-browse see http://www.coosoft.plus.com/software.html.
 INSTALLATION
 ------------
 
+Using linux-install
+-------------------
+
 As root simply unpack the tar file and run the installer by doing:
 
     tar xvpzf mtn-browse-<Version Number>.tgz
     cd mtn-browse-<Version Number>
     chmod +x linux-install
-    ./linux-install
+    ./linux-install -i
 
 and then follow the prompts.
+
+If you wish to do an automated install then all of the options can be specified
+on the command line. To get more information on what options are available do:
+
+    ./linux-install --man
+
+In particular, package maintainers may find the following particularly useful:
+
+    ./linux-install --prefix=/opt/mtn-browse --destdir=/tmp/install-dir
+
+This tells the installer to configure the installation as if it were going
+under /opt/mtn-browse but actually installs it under /tmp/install-dir (i.e. the
+application can be found at /tmp/install-dir/opt/mtn-browse/bin/mtn-browse).
+
+Manual Installation
+-------------------
 
 If you prefer to install this application manually then copy the files into
 place using the following directory structure:

@@ -44,7 +44,7 @@ package Installer;
 
 # ***** DIRECTIVES *****
 
-require 5.008;
+require 5.008005;
 
 use integer;
 use strict;

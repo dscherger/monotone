@@ -39,7 +39,7 @@
 
 # ***** DIRECTIVES *****
 
-require 5.008;
+require 5.008005;
 
 use strict;
 use warnings;
@@ -48,12 +48,20 @@ use warnings;
 
 # Standard Perl and CPAN modules.
 
+use Getopt::Long;
 use IO::Dir;
 use IO::File;
+use Pod::Usage;
 
 # Modules specific to this application.
 
 use Installer;
+
+# ***** FUNCTIONAL PROTOTYPES *****
+
+# Private routines.
+
+sub check_dependencies($);
 #
 ##############################################################################
 #
@@ -70,103 +78,208 @@ use Installer;
 
 {
 
-    my($dir,
+    my($confirm,
+       $dep_level,
+       $dest_dir,
+       $dir,
        $file,
        $globs_file,
+       $help,
        $infile,
        $input,
        $installer,
+       $interactive,
+       $lib_dest_dir,
        $lib_dir,
+       $lib_prefix_dir,
+       $man,
        $mas_path,
        $outfile,
+       $parser,
        $prefix_dir,
-       $use_dist_mas_lib);
+       $prefix_dest_dir,
+       $quiet,
+       $use_dists_mas_lib);
 
-    print("Linux installer for mtn-browse\n\n");
+    # Assign defaults.
 
+    $dep_level = 2;
+    $dest_dir = "";
     $globs_file = "/usr/share/mime/globs";
     $prefix_dir = "/usr";
+    $lib_dir = "/lib/mtn-browse";
+    $use_dists_mas_lib = 1;
+
+    # Process any command line options.
+
+    $parser = Getopt::Long::Parser->new();
+    $parser->configure("bundling");
+    if (! $parser->getoptions("confirm|c"       => \$confirm,
+			      "dep-level=i"     => \$dep_level,
+			      "destdir|d=s"     => \$dest_dir,
+			      "globs-file|g=s"  => \$globs_file,
+			      "interactive|i"   => \$interactive,
+			      "libdir|l=s"      => \$lib_dir,
+			      "prefix|p=s"      => \$prefix_dir,
+			      "quiet|q"         => \$quiet,
+			      "use-dists-mas!"  => \$use_dists_mas_lib,
+			      "help|?"          => \$help,
+			      "man|m"           => \$man))
+    {
+	pod2usage(1);
+    }
+    pod2usage(0) if ($help);
+    pod2usage(-exitstatus => 0, -verbose => 2) if ($man);
+
+    # Do dependency checks if required.
+
+    if ($dep_level > 0)
+    {
+
+	my(%deps,
+	   $met);
+
+	# Build up the dependency list.
+
+	%deps = ("Glib"               => 1.144,
+		 "Gnome2"             => 1.042,
+		 "Gnome2::Canvas"     => 1.002,
+		 "Gnome2::Print"      => 1.000,
+		 "Gnome2::VFS"        => 1.080,
+		 "Gtk2"               => 1.146,
+		 "Gtk2::GladeXML"     => 1.006,
+		 "Gtk2::SourceView"   => 1.000,
+		 "Locale::TextDomain" => 1.16);
+	$deps{"Monotone::AutomateStdio"} = 0.02 if (! $use_dists_mas_lib);
+
+	# Do the check.
+
+	$met = check_dependencies(\%deps);
+
+	# Deal with the result depending upon what the user wants.
+
+	exit($met ? 0 : 1) if ($dep_level == 1 || ($dep_level == 2 && ! $met));
+
+    }
+
+    # Do interactive stuff and validate options.
+
+    print("Linux installer for mtn-browse\n\n") if ($interactive);
     while (1)
     {
-	print("Where is your MIME globs file? [" . $globs_file . "]: ");
-	chomp($input = <STDIN>);
-	($input) = ($input =~ m/^\s*(.*)\s*$/);
-	if ($input ne "")
+	if ($interactive)
 	{
-	    if (! -f $input)
-	    {
-		print("Error: File `" . $input . "' is unreadable.\n");
-		next;
-	    }
-	    $globs_file = $input;
+	    print("Where is your MIME globs file? [" . $globs_file . "]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $globs_file = $input if ($input ne "");
+	}
+	if (! -f $globs_file)
+	{
+	    print("Error: File `" . $globs_file . "' is unreadable.\n");
+	    exit(1) if (! $interactive);
+	    next;
 	}
 
-	print("Where do you want to install it? [" . $prefix_dir . "]: ");
-	chomp($input = <STDIN>);
-	($input) = ($input =~ m/^\s*(.*)\s*$/);
-	if ($input ne "")
+	if ($interactive)
 	{
-	    if (-e $input && (! -d $input || ! -w $input))
-	    {
-		print("Error: Directory `" . $input . "' is unwritable or not "
-		      . "a directory.\n");
-		next;
-	    }
-	    $prefix_dir = $input;
+	    print("Where will it be run from (PREFIX_DIR)? [" . $prefix_dir
+		  . "]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $prefix_dir = $input if ($input ne "");
+	}
+	if (-e $prefix_dir && ! -d $prefix_dir)
+	{
+	    print("Error: Directory `" . $prefix_dir . "' is not a "
+		  . "directory.\n");
+	    exit(1) if (! $interactive);
+	    next;
 	}
 
-	$lib_dir = $prefix_dir . "/lib/mtn-browse";
-	print("Where should the libraries go? [" . $lib_dir . "]: ");
-	chomp($input = <STDIN>);
-	($input) = ($input =~ m/^\s*(.*)\s*$/);
-	if ($input ne "")
+	if ($interactive)
 	{
-	    if (-e $input && (! -d $input || ! -w $input))
-	    {
-		print("Error: Directory `" . $input . "' is unwritable or not "
-		      . "a directory.\n");
-		next;
-	    }
-	    $lib_dir = $input;
+	    print("Where do you want to copy it to (DEST_DIR)? [" . $dest_dir
+		  . "]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $dest_dir = $input if ($input ne "");
+	}
+	$prefix_dest_dir = $dest_dir . $prefix_dir;
+	if (-e $prefix_dest_dir
+	    && (! -d $prefix_dest_dir || ! -w $prefix_dest_dir))
+	{
+	    print("Error: Directory `" . $prefix_dest_dir . "' is unwritable "
+		  . "or not a directory.\n");
+	    exit(1) if (! $interactive);
+	    next;
 	}
 
-	print("Use the Monotone::AutomateStdio (MAS) library that came with "
-	      . "this package? [Y]: ");
-	chomp($input = <STDIN>);
-	if ($input =~ m/^\s*[nN]\s*$/)
+	if ($interactive)
 	{
-	    $use_dist_mas_lib = 0;
+	    print("Where should the libraries go (LIB_DIR)? [<PREFIX_DIR>"
+		  . $lib_dir . "]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $lib_dir = $input if ($input ne "");
+	}
+	$lib_prefix_dir = $prefix_dir . $lib_dir;
+	$lib_dest_dir = $dest_dir . $prefix_dir. $lib_dir;
+	if (-e $lib_dest_dir && (! -d $lib_dest_dir || ! -w $lib_dest_dir))
+	{
+	    print("Error: Directory `" . $lib_dest_dir . "' is unwritable or "
+		  . "not a directory.\n");
+	    exit(1) if (! $interactive);
+	    next;
+	}
+
+	if ($interactive)
+	{
+	    print("Use the Monotone::AutomateStdio (MAS) library that came "
+		  . "with this package? [Y]: ");
+	    chomp($input = <STDIN>);
+	    if ($input =~ m/^\s*[nN]\s*$/)
+	    {
+		$use_dists_mas_lib = 0;
+	    }
+	    else
+	    {
+		$use_dists_mas_lib = 1;
+	    }
+	}
+
+	if ($confirm || $interactive || ! $quiet)
+	{
+	    print("\nInstallation options are:\n");
+	    print("GLOBS_FILE = " . $globs_file . "\n");
+	    print("PREFIX_DIR = " . $prefix_dir . "\n");
+	    print("DEST_DIR   = " . $dest_dir . "\n");
+	    print("LIB_DIR    = <PREFIX_DIR>" . $lib_dir . "\n");
+	    print("Use my MAS = " . ($use_dists_mas_lib ? "Yes" : "No")
+		  . "\n");
+	}
+	if ($interactive)
+	{
+	    print("\nAccept these? [N]: ");
+	    chomp($input = <STDIN>);
+	    if ($input =~ m/^\s*[yY]\s*$/)
+	    {
+		last;
+	    }
+	}
+	elsif ($confirm)
+	{
+	    print("\nPress <Return> to continue: ");
+	    <STDIN>;
+	    last;
 	}
 	else
-	{
-	    $use_dist_mas_lib = 1;
-	}
-
-	($input) = ($input =~ m/^\s*(.*)\s*$/);
-	if ($input ne "")
-	{
-	    if (-e $input && (! -d $input || ! -w $input))
-	    {
-		print("Error: Directory `" . $input . "' is unwritable or not "
-		      . "a directory.\n");
-		next;
-	    }
-	    $lib_dir = $input;
-	}
-
-	print("\nInstallation options are:\n");
-	print("GLOBS_FILE = " . $globs_file . "\n");
-	print("PREFIX_DIR = " . $prefix_dir . "\n");
-	print("LIB_DIR    = " . $lib_dir . "\n");
-	print("Use my MAS = " . ($use_dist_mas_lib ? "Yes" : "No") . "\n");
-	print("\nAccept these? [N]: ");
-	chomp($input = <STDIN>);
-	if ($input =~ m/^\s*[yY]\s*$/)
 	{
 	    last;
 	}
     }
 
+    print("Installing...\n") if (! $quiet);
     $installer = Installer->new(0, 0, 0755, 0755, 0644);
 
     # Install `executable'.
@@ -177,7 +290,7 @@ use Installer;
 	if (! defined($outfile = IO::File->new("mtn-browse.out", "w")));
     while (defined($input = $infile->getline()))
     {
-	$input =~ s/\@INST:LIB_DIR\@/$lib_dir/g;
+	$input =~ s/\@INST:LIB_DIR\@/$lib_prefix_dir/g;
 	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
 	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
 	$outfile->print($input);
@@ -186,7 +299,7 @@ use Installer;
     $outfile->close();
     $infile = $outfile = undef;
     $installer->install("mtn-browse.out",
-			"${prefix_dir}/bin/mtn-browse",
+			"${prefix_dest_dir}/bin/mtn-browse",
 			0755);
     unlink("mtn-browse.out");
 
@@ -196,11 +309,11 @@ use Installer;
 	if (! defined($dir = IO::Dir->new("lib/perl")));
     while (defined($file = $dir->read()))
     {
-	$installer->install("lib/perl/$file",  "${lib_dir}/perl/$file")
+	$installer->install("lib/perl/$file",  "${lib_dest_dir}/perl/$file")
 	    if ($file =~ m/.*\.pm$/);
     }
     $dir->close();
-    if ($use_dist_mas_lib)
+    if ($use_dists_mas_lib)
     {
 	my $mas_dir;
 	if (-r "lib/perl/Monotone/AutomateStdio.pm")
@@ -220,7 +333,7 @@ use Installer;
 	while (defined($file = $dir->read()))
 	{
 	    $installer->install("${mas_dir}/$file",
-				"${lib_dir}/perl/Monotone/$file")
+				"${lib_dest_dir}/perl/Monotone/$file")
 		if ($file =~ m/.*\.pm$/ || $file =~ m/.*\.pod$/);
 	}
 	$dir->close();
@@ -229,12 +342,12 @@ use Installer;
     # Install GUI components.
 
     $installer->install("lib/ui/mtn-browse.glade",
-			"${lib_dir}/ui/mtn-browse.glade");
+			"${lib_dest_dir}/ui/mtn-browse.glade");
     die("IO::Dir failed with $!")
 	if (! defined($dir = IO::Dir->new("lib/ui/pixmaps")));
     while (defined($file = $dir->read()))
     {
-	$installer->install("lib/ui/pixmaps/$file", "${lib_dir}/ui/$file")
+	$installer->install("lib/ui/pixmaps/$file", "${lib_dest_dir}/ui/$file")
 	    if ($file =~ m/.*\.png$/);
     }
     $dir->close();
@@ -251,7 +364,7 @@ use Installer;
 	    system("msgfmt --output-file=translations/${locale}.mo "
 		   . "translations/$file");
 	    $installer->install("translations/${locale}.mo",
-				"${prefix_dir}/share/locale/${locale}/"
+				"${prefix_dest_dir}/share/locale/${locale}/"
 				. "LC_MESSAGES/mtn-browse.mo");
 	}
     }
@@ -260,3 +373,189 @@ use Installer;
     exit(0);
 
 }
+#
+##############################################################################
+#
+#   Routine      - check_dependencies
+#
+#   Description  - Checks that the specified Perl package dependencies are
+#                  met. The code was taken/stolen from ExtUtils::MakeMaker.
+#
+#   Data         - $dependencies : A reference to a hash containing the
+#                                  dependencies, where the key is the package
+#                                  name and the value is the required version
+#                                  number. If the version number is zero then
+#                                  only the presence of the package is tested.
+#                  Return Value  : True if the dependencies are met, otherwise
+#                                  false if they are not.
+#
+##############################################################################
+
+
+
+sub check_dependencies($)
+{
+
+    my $dependencies = $_[0];
+
+    my $met = 1;
+
+    foreach my $dep (sort(keys(%$dependencies)))
+    {
+
+        # Attempt to eval the package in. Perl 5.8.0 has a bug with require
+	# Foo::Bar alone in an eval, so an extra statement is a workaround.
+
+        eval "require $dep; 0";
+
+	# What was the outcome?
+
+	if ($@ ne "")
+	{
+
+	    # Not installed.
+
+	    printf(STDERR "Warning: prerequisite %s %s not found.\n",
+		   $dep,
+		   $dependencies->{$dep});
+	    $met = undef;
+
+	}
+	elsif ($dependencies->{$dep} > 0)
+	{
+
+	    my $version;
+
+	    # Installed, and we need to check the version number.
+
+	    # Get the version number, converting X.Y_Z alpha version #s to X.YZ
+	    # for easier comparisons.
+
+	    $version = defined($dep->VERSION) ? $dep->VERSION : 0;
+	    $version =~ s/(\d+)\.(\d+)_(\d+)/$1.$2$3/;
+
+	    # Now check the version numbers.
+
+	    if ($version < $dependencies->{$dep})
+	    {
+		printf(STDERR
+		       "Warning: prerequisite %s %s not found. We have %s.\n",
+		       $dep,
+		       $dependencies->{$dep},
+		       $version);
+		$met = undef;
+	    }
+
+	}
+
+    }
+
+    return $met;
+
+}
+##############################################################################
+#
+#   Embedded Documentation For This Module
+#
+##############################################################################
+
+
+
+__END__
+
+=head1 linux-install
+
+linux-install - Linux installer for the mtn-browse application
+
+=head1 SYNOPSIS
+
+linux-install [options]
+
+  Options:
+    --confirm            -c           Print out what will happen first
+    --dep-level              LEVEL    Specify type of dependency checking
+    --destdir=           -d  DIR      Specify temp installation location
+    --globs-file=        -g  FILE     Location of mime globs file
+    --interactive        -i           Ask questions interactively
+    --libdir=            -l  DIR      Library dir relative to PREFIX_DIR
+    --prefix=            -p  DIR      Installation location
+    --quiet              -q           Keep quiet
+    --(no)-use-dists-mas              Use/don't use MAS within distro
+    --help               -?           Print this help text
+    --man                -m           Print full help text
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--confirm or -c>
+
+Print out what will be done before actually doing it.
+
+=item B<--dep-level LEVEL>
+
+Specify type of dependency checking. Valid values are:
+
+    0 - No dependency checking at all.
+    1 - Do dependency checking only.
+    2 - Do dependency checking and exit with an error code if
+        they are not met. This is the default.
+    3 - Do dependency checking and continue with the installation
+        regardless.
+
+=item B<--destdir=DIR or -d DIR>
+
+Specify the destination directory for the installation process. In effect this
+path is prepended onto the PREFIX_DIR path. Normally this is blank. Any
+directory paths in the application will still assume that it is installed in
+the PREFIX_DIR directory. This option is particularly useful for package
+maintainers.
+
+=item B<--globs-file=FILE or -g FILE>
+
+Specify the location of the system's MIME globs file. The default is
+/usr/share/mime/globs.
+
+=item B<--interactive or -i>
+
+Ask for all of the installation options interactively rather than getting
+settings from the command line.
+
+=item B<--libdir=DIR or -l DIR>
+
+Specify the library directory, relative to <PREFIX_DIR>, for the the mtn-browse
+application. The default is (<PREFIX_DIR>)/lib/mtn-browse.
+
+=item B<--prefix=DIR or -p DIR>
+
+Specify the final base installation directory. mtn-browse will assume it is
+running from the <PREFIX_DIR>/bin directory and its libraries are located in
+<PREFIX_DIR>/<LIB_DIR>.
+
+=item B<--quiet or -q>
+
+Do not output anything to the screen.
+
+=item B<--(no)-use-dists-mas>
+
+Select whether to use the Monotone::AutomateStdio library that shipped with
+mtn-browse or use one already installed on your system. The default is to use
+the one that comes with mtn-browse.
+
+=item B<-help>
+
+Print a brief help message and exit.
+
+=item B<-man or -m>
+
+Prints the manual page and exit.
+
+=back
+
+=head1 DESCRIPTION
+
+This program is the installer for the mtn-browse application. It is assumed
+that this script will be run in the top level directory of the hierarchy made
+by unpacking the tar file that mtn-browse was shipped in.
+
+=cut
