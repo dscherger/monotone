@@ -1,3 +1,46 @@
-Overview Of Changes In mtn-browse 0.60
-======================================
+Overview Of Changes In mtn-browse 0.61 (2009-02-08 18:00:00)
+============================================================
+
+New:
+- Annotate window now offers a lot more options via its menu for accessing file
+  and revision change logs and comparing between the current file or revision
+  its parent version.
+- Added a user preference option for controlling whether line numbers are
+  displayed by default when showing a file's contents.
+- Added a user preference option for controlling whether branch and revision
+  comboboxentries update their lists when the user is typing in values (a
+  performance tuning option).
+- Implemented the option of selecting a search column in a treeview widget.
+- Searching in a treeview now uses REs.
+- Added installation via `perl Makefile.PL'.
+
+Changes:
+- Vertical panes now maintain the size of the left hand window.
+- A scroll margin is now used when finding text. This makes it easier to see
+  the context of a found string when it is at the top or bottom of the window.
+- Beefed up linux-install, now called linux-installer. It now:
+  - Can take all its information from the command line.
+  - Supports the concept of DESTDIR.
+  - Checks that Perl dependencies have been met.
+  - Has built in help.
+- Switched all Perl scripts over to demanding Perl 5.8.5.
+- README file has been updated as a result of the changes in linux-installer.
+
+Bugs Fixed:
+- Now a little bit better at reporting helper application launch errors to the
+  user.
+- Annotate no longer fails on an empty file.
+- Annotate and comparisons are no longer affected by where the application is
+  run inside a workspace.
+- mtn-browse now always explicitly opens a database rather than relying on the
+  mtn subprocess sorting itself out inside a workspace. This is much safer.
+- Database locked dialog windows are no longer parented.
+- Now guard against no external comparison helper application being setup.
+- Directory separators are no longer assumed to be '/'.
+- The get_revision_ids routine now correctly uses the current branch to refine
+  the query (can now cope with multiple tags on different branches).
+
+
+Overview Of Changes In mtn-browse 0.60 (2009-01-23 19:17:02)
+============================================================
 - Pretty much works on Linux. First release of this application.

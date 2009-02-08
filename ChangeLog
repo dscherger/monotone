@@ -1,4 +1,62 @@
 Revision history for mtn-browse.
 
+0.61  Sun Feb 08 18:00:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Added a Makefile.PL style install capability.
+	- Split out the dependency checker into a separate module.
+	- Updated INSTALL and README with the up to date details of
+	  installation.
+	- Moved the support modules for linux-installer into their own
+	  subdirectory.
+	- Beefed up linux-install. It now:
+	  - Can take all its information from the command line.
+	  - Supports the concept of DESTDIR.
+	  - Checks that Perl dependencies have been met.
+	  - Has built in help.
+	- Switched all Perl scripts over to demanding Perl 5.8.5.
+	- Added a user preference option for controlling whether line numbers
+	  are displayed by default when showing a file's contents.
+	- Added a user preference option for controlling whether branch and
+	  revision comboboxentries update their lists when the user is typing
+	  in values (a performance tuning option).
+	- A scroll margin is now used when finding text. This makes it easier
+	  to see the context of a found string when it is at the top or bottom
+	  of the window.
+	- Directory separators are no longer assumed to be '/'.
+	- The get_revision_ids routine now correctly uses the current branch to
+	  refine the query (can now cope with multiple tags on different
+	  branches).
+	- Renamed the find_button widget to find_text_button to make it more
+	  specific.
+	- Annotate window now offers a lot more options via its menu for
+	  accessing file and revision change logs and comparing between the
+	  current file or revision its parent version.
+	- Put some string constants under locale control, they were missed off
+	  before by accident.
+	- Made sure that all calls to dialogs' run method are granted mouse
+	  input by the WindowManager object.
+	- The mtn warning handler can be suppressed by the use of a global
+	  variable (which can be set using local).
+	- Now guard against no external comparison helper application being
+	  setup.
+	- Refactored some code in History.pm to better help support the new
+	  annotate window options.
+	- Annotate no longer fails on an empty file.
+	- Annotate and comparisons are no longer affected by where the
+	  application is run inside a workspace.
+	- mtn-browse now always explicitly opens a database rather than relying
+	  on the mtn subprocess sorting itself out inside a workspace. This
+	  means that the mtn subprocess is always run in the root directory
+	  which is much safer WRT unexpected interactions with a workspace.
+	- Database locked dialog windows are no longer parented as these
+	  dialogs are in fact related to Monotone::AutomateStdio object
+	  instances and not browser window instances (which share
+	  Monotone::AutomateStdio object instances).
+	- Now a little bit better at reporting helper application launch errors
+	  to the user.
+	- Vertical panes now maintain the size of the left hand window.
+	- Implemented the option of selecting a search column in a treeview
+	  widget.
+	- Searching in a treeview now used REs.
+
 0.60  Fri Jan 23 19:09:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Initial release of the application to Source Forge.
