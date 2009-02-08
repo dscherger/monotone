@@ -305,9 +305,9 @@ UNIT_TEST_SOURCES =							\
 	string_queue.cc transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
-# and must be recompiled for that purpose
+# and are not used by the main program
 UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc randomizer.cc randomizer.hh unit_tests.cc
+	randomizer.cc randomizer.hh roster_tests.hh unit_tests.cc 
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
@@ -321,8 +321,8 @@ UNIT_TEST_OBJ_SUPPORT =							\
 	mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)			\
 	mtn-merge_content.$(OBJEXT) mtn-merkle_tree.$(OBJEXT)		\
 	mtn-pcrewrap.$(OBJEXT) mtn-project.$(OBJEXT)			\
-	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
-	mtn-migrate_schema.$(OBJEXT)					\
+	mtn-roster_delta.$(OBJEXT) mtn-sanity.$(OBJEXT)			\
+	mtn-schema.$(OBJEXT) mtn-migrate_schema.$(OBJEXT)		\
 	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
 	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
 	mtn-migrate_work.$(OBJEXT)

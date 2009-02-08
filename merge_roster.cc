@@ -3113,6 +3113,7 @@ roster_merge(roster_t const & left_parent,
 #include "unit_tests.hh"
 #include "constants.hh"
 #include "roster_delta.hh"
+#include "roster_tests.hh"
 
 // cases for testing:
 //

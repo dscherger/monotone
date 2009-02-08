@@ -570,43 +570,6 @@ try_get_content_from_roster_delta(roster_delta const & del,
   return false;
 }
 
-#ifdef BUILD_UNIT_TESTS
-
-static void
-spin(roster_t const & from, marking_map const & from_marking,
-     roster_t const & to, marking_map const & to_marking)
-{
-  MM(from);
-  MM(from_marking);
-  MM(to);
-  MM(to_marking);
-  roster_delta del;
-  MM(del);
-  delta_rosters(from, from_marking, to, to_marking, del);
-
-  roster_t tmp(from);
-  MM(tmp);
-  marking_map tmp_marking(from_marking);
-  MM(tmp_marking);
-  apply_roster_delta(del, tmp, tmp_marking);
-  I(tmp == to);
-  I(tmp_marking == to_marking);
-
-  roster_delta del2;
-  delta_rosters(from, from_marking, tmp, tmp_marking, del2);
-  I(del == del2);
-}
-
-void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
-                          roster_t const & b, marking_map const & b_marking)
-{
-  spin(a, a_marking, b, b_marking);
-  spin(b, b_marking, a, a_marking);
-}
-
-#endif // BUILD_UNIT_TESTS
-
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -614,4 +577,3 @@ void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -2722,8 +2722,8 @@ void calculate_ident(roster_t const & ros,
 #include "sanity.hh"
 #include "constants.hh"
 #include "randomizer.hh"
-
 #include "roster_delta.hh"
+#include "roster_tests.hh"
 
 #include <cstdlib>
 #include "lexical_cast.hh"
@@ -2850,6 +2850,38 @@ apply_cset_and_do_testing(roster_t & r, cset const & cs, node_id_source & nis)
 
   do_testing_on_two_equivalent_csets(cs, derived);
   do_testing_on_one_roster(r);
+}
+
+static void
+spin(roster_t const & from, marking_map const & from_marking,
+     roster_t const & to, marking_map const & to_marking)
+{
+  MM(from);
+  MM(from_marking);
+  MM(to);
+  MM(to_marking);
+  roster_delta del;
+  MM(del);
+  delta_rosters(from, from_marking, to, to_marking, del);
+
+  roster_t tmp(from);
+  MM(tmp);
+  marking_map tmp_marking(from_marking);
+  MM(tmp_marking);
+  apply_roster_delta(del, tmp, tmp_marking);
+  I(tmp == to);
+  I(tmp_marking == to_marking);
+
+  roster_delta del2;
+  delta_rosters(from, from_marking, tmp, tmp_marking, del2);
+  I(del == del2);
+}
+
+void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
+                          roster_t const & b, marking_map const & b_marking)
+{
+  spin(a, a_marking, b, b_marking);
+  spin(b, b_marking, a, a_marking);
 }
 
 static void
