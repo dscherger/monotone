@@ -10,7 +10,7 @@
 
 using std::logic_error;
 
-UNIT_TEST(string_queue, string_queue)
+UNIT_TEST(string_queue)
 {
   string_queue sq1;
 

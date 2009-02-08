@@ -1187,7 +1187,7 @@ test_a_scalar_merge(scalar_val left_val, string const & left_marks_str,
                                                 expected_outcome);
 }
 
-UNIT_TEST(roster_merge, scalar_merges)
+UNIT_TEST(scalar_merges)
 {
   // Notation: a1* means, "value is a, this is node 1 in the graph, it is
   // marked".  ".2" means, "value is unimportant and different from either a
@@ -1353,7 +1353,7 @@ make_node_lifecycle_objs(roster_t & r, marking_map & markings, revision_id const
   make_file(r, markings, common1, common1, common1, name + "_dead_file", fid1, nis.next());
 }
 
-UNIT_TEST(roster_merge, node_lifecycle)
+UNIT_TEST(node_lifecycle)
 {
   roster_t a_roster, b_roster;
   marking_map a_markings, b_markings;
@@ -1405,7 +1405,7 @@ UNIT_TEST(roster_merge, node_lifecycle)
                   b_roster.get_node(b_safe_file_nid), false));
 }
 
-UNIT_TEST(roster_merge, attr_lifecycle)
+UNIT_TEST(attr_lifecycle)
 {
   roster_t left_roster, right_roster;
   marking_map left_markings, right_markings;
@@ -1692,7 +1692,7 @@ struct simple_missing_root_dir : public structural_conflict_helper
     }
 };
 
-UNIT_TEST(roster_merge, simple_structural_conflicts)
+UNIT_TEST(simple_structural_conflicts)
 {
   {
     simple_duplicate_name_conflict t;
@@ -1926,7 +1926,7 @@ struct duplicate_name_plus_missing_root : public structural_conflict_helper
   }
 };
 
-UNIT_TEST(roster_merge, complex_structural_conflicts)
+UNIT_TEST(complex_structural_conflicts)
 {
   {
     multiple_name_plus_duplicate_name t;

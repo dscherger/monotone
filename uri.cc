@@ -294,7 +294,7 @@ test_one_uri(string scheme,
   UNIT_TEST_CHECK(u.fragment == fragment);
 }
 
-UNIT_TEST(uri, basic)
+UNIT_TEST(basic)
 {
   test_one_uri("ssh", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("ssh", "graydon", "", "venge.net", "",   "/tmp/foo.mtn", "", "");
@@ -308,7 +308,7 @@ UNIT_TEST(uri, basic)
   test_one_uri("http", "graydon", "fe:00:01::04:21", "", "8080", "/foo.cgi", "branch=foo", "tip");
 }
 
-UNIT_TEST(uri, bizarre)
+UNIT_TEST(bizarre)
 {
   test_one_uri("", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
   test_one_uri("", "", "", "", "", "/graydon@venge.net:22/tmp/foo.mtn", "", "");
@@ -316,7 +316,7 @@ UNIT_TEST(uri, bizarre)
   test_one_uri("ssh", "", "", "", "", "/graydon@venge.net:22/tmp/foo.mtn", "", "");
 }
 
-UNIT_TEST(uri, invalid)
+UNIT_TEST(invalid)
 {
   uri u;
 
@@ -325,7 +325,7 @@ UNIT_TEST(uri, invalid)
   UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", u, origin::user), recoverable_failure);
 }
 
-UNIT_TEST(uri, urldecode)
+UNIT_TEST(urldecode)
 {
   UNIT_TEST_CHECK(urldecode("foo%20bar", origin::internal) == "foo bar");
   UNIT_TEST_CHECK(urldecode("%61", origin::user) == "a");

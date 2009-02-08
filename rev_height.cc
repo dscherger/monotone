@@ -120,7 +120,7 @@ void dump(rev_height const & h, string & out)
 #include "unit_tests.hh"
 #include "randomizer.hh"
 
-UNIT_TEST(rev_height, count_up)
+UNIT_TEST(count_up)
 {
   rev_height h = rev_height::root_height().child_height(1);
 
@@ -139,7 +139,7 @@ UNIT_TEST(rev_height, count_up)
     }    
 }
 
-UNIT_TEST(rev_height, children)
+UNIT_TEST(children)
 {
   rev_height h;
   I(!h.valid());
@@ -197,7 +197,7 @@ UNIT_TEST(rev_height, children)
     }
 }
 
-UNIT_TEST(rev_height, comparisons)
+UNIT_TEST(comparisons)
 {
   rev_height root(rev_height::root_height());
   rev_height left(root.child_height(0));

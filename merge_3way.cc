@@ -500,7 +500,7 @@ static void dump_incorrect_merge(vector<string> const & expected,
 }
 
 // high tech randomizing test
-UNIT_TEST(diff_patch, randomizing_merge)
+UNIT_TEST(randomizing_merge)
 {
   randomizer rng;
   for (int i = 0; i < 30; ++i)
@@ -523,7 +523,7 @@ UNIT_TEST(diff_patch, randomizing_merge)
 
 
 // old boring tests
-UNIT_TEST(diff_patch, merge_prepend)
+UNIT_TEST(merge_prepend)
 {
   UNIT_TEST_CHECKPOINT("prepend test");
   vector<string> anc, d1, d2, m1, m2, gm;
@@ -553,7 +553,7 @@ UNIT_TEST(diff_patch, merge_prepend)
   UNIT_TEST_CHECK(gm == m2);
 }
 
-UNIT_TEST(diff_patch, merge_append)
+UNIT_TEST(merge_append)
 {
   UNIT_TEST_CHECKPOINT("append test");
   vector<string> anc, d1, d2, m1, m2, gm;
@@ -583,7 +583,7 @@ UNIT_TEST(diff_patch, merge_append)
 
 }
 
-UNIT_TEST(diff_patch, merge_additions)
+UNIT_TEST(merge_additions)
 {
   UNIT_TEST_CHECKPOINT("additions test");
   string ancestor("I like oatmeal\nI like orange juice\nI like toast");
@@ -612,7 +612,7 @@ UNIT_TEST(diff_patch, merge_additions)
   UNIT_TEST_CHECK(!merge3(anc, d1, cf, m1));
 }
 
-UNIT_TEST(diff_patch, merge_deletions)
+UNIT_TEST(merge_deletions)
 {
   string ancestor("I like oatmeal\nI like orange juice\nI like toast");
   string desc2("I like oatmeal\nI like toast");

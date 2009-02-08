@@ -462,7 +462,7 @@ concrete_option_set::get_usage_strings(vector<string> & names,
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(option, concrete_options)
+UNIT_TEST(concrete_options)
 {
   bool b = false;
   string s;

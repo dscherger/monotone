@@ -45,7 +45,7 @@ namespace {
   extern char const * const pseudo_checkpoints[];
 };
 
-UNIT_TEST(sha1, short_message)
+UNIT_TEST(short_message)
 {
   int failures = 0;
   for (int i = 0; short_message_in[i]; i++)
@@ -69,7 +69,7 @@ UNIT_TEST(sha1, short_message)
                       FL("short message: %d failures") % failures);
 }
 
-UNIT_TEST(sha1, long_message)
+UNIT_TEST(long_message)
 {
   int failures = 0;
   for (int i = 0; long_message_in[i]; i++)
@@ -93,7 +93,7 @@ UNIT_TEST(sha1, long_message)
                       FL("long message: %d failures") % failures);
 }
 
-UNIT_TEST(sha1, pseudo_message)
+UNIT_TEST(pseudo_message)
 {
   std::string MD[1003];
   int failures = 0;

@@ -823,7 +823,7 @@ invert_xdelta(string const & old_str,
 
 #include "unit_tests.hh"
 
-UNIT_TEST(xdelta, basic)
+UNIT_TEST(basic)
 {
   data dat1(string("the first day of spring\nmakes me want to sing\n"),
             origin::internal);
@@ -876,7 +876,7 @@ spin(string a, string b)
   UNIT_TEST_CHECK(b == apply_via_piecewise(a, ba_inverted));
 }
 
-UNIT_TEST(xdelta, simple_cases)
+UNIT_TEST(simple_cases)
 {
   L(FL("empty/empty"));
   spin("", "");
@@ -971,7 +971,7 @@ xdelta_randomly_delete(string & str)
     }
 }
 
-UNIT_TEST(xdelta, random_simple_delta)
+UNIT_TEST(random_simple_delta)
 {
   for (int i = 0; i < 100; ++i)
     {
@@ -985,7 +985,7 @@ UNIT_TEST(xdelta, random_simple_delta)
     }
 }
 
-UNIT_TEST(xdelta, random_piecewise_delta)
+UNIT_TEST(random_piecewise_delta)
 {
   for (int i = 0; i < 50; ++i)
     {
@@ -1012,7 +1012,7 @@ UNIT_TEST(xdelta, random_piecewise_delta)
   }
 }
 
-UNIT_TEST(xdelta, rolling_sanity_check)
+UNIT_TEST(rolling_sanity_check)
 {
   const unsigned testbufsize = 512;
   static const string::size_type blocksz = 64;

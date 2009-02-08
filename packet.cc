@@ -405,7 +405,7 @@ read_packets(istream & in, packet_consumer & cons)
 
 using std::ostringstream;
 
-UNIT_TEST(packet, validators)
+UNIT_TEST(validators)
 {
   ostringstream oss;
   packet_writer pw(oss);
@@ -473,7 +473,7 @@ UNIT_TEST(packet, validators)
   }
 }
 
-UNIT_TEST(packet, roundabout)
+UNIT_TEST(roundabout)
 {
   string tmp;
 

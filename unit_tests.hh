@@ -10,6 +10,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#include <boost/noncopyable.hpp>
+
 // Log a success/failure message, and set the test state to 'fail' if needed
 #define UNIT_TEST_CHECK(expression)             \
   unit_test::do_check(expression, __FILE__, __LINE__, #expression)
@@ -70,17 +72,16 @@ namespace unit_test {
 
   // Declarative mechanism for specifying unit tests, similar to
   // auto_unit_test in boost, but more suited to our needs.
-  struct unit_test_case
+  struct unit_test_case : boost::noncopyable
   {
-    char const *group;
-    char const *name;
-    void (*func)();
-    bool failure_is_success;
+    std::string const group;
+    std::string const name;
+    void (*const func)();
+    bool const failure_is_success;
     unit_test_case(char const * group,
                    char const * name,
                    void (*func)(),
                    bool fis);
-    unit_test_case();
   };
 }
 
@@ -88,13 +89,13 @@ namespace unit_test {
 // names of symbols in the code being tested, despite their being in a
 // separate namespace, so that references _from_ the test functions _to_ the
 // code under test resolve correctly.
-#define UNIT_TEST(GROUP, TEST)                    \
-  namespace unit_test {                           \
-      static void t_##GROUP##_##TEST();           \
-      static unit_test_case r_##GROUP##_##TEST    \
-      (#GROUP, #TEST, t_##GROUP##_##TEST, false); \
-  }                                               \
-  static void unit_test::t_##GROUP##_##TEST()
+#define UNIT_TEST(TEST)                         \
+  namespace unit_test {                         \
+      static void t_##TEST();                   \
+      static const unit_test_case r_##TEST      \
+      (__FILE__, #TEST, t_##TEST, false);       \
+  }                                             \
+  static void unit_test::t_##TEST()
 
 // Local Variables:
 // mode: C++

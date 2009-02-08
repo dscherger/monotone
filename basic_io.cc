@@ -220,7 +220,7 @@ string basic_io::parser::tt2str(token_type tt)
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(basic_io, binary_transparency)
+UNIT_TEST(binary_transparency)
 {
   std::string testpattern;
   for (unsigned i=0; i<256; ++i) testpattern+=char(i);

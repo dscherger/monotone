@@ -523,7 +523,7 @@ bool globish::matches(string const & target) const
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(globish, syntax)
+UNIT_TEST(syntax)
 {
   struct tcase
   {
@@ -623,7 +623,7 @@ UNIT_TEST(globish, syntax)
     }
 }
 
-UNIT_TEST(globish, from_vector)
+UNIT_TEST(from_vector)
 {
   vector<arg_type> v;
   v.push_back(arg_type("a", origin::internal));
@@ -635,7 +635,7 @@ UNIT_TEST(globish, from_vector)
   UNIT_TEST_CHECK(s == "{a,b,c}");
 }
 
-UNIT_TEST(globish, simple_matches)
+UNIT_TEST(simple_matches)
 {
   UNIT_TEST_CHECK(globish("abc", origin::internal).matches("abc"));
   UNIT_TEST_CHECK(!globish("abc", origin::internal).matches("aac"));
@@ -688,7 +688,7 @@ UNIT_TEST(globish, simple_matches)
   UNIT_TEST_CHECK(!globish("a*b*[cd]", origin::internal).matches("adb"));
 }
 
-UNIT_TEST(globish, complex_matches)
+UNIT_TEST(complex_matches)
 {  {
     globish_matcher m(globish("{a,b}?*\\*|", origin::internal),
                       globish("*c*", origin::internal));
@@ -724,7 +724,7 @@ UNIT_TEST(globish, complex_matches)
   }
 }
 
-UNIT_TEST(globish, nested_matches)
+UNIT_TEST(nested_matches)
 {
   globish g("a.{i.{x,y},j}", origin::internal);
   UNIT_TEST_CHECK(g.matches("a.i.x"));

@@ -295,7 +295,7 @@ calculate_ident(revision_data const & dat,
 #include "unit_tests.hh"
 #include <stdlib.h>
 
-UNIT_TEST(transform, enc)
+UNIT_TEST(enc)
 {
   data d2, d1("the rain in spain");
   gzip<data> gzd1, gzd2;
@@ -308,7 +308,7 @@ UNIT_TEST(transform, enc)
   UNIT_TEST_CHECK(d2 == d1);
 }
 
-UNIT_TEST(transform, calculate_ident)
+UNIT_TEST(calculate_ident)
 {
   data input(string("the only blender which can be turned into the most powerful vaccum cleaner"),
              origin::internal);
@@ -318,7 +318,7 @@ UNIT_TEST(transform, calculate_ident)
   UNIT_TEST_CHECK(output() == decode_hexenc(ident, origin::internal));
 }
 
-UNIT_TEST(transform, corruption_check)
+UNIT_TEST(corruption_check)
 {
   data input(string("i'm so fragile, fragile when you're here"), origin::internal);
   gzip<data> gzd;

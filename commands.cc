@@ -545,7 +545,7 @@ mkargs(const char *words)
   return split_into_words(arg_type(words, origin::user));
 }
 
-UNIT_TEST(commands, make_command_id)
+UNIT_TEST(make_command_id)
 {
   using commands::command_id;
   using commands::make_command_id;
@@ -564,7 +564,7 @@ UNIT_TEST(commands, make_command_id)
   }
 }
 
-UNIT_TEST(commands, complete_command)
+UNIT_TEST(complete_command)
 {
   using commands::command_id;
   using commands::complete_command;
@@ -601,7 +601,7 @@ UNIT_TEST(commands, complete_command)
   }
 }
 
-UNIT_TEST(commands, command_complete_command)
+UNIT_TEST(command_complete_command)
 {
   using commands::command_id;
   using commands::make_command_id;
@@ -713,7 +713,7 @@ UNIT_TEST(commands, command_complete_command)
   }
 }
 
-UNIT_TEST(commands, command_find_command)
+UNIT_TEST(command_find_command)
 {
   using commands::command;
   using commands::command_id;

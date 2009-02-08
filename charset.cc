@@ -582,7 +582,7 @@ idna
       IDNA_ACE_PREFIX "b1abfaaepdrnnbgefbadotcwatmq2g4l"},
   };
 
-UNIT_TEST(charset, idna_encoding)
+UNIT_TEST(idna_encoding)
 {
   // putenv takes a char*, not a const char*, there is nothing we can do.
   putenv(const_cast<char *>("CHARSET=UTF-8"));
@@ -606,7 +606,7 @@ UNIT_TEST(charset, idna_encoding)
     }
 }
 
-UNIT_TEST(charset, utf8_validation)
+UNIT_TEST(utf8_validation)
 {
   // these tests are based on the tests from the file utf8-validate.c of the
   // GLib library, and also include sequences from Markus Kuhn's UTF-8

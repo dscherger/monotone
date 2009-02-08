@@ -707,7 +707,7 @@ check_with_count(size_t base_set_size, randomizer & rng)
     }
 }
 
-UNIT_TEST(refiner, various_counts)
+UNIT_TEST(various_counts)
 {
   {
     // Once with zero-zero, for good measure.

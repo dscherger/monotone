@@ -88,7 +88,7 @@ outdated_indicator_factory::note_change()
 #ifdef BUILD_UNIT_TESTS
 #include "unit_tests.hh"
 
-UNIT_TEST(outdated_indicator, )
+UNIT_TEST(basic)
 {
   outdated_indicator indicator;
   {

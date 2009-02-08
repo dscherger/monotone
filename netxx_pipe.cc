@@ -554,7 +554,7 @@ Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 
 #ifndef WIN32
 
-UNIT_TEST(pipe, simple_pipe)
+UNIT_TEST(simple_pipe)
 { try
   {
   Netxx::PipeStream pipe("cat",vector<string>());

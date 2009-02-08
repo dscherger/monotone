@@ -222,7 +222,7 @@ void dump (id const & obj, std::string & out)
 
 #include "unit_tests.hh"
 
-UNIT_TEST(vocab, verify_hexenc_id)
+UNIT_TEST(verify_hexenc_id)
 {
   // -------- magic empty string and default constructor are okay:
   UNIT_TEST_CHECK(hexenc<id>("")() == "");

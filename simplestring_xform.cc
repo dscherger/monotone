@@ -237,7 +237,7 @@ trim(string const & s, string const & chars)
 #include "unit_tests.hh"
 #include "vocab.hh"
 
-UNIT_TEST(simplestring_xform, caseconv)
+UNIT_TEST(caseconv)
 {
   UNIT_TEST_CHECK(uppercase("hello") == "HELLO");
   UNIT_TEST_CHECK(uppercase("heLlO") == "HELLO");
@@ -247,7 +247,7 @@ UNIT_TEST(simplestring_xform, caseconv)
   UNIT_TEST_CHECK(lowercase("!@#$%^&*()") == "!@#$%^&*()");
 }
 
-UNIT_TEST(simplestring_xform, join_lines)
+UNIT_TEST(join_lines)
 {
   vector<string> strs;
   string joined;
@@ -269,7 +269,7 @@ UNIT_TEST(simplestring_xform, join_lines)
   UNIT_TEST_CHECK(joined == "hi\nthere\nuser\n");
 }
 
-UNIT_TEST(simplestring_xform, join_words)
+UNIT_TEST(join_words)
 {
   vector< utf8 > v;
   set< utf8 > s;
@@ -314,7 +314,7 @@ UNIT_TEST(simplestring_xform, join_words)
   UNIT_TEST_CHECK(join_words(s, ", ")() == "a, b, c");
 }
 
-UNIT_TEST(simplestring_xform, split_into_words)
+UNIT_TEST(split_into_words)
 {
   vector< utf8 > words;
 
@@ -339,7 +339,7 @@ UNIT_TEST(simplestring_xform, split_into_words)
   UNIT_TEST_CHECK(words[2]() == "bar");
 }
 
-UNIT_TEST(simplestring_xform, trimming)
+UNIT_TEST(trimming)
 {
   UNIT_TEST_CHECK(trim_right(":foobar:", ":") == ":foobar");
   UNIT_TEST_CHECK(trim_left(":foobar:", ":") == "foobar:");

@@ -504,7 +504,7 @@ static void setup(roster_t & roster)
 
 }
 
-UNIT_TEST(restrictions, empty_restriction)
+UNIT_TEST(empty_restriction)
 {
   roster_t roster;
   setup(roster);
@@ -570,7 +570,7 @@ UNIT_TEST(restrictions, empty_restriction)
   UNIT_TEST_CHECK(pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, simple_include)
+UNIT_TEST(simple_include)
 {
   roster_t roster;
   setup(roster);
@@ -640,7 +640,7 @@ UNIT_TEST(restrictions, simple_include)
   UNIT_TEST_CHECK( pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, simple_exclude)
+UNIT_TEST(simple_exclude)
 {
   roster_t roster;
   setup(roster);
@@ -710,7 +710,7 @@ UNIT_TEST(restrictions, simple_exclude)
   UNIT_TEST_CHECK(!pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, include_exclude)
+UNIT_TEST(include_exclude)
 {
   roster_t roster;
   setup(roster);
@@ -782,7 +782,7 @@ UNIT_TEST(restrictions, include_exclude)
   UNIT_TEST_CHECK(!pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, exclude_include)
+UNIT_TEST(exclude_include)
 {
   roster_t roster;
   setup(roster);
@@ -857,7 +857,7 @@ UNIT_TEST(restrictions, exclude_include)
   UNIT_TEST_CHECK( pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, invalid_roster_paths)
+UNIT_TEST(invalid_roster_paths)
 {
   roster_t roster;
   setup(roster);
@@ -870,7 +870,7 @@ UNIT_TEST(restrictions, invalid_roster_paths)
                         recoverable_failure);
 }
 
-UNIT_TEST(restrictions, invalid_workspace_paths)
+UNIT_TEST(invalid_workspace_paths)
 {
   roster_t roster;
   setup(roster);
@@ -883,7 +883,7 @@ UNIT_TEST(restrictions, invalid_workspace_paths)
                         recoverable_failure);
 }
 
-UNIT_TEST(restrictions, ignored_invalid_workspace_paths)
+UNIT_TEST(ignored_invalid_workspace_paths)
 {
   roster_t roster;
   setup(roster);
@@ -899,7 +899,7 @@ UNIT_TEST(restrictions, ignored_invalid_workspace_paths)
   UNIT_TEST_CHECK(!pmask.includes(file_path_internal("bar")));
 }
 
-UNIT_TEST(restrictions, include_depth_0)
+UNIT_TEST(include_depth_0)
 {
   roster_t roster;
   setup(roster);
@@ -971,7 +971,7 @@ UNIT_TEST(restrictions, include_depth_0)
   UNIT_TEST_CHECK(!pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, include_depth_1)
+UNIT_TEST(include_depth_1)
 {
   roster_t roster;
   setup(roster);
@@ -1043,7 +1043,7 @@ UNIT_TEST(restrictions, include_depth_1)
   UNIT_TEST_CHECK(!pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, include_depth_1_empty_restriction)
+UNIT_TEST(include_depth_1_empty_restriction)
 {
   roster_t roster;
   setup(roster);
@@ -1113,7 +1113,7 @@ UNIT_TEST(restrictions, include_depth_1_empty_restriction)
   UNIT_TEST_CHECK(!pmask.includes(fp_yyg));
 }
 
-UNIT_TEST(restrictions, include_depth_2)
+UNIT_TEST(include_depth_2)
 {
   roster_t roster;
   setup(roster);

@@ -503,7 +503,7 @@ setup_roster(roster_t & r, file_id const & fid, node_id_source & nis)
   }
 }
 
-UNIT_TEST(cset, cset_written)
+UNIT_TEST(cset_written)
 {
   {
     L(FL("TEST: cset reading - operation misordering"));
@@ -758,7 +758,7 @@ UNIT_TEST(cset, cset_written)
   }
 }
 
-UNIT_TEST(cset, basic_csets)
+UNIT_TEST(basic_csets)
 {
 
   temp_node_id_source nis;
@@ -937,7 +937,7 @@ UNIT_TEST(cset, basic_csets)
   }
 }
 
-UNIT_TEST(cset, invalid_csets)
+UNIT_TEST(invalid_csets)
 {
   temp_node_id_source nis;
   roster_t r;
@@ -1109,7 +1109,7 @@ UNIT_TEST(cset, invalid_csets)
   }
 }
 
-UNIT_TEST(cset, root_dir)
+UNIT_TEST(root_dir)
 {
   temp_node_id_source nis;
   roster_t r;

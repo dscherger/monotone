@@ -37,7 +37,7 @@ using std::clog;
 using std::exit;
 
 typedef unit_test::unit_test_case test_t;
-typedef map<string const, test_t> test_list_t;
+typedef map<string const, test_t const *> test_list_t;
 typedef map<string const, test_list_t> group_list_t;
 
 // This is used by other global constructors, so initialize on demand.
@@ -47,17 +47,34 @@ static group_list_t & unit_tests()
   return tests;
 }
 
-unit_test::unit_test_case::unit_test_case(char const * group,
-                                          char const * name,
-                                          void (*func)(),
-                                          bool fis)
-  : group(group), name(name), func(func), failure_is_success(fis)
+// this is effectively basename(), but has no dependencies on
+// e.g. system_path being usable yet.  The special-case for 'fis'
+// ensures that the unit tests of the unit tester itself will be
+// run first (see below).
+static string
+extract_group(char const *filename, bool fis)
 {
-  unit_tests()[group][name] = *this;
+  string result(filename);
+  string::size_type last_slash = result.find_last_of("/\\");
+  if (last_slash != string::npos)
+    result.erase(0, last_slash+1);
+  string::size_type first_dot = result.find_first_of('.');
+  if (first_dot != string::npos)
+    result.erase(first_dot, string::npos);
+  if (fis)
+    result.insert(0, 1, '_');
+  return result;
 }
 
-unit_test::unit_test_case::unit_test_case()
-{}
+unit_test::unit_test_case::unit_test_case(char const * g,
+                                          char const * n,
+                                          void (*f)(),
+                                          bool fis)
+  : group(extract_group(g, fis)), name(n), func(f), failure_is_success(fis)
+{
+  // All unit_test_case objects are statically allocated so this is safe.
+  unit_tests()[group][name] = this;
+}
 
 // Test state.
 static bool this_test_failed = false;
@@ -247,7 +264,7 @@ int main(int argc, char * argv[])
 
   try
     {
-      t->second.func();
+      t->second->func();
     }
   catch(require_failed &)
     {
@@ -264,7 +281,7 @@ int main(int argc, char * argv[])
       this_test_failed = true;
     }
 
-  if (this_test_failed && !t->second.failure_is_success)
+  if (this_test_failed && !t->second->failure_is_success)
     {
       L(FL("Test %s:%s failed.\n") % group % test);
       return 1;
@@ -302,51 +319,51 @@ sanity & global_sanity = real_sanity;
 // into a success.  Since we don't want that mechanism used elsewhere,
 // the necessary definition macro is defined here and not in unit_test.hh.
 
-#define NEGATIVE_UNIT_TEST(GROUP, TEST)           \
-  namespace unit_test {                           \
-      static void t_##GROUP##_##TEST();           \
-      static unit_test_case r_##GROUP##_##TEST    \
-      (#GROUP, #TEST, t_##GROUP##_##TEST, true);  \
-  }                                               \
-  static void unit_test::t_##GROUP##_##TEST()
+#define NEGATIVE_UNIT_TEST(TEST)                \
+  namespace unit_test {                         \
+      static void t_##TEST();                   \
+      static const unit_test_case r_##TEST      \
+      (__FILE__, #TEST, t_##TEST, true);        \
+  }                                             \
+  static void unit_test::t_##TEST()
 
 #include <stdexcept>
 
-NEGATIVE_UNIT_TEST(_unit_tester, fail_check)
+NEGATIVE_UNIT_TEST(fail_check)
 {
   UNIT_TEST_CHECKPOINT("checkpoint");
   UNIT_TEST_CHECK(false);
   UNIT_TEST_CHECK(false);
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, fail_require)
+NEGATIVE_UNIT_TEST(fail_require)
 {
   UNIT_TEST_CHECKPOINT("checkpoint");
   UNIT_TEST_REQUIRE(false);
   UNIT_TEST_CHECK(false);
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, fail_throw)
+NEGATIVE_UNIT_TEST(fail_throw)
 {
   UNIT_TEST_CHECK_THROW(string().size(), int);
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, fail_nothrow)
+NEGATIVE_UNIT_TEST(fail_nothrow)
 {
   UNIT_TEST_CHECK_NOT_THROW(throw int(), int);
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, uncaught)
+NEGATIVE_UNIT_TEST(uncaught)
 {
   throw int();
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, uncaught_std)
+NEGATIVE_UNIT_TEST(uncaught_std)
 {
   throw std::bad_exception();
 }
 
-NEGATIVE_UNIT_TEST(_unit_tester, uncaught_std_what)
+NEGATIVE_UNIT_TEST(uncaught_std_what)
 {
   throw std::runtime_error("There is no spoon.");
 }

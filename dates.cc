@@ -564,7 +564,7 @@ date_t::operator -(date_t const & other) const
 
 s64 const FOUR_HUNDRED_YEARS = 400 * YEAR + (100 - 4 + 1) * DAY;
 
-UNIT_TEST(date, our_timegm)
+UNIT_TEST(our_timegm)
 {
 #define OK(x) UNIT_TEST_CHECK(our_timegm(t) == MILLISEC(x))
 
@@ -614,7 +614,7 @@ UNIT_TEST(date, our_timegm)
 #undef OK
 }
 
-UNIT_TEST(date, from_string)
+UNIT_TEST(from_string)
 {
 #define OK(x,y) do {                                    \
     string s_ = date_t(x).as_iso_8601_extended();       \
@@ -737,7 +737,7 @@ UNIT_TEST(date, from_string)
 #undef NO
 }
 
-UNIT_TEST(date, from_unix_epoch)
+UNIT_TEST(from_unix_epoch)
 {
 #define OK_(x,y) do {                              \
     string s_ = date_t(x).as_iso_8601_extended();  \
@@ -866,7 +866,7 @@ UNIT_TEST(date, from_unix_epoch)
 #undef OK
 }
 
-UNIT_TEST(date, comparisons)
+UNIT_TEST(comparisons)
 {
   date_t may = date_t("2000-05-01T00:00:00"),
          jun = date_t("2000-06-01T00:00:00"),
@@ -974,7 +974,7 @@ roundtrip_1(s64 t)
     }
 }
 
-UNIT_TEST(date, roundtrip_all_year_boundaries)
+UNIT_TEST(roundtrip_all_year_boundaries)
 {
   s64 t = EARLIEST_SUPPORTED_DATE;
   u32 year = 1;

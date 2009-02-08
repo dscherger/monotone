@@ -12,37 +12,36 @@
 #ifdef BUILD_UNIT_TESTS
 
 #include "base.hh"
-#include "unit_tests.hh"
-#include "sanity.hh"
 #include "numeric_vocab.hh"
+#include "unit_tests.hh"
 
-UNIT_TEST(widen, widen)
+UNIT_TEST(widen)
 {
   // These all have double-parens to stop the C preprocessor from becoming
   // confused by the commas in the template arguments.  The static_cast<u8>'s
   // are to shut up compiler warnings.
 
   // unsigned -> unsigned
-  I((widen<u8,u8>(1) == 1));
-  I((widen<u8,u8>(255) == 255));
-  I((widen<u8,u8>(static_cast<u8>(-1)) == 255));
-  I((widen<u32,u8>(1) == 1));
-  I((widen<u32,u8>(255) == 255));
-  I((widen<u32,u8>(static_cast<u8>(-1)) == 255));
+  UNIT_TEST_CHECK((widen<u8,u8>(1) == 1));
+  UNIT_TEST_CHECK((widen<u8,u8>(255) == 255));
+  UNIT_TEST_CHECK((widen<u8,u8>(static_cast<u8>(-1)) == 255));
+  UNIT_TEST_CHECK((widen<u32,u8>(1) == 1));
+  UNIT_TEST_CHECK((widen<u32,u8>(255) == 255));
+  UNIT_TEST_CHECK((widen<u32,u8>(static_cast<u8>(-1)) == 255));
   // unsigned -> signed
-  I((widen<s32,u8>(1) == 1));
-  I((widen<s32,u8>(255) == 255));
-  I((widen<s32,u8>(static_cast<u8>(-1)) == 255));
+  UNIT_TEST_CHECK((widen<s32,u8>(1) == 1));
+  UNIT_TEST_CHECK((widen<s32,u8>(255) == 255));
+  UNIT_TEST_CHECK((widen<s32,u8>(static_cast<u8>(-1)) == 255));
   // signed -> signed
-  I((widen<s32,s8>(1) == 1));
-  I((widen<s32,s8>(255) == -1));
-  I((widen<s32,s8>(-1) == -1));
+  UNIT_TEST_CHECK((widen<s32,s8>(1) == 1));
+  UNIT_TEST_CHECK((widen<s32,s8>(255) == -1));
+  UNIT_TEST_CHECK((widen<s32,s8>(-1) == -1));
   // signed -> unsigned ((critical case!))
-  I((widen<u32,s8>(1) == 1));
-  I((widen<u32,s8>(255) == 255));
-  I((widen<u32,s8>(-1) == 255));
+  UNIT_TEST_CHECK((widen<u32,s8>(1) == 1));
+  UNIT_TEST_CHECK((widen<u32,s8>(255) == 255));
+  UNIT_TEST_CHECK((widen<u32,s8>(-1) == 255));
   // contrasts with:
-  I((static_cast<u32>(s8(-1)) == u32(4294967295u)));
+  UNIT_TEST_CHECK((static_cast<u32>(s8(-1)) == u32(4294967295u)));
 }
 
 #endif // BUILD_UNIT_TESTS

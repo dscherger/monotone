@@ -1068,7 +1068,7 @@ find_new_path_for(map<file_path, file_path> const & renames,
 
 using std::logic_error;
 
-UNIT_TEST(paths, path_component)
+UNIT_TEST(path_component)
 {
   char const * const baddies[] = {".",
                             "..",
@@ -1107,7 +1107,7 @@ UNIT_TEST(paths, path_component)
 }
 
 
-UNIT_TEST(paths, file_path_internal)
+UNIT_TEST(file_path_internal)
 {
   char const * const baddies[] = {"/foo",
                             "foo//bar",
@@ -1201,7 +1201,7 @@ static void check_fp_normalizes_to(char const * before, char const * after)
   UNIT_TEST_CHECK(fp.as_external() == after);
 }
 
-UNIT_TEST(paths, file_path_external_null_prefix)
+UNIT_TEST(file_path_external_null_prefix)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string(), true);
@@ -1268,7 +1268,7 @@ UNIT_TEST(paths, file_path_external_null_prefix)
   initial_rel_path.unset();
 }
 
-UNIT_TEST(paths, file_path_external_prefix__MTN)
+UNIT_TEST(file_path_external_prefix__MTN)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string("_MTN"), true);
@@ -1280,7 +1280,7 @@ UNIT_TEST(paths, file_path_external_prefix__MTN)
   check_fp_normalizes_to("../foo", "foo");
 }
 
-UNIT_TEST(paths, file_path_external_prefix_a_b)
+UNIT_TEST(file_path_external_prefix_a_b)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string("a/b"), true);
@@ -1358,7 +1358,7 @@ UNIT_TEST(paths, file_path_external_prefix_a_b)
   initial_rel_path.unset();
 }
 
-UNIT_TEST(paths, basename)
+UNIT_TEST(basename)
 {
   struct t
   {
@@ -1474,7 +1474,7 @@ UNIT_TEST(paths, basename)
   initial_abs_path.unset();
 }
 
-UNIT_TEST(paths, dirname)
+UNIT_TEST(dirname)
 {
   struct t
   {
@@ -1569,7 +1569,7 @@ UNIT_TEST(paths, dirname)
   initial_abs_path.unset();
 }
 
-UNIT_TEST(paths, depth)
+UNIT_TEST(depth)
 {
   char const * const cases[] = {"", "foo", "foo/bar", "foo/bar/baz", 0};
   for (unsigned int i = 0; cases[i]; i++)
@@ -1590,7 +1590,7 @@ static void check_bk_normalizes_to(char const * before, char const * after)
                                    origin::internal).as_internal() == bp.as_internal());
 }
 
-UNIT_TEST(paths, bookkeeping)
+UNIT_TEST(bookkeeping)
 {
   char const * const baddies[] = {"/foo",
                             "foo//bar",
@@ -1642,7 +1642,7 @@ static void check_system_normalizes_to(char const * before, char const * after)
                               origin::internal).as_internal() == sp.as_internal());
 }
 
-UNIT_TEST(paths, system)
+UNIT_TEST(system)
 {
   initial_abs_path.unset();
   initial_abs_path.set(system_path("/a/b"), true);
@@ -1729,7 +1729,7 @@ UNIT_TEST(paths, system)
   initial_rel_path.unset();
 }
 
-UNIT_TEST(paths, access_tracker)
+UNIT_TEST(access_tracker)
 {
   access_tracker<int> a;
   UNIT_TEST_CHECK_THROW(a.get(), logic_error);
@@ -1766,7 +1766,7 @@ static void test_path_equal(string const & left, string const & right)
   I(left_fp == right_fp);
 }
 
-UNIT_TEST(paths, ordering)
+UNIT_TEST(ordering)
 {
   // this ordering is very important:
   //   -- it is used to determine the textual form of csets and manifests
@@ -1794,7 +1794,7 @@ UNIT_TEST(paths, ordering)
                        "fallanopic_not_otherwise_mentioned");
 }
 
-UNIT_TEST(paths, ordering_random)
+UNIT_TEST(ordering_random)
 {
   char x[4] = {0,0,0,0};
   char y[4] = {0,0,0,0};
@@ -1949,7 +1949,7 @@ UNIT_TEST(paths, ordering_random)
     }
 }
 
-UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
+UNIT_TEST(test_internal_string_is_bookkeeping_path)
 {
   char const * const yes[] = {"_MTN",
                         "_MTN/foo",
@@ -1968,7 +1968,7 @@ UNIT_TEST(paths, test_internal_string_is_bookkeeping_path)
                                                                origin::internal)));
 }
 
-UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
+UNIT_TEST(test_external_string_is_bookkeeping_path_prefix_none)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string(), true);
@@ -1992,7 +1992,7 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_none)
                                                                origin::internal)));
 }
 
-UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
+UNIT_TEST(test_external_string_is_bookkeeping_path_prefix_a_b)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string("a/b"), true);
@@ -2018,7 +2018,7 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix_a_b)
                                                                origin::internal)));
 }
 
-UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
+UNIT_TEST(test_external_string_is_bookkeeping_path_prefix__MTN)
 {
   initial_rel_path.unset();
   initial_rel_path.set(string("_MTN"), true);
@@ -2048,7 +2048,7 @@ UNIT_TEST(paths, test_external_string_is_bookkeeping_path_prefix__MTN)
                                                                origin::internal)));
 }
 
-UNIT_TEST(paths, find_old_new_path_for)
+UNIT_TEST(find_old_new_path_for)
 {
   map<file_path, file_path> renames;
   file_path foo = file_path_internal("foo");

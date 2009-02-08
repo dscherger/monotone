@@ -564,7 +564,7 @@ netcmd::write_usher_reply_cmd(utf8 const & server, globish const & pattern)
 #include "transforms.hh"
 #include "lexical_cast.hh"
 
-UNIT_TEST(netcmd, mac)
+UNIT_TEST(mac)
 {
   netcmd out_cmd, in_cmd;
   string buf;
@@ -622,7 +622,7 @@ do_netcmd_roundtrip(netcmd const & out_cmd, netcmd & in_cmd, string & buf)
   UNIT_TEST_CHECK(in_cmd == out_cmd);
 }
 
-UNIT_TEST(netcmd, functions)
+UNIT_TEST(functions)
 {
 
   try

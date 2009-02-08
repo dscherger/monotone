@@ -458,7 +458,7 @@ void calculate_ident(revision_t const & cs,
 #include "unit_tests.hh"
 #include "lexical_cast.hh"
 
-UNIT_TEST(revision, from_network)
+UNIT_TEST(from_network)
 {
   char const * bad_revisions[] = {
     "",

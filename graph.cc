@@ -243,7 +243,7 @@ run_get_reconstruction_path_tests_on_random_graph(size_t num_nodes,
     }
 }
 
-UNIT_TEST(graph, random_get_reconstruction_path)
+UNIT_TEST(random_get_reconstruction_path)
 {
   randomizer rng;
   // Some arbitrary numbers.
@@ -519,7 +519,7 @@ run_a_get_uncommon_ancestors_test(rev_ancestry_map const & child_to_parent_map,
   I(calculated_right_uncommon_ancestors == true_right_uncommon_ancestors);
 }
 
-UNIT_TEST(graph, get_uncommon_ancestors_nasty_convexity_case)
+UNIT_TEST(get_uncommon_ancestors_nasty_convexity_case)
 {
   // This tests the nasty case described in the giant comment above
   // get_uncommon_ancestors:
@@ -676,7 +676,7 @@ run_a_get_uncommon_ancestors_random_test(size_t num_nodes,
     }
 }
 
-UNIT_TEST(graph, get_uncommon_ancestors_randomly)
+UNIT_TEST(get_uncommon_ancestors_randomly)
 {
   randomizer rng;
   run_a_get_uncommon_ancestors_random_test(100, 100, rng);

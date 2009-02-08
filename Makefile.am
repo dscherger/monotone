@@ -11,7 +11,7 @@ SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
 	simplestring_xform.cc simplestring_xform.hh 			\
 	constants.cc constants.hh numeric_vocab.hh 			\
-	platform.hh numeric_vocab.cc origin_type.hh
+	platform.hh origin_type.hh
 
 LUAEXT_SOURCES = 							\
 	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
@@ -303,7 +303,7 @@ UNIT_TEST_SOURCES =							\
 	outdated_indicator.cc packet.cc paths.cc refiner.cc		\
 	restrictions.cc rev_height.cc revision.cc roster.cc		\
 	simplestring_xform.cc string_queue.cc transforms.cc		\
-	unit_tests.cc uri.cc vocab.cc xdelta.cc
+	unit_tester.cc uri.cc vocab.cc xdelta.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and are not used by the main program
