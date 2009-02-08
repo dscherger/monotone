@@ -454,56 +454,6 @@ void calculate_ident(revision_t const & cs,
   ident = revision_id(tid);
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-#include "lexical_cast.hh"
-
-UNIT_TEST(from_network)
-{
-  char const * bad_revisions[] = {
-    "",
-
-    "format_version \"1\"\n",
-
-    "format_version \"1\"\n"
-    "\n"
-    "new_manifest [0000000000000000000000000000000000000000]\n",
-
-    "format_version \"1\"\n"
-    "\n"
-    "new_manifest [000000000000000]\n",
-
-    "format_version \"1\"\n"
-    "\n"
-    "new_manifest [0000000000000000000000000000000000000000]\n"
-    "\n"
-    "old_revision [66ff7f4640593afacdb056fefc069349e7d9ed9e]\n"
-    "\n"
-    "rename \"some_file\"\n"
-    "   foo \"x\"\n",
-
-    "format_version \"1\"\n"
-    "\n"
-    "new_manifest [0000000000000000000000000000000000000000]\n"
-    "\n"
-    "old_revision [66ff7f4640593afacdb056fefc069349e7d9ed9e]\n"
-    "\n"
-    "rename \"some_file\"\n"
-    "   foo \"some_file\"\n"
-  };
-  revision_t rev;
-  for (unsigned i = 0; i < sizeof(bad_revisions)/sizeof(char const*); ++i)
-    {
-      UNIT_TEST_CHECKPOINT((string("iteration ")
-                            + boost::lexical_cast<string>(i)).c_str());
-      UNIT_TEST_CHECK_THROW(read_revision(data(bad_revisions[i],
-                                               origin::network),
-                                          rev),
-                            recoverable_failure);
-    }
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

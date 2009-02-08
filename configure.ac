@@ -150,12 +150,4 @@ BOOST_VERSION_SPECIFIC_BUGS
 MTN_NETXX_DEPENDENCIES
 MTN_SQLITE_DEPENDENCIES
 
-# allow compiling with different flags/optimisation
-# for monotone versus libs, useful for testing.
-# only makes sense if CFLAGS="" or CXXFLAGS=""
-AC_SUBST(MONOTONE_CFLAGS)
-AC_SUBST(MONOTONE_CXXFLAGS)
-AC_SUBST(LIB3RDPARTY_CFLAGS)
-AC_SUBST(LIB3RDPARTY_CXXFLAGS)
-
 AC_OUTPUT

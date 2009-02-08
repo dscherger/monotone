@@ -8,7 +8,6 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#ifdef BUILD_UNIT_TESTS
 #include "base.hh"
 #include "unit_tests.hh"
 #include "transforms.hh"
@@ -6426,8 +6425,6 @@ print_c_array(messages, msg_varname)
 print_c_array(digests, dig_varname)
 
 */
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

@@ -15,8 +15,16 @@ function prepare_to_enumerate_tests (P)
    local err = readfile_q("err")
 
    if status == 0 and err == "" and out ~= "" then
-      unlogged_remove(testdir)
+      -- clean up any on-the-fly tests from a previous run, in case the
+      -- set changed; we mustn't blow away the entire directory because
+      -- it's shared with the makefile (and possibly the source code)
       unlogged_mkdir(testdir)
+      for _,candidate in ipairs(read_directory(testdir)) do
+	 if exists(testdir .. "/" .. candidate .. "/__driver__.lua") then
+	    unlogged_remove(testdir .. "/" .. candidate)
+	 end
+      end
+
       for tcase in string.gmatch(out, "[%w_:]+") do
 	 local tdir = string.gsub(tcase, ':', '_')
 	 unlogged_mkdir(testdir .. "/" .. tdir)

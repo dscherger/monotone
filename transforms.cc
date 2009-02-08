@@ -291,52 +291,6 @@ calculate_ident(revision_data const & dat,
   ident = revision_id(tmp);
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-#include <stdlib.h>
-
-UNIT_TEST(enc)
-{
-  data d2, d1("the rain in spain");
-  gzip<data> gzd1, gzd2;
-  base64< gzip<data> > bgzd;
-  encode_gzip(d1, gzd1);
-  bgzd = encode_base64(gzd1);
-  gzd2 = decode_base64(bgzd);
-  UNIT_TEST_CHECK(gzd2 == gzd1);
-  decode_gzip(gzd2, d2);
-  UNIT_TEST_CHECK(d2 == d1);
-}
-
-UNIT_TEST(calculate_ident)
-{
-  data input(string("the only blender which can be turned into the most powerful vaccum cleaner"),
-             origin::internal);
-  id output;
-  string ident("86e03bdb3870e2a207dfd0dcbfd4c4f2e3bc97bd");
-  calculate_ident(input, output);
-  UNIT_TEST_CHECK(output() == decode_hexenc(ident, origin::internal));
-}
-
-UNIT_TEST(corruption_check)
-{
-  data input(string("i'm so fragile, fragile when you're here"), origin::internal);
-  gzip<data> gzd;
-  encode_gzip(input, gzd);
-
-  // fake a single-bit error
-  string gzs = gzd();
-  string::iterator i = gzs.begin();
-  while (*i != '+')
-    i++;
-  *i = 'k';
-
-  gzip<data> gzbad(gzs, origin::network);
-  data output;
-  UNIT_TEST_CHECK_THROW(decode_gzip(gzbad, output), recoverable_failure);
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

@@ -60,7 +60,6 @@
 ^testlib\.c$
 ^texinfo\.tex$
 ^txt2c$
-^unit-tests$
 ^unit_tester$
 ^unit_tests\.status$
 ^version\.texi$

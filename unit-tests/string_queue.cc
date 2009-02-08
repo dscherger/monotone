@@ -1,23 +1,19 @@
 // unit tests for string_queue
 
-
 #include "base.hh"
-#include "string_queue.hh"
-
-#ifdef BUILD_UNIT_TESTS
-
 #include "unit_tests.hh"
+#include "string_queue.hh"
 
 using std::logic_error;
 
-UNIT_TEST(string_queue)
+UNIT_TEST(basic)
 {
   string_queue sq1;
 
   UNIT_TEST_CHECKPOINT( "append" );
 
   sq1.append("123");
-  sq1.append("45z", 2); // 'z' shall be ignored
+  sq1.append("45z", 2); // 'z' will be ignored
   sq1.append('6');
 
   UNIT_TEST_CHECK( sq1.size() == 6 );
@@ -67,12 +63,10 @@ UNIT_TEST(string_queue)
   UNIT_TEST_CHECK( sq1.empty() );
 }
 
-#endif // BUILD_UNIT_TESTS
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

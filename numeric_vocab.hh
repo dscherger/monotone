@@ -49,6 +49,27 @@ widen(V const & v)
     }
 }
 
+// Writing a 64-bit constant is tricky.  We cannot use the macros that
+// <stdint.h> provides in C99 (INT64_C, or even INT64_MAX) because those
+// macros are not in C++'s version of <stdint.h>.  std::numeric_limits<s64>
+// cannot be used directly, so we have to resort to #ifdef chains on the old
+// skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
+// doesn't let us use std::numeric_limits<s64>::max(), so we rely on
+// one of the users (the unit tests for dates.cc) to check it at runtime.
+
+#if defined LONG_MAX && LONG_MAX > UINT_MAX
+  #define PROBABLE_S64_MAX LONG_MAX
+  #define s64_C(x) x##L
+#elif defined LLONG_MAX && LLONG_MAX > UINT_MAX
+  #define PROBABLE_S64_MAX LLONG_MAX
+  #define s64_C(x) x##LL
+#elif defined LONG_LONG_MAX && LONG_LONG_MAX > UINT_MAX
+  #define PROBABLE_S64_MAX LONG_LONG_MAX
+  #define s64_C(x) x##LL
+#else
+  #error "How do I write a constant of type s64?"
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

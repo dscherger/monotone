@@ -9,11 +9,9 @@
 
 // Currently, this file just contains unit tests for widen<>.
 
-#ifdef BUILD_UNIT_TESTS
-
 #include "base.hh"
-#include "numeric_vocab.hh"
 #include "unit_tests.hh"
+#include "numeric_vocab.hh"
 
 UNIT_TEST(widen)
 {
@@ -44,9 +42,6 @@ UNIT_TEST(widen)
   UNIT_TEST_CHECK((static_cast<u32>(s8(-1)) == u32(4294967295u)));
 }
 
-#endif // BUILD_UNIT_TESTS
-
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -54,4 +49,3 @@ UNIT_TEST(widen)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

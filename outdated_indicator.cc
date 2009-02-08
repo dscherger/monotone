@@ -85,28 +85,6 @@ outdated_indicator_factory::note_change()
   impl->note_change();
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-UNIT_TEST(basic)
-{
-  outdated_indicator indicator;
-  {
-    outdated_indicator_factory factory;
-    UNIT_TEST_CHECK(indicator.outdated());
-    indicator = factory.get_indicator();
-    UNIT_TEST_CHECK(!indicator.outdated());
-    factory.note_change();
-    UNIT_TEST_CHECK(indicator.outdated());
-    factory.note_change();
-    factory.note_change();
-    indicator = factory.get_indicator();
-    UNIT_TEST_CHECK(!indicator.outdated());
-  }
-  UNIT_TEST_CHECK(indicator.outdated());
-}
-
-#endif
 
 
 // Local Variables:

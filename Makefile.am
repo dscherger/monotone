@@ -66,7 +66,7 @@ MOST_SOURCES = 								\
 	annotate.cc annotate.hh						\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
-	string_queue.cc string_queue.hh					\
+	string_queue.hh							\
 	merge_roster.cc merge_conflict.cc merge_roster.hh		\
 	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
@@ -295,28 +295,48 @@ WIN32_PLATFORM_SOURCES =						\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
 	win32/ssh_agent_platform.hh
 
-# these files contain unit tests
-UNIT_TEST_SOURCES =							\
-	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc globish.cc graph.cc merge_3way.cc merge_roster.cc	\
-	netcmd.cc netxx_pipe.cc numeric_vocab.cc option.cc		\
-	outdated_indicator.cc packet.cc paths.cc refiner.cc		\
-	restrictions.cc rev_height.cc revision.cc roster.cc		\
-	simplestring_xform.cc string_queue.cc transforms.cc		\
-	unit_tester.cc uri.cc vocab.cc xdelta.cc
+# these files (part of the main program) contain code subject to unit testing
+
+UNIT_TESTEES =								\
+	basic_io.cc charset.cc commands.cc cset.cc globish.cc graph.cc	\
+	merge_3way.cc merge_roster.cc netcmd.cc netxx_pipe.cc		\
+	option.cc outdated_indicator.cc refiner.cc restrictions.cc	\
+	revision.cc simplestring_xform.cc transforms.cc uri.cc		\
+	vocab.cc xdelta.cc
+
+# these files contain the actual unit tests
+# yes, we have to list them all explicitly, with directory prefix, or
+# automake gets very confused
+UNIT_TESTERS =								\
+	unit-tests/basic_io.cc unit-tests/charset.cc			\
+	unit-tests/commands.cc unit-tests/cset.cc			\
+	unit-tests/globish.cc unit-tests/graph.cc			\
+	unit-tests/merge_3way.cc unit-tests/merge_roster.cc		\
+	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
+	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
+	unit-tests/refiner.cc unit-tests/restrictions.cc		\
+	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
+	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
+	unit-tests/xdelta.cc						\
+									\
+	unit-tests/numeric_vocab.cc unit-tests/sha1.cc			\
+	unit-tests/string_queue.cc unit_tester.cc
+
+# these files contain unit tests that need access to private interfaces
+# of the code under test, so they #include the code under test.  thus,
+# to avoid multiple-definition errors, for these files the code under
+# test is not part of UNIT_TESTEES.
+
+UNIT_TESTERS_PRIV =							\
+	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
+	unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
-# and are not used by the main program
-UNIT_TEST_SRC_SUPPORT =							\
-	randomizer.cc randomizer.hh roster_tests.hh
-
-# these files do not contain unit tests; they are required for unit
-# testing, but can be used "as is" from the main build.
-UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-constants.$(OBJEXT) mtn-file_io.$(OBJEXT)			\
-	mtn-gzip.$(OBJEXT) mtn-hmac.$(OBJEXT) mtn-lcs.$(OBJEXT)		\
-	mtn-merkle_tree.$(OBJEXT) mtn-roster_delta.$(OBJEXT)		\
-	mtn-sanity.$(OBJEXT) mtn-specialized_lexical_cast.$(OBJEXT)
+# note that some are and some aren't part of the main program
+UNIT_TEST_SUPPORT =							\
+	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
+	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
+	sanity.cc specialized_lexical_cast.cc
 
 # primaries
 
@@ -329,14 +349,12 @@ dist_bin_SCRIPTS = mtnopt
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.c schema.c
 
-unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
-unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
+unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
+	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-tester_SOURCES = tester.cc transforms.cc gzip.cc
+tester_SOURCES = tester.cc transforms.cc gzip.cc \
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
 nodist_tester_SOURCES = testlib.c
-tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
-		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
-		 	  	pcrewrap.cc)))
 
 txt2c_SOURCES = txt2c.cc
 
@@ -385,41 +403,19 @@ endif
 
 SUFFIXES = .gch
 
-AM_CPPFLAGS =
+AM_CPPFLAGS = -I$(top_srcdir)/lua
 AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DSQLITE_OMIT_CURSOR -DSQLITE_OMIT_LOAD_EXTENSION -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
-AM_CXXFLAGS = $(AM_CPPFLAGS)
-AM_LDFLAGS =
+AM_CXXFLAGS = $(AM_CPPFLAGS) $(PCH_FLAGS)
 
-lib3rdparty_a_CPPFLAGS =
-lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS) -fpermissive
-
-mtn_LDFLAGS =
-mtn_CPPFLAGS = -I$(top_srcdir)/lua
-mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
-mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
 mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-unit_tester_LDFLAGS =
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua
-unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a \
+unit_tester_LDADD = libplatform.a lib3rdparty.a \
 		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-tester_LDFLAGS =
-tester_CPPFLAGS = -I$(top_srcdir)/lua
-tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
+tester_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
 
 if INCLUDED_PCRE
-  lib3rdparty_a_CPPFLAGS += -I$(top_srcdir)/pcre
-  mtn_CPPFLAGS += -I$(top_srcdir)/pcre
-  unit_tester_CPPFLAGS += -I$(top_srcdir)/pcre
-  tester_CPPFLAGS += -I$(top_srcdir)/pcre
+  AM_CPPFLAGS += -I$(top_srcdir)/pcre
 else
-  mtn_CPPFLAGS += $(PCRE_CFLAGS)
-  unit_tester_CPPFLAGS += $(PCRE_CFLAGS)
-  tester_CPPFLAGS += $(PCRE_CFLAGS)
+  AM_CPPFLAGS += $(PCRE_CFLAGS)
 
   mtn_LDADD += $(PCRE_LIBS)
   unit_tester_LDADD += $(PCRE_LIBS)
@@ -431,7 +427,7 @@ if WIN32_PLATFORM
   mtn_SOURCES += win32/main.cc
   mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  lib3rdparty_a_CPPFLAGS += -DWIN32
+  AM_CPPFLAGS += -DWIN32
   lib3rdparty_a_SOURCES += botan/es_capi.h botan/es_capi.cpp		\
 			   botan/es_win32.cpp botan/es_win32.h
   tester_SOURCES += win32/tester-plaf.cc
@@ -446,12 +442,12 @@ endif
 
 if MISSING_INET_PTON
   lib3rdparty_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_PTON
+  AM_CPPFLAGS += -DNETXX_NO_PTON
 endif
 
 if MISSING_INET_NTOP
   lib3rdparty_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_NTOP
+  AM_CPPFLAGS += -DNETXX_NO_NTOP
 endif
 
 if MISSING_GETADDRINFO
@@ -461,7 +457,7 @@ else
 endif
 
 if MISSING_INET6
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
+  AM_CPPFLAGS += -DNETXX_NO_INET6
 endif
 
 # i18n support
@@ -643,7 +639,11 @@ FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_lua_tests
 
 mostlyclean-local:
-	rm -rf tester_dir unit-tests html
+	rm -rf tester_dir html
+	set -ex; for d in unit-tests/*/__driver__.lua; do \
+	  rm -f $$d; \
+	  rmdir $${d%/*} || :; \
+	done
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_lua_tests		\

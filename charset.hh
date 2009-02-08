@@ -27,6 +27,11 @@ void utf8_to_system_best_effort(utf8 const & utf, external & system);
 void utf8_to_system_best_effort(utf8 const & utf, std::string & system);
 bool utf8_validate(utf8 const & utf);
 
+// These are exposed for unit testing only.
+void ace_to_utf8(std::string const & a, utf8 & utf, origin::type whence);
+void utf8_to_ace(utf8 const & utf, std::string & a);
+
+
 // Returns length in characters (not bytes).
 // Is not aware of combining and invisible characters.
 size_t display_width(utf8 const & utf);
