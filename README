@@ -1,4 +1,4 @@
-Monotone::AutomateStdio Version 0.1
+Monotone::AutomateStdio Version 0.3
 ===================================
 
 This is a Perl library module for accessing Monotone's automate stdio
@@ -14,9 +14,10 @@ Monotone::AutomateStdio see http://www.coosoft.plus.com/software.html.
 INSTALLATION
 ------------
 
-To install this module simply unpack the tar or zip, change into the created
-directory and type the following:
+Simply unpack the tar file and use Makefile.PL by doing:
 
+    tar xvpzf Monotone-AutomateStdio-<Version Number>.tar.gz
+    cd Monotone-AutomateStdio-<Version Number>
     perl Makefile.PL
     make
     make test
@@ -24,7 +25,12 @@ directory and type the following:
 
 To install to a custom location use:
 
-    perl Makefile.PL PREFIX=<Custom Full Path Name>
+    perl Makefile.PL PREFIX=<PATH>
+
+To configure the software to run in a custom location but have the installation
+location prepended by an additional path (useful for package maintainers) use:
+
+    perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH>
 
 Please note that automated testing of this library module is still `work in
 progress'. There is a test harness called mtn-tester that can be used to test

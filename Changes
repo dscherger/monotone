@@ -1,5 +1,15 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+0.03  Sun Feb 8 18:22:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Switched all Perl scripts over to demanding Perl 5.8.5.
+	- Improved an error message (which was causing compilation to fail
+	  anyway).
+	- Added the $mtn->switch_to_ws_root() class method.
+	- Documented the above and under the NOTES section went into greater
+	  detail the issues surrounding using mtn inside workspaces.
+	- Changed the order of the Changes file (most recent first).
+	- Clarified some POD file text.
+
 0.02  Wed Jan 7 16:00:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Updated to work with Monotone version 0.42 (added the
 	  $mtn->file_merge(), $mtn->lua() and $mtn->read_packets() methods and
