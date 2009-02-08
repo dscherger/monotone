@@ -45,7 +45,7 @@ package Monotone::AutomateStdio;
 
 # ***** DIRECTIVES *****
 
-require 5.008;
+require 5.008005;
 
 no locale;
 use integer;
