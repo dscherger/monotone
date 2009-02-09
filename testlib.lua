@@ -859,8 +859,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      set_env(name,"C")
   end
 
-  -- no test suite should touch the user's ssh agent
+  -- no test suite should touch the user's ssh agent or display
   unset_env("SSH_AUTH_SOCK")
+  unset_env("DISPLAY")
 
   logfile = io.open(logname, "w")
   chdir(run_dir);

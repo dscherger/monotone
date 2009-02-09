@@ -70,7 +70,6 @@ extern char const schema_constant[];
 
 using std::deque;
 using std::istream;
-using std::ifstream;
 using std::make_pair;
 using std::map;
 using std::multimap;

@@ -10,13 +10,13 @@
 #include "base.hh"
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <iterator>
 
 #include "charset.hh"
 #include "cmd.hh"
 #include "app_state.hh"
 #include "database.hh"
+#include "file_io.hh"
 #include "project.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -28,7 +28,6 @@ using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::string;
-using std::ofstream;
 
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
     N_("Generates an RSA key-pair"),
@@ -127,9 +126,12 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
     keys.export_key_for_agent(id, cout);
   else
     {
-      string external_path = system_path(idx(args, 0)).as_external();
-      ofstream fout(external_path.c_str(), ofstream::out);
+      ostringstream fout;
       keys.export_key_for_agent(id, fout);
+      data keydat(fout.str(), origin::system);
+
+      system_path fname(idx(args, 0));
+      write_data_userprivate(fname, keydat, fname.dirname());
     }
 }
 

@@ -28,7 +28,6 @@
 using std::cin;
 using std::ifstream;
 using std::ios_base;
-using std::ofstream;
 using std::logic_error;
 using std::string;
 using std::vector;

@@ -27,6 +27,13 @@
           to select() on the file handle, as recommended by the
           select_tut man page.
 
+	- If given a filename, `mtn ssh_agent_export' now creates that
+	  file with the correct permissions (i.e. mode 600), creates
+	  directories as necessary, and does not throw an internal
+	  error if creation or writing fails.  (You're still on your
+	  own for directory creation and permissions if you take the
+	  key on standard output and redirect it to a file.)
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets
