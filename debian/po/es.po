@@ -1,0 +1,88 @@
+# monotone po-debconf translation to Spanish.
+# Copyright (C) 2007.
+# This file is distributed under the same license as the monotone package.
+#
+#  Changes:
+# - Initial translation
+#       Elías A.M. <rumbo_4000@yahoo.es>
+#
+# - Last revision:
+#       Fernando González de Requena <fgrequena@gmail.com>, 2009.
+# 
+#
+#  Traductores, si no conoce el formato PO, merece la pena leer la 
+#  documentación de gettext, especialmente las secciones dedicadas a este
+#  formato, por ejemplo ejecutando:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+# Equipo de traducción al español, por favor lean antes de traducir
+# los siguientes documentos:
+#
+# - El proyecto de traducción de Debian al español
+#   http://www.debian.org/intl/spanish/
+#   especialmente las notas y normas de traducción en
+#   http://www.debian.org/intl/spanish/notas
+#
+# - La guía de traducción de po's de debconf:
+#   /usr/share/doc/po-debconf/README-trans
+#   o http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+# Si tiene dudas o consultas sobre esta traducción consulte con el último
+# traductor (campo Last-Translator) y ponga en copia a la lista de
+# traducción de Debian al español (<debian-l10n-spanish@lists.debian.org>)
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: monotone 0.40-7\n"
+"Report-Msgid-Bugs-To: <monotone-debian@nongnu.org\n"
+"POT-Creation-Date: 2008-07-30 04:33+0200\n"
+"PO-Revision-Date: 2009-01-13 20:08+0200\n"
+"Last-Translator: Fernando González de Requena <fgrequena@gmail.com>\n"
+"Language-Team: Spanish <debian-l10n-spanish@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: boolean
+#. Description
+#: ../monotone-server.templates:1001
+msgid "Automatically manage monotone database?"
+msgstr "¿Desea gestionar automáticamente la base de datos de monotone?"
+
+#. Type: boolean
+#. Description
+#: ../monotone-server.templates:1001
+msgid ""
+"Select this option to automatically manage the monotone database. If "
+"selected, the database will automatically be created. Also when upgrading, "
+"the database will be automatically migrated if necessary."
+msgstr "Seleccione esta opción para gestionar automáticamente la base de datos de monotone. Si la selecciona, se creará la base de datos automáticamente. En una actualización, si fuera necesario, la base de datos se migrará automáticamente."
+
+#. Type: string
+#. Description
+#: ../monotone-server.templates:2001
+msgid "Monotone key id:"
+msgstr "Identificador de la clave de monotone:"
+
+#. Type: string
+#. Description
+#: ../monotone-server.templates:2001
+msgid ""
+"Enter the id of the key your monotone server will use. The key id is "
+"typically an email address."
+msgstr "Introduzca el identificador de la clave que usará el servidor monotone. El identificador de la clave normalmente es una dirección de correo electrónico."
+
+#. Type: password
+#. Description
+#: ../monotone-server.templates:3001
+msgid "Monotone key passphrase:"
+msgstr "Frase de paso (contraseña) de monotone:"
+
+#. Type: password
+#. Description
+#: ../monotone-server.templates:3001
+msgid ""
+"Please choose a passphrase for your monotone key. If left blank, one will be "
+"generated for you."
+msgstr "Por favor, escoja una frase de paso (contraseña) para la identificación de clave. Si la deja en blanco, se generará una. "
