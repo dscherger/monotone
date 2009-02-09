@@ -27,12 +27,15 @@
 
 #include <iostream>
 #include <sstream>
+#include <stack>
 
 using std::cout;
 using std::map;
+using std::make_pair;
 using std::istringstream;
 using std::ostringstream;
 using std::set;
+using std::stack;
 using std::string;
 using std::vector;
 
@@ -125,6 +128,10 @@ namespace
       path(path), content(content), mode(mode) {}
   };
 
+  typedef vector<file_delete>::const_iterator delete_iterator;
+  typedef vector<file_rename>::const_iterator rename_iterator;
+  typedef vector<file_add>::const_iterator add_iterator;
+
   attr_key exe_attr("mtn:execute");
 
   void
@@ -215,6 +222,76 @@ namespace
               }
             break;
           }
+      }
+  }
+
+  // re-order renames so that they occur in the correct order
+  // i.e. rename a->b + rename b->c will be re-ordered as
+  //      rename b->c + rename a->b
+  // this will also insert temporary names to resolve circular 
+  // renames and name swaps:
+  // i.e. rename a->b + rename b->a will be re-ordered as
+  //      rename a->tmp + rename b->a + rename tmp->b
+  void
+  reorder_renames(vector<file_rename> & renames)
+  {
+    typedef map<file_path, file_path> map_type;
+
+    map_type rename_map;
+
+    for (rename_iterator i = renames.begin(); i != renames.end(); ++i)
+      rename_map.insert(make_pair(i->old_path, i->new_path));
+    
+    renames.clear();
+
+    while (!rename_map.empty())
+      {
+        map_type::iterator i = rename_map.begin();
+        I(i != rename_map.end());
+        file_rename base(i->first, i->second);
+        rename_map.erase(i);
+
+        map_type::iterator next = rename_map.find(base.new_path);
+        stack<file_rename> rename_stack;
+
+        // stack renames so their order can be reversed
+        while (next != rename_map.end())
+          {
+            file_rename rename(next->first, next->second);
+            rename_stack.push(rename);
+            rename_map.erase(next);
+            next = rename_map.find(rename.new_path);
+          }
+
+        // break rename loops
+        if (!rename_stack.empty())
+          {
+            file_rename const & top = rename_stack.top();
+            // if there is a loop push another rename onto the stack that
+            // renames the old base to a temporary and adjust the base
+            // rename to account for this
+            if (base.old_path == top.new_path)
+              {
+                // the temporary path introduced here is pretty weak in
+                // terms of random filenames but should suffice for the
+                // already rare situations where any of this is required.
+                string path = top.new_path.as_internal();
+                path += ".tmp.break-rename-loop";
+                file_path tmp = file_path_internal(path);
+                rename_stack.push(file_rename(base.old_path, tmp));
+                base.old_path = tmp;
+              }
+          }
+
+        // insert the stacked renames in reverse order
+        while (!rename_stack.empty())
+          {
+            file_rename rename = rename_stack.top();
+            rename_stack.pop();
+            renames.push_back(rename);
+          }
+        
+        renames.push_back(base);
       }
   }
 
@@ -449,11 +526,9 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       vector<file_rename> renames;
       vector<file_add> additions;
 
-      typedef vector<file_delete>::const_iterator delete_iterator;
-      typedef vector<file_rename>::const_iterator rename_iterator;
-      typedef vector<file_add>::const_iterator add_iterator;
-
       get_changes(old_roster, new_roster, deletions, renames, additions);
+
+      reorder_renames(renames);
 
       // emit file data blobs for modified and added files
 
@@ -522,7 +597,6 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       for (delete_iterator i = deletions.begin(); i != deletions.end(); ++i)
         cout << "D " << quote_path(i->path) << "\n";
 
-      // FIXME: handle rename ordering issues
       for (rename_iterator i = renames.begin(); i != renames.end(); ++i)
         cout << "R " 
              << quote_path(i->old_path) << " " 
@@ -605,6 +679,106 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       write_data(app.opts.export_marks, mark_data, tmp);
     }
 }
+
+#ifdef BUILD_UNIT_TESTS
+
+#include "unit_tests.hh"
+
+UNIT_TEST(git_rename_reordering, reorder_chained_renames)
+{
+  vector<file_rename> renames;
+  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
+  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("c")));
+  renames.push_back(file_rename(file_path_internal("c"), file_path_internal("d")));
+
+  // these should be reordered from a->b b->c c->d to c->d b->c a->b
+  reorder_renames(renames);
+  rename_iterator rename = renames.begin();
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("c"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("d"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("c"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
+  ++rename;
+  UNIT_TEST_CHECK(rename == renames.end());
+}
+
+UNIT_TEST(git_rename_reordering, reorder_swapped_renames)
+{
+  vector<file_rename> renames;
+  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
+  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("a")));
+
+  // these should be reordered from a->b b->a to a->tmp b->a tmp->b
+  reorder_renames(renames);
+  rename_iterator rename = renames.begin();
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a.tmp.break-rename-loop"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a.tmp.break-rename-loop"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
+  ++rename;
+  UNIT_TEST_CHECK(rename == renames.end());
+}
+
+UNIT_TEST(git_rename_reordering, reorder_rename_loop)
+{
+  vector<file_rename> renames;
+  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
+  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("c")));
+  renames.push_back(file_rename(file_path_internal("c"), file_path_internal("a")));
+
+  // these should be reordered from a->b b->c c->a to a->tmp c->a b->c a->b tmp->b
+  reorder_renames(renames);
+  rename_iterator rename = renames.begin();
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a.tmp.break-rename-loop"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("c"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("c"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a.tmp.break-rename-loop"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
+  ++rename;
+  UNIT_TEST_CHECK(rename == renames.end());
+}
+
+UNIT_TEST(git_rename_reordering, reorder_reversed_rename_loop)
+{
+  vector<file_rename> renames;
+  renames.push_back(file_rename(file_path_internal("z"), file_path_internal("y")));
+  renames.push_back(file_rename(file_path_internal("y"), file_path_internal("x")));
+  renames.push_back(file_rename(file_path_internal("x"), file_path_internal("z")));
+
+  // assuming that the x->z rename gets pulled from the rename map first
+  // these should be reordered from z->y y->x x->z to x->tmp y->x z->y tmp->z
+  reorder_renames(renames);
+  rename_iterator rename = renames.begin();
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("x"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("x.tmp.break-rename-loop"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("y"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("x"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("z"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("y"));
+  ++rename;
+  UNIT_TEST_CHECK(rename->old_path == file_path_internal("x.tmp.break-rename-loop"));
+  UNIT_TEST_CHECK(rename->new_path == file_path_internal("z"));
+  ++rename;
+  UNIT_TEST_CHECK(rename == renames.end());
+}
+
+#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++
