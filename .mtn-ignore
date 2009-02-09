@@ -7,9 +7,6 @@
 ^compile$
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
 ^configure$
-^debian/files$
-^debian/monotone
-^debian/monotone\.substvars$
 ^depcomp$
 ^html
 ^install-sh$
