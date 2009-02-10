@@ -454,7 +454,6 @@ void calculate_ident(revision_t const & cs,
   ident = revision_id(tid);
 }
 
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
