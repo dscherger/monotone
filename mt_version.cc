@@ -68,7 +68,7 @@ get_full_version(string & out)
            "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
-	 % s
+	 % base_version % flavour
 	 % BOOST_COMPILER
 	 % BOOST_STDLIB
 	 % BOOST_LIB_VERSION

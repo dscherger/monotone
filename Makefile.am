@@ -129,10 +129,10 @@ WIN32_PLATFORM_SOURCES =						\
 
 UNIT_TESTEES =								\
 	basic_io.cc charset.cc commands.cc cset.cc globish.cc graph.cc	\
-	merge_3way.cc merge_roster.cc netcmd.cc netxx_pipe.cc		\
-	option.cc outdated_indicator.cc refiner.cc restrictions.cc	\
-	revision.cc simplestring_xform.cc transforms.cc uri.cc		\
-	vocab.cc xdelta.cc
+	merge_3way.cc merge_roster.cc mkstemp.cc netcmd.cc		\
+	netxx_pipe.cc option.cc outdated_indicator.cc refiner.cc	\
+	restrictions.cc revision.cc simplestring_xform.cc		\
+	transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files contain the actual unit tests
 # yes, we have to list them all explicitly, with directory prefix, or
@@ -142,12 +142,12 @@ UNIT_TESTERS =								\
 	unit-tests/commands.cc unit-tests/cset.cc			\
 	unit-tests/globish.cc unit-tests/graph.cc			\
 	unit-tests/merge_3way.cc unit-tests/merge_roster.cc		\
-	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
-	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
-	unit-tests/refiner.cc unit-tests/restrictions.cc		\
-	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
-	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
-	unit-tests/xdelta.cc						\
+	unit-tests/mkstemp.cc unit-tests/netcmd.cc			\
+	unit-tests/netxx_pipe.cc unit-tests/option.cc			\
+	unit-tests/outdated_indicator.cc unit-tests/refiner.cc		\
+	unit-tests/restrictions.cc unit-tests/revision.cc		\
+	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
+	unit-tests/uri.cc unit-tests/vocab.cc unit-tests/xdelta.cc	\
 									\
 	unit-tests/numeric_vocab.cc unit-tests/sha1.cc			\
 	unit-tests/string_queue.cc unit_tester.cc
@@ -184,7 +184,7 @@ unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
 
 tester_SOURCES = tester.cc transforms.cc gzip.cc \
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
-nodist_tester_SOURCES = testlib.c
+nodist_tester_SOURCES = testlib.cc
 
 txt2c_SOURCES = txt2c.cc
 
@@ -235,17 +235,17 @@ AM_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
 	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
 AM_CXXFLAGS = $(PCH_FLAGS)
 
-LDADD = $(BOOSTLIBS) $(LIBICONV) $(LIBINTL) $(pcre_LIBS) \
-	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
+LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBINTL)	\
+	$(LIBICONV) $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS)	\
+	$(sqlite_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
-  mtn_LDADD = -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  unit_tester_LDADD = -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  AM_CPPFLAGS += -DWIN32
   tester_SOURCES += win32/tester-plaf.cc
   check_net_SOURCES = win32/tester-check-net.cc
+  AM_CPPFLAGS += -DWIN32
+  LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
