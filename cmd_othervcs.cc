@@ -128,6 +128,13 @@ namespace
       path(path), content(content), mode(mode) {}
   };
 
+  struct file_changes
+  {
+    vector<file_delete> deletions;
+    vector<file_rename> renames;
+    vector<file_add> additions;
+  };
+
   typedef vector<file_delete>::const_iterator delete_iterator;
   typedef vector<file_rename>::const_iterator rename_iterator;
   typedef vector<file_add>::const_iterator add_iterator;
@@ -136,9 +143,7 @@ namespace
 
   void
   get_changes(roster_t const & left, roster_t const & right, 
-              vector<file_delete> & deletions,
-              vector<file_rename> & renames,
-              vector<file_add> & additions)
+              file_changes & changes)
   {
 
     parallel::iter<node_map> i(left.all_nodes(), right.all_nodes());
@@ -156,7 +161,7 @@ namespace
               {
                 file_path path;
                 left.get_name(i.left_key(), path);
-                deletions.push_back(file_delete(path));
+                changes.deletions.push_back(file_delete(path));
               }
             break;
 
@@ -177,7 +182,9 @@ namespace
 
                 file_path path;
                 right.get_name(i.right_key(), path);
-                additions.push_back(file_add(path, file->content, mode));
+                changes.additions.push_back(file_add(path, 
+                                                     file->content, 
+                                                     mode));
               }
             break;
 
@@ -211,14 +218,15 @@ namespace
                 right.get_name(i.right_key(), right_path);
 
                 if (left_path != right_path)
-                  renames.push_back(file_rename(left_path, right_path));
+                  changes.renames.push_back(file_rename(left_path, 
+                                                        right_path));
 
                 // git handles content changes as additions
                 if (left_file->content != right_file->content || 
                     left_mode != right_mode)
-                  additions.push_back(file_add(right_path, 
-                                               right_file->content,
-                                               right_mode));
+                  changes.additions.push_back(file_add(right_path, 
+                                                       right_file->content,
+                                                       right_mode));
               }
             break;
           }
@@ -396,11 +404,64 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   vector<revision_id> revisions;
   toposort(db, revision_set, revisions);
 
-  ticker exported(_("revisions"), "r", 1);
-  exported.set_total(revisions.size());
+  map<revision_id, file_changes> change_map;
+
+  // first process revisions in reverse order and calculate the file changes
+  // for each revision. these are cached in a map for use in the export
+  // phase where revisions are processed in forward order. this trades off
+  // memory for speed, loading rosters in reverse order is ~5x faster than
+  // loading them in forward order and the memory required for file changes
+  // is generally quite small. the memory required here should be comparable
+  // to that for all of the revision texts in the database being exported.
+  //
+  // testing exports of a current monotone database with ~18MB of revision
+  // text in ~15K revisions and a current piding database with ~20MB of
+  // revision text in ~27K revisions indicate that this is a reasonable
+  // approach. the export process reaches around 203MB VSS and 126MB RSS
+  // for the monotone database and around 206MB VSS and 129MB RSS for the
+  // pidgin database.
+
+  {
+    ticker loaded(_("loading"), "r", 1);
+    loaded.set_total(revisions.size());
+
+    for (vector<revision_id>::reverse_iterator 
+           r = revisions.rbegin(); r != revisions.rend(); ++r)
+      {
+        revision_t revision;
+        db.get_revision(*r, revision);
+
+        // we apparently only need/want the changes from the first parent.
+        // including the changes from the second parent seems to cause
+        // failures due to repeated renames. verification of git merge nodes
+        // against the monotone source seems to show that they are correct.
+        // presumably this is somehow because of the 'from' and 'merge'
+        // lines in exported commits below.
+
+        revision_id parent1;
+        edge_map::const_iterator edge = revision.edges.begin();
+        parent1 = edge_old_revision(edge);
+
+        roster_t old_roster, new_roster;
+        db.get_roster(parent1, old_roster);
+        db.get_roster(*r, new_roster);
+
+        file_changes changes;
+        get_changes(old_roster, new_roster, changes);
+        change_map[*r] = changes;
+
+        ++loaded;
+      }
+  }
+
+  // now that we have all the changes process the revisions in forward order
+  // and write out the fast-export data stream.
 
   size_t revnum = 0;
   size_t revmax = revisions.size();
+
+  ticker exported(_("exporting"), "r", 1);
+  exported.set_total(revisions.size());
 
   for (vector<revision_id>::const_iterator 
          r = revisions.begin(); r != revisions.end(); ++r)
@@ -511,28 +572,16 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       else
         I(false);
 
-      // we apparently only need/want the changes from the first parent.
-      // including the changes from the second parent seems to cause failures
-      // due to repeated renames. verification of git merge nodes against the
-      // monotone source seems to show that they are correct.  presumably this
-      // is somehow because of the 'from' and 'merge' lines in exported commits
-      // below.
+      map<revision_id, file_changes>::iterator f = change_map.find(*r);
+      I(f != change_map.end());
+      file_changes & changes = f->second;
 
-      roster_t old_roster, new_roster;
-      db.get_roster(parent1, old_roster);
-      db.get_roster(*r, new_roster);
-
-      vector<file_delete> deletions;
-      vector<file_rename> renames;
-      vector<file_add> additions;
-
-      get_changes(old_roster, new_roster, deletions, renames, additions);
-
-      reorder_renames(renames);
+      reorder_renames(changes.renames);
 
       // emit file data blobs for modified and added files
 
-      for (add_iterator i = additions.begin(); i != additions.end(); ++i)
+      for (add_iterator 
+             i = changes.additions.begin(); i != changes.additions.end(); ++i)
         {
           if (marked_files.find(i->content) == marked_files.end())
             {
@@ -569,7 +618,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
           for ( ; date != dates.end(); ++date)
             message << "Monotone-Date: " << date->inner().value() << "\n";
 
-          for (cert_iterator branch = branches.begin() ; branch != branches.end(); ++branch)
+          for (cert_iterator 
+                 branch = branches.begin() ; branch != branches.end(); ++branch)
             message << "Monotone-Branch: " << branch->inner().value() << "\n";
 
           for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
@@ -594,15 +644,18 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
       if (!null_id(parent2))
         cout << "merge :" << marked_revs[parent2] << "\n";
 
-      for (delete_iterator i = deletions.begin(); i != deletions.end(); ++i)
+      for (delete_iterator
+             i = changes.deletions.begin(); i != changes.deletions.end(); ++i)
         cout << "D " << quote_path(i->path) << "\n";
 
-      for (rename_iterator i = renames.begin(); i != renames.end(); ++i)
+      for (rename_iterator
+             i = changes.renames.begin(); i != changes.renames.end(); ++i)
         cout << "R " 
              << quote_path(i->old_path) << " " 
              << quote_path(i->new_path) << "\n";
 
-      for (add_iterator i = additions.begin(); i != additions.end(); ++i)
+      for (add_iterator
+             i = changes.additions.begin(); i != changes.additions.end(); ++i)
         cout << "M " << i->mode << " :" 
              << marked_files[i->content] << " " 
              << quote_path(i->path) << "\n";
