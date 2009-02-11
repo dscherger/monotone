@@ -52,6 +52,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
+	git_export.cc git_export.hh 					\
 	revision.cc revision.hh						\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
@@ -303,12 +304,12 @@ UNIT_TEST_SOURCES =							\
 	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
 	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
 	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc cmd_othervcs.cc
+	xdelta.cc git_export.cc
 
 # these files do not contain unit tests, but are required for unit testing
 # and must be recompiled for that purpose
 UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc rcs_import.cc rcs_file.cc
+	roster_delta.cc
 
 # these files do not contain unit tests; they are required for unit
 # testing, but can be used "as is" from the main build.  (many of
