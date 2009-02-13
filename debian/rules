@@ -69,9 +69,11 @@ build: build-arch
 config.status: configure
 	dh_testdir
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	mv -f config.sub config.sub.upstream
 	cp -f /usr/share/misc/config.sub config.sub
 endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	mv -f config.guess config.guess.upstream
 	cp -f /usr/share/misc/config.guess config.guess
 endif
 	./configure $(BUILD_AND_HOST) \
@@ -112,6 +114,8 @@ clean:
 	dh_testroot
 	[ ! -f Makefile ] || $(MAKE) distclean
 	rm -f build-arch-stamp build-indep-stamp
+	[ ! -f config.sub.upstream ] || mv -f config.sub.upstream config.sub
+	[ ! -f config.guess.upstream ] || mv -f config.guess.upstream config.guess
 	dh_clean
 
 # Build architecture-independent files here.

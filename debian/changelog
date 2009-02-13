@@ -1,3 +1,19 @@
+monotone (0.42-2) unstable; urgency=low
+
+  * debian/control: Allow use of boost1.35-dev or boost1.37-dev
+    as alternatives to plain boost-dev.  Add ${misc:Depends} to
+    monotone and monotone-doc Depends: lines.
+  * po/es.po: New Spanish debconf template translation, thanks to
+    Fernando González de Requena (closes: #512996).
+  * Include a manpage for mtnopt.
+  * Add missing 'set -e' to monotone-doc.postinst.
+  * Recreate /var/run/monotone in init script if missing, to
+    accommodate systems where /var/run is a tmpfs.
+  * Tweak handling of config.sub/config.guess for build reproducibility.
+  * Upload to unstable now lenny is released (closes: #512035).
+
+ -- Zack Weinberg <zackw@panix.com>  Mon, 16 Feb 2009 10:22:12 -0800
+
 monotone (0.42-1) unstable; urgency=low
 
   * New upstream version.
