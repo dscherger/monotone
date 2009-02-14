@@ -14,8 +14,12 @@
 #include <set>
 #include "vector.hh"
 
+#include "branch_name.hh"
 #include "vocab.hh"
 #include "dates.hh"
+
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 // Certs associate an opaque name/value pair with a revision ID, and
 // are accompanied by an RSA public-key signature attesting to the
@@ -80,6 +84,15 @@ bool put_simple_revision_cert(database & db,
                               revision_id const & id,
                               cert_name const & nm,
                               cert_value const & val);
+typedef boost::function<bool (std::set<rsa_keypair_id> const &,
+                              revision_id const &,
+                              cert_name const &,
+                              cert_value const &)> trust_function;
+
+void erase_bogus_certs(database & db,
+                       trust_function trust_fn,
+                       std::vector< revision<cert> > & certs);
+
 
 void erase_bogus_certs(database & db, std::vector< revision<cert> > & certs);
 void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
@@ -91,7 +104,7 @@ void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
 void
 cert_revision_in_branch(database & db, key_store & keys,
                         revision_id const & rev,
-                        branch_name const & branchname);
+                        branch_uid const & branchname);
 
 
 // We also define some common cert types, to help establish useful
@@ -115,7 +128,7 @@ guess_branch(options & opts, project_t & project, revision_id const & rev);
 void
 cert_revision_suspended_in_branch(database & db, key_store & keys,
                                   revision_id const & rev,
-                                  branch_name const & branchname);
+                                  branch_uid const & branchname);
 
 void
 cert_revision_date_time(database & db, key_store & keys,

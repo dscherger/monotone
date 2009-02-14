@@ -884,7 +884,7 @@ session::session(options & opts,
   key_refiner(key_item, voice, *this),
   cert_refiner(cert_item, voice, *this),
   rev_refiner(revision_item, voice, *this),
-  rev_enumerator(project, *this),
+  rev_enumerator(project.db, *this),
   initiated_by_server(initiated_by_server)
 {}
 
@@ -1628,7 +1628,6 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
             % printable_key_hash);
           project.db.set_var(their_key_key, printable_key_hash);
         }
-
       if (project.db.public_key_exists(their_keyname))
         {
           rsa_pub_key tmp;
@@ -2169,7 +2168,7 @@ session::load_data(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         project.db.get_epoch(epoch_id(item), branch, epoch);
         write_epoch(branch, epoch, out);
@@ -2239,14 +2238,14 @@ session::process_data_cmd(netcmd_item_type type,
     {
     case epoch_item:
       {
-        branch_name branch;
+        branch_uid branch;
         epoch_data epoch;
         read_epoch(dat, branch, epoch);
         L(FL("received epoch %s for branch %s")
           % epoch % branch);
-        map<branch_name, epoch_data> epochs;
+        map<branch_uid, epoch_data> epochs;
         project.db.get_epochs(epochs);
-        map<branch_name, epoch_data>::const_iterator i;
+        map<branch_uid, epoch_data>::const_iterator i;
         i = epochs.find(branch);
         if (i == epochs.end())
           {
@@ -3362,7 +3361,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   }
 
   {
-    map<branch_name, epoch_data> epochs;
+    map<branch_uid, epoch_data> epochs;
     project.db.get_epochs(epochs);
 
     epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'),
@@ -3370,8 +3369,8 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
     for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
-        branch_name const & branch(*i);
-        map<branch_name, epoch_data>::const_iterator j;
+        branch_uid branch = project.translate_branch(*i);
+        map<branch_uid, epoch_data>::const_iterator j;
         j = epochs.find(branch);
 
         // Set to zero any epoch which is not yet set.
