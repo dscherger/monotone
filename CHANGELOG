@@ -1,0 +1,12 @@
+2009-02-15:
+
+- Added basic documentation and readme
+
+
+2009-01-17:
+
+- Start of the project.
+- Search for a XSLT 2.0 capable processor, which is needed for generating more than one output file out of the basic TechML documentation, which comes in a single file.
+- Experiments with the "multiple document" features of XSLT.
+- First basic templates which split the input TechML into logical blocks along the different chapters.
+- Creation of a group of recursive working templates which convert the plain TechML structure into a hierarchical one. This is mainly used for building up the path for the output documents.

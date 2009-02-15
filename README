@@ -1,0 +1,88 @@
+--------------------------------------------------------------------------------
+ Monotone distributed version control system
+--------------------------------------------------------------------------------
+ TechML to Wiki XSLT converter
+--------------------------------------------------------------------------------
+ Author: Philipp Groeschler
+ Mailto: monotone@plasma.cx
+ Last change: 2009-02-15
+--------------------------------------------------------------------------------
+
+PURPOSE & INTRODUCTION
+
+After quite a while of having Monotone in daily use at work and also following
+its development on the mailing list, I have been looking for a way to
+contribute to the project. The main work in Monotone is done in C++ which I
+last used during my days at the university. Today I am using other languages
+and technologies, so contribution seemed somewhat out of range.
+
+During the preliminaries to the "Mtn Mini Summit" in january 2009, an issue
+came up on the mailing list, asking for a way to automatically convert the
+original documentation into a bunch of files which can be included in the new
+Wiki system. Since the original documentation is done in TechInfo and can thus
+be output in XML format, this was my chance.
+
+To make a long story short, this small project consists of a collection of XSLT
+files which take a single TechML file and convert it into a structure of
+directories and documents in a desired target format.
+
+Currently available formats are MDWN (ikiwiki) and HTML. The latter one is for
+testing purposes only and its output filter will possibly never be finished. As
+the structure of the XSLT allows for pluggable output filters, each one could
+create his own filter as desired, without the need to touch the others filters
+or the basic template.
+
+
+USING THE CONVERTER
+
+For development and testing I use the Saxon-B XSLT processor from Michael Kay.
+It is written in Java and therefore needs a JVM to be executed. The reason for
+the use of this package is that it is the only XSLT 2.0 capable processor known
+to me at the current time. Any other transformation engine could be used.
+
+If you have successfully tested other processors with this converter, please
+let me know. The short-term available documentation to this project should
+include a list of XSLT processors which are known to suceed or fail on the job.
+
+First step: Get the TechInfo XML file
+
+Open up a console, switch over to the Monotone source directory and type in
+$ makeinfo --xml monotone.texi
+
+This should result in a file called "monotone.xml" containing the documentation
+in TechML format. Move this file to the destination to where you have installed
+the converter XSLT and change to this directory.
+
+Second step: Generate document tree
+
+Still using Saxon as example, type in
+$ java -jar saxon9.jar -xsl:mtn_texml_to_wiki.xslt monotone.xml
+
+Any other XSLT processor should just get "monotone.xml" as input file and
+"mtn_texml_to_wiki.xslt" as template file. The converter then should do its
+work using default settings, like:
+
+- output directory is set to ./wikifiles
+- output format is MDWN
+
+The output destination directory will be created if non existant, files will be
+overwritten silently on repetition of calling the converter.
+
+
+BUGS AND ANNOTATIONS
+
+The project has not even near production quality at the time of this writing.
+Future development should include at least one completely working filter plugin
+and also some sort of shell script to save you from typing in all commands at
+your shell. At least this latter issue could be a tricky one, as it is not
+intended to include a full XSLT processor and each one has a different manner
+of usage and calling parameters.
+
+Maybe this converter will be included into the distribution at some time, but
+that is not my decision. Its purpose is definitely not aimed to the end user
+but to help the people which maintain the release or rather the documentation.
+The future use and direction of this project are therefore to be discussed by
+people in charge.
+
+
+--------------------------------------------------------------------------------
