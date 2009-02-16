@@ -176,14 +176,9 @@ building and installation process for monotone
 
            13. gettext
                $ cd /usr/src
-               $ tar zxf gettext-0.16.1.tar.gz
-               $ cd gettext-0.16.1
-               $ wget 'http://cvs.savannah.gnu.org/viewvc/gettext/gettext/gettext-runtime/intl/\
-                 localename.c?r1=1.15&r2=1.16&view=patch' -O localename_1.15-1.16.patch
-               $ cd gettext-runtime/intl
-               $ patch -p0 < ../../localename_1.15-1.16.patch
-               $ cd ../..
-               $ ./configure --prefix=/mingw
+               $ tar zxf gettext-0.17.tar.gz
+               $ cd gettext-0.17
+               $ ./configure --prefix=/usr/local
                $ make install
 
            14. If the wget command here fails, get the patch manually
@@ -236,9 +231,9 @@ building and installation process for monotone
                $ make install
 
             cd monotone
-            ./configure LUA_CFLAGS=-I/usr/local/include LUA_LIBS="-L/usr/local/lib -llua" \
-                        SQLITE3_CFLAGS=-I/usr/local/include SQLITE3_LIBS="-L/usr/local/lib -lsqlite3" \
-                        LIBIDN_CFLAGS=-I/usr/local/include LIBIDN_LIBS="-L/usr/local/lib -lidn"
+            ./configure lua_CFLAGS=-I/usr/local/include lua_LIBS="-L/usr/local/lib -llua" \
+                        sqlite_CFLAGS=-I/usr/local/include sqlite_LIBS="-L/usr/local/lib -lsqlite3" \
+                        idn_CFLAGS=-I/usr/local/include idn_LIBS="-L/usr/local/lib -lidn"
 
            # Notes
 
