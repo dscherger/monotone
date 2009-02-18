@@ -343,7 +343,7 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # the user's LINGUAS env. variable.  Additional settings are in
 # po/Makevars.
 #
-# Only the foo.po-update target will overwrite a file in the source 
+# Only the foo.po-update target will overwrite a file in the source
 # po/ directory.
 
 include $(srcdir)/po/Makevars
@@ -380,7 +380,7 @@ if REBUILD_NLS
 %.gmo: %.merged.po
 	$(MSGFMT) -c --statistics -o $@ $<
 
-%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot 
+%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
 	$(MSGMERGE) $^ -o $@
 
 # for translators' use
@@ -571,17 +571,17 @@ txt2c$(EXEEXT): txt2c.cc
 	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $<
 
 # FIXME: should use stamp files.
-%.cc: %.sql txt2c
+%.cc: %.sql txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.cc: %.lua txt2c
+%.cc: %.lua txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.cc: %.txt txt2c
+%.cc: %.txt txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
