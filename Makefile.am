@@ -192,7 +192,6 @@ noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
-lib3rdparty_a_CPPFLAGS = # may be augmented in conditionals
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
