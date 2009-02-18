@@ -53,6 +53,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
+	git_export.cc git_export.hh 					\
 	revision.cc ancestry.cc revision.hh				\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\

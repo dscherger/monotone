@@ -725,6 +725,66 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
 }
 #endif
 
+OPT(authors_file, "authors-file", system_path, , 
+    gettext_noop("file mapping author names from original to new values"))
+#ifdef option_bodies
+{
+  authors_file = system_path(arg);
+}
+#endif
+
+OPT(branches_file, "branches-file", system_path, , 
+    gettext_noop("file mapping branch names from original to new values "))
+#ifdef option_bodies
+{
+  branches_file = system_path(arg);
+}
+#endif
+
+OPT(refs, "refs", std::set<std::string>, , 
+    gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
+#ifdef option_bodies
+{
+  if (arg == "revs" || arg == "roots" || arg == "leaves")
+    refs.insert(arg);
+  else
+    throw bad_arg_internal
+      (F("git ref type must be 'revs', 'roots', or 'leaves'").str());
+}
+#endif
+
+OPT(log_revids, "log-revids", bool, false,
+    gettext_noop("include revision ids in commit logs"))
+#ifdef option_bodies
+{
+  log_revids = true;
+}
+#endif
+
+OPT(log_certs, "log-certs", bool, false,
+    gettext_noop("include standard cert values in commit logs"))
+#ifdef option_bodies
+{
+  log_certs = true;
+}
+#endif
+
+OPT(import_marks, "import-marks", system_path, ,
+    gettext_noop("load the internal marks table before exporting revisions"))
+#ifdef option_bodies
+{
+  import_marks = system_path(arg);
+}
+#endif
+
+OPT(export_marks, "export-marks", system_path, ,
+    gettext_noop("save the internal marks table after exporting revisions"))
+#ifdef option_bodies
+{
+  export_marks = system_path(arg);
+}
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
