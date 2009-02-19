@@ -686,34 +686,26 @@ BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
 CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES)
 
-txt2c: txt2c.cc
-	$(CXX) $(CXXFLAGS) -o $@ $<
-	chmod 0755 $@$(EXEEXT)
+# files generated using txt2c
+std_hooks.c: std_hooks.lua txt2c$(EXEEXT)
+	./txt2c std_hooks $< $@
 
-# FIXME: should use stamp files.
-%.c: %.sql txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+testlib.c: testlib.lua txt2c$(EXEEXT)
+	./txt2c testlib $< $@
 
-%.c: %.lua txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+schema.c: schema.sql txt2c$(EXEEXT)
+	./txt2c schema $< $@
 
-%.c: %.txt txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+package_revision.c: package_revision.txt txt2c$(EXEEXT)
+	./txt2c --strip-trailing package_revision $< $@
+
+package_full_revision.c: package_full_revision.txt txt2c$(EXEEXT)
+	./txt2c package_full_revision $< $@
+
 
 # Support for scripts
 %: util/%
 	cp $< $@
-
-# This construct causes --strip-trailing to be applied only when
-# generating package_revision.c.
-TXT2CFLAGS =
-package_revision.c : TXT2CFLAGS = --strip-trailing
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
