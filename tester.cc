@@ -30,7 +30,7 @@ extern char const testlib_constant[];
 struct tester_sanity : public sanity
 {
   void inform_log(std::string const &msg)
-  {fprintf(stdout, "%s", msg.c_str());}
+  {/*fprintf(stdout, "%s", msg.c_str());*/}
   void inform_message(std::string const &msg)
   {fprintf(stdout, "%s", msg.c_str());};
   void inform_warning(std::string const &msg)

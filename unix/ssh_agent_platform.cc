@@ -126,7 +126,7 @@ ssh_agent_platform::read_data(string::size_type len, string & out)
       ssize_t recvd = ::recv(sock, buf, min(get, bufsize), MSG_WAITALL);
 
       E(recvd >= 0, origin::system,
-	F("ssh_agent: error during recieve: %s") % strerror(errno));
+	F("ssh_agent: error during receive: %s") % strerror(errno));
       if (recvd == 0)
 	E(++deadcycles < 8, origin::system,
 	  F("ssh_agent: giving up after %d ineffective receives from agent"));
