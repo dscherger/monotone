@@ -375,7 +375,7 @@ protected:
   }
   bool output_overfull() const
   {
-    return outbuf.size() > constants::bufsz * 10;
+    return outbuf_size > constants::bufsz * 10;
   }
 public:
   string peer_id;
