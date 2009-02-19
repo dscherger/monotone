@@ -3,7 +3,18 @@ skip_if(not existsonpath("env"))
 mtn_setup()
 
 function noenv_mtn(...)
-  return {"env", "-i", unpack(mtn(unpack(arg)))}
+  -- strip all environment variables, except for the library path, so that
+  -- we can link against libraries in non-standard locations. So far I've
+  -- only tested that on Linux.
+  save_LD_LIBRARY_PATH = os.getenv("LD_LIBRARY_PATH")
+  if save_LD_LIBRARY_PATH then
+    return {"env", "-i",
+            "LD_LIBRARY_PATH="..save_LD_LIBRARY_PATH,
+            unpack(mtn(unpack(arg)))}
+  else
+    return {"env", "-i",
+            unpack(mtn(unpack(arg)))}
+  end
 end
 
 if ostype == "Windows" then

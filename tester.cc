@@ -1,4 +1,7 @@
 #include "base.hh"
+#include <botan/botan.h>
+#include "botan_pipe_cache.hh"
+
 #include "lua.hh"
 #include "paths.hh"
 #include "platform.hh"
@@ -6,8 +9,6 @@
 #include "tester-plaf.hh"
 #include "vector.hh"
 #include "sanity.hh"
-#include "botan/botan.h"
-#include "botan_pipe_cache.hh"
 #include "lexical_cast.hh"
 #include <cstring>
 
