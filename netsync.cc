@@ -366,16 +366,16 @@ protected:
   string_queue inbuf;
 private:
   deque< pair<string, size_t> > outbuf;
-  size_t outbuf_size; // so we can avoid queueing up too much stuff
+  size_t outbuf_bytes; // so we can avoid queueing up too much stuff
 protected:
   void queue_output(string const & s)
   {
     outbuf.push_back(make_pair(s, 0));
-    outbuf_size += s.size();
+    outbuf_bytes += s.size();
   }
   bool output_overfull() const
   {
-    return outbuf_size > constants::bufsz * 10;
+    return outbuf_bytes > constants::bufsz * 10;
   }
 public:
   string peer_id;
@@ -397,7 +397,7 @@ public:
 
   session_base(string const & peer_id,
                shared_ptr<Netxx::StreamBase> str) :
-    outbuf_size(0),
+    outbuf_bytes(0),
     peer_id(peer_id), str(str),
     last_io_time(::time(NULL)),
     protocol_state(working_state),
@@ -528,7 +528,7 @@ session_base::write_some()
     {
       if ((size_t)count == writelen)
         {
-          outbuf_size -= outbuf.front().first.size();
+          outbuf_bytes -= outbuf.front().first.size();
           outbuf.pop_front();
         }
       else
