@@ -26,7 +26,10 @@ mtn_sanity::initialize(int argc, char ** argv, char const * lc_all)
 void
 mtn_sanity::inform_log(std::string const &msg)
 {
-  ui.inform(msg);
+  if (debug_p())
+    {
+      ui.inform(msg);
+    }
 }
 
 void
