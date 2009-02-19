@@ -318,12 +318,10 @@ sanity::generic_failure(char const * expr,
   if (!imp)
     throw std::logic_error("sanity::generic_failure occured "
                            "before sanity::initialize");
-  if (imp->debug)
-    {
-      log(FL("%s:%d: detected %s error, '%s' violated")
-          % file % line % origin::type_to_string(caused_by) % expr,
-          file, line);
-    }
+
+  log(FL("%s:%d: detected %s error, '%s' violated")
+      % file % line % origin::type_to_string(caused_by) % expr,
+      file, line);
   gasp();
 
   string prefix;
