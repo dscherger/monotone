@@ -375,7 +375,7 @@ protected:
   }
   bool output_overfull() const
   {
-    return outbuf.size() > constants::bufsz * 10;
+    return outbuf_size > constants::bufsz * 10;
   }
 public:
   string peer_id;
@@ -2581,11 +2581,19 @@ session::begin_service()
 void
 session::maybe_step()
 {
+  date_t start_time = date_t::now();
+
   while (done_all_refinements()
          && !rev_enumerator.done()
          && !output_overfull())
     {
       rev_enumerator.step();
+
+      // Safety check, don't spin too long without
+      // returning to the event loop.
+      s64 elapsed_millisec = date_t::now() - start_time;
+      if (elapsed_millisec > 1000 * 10)
+        break;
     }
 }
 
