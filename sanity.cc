@@ -319,10 +319,12 @@ sanity::generic_failure(char const * expr,
     throw std::logic_error("sanity::generic_failure occured "
                            "before sanity::initialize");
 
+  log(FL("Encountered an error while musing upon the following:"),
+      file, line);
+  gasp();
   log(FL("%s:%d: detected %s error, '%s' violated")
       % file % line % origin::type_to_string(caused_by) % expr,
       file, line);
-  gasp();
 
   string prefix;
   if (caused_by == origin::user)
