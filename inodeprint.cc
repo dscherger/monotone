@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <iterator>
 
+#include <botan/botan.h>
+#include <botan/sha160.h>
+
 #include "inodeprint.hh"
 #include "sanity.hh"
 #include "platform.hh"
@@ -20,9 +23,6 @@
 #include "constants.hh"
 #include "basic_io.hh"
 #include "vocab_cast.hh"
-
-#include "botan/botan.h"
-#include "botan/sha160.h"
 
 using std::ostream;
 using std::ostringstream;
