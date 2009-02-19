@@ -30,15 +30,15 @@ AC_C_INLINE
 AC_CC_FEXCEPTIONS
 
 AC_CACHE_CHECK([whether this is Windows],
-       ac_win32, [
+       ac_cv_win32, [
        AC_TRY_COMPILE([#ifdef WIN32
                        #include <windows.h>
                        #endif],
                       [HANDLE h; DWORD d;],
-                      ac_win32=yes,
-                      ac_win32=no)
+                      ac_cv_win32=yes,
+                      ac_cv_win32=no)
 ])
-if test "$ac_win32" = "yes"; then
+if test "$ac_cv_win32" = "yes"; then
    AM_CONDITIONAL(WIN32_PLATFORM, true)
    AC_DEFINE(os_err_t, unsigned int, [OS-specific error type])
 else
@@ -47,15 +47,15 @@ else
 fi
 
 AC_CACHE_CHECK([whether this is AIX],
-       ac_aix, [
+       ac_cv_aix, [
        AC_TRY_COMPILE([#ifndef _AIX
                        #error "This is not AIX"
                        #endif],
                       [int i;],
-                      ac_aix=yes,
-                      ac_aix=no)
+                      ac_cv_aix=yes,
+                      ac_cv_aix=no)
 ])
-if test "$ac_aix" = "yes"; then
+if test "$ac_cv_aix" = "yes"; then
    AM_CONDITIONAL(AIX_PLATFORM, true)
    LDFLAGS="$LDFLAGS -Wl,-bexpfull"
 else
