@@ -350,7 +350,8 @@ CMD_AUTOMATE(stdio, "",
 
       try
         {
-          automate const * acmd = reinterpret_cast< automate const * >(cmd);
+          automate const * acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd);
           acmd->exec_from_automate(app, id, args, os);
         }
       catch(recoverable_failure & f)
@@ -448,7 +449,9 @@ LUAEXT(mtn_automate, )
       opts.instantiate(&app_p->opts).from_command_line(args, false);
       args_vector & parsed_args = app_p->opts.args;
 
-      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      commands::automate const * acmd
+        = dynamic_cast< commands::automate const * >(cmd);
+      I(acmd);
       acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // allow further calls

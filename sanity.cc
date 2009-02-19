@@ -318,13 +318,13 @@ sanity::generic_failure(char const * expr,
   if (!imp)
     throw std::logic_error("sanity::generic_failure occured "
                            "before sanity::initialize");
-  if (imp->debug)
-    {
-      log(FL("%s:%d: detected %s error, '%s' violated")
-          % file % line % origin::type_to_string(caused_by) % expr,
-          file, line);
-    }
+
+  log(FL("Encountered an error while musing upon the following:"),
+      file, line);
   gasp();
+  log(FL("%s:%d: detected %s error, '%s' violated")
+      % file % line % origin::type_to_string(caused_by) % expr,
+      file, line);
 
   string prefix;
   if (caused_by == origin::user)
@@ -335,10 +335,8 @@ sanity::generic_failure(char const * expr,
     {
       prefix = _("error: ");
     }
-  string detection_msg((F("detected at %s:%d") % file % line).str());
   string message;
-  prefix_lines_with(prefix, detection_msg + string("\n") +
-                    do_format(explain, file, line), message);
+  prefix_lines_with(prefix, do_format(explain, file, line), message);
   switch (caused_by)
     {
     case origin::database:
