@@ -227,16 +227,15 @@ pch-file:
 	&& mv "./$(PCH_FILE).Tdep" "./$(PCH_FILE).dep" \
 	|| rm "./$(PCH_FILE).Tdep"
 endif
+AM_CXXFLAGS = $(PCH_FLAGS)
 
 SUFFIXES = .gch .merged.po .gmo
 
-AM_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
+AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
 	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
-AM_CXXFLAGS = $(PCH_FLAGS)
 
-LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBINTL)	\
-	$(LIBICONV) $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS)	\
-	$(sqlite_LIBS) $(idn_LIBS)
+LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
