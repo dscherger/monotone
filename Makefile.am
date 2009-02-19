@@ -749,8 +749,8 @@ package_revision.txt: package_revision_raw.txt
 .PHONY: package_full_revision_raw.txt
 package_full_revision_raw.txt:
 	REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_revision) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && mtn --root=. automate get_revision) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
 # See above comment -- the file this depends on may or may not exist.
 # This file, however, must always exist, so that 'make dist' can
