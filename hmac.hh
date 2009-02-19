@@ -2,7 +2,8 @@
 #define __HMAC_HH__
 
 
-#include "botan/botan.h"
+#include <botan/botan.h>
+
 #include "vocab.hh"
 #include "constants.hh"
 #include "string_queue.hh"

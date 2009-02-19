@@ -15,9 +15,15 @@
 
 #include <base.hh>
 #include <gzip.hh>
+
+#include <botan/botan.h>
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 #include <botan/loadstor.h>
 #include <botan/filters.h>
 #include <botan/bit_ops.h>
+#endif
+
 #include <cstring>
 #include <map>
 #include <zlib.h>
