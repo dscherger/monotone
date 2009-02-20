@@ -564,6 +564,12 @@ BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
 CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES) $(CLEAN_POFILES)
 
+# automake provides no nice way to build a helper program to execute
+# on the build machine, so we need our own rule.  almost all the
+# standard flags variables are inappropriate.
+txt2c$(EXEEXT): txt2c.cc
+	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
+
 # files generated using txt2c
 std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
 	./txt2c std_hooks $< $@
