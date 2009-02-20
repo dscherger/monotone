@@ -567,34 +567,32 @@ BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
 CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES) $(CLEAN_POFILES)
 
-# override compiler for txt2c
+# automake provides no nice way to build a helper program to execute
+# on the build machine, so we need our own rule.  almost all the
+# standard flags variables are inappropriate.
 txt2c$(EXEEXT): txt2c.cc
-	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $<
+	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
 
-# FIXME: should use stamp files.
-%.cc: %.sql txt2c$(EXEEXT)
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+# files generated using txt2c
+std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
+	./txt2c std_hooks $< $@
 
-%.cc: %.lua txt2c$(EXEEXT)
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+testlib.cc: testlib.lua txt2c$(EXEEXT)
+	./txt2c testlib $< $@
 
-%.cc: %.txt txt2c$(EXEEXT)
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+schema.cc: schema.sql txt2c$(EXEEXT)
+	./txt2c schema $< $@
+
+package_revision.cc: package_revision.txt txt2c$(EXEEXT)
+	./txt2c --strip-trailing package_revision $< $@
+
+package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
+	./txt2c package_full_revision $< $@
+
 
 # Support for scripts
 %: util/%
 	cp $< $@
-
-# This construct causes --strip-trailing to be applied only when
-# generating package_revision.cc.
-TXT2CFLAGS =
-package_revision.cc : TXT2CFLAGS = --strip-trailing
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
@@ -630,8 +628,8 @@ package_revision.txt: package_revision_raw.txt
 .PHONY: package_full_revision_raw.txt
 package_full_revision_raw.txt:
 	REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_revision) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && mtn --root=. automate get_revision) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
 # See above comment -- the file this depends on may or may not exist.
 # This file, however, must always exist, so that 'make dist' can
