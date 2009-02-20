@@ -113,6 +113,14 @@ OPTION(bind_opts, bind_stdio, false, "stdio",
 }
 #endif
 
+OPT(bind_automate_uris, "bind-automate", std::list<utf8>, ,
+    gettext_noop("serve 'automate stdio' connections on this address"))
+#ifdef option_bodies
+{
+  bind_automate_uris.push_back(utf8(arg, origin::user));
+}
+#endif
+
 OPTVAR(branch, branch_name, branchname, )
 OPTION(branch, branch, true, "branch,b",
         gettext_noop("select branch cert for operation"))
