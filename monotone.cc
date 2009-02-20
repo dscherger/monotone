@@ -233,7 +233,7 @@ cpp_main(int argc, char ** argv)
       // against Botan 1.7.21 and before should still work with newer Botan
       // versions, including all of the stable branch 1.8.x.
       E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
-        F("This monotone binary does not work with Botan 1.9.x.");
+        F("This monotone binary does not work with Botan 1.9.x."));
 #else
       E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22), origin::system,
         F("This monotone binary requires Botan 1.7.22 or newer."));
