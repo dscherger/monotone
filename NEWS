@@ -1,26 +1,3 @@
-Changes from nvm.stripped, please move down when landing on mainline:
-
-        Changes
-
-	- Monotone is now compiled against external libraries and does no
-          longer ship included variants. This means monotone now requires
-          these libraries:
-
-             * botan (1.7.8 or newer)
-             * lua5.1
-             * sqlite (3.3.8 or newer)
-             * pcre (7.6 or newer)
-
-          This reduces maintenance of third-party libraries for monotone
-          developers and allows us to concentrate on monotone itself. For
-          the user this means faster adoption of improvements in those
-          libraries. For example, monotone can now be build against an up
-          to date sqlite 3.6.3, botan 1.7.17 and pcre 7.8, whereas we
-          shipped with sqlite 3.4.1, botan 1.7.12 and pcre 7.6 before.
-
-
-
-
 ??? ??? ?? ??:??:?? UTC 2009
 
         0.43 release.
@@ -31,6 +8,18 @@ Changes from nvm.stripped, please move down when landing on mainline:
           longer print global options, thus making the output of specific help
           requests more compact. You still see all available global options
           by executing 'mtn help' without any arguments.
+
+	- The Monotone source distribution no longer includes copies of
+	  several third-party libraries.  This means they must be downloaded
+	  and built separately, before building monotone.  See INSTALL for a
+	  complete list of necessary libraries.  
+
+	  This allows monotone's developers to concentrate on monotone
+	  itself, rather than tracking external library updates, which in
+	  practice did not happen.  By way of illustration, we were still
+	  shipping sqlite 3.4.1, which is years out of date.  This has also
+	  been a long-standing request of various redistributors of binary
+	  packages, who prefer the use of globally shared libraries.
 
         Bugs fixed
 
