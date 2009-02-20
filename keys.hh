@@ -25,7 +25,7 @@ struct keypair;
 
 // N()'s out if there is no unique key for us to use
 void get_user_key(options const & opts, lua_hooks & lua,
-                  database & db, key_store & keys, 
+                  database & db, key_store & keys,
                   rsa_keypair_id & key);
 
 void cache_user_key(options const & opts, lua_hooks & lua,
@@ -53,6 +53,8 @@ bool keys_match(rsa_keypair_id const & id1,
                 rsa_keypair_id const & id2,
                 rsa_pub_key const & key2);
 
+#endif // __KEYS_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -60,5 +62,3 @@ bool keys_match(rsa_keypair_id const & id1,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __KEYS_HH__

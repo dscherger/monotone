@@ -414,10 +414,10 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 
           // Attempt to wait for the completion of the read-in-progress.
 
-	  int milliseconds = ((timeout.get_sec() * 1000)
+          int milliseconds = ((timeout.get_sec() * 1000)
                               + (timeout.get_usec() / 1000));
 
-	  L(FL("WaitForSingleObject(,%d)") % milliseconds);
+          L(FL("WaitForSingleObject(,%d)") % milliseconds);
 
           DWORD wstatus = WAIT_FAILED;
 

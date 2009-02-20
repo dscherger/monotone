@@ -2083,7 +2083,7 @@ create_random_unification_task(roster_t & left,
                                editable_roster_base & right_erb,
                                editable_roster_for_merge & left_erm,
                                editable_roster_for_merge & right_erm,
-			       randomizer & rng)
+                               randomizer & rng)
 {
   size_t n_nodes = 20 + rng.uniform(60);
 
@@ -2367,4 +2367,4 @@ UNIT_TEST(unify_rosters_end_to_end_attr_corpses)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

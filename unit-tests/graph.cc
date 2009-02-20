@@ -159,7 +159,7 @@ struct mock_rev_graph : rev_graph
   {
     // assign sensible heights
     height_map.clear();
-    
+
     // toposort expects parent->child
     rev_ancestry_map parent_to_child;
     for (rev_ancestry_map::const_iterator i = child_to_parent_map.begin();
@@ -169,7 +169,7 @@ struct mock_rev_graph : rev_graph
     }
     vector<revision_id> topo_revs;
     toposort_rev_ancestry(parent_to_child, topo_revs);
-    
+
     // this is ugly but works. just give each one a sequential number.
     rev_height top = rev_height::root_height();
     u32 num = 1;
@@ -179,7 +179,7 @@ struct mock_rev_graph : rev_graph
       height_map.insert(make_pair(*r, top.child_height(num)));
     }
   }
-  
+
   virtual void get_parents(revision_id const & node, set<revision_id> & parents) const
   {
     parents.clear();
@@ -190,20 +190,20 @@ struct mock_rev_graph : rev_graph
         safe_insert(parents, i->second);
     }
   }
-  
+
   virtual void get_children(revision_id const & node, set<revision_id> & parents) const
   {
     // not required
     I(false);
   }
-  
+
   virtual void get_height(revision_id const & rev, rev_height & h) const
   {
     MM(rev);
     h = safe_get(height_map, rev);
   }
-  
-  
+
+
   rev_ancestry_map const & child_to_parent_map;
   map<revision_id, rev_height> height_map;
 };
@@ -225,7 +225,7 @@ run_a_get_uncommon_ancestors_test(rev_ancestry_map const & child_to_parent_map,
   set_difference(true_right_ancestors.begin(), true_right_ancestors.end(),
                  true_left_ancestors.begin(), true_left_ancestors.end(),
                  inserter(true_right_uncommon_ancestors, true_right_uncommon_ancestors.begin()));
-      
+
   set<revision_id> calculated_left_uncommon_ancestors, calculated_right_uncommon_ancestors;
   MM(calculated_left_uncommon_ancestors);
   MM(calculated_right_uncommon_ancestors);
@@ -246,7 +246,7 @@ UNIT_TEST(get_uncommon_ancestors_nasty_convexity_case)
 {
   // This tests the nasty case described in the giant comment above
   // get_uncommon_ancestors:
-  // 
+  //
   //              9
   //              |\                  . Extraneous dots brought to you by the
   //              8 \                 . Committee to Shut Up the C Preprocessor
@@ -413,4 +413,4 @@ UNIT_TEST(get_uncommon_ancestors_randomly)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

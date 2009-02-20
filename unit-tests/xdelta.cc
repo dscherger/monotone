@@ -197,17 +197,17 @@ UNIT_TEST(rolling_sanity_check)
   static const string::size_type blocksz = 64;
   char testbuf[testbufsize];
 
-  for(unsigned i = 0; i < testbufsize; ++i) 
+  for(unsigned i = 0; i < testbufsize; ++i)
     {
       testbuf[i] = xdelta_chargen(xdelta_prng);
     }
-  for(unsigned advanceby = 0; advanceby < testbufsize; ++advanceby) 
+  for(unsigned advanceby = 0; advanceby < testbufsize; ++advanceby)
     {
       adler32 incremental(reinterpret_cast<u8 const *>(testbuf), blocksz);
-      for(unsigned i = 0; i < advanceby; ++i) 
+      for(unsigned i = 0; i < advanceby; ++i)
         {
           incremental.out(static_cast<u8>(testbuf[i]));
-          if ((i + blocksz) < testbufsize) 
+          if ((i + blocksz) < testbufsize)
             {
               incremental.in(static_cast<u8>(testbuf[i+blocksz]));
             }
@@ -215,7 +215,7 @@ UNIT_TEST(rolling_sanity_check)
       adler32 skip(reinterpret_cast<u8 const *>(testbuf), blocksz);
       u32 new_lo = advanceby;
       u32 new_hi = new_lo + blocksz;
-      if (new_hi > testbufsize) 
+      if (new_hi > testbufsize)
         {
           new_hi = testbufsize;
         }
@@ -224,7 +224,7 @@ UNIT_TEST(rolling_sanity_check)
       UNIT_TEST_CHECK(skip.sum() == incremental.sum());
     }
   L(FL("rolling sanity check passed"));
-}                   
+}
 
 // Local Variables:
 // mode: C++
@@ -232,4 +232,4 @@ UNIT_TEST(rolling_sanity_check)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

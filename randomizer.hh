@@ -26,7 +26,7 @@ struct randomizer
   std::size_t uniform(std::size_t n);
 
   // boolean process with prob(true) = p, prob(false) = 1-p.
-  bool bernoulli(double p); 
+  bool bernoulli(double p);
 
   bool flip(std::size_t n = 2);
 };
@@ -41,4 +41,3 @@ struct randomizer
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -176,7 +176,7 @@ do_read_directory(string const & path,
   string p(path);
   if (p == "")
     p = ".";
-  
+
   dirhandle dir(p);
   struct dirent *d;
   struct stat st;
@@ -195,12 +195,12 @@ do_read_directory(string const & path,
         case DT_DIR: // directory
           dirs.consume(d->d_name);
           continue;
-          
+
         case DT_UNKNOWN: // unknown type
         case DT_LNK:     // symlink - must find out what's at the other end
         default:
           break;
-        }          
+        }
 #endif
 
       // the use of stat rather than lstat here is deliberate.
@@ -255,8 +255,8 @@ do_read_directory(string const & path,
     }
   return;
 }
-  
-                  
+
+
 
 void
 rename_clobberingly(string const & from, string const & to)
@@ -340,7 +340,7 @@ make_temp_file(string const & dir, string & name, mode_t mode)
       v /= base;
       tmp.at(tmp.size() -  5) = letters[v % base];
       v /= base;
-    
+
       int fd = open(tmp.c_str(), O_RDWR|O_CREAT|O_EXCL, mode);
       int err = errno;
 

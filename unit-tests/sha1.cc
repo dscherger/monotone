@@ -107,9 +107,9 @@ UNIT_TEST(pseudo_message)
 
       for (int i = 3; i < 1003; i++)
         {
-	  data msg(MD[i-3] + MD[i-2] + MD[i-1], origin::internal);
+          data msg(MD[i-3] + MD[i-2] + MD[i-1], origin::internal);
           calculate_ident(msg, output);
-	  MD[i] = output();
+          MD[i] = output();
         }
 
       id expect(decode_hexenc_as<id>(pseudo_checkpoints[j], origin::internal));
@@ -142,7 +142,7 @@ namespace {
 //  SHA-1 tests are configured for BYTE oriented implementations
 //  Generated on Wed Feb 08 14:59:32 2006
 
-char const * const short_message_in[] = 
+char const * const short_message_in[] =
 {
   "",
   "a8",
@@ -239,7 +239,7 @@ char const * const short_message_in[] =
   0
 };
 
-char const * const short_message_out[] = 
+char const * const short_message_out[] =
 {
   "da39a3ee5e6b4b0d3255bfef95601890afd80709",
   "99f2aa95e36f95c2acb0eaf23998f030638f3f15",
@@ -314,7 +314,7 @@ char const * const short_message_out[] =
 //  SHA tests are configured for BYTE oriented implementations
 //  Generated on Wed Feb 08 14:59:32 2006
 
-char const * const long_message_in[] = 
+char const * const long_message_in[] =
 {
   "ec29561244ede706b6eb30a1c371d74450a105c3f9735f7fa9fe38cf67f304a5736a106e92"
     "e17139a6813b1c81a4f3d3fb9546ab4296fa9f722826c066869edacd73b2548035185813"
@@ -6175,7 +6175,7 @@ char const * const long_message_in[] =
   0
 };
 
-char const * const long_message_out[] = 
+char const * const long_message_out[] =
 {
   "970111c4e77bcc88cc20459c02b69b4aa8f58217",
   "0423dc76a8791107d14e13f5265b343f24cc0f19",
@@ -6251,7 +6251,7 @@ char const * const long_message_out[] =
 
 char const pseudo_seed[] = "8bfd162cb9d3b04dcb7e54b4ddb2b5d8d9c899f8";
 
-char const * const pseudo_checkpoints[] = 
+char const * const pseudo_checkpoints[] =
 {
   "6a3a5b517df036a753a50201323743854aca905d",
   "b5405f3152d0289411b5ffa30cc8d3058854fef4",

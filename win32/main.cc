@@ -88,7 +88,7 @@ seh_reporting_function(LPEXCEPTION_POINTERS ep)
     case EXCEPTION_ACCESS_VIOLATION:
       report_error("memory access violation");
       break;
-      
+
     case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
       report_error("array bounds exceeded");
       break;
@@ -190,7 +190,7 @@ main(int argc, char ** argv)
   } else {
     argv0 = argv[0];
   }
-  
+
   SetUnhandledExceptionFilter(&seh_reporting_function);
 
 #ifdef MS_CRT_DEBUG_HOOK

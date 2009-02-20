@@ -138,7 +138,7 @@ args_to_paths(args_vector const & args)
     {
       if (bookkeeping_path::external_string_is_bookkeeping_path(*i))
         W(F("ignored bookkeeping path '%s'") % *i);
-      else 
+      else
         paths.push_back(file_path_external(*i));
     }
   // "it should not be the case that args were passed, but our paths set
@@ -282,6 +282,8 @@ CMD_FWD_DECL(variables);
 CMD_FWD_DECL(workspace);
 CMD_FWD_DECL(user);
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -289,5 +291,3 @@ CMD_FWD_DECL(user);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

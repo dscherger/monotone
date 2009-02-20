@@ -1,4 +1,3 @@
-
 #include "base.hh"
 #include <botan/botan.h>
 
@@ -26,7 +25,7 @@ chained_hmac::set_key(netsync_session_key const & session_key)
   if (active)
     {
       key = Botan::SymmetricKey(reinterpret_cast<Botan::byte const *>(session_key().data()),
-				session_key().size());
+                                session_key().size());
       engine.reset();
       engine.append(new Botan::MAC_Filter("HMAC(SHA-160)", key,
                                           constants::sha1_digest_length));

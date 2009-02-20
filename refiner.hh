@@ -39,9 +39,9 @@ struct
 refiner_callbacks
 {
   virtual void queue_refine_cmd(refinement_type ty,
-				merkle_node const & our_node) = 0;
+                                merkle_node const & our_node) = 0;
   virtual void queue_done_cmd(netcmd_item_type ty,
-			      size_t n_items) = 0;
+                              size_t n_items) = 0;
   virtual ~refiner_callbacks() {}
 };
 
@@ -68,10 +68,10 @@ refiner
                         merkle_ptr & node);
   bool merkle_node_exists(size_t level, prefix const & pref);
   void calculate_items_to_send();
-  std::string voicestr() 
-  { 
-    return voice == server_voice ? "server" : "client"; 
-  }  
+  std::string voicestr()
+  {
+    return voice == server_voice ? "server" : "client";
+  }
 
 public:
 
@@ -96,6 +96,8 @@ public:
 };
 
 
+#endif // __REFINER_H__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -103,5 +105,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __REFINER_H__

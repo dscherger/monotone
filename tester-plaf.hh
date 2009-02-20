@@ -90,6 +90,9 @@ void prepare_for_parallel_testcases(int, int, int);
 // These functions are actually in tester.cc but are used by tester-plaf.cc.
 void do_remove_recursive(std::string const & dir);
 
+#endif
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -97,6 +100,3 @@ void do_remove_recursive(std::string const & dir);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif
-

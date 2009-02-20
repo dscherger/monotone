@@ -202,7 +202,7 @@ namespace
     }
     static void read_rest(istream& in, string& dest)
     {
-    
+
       while (true)
         {
           string t;
@@ -218,8 +218,8 @@ namespace
       string certid; iss >> certid; validate_id(certid);
       string name;   iss >> name;   validate_certname(name);
       string keyid;  iss >> keyid;  validate_key(keyid);
-      string val;    
-      read_rest(iss,val);           validate_arg_base64(val);    
+      string val;
+      read_rest(iss,val);           validate_arg_base64(val);
 
       revision_id hash(decode_hexenc_as<revision_id>(certid, made_from));
       validate_base64(body);
@@ -266,7 +266,7 @@ namespace
       cons.consume_old_private_key(rsa_keypair_id(args, made_from),
                                    decode_base64_as<old_arc4_rsa_priv_key>(body, made_from));
     }
-  
+
     void operator()(string const & type,
                     string const & args,
                     string const & body) const
@@ -308,7 +308,7 @@ extract_packets(string const & s, packet_consumer & cons)
     scanning_args, found_args, scanning_body,
     end_1, end_2, end_3, end_4, end_5
   } state = skipping;
-  
+
   for (p = s.begin(); p != s.end(); p++)
     switch (state)
       {

@@ -392,9 +392,9 @@ prepare_diff(app_state & app,
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -419,9 +419,9 @@ prepare_diff(app_state & app,
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -465,10 +465,10 @@ prepare_diff(app_state & app,
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
                             old_roster, new_roster);
-      
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -715,7 +715,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           work.get_current_roster_shape(db, nis, new_roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, parents, new_roster,
                                   ignored_file(work));
         }
@@ -727,7 +727,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           db.get_roster(first_rid, roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster);
         }
     }

@@ -13,7 +13,7 @@ void get_system_flavour(std::string & ident)
   struct utsname n;
   /* Solaris has >= 0 as success, while
      Linux only knows 0 - as >0 is not an
-     error condition there, relax a bit */ 
+     error condition there, relax a bit */
   I(uname(&n) >= 0);
   ident = (FL("%s %s %s %s")
            % n.sysname

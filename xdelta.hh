@@ -54,8 +54,10 @@ void apply_delta(boost::shared_ptr<delta_applicator> da,
 
 u64 measure_delta_target_size(std::string const & delta);
 void invert_xdelta(std::string const & old_str,
-		   std::string const & delta,
-		   std::string & delta_inverse);
+                   std::string const & delta,
+                   std::string & delta_inverse);
+
+#endif // __XDELTA_HH__
 
 // Local Variables:
 // mode: C++
@@ -64,5 +66,3 @@ void invert_xdelta(std::string const & old_str,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __XDELTA_HH__

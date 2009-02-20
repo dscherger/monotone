@@ -170,7 +170,7 @@ redir::redir(int which, char const * filename)
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = true;
-  
+
   file = CreateFile(filename,
                     (which==0?GENERIC_READ:GENERIC_WRITE),
                     FILE_SHARE_READ,

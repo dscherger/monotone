@@ -89,6 +89,8 @@ struct cycle_detector
   }
 };
 
+#endif // __CYCLE_DETECTOR_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -96,5 +98,3 @@ struct cycle_detector
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __CYCLE_DETECTOR_HH__

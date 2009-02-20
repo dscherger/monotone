@@ -22,6 +22,8 @@ void import_cvs_repo(project_t & project,
                      system_path const & cvsroot,
                      branch_name const & branchname);
 
+#endif // __RCS_IMPORT_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -29,5 +31,3 @@ void import_cvs_repo(project_t & project,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __RCS_IMPORT_HH__

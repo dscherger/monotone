@@ -67,18 +67,20 @@ revision_enumerator
                           std::set<file_id> & full_files,
                           std::set<std::pair<file_id,file_id> > & del_files);
   void get_revision_certs(revision_id const & rid,
-			  std::vector<id> & certs);
+                          std::vector<id> & certs);
 
 public:
   revision_enumerator(project_t & project,
                       enumerator_callbacks & cb);
   void get_revision_parents(revision_id const & rid,
-			    std::vector<revision_id> & parents);
+                            std::vector<revision_id> & parents);
   void note_cert(revision_id const & rid,
                  id const & cert_hash);
   void step();
   bool done();
 };
+
+#endif // __ENUMERATOR_H__
 
 // Local Variables:
 // mode: C++
@@ -87,5 +89,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __ENUMERATOR_H__

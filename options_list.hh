@@ -44,14 +44,14 @@
 // This is a shortcut for an option which has its own variable and optset.
 // It will take an argument unless 'type' is 'bool'.
 #define OPT(name, string, type, default_, description)               \
-  OPTVAR(name, type, name, default_)					\
+  OPTVAR(name, type, name, default_)                                    \
   OPTION(name, name, has_arg<type >(), string, description)
 
 // This is the same, except that the option and variable belong to the
 // 'globals' optset. These are global options, not specific to a particular
 // command.
-#define GOPT(name, string, type, default_, description)			\
-  OPTVAR(globals, type, name, default_)					\
+#define GOPT(name, string, type, default_, description)                 \
+  OPTVAR(globals, type, name, default_)                                 \
   OPTION(globals, name, has_arg<type >(), string, description)
 
 // because 'default_' is constructor arguments, and may need to be a list

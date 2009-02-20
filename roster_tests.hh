@@ -25,6 +25,8 @@ struct testing_node_id_source
 void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
                           roster_t const & b, marking_map const & b_marking);
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -32,5 +34,3 @@ void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif 

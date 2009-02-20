@@ -85,7 +85,7 @@ get_user_key(options const & opts, lua_hooks & lua,
   // Ensure that the specified key actually exists.
   keypair priv_key;
   load_key_pair(keys, key, priv_key);
-  
+
   if (db.database_specified())
     {
       // If the database doesn't have this public key, add it now; otherwise

@@ -420,7 +420,7 @@ template <class T>
 struct path_always_false : public path_predicate<T>
 {
   virtual bool operator()(T const &) const;
-};  
+};
 
 // Return a file_path, bookkeeping_path, or system_path, as appropriate.
 // 'path' is an external path. If to_workspace_root, path is relative to
@@ -448,6 +448,8 @@ file_path
 find_new_path_for(std::map<file_path, file_path> const & renames,
                   file_path const & old_path);
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -455,5 +457,3 @@ find_new_path_for(std::map<file_path, file_path> const & renames,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

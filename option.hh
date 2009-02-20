@@ -60,8 +60,8 @@ namespace option {
   {
     bad_arg(std::string const & opt, arg_type const & arg);
     bad_arg(std::string const & opt,
-	    arg_type const & arg,
-	    std::string const & reason);
+            arg_type const & arg,
+            std::string const & reason);
   };
   // from_command_line() catches this and boost::bad_lexical_cast
   // and converts them to bad_arg exceptions
@@ -86,10 +86,10 @@ namespace option {
 
     concrete_option();
     concrete_option(std::string const & names,
-		    std::string const & desc,
-		    bool arg,
-		    boost::function<void (std::string)> set,
-		    boost::function<void ()> reset);
+                    std::string const & desc,
+                    bool arg,
+                    boost::function<void (std::string)> set,
+                    boost::function<void ()> reset);
 
     bool operator<(concrete_option const & other) const;
   };
@@ -107,14 +107,14 @@ namespace option {
     // rather than using intermediate machinery like in options*
     concrete_option_set &
     operator()(std::string const & names,
-	       std::string const & desc,
-	       boost::function<void ()> set,
-	       boost::function<void ()> reset = 0);
+               std::string const & desc,
+               boost::function<void ()> set,
+               boost::function<void ()> reset = 0);
     concrete_option_set &
     operator()(std::string const & names,
-	       std::string const & desc,
-	       boost::function<void (std::string)> set,
-	       boost::function<void ()> reset = 0);
+               std::string const & desc,
+               boost::function<void (std::string)> set,
+               boost::function<void ()> reset = 0);
 
     concrete_option_set operator | (concrete_option_set const & other) const;
     void reset() const;
@@ -223,10 +223,10 @@ namespace option {
     boost::function<void (T*)> resetter;
 
     option(std::string const & name,
-	   std::string const & desc,
-	   bool arg,
-	   void(T::*set)(std::string),
-	   void(T::*reset)())
+           std::string const & desc,
+           bool arg,
+           void(T::*set)(std::string),
+           void(T::*reset)())
     {
       I(!name.empty() || !desc.empty());
       description = desc;
@@ -244,9 +244,9 @@ namespace option {
       out.has_arg = has_arg;
 
       if (setter)
-	out.setter = std::bind1st(setter, obj);
+        out.setter = std::bind1st(setter, obj);
       if (resetter)
-	out.resetter = binder_only<T>(resetter, obj);
+        out.resetter = binder_only<T>(resetter, obj);
       return out;
     }
 
@@ -274,10 +274,10 @@ namespace option {
     }
 
     option_set(std::string const & name,
-	       std::string const & desc,
-	       bool arg,
-	       void(T::*set)(std::string),
-	       void(T::*reset)())
+               std::string const & desc,
+               bool arg,
+               void(T::*set)(std::string),
+               void(T::*reset)())
     {
       options.insert(option<T>(name, desc, arg, set, reset));
     }
@@ -285,16 +285,16 @@ namespace option {
     {
       std::set<concrete_option> out;
       for (typename std::set<option<T> >::const_iterator i = options.begin();
-	   i != options.end(); ++i)
-	out.insert(i->instantiate(obj));
+           i != options.end(); ++i)
+        out.insert(i->instantiate(obj));
       return out;
     }
     option_set<T> operator | (option_set<T> const & other) const
     {
       option_set<T> combined;
       std::set_union(options.begin(), options.end(),
-		     other.options.begin(), other.options.end(),
-		     std::inserter(combined.options, combined.options.begin()));
+                     other.options.begin(), other.options.end(),
+                     std::inserter(combined.options, combined.options.begin()));
       return combined;
     }
     option_set<T> operator - (option_set<T> const & other) const

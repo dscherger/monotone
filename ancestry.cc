@@ -240,7 +240,7 @@ toposort(database & db,
   map<rev_height, revision_id> work;
 
   for (set<revision_id>::const_iterator i = revisions.begin();
-       i != revisions.end(); ++i) 
+       i != revisions.end(); ++i)
     {
       rev_height height;
       db.get_rev_height(*i, height);
@@ -248,7 +248,7 @@ toposort(database & db,
     }
 
   sorted.clear();
-  
+
   for (map<rev_height, revision_id>::const_iterator i = work.begin();
        i != work.end(); ++i)
     {
@@ -305,10 +305,10 @@ erase_ancestors_and_failures(database & db,
 {
   // Load up the ancestry graph
   multimap<revision_id, revision_id> inverse_graph;
-  
+
   if (candidates.empty())
     return;
-  
+
   if (inverse_graph_cache_ptr == NULL)
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
@@ -490,8 +490,8 @@ namespace {
 // can be unit tested.  (See comments in that file for further explanation.)
 static void
 make_roster_for_merge(revision_t const & rev, revision_id const & new_rid,
-		      roster_t & new_roster, marking_map & new_markings,
-		      database & db, node_id_source & nis)
+                      roster_t & new_roster, marking_map & new_markings,
+                      database & db, node_id_source & nis)
 {
   edge_map::const_iterator i = rev.edges.begin();
   revision_id const & left_rid = edge_old_revision(i);
@@ -507,16 +507,16 @@ make_roster_for_merge(revision_t const & rev, revision_id const & new_rid,
 
   set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
   db.get_uncommon_ancestors(left_rid, right_rid,
-			    left_uncommon_ancestors,
-			    right_uncommon_ancestors);
+                            left_uncommon_ancestors,
+                            right_uncommon_ancestors);
 
   make_roster_for_merge(left_rid, *left_cached.first, *left_cached.second,
-			left_cs, left_uncommon_ancestors,
-			right_rid, *right_cached.first, *right_cached.second,
-			right_cs, right_uncommon_ancestors,
-			new_rid,
-			new_roster, new_markings,
-			nis);
+                        left_cs, left_uncommon_ancestors,
+                        right_rid, *right_cached.first, *right_cached.second,
+                        right_cs, right_uncommon_ancestors,
+                        new_rid,
+                        new_roster, new_markings,
+                        nis);
 }
 
 static void

@@ -386,7 +386,7 @@ private:
   time_t last_io_time;
 public:
 
-  enum 
+  enum
     {
       working_state,
       shutdown_state,

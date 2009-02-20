@@ -70,13 +70,13 @@ private:
   std::set<Key> _dirty;
   /// Manager
   Manager _manager;
-    
+
   /// Maximum abstract size of the cache
   unsigned long _max_size;
-    
+
   /// Current abstract size of the cache
   unsigned long _curr_size;
-    
+
 public:
   /** @brief Creates a cache that holds at most Size worth of elements.
    *  @param Size maximum size of cache
@@ -279,4 +279,3 @@ private:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -446,10 +446,10 @@ void
 print_var(std::string const & value, char const * var,
           char const * file, int const line, char const * func)
 {
-  std::cout << (FL("----- begin '%s' (in %s, at %s:%d)\n") 
+  std::cout << (FL("----- begin '%s' (in %s, at %s:%d)\n")
                 % var % func % file % line)
             << value
-            << (FL("\n-----   end '%s' (in %s, at %s:%d)\n\n") 
+            << (FL("\n-----   end '%s' (in %s, at %s:%d)\n\n")
                 % var % func % file % line);
 }
 

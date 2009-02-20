@@ -164,8 +164,8 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
     {
       // they might have given us bogus data
       cmd_digest = extract_substring(inbuf, pos,
-				     constants::netsync_hmac_value_length_in_bytes,
-				     "netcmd HMAC");
+                                     constants::netsync_hmac_value_length_in_bytes,
+                                     "netcmd HMAC");
     }
 
   inbuf.pop_front(pos);
@@ -175,9 +175,9 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
       && cmd_digest != digest)
     {
       throw bad_decode(F("bad HMAC checksum (got %s, wanted %s)\n"
-			 "this suggests data was corrupted in transit")
-		       % cmd_digest
-		       % digest);
+                         "this suggests data was corrupted in transit")
+                       % cmd_digest
+                       % digest);
     }
 
   return true;

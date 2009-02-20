@@ -12,7 +12,7 @@
    are subject to copyright (C) 2003 graydon hoare, licensed to the public
    under the GPL v2+. see the file COPYING for details. if you want to see
    more of the original file jaffer's work came from, see the SLIB
-   repository on savannah.nongnu.org, his website at 
+   repository on savannah.nongnu.org, his website at
    http://www.swiss.ai.mit.edu/~jaffer/, or look in the journal of
    computational biology. apparantly it's submitted for publication there
    too.

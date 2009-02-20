@@ -53,7 +53,7 @@ read_inodeprint_map(data const & dat,
       L(FL("inodeprints file format is wrong, skipping it"));
       return;
     }
-  
+
   basic_io::input_source src(dat(), "inodeprint");
   basic_io::tokenizer tok(src);
   basic_io::parser pa(tok);

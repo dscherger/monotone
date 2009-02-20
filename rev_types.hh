@@ -30,7 +30,7 @@ namespace basic_io
   struct stanza;
 }
 
-// full definitions in cset.hh 
+// full definitions in cset.hh
 typedef u32 node_id;
 struct cset;
 struct editable_tree;

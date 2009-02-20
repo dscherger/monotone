@@ -118,6 +118,8 @@ read_cset(data const & dat, cset & cs);
 template <> void
 dump(cset const & cs, std::string & out);
 
+#endif // __CSET_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -125,5 +127,3 @@ dump(cset const & cs, std::string & out);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __CSET_HH__

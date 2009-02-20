@@ -60,7 +60,7 @@ CMD(fmerge, "fmerge", "", CMD_REF(debug), N_("<parent> <left> <right>"),
   if (args.size() != 3)
     throw usage(execid);
 
-  file_id 
+  file_id
     anc_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user)),
     left_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user)),
     right_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user));
@@ -104,7 +104,7 @@ CMD(fdiff, "fdiff", "", CMD_REF(debug), N_("SRCNAME DESTNAME SRCID DESTID"),
     & src_name = idx(args, 0)(),
     & dst_name = idx(args, 1)();
 
-  file_id 
+  file_id
     src_id(decode_hexenc_as<file_id>(idx(args, 2)(), origin::user)),
     dst_id(decode_hexenc_as<file_id>(idx(args, 3)(), origin::user));
 
@@ -234,15 +234,15 @@ CMD_AUTOMATE(identify, N_("PATH"),
 {
   E(args.size() == 1, origin::user,
     F("wrong argument count"));
-  
+
   utf8 path = idx(args, 0);
-  
+
   E(path() != "-", origin::user,
     F("Cannot read from stdin"));
-  
+
   data dat;
   read_data_for_command_line(path, dat);
-  
+
   id ident;
   calculate_ident(dat, ident);
   output << ident << '\n';
@@ -275,7 +275,7 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
   db.get_roster(rid, roster, marks);
   E(roster.has_node(fp), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);
-  
+
   node_t node = roster.get_node(fp);
   E((!null_node(node->self) && is_file_t(node)), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);

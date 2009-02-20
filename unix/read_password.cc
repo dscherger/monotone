@@ -11,14 +11,14 @@
 
 #include "sanity.hh"
 
-static void 
+static void
 echo_on(struct termios & save_term)
 {
    tcsetattr(0, TCSANOW, &save_term);
 }
 
-static void 
-echo_off(struct termios & save_term) 
+static void
+echo_off(struct termios & save_term)
 {
   struct termios temp;
   tcgetattr(0,&save_term);
@@ -27,10 +27,10 @@ echo_off(struct termios & save_term)
   tcsetattr(0, TCSANOW, &temp);
 }
 
-void 
+void
 read_password(std::string const & prompt, char * buf, size_t bufsz)
 {
-  struct termios save_term;  
+  struct termios save_term;
   I(buf != NULL);
   memset(buf, 0, bufsz);
   std::cout << prompt;

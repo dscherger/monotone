@@ -121,7 +121,7 @@ decode_selector(project_t & project,
         case sel_later:
         case sel_earlier:
           if (lua.hook_exists("expand_date"))
-            { 
+            {
               E(lua.hook_expand_date(sel, tmp), origin::user,
                 F("selector '%s' is not a valid date\n") % sel);
             }
@@ -200,7 +200,7 @@ decode_selector(project_t & project,
     }
 }
 
-static void 
+static void
 parse_selector(project_t & project,
                options const & opts,
                lua_hooks & lua,
@@ -251,7 +251,7 @@ complete_one_selector(project_t & project,
       I(!value.empty());
       project.db.select_parent(value, completions);
       break;
-        
+
     case sel_author:
       project.db.select_cert(author_cert_name(), value, completions);
       break;

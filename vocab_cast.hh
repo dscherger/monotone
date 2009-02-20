@@ -14,8 +14,8 @@ template<typename From, typename To>
 void typecast_vocab_container(From const & from, To & to)
 {
   std::transform(from.begin(), from.end(), std::inserter(to, to.end()),
-		 &typecast_vocab<typename To::value_type,
-		 typename From::value_type>);
+                 &typecast_vocab<typename To::value_type,
+                 typename From::value_type>);
 }
 
 // You won't use this directly either.
@@ -31,8 +31,8 @@ template<typename From, typename To>
 void add_decoration_to_container(From const & from, To & to)
 {
   std::transform(from.begin(), from.end(), std::inserter(to, to.end()),
-		 &add_decoration<typename To::value_type,
-		 typename From::value_type>);
+                 &add_decoration<typename To::value_type,
+                 typename From::value_type>);
 }
 
 template<typename From, typename To>
@@ -42,3 +42,11 @@ void vocabify_container(From const & from, To & to)
 }
 
 #endif
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

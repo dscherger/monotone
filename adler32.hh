@@ -49,15 +49,15 @@ adler32
   // monotone only uses the adler32 in order to do a rolling window over
   // the data for the purpose of finding matches in xdelta.cc
   // Optimize for this case avoiding a lot of unneeded masking.
-  inline void replace_with(u8 const * ch, std::string::size_type count) 
+  inline void replace_with(u8 const * ch, std::string::size_type count)
   {
     I(count < 255);
     s1 = 1;
     s2 = 0;
     len = count;
-    // Can't overflow in this case as (for s1) 255*255 < 0xffff, 
+    // Can't overflow in this case as (for s1) 255*255 < 0xffff,
     // and (for s2) (maxs1 = 255*255)*255 < 0xffff_ffff
-    while (count--) 
+    while (count--)
       {
         u32 c = widen<u32,u8>(*(ch++));
         s1 += c;
@@ -77,6 +77,8 @@ adler32
   }
 };
 
+#endif // __ADLER32_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -84,5 +86,3 @@ adler32
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __ADLER32_HH__

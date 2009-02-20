@@ -437,7 +437,7 @@ user_interface::user_interface() : imp(0) {}
 void user_interface::initialize()
 {
   imp = new user_interface::impl;
-  
+
   cout.exceptions(ios_base::badbit);
 #ifdef SYNC_WITH_STDIO_WORKS
   clog.sync_with_stdio(false);

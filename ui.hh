@@ -98,6 +98,8 @@ format_usage_strings(std::vector<std::string> const & names,
                      std::vector<std::string> const & descriptions,
                      unsigned int namelen);
 
+#endif // __UI_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -105,5 +107,3 @@ format_usage_strings(std::vector<std::string> const & names,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __UI_HH__

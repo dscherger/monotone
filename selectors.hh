@@ -44,6 +44,8 @@ void diagnose_ambiguous_expansion(project_t & project, std::string const & str,
                                   std::set<revision_id> const & completions);
 
 
+#endif // __SELECTORS_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -51,5 +53,3 @@ void diagnose_ambiguous_expansion(project_t & project, std::string const & str,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __SELECTORS_HH__

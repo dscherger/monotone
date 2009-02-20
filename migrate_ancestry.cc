@@ -873,7 +873,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           L(FL("mapped node %d to revision %s") % child % new_rid);
           if (db.put_revision(new_rid, rev))
             ++n_revs_out;
-          
+
           // Mark this child as done, hooray!
           safe_insert(done, child);
 

@@ -143,7 +143,7 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
 {
   typedef multimap<revision_id, revision_id>::const_iterator gi;
   typedef map<revision_id, int>::iterator pi;
-  
+
   revisions.clear();
   revisions.reserve(graph.size());
   // determine the number of parents for each rev
@@ -165,7 +165,7 @@ void toposort_rev_ancestry(rev_ancestry_map const & graph,
       roots.pop_front();
       if (!null_id(cur))
         revisions.push_back(cur);
-      
+
       std::pair<gi, gi> bounds = graph.equal_range(cur);
       for(gi i = bounds.first;
           i != bounds.second; i++)
@@ -225,11 +225,11 @@ get_uncommon_ancestors(revision_id const & a,
     rg.get_height(b, h);
     b_frontier.insert(make_pair(h, b));
   }
-  
+
   hash_set<revision_id> a_seen, b_seen, common_seen;
   a_seen.insert(a);
   b_seen.insert(b);
-  
+
   while (!a_frontier.empty() || !b_frontier.empty())
   {
     // We take the leaf-most (ie highest) height entry from any frontier.
@@ -278,7 +278,7 @@ get_uncommon_ancestors(revision_id const & a,
       }
     else
       I(false);
-  }  
+  }
 }
 
 

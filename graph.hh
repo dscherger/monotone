@@ -51,7 +51,7 @@ get_uncommon_ancestors(revision_id const & a,
                        rev_graph const & hg,
                        std::set<revision_id> & a_uncommon_ancs,
                        std::set<revision_id> & b_uncommon_ancs);
-                       
+
 
 
 #endif // __GRAPH__HH__
@@ -64,4 +64,3 @@ get_uncommon_ancestors(revision_id const & a,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

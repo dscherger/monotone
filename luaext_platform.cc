@@ -1,4 +1,3 @@
-
 #include "base.hh"
 #include "lua.hh"
 
@@ -84,7 +83,7 @@ LUAEXT(spawn_redirected, )
 // There is a Lua FAQ entitled:
 // "Why does my library-created file segfault on :close() but work otherwise?"
 
-#define topfile(LS)	((FILE **)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
+#define topfile(LS)     ((FILE **)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
 
 static int io_fclose (lua_State *LS) {
   FILE **p = topfile(LS);
@@ -118,7 +117,7 @@ LUAEXT(spawn_pipe, )
     return 0;
   for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+1);
   argv[i] = NULL;
-  
+
   int infd;
   FILE **inpf = newfile(LS);
   int outfd;
@@ -177,4 +176,3 @@ LUAEXT(get_pid, )
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

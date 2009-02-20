@@ -68,16 +68,16 @@ get_full_version(string & out)
            "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
-	 % base_version % flavour
-	 % BOOST_COMPILER
-	 % BOOST_STDLIB
-	 % BOOST_LIB_VERSION
-	 % sqlite3_libversion() % SQLITE_VERSION
-	 % LUA_VERSION
-	 % pcre_version() % PCRE_MAJOR % PCRE_MINOR
-	 % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
-	 % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
-	 % string(package_full_revision_constant))
+         % base_version % flavour
+         % BOOST_COMPILER
+         % BOOST_STDLIB
+         % BOOST_LIB_VERSION
+         % sqlite3_libversion() % SQLITE_VERSION
+         % LUA_VERSION
+         % pcre_version() % PCRE_MAJOR % PCRE_MINOR
+         % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
+         % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
+         % string(package_full_revision_constant))
     .str();
 }
 

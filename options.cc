@@ -81,9 +81,9 @@ options::var_membership()
 options::options()
 {
 # define OPTSET(name)
-# define OPTVAR(group, type, name, default_)	\
+# define OPTVAR(group, type, name, default_)    \
     name = type ( default_ );
-# define OPTION(optset, name, hasarg, optstring, description)	\
+# define OPTION(optset, name, hasarg, optstring, description)   \
     name ## _given = false;
 # define OPTSET_REL(parent, child)
 
@@ -104,7 +104,7 @@ collect_children(options::static_options_fun opt)
        i != ch.end(); ++i)
     {
       if (*i != opt)
-	out = out | (*(*i))();
+        out = out | (*(*i))();
     }
   return out;
 }
@@ -132,46 +132,46 @@ options::options_type const & options::opts::all_options()
 }
 
 # define OPTSET(name) \
-  options::options_type const & options::opts::name()			\
-  {									\
-    static options::options_type val =					\
-      collect_children(&options::opts::name)				\
+  options::options_type const & options::opts::name()                   \
+  {                                                                     \
+    static options::options_type val =                                  \
+      collect_children(&options::opts::name)                            \
       | options::option_type("", #name, false, 0,                       \
-			     &options::reset_optset_ ## name );		\
-    return val;								\
-  }									\
-  void options::reset_optset_ ## name ()				\
-  {									\
-    reset_optset(&opts:: name);						\
+                             &options::reset_optset_ ## name );         \
+    return val;                                                         \
+  }                                                                     \
+  void options::reset_optset_ ## name ()                                \
+  {                                                                     \
+    reset_optset(&opts:: name);                                         \
   }
 
-# define OPTVAR(optset, type, name, default_)		      \
-  void options::reset_ ## name ()			      \
-  {							      \
-    name = type ( default_ );				      \
+# define OPTVAR(optset, type, name, default_)                 \
+  void options::reset_ ## name ()                             \
+  {                                                           \
+    name = type ( default_ );                                 \
   }
 
-# define OPTION(optset, name, hasarg, optstring, description)		\
-  options::options_type const & options::opts::name()			\
-  {									\
+# define OPTION(optset, name, hasarg, optstring, description)           \
+  options::options_type const & options::opts::name()                   \
+  {                                                                     \
     localize_monotone();                                                \
                                                                         \
-    static options::options_type val(optstring,				\
-				     gettext(description), hasarg,	\
-				     &options::set_ ## name ,		\
-				     &options::reset_opt_ ## name );	\
-    return val;								\
-  }									\
-  void options::reset_opt_ ## name ()					\
-  {									\
-    name ## _given = false;						\
-    reset_optset(&opts:: name);						\
-  }									\
-  void options::set_ ## name (std::string arg)   			\
-  {									\
-    name ## _given = true;						\
-    real_set_ ## name (arg);						\
-  }									\
+    static options::options_type val(optstring,                         \
+                                     gettext(description), hasarg,      \
+                                     &options::set_ ## name ,           \
+                                     &options::reset_opt_ ## name );    \
+    return val;                                                         \
+  }                                                                     \
+  void options::reset_opt_ ## name ()                                   \
+  {                                                                     \
+    name ## _given = false;                                             \
+    reset_optset(&opts:: name);                                         \
+  }                                                                     \
+  void options::set_ ## name (std::string arg)                          \
+  {                                                                     \
+    name ## _given = true;                                              \
+    real_set_ ## name (arg);                                            \
+  }                                                                     \
   void options::real_set_ ## name (std::string arg)
 
 # define OPTSET_REL(parent, child)
@@ -188,7 +188,7 @@ options::options_type const & options::opts::all_options()
 
 option::option_set<options>
 operator | (option::option_set<options> const & opts,
-	    option::option_set<options> const & (*fun)())
+            option::option_set<options> const & (*fun)())
 {
   return opts | fun();
 }

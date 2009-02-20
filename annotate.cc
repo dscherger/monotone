@@ -263,7 +263,7 @@ annotate_context::evaluate(revision_id rev)
           // L(FL("evaluate setting annotations[%d] -> %s, since "
           //      "touched_lines contained %d, copied_lines didn't and "
           //      "annotations[%d] was nullid\n") % *i % rev % *i % *i);
-        
+
           annotations[*i] = rev;
           annotated_lines_completed++;
         }
@@ -717,7 +717,7 @@ do_annotate_node(database & db,
       I(!(work_unit.revision == parent_revision));
 
       file_id file_in_parent;
-      
+
       work_units::index<by_rev>::type::iterator lmn =
         work_units.get<by_rev>().find(parent_revision);
 
@@ -741,7 +741,7 @@ do_annotate_node(database & db,
           added_in_parent_count++;
           continue;
         }
-      
+
       // the node was live in the parent, so this represents a delta.
       shared_ptr<annotate_lineage_mapping> parent_lineage;
 
@@ -781,11 +781,11 @@ do_annotate_node(database & db,
             }
           else
             parent_marked = true;
-          
+
           // if it's marked, we need to look at its parents instead.
           if (parent_marked)
             db.get_revision_parents(parent_revision, parents_interesting_ancestors);
-          
+
           rev_height parent_height;
           db.get_rev_height(parent_revision, parent_height);
           annotate_node_work newunit(work_unit.annotations,
@@ -803,7 +803,7 @@ do_annotate_node(database & db,
           // already a pending node, so we just have to merge the lineage.
           L(FL("merging lineage from node %s to parent %s")
             % work_unit.revision % parent_revision);
-          
+
           lmn->lineage->merge(*parent_lineage, work_unit.annotations);
         }
     }
@@ -841,19 +841,19 @@ do_annotate (project_t & project, file_t file_node,
                        && *(rids_interesting_ancestors.begin()) == rid);
     if (rid_marked)
       project.db.get_revision_parents(rid, rids_interesting_ancestors);
-    
+
     annotate_node_work workunit(acp, lineage, rid, file_node->self, height,
                                 rids_interesting_ancestors, file_node->content,
                                 rid_marked);
     work_units.insert(workunit);
   }
-  
+
   while (!(work_units.empty() || acp->is_complete()))
     {
       // get the work unit for the revision with the greatest height
       work_units::iterator w = work_units.begin();
       I(w != work_units.end());
-      
+
       // do_annotate_node() might insert new work units into work_units, and
       // thus might invalidate the iterator
       annotate_node_work work = *w;

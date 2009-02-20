@@ -226,7 +226,7 @@ compute_delta_insns(string const & a,
 
   for (string::size_type
        sz = b.size(),
-       lo = 0; 
+       lo = 0;
        lo < sz; )
     {
       string::size_type apos = 0, alen = 1, badvance = 1;
@@ -243,7 +243,7 @@ compute_delta_insns(string const & a,
         {
           copy_insn(delta, apos, alen);
           u32 save_lo = lo;
-          if (badvance <= blocksz) 
+          if (badvance <= blocksz)
             {
               string::size_type next = lo;
               I(next < b.size() && (lo + badvance - 1) < b.size());
@@ -265,11 +265,11 @@ compute_delta_insns(string const & a,
           // it does a multiply, but for now, ignore this; it turns out that
           // advancements in the range of [2..blocksz-1] are actually really
           // rare.
-          if (badvance >= blocksz/2) 
+          if (badvance >= blocksz/2)
             {
               u32 new_lo = save_lo + badvance;
               u32 new_hi = new_lo + blocksz;
-              if (new_hi > b.size()) 
+              if (new_hi > b.size())
                 {
                   new_hi = b.size();
                 }
@@ -286,7 +286,7 @@ compute_delta_insns(string const & a,
           I(lo < b.size());
           insert_insn(delta, b[lo]);
           rolling.out(static_cast<u8>(b[lo]));
-          if (lo + blocksz < b.size()) 
+          if (lo + blocksz < b.size())
             {
               rolling.in(static_cast<u8>(b[lo+blocksz]));
             }
@@ -761,7 +761,7 @@ inverse_delta_writing_applicator :
 
     for (set<copied_extent>::iterator i = copied_extents.begin();
          i != copied_extents.end(); ++i)
-      { 
+      {
         // It is possible that this extent left a gap after the
         // previously copied extent; in this case we wish to pad
         // the intermediate space with an insert.

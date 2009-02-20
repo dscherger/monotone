@@ -80,6 +80,8 @@ inline cached_botan_pipe::cached_botan_pipe(Botan::Pipe * p)
   global_pipe_cleanup_object->to_be_destroyed = this;
 }
 
+#endif // __BOTAN_PIPE_CACHE_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -87,5 +89,3 @@ inline cached_botan_pipe::cached_botan_pipe(Botan::Pipe * p)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __BOTAN_PIPE_CACHE_HH__

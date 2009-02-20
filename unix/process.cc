@@ -185,7 +185,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   int infds[2];
   int outfds[2];
   pid_t pid;
-  
+
   if (pipe(infds) < 0)
     return -1;
   if (pipe(outfds) < 0)
@@ -194,7 +194,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
       close(infds[1]);
       return -1;
     }
-  
+
   switch(pid = vfork())
     {
       case -1:
@@ -217,7 +217,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
               close(outfds[1]);
             }
           close(outfds[0]);
-          
+
           execvp(argv[0], (char * const *)argv);
           raise(SIGKILL);
         }
@@ -226,7 +226,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   close(outfds[1]);
   *in = fdopen(infds[1], "w");
   *out = fdopen(outfds[0], "r");
-  
+
   return pid;
 }
 
@@ -262,7 +262,7 @@ int process_wait(pid_t pid, int *res, int timeout)
       *res = 0;
       return -1;
     }
-  if (WIFEXITED(status))    
+  if (WIFEXITED(status))
     *res = WEXITSTATUS(status);
   else
     *res = -WTERMSIG(status);

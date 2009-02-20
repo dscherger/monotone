@@ -14,9 +14,9 @@ struct table_entry
   char *val;
 };
 
-void key_to_string(unsigned long key, 
+void key_to_string(unsigned long key,
                    table_entry *table,
-                   std::string & str, 
+                   std::string & str,
                    std::string const & def)
 {
   while (table->val != 0)
@@ -73,7 +73,7 @@ static table_entry processor_types[] = {
 
 static table_entry processors[] = {
 #ifdef PROCESSOR_ARCHITECTURE_INTEL
-  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },  
+  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },
 #endif
 #ifdef PROCESSOR_ARCHITECTURE_IA64
   { PROCESSOR_ARCHITECTURE_IA64, "ia64" },
@@ -129,7 +129,7 @@ void get_system_flavour(std::string & ident)
 
   GetSystemInfo(&si);
   I(GetVersionEx(&vi));
-  
+
   std::string family, processor;
 
   key_to_string(vi.dwPlatformId, families, family, "unknown");
@@ -160,7 +160,7 @@ void get_system_flavour(std::string & ident)
     }
 
   ident = (F("Windows %s (%d.%d, build %d, %s) on %s")
-           % family 
+           % family
            % vi.dwMajorVersion
            % vi.dwMinorVersion
            % vi.dwBuildNumber

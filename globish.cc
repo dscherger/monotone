@@ -104,7 +104,7 @@ compile_charclass(string const & pat, string::const_iterator p,
 
           L(FL("expanding range from %X (%c) to %X (%c)")
             % (start+1) % (char)(start+1) % stop % (char)stop);
-          
+
           for (unsigned int r = start + 1; r < stop; r++)
             in_class.push_back((char)r);
         }
@@ -160,7 +160,7 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
         E((widen<unsigned int, char>(*p)) >= ' ', made_from,
           F("invalid pattern '%s': control character 0x%02x is not allowed")
           % pat % (widen<unsigned int, char>(*p)));
-        
+
         *to++ = *p;
         break;
 
@@ -185,7 +185,7 @@ compile_frag(string const & pat, back_insert_iterator<string> & to,
       case '?':
         *to++ = META_QUES;
         break;
-        
+
       case '\\':
         p++;
         E(p != pat.end(), made_from,
@@ -369,7 +369,7 @@ find_next_subpattern(string::const_iterator p,
 
   I(false);
 }
-                   
+
 
 static bool
 do_match(string::const_iterator sb, string::const_iterator se,
@@ -493,7 +493,7 @@ do_match(string::const_iterator sb, string::const_iterator se,
                 if (do_match(s, srest, psub, pnext - 1)
                     && do_match(srest, se, prest, pe))
                   return true;
-                
+
                 psub = pnext;
               }
             while (pnext < prest);
@@ -507,7 +507,7 @@ do_match(string::const_iterator sb, string::const_iterator se,
 bool globish::matches(string const & target) const
 {
   bool result;
-  
+
   // The empty pattern matches nothing.
   if (compiled_pattern.empty())
     result = false;

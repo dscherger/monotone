@@ -28,7 +28,7 @@ using std::ostringstream;
  * One could also use vector<u32>. While this would be cleaner, it
  * would force us to convert back and forth to the database format
  * every now and then, and additionally inhibit the use of memcmp().
- * 
+ *
  */
 
 // Internal manipulations
@@ -100,7 +100,7 @@ ostream & operator <<(ostream & os, rev_height const & h)
   for (size_t i = 0; i < d.size() / width; ++i)
     {
       if (!first)
-	os << '.';
+        os << '.';
       os << read_at(d, i);
       first = false;
     }

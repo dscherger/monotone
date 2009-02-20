@@ -123,6 +123,8 @@ bool ident_existing_file(file_path const & p, file_id & ident, path::status stat
 void calculate_ident(file_path const & file,
                      file_id & ident);
 
+#endif // __FILE_IO_H__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -130,5 +132,3 @@ void calculate_ident(file_path const & file,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __FILE_IO_H__

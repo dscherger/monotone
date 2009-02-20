@@ -60,7 +60,7 @@ UNIT_TEST(validators)
   N_THROW(f.validate_certname("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                               "abcdefghijklmnopqrstuvwxyz"
                               "0123456789-"));
-    
+
   Y_THROW(f.validate_certname(""));
   Y_THROW(f.validate_certname("graydon@venge.net"));
   Y_THROW(f.validate_certname("graydon at venge dot net"));
@@ -164,4 +164,4 @@ UNIT_TEST(roundabout)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

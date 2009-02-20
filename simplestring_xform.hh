@@ -106,16 +106,18 @@ void append_without_ws(std::string & appendto, std::string const & s);
 std::string remove_ws(std::string const & s);
 
 // remove leading chars from string
-std::string trim_left(std::string const & s, 
+std::string trim_left(std::string const & s,
                       std::string const & chars = "\n\r\t ");
 
-// remove trailing chars from string 
-std::string trim_right(std::string const & s, 
+// remove trailing chars from string
+std::string trim_right(std::string const & s,
                        std::string const & chars = "\n\r\t ");
 
 // remove leading and trailing chars from string
-std::string trim(std::string const & s, 
+std::string trim(std::string const & s,
                  std::string const & chars = "\n\r\t ");
+
+#endif
 
 // Local Variables:
 // mode: C++
@@ -124,5 +126,3 @@ std::string trim(std::string const & s,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

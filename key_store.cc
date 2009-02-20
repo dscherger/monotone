@@ -408,7 +408,7 @@ get_passphrase(utf8 & phrase,
 
   if (confirm_phrase)
     prompt2 = (F("confirm passphrase for key ID [%s]: ") % keyid).str();
-  
+
   try
     {
       for (;;)

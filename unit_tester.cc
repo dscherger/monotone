@@ -242,7 +242,7 @@ int main(int argc, char * argv[])
   string group, test;
   group = test_to_run.substr(0, sep);
   test = test_to_run.substr(sep+1, string::npos);
-            
+
   group_list_t::const_iterator g = unit_tests().find(group);
 
   if (g == unit_tests().end())

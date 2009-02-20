@@ -293,7 +293,7 @@ TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
-	audit-includes do-editor-vars.sh doxygen.cfg indent_script	\
+	audit-includes do-editor-vars.sh doxygen.cfg			\
 	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
