@@ -192,7 +192,6 @@ noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
-lib3rdparty_a_CPPFLAGS = # may be augmented in conditionals
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
@@ -228,16 +227,15 @@ pch-file:
 	&& mv "./$(PCH_FILE).Tdep" "./$(PCH_FILE).dep" \
 	|| rm "./$(PCH_FILE).Tdep"
 endif
+AM_CXXFLAGS = $(PCH_FLAGS)
 
 SUFFIXES = .gch .merged.po .gmo
 
-AM_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
+AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
 	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
-AM_CXXFLAGS = $(PCH_FLAGS)
 
-LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBINTL)	\
-	$(LIBICONV) $(pcre_LIBS) $(botan_LIBS) $(lua_LIBS)	\
-	$(sqlite_LIBS) $(idn_LIBS)
+LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
@@ -343,7 +341,7 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # the user's LINGUAS env. variable.  Additional settings are in
 # po/Makevars.
 #
-# Only the foo.po-update target will overwrite a file in the source 
+# Only the foo.po-update target will overwrite a file in the source
 # po/ directory.
 
 include $(srcdir)/po/Makevars
@@ -380,7 +378,7 @@ if REBUILD_NLS
 %.gmo: %.merged.po
 	$(MSGFMT) -c --statistics -o $@ $<
 
-%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot 
+%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
 	$(MSGMERGE) $^ -o $@
 
 # for translators' use
@@ -571,17 +569,17 @@ txt2c$(EXEEXT): txt2c.cc
 	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $<
 
 # FIXME: should use stamp files.
-%.cc: %.sql txt2c
+%.cc: %.sql txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.cc: %.lua txt2c
+%.cc: %.lua txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp
 
-%.cc: %.txt txt2c
+%.cc: %.txt txt2c$(EXEEXT)
 	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
 	cmp -s $@.tmp $@ || mv -f $@.tmp $@
 	rm -f $@.tmp

@@ -31,7 +31,7 @@
   #elif defined(BOTAN_HAS_TIMER_WIN32)
     #include <botan/tm_win32.h>
     typedef Botan::Win32_Timer benchmark_timer_class;
-  #elif
+  #else
     /* This uses ANSI clock and gives somewhat bogus results
        due to the poor resolution
     */
