@@ -236,12 +236,12 @@ read_mappings(system_path const & path, map<string, string> & mappings)
 
   for (vector<string>::const_iterator i = lines.begin(); i != lines.end(); ++i)
     {
-      string line = trim_ws(*i);
+      string line = trim(*i);
       size_t index = line.find('=');
       if (index != string::npos || index < line.length()-1)
         {
-          string key = trim_ws(line.substr(0, index));
-          string value = trim_ws(line.substr(index+1));
+          string key = trim(line.substr(0, index));
+          string value = trim(line.substr(index+1));
           mappings[key] = value;
         }
       else if (!line.empty())
@@ -265,17 +265,17 @@ import_marks(system_path const & marks_file,
       string tmp;
           
       marks.get(c);
-      N(c == ':', F("missing leading ':' in marks file"));
+      E(c == ':', origin::user, F("missing leading ':' in marks file"));
       marks >> mark;
 
       marks.get(c);
-      N(c == ' ', F("missing space after mark"));
+      E(c == ' ', origin::user, F("missing space after mark"));
       marks >> tmp;
-      N(tmp.size() == 40, F("bad revision id in marks file"));
-      revision_id revid(decode_hexenc(tmp));
+      E(tmp.size() == 40, origin::user, F("bad revision id in marks file"));
+      revision_id revid(decode_hexenc(tmp, origin::user), origin::user);
 
       marks.get(c);
-      N(c == '\n', F("incomplete line in marks file"));
+      E(c == '\n', origin::user, F("incomplete line in marks file"));
 
       marked_revs[revid] = mark;
       if (mark > mark_id) mark_id = mark+1;
@@ -293,7 +293,7 @@ export_marks(system_path const & marks_file,
          i = marked_revs.begin(); i != marked_revs.end(); ++i)
     marks << ":" << i->second << " " << i->first << "\n";
   
-  data mark_data(marks.str());
+  data mark_data(marks.str(), origin::internal);
   system_path tmp("."); // use the current directory for tmp
   write_data(marks_file, mark_data, tmp);
 }
@@ -409,8 +409,8 @@ export_changes(database & db,
 
       if (author != authors.end())
         {
-          author_name = trim_ws(author->inner().value());
-          author_key  = trim_ws(author->inner().key());
+          author_name = trim(author->inner().value());
+          author_key  = trim(author->inner().key());
         }
 
       // all monotone keys and authors that don't follow the "Name <email>"
@@ -450,7 +450,7 @@ export_changes(database & db,
       if (!branches.empty())
         branch_name = branches.begin()->inner().value();
 
-      branch_name = trim_ws(branch_name);
+      branch_name = trim(branch_name);
 
       lookup_iterator branch_lookup = branch_map.find(branch_name);
 
@@ -594,7 +594,7 @@ export_changes(database & db,
           branch++;
           for ( ; branch != branches.end(); ++branch)
             {
-              branch_name = trim_ws(branch->inner().value());
+              branch_name = trim(branch->inner().value());
 
               lookup_iterator branch_lookup = branch_map.find(branch_name);
 

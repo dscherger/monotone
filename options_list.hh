@@ -729,7 +729,7 @@ OPT(authors_file, "authors-file", system_path, ,
     gettext_noop("file mapping author names from original to new values"))
 #ifdef option_bodies
 {
-  authors_file = system_path(arg);
+  authors_file = system_path(arg, origin::user);
 }
 #endif
 
@@ -737,7 +737,7 @@ OPT(branches_file, "branches-file", system_path, ,
     gettext_noop("file mapping branch names from original to new values "))
 #ifdef option_bodies
 {
-  branches_file = system_path(arg);
+  branches_file = system_path(arg, origin::user);
 }
 #endif
 
@@ -773,7 +773,7 @@ OPT(import_marks, "import-marks", system_path, ,
     gettext_noop("load the internal marks table before exporting revisions"))
 #ifdef option_bodies
 {
-  import_marks = system_path(arg);
+  import_marks = system_path(arg, origin::user);
 }
 #endif
 
@@ -781,7 +781,7 @@ OPT(export_marks, "export-marks", system_path, ,
     gettext_noop("save the internal marks table after exporting revisions"))
 #ifdef option_bodies
 {
-  export_marks = system_path(arg);
+  export_marks = system_path(arg, origin::user);
 }
 #endif
 
