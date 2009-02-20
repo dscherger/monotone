@@ -12,6 +12,7 @@
 #include "cmd.hh"
 #include "app_state.hh"
 #include "database.hh"
+#include "git_change.hh"
 #include "git_export.hh"
 #include "project.hh"
 #include "rcs_import.hh"
@@ -115,7 +116,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   vector<revision_id> revisions;
   toposort(db, revision_set, revisions);
 
-  map<revision_id, file_changes> change_map;
+  map<revision_id, git_change> change_map;
 
   load_changes(db, revisions, change_map);
 

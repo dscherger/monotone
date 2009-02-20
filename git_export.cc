@@ -12,9 +12,9 @@
 #include "database.hh"
 #include "dates.hh"
 #include "file_io.hh"
+#include "git_change.hh"
 #include "git_export.hh"
 #include "outdated_indicator.hh"
-#include "parallel_iter.hh"
 #include "revision.hh"
 #include "roster.hh"
 #include "simplestring_xform.hh"
@@ -23,15 +23,12 @@
 
 #include <iostream>
 #include <sstream>
-#include <stack>
 
 using std::cout;
 using std::istringstream;
-using std::make_pair;
 using std::map;
 using std::ostringstream;
 using std::set;
-using std::stack;
 using std::string;
 using std::vector;
 
@@ -56,173 +53,6 @@ namespace
 
     return quoted;
   }
-
-  typedef vector<file_delete>::const_iterator delete_iterator;
-  typedef vector<file_rename>::const_iterator rename_iterator;
-  typedef vector<file_add>::const_iterator add_iterator;
-
-  attr_key exe_attr("mtn:execute");
-
-  void
-  get_changes(roster_t const & left, roster_t const & right, 
-              file_changes & changes)
-  {
-
-    typedef full_attr_map_t::const_iterator attr_iterator;
-
-    parallel::iter<node_map> i(left.all_nodes(), right.all_nodes());
-    while (i.next())
-      {
-        MM(i);
-        switch (i.state())
-          {
-          case parallel::invalid:
-            I(false);
-
-          case parallel::in_left:
-            // deleted
-            if (is_file_t(i.left_data()))
-              {
-                file_path path;
-                left.get_name(i.left_key(), path);
-                changes.deletions.push_back(file_delete(path));
-              }
-            break;
-
-          case parallel::in_right:
-            // added
-            if (is_file_t(i.right_data()))
-              {
-                file_t file = downcast_to_file_t(i.right_data());
-
-                attr_iterator exe = file->attrs.find(exe_attr);
-
-                string mode = "100644";
-                if (exe != file->attrs.end() && 
-                    exe->second.first && // live attr
-                    exe->second.second() == "true")
-                  mode = "100755";
-
-                file_path path;
-                right.get_name(i.right_key(), path);
-                changes.additions.push_back(file_add(path, 
-                                                     file->content, 
-                                                     mode));
-              }
-            break;
-
-          case parallel::in_both:
-            // moved/renamed/patched/attribute changes
-            if (is_file_t(i.left_data()))
-              {
-                file_t left_file = downcast_to_file_t(i.left_data());
-                file_t right_file = downcast_to_file_t(i.right_data());
-
-                attr_iterator left_attr = left_file->attrs.find(exe_attr);
-                attr_iterator right_attr = right_file->attrs.find(exe_attr);
-
-                string left_mode = "100644";
-                string right_mode = "100644";
-
-                if (left_attr != left_file->attrs.end() && 
-                    left_attr->second.first && // live attr
-                    left_attr->second.second() == "true")
-                  left_mode = "100755";
-
-                if (right_attr != right_file->attrs.end() && 
-                    right_attr->second.first && // live attr
-                    right_attr->second.second() == "true")
-                  right_mode = "100755";
-
-                file_path left_path, right_path;
-                left.get_name(i.left_key(), left_path);
-                right.get_name(i.right_key(), right_path);
-
-                if (left_path != right_path)
-                  changes.renames.push_back(file_rename(left_path, 
-                                                        right_path));
-
-                // git handles content changes as additions
-                if (left_file->content != right_file->content || 
-                    left_mode != right_mode)
-                  changes.additions.push_back(file_add(right_path, 
-                                                       right_file->content,
-                                                       right_mode));
-              }
-            break;
-          }
-      }
-  }
-
-  // re-order renames so that they occur in the correct order
-  // i.e. rename a->b + rename b->c will be re-ordered as
-  //      rename b->c + rename a->b
-  // this will also insert temporary names to resolve circular 
-  // renames and name swaps:
-  // i.e. rename a->b + rename b->a will be re-ordered as
-  //      rename a->tmp + rename b->a + rename tmp->b
-  void
-  reorder_renames(vector<file_rename> const & renames, 
-                  vector<file_rename> & reordered_renames)
-  {
-    typedef map<file_path, file_path> map_type;
-
-    map_type rename_map;
-
-    for (rename_iterator i = renames.begin(); i != renames.end(); ++i)
-      rename_map.insert(make_pair(i->old_path, i->new_path));
-
-    while (!rename_map.empty())
-      {
-        map_type::iterator i = rename_map.begin();
-        I(i != rename_map.end());
-        file_rename base(i->first, i->second);
-        rename_map.erase(i);
-
-        map_type::iterator next = rename_map.find(base.new_path);
-        stack<file_rename> rename_stack;
-
-        // stack renames so their order can be reversed
-        while (next != rename_map.end())
-          {
-            file_rename rename(next->first, next->second);
-            rename_stack.push(rename);
-            rename_map.erase(next);
-            next = rename_map.find(rename.new_path);
-          }
-
-        // break rename loops
-        if (!rename_stack.empty())
-          {
-            file_rename const & top = rename_stack.top();
-            // if there is a loop push another rename onto the stack that
-            // renames the old base to a temporary and adjust the base
-            // rename to account for this
-            if (base.old_path == top.new_path)
-              {
-                // the temporary path introduced here is pretty weak in
-                // terms of random filenames but should suffice for the
-                // already rare situations where any of this is required.
-                string path = top.new_path.as_internal();
-                path += ".tmp.break-rename-loop";
-                file_path tmp = file_path_internal(path);
-                rename_stack.push(file_rename(base.old_path, tmp));
-                base.old_path = tmp;
-              }
-          }
-
-        // insert the stacked renames in reverse order
-        while (!rename_stack.empty())
-          {
-            file_rename rename = rename_stack.top();
-            rename_stack.pop();
-            reordered_renames.push_back(rename);
-          }
-        
-        reordered_renames.push_back(base);
-      }
-  }
-
 };
 
 void
@@ -301,7 +131,7 @@ export_marks(system_path const & marks_file,
 void
 load_changes(database & db,
              vector<revision_id> const & revisions, 
-             map<revision_id, file_changes> & change_map)
+             map<revision_id, git_change> & change_map)
 {
   // process revisions in reverse order and calculate the file changes for
   // each revision. these are cached in a map for use in the export phase
@@ -342,8 +172,8 @@ load_changes(database & db,
       db.get_roster(parent1, old_roster);
       db.get_roster(*r, new_roster);
 
-      file_changes changes;
-      get_changes(old_roster, new_roster, changes);
+      git_change changes;
+      get_change(old_roster, new_roster, changes);
       change_map[*r] = changes;
 
       ++loaded;
@@ -356,7 +186,7 @@ export_changes(database & db,
                map<revision_id, size_t> & marked_revs,
                map<string, string> const & author_map,
                map<string, string> const & branch_map,
-               map<revision_id, file_changes> const & change_map,
+               map<revision_id, git_change> const & change_map,
                bool log_revids, bool log_certs)
 {               
   size_t revnum = 0;
@@ -498,17 +328,17 @@ export_changes(database & db,
       else
         I(false);
 
-      map<revision_id, file_changes>::const_iterator f = change_map.find(*r);
+      map<revision_id, git_change>::const_iterator f = change_map.find(*r);
       I(f != change_map.end());
-      file_changes const & changes = f->second;
+      git_change const & change = f->second;
 
-      vector<file_rename> reordered_renames;
-      reorder_renames(changes.renames, reordered_renames);
+      vector<git_rename> reordered_renames;
+      reorder_renames(change.renames, reordered_renames);
 
       // emit file data blobs for modified and added files
 
       for (add_iterator 
-             i = changes.additions.begin(); i != changes.additions.end(); ++i)
+             i = change.additions.begin(); i != change.additions.end(); ++i)
         {
           if (marked_files.find(i->content) == marked_files.end())
             {
@@ -572,17 +402,17 @@ export_changes(database & db,
         cout << "merge :" << marked_revs[parent2] << "\n";
 
       for (delete_iterator
-             i = changes.deletions.begin(); i != changes.deletions.end(); ++i)
-        cout << "D " << quote_path(i->path) << "\n";
+             i = change.deletions.begin(); i != change.deletions.end(); ++i)
+        cout << "D " << quote_path(*i) << "\n";
 
       for (rename_iterator
              i = reordered_renames.begin(); i != reordered_renames.end(); ++i)
         cout << "R " 
-             << quote_path(i->old_path) << " " 
-             << quote_path(i->new_path) << "\n";
+             << quote_path(i->first) << " " 
+             << quote_path(i->second) << "\n";
 
       for (add_iterator
-             i = changes.additions.begin(); i != changes.additions.end(); ++i)
+             i = change.additions.begin(); i != change.additions.end(); ++i)
         cout << "M " << i->mode << " :" 
              << marked_files[i->content] << " " 
              << quote_path(i->path) << "\n";
@@ -643,7 +473,6 @@ export_root_refs(database & db,
          << "from :" << marked_revs[*i] << "\n";
 }
 
-
 void
 export_leaf_refs(database & db,
                  map<revision_id, size_t> & marked_revs)
@@ -655,106 +484,6 @@ export_leaf_refs(database & db,
     cout << "reset refs/mtn/leaves/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
 }
-
-#ifdef BUILD_UNIT_TESTS
-
-#include "unit_tests.hh"
-
-UNIT_TEST(git_rename_reordering, reorder_chained_renames)
-{
-  vector<file_rename> renames, reordered_renames;
-  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
-  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("c")));
-  renames.push_back(file_rename(file_path_internal("c"), file_path_internal("d")));
-
-  // these should be reordered from a->b b->c c->d to c->d b->c a->b
-  reorder_renames(renames, reordered_renames);
-  rename_iterator rename = reordered_renames.begin();
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("c"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("d"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("c"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
-  ++rename;
-  UNIT_TEST_CHECK(rename == reordered_renames.end());
-}
-
-UNIT_TEST(git_rename_reordering, reorder_swapped_renames)
-{
-  vector<file_rename> renames, reordered_renames;
-  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
-  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("a")));
-
-  // these should be reordered from a->b b->a to a->tmp b->a tmp->b
-  reorder_renames(renames, reordered_renames);
-  rename_iterator rename = reordered_renames.begin();
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a.tmp.break-rename-loop"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a.tmp.break-rename-loop"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
-  ++rename;
-  UNIT_TEST_CHECK(rename == reordered_renames.end());
-}
-
-UNIT_TEST(git_rename_reordering, reorder_rename_loop)
-{
-  vector<file_rename> renames, reordered_renames;
-  renames.push_back(file_rename(file_path_internal("a"), file_path_internal("b")));
-  renames.push_back(file_rename(file_path_internal("b"), file_path_internal("c")));
-  renames.push_back(file_rename(file_path_internal("c"), file_path_internal("a")));
-
-  // these should be reordered from a->b b->c c->a to a->tmp c->a b->c a->b tmp->b
-  reorder_renames(renames, reordered_renames);
-  rename_iterator rename = reordered_renames.begin();
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a.tmp.break-rename-loop"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("c"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("a"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("b"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("c"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("a.tmp.break-rename-loop"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("b"));
-  ++rename;
-  UNIT_TEST_CHECK(rename == reordered_renames.end());
-}
-
-UNIT_TEST(git_rename_reordering, reorder_reversed_rename_loop)
-{
-  vector<file_rename> renames, reordered_renames;
-  renames.push_back(file_rename(file_path_internal("z"), file_path_internal("y")));
-  renames.push_back(file_rename(file_path_internal("y"), file_path_internal("x")));
-  renames.push_back(file_rename(file_path_internal("x"), file_path_internal("z")));
-
-  // assuming that the x->z rename gets pulled from the rename map first
-  // these should be reordered from z->y y->x x->z to x->tmp y->x z->y tmp->z
-  reorder_renames(renames, reordered_renames);
-  rename_iterator rename = reordered_renames.begin();
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("x"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("x.tmp.break-rename-loop"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("y"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("x"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("z"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("y"));
-  ++rename;
-  UNIT_TEST_CHECK(rename->old_path == file_path_internal("x.tmp.break-rename-loop"));
-  UNIT_TEST_CHECK(rename->new_path == file_path_internal("z"));
-  ++rename;
-  UNIT_TEST_CHECK(rename == reordered_renames.end());
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++
