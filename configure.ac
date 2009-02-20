@@ -6,7 +6,7 @@ AC_INIT([monotone], [0.43dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile util/mtnopt])
+AC_CONFIG_FILES([Makefile])
 AC_LANG([C++])
 
 dnl AM_INIT_AUTOMAKE only provides $(MKDIR_P) in 1.10 and later.

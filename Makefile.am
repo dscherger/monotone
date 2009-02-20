@@ -174,7 +174,7 @@ bin_PROGRAMS = mtn
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS =
 
-dist_bin_SCRIPTS = mtnopt
+bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.cc schema.cc
@@ -198,8 +198,9 @@ html_DATA = monotone.html
 
 # flags
 
-# sets DEFS for just this object
+# sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
 # the variable prevents this from overriding automake's unix/fs.o rule
+DEFS =
 UNIX=unix/
 $(UNIX)fs.$(OBJEXT) : DEFS += -DLOCALEDIR="\"$(localedir)\""
 
@@ -290,26 +291,23 @@ EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.ep
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
 info_TEXINFOS = monotone.texi
-EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
-	UPGRADE monotone.spec monotone.html texinfo.css schema.sql	\
-	std_hooks.lua testlib.lua lua-testsuite.lua $(srcdir)/tests	\
-	tester-testsuite.lua $(srcdir)/tester-tests			\
-	unit-testsuite.lua package.m4 package_revision.txt		\
-	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	contrib/README contrib/monoprof.sh				\
-	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
-	contrib/monotone.el contrib/monotone-nav.el			\
-	contrib/monotone.bash_completion				\
-	contrib/monotone.zsh_completion contrib/mtbrowse.sh		\
-	contrib/colorize contrib/color-logs.sh contrib/color-logs.conf	\
-	contrib/get_stdio.pl contrib/ciabot_monotone_hookversion.py	\
-	contrib/Monotone.pm $(wildcard $(srcdir)/contrib/*.lua)		\
-	$(wildcard $(srcdir)/contrib/command/*.lua)			\
-	contrib/command/README $(wildcard $(srcdir)/examples/*)		\
-	win32/monotone.iss win32/modpath.iss $(wildcard			\
-	$(srcdir)/debian/*) mac/monotone-pkg-logo.gif			\
-	mac/monotone.pmproj mac/package-intro.rtf audit-includes	\
-	$(TEXI_FRAGMENTS)
+EXTRA_DIST =								\
+	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
+	audit-includes do-editor-vars.sh doxygen.cfg indent_script	\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
+	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
+	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+									\
+	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
+	figures/monotone-logo.svg figures/oo-figures.sxd		\
+	figures/pdfcrop.pl figures/README				\
+									\
+	std_hooks.lua testlib.lua lua-testsuite.lua tests		\
+	tester-testsuite.lua tester-tests unit-testsuite.lua		\
+									\
+	package_revision.txt package_full_revision_dist.txt		\
+									\
+	contrib cygwin examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
@@ -404,6 +402,11 @@ $(PACKAGE).pot: $(POTFILES)
 
 dist-hook: $(ALL_GMOFILES)
 	cp $^ $(distdir)/po
+# also, kill off any backup files that got pulled in by one of the
+# recursive subdirectory includes in EXTRA_DIST
+# note use of slightly non-portable "-delete" action
+	find $(distdir) \( -name '*.bak' -o -name '*.orig' -o -name '*.rej' \
+	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
 
 else
 
@@ -531,22 +534,7 @@ mostlyclean-local:
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status  \
-	mtnopt
-
-# note: these targets are all in srcdir; they are *not* built during
-# the VPATH build part of distcheck (with non-writable source
-# directory) but only during the initial dist stage.
-
-$(srcdir)/package.m4: $(top_srcdir)/configure.ac
-	{                                      \
-	  echo '# Signature of the current package.'; \
-	  echo 'm4_define([AT_PACKAGE_NAME],      [@PACKAGE_NAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_TARNAME],   [@PACKAGE_TARNAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_VERSION],   [@PACKAGE_VERSION@])'; \
-	  echo 'm4_define([AT_PACKAGE_STRING],    [@PACKAGE_STRING@])'; \
-	  echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
-	} >$(srcdir)/package.m4
+	tester_tests.status unit_tests.status lua_tests.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
@@ -562,7 +550,8 @@ CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
+	     $(EPS_FIGURES) $(CLEAN_POFILES)
 
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
@@ -588,8 +577,11 @@ package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
 
 
 # Support for scripts
-%: util/%
-	cp $< $@
+do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
+
+%: util/%.in
+	$(do_subst) < $< > $@
+	chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
