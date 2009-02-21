@@ -10,7 +10,7 @@
 #include "base.hh"
 #include <boost/tokenizer.hpp>
 #include "lexical_cast.hh"
-#include "sqlite/sqlite3.h"
+#include <sqlite3.h>
 #include <cstring>
 
 #include "sanity.hh"
@@ -52,7 +52,7 @@ assert_sqlite3_ok(sqlite3 * db)
   // errno's.
   L(FL("sqlite error: %d: %s") % errcode % errmsg);
 
-  // Check the string to see if it looks like an informative_failure
+  // Check the string to see if it looks like a recoverable_failure
   // thrown from within an SQL extension function, caught, and turned
   // into a call to sqlite3_result_error.  (Extension functions have to
   // do this to avoid corrupting sqlite's internal state.)  If it is,
@@ -87,7 +87,7 @@ assert_sqlite3_ok(sqlite3 * db)
       // older).
     case SQLITE_CORRUPT:
     case SQLITE_NOTADB:
-      auxiliary_message 
+      auxiliary_message
         = _("(if this is a database last used by monotone 0.16 or older,\n"
             "you must follow a special procedure to make it usable again.\n"
             "see the file UPGRADE, in the distribution, for instructions.)");
@@ -353,7 +353,7 @@ char const migrate_merge_url_and_group[] =
   "INSERT INTO posting_queue"
   "  SELECT (url || '/' || groupname), content FROM tmp;"
   "DROP TABLE tmp;"
-  
+
   // migrate the incoming_queue table
   "ALTER TABLE incoming_queue RENAME TO tmp;"
   "CREATE TABLE incoming_queue "
@@ -388,7 +388,7 @@ char const migrate_merge_url_and_group[] =
   "DROP TABLE tmp;"
   ;
 
-char const migrate_add_hashes_and_merkle_trees[] = 
+char const migrate_add_hashes_and_merkle_trees[] =
   // add the column to manifest_certs
   "ALTER TABLE manifest_certs RENAME TO tmp;"
   "CREATE TABLE manifest_certs"
@@ -503,7 +503,7 @@ char const migrate_to_epochs[] =
   "  );"
   ;
 
-char const migrate_to_vars[] = 
+char const migrate_to_vars[] =
   "CREATE TABLE db_vars\n"
   "  ( domain not null,      -- scope of application of a var\n"
   "    name not null,        -- var key\n"
@@ -577,7 +577,7 @@ char const migrate_add_rosters[] =
   ;
 
 // I wish I had a form of ALTER TABLE COMMENT on sqlite3
-char const migrate_files_BLOB[] = 
+char const migrate_files_BLOB[] =
   // change the encoding of file(_delta)s
   "ALTER TABLE files RENAME TO tmp;"
   "CREATE TABLE files"
@@ -635,8 +635,8 @@ char const migrate_rosters_no_hash[] =
 
 char const migrate_add_heights[] =
   "CREATE TABLE heights"
-  "  ( revision not null,	-- joins with revisions.id\n"
-  "    height not null,	-- complex height, array of big endian u32 integers\n"
+  "  ( revision not null,       -- joins with revisions.id\n"
+  "    height not null, -- complex height, array of big endian u32 integers\n"
   "    unique(revision, height)"
   "  );"
   ;
@@ -670,14 +670,14 @@ char const migrate_to_binary_hashes[] =
   // table completely.
   "ALTER TABLE revision_certs RENAME TO tmp;\n"
   "CREATE TABLE revision_certs"
-	"  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
-	"    id not null,            -- joins with revisions.id\n"
-	"    name not null,          -- opaque string chosen by user\n"
-	"    value not null,         -- opaque blob\n"
-	"    keypair not null,       -- joins with public_keys.id\n"
-	"    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
-	"    unique(name, value, id, keypair, signature)\n"
-	"  );"
+        "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
+        "    id not null,            -- joins with revisions.id\n"
+        "    name not null,          -- opaque string chosen by user\n"
+        "    value not null,         -- opaque blob\n"
+        "    keypair not null,       -- joins with public_keys.id\n"
+        "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
+        "    unique(name, value, id, keypair, signature)\n"
+        "  );"
   "INSERT INTO revision_certs SELECT unhex(hash), unhex(id), name, value, keypair, signature FROM tmp;"
   "DROP TABLE tmp;"
   "CREATE INDEX revision_certs__id ON revision_certs (id);"
@@ -687,10 +687,10 @@ char const migrate_to_binary_hashes[] =
   // schema hash to upgrade to.
   "ALTER TABLE branch_epochs RENAME TO tmp;"
   "CREATE TABLE branch_epochs"
-	"  ( hash not null unique,         -- hash of remaining fields separated by \":\"\n"
-	"    branch not null unique,       -- joins with revision_certs.value\n"
-	"    epoch not null                -- random binary id\n"
-	"  );"
+        "  ( hash not null unique,         -- hash of remaining fields separated by \":\"\n"
+        "    branch not null unique,       -- joins with revision_certs.value\n"
+        "    epoch not null                -- random binary id\n"
+        "  );"
   "INSERT INTO branch_epochs SELECT unhex(hash), branch, unhex(epoch) FROM tmp;"
   "DROP TABLE tmp;"
 
@@ -709,7 +709,7 @@ enum upgrade_regime
     upgrade_changesetify,
     upgrade_rosterify,
     upgrade_regen_caches,
-    upgrade_none, 
+    upgrade_none,
   };
 static void
 dump(enum upgrade_regime const & regime, string & out)
@@ -991,17 +991,22 @@ void
 check_sql_schema(sqlite3 * db, system_path const & filename)
 {
   I(db != NULL);
- 
+
   schema_mismatch_case cat = classify_schema(db);
- 
+
   diagnose_unrecognized_schema(cat, filename);
- 
+
   E(cat != SCHEMA_MIGRATION_NEEDED, origin::user,
     F("database %s is laid out according to an old schema\n"
       "try '%s db migrate' to upgrade\n"
       "(this is irreversible; you may want to make a backup copy first)")
     % filename % prog_name);
 }
+
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+// import the hex function for old sqlite libraries from database.cc
+void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
+#endif
 
 void
 migrate_sql_schema(sqlite3 * db, key_store & keys,
@@ -1010,7 +1015,7 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
   I(db != NULL);
 
   upgrade_regime regime = upgrade_none; MM(regime);
-  
+
   // Take an exclusive lock on the database before we try to read anything
   // from it.  If we don't take this lock until the beginning of the
   // "migrating data" phase, two simultaneous "db migrate" processes could
@@ -1038,6 +1043,12 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
         P(F("no migration performed; database schema already up-to-date"));
         return;
       }
+
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+    // SQLite up to and including 3.3.12 didn't have a hex() function
+    if (sqlite3_libversion_number() <= 3003012)
+      sql::create_function(db, "hex", sqlite3_hex_fn);
+#endif
 
     sql::create_function(db, "sha1", sqlite_sha1_fn);
     sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
@@ -1110,6 +1121,13 @@ test_migration_step(sqlite3 * db, key_store & keys,
                     string const & schema)
 {
   I(db != NULL);
+
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+  // SQLite up to and including 3.3.12 didn't have a hex() function
+  if (sqlite3_libversion_number() <= 3003012)
+    sql::create_function(db, "hex", sqlite3_hex_fn);
+#endif
+
   sql::create_function(db, "sha1", sqlite_sha1_fn);
   sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
   sql::create_function(db, "unhex", sqlite3_unhex_fn);

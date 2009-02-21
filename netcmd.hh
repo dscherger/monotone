@@ -1,6 +1,3 @@
-#ifndef __NETCMD_HH__
-#define __NETCMD_HH__
-
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __NETCMD_HH__
+#define __NETCMD_HH__
 
 #include "vector.hh"
 #include <list>
@@ -101,7 +101,7 @@ public:
   bool read(string_queue & inbuf,
             chained_hmac & hmac);
   bool read_string(std::string & inbuf,
-		   chained_hmac & hmac) {
+                   chained_hmac & hmac) {
     // this is here only for the regression tests because they want to
     // read and write to the same type, but we want to have reads from
     // a string queue so that when data is read in from the network it
@@ -201,6 +201,8 @@ void run_netsync_protocol(options & opts, lua_hooks & lua,
                           protocol_role role,
                           netsync_connection_info const & info);
 
+#endif // __NETCMD_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -208,5 +210,3 @@ void run_netsync_protocol(options & opts, lua_hooks & lua,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __NETCMD_HH__

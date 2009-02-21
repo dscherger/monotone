@@ -1,3 +1,12 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include "base.hh"
 #include "simplestring_xform.hh"
 #include "sanity.hh"
@@ -113,7 +122,7 @@ void split_into_lines(string const & in,
         if (diff_compat) {
           // special handling: produce diff(1) compatible output
           s += (in.find_first_of("\r") != string::npos ? "\r\n" : "\n");
-          s += "\\ No newline at end of file"; 
+          s += "\\ No newline at end of file";
         }
         out.push_back(s);
       }

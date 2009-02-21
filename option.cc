@@ -1,5 +1,11 @@
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include "file_io.hh"
@@ -47,8 +53,9 @@ bad_arg_internal::bad_arg_internal(string const & str)
 
 
 
-void splitname(string const & from, string & name, string & n)
+void splitname(char const * f, string & name, string & n)
 {
+  string from(f);
   // from looks like "foo" or "foo,f"
   string::size_type comma = from.find(',');
   name = from.substr(0, comma);
@@ -72,15 +79,15 @@ concrete_option::concrete_option()
   : has_arg(false)
 {}
 
-concrete_option::concrete_option(std::string const & names,
-                                 std::string const & desc,
+concrete_option::concrete_option(char const * names,
+                                 char const * desc,
                                  bool arg,
                                  boost::function<void (std::string)> set,
                                  boost::function<void ()> reset)
 {
   description = desc;
   splitname(names, longname, shortname);
-  I(!description.empty() || !longname.empty() || !shortname.empty());
+  I((desc && desc[0]) || !longname.empty() || !shortname.empty());
   // If an option has a name (ie, can be set), it must have a setter function
   I(set || (longname.empty() && shortname.empty()));
   has_arg = arg;
@@ -128,8 +135,8 @@ class discard_argument
 };
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void ()> set,
                                 boost::function<void ()> reset)
 {
@@ -138,8 +145,8 @@ concrete_option_set::operator()(string const & names,
 }
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void (string)> set,
                                 boost::function<void ()> reset)
 {
@@ -176,7 +183,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
   string cur;
   quote_type type = none;
   bool have_tok(false);
-  
+
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
       if (*i == '\'')
@@ -321,11 +328,11 @@ void concrete_option_set::from_command_line(args_vector & args,
       else if (idx(args,i)().substr(0,1) == "-")
         {
           name = idx(args,i)().substr(1,1);
-          
+
           o = getopt(by_name, name);
           if (!o.has_arg && idx(args,i)().size() != 2)
             throw extra_arg(name);
-          
+
           if (o.has_arg)
             {
               if (idx(args,i)().size() == 2)
@@ -353,7 +360,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           read_data_for_command_line(arg, dat);
           args_vector fargs;
           tokenize_for_command_line(dat(), fargs);
-          
+
           args.erase(args.begin() + i);
           if (separate_arg)
             args.erase(args.begin() + i);
@@ -451,7 +458,7 @@ concrete_option_set::get_usage_strings(vector<string> & names,
       if (name.size() > namelen)
         namelen = name.size();
       names.push_back(name);
-      descriptions.push_back(i->description);
+      descriptions.push_back(gettext(i->description));
     }
   maxnamelen = namelen;
 }
@@ -467,4 +474,3 @@ concrete_option_set::get_usage_strings(vector<string> & names,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -9,7 +9,27 @@
           requests more compact. You still see all available global options
           by executing 'mtn help' without any arguments.
 
+	- The Monotone source distribution no longer includes copies of
+	  several third-party libraries.  This means they must be downloaded
+	  and built separately, before building monotone.  See INSTALL for a
+	  complete list of necessary libraries.  
+
+	  This allows monotone's developers to concentrate on monotone
+	  itself, rather than tracking external library updates, which in
+	  practice did not happen.  By way of illustration, we were still
+	  shipping sqlite 3.4.1, which is years out of date.  This has also
+	  been a long-standing request of various redistributors of binary
+	  packages, who prefer the use of globally shared libraries.
+
         Bugs fixed
+
+        - In 0.42, a netsync writer would attemts to queue up all outgoing
+          data as soon as it knew what data to send, in a single operation,
+          without servicing the event loop. If there was a large amount of
+          data to send, this would cause very long pauses and sometimes
+          timeouts and dropped connections (for pauses over 10 minutes).
+          The bug that caused this is fixed, and that operation now has a
+          safety timer that should prevent it from coming back.
 
         - Several bugfixes to `mtn automate stdio':
           * it now correctly distinguishs between syntax and command errors by
@@ -41,6 +61,10 @@
 
         - Additional '--full' option for 'mtn db info' to display some
           statistic analysis of the date certs in the database.
+
+	- Command line options in the EDITOR and/or VISUAL environment
+	  variables are honored; for instance, EDITOR="emacs -nw"
+	  works now.  (Debian bug #320565.)
 
         - A monotone database may be exported in the git fast-import format
           using the git_export command. The output from this command may be

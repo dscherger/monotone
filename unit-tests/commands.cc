@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-// Copyright (C) 2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
+//               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -20,7 +20,7 @@ using std::set;
 
 option::option_set<options>
 operator | (option::option_set<options> const & opts,
-	    option::option_set<options> const & (*fun)())
+            option::option_set<options> const & (*fun)())
 {
   return opts | fun();
 }
@@ -303,4 +303,4 @@ UNIT_TEST(command_find_command)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

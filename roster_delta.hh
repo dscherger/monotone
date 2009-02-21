@@ -1,5 +1,3 @@
-#ifndef __ROSTER_DELTA_HH__
-
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -8,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __ROSTER_DELTA_HH__
+#define __ROSTER_DELTA_HH__
 
 // This file contains "diff"/"patch" code that operates directly on rosters
 // (with their associated markings).
@@ -23,7 +24,7 @@ delta_rosters(roster_t const & from, marking_map const & from_markings,
 void
 apply_roster_delta(roster_delta const & del,
                    roster_t & roster, marking_map & markings);
-                   
+
 bool
 try_get_markings_from_roster_delta(roster_delta const & del,
                                    node_id const & nid,
@@ -34,7 +35,7 @@ bool
 try_get_content_from_roster_delta(roster_delta const & del,
                                   node_id const & nid,
                                   file_id & content);
-  
+
 #endif // __ROSTER_DELTA_HH__
 
 
@@ -45,4 +46,3 @@ try_get_content_from_roster_delta(roster_delta const & del,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

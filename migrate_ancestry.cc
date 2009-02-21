@@ -195,7 +195,13 @@ void anc_graph::write_certs()
     for (set<string>::const_iterator i = branches.begin(); i != branches.end(); ++i)
       {
         char buf[constants::epochlen_bytes];
-        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf), constants::epochlen_bytes);
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+        keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
+                                 constants::epochlen_bytes);
+#else
+        Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+                                     constants::epochlen_bytes);
+#endif
         epoch_data new_epoch(string(buf, buf + constants::epochlen_bytes),
                              origin::internal);
         L(FL("setting epoch for %s to %s")
@@ -867,7 +873,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           L(FL("mapped node %d to revision %s") % child % new_rid);
           if (db.put_revision(new_rid, rev))
             ++n_revs_out;
-          
+
           // Mark this child as done, hooray!
           safe_insert(done, child);
 

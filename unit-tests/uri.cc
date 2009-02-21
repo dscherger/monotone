@@ -15,13 +15,13 @@ using std::string;
 
 static void
 test_one_uri(string scheme,
-	     string user,
-	     string ipv6_host,
-	     string normal_host,
-	     string port,
-	     string path,
-	     string query,
-	     string fragment)
+             string user,
+             string ipv6_host,
+             string normal_host,
+             string port,
+             string path,
+             string query,
+             string fragment)
 {
   string built;
 
@@ -40,22 +40,22 @@ test_one_uri(string scheme,
     host = normal_host;
 
   if (! (user.empty()
-	 && host.empty()
-	 && port.empty()))
+         && host.empty()
+         && port.empty()))
     {
       built += "//";
 
       if (! user.empty())
-	built += (user + '@');
+        built += (user + '@');
 
       if (! host.empty())
-	built += host;
+        built += host;
 
       if (! port.empty())
-	{
-	  built += ':';
-	  built += port;
-	}
+        {
+          built += ':';
+          built += port;
+        }
     }
 
   if (! path.empty())
@@ -137,4 +137,4 @@ UNIT_TEST(urldecode)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

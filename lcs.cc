@@ -1,6 +1,13 @@
-/*
+// Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
-   this is a pretty direct translation (with only vague understanding,
+/* this is a pretty direct translation (with only vague understanding,
    unfortunately) of aubrey jaffer's most recent O(NP) edit-script
    calculation algorithm, which performs quite a bit better than myers,
    manber and miller's O(NP) simple edit *distance* algorithm. this one
@@ -8,11 +15,8 @@
 
    the following is jaffer's copyright and license statement. it probably
    still has some legal relevance here, as this is a highly derivative
-   work. if not, the portions of this file which are "mine" (if any exist)
-   are subject to copyright (C) 2003 graydon hoare, licensed to the public
-   under the GPL v2+. see the file COPYING for details. if you want to see
-   more of the original file jaffer's work came from, see the SLIB
-   repository on savannah.nongnu.org, his website at 
+   work. if you want to see more of the original file jaffer's work came
+   from, see the SLIB repository on savannah.nongnu.org, his website at
    http://www.swiss.ai.mit.edu/~jaffer/, or look in the journal of
    computational biology. apparantly it's submitted for publication there
    too.

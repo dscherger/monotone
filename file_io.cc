@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "botan/botan.h"
+#include <botan/botan.h>
 #include "botan_pipe_cache.hh"
 
 #include "file_io.hh"
@@ -490,7 +490,7 @@ walk_tree_recursive(file_path const & path,
   // describing _this_ directory pinned on the heap.  Then our recursive
   // call itself made another recursive call, etc., causing a huge spike in
   // peak memory.  By splitting the loop in half, we avoid this problem.
-  // 
+  //
   // [1] http://lkml.org/lkml/2006/2/24/215
   vector<path_component> files, dirs;
   read_directory(path, files, dirs);

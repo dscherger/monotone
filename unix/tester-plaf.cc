@@ -1,3 +1,13 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2007 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 // Tester-specific platform interface glue, Unix version.
 
 #include "base.hh"
@@ -213,7 +223,7 @@ char * make_temp_dir()
           delete [] tmpdir;
           return templ;
         }
-        
+
       E(errno == EEXIST, origin::system,
         F("mkdir(%s) failed: %s") % tmpdir % os_strerror(errno));
 
@@ -450,7 +460,7 @@ void run_tests_in_children(test_enumerator const & next_test,
 
   E(sigaction(SIGCHLD, &sa, &osa) == 0, origin::system,
     F("setting SIGCHLD handler: %s") % os_strerror(errno));
-  
+
   while (next_test(t))
     {
       do
@@ -484,7 +494,7 @@ void run_tests_in_children(test_enumerator const & next_test,
         }
       while (acquire_token());
 
-      
+
       // This must be done before we try to redirect stdout/err to a file
       // within testdir.  If we did it in the child, we would have to do it
       // before it was safe to issue diagnostics.

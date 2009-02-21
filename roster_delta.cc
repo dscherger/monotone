@@ -28,7 +28,7 @@ using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
 
-namespace 
+namespace
 {
 
   struct roster_delta_t
@@ -206,17 +206,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted
               safe_insert(d.nodes_deleted, i.left_key());
               break;
-            
+
             case parallel::in_right:
               // added
               do_delta_for_node_only_in_dest(i.right_data(), d);
               break;
-            
+
             case parallel::in_both:
               // moved/patched/attribute changes
               do_delta_for_node_in_both(i.left_data(), i.right_data(), d);
@@ -233,17 +233,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted; don't need to do anything (will be handled by
               // nodes_deleted set
               break;
-            
+
             case parallel::in_right:
               // added
               safe_insert(d.markings_changed, i.right_value());
               break;
-            
+
             case parallel::in_both:
               // maybe changed
               if (!(i.left_data() == i.right_data()))
@@ -264,7 +264,7 @@ namespace
     symbol const attr_cleared("attr_cleared");
     symbol const attr_changed("attr_changed");
     symbol const marking("marking");
-    
+
     symbol const content("content");
     symbol const location("location");
     symbol const attr("attr");
@@ -462,7 +462,7 @@ namespace
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
   }
-  
+
 } // end anonymous namespace
 
 void
@@ -539,7 +539,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
 {
   roster_delta_t d;
   read_roster_delta(del, d);
-  
+
   roster_delta_t::deltas_applied_t::const_iterator i = d.deltas_applied.find(nid);
   if (i != d.deltas_applied.end())
     {
@@ -566,7 +566,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
           return true;
         }
     }
-   
+
   return false;
 }
 

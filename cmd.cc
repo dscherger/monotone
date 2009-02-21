@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-// Copyright (C) 2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
+//               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -303,7 +303,7 @@ namespace commands {
                    std::string const & func_name) :
          command(primary_name, "", CMD_REF(user), false, false, params,
                  abstract, desc, true,
-		 options::options_type() | options::opts::none, true),
+                 options::options_type() | options::opts::none, true),
                  st(L_st), f_name(func_name)
     {
       // because user commands are inserted after the normal
@@ -312,7 +312,7 @@ namespace commands {
     }
 
     void exec(app_state & app, command_id const & execid,
-	      args_vector const & args) const
+              args_vector const & args) const
     {
       I(st);
       I(app.lua.check_lua_state(st));
@@ -324,8 +324,8 @@ namespace commands {
       ll.func(f_name);
 
       for (args_vector::const_iterator it = args.begin();
-	   it != args.end(); ++it)
-	ll.push_str((*it)());
+           it != args.end(); ++it)
+        ll.push_str((*it)());
 
       app.mtn_automate_allowed = true;
 
@@ -334,8 +334,8 @@ namespace commands {
       app.mtn_automate_allowed = false;
 
       E(ll.ok(), origin::user,
-	F("Call to user command %s (lua command: %s) failed.")
-	% primary_name() % f_name);
+        F("Call to user command %s (lua command: %s) failed.")
+        % primary_name() % f_name);
     }
   };
 }
@@ -373,7 +373,7 @@ LUAEXT(register_command, )
 
   // leak this - commands can't be removed anyway
   new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc,
-			LS, cmd_func);
+                        LS, cmd_func);
 
   lua_pushboolean(LS, true);
   return 1;
@@ -383,7 +383,7 @@ LUAEXT(register_command, )
 // better file.
 
 CMD_NO_WORKSPACE(help, "help", "", CMD_REF(informative),
-		 N_("command [ARGS...]"),
+                 N_("command [ARGS...]"),
     N_("Displays help about commands and options"),
     "",
     options::opts::none)

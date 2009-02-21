@@ -1,6 +1,3 @@
-#ifndef __MIGRATION__
-#define __MIGRATION__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,6 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __MIGRATION_HH__
+#define __MIGRATION_HH__
 
 // this file knows how to migrate schema databases. the general strategy is
 // to hash each schema we ever use, and make a list of the SQL commands
@@ -65,6 +64,8 @@ void
 regenerate_caches(database & db);
 
 
+#endif // __MIGRATION__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -72,5 +73,3 @@ regenerate_caches(database & db);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __MIGRATION__

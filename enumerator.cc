@@ -45,7 +45,7 @@ revision_enumerator::revision_enumerator(project_t & project,
 
 void
 revision_enumerator::get_revision_parents(revision_id const & child,
-					  vector<revision_id> & parents)
+                                          vector<revision_id> & parents)
 {
   parents.clear();
   typedef multimap<revision_id, revision_id>::const_iterator ci;
@@ -54,8 +54,8 @@ revision_enumerator::get_revision_parents(revision_id const & child,
     {
       if (i->first == child)
         {
-	  parents.push_back(i->second);
-	}
+          parents.push_back(i->second);
+        }
     }
 }
 
@@ -166,7 +166,7 @@ revision_enumerator::files_for_revision(revision_id const & r,
 
 void
 revision_enumerator::note_cert(revision_id const & rid,
-			       id const & cert_hash)
+                               id const & cert_hash)
 {
   revision_certs.insert(make_pair(rid, cert_hash));
 }
@@ -174,7 +174,7 @@ revision_enumerator::note_cert(revision_id const & rid,
 
 void
 revision_enumerator::get_revision_certs(revision_id const & rid,
-					vector<id> & hashes)
+                                        vector<id> & hashes)
 {
   hashes.clear();
   bool found_one = false;
@@ -184,7 +184,7 @@ revision_enumerator::get_revision_certs(revision_id const & rid,
     {
       found_one = true;
       if (i->first == rid)
-	hashes.push_back(i->second);
+        hashes.push_back(i->second);
     }
   if (!found_one)
     project.get_revision_cert_hashes(rid, hashes);
@@ -217,9 +217,9 @@ revision_enumerator::step()
               pair<ci,ci> range = graph.equal_range(r);
               for (ci i = range.first; i != range.second; ++i)
                 {
-		  // We push_front here rather than push_back in order
-		  // to improve database cache performance. It avoids
-		  // skipping back and forth beween parallel lineages.
+                  // We push_front here rather than push_back in order
+                  // to improve database cache performance. It avoids
+                  // skipping back and forth beween parallel lineages.
                   if (i->first == r)
                     if (enumerated_nodes.find(i->first) == enumerated_nodes.end())
                       revs.push_front(i->second);

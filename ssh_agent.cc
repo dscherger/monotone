@@ -10,14 +10,15 @@
 #include "base.hh"
 #include <stdlib.h>
 
+#include <boost/shared_ptr.hpp>
+#include <botan/botan.h>
+#include <botan/rsa.h>
+
 #include "ssh_agent.hh"
 #include "sanity.hh"
 #include "netio.hh"
 #include "botan/numthry.h"
 #include "numeric_vocab.hh"
-#include "botan/rsa.h"
-#include "botan/bigint.h"
-#include <boost/shared_ptr.hpp>
 #include "platform.hh"
 #include "key_store.hh"
 
@@ -395,7 +396,7 @@ ssh_agent::has_key(const keypair & key)
   if (!pub_key)
     throw recoverable_failure(origin::system,
                               "has_key: Failed to get monotone RSA public key");
-  
+
   vector<RSA_PublicKey> ssh_keys = get_keys();
   for (vector<RSA_PublicKey>::const_iterator
          si = ssh_keys.begin(); si != ssh_keys.end(); ++si)
@@ -508,4 +509,3 @@ ssh_agent::add_identity(RSA_PrivateKey const & key, string const & comment)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -1,8 +1,11 @@
-// copyright (C) 2005 nathaniel smith <njs@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
-
+// Copyright (C) 2005 nathaniel smith <njs@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #define WIN32_LEAN_AND_MEAN
 #include "base.hh"
@@ -138,7 +141,7 @@ get_path_status(std::string const & path)
          || err == ERROR_BAD_NETPATH)
         return path::nonexistent;
 
-	  E(false, origin::system, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
+          E(false, origin::system, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
     }
   else if (attrs & FILE_ATTRIBUTE_DIRECTORY)
     return path::directory;
@@ -187,7 +190,7 @@ namespace
         }
       if (FindNextFile(h, data))
         return true;
-	  E(GetLastError() == ERROR_NO_MORE_FILES, origin::system,
+          E(GetLastError() == ERROR_NO_MORE_FILES, origin::system,
         F("error while reading directory: %s") % os_strerror(errno));
       last = true;
       return false;
@@ -267,13 +270,13 @@ rename_clobberingly_impl(const char * from, const char * to)
     {
       HMODULE hModule = LoadLibrary("kernel32");
       if (hModule)
-	fnMoveFileEx = reinterpret_cast<MoveFileExFun>
-	  (GetProcAddress(hModule, "MoveFileExA"));
+        fnMoveFileEx = reinterpret_cast<MoveFileExFun>
+          (GetProcAddress(hModule, "MoveFileExA"));
       if (fnMoveFileEx)
-	{
-	  L(FL("using MoveFileEx for renames"));
-	  MoveFileExAvailable = YES;
-	}
+        {
+          L(FL("using MoveFileEx for renames"));
+          MoveFileExAvailable = YES;
+        }
       else
         {
           L(FL("using DeleteFile/MoveFile fallback for renames"));
@@ -286,14 +289,14 @@ rename_clobberingly_impl(const char * from, const char * to)
   if (MoveFileExAvailable == YES)
     {
       if (fnMoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING))
-	return true;
+        return true;
       else if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED)
         return false;
       else
         {
           MoveFileExAvailable = NO;
           L(FL("MoveFileEx failed with CALL_NOT_IMPLEMENTED, using fallback"));
-	}
+        }
     }
 
   // This is not even remotely atomic, but what can you do?

@@ -143,7 +143,7 @@ workspace::check_ws_format()
   E(format <= current_workspace_format, origin::system,
     F("this version of monotone only understands workspace metadata\n"
       "in formats 0 through %d.  your workspace is in format %d.\n"
-      "you need a newer version of monotone to use this workspace.") 
+      "you need a newer version of monotone to use this workspace.")
     % current_workspace_format % format);
 }
 
@@ -188,7 +188,7 @@ migrate_1_to_2()
 
   bookkeeping_path rev_path = bookkeeping_root / "revision";
   data base_rev_data; MM(base_rev_data);
-  try 
+  try
     {
       read_data(rev_path, base_rev_data);
     }
@@ -201,7 +201,7 @@ migrate_1_to_2()
                                                      origin::system));
   MM(base_rid);
 
-  cset workcs; 
+  cset workcs;
   MM(workcs);
   bookkeeping_path workcs_path = bookkeeping_root / "work";
   bool delete_workcs = false;
@@ -209,7 +209,7 @@ migrate_1_to_2()
     {
       delete_workcs = true;
       data workcs_data; MM(workcs_data);
-      try 
+      try
         {
           read_data(workcs_path, workcs_data);
         }
@@ -262,7 +262,7 @@ workspace::migrate_ws_format()
       write_ws_format();
       break;
 
-    case current_workspace_format: 
+    case current_workspace_format:
       P(F("this workspace is in the current format, "
           "no migration is necessary."));
       break;
@@ -273,7 +273,7 @@ workspace::migrate_ws_format()
       E(false, origin::system,
         F("this version of monotone only understands workspace metadata\n"
           "in formats 0 through %d.  your workspace is in format %d.\n"
-          "you need a newer version of monotone to use this workspace.") 
+          "you need a newer version of monotone to use this workspace.")
         % current_workspace_format % format);
     }
 }

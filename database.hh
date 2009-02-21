@@ -1,6 +1,3 @@
-#ifndef __DATABASE_HH__
-#define __DATABASE_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,10 +7,13 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __DATABASE_HH__
+#define __DATABASE_HH__
+
 #include "vector.hh"
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "botan/rng.h"
+#include <botan/version.h>
 
 #include "rev_types.hh"
 #include "cert.hh"
@@ -25,6 +25,7 @@ struct globish;
 class key_store;
 class outdated_indicator;
 class rev_height;
+class lazy_rng;
 
 typedef std::pair<var_domain, var_name> var_key;
 
@@ -245,7 +246,7 @@ public:
   void delete_public_key(rsa_keypair_id const & pub_id);
 
   // Crypto operations
-  
+
   void encrypt_rsa(rsa_keypair_id const & pub_id,
                    std::string const & plaintext,
                    rsa_oaep_sha_data & ciphertext);
@@ -415,7 +416,7 @@ public:
 
   void put_rev_height(revision_id const & id,
                       rev_height const & height);
-  
+
   bool has_rev_height(rev_height const & height);
   void delete_existing_heights();
 
@@ -437,7 +438,9 @@ public:
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
-  boost::shared_ptr<Botan::RandomNumberGenerator> rng;
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  boost::shared_ptr<lazy_rng> rng;
+#endif
 };
 
 // not a member function, defined in database_check.cc
@@ -540,6 +543,8 @@ public:
   }
 };
 
+#endif // __DATABASE_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -547,5 +552,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __DATABASE_HH__

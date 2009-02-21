@@ -1,7 +1,11 @@
-/* read_password.c: retrieve the password
- * Nico Schottelius (nico-linux-monotone@schottelius.org)
- * 13-May-2004
- */
+// Copyright (C) 2004 Nico Schottelius <nico-linux-monotone@schottelius.org>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <unistd.h>
@@ -11,7 +15,7 @@
 
 #include "sanity.hh"
 
-void 
+void
 read_password(std::string const & prompt, char * buf, size_t bufsz)
 {
   HANDLE mt_stdin;
@@ -24,7 +28,7 @@ read_password(std::string const & prompt, char * buf, size_t bufsz)
   I(mt_stdin != NULL); // NULL is non-interactive.  Can't get a passphrase if we're non-interactive
   if (GetConsoleMode(mt_stdin, &origmode) == 0)
   {
-    /* This looks like we're not a real windows console.  
+    /* This looks like we're not a real windows console.
        Possibly MSYS or Cygwin.  We'll do the best we can
        to make the password invisible in the absence of tcsetattr,
        namely emitting vt100 codes to change the foreground and

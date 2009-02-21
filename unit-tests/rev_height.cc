@@ -29,7 +29,7 @@ UNIT_TEST(count_up)
       I(read_at(h(), 0) == 0);
       I(read_at(h(), 1) == 0);
       I(read_at(h(), 2) == n);
-    }    
+    }
 }
 
 UNIT_TEST(children)
@@ -58,7 +58,7 @@ UNIT_TEST(children)
 
       L(FL("gen %d: %d children, survivor %d")
         % generations % children % survivor_no);
-      
+
       u32 parent_len = h().size() / width;
       rev_height survivor;
       MM(survivor);
@@ -114,4 +114,4 @@ UNIT_TEST(comparisons)
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
-// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

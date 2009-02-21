@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <iterator>
 
+#include <botan/botan.h>
+#include <botan/sha160.h>
+
 #include "inodeprint.hh"
 #include "sanity.hh"
 #include "platform.hh"
@@ -20,9 +23,6 @@
 #include "constants.hh"
 #include "basic_io.hh"
 #include "vocab_cast.hh"
-
-#include "botan/botan.h"
-#include "botan/sha160.h"
 
 using std::ostream;
 using std::ostringstream;
@@ -53,7 +53,7 @@ read_inodeprint_map(data const & dat,
       L(FL("inodeprints file format is wrong, skipping it"));
       return;
     }
-  
+
   basic_io::input_source src(dat(), "inodeprint");
   basic_io::tokenizer tok(src);
   basic_io::parser pa(tok);

@@ -161,7 +161,7 @@ pick_update_candidates(lua_hooks & lua,
 
   if (ignore_suspend_certs)
     return;
-  
+
    set<revision_id> active_candidates;
    for (set<revision_id>::const_iterator i = candidates.begin();
         i != candidates.end(); i++)

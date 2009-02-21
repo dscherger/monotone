@@ -188,7 +188,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   guard.commit();
 }
 
-CMD(trusted, "trusted", "", CMD_REF(key_and_cert), 
+CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     N_("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"),
     N_("Tests whether a hypothetical certificate would be trusted"),
     N_("The current settings are used to run the test."),

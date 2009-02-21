@@ -1,6 +1,12 @@
-// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 /*
  * This is a list of all options that monotone can take, what variables
@@ -44,14 +50,14 @@
 // This is a shortcut for an option which has its own variable and optset.
 // It will take an argument unless 'type' is 'bool'.
 #define OPT(name, string, type, default_, description)               \
-  OPTVAR(name, type, name, default_)					\
+  OPTVAR(name, type, name, default_)                                    \
   OPTION(name, name, has_arg<type >(), string, description)
 
 // This is the same, except that the option and variable belong to the
 // 'globals' optset. These are global options, not specific to a particular
 // command.
-#define GOPT(name, string, type, default_, description)			\
-  OPTVAR(globals, type, name, default_)					\
+#define GOPT(name, string, type, default_, description)                 \
+  OPTVAR(globals, type, name, default_)                                 \
   OPTION(globals, name, has_arg<type >(), string, description)
 
 // because 'default_' is constructor arguments, and may need to be a list

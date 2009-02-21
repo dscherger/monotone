@@ -148,7 +148,7 @@ string
 urldecode(string const & in, origin::type made_from)
 {
   string out;
-  
+
   for (string::const_iterator i = in.begin(); i != in.end(); ++i)
     {
       if (*i != '%')
@@ -162,7 +162,7 @@ urldecode(string const & in, origin::type made_from)
           ++i;
           E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
           d2 = *i;
-          
+
           char c = 0;
           switch(d1)
             {
@@ -208,7 +208,7 @@ urldecode(string const & in, origin::type made_from)
           out += c;
         }
     }
-  
+
   return out;
 }
 

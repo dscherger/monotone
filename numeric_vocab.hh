@@ -1,6 +1,3 @@
-#ifndef __NUMERIC_VOCAB__
-#define __NUMERIC_VOCAB__
-
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __NUMERIC_VOCAB__
+#define __NUMERIC_VOCAB__
 
 #include <cstddef>
 #include <climits>              // Some architectures need this for CHAR_BIT
@@ -70,6 +70,8 @@ widen(V const & v)
   #error "How do I write a constant of type s64?"
 #endif
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -77,5 +79,3 @@ widen(V const & v)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

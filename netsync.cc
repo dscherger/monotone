@@ -1,5 +1,5 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -22,6 +22,9 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+
+#include <botan/botan.h>
+#include <botan/rng.h>
 
 #include "lua_hooks.hh"
 #include "key_store.hh"
@@ -49,8 +52,6 @@
 #include "uri.hh"
 #include "options.hh"
 #include "vocab_cast.hh"
-
-#include "botan/botan.h"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
@@ -366,16 +367,16 @@ protected:
   string_queue inbuf;
 private:
   deque< pair<string, size_t> > outbuf;
-  size_t outbuf_size; // so we can avoid queueing up too much stuff
+  size_t outbuf_bytes; // so we can avoid queueing up too much stuff
 protected:
   void queue_output(string const & s)
   {
     outbuf.push_back(make_pair(s, 0));
-    outbuf_size += s.size();
+    outbuf_bytes += s.size();
   }
   bool output_overfull() const
   {
-    return outbuf_size > constants::bufsz * 10;
+    return outbuf_bytes > constants::bufsz * 10;
   }
 public:
   string peer_id;
@@ -385,7 +386,7 @@ private:
   time_t last_io_time;
 public:
 
-  enum 
+  enum
     {
       working_state,
       shutdown_state,
@@ -397,7 +398,7 @@ public:
 
   session_base(string const & peer_id,
                shared_ptr<Netxx::StreamBase> str) :
-    outbuf_size(0),
+    outbuf_bytes(0),
     peer_id(peer_id), str(str),
     last_io_time(::time(NULL)),
     protocol_state(working_state),
@@ -528,7 +529,7 @@ session_base::write_some()
     {
       if ((size_t)count == writelen)
         {
-          outbuf_size -= outbuf.front().first.size();
+          outbuf_bytes -= outbuf.front().first.size();
           outbuf.pop_front();
         }
       else
@@ -1080,8 +1081,14 @@ session::mk_nonce()
 {
   I(this->saved_nonce().empty());
   char buf[constants::merkle_hash_length_in_bytes];
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                             constants::merkle_hash_length_in_bytes);
+                           constants::merkle_hash_length_in_bytes);
+#else
+  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+                               constants::merkle_hash_length_in_bytes);
+#endif
   this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes),
                          origin::internal);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);

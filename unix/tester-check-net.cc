@@ -1,11 +1,11 @@
-/* Copyright (C) 2008 Zack Weinberg <zackw@panix.com>
-   
-   This program is made available under the GNU GPL version 2.0 or
-   greater. See the accompanying file COPYING for details.
-
-   This program is distributed WITHOUT ANY WARRANTY; without even the
-   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-   PURPOSE.  */
+// Copyright (C) 2008 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 /* The test suite runs this program to decide whether or not to include
    network tests.  It determines whether it is possible to create a
@@ -16,13 +16,15 @@
    will exit unsuccessfully and produce diagnostics on stderr.  */
 
 #include "config.h"
+#include <stdio.h>
+
 #if defined HAVE_SOCKET && defined HAVE_NETINET_IN_H
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -79,7 +81,7 @@ static int get_socket(int (*b_or_c)(int, const struct sockaddr *, socklen_t))
     sin6.sin6_family = AF_INET6;
     sin6.sin6_port = htons(port);
     sin6.sin6_addr = in6addr_loopback;
-    
+
     sfd = socket(PF_INET6, SOCK_STREAM, 0);
     if (sfd >= 0)
       {
@@ -104,7 +106,7 @@ static int server(void)
   sfd = get_socket(bind);
   if (sfd < 0)
     return 1;
-  
+
   if (listen(sfd, 1))
     {
       fprintf(stderr, "server: listen: %s\n", strerror(errno));
@@ -272,12 +274,10 @@ int main(void)
 
 #endif
 
-/*
-   Local Variables:
-   mode: C
-   fill-column: 76
-   c-file-style: "gnu"
-   indent-tabs-mode: nil
-   End:
-   vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
- */
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

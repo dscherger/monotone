@@ -1,6 +1,3 @@
-#ifndef __LEXICAL_CAST_HH__
-#define __LEXICAL_CAST_HH__
-
 // Copyright (C) 2007 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,6 +7,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __LEXICAL_CAST_HH__
+#define __LEXICAL_CAST_HH__
 
 #include <boost/lexical_cast.hpp>
 

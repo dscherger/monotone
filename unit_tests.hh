@@ -1,6 +1,3 @@
-#ifndef __UNIT_TESTS__
-#define __UNIT_TESTS__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __UNIT_TESTS__
+#define __UNIT_TESTS__
 
 #include <boost/noncopyable.hpp>
 
@@ -97,6 +97,8 @@ namespace unit_test {
   }                                             \
   static void unit_test::t_##TEST()
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -104,5 +106,3 @@ namespace unit_test {
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

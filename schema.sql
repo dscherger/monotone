@@ -1,3 +1,11 @@
+-- Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
  
 -- schema for the sql database. this file is converted into
 -- a string constant, as the symbol:
@@ -6,12 +14,6 @@
 --
 -- and emitted as schema.h at compile time. it is used by
 -- database.cc when initializing a fresh sqlite db.
-
-
--- copyright (C) 2002, 2003, 2004 graydon hoare <graydon@pobox.com>
--- all rights reserved.
--- licensed to the public under the terms of the GNU GPL 2.1+
--- see the file COPYING for details
 
 PRAGMA page_size=8192;
 

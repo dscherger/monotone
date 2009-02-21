@@ -18,8 +18,8 @@
 #include <cerrno>
 
 #include <boost/function.hpp>
+#include <botan/botan.h>
 
-#include "botan/botan.h"
 #include "option.hh"
 #include "unit_tests.hh"
 #include "sanity.hh"
@@ -242,7 +242,7 @@ int main(int argc, char * argv[])
   string group, test;
   group = test_to_run.substr(0, sep);
   test = test_to_run.substr(sep+1, string::npos);
-            
+
   group_list_t::const_iterator g = unit_tests().find(group);
 
   if (g == unit_tests().end())
@@ -291,12 +291,6 @@ int main(int argc, char * argv[])
       L(FL("Test %s:%s succeeded.\n") % group % test);
       return 0;
     }
-}
-
-// Stub for options.cc's sake.
-void
-localize_monotone()
-{
 }
 
 // Global sanity object.  We don't want to depend on ui.

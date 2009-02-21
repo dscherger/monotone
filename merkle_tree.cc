@@ -12,9 +12,8 @@
 #include <sstream>
 
 #include <boost/dynamic_bitset.hpp>
-
-#include "botan/botan.h"
-#include "botan/sha160.h"
+#include <botan/botan.h>
+#include <botan/sha160.h>
 
 #include "constants.hh"
 #include "merkle_tree.hh"
@@ -75,7 +74,7 @@ raw_sha1(string const & in)
 {
   Botan::SHA_160 hash;
   hash.update(reinterpret_cast<Botan::byte const *>(in.data()),
-	      static_cast<unsigned int>(in.size()));
+              static_cast<unsigned int>(in.size()));
   char digest[constants::sha1_digest_length];
   hash.final(reinterpret_cast<Botan::byte *>(digest));
   string out(digest, constants::sha1_digest_length);
@@ -306,7 +305,7 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
   out.check_invariants();
   if (hash != checkhash)
     throw bad_decode(F("mismatched node hash value %s, expected %s")
-		     % id(checkhash, origin::internal)
+                     % id(checkhash, origin::internal)
                      % id(hash, origin::network));
 }
 

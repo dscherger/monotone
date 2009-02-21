@@ -9,11 +9,15 @@
 
 #include "base.hh"
 #include "app_state.hh"
+#include "lazy_rng.hh"
 
 app_state::app_state()
-  : lua(this), mtn_automate_allowed(false),
-    rng(Botan::RandomNumberGenerator::make_rng())
-{}
+  : lua(this), mtn_automate_allowed(false)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  , rng(new lazy_rng())
+#endif
+{
+}
 
 app_state::~app_state()
 {}

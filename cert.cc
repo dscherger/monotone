@@ -116,7 +116,7 @@ erase_bogus_certs(database & db,
 
   // Sorry, this is a crazy data structure
   typedef tuple< manifest_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
+  typedef map< trust_key,
     pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
   trust_map trust;
 
@@ -175,14 +175,14 @@ erase_bogus_certs(database & db,
 
   // sorry, this is a crazy data structure
   typedef tuple< revision_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
+  typedef map< trust_key,
     pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
   trust_map trust;
 
   for (it i = certs.begin(); i != certs.end(); ++i)
     {
-      trust_key key = trust_key(i->inner().ident, 
-                                i->inner().name, 
+      trust_key key = trust_key(i->inner().ident,
+                                i->inner().name,
                                 i->inner().value);
       trust_map::iterator j = trust.find(key);
       shared_ptr< set<rsa_keypair_id> > s;
