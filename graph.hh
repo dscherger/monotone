@@ -1,6 +1,3 @@
-#ifndef __GRAPH__HH__
-#define __GRAPH__HH__
-
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __GRAPH__HH__
+#define __GRAPH__HH__
 
 // This file contains generic graph algorithms.  They are split out from any
 // particular concrete graph (e.g., the revision graph, the delta storage

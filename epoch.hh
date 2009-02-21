@@ -1,6 +1,3 @@
-#ifndef __EPOCH_HH__
-#define __EPOCH_HH__
-
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,8 +7,10 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "vocab.hh"
+#ifndef __EPOCH_HH__
+#define __EPOCH_HH__
 
+#include "vocab.hh"
 
 // epochs are pairs (branch name, random data)
 

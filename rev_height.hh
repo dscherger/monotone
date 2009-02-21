@@ -1,6 +1,3 @@
-#ifndef __REV_HEIGHT_HH_
-#define __REV_HEIGHT_HH_
-
 // Copyright (C) 2006 Thomas Moschny <thomas.moschny@gmx.de>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __REV_HEIGHT_HH_
+#define __REV_HEIGHT_HH_
 
 #include "numeric_vocab.hh"
 

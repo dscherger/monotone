@@ -1,8 +1,5 @@
-#ifndef __PATHS_HH__
-#define __PATHS_HH__
-
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __PATHS_HH__
+#define __PATHS_HH__
 
 // safe, portable, fast, simple path handling -- in that order.
 // but they all count.

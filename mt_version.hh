@@ -1,6 +1,3 @@
-#ifndef __MT_VERSION_HH__
-#define __MT_VERSION_HH__
-
 // Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,11 +7,16 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __MT_VERSION_HH__
+#define __MT_VERSION_HH__
 
 void get_version(std::string & out);
 void print_version();
 void get_full_version(std::string & out);
 void print_full_version();
+
+extern char const package_revision_constant[];
+extern char const package_full_revision_constant[];
 
 #endif
 

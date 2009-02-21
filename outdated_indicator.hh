@@ -1,8 +1,14 @@
+// Copyright (C) 2007 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __OUTDATED_NOTIFIER_HH__
 #define __OUTDATED_NOTIFIER_HH__
-
-// 2007 Timothy Brownawell <tbrownaw@gmail.com>
-// GNU GPL V2 or later
 
 // Allow clients to find out when something changes.
 // The 'something' has an outdated_indicator_factory,

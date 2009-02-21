@@ -1,9 +1,15 @@
-// this file is partially cribbed from gfileutils.c in glib, which is
-// copyright (c) 2000 Red Hat. It was released as LGPL version 2.0 or
-// greater, so I have copied some of its text into this file and am
-// relicensing my derivative work (this file):
-//    copyright (C) 2004 graydon hoare, as LGPL version 2.0 or greater also.
-//    revised, copyright (C) 2009 zack weinberg <zackw@panix.com>
+// Copyright (C) 2000 Red Hat, Inc.
+//               2004 Graydon Hoare <graydon@pobox.com>
+//               2009 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
+// this code was originally based on part of gfileutils.cc in glib.
 //
 // this is a portable implementation of mkstemp, which is not available on
 // all systems and not always correctly implemented even when available.
@@ -44,7 +50,7 @@
 // and it can be extremely poor quality (RANDU, anyone?)
 
 #include "base.hh"
-#include "mkstemp.hh"
+#include "file_io.hh"
 #include "numeric_vocab.hh"
 
 #include <errno.h>

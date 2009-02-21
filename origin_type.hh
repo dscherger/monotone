@@ -1,3 +1,12 @@
+// Copyright (C) 2009 Timothy Brownawell  <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __ORIGIN_TYPE_HH__
 #define __ORIGIN_TYPE_HH__
 

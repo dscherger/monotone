@@ -1,6 +1,12 @@
-// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 /*
  * This is a list of all options that monotone can take, what variables

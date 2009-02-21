@@ -293,12 +293,6 @@ int main(int argc, char * argv[])
     }
 }
 
-// Stub for options.cc's sake.
-void
-localize_monotone()
-{
-}
-
 // Global sanity object.  We don't want to depend on ui.
 struct unit_tester_sanity : public sanity
 {

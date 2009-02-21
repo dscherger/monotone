@@ -9,7 +9,7 @@
 
 #include "base.hh"
 #include "unit_tests.hh"
-#include "mkstemp.hh"
+#include "file_io.hh"
 #include "sanity.hh"
 
 #include <cerrno>

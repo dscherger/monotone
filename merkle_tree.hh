@@ -1,6 +1,3 @@
-#ifndef __MERKLE_TREE_HH__
-#define __MERKLE_TREE_HH__
-
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __MERKLE_TREE_HH__
+#define __MERKLE_TREE_HH__
 
 #include <map>
 #include <set>

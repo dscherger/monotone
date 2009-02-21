@@ -1,6 +1,3 @@
-#ifndef __ADLER32_HH__
-#define __ADLER32_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __ADLER32_HH__
+#define __ADLER32_HH__
 
 // this is a pseudo-adler32. it does not use a prime modulus. it is not
 // entirely clear that this matters; it is what rsync and xdelta both do

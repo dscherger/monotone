@@ -1,3 +1,12 @@
+-- Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
+
 -- This test suite is special; it synthesizes all its __driver__.lua
 -- files on the fly.  Each one runs the 'unit_tests' binary over just
 -- one of the test cases it can run.

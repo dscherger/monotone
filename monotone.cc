@@ -19,7 +19,6 @@
 #include <sqlite3.h>
 #include <botan/botan.h>
 
-#include "i18n.h"
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"
 #include "commands.hh"
@@ -33,7 +32,6 @@
 #include "simplestring_xform.hh"
 #include "platform.hh"
 #include "work.hh"
-
 
 using std::cout;
 using std::cerr;
@@ -84,21 +82,6 @@ struct ui_library
   ui_library() { ui.initialize(); }
   ~ui_library() { ui.deinitialize(); }
 };
-
-// This is in a separate procedure so it can be called from code that's called
-// before cpp_main(), such as program option object creation code.  It's made
-// so it can be called multiple times as well.
-void localize_monotone()
-{
-  static int init = 0;
-  if (!init)
-    {
-      setlocale(LC_ALL, "");
-      bindtextdomain(PACKAGE, get_locale_dir().c_str());
-      textdomain(PACKAGE);
-      init = 1;
-    }
-}
 
 // define the global objects needed by botan_pipe_cache.hh
 pipe_cache_cleanup * global_pipe_cleanup_object;
@@ -163,7 +146,9 @@ int
 cpp_main(int argc, char ** argv)
 {
   // go-go gadget i18n
-  localize_monotone();
+  setlocale(LC_ALL, "");
+  bindtextdomain(PACKAGE, get_locale_dir().c_str());
+  textdomain(PACKAGE);
 
   // set up global ui object - must occur before anything that might try to
   // issue a diagnostic

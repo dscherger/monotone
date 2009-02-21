@@ -1,4 +1,14 @@
 #! /bin/sh
+# Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# Check all C++ source files to make sure they obey the header file rules.
 
 egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
   sed -e "$(printf 's/:[ \t]*#[ \t]*include[ \t]*[<\"]/ /')" -e 's/[>"]$//' |
@@ -8,6 +18,7 @@ egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
     late_base_hh=""
     shouldnt_base_hh=""
     shouldnt_config_h=""
+    shouldnt_gettext_h=""
     shouldnt_string=""
     shouldnt_iosfwd=""
     found_base_hh=f
@@ -44,6 +55,10 @@ egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
 	  if [ "$file" != "base.hh" ]
 	  then shouldnt_config_h="$shouldnt_config_h $file"
 	  fi;;
+	(gettext.h)
+	  if [ "$file" != "base.hh" ]
+	  then shouldnt_gettext_h="$shouldnt_gettext_h $file"
+	  fi;;
 	(string)
 	  if [ "$file" != "base.hh" ]
 	  then shouldnt_string="$shouldnt_string $file"
@@ -78,6 +93,11 @@ egrep -H "$(printf '^[ \t]*#[ \t]*include\\>')" "$@" |
     if [ -n "$shouldnt_config_h" ]; then
       echo "*** Unwanted #include \"config.h\":"
       echo "$shouldnt_config_h" | tr -s ' ' | fmt | sed 's/^/   /'
+      status=1
+    fi
+    if [ -n "$shouldnt_gettext_h" ]; then
+      echo "*** Unwanted #include \"gettext.h\":"
+      echo "$shouldnt_gettext_h" | tr -s ' ' | fmt | sed 's/^/   /'
       status=1
     fi
     if [ -n "$shouldnt_string" ]; then
