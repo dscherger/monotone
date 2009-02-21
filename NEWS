@@ -23,6 +23,14 @@
 
         Bugs fixed
 
+        - In 0.42, a netsync writer would attemts to queue up all outgoing
+          data as soon as it knew what data to send, in a single operation,
+          without servicing the event loop. If there was a large amount of
+          data to send, this would cause very long pauses and sometimes
+          timeouts and dropped connections (for pauses over 10 minutes).
+          The bug that caused this is fixed, and that operation now has a
+          safety timer that should prevent it from coming back.
+
         - Several bugfixes to `mtn automate stdio':
           * it now correctly distinguishs between syntax and command errors by
             returning error code 1 for the former and error code 2 for the
