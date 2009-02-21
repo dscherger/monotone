@@ -159,7 +159,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if ((args.size() != 3) && (args.size() != 2))
     throw usage(execid);
@@ -195,7 +195,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     options::opts::none)
 {
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() < 4)
     throw usage(execid);
@@ -250,7 +250,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 2)
     throw usage(execid);
@@ -271,7 +271,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 2)
     throw usage(execid);
@@ -291,7 +291,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
@@ -313,7 +313,7 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
@@ -323,7 +323,6 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   guess_branch(app.opts, project, r);
   E(app.opts.branchname() != "", origin::user,
     F("need --branch argument to suspend"));
-
   cache_user_key(app.opts, app.lua, db, keys);
   project.suspend_revision_in_branch(keys, r, app.opts.branchname);
 }
@@ -335,7 +334,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1 && args.size() != 2)
     throw usage(execid);

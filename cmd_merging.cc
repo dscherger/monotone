@@ -89,19 +89,13 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
 }
 
 static bool
-pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
+pick_branch_for_update(options & opts, project_t & project, revision_id chosen_rid)
 {
   bool switched_branch = false;
 
   // figure out which branches the target is in
-  vector< revision<cert> > certs;
-  db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  erase_bogus_certs(db, certs);
-
   set< branch_name > branches;
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
-       i != certs.end(); i++)
-    branches.insert(typecast_vocab<branch_name>(i->inner().value));
+  project.get_revision_branches(chosen_rid, branches);
 
   if (branches.find(opts.branchname) != branches.end())
     {
@@ -154,7 +148,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   // Figure out where we are
   parent_map parents;
@@ -170,6 +164,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // Figure out where we're going
   E(!app.opts.branchname().empty(), origin::user,
     F("cannot determine branch for update"));
+  MM(app.opts.branchname);
 
   revision_id chosen_rid;
   if (app.opts.revision_selectors.empty())
@@ -222,7 +217,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   // Fiddle around with branches, in an attempt to guess what the user
   // wants.
-  bool switched_branch = pick_branch_for_update(app.opts, db, chosen_rid);
+  bool switched_branch = pick_branch_for_update(app.opts, project, chosen_rid);
   if (switched_branch)
     P(F("switching to branch %s") % app.opts.branchname());
 
@@ -437,7 +432,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (!args.empty())
     throw usage(execid);
@@ -554,7 +549,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   set<revision_id> src_heads, dst_heads;
 
   if (args.size() != 3)
@@ -717,7 +712,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   // Get the current state of the workspace.
 
@@ -825,7 +820,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   revision_id left, right;
   branch_name branch;
 
@@ -989,7 +984,7 @@ CMD(show_conflicts, "show_conflicts", "", CMD_REF(informative), N_("REV REV"),
     options::opts::none)
 {
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 2)
     throw usage(execid);
@@ -1058,7 +1053,7 @@ CMD_AUTOMATE(show_conflicts, N_("[LEFT_REVID RIGHT_REVID]"),
              options::opts::branch | options::opts::ignore_suspend_certs)
 {
   database    db(app);
-  project_t   project(db);
+  project_t project(db, app.lua, app.opts);
   revision_id l_id, r_id;
 
   get_conflicts_rids(args, db, project, app, l_id, r_id);
@@ -1074,7 +1069,7 @@ CMD(store, "store", "", CMD_REF(conflicts),
     options::opts::branch | options::opts::conflicts_opts)
 {
   database    db(app);
-  project_t   project(db);
+  project_t   project(db, app.lua, app.opts);
   revision_id left_id, right_id;
 
   get_conflicts_rids(args, db, project, app, left_id, right_id);
@@ -1103,7 +1098,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
     F("wrong argument count"));
 
   database  db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   revision_id left_rid;
   complete(app.opts, app.lua, project, idx(args,0)(), left_rid);
@@ -1159,7 +1154,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 {
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   // Work out our arguments
   revision_id from_rid, to_rid;
@@ -1345,7 +1340,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
     F("please specify a branch, with --branch=BRANCH"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   project.get_branch_heads(app.opts.branchname, heads,
                            app.opts.ignore_suspend_certs);
@@ -1421,7 +1416,7 @@ CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),
   else if (args.size() == 1)
     {
       database db(app);
-      project_t project(db);
+      project_t project(db, app.lua, app.opts);
       revision_id rid;
       complete(app.opts, app.lua, project, idx(args, 0)(), rid);
       I(!null_id(rid));
