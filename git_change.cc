@@ -21,12 +21,12 @@ using std::string;
 using std::vector;
 
 void
-get_change(roster_t const & left, roster_t const & right, 
+get_change(roster_t const & left, roster_t const & right,
            git_change & change)
 {
   typedef full_attr_map_t::const_iterator attr_iterator;
   static attr_key exe_attr("mtn:execute");
-    
+
   parallel::iter<node_map> i(left.all_nodes(), right.all_nodes());
   while (i.next())
     {
@@ -55,15 +55,15 @@ get_change(roster_t const & left, roster_t const & right,
               attr_iterator exe = file->attrs.find(exe_attr);
 
               string mode = "100644";
-              if (exe != file->attrs.end() && 
+              if (exe != file->attrs.end() &&
                   exe->second.first && // live attr
                   exe->second.second() == "true")
                 mode = "100755";
 
               file_path path;
               right.get_name(i.right_key(), path);
-              change.additions.push_back(git_add(path, 
-                                                 file->content, 
+              change.additions.push_back(git_add(path,
+                                                 file->content,
                                                  mode));
             }
           break;
@@ -81,12 +81,12 @@ get_change(roster_t const & left, roster_t const & right,
               string left_mode = "100644";
               string right_mode = "100644";
 
-              if (left_attr != left_file->attrs.end() && 
+              if (left_attr != left_file->attrs.end() &&
                   left_attr->second.first && // live attr
                   left_attr->second.second() == "true")
                 left_mode = "100755";
 
-              if (right_attr != right_file->attrs.end() && 
+              if (right_attr != right_file->attrs.end() &&
                   right_attr->second.first && // live attr
                   right_attr->second.second() == "true")
                 right_mode = "100755";
@@ -96,13 +96,13 @@ get_change(roster_t const & left, roster_t const & right,
               right.get_name(i.right_key(), right_path);
 
               if (left_path != right_path)
-                change.renames.push_back(make_pair(left_path, 
+                change.renames.push_back(make_pair(left_path,
                                                    right_path));
 
               // git handles content changes as additions
-              if (left_file->content != right_file->content || 
+              if (left_file->content != right_file->content ||
                   left_mode != right_mode)
-                change.additions.push_back(git_add(right_path, 
+                change.additions.push_back(git_add(right_path,
                                                    right_file->content,
                                                    right_mode));
             }
@@ -114,12 +114,12 @@ get_change(roster_t const & left, roster_t const & right,
 // re-order renames so that they occur in the correct order
 // i.e. rename a->b + rename b->c will be re-ordered as
 //      rename b->c + rename a->b
-// this will also insert temporary names to resolve circular 
+// this will also insert temporary names to resolve circular
 // renames and name swaps:
 // i.e. rename a->b + rename b->a will be re-ordered as
 //      rename a->tmp + rename b->a + rename tmp->b
 void
-reorder_renames(vector<git_rename> const & renames, 
+reorder_renames(vector<git_rename> const & renames,
                 vector<git_rename> & reordered_renames)
 {
   typedef map<file_path, file_path> map_type;
@@ -175,7 +175,7 @@ reorder_renames(vector<git_rename> const & renames,
           rename_stack.pop();
           reordered_renames.push_back(rename);
         }
-        
+
       reordered_renames.push_back(base);
     }
 }

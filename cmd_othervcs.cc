@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-// Copyright (C) 2009 Derek Scherger <derek@echologic.com>
+//               2009 Derek Scherger <derek@echologic.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -40,7 +40,7 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
 }
 
 
-CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"), 
+CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
     N_("Imports all versions in a CVS repository"),
     "",
     options::opts::branch)
@@ -72,8 +72,8 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
 CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
     N_("Produces a git fast-export data stream on stdout"),
     N_(""),
-    options::opts::authors_file | options::opts::branches_file | 
-    options::opts::log_revids | options::opts::log_certs | 
+    options::opts::authors_file | options::opts::branches_file |
+    options::opts::log_revids | options::opts::log_certs |
     options::opts::import_marks | options::opts::export_marks |
     options::opts::refs)
 {
@@ -109,7 +109,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   db.get_revision_ids(revision_set);
 
   // remove marked revs from the set to be exported
-  for (map<revision_id, size_t>::const_iterator 
+  for (map<revision_id, size_t>::const_iterator
          i = marked_revs.begin(); i != marked_revs.end(); ++i)
     revision_set.erase(i->first);
 
@@ -122,7 +122,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
 
   // needs author and branch maps
   export_changes(db,
-                 revisions, marked_revs, 
+                 revisions, marked_revs,
                  author_map, branch_map, change_map,
                  app.opts.log_revids, app.opts.log_certs);
 

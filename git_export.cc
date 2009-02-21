@@ -39,16 +39,16 @@ namespace
     string raw = path.as_internal();
     string quoted;
     quoted.reserve(raw.size() + 8);
-    
+
     quoted += "\"";
-    
+
     for (string::const_iterator i = raw.begin(); i != raw.end(); ++i)
       {
         if (*i == '"')
           quoted += "\\";
         quoted += *i;
       }
-    
+
     quoted += "\"";
 
     return quoted;
@@ -80,7 +80,7 @@ read_mappings(system_path const & path, map<string, string> & mappings)
 }
 
 void
-import_marks(system_path const & marks_file, 
+import_marks(system_path const & marks_file,
              map<revision_id, size_t> & marked_revs)
 {
   size_t mark_id = 1;
@@ -93,7 +93,7 @@ import_marks(system_path const & marks_file,
       char c;
       size_t mark;
       string tmp;
-          
+
       marks.get(c);
       E(c == ':', origin::user, F("missing leading ':' in marks file"));
       marks >> mark;
@@ -115,14 +115,14 @@ import_marks(system_path const & marks_file,
 
 
 void
-export_marks(system_path const & marks_file, 
+export_marks(system_path const & marks_file,
              map<revision_id, size_t> const & marked_revs)
 {
   ostringstream marks;
-  for (map<revision_id, size_t>::const_iterator 
+  for (map<revision_id, size_t>::const_iterator
          i = marked_revs.begin(); i != marked_revs.end(); ++i)
     marks << ":" << i->second << " " << i->first << "\n";
-  
+
   data mark_data(marks.str(), origin::internal);
   system_path tmp("."); // use the current directory for tmp
   write_data(marks_file, mark_data, tmp);
@@ -130,7 +130,7 @@ export_marks(system_path const & marks_file,
 
 void
 load_changes(database & db,
-             vector<revision_id> const & revisions, 
+             vector<revision_id> const & revisions,
              map<revision_id, git_change> & change_map)
 {
   // process revisions in reverse order and calculate the file changes for
@@ -151,7 +151,7 @@ load_changes(database & db,
   ticker loaded(_("loading"), "r", 1);
   loaded.set_total(revisions.size());
 
-  for (vector<revision_id>::const_reverse_iterator 
+  for (vector<revision_id>::const_reverse_iterator
          r = revisions.rbegin(); r != revisions.rend(); ++r)
     {
       revision_t revision;
@@ -182,13 +182,13 @@ load_changes(database & db,
 
 void
 export_changes(database & db,
-               vector<revision_id> const & revisions, 
+               vector<revision_id> const & revisions,
                map<revision_id, size_t> & marked_revs,
                map<string, string> const & author_map,
                map<string, string> const & branch_map,
                map<revision_id, git_change> const & change_map,
                bool log_revids, bool log_certs)
-{               
+{
   size_t revnum = 0;
   size_t revmax = revisions.size();
 
@@ -206,7 +206,7 @@ export_changes(database & db,
   ticker exported(_("exporting"), "r", 1);
   exported.set_total(revisions.size());
 
-  for (vector<revision_id>::const_iterator 
+  for (vector<revision_id>::const_iterator
          r = revisions.begin(); r != revisions.end(); ++r)
     {
       revnum++;
@@ -292,10 +292,10 @@ export_changes(database & db,
 
       // process comment certs with changelog certs
 
-      changelogs.insert(changelogs.end(), 
+      changelogs.insert(changelogs.end(),
                         comments.begin(), comments.end());
 
-      for (cert_iterator changelog = changelogs.begin(); 
+      for (cert_iterator changelog = changelogs.begin();
            changelog != changelogs.end(); ++changelog)
         {
           string value = changelog->inner().value();
@@ -337,7 +337,7 @@ export_changes(database & db,
 
       // emit file data blobs for modified and added files
 
-      for (add_iterator 
+      for (add_iterator
              i = change.additions.begin(); i != change.additions.end(); ++i)
         {
           if (marked_files.find(i->content) == marked_files.end())
@@ -348,7 +348,7 @@ export_changes(database & db,
               marked_files[i->content] = mark_id++;
               cout << "blob\n"
                    << "mark :" << marked_files[i->content] << "\n"
-                   << "data " << data.inner()().size() << "\n" 
+                   << "data " << data.inner()().size() << "\n"
                    << data.inner()() << "\n";
             }
         }
@@ -356,7 +356,7 @@ export_changes(database & db,
       if (log_revids)
         {
           message << "\n";
-      
+
           if (!null_id(parent1))
             message << "Monotone-Parent: " << parent1 << "\n";
 
@@ -375,7 +375,7 @@ export_changes(database & db,
           for ( ; date != dates.end(); ++date)
             message << "Monotone-Date: " << date->inner().value() << "\n";
 
-          for (cert_iterator 
+          for (cert_iterator
                  branch = branches.begin() ; branch != branches.end(); ++branch)
             message << "Monotone-Branch: " << branch->inner().value() << "\n";
 
@@ -397,7 +397,7 @@ export_changes(database & db,
 
       if (!null_id(parent1))
         cout << "from :" << marked_revs[parent1] << "\n";
-      
+
       if (!null_id(parent2))
         cout << "merge :" << marked_revs[parent2] << "\n";
 
@@ -407,16 +407,16 @@ export_changes(database & db,
 
       for (rename_iterator
              i = reordered_renames.begin(); i != reordered_renames.end(); ++i)
-        cout << "R " 
-             << quote_path(i->first) << " " 
+        cout << "R "
+             << quote_path(i->first) << " "
              << quote_path(i->second) << "\n";
 
       for (add_iterator
              i = change.additions.begin(); i != change.additions.end(); ++i)
-        cout << "M " << i->mode << " :" 
-             << marked_files[i->content] << " " 
+        cout << "M " << i->mode << " :"
+             << marked_files[i->content] << " "
              << quote_path(i->path) << "\n";
-      
+
       // create additional branch refs
       if (!branches.empty())
         {
@@ -442,7 +442,7 @@ export_changes(database & db,
              << "from :" << marked_revs[*r] << "\n";
 
       // report progress to the export file which will be reported during import
-      cout << "progress revision " << *r 
+      cout << "progress revision " << *r
            << " (" << revnum << "/" << revmax << ")\n"
            << "#############################################################\n";
 
@@ -451,10 +451,10 @@ export_changes(database & db,
 }
 
 void
-export_rev_refs(vector<revision_id> const & revisions, 
+export_rev_refs(vector<revision_id> const & revisions,
                 map<revision_id, size_t> & marked_revs)
 {
-  for (vector<revision_id>::const_iterator 
+  for (vector<revision_id>::const_iterator
          i = revisions.begin(); i != revisions.end(); ++i)
     cout << "reset refs/mtn/revs/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
@@ -467,7 +467,7 @@ export_root_refs(database & db,
   set<revision_id> roots;
   revision_id nullid;
   db.get_revision_children(nullid, roots);
-  for (set<revision_id>::const_iterator 
+  for (set<revision_id>::const_iterator
          i = roots.begin(); i != roots.end(); ++i)
     cout << "reset refs/mtn/roots/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
@@ -479,7 +479,7 @@ export_leaf_refs(database & db,
 {
   set<revision_id> leaves;
   db.get_leaves(leaves);
-  for (set<revision_id>::const_iterator 
+  for (set<revision_id>::const_iterator
          i = leaves.begin(); i != leaves.end(); ++i)
     cout << "reset refs/mtn/leaves/" << *i << "\n"
          << "from :" << marked_revs[*i] << "\n";
