@@ -482,8 +482,6 @@ dump(T const & t, char const *var,
 
 #define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
 
-extern void localize_monotone();
-
 #endif // __SANITY_HH__
 
 // Local Variables:

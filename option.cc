@@ -53,8 +53,9 @@ bad_arg_internal::bad_arg_internal(string const & str)
 
 
 
-void splitname(string const & from, string & name, string & n)
+void splitname(char const * f, string & name, string & n)
 {
+  string from(f);
   // from looks like "foo" or "foo,f"
   string::size_type comma = from.find(',');
   name = from.substr(0, comma);
@@ -78,15 +79,15 @@ concrete_option::concrete_option()
   : has_arg(false)
 {}
 
-concrete_option::concrete_option(std::string const & names,
-                                 std::string const & desc,
+concrete_option::concrete_option(char const * names,
+                                 char const * desc,
                                  bool arg,
                                  boost::function<void (std::string)> set,
                                  boost::function<void ()> reset)
 {
   description = desc;
   splitname(names, longname, shortname);
-  I(!description.empty() || !longname.empty() || !shortname.empty());
+  I((desc && desc[0]) || !longname.empty() || !shortname.empty());
   // If an option has a name (ie, can be set), it must have a setter function
   I(set || (longname.empty() && shortname.empty()));
   has_arg = arg;
@@ -134,8 +135,8 @@ class discard_argument
 };
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void ()> set,
                                 boost::function<void ()> reset)
 {
@@ -144,8 +145,8 @@ concrete_option_set::operator()(string const & names,
 }
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void (string)> set,
                                 boost::function<void ()> reset)
 {
@@ -457,7 +458,7 @@ concrete_option_set::get_usage_strings(vector<string> & names,
       if (name.size() > namelen)
         namelen = name.size();
       names.push_back(name);
-      descriptions.push_back(i->description);
+      descriptions.push_back(gettext(i->description));
     }
   maxnamelen = namelen;
 }

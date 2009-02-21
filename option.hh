@@ -78,12 +78,12 @@ namespace option {
   };
 
   // Split a "long,s" option name into long and short names.
-  void splitname(std::string const & from, std::string & name, std::string & n);
+  void splitname(char const * from, std::string & name, std::string & n);
 
   // An option that can be set and reset.
   struct concrete_option
   {
-    std::string description;
+    char const * description;
     std::string longname;
     std::string shortname;
     bool has_arg;
@@ -91,8 +91,8 @@ namespace option {
     boost::function<void ()> resetter;
 
     concrete_option();
-    concrete_option(std::string const & names,
-                    std::string const & desc,
+    concrete_option(char const * names,
+                    char const * desc,
                     bool arg,
                     boost::function<void (std::string)> set,
                     boost::function<void ()> reset);
@@ -109,16 +109,16 @@ namespace option {
     concrete_option_set(std::set<concrete_option> const & other);
     concrete_option_set(concrete_option const & opt);
 
-    // for building a concret_option_set directly (as done in unit_tests.cc),
+    // for building a concrete_option_set directly (as done in unit_tests.cc),
     // rather than using intermediate machinery like in options*
     concrete_option_set &
-    operator()(std::string const & names,
-               std::string const & desc,
+    operator()(char const * names,
+               char const * desc,
                boost::function<void ()> set,
                boost::function<void ()> reset = 0);
     concrete_option_set &
-    operator()(std::string const & names,
-               std::string const & desc,
+    operator()(char const * names,
+               char const * desc,
                boost::function<void (std::string)> set,
                boost::function<void ()> reset = 0);
 
@@ -222,19 +222,19 @@ namespace option {
   template<typename T>
   struct option
   {
-    std::string description;
-    std::string names;
+    char const * description;
+    char const * names;
     bool has_arg;
     boost::function<void (T*, std::string)> setter;
     boost::function<void (T*)> resetter;
 
-    option(std::string const & name,
-           std::string const & desc,
+    option(char const * name,
+           char const * desc,
            bool arg,
            void(T::*set)(std::string),
            void(T::*reset)())
     {
-      I(!name.empty() || !desc.empty());
+      I((name && name[0]) || (desc && desc[0]));
       description = desc;
       names = name;
       has_arg = arg;
@@ -279,8 +279,8 @@ namespace option {
       options.insert(opt);
     }
 
-    option_set(std::string const & name,
-               std::string const & desc,
+    option_set(char const * name,
+               char const * desc,
                bool arg,
                void(T::*set)(std::string),
                void(T::*reset)())

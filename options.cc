@@ -160,10 +160,8 @@ options::options_type const & options::opts::all_options()
 # define OPTION(optset, name, hasarg, optstring, description)           \
   options::options_type const & options::opts::name()                   \
   {                                                                     \
-    localize_monotone();                                                \
-                                                                        \
     static options::options_type val(optstring,                         \
-                                     gettext(description), hasarg,      \
+                                     description, hasarg,               \
                                      &options::set_ ## name ,           \
                                      &options::reset_opt_ ## name );    \
     return val;                                                         \
