@@ -19,7 +19,6 @@
 #include <sqlite3.h>
 #include <botan/botan.h>
 
-#include "i18n.h"
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"
 #include "commands.hh"
@@ -33,7 +32,6 @@
 #include "simplestring_xform.hh"
 #include "platform.hh"
 #include "work.hh"
-
 
 using std::cout;
 using std::cerr;

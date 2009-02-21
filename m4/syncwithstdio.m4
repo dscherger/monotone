@@ -1,3 +1,12 @@
+# Copyright (C) 2006 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # Check whether sync_with_stdio(false) run on C++ streams works correctly.
 # It causes strange problems (EOF returned too early) on some versions of
 # MinGW and OS X.  The first test is for the MinGW issue, the second for

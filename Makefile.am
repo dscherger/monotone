@@ -1,5 +1,16 @@
-AUTOMAKE_OPTIONS=subdir-objects -Wno-portability
-ACLOCAL_AMFLAGS = -I m4
+# Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# Makefile for monotone
+
+AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
+ACLOCAL_AMFLAGS  = -I m4
 
 CMD_SOURCES =								\
 	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
@@ -19,7 +30,7 @@ LUAEXT_SOURCES = 							\
 	interner.hh hash_map.hh	vocab_hash.hh				\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
-	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
+	lua.cc lua.hh mkstemp.cc file_io.cc file_io.hh			\
 	globish.cc globish.hh basic_io.cc basic_io.hh			\
 	char_classifiers.hh
 
@@ -83,11 +94,10 @@ MOST_SOURCES = 								\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
 	netio.hh gettext.h						\
-	package_revision.cc package_revision.h				\
-	package_full_revision.cc package_full_revision.h		\
+	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
 	specialized_lexical_cast.cc lexical_cast.hh			\
-	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
+	parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
 NETXX_SOURCES =								\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx		\

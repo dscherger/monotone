@@ -1,7 +1,11 @@
-/* read_password.c: retrieve the password
- * Nico Schottelius (nico-linux-monotone@schottelius.org)
- * 13-May-2004
- */
+// Copyright (C) 2004 Nico Schottelius <nico-linux-monotone@schottelius.org>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <unistd.h>

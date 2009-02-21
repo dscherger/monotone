@@ -1,3 +1,12 @@
+# Copyright (C) 2009 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # This is a custom set of probe macros for xgettext and the gettext
 # library (either in libc or as -lintl [-liconv]).  The differences
 # from the standard version are as follows:

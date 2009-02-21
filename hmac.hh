@@ -1,6 +1,14 @@
+// Copyright (C) 2005 Matt Johnston <matt@ucc.asn.au>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __HMAC_HH__
 #define __HMAC_HH__
-
 
 #include <botan/botan.h>
 
@@ -27,9 +35,6 @@ private:
   Botan::Pipe engine;
   std::string chain_val;
 };
-
-
-
 
 #endif // __HMAC_HH__
 

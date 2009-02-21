@@ -1,7 +1,4 @@
-#ifndef __HYBRID_MAP_HH__
-#define __HYBRID_MAP_HH__
-
-// Copyright 2007 Timothy Brownawell <tbrownaw@gmail.com>
+// Copyright (C) 2007 Timothy Brownawell <tbrownaw@gmail.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __HYBRID_MAP_HH__
+#define __HYBRID_MAP_HH__
 
 #include "sanity.hh"
 #include "hash_map.hh"

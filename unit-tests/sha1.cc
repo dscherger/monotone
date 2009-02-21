@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Kaushik Veeraraghavan <kaushikv@gmail.com>
-// Copyright (C) 2009 Zack Weinberg <zackw@panix.com>
+//               2009 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.

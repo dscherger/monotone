@@ -1,6 +1,3 @@
-#ifndef __NETXX_PIPE_HH__
-#define __NETXX_PIPE_HH__
-
 // Copyright (C) 2005 Christof Petig <christof@petig-baender.de>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __NETXX_PIPE_HH__
+#define __NETXX_PIPE_HH__
 
 #include "vector.hh"
 #include <netxx/socket.h>

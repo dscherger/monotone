@@ -1,3 +1,12 @@
+# Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # check for the obnoxious gcc 4.1.[01] template static data bug
 # (see http://gcc.gnu.org/PR28016)
 AC_DEFUN([AC_CXX_TEMPLATE_STATIC_CONST_BUG],

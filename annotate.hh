@@ -1,6 +1,3 @@
-#ifndef __ANNOTATE_HH__
-#define __ANNOTATE_HH__
-
 // Copyright (C) 2005 Emile Snyder <emile@alumni.reed.edu>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __ANNOTATE_HH__
+#define __ANNOTATE_HH__
 
 #include "vocab.hh"
 #include "rev_types.hh"

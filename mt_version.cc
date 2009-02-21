@@ -28,8 +28,6 @@
 #include "lua.hh"
 #include "platform.hh"
 #include "mt_version.hh"
-#include "package_revision.h"
-#include "package_full_revision.h"
 #include "sanity.hh"
 
 using std::cout;

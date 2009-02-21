@@ -1,5 +1,5 @@
-// Copyright (C) 2004, 2007 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 - 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
+//               2007 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.

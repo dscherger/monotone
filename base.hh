@@ -1,6 +1,3 @@
-#ifndef __BASE_HH__
-#define __BASE_HH__
-
 // Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __BASE_HH__
+#define __BASE_HH__
 
 // This file contains a small number of inclusions and declarations that
 // should be visible to the entire program.  Include it first.
@@ -60,6 +60,13 @@ template <> void dump(std::string const & obj, std::string & out);
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
 #define sqlite3_prepare_v2 sqlite3_prepare
 #endif
+
+// i18n goo
+
+#include "gettext.h"
+
+#define _(str) gettext(str)
+#define N_(str) gettext_noop(str)
 
 #endif // __BASE_HH__
 

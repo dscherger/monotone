@@ -1,6 +1,14 @@
+// Copyright (C) 2005 Patrick Mauritz <oxygene@studentenbude.ath.cx>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __HASHMAP_HH
 #define __HASHMAP_HH
-
 
 #include <functional>
 namespace hashmap {

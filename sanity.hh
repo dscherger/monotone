@@ -1,6 +1,3 @@
-#ifndef __SANITY_HH__
-#define __SANITY_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,13 +7,15 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __SANITY_HH__
+#define __SANITY_HH__
+
 #include <stdexcept>
 #include <ostream>
 #include <cstdio>
 
 #include "boost/current_function.hpp"
 
-#include "i18n.h"
 #include "numeric_vocab.hh"
 #include "origin_type.hh"
 
@@ -482,6 +481,8 @@ dump(T const & t, char const *var,
 };
 
 #define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
+
+extern void localize_monotone();
 
 #endif // __SANITY_HH__
 

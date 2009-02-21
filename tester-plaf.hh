@@ -1,6 +1,3 @@
-#ifndef __TESTER_PLAF_HH__
-#define __TESTER_PLAF_HH__
-
 // Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __TESTER_PLAF_HH__
+#define __TESTER_PLAF_HH__
 
 // this describes functions to be found, alternatively, in win32/* or unix/*
 // directories and used only by the tester.

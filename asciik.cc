@@ -1,6 +1,6 @@
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 Lapo Luchini <lapo@lapo.it>
-// Copyright (C) 2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
+//               2007 Lapo Luchini <lapo@lapo.it>
+//               2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.

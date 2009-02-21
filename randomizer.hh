@@ -1,6 +1,3 @@
-#ifndef __RANDOMIZER_HH__
-#define __RANDOMIZER_HH__
-
 // Copyright (C) 2006 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __RANDOMIZER_HH__
+#define __RANDOMIZER_HH__
 
 // This is just a set of utility methods built on top of boost::random.
 //

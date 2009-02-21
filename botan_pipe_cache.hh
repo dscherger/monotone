@@ -1,6 +1,3 @@
-#ifndef __BOTAN_PIPE_CACHE_HH__
-#define __BOTAN_PIPE_CACHE_HH__
-
 // Copyright (C) 2008 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __BOTAN_PIPE_CACHE_HH__
+#define __BOTAN_PIPE_CACHE_HH__
 
 #include <botan/botan.h>
 #include <boost/scoped_ptr.hpp>

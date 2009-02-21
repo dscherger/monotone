@@ -1,6 +1,6 @@
-dnl @synopsis AC_CXX_GNUCXX_HASHMAP
+dnl @synopsis AC_CXX_TYPEOF
 dnl
-dnl tests for the presence of the gcc hashmap stl extension
+dnl tests for the presence of the gcc typeof() extension
 dnl
 dnl @author Patrick Mauritz <oxygene@studentenbude.ath.cx>
 dnl @version 2005-08-15

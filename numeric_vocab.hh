@@ -1,6 +1,3 @@
-#ifndef __NUMERIC_VOCAB__
-#define __NUMERIC_VOCAB__
-
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __NUMERIC_VOCAB__
+#define __NUMERIC_VOCAB__
 
 #include <cstddef>
 #include <climits>              // Some architectures need this for CHAR_BIT
