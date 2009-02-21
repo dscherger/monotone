@@ -62,6 +62,10 @@
         - Additional '--full' option for 'mtn db info' to display some
           statistic analysis of the date certs in the database.
 
+	- Command line options in the EDITOR and/or VISUAL environment
+	  variables are honored; for instance, EDITOR="emacs -nw"
+	  works now.  (Debian bug #320565.)
+
         Internal
 
         - Using 64 bit integer values to represent dates internally. This
