@@ -14,6 +14,8 @@ REV2=base_revision()
 selmap("p:", {REV1})
 -- standard selection
 selmap("p:" .. REV2, {REV1})
+-- single-character prefix
+selmap("p:" .. string.sub(REV2,1,1), {REV1})
 -- parent of a root revision
 selmap("p:" .. REV1, {})
 
