@@ -91,7 +91,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
   else
     {
       workspace::require_workspace(F("with no argument, this command prints the heads of the workspace's branch"));
-      branch = app.opts.branchname;
+      branch = app.opts.branch;
     }
 
   set<revision_id> heads;

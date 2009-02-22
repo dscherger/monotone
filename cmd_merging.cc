@@ -103,9 +103,9 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
        i != certs.end(); i++)
     branches.insert(typecast_vocab<branch_name>(i->inner().value));
 
-  if (branches.find(opts.branchname) != branches.end())
+  if (branches.find(opts.branch) != branches.end())
     {
-      L(FL("using existing branch %s") % opts.branchname());
+      L(FL("using existing branch %s") % opts.branch());
     }
   else
     {
@@ -124,7 +124,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
       else if (branches.size() == 1)
         {
           // one non-matching, inform and update
-          opts.branchname = *(branches.begin());
+          opts.branch = *(branches.begin());
           switched_branch = true;
         }
       else
@@ -132,7 +132,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
           I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
-            % opts.branchname);
+            % opts.branch);
         }
     }
   return switched_branch;
@@ -168,22 +168,22 @@ CMD(update, "update", "", CMD_REF(workspace), "",
     F("this workspace is a new project; cannot update"));
 
   // Figure out where we're going
-  E(!app.opts.branchname().empty(), origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
   if (app.opts.revision_selectors.empty())
     {
-      P(F("updating along branch '%s'") % app.opts.branchname);
+      P(F("updating along branch '%s'") % app.opts.branch);
       set<revision_id> candidates;
       pick_update_candidates(app.lua, project, candidates, old_rid,
-                             app.opts.branchname,
+                             app.opts.branch,
                              app.opts.ignore_suspend_certs);
       E(!candidates.empty(), origin::user,
         F("your request matches no descendents of the current revision\n"
           "in fact, it doesn't even match the current revision\n"
           "maybe you want something like --revision=h:%s")
-        % app.opts.branchname);
+        % app.opts.branch);
       if (candidates.size() != 1)
         {
           P(F("multiple update candidates:"));
@@ -207,7 +207,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // because when you are at one of several heads, and you hit update, you
   // want to know that merging would let you update further.
   notify_if_multiple_heads(project,
-                           app.opts.branchname, app.opts.ignore_suspend_certs);
+                           app.opts.branch, app.opts.ignore_suspend_certs);
 
   if (old_rid == chosen_rid)
     {
@@ -224,7 +224,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // wants.
   bool switched_branch = pick_branch_for_update(app.opts, db, chosen_rid);
   if (switched_branch)
-    P(F("switching to branch %s") % app.opts.branchname());
+    P(F("switching to branch %s") % app.opts.branch());
 
   // Okay, we have a target, we have a branch, let's do this merge!
 
@@ -306,7 +306,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   work.set_options(app.opts, true);
 
   if (switched_branch)
-    P(F("switched branch; next commit will use branch %s") % app.opts.branchname());
+    P(F("switched branch; next commit will use branch %s") % app.opts.branch());
   P(F("updated to base revision %s") % chosen_rid);
 }
 
@@ -336,14 +336,14 @@ merge_two(options & opts, lua_hooks & lua, project_t & project,
   bool log_message_given;
   size_t fieldwidth = max(caller.size() + strlen(" of '"), strlen("and '"));
 
-  if (branch != opts.branchname)
+  if (branch != opts.branch)
     fieldwidth = max(fieldwidth, strlen("to branch '"));
 
   log << setw(fieldwidth - strlen(" of '")) << caller << " of '" << left
       << "'\n" << setw(fieldwidth) << "and '" << right
       << "'\n";
 
-  if (branch != opts.branchname)
+  if (branch != opts.branch)
     log << setw(fieldwidth) << "to branch '" << branch << "'\n";
 
   process_commit_message_args(opts, log_message_given, log_message,
@@ -442,23 +442,23 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   set<revision_id> heads;
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
 
   E(!heads.empty(), origin::user,
-    F("branch '%s' is empty") % app.opts.branchname);
+    F("branch '%s' is empty") % app.opts.branch);
   if (heads.size() == 1)
     {
-      P(F("branch '%s' is already merged") % app.opts.branchname);
+      P(F("branch '%s' is already merged") % app.opts.branch);
       return;
     }
 
   P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
-      % heads.size() % app.opts.branchname);
+      % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
   cache_user_key(app.opts, app.lua, db, keys);
@@ -491,16 +491,16 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       revpair p = find_heads_to_merge(db, heads);
 
       merge_two(app.opts, app.lua, project, keys,
-                p.first, p.second, app.opts.branchname, string("merge"),
+                p.first, p.second, app.opts.branch, string("merge"),
                 std::cout, false);
 
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       pass++;
     }
 
   if (heads.size() > 1)
-    P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branchname % heads.size());
+    P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branch % heads.size());
 
   P(F("note: your workspaces have not been updated"));
 }
@@ -1010,15 +1010,15 @@ static void get_conflicts_rids(args_vector const & args,
   if (args.empty())
     {
       // get ids from heads
-      E(app.opts.branchname() != "", origin::user,
+      E(!app.opts.branch().empty(), origin::user,
         F("please specify a branch, with --branch=BRANCH"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
 
       E(heads.size() >= 2, origin::user,
-        F("branch '%s' has only 1 head; must be at least 2 for conflicts") % app.opts.branchname);
+        F("branch '%s' has only 1 head; must be at least 2 for conflicts") % app.opts.branch);
 
       revpair p = find_heads_to_merge (db, heads);
       left_rid = p.first;
@@ -1341,21 +1341,21 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   database db(app);
   project_t project(db);
 
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
 
   if (heads.empty())
-    P(F("branch '%s' is empty") % app.opts.branchname);
+    P(F("branch '%s' is empty") % app.opts.branch);
   else if (heads.size() == 1)
-    P(F("branch '%s' is currently merged:") % app.opts.branchname);
+    P(F("branch '%s' is currently merged:") % app.opts.branch);
   else
-    P(F("branch '%s' is currently unmerged:") % app.opts.branchname);
+    P(F("branch '%s' is currently unmerged:") % app.opts.branch);
 
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)

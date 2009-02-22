@@ -367,7 +367,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
       % r % rev.edges.size());
 
   guess_branch(app.opts, project, r);
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for disapproval"));
 
   process_commit_message_args(app.opts, log_message_given, log_message,
@@ -399,7 +399,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     db.put_revision(inv_id, rdat);
 
     project.put_standard_certs_from_options(app.opts, app.lua, keys,
-                                            inv_id, app.opts.branchname,
+                                            inv_id, app.opts.branch,
                                             log_message);
     guard.commit();
   }
@@ -595,7 +595,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   make_restricted_revision(old_rosters, new_roster, mask, rev);
 
   utf8 summary;
-  revision_summary(rev, app.opts.branchname, summary);
+  revision_summary(rev, app.opts.branch, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
   cout << summary_external;
@@ -621,23 +621,23 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   if (app.opts.revision_selectors.empty())
     {
       // use branch head revision
-      E(!app.opts.branchname().empty(), origin::user,
+      E(!app.opts.branch().empty(), origin::user,
         F("use --revision or --branch to specify what to checkout"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       E(!heads.empty(), origin::user,
-        F("branch '%s' is empty") % app.opts.branchname);
+        F("branch '%s' is empty") % app.opts.branch);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % app.opts.branchname);
+          P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
           P(F("choose one with '%s checkout -r<id>'") % prog_name);
           E(false, origin::user,
-            F("branch %s has multiple heads") % app.opts.branchname);
+            F("branch %s has multiple heads") % app.opts.branch);
         }
       revid = *(heads.begin());
     }
@@ -648,12 +648,12 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
 
       guess_branch(app.opts, project, revid);
 
-      I(!app.opts.branchname().empty());
+      I(!app.opts.branch().empty());
 
-      E(project.revision_is_in_branch(revid, app.opts.branchname),
+      E(project.revision_is_in_branch(revid, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch %s")
-        % revid % app.opts.branchname);
+        % revid % app.opts.branch);
     }
 
   // we do this part of the checking down here, because it is legitimate to
@@ -668,9 +668,9 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
     if (args.empty())
       {
         // No checkout dir specified, use branch name for dir.
-        E(!app.opts.branchname().empty(), origin::user,
+        E(!app.opts.branch().empty(), origin::user,
           F("you must specify a destination directory"));
-        dir = system_path(app.opts.branchname(), origin::user);
+        dir = system_path(app.opts.branch(), origin::user);
       }
     else
       {
@@ -1121,7 +1121,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   // We need the 'if' because guess_branch will try to override any branch
   // picked up from _MTN/options.
-  if (app.opts.branchname().empty())
+  if (app.opts.branch().empty())
     {
       branch_name branchname, bn_candidate;
       for (edge_map::iterator i = restricted_rev.edges.begin();
@@ -1139,10 +1139,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
           branchname = bn_candidate;
         }
 
-      app.opts.branchname = branchname;
+      app.opts.branch = branchname;
     }
 
-  P(F("beginning commit on branch '%s'") % app.opts.branchname);
+  P(F("beginning commit on branch '%s'") % app.opts.branch);
 
   if (global_sanity.debug_p())
     {
@@ -1164,7 +1164,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     {
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, restricted_rev,
-                                    app.opts.branchname, log_message);
+                                    app.opts.branch, log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
@@ -1191,7 +1191,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   revision_data new_rev;
   write_revision(restricted_rev, new_rev);
 
-  app.lua.hook_validate_commit_message(log_message, new_rev, app.opts.branchname,
+  app.lua.hook_validate_commit_message(log_message, new_rev, app.opts.branch,
                                        message_validated, reason);
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
@@ -1200,7 +1200,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   // for the divergence check, below
   set<revision_id> heads;
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
   unsigned int old_head_size = heads.size();
 
@@ -1295,7 +1295,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
     project.put_standard_certs_from_options(app.opts, app.lua, keys,
                                             restricted_rev_id,
-                                            app.opts.branchname,
+                                            app.opts.branch,
                                             log_message);
     guard.commit();
   }
@@ -1314,7 +1314,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   work.blank_user_log();
 
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
   if (heads.size() > old_head_size && old_head_size > 0) {
     P(F("note: this revision creates divergence\n"
@@ -1351,7 +1351,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 {
   if (args.size() > 1)
     throw usage(execid);
-  E(!app.opts.branchname().empty(), origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for setup"));
 
   database db(app);
@@ -1395,31 +1395,31 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
 
       guess_branch(app.opts, project, ident);
 
-      I(!app.opts.branchname().empty());
+      I(!app.opts.branch().empty());
 
-      E(project.revision_is_in_branch(ident, app.opts.branchname),
+      E(project.revision_is_in_branch(ident, app.opts.branch),
         origin::user,
         F("revision %s is not a member of branch %s")
-        % ident % app.opts.branchname);
+        % ident % app.opts.branch);
     }
   else
     {
       // use branch head revision
-      E(!app.opts.branchname().empty(), origin::user,
+      E(!app.opts.branch().empty(), origin::user,
         F("use --revision or --branch to specify the parent revision for the import"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       if (heads.size() > 1)
         {
-          P(F("branch %s has multiple heads:") % app.opts.branchname);
+          P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
           P(F("choose one with '%s import -r<id>'") % prog_name);
           E(false, origin::user,
-            F("branch %s has multiple heads") % app.opts.branchname);
+            F("branch %s has multiple heads") % app.opts.branch);
         }
       if (!heads.empty())
         ident = *(heads.begin());

@@ -392,8 +392,8 @@ void
 guess_branch(options & opts, project_t & project,
              revision_id const & ident, branch_name & branchname)
 {
-  if (opts.branch_given && !opts.branchname().empty())
-    branchname = opts.branchname;
+  if (opts.branch_given && !opts.branch().empty())
+    branchname = opts.branch;
   else
     {
       E(!ident.inner()().empty(), origin::user,
@@ -424,7 +424,7 @@ guess_branch(options & opts, project_t & project, revision_id const & ident)
 {
   branch_name branchname;
   guess_branch(opts, project, ident, branchname);
-  opts.branchname = branchname;
+  opts.branch = branchname;
 }
 
 void

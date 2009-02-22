@@ -374,12 +374,12 @@ CMD(clone, "clone", "", CMD_REF(network),
                                   / bookkeeping_root_component
                                   / ws_internal_db_file_name);
 
-  // this is actually stupid, but app.opts.branchname must be set here
+  // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
   // a revision is chosen which has multiple branch certs
-  app.opts.branchname = branchname;
+  app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
-  app.opts.branchname = branch_name();
+  app.opts.branch = branch_name();
 
   database db(app);
   if (get_path_status(db.get_filename()) == path::nonexistent)

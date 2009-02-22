@@ -65,7 +65,7 @@ get_user_key(options const & opts, lua_hooks & lua,
 
   if (!opts.signing_key().empty())
     key = opts.signing_key;
-  else if (lua.hook_get_branch_key(opts.branchname, key))
+  else if (lua.hook_get_branch_key(opts.branch, key))
     ; // the lua hook sets the key
   else
     {

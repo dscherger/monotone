@@ -299,11 +299,11 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.put_revision_in_branch(keys, r, app.opts.branchname);
+  project.put_revision_in_branch(keys, r, app.opts.branch);
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
@@ -321,11 +321,11 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.suspend_revision_in_branch(keys, r, app.opts.branchname);
+  project.suspend_revision_in_branch(keys, r, app.opts.branch);
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),

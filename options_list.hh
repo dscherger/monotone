@@ -119,12 +119,11 @@ OPTION(bind_opts, bind_stdio, false, "stdio",
 }
 #endif
 
-OPTVAR(branch, branch_name, branchname, )
-OPTION(branch, branch, true, "branch,b",
+OPT(branch, "branch,b", branch_name, ,
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
-  branchname = branch_name(arg, origin::user);
+  branch = branch_name(arg, origin::user);
 }
 #endif
 

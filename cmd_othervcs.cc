@@ -45,7 +45,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   if (args.size() != 1)
     throw usage(execid);
 
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("need base --branch argument for importing"));
 
   system_path cvsroot(idx(args, 0)(), origin::user);
@@ -58,7 +58,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   // amount of work
   cache_user_key(app.opts, app.lua, db, keys);
 
-  import_cvs_repo(project, keys, cvsroot, app.opts.branchname);
+  import_cvs_repo(project, keys, cvsroot, app.opts.branch);
 }
 
 

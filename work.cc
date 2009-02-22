@@ -467,13 +467,13 @@ workspace::get_options(options & opts)
       opts.key_dir_given = true;
     }
 
-  if (opts.branchname().empty() && !workspace_branch().empty())
+  if (opts.branch().empty() && !workspace_branch().empty())
     {
-      opts.branchname = workspace_branch;
+      opts.branch = workspace_branch;
       branch_is_sticky = true;
     }
 
-  L(FL("branch name is '%s'") % opts.branchname);
+  L(FL("branch name is '%s'") % opts.branch);
 
   if (!opts.key_given)
     opts.signing_key = workspace_key;
@@ -526,8 +526,8 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
       get_path_status(opts.key_dir.as_internal()) == path::directory)
     workspace_keydir = opts.key_dir;
   if ((branch_is_sticky || workspace::branch_is_sticky)
-      && !opts.branchname().empty())
-    workspace_branch = opts.branchname;
+      && !opts.branch().empty())
+    workspace_branch = opts.branch;
   if (opts.key_given)
     workspace_key = opts.signing_key;
 

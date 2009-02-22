@@ -163,7 +163,7 @@ decode_selector(project_t & project,
                 : F("the empty head selector h: refers to "
                     "the head of the current branch");
               workspace::require_workspace(msg);
-              sel = opts.branchname();
+              sel = opts.branch();
             }
           break;
 
