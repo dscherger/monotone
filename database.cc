@@ -3529,8 +3529,7 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", encode_hexenc(partial,
-                                                             origin::internal), q);
+  imp->add_prefix_matching_constraint("child", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
