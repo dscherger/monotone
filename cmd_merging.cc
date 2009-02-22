@@ -214,7 +214,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
       P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
-      work.set_ws_options(app.opts, true);
+      work.set_options(app.opts, true);
       return;
     }
 
@@ -303,7 +303,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   work.put_work_rev(remaining);
   work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
-  work.set_ws_options(app.opts, true);
+  work.set_options(app.opts, true);
 
   if (switched_branch)
     P(F("switched branch; next commit will use branch %s") % app.opts.branchname());

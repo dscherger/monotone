@@ -23,7 +23,7 @@ using std::string;
 using std::exception;
 using boost::lexical_cast;
 
-// This file's primary entry point is workspace::migrate_ws_format.  It is
+// This file's primary entry point is workspace::migrate_format.  It is
 // responsible for migrating workspace directories from metadata formats
 // used by older versions of monotone.  This file also defines the other
 // workspace:: functions related to metadata format.  Whenever a new
@@ -48,11 +48,11 @@ static const char first_version_supporting_current_format[] = "0.30";
 // of _MTN/format.  Format 0 is even older, and is indicated by the
 // metadata directory being named "MT", not "_MTN".  All these little
 // details are handled by the following two functions.  Note that
-// write_ws_format is a public interface, but get_ws_format is not
-// (the corresponding public interface is check_ws_format, below).
+// write_format is a public interface, but get_workspace_format is not
+// (the corresponding public interface is check_format, below).
 
 static unsigned int
-get_ws_format()
+get_workspace_format()
 {
   unsigned int format;
   bookkeeping_path f_path = bookkeeping_root / "format";
@@ -89,7 +89,7 @@ get_ws_format()
 }
 
 void
-workspace::write_ws_format()
+workspace::write_format()
 {
   bookkeeping_path f_path = bookkeeping_root / "format";
   // one or other side of this conditional will always be dead code, but
@@ -108,17 +108,17 @@ workspace::write_ws_format()
     }
 }
 
-// This function is the public face of get_ws_format.  It produces
+// This function is the public face of get_workspace_format.  It produces
 // suitable error messages if the workspace's format number is not
 // equal to current_workspace_format.
 
 void
-workspace::check_ws_format()
+workspace::check_format()
 {
   if (!workspace::found)
     return;
 
-  unsigned int format = get_ws_format();
+  unsigned int format = get_workspace_format();
 
   // Don't give user false expectations about format 0.
   E(format > 0, origin::system,
@@ -139,7 +139,7 @@ workspace::check_ws_format()
     % format % current_workspace_format % prog_name
     % first_version_supporting_current_format);
 
-  // keep this message in sync with the copy in migrate_ws_format
+  // keep this message in sync with the copy in migrate_format
   E(format <= current_workspace_format, origin::system,
     F("this version of monotone only understands workspace metadata\n"
       "in formats 0 through %d.  your workspace is in format %d.\n"
@@ -241,9 +241,9 @@ migrate_1_to_2()
 // This function is the public face of the migrate_X_to_X+1 functions.
 
 void
-workspace::migrate_ws_format()
+workspace::migrate_format()
 {
-  unsigned int format = get_ws_format();
+  unsigned int format = get_workspace_format();
 
   // When adding new migrations, note the organization of the first block of
   // case entries in this switch statement.  There are entries each of the
@@ -251,7 +251,7 @@ workspace::migrate_ws_format()
   // migrate_<n>_to_<n+1> function, AND DROPS THROUGH.  Thus, when we
   // encounter a workspace in format K < C, the migrate_K_to_K+1,
   // migrate_K+1_to_K+2, ..., migrate_C-1_to_C functions will all be called.
-  // The last entry drops through to the write_ws_format() line.
+  // The last entry drops through to the write_format() line.
 
   switch (format)
     {
@@ -259,7 +259,7 @@ workspace::migrate_ws_format()
     case 1: migrate_1_to_2();
 
       // We are now in the current format.
-      write_ws_format();
+      write_format();
       break;
 
     case current_workspace_format:
@@ -269,7 +269,7 @@ workspace::migrate_ws_format()
 
     default:
       I(format > current_workspace_format);
-      // keep this message in sync with the copy in check_ws_format
+      // keep this message in sync with the copy in check_format
       E(false, origin::system,
         F("this version of monotone only understands workspace metadata\n"
           "in formats 0 through %d.  your workspace is in format %d.\n"

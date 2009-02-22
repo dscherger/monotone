@@ -111,8 +111,8 @@ namespace commands {
     // the command needs it.
     if (cmd->use_workspace_options())
       {
-        workspace::check_ws_format();
-        workspace::get_ws_options(app.opts);
+        workspace::check_format();
+        workspace::get_options(app.opts);
       }
 
     cmd->exec(app, ident, args);

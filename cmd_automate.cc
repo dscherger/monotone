@@ -418,8 +418,8 @@ CMD_AUTOMATE(stdio, "",
               // Re-read the ws options file, rather than just copying
               // the options from the previous apts.opts object, because
               // the file may have changed due to user activity.
-              workspace::check_ws_format();
-              workspace::get_ws_options(app.opts);
+              workspace::check_format();
+              workspace::get_options(app.opts);
             }
 
           opts = options::opts::globals() | cmd->opts();
@@ -539,8 +539,8 @@ LUAEXT(mtn_automate, )
           // Re-read the ws options file, rather than just copying
           // the options from the previous apts.opts object, because
           // the file may have changed due to user activity.
-          workspace::check_ws_format();
-          workspace::get_ws_options(app_p->opts);
+          workspace::check_format();
+          workspace::get_options(app_p->opts);
         }
 
       opts.instantiate(&app_p->opts).from_command_line(args, false);

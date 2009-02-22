@@ -1841,7 +1841,7 @@ CMD_AUTOMATE(get_option, N_("OPTION"),
     F("wrong argument count"));
 
   workspace work(app);
-  work.print_ws_option(args[0], output);
+  work.print_option(args[0], output);
 }
 
 // Name: get_content_changed
