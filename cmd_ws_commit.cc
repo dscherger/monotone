@@ -1301,7 +1301,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   }
 
   // the workspace should remember the branch we just committed to.
-  work.set_ws_options(app.opts, true);
+  work.set_options(app.opts, true);
 
   // the work revision is now whatever changes remain on top of the revision
   // we just checked in.
@@ -1491,7 +1491,7 @@ CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
     }
 
   workspace work(app, false);
-  work.migrate_ws_format();
+  work.migrate_format();
 }
 
 CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",
