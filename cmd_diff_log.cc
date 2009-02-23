@@ -19,6 +19,7 @@
 #include "cmd.hh"
 #include "diff_output.hh"
 #include "file_io.hh"
+#include "globish.hh"
 #include "restrictions.hh"
 #include "revision.hh"
 #include "rev_height.hh"
@@ -642,16 +643,53 @@ typedef priority_queue<pair<rev_height, revision_id>,
                        vector<pair<rev_height, revision_id> >,
                        rev_cmp> frontier_t;
 
+struct cert_globber
+{
+  database & db;
+  cert_name name;
+  globish glob;
+
+  cert_globber(database & db, cert_name const & name,
+               string const & pattern)
+    : db(db), name(name), glob(pattern, origin::user) {}
+
+  cert_globber(database & db, cert_name const & name, 
+               vector<string> const & patterns) 
+    : db(db), name(name)
+  {
+    vector<arg_type> args;
+    for (vector<string>::const_iterator i = patterns.begin(); 
+         i != patterns.end(); ++i)
+      args.push_back(arg_type(*i, origin::user));
+    glob = globish(args);
+  }
+
+  bool match(revision_id const & rid)
+  {
+    vector< revision<cert> > certs;
+    db.get_revision_certs(rid, name, certs);
+
+    for (vector< revision<cert> >::const_iterator i = certs.begin();
+         i != certs.end(); ++i)
+      if (glob.matches(i->inner().value()))
+        return true;
+
+    return false;
+  }
+};
+
 CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
     N_("Prints history in reverse order"),
     N_("This command prints history in reverse order, filtering it by "
        "FILE if given.  If one or more revisions are given, uses them as "
        "a starting point."),
-    options::opts::last | options::opts::next
-    | options::opts::from | options::opts::to
-    | options::opts::brief | options::opts::diffs
-    | options::opts::no_merges | options::opts::no_files
-    | options::opts::no_graph)
+    options::opts::last | options::opts::next |
+    options::opts::from | options::opts::to |
+    options::opts::brief | options::opts::diffs |
+    options::opts::no_merges | options::opts::no_files |
+    options::opts::no_graph | 
+    options::opts::author | options::opts::branch | options::opts::date |
+    options::opts::message)
 {
   database db(app);
   project_t project(db);
@@ -798,6 +836,12 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   // we can use the markings if we walk backwards for a restricted log
   bool use_markings(!(next>0) && !mask.empty());
 
+  cert_globber author_globber(db, author_name, app.opts.author());
+  cert_globber branch_globber(db, branch_name, app.opts.branch());
+  cert_globber changelog_globber(db, changelog_name, app.opts.message);
+  cert_globber comment_globber(db, comment_name, app.opts.message);
+  cert_globber date_globber(db, date_name, app.opts.date);
+
   set<revision_id> seen;
   revision_t rev;
   // this is instantiated even when not used, but it's lightweight
@@ -872,8 +916,20 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
             }
         }
 
-      if (app.opts.no_merges && rev.is_merge_node())
+      if (print_this && app.opts.no_merges && rev.is_merge_node())
         print_this = false;
+
+      if (print_this && app.opts.author_given)
+        print_this = author_globber.match(rid);
+
+      if (print_this && !app.opts.branch().empty())
+        print_this = branch_globber.match(rid);
+
+      if (print_this && app.opts.message_given)
+        print_this = changelog_globber.match(rid) | comment_globber.match(rid);
+
+      if (print_this && app.opts.date_given)
+        print_this = date_globber.match(rid);
 
       set<revision_id> interesting;
       // if rid is not marked we can jump directly to the marked ancestors,
@@ -964,6 +1020,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
             cout << out_system;
           else
             graph.print(rid, interesting, out_system);
+
+          cout.flush();
         }
       else if (use_markings && !app.opts.no_graph)
         graph.print(rid, interesting,

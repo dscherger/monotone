@@ -350,7 +350,7 @@ project_t::put_standard_certs_from_options(options const & opts,
 {
   date_t date;
   if (opts.date_given)
-    date = opts.date;
+    date = date_t(opts.date);
   else
     date = date_t::now();
 

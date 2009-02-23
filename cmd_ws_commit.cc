@@ -1085,9 +1085,9 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",
-    options::opts::branch | options::opts::message | options::opts::msgfile
-    | options::opts::date | options::opts::author | options::opts::depth
-    | options::opts::exclude)
+    options::opts::branch | options::opts::message | options::opts::msgfile |
+    options::opts::date | options::opts::author | options::opts::depth |
+    options::opts::exclude)
 {
   database db(app);
   key_store keys(app);

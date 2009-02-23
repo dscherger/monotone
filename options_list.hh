@@ -165,18 +165,11 @@ GOPT(no_default_confdir, "no-default-confdir", bool, false,
 }
 #endif
 
-OPT(date, "date", date_t, ,
+OPT(date, "date", std::string, ,
      gettext_noop("override date/time for commit"))
 #ifdef option_bodies
 {
-  try
-    {
-      date = date_t(arg);
-    }
-  catch (std::exception &e)
-    {
-      throw bad_arg_internal(e.what());
-    }
+  date = arg;
 }
 #endif
 

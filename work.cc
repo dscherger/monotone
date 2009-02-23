@@ -467,7 +467,7 @@ workspace::get_options(options & opts)
       opts.key_dir_given = true;
     }
 
-  if (opts.branch().empty() && !workspace_branch().empty())
+  if (!opts.branch_given && !workspace_branch().empty())
     {
       opts.branch = workspace_branch;
       branch_is_sticky = true;
