@@ -1,6 +1,3 @@
-#ifndef __FILE_IO_H__
-#define __FILE_IO_H__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,9 +7,11 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __FILE_IO_H__
+#define __FILE_IO_H__
+
 #include "vocab.hh"
 #include "paths.hh"
-#include "sanity.hh"
 #include "platform-wrapped.hh"
 #include "vector.hh"
 
@@ -47,9 +46,11 @@ bool file_exists(any_path const & path);
 // returns true if there is a directory at 'path' with no files or sub-directories
 bool directory_empty(any_path const & path);
 
-
 // returns true if the string content is binary according to monotone heuristic
 bool guess_binary(std::string const & s);
+
+// creates and returns the name of a temporary file
+bool monotone_mkstemp(std::string & tmpl);
 
 void mkdir_p(any_path const & path);
 void make_dir_for(any_path const & p);
@@ -123,6 +124,8 @@ bool ident_existing_file(file_path const & p, file_id & ident, path::status stat
 void calculate_ident(file_path const & file,
                      file_id & ident);
 
+#endif // __FILE_IO_H__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -130,5 +133,3 @@ void calculate_ident(file_path const & file,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __FILE_IO_H__

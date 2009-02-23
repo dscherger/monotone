@@ -15,7 +15,7 @@ using std::string;
 typedef string::size_type stringpos;
 
 static void
-parse_authority(string const & in, uri & u)
+parse_authority(string const & in, uri & u, origin::type made_from)
 {
   L(FL("matched URI authority: '%s'") % in);
 
@@ -39,7 +39,7 @@ parse_authority(string const & in, uri & u)
     {
       p++;
       stringpos ipv6_end = in.find(']', p);
-      N(ipv6_end != string::npos,
+      E(ipv6_end != string::npos, made_from,
         F("IPv6 address in URI has no closing ']'"));
 
       u.host.assign(in, p, ipv6_end - p);
@@ -59,10 +59,10 @@ parse_authority(string const & in, uri & u)
   if (p < in.size() && in.at(p) == ':')
     {
       p++;
-      N(p < in.size(),
+      E(p < in.size(), made_from,
         F("explicit port-number specification in URI has no digits"));
 
-      N(in.find_first_not_of("0123456789", p) == string::npos,
+      E(in.find_first_not_of("0123456789", p) == string::npos, made_from,
         F("explicit port-number specification in URI contains nondigits"));
 
       u.port.assign(in, p, string::npos);
@@ -71,7 +71,7 @@ parse_authority(string const & in, uri & u)
 }
 
 void
-parse_uri(string const & in, uri & u)
+parse_uri(string const & in, uri & u, origin::type made_from)
 {
   u.scheme.clear();
   u.user.clear();
@@ -105,7 +105,7 @@ parse_uri(string const & in, uri & u)
       stringpos authority_end = in.find_first_of("/?#", p);
       if (authority_end != p)
         {
-          parse_authority(string(in, p, authority_end - p), u);
+          parse_authority(string(in, p, authority_end - p), u, made_from);
           p = authority_end;
         }
       if (p >= in.size())
@@ -145,10 +145,10 @@ parse_uri(string const & in, uri & u)
 }
 
 string
-urldecode(string const & in)
+urldecode(string const & in, origin::type made_from)
 {
   string out;
-  
+
   for (string::const_iterator i = in.begin(); i != in.end(); ++i)
     {
       if (*i != '%')
@@ -157,12 +157,12 @@ urldecode(string const & in)
         {
           char d1, d2;
           ++i;
-          E(i != in.end(), F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
           d1 = *i;
           ++i;
-          E(i != in.end(), F("Bad URLencoded string '%s'") % in);
+          E(i != in.end(), made_from, F("Bad URLencoded string '%s'") % in);
           d2 = *i;
-          
+
           char c = 0;
           switch(d1)
             {
@@ -182,7 +182,7 @@ urldecode(string const & in)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
             }
           c *= 16;
           switch(d2)
@@ -203,138 +203,16 @@ urldecode(string const & in)
             case 'd': case 'D': c += 13; break;
             case 'e': case 'E': c += 14; break;
             case 'f': case 'F': c += 15; break;
-            default: E(false, F("Bad URLencoded string '%s'") % in);
+            default: E(false, made_from, F("Bad URLencoded string '%s'") % in);
             }
           out += c;
         }
     }
-  
+
   return out;
 }
 
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-static void
-test_one_uri(string scheme,
-	     string user,
-	     string ipv6_host,
-	     string normal_host,
-	     string port,
-	     string path,
-	     string query,
-	     string fragment)
-{
-  string built;
-
-  if (!scheme.empty())
-    built += scheme + ':';
-
-  string host;
-
-  if (! ipv6_host.empty())
-    {
-      I(normal_host.empty());
-      host += '[';
-      host += (ipv6_host + ']');
-    }
-  else
-    host = normal_host;
-
-  if (! (user.empty()
-	 && host.empty()
-	 && port.empty()))
-    {
-      built += "//";
-
-      if (! user.empty())
-	built += (user + '@');
-
-      if (! host.empty())
-	built += host;
-
-      if (! port.empty())
-	{
-	  built += ':';
-	  built += port;
-	}
-    }
-
-  if (! path.empty())
-    {
-      I(path[0] == '/');
-      built += path;
-    }
-
-  if (! query.empty())
-    {
-      built += '?';
-      built += query;
-    }
-
-  if (! fragment.empty())
-    {
-      built += '#';
-      built += fragment;
-    }
-
-  L(FL("testing parse of URI '%s'") % built);
-  uri u;
-  UNIT_TEST_CHECK_NOT_THROW(parse_uri(built, u), informative_failure);
-  UNIT_TEST_CHECK(u.scheme == scheme);
-  UNIT_TEST_CHECK(u.user == user);
-  if (!normal_host.empty())
-    UNIT_TEST_CHECK(u.host == normal_host);
-  else
-    UNIT_TEST_CHECK(u.host == ipv6_host);
-  UNIT_TEST_CHECK(u.port == port);
-  UNIT_TEST_CHECK(u.path == path);
-  UNIT_TEST_CHECK(u.query == query);
-  UNIT_TEST_CHECK(u.fragment == fragment);
-}
-
-UNIT_TEST(uri, basic)
-{
-  test_one_uri("ssh", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "graydon", "", "venge.net", "",   "/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "",        "", "venge.net", "22", "/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "",        "", "venge.net", "",   "/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "",        "fe:00:01::04:21", "", "",   "/tmp/foo.mtn", "", "");
-  test_one_uri("file", "",       "", "",          "",   "/tmp/foo.mtn", "", "");
-  test_one_uri("", "", "", "", "", "/tmp/foo.mtn", "", "");
-  test_one_uri("http", "graydon", "", "venge.net", "8080", "/foo.cgi", "branch=foo", "tip");
-  test_one_uri("http", "graydon", "", "192.168.0.104", "8080", "/foo.cgi", "branch=foo", "tip");
-  test_one_uri("http", "graydon", "fe:00:01::04:21", "", "8080", "/foo.cgi", "branch=foo", "tip");
-}
-
-UNIT_TEST(uri, bizarre)
-{
-  test_one_uri("", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
-  test_one_uri("", "", "", "", "", "/graydon@venge.net:22/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "graydon", "", "venge.net", "22", "/tmp/foo.mtn", "", "");
-  test_one_uri("ssh", "", "", "", "", "/graydon@venge.net:22/tmp/foo.mtn", "", "");
-}
-
-UNIT_TEST(uri, invalid)
-{
-  uri u;
-
-  UNIT_TEST_CHECK_THROW(parse_uri("http://[f3:03:21/foo/bar", u), informative_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:/foo/bar", u), informative_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", u), informative_failure);
-}
-
-UNIT_TEST(uri, urldecode)
-{
-  UNIT_TEST_CHECK(urldecode("foo%20bar") == "foo bar");
-  UNIT_TEST_CHECK(urldecode("%61") == "a");
-  UNIT_TEST_CHECK_THROW(urldecode("%xx"), informative_failure);
-  UNIT_TEST_CHECK_THROW(urldecode("%"), informative_failure);
-  UNIT_TEST_CHECK_THROW(urldecode("%5"), informative_failure);
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

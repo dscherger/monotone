@@ -1,8 +1,24 @@
+// Copyright (C) 2005 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __KEY_STORE_H__
 #define __KEY_STORE_H__
 
 #include <boost/scoped_ptr.hpp>
-#include "botan/rng.h"
+
+#include <botan/botan.h>
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+#include <botan/rng.h>
+#else
+#include <botan/libstate.h>
+#endif
+
 #include "vector.hh"
 #include "vocab.hh"
 #include "paths.hh"
@@ -36,7 +52,10 @@ public:
   explicit key_store(app_state & a);
   ~key_store();
 
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   Botan::RandomNumberGenerator & get_rng();
+#endif
+
   system_path const & get_key_dir();
 
   // Basic key I/O
@@ -64,7 +83,7 @@ public:
 
   void cache_decrypted_key(rsa_keypair_id const & id);
 
-  void create_key_pair(database & db, rsa_keypair_id const & id,
+  void create_key_pair(database & db, rsa_keypair_id const & ident,
                        utf8 const * maybe_passphrase = NULL,
                        id * maybe_pubhash = NULL,
                        id * maybe_privhash = NULL);
@@ -92,6 +111,8 @@ public:
                             rsa_pub_key const & pub);
 };
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -99,5 +120,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

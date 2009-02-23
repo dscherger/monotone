@@ -1,3 +1,11 @@
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 //HH
 
@@ -18,8 +26,8 @@ class enc : public origin_aware {                      \
   immutable_string s;                                  \
 public:                                                \
   enc() {}                                             \
-  explicit enc(std::string const & s);                 \
-  enc(std::string const & s, made_from_t m);           \
+  explicit enc(char const * const s);                  \
+  enc(std::string const & s, origin::type m);          \
   enc(enc<INNER> const & other);                       \
   enc<INNER> const &                                   \
   operator=(enc<INNER> const & other);                 \
@@ -55,8 +63,8 @@ class dec {                                            \
   INNER i;                                             \
 public:                                                \
   dec() {}                                             \
-  explicit dec(std::string const & s);                 \
-  dec(std::string const & s, made_from_t m);           \
+  explicit dec(char const * const s);                  \
+  dec(std::string const & s, origin::type m);          \
   explicit dec(INNER const & inner);                   \
   dec(dec<INNER> const & other);                       \
   bool operator<(dec<INNER> const & x) const           \
@@ -86,8 +94,8 @@ class ty : public origin_aware {                       \
   immutable_string s;                                  \
 public:                                                \
   ty() {}                                              \
-  explicit ty(std::string const & str);                \
-  ty(std::string const & str, made_from_t m);          \
+  explicit ty(char const * const str);                 \
+  ty(std::string const & str, origin::type m);         \
   ty(ty const & other);                                \
   ty const & operator=(ty const & other);              \
   std::string const & operator()() const               \
@@ -120,7 +128,7 @@ public:                                                \
 static symtab_impl ty ## _tab;               \
 static size_t ty ## _tab_active = 0;         \
                                              \
-ty::ty(string const & str) :                 \
+ty::ty(char const * const str) :             \
   origin_aware(),                            \
   s((ty ## _tab_active > 0)                  \
     ? (ty ## _tab.unique(str))               \
@@ -128,7 +136,7 @@ ty::ty(string const & str) :                 \
 { verify(*this); }                           \
                                              \
 ty::ty(string const & str,                   \
-       made_from_t m) :                      \
+       origin::type m) :                     \
   origin_aware(m),                           \
   s((ty ## _tab_active > 0)                  \
     ? (ty ## _tab.unique(str))               \
@@ -154,7 +162,6 @@ ty::symtab::symtab()                         \
                                              \
 ty::symtab::~symtab()                        \
 {                                            \
-  made_from_t made_from(::made_from);        \
   I(ty ## _tab_active > 0);                  \
   ty ## _tab_active--;                       \
   if (ty ## _tab_active == 0)                \
@@ -172,7 +179,7 @@ cc_ATOMIC(ty)
 static symtab_impl ty ## _tab;               \
 static size_t ty ## _tab_active = 0;         \
                                              \
-ty::ty(string const & str) :                 \
+ty::ty(char const * const str) :             \
   origin_aware(),                            \
   s((ty ## _tab_active > 0)                  \
     ? (ty ## _tab.unique(str))               \
@@ -180,7 +187,7 @@ ty::ty(string const & str) :                 \
 { verify(*this); }                           \
                                              \
 ty::ty(string const & str,                   \
-       made_from_t m) :                      \
+       origin::type m) :                     \
   origin_aware(m),                           \
   s((ty ## _tab_active > 0)                  \
     ? (ty ## _tab.unique(str))               \
@@ -195,14 +202,13 @@ ty const & ty::operator=(ty const & other)   \
                                              \
 std::ostream & operator<<(std::ostream & o,  \
                           ty const & a)      \
-{ return (o << encode_hexenc(a.s.get())); }  \
+{ return (o << encode_hexenc(a(), a.made_from)); }      \
                                              \
 ty::symtab::symtab()                         \
 { ty ## _tab_active++; }                     \
                                              \
 ty::symtab::~symtab()                        \
 {                                            \
-  made_from_t made_from(::made_from);        \
   I(ty ## _tab_active > 0);                  \
   ty ## _tab_active--;                       \
   if (ty ## _tab_active == 0)                \
@@ -214,12 +220,12 @@ ty::symtab::~symtab()                        \
 #define cc_ENCODING(enc)                                 \
                                                          \
 template<typename INNER>                                 \
-enc<INNER>::enc(string const & s) :                      \
+enc<INNER>::enc(char const * const s) :                  \
   origin_aware(), s(s)                                   \
   { verify(*this); }                                     \
                                                          \
 template<typename INNER>                                 \
-enc<INNER>::enc(string const & s, made_from_t m) :       \
+enc<INNER>::enc(string const & s, origin::type m) :      \
   origin_aware(m), s(s)                                  \
   { verify(*this); }                                     \
                                                          \
@@ -255,12 +261,12 @@ dec<INNER>::dec(dec<INNER> const & other)                \
   : i(other.i) {}                                        \
                                                          \
 template<typename INNER>                                 \
-dec<INNER>::dec(std::string const & s)                   \
+dec<INNER>::dec(char const * const s)                    \
   : i(s) { verify(i); }                                  \
                                                          \
 template<typename INNER>                                 \
 dec<INNER>::dec(std::string const & s,                   \
-                made_from_t m)                           \
+                origin::type m)                          \
   : i(s, m) { verify(i); }                               \
                                                          \
 template<typename INNER>                                 \
@@ -281,7 +287,6 @@ template <typename INNER>                                \
 void dump(dec<INNER> const & obj, std::string & out)     \
 { dump(obj.inner(), out); }
 
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -289,4 +294,3 @@ void dump(dec<INNER> const & obj, std::string & out)     \
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

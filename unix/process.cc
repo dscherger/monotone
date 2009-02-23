@@ -1,7 +1,11 @@
-// copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <sys/types.h>
@@ -55,7 +59,8 @@ bool is_executable(const char *path)
   if (rc == -1)
     {
       const int err = errno;
-      N(false, F("error getting status of file %s: %s") % path % os_strerror(err));
+      E(false, origin::user,
+        F("error getting status of file %s: %s") % path % os_strerror(err));
     }
 
   return (s.st_mode & S_IXUSR) && !(s.st_mode & S_IFDIR);
@@ -78,7 +83,8 @@ int make_executable(const char *path)
   if (fd == -1)
     {
       const int err = errno;
-      N(false, F("error opening file %s: %s") % path % os_strerror(err));
+      E(false, origin::user,
+        F("error opening file %s: %s") % path % os_strerror(err));
     }
   if (fstat(fd, &s))
     return -1;
@@ -88,7 +94,8 @@ int make_executable(const char *path)
   if (close(fd) != 0)
     {
       const int err = errno;
-      N(false, F("error closing file %s: %s") % path % os_strerror(err));
+      E(false, origin::system,
+        F("error closing file %s: %s") % path % os_strerror(err));
     }
   return ret;
 }
@@ -182,7 +189,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   int infds[2];
   int outfds[2];
   pid_t pid;
-  
+
   if (pipe(infds) < 0)
     return -1;
   if (pipe(outfds) < 0)
@@ -191,7 +198,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
       close(infds[1]);
       return -1;
     }
-  
+
   switch(pid = vfork())
     {
       case -1:
@@ -214,7 +221,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
               close(outfds[1]);
             }
           close(outfds[0]);
-          
+
           execvp(argv[0], (char * const *)argv);
           raise(SIGKILL);
         }
@@ -223,7 +230,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   close(outfds[1]);
   *in = fdopen(infds[1], "w");
   *out = fdopen(outfds[0], "r");
-  
+
   return pid;
 }
 
@@ -259,7 +266,7 @@ int process_wait(pid_t pid, int *res, int timeout)
       *res = 0;
       return -1;
     }
-  if (WIFEXITED(status))    
+  if (WIFEXITED(status))
     *res = WEXITSTATUS(status);
   else
     *res = -WTERMSIG(status);

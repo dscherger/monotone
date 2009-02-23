@@ -1,6 +1,3 @@
-#ifndef __VECTOR_HH__
-#define __VECTOR_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __VECTOR_HH__
+#define __VECTOR_HH__
 
 // we're interested in trapping index overflows early and precisely,
 // because they usually represent *very significant* logic errors.  we use
@@ -91,11 +91,12 @@ dump(std::vector<T> const & vec, std::string & out)
     }
 };
 
+#endif // __VECTOR_HH__
+
 // Local Variables:
 // mode: C++
+// fill-column: 76
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __VECTOR_HH__

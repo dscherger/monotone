@@ -31,6 +31,7 @@
 #include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "ui.hh"
+#include "vocab_cast.hh"
 
 using std::make_pair;
 using std::map;
@@ -115,7 +116,7 @@ erase_bogus_certs(database & db,
 
   // Sorry, this is a crazy data structure
   typedef tuple< manifest_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
+  typedef map< trust_key,
     pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
   trust_map trust;
 
@@ -174,14 +175,14 @@ erase_bogus_certs(database & db,
 
   // sorry, this is a crazy data structure
   typedef tuple< revision_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
+  typedef map< trust_key,
     pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
   trust_map trust;
 
   for (it i = certs.begin(); i != certs.end(); ++i)
     {
-      trust_key key = trust_key(i->inner().ident, 
-                                i->inner().name, 
+      trust_key key = trust_key(i->inner().ident,
+                                i->inner().name,
                                 i->inner().value);
       trust_map::iterator j = trust.find(key);
       shared_ptr< set<rsa_keypair_id> > s;
@@ -223,34 +224,16 @@ erase_bogus_certs(database & db,
 
 
 // cert-managing routines
-
-cert::cert()
-{}
-
 cert::cert(std::string const & s)
 {
   read_cert(s, *this);
 }
-cert::cert(std::string const & s, made_from_t m)
+
+cert::cert(std::string const & s, origin::type m)
   : origin_aware(m)
 {
   read_cert(s, *this);
 }
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key)
-  : ident(ident), name(name), value(value), key(key)
-{}
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key,
-           rsa_sha1_signature const & sig)
-  : ident(ident), name(name), value(value), key(key), sig(sig)
-{}
 
 bool
 cert::operator<(cert const & other) const
@@ -284,10 +267,12 @@ read_cert(string const & in, cert & t)
   size_t pos = 0;
   id hash = id(extract_substring(in, pos,
                                  constants::merkle_hash_length_in_bytes,
-                                 "cert hash"));
+                                 "cert hash"),
+               origin::network);
   revision_id ident = revision_id(extract_substring(in, pos,
                                   constants::merkle_hash_length_in_bytes,
-                                  "cert ident"));
+                                                    "cert ident"),
+                                  origin::network);
   string name, val, key, sig;
   extract_variable_length_string(in, name, pos, "cert name");
   extract_variable_length_string(in, val, pos, "cert val");
@@ -295,8 +280,10 @@ read_cert(string const & in, cert & t)
   extract_variable_length_string(in, sig, pos, "cert sig");
   assert_end_of_buffer(in, pos, "cert");
 
-  cert tmp(ident, cert_name(name), cert_value(val), rsa_keypair_id(key),
-           rsa_sha1_signature(sig));
+  cert tmp(ident, cert_name(name, origin::network),
+           cert_value(val, origin::network),
+           rsa_keypair_id(key, origin::network),
+           rsa_sha1_signature(sig, origin::network));
 
   id check;
   cert_hash_code(tmp, check);
@@ -326,7 +313,8 @@ void
 cert_signable_text(cert const & t, string & out)
 {
   base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()()));
+  string ident_encoded(encode_hexenc(t.ident.inner()(),
+                                     t.ident.inner().made_from));
 
   out.clear();
   out.reserve(4 + t.name().size() + ident_encoded.size()
@@ -348,7 +336,8 @@ cert_hash_code(cert const & t, id & out)
 {
   base64<rsa_sha1_signature> sig_encoded(encode_base64(t.sig));
   base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()()));
+  string ident_encoded(encode_hexenc(t.ident.inner()(),
+                                     t.ident.inner().made_from));
   string tmp;
   tmp.reserve(4 + ident_encoded.size()
               + t.name().size() + val_encoded().size()
@@ -363,7 +352,7 @@ cert_hash_code(cert const & t, id & out)
   tmp += ':';
   append_without_ws(tmp, sig_encoded());
 
-  data tdat(tmp);
+  data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);
 }
 
@@ -403,22 +392,22 @@ void
 guess_branch(options & opts, project_t & project,
              revision_id const & ident, branch_name & branchname)
 {
-  if (opts.branch_given && !opts.branchname().empty())
-    branchname = opts.branchname;
+  if (opts.branch_given && !opts.branch().empty())
+    branchname = opts.branch;
   else
     {
-      N(!ident.inner()().empty(),
+      E(!ident.inner()().empty(), origin::user,
         F("no branch found for empty revision, "
           "please provide a branch name"));
 
       set<branch_name> branches;
       project.get_revision_branches(ident, branches);
 
-      N(!branches.empty(),
+      E(!branches.empty(), origin::user,
         F("no branch certs found for revision %s, "
           "please provide a branch name") % ident);
 
-      N(branches.size() == 1,
+      E(branches.size() == 1, origin::user,
         F("multiple branch certs found for revision %s, "
           "please provide a branch name") % ident);
 
@@ -435,7 +424,7 @@ guess_branch(options & opts, project_t & project, revision_id const & ident)
 {
   branch_name branchname;
   guess_branch(opts, project, ident, branchname);
-  opts.branchname = branchname;
+  opts.branch = branchname;
 }
 
 void
@@ -445,7 +434,7 @@ cert_revision_in_branch(database & db,
                         branch_name const & branch)
 {
   put_simple_revision_cert(db, keys, rev, branch_cert_name,
-                           cert_value(branch()));
+                           typecast_vocab<cert_value>(branch));
 }
 
 void
@@ -455,7 +444,7 @@ cert_revision_suspended_in_branch(database & db,
                                   branch_name const & branch)
 {
   put_simple_revision_cert(db, keys, rev, suspend_cert_name,
-                           cert_value(branch()));
+                           typecast_vocab<cert_value>(branch));
 }
 
 
@@ -467,7 +456,7 @@ cert_revision_date_time(database & db,
                         revision_id const & rev,
                         date_t const & t)
 {
-  cert_value val = cert_value(t.as_iso_8601_extended());
+  cert_value val = cert_value(t.as_iso_8601_extended(), origin::internal);
   put_simple_revision_cert(db, keys, rev, date_cert_name, val);
 }
 
@@ -478,7 +467,7 @@ cert_revision_author(database & db,
                      string const & author)
 {
   put_simple_revision_cert(db, keys, rev, author_cert_name,
-                           cert_value(author));
+                           cert_value(author, origin::user));
 }
 
 void
@@ -488,7 +477,7 @@ cert_revision_tag(database & db,
                   string const & tagname)
 {
   put_simple_revision_cert(db, keys, rev, tag_cert_name,
-                           cert_value(tagname));
+                           cert_value(tagname, origin::user));
 }
 
 void
@@ -498,7 +487,7 @@ cert_revision_changelog(database & db,
                         utf8 const & log)
 {
   put_simple_revision_cert(db, keys, rev, changelog_cert_name,
-                           cert_value(log()));
+                           typecast_vocab<cert_value>(log));
 }
 
 void
@@ -508,7 +497,7 @@ cert_revision_comment(database & db,
                       utf8 const & comment)
 {
   put_simple_revision_cert(db, keys, rev, comment_cert_name,
-                           cert_value(comment()));
+                           typecast_vocab<cert_value>(comment));
 }
 
 void
@@ -529,12 +518,14 @@ cert_revision_testresult(database & db,
            results == "0")
     passed = false;
   else
-    throw informative_failure("could not interpret test results, "
+    throw recoverable_failure(origin::user,
+                              "could not interpret test results, "
                               "tried '0/1' 'yes/no', 'true/false', "
                               "'pass/fail'");
 
   put_simple_revision_cert(db, keys, rev, testresult_cert_name,
-                           cert_value(lexical_cast<string>(passed)));
+                           cert_value(lexical_cast<string>(passed),
+                                      origin::internal));
 }
 
 // Local Variables:

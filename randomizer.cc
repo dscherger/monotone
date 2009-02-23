@@ -16,21 +16,21 @@
 typedef boost::mt19937 & rng_t;
 
 bool randomizer::flip(size_t n)
-{ 
-  return bernoulli(1.0 / static_cast<double>(n)); 
+{
+  return bernoulli(1.0 / static_cast<double>(n));
 }
 
 size_t randomizer::uniform(size_t n)
 {
   typedef boost::uniform_int<size_t> dist_t;
   return boost::variate_generator<rng_t, dist_t>(rng, dist_t(0, n-1))();
-}  
+}
 
 bool randomizer::bernoulli(double p)
 {
   typedef boost::bernoulli_distribution<double> dist_t;
   return boost::variate_generator<rng_t, dist_t>(rng, dist_t(p))();
-}  
+}
 
 // Local Variables:
 // mode: C++

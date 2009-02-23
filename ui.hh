@@ -1,6 +1,3 @@
-#ifndef __UI_HH__
-#define __UI_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,9 +7,14 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __UI_HH__
+#define __UI_HH__
+
 // this file contains a couple utilities to deal with the user
 // interface. the global user_interface object 'ui' owns cerr, so
 // no writing to it directly!
+
+#include "vector.hh"
 
 struct i18n_format;
 class system_path;
@@ -53,6 +55,8 @@ public:
   void warn(format_base const & fmt) { warn(fmt.str()); }
   void fatal(std::string const & fatal);
   void fatal(format_base const & fmt) { fatal(fmt.str()); }
+  void fatal_db(std::string const & fatal);
+  void fatal_db(format_base const & fmt) { fatal_db(fmt.str()); }
   void inform(std::string const & line);
   void inform(format_base const & fmt) { inform(fmt.str()); }
   void fatal_exception(std::exception const & ex);
@@ -65,7 +69,6 @@ public:
   void redirect_log_to(system_path const & filename);
 
   std::string output_prefix();
-  std::string prog_name;
 
 private:
   void finish_ticking();
@@ -90,6 +93,13 @@ std::string format_text(std::string const & text,
 std::string format_text(i18n_format const & text,
                         size_t const col = 0, size_t curcol = 0);
 
+std::string
+format_usage_strings(std::vector<std::string> const & names,
+                     std::vector<std::string> const & descriptions,
+                     unsigned int namelen);
+
+#endif // __UI_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -97,5 +107,3 @@ std::string format_text(i18n_format const & text,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __UI_HH__

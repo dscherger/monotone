@@ -8,92 +8,140 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "sanity.hh"
+#include "ssh_agent_platform.hh"
+
 #include <sys/types.h>
-#include <sys/un.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "../sanity.hh"
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
 
-#include "ssh_agent_platform.hh"
-
-using Netxx::Stream;
-using Netxx::socket_type;
 using std::min;
 using std::string;
 
 // helper function for constructor
-socket_type
-ssh_agent_platform::connect() 
+static int
+connect_to_agent()
 {
-  const char *authsocket;
-  struct sockaddr_un sunaddr;
-  socket_type sock;
+  const char *authsocket = getenv("SSH_AUTH_SOCK");
 
-  authsocket = getenv("SSH_AUTH_SOCK");
-  
-  if (!authsocket || !strlen(authsocket))
+  if (!authsocket || !*authsocket)
     {
-      L(FL("ssh_agent: connect: ssh-agent socket not found"));
+      L(FL("ssh_agent: no agent"));
       return -1;
     }
 
-  sunaddr.sun_family = AF_UNIX;
-  strncpy(sunaddr.sun_path, authsocket, sizeof(sunaddr.sun_path));
-
-  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock < 0)
     {
-      W(F("ssh_agent: connect: could not open socket to ssh-agent"));
+      W(F("ssh_agent: failed to create a socket: %s")
+        % strerror(errno));
+      return -1;
+    }
+  if (fcntl(sock, F_SETFD, FD_CLOEXEC))
+    {
+      close(sock);
+      W(F("ssh_agent: failed to set socket as close-on-exec: %s")
+        % strerror(errno));
       return -1;
     }
 
-  int ret = fcntl(sock, F_SETFD, FD_CLOEXEC);
-  if (ret == -1)
+  struct sockaddr_un addr;
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, authsocket, sizeof(addr.sun_path));
+
+  if (::connect(sock, (struct sockaddr *)&addr, sizeof addr))
     {
       close(sock);
-      W(F("ssh_agent: connect: could not set up socket for ssh-agent"));
-      return -1;
-    }
-  ret = ::connect(sock, (struct sockaddr *)&sunaddr, sizeof sunaddr);
-  if (ret < 0)
-    {
-      close(sock);
-      W(F("ssh_agent: connect: could not connect to socket for ssh-agent"));
+      W(F("ssh_agent: failed to connect to agent: %s")
+        % strerror(errno));
       return -1;
     }
 
   return sock;
 }
 
+ssh_agent_platform::ssh_agent_platform()
+  : sock(connect_to_agent())
+{}
+
+ssh_agent_platform::~ssh_agent_platform()
+{
+  close(sock);
+}
+
 void
 ssh_agent_platform::write_data(string const & data)
 {
-  L(FL("ssh_agent_platform::write_data: asked to write %u bytes")
-    % data.length());
   I(connected());
-  stream.write(data.c_str(), data.length());
+
+  size_t put = data.length();
+  const char *buf = data.data();
+  int deadcycles = 0;
+
+  L(FL("ssh_agent: write_data: asked to send %u bytes") % put);
+  while (put > 0)
+    {
+      ssize_t sent = ::send(sock, buf, put, MSG_NOSIGNAL);
+
+      E(sent >= 0, origin::system,
+        F("ssh_agent: error during send: %s") % strerror(errno));
+      if (sent == 0)
+        E(++deadcycles < 8, origin::system,
+          F("ssh_agent: giving up after %d ineffective sends to agent")
+          % deadcycles);
+
+      buf += sent;
+      put -= sent;
+    }
+  E(put == 0, origin::system,
+    F("ssh_agent: sent %u extra bytes to agent") % -put);
 }
 
-void 
-ssh_agent_platform::read_data(u32 const len, string & out)
+void
+ssh_agent_platform::read_data(string::size_type len, string & out)
 {
-  int ret;
-  const u32 bufsize = 4096;
-  char read_buf[bufsize];
-  u32 get = len;
-  L(FL("ssh_agent: read_data: asked to read %u bytes") % len);
   I(connected());
+
+  size_t get = len;
+  const size_t bufsize = 4096;
+  char buf[bufsize];
+  int deadcycles = 0;
+
+  L(FL("ssh_agent: read_data: asked to read %u bytes") % len);
 
   while (get > 0)
     {
-      ret = stream.read(read_buf, min(get, bufsize));
-      E(ret >= 0, F("stream read failed (%i)") % ret);
-      out.append(read_buf, ret);
-      get -= ret;
+      ssize_t recvd = ::recv(sock, buf, min(get, bufsize), MSG_WAITALL);
+
+      E(recvd >= 0, origin::system,
+        F("ssh_agent: error during receive: %s") % strerror(errno));
+      if (recvd == 0)
+        E(++deadcycles < 8, origin::system,
+          F("ssh_agent: giving up after %d ineffective receives from agent"));
+
+      out.append(buf, recvd);
+      get -= recvd;
     }
-  E(get == 0, F("%u extra bytes from ssh-agent") % -get);
+  E(get == 0, origin::system,
+    F("ssh_agent: received %u extra bytes from agent") % -get);
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

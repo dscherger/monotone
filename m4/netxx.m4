@@ -1,3 +1,12 @@
+# Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # checks done primarily for the benefit of netxx
 
 # Check for IPv6.  Let the user enable or disable it manually using a

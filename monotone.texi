@@ -606,6 +606,11 @@ the scope of this document.
 @image{figures/cert}
 @end ifnotinfo
 
+@b{Warning:} because our certificates give the @i{name} of the
+signing key instead of the @i{hash} (ID), all key names must be
+globally unique forever. If you lose a key and need to generate a
+replacement, make sure that you give the replacement a different name.
+
 Monotone uses certs extensively. Any ``extra'' information which needs
 to be stored, transmitted or retrieved --- above and beyond files,
 manifests, and revisions --- is kept in the form of certs. This
@@ -11845,8 +11850,8 @@ expected by the Perl-Compatible Regular Expression library (PCRE).
 * Regexp Details::  Details of regular expression syntax and semantics.
 @end menu
 
-@include pcre/pcresyntax.texi
-@include pcre/pcrepattern.texi
+@include pcresyntax.texi
+@include pcrepattern.texi
 
 @node Default hooks, General Index, Special Topics, Top
 @appendix Default hooks

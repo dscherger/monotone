@@ -16,8 +16,9 @@
 #include <locale.h>
 #include <stdlib.h>
 
-#include "botan/botan.h"
-#include "i18n.h"
+#include <sqlite3.h>
+#include <botan/botan.h>
+
 #include "app_state.hh"
 #include "botan_pipe_cache.hh"
 #include "commands.hh"
@@ -28,11 +29,9 @@
 #include "mt_version.hh"
 #include "option.hh"
 #include "paths.hh"
-#include "sha1.hh"
 #include "simplestring_xform.hh"
 #include "platform.hh"
 #include "work.hh"
-
 
 using std::cout;
 using std::cerr;
@@ -84,21 +83,6 @@ struct ui_library
   ~ui_library() { ui.deinitialize(); }
 };
 
-// This is in a separate procedure so it can be called from code that's called
-// before cpp_main(), such as program option object creation code.  It's made
-// so it can be called multiple times as well.
-void localize_monotone()
-{
-  static int init = 0;
-  if (!init)
-    {
-      setlocale(LC_ALL, "");
-      bindtextdomain(PACKAGE, get_locale_dir().c_str());
-      textdomain(PACKAGE);
-      init = 1;
-    }
-}
-
 // define the global objects needed by botan_pipe_cache.hh
 pipe_cache_cleanup * global_pipe_cleanup_object;
 Botan::Pipe * unfiltered_pipe;
@@ -147,13 +131,24 @@ commands::command_id read_options(options & opts, option::concrete_option_set & 
   return cmd;
 }
 
+string
+get_usage_str(options::options_type const & optset, options & opts)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  return format_usage_strings(names, descriptions, maxnamelen);
+}
+
 int
 cpp_main(int argc, char ** argv)
 {
-  int ret = 0;
-
   // go-go gadget i18n
-  localize_monotone();
+  setlocale(LC_ALL, "");
+  bindtextdomain(PACKAGE, get_locale_dir().c_str());
+  textdomain(PACKAGE);
 
   // set up global ui object - must occur before anything that might try to
   // issue a diagnostic
@@ -164,7 +159,8 @@ cpp_main(int argc, char ** argv)
   try
     {
       // Set up the global sanity object.  No destructor is needed and
-      // therefore no wrapper object is needed either.
+      // therefore no wrapper object is needed either.  This has the
+      // side effect of making the 'prog_name' global usable.
       global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
 
       // Set up secure memory allocation etc
@@ -191,17 +187,44 @@ cpp_main(int argc, char ** argv)
           args.push_back(arg_type(ut));
         }
 
-      // find base name of executable, convert to utf8, and save it in the
-      // global ui object
-      {
-        utf8 argv0_u;
-        system_to_utf8(external(argv[0]), argv0_u);
-        string prog_name = system_path(argv0_u).basename()();
-        if (prog_name.rfind(".exe") == prog_name.size() - 4)
-          prog_name = prog_name.substr(0, prog_name.size() - 4);
-        ui.prog_name = prog_name;
-        I(!ui.prog_name.empty());
-      }
+#ifdef SUPPORT_SQLITE_BEFORE_3003014
+      E(sqlite3_libversion_number() >= 3003008, origin::system,
+        F("This monotone binary requires at least SQLite 3.3.8 to run."));
+#else
+      E(sqlite3_libversion_number() >= 3003014, origin::system,
+        F("This monotone binary requires at least SQLite 3.3.14 to run."));
+#endif
+
+      // check the botan library version we got linked against.
+      u32 linked_botan_version = BOTAN_VERSION_CODE_FOR(
+        Botan::version_major(), Botan::version_minor(),
+        Botan::version_patch());
+
+      // Botan 1.7.14 has an incompatible API change, which got reverted
+      // again in 1.7.15. Thus we do not care to support 1.7.14.
+      E(linked_botan_version != BOTAN_VERSION_CODE_FOR(1,7,14), origin::system,
+        F("Monotone does not support Botan 1.7.14."));
+
+#if BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,6)
+      E(linked_botan_version >= BOTAN_VERSION_CODE_FOR(1,6,3), origin::system,
+        F("This monotone binary requires Botan 1.6.3 or newer."));
+      E(linked_botan_version <= BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+        F("This monotone binary does not work with Botan newer than 1.7.6."));
+#elif BOTAN_VERSION_CODE <= BOTAN_VERSION_CODE_FOR(1,7,22)
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,6), origin::system,
+        F("This monotone binary requires Botan 1.7.7 or newer."));
+      // While compiling against 1.7.22 or newer is recommended, because
+      // it enables new features of Botan, the monotone binary compiled
+      // against Botan 1.7.21 and before should still work with newer Botan
+      // versions, including all of the stable branch 1.8.x.
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+        F("This monotone binary does not work with Botan 1.9.x."));
+#else
+      E(linked_botan_version > BOTAN_VERSION_CODE_FOR(1,7,22), origin::system,
+        F("This monotone binary requires Botan 1.7.22 or newer."));
+      E(linked_botan_version < BOTAN_VERSION_CODE_FOR(1,9,0), origin::system,
+        F("This monotone binary does not work with Botan 1.9.x."));
+#endif
 
       app_state app;
       try
@@ -209,7 +232,8 @@ cpp_main(int argc, char ** argv)
           // read global options first
           // command specific options will be read below
           args_vector opt_args(args);
-          option::concrete_option_set optset = read_global_options(app.opts, opt_args);
+          option::concrete_option_set optset
+            = read_global_options(app.opts, opt_args);
 
           if (app.opts.version_given)
             {
@@ -240,7 +264,8 @@ cpp_main(int argc, char ** argv)
 
           // check if the user specified default arguments for this command
           args_vector default_args;
-          if (!cmd.empty() && app.lua.hook_get_default_command_options(cmd, default_args))
+          if (!cmd.empty()
+              && app.lua.hook_get_default_command_options(cmd, default_args))
             optset.from_command_line(default_args, false);
 
           if (workspace::found)
@@ -262,28 +287,19 @@ cpp_main(int argc, char ** argv)
 
           // stop here if they asked for help
           if (app.opts.help)
-            {
-              throw usage(cmd);
-            }
+            throw usage(cmd);
 
           // main options processed, now invoke the
           // sub-command w/ remaining args
           if (cmd.empty())
-            {
-              throw usage(commands::command_id());
-            }
-          else
-            {
-              commands::process(app, cmd, app.opts.args);
-              // The command will raise any problems itself through
-              // exceptions.  If we reach this point, it is because it
-              // worked correctly.
-              return 0;
-            }
-        }
-      catch (option::option_error const & e)
-        {
-          N(false, i18n_format("%s") % e.what());
+            throw usage(commands::command_id());
+
+
+          commands::process(app, cmd, app.opts.args);
+          // The command will raise any problems itself through
+          // exceptions.  If we reach this point, it is because it
+          // worked correctly.
+          return 0;
         }
       catch (usage & u)
         {
@@ -299,13 +315,10 @@ cpp_main(int argc, char ** argv)
                                                   u.which.end()))();
 
           usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
-                          ui.prog_name << "\n\n";
+                          prog_name << "\n\n";
 
           if (u.which.empty())
-            {
-              usage_stream << options::opts::globals().instantiate(&app.opts).
-                get_usage_str() << '\n';
-            }
+            usage_stream << get_usage_str(options::opts::globals(), app.opts);
 
           // Make sure to hide documentation that's not part of
           // the current command.
@@ -314,11 +327,11 @@ cpp_main(int argc, char ** argv)
           if (!cmd_options.empty())
             {
               usage_stream
-                << F("Options specific to '%s %s' (run '%s help' to see global options):")
-                    % ui.prog_name % visibleid % ui.prog_name
+                << F("Options specific to '%s %s' "
+                     "(run '%s help' to see global options):")
+                    % prog_name % visibleid % prog_name
                 << "\n\n";
-              usage_stream << cmd_options.instantiate(&app.opts).
-                              get_usage_str() << '\n';
+              usage_stream << get_usage_str(cmd_options, app.opts);
             }
 
           commands::explain_usage(u.which, usage_stream);
@@ -326,13 +339,25 @@ cpp_main(int argc, char ** argv)
             return 0;
           else
             return 2;
-
         }
     }
-  catch (informative_failure & inf)
+  catch (option::option_error const & inf)
     {
       ui.inform(inf.what());
       return 1;
+    }
+  catch (recoverable_failure & inf)
+    {
+      ui.inform(inf.what());
+      return 1;
+    }
+  catch (unrecoverable_failure & inf)
+    {
+      if (inf.caused_by() == origin::database)
+        ui.fatal_db(inf.what());
+      else
+        ui.fatal(inf.what());
+      return 3;
     }
   catch (ios_base::failure const & ex)
     {

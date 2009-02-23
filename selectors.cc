@@ -121,8 +121,8 @@ decode_selector(project_t & project,
         case sel_later:
         case sel_earlier:
           if (lua.hook_exists("expand_date"))
-            { 
-              N(lua.hook_expand_date(sel, tmp),
+            {
+              E(lua.hook_expand_date(sel, tmp), origin::user,
                 F("selector '%s' is not a valid date\n") % sel);
             }
           else
@@ -140,7 +140,7 @@ decode_selector(project_t & project,
             tmp += "-01T00:00:00";
           else if (tmp.size()<11 && (sel_later==type || sel_earlier==type))
             tmp += "T00:00:00";
-          N(tmp.size()==19 || sel_date==type, 
+          E(tmp.size()==19 || sel_date==type, origin::user,
             F("selector '%s' is not a valid date (%s)") % sel % tmp);
 
           if (sel != tmp)
@@ -163,12 +163,12 @@ decode_selector(project_t & project,
                 : F("the empty head selector h: refers to "
                     "the head of the current branch");
               workspace::require_workspace(msg);
-              sel = opts.branchname();
+              sel = opts.branch();
             }
           break;
 
         case sel_cert:
-          N(!sel.empty(),
+          E(!sel.empty(), origin::user,
             F("the cert selector c: may not be empty"));
           break;
 
@@ -190,17 +190,16 @@ decode_selector(project_t & project,
                 }
 
               diagnose_ambiguous_expansion(project, "p:", parent_ids);
-              sel = (* parent_ids.begin()).inner()();
+              sel = encode_hexenc((* parent_ids.begin()).inner()(),
+                                  origin::internal);
             }
-          else
-            sel = decode_hexenc(sel);
           break;
         default: break;
         }
     }
 }
 
-static void 
+static void
 parse_selector(project_t & project,
                options const & opts,
                lua_hooks & lua,
@@ -251,7 +250,7 @@ complete_one_selector(project_t & project,
       I(!value.empty());
       project.db.select_parent(value, completions);
       break;
-        
+
     case sel_author:
       project.db.select_cert(author_cert_name(), value, completions);
       break;
@@ -308,7 +307,7 @@ complete_one_selector(project_t & project,
         // get branch names
         set<branch_name> branch_names;
         I(!value.empty());
-        project.get_branch_list(globish(value), branch_names);
+        project.get_branch_list(globish(value, origin::user), branch_names);
 
         L(FL("found %d matching branches") % branch_names.size());
 
@@ -372,8 +371,8 @@ complete(options const & opts, lua_hooks & lua,
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
-      N(project.db.revision_exists(*completions.begin()),
+      completions.insert(decode_hexenc_as<revision_id>(sels[0].second, origin::user));
+      E(project.db.revision_exists(*completions.begin()), origin::user,
         F("no such revision '%s'") % *completions.begin());
       return;
     }
@@ -381,7 +380,7 @@ complete(options const & opts, lua_hooks & lua,
   P(F("expanding selection '%s'") % str);
   complete_selector(project, sels, completions);
 
-  N(!completions.empty(),
+  E(!completions.empty(), origin::user,
     F("no match for selection '%s'") % str);
 
   for (set<revision_id>::const_iterator i = completions.begin();
@@ -391,7 +390,7 @@ complete(options const & opts, lua_hooks & lua,
 
       // This may be impossible, but let's make sure.
       // All the callers used to do it.
-      N(project.db.revision_exists(*i),
+      E(project.db.revision_exists(*i), origin::user,
         F("no such revision '%s'") % *i);
     }
 }
@@ -427,7 +426,8 @@ expand_selector(options const & opts, lua_hooks & lua,
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
+      completions.insert(decode_hexenc_as<revision_id>(sels[0].second,
+                                                       origin::user));
       return;
     }
 
@@ -448,7 +448,7 @@ diagnose_ambiguous_expansion(project_t & project,
        i != completions.end(); ++i)
     err += ("\n" + describe_revision(project, *i));
 
-  N(false, i18n_format(err));
+  E(false, origin::user, i18n_format(err));
 }
 
 

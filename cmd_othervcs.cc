@@ -29,11 +29,11 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
 
   for (args_vector::const_iterator i = args.begin();
        i != args.end(); ++i)
-    test_parse_rcs_file(system_path((*i)()));
+    test_parse_rcs_file(system_path((*i)(), origin::user));
 }
 
 
-CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"), 
+CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
     N_("Imports all versions in a CVS repository"),
     "",
     options::opts::branch)
@@ -45,10 +45,10 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   if (args.size() != 1)
     throw usage(execid);
 
-  N(app.opts.branchname() != "",
+  E(!app.opts.branch().empty(), origin::user,
     F("need base --branch argument for importing"));
 
-  system_path cvsroot(idx(args, 0)());
+  system_path cvsroot(idx(args, 0)(), origin::user);
   require_path_is_directory(cvsroot,
                             F("path %s does not exist") % cvsroot,
                             F("'%s' is not a directory") % cvsroot);
@@ -58,7 +58,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(rcs), N_("CVSROOT"),
   // amount of work
   cache_user_key(app.opts, app.lua, db, keys);
 
-  import_cvs_repo(project, keys, cvsroot, app.opts.branchname);
+  import_cvs_repo(project, keys, cvsroot, app.opts.branch);
 }
 
 

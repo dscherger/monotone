@@ -1,5 +1,11 @@
-// 2007 Timothy Brownawell <tbrownaw@gmail.com>
-// GNU GPL V2 or later
+// Copyright (C) 2007 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include "vector.hh"
@@ -12,6 +18,8 @@
 #include "lua_hooks.hh"
 #include "keys.hh"
 #include "options.hh"
+#include "vocab_cast.hh"
+#include "simplestring_xform.hh"
 
 using std::string;
 using std::set;
@@ -33,12 +41,12 @@ project_t::get_branch_list(std::set<branch_name> & names,
       indicator = db.get_branches(got);
       branches.clear();
       multimap<revision_id, revision_id> inverse_graph_cache;
-  
+
       for (std::vector<std::string>::iterator i = got.begin();
            i != got.end(); ++i)
         {
           // check that the branch has at least one non-suspended head
-          const branch_name branch(*i);
+          const branch_name branch(*i, origin::database);
           std::set<revision_id> heads;
 
           if (check_heads)
@@ -61,12 +69,12 @@ project_t::get_branch_list(globish const & glob,
   db.get_branches(glob, got);
   names.clear();
   multimap<revision_id, revision_id> inverse_graph_cache;
-  
+
   for (std::vector<std::string>::iterator i = got.begin();
        i != got.end(); ++i)
     {
       // check that the branch has at least one non-suspended head
-      const branch_name branch(*i);
+      const branch_name branch(*i, origin::database);
       std::set<revision_id> heads;
 
       if (check_heads)
@@ -92,7 +100,7 @@ namespace
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
                             cert_name(branch_cert_name),
-                            cert_value(branch()),
+                            typecast_vocab<cert_value>(branch),
                             certs);
       erase_bogus_certs(db, certs);
       return certs.empty();
@@ -112,7 +120,7 @@ namespace
       vector< revision<cert> > certs;
       db.get_revision_certs(rid,
                             cert_name(suspend_cert_name),
-                            cert_value(branch()),
+                            typecast_vocab<cert_value>(branch),
                             certs);
       erase_bogus_certs(db, certs);
       return !certs.empty();
@@ -135,7 +143,7 @@ project_t::get_branch_heads(branch_name const & name,
       L(FL("getting heads of branch %s") % name);
 
       branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                cert_value(name()),
+                                                typecast_vocab<cert_value>(name),
                                                 branch.second);
 
       not_in_branch p(db, name);
@@ -152,7 +160,7 @@ project_t::get_branch_heads(branch_name const & name,
             else
               it++;
         }
-      
+
       L(FL("found heads of branch %s (%s heads)")
         % name % branch.second.size());
     }
@@ -164,7 +172,8 @@ project_t::revision_is_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
   vector<revision<cert> > certs;
-  db.get_revision_certs(id, branch_cert_name, cert_value(branch()), certs);
+  db.get_revision_certs(id, branch_cert_name,
+                        typecast_vocab<cert_value>(branch), certs);
 
   int num = certs.size();
 
@@ -192,7 +201,8 @@ project_t::revision_is_suspended_in_branch(revision_id const & id,
                                  branch_name const & branch)
 {
   vector<revision<cert> > certs;
-  db.get_revision_certs(id, suspend_cert_name, cert_value(branch()), certs);
+  db.get_revision_certs(id, suspend_cert_name,
+                        typecast_vocab<cert_value>(branch), certs);
 
   int num = certs.size();
 
@@ -249,7 +259,7 @@ project_t::get_revision_branches(revision_id const & id,
   branches.clear();
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
-    branches.insert(branch_name(i->inner().value()));
+    branches.insert(typecast_vocab<branch_name>(i->inner().value));
 
   return i;
 }
@@ -258,7 +268,8 @@ outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
                             std::vector<revision<cert> > & certs)
 {
-  return db.get_revision_certs(branch_cert_name, cert_value(branch()), certs);
+  return db.get_revision_certs(branch_cert_name,
+                               typecast_vocab<cert_value>(branch), certs);
 }
 
 tag_t::tag_t(revision_id const & ident,
@@ -295,7 +306,8 @@ project_t::get_tags(set<tag_t> & tags)
   for (std::vector<revision<cert> >::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     tags.insert(tag_t(revision_id(i->inner().ident),
-                      utf8(i->inner().value()), i->inner().key));
+                      typecast_vocab<utf8>(i->inner().value),
+                      i->inner().key));
 
   return i;
 }
@@ -364,6 +376,55 @@ project_t::put_cert(key_store & keys,
   put_simple_revision_cert(db, keys, id, name, value);
 }
 
+// These should maybe be converted to member functions.
+
+string
+describe_revision(project_t & project, revision_id const & id)
+{
+  cert_name author_name(author_cert_name);
+  cert_name date_name(date_cert_name);
+
+  string description;
+
+  description += encode_hexenc(id.inner()(), id.inner().made_from);
+
+  // append authors and date of this revision
+  vector< revision<cert> > tmp;
+  project.get_revision_certs_by_name(id, author_name, tmp);
+  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+       i != tmp.end(); ++i)
+    {
+      description += " ";
+      description += i->inner().value();
+    }
+  project.get_revision_certs_by_name(id, date_name, tmp);
+  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+       i != tmp.end(); ++i)
+    {
+      description += " ";
+      description += i->inner().value();
+    }
+
+  return description;
+}
+
+void
+notify_if_multiple_heads(project_t & project,
+                         branch_name const & branchname,
+                         bool ignore_suspend_certs)
+{
+  set<revision_id> heads;
+  project.get_branch_heads(branchname, heads, ignore_suspend_certs);
+  if (heads.size() > 1) {
+    string prefixedline;
+    prefix_lines_with(_("note: "),
+                      _("branch '%s' has multiple heads\n"
+                        "perhaps consider '%s merge'"),
+                      prefixedline);
+    P(i18n_format(prefixedline) % branchname % prog_name);
+  }
+}
+
 
 // Local Variables:
 // mode: C++
@@ -372,4 +433,3 @@ project_t::put_cert(key_store & keys,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

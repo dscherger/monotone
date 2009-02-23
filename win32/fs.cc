@@ -1,8 +1,11 @@
-// copyright (C) 2005 nathaniel smith <njs@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
-
+// Copyright (C) 2005 nathaniel smith <njs@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #define WIN32_LEAN_AND_MEAN
 #include "base.hh"
@@ -19,7 +22,7 @@ std::string
 get_current_working_dir()
 {
   char buffer[4096];
-  E(getcwd(buffer, 4096),
+  E(getcwd(buffer, 4096), origin::system,
     F("cannot get working directory: %s") % strerror(errno));
   std::string str(buffer);
 
@@ -35,7 +38,7 @@ get_current_working_dir()
 void
 change_current_working_dir(std::string const & to)
 {
-  E(!chdir(to.c_str()),
+  E(!chdir(to.c_str()), origin::system,
     F("cannot change to directory %s: %s") % to % strerror(errno));
 }
 
@@ -53,7 +56,7 @@ get_default_confdir()
       if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
         base = szPath;
     }
-  N(!base.empty(), F("could not determine configuration path"));
+  E(!base.empty(), origin::system, F("could not determine configuration path"));
   return base + "\\monotone";
 }
 
@@ -138,7 +141,7 @@ get_path_status(std::string const & path)
          || err == ERROR_BAD_NETPATH)
         return path::nonexistent;
 
-      E(false, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
+          E(false, origin::system, F("%s: GetFileAttributes error: %s") % path % os_strerror(err));
     }
   else if (attrs & FILE_ATTRIBUTE_DIRECTORY)
     return path::directory;
@@ -166,7 +169,7 @@ namespace
           if (GetLastError() == ERROR_FILE_NOT_FOUND) // zero files in dir
             last = true;
           else
-            E(false, F("could not open directory '%s': %s")
+            E(false, origin::system, F("could not open directory '%s': %s")
               % path % os_strerror(GetLastError()));
         }
     }
@@ -187,7 +190,7 @@ namespace
         }
       if (FindNextFile(h, data))
         return true;
-      E(GetLastError() == ERROR_NO_MORE_FILES,
+          E(GetLastError() == ERROR_NO_MORE_FILES, origin::system,
         F("error while reading directory: %s") % os_strerror(errno));
       last = true;
       return false;
@@ -241,14 +244,14 @@ do_remove(std::string const & path)
       // the path doesn't exist.
       break;
     }
-  E(false,
+  E(false, origin::system,
     F("could not remove '%s': %s") % path % os_strerror(GetLastError()));
 }
 
 void
 do_mkdir(std::string const & path)
 {
-  E(CreateDirectoryA(path.c_str(), 0) != 0,
+  E(CreateDirectoryA(path.c_str(), 0) != 0, origin::system,
     F("could not create directory '%s': %s")
     % path % os_strerror(GetLastError()));
 }
@@ -267,13 +270,13 @@ rename_clobberingly_impl(const char * from, const char * to)
     {
       HMODULE hModule = LoadLibrary("kernel32");
       if (hModule)
-	fnMoveFileEx = reinterpret_cast<MoveFileExFun>
-	  (GetProcAddress(hModule, "MoveFileExA"));
+        fnMoveFileEx = reinterpret_cast<MoveFileExFun>
+          (GetProcAddress(hModule, "MoveFileExA"));
       if (fnMoveFileEx)
-	{
-	  L(FL("using MoveFileEx for renames"));
-	  MoveFileExAvailable = YES;
-	}
+        {
+          L(FL("using MoveFileEx for renames"));
+          MoveFileExAvailable = YES;
+        }
       else
         {
           L(FL("using DeleteFile/MoveFile fallback for renames"));
@@ -286,14 +289,14 @@ rename_clobberingly_impl(const char * from, const char * to)
   if (MoveFileExAvailable == YES)
     {
       if (fnMoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING))
-	return true;
+        return true;
       else if (GetLastError() != ERROR_CALL_NOT_IMPLEMENTED)
         return false;
       else
         {
           MoveFileExAvailable = NO;
           L(FL("MoveFileEx failed with CALL_NOT_IMPLEMENTED, using fallback"));
-	}
+        }
     }
 
   // This is not even remotely atomic, but what can you do?
@@ -322,8 +325,9 @@ rename_clobberingly(std::string const & from, std::string const & to)
     if (sleepTime < 250)
       sleepTime *= 2;
   }
-  E(false, F("renaming '%s' to '%s' failed: %s (%d)") % from % to
-           % os_strerror(lastError) % lastError);
+  E(false, origin::system,
+    F("renaming '%s' to '%s' failed: %s (%d)") % from % to
+      % os_strerror(lastError) % lastError);
 }
 
 // Create a temporary file in directory DIR, writing its name to NAME and
@@ -382,7 +386,7 @@ make_temp_file(std::string const & dir, std::string & name)
       // ERROR_ALREADY_EXISTS means we should go 'round again.  Any other
       // GetLastError() value is a plain error.  (Presumably, just as for
       // Unix, there are values that would represent bugs.)
-      E(GetLastError() == ERROR_ALREADY_EXISTS,
+      E(GetLastError() == ERROR_ALREADY_EXISTS, origin::system,
         F("cannot create temp file %s: %s")
         % tmp % os_strerror(GetLastError()));
 
@@ -390,7 +394,7 @@ make_temp_file(std::string const & dir, std::string & name)
       // 'value' will visit every number in its range.
       value += 7777;
     }
-  E(false,
+  E(false, origin::system,
     F("cannot find a temporary file (tried %d possibilities)") % limit);
 }
 
@@ -443,13 +447,14 @@ write_data_worker(std::string const & fname,
       {
         DWORD written;
         E(WriteFile(h, (LPCVOID)ptr, remaining, &written, (LPOVERLAPPED)0),
+          origin::system,
           F("error writing to temp file %s: %s")
           % tmp % os_strerror(GetLastError()));
 
         if (written == 0)
           {
             deadcycles++;
-            E(deadcycles < 4,
+            E(deadcycles < 4, origin::system,
               FP("giving up after four zero-length writes to %s "
                  "(%d byte written, %d left)",
                  "giving up after four zero-length writes to %s "

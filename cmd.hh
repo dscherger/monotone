@@ -1,6 +1,3 @@
-#ifndef __CMD_HH__
-#define __CMD_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,18 +7,17 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __CMD_HH__
+#define __CMD_HH__
+
 #include <map>
 #include <set>
 
 #include "commands.hh"
 #include "selectors.hh"
 #include "options.hh"
-#include "sanity.hh"
 
 class app_state;
-class database;
-class project_t;
-struct workspace;
 
 namespace commands
 {
@@ -132,7 +128,7 @@ namespace commands
               command_id const & execid,
               args_vector const & args) const;
   };
-};
+}
 
 inline std::vector<file_path>
 args_to_paths(args_vector const & args)
@@ -142,7 +138,7 @@ args_to_paths(args_vector const & args)
     {
       if (bookkeeping_path::external_string_is_bookkeeping_path(*i))
         W(F("ignored bookkeeping path '%s'") % *i);
-      else 
+      else
         paths.push_back(file_path_external(*i));
     }
   // "it should not be the case that args were passed, but our paths set
@@ -150,17 +146,10 @@ args_to_paths(args_vector const & args)
   // behavior for empty path sets -- in particular, it is the same as having
   // no restriction at all.  "mtn revert _MTN" turning into "mtn revert"
   // would be bad.  (Or substitute diff, etc.)
-  N(!(!args.empty() && paths.empty()),
+  E(!(!args.empty() && paths.empty()), origin::user,
     F("all arguments given were bookkeeping paths; aborting"));
   return paths;
 }
-
-std::string
-describe_revision(project_t & project, revision_id const & id);
-
-void
-notify_if_multiple_heads(project_t & project, branch_name const & branchname,
-                         bool ignore_suspend_certs);
 
 void
 process_commit_message_args(options const & opts,
@@ -293,6 +282,8 @@ CMD_FWD_DECL(variables);
 CMD_FWD_DECL(workspace);
 CMD_FWD_DECL(user);
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -300,5 +291,3 @@ CMD_FWD_DECL(user);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

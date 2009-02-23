@@ -28,7 +28,7 @@ using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
 
-namespace 
+namespace
 {
 
   struct roster_delta_t
@@ -206,17 +206,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted
               safe_insert(d.nodes_deleted, i.left_key());
               break;
-            
+
             case parallel::in_right:
               // added
               do_delta_for_node_only_in_dest(i.right_data(), d);
               break;
-            
+
             case parallel::in_both:
               // moved/patched/attribute changes
               do_delta_for_node_in_both(i.left_data(), i.right_data(), d);
@@ -233,17 +233,17 @@ namespace
             {
             case parallel::invalid:
               I(false);
-            
+
             case parallel::in_left:
               // deleted; don't need to do anything (will be handled by
               // nodes_deleted set
               break;
-            
+
             case parallel::in_right:
               // added
               safe_insert(d.markings_changed, i.right_value());
               break;
-            
+
             case parallel::in_both:
               // maybe changed
               if (!(i.left_data() == i.right_data()))
@@ -264,7 +264,7 @@ namespace
     symbol const attr_cleared("attr_cleared");
     symbol const attr_changed("attr_changed");
     symbol const marking("marking");
-    
+
     symbol const content("content");
     symbol const location("location");
     symbol const attr("attr");
@@ -376,7 +376,7 @@ namespace
     loc.first = parse_nid(parser);
     std::string name;
     parser.str(name);
-    loc.second = path_component(name);
+    loc.second = path_component(name, parser.tok.in.made_from);
   }
 
   void
@@ -413,7 +413,7 @@ namespace
         std::string s;
         parser.hex(s);
         safe_insert(d.files_added,
-                    make_pair(loc, make_pair(nid, file_id(decode_hexenc(s)))));
+                    make_pair(loc, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from))));
       }
     while (parser.symp(syms::delta))
       {
@@ -422,7 +422,7 @@ namespace
         parser.esym(syms::content);
         std::string s;
         parser.hex(s);
-        safe_insert(d.deltas_applied, make_pair(nid, file_id(decode_hexenc(s))));
+        safe_insert(d.deltas_applied, make_pair(nid, decode_hexenc_as<file_id>(s, parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_cleared))
       {
@@ -431,7 +431,8 @@ namespace
         parser.esym(syms::attr);
         std::string key;
         parser.str(key);
-        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key)));
+        safe_insert(d.attrs_cleared, make_pair(nid, attr_key(key,
+                                                             parser.tok.in.made_from)));
       }
     while (parser.symp(syms::attr_changed))
       {
@@ -445,10 +446,12 @@ namespace
         parser.str(value_bool);
         parser.str(value_value);
         pair<bool, attr_value> full_value(lexical_cast<bool>(value_bool),
-                                          attr_value(value_value));
+                                          attr_value(value_value,
+                                                     parser.tok.in.made_from));
         safe_insert(d.attrs_changed,
                     make_pair(nid,
-                              make_pair(attr_key(key), full_value)));
+                              make_pair(attr_key(key, parser.tok.in.made_from),
+                                        full_value)));
       }
     while (parser.symp(syms::marking))
       {
@@ -459,7 +462,7 @@ namespace
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
   }
-  
+
 } // end anonymous namespace
 
 void
@@ -475,7 +478,7 @@ delta_rosters(roster_t const & from, marking_map const & from_markings,
   make_roster_delta_t(from, from_markings, to, to_markings, d);
   basic_io::printer printer;
   print_roster_delta_t(printer, d);
-  del = roster_delta(printer.buf);
+  del = roster_delta(printer.buf, origin::internal);
 }
 
 static
@@ -536,7 +539,7 @@ try_get_content_from_roster_delta(roster_delta const & del,
 {
   roster_delta_t d;
   read_roster_delta(del, d);
-  
+
   roster_delta_t::deltas_applied_t::const_iterator i = d.deltas_applied.find(nid);
   if (i != d.deltas_applied.end())
     {
@@ -563,46 +566,9 @@ try_get_content_from_roster_delta(roster_delta const & del,
           return true;
         }
     }
-   
+
   return false;
 }
-
-#ifdef BUILD_UNIT_TESTS
-
-static void
-spin(roster_t const & from, marking_map const & from_marking,
-     roster_t const & to, marking_map const & to_marking)
-{
-  MM(from);
-  MM(from_marking);
-  MM(to);
-  MM(to_marking);
-  roster_delta del;
-  MM(del);
-  delta_rosters(from, from_marking, to, to_marking, del);
-
-  roster_t tmp(from);
-  MM(tmp);
-  marking_map tmp_marking(from_marking);
-  MM(tmp_marking);
-  apply_roster_delta(del, tmp, tmp_marking);
-  I(tmp == to);
-  I(tmp_marking == to_marking);
-
-  roster_delta del2;
-  delta_rosters(from, from_marking, tmp, tmp_marking, del2);
-  I(del == del2);
-}
-
-void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
-                          roster_t const & b, marking_map const & b_marking)
-{
-  spin(a, a_marking, b, b_marking);
-  spin(b, b_marking, a, a_marking);
-}
-
-#endif // BUILD_UNIT_TESTS
-
 
 // Local Variables:
 // mode: C++
@@ -611,4 +577,3 @@ void test_roster_delta_on(roster_t const & a, marking_map const & a_marking,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

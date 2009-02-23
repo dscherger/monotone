@@ -1,16 +1,28 @@
-AUTOMAKE_OPTIONS=subdir-objects 1.7.1
-ACLOCAL_AMFLAGS = -I m4
+# Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# Makefile for monotone
+
+AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
+ACLOCAL_AMFLAGS  = -I m4
 
 CMD_SOURCES =								\
-	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
-	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_conflicts.cc
+	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
+	cmd_key_cert.cc cmd_merging.cc cmd_db.cc cmd_diff_log.cc	\
+	cmd_ws_commit.cc cmd_othervcs.cc cmd_automate.cc cmd_files.cc	\
+	cmd_conflicts.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
 	simplestring_xform.cc simplestring_xform.hh 			\
 	constants.cc constants.hh numeric_vocab.hh 			\
-	platform.hh numeric_vocab.cc
+	platform.hh origin_type.hh
 
 LUAEXT_SOURCES = 							\
 	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
@@ -18,7 +30,7 @@ LUAEXT_SOURCES = 							\
 	interner.hh hash_map.hh	vocab_hash.hh				\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
-	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
+	lua.cc lua.hh mkstemp.cc file_io.cc file_io.hh			\
 	globish.cc globish.hh basic_io.cc basic_io.hh			\
 	char_classifiers.hh
 
@@ -28,11 +40,11 @@ MOST_SOURCES = 								\
 	app_state.cc app_state.hh					\
 	botan_pipe_cache.hh						\
 	commands.cc commands.hh $(CMD_SOURCES)				\
-	diff_patch.cc diff_patch.hh					\
+	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
-	work.cc work_migration.cc work.hh				\
+	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
@@ -43,7 +55,7 @@ MOST_SOURCES = 								\
 	packet.cc packet.hh						\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
-	schema_migration.cc schema_migration.hh				\
+	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
@@ -52,7 +64,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
-	revision.cc revision.hh						\
+	revision.cc ancestry.cc revision.hh				\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
 	mt_version.cc mt_version.hh					\
@@ -65,29 +77,27 @@ MOST_SOURCES = 								\
 	annotate.cc annotate.hh						\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
-	string_queue.cc string_queue.hh					\
-	roster_merge.cc roster_merge.hh					\
-	merge.cc merge.hh						\
+	string_queue.hh							\
+	merge_roster.cc merge_conflict.cc merge_roster.hh		\
+	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
 	graph.cc graph.hh						\
 	roster_delta.cc roster_delta.hh					\
-	sha1.hh sha1.cc sha1_engine.hh                                  \
+	sha1.cc								\
 	pcrewrap.cc pcrewrap.hh						\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
 									\
-	lru_writeback_cache.hh hybrid_map.hh				\
+	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
-	randomizer.cc randomizer.hh					\
 	netio.hh gettext.h						\
-	package_revision.c package_revision.h				\
-	package_full_revision.c package_full_revision.h			\
+	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
 	specialized_lexical_cast.cc lexical_cast.hh			\
-	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
+	parallel_iter.hh safe_map.hh pch.hh current_exception.hh
 
 NETXX_SOURCES =								\
 	netxx/accept.cxx netxx/accept.h netxx/address.cxx		\
@@ -105,181 +115,11 @@ NETXX_SOURCES =								\
 	netxx/streambase.h netxx/streamserver.h netxx/timeout.h		\
 	netxx/types.h
 
-BOTAN_SOURCES = 							\
-	botan/aes.cpp botan/aes_tab.cpp botan/alg_id.cpp botan/arc4.cpp	\
-	botan/asn1_alt.cpp botan/asn1_att.cpp botan/asn1_dn.cpp		\
-	botan/asn1_int.cpp botan/asn1_ku.cpp botan/asn1_oid.cpp		\
-	botan/asn1_str.cpp botan/asn1_tm.cpp botan/base64.cpp		\
-	botan/base.cpp botan/basefilt.cpp botan/ber_dec.cpp		\
-	botan/big_code.cpp botan/bigint.cpp botan/big_io.cpp		\
-	botan/big_ops2.cpp botan/big_ops3.cpp botan/big_rand.cpp	\
-	botan/blinding.cpp botan/buf_es.cpp				\
-	botan/buf_filt.cpp botan/cbc.cpp botan/cbc_mac.cpp		\
-	botan/certstor.cpp botan/cfb.cpp botan/charset.cpp		\
-	botan/crc32.cpp botan/crl_ent.cpp botan/ctr.cpp botan/cts.cpp	\
-	botan/data_snk.cpp botan/data_src.cpp botan/datastor.cpp	\
-	botan/def_alg.cpp botan/defalloc.cpp botan/def_mode.cpp		\
-	botan/def_ops.cpp botan/def_powm.cpp botan/der_enc.cpp		\
-	botan/des.cpp botan/des_tab.cpp botan/dh.cpp botan/divide.cpp	\
-	botan/dl_algo.cpp botan/dl_group.cpp botan/dlies.cpp		\
-	botan/dsa_gen.cpp botan/eax.cpp botan/ecb.cpp botan/eme1.cpp	\
-	botan/eme_pkcs.cpp botan/emsa1.cpp botan/emsa2.cpp		\
-	botan/emsa3.cpp botan/emsa4.cpp botan/emsa_raw.cpp		\
-	botan/eng_base.cpp botan/engine.cpp				\
-	botan/exceptn.cpp botan/filter.cpp				\
-	botan/filters.cpp botan/get_algo.cpp botan/get_enc.cpp		\
-	botan/get_pbe.cpp botan/hash_id.cpp botan/hex.cpp		\
-	botan/hmac.cpp botan/if_algo.cpp botan/init_def.cpp		\
-	botan/init_opt.cpp botan/jacobi.cpp botan/kdf.cpp		\
-	botan/keypair.cpp botan/libstate.cpp botan/look_pk.cpp		\
-	botan/make_prm.cpp botan/mdx_hash.cpp botan/mem_pool.cpp	\
-	botan/mgf1.cpp botan/mlock.cpp botan/modebase.cpp		\
-	botan/mode_pad.cpp botan/modules.cpp botan/mp_asm.cpp		\
-	botan/mp_comba.cpp botan/mp_karat.cpp botan/mp_misc.cpp		\
-	botan/mp_monty.cpp						\
-	botan/mp_mulop.cpp botan/mp_numth.cpp botan/mp_shift.cpp	\
-	botan/mutex.cpp botan/noekeon.cpp botan/numthry.cpp		\
-	botan/ofb.cpp botan/oids.cpp botan/out_buf.cpp			\
-	botan/parsing.cpp botan/pbes1.cpp botan/pbes2.cpp		\
-	botan/pem.cpp botan/pipe.cpp botan/pipe_io.cpp			\
-	botan/pipe_rw.cpp botan/pk_algs.cpp botan/pk_core.cpp		\
-	botan/pkcs10.cpp botan/pkcs5.cpp botan/pkcs8.cpp		\
-	botan/pk_keys.cpp botan/pk_util.cpp botan/policy.cpp		\
-	botan/powm_fw.cpp botan/powm_mnt.cpp botan/pow_mod.cpp		\
-	botan/prf_x942.cpp botan/primes.cpp botan/pubkey.cpp		\
-	botan/randpool.cpp botan/reducer.cpp botan/rng.cpp		\
-	botan/rsa.cpp botan/s2k.cpp botan/secqueue.cpp			\
-	botan/selftest.cpp botan/sha160.cpp botan/sha256.cpp		\
-	botan/symkey.cpp botan/timers.cpp botan/ui.cpp botan/util.cpp	\
-	botan/x509_ca.cpp botan/x509cert.cpp botan/x509_crl.cpp		\
-	botan/x509_ext.cpp botan/x509find.cpp botan/x509_key.cpp	\
-	botan/x509_obj.cpp botan/x509opt.cpp botan/x509self.cpp		\
-	botan/x509stor.cpp botan/x931_rng.cpp				\
-	\
-	botan/aes.h botan/alg_id.h botan/allocate.h botan/arc4.h	\
-	botan/asn1_int.h botan/asn1_obj.h botan/asn1_oid.h		\
-	botan/base64.h botan/basefilt.h botan/base.h botan/ber_dec.h	\
-	botan/bigint.h botan/bit_ops.h botan/blinding.h botan/botan.h	\
-	botan/bswap.h							\
-	botan/buf_es.h botan/buf_filt.h botan/build.h botan/cbc.h	\
-	botan/cbc_mac.h botan/certstor.h botan/cfb.h botan/charset.h	\
-	botan/crc32.h botan/crl_ent.h botan/ctr.h botan/cts.h		\
-	botan/data_snk.h botan/data_src.h botan/datastor.h		\
-	botan/defalloc.h botan/def_powm.h botan/der_enc.h botan/des.h	\
-	botan/dh.h botan/dl_algo.h botan/dl_group.h botan/dlies.h	\
-	botan/eax.h botan/ecb.h botan/eme.h botan/emsa.h		\
-	botan/eng_def.h botan/engine.h botan/enums.h botan/es_dev.h	\
-	botan/exceptn.h botan/filter.h botan/filters.h			\
-	botan/hash_id.h botan/hex.h botan/hmac.h botan/if_algo.h	\
-	botan/init.h botan/kdf.h botan/keypair.h botan/libstate.h	\
-	botan/loadstor.h botan/look_add.h botan/look_pk.h		\
-	botan/lookup.h botan/mdx_hash.h botan/mem_ops.h			\
-	botan/mem_pool.h botan/mgf1.h botan/modebase.h botan/mode_pad.h	\
-	botan/modules.h botan/mp_asm.h botan/mp_asmi.h botan/mp_core.h	\
-	botan/mp_types.h botan/mutex.h botan/noekeon.h botan/numthry.h	\
-	botan/ofb.h botan/oids.h botan/out_buf.h botan/parsing.h	\
-	botan/pbe.h botan/pbe_pkcs.h botan/pem.h botan/pipe.h		\
-	botan/pk_algs.h botan/pk_core.h botan/pkcs10.h botan/pkcs5.h	\
-	botan/pkcs8.h botan/pk_keys.h botan/pk_ops.h botan/pk_util.h	\
-	botan/pow_mod.h botan/pubkey.h botan/randpool.h botan/reducer.h	\
-	botan/rng.h botan/rotate.h botan/rsa.h botan/s2k.h		\
-	botan/secmem.h							\
-	botan/secqueue.h botan/selftest.h botan/sha160.h botan/sha256.h	\
-	botan/stl_util.h botan/symkey.h botan/timers.h botan/types.h	\
-	botan/ui.h botan/util.h botan/version.h botan/x509_ca.h		\
-	botan/x509cert.h botan/x509_crl.h botan/x509_ext.h		\
-	botan/x509find.h botan/x509_key.h botan/x509_obj.h		\
-	botan/x509self.h botan/x509stor.h botan/x931_rng.h		\
-	botan/xor_buf.h
-
-# unix only:	botan/es_dev.{cpp,h} botan/es_egd.{cpp,h}
-# windows only:	botan/es_capi.h  botan/es_capi.cpp
-#		botan/es_win32.{cpp,h}
-
 BOOST_SANDBOX_SOURCES =							\
 	boost/circular_buffer_adaptor.hpp				\
 	boost/circular_buffer_base.hpp					\
 	boost/circular_buffer_fwd.hpp					\
 	boost/circular_buffer.hpp
-
-SQLITE_SOURCES =							\
-	sqlite/alter.c sqlite/attach.c sqlite/auth.c sqlite/btree.c	\
-	sqlite/build.c sqlite/date.c sqlite/delete.c sqlite/expr.c	\
-	sqlite/func.c sqlite/hash.c sqlite/insert.c			\
-	sqlite/legacy.c	sqlite/main.c sqlite/opcodes.c			\
-	sqlite/os.c sqlite/os_unix.c sqlite/os_win.c sqlite/os_os2.c	\
-	sqlite/pager.c sqlite/parse.c sqlite/pragma.c sqlite/printf.c	\
-	sqlite/random.c sqlite/select.c					\
-	sqlite/table.c sqlite/tokenize.c				\
-	sqlite/trigger.c sqlite/update.c sqlite/utf.c			\
-	sqlite/util.c sqlite/vacuum.c					\
-	sqlite/vdbe.c sqlite/vdbeapi.c sqlite/vdbeaux.c			\
-	sqlite/vdbemem.c sqlite/where.c					\
-	sqlite/prepare.c sqlite/callback.c				\
-	sqlite/analyze.c sqlite/vdbefifo.c				\
-	sqlite/complete.c sqlite/malloc.c sqlite/vdbeblob.c		\
-	sqlite/loadext.c sqlite/vtab.c					\
-									\
-	sqlite/btree.h sqlite/hash.h sqlite/opcodes.h sqlite/os.h	\
-	sqlite/os_common.h sqlite/os_os2.h				\
-	sqlite/parse.h sqlite/sqlite3.h	sqlite/sqlite3ext.h		\
-	sqlite/sqliteInt.h						\
-	sqlite/vdbe.h sqlite/vdbeInt.h					\
-	sqlite/pager.h sqlite/btreeInt.h sqlite/sqliteLimit.h
-
-LUA_SOURCES =								\
-	lua/lapi.cc lua/lapi.h						\
-	lua/lcode.cc lua/lcode.h					\
-	lua/ldebug.cc lua/ldebug.h					\
-	lua/ldo.cc lua/ldo.h						\
-	lua/ldump.cc							\
-	lua/lfunc.cc lua/lfunc.h					\
-	lua/lgc.cc lua/lgc.h						\
-	lua/linit.cc							\
-	lua/llex.cc lua/llex.h						\
-	lua/lmem.cc lua/lmem.h						\
-	lua/lobject.cc lua/lobject.h					\
-	lua/lopcodes.cc lua/lopcodes.h					\
-	lua/lparser.cc lua/lparser.h					\
-	lua/lstate.cc lua/lstate.h					\
-	lua/lstring.cc lua/lstring.h					\
-	lua/ltable.cc lua/ltable.h					\
-	lua/ltests.cc							\
-	lua/ltm.cc lua/ltm.h						\
-	lua/lundump.cc lua/lundump.h					\
-	lua/lvm.cc lua/lvm.h						\
-	lua/lzio.cc lua/lzio.h						\
-									\
-	lua/luaconf.h lua/llimits.h					\
-	lua/lua.h lua/lauxlib.h	lua/lualib.h				\
-									\
-	lua/lauxlib.cc							\
-	lua/lbaselib.cc							\
-	lua/ldblib.cc							\
-	lua/liolib.cc							\
-	lua/lmathlib.cc							\
-	lua/loadlib.cc							\
-	lua/lstrlib.cc							\
-	lua/ltablib.cc							\
-	lua/loslib.cc
-
-IDNA_SOURCES =								\
-	idna/gunibreak.h idna/gunidecomp.h idna/idna.h idna/nfkc.c	\
-	idna/punycode.c idna/rfc3454.c idna/stringprep.h idna/version.c	\
-	idna/gunicomp.h idna/idna.c idna/idn-int.h idna/profiles.c	\
-	idna/punycode.h idna/stringprep.c idna/toutf8.c
-
-PCRE_SOURCES =								\
-	pcre/pcre_chartables.c pcre/pcre_compile.c pcre/pcre_config.c	\
-	pcre/pcre_dfa_exec.c pcre/pcre_exec.c pcre/pcre_fullinfo.c	\
-	pcre/pcre_get.c pcre/pcre_globals.c pcre/pcre_info.c		\
-	pcre/pcre_maketables.c pcre/pcre_newline.c			\
-	pcre/pcre_ord2utf8.c pcre/pcre_refcount.c pcre/pcre_study.c	\
-	pcre/pcre_tables.c pcre/pcre_try_flipped.c			\
-	pcre/pcre_ucp_searchfuncs.c pcre/pcre_valid_utf8.c		\
-	pcre/pcre_version.c pcre/pcre_xclass.c pcre/pcre_config.h	\
-	pcre/pcre.h pcre/pcre_internal.h pcre/ucp.h pcre/ucpinternal.h	\
-	pcre/ucptable.h
 
 UNIX_PLATFORM_SOURCES =							\
 	unix/read_password.cc unix/get_system_flavour.cc		\
@@ -295,41 +135,48 @@ WIN32_PLATFORM_SOURCES =						\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
 	win32/ssh_agent_platform.hh
 
-# these files contain unit tests
-UNIT_TEST_SOURCES =							\
-	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc diff_patch.cc globish.cc graph.cc netcmd.cc		\
-	netxx_pipe.cc numeric_vocab.cc option.cc outdated_indicator.cc	\
-	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
-	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
-	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc
+# these files (part of the main program) contain code subject to unit testing
+
+UNIT_TESTEES =								\
+	basic_io.cc charset.cc commands.cc cset.cc globish.cc graph.cc	\
+	merge_3way.cc merge_roster.cc mkstemp.cc netcmd.cc		\
+	netxx_pipe.cc option.cc outdated_indicator.cc refiner.cc	\
+	restrictions.cc revision.cc simplestring_xform.cc		\
+	transforms.cc uri.cc vocab.cc xdelta.cc
+
+# these files contain the actual unit tests
+# yes, we have to list them all explicitly, with directory prefix, or
+# automake gets very confused
+UNIT_TESTERS =								\
+	unit-tests/basic_io.cc unit-tests/charset.cc			\
+	unit-tests/commands.cc unit-tests/cset.cc			\
+	unit-tests/globish.cc unit-tests/graph.cc			\
+	unit-tests/merge_3way.cc unit-tests/merge_roster.cc		\
+	unit-tests/mkstemp.cc unit-tests/netcmd.cc			\
+	unit-tests/netxx_pipe.cc unit-tests/option.cc			\
+	unit-tests/outdated_indicator.cc unit-tests/refiner.cc		\
+	unit-tests/restrictions.cc unit-tests/revision.cc		\
+	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
+	unit-tests/uri.cc unit-tests/vocab.cc unit-tests/xdelta.cc	\
+									\
+	unit-tests/numeric_vocab.cc unit-tests/sha1.cc			\
+	unit-tests/string_queue.cc unit_tester.cc
+
+# these files contain unit tests that need access to private interfaces
+# of the code under test, so they #include the code under test.  thus,
+# to avoid multiple-definition errors, for these files the code under
+# test is not part of UNIT_TESTEES.
+
+UNIT_TESTERS_PRIV =							\
+	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
+	unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
-# and must be recompiled for that purpose
-UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc
-
-# these files do not contain unit tests; they are required for unit
-# testing, but can be used "as is" from the main build.  (many of
-# these _should_ have unit tests, but they haven't been written yet.)
-UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-app_state.$(OBJEXT) mtn-cert.$(OBJEXT)			\
-	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
-	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
-	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)	\
-	mtn-merkle_tree.$(OBJEXT) mtn-mt_version.$(OBJEXT)		\
-	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
-	mtn-package_full_revision.$(OBJEXT)				\
-	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
-	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
-	mtn-schema_migration.$(OBJEXT)					\
-	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
-	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-work_migration.$(OBJEXT)
+# note that some are and some aren't part of the main program
+UNIT_TEST_SUPPORT =							\
+	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
+	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
+	sanity.cc specialized_lexical_cast.cc
 
 # primaries
 
@@ -337,39 +184,35 @@ bin_PROGRAMS = mtn
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS =
 
-dist_bin_SCRIPTS = mtnopt
+bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
-nodist_mtn_SOURCES = std_hooks.c schema.c
+nodist_mtn_SOURCES = std_hooks.cc schema.cc
 
-unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
-unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
+unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
+	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-tester_SOURCES = tester.cc transforms.cc gzip.cc
-nodist_tester_SOURCES = testlib.c
-tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
-		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
-		 	  	pcrewrap.cc)))
+tester_SOURCES = tester.cc transforms.cc gzip.cc \
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
+nodist_tester_SOURCES = testlib.cc
 
 txt2c_SOURCES = txt2c.cc
 
 noinst_LIBRARIES = libplatform.a lib3rdparty.a
 libplatform_a_SOURCES = platform.hh tester-plaf.hh
 lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
-			$(BOTAN_SOURCES) \
-			$(IDNA_SOURCES) \
-			$(NETXX_SOURCES) \
-			$(LUA_SOURCES) \
-			$(SQLITE_SOURCES)
-
-if INCLUDED_PCRE
-lib3rdparty_a_SOURCES += $(PCRE_SOURCES)
-endif
+			$(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html
 
 # flags
+
+# sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
+# the variable prevents this from overriding automake's unix/fs.o rule
+DEFS =
+UNIX=unix/
+$(UNIX)fs.$(OBJEXT) : DEFS += -DLOCALEDIR="\"$(localedir)\""
 
 if BUILD_PCH
 
@@ -395,76 +238,38 @@ pch-file:
 	&& mv "./$(PCH_FILE).Tdep" "./$(PCH_FILE).dep" \
 	|| rm "./$(PCH_FILE).Tdep"
 endif
+AM_CXXFLAGS = $(PCH_FLAGS)
 
-SUFFIXES = .gch
+SUFFIXES = .gch .merged.po .gmo
 
-AM_CPPFLAGS =
-AM_CFLAGS = $(AM_CPPFLAGS) -DTEMP_STORE=1 -DNDEBUG -DSQLITE_OMIT_CURSOR -DSQLITE_OMIT_LOAD_EXTENSION -DTHREADSAFE=0 -DSQLITE_THREAD_OVERRIDE_LOCK=-1 $(SQLITE_CPPFLAGS)
-AM_CXXFLAGS = $(AM_CPPFLAGS)
-AM_LDFLAGS =
+AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
+	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
 
-lib3rdparty_a_CPPFLAGS =
-lib3rdparty_a_CFLAGS = $(AM_CFLAGS) $(LIB3RDPARTY_CFLAGS)
-lib3rdparty_a_CXXFLAGS = $(AM_CXXFLAGS) $(LIB3RDPARTY_CXXFLAGS) -fpermissive
-
-mtn_LDFLAGS =
-mtn_CPPFLAGS = -I$(top_srcdir)/lua
-mtn_CFLAGS = $(AM_CFLAGS) $(MTN_CFLAGS)
-mtn_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS) $(MTN_CXXFLAGS)
-mtn_LDADD = libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-unit_tester_LDFLAGS =
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS -I$(top_srcdir)/lua
-unit_tester_CXXFLAGS = $(AM_CXXFLAGS) $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a lib3rdparty.a \
-		     $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-tester_LDFLAGS =
-tester_CPPFLAGS = -I$(top_srcdir)/lua
-tester_CXXFLAGS = $(AM_CXXFLAGS)
-tester_LDADD += libplatform.a lib3rdparty.a $(BOOSTLIBS) $(LIBICONV) $(LIBINTL)
-
-if INCLUDED_PCRE
-  lib3rdparty_a_CPPFLAGS += -I$(top_srcdir)/pcre
-  mtn_CPPFLAGS += -I$(top_srcdir)/pcre
-  unit_tester_CPPFLAGS += -I$(top_srcdir)/pcre
-  tester_CPPFLAGS += -I$(top_srcdir)/pcre
-else
-  mtn_CPPFLAGS += $(PCRE_CFLAGS)
-  unit_tester_CPPFLAGS += $(PCRE_CFLAGS)
-  tester_CPPFLAGS += $(PCRE_CFLAGS)
-
-  mtn_LDADD += $(PCRE_LIBS)
-  unit_tester_LDADD += $(PCRE_LIBS)
-  tester_LDADD += $(PCRE_LIBS)
-endif
+LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
-  mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  lib3rdparty_a_CPPFLAGS += -DWIN32
-  lib3rdparty_a_SOURCES += botan/es_capi.h botan/es_capi.cpp		\
-			   botan/es_win32.cpp botan/es_win32.h
   tester_SOURCES += win32/tester-plaf.cc
-  check_net_SOURCES = win32/tester-check-net.c
+  check_net_SOURCES = win32/tester-check-net.cc
+  AM_CPPFLAGS += -DWIN32
+  LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
-  lib3rdparty_a_SOURCES += botan/es_dev.cpp botan/es_egd.cpp botan/es_egd.h
   tester_SOURCES += unix/tester-plaf.cc
-  check_net_SOURCES = unix/tester-check-net.c
+  check_net_SOURCES = unix/tester-check-net.cc
 endif
 
 if MISSING_INET_PTON
   lib3rdparty_a_SOURCES += netxx/inet_pton.cxx netxx/inet_pton.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_PTON
+  AM_CPPFLAGS += -DNETXX_NO_PTON
 endif
 
 if MISSING_INET_NTOP
   lib3rdparty_a_SOURCES += netxx/inet_ntop.cxx netxx/inet_ntop.h
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_NTOP
+  AM_CPPFLAGS += -DNETXX_NO_NTOP
 endif
 
 if MISSING_GETADDRINFO
@@ -474,15 +279,8 @@ else
 endif
 
 if MISSING_INET6
-  lib3rdparty_a_CPPFLAGS += -DNETXX_NO_INET6
+  AM_CPPFLAGS += -DNETXX_NO_INET6
 endif
-
-# i18n support
-
-SUBDIRS = po
-datadir = @datadir@
-localedir = $(datadir)/locale
-DEFS = -DLOCALEDIR=\"$(localedir)\" @DEFS@
 
 # extra files
 
@@ -500,29 +298,26 @@ PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\
 
 PNG_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.png)))
 EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.eps)))
-TEXI_FRAGMENTS = pcre/pcrepattern.texi pcre/pcresyntax.texi
+TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
 info_TEXINFOS = monotone.texi
-EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
-	UPGRADE monotone.spec monotone.html texinfo.css schema.sql	\
-	std_hooks.lua testlib.lua lua-testsuite.lua $(srcdir)/tests	\
-	tester-testsuite.lua $(srcdir)/tester-tests			\
-	unit-testsuite.lua package.m4 package_revision.txt		\
-	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	sqlite/keywordhash.h contrib/README contrib/monoprof.sh		\
-	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
-	contrib/monotone.el contrib/monotone-nav.el			\
-	contrib/monotone.bash_completion				\
-	contrib/monotone.zsh_completion contrib/mtbrowse.sh		\
-	contrib/colorize contrib/color-logs.sh contrib/color-logs.conf	\
-	contrib/get_stdio.pl contrib/ciabot_monotone_hookversion.py	\
-	contrib/Monotone.pm $(wildcard $(srcdir)/contrib/*.lua)		\
-	$(wildcard $(srcdir)/contrib/command/*.lua)			\
-	contrib/command/README $(wildcard $(srcdir)/examples/*)		\
-	win32/monotone.iss win32/modpath.iss $(wildcard			\
-	$(srcdir)/debian/*) mac/monotone-pkg-logo.gif			\
-	mac/monotone.pmproj mac/package-intro.rtf audit-includes	\
-	$(TEXI_FRAGMENTS)
+EXTRA_DIST =								\
+	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
+	audit-includes do-editor-vars.sh doxygen.cfg			\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
+	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
+	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+									\
+	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
+	figures/monotone-logo.svg figures/oo-figures.sxd		\
+	figures/pdfcrop.pl figures/README				\
+									\
+	std_hooks.lua testlib.lua lua-testsuite.lua tests		\
+	tester-testsuite.lua tester-tests unit-testsuite.lua		\
+									\
+	package_revision.txt package_full_revision_dist.txt		\
+									\
+	contrib cygwin examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
@@ -547,6 +342,91 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 	mkdir -p $(top_builddir)/figures
 #	acroread -toPostScript -pairs $< $@
 	pdftops $< $@
+
+
+# Message translation support
+# INST_LINGUAS is set by configure, based on the po/LINGUAS file and
+# the user's LINGUAS env. variable.  Additional settings are in
+# po/Makevars.
+#
+# Only the foo.po-update target will overwrite a file in the source
+# po/ directory.
+
+include $(srcdir)/po/Makevars
+ALL_POFILES := $(wildcard $(srcdir)/po/*.po)
+ALL_LINGUAS := $(basename $(notdir $(ALL_POFILES)))
+ALL_GMOFILES := $(addsuffix .gmo, $(ALL_LINGUAS))
+CLEAN_POFILES := $(ALL_GMOFILES) $(addsuffix .merged.po, $(ALL_LINGUAS)) \
+		 $(PACKAGE).pot
+
+EXTRA_DIST += $(ALL_POFILES) po/LINGUAS po/README
+
+if USE_NLS
+# for installation
+GMOFILES := $(addsuffix .gmo, $(INST_LINGUAS))
+
+all-local: $(GMOFILES)
+
+install-data-local: all-local
+	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	  dir=$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES; \
+	  $(MKDIR_P) $$dir; \
+	  $(INSTALL_DATA) $$lang.gmo $$dir/$(PACKAGE).mo; \
+	done
+
+uninstall-local:
+	@linguas='$(INST_LINGUAS)'; set -ex; for lang in $$linguas; do \
+	  rm -f $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$(PACKAGE).mo; \
+	  rmdir $(DESTDIR)$(localedir)/$$lang/LC_MESSAGES || :; \
+	  rmdir $(DESTDIR)$(localedir)/$$lang || :; \
+	done
+endif
+
+if REBUILD_NLS
+%.gmo: %.merged.po
+	$(MSGFMT) -c --statistics -o $@ $<
+
+%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
+	$(MSGMERGE) $^ -o $@
+
+# for translators' use
+UPDATEPOFILES = $(addsuffix .po-update, $(ALL_LINGUAS))
+
+%.po-update: $(srcdir)/po/%.po $(PACKAGE).pot
+	$(MSGMERGE) --update $^
+
+update-po: $(UPDATEPOFILES)
+
+# for the template file
+POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
+	$(UNIX_PLATFORM_SOURCES) $(WIN32_PLATFORM_SOURCES) \
+	monotone.cc std_hooks.lua
+
+$(PACKAGE).pot: $(POTFILES)
+	$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
+	  --package-name=$(PACKAGE) --package-version=$(VERSION) \
+	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
+	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
+	  $(XGETTEXT_OPTS) \
+	  $(POTFILES)
+
+dist-hook: $(ALL_GMOFILES)
+	cp $^ $(distdir)/po
+# also, kill off any backup files that got pulled in by one of the
+# recursive subdirectory includes in EXTRA_DIST
+# note use of slightly non-portable "-delete" action
+	find $(distdir) \( -name '*.bak' -o -name '*.orig' -o -name '*.rej' \
+	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
+
+else
+
+%.gmo: $(srcdir)/po/%.gmo
+	cp $< $@
+
+dist-hook:
+	@echo "*** Cannot 'make dist' without xgettext" >&2; exit 1
+
+endif
 
 # build an OS X installer
 # requires sudo since packagemaker just looks at directory permissions.
@@ -656,32 +536,15 @@ FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_lua_tests
 
 mostlyclean-local:
-	rm -rf tester_dir unit-tests html
+	rm -rf tester_dir html
+	set -ex; for d in unit-tests/*/__driver__.lua; do \
+	  rm -f $$d; \
+	  rmdir $${d%/*} || :; \
+	done
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status  \
-	mtnopt
-
-# distcheck stuff
-
-DISTCHECK_CONFIGURE_FLAGS = \
-	--with-bundled-sqlite \
-	--with-bundled-lua
-
-# note: these targets are all in srcdir; they are *not* built during
-# the VPATH build part of distcheck (with non-writable source
-# directory) but only during the initial dist stage.
-
-$(srcdir)/package.m4: $(top_srcdir)/configure.ac
-	{                                      \
-	  echo '# Signature of the current package.'; \
-	  echo 'm4_define([AT_PACKAGE_NAME],      [@PACKAGE_NAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_TARNAME],   [@PACKAGE_TARNAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_VERSION],   [@PACKAGE_VERSION@])'; \
-	  echo 'm4_define([AT_PACKAGE_STRING],    [@PACKAGE_STRING@])'; \
-	  echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
-	} >$(srcdir)/package.m4
+	tester_tests.status unit_tests.status lua_tests.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
@@ -690,43 +553,45 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 
 # package_revision.txt and package_full_revision_dist.txt are shipped
 # in the distribution, so don't delete them here
-CLEAN_SOURCES = std_hooks.c testlib.c schema.c \
-	package_revision.c package_full_revision.c \
+CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
+	package_revision.cc package_full_revision.cc \
 	package_revision_raw.txt \
 	package_full_revision.txt package_full_revision_raw.txt
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES)
+CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
+	     $(EPS_FIGURES) $(CLEAN_POFILES)
 
-txt2c: txt2c.cc
-	$(CXX) $(CXXFLAGS) -o $@ $<
-	chmod 0755 $@$(EXEEXT)
+# automake provides no nice way to build a helper program to execute
+# on the build machine, so we need our own rule.  almost all the
+# standard flags variables are inappropriate.
+txt2c$(EXEEXT): txt2c.cc
+	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
 
-# FIXME: should use stamp files.
-%.c: %.sql txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+# files generated using txt2c
+std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
+	./txt2c std_hooks $< $@
 
-%.c: %.lua txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+testlib.cc: testlib.lua txt2c$(EXEEXT)
+	./txt2c testlib $< $@
 
-%.c: %.txt txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+schema.cc: schema.sql txt2c$(EXEEXT)
+	./txt2c schema $< $@
+
+package_revision.cc: package_revision.txt txt2c$(EXEEXT)
+	./txt2c --strip-trailing package_revision $< $@
+
+package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
+	./txt2c package_full_revision $< $@
+
 
 # Support for scripts
-%: util/%
-	cp $< $@
+do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 
-# This construct causes --strip-trailing to be applied only when
-# generating package_revision.c.
-TXT2CFLAGS =
-package_revision.c : TXT2CFLAGS = --strip-trailing
+%: util/%.in
+	$(do_subst) < $< > $@
+	chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
@@ -762,8 +627,8 @@ package_revision.txt: package_revision_raw.txt
 .PHONY: package_full_revision_raw.txt
 package_full_revision_raw.txt:
 	REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_revision) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && mtn --root=. automate get_revision) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
 # See above comment -- the file this depends on may or may not exist.
 # This file, however, must always exist, so that 'make dist' can

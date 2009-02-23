@@ -8,9 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
-
-#include "../sanity.hh"
-
+#include "sanity.hh"
 #include "ssh_agent_platform.hh"
 
 using std::string;
@@ -80,7 +78,7 @@ ssh_agent_platform::write_data(string const & data)
   L(FL("ssh_agent_platform::write_data: writing %u bytes to %s")
     % data.length() % mapname);
 
-  E(data.length() < AGENT_MAX_MSGLEN,
+  E(data.length() < AGENT_MAX_MSGLEN, origin::system,
     F("Asked to write more than %u to pageant.") %  AGENT_MAX_MSGLEN);
 
   memcpy(filemap_view, data.c_str(), data.length());
@@ -90,7 +88,7 @@ ssh_agent_platform::write_data(string const & data)
 
   id = SendMessage(hwnd, WM_COPYDATA, (WPARAM) NULL, (LPARAM) &cds);
 
-  E(id > 0, F("Error sending message to pageant (%d).") % id);
+  E(id > 0, origin::system, F("Error sending message to pageant (%d).") % id);
 
   //Start our read counter again
   read_len = 0;
@@ -103,7 +101,7 @@ ssh_agent_platform::read_data(u32 const len, string & out)
 
   L(FL("ssh_agent: read_data: asked to read %u bytes") % len);
 
-  E((read_len + len) < AGENT_MAX_MSGLEN,
+  E((read_len + len) < AGENT_MAX_MSGLEN, origin::system,
     F("Asked to read more than %u from pageant.") % AGENT_MAX_MSGLEN);
 
   out.append(filemap_view + read_len, len);
@@ -111,3 +109,11 @@ ssh_agent_platform::read_data(u32 const len, string & out)
   //keep track of how much we've read
   read_len += len;
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

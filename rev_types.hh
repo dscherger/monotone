@@ -30,10 +30,16 @@ namespace basic_io
   struct stanza;
 }
 
-// full definitions in cset.hh 
+// full definitions in cset.hh
 typedef u32 node_id;
 struct cset;
 struct editable_tree;
+
+const node_id first_temp_node = 1U << (sizeof(node_id) * 8 - 1);
+inline bool temp_node(node_id n)
+{
+  return n & first_temp_node;
+}
 
 // full definitions in graph.hh
 struct rev_graph;

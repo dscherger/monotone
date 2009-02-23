@@ -29,10 +29,9 @@ template <typename INNER>
 inline void
 verify(hexenc<INNER> const & val)
 {
-  made_from_t made_from(val.made_from);
   for (string::const_iterator i = val().begin(); i != val().end(); ++i)
     {
-      N(is_xdigit(*i),
+      E(is_xdigit(*i), val.made_from,
         F("bad character '%c' in '%s'") % *i % val);
     }
 }
@@ -44,12 +43,11 @@ verify(hexenc<id> const & val)
   if (val().empty())
     return;
 
-  made_from_t made_from(val.made_from);
-  N(val().size() == constants::idlen,
+  E(val().size() == constants::idlen, val.made_from,
     F("hex encoded ID '%s' size != %d") % val % constants::idlen);
   for (string::const_iterator i = val().begin(); i != val().end(); ++i)
     {
-      N(is_xdigit(*i),
+      E(is_xdigit(*i), val.made_from,
         F("bad character '%c' in id name '%s'") % *i % val);
     }
 }
@@ -61,18 +59,16 @@ verify(id & val)
   if (val().empty())
     return;
 
-  made_from_t made_from(val.made_from);
-  N(val().size() == constants::idlen_bytes,
+  E(val().size() == constants::idlen_bytes, val.made_from,
     F("invalid ID '%s'") % val);
 }
 
 inline void
 verify(symbol const & val)
 {
-  made_from_t made_from(val.made_from);
   for (string::const_iterator i = val().begin(); i != val().end(); ++i)
     {
-      N(is_alnum(*i) || *i == '_',
+      E(is_alnum(*i) || *i == '_', val.made_from,
         F("bad character '%c' in symbol '%s'") % *i % val);
     }
 }
@@ -80,18 +76,16 @@ verify(symbol const & val)
 inline void
 verify(cert_name const & val)
 {
-  made_from_t made_from(val.made_from);
   string::size_type pos = val().find_first_not_of(constants::legal_cert_name_bytes);
-  N(pos == string::npos,
+  E(pos == string::npos, val.made_from,
     F("bad character '%c' in cert name '%s'") % val().at(pos) % val);
 }
 
 inline void
 verify(rsa_keypair_id const & val)
 {
-  made_from_t made_from(val.made_from);
   string::size_type pos = val().find_first_not_of(constants::legal_key_name_bytes);
-  N(pos == string::npos,
+  E(pos == string::npos, val.made_from,
     F("bad character '%c' in key name '%s'") % val().at(pos) % val);
 }
 
@@ -108,8 +102,8 @@ verify(netsync_session_key & val)
       return;
     }
 
-  made_from_t made_from(val.made_from);
-  N(val().size() == constants::netsync_session_key_length_in_bytes,
+  E(val().size() == constants::netsync_session_key_length_in_bytes,
+    val.made_from,
     F("Invalid key length of %d bytes") % val().length());
 }
 
@@ -122,8 +116,8 @@ verify(netsync_hmac_value & val)
       return;
     }
 
-  made_from_t made_from(val.made_from);
-  N(val().size() == constants::netsync_hmac_value_length_in_bytes,
+  E(val().size() == constants::netsync_hmac_value_length_in_bytes,
+    val.made_from,
     F("Invalid hmac length of %d bytes") % val().length());
 }
 
@@ -160,7 +154,7 @@ fake_id()
   ++counter;
   I(counter >= 1); // detect overflow
   string s((FL("00000000000000000000000000000000%08x") % counter).str());
-  return id(decode_hexenc(s));
+  return id(decode_hexenc(s, origin::internal), origin::internal);
 }
 
 // instantiation of various vocab functions
@@ -221,67 +215,9 @@ template std::ostream & operator<< <>(std::ostream &,   roster<data> const &);
 template <>
 void dump (id const & obj, std::string & out)
 {
-  out = encode_hexenc(obj());
+  out = encode_hexenc(obj(), obj.made_from);
 }
 
-#ifdef BUILD_UNIT_TESTS
-
-#include "unit_tests.hh"
-
-UNIT_TEST(vocab, verify_hexenc_id)
-{
-  // -------- magic empty string and default constructor are okay:
-  UNIT_TEST_CHECK(hexenc<id>("")() == "");
-  hexenc<id> my_default_id;
-  UNIT_TEST_CHECK(my_default_id() == "");
-
-  // -------- wrong length:
-  UNIT_TEST_CHECK_THROW(hexenc<id>("a"), informative_failure);
-  // 39 letters
-  UNIT_TEST_CHECK_THROW(hexenc<id>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-                    informative_failure);
-  // 41 letters
-  UNIT_TEST_CHECK_THROW(hexenc<id>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-                    informative_failure);
-  // but 40 is okay
-  UNIT_TEST_CHECK(hexenc<id>("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")()
-              == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-  // -------- bad characters:
-  UNIT_TEST_CHECK_THROW(hexenc<id>("g000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("h000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("G000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("H000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("*000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("`000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("z000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("Z000000000000000000000000000000000000000"), informative_failure);
-  // different positions:
-  UNIT_TEST_CHECK_THROW(hexenc<id>("g000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("0g00000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("00g0000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("000g000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("0000g00000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("000000000000000000000g000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("0000000000000000000000g00000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("000000000000000000000000000000g000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("000000000000000000000000000000000000g000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("0000000000000000000000000000000000000g00"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("00000000000000000000000000000000000000g0"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("000000000000000000000000000000000000000g"), informative_failure);
-  // uppercase hex is bad too!
-  UNIT_TEST_CHECK_THROW(hexenc<id>("A000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("B000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("C000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("D000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("E000000000000000000000000000000000000000"), informative_failure);
-  UNIT_TEST_CHECK_THROW(hexenc<id>("F000000000000000000000000000000000000000"), informative_failure);
-  // but lowercase and digits are all fine
-  UNIT_TEST_CHECK(hexenc<id>("0123456789abcdef0123456789abcdef01234567")()
-              == "0123456789abcdef0123456789abcdef01234567");
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

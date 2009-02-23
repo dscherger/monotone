@@ -7,21 +7,28 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#include "../numeric_vocab.hh"
-#include "../netxx/stream.h"
+#ifndef __SSH_AGENT_PLATFORM_HH__
+#define __SSH_AGENT_PLATFORM_HH__
 
 class ssh_agent_platform {
 private:
-  Netxx::Stream stream;
-  Netxx::socket_type connect();
+  int sock;
 
 public:
-  // We rely on Netxx::Stream not blowing up if constructed from an
-  // invalid file descriptor, as long as no one actually tries to write()
-  // or read() on it.
-  ssh_agent_platform() : stream(connect()) {}
-  bool connected() { return stream.get_socketfd() != -1; }
+  ssh_agent_platform();
+  ~ssh_agent_platform();
+  bool connected() { return sock != -1; }
 
   void write_data(std::string const & data);
-  void read_data(u32 const len, std::string & out);
+  void read_data(std::string::size_type len, std::string & out);
 };
+
+#endif
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

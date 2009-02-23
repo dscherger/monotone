@@ -88,7 +88,7 @@ CMD_AUTOMATE(interface_version, "",
              "",
              options::opts::none)
 {
-  N(args.empty(),
+  E(args.empty(), origin::user,
     F("no arguments needed"));
 
   output << interface_version << '\n';
@@ -160,7 +160,7 @@ class automate_reader
         size = (size*10)+(c-'0');
         read(&c, 1);
       }
-    E(c == ':',
+    E(c == ':', origin::user,
         F("Bad input to automate stdio: expected ':' after string size"));
     char *str = new char[size];
     size_t got = 0;
@@ -180,7 +180,8 @@ class automate_reader
 
     rv = in.rdbuf()->sgetn(buf, nbytes);
 
-    E(eof_ok || rv > 0, F("Bad input to automate stdio: unexpected EOF"));
+    E(eof_ok || rv > 0, origin::user,
+      F("Bad input to automate stdio: unexpected EOF"));
     return rv;
   }
   void go_to_next_item()
@@ -207,7 +208,7 @@ class automate_reader
       case 'o': loc = opt; break;
       case 'l': loc = cmd; break;
       default:
-        E(false,
+        E(false, origin::user,
             F("Bad input to automate stdio: unknown start token '%c'") % c);
       }
   }
@@ -230,13 +231,14 @@ public:
           params.push_back(make_pair(key, val));
         go_to_next_item();
       }
-    E(loc == cmd, F("Bad input to automate stdio: expected '%c' token") % cmd);
+    E(loc == cmd, origin::user,
+      F("Bad input to automate stdio: expected '%c' token") % cmd);
     string item;
     while (get_string(item))
       {
         cmdline.push_back(item);
       }
-    E(cmdline.size() > 0,
+    E(cmdline.size() > 0, origin::user,
         F("Bad input to automate stdio: command name is missing"));
     return true;
   }
@@ -350,7 +352,7 @@ CMD_AUTOMATE(stdio, "",
              "",
              options::opts::automate_stdio_size)
 {
-  N(args.empty(),
+  E(args.empty(), origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -379,8 +381,8 @@ CMD_AUTOMATE(stdio, "",
           vector<string>::iterator i = cmdline.begin();
           for (; i != cmdline.end(); ++i)
             {
-              args.push_back(arg_type(*i));
-              id.push_back(utf8(*i));
+              args.push_back(arg_type(*i, origin::user));
+              id.push_back(utf8(*i, origin::user));
             }
 
           set< command_id > matches =
@@ -388,11 +390,13 @@ CMD_AUTOMATE(stdio, "",
 
           if (matches.empty())
             {
-              N(false, F("no completions for this command"));
+              E(false, origin::user,
+                F("no completions for this command"));
             }
           else if (matches.size() > 1)
             {
-              N(false, F("multiple completions possible for this command"));
+              E(false, origin::user,
+                F("multiple completions possible for this command"));
             }
 
           id = *matches.begin();
@@ -414,8 +418,8 @@ CMD_AUTOMATE(stdio, "",
               // Re-read the ws options file, rather than just copying
               // the options from the previous apts.opts object, because
               // the file may have changed due to user activity.
-              workspace::check_ws_format();
-              workspace::get_ws_options(app.opts);
+              workspace::check_format();
+              workspace::get_options(app.opts);
             }
 
           opts = options::opts::globals() | cmd->opts();
@@ -432,7 +436,7 @@ CMD_AUTOMATE(stdio, "",
           ar.reset();
           continue;
         }
-      catch (informative_failure & f)
+      catch (recoverable_failure & f)
         {
           os.set_err(1);
           os<<f.what();
@@ -443,10 +447,11 @@ CMD_AUTOMATE(stdio, "",
 
       try
         {
-          automate const * acmd = reinterpret_cast< automate const * >(cmd);
+          automate const * acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd);
           acmd->exec_from_automate(app, id, args, os);
         }
-      catch (informative_failure & f)
+      catch(recoverable_failure & f)
         {
           os.set_err(2);
           os<<f.what();
@@ -464,25 +469,26 @@ LUAEXT(mtn_automate, )
 
   try
     {
-      app_state* app_p = get_app_state(L);
+      app_state* app_p = get_app_state(LS);
       I(app_p != NULL);
-      I(app_p->lua.check_lua_state(L));
-      E(app_p->mtn_automate_allowed,
+      I(app_p->lua.check_lua_state(LS));
+      E(app_p->mtn_automate_allowed, origin::user,
           F("It is illegal to call the mtn_automate() lua extension,\n"
             "unless from a command function defined by register_command()."));
 
       // don't allow recursive calls
       app_p->mtn_automate_allowed = false;
 
-      int n = lua_gettop(L);
+      int n = lua_gettop(LS);
 
-      E(n > 0, F("Bad input to mtn_automate() lua extension: command name is missing"));
+      E(n > 0, origin::user,
+        F("Bad input to mtn_automate() lua extension: command name is missing"));
 
       L(FL("Starting call to mtn_automate lua hook"));
 
       for (int i=1; i<=n; i++)
         {
-          arg_type next_arg(luaL_checkstring(L, i));
+          arg_type next_arg(luaL_checkstring(LS, i), origin::user);
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
@@ -501,20 +507,21 @@ LUAEXT(mtn_automate, )
       commands::command_id id;
       for (args_vector::const_iterator iter = args.begin();
            iter != args.end(); iter++)
-        id.push_back(utf8((*iter)()));
+        id.push_back(*iter);
 
-      E(!id.empty(), F("no command found"));
+      E(!id.empty(), origin::user, F("no command found"));
 
       set< commands::command_id > matches =
         CMD_REF(automate)->complete_command(id);
 
       if (matches.empty())
         {
-          N(false, F("no completions for this command"));
+          E(false, origin::user, F("no completions for this command"));
         }
       else if (matches.size() > 1)
         {
-          N(false, F("multiple completions possible for this command"));
+          E(false, origin::user,
+            F("multiple completions possible for this command"));
         }
 
       id = *matches.begin();
@@ -532,20 +539,22 @@ LUAEXT(mtn_automate, )
           // Re-read the ws options file, rather than just copying
           // the options from the previous apts.opts object, because
           // the file may have changed due to user activity.
-          workspace::check_ws_format();
-          workspace::get_ws_options(app_p->opts);
+          workspace::check_format();
+          workspace::get_options(app_p->opts);
         }
 
       opts.instantiate(&app_p->opts).from_command_line(args, false);
       args_vector & parsed_args = app_p->opts.args;
 
-      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      commands::automate const * acmd
+        = dynamic_cast< commands::automate const * >(cmd);
+      I(acmd);
       acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;
     }
-  catch(informative_failure & f)
+  catch(recoverable_failure & f)
     {
       // informative failures are passed back to the caller
       result = false;
@@ -560,14 +569,14 @@ LUAEXT(mtn_automate, )
       // invariant failures are permanent
       result = false;
       ui.fatal(e.what());
-      lua_pushstring(L, e.what());
-      lua_error(L);
+      lua_pushstring(LS, e.what());
+      lua_error(LS);
     }
 
   os.flush();
 
-  lua_pushboolean(L, result);
-  lua_pushstring(L, output.str().c_str());
+  lua_pushboolean(LS, result);
+  lua_pushstring(LS, output.str().c_str());
   return 2;
 }
 

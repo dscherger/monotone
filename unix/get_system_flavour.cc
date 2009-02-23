@@ -1,7 +1,11 @@
-// copyright (C) 2004 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2004 graydon hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <sys/utsname.h>
@@ -13,7 +17,7 @@ void get_system_flavour(std::string & ident)
   struct utsname n;
   /* Solaris has >= 0 as success, while
      Linux only knows 0 - as >0 is not an
-     error condition there, relax a bit */ 
+     error condition there, relax a bit */
   I(uname(&n) >= 0);
   ident = (FL("%s %s %s %s")
            % n.sysname

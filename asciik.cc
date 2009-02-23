@@ -1,6 +1,6 @@
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 Lapo Luchini <lapo@lapo.it>
-// Copyright (C) 2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
+//               2007 Lapo Luchini <lapo@lapo.it>
+//               2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -375,7 +375,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     "",
     options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   set<revision_id> revs;
@@ -395,6 +395,15 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
       set<revision_id> parents;
       db.get_revision_parents(*rev, parents);
       parents.erase(ghost); // remove the fake parent that root nodes have
-      graph.print(*rev, parents, encode_hexenc(rev->inner()()));
+      graph.print(*rev, parents, encode_hexenc(rev->inner()(),
+                                               rev->inner().made_from));
     }
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

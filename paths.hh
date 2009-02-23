@@ -1,8 +1,5 @@
-#ifndef __PATHS_HH__
-#define __PATHS_HH__
-
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __PATHS_HH__
+#define __PATHS_HH__
 
 // safe, portable, fast, simple path handling -- in that order.
 // but they all count.
@@ -102,6 +102,9 @@
 //       it were a string
 
 #include <boost/shared_ptr.hpp>
+#include <boost/concept_check.hpp>
+#include "origin_type.hh"
+#include <map>
 
 class any_path;
 class file_path;
@@ -114,12 +117,12 @@ class utf8;
 // for the basename of the root directory.  It resembles, but is not, a
 // vocab type.
 
-class path_component
+class path_component : public origin_aware
 {
 public:
   path_component() : data() {}
   explicit path_component(utf8 const &);
-  explicit path_component(std::string const &);
+  path_component(std::string const &, origin::type);
   explicit path_component(char const *);
 
   std::string const & operator()() const { return data; }
@@ -153,7 +156,7 @@ template <> void dump(path_component const &, std::string &);
 // It's possible this will become a proper virtual interface in the future,
 // but since the implementation is exactly the same in all cases, there isn't
 // much point ATM...
-class any_path
+class any_path : public origin_aware
 {
 public:
   // converts to native charset and path syntax
@@ -173,13 +176,14 @@ public:
   any_path dirname() const;
 
   any_path(any_path const & other)
-    : data(other.data) {}
+    : origin_aware(other.made_from), data(other.data) {}
   any_path & operator=(any_path const & other)
-  { data = other.data; return *this; }
+  { made_from = other.made_from; data = other.data; return *this; }
 
 protected:
   std::string data;
   any_path() {}
+  any_path(origin::type whence) : origin_aware(whence) {}
 
 private:
   any_path(std::string const & path,
@@ -312,7 +316,8 @@ public:
   // path _should_ contain the leading _MTN/
   // and _should_ look like an internal path
   // usually you should just use the / operator as a constructor!
-  bookkeeping_path(std::string const &);
+  explicit bookkeeping_path(char const * const path);
+  bookkeeping_path(std::string const &, origin::type made_from);
   bookkeeping_path operator /(char const *) const;
   bookkeeping_path operator /(path_component const &) const;
 
@@ -366,8 +371,9 @@ public:
   // this path can contain anything, and it will be absolutified and
   // tilde-expanded.  it will considered to be relative to the directory
   // monotone started in.  it should be in utf8.
-  system_path(std::string const & path);
-  system_path(utf8 const & path);
+  explicit system_path(char const * const path);
+  system_path(std::string const & path, origin::type from);
+  explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
   { return data== other.data; }
@@ -392,6 +398,30 @@ template <> void dump(file_path const & sp, std::string & out);
 template <> void dump(bookkeeping_path const & sp, std::string & out);
 template <> void dump(system_path const & sp, std::string & out);
 
+// Base class for predicate functors on paths.  T must be one of the path
+// classes.
+template <class T>
+struct path_predicate
+{
+  BOOST_CLASS_REQUIRE2(T, any_path, boost, ConvertibleConcept);
+  virtual bool operator()(T const &) const = 0;
+protected:
+  path_predicate() {}
+  virtual ~path_predicate() {}
+};
+
+// paths.cc provides always-true and always-false predicates.
+template <class T>
+struct path_always_true : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+template <class T>
+struct path_always_false : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+
 // Return a file_path, bookkeeping_path, or system_path, as appropriate.
 // 'path' is an external path. If to_workspace_root, path is relative to
 // workspace root, or absolute. Otherwise, it is relative to the current
@@ -414,6 +444,12 @@ go_to_workspace(system_path const & new_workspace);
 
 void mark_std_paths_used(void);
 
+file_path
+find_new_path_for(std::map<file_path, file_path> const & renames,
+                  file_path const & old_path);
+
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -421,5 +457,3 @@ void mark_std_paths_used(void);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

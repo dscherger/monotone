@@ -21,9 +21,13 @@
 using std::string;
 
 static NORETURN(void pcre_compile_error(int errcode, char const * err,
-                                        int erroff, char const * pattern));
-static NORETURN(void pcre_study_error(char const * err, char const * pattern));
-static NORETURN(void pcre_match_error(int errcode));
+                                        int erroff, char const * pattern,
+                                        origin::type caused_by));
+static NORETURN(void pcre_study_error(char const * err, char const * pattern,
+                                      origin::type caused_by));
+static NORETURN(void pcre_match_error(int errcode,
+                                      origin::type regex_from,
+                                      origin::type subject_from));
 
 inline unsigned int
 flags_to_internal(pcre::flags f)
@@ -71,11 +75,11 @@ namespace pcre
     basedat = pcre_compile2(pattern, flags_to_internal(options),
                             &errcode, &err, &erroff, 0);
     if (!basedat)
-      pcre_compile_error(errcode, err, erroff, pattern);
+      pcre_compile_error(errcode, err, erroff, pattern, made_from);
 
     pcre_extra *ed = pcre_study(basedat, 0, &err);
     if (err)
-      pcre_study_error(err, pattern);
+      pcre_study_error(err, pattern, made_from);
     if (!ed)
       {
         // I resent that C++ requires this cast.
@@ -93,12 +97,14 @@ namespace pcre
     extradat = ed;
   }
 
-  regex::regex(char const * pattern, flags options)
+  regex::regex(char const * pattern, origin::type whence, flags options)
+    : made_from(whence)
   {
     this->init(pattern, options);
   }
 
-  regex::regex(string const & pattern, flags options)
+  regex::regex(string const & pattern, origin::type whence, flags options)
+    : made_from(whence)
   {
     this->init(pattern.c_str(), options);
   }
@@ -112,7 +118,8 @@ namespace pcre
   }
 
   bool
-  regex::match(string const & subject, flags options) const
+  regex::match(string const & subject, origin::type subject_origin,
+               flags options) const
   {
     int rc = pcre_exec(basedat, extradat,
                        subject.data(), subject.size(),
@@ -122,7 +129,7 @@ namespace pcre
     else if (rc == PCRE_ERROR_NOMATCH)
       return false;
     else
-      pcre_match_error(rc);
+      pcre_match_error(rc, made_from, subject_origin);
   }
 } // namespace pcre
 
@@ -130,7 +137,8 @@ namespace pcre
 // bugs in monotone and user errors in regexp writing.
 static void
 pcre_compile_error(int errcode, char const * err,
-                   int erroff, char const * pattern)
+                   int erroff, char const * pattern,
+                   origin::type caused_by)
 {
   // One of the more entertaining things about the PCRE API is that
   // while the numeric error codes are documented, they do not get
@@ -160,17 +168,18 @@ pcre_compile_error(int errcode, char const * err,
       // character offset 0 in the pattern, so in practice we give the
       // position-ful variant for all errors, but I'm leaving the == -1 check
       // here in case PCRE gets fixed.
-      throw informative_failure((erroff == -1
-                                 ? (F("error in regex \"%s\": %s")
-                                    % pattern % err)
-                                 : (F("error near char %d of regex \"%s\": %s")
-                                    % (erroff + 1) % pattern % err)
-                                 ).str().c_str());
+      E(false, caused_by, (erroff == -1
+                           ? (F("error in regex \"%s\": %s")
+                              % pattern % err)
+                           : (F("error near char %d of regex \"%s\": %s")
+                              % (erroff + 1) % pattern % err)
+                           ));
     }
 }
 
 static void
-pcre_study_error(char const * err, char const * pattern)
+pcre_study_error(char const * err, char const * pattern,
+                 origin::type caused_by)
 {
   // This interface doesn't even *have* error codes.
   // If the error is not out-of-memory, it's a bug.
@@ -182,7 +191,7 @@ pcre_study_error(char const * err, char const * pattern)
 }
 
 static void
-pcre_match_error(int errcode)
+pcre_match_error(int errcode, origin::type regex_from, origin::type subject_from)
 {
   // This interface provides error codes with symbolic constants for them!
   // But it doesn't provide string versions of them.  As most of them
@@ -194,17 +203,17 @@ pcre_match_error(int errcode)
       throw std::bad_alloc();
 
     case PCRE_ERROR_MATCHLIMIT:
-      throw informative_failure
-        (_("backtrack limit exceeded in regular expression matching"));
+      E(false, subject_from,
+        F("backtrack limit exceeded in regular expression matching"));
 
     case PCRE_ERROR_RECURSIONLIMIT:
-      throw informative_failure
-        (_("recursion limit exceeded in regular expression matching"));
+      E(false, subject_from,
+        F("recursion limit exceeded in regular expression matching"));
 
     case PCRE_ERROR_BADUTF8:
     case PCRE_ERROR_BADUTF8_OFFSET:
-      throw informative_failure
-        (_("invalid UTF-8 sequence found during regular expression matching"));
+      E(false, subject_from,
+        F("invalid UTF-8 sequence found during regular expression matching"));
 
     default:
       throw oops((F("pcre_match returned %d") % errcode)

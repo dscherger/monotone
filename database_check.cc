@@ -139,7 +139,7 @@ static void
 check_db_integrity_check(database & db)
 {
     L(FL("asking sqlite to check db integrity"));
-    E(db.check_integrity(),
+    E(db.check_integrity(), origin::database,
       F("file structure is corrupted; cannot check further"));
 }
 
@@ -179,9 +179,9 @@ check_rosters_manifest(database & db,
 
   db.get_roster_ids(rosters);
   L(FL("checking %d rosters, manifest pass") % rosters.size());
-  
+
   ticker ticks(_("rosters"), "r", rosters.size()/70+1);
-  
+
   for (set<revision_id>::const_iterator i = rosters.begin();
        i != rosters.end(); ++i)
     {
@@ -503,7 +503,7 @@ check_heights(database & db,
     revision_id null_id;
     heights.insert(null_id);
   }
-  
+
   L(FL("checking %d heights") % heights.size());
 
   set<rev_height> seen;
@@ -514,7 +514,7 @@ check_heights(database & db,
        i != heights.end(); ++i)
     {
       L(FL("checking height for %s") % *i);
-      
+
       rev_height h;
       try
         {
@@ -573,7 +573,7 @@ check_heights_relation(database & db,
         L(FL("checking heights for edges %s -> %s")
           % p_id
           % c_id);
-      
+
       rev_height parent, child;
       db.get_rev_height(p_id, parent);
       db.get_rev_height(c_id, child);
@@ -1055,7 +1055,11 @@ check_db(database & db)
     % checked_heights.size());
   P(F("total problems detected: %d (%d serious)") % total % serious);
   if (serious)
-    E(false, F("serious problems detected"));
+    {
+      // should be origin::database, but that gives the "almost certainly a bug"
+      // message, which we don't want.
+      E(false, origin::no_fault, F("serious problems detected"));
+    }
   else if (total)
     P(F("minor problems detected"));
   else

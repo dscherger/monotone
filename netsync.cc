@@ -1,5 +1,5 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -22,6 +22,9 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
+
+#include <botan/botan.h>
+#include <botan/rng.h>
 
 #include "lua_hooks.hh"
 #include "key_store.hh"
@@ -48,8 +51,7 @@
 #include "globish.hh"
 #include "uri.hh"
 #include "options.hh"
-
-#include "botan/botan.h"
+#include "vocab_cast.hh"
 
 #include "netxx/address.h"
 #include "netxx/peer.h"
@@ -264,10 +266,10 @@ struct server_initiated_sync_request
 deque<server_initiated_sync_request> server_initiated_sync_requests;
 LUAEXT(server_request_sync, )
 {
-  char const * w = luaL_checkstring(L, 1);
-  char const * a = luaL_checkstring(L, 2);
-  char const * i = luaL_checkstring(L, 3);
-  char const * e = luaL_checkstring(L, 4);
+  char const * w = luaL_checkstring(LS, 1);
+  char const * a = luaL_checkstring(LS, 2);
+  char const * i = luaL_checkstring(LS, 3);
+  char const * e = luaL_checkstring(LS, 4);
   server_initiated_sync_request request;
   request.what = string(w);
   request.address = string(a);
@@ -293,8 +295,8 @@ read_pubkey(string const & in,
   size_t pos = 0;
   extract_variable_length_string(in, tmp_id, pos, "pubkey id");
   extract_variable_length_string(in, tmp_key, pos, "pubkey value");
-  id = rsa_keypair_id(tmp_id);
-  pub = rsa_pub_key(tmp_key);
+  id = rsa_keypair_id(tmp_id, origin::network);
+  pub = rsa_pub_key(tmp_key, origin::network);
 }
 
 static void
@@ -365,16 +367,16 @@ protected:
   string_queue inbuf;
 private:
   deque< pair<string, size_t> > outbuf;
-  size_t outbuf_size; // so we can avoid queueing up too much stuff
+  size_t outbuf_bytes; // so we can avoid queueing up too much stuff
 protected:
   void queue_output(string const & s)
   {
     outbuf.push_back(make_pair(s, 0));
-    outbuf_size += s.size();
+    outbuf_bytes += s.size();
   }
   bool output_overfull() const
   {
-    return outbuf.size() > constants::bufsz * 10;
+    return outbuf_bytes > constants::bufsz * 10;
   }
 public:
   string peer_id;
@@ -384,7 +386,7 @@ private:
   time_t last_io_time;
 public:
 
-  enum 
+  enum
     {
       working_state,
       shutdown_state,
@@ -396,7 +398,7 @@ public:
 
   session_base(string const & peer_id,
                shared_ptr<Netxx::StreamBase> str) :
-    outbuf_size(0),
+    outbuf_bytes(0),
     peer_id(peer_id), str(str),
     last_io_time(::time(NULL)),
     protocol_state(working_state),
@@ -527,7 +529,7 @@ session_base::write_some()
     {
       if ((size_t)count == writelen)
         {
-          outbuf_size -= outbuf.front().first.size();
+          outbuf_bytes -= outbuf.front().first.size();
           outbuf.pop_front();
         }
       else
@@ -1079,9 +1081,16 @@ session::mk_nonce()
 {
   I(this->saved_nonce().empty());
   char buf[constants::merkle_hash_length_in_bytes];
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                             constants::merkle_hash_length_in_bytes);
-  this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes));
+                           constants::merkle_hash_length_in_bytes);
+#else
+  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
+                               constants::merkle_hash_length_in_bytes);
+#endif
+  this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes),
+                         origin::internal);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
   return this->saved_nonce;
 }
@@ -1089,7 +1098,7 @@ session::mk_nonce()
 void
 session::set_session_key(string const & key)
 {
-  session_key = netsync_session_key(key);
+  session_key = netsync_session_key(key, origin::internal);
   read_hmac.set_key(session_key);
   write_hmac.set_key(session_key);
 }
@@ -1239,7 +1248,8 @@ decrement_if_nonzero(netcmd_item_type ty,
     {
       string typestr;
       netcmd_item_type_to_string(ty, typestr);
-      E(false, F("underflow on count of %s items to receive") % typestr);
+      E(false, origin::network,
+        F("underflow on count of %s items to receive") % typestr);
     }
   --n;
   if (n == 0)
@@ -1579,10 +1589,16 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
     {
       id their_key_hash;
       key_hash_code(their_keyname, their_key, their_key_hash);
-      var_value printable_key_hash(encode_hexenc(their_key_hash()));
+      var_value printable_key_hash;
+      {
+        hexenc<id> encoded_key_hash;
+        encode_hexenc(their_key_hash, encoded_key_hash);
+        printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
+      }
       L(FL("server key has name %s, hash %s")
         % their_keyname % printable_key_hash);
-      var_key their_key_key(known_servers_domain, var_name(peer_id));
+      var_key their_key_key(known_servers_domain,
+                            var_name(peer_id, origin::internal));
       if (project.db.var_exists(their_key_key))
         {
           var_value expected_key_hash;
@@ -1599,8 +1615,8 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
                   "'%s unset %s %s' overrides this check")
                 % printable_key_hash
                 % expected_key_hash
-                % ui.prog_name % their_key_key.first % their_key_key.second);
-              E(false, F("server key changed"));
+                % prog_name % their_key_key.first % their_key_key.second);
+              E(false, origin::network, F("server key changed"));
             }
         }
       else
@@ -1619,13 +1635,14 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
           project.db.get_key(their_keyname, tmp);
 
           E(keys_match(their_keyname, tmp, their_keyname, their_key),
+            origin::network,
             F("the server sent a key with the key id '%s'\n"
               "which is already in use in your database. you may want to execute\n"
               "  %s dropkey %s\n"
               "on your local database before you run this command again,\n"
               "assuming that key currently present in your database does NOT have\n"
               "a private counterpart (or in other words, is one of YOUR keys)")
-            % their_keyname % ui.prog_name % their_keyname);
+            % their_keyname % prog_name % their_keyname);
         }
       else
         {
@@ -2273,7 +2290,7 @@ session::process_data_cmd(netcmd_item_type type,
           {
             throw bad_decode(F("hash check failed for public key '%s' (%s);"
                                " wanted '%s' got '%s'")
-                               % hitem() % keyid % hitem()
+                             % hitem() % keyid % hitem()
                                % tmp);
           }
         if (project.db.put_key(keyid, pub))
@@ -2301,7 +2318,7 @@ session::process_data_cmd(netcmd_item_type type,
       {
         L(FL("received revision '%s'") % hitem());
         revision_t rev;
-        read_revision(data(dat, made_from_network), rev);
+        read_revision(data(dat, origin::network), rev);
         if (project.db.put_revision(revision_id(item), rev))
           written_revisions.push_back(revision_id(item));
       }
@@ -2311,7 +2328,7 @@ session::process_data_cmd(netcmd_item_type type,
       {
         L(FL("received file '%s'") % hitem());
         project.db.put_file(file_id(item),
-                            file_data(dat, made_from_network));
+                            file_data(dat, origin::network));
       }
       break;
     }
@@ -2358,7 +2375,8 @@ session::process_usher_cmd(utf8 const & msg)
         L(FL("Received greeting from usher: %s") % msg().substr(1));
     }
   netcmd cmdout;
-  cmdout.write_usher_reply_cmd(utf8(peer_id), our_include_pattern);
+  cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
+                               our_include_pattern);
   write_netcmd_and_try_flush(cmdout);
   L(FL("Sent reply."));
   return true;
@@ -2570,11 +2588,19 @@ session::begin_service()
 void
 session::maybe_step()
 {
+  date_t start_time = date_t::now();
+
   while (done_all_refinements()
          && !rev_enumerator.done()
          && !output_overfull())
     {
       rev_enumerator.step();
+
+      // Safety check, don't spin too long without
+      // returning to the event loop.
+      s64 elapsed_millisec = date_t::now() - start_time;
+      if (elapsed_millisec > 1000 * 10)
+        break;
     }
 }
 
@@ -2999,7 +3025,8 @@ listener::do_io(Netxx::Probe::ready_type event)
 
       shared_ptr<session> sess(new session(opts, lua, project, keys,
                                            role, server_voice,
-                                           globish("*"), globish(""),
+                                           globish("*", origin::internal),
+                                           globish("", origin::internal),
                                            lexical_cast<string>(client), str));
       sess->begin_service();
       I(guard);
@@ -3093,17 +3120,17 @@ call_server(options & opts,
           // client voice when we have a decode exception, or received an
           // error from our server (which is translated to a decode
           // exception). We call these cases E() errors.
-          E(false, F("processing failure while talking to "
-                     "peer %s, disconnecting")
+          E(false, origin::network,
+            F("processing failure while talking to peer %s, disconnecting")
             % sess->peer_id);
           return;
         }
 
       bool io_ok = react.do_io();
 
-      E(io_ok, (F("timed out waiting for I/O with "
-                  "peer %s, disconnecting")
-                % sess->peer_id));
+      E(io_ok, origin::network,
+        F("timed out waiting for I/O with peer %s, disconnecting")
+        % sess->peer_id);
 
       if (react.size() == 0)
         {
@@ -3127,9 +3154,9 @@ call_server(options & opts,
               return;
             }
           else
-            E(false, (F("I/O failure while talking to "
-                        "peer %s, disconnecting")
-                      % sess->peer_id));
+            E(false, origin::network,
+              (F("I/O failure while talking to peer %s, disconnecting")
+               % sess->peer_id));
         }
     }
 }
@@ -3142,11 +3169,12 @@ session_from_server_sync_item(options & opts,
                               server_initiated_sync_request const & request)
 {
   netsync_connection_info info;
-  info.client.unparsed = utf8(request.address);
-  info.client.include_pattern = globish(request.include);
-  info.client.exclude_pattern = globish(request.exclude);
+  info.client.unparsed = utf8(request.address, origin::user);
+  info.client.include_pattern = globish(request.include, origin::user);
+  info.client.exclude_pattern = globish(request.exclude, origin::user);
   info.client.use_argv = false;
-  parse_uri(info.client.unparsed(), info.client.u);
+  parse_uri(info.client.unparsed(), info.client.u,
+            origin::user /* from lua hook */);
 
   try
     {
@@ -3345,7 +3373,8 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
     map<branch_name, epoch_data> epochs;
     project.db.get_epochs(epochs);
 
-    epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'));
+    epoch_data epoch_zero(string(constants::epochlen_bytes, '\x00'),
+                          origin::internal);
     for (set<branch_name>::const_iterator i = branchnames.begin();
          i != branchnames.end(); ++i)
       {
@@ -3475,7 +3504,8 @@ run_netsync_protocol(options & opts, lua_hooks & lua,
               shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
               shared_ptr<session> sess(new session(opts, lua, project, keys,
                                                    role, server_voice,
-                                                   globish("*"), globish(""),
+                                                   globish("*", origin::internal),
+                                                   globish("", origin::internal),
                                                    "stdio", str));
               serve_single_connection(project, sess);
             }
@@ -3492,7 +3522,8 @@ run_netsync_protocol(options & opts, lua_hooks & lua,
     }
   catch (Netxx::NetworkException & e)
     {
-      throw informative_failure((F("network error: %s") % e.what()).str());
+      throw recoverable_failure(origin::network,
+                                (F("network error: %s") % e.what()).str());
     }
   catch (Netxx::Exception & e)
     {

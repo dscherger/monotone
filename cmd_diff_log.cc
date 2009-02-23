@@ -17,7 +17,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
-#include "diff_patch.hh"
+#include "diff_output.hh"
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"
@@ -222,8 +222,10 @@ do_external_diff(options & opts, lua_hooks & lua, database & db,
                              is_binary,
                              opts.external_diff_args_given,
                              opts.external_diff_args,
-                             encode_hexenc(delta_entry_src(i).inner()()),
-                             encode_hexenc(delta_entry_dst(i).inner()()));
+                             encode_hexenc(delta_entry_src(i).inner()(),
+                                           delta_entry_src(i).inner().made_from),
+                             encode_hexenc(delta_entry_dst(i).inner()(),
+                                           delta_entry_dst(i).inner().made_from));
     }
 }
 
@@ -362,7 +364,7 @@ prepare_diff(app_state & app,
   // initialize before transaction so we have a database to work with.
   project_t project(db);
 
-  N(app.opts.revision_selectors.size() <= 2,
+  E(app.opts.revision_selectors.size() <= 2, origin::user,
     F("more than two revisions given"));
 
   if (app.opts.revision_selectors.empty())
@@ -375,7 +377,7 @@ prepare_diff(app_state & app,
       work.get_parent_rosters(db, parents);
 
       // With no arguments, which parent should we diff against?
-      N(parents.size() == 1,
+      E(parents.size() == 1, origin::user,
         F("this workspace has more than one parent\n"
           "(specify a revision to diff against with --revision)"));
 
@@ -383,16 +385,16 @@ prepare_diff(app_state & app,
       old_roster = parent_roster(parents.begin());
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -410,16 +412,16 @@ prepare_diff(app_state & app,
       db.get_roster(r_old_id, old_roster);
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -463,10 +465,10 @@ prepare_diff(app_state & app,
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
                             old_roster, new_roster);
-      
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
       make_cset(restricted_roster, new_roster, excluded);
 
@@ -519,7 +521,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
     | options::opts::diff_options)
 {
   if (app.opts.external_diff_args_given)
-    N(app.opts.diff_format == external_diff,
+    E(app.opts.diff_format == external_diff, origin::user,
       F("--diff-args requires --external\n"
         "try adding --external or removing --diff-args?"));
 
@@ -657,7 +659,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   long last = app.opts.last;
   long next = app.opts.next;
 
-  N(last == -1 || next == -1,
+  E(last == -1 || next == -1, origin::user,
     F("only one of --last/--next allowed"));
 
   frontier_t frontier(rev_cmp(!(next>0)));
@@ -712,9 +714,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           work.get_parent_rosters(db, parents);
           work.get_current_roster_shape(db, nis, new_roster);
 
-          mask = node_restriction(work, args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
-                                  app.opts.depth, parents, new_roster);
+          mask = node_restriction(args_to_paths(args),
+                                  args_to_paths(app.opts.exclude_patterns),
+                                  app.opts.depth, parents, new_roster,
+                                  ignored_file(work));
         }
       else
         {
@@ -724,7 +727,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           db.get_roster(first_rid, roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster);
         }
     }
@@ -956,7 +959,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
             last--;
 
           string out_system;
-          utf8_to_system_best_effort(utf8(out.str()), out_system);
+          utf8_to_system_best_effort(utf8(out.str(), origin::internal), out_system);
           if (app.opts.no_graph)
             cout << out_system;
           else

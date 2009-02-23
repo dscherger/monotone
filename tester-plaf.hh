@@ -1,6 +1,3 @@
-#ifndef __TESTER_PLAF_HH__
-#define __TESTER_PLAF_HH__
-
 // Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __TESTER_PLAF_HH__
+#define __TESTER_PLAF_HH__
 
 // this describes functions to be found, alternatively, in win32/* or unix/*
 // directories and used only by the tester.
@@ -90,6 +90,9 @@ void prepare_for_parallel_testcases(int, int, int);
 // These functions are actually in tester.cc but are used by tester-plaf.cc.
 void do_remove_recursive(std::string const & dir);
 
+#endif
+
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -97,6 +100,3 @@ void do_remove_recursive(std::string const & dir);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif
-

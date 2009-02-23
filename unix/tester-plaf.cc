@@ -1,3 +1,13 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2007 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 // Tester-specific platform interface glue, Unix version.
 
 #include "base.hh"
@@ -24,7 +34,7 @@ void make_accessible(string const & name)
   if (stat(name.c_str(), &st) != 0)
     {
       const int err = errno;
-      E(false, F("stat(%s) failed: %s") % name % os_strerror(err));
+      E(false, origin::system, F("stat(%s) failed: %s") % name % os_strerror(err));
     }
 
   mode_t new_mode = st.st_mode;
@@ -35,7 +45,7 @@ void make_accessible(string const & name)
   if (chmod(name.c_str(), new_mode) != 0)
     {
       const int err = errno;
-      E(false, F("chmod(%s) failed: %s") % name % os_strerror(err));
+      E(false, origin::system, F("chmod(%s) failed: %s") % name % os_strerror(err));
     }
 }
 
@@ -45,7 +55,7 @@ time_t get_last_write_time(char const * name)
   if (stat(name, &st) != 0)
     {
       const int err = errno;
-      E(false, F("stat(%s) failed: %s") % name % os_strerror(err));
+      E(false, origin::system, F("stat(%s) failed: %s") % name % os_strerror(err));
     }
 
   return st.st_mtime;
@@ -57,7 +67,7 @@ void do_copy_file(string const & from, string const & to)
   int ifd, ofd;
   ifd = open(from.c_str(), O_RDONLY);
   const int err = errno;
-  E(ifd >= 0, F("open %s: %s") % from % os_strerror(err));
+  E(ifd >= 0, origin::system, F("open %s: %s") % from % os_strerror(err));
   struct stat st;
   st.st_mode = 0666;  // sane default if fstat fails
   fstat(ifd, &st);
@@ -66,7 +76,7 @@ void do_copy_file(string const & from, string const & to)
     {
       const int err = errno;
       close(ifd);
-      E(false, F("open %s: %s") % to % os_strerror(err));
+      E(false, origin::system, F("open %s: %s") % to % os_strerror(err));
     }
 
   ssize_t nread, nwrite;
@@ -103,21 +113,22 @@ void do_copy_file(string const & from, string const & to)
     int err = errno;
     close(ifd);
     close(ofd);
-    E(false, F("read error copying %s to %s: %s")
+    E(false, origin::system, F("read error copying %s to %s: %s")
       % from % to % os_strerror(err));
   }
  write_error:  {
     int err = errno;
     close(ifd);
     close(ofd);
-    E(false, F("write error copying %s to %s: %s")
+    E(false, origin::system, F("write error copying %s to %s: %s")
       % from % to % os_strerror(err));
   }
  spinning:
   {
     close(ifd);
     close(ofd);
-    E(false, F("abandoning copy of %s to %s after four zero-length writes")
+    E(false, origin::system,
+      F("abandoning copy of %s to %s after four zero-length writes")
       % from % to);
   }
 }
@@ -202,7 +213,8 @@ char * make_temp_dir()
     {
       strcpy(tmpdir, templ);
       result = mktemp(tmpdir);
-      E(result, F("mktemp(%s) failed: %s") % tmpdir % os_strerror(errno));
+      E(result, origin::system,
+        F("mktemp(%s) failed: %s") % tmpdir % os_strerror(errno));
       I(result == tmpdir);
 
       if (mkdir(tmpdir, 0700) == 0)
@@ -211,12 +223,12 @@ char * make_temp_dir()
           delete [] tmpdir;
           return templ;
         }
-        
-      E(errno == EEXIST,
+
+      E(errno == EEXIST, origin::system,
         F("mkdir(%s) failed: %s") % tmpdir % os_strerror(errno));
 
       cycles++;
-      E(cycles < limit,
+      E(cycles < limit, origin::system,
         F("%d temporary names are all in use") % limit);
     }
 
@@ -379,7 +391,7 @@ void prepare_for_parallel_testcases(int jobs, int jread, int jwrite)
   if (jread == -1 && jwrite == -1)
     {
       int jp[2];
-      E(pipe(jp) == 0,
+      E(pipe(jp) == 0, origin::system,
         F("creating jobs pipe: %s") % os_strerror(errno));
       jread = jp[0];
       jwrite = jp[1];
@@ -446,9 +458,9 @@ void run_tests_in_children(test_enumerator const & next_test,
   sa.sa_handler = sigchld;
   sa.sa_flags = SA_NOCLDSTOP; // deliberate non-use of SA_RESTART
 
-  E(sigaction(SIGCHLD, &sa, &osa) == 0,
+  E(sigaction(SIGCHLD, &sa, &osa) == 0, origin::system,
     F("setting SIGCHLD handler: %s") % os_strerror(errno));
-  
+
   while (next_test(t))
     {
       do
@@ -468,7 +480,8 @@ void run_tests_in_children(test_enumerator const & next_test,
                     break;
                   if (errno == EINTR)
                     continue;
-                  E(false, F("waitpid failed: %s") % os_strerror(errno));
+                  E(false, origin::system,
+                    F("waitpid failed: %s") % os_strerror(errno));
                 }
 
               map<pid_t, test_to_run>::iterator tfin = children.find(pid);
@@ -481,7 +494,7 @@ void run_tests_in_children(test_enumerator const & next_test,
         }
       while (acquire_token());
 
-      
+
       // This must be done before we try to redirect stdout/err to a file
       // within testdir.  If we did it in the child, we would have to do it
       // before it was safe to issue diagnostics.
@@ -527,7 +540,8 @@ void run_tests_in_children(test_enumerator const & next_test,
             break;
           if (errno == EINTR)
             continue;
-          E(false, F("waitpid failed: %s") % os_strerror(errno));
+          E(false, origin::system,
+            F("waitpid failed: %s") % os_strerror(errno));
         }
 
       map<pid_t, test_to_run>::iterator tfin = children.find(pid);

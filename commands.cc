@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-// Copyright (C) 2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
+//               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -9,101 +9,17 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <map>
-#include <algorithm>
-#include <iostream>
-
-#include "transforms.hh"
-#include "simplestring_xform.hh"
-#include "file_io.hh"
-#include "charset.hh"
-#include "diff_patch.hh"
-#include "inodeprint.hh"
-#include "cert.hh"
-#include "ui.hh"
 #include "cmd.hh"
-#include "constants.hh"
-#include "app_state.hh"
-#include "project.hh"
-#include "work.hh"
+#include "simplestring_xform.hh"
 
-#ifndef _WIN32
-#include "lexical_cast.hh"
-#include <signal.h>
-#endif
-
-using std::cin;
-using std::make_pair;
 using std::map;
-using std::ostream;
-using std::pair;
 using std::set;
 using std::string;
-using std::strlen;
 using std::vector;
 
-CMD_GROUP(__root__, "__root__", "", NULL, "", "");
-
-//
-// Definition of top-level commands, used to classify the real commands
-// in logical groups.
-//
-// These top level commands, while part of the final identifiers and defined
-// as regular command groups, are handled separately.  The user should not
-// see them except through the help command.
-//
-// XXX This is to easily maintain compatibilty with older versions.  But
-// maybe this should be revised, because exposing the top level category
-// (being optional, of course), may not be a bad idea.
-//
-CMD_GROUP_NO_COMPLETE(automation, "automation", "", CMD_REF(__root__),
-                      N_("Commands that aid in scripted execution"),
-                      "");
-CMD_GROUP(database, "database", "", CMD_REF(__root__),
-          N_("Commands that manipulate the database"),
-          "");
-CMD_GROUP(debug, "debug", "", CMD_REF(__root__),
-          N_("Commands that aid in program debugging"),
-          "");
-CMD_GROUP(informative, "informative", "", CMD_REF(__root__),
-          N_("Commands for information retrieval"),
-          "");
-CMD_GROUP(key_and_cert, "key_and_cert", "", CMD_REF(__root__),
-          N_("Commands to manage keys and certificates"),
-          "");
-CMD_GROUP(network, "network", "", CMD_REF(__root__),
-          N_("Commands that access the network"),
-          "");
-CMD_GROUP(packet_io, "packet_io", "", CMD_REF(__root__),
-          N_("Commands for packet reading and writing"),
-          "");
-CMD_GROUP(rcs, "rcs", "", CMD_REF(__root__),
-          N_("Commands for interaction with RCS and CVS"),
-          "");
-CMD_GROUP(review, "review", "", CMD_REF(__root__),
-          N_("Commands to review revisions"),
-          "");
-CMD_GROUP(tree, "tree", "", CMD_REF(__root__),
-          N_("Commands to manipulate the tree"),
-          "");
-CMD_GROUP(variables, "variables", "", CMD_REF(__root__),
-          N_("Commands to manage persistent variables"),
-          "");
-CMD_GROUP(workspace, "workspace", "", CMD_REF(__root__),
-          N_("Commands that deal with the workspace"),
-          "");
-CMD_GROUP(user, "user", "", CMD_REF(__root__),
-          N_("Commands defined by the user"),
-          "");
-
-// this file defines the task-oriented "top level" commands which can be
-// issued as part of a monotone command line. the command line can only
-// have one such command on it, followed by a vector of strings which are its
-// arguments. all --options will be processed by the main program *before*
-// calling a command
-//
-// we might expose this blunt command interface to scripting someday. but
-// not today.
+// This file defines the logic behind the CMD() family of macros and handles
+// command completion.  Note that commands::process is in cmd.cc mainly for
+// better encapsulation of functions not needed in the unit tester.
 
 namespace commands
 {
@@ -140,12 +56,10 @@ namespace commands
           }
       }
   }
-}
 
-//
-// Implementation of the commands::command class.
-//
-namespace commands {
+  //
+  // Implementation of the commands::command class.
+  //
   command::command(std::string const & primary_name,
                    std::string const & other_names,
                    command * parent,
@@ -157,13 +71,13 @@ namespace commands {
                    bool use_workspace_options,
                    options::options_type const & opts,
                    bool _allow_completion)
-    : m_primary_name(utf8(primary_name)),
+    : m_primary_name(utf8(primary_name, origin::internal)),
       m_parent(parent),
       m_is_group(is_group),
       m_hidden(hidden),
-      m_params(utf8(params)),
-      m_abstract(utf8(abstract)),
-      m_desc(utf8(desc)),
+      m_params(utf8(params, origin::internal)),
+      m_abstract(utf8(abstract, origin::internal)),
+      m_desc(utf8(desc, origin::internal)),
       m_use_workspace_options(use_workspace_options),
       m_opts(opts),
       m_allow_completion(_allow_completion)
@@ -183,7 +97,7 @@ namespace commands {
 
     m_names.insert(m_primary_name);
 
-    vector< utf8 > onv = split_into_words(utf8(other_names));
+    vector< utf8 > onv = split_into_words(utf8(other_names, origin::internal));
     m_names.insert(onv.begin(), onv.end());
   }
 
@@ -421,7 +335,7 @@ namespace commands {
                      allow_completion() && completion_ok)
               {
                 string temp((*iter2)(), 0, prefix().length());
-                utf8 p(temp);
+                utf8 p(temp, origin::internal);
                 if (prefix == p)
                   matches[caux] = child;
               }
@@ -516,7 +430,7 @@ namespace commands
     command_id id;
     for (args_vector::const_iterator iter = args.begin();
          iter != args.end(); iter++)
-      id.push_back(utf8((*iter)()));
+      id.push_back(*iter);
 
     set< command_id > matches;
 
@@ -555,8 +469,8 @@ namespace commands
 
     if (matches.empty())
       {
-        N(false,
-          F("unknown command '%s'") % join_words(id)());
+        E(false, origin::user,
+          F("unknown command '%s'") % join_words(id));
       }
     else if (matches.size() == 1)
       {
@@ -571,647 +485,19 @@ namespace commands
         for (set< command_id >::const_iterator iter = matches.begin();
              iter != matches.end(); iter++)
           err += '\n' + join_words(*iter)();
-        N(false, i18n_format(err));
+        E(false, origin::user, i18n_format(err));
       }
 
     I(!id.empty());
     return id;
   }
 
-  static command const *
-  find_command(command_id const & ident)
-  {
-    command const * cmd = CMD_REF(__root__)->find_command(ident);
-
-    // This function is only used internally with an identifier returned
-    // by complete_command.  Therefore, it must always exist.
-    I(cmd != NULL);
-
-    return cmd;
-  }
-
-  // Prints the abstract description of the given command or command group
-  // properly indented.  The tag starts at column two.  The description has
-  // to start, at the very least, two spaces after the tag's end position;
-  // this is given by the colabstract parameter.
-  static void describe(const string & tag, const string & abstract,
-                       const string & subcommands, size_t colabstract,
-                       ostream & out)
-  {
-    I(colabstract > 0);
-
-    size_t col = 0;
-    out << "  " << tag << " ";
-    col += display_width(utf8(tag + "   "));
-
-    out << string(colabstract - col, ' ');
-    col = colabstract;
-    string desc(abstract);
-    if (!subcommands.empty())
-      {
-        desc += " (" + subcommands + ')';
-      }
-    out << format_text(desc, colabstract, col) << '\n';
-  }
-
-  static void explain_children(command::children_set const & children,
-                               ostream & out)
-  {
-    I(!children.empty());
-
-    vector< command const * > sorted;
-
-    size_t colabstract = 0;
-    for (command::children_set::const_iterator i = children.begin();
-         i != children.end(); i++)
-      {
-        command const * child = *i;
-
-        if (child->hidden())
-          continue;
-
-        size_t len = display_width(join_words(child->names(), ", ")) +
-            display_width(utf8("    "));
-        if (colabstract < len)
-          colabstract = len;
-
-        sorted.push_back(child);
-      }
-
-    sort(sorted.begin(), sorted.end(), std::greater< command * >());
-
-    for (vector< command const * >::const_iterator i = sorted.begin();
-         i != sorted.end(); i++)
-      {
-        command const * child = *i;
-        describe(join_words(child->names(), ", ")(), child->abstract(),
-                 join_words(child->subcommands(), ", ")(),
-                 colabstract, out);
-      }
-  }
-
-  static void explain_cmd_usage(command_id const & ident, ostream & out)
-  {
-    I(ident.size() >= 1);
-
-    vector< string > lines;
-    command const * cmd = find_command(ident);
-
-    string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
-                                                 ident.end()))();
-
-    // Print command parameters.
-    string params = cmd->params();
-    split_into_lines(params, lines);
-
-    if (visibleid.empty())
-      out << format_text(F("Commands in group '%s':") %
-                         join_words(ident)())
-          << "\n\n";
-    else
-      {
-        if (!cmd->children().empty())
-          out << format_text(F("Subcommands of '%s %s':") %
-                             ui.prog_name % visibleid)
-              << "\n\n";
-        else if (!lines.empty())
-          out << format_text(F("Syntax specific to '%s %s':") %
-                             ui.prog_name % visibleid)
-              << "\n\n";
-      }
-
-    // lines might be empty, but only when specific syntax is to be
-    // displayed, not in the other cases.
-    if (!lines.empty())
-      {
-        for (vector<string>::const_iterator j = lines.begin();
-             j != lines.end(); ++j)
-          out << "  " << visibleid << ' ' << *j << '\n';
-        out << '\n';
-      }
-
-    // Explain children, if any.
-    if (!cmd->is_leaf())
-      {
-        explain_children(cmd->children(), out);
-        out << '\n';
-      }
-
-    // Print command description.
-    if (visibleid.empty())
-      out << format_text(F("Purpose of group '%s':") %
-                         join_words(ident)())
-          << "\n\n";
-    else
-      out << format_text(F("Description for '%s %s':") %
-                         ui.prog_name % visibleid)
-          << "\n\n";
-    out << format_text(cmd->desc(), 2) << "\n\n";
-
-    // Print all available aliases.
-    if (cmd->names().size() > 1)
-      {
-        command::names_set othernames = cmd->names();
-        othernames.erase(ident[ident.size() - 1]);
-        out << format_text(F("Aliases: %s.") %
-                           join_words(othernames, ", ")(), 2)
-            << '\n';
-      }
-  }
-
   command_id make_command_id(std::string const & path)
   {
-    return split_into_words(utf8(path));
-  }
-
-  void explain_usage(command_id const & ident, ostream & out)
-  {
-    command const * cmd = find_command(ident);
-
-    if (ident.empty())
-      {
-        out << format_text(F("Command groups:")) << "\n\n";
-        explain_children(CMD_REF(__root__)->children(), out);
-        out << '\n'
-            << format_text(F("For information on a specific command, type "
-                           "'mtn help <command_name> [subcommand_name ...]'."))
-            << "\n\n"
-            << format_text(F("To see more details about the commands of a "
-                           "particular group, type 'mtn help <group_name>'."))
-            << "\n\n"
-            << format_text(F("Note that you can always abbreviate a command "
-                           "name as long as it does not conflict with other "
-                           "names."))
-            << "\n";
-      }
-    else
-      explain_cmd_usage(ident, out);
-  }
-
-  void process(app_state & app, command_id const & ident,
-               args_vector const & args)
-  {
-    command const * cmd = CMD_REF(__root__)->find_command(ident);
-
-    string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
-                                                 ident.end()))();
-
-    I(cmd->is_leaf() || cmd->is_group());
-    N(!(cmd->is_group() && cmd->parent() == CMD_REF(__root__)),
-      F("command '%s' is invalid; it is a group") % join_words(ident));
-
-    N(!(!cmd->is_leaf() && args.empty()),
-      F("no subcommand specified for '%s'") % visibleid);
-
-    N(!(!cmd->is_leaf() && !args.empty()),
-      F("could not match '%s' to a subcommand of '%s'") %
-      join_words(args) % visibleid);
-
-    L(FL("executing command '%s'") % visibleid);
-
-    // at this point we process the data from _MTN/options if
-    // the command needs it.
-    if (cmd->use_workspace_options())
-      {
-        workspace::check_ws_format();
-        workspace::get_ws_options(app.opts);
-      }
-
-    cmd->exec(app, ident, args);
-  }
-
-  options::options_type command_options(command_id const & ident)
-  {
-    command const * cmd = find_command(ident);
-    return cmd->opts();
-  }
-}
-////////////////////////////////////////////////////////////////////////
-
-CMD(help, "help", "", CMD_REF(informative), N_("command [ARGS...]"),
-    N_("Displays help about commands and options"),
-    "",
-    options::opts::none)
-{
-  if (args.size() < 1)
-    {
-      app.opts.help = true;
-      throw usage(command_id());
-    }
-
-  command_id id = commands::complete_command(args);
-  app.opts.help = true;
-  throw usage(id);
-}
-
-CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
-           "{ N | E | I | exception | signal }",
-           N_("Triggers the specified kind of crash"),
-           "",
-           options::opts::none)
-{
-  if (args.size() != 1)
-    throw usage(execid);
-  bool spoon_exists(false);
-  if (idx(args,0)() == "N")
-    N(spoon_exists, i18n_format("There is no spoon."));
-  else if (idx(args,0)() == "E")
-    E(spoon_exists, i18n_format("There is no spoon."));
-  else if (idx(args,0)() == "I")
-    {
-      I(spoon_exists);
-    }
-#define maybe_throw(ex) if(idx(args,0)()==#ex) throw ex("There is no spoon.")
-#define maybe_throw_bare(ex) if(idx(args,0)()==#ex) throw ex()
-  else maybe_throw_bare(std::bad_alloc);
-  else maybe_throw_bare(std::bad_cast);
-  else maybe_throw_bare(std::bad_typeid);
-  else maybe_throw_bare(std::bad_exception);
-  else maybe_throw_bare(std::exception);
-  else maybe_throw(std::domain_error);
-  else maybe_throw(std::invalid_argument);
-  else maybe_throw(std::length_error);
-  else maybe_throw(std::out_of_range);
-  else maybe_throw(std::range_error);
-  else maybe_throw(std::overflow_error);
-  else maybe_throw(std::underflow_error);
-  else maybe_throw(std::logic_error);
-  else maybe_throw(std::runtime_error);
-  else
-    {
-#ifndef _WIN32
-      try
-        {
-          int signo = boost::lexical_cast<int>(idx(args,0)());
-          if (0 < signo && signo <= 15)
-            {
-              raise(signo);
-              // control should not get here...
-              I(!"crash: raise returned");
-            }
-        }
-      catch (boost::bad_lexical_cast&)
-        { // fall through and throw usage
-        }
-#endif
-      throw usage(execid);
-    }
-#undef maybe_throw
-#undef maybe_throw_bare
-}
-
-string
-describe_revision(project_t & project, revision_id const & id)
-{
-  cert_name author_name(author_cert_name);
-  cert_name date_name(date_cert_name);
-
-  string description;
-
-  description += encode_hexenc(id.inner()());
-
-  // append authors and date of this revision
-  vector< revision<cert> > tmp;
-  project.get_revision_certs_by_name(id, author_name, tmp);
-  for (vector< revision<cert> >::const_iterator i = tmp.begin();
-       i != tmp.end(); ++i)
-    {
-      description += " ";
-      description += i->inner().value();
-    }
-  project.get_revision_certs_by_name(id, date_name, tmp);
-  for (vector< revision<cert> >::const_iterator i = tmp.begin();
-       i != tmp.end(); ++i)
-    {
-      description += " ";
-      description += i->inner().value();
-    }
-
-  return description;
-}
-
-void
-notify_if_multiple_heads(project_t & project,
-                         branch_name const & branchname,
-                         bool ignore_suspend_certs)
-{
-  set<revision_id> heads;
-  project.get_branch_heads(branchname, heads, ignore_suspend_certs);
-  if (heads.size() > 1) {
-    string prefixedline;
-    prefix_lines_with(_("note: "),
-                      _("branch '%s' has multiple heads\n"
-                        "perhaps consider '%s merge'"),
-                      prefixedline);
-    P(i18n_format(prefixedline) % branchname % ui.prog_name);
+    return split_into_words(utf8(path, origin::user));
   }
 }
 
-void
-process_commit_message_args(options const & opts,
-                            bool & given,
-                            utf8 & log_message,
-                            utf8 const & message_prefix)
-{
-  // can't have both a --message and a --message-file ...
-  N(!opts.message_given || !opts.msgfile_given,
-    F("--message and --message-file are mutually exclusive"));
-
-  if (opts.message_given)
-    {
-      string msg;
-      join_lines(opts.message, msg);
-      log_message = utf8(msg);
-      if (!opts.no_prefix && message_prefix().length() != 0)
-        log_message = utf8(message_prefix() + "\n\n" + log_message());
-      given = true;
-    }
-  else if (opts.msgfile_given)
-    {
-      data dat;
-      read_data_for_command_line(opts.msgfile, dat);
-      external dat2 = external(dat());
-      system_to_utf8(dat2, log_message);
-      if (!opts.no_prefix && message_prefix().length() != 0)
-        log_message = utf8(message_prefix() + "\n\n" + log_message());
-      given = true;
-    }
-  else if (message_prefix().length() != 0)
-    {
-      log_message = message_prefix;
-      given = true;
-    }
-  else
-    given = false;
-}
-
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-CMD_GROUP(top, "top", "", CMD_REF(__root__),
-          "", "");
-CMD(test, "test", "", CMD_REF(top),
-    "", "", "", options::opts::none) {}
-CMD(test1, "test1", "alias1", CMD_REF(top),
-    "", "", "", options::opts::none) {}
-CMD(test2, "test2", "alias2", CMD_REF(top),
-    "", "", "", options::opts::none) {}
-CMD_HIDDEN(test3, "test3", "", CMD_REF(top),
-           "", "", "", options::opts::none) {}
-
-CMD_GROUP(testg, "testg", "aliasg", CMD_REF(top),
-          "", "");
-CMD(testg1, "testg1", "", CMD_REF(testg),
-    "", "", "", options::opts::none) {}
-CMD(testg2, "testg2", "", CMD_REF(testg),
-    "", "", "", options::opts::none) {}
-CMD_HIDDEN(testg3, "testg3", "", CMD_REF(testg),
-           "", "", "", options::opts::none) {}
-
-static args_vector
-mkargs(const char *words)
-{
-  return split_into_words(arg_type(words));
-}
-
-UNIT_TEST(commands, make_command_id)
-{
-  using commands::command_id;
-  using commands::make_command_id;
-
-  {
-    command_id id = make_command_id("foo");
-    UNIT_TEST_CHECK(id.size() == 1);
-    UNIT_TEST_CHECK(id[0]() == "foo");
-  }
-
-  {
-    command_id id = make_command_id("foo bar");
-    UNIT_TEST_CHECK(id.size() == 2);
-    UNIT_TEST_CHECK(id[0]() == "foo");
-    UNIT_TEST_CHECK(id[1]() == "bar");
-  }
-}
-
-UNIT_TEST(commands, complete_command)
-{
-  using commands::command_id;
-  using commands::complete_command;
-  using commands::make_command_id;
-
-  // Single-word identifier, top-level category.
-  {
-    command_id id = complete_command(mkargs("top"));
-    UNIT_TEST_CHECK(id == make_command_id("top"));
-  }
-
-  // Single-word identifier.
-  {
-    command_id id = complete_command(mkargs("testg"));
-    UNIT_TEST_CHECK(id == make_command_id("top testg"));
-  }
-
-  // Single-word identifier, non-primary name.
-  {
-    command_id id = complete_command(mkargs("alias1"));
-    UNIT_TEST_CHECK(id == make_command_id("top alias1"));
-  }
-
-  // Multi-word identifier.
-  {
-    command_id id = complete_command(mkargs("testg testg1"));
-    UNIT_TEST_CHECK(id == make_command_id("top testg testg1"));
-  }
-
-  // Multi-word identifier, non-primary names.
-  {
-    command_id id = complete_command(mkargs("al testg1"));
-    UNIT_TEST_CHECK(id == make_command_id("top aliasg testg1"));
-  }
-}
-
-UNIT_TEST(commands, command_complete_command)
-{
-  using commands::command_id;
-  using commands::make_command_id;
-
-  // Non-existent single-word identifier.
-  {
-    command_id id = make_command_id("foo");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.empty());
-  }
-
-  // Non-existent multi-word identifier.
-  {
-    command_id id = make_command_id("foo bar");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.empty());
-  }
-
-  // Single-word identifier with one match. Exact matches are found
-  // before any possible completions.
-  {
-    command_id id = make_command_id("test");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 1);
-    UNIT_TEST_CHECK(*matches.begin() == make_command_id("test"));
-  }
-
-  // Single-word identifier with one match, non-primary name.
-  {
-    command_id id = make_command_id("alias1");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 1);
-    UNIT_TEST_CHECK(*matches.begin() == make_command_id("alias1"));
-  }
-
-  // Single-word identifier with multiple matches.
-  {
-    command_id id = make_command_id("tes");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 4);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("test"));
-    expected.insert(make_command_id("test1"));
-    expected.insert(make_command_id("test2"));
-    expected.insert(make_command_id("testg"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-
-  // Single-word identifier with multiple matches, non-primary name.
-  {
-    command_id id = make_command_id("alias");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 3);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("alias1"));
-    expected.insert(make_command_id("alias2"));
-    expected.insert(make_command_id("aliasg"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-
-  // Multi-word identifier with one match.
-  {
-    command_id id = make_command_id("testg testg1");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 1);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("testg testg1"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-
-  // Multi-word identifier with multiple matches.
-  {
-    command_id id = make_command_id("testg testg");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 2);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("testg testg1"));
-    expected.insert(make_command_id("testg testg2"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-
-  // Multi-word identifier with multiple matches at different levels.
-  {
-    command_id id = make_command_id("tes testg1");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 4);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("test"));
-    expected.insert(make_command_id("test1"));
-    expected.insert(make_command_id("test2"));
-    expected.insert(make_command_id("testg testg1"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-
-  // Multi-word identifier with one match and extra words.
-  {
-    command_id id = make_command_id("testg testg1 foo");
-    set< command_id > matches = CMD_REF(top)->complete_command(id);
-    UNIT_TEST_REQUIRE(matches.size() == 1);
-
-    set< command_id > expected;
-    expected.insert(make_command_id("testg testg1"));
-    UNIT_TEST_CHECK(matches == expected);
-  }
-}
-
-UNIT_TEST(commands, command_find_command)
-{
-  using commands::command;
-  using commands::command_id;
-  using commands::make_command_id;
-
-  // Non-existent single-word identifier.
-  {
-    command_id id = make_command_id("foo");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == NULL);
-  }
-
-  // Non-existent multi-word identifier.
-  {
-    command_id id = make_command_id("foo bar");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == NULL);
-  }
-
-  // Single-word identifier that could be completed.
-  {
-    command_id id = make_command_id("tes");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == NULL);
-  }
-
-  // Single-word identifier.
-  {
-    command_id id = make_command_id("test1");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == CMD_REF(test1));
-  }
-
-  // Hidden single-word identifier.
-  {
-    command_id id = make_command_id("test3");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == CMD_REF(test3));
-  }
-
-  // Multi-word identifier that could be completed.
-  {
-    command_id id = make_command_id("testg testg");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == NULL);
-  }
-
-  // Multi-word identifier.
-  {
-    command_id id = make_command_id("testg testg1");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == CMD_REF(testg1));
-  }
-
-  // Hidden multi-word identifier.
-  {
-    command_id id = make_command_id("testg testg3");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == CMD_REF(testg3));
-  }
-
-  // Multi-word identifier with extra words.
-  {
-    command_id id = make_command_id("testg testg1 foo");
-    command const * cmd = CMD_REF(top)->find_command(id);
-    UNIT_TEST_CHECK(cmd == NULL);
-  }
-}
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++
