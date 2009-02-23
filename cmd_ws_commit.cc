@@ -61,7 +61,7 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
       << "Branch: " << branch << "\n"
       << "Changelog:\n\n";
 
-  header = utf8(out.str());
+  header = utf8(out.str(), origin::internal);
 }
 
 static void
@@ -158,17 +158,18 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   if (text.empty() || text.substr(text.length()-1) != "\n")
     {
       text += "\n";
-      message = utf8(text);
+      message = utf8(text, origin::user);
     }
 
-  utf8 full_message(instructions() + header() + message() + summary());
+  utf8 full_message(instructions() + header() + message() + summary(), origin::internal);
   
   external input_message;
   external output_message;
 
   utf8_to_system_best_effort(full_message, input_message);
 
-  N(lua.hook_edit_comment(input_message, output_message),
+  E(lua.hook_edit_comment(input_message, output_message),
+    origin::user,
     F("edit of log message failed"));
 
   system_to_utf8(output_message, full_message);
@@ -184,7 +185,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   // "Changes against parent ..." (following the changelog message) but both
   // of these are optional.
 
-  N(raw.find(instructions()) == 0,
+  E(raw.find(instructions()) == 0,
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing instructions)."));
 
@@ -194,7 +196,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       size_t pos = raw.find(summary().substr(1));
 
       // ignore the trailing blank line from the header as well
-      N(pos >= instructions().length() + header().length() - 1,
+      E(pos >= instructions().length() + header().length() - 1,
+        origin::user,
         F("Modifications outside of Author, Date, Branch or Changelog.\n"
           "Commit failed (missing summary)."));
       raw.resize(pos); // remove the change summary
@@ -204,7 +207,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // ensure the first 3 or 4 lines from the header still match
   size_t pos = header().find("Author: ");
-  N(header().substr(0, pos) == raw.substr(0, pos),
+  E(header().substr(0, pos) == raw.substr(0, pos),
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing revision or parent header)."));
 
@@ -213,33 +217,38 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   vector<string> lines;
   split_into_lines(raw, lines);
 
-  N(lines.size() >= 4,
+  E(lines.size() >= 4,
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing lines)."));
 
   vector<string>::const_iterator line = lines.begin();
-  N(line->find("Author: ") == 0,
+  E(line->find("Author: ") == 0,
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing author)."));
 
-  author = trim_ws(line->substr(8));
+  author = trim(line->substr(8));
   
   ++line;
-  N(line->find("Date: ") == 0,
+  E(line->find("Date: ") == 0,
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing date)."));
 
-  date = trim_ws(line->substr(6));
+  date = trim(line->substr(6));
 
   ++line;
-  N(line->find("Branch: ") == 0,
+  E(line->find("Branch: ") == 0,
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing branch)."));
 
-  branch = branch_name(trim_ws(line->substr(8)));
+  branch = branch_name(trim(line->substr(8)), origin::user);
 
   ++line;
-  N(*line == "Changelog:",
+  E(*line == "Changelog:",
+    origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing changelog)."));
 
@@ -247,9 +256,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   ++line;
   join_lines(line, lines.end(), raw);
 
-  raw = trim_ws(raw) + "\n";
+  raw = trim(raw) + "\n";
 
-  log_message = utf8(raw);
+  log_message = utf8(raw, origin::user);
 }
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
@@ -700,14 +709,14 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   calculate_ident(rev, rid);
 
   get_user_key(app.opts, app.lua, db, keys, key);
-  if (!app.lua.hook_get_author(app.opts.branchname, key, author))
+  if (!app.lua.hook_get_author(app.opts.branch, key, author))
     author = key();
 
   utf8 header;
   utf8 message;
   utf8 summary;
 
-  revision_header(rid, rev, author, date_t::now(), app.opts.branchname, header);
+  revision_header(rid, rev, author, date_t::now(), app.opts.branch, header);
   work.read_user_log(message);
   revision_summary(rev, summary);
 
@@ -715,7 +724,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   if (text.empty() || text.substr(text.length()-1) != "\n")
     {
       text += "\n";
-      message = utf8(text);
+      message = utf8(text, origin::user);
     }
 
   external header_external;
@@ -1303,7 +1312,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     {
       rsa_keypair_id key;
       get_user_key(app.opts, app.lua, db, keys, key);
-      if (!app.lua.hook_get_author(app.opts.branchname, key, author))
+      if (!app.lua.hook_get_author(app.opts.branch, key, author))
         author = key();
     }
 
@@ -1312,7 +1321,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, 
                                     restricted_rev_id, restricted_rev,
-                                    author, date, app.opts.branchname, 
+                                    author, date, app.opts.branch, 
                                     log_message);
 
       // We only check for empty log messages when the user entered them
@@ -1450,7 +1459,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
     project.put_standard_certs(keys,
                                restricted_rev_id,
-                               app.opts.branchname,
+                               app.opts.branch,
                                log_message,
                                date,
                                author);
