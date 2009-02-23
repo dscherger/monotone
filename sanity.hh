@@ -345,12 +345,17 @@ struct bad_decode {
 
 // I is for invariants that "should" always be true
 // (if they are wrong, there is a *bug*)
+
+#define FILE_LINE_INNER(line) __FILE__ ":" #line
+#define FILE_LINE_MIDDLE(line) FILE_LINE_INNER(line)
+#define FILE_LINE FILE_LINE_MIDDLE(__LINE__)
+
 #define I(e)                                                            \
   do {                                                                  \
     if (UNLIKELY(!(e)))                                                 \
       {                                                                 \
         global_sanity.generic_failure("I("#e")", origin::internal,      \
-                                      F("%s") % "I("#e")",              \
+                                      F("%s") % FILE_LINE": I("#e")",   \
                                       __FILE__, __LINE__);              \
       }                                                                 \
   } while (0)

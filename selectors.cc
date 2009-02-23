@@ -190,10 +190,9 @@ decode_selector(project_t & project,
                 }
 
               diagnose_ambiguous_expansion(project, "p:", parent_ids);
-              sel = (* parent_ids.begin()).inner()();
+              sel = encode_hexenc((* parent_ids.begin()).inner()(),
+                                  origin::internal);
             }
-          else
-            sel = decode_hexenc(sel, origin::user);
           break;
         default: break;
         }

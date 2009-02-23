@@ -3412,54 +3412,28 @@ database_impl::add_prefix_matching_constraint(string const & colname,
 
   if (prefix.empty())
     q.sql_cmd += "1";  // always true
+  else if (prefix.size() > constants::idlen)
+    q.sql_cmd += "0"; // always false
   else
     {
-      string binary_prefix = decode_hexenc(prefix, origin::internal);
-      string lower_bound(binary_prefix);
-      string upper_bound(binary_prefix);
+      string lower_hex = prefix;
+      if (lower_hex.size() < constants::idlen)
+        lower_hex.append(constants::idlen - lower_hex.size(), '0');
+      string lower_bound = decode_hexenc(lower_hex, origin::internal);
 
-      string::reverse_iterator ity(upper_bound.rbegin());
-      if (ity != upper_bound.rend())
-        ++(*ity);
-      while ((*ity == 0) && ity != upper_bound.rend())
-        {
-          ++ity;
-          ++(*ity);
-        }
+      string upper_hex = prefix;
+      if (upper_hex.size() < constants::idlen)
+        upper_hex.append(constants::idlen - upper_hex.size(), 'f');
+      string upper_bound = decode_hexenc(upper_hex, origin::internal);
 
-      if (ity == upper_bound.rend())
-        {
-          // no upper bound needed, as the lower bound is
-          // 0xffffff...
-          if (global_sanity.debug_p())
-            L(FL("prefix_matcher: only lower bound ('%s')")
-              % lower_bound);
+      if (global_sanity.debug_p())
+        L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
+          % encode_hexenc(lower_bound, origin::internal)
+          % encode_hexenc(upper_bound, origin::internal));
 
-          q.sql_cmd += colname + " > ?";
-          q.args.push_back(blob(lower_bound));
-        }
-      else
-        {
-          if (global_sanity.debug_p())
-            L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
-              % lower_bound
-              % upper_bound);
-
-          q.sql_cmd += colname + " BETWEEN ? AND ?";
-          q.args.push_back(blob(lower_bound));
-          q.args.push_back(blob(upper_bound));
-        }
-
-      // encode_hexenc might have lost a nibble a the end, thus we possibly
-      // need to add a second check, with a LIKE operator on the hex
-      // encoded string.
-
-      if (prefix.size() % 2 == 1)
-        {
-          string pattern = prefix + '%';
-          q.sql_cmd += " AND (hex(" + colname + ") LIKE ?)";
-          q.args.push_back(text(pattern));
-        }
+      q.sql_cmd += colname + " BETWEEN ? AND ?";
+      q.args.push_back(blob(lower_bound));
+      q.args.push_back(blob(upper_bound));
     }
 }
 
@@ -3529,8 +3503,7 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", encode_hexenc(partial,
-                                                             origin::internal), q);
+  imp->add_prefix_matching_constraint("child", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
