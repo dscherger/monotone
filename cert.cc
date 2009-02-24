@@ -29,18 +29,6 @@ verify(T & val)
 template class revision<cert>;
 template class manifest<cert>;
 
-// cert-managing routines
-cert::cert(std::string const & s)
-{
-  read_cert(s, *this);
-}
-
-cert::cert(std::string const & s, origin::type m)
-  : origin_aware(m)
-{
-  read_cert(s, *this);
-}
-
 bool
 cert::operator<(cert const & other) const
 {
@@ -67,7 +55,7 @@ cert::operator==(cert const & other) const
 
 // netio support
 
-void
+static void
 read_cert(string const & in, cert & t)
 {
   size_t pos = 0;
@@ -92,42 +80,53 @@ read_cert(string const & in, cert & t)
            rsa_sha1_signature(sig, origin::network));
 
   id check;
-  cert_hash_code(tmp, check);
+  tmp.hash_code(check);
   if (!(check == hash))
     throw bad_decode(F("calculated cert hash '%s' does not match '%s'")
                      % check % hash);
   t = tmp;
 }
 
+cert::cert(std::string const & s)
+{
+  read_cert(s, *this);
+}
+
+cert::cert(std::string const & s, origin::type m)
+  : origin_aware(m)
+{
+  read_cert(s, *this);
+}
+
 void
-write_cert(cert const & t, string & out)
+cert::marshal_for_netio(string & out) const
 {
   string name, key;
   id hash;
 
-  cert_hash_code(t, hash);
+  hash_code(hash);
 
   out.append(hash());
-  out.append(t.ident.inner()());
-  insert_variable_length_string(t.name(), out);
-  insert_variable_length_string(t.value(), out);
-  insert_variable_length_string(t.key(), out);
-  insert_variable_length_string(t.sig(), out);
+  out.append(this->ident.inner()());
+  insert_variable_length_string(this->name(), out);
+  insert_variable_length_string(this->value(), out);
+  insert_variable_length_string(this->key(), out);
+  insert_variable_length_string(this->sig(), out);
 }
 
 void
-cert_signable_text(cert const & t, string & out)
+cert::signable_text(string & out) const
 {
-  base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()(),
-                                     t.ident.inner().made_from));
+  base64<cert_value> val_encoded(encode_base64(this->value));
+  string ident_encoded(encode_hexenc(this->ident.inner()(),
+                                     this->ident.inner().made_from));
 
   out.clear();
-  out.reserve(4 + t.name().size() + ident_encoded.size()
+  out.reserve(4 + this->name().size() + ident_encoded.size()
               + val_encoded().size());
 
   out += '[';
-  out.append(t.name());
+  out.append(this->name());
   out += '@';
   out.append(ident_encoded);
   out += ':';
@@ -138,23 +137,23 @@ cert_signable_text(cert const & t, string & out)
 }
 
 void
-cert_hash_code(cert const & t, id & out)
+cert::hash_code(id & out) const
 {
-  base64<rsa_sha1_signature> sig_encoded(encode_base64(t.sig));
-  base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()(),
-                                     t.ident.inner().made_from));
+  base64<rsa_sha1_signature> sig_encoded(encode_base64(this->sig));
+  base64<cert_value> val_encoded(encode_base64(this->value));
+  string ident_encoded(encode_hexenc(this->ident.inner()(),
+                                     this->ident.inner().made_from));
   string tmp;
   tmp.reserve(4 + ident_encoded.size()
-              + t.name().size() + val_encoded().size()
-              + t.key().size() + sig_encoded().size());
+              + this->name().size() + val_encoded().size()
+              + this->key().size() + sig_encoded().size());
   tmp.append(ident_encoded);
   tmp += ':';
-  tmp.append(t.name());
+  tmp.append(this->name());
   tmp += ':';
   append_without_ws(tmp, val_encoded());
   tmp += ':';
-  tmp.append(t.key());
+  tmp.append(this->key());
   tmp += ':';
   append_without_ws(tmp, sig_encoded());
 

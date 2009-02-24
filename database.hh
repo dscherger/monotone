@@ -28,6 +28,7 @@ class rev_height;
 class lazy_rng;
 
 typedef std::pair<var_domain, var_name> var_key;
+typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 
 // this file defines a public, typed interface to the database.
 // the database class encapsulates all knowledge about sqlite,

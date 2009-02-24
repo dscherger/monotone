@@ -3039,7 +3039,7 @@ cert_status
 database::check_cert(cert const & t)
 {
   string signed_text;
-  cert_signable_text(t, signed_text);
+  t.signable_text(signed_text);
   return check_signature(t.key, signed_text, t.sig);
 }
 
@@ -3072,7 +3072,7 @@ database_impl::put_cert(cert const & t,
                         string const & table)
 {
   id thash;
-  cert_hash_code(t, thash);
+  t.hash_code(thash);
   rsa_sha1_signature sig;
 
   string insert = "INSERT INTO " + table + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -3436,7 +3436,7 @@ namespace {
       else if (status == cert_bad)
         {
           string txt;
-          cert_signable_text(c, txt);
+          c.signable_text(txt);
           W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
           return true;
         }
@@ -3444,7 +3444,7 @@ namespace {
         {
           I(status == cert_unknown);
           string txt;
-          cert_signable_text(c, txt);
+          c.signable_text(txt);
           W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
           return true;
         }

@@ -47,22 +47,17 @@ struct cert : public origin_aware
   cert_value value;
   rsa_keypair_id key;
   rsa_sha1_signature sig;
+
   bool operator<(cert const & other) const;
   bool operator==(cert const & other) const;
+
+  void hash_code(id & out) const;
+  void signable_text(std::string & out) const;
+  void marshal_for_netio(std::string & out) const;
 };
 
 EXTERN template class revision<cert>;
 EXTERN template class manifest<cert>;
-
-
-// These 3 are for netio support.
-void read_cert(std::string const & in, cert & t);
-void write_cert(cert const & t, std::string & out);
-void cert_hash_code(cert const & t, id & out);
-
-typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
-
-void cert_signable_text(cert const & t,std::string & out);
 
 #endif // __CERT_HH__
 

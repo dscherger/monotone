@@ -476,7 +476,7 @@ check_certs(database & db,
       if (checked.found_key)
         {
           string signed_text;
-          cert_signable_text(i->inner(), signed_text);
+          i->inner().signable_text(signed_text);
           checked.good_sig
             = (db.check_signature(i->inner().key,
                                   signed_text, i->inner().sig) == cert_ok);
