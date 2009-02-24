@@ -15,6 +15,15 @@ check(exists("try/dump"))
 check(mtn("crash", "I", "--dump=fork"), 3, false, false)
 check(exists("fork"))
 
+remove("fork")
+check(mtn("crash", "double-throw", "--dump=fork"), 3, false, true)
+check(exists("fork"))
+-- Make sure we're checking the std::terminate handler, rather than
+-- normal exception reporting. Sometimes what should result in
+-- std::terminate() will instead result in the second exception
+-- being propagated. http://bugs.debian.org/516862
+check(qgrep("std::terminate", "stderr"))
+
 -- all the exceptions caught in monotone.cc and translated to error messages
 for _,tag in pairs({  'std::bad_cast',
 		      'std::bad_typeid',
