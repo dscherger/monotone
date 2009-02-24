@@ -11,7 +11,7 @@
 #include "migration.hh"
 #include "revision.hh"
 #include "roster.hh"
-
+#include "project.hh"
 #include "constants.hh"
 #include "database.hh"
 #include "graph.hh"
@@ -212,6 +212,7 @@ void anc_graph::write_certs()
 
 
   typedef multimap<u64, pair<cert_name, cert_value> >::const_iterator ci;
+  project_t project(db);
 
   for (map<u64,revision_id>::const_iterator i = node_to_new_rev.begin();
        i != node_to_new_rev.end(); ++i)
@@ -225,7 +226,7 @@ void anc_graph::write_certs()
           cert_name name(j->second.first);
           cert_value val(j->second.second);
 
-          if (put_simple_revision_cert(db, keys, rev, name, val))
+          if (project.put_cert(keys, rev, name, val))
             ++n_certs_out;
         }
     }

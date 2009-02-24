@@ -84,69 +84,6 @@ bool put_simple_revision_cert(database & db,
 void erase_bogus_certs(database & db, std::vector< revision<cert> > & certs);
 void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
 
-// Special certs -- system won't work without them.
-
-#define branch_cert_name cert_name("branch")
-
-void
-cert_revision_in_branch(database & db, key_store & keys,
-                        revision_id const & rev,
-                        branch_name const & branchname);
-
-
-// We also define some common cert types, to help establish useful
-// conventions. you should use these unless you have a compelling
-// reason not to.
-
-void
-guess_branch(options & opts, project_t & project, revision_id const & rev,
-             branch_name & branchname);
-void
-guess_branch(options & opts, project_t & project, revision_id const & rev);
-
-#define date_cert_name cert_name("date")
-#define author_cert_name cert_name("author")
-#define tag_cert_name cert_name("tag")
-#define changelog_cert_name cert_name("changelog")
-#define comment_cert_name cert_name("comment")
-#define testresult_cert_name cert_name("testresult")
-#define suspend_cert_name cert_name("suspend")
-
-void
-cert_revision_suspended_in_branch(database & db, key_store & keys,
-                                  revision_id const & rev,
-                                  branch_name const & branchname);
-
-void
-cert_revision_date_time(database & db, key_store & keys,
-                        revision_id const & rev,
-                        date_t const & t);
-
-void
-cert_revision_author(database & db, key_store & keys,
-                     revision_id const & m,
-                     std::string const & author);
-
-void
-cert_revision_tag(database & db, key_store & keys,
-                  revision_id const & rev,
-                  std::string const & tagname);
-
-void
-cert_revision_changelog(database & db, key_store & keys,
-                        revision_id const & rev,
-                        utf8 const & changelog);
-
-void
-cert_revision_comment(database & db, key_store & keys,
-                      revision_id const & m,
-                      utf8 const & comment);
-
-void
-cert_revision_testresult(database & db, key_store & keys,
-                         revision_id const & m,
-                         std::string const & results);
-
 #endif // __CERT_HH__
 
 // Local Variables:

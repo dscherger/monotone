@@ -280,7 +280,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  cert_revision_testresult(db, keys, r, idx(args, 1)());
+  project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
 
@@ -360,7 +360,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  cert_revision_comment(db, keys, r, comment);
+  project.put_revision_comment(keys, r, comment);
 }
 
 // Local Variables:

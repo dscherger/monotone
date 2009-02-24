@@ -18,6 +18,7 @@
 #include "vocab.hh"
 #include "transforms.hh"
 #include "cert.hh"
+#include "project.hh"
 #include "rev_height.hh"
 #include "roster.hh"
 #include "outdated_indicator.hh"

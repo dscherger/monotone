@@ -20,17 +20,13 @@
 #include "cert.hh"
 #include "constants.hh"
 #include "database.hh"
-#include "interner.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "netio.hh"
-#include "options.hh"
-#include "project.hh"
 #include "revision.hh"
 #include "sanity.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
-#include "ui.hh"
 #include "vocab_cast.hh"
 
 using std::make_pair;
@@ -362,170 +358,6 @@ check_cert(database & db, cert const & t)
   string signed_text;
   cert_signable_text(t, signed_text);
   return db.check_signature(t.key, signed_text, t.sig);
-}
-
-bool
-put_simple_revision_cert(database & db,
-                         key_store & keys,
-                         revision_id const & id,
-                         cert_name const & nm,
-                         cert_value const & val)
-{
-  I(!keys.signing_key().empty());
-
-  cert t(id, nm, val, keys.signing_key);
-  string signed_text;
-  cert_signable_text(t, signed_text);
-  load_key_pair(keys, t.key);
-  keys.make_signature(db, t.key, signed_text, t.sig);
-
-  revision<cert> cc(t);
-  return db.put_revision_cert(cc);
-}
-
-// "special certs"
-
-// Guess which branch is appropriate for a commit below IDENT.
-// OPTS may override.  Branch name is returned in BRANCHNAME.
-// Does not modify branch state in OPTS.
-void
-guess_branch(options & opts, project_t & project,
-             revision_id const & ident, branch_name & branchname)
-{
-  if (opts.branch_given && !opts.branch().empty())
-    branchname = opts.branch;
-  else
-    {
-      E(!ident.inner()().empty(), origin::user,
-        F("no branch found for empty revision, "
-          "please provide a branch name"));
-
-      set<branch_name> branches;
-      project.get_revision_branches(ident, branches);
-
-      E(!branches.empty(), origin::user,
-        F("no branch certs found for revision %s, "
-          "please provide a branch name") % ident);
-
-      E(branches.size() == 1, origin::user,
-        F("multiple branch certs found for revision %s, "
-          "please provide a branch name") % ident);
-
-      set<branch_name>::iterator i = branches.begin();
-      I(i != branches.end());
-      branchname = *i;
-    }
-}
-
-// As above, but set the branch name in the options
-// if it wasn't already set.
-void
-guess_branch(options & opts, project_t & project, revision_id const & ident)
-{
-  branch_name branchname;
-  guess_branch(opts, project, ident, branchname);
-  opts.branch = branchname;
-}
-
-void
-cert_revision_in_branch(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        branch_name const & branch)
-{
-  put_simple_revision_cert(db, keys, rev, branch_cert_name,
-                           typecast_vocab<cert_value>(branch));
-}
-
-void
-cert_revision_suspended_in_branch(database & db,
-                                  key_store & keys,
-                                  revision_id const & rev,
-                                  branch_name const & branch)
-{
-  put_simple_revision_cert(db, keys, rev, suspend_cert_name,
-                           typecast_vocab<cert_value>(branch));
-}
-
-
-// "standard certs"
-
-void
-cert_revision_date_time(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        date_t const & t)
-{
-  cert_value val = cert_value(t.as_iso_8601_extended(), origin::internal);
-  put_simple_revision_cert(db, keys, rev, date_cert_name, val);
-}
-
-void
-cert_revision_author(database & db,
-                     key_store & keys,
-                     revision_id const & rev,
-                     string const & author)
-{
-  put_simple_revision_cert(db, keys, rev, author_cert_name,
-                           cert_value(author, origin::user));
-}
-
-void
-cert_revision_tag(database & db,
-                  key_store & keys,
-                  revision_id const & rev,
-                  string const & tagname)
-{
-  put_simple_revision_cert(db, keys, rev, tag_cert_name,
-                           cert_value(tagname, origin::user));
-}
-
-void
-cert_revision_changelog(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        utf8 const & log)
-{
-  put_simple_revision_cert(db, keys, rev, changelog_cert_name,
-                           typecast_vocab<cert_value>(log));
-}
-
-void
-cert_revision_comment(database & db,
-                      key_store & keys,
-                      revision_id const & rev,
-                      utf8 const & comment)
-{
-  put_simple_revision_cert(db, keys, rev, comment_cert_name,
-                           typecast_vocab<cert_value>(comment));
-}
-
-void
-cert_revision_testresult(database & db,
-                         key_store & keys,
-                         revision_id const & rev,
-                         string const & results)
-{
-  bool passed = false;
-  if (lowercase(results) == "true" ||
-      lowercase(results) == "yes" ||
-      lowercase(results) == "pass" ||
-      results == "1")
-    passed = true;
-  else if (lowercase(results) == "false" ||
-           lowercase(results) == "no" ||
-           lowercase(results) == "fail" ||
-           results == "0")
-    passed = false;
-  else
-    throw recoverable_failure(origin::user,
-                              "could not interpret test results, "
-                              "tried '0/1' 'yes/no', 'true/false', "
-                              "'pass/fail'");
-
-  put_simple_revision_cert(db, keys, rev, testresult_cert_name,
-                           cert_value(lexical_cast<string>(passed),
-                                      origin::internal));
 }
 
 // Local Variables:

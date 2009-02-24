@@ -2114,9 +2114,11 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
     F("no such revision '%s'") % hrid);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  put_simple_revision_cert(db, keys, rid,
-                           typecast_vocab<cert_name>(idx(args, 1)),
-                           typecast_vocab<cert_value>(idx(args, 2)));
+
+  project_t project(db);
+  project.put_cert(keys, rid,
+                   typecast_vocab<cert_name>(idx(args, 1)),
+                   typecast_vocab<cert_value>(idx(args, 2)));
 }
 
 // Name: get_db_variables

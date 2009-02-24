@@ -34,6 +34,7 @@
 
 #include "app_state.hh"
 #include "cert.hh"
+#include "project.hh"
 #include "cleanup.hh"
 #include "constants.hh"
 #include "dates.hh"

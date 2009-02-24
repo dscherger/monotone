@@ -16,16 +16,19 @@
 #include "revision.hh"
 #include "transforms.hh"
 #include "lua_hooks.hh"
+#include "key_store.hh"
 #include "keys.hh"
 #include "options.hh"
 #include "vocab_cast.hh"
 #include "simplestring_xform.hh"
+#include "lexical_cast.hh"
 
 using std::string;
 using std::set;
 using std::vector;
 using std::multimap;
 using std::make_pair;
+using boost::lexical_cast;
 
 project_t::project_t(database & db)
   : db(db)
@@ -193,7 +196,7 @@ project_t::put_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch)
 {
-  cert_revision_in_branch(db, keys, id, branch);
+  put_cert(keys, id, branch_cert_name, typecast_vocab<cert_value>(branch));
 }
 
 bool
@@ -222,7 +225,7 @@ project_t::suspend_revision_in_branch(key_store & keys,
                                       revision_id const & id,
                                       branch_name const & branch)
 {
-  cert_revision_suspended_in_branch(db, keys, id, branch);
+  put_cert(keys, id, suspend_cert_name, typecast_vocab<cert_value>(branch));
 }
 
 
@@ -317,8 +320,9 @@ project_t::put_tag(key_store & keys,
                    revision_id const & id,
                    string const & name)
 {
-  cert_revision_tag(db, keys, id, name);
+  put_cert(keys, id, tag_cert_name, cert_value(name, origin::user));
 }
+
 
 
 void
@@ -334,10 +338,14 @@ project_t::put_standard_certs(key_store & keys,
   I(time.valid());
   I(!author.empty());
 
-  cert_revision_in_branch(db, keys, id, branch);
-  cert_revision_changelog(db, keys, id, changelog);
-  cert_revision_date_time(db, keys, id, time);
-  cert_revision_author(db, keys, id, author);
+  put_cert(keys, id, branch_cert_name,
+           typecast_vocab<cert_value>(branch));
+  put_cert(keys, id, changelog_cert_name,
+           typecast_vocab<cert_value>(changelog));
+  put_cert(keys, id, date_cert_name,
+           cert_value(time.as_iso_8601_extended(), origin::internal));
+  put_cert(keys, id, author_cert_name,
+           cert_value(author, origin::user));
 }
 
 void
@@ -367,13 +375,56 @@ project_t::put_standard_certs_from_options(options const & opts,
   put_standard_certs(keys, id, branch, changelog, date, author);
 }
 
-void
+bool
 project_t::put_cert(key_store & keys,
                     revision_id const & id,
                     cert_name const & name,
                     cert_value const & value)
 {
-  put_simple_revision_cert(db, keys, id, name, value);
+  I(!keys.signing_key().empty());
+
+  cert t(id, name, value, keys.signing_key);
+  string signed_text;
+  cert_signable_text(t, signed_text);
+  load_key_pair(keys, t.key);
+  keys.make_signature(db, t.key, signed_text, t.sig);
+
+  revision<cert> cc(t);
+  return db.put_revision_cert(cc);
+}
+
+void
+project_t::put_revision_comment(key_store & keys,
+                                revision_id const & id,
+                                utf8 const & comment)
+{
+  put_cert(keys, id, comment_cert_name, typecast_vocab<cert_value>(comment));
+}
+
+void
+project_t::put_revision_testresult(key_store & keys,
+                                   revision_id const & id,
+                                   string const & results)
+{
+  bool passed;
+  if (lowercase(results) == "true" ||
+      lowercase(results) == "yes" ||
+      lowercase(results) == "pass" ||
+      results == "1")
+    passed = true;
+  else if (lowercase(results) == "false" ||
+           lowercase(results) == "no" ||
+           lowercase(results) == "fail" ||
+           results == "0")
+    passed = false;
+  else
+    E(false, origin::user,
+      F("could not interpret test result string '%s'; "
+        "valid strings are: 1, 0, yes, no, true, false, pass, fail")
+      % results);
+
+  put_cert(keys, id, testresult_cert_name,
+           cert_value(lexical_cast<string>(passed), origin::internal));
 }
 
 // These should maybe be converted to member functions.
@@ -425,6 +476,47 @@ notify_if_multiple_heads(project_t & project,
   }
 }
 
+// Guess which branch is appropriate for a commit below IDENT.
+// OPTS may override.  Branch name is returned in BRANCHNAME.
+// Does not modify branch state in OPTS.
+void
+guess_branch(options & opts, project_t & project,
+             revision_id const & ident, branch_name & branchname)
+{
+  if (opts.branch_given && !opts.branch().empty())
+    branchname = opts.branch;
+  else
+    {
+      E(!ident.inner()().empty(), origin::user,
+        F("no branch found for empty revision, "
+          "please provide a branch name"));
+
+      set<branch_name> branches;
+      project.get_revision_branches(ident, branches);
+
+      E(!branches.empty(), origin::user,
+        F("no branch certs found for revision %s, "
+          "please provide a branch name") % ident);
+
+      E(branches.size() == 1, origin::user,
+        F("multiple branch certs found for revision %s, "
+          "please provide a branch name") % ident);
+
+      set<branch_name>::iterator i = branches.begin();
+      I(i != branches.end());
+      branchname = *i;
+    }
+}
+
+// As above, but set the branch name in the options
+// if it wasn't already set.
+void
+guess_branch(options & opts, project_t & project, revision_id const & ident)
+{
+  branch_name branchname;
+  guess_branch(opts, project, ident, branchname);
+  opts.branch = branchname;
+}
 
 // Local Variables:
 // mode: C++
