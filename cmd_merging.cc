@@ -96,7 +96,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
   // figure out which branches the target is in
   vector< revision<cert> > certs;
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
 
   set< branch_name > branches;
   for (vector< revision<cert> >::const_iterator i = certs.begin();

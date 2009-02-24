@@ -254,6 +254,7 @@ public:
   cert_status check_signature(rsa_keypair_id const & id,
                               std::string const & alleged_text,
                               rsa_sha1_signature const & signature);
+  cert_status check_cert(cert const & t);
 
   //
   // --== Certs ==--
@@ -312,6 +313,9 @@ public:
 
   void get_manifest_certs(cert_name const & name,
                           std::vector< manifest<cert> > & certs);
+
+  void erase_bogus_certs(std::vector< manifest<cert> > & certs);
+  void erase_bogus_certs(std::vector< revision<cert> > & certs);
 
   //
   // --== Epochs ==--
@@ -427,13 +431,6 @@ public:
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
-
-  // We make these lua hooks available via the database context;
-  // see comments above their definition for rationale and plans.
-  bool hook_get_manifest_cert_trust(std::set<rsa_keypair_id> const & signers,
-    manifest_id const & id, cert_name const & name, cert_value const & val);
-  bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
-    revision_id const & id, cert_name const & name, cert_value const & val);
 
 private:
   boost::shared_ptr<database_impl> imp;
