@@ -222,7 +222,8 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     }
 
 
-  bool trusted = app.lua.hook_get_revision_cert_trust(signers, ident,
+  bool trusted = app.lua.hook_get_revision_cert_trust(signers,
+                                                      ident.inner(),
                                                       cname, value);
 
 

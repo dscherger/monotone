@@ -543,7 +543,7 @@ CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), "",
     options::opts::none)
 {
   database db(app);
-  vector< revision<cert> > certs;
+  vector<cert> certs;
 
   P(F("loading certs"));
   db.get_revision_certs(certs);

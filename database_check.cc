@@ -49,11 +49,11 @@ using std::string;
 using std::vector;
 
 struct checked_cert {
-  revision<cert> rcert;
+  cert rcert;
   bool found_key;
   bool good_sig;
 
-  checked_cert(revision<cert> const & c): rcert(c), found_key(false), good_sig(false) {}
+  checked_cert(cert const & c): rcert(c), found_key(false), good_sig(false) {}
 };
 
 struct checked_key {
@@ -458,7 +458,7 @@ check_certs(database & db,
             map<rsa_keypair_id, checked_key> & checked_keys,
             size_t & total_certs)
 {
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   db.get_revision_certs(certs);
 
   total_certs = certs.size();
@@ -467,23 +467,22 @@ check_certs(database & db,
 
   ticker ticks(_("certs"), "c", certs.size()/70+1);
 
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
       checked_cert checked(*i);
-      checked.found_key = checked_keys[i->inner().key].found;
+      checked.found_key = checked_keys[i->key].found;
 
       if (checked.found_key)
         {
           string signed_text;
-          i->inner().signable_text(signed_text);
+          i->signable_text(signed_text);
           checked.good_sig
-            = (db.check_signature(i->inner().key,
-                                  signed_text, i->inner().sig) == cert_ok);
+            = (db.check_signature(i->key, signed_text, i->sig) == cert_ok);
         }
 
-      checked_keys[i->inner().key].sigs++;
-      checked_revisions[revision_id(i->inner().ident)].checked_certs.push_back(checked);
+      checked_keys[i->key].sigs++;
+      checked_revisions[i->ident].checked_certs.push_back(checked);
 
       ++ticks;
     }
@@ -816,19 +815,19 @@ report_certs(map<revision_id, checked_revision> const & checked_revisions,
               unchecked_sigs++;
               P(F("revision %s unchecked signature in %s cert from missing key %s")
                 % i->first
-                % checked->rcert.inner().name
-                % checked->rcert.inner().key);
+                % checked->rcert.name
+                % checked->rcert.key);
             }
           else if (!checked->good_sig)
             {
               bad_sigs++;
               P(F("revision %s bad signature in %s cert from key %s")
                 % i->first
-                % checked->rcert.inner().name
-                % checked->rcert.inner().key);
+                % checked->rcert.name
+                % checked->rcert.key);
             }
 
-          cert_counts[checked->rcert.inner().name]++;
+          cert_counts[checked->rcert.name]++;
         }
 
       for (set<cert_name>::const_iterator n = cnames.begin();

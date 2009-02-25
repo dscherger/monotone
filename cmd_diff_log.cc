@@ -588,14 +588,14 @@ static void
 log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
           string label, string separator, bool multiline, bool newline)
 {
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   bool first = true;
 
   if (multiline)
     newline = true;
 
   project.get_revision_certs_by_name(id, name, certs);
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
       if (first)
@@ -605,7 +605,7 @@ log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
 
       if (multiline)
         os << "\n\n";
-      os << i->inner().value;
+      os << i->value;
       if (newline)
         os << '\n';
 

@@ -343,17 +343,17 @@ annotate_context::is_complete() const
 }
 
 static string
-cert_string_value(vector< revision<cert> > const & certs,
+cert_string_value(vector<cert> const & certs,
                   cert_name const & name,
                   bool from_start, bool from_end,
                   string const & sep)
 {
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
-      if (i->inner().name == name)
+      if (i->name == name)
         {
-          cert_value tv(i->inner().value);
+          cert_value tv(i->value);
           string::size_type f = 0;
           string::size_type l = string::npos;
           if (from_start)
@@ -391,7 +391,7 @@ annotate_context::build_revisions_to_annotations
   for (set<revision_id>::const_iterator i = seen.begin();
        i != seen.end(); i++)
     {
-      vector< revision<cert> > certs;
+      vector<cert> certs;
       project.get_revision_certs(*i, certs);
       project.db.erase_bogus_certs(certs);
 
