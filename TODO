@@ -1,0 +1,6 @@
+- Include licensing information, details to be resolved on IRC or mailing list
+- Clarify if MDWN files should include some common settings, maybe a "documentation" tag or something
+- Documentation in XML format and "toolchain" template for conversion to plain text and HTML
+- Specification of the basic layout of a plain output converter stylesheet, in case someone wants to write his/her own
+- Change XSLT variables to parameters (for override them per command line, if needed) and document them
+- Error checking on the input parameters

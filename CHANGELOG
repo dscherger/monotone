@@ -1,3 +1,10 @@
+2009-02-25:
+
+- Several "output filter" template files, for allowing different target formats, which include the central converter stylesheet for basic functionality
+- First work on the MDWN and HTML converter stylesheets; these are just test files for showing the possibility of different output formats; many work has to be done to get them complete
+- Small adaptions on the Readme and Todo files
+
+
 2009-02-15:
 
 - Added basic documentation and readme

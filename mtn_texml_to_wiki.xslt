@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+	Monotone distributed version control system
+	TechML to Wiki XSLT converter
+
+	Variables which must be set within the converter stylesheet:
+	- conv_path_suffix (".html", ...)
+-->
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
-	<xsl:output method="text"/>
 	<!-- Global variables for customization -->
-	<xsl:variable name="mdwn_path_prefix" select="'wikifiles'" />
-	<xsl:variable name="mdwn_path_suffix" select="'.mdwn'" />
-	<xsl:variable name="mdwn_path_separator" select="'/'" />
-	<xsl:variable name="mdwn_index_filename">
+	<xsl:variable name="conv_path_prefix">wikifiles</xsl:variable>
+	<xsl:variable name="conv_path_separator" select="'/'" />
+
+	<xsl:variable name="conv_index_filename">
 		<xsl:call-template name="filter-filename">
 			<xsl:with-param name="file_name" select="/texinfo/titlepage/booktitle/text()" />
 		</xsl:call-template>
 	</xsl:variable>
+
 	<!-- Root Template -->
 	<xsl:template match="/texinfo">
 		<!-- Select each "node" element -->
@@ -27,9 +36,8 @@
 			</xsl:message>
 			<!-- Create target file -->
 			<xsl:result-document href="{$current_filename}">
-				<html><body>
-					<xsl:value-of select="./section"/>
-				</body></html>
+				<!-- Hand over to format converter template from the including file -->
+				<xsl:call-template name="document-root" />
 			</xsl:result-document>
 		</xsl:for-each>
 	</xsl:template>  <!-- End of Root Template -->
@@ -51,9 +59,9 @@
 		<xsl:choose>
 			<!-- if called from toplevel node, output index document filename -->
 			<xsl:when test="$parent_node_name='(dir)'">
-				<xsl:value-of select="$mdwn_path_prefix" />
-				<xsl:value-of select="$mdwn_path_separator" />
-				<xsl:value-of select="$mdwn_index_filename" />
+				<xsl:value-of select="$conv_path_prefix" />
+				<xsl:value-of select="$conv_path_separator" />
+				<xsl:value-of select="$conv_index_filename" />
 			</xsl:when>
 			<!-- not at top level, do recursive lookup of complete path -->
 			<xsl:otherwise>
@@ -63,7 +71,7 @@
 			</xsl:otherwise>
 		</xsl:choose>
 		<!-- Finally output filename suffix -->
-		<xsl:value-of select="$mdwn_path_suffix" />
+		<xsl:value-of select="$conv_path_suffix" />
 	</xsl:template>  <!-- End of create-node-path -->
 
 	<!--
@@ -84,14 +92,14 @@
 		<!-- test if we need to go one level up first -->
 		<xsl:choose>
 			<xsl:when test="$parent_node_name='(dir)'">  <!-- reached top level, return wiki path prefix -->
-				<xsl:value-of select="$mdwn_path_prefix" />
+				<xsl:value-of select="$conv_path_prefix" />
 			</xsl:when>
 			<xsl:otherwise>  <!-- not at top level yet, recursively go up -->
 				<xsl:call-template name="recursive-create-node-path">
 					<xsl:with-param name="node_name" select="$parent_node_name" />
 				</xsl:call-template>
 				<!-- after returning: output path separator and current node name -->
-				<xsl:value-of select="$mdwn_path_separator" />
+				<xsl:value-of select="$conv_path_separator" />
 				<xsl:call-template name="filter-filename">
 					<xsl:with-param name="file_name" select="$node_name" />
 				</xsl:call-template>
@@ -119,4 +127,15 @@
 		<xsl:param name="node_name" />
 		<xsl:value-of select="/texinfo/node/nodename[text()=$node_name]/../nodeup" />
 	</xsl:template>  <!-- End of node-parent-name -->
+
+
+	<!--
+		Default matching templates for nodes within the TexML whoes
+		values should not be output into the document directly.
+	-->
+	<xsl:template match="nodename" priority="-1"/>
+	<xsl:template match="nodenext" priority="-1"/>
+	<xsl:template match="nodeprev" priority="-1"/>
+	<xsl:template match="nodeup" priority="-1"/>
+
 </xsl:stylesheet>
