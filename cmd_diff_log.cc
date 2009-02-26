@@ -647,11 +647,12 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
     N_("This command prints history in reverse order, filtering it by "
        "FILE if given.  If one or more revisions are given, uses them as "
        "a starting point."),
-    options::opts::last | options::opts::next
-    | options::opts::from | options::opts::to
-    | options::opts::brief | options::opts::diffs
-    | options::opts::no_merges | options::opts::no_files
-    | options::opts::no_graph)
+    options::opts::last | options::opts::next |
+    options::opts::from | options::opts::to |
+    options::opts::brief | options::opts::diffs |
+    options::opts::depth | options::opts::exclude |
+    options::opts::no_merges | options::opts::no_files |
+    options::opts::no_graph)
 {
   database db(app);
   project_t project(db);
@@ -701,7 +702,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
 
   node_restriction mask;
 
-  if (!args.empty())
+  if (!args.empty() || !app.opts.exclude_patterns.empty())
     {
       // User wants to trace only specific files
       if (app.opts.from.empty())
@@ -764,13 +765,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           set<revision_id> relatives;
           MM(relatives);
           if (next > 0)
-            {
-              db.get_revision_children(rid, relatives);
-            }
+            db.get_revision_children(rid, relatives);
           else
-            {
-              db.get_revision_parents(rid, relatives);
-            }
+            db.get_revision_parents(rid, relatives);
 
           for (set<revision_id>::const_iterator i = relatives.begin();
                i != relatives.end(); ++i)
@@ -796,14 +793,13 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   cert_name comment_name(comment_cert_name);
 
   // we can use the markings if we walk backwards for a restricted log
-  bool use_markings(!(next>0) && !mask.empty());
+  bool use_markings(next <= 0 && !mask.empty());
 
   set<revision_id> seen;
   revision_t rev;
   // this is instantiated even when not used, but it's lightweight
   asciik graph(cout);
-  while(! frontier.empty() && (last == -1 || last > 0)
-        && (next == -1 || next > 0))
+  while(! frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
 
@@ -968,6 +964,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
       else if (use_markings && !app.opts.no_graph)
         graph.print(rid, interesting,
                     (F("(Revision: %s)") % rid).str());
+
+      cout.flush();
 
       frontier.pop(); // beware: rid is invalid from now on
 
