@@ -1,4 +1,4 @@
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+
 //               2007 Julio M. Merino Vidal <jmmv@NetBSD.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -20,7 +20,6 @@ using std::vector;
 // This file defines the logic behind the CMD() family of macros and handles
 // command completion.  Note that commands::process is in cmd.cc mainly for
 // better encapsulation of functions not needed in the unit tester.
-#endif
 
 namespace commands
 {

@@ -6,7 +6,7 @@ libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 	../transforms.cc ../vocab.cc ../paths.cc ../charset.cc \
 	../simplestring_xform.cc ../constants.cc ../xdelta.cc \
 	../commands.cc ../basic_io.cc botan/md5.cpp piece_table.cc \
-	../mtn-sanity.cc ../package_revision.c ../option.cc \
+	../mtn-sanity.cc ../package_revision.cc ../option.cc \
 	../file_io.cc ../ssh_agent.cc ../specialized_lexical_cast.cc \
 	../gzip.cc ../lua.cc ../globish.cc ../pcrewrap.cc
 
