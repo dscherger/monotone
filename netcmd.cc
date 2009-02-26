@@ -20,6 +20,9 @@
 #include "hmac.hh"
 #include "globish.hh"
 
+#include "key_store.hh"
+Botan::RandomNumberGenerator * fuzzy_rng = 0;
+
 using std::string;
 
 static netcmd_item_type
@@ -65,6 +68,29 @@ netcmd::operator==(netcmd const & other) const
     payload == other.payload;
 }
 
+double
+rnd()
+{
+  if (!fuzzy_rng)
+    return 0;
+  uint32_t x;
+  fuzzy_rng->randomize((Botan::byte*)&x, 4);
+  return (double(x) / uint32_t(-1));
+}
+bool
+maybe(double p)
+{
+  return rnd() < p;
+}
+int
+pick(int n)
+{
+  return rnd() * n;
+}
+
+double p_fuzz_packet = 0.01;
+double p_bad_hmac    = 0.0001;
+
 // note: usher_reply_cmd does not get included in the hmac.
 void
 netcmd::write(string & out, chained_hmac & hmac) const
@@ -72,12 +98,34 @@ netcmd::write(string & out, chained_hmac & hmac) const
   size_t oldlen = out.size();
   out += static_cast<char>(version);
   out += static_cast<char>(cmd_code);
+
+  // maybe mess up the data
+  // don't mess up refine commands very often, that drops the
+  // connection before we get to mess up anything else
+  if (maybe(p_fuzz_packet) && (cmd_code != refine_cmd || maybe(p_fuzz_packet / 10)))
+    {
+      int pos = pick(payload.size());
+      fuzzy_rng->randomize((Botan::byte*)&payload[pos], 1);
+      P(F("fuzzy payload!"));
+    }
+
+  // Don't mess up the packet length. That will have the same effect as
+  // messing up the hmac, except that it might cause a big delay while the
+  // server waits for more input. The timeout for this is annoyingly long,
+  // and would slow testing by absurd amounts.
   insert_variable_length_string(payload, out);
 
   if (hmac.is_active() && cmd_code != usher_reply_cmd)
     {
       string digest = hmac.process(out, oldlen);
       I(hmac.hmac_length == constants::netsync_hmac_value_length_in_bytes);
+      // or maybe mess up the hmac
+      if (maybe(p_bad_hmac))
+        {
+          int pos = pick(digest.size());
+          fuzzy_rng->randomize((Botan::byte*)&digest[pos], 1);
+          P(F("fuzzy hmac!"));
+        }
       out.append(digest);
     }
 }

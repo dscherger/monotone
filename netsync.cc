@@ -62,6 +62,8 @@
 #include "netxx/streamserver.h"
 #include "netxx/timeout.h"
 #include "netxx_pipe.hh"
+
+extern Botan::RandomNumberGenerator * fuzzy_rng;
 // TODO: things to do that will break protocol compatibility
 //   -- need some way to upgrade anonymous to keyed pull, without user having
 //      to explicitly specify which they want
@@ -886,7 +888,10 @@ session::session(options & opts,
   rev_refiner(revision_item, voice, *this),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
-{}
+{
+  if (fuzzy_rng == 0)
+    fuzzy_rng = &keys.get_rng();
+}
 
 session::~session()
 {
