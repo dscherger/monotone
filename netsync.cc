@@ -2316,8 +2316,13 @@ session::process_data_cmd(netcmd_item_type type,
     case revision_item:
       {
         L(FL("received revision '%s'") % hitem());
+        data d(dat, origin::network);
+        id tmp;
+        calculate_ident(d, tmp);
+        if (!(tmp == item))
+          throw bad_decode(F("hash check failed for revision %s") % item);
         revision_t rev;
-        read_revision(data(dat, origin::network), rev);
+        read_revision(d, rev);
         if (project.db.put_revision(revision_id(item), rev))
           written_revisions.push_back(revision_id(item));
       }
@@ -2326,8 +2331,13 @@ session::process_data_cmd(netcmd_item_type type,
     case file_item:
       {
         L(FL("received file '%s'") % hitem());
+        data d(dat, origin::network);
+        id tmp;
+        calculate_ident(d, tmp);
+        if (!(tmp == item))
+          throw bad_decode(F("hash check failed for file %s") % item);
         project.db.put_file(file_id(item),
-                            file_data(dat, origin::network));
+                            file_data(d));
       }
       break;
     }
@@ -2666,6 +2676,13 @@ bool session::process(transaction_guard & guard)
         % peer_id % bd.what);
       return false;
     }
+  catch (recoverable_failure & rf)
+    {
+      W(F("recoverable '%s' error while processing peer %s: '%s'")
+        % origin::type_to_string(rf.caused_by())
+        % peer_id % rf.what());
+      return false;
+    }
   catch (netsync_error & err)
     {
       W(F("error: %s") % err.msg);
@@ -2865,6 +2882,13 @@ class reactor
           {
             W(F("protocol error while processing peer %s: '%s'")
               % item->name() % bd.what);
+            remove(item);
+          }
+        catch (recoverable_failure & rf)
+          {
+            W(F("recoverable '%s' error while processing peer %s: '%s'")
+              % origin::type_to_string(rf.caused_by())
+              % item->name() % rf.what());
             remove(item);
           }
       }
