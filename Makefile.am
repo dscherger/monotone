@@ -282,6 +282,7 @@ if MISSING_INET6
   AM_CPPFLAGS += -DNETXX_NO_INET6
 endif
 
+SUBDIRS = po . mtn_cvs
 # extra files
 
 PDF_FIGURES= figures/branch-heads.pdf figures/cert.pdf			\

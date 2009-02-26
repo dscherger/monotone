@@ -20,6 +20,7 @@ using std::vector;
 // This file defines the logic behind the CMD() family of macros and handles
 // command completion.  Note that commands::process is in cmd.cc mainly for
 // better encapsulation of functions not needed in the unit tester.
+#endif
 
 namespace commands
 {
@@ -496,9 +497,12 @@ namespace commands
   {
     return split_into_words(utf8(path, origin::user));
   }
+#ifndef LIBMTN_COMPILE
+#endif
+#ifndef LIBMTN_COMPILE
 }
 
-
+#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76

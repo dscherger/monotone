@@ -1,0 +1,47 @@
+#  -*- Autoconf -*-
+
+AT_SETUP([pull of CVS module with rapidly changed history])
+
+MTN_SETUP
+
+# build the cvs repository
+
+CVSROOT=`pwd`/cvs-repository
+AT_CHECK(cvs -q -d $CVSROOT init)
+AT_CHECK(test -e $CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT)
+AT_CHECK(test -e $CVSROOT/CVSROOT/history)
+
+# fake a test project
+
+AT_CHECK(mkdir $CVSROOT/test)
+
+# change the repository in various ways
+
+AT_CHECK([cvs -q -d $CVSROOT co test], [], [ignore], [ignore])
+AT_CHECK([echo "fast A" >test/A])
+AT_CHECK([echo "fast B" >test/B])
+AT_CHECK([echo "fast C" >test/C])
+AT_CHECK([echo "fast D" >test/D])
+AT_CHECK([cd test;cvs -Q add A;cvs -Q ci -m "fast A add"])
+AT_CHECK([cd test;cvs -Q add C;cvs -Q ci -m "fast C add"])
+AT_CHECK([cd test;cvs -Q add B;cvs -Q ci -m "fast B add"])
+AT_CHECK([cd test;cvs -Q add D;cvs -Q ci -m "fast D add"])
+AT_CHECK([echo "fast A change" >test/A])
+AT_CHECK([echo "fast B change" >test/B])
+AT_CHECK([echo "fast C change" >test/C])
+AT_CHECK([echo "fast D change" >test/D])
+AT_CHECK([cd test;cvs -Q ci -m "fast D change" D])
+AT_CHECK([cd test;cvs -Q ci -m "fast C change" C])
+AT_CHECK([cd test;cvs -Q ci -m "fast B change" B])
+AT_CHECK([cd test;cvs -Q ci -m "fast A change" A])
+
+# pull into monotone
+
+AT_CHECK(MTN --branch=testbranch cvs_pull $CVSROOT test, [], [ignore], [ignore])
+
+# also check that history is okay -- has a unique head
+
+AT_CHECK(MTN checkout --branch=testbranch mtcodir, [], [ignore], [ignore])
+
+AT_CLEANUP
