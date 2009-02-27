@@ -94,14 +94,14 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
   bool switched_branch = false;
 
   // figure out which branches the target is in
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
 
   set< branch_name > branches;
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
-    branches.insert(typecast_vocab<branch_name>(i->inner().value));
+    branches.insert(typecast_vocab<branch_name>(i->value));
 
   if (branches.find(opts.branch) != branches.end())
     {

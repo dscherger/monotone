@@ -20,6 +20,8 @@
 
 #include <string.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
@@ -34,6 +36,7 @@
 
 #include "app_state.hh"
 #include "cert.hh"
+#include "project.hh"
 #include "cleanup.hh"
 #include "constants.hh"
 #include "dates.hh"
@@ -84,6 +87,9 @@ using std::accumulate;
 
 using boost::shared_ptr;
 using boost::shared_dynamic_cast;
+using boost::lexical_cast;
+using boost::get;
+using boost::tuple;
 using boost::lexical_cast;
 
 using Botan::PK_Encryptor;
@@ -3029,6 +3035,14 @@ database::check_signature(rsa_keypair_id const & id,
     return cert_bad;
 }
 
+cert_status
+database::check_cert(cert const & t)
+{
+  string signed_text;
+  t.signable_text(signed_text);
+  return check_signature(t.key, signed_text, t.sig);
+}
+
 // cert management
 
 bool
@@ -3058,7 +3072,7 @@ database_impl::put_cert(cert const & t,
                         string const & table)
 {
   id thash;
-  cert_hash_code(t, thash);
+  t.hash_code(thash);
   rsa_sha1_signature sig;
 
   string insert = "INSERT INTO " + table + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -3199,30 +3213,30 @@ database_impl::get_certs(id const & ident,
 
 
 bool
-database::revision_cert_exists(revision<cert> const & cert)
+database::revision_cert_exists(cert const & cert)
 {
-  return imp->cert_exists(cert.inner(), "revision_certs");
+  return imp->cert_exists(cert, "revision_certs");
 }
 
 bool
-database::put_revision_cert(revision<cert> const & cert)
+database::put_revision_cert(cert const & cert)
 {
   if (revision_cert_exists(cert))
     {
       L(FL("revision cert on '%s' already exists in db")
-        % cert.inner().ident);
+        % cert.ident);
       return false;
     }
 
-  if (!revision_exists(revision_id(cert.inner().ident)))
+  if (!revision_exists(revision_id(cert.ident)))
     {
       W(F("cert revision '%s' does not exist in db")
-        % cert.inner().ident);
+        % cert.ident);
       W(F("dropping cert"));
       return false;
     }
 
-  imp->put_cert(cert.inner(), "revision_certs");
+  imp->put_cert(cert, "revision_certs");
   imp->cert_stamper.note_change();
   return true;
 }
@@ -3251,35 +3265,26 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 }
 
 outdated_indicator
-database::get_revision_certs(vector< revision<cert> > & ts)
+database::get_revision_certs(vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
-                            vector< revision<cert> > & ts)
+                            vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), name, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3287,12 +3292,9 @@ outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
                              cert_value const & val,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), name, val, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3313,46 +3315,39 @@ database::get_revisions_with_cert(cert_name const & name,
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, val, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & id,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & ident,
-                             vector<id> & ts)
+                             vector<id> & ids)
 {
   results res;
-  vector<cert> certs;
   imp->fetch(res, one_col, any_rows,
              query("SELECT hash "
                    "FROM revision_certs "
                    "WHERE id = ?")
              % blob(ident.inner()()));
-  ts.clear();
+  ids.clear();
   for (size_t i = 0; i < res.size(); ++i)
-    ts.push_back(id(res[i][0], origin::database));
+    ids.push_back(id(res[i][0], origin::database));
   return imp->cert_stamper.get_indicator();
 }
 
 void
 database::get_revision_cert(id const & hash,
-                            revision<cert> & c)
+                            cert & c)
 {
   results res;
   vector<cert> certs;
@@ -3363,7 +3358,7 @@ database::get_revision_cert(id const & hash,
              % blob(hash()));
   imp->results_to_certs(res, certs);
   I(certs.size() == 1);
-  c = revision<cert>(certs[0]);
+  c = certs[0];
 }
 
 bool
@@ -3380,27 +3375,133 @@ database::revision_cert_exists(revision_id const & hash)
   return (res.size() == 1);
 }
 
+// FIXME: the bogus-cert family of functions is ridiculous
+// and needs to be replaced, or at least factored.
+namespace {
+  struct
+  bogus_cert_p
+  {
+    database & db;
+    bogus_cert_p(database & db) : db(db) {};
+
+    bool operator()(cert const & c) const
+    {
+      cert_status status = db.check_cert(c);
+      if (status == cert_ok)
+        {
+          L(FL("cert ok"));
+          return false;
+        }
+      else if (status == cert_bad)
+        {
+          string txt;
+          c.signable_text(txt);
+          W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
+          return true;
+        }
+      else
+        {
+          I(status == cert_unknown);
+          string txt;
+          c.signable_text(txt);
+          W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
+          return true;
+        }
+    }
+  };
+
+  typedef bool (lua_hooks::*cert_trust_hook_t)(set<rsa_keypair_id> const &,
+                                               id const &,
+                                               cert_name const &,
+                                               cert_value const &);
+
+  void
+  erase_bogus_certs_internal(vector<cert> & certs,
+                             database & db, lua_hooks & lua,
+                             cert_trust_hook_t hook_get_cert_trust)
+  {
+    typedef vector<cert>::iterator it;
+    it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
+    certs.erase(e, certs.end());
+
+    vector<cert> tmp_certs;
+
+    // sorry, this is a crazy data structure
+    typedef tuple<id, cert_name, cert_value> trust_key;
+    typedef map< trust_key,
+      pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
+    trust_map trust;
+
+    for (it i = certs.begin(); i != certs.end(); ++i)
+      {
+        trust_key key = trust_key(i->ident.inner(),
+                                  i->name,
+                                  i->value);
+        trust_map::iterator j = trust.find(key);
+        shared_ptr< set<rsa_keypair_id> > s;
+        if (j == trust.end())
+          {
+            s.reset(new set<rsa_keypair_id>());
+            trust.insert(make_pair(key, make_pair(s, i)));
+          }
+        else
+          s = j->second.first;
+        s->insert(i->key);
+      }
+
+    for (trust_map::const_iterator i = trust.begin();
+         i != trust.end(); ++i)
+      {
+        if ((lua.*hook_get_cert_trust)(*(i->second.first),
+                                       get<0>(i->first),
+                                       get<1>(i->first),
+                                       get<2>(i->first)))
+          {
+            if (global_sanity.debug_p())
+              L(FL("trust function liked %d signers of %s cert on revision %s")
+                % i->second.first->size()
+                % get<1>(i->first)
+                % get<0>(i->first));
+            tmp_certs.push_back(*(i->second.second));
+          }
+        else
+          {
+            W(F("trust function disliked %d signers of %s cert on revision %s")
+              % i->second.first->size()
+              % get<1>(i->first)
+              % get<0>(i->first));
+          }
+      }
+    certs = tmp_certs;
+  }
+} // anonymous namespace
+
 void
-database::get_manifest_certs(manifest_id const & id,
-                             vector< manifest<cert> > & ts)
+database::erase_bogus_certs(vector<cert> & certs)
 {
-  vector<cert> certs;
+  erase_bogus_certs_internal(certs, *this, this->lua,
+                             &lua_hooks::hook_get_revision_cert_trust);
+}
+
+// These are only used by migration from old manifest-style ancestry, so we
+// don't much worry that they are not perfectly typesafe.  Also, we know
+// that the callers want bogus certs erased.
+
+void
+database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
+{
   imp->get_certs(id.inner(), certs, "manifest_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
+  erase_bogus_certs_internal(certs, *this, this->lua,
+                             &lua_hooks::hook_get_manifest_cert_trust);
 }
-
 
 void
-database::get_manifest_certs(cert_name const & name,
-                            vector< manifest<cert> > & ts)
+database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, certs, "manifest_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
+  erase_bogus_certs_internal(certs, *this, this->lua,
+                             &lua_hooks::hook_get_manifest_cert_trust);
 }
-
 
 // completions
 void
@@ -3946,31 +4047,6 @@ database_impl::close()
 
   I(!__sql);
 }
-
-// the database holds onto the lua_hooks object and uses it to re-expose
-// these two hooks.  it is impractical to pass the lua_hooks object down to
-// all the places where this is used, and they're all going to get
-// reexamined when we do policy branches anyway.  also, arguably this is
-// cleaner, because those places don't have access to *all* the lua hooks,
-// just these two.  (manifest cert trust is only relevant to pre-roster
-// migration, but revision cert trust comes up everywhere erase_bogus_certs
-// is called.)  (A near-term refactor that might make sense: make
-// erase_bogus_certs a project_t member and have the project_t hold the
-// lua_hooks reference.)
-
-bool
-database::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-    manifest_id const & id, cert_name const & name, cert_value const & val)
-{
-  return lua.hook_get_manifest_cert_trust(signers, id, name, val);
-};
-
-bool
-database::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-    revision_id const & id, cert_name const & name, cert_value const & val)
-{
-  return lua.hook_get_revision_cert_trust(signers, id, name, val);
-};
 
 // transaction guards
 

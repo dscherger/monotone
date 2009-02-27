@@ -54,6 +54,10 @@
 	  own for directory creation and permissions if you take the
 	  key on standard output and redirect it to a file.)
 
+        - The log command was missing --depth and --exclude options used to
+          restrict revisions printed to those touching specific paths. Log now
+          allows these options and uses them properly.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets

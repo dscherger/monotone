@@ -11,7 +11,7 @@
 #include "migration.hh"
 #include "revision.hh"
 #include "roster.hh"
-
+#include "project.hh"
 #include "constants.hh"
 #include "database.hh"
 #include "graph.hh"
@@ -212,6 +212,7 @@ void anc_graph::write_certs()
 
 
   typedef multimap<u64, pair<cert_name, cert_value> >::const_iterator ci;
+  project_t project(db);
 
   for (map<u64,revision_id>::const_iterator i = node_to_new_rev.begin();
        i != node_to_new_rev.end(); ++i)
@@ -225,7 +226,7 @@ void anc_graph::write_certs()
           cert_name name(j->second.first);
           cert_value val(j->second.second);
 
-          if (put_simple_revision_cert(db, keys, rev, name, val))
+          if (project.put_cert(keys, rev, name, val))
             ++n_certs_out;
         }
     }
@@ -343,16 +344,14 @@ anc_graph::add_node_for_old_manifest(manifest_id const & man)
       node_to_old_man.insert(make_pair(node, man));
 
       // load certs
-      vector< manifest<cert> > mcerts;
+      vector<cert> mcerts;
       db.get_manifest_certs(man, mcerts);
-      erase_bogus_certs(db, mcerts);
-      for(vector< manifest<cert> >::const_iterator i = mcerts.begin();
+      for(vector<cert>::const_iterator i = mcerts.begin();
           i != mcerts.end(); ++i)
         {
-          L(FL("loaded '%s' manifest cert for node %s") % i->inner().name % node);
+          L(FL("loaded '%s' manifest cert for node %s") % i->name % node);
           ++n_certs_in;
-          certs.insert(make_pair(node, make_pair(i->inner().name,
-                                                 i->inner().value)));
+          certs.insert(make_pair(node, make_pair(i->name, i->value)));
         }
     }
   else
@@ -386,19 +385,19 @@ u64 anc_graph::add_node_for_oldstyle_revision(revision_id const & rev)
       node_to_renames.insert(make_pair(node, renames));
 
       // load certs
-      vector< revision<cert> > rcerts;
+      vector<cert> rcerts;
       db.get_revision_certs(rev, rcerts);
-      erase_bogus_certs(db, rcerts);
-      for(vector< revision<cert> >::const_iterator i = rcerts.begin();
+      db.erase_bogus_certs(rcerts);
+      for(vector<cert>::const_iterator i = rcerts.begin();
           i != rcerts.end(); ++i)
         {
-          L(FL("loaded '%s' revision cert for node %s") % i->inner().name % node);
+          L(FL("loaded '%s' revision cert for node %s") % i->name % node);
           ++n_certs_in;
-          certs.insert(make_pair(node, make_pair(i->inner().name,
-                                                 i->inner().value)));
+          certs.insert(make_pair(node, make_pair(i->name,
+                                                 i->value)));
 
-          if (i->inner().name == branch_cert_name)
-            branches.insert(i->inner().value());
+          if (i->name == branch_cert_name)
+            branches.insert(i->value());
         }
     }
   else
@@ -944,16 +943,15 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
 
   P(F("rebuilding revision graph from manifest certs"));
 
-  vector< manifest<cert> > tmp;
+  vector<cert> tmp;
   db.get_manifest_certs(cert_name("ancestor"), tmp);
-  erase_bogus_certs(db, tmp);
 
-  for (vector< manifest<cert> >::const_iterator i = tmp.begin();
+  for (vector<cert>::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {
       manifest_id child, parent;
-      child = manifest_id(i->inner().ident.inner());
-      parent = typecast_vocab<manifest_id>(i->inner().value);
+      child = manifest_id(i->ident.inner());
+      parent = typecast_vocab<manifest_id>(i->value);
 
       u64 parent_node = graph.add_node_for_old_manifest(parent);
       u64 child_node = graph.add_node_for_old_manifest(child);
