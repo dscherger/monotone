@@ -626,15 +626,73 @@ log_certs(project_t & project, ostream & os, revision_id id, cert_name name)
   log_certs(project, os, id, name, " ", ",", false, false);
 }
 
+enum log_direction { log_forward, log_reverse };
 
 struct rev_cmp
 {
-  bool dir;
-  rev_cmp(bool _dir) : dir(_dir) {}
+  log_direction direction;
+  rev_cmp(log_direction const & direction) : direction(direction) {}
   bool operator() (pair<rev_height, revision_id> const & x,
                    pair<rev_height, revision_id> const & y) const
   {
-    return dir ? (x.first < y.first) : (x.first > y.first);
+    switch (direction)
+      {
+      case log_forward:
+        return x.first > y.first; // optional with --next N
+      case log_reverse:
+        return x.first < y.first; // default and with --last N
+      }
+  }
+};
+
+struct revision_loader
+{
+  database & db;
+  log_direction direction;
+
+  revision_loader(database & db, log_direction const direction) :
+    db(db), direction(direction) {}
+
+  void
+  load_related_revs(revision_id const & rid, set<revision_id> & relatives)
+  {
+    switch (direction)
+      {
+      case log_forward: // optional with --next N
+        db.get_revision_children(rid, relatives);
+        break;
+      case log_reverse: // default and with --last N
+        db.get_revision_parents(rid, relatives);
+        break;
+      }
+  }
+
+  void
+  load_implied_revs(set<revision_id> & revs)
+  {
+    std::deque<revision_id> next(revs.begin(), revs.end());
+
+    while (!next.empty())
+      {
+        revision_id const & rid(next.front());
+        MM(rid);
+
+        set<revision_id> relatives;
+        MM(relatives);
+        load_related_revs(rid, relatives);
+
+        for (set<revision_id>::const_iterator i = relatives.begin();
+             i != relatives.end(); ++i)
+          {
+            if (null_id(*i))
+              continue;
+            pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
+            if (res.second)
+              next.push_back(*i);
+          }
+
+        next.pop_front();
+      }
   }
 };
 
@@ -660,10 +718,18 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   long last = app.opts.last;
   long next = app.opts.next;
 
+  log_direction direction = log_reverse;
+
   E(last == -1 || next == -1, origin::user,
     F("only one of --last/--next allowed"));
 
-  frontier_t frontier(rev_cmp(!(next>0)));
+  if (next >= 0)
+    direction = log_forward;
+
+  revision_loader loader(db, direction);
+
+  rev_cmp cmp(direction);
+  frontier_t frontier(cmp);
   revision_id first_rid; // for mapping paths to node ids when restricted
 
   if (app.opts.from.empty())
@@ -757,32 +823,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
             }
         }
 
-      while (!to.empty())
-        {
-          revision_id const & rid(to.front());
-          MM(rid);
-
-          set<revision_id> relatives;
-          MM(relatives);
-          if (next > 0)
-            db.get_revision_children(rid, relatives);
-          else
-            db.get_revision_parents(rid, relatives);
-
-          for (set<revision_id>::const_iterator i = relatives.begin();
-               i != relatives.end(); ++i)
-            {
-              if (null_id(*i))
-                continue;
-              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*i);
-              if (res.second)
-                {
-                  to.push_back(*i);
-                }
-            }
-
-          to.pop_front();
-        }
+      loader.load_implied_revs(disallowed);
     }
 
   cert_name author_name(author_cert_name);
@@ -793,7 +834,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   cert_name comment_name(comment_cert_name);
 
   // we can use the markings if we walk backwards for a restricted log
-  bool use_markings(next <= 0 && !mask.empty());
+  bool use_markings(direction == log_reverse && !mask.empty());
 
   set<revision_id> seen;
   revision_t rev;
@@ -827,8 +868,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           for (marking_map::const_iterator m = markings.begin();
                m != markings.end(); ++m)
             {
-              node_id node = m->first;
-              marking_t marking = m->second;
+              node_id const & node = m->first;
+              marking_t const & marking = m->second;
 
               if (mask.includes(roster, node))
                 {
@@ -880,10 +921,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
       else
         {
-          if (next > 0)
-            db.get_revision_children(rid, interesting);
-          else // walk backwards by default
-            db.get_revision_parents(rid, interesting);
+          loader.load_related_revs(rid, interesting);
         }
 
       if (print_this)
