@@ -766,6 +766,33 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
     }
 
+  // If --to was given, don't log past those revisions.
+  set<revision_id> disallowed;
+  bool use_disallowed(!app.opts.to.empty());
+  if (use_disallowed)
+    {
+      std::deque<revision_id> to;
+      for (args_vector::const_iterator i = app.opts.to.begin();
+           i != app.opts.to.end(); i++)
+        {
+          MM(*i);
+          set<revision_id> rids;
+          complete(app.opts, app.lua, project, (*i)(), rids);
+          for (set<revision_id>::const_iterator j = rids.begin();
+               j != rids.end(); ++j)
+            {
+              I(!null_id(*j));
+              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*j);
+              if (res.second)
+                {
+                  to.push_back(*j);
+                }
+            }
+        }
+
+      loader.load_implied_revs(disallowed);
+    }
+
   node_restriction mask;
 
   if (!args.empty() || !app.opts.exclude_patterns.empty())
@@ -797,33 +824,6 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                                   args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster);
         }
-    }
-
-  // If --to was given, don't log past those revisions.
-  set<revision_id> disallowed;
-  bool use_disallowed(!app.opts.to.empty());
-  if (use_disallowed)
-    {
-      std::deque<revision_id> to;
-      for (args_vector::const_iterator i = app.opts.to.begin();
-           i != app.opts.to.end(); i++)
-        {
-          MM(*i);
-          set<revision_id> rids;
-          complete(app.opts, app.lua, project, (*i)(), rids);
-          for (set<revision_id>::const_iterator j = rids.begin();
-               j != rids.end(); ++j)
-            {
-              I(!null_id(*j));
-              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*j);
-              if (res.second)
-                {
-                  to.push_back(*j);
-                }
-            }
-        }
-
-      loader.load_implied_revs(disallowed);
     }
 
   cert_name author_name(author_cert_name);
@@ -869,14 +869,16 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                m != markings.end(); ++m)
             {
               node_id const & node = m->first;
-              marking_t const & marking = m->second;
+              marking_t const & marks = m->second;
 
               if (mask.includes(roster, node))
                 {
-                  marked_revs.insert(marking.file_content.begin(), marking.file_content.end());
-                  marked_revs.insert(marking.parent_name.begin(), marking.parent_name.end());
-                  for (map<attr_key, set<revision_id> >::const_iterator a = marking.attrs.begin();
-                       a != marking.attrs.end(); ++a)
+                  marked_revs.insert(marks.file_content.begin(),
+                                     marks.file_content.end());
+                  marked_revs.insert(marks.parent_name.begin(),
+                                     marks.parent_name.end());
+                  for (map<attr_key, set<revision_id> >::const_iterator
+                         a = marks.attrs.begin(); a != marks.attrs.end(); ++a)
                     marked_revs.insert(a->second.begin(), a->second.end());
                 }
             }
