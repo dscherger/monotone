@@ -29,7 +29,7 @@ void export_changes(database & db,
                     std::map<std::string, std::string> const & author_map,
                     std::map<std::string, std::string> const & branch_map,
                     std::map<revision_id, git_change> const & change_map,
-                    bool log_revids, bool log_certs);
+                    bool log_revids, bool log_certs, bool use_one_changelog);
 
 void export_rev_refs(std::vector<revision_id> const & revisions,
                      std::map<revision_id, size_t> & marked_revs);

@@ -73,7 +73,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
     N_("Produces a git fast-export data stream on stdout"),
     N_(""),
     options::opts::authors_file | options::opts::branches_file |
-    options::opts::log_revids | options::opts::log_certs |
+    options::opts::log_revids | options::opts::log_certs | 
+    options::opts::use_one_changelog |
     options::opts::import_marks | options::opts::export_marks |
     options::opts::refs)
 {
@@ -124,7 +125,8 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
   export_changes(db,
                  revisions, marked_revs,
                  author_map, branch_map, change_map,
-                 app.opts.log_revids, app.opts.log_certs);
+                 app.opts.log_revids, app.opts.log_certs,
+                 app.opts.use_one_changelog);
 
   if (app.opts.refs.find("revs") != app.opts.refs.end())
     export_rev_refs(revisions, marked_revs);

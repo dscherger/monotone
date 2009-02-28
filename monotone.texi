@@ -9362,7 +9362,7 @@ the tree.
 @ftable @command
 @item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
 @itemx mtn git_export [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
-@itemx mtn git_export [--log-revids] [--log-certs]
+@itemx mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]
 @itemx mtn git_export [--refs=@var{type}]
 
 This command exports all revisions from the current monotone database
@@ -9370,11 +9370,25 @@ to @code{stdout} in a format that can be piped directly to git
 fast-import.
 
 The @option{--authors-file} option may be used to map monotone author
-names to different values in a manner similar to that documented in
-git-svn(1). Author mappings are specified in the @var{authors-file} as:
+and committer names to different values in a manner similar to that
+documented in git-svn(1). Mappings are specified in the
+@var{authors-file} as:
 @verbatim
 loginname = Joe User <user@example.com>
 @end verbatim
+
+The list of authors that might need to be mapped can be extracted from
+a monotone database with the following sql query:
+@verbatim
+$ mtn db execute 'select distinct value from revision_certs where name = "author"'
+@end verbatim
+
+The list of committers that might need to be mapped can be extracted
+from a monotone database with the following sql query:
+@verbatim
+$ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+@end verbatim
+
 The @option{--branches-file} option may be used to map monotone branch
 names to different values. This may be required as monotone allows
 branch names that are not valid according to git. Branch mappings are
@@ -9385,6 +9399,12 @@ monotone-branch-name = git-branch-name
 Revisions with no author cert will use <unknown> for both the author
 and the committer. These can be mapped to other values using the
 @var{authors-file} option.
+
+The list of branches that might need to be mapped can be extracted
+from a monotone database with using the @command{ls branches} command:
+@verbatim
+$ mtn ls branches --ignore-suspend-certs
+@end verbatim
 
 The @option{--import-marks} and @option{--export-marks} options are
 similar to those documented in git-fast-export(1) and
@@ -9424,6 +9444,16 @@ verification or maintaining information that is otherwise not
 maintained by git. In particular monotone may have several values for
 each of these certs and git only represents a single @code{author} and
 @code{date} value.
+
+By default, the values of all changelog and comment certs on a
+revision are concatenated to form the git commit message for that
+revision. The @option{--use-one-changelog} option will prevent this
+behaviour and use the value from the first changelog cert
+encountered. @emph{WARNING:} this will explicitly lose information in
+the exported data. Changelog certs have no implicit ordering, one will
+be selected arbitrarily to be used as the git commit message and all
+others will be excluded from the exported data. Additionally, all
+comment certs will be excluded from the exported data.
 
 References to the original monotone branches and tags are exported as
 @code{refs/tags/<tag-name>} and @code{refs/heads/<branch-name>}. In

@@ -731,6 +731,14 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
 }
 #endif
 
+OPT(use_one_changelog, "use-one-changelog", bool, false,
+    gettext_noop("use only one changelog cert for the git commit message"))
+#ifdef option_bodies
+{
+  use_one_changelog = true;
+}
+#endif
+    
 OPT(authors_file, "authors-file", system_path, , 
     gettext_noop("file mapping author names from original to new values"))
 #ifdef option_bodies

@@ -187,7 +187,8 @@ export_changes(database & db,
                map<string, string> const & author_map,
                map<string, string> const & branch_map,
                map<revision_id, git_change> const & change_map,
-               bool log_revids, bool log_certs)
+               bool log_revids, bool log_certs,
+               bool use_one_changelog)
 {
   size_t revnum = 0;
   size_t revmax = revisions.size();
@@ -292,8 +293,9 @@ export_changes(database & db,
 
       // process comment certs with changelog certs
 
-      changelogs.insert(changelogs.end(),
-                        comments.begin(), comments.end());
+      if (!use_one_changelog)
+        changelogs.insert(changelogs.end(),
+                          comments.begin(), comments.end());
 
       for (cert_iterator changelog = changelogs.begin();
            changelog != changelogs.end(); ++changelog)
@@ -305,6 +307,8 @@ export_changes(database & db,
               message << value;
               if (value[value.size()-1] != '\n')
                 message << "\n";
+              if (use_one_changelog)
+                break;
             }
         }
 
