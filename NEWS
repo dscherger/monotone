@@ -31,6 +31,10 @@
           The bug that caused this is fixed, and that operation now has a
           safety timer that should prevent it from coming back.
 
+        - When the netsync server receives garbage over the network, it
+          should be much better about only terminating the offending connection
+          instead of the entire server.
+
         - Several bugfixes to `mtn automate stdio':
           * it now correctly distinguishs between syntax and command errors by
             returning error code 1 for the former and error code 2 for the
