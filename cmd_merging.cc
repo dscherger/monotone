@@ -300,6 +300,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
                               merged_roster, remaining);
 
   // small race condition here... FIXME: what is it?
+  work.put_update_id(old_rid);
   work.put_work_rev(remaining);
   work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);

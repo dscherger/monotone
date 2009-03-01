@@ -85,6 +85,10 @@
         - Additional '--revision' option for 'mtn log' allows logging of
           selected sets of revisions.
 
+        - Additional 'u:' and 'm:' selector types for selecting the revision the
+          workspace was last updated from and revisions matching specified
+          message globs in changelog and comment certs.
+
         Internal
 
         - Using 64 bit integer values to represent dates internally. This
