@@ -63,16 +63,17 @@ get_reconstruction_path(id const & start,
   // moment. this imperative version only loads the descendents of the
   // reconstruction node, so it much cheaper in terms of memory.
 
+  set<id> seen_nodes;
   vector< shared_ptr<reconstruction_path> > live_paths;
 
   {
     shared_ptr<reconstruction_path> pth0 = shared_ptr<reconstruction_path>(new reconstruction_path());
     pth0->push_back(start);
     live_paths.push_back(pth0);
+    seen_nodes.insert(start);
   }
 
   shared_ptr<reconstruction_path> selected_path;
-  set<id> seen_nodes;
 
   while (!selected_path)
     {
@@ -126,7 +127,8 @@ get_reconstruction_path(id const & start,
                         }
                       // check for a cycle... not that anything would break if
                       // there were one, but it's nice to let us know we have a bug
-                      for (reconstruction_path::const_iterator k = pthN->begin(); k != pthN->end(); ++k)
+                      for (reconstruction_path::const_iterator k = pthN->begin();
+                           k != pthN->end(); ++k)
                         I(*k != *j);
                       pthN->push_back(*j);
                       next_paths.push_back(pthN);

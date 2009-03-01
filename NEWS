@@ -21,6 +21,14 @@
 	  been a long-standing request of various redistributors of binary
 	  packages, who prefer the use of globally shared libraries.
 
+        - There is a new db var "database delta-direction", which can have
+          values "reverse" (default), "forward", and "both". This controls
+          what kind of deltas are stored for new file versions. Forward
+          deltas are very fast for netsync, but slow for most other uses.
+          Set this to "both" (or "forward" if you're short on disk space) on
+          an empty db and pull everything into it, to get a database which
+          will be much faster for server usage (especially initial pulls).
+
         Bugs fixed
 
         - In 0.42, a netsync writer would attemts to queue up all outgoing
