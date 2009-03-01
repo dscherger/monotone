@@ -169,6 +169,14 @@ public:
   // read the (partial) revision describing the current workspace.
   void get_work_rev(revision_t & rev);
 
+  // read the revision id that was the parent of this workspace before
+  // the last update occured. this is used for the u: (update) selector
+  void get_update_id(revision_id & update_id);
+
+  // write the revision id that was the parent of this workspace before
+  // update completes. this is used for the u: (update) selector
+  void put_update_id(revision_id const & update_id);
+
   // convenience wrappers around the above functions.
 
   // This returns the current roster, except it does not bother updating the

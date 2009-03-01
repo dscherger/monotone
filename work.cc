@@ -53,6 +53,7 @@ static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
 static char const revision_file_name[] = "revision";
+static char const update_file_name[] = "update";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -87,6 +88,13 @@ get_user_log_path(bookkeeping_path & ul_path)
 {
   ul_path = bookkeeping_root / user_log_file_name;
   L(FL("user log path is %s") % ul_path);
+}
+
+static void
+get_update_path(bookkeeping_path & update_path)
+{
+  update_path = bookkeeping_root / update_file_name;
+  L(FL("update path is %s") % update_path);
 }
 
 //
@@ -228,6 +236,33 @@ workspace::put_work_rev(revision_t const & rev)
   bookkeeping_path rev_path;
   get_revision_path(rev_path);
   write_data(rev_path, rev_data);
+}
+
+void
+workspace::get_update_id(revision_id & update_id)
+{
+  data update_data;
+  bookkeeping_path update_path;
+  get_update_path(update_path);
+  E(file_exists(update_path), origin::user,
+    F("no update has occurred in this workspace"));
+
+  read_data(update_path, update_data);
+
+  update_id = revision_id(decode_hexenc(update_data(), origin::internal),
+                          origin::internal);
+  E(!null_id(update_id), origin::internal,
+    F("no update revision available"));
+}
+
+void
+workspace::put_update_id(revision_id const & update_id)
+{
+  data update_data(encode_hexenc(update_id.inner()(), origin::internal), 
+                   origin::internal);
+  bookkeeping_path update_path;
+  get_update_path(update_path);
+  write_data(update_path, update_data);
 }
 
 // structures derived from the work revision, the database, and possibly

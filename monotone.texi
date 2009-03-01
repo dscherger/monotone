@@ -2764,6 +2764,10 @@ recorded in your _MTN/options file.
 Uses selector type @code{d}. For example, @code{d:2004-04} matches
 @code{date} certs where the cert value begins with
 @code{2004-04}. This selector also accepts expanded date syntax (see below).
+@item Message selection
+Uses selector type @code{m}. For example @code{m:*foobar*} matches
+@code{changelog} and @code{comment} certs where the cert value
+contains the glob @code{*foobar*}.
 @item "Earlier or equal than" selection
 Uses selector type @code{e}. For example, @code{e:2004-04-25} matches
 @code{date} certs where the cert value is less or equal than
@@ -2784,6 +2788,24 @@ Uses selector type @code{p}. For example, @code{p:0f3a} matches the
 revision IDs which are the parent of the revision ID which begins with
 @code{0f3a}. If you give a bare @code{p:}, monotone will require you to be in
 a workspace, and query the parent of the base workspace revision.
+@item Update selection
+Uses selector type @code{u}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID of the workspace before the last @command{update} command
+was executed. This can be useful for reviewing incoming
+revisions. After each update operation, or at least before the next
+update operation, run a command similar to the following:
+@smallexample
+$ mtn log --to u: --diffs
+@end smallexample
+to log all revisions back to the last update. It can also be
+used for quickly jumping between two different revisions. For example,
+the following command:
+@smallexample
+$ mtn update -r u:
+@end smallexample
+will update back to the previous update revision. Repeating this
+command will swap the current and previous update revision.
 @item Tag selection
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
