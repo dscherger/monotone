@@ -740,7 +740,7 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
     {
-      for (full_attr_map_t::iterator i = node->attrs.begin();
+      for (attr_map_t::iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
         i->second = make_pair(false, "");
     }
@@ -788,7 +788,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   if (args.size() == 1)
     {
       bool has_any_live_attrs = false;
-      for (full_attr_map_t::const_iterator i = node->attrs.begin();
+      for (attr_map_t::const_iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
         if (i->second.first)
           {
@@ -804,7 +804,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     {
       I(args.size() == 2);
       attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
-      full_attr_map_t::const_iterator i = node->attrs.find(a_key);
+      attr_map_t::const_iterator i = node->attrs.find(a_key);
       if (i != node->attrs.end() && i->second.first)
         cout << path << " : "
              << i->first << '='
@@ -908,7 +908,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
   // the current node holds all current attributes (unchanged and new ones)
   node_t n = current.get_node(path);
-  for (full_attr_map_t::const_iterator i = n->attrs.begin();
+  for (attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
     std::string value(i->second.second());
@@ -927,7 +927,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         node_t prev_node = base.get_node(path);
 
         // find the attribute in there
-        full_attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
+        attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
         I(j != prev_node->attrs.end());
 
         // was this dropped before? then ignore it
@@ -943,7 +943,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         if (base.has_node(path))
           {
             node_t prev_node = base.get_node(path);
-            full_attr_map_t::const_iterator j =
+            attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
 
             // the attribute is new if it either hasn't been found
@@ -1060,7 +1060,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
     {
-      for (full_attr_map_t::iterator i = node->attrs.begin();
+      for (attr_map_t::iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
         i->second = make_pair(false, "");
     }

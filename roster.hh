@@ -33,7 +33,7 @@ null_node(node_id n)
 }
 
 template <> void dump(node_id const & val, std::string & out);
-template <> void dump(full_attr_map_t const & val, std::string & out);
+template <> void dump(attr_map_t const & val, std::string & out);
 
 struct node
 {
@@ -42,7 +42,7 @@ struct node
   node_id self;
   node_id parent; // the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
-  full_attr_map_t attrs;
+  attr_map_t attrs;
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;

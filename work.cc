@@ -1873,11 +1873,11 @@ workspace::update_any_attrs(database & db)
       new_roster.get_name(i->first, fp);
 
       node_t n = i->second;
-      for (full_attr_map_t::const_iterator j = n->attrs.begin();
+      for (attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
         if (j->second.first)
-          lua.hook_apply_attribute (j->first(), fp,
-                                    j->second.second());
+          lua.hook_apply_attribute(j->first(), fp,
+                                   j->second.second());
     }
 }
 
