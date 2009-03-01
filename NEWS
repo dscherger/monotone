@@ -66,7 +66,7 @@
 	  own for directory creation and permissions if you take the
 	  key on standard output and redirect it to a file.)
 
-        - The log command was missing --depth and --exclude options used to
+        - The log command was missing '--depth' and '--exclude' options used to
           restrict revisions printed to those touching specific paths. Log now
           allows these options and uses them properly.
 
@@ -81,6 +81,9 @@
 	- Command line options in the EDITOR and/or VISUAL environment
 	  variables are honored; for instance, EDITOR="emacs -nw"
 	  works now.  (Debian bug #320565.)
+
+        - Additional '--revision' option for 'mtn log' allows logging of
+          selected sets of revisions.
 
         Internal
 
