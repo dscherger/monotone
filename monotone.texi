@@ -29,7 +29,7 @@ This edition documents version @value{VERSION}.
 
 Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
-Copyright @copyright{} 2005, 2008 Derek Scherger @*
+Copyright @copyright{} 2005, 2008, 2009 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
@@ -2881,6 +2881,7 @@ The following commands all support restrictions using optional
 @item @command{list ignored}
 @item @command{list missing}
 @item @command{list changed}
+@item @command{log}
 @end itemize
 
 Including either the old or new name of a renamed file or directory will
@@ -5243,32 +5244,60 @@ Specifying only the pathname "." will restrict @command{status} to files
 changed within the current subdirectory of the workspace.
 
 @item mtn log
-@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--to=@var{id} [...]] [--brief] [--no-merges] [--no-files] [--diffs] [@var{file} [...]]
+@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--to=@var{id} [...]] [--revision=@var{id} [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [@var{pathname...}]
 
-This command prints out a log, in reverse-ancestry order, of small
-history summaries.  Each summary contains author, date, changelog and
-comment information associated with a revision.
+This command prints out a log, in forward ancestry order by default
+but optionally in reverse ancestry order, of small history summaries.
+Each summary contains author, date, branch, changelog and comment
+information associated with a revision.
 
-If @option{--brief} is given, the output consists of one line per revision
-with the revision ID, the author, the date and the branches (separated
-with commas).
+If @option{--brief} is given, the output consists of two lines per
+revision with the revision ID, the author, the date and the branches
+(separated with commas). If the @option{--no-graph} option is also
+given the output contains only one line per revision.
 
-If @option{--last=}@var{n} is given, at most @var{n} log entries will be
-given.
+If @option{--last=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in reverse-ancestry order,
+from newer revisions to older revisions.
 
-If @option{--next=}@var{n} is given, at most @var{n} log entries towards
-the current head revision will be given from the workspace's base
-revision in forward-ancestry order.  This is useful to review changes
-that will be applied to the workspace when @command{update} is run.
+If @option{--next=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in forward-ancestry order,
+from older revisions to newer revisions. This is useful to review
+changes that will be applied to the workspace when @command{update} is
+run.
 
-If @option{--from=}@var{id} is given, the command starts tracing back through
-history from these revisions, otherwise it starts from the base revision of
-your workspace.
+If @option{--from=}@var{id} is given, log starts tracing through
+history from the specified revisions, otherwise it starts from the
+base revision of your workspace. Log will stop when it reaches the end
+of the revision history or revisions specified by the @option{--to}
+option.
 
-If @option{--to=}@var{id} is given, log will only print entries for revisions
-that would not also be printed when logging from the revisions specified in
-@option{--to}. This is useful for reviewing changes between two points
-in history.
+When tracing through history in reverse-ancestry order and
+@option{--to=}@var{id} is given, log will stop when it reaches the
+specified revisions or any of their ancestors or the end of the
+revision history. When tracing through history in forward-ancestry
+order log will stop when it reaches the specified revisions or any of
+their descendants or the end of the revision history.
+
+If @option{--revision=}@var{id} is given, log will print only the
+specified revisions.
+
+If both @option{--from} and @option{--revision} are given only
+revisions included by both options will be logged. Revisions specified
+by @option{--revision} that are beyond the starting points specified
+by @option{--from} will be excluded.
+
+Additionally, each of the @option{--from}, @option{--to} and
+@option{--revision} options accept selectors, see
+@ref{Selectors}. These can be used in various ways to log interesting
+revisions.  For example:
+@verbatim
+$ mtn log --revision b:
+$ mtn log --revision today
+$ mtn log --revision bob
+@end verbatim
+will log all revisions from the current branch, all revisions dated
+today and all revisions with bob as the author, respectively.
 
 By default, the log entries for merge nodes are shown.  If
 @option{--no-merges} is given, the log entries for these nodes will be
@@ -5276,6 +5305,9 @@ excluded.
 
 If @option{--no-files} is given, the log output excludes the list of
 files changed in each revision.
+
+If @option{--no-graph} is given, the log output excludes the ASCII revision graph
+prefix on log output lines.
 
 Specifying @option{--diffs} causes the log output to include a unified
 diff of the changes in each revision.

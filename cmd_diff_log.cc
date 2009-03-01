@@ -700,13 +700,12 @@ typedef priority_queue<pair<rev_height, revision_id>,
                        vector<pair<rev_height, revision_id> >,
                        rev_cmp> frontier_t;
 
-CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
-    N_("Prints history in reverse order"),
-    N_("This command prints history in reverse order, filtering it by "
-       "FILE if given.  If one or more revisions are given, uses them as "
-       "a starting point."),
+CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
+    N_("Prints selected history in forward or reverse order"),
+    N_("This command prints selected history in forward or reverse order, "
+       "filtering it by PATH if given."),
     options::opts::last | options::opts::next |
-    options::opts::from | options::opts::to |
+    options::opts::from | options::opts::to | options::opts::revision |
     options::opts::brief | options::opts::diffs |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
@@ -732,66 +731,84 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   frontier_t frontier(cmp);
   revision_id first_rid; // for mapping paths to node ids when restricted
 
-  if (app.opts.from.empty())
+  // start at revisions specified and implied by --from selectors
+
+  set<revision_id> starting_revs;
+  if (app.opts.from.empty() && app.opts.revision_selectors.empty())
     {
-      workspace work(app,
-                     F("try passing a --from revision to start at"));
+      // only set default --from revs if no --revision selectors were specified
+      workspace work(app, F("try passing a --from revision to start at"));
 
       revision_t rev;
       work.get_work_rev(rev);
       for (edge_map::const_iterator i = rev.edges.begin();
            i != rev.edges.end(); i++)
         {
-          rev_height height;
-          db.get_rev_height(edge_old_revision(i), height);
-          frontier.push(make_pair(height, edge_old_revision(i)));
+          starting_revs.insert(edge_old_revision(i));
+          if (i == rev.edges.begin())
+            first_rid = edge_old_revision(i);
         }
     }
-  else
+  else if (!app.opts.from.empty())
     {
       for (args_vector::const_iterator i = app.opts.from.begin();
            i != app.opts.from.end(); i++)
         {
           set<revision_id> rids;
+          MM(rids);
+          MM(*i);
           complete(app.opts, app.lua, project, (*i)(), rids);
-          for (set<revision_id>::const_iterator j = rids.begin();
-               j != rids.end(); ++j)
-            {
-              rev_height height;
-              db.get_rev_height(*j, height);
-              frontier.push(make_pair(height, *j));
-            }
+          starting_revs.insert(rids.begin(), rids.end());
           if (i == app.opts.from.begin())
             first_rid = *rids.begin();
         }
     }
 
-  // If --to was given, don't log past those revisions.
-  set<revision_id> disallowed;
-  bool use_disallowed(!app.opts.to.empty());
-  if (use_disallowed)
+  L(FL("%d starting revisions") % starting_revs.size());
+
+  // stop at revisions specified and implied by --to selectors
+
+  set<revision_id> ending_revs;
+  if (!app.opts.to.empty())
     {
-      std::deque<revision_id> to;
       for (args_vector::const_iterator i = app.opts.to.begin();
            i != app.opts.to.end(); i++)
         {
-          MM(*i);
           set<revision_id> rids;
+          MM(rids);
+          MM(*i);
           complete(app.opts, app.lua, project, (*i)(), rids);
-          for (set<revision_id>::const_iterator j = rids.begin();
-               j != rids.end(); ++j)
-            {
-              I(!null_id(*j));
-              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*j);
-              if (res.second)
-                {
-                  to.push_back(*j);
-                }
-            }
+          ending_revs.insert(rids.begin(), rids.end());
         }
 
-      loader.load_implied_revs(disallowed);
+      loader.load_implied_revs(ending_revs);
     }
+
+  L(FL("%d ending revisions") % ending_revs.size());
+
+  // select revisions specified by --revision selectors
+
+  set<revision_id> selected_revs;
+  if (!app.opts.revision_selectors.empty())
+    {
+      for (args_vector::const_iterator i = app.opts.revision_selectors.begin();
+           i != app.opts.revision_selectors.end(); i++)
+        {
+          set<revision_id> rids;
+          MM(rids);
+          MM(*i);
+          complete(app.opts, app.lua, project, (*i)(), rids);
+
+          // only select revs outside of the ending set
+          set_difference(rids.begin(), rids.end(),
+                         ending_revs.begin(), ending_revs.end(),
+                         inserter(selected_revs, selected_revs.end()));
+          if (null_id(first_rid) && i == app.opts.revision_selectors.begin())
+            first_rid = *rids.begin();
+        }
+    }
+
+  L(FL("%d selected revisions") % selected_revs.size());
 
   node_restriction mask;
 
@@ -817,6 +834,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         {
           // FIXME_RESTRICTIONS: should this add paths from the rosters of
           // all selected revs?
+          I(!null_id(first_rid));
           roster_t roster;
           db.get_roster(first_rid, roster);
 
@@ -824,6 +842,33 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                                   args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster);
         }
+    }
+
+  // if --revision was specified without --from log only the selected revs
+  bool log_selected(!app.opts.revision_selectors.empty() && 
+                    app.opts.from.empty());
+
+  if (log_selected)
+    {
+      for (set<revision_id>::const_iterator i = selected_revs.begin();
+           i != selected_revs.end(); ++i)
+        {
+          rev_height height;
+          db.get_rev_height(*i, height);
+          frontier.push(make_pair(height, *i));
+        }
+      L(FL("log %d selected revisions") % selected_revs.size());
+    }
+  else
+    {
+      for (set<revision_id>::const_iterator i = starting_revs.begin();
+           i != starting_revs.end(); ++i)
+        {
+          rev_height height;
+          db.get_rev_height(*i, height);
+          frontier.push(make_pair(height, *i));
+        }
+      L(FL("log %d starting revisions") % starting_revs.size());
     }
 
   cert_name author_name(author_cert_name);
@@ -840,7 +885,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
   revision_t rev;
   // this is instantiated even when not used, but it's lightweight
   asciik graph(cout);
-  while(! frontier.empty() && last != 0 && next != 0)
+  while(!frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
 
@@ -912,6 +957,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
 
       if (app.opts.no_merges && rev.is_merge_node())
+        print_this = false;
+      else if (!app.opts.revision_selectors.empty() &&
+          selected_revs.find(rid) == selected_revs.end())
         print_this = false;
 
       set<revision_id> interesting;
@@ -1009,16 +1057,18 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
 
       frontier.pop(); // beware: rid is invalid from now on
 
-      for (set<revision_id>::const_iterator i = interesting.begin();
-           i != interesting.end(); ++i)
+      if (!log_selected)
         {
-          if (use_disallowed && (disallowed.find(*i) != disallowed.end()))
+          // only add revs to the frontier when not logging specific selected revs
+          for (set<revision_id>::const_iterator i = interesting.begin();
+               i != interesting.end(); ++i)
             {
-              continue;
+              if (!app.opts.to.empty() && (ending_revs.find(*i) != ending_revs.end()))
+                continue;
+              rev_height height;
+              db.get_rev_height(*i, height);
+              frontier.push(make_pair(height, *i));
             }
-          rev_height height;
-          db.get_rev_height(*i, height);
-          frontier.push(make_pair(height, *i));
         }
     }
 }
