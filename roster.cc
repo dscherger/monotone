@@ -934,10 +934,10 @@ roster_t::set_content(node_id nid, file_id const & new_id)
 
 
 void
-roster_t::clear_attr(file_path const & pth,
-                     attr_key const & name)
+roster_t::clear_attr(file_path const & path,
+                     attr_key const & key)
 {
-  set_attr(pth, name, make_pair(false, attr_value()));
+  set_attr(path, key, make_pair(false, attr_value()));
 }
 
 void
@@ -949,11 +949,11 @@ roster_t::erase_attr(node_id nid,
 }
 
 void
-roster_t::set_attr(file_path const & pth,
-                   attr_key const & name,
+roster_t::set_attr(file_path const & path,
+                   attr_key const & key,
                    attr_value const & val)
 {
-  set_attr(pth, name, make_pair(true, val));
+  set_attr(path, key, make_pair(true, val));
 }
 
 
@@ -1179,20 +1179,20 @@ editable_roster_base::apply_delta(file_path const & pth,
 }
 
 void
-editable_roster_base::clear_attr(file_path const & pth,
-                                 attr_key const & name)
+editable_roster_base::clear_attr(file_path const & path,
+                                 attr_key const & key)
 {
-  // L(FL("clear_attr('%s', '%s')") % pth % name);
-  r.clear_attr(pth, name);
+  // L(FL("clear_attr('%s', '%s')") % path % key);
+  r.clear_attr(path, key);
 }
 
 void
-editable_roster_base::set_attr(file_path const & pth,
-                               attr_key const & name,
+editable_roster_base::set_attr(file_path const & path,
+                               attr_key const & key,
                                attr_value const & val)
 {
-  // L(FL("set_attr('%s', '%s', '%s')") % pth % name % val);
-  r.set_attr(pth, name, val);
+  // L(FL("set_attr('%s', '%s', '%s')") % path % key % val);
+  r.set_attr(path, key, val);
 }
 
 void
@@ -1742,17 +1742,17 @@ namespace {
       marking->second.file_content.insert(rid);
     }
 
-    virtual void clear_attr(file_path const & pth, attr_key const & name)
+    virtual void clear_attr(file_path const & path, attr_key const & key)
     {
-      this->editable_roster_base::clear_attr(pth, name);
-      handle_attr(pth, name);
+      this->editable_roster_base::clear_attr(path, key);
+      handle_attr(path, key);
     }
 
-    virtual void set_attr(file_path const & pth, attr_key const & name,
+    virtual void set_attr(file_path const & path, attr_key const & key,
                           attr_value const & val)
     {
-      this->editable_roster_base::set_attr(pth, name, val);
-      handle_attr(pth, name);
+      this->editable_roster_base::set_attr(path, key, val);
+      handle_attr(path, key);
     }
 
     node_id handle_new(node_id nid)

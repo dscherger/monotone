@@ -955,10 +955,10 @@ struct editable_working_tree : public editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
 
   virtual void commit();
@@ -996,10 +996,10 @@ struct simulated_working_tree : public editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
 
   virtual void commit();
@@ -1189,16 +1189,16 @@ editable_working_tree::apply_delta(file_path const & pth,
 }
 
 void
-editable_working_tree::clear_attr(file_path const & pth,
-                                  attr_key const & name)
+editable_working_tree::clear_attr(file_path const & path,
+                                  attr_key const & key)
 {
   // FIXME_ROSTERS: call a lua hook
 }
 
 void
-editable_working_tree::set_attr(file_path const & pth,
-                                attr_key const & name,
-                                attr_value const & val)
+editable_working_tree::set_attr(file_path const & path,
+                                attr_key const & key,
+                                attr_value const & value)
 {
   // FIXME_ROSTERS: call a lua hook
 }
@@ -1299,14 +1299,14 @@ simulated_working_tree::apply_delta(file_path const & path,
 }
 
 void
-simulated_working_tree::clear_attr(file_path const & pth,
-                                   attr_key const & name)
+simulated_working_tree::clear_attr(file_path const & path,
+                                   attr_key const & key)
 {
 }
 
 void
-simulated_working_tree::set_attr(file_path const & pth,
-                                 attr_key const & name,
+simulated_working_tree::set_attr(file_path const & path,
+                                 attr_key const & key,
                                  attr_value const & val)
 {
 }
@@ -1876,8 +1876,7 @@ workspace::update_any_attrs(database & db)
       for (attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
         if (j->second.first)
-          lua.hook_apply_attribute(j->first(), fp,
-                                   j->second.second());
+          lua.hook_apply_attribute(j->first(), fp, j->second.second());
     }
 }
 

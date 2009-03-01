@@ -178,13 +178,13 @@ public:
   void apply_delta(file_path const & pth,
                    file_id const & old_id,
                    file_id const & new_id);
-  void clear_attr(file_path const & pth,
-                  attr_key const & name);
-  void set_attr(file_path const & pth,
-                attr_key const & name,
+  void clear_attr(file_path const & path,
+                  attr_key const & key);
+  void set_attr(file_path const & path,
+                attr_key const & key,
                 attr_value const & val);
-  void set_attr(file_path const & pth,
-                attr_key const & name,
+  void set_attr(file_path const & path,
+                attr_key const & key,
                 std::pair<bool, attr_value> const & val);
 
   // more direct, lower-level operations, for the use of roster_delta's
@@ -298,10 +298,10 @@ public:
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
   virtual void commit();
 protected:
