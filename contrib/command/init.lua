@@ -34,7 +34,7 @@ function command_init(branch)
     --  place database into book-keeping directory
     execute("mv", "mtn.db", "_MTN/mtn.db")
     local txt = read_contents_of_file("_MTN/options")
-    txt = string.gsub(txt, "database \"[^\"]*\"", "database \".mtn/mtn.db\"")
+    txt = string.gsub(txt, "database \"[^\"]*\"", "database \"_MTN/mtn.db\"")
     options = io.open("_MTN/options", "w")
     options:write(txt)
     io.close(options)
