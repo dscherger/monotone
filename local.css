@@ -44,7 +44,8 @@ code {
     text-align: right;
 }
 
-.actions ul {
+.actions ul,
+.pageheader .actions ul {
     border: 0;
     padding: 0;
     padding-right: 2em;
@@ -269,3 +270,23 @@ code {
 #footer {
     text-align: center;
 }
+
+#feedlink {
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+}
+
+.recentchanges {
+    font-size: 1.3em;
+    border: 0;
+}
+
+.recentchanges .changelog {
+    font-style: normal;
+    padding-left: 1em;
+}
+
+.recentchanges .metadata .pagelinks a {
+    margin-right: 0.5em;
+}
+
