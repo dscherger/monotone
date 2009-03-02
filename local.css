@@ -296,7 +296,7 @@ code {
 }
 
 #searchform #searchbox,
-#searchform form input {
+#searchform input {
     border: 1px solid #474747;
     width: 15em;
     background: #FFFFFF url(wikiicons/search-bg.gif) no-repeat scroll right top;
