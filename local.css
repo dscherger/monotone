@@ -295,8 +295,11 @@ code {
     margin-top: -1.2em;
 }
 
-#searchform #searchbox {
+#searchform #searchbox,
+#searchform form input {
     border: 1px solid #474747;
     width: 15em;
+    background: #FFFFFF url(wikiicons/search-bg.gif) no-repeat scroll right top;
+    color:#000000;
 }
 
