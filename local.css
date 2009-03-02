@@ -290,3 +290,13 @@ code {
     margin-right: 0.5em;
 }
 
+#searchform {
+    margin-right: 0.8em;
+    margin-top: -1.2em;
+}
+
+#searchform #searchbox {
+    border: 1px solid #474747;
+    width: 15em;
+}
+
