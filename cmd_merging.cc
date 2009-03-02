@@ -43,6 +43,19 @@ using std::strlen;
 using boost::shared_ptr;
 
 static void
+add_dormant_attrs(node_t const parent, node_t child)
+{
+  for (attr_map_t::const_iterator i = parent->attrs.begin();
+       i != parent->attrs.end(); ++i)
+    {
+      // if the child does not have the associated attr add a dormant one
+      if (child->attrs.find(i->first) == child->attrs.end())
+        safe_insert(child->attrs, 
+                    make_pair(i->first, make_pair(false, attr_value())));
+    }
+}
+
+static void
 three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_roster,
                 revision_id const & left_rid, roster_t const & left_roster,
                 revision_id const & right_rid, roster_t const & right_roster,
@@ -58,6 +71,29 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   MM(left_rid);
   MM(right_rid);
 
+  // for this to work correctly attrs that exist in the ancestor *must*
+  // exist in both children, since attrs are never deleted they are only
+  // marked as dormant. however, since this may be any arbitrary arrangement
+  // of three revisions it is possible that attrs do exist in the parent and
+  // not in the children. in this case the attrs must be added to the
+  // children as dormant so that roster_merge works correctly.
+
+  roster_t left_with_attrs(left_roster);
+  roster_t right_with_attrs(right_roster);
+
+  MM(left_with_attrs);
+  MM(right_with_attrs);
+
+  node_map const & nodes = ancestor_roster.all_nodes();
+
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      if (left_with_attrs.has_node(i->first))
+        add_dormant_attrs(i->second, left_with_attrs.get_node(i->first));
+      if (right_with_attrs.has_node(i->first))
+        add_dormant_attrs(i->second, right_with_attrs.get_node(i->first));
+    }
+  
   // Mark up the ANCESTOR
   marking_map ancestor_markings; MM(ancestor_markings);
   mark_roster_with_no_parents(ancestor_rid, ancestor_roster, ancestor_markings);
@@ -66,13 +102,13 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   left_markings.clear();
   MM(left_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
-                              left_rid, left_roster, left_markings);
+                              left_rid, left_with_attrs, left_markings);
 
   // Mark up the RIGHT roster
   right_markings.clear();
   MM(right_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
-                              right_rid, right_roster, right_markings);
+                              right_rid, right_with_attrs, right_markings);
 
   // Make the synthetic graph, by creating uncommon ancestor sets
   std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
@@ -83,8 +119,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   P(F("[right] %s") % right_rid);
 
   // And do the merge
-  roster_merge(left_roster, left_markings, left_uncommon_ancestors,
-               right_roster, right_markings, right_uncommon_ancestors,
+  roster_merge(left_with_attrs, left_markings, left_uncommon_ancestors,
+               right_with_attrs, right_markings, right_uncommon_ancestors,
                result);
 }
 

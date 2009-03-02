@@ -10232,7 +10232,7 @@ merged -- see @ref{Merging}), or they may represent executable scripts
 or programs.
 
 Monotone allows each file (or directory) in a repository to carry
-arbitrary @ref{File Attributes}.  Persistent attributes are stored
+arbitrary @ref{File Attributes}.  Persistent attributes are stored in
 each revision's manifest. The hooks in this section allow files to be
 automatically recognised as having certain attributes at the time
 they're added, and for custom triggers to be invoked on each file
@@ -10260,8 +10260,10 @@ attribute. Its definition is:
 @group
 attr_functions["mtn:execute"] =
   function(filename, value)
-        if (value == "true") then
-         make_executable(filename)
+      if (value == "true") then
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 @end group

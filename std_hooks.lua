@@ -96,7 +96,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 

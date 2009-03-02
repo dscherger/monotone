@@ -939,10 +939,11 @@ addition_builder::visit_file(file_path const & path)
 
 struct editable_working_tree : public editable_tree
 {
-  editable_working_tree(workspace & work, content_merge_adaptor const & source,
+  editable_working_tree(workspace & work, lua_hooks & lua, 
+                        content_merge_adaptor const & source,
                         bool const messages)
-    : work(work), source(source), next_nid(1), root_dir_attached(true),
-      messages(messages)
+    : work(work), lua(lua), source(source), next_nid(1), 
+      root_dir_attached(true), messages(messages)
   {};
 
   virtual node_id detach_node(file_path const & src);
@@ -966,6 +967,7 @@ struct editable_working_tree : public editable_tree
   virtual ~editable_working_tree();
 private:
   workspace & work;
+  lua_hooks & lua;
   content_merge_adaptor const & source;
   node_id next_nid;
   std::map<bookkeeping_path, file_path> rename_add_drop_map;
@@ -1192,7 +1194,8 @@ void
 editable_working_tree::clear_attr(file_path const & path,
                                   attr_key const & key)
 {
-  // FIXME_ROSTERS: call a lua hook
+  L(FL("calling hook to clear attribute %s on %s") % key % path);
+  lua.hook_apply_attribute(key(), path, "");
 }
 
 void
@@ -1200,7 +1203,8 @@ editable_working_tree::set_attr(file_path const & path,
                                 attr_key const & key,
                                 attr_value const & value)
 {
-  // FIXME_ROSTERS: call a lua hook
+  L(FL("calling hook to set attribute %s on %s to %s") % key % path % value);
+  lua.hook_apply_attribute(key(), path, value());
 }
 
 void
@@ -1853,7 +1857,7 @@ workspace::perform_content_update(database & db,
 
   mkdir_p(detached);
 
-  editable_working_tree ewt(*this, ca, messages);
+  editable_working_tree ewt(*this, this->lua, ca, messages);
   update.apply_to(ewt);
 
   delete_dir_shallow(detached);

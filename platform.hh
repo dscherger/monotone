@@ -22,7 +22,8 @@ bool is_executable(const char *path);
 
 // For LUA
 int existsonpath(const char *exe);
-int make_executable(const char *path);
+int set_executable(const char *path);
+int clear_executable(const char *path);
 pid_t process_spawn(const char * const argv[]);
 pid_t process_spawn_redirected(char const * in,
                                char const * out,

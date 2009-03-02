@@ -70,6 +70,9 @@
           restrict revisions printed to those touching specific paths. Log now
           allows these options and uses them properly.
 
+        - The update command previously did not clear execute permissions from
+          files that had their associated 'mtn:execute' attribute cleared.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets

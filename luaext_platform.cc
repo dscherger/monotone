@@ -40,10 +40,17 @@ LUAEXT(is_executable, )
   return 1;
 }
 
-LUAEXT(make_executable, )
+LUAEXT(set_executable, )
 {
   const char *path = luaL_checkstring(LS, -1);
-  lua_pushnumber(LS, make_executable(path));
+  lua_pushnumber(LS, set_executable(path));
+  return 1;
+}
+
+LUAEXT(clear_executable, )
+{
+  const char *path = luaL_checkstring(LS, -1);
+  lua_pushnumber(LS, clear_executable(path));
   return 1;
 }
 
