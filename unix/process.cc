@@ -75,7 +75,7 @@ read_umask()
   return mask;
 }
 
-int set_executable(const char *path)
+int change_xbits(const char *path, const bool set)
 {
   mode_t mode;
   struct stat s;
@@ -89,7 +89,11 @@ int set_executable(const char *path)
   if (fstat(fd, &s))
     return -1;
   mode = s.st_mode;
-  mode |= ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+  if (set) {
+    mode |= ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+  } else {
+    mode &= (~(S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+  }
   L(FL("setting execute permission on path %s with mode %s") % path % mode);
   int ret = fchmod(fd, mode);
   if (close(fd) != 0)
@@ -101,30 +105,14 @@ int set_executable(const char *path)
   return ret;
 }
 
+int set_executable(const char *path)
+{
+  return change_xbits(path, true);
+}
+
 int clear_executable(const char *path)
 {
-  mode_t mode;
-  struct stat s;
-  int fd = open(path, O_RDONLY);
-  if (fd == -1)
-    {
-      const int err = errno;
-      E(false, origin::user,
-        F("error opening file %s: %s") % path % os_strerror(err));
-    }
-  if (fstat(fd, &s))
-    return -1;
-  mode = s.st_mode;
-  mode &= (~(S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
-  L(FL("clearing execute permission on path %s with mode %s") % path % mode);
-  int ret = fchmod(fd, mode);
-  if (close(fd) != 0)
-    {
-      const int err = errno;
-      E(false, origin::system,
-        F("error closing file %s: %s") % path % os_strerror(err));
-    }
-  return ret;
+  return change_xbits(path, false);
 }
 
 pid_t process_spawn(const char * const argv[])
