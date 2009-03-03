@@ -1195,7 +1195,7 @@ editable_working_tree::clear_attr(file_path const & path,
                                   attr_key const & key)
 {
   L(FL("calling hook to clear attribute %s on %s") % key % path);
-  lua.hook_apply_attribute(key(), path, "");
+  lua.hook_clear_attribute(key(), path);
 }
 
 void
@@ -1204,7 +1204,7 @@ editable_working_tree::set_attr(file_path const & path,
                                 attr_value const & value)
 {
   L(FL("calling hook to set attribute %s on %s to %s") % key % path % value);
-  lua.hook_apply_attribute(key(), path, value());
+  lua.hook_set_attribute(key(), path, value());
 }
 
 void
@@ -1880,7 +1880,7 @@ workspace::update_any_attrs(database & db)
       for (attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
         if (j->second.first)
-          lua.hook_apply_attribute(j->first(), fp, j->second.second());
+          lua.hook_set_attribute(j->first(), fp, j->second.second());
     }
 }
 

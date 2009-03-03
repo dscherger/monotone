@@ -824,9 +824,9 @@ lua_hooks::hook_init_attributes(file_path const & filename,
 }
 
 bool
-lua_hooks::hook_apply_attribute(string const & attr,
-                                file_path const & filename,
-                                string const & value)
+lua_hooks::hook_set_attribute(string const & attr,
+                              file_path const & filename,
+                              string const & value)
 {
   return Lua(st)
     .push_str("attr_functions")
@@ -839,6 +839,20 @@ lua_hooks::hook_apply_attribute(string const & attr,
     .ok();
 }
 
+bool
+lua_hooks::hook_clear_attribute(string const & attr,
+                                file_path const & filename)
+{
+  return Lua(st)
+    .push_str("attr_functions")
+    .get_tab()
+    .push_str(attr)
+    .get_fn(-2)
+    .push_str(filename.as_external())
+    .push_nil()
+    .call(2,0)
+    .ok();
+}
 
 bool
 lua_hooks::hook_validate_commit_message(utf8 const & message,

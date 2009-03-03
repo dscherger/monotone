@@ -10244,11 +10244,20 @@ according to its attributes when the workspace is changed.
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_functions}, at table
 entry @var{attribute}, is a function taking a file name @var{filename}
-and a attribute value @var{value}. The function should ``apply'' the
-attribute to the file, possibly in a platform-specific way.
+and an attribute value @var{value}. The function should ``apply'' the
+attribute to the file, possibly in a platform-specific way.  When
+called to set an attribute the value this hook receives will be a
+string representing the value of the attribute. When called to clear
+an attribute the value this hook receives will be @code{nil}.
 
-Hook functions from this table are called for each existing attr,
-after any command which modifies the workspace. This facility can
+Hook functions from this table are called for each existing attribute,
+after any command which modifies the workspace. These functions are
+also called during creation and modification of a workspace by the
+@command{update}, @command{merge_into_workspace}, @command{pluck},
+@command{clone} and @command{checkout} commands to set or clear
+attributes as they change.
+
+This facility can
 be used to extend monotone's understanding of files with
 platform-specific attributes, such as permission bits, access control
 lists, or special file types.

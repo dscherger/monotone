@@ -2220,7 +2220,7 @@ attach_node (lua_hooks & lua,
   for (attr_map_t::const_iterator attr = node->attrs.begin();
        attr != node->attrs.end();
        ++attr)
-    lua.hook_apply_attribute (attr->first(), target_path, attr->second.second());
+    lua.hook_set_attribute(attr->first(), target_path, attr->second.second());
 
 } // attach_node
 
