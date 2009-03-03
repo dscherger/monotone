@@ -63,8 +63,8 @@ CMD_GROUP(network, "network", "", CMD_REF(__root__),
 CMD_GROUP(packet_io, "packet_io", "", CMD_REF(__root__),
           N_("Commands for packet reading and writing"),
           "");
-CMD_GROUP(rcs, "rcs", "", CMD_REF(__root__),
-          N_("Commands for interaction with RCS and CVS"),
+CMD_GROUP(vcs, "vcs", "", CMD_REF(__root__),
+          N_("Commands for interaction with other version control systems"),
           "");
 CMD_GROUP(review, "review", "", CMD_REF(__root__),
           N_("Commands to review revisions"),

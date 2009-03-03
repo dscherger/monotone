@@ -92,6 +92,10 @@
           workspace was last updated from and revisions matching specified
           message globs in changelog and comment certs.
 
+        - A monotone database may be exported in the git fast-import format
+          using the git_export command. The output from this command may be
+          piped into git fast-import or other tools supporting this format.
+
         Internal
 
         - Using 64 bit integer values to represent dates internally. This
