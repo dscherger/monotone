@@ -120,7 +120,7 @@ namespace
     virtual void consume_revision_cert(cert const & t)
     {
       transaction_guard guard(db);
-      db.put_revision_cert(revision<cert>(t));
+      db.put_revision_cert(t);
       guard.commit();
     }
 

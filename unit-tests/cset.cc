@@ -393,7 +393,7 @@ UNIT_TEST(basic_csets)
                                   attr_value("klang")));
     UNIT_TEST_CHECK_NOT_THROW(cs.apply_to(tree), logic_error);
 
-    full_attr_map_t attrs = (r.get_node(foo_bar))->attrs;
+    attr_map_t attrs = (r.get_node(foo_bar))->attrs;
     UNIT_TEST_CHECK(attrs[attr_key("ping")] == make_pair(true, attr_value("klang")));
 
     attrs = (r.get_node(foo))->attrs;

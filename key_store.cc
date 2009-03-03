@@ -661,18 +661,26 @@ key_store::decrypt_rsa(rsa_keypair_id const & id,
                        rsa_oaep_sha_data const & ciphertext,
                        string & plaintext)
 {
-  keypair kp;
-  load_key_pair(*this, id, kp);
-  shared_ptr<RSA_PrivateKey> priv_key = s->decrypt_private_key(id);
+  try
+    {
+      keypair kp;
+      load_key_pair(*this, id, kp);
+      shared_ptr<RSA_PrivateKey> priv_key = s->decrypt_private_key(id);
 
-  shared_ptr<PK_Decryptor>
-    decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
+      shared_ptr<PK_Decryptor>
+        decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
 
-  SecureVector<Botan::byte> plain = decryptor->decrypt(
-          reinterpret_cast<Botan::byte const *>(ciphertext().data()),
-          ciphertext().size());
-  plaintext = string(reinterpret_cast<char const*>(plain.begin()),
-                     plain.size());
+      SecureVector<Botan::byte> plain =
+        decryptor->decrypt(reinterpret_cast<Botan::byte const *>(ciphertext().data()),
+                           ciphertext().size());
+      plaintext = string(reinterpret_cast<char const*>(plain.begin()),
+                         plain.size());
+    }
+  catch (Botan::Exception & ex)
+    {
+      E(false, ciphertext.made_from,
+        F("Botan error decrypting data: '%s'") % ex.what());
+    }
 }
 
 void

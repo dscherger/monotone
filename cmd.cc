@@ -414,7 +414,7 @@ CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
 }
 
 CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
-           "{ N | E | I | exception | signal }",
+           "{ N | E | I | double-throw | exception | signal }",
            N_("Triggers the specified kind of crash"),
            "",
            options::opts::none)
@@ -429,6 +429,22 @@ CMD_HIDDEN(crash, "crash", "", CMD_REF(debug),
   else if (idx(args,0)() == "I")
     {
       I(spoon_exists);
+    }
+  else if (idx(args,0)() == "double-throw")
+    {
+      // This code is rather picky, for example I(false) in the destructor
+      // won't always work like it should; see http://bugs.debian.org/516862
+      class throwing_dtor
+      {
+      public:
+        throwing_dtor() {}
+        ~throwing_dtor()
+        {
+          throw std::exception();
+        }
+      };
+      throwing_dtor td;
+      throw std::exception();
     }
 #define maybe_throw(ex) if(idx(args,0)()==#ex) throw ex("There is no spoon.")
 #define maybe_throw_bare(ex) if(idx(args,0)()==#ex) throw ex()

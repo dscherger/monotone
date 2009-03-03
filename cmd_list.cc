@@ -70,11 +70,11 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   revision_id ident;
   complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
-  vector< revision<cert> > ts;
+  vector<cert> ts;
   project.get_revision_certs(ident, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
-    certs.push_back(idx(ts, i).inner());
+    certs.push_back(idx(ts, i));
 
   {
     set<rsa_keypair_id> checked;
@@ -109,7 +109,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   for (size_t i = 0; i < certs.size(); ++i)
     {
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       string washed;
       if (guess_binary(tv()))
@@ -793,13 +793,13 @@ CMD_AUTOMATE(certs, N_("REV"),
   E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % hrid);
 
-  vector< revision<cert> > ts;
+  vector<cert> ts;
   // FIXME_PROJECTS: after projects are implemented,
   // use the db version instead if no project is specified.
   project.get_revision_certs(rid, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
-    certs.push_back(idx(ts, i).inner());
+    certs.push_back(idx(ts, i));
 
   {
     set<rsa_keypair_id> checked;
@@ -822,7 +822,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   for (size_t i = 0; i < certs.size(); ++i)
     {
       basic_io::stanza st;
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
       set<rsa_keypair_id> signers;
@@ -831,7 +831,7 @@ CMD_AUTOMATE(certs, N_("REV"),
       signers.insert(keyid);
 
       bool trusted =
-        app.lua.hook_get_revision_cert_trust(signers, rid,
+        app.lua.hook_get_revision_cert_trust(signers, rid.inner(),
                                              name, tv);
 
       st.push_str_pair(syms::key, keyid());

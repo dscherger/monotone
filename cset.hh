@@ -33,10 +33,10 @@ struct editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id) = 0;
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name) = 0;
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key) = 0;
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val) = 0;
 
   virtual void commit() = 0;

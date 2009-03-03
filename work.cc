@@ -53,6 +53,7 @@ static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
 static char const revision_file_name[] = "revision";
+static char const update_file_name[] = "update";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -87,6 +88,13 @@ get_user_log_path(bookkeeping_path & ul_path)
 {
   ul_path = bookkeeping_root / user_log_file_name;
   L(FL("user log path is %s") % ul_path);
+}
+
+static void
+get_update_path(bookkeeping_path & update_path)
+{
+  update_path = bookkeeping_root / update_file_name;
+  L(FL("update path is %s") % update_path);
 }
 
 //
@@ -228,6 +236,33 @@ workspace::put_work_rev(revision_t const & rev)
   bookkeeping_path rev_path;
   get_revision_path(rev_path);
   write_data(rev_path, rev_data);
+}
+
+void
+workspace::get_update_id(revision_id & update_id)
+{
+  data update_data;
+  bookkeeping_path update_path;
+  get_update_path(update_path);
+  E(file_exists(update_path), origin::user,
+    F("no update has occurred in this workspace"));
+
+  read_data(update_path, update_data);
+
+  update_id = revision_id(decode_hexenc(update_data(), origin::internal),
+                          origin::internal);
+  E(!null_id(update_id), origin::internal,
+    F("no update revision available"));
+}
+
+void
+workspace::put_update_id(revision_id const & update_id)
+{
+  data update_data(encode_hexenc(update_id.inner()(), origin::internal), 
+                   origin::internal);
+  bookkeeping_path update_path;
+  get_update_path(update_path);
+  write_data(update_path, update_data);
 }
 
 // structures derived from the work revision, the database, and possibly
@@ -904,10 +939,11 @@ addition_builder::visit_file(file_path const & path)
 
 struct editable_working_tree : public editable_tree
 {
-  editable_working_tree(workspace & work, content_merge_adaptor const & source,
+  editable_working_tree(workspace & work, lua_hooks & lua, 
+                        content_merge_adaptor const & source,
                         bool const messages)
-    : work(work), source(source), next_nid(1), root_dir_attached(true),
-      messages(messages)
+    : work(work), lua(lua), source(source), next_nid(1), 
+      root_dir_attached(true), messages(messages)
   {};
 
   virtual node_id detach_node(file_path const & src);
@@ -920,10 +956,10 @@ struct editable_working_tree : public editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
 
   virtual void commit();
@@ -931,6 +967,7 @@ struct editable_working_tree : public editable_tree
   virtual ~editable_working_tree();
 private:
   workspace & work;
+  lua_hooks & lua;
   content_merge_adaptor const & source;
   node_id next_nid;
   std::map<bookkeeping_path, file_path> rename_add_drop_map;
@@ -961,10 +998,10 @@ struct simulated_working_tree : public editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
 
   virtual void commit();
@@ -1154,18 +1191,20 @@ editable_working_tree::apply_delta(file_path const & pth,
 }
 
 void
-editable_working_tree::clear_attr(file_path const & pth,
-                                  attr_key const & name)
+editable_working_tree::clear_attr(file_path const & path,
+                                  attr_key const & key)
 {
-  // FIXME_ROSTERS: call a lua hook
+  L(FL("calling hook to clear attribute %s on %s") % key % path);
+  lua.hook_apply_attribute(key(), path, "");
 }
 
 void
-editable_working_tree::set_attr(file_path const & pth,
-                                attr_key const & name,
-                                attr_value const & val)
+editable_working_tree::set_attr(file_path const & path,
+                                attr_key const & key,
+                                attr_value const & value)
 {
-  // FIXME_ROSTERS: call a lua hook
+  L(FL("calling hook to set attribute %s on %s to %s") % key % path % value);
+  lua.hook_apply_attribute(key(), path, value());
 }
 
 void
@@ -1264,14 +1303,14 @@ simulated_working_tree::apply_delta(file_path const & path,
 }
 
 void
-simulated_working_tree::clear_attr(file_path const & pth,
-                                   attr_key const & name)
+simulated_working_tree::clear_attr(file_path const & path,
+                                   attr_key const & key)
 {
 }
 
 void
-simulated_working_tree::set_attr(file_path const & pth,
-                                 attr_key const & name,
+simulated_working_tree::set_attr(file_path const & path,
+                                 attr_key const & key,
                                  attr_value const & val)
 {
 }
@@ -1818,7 +1857,7 @@ workspace::perform_content_update(database & db,
 
   mkdir_p(detached);
 
-  editable_working_tree ewt(*this, ca, messages);
+  editable_working_tree ewt(*this, this->lua, ca, messages);
   update.apply_to(ewt);
 
   delete_dir_shallow(detached);
@@ -1838,11 +1877,10 @@ workspace::update_any_attrs(database & db)
       new_roster.get_name(i->first, fp);
 
       node_t n = i->second;
-      for (full_attr_map_t::const_iterator j = n->attrs.begin();
+      for (attr_map_t::const_iterator j = n->attrs.begin();
            j != n->attrs.end(); ++j)
         if (j->second.first)
-          lua.hook_apply_attribute (j->first(), fp,
-                                    j->second.second());
+          lua.hook_apply_attribute(j->first(), fp, j->second.second());
     }
 }
 

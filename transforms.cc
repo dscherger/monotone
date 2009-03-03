@@ -99,9 +99,9 @@ error_in_transform(Botan::Exception & e, origin::type caused_by)
   template<> string xform<T>(string const & in, origin::type made_from) \
   {                                                             \
     string out;                                                 \
+    static cached_botan_pipe pipe(new Pipe(new T(carg)));       \
     try                                                         \
       {                                                         \
-        static cached_botan_pipe pipe(new Pipe(new T(carg)));   \
         /* this might actually be a problem here */             \
         I(pipe->message_count() < Pipe::LAST_MESSAGE);          \
         pipe->process_msg(in);                                  \
@@ -109,6 +109,7 @@ error_in_transform(Botan::Exception & e, origin::type caused_by)
       }                                                         \
     catch (Botan::Exception & e)                                \
       {                                                         \
+        pipe.reset(new Pipe(new T(carg)));                      \
         error_in_transform(e, made_from);                       \
       }                                                         \
     return out;                                                 \
@@ -210,16 +211,18 @@ void pack(T const & in, base64< gzip<T> > & out)
   string tmp;
   tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
 
+  static cached_botan_pipe pipe(new Pipe(new Gzip_Compression,
+                                         new Base64_Encoder));
   try
     {
-      static cached_botan_pipe pipe(new Pipe(new Gzip_Compression,
-                                             new Base64_Encoder));
       pipe->process_msg(in());
       tmp = pipe->read_all_as_string(Pipe::LAST_MESSAGE);
       out = base64< gzip<T> >(tmp, in.made_from);
     }
   catch (Botan::Exception & e)
     {
+      pipe.reset(new Pipe(new Gzip_Compression,
+                          new Base64_Encoder));
       error_in_transform(e, in.made_from);
     }
 }
@@ -227,15 +230,17 @@ void pack(T const & in, base64< gzip<T> > & out)
 template <typename T>
 void unpack(base64< gzip<T> > const & in, T & out)
 {
+  static cached_botan_pipe pipe(new Pipe(new Base64_Decoder,
+                                         new Gzip_Decompression));
   try
     {
-      static cached_botan_pipe pipe(new Pipe(new Base64_Decoder,
-                                             new Gzip_Decompression));
       pipe->process_msg(in());
       out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE), in.made_from);
     }
   catch (Botan::Exception & e)
     {
+      pipe.reset(new Pipe(new Base64_Decoder,
+                          new Gzip_Decompression));
       error_in_transform(e, in.made_from);
     }
 }
@@ -253,14 +258,15 @@ void
 calculate_ident(data const & dat,
                 id & ident)
 {
+  static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
   try
     {
-      static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
       p->process_msg(dat());
       ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
     }
   catch (Botan::Exception & e)
     {
+      p.reset(new Pipe(new Hash_Filter("SHA-160")));
       error_in_transform(e, dat.made_from);
     }
 }

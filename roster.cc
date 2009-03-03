@@ -68,10 +68,10 @@ dump(node_id const & val, string & out)
 }
 
 template <> void
-dump(full_attr_map_t const & val, string & out)
+dump(attr_map_t const & val, string & out)
 {
   ostringstream oss;
-  for (full_attr_map_t::const_iterator i = val.begin(); i != val.end(); ++i)
+  for (attr_map_t::const_iterator i = val.begin(); i != val.end(); ++i)
     oss << "attr key: '" << i->first << "'\n"
         << "  status: " << (i->second.first ? "live" : "dead") << '\n'
         << "   value: '" << i->second.second << "'\n";
@@ -934,10 +934,10 @@ roster_t::set_content(node_id nid, file_id const & new_id)
 
 
 void
-roster_t::clear_attr(file_path const & pth,
-                     attr_key const & name)
+roster_t::clear_attr(file_path const & path,
+                     attr_key const & key)
 {
-  set_attr(pth, name, make_pair(false, attr_value()));
+  set_attr(path, key, make_pair(false, attr_value()));
 }
 
 void
@@ -949,11 +949,11 @@ roster_t::erase_attr(node_id nid,
 }
 
 void
-roster_t::set_attr(file_path const & pth,
-                   attr_key const & name,
+roster_t::set_attr(file_path const & path,
+                   attr_key const & key,
                    attr_value const & val)
 {
-  set_attr(pth, name, make_pair(true, val));
+  set_attr(path, key, make_pair(true, val));
 }
 
 
@@ -965,7 +965,7 @@ roster_t::set_attr(file_path const & pth,
   node_t n = get_node(pth);
   I(val.first || val.second().empty());
   I(!null_node(n->self));
-  full_attr_map_t::iterator i = n->attrs.find(name);
+  attr_map_t::iterator i = n->attrs.find(name);
   if (i == n->attrs.end())
     i = safe_insert(n->attrs, make_pair(name,
                                         make_pair(false, attr_value())));
@@ -981,7 +981,7 @@ roster_t::set_attr_unknown_to_dead_ok(node_id nid,
 {
   node_t n = get_node(nid);
   I(val.first || val.second().empty());
-  full_attr_map_t::iterator i = n->attrs.find(name);
+  attr_map_t::iterator i = n->attrs.find(name);
   if (i != n->attrs.end())
     I(i->second != val);
   n->attrs[name] = val;
@@ -995,7 +995,7 @@ roster_t::get_attr(file_path const & pth,
   I(has_node(pth));
 
   node_t n = get_node(pth);
-  full_attr_map_t::const_iterator i = n->attrs.find(name);
+  attr_map_t::const_iterator i = n->attrs.find(name);
   if (i != n->attrs.end() && i->second.first)
     {
       val = i->second.second;
@@ -1054,7 +1054,7 @@ roster_t::check_sane(bool temp_nodes_ok) const
           I(!n->name.empty() && !null_node(n->parent));
           I(!null_id(downcast_to_file_t(n)->content));
         }
-      for (full_attr_map_t::const_iterator i = n->attrs.begin(); i != n->attrs.end(); ++i)
+      for (attr_map_t::const_iterator i = n->attrs.begin(); i != n->attrs.end(); ++i)
         I(i->second.first || i->second.second().empty());
       if (n != root_dir)
         {
@@ -1095,7 +1095,7 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
       else
         I(mi->second.file_content.empty());
 
-      full_attr_map_t::const_iterator rai;
+      attr_map_t::const_iterator rai;
       map<attr_key, set<revision_id> >::const_iterator mai;
       for (rai = ri->second->attrs.begin(), mai = mi->second.attrs.begin();
            rai != ri->second->attrs.end() && mai != mi->second.attrs.end();
@@ -1179,20 +1179,20 @@ editable_roster_base::apply_delta(file_path const & pth,
 }
 
 void
-editable_roster_base::clear_attr(file_path const & pth,
-                                 attr_key const & name)
+editable_roster_base::clear_attr(file_path const & path,
+                                 attr_key const & key)
 {
-  // L(FL("clear_attr('%s', '%s')") % pth % name);
-  r.clear_attr(pth, name);
+  // L(FL("clear_attr('%s', '%s')") % path % key);
+  r.clear_attr(path, key);
 }
 
 void
-editable_roster_base::set_attr(file_path const & pth,
-                               attr_key const & name,
+editable_roster_base::set_attr(file_path const & path,
+                               attr_key const & key,
                                attr_value const & val)
 {
-  // L(FL("set_attr('%s', '%s', '%s')") % pth % name % val);
-  r.set_attr(pth, name, val);
+  // L(FL("set_attr('%s', '%s', '%s')") % path % key % val);
+  r.set_attr(path, key, val);
 }
 
 void
@@ -1292,8 +1292,8 @@ namespace
     while (left_i != left.all_nodes().end() || right_i != right.all_nodes().end())
       {
         I(left_i->second->self == right_i->second->self);
-        parallel::iter<full_attr_map_t> j(left_i->second->attrs,
-                                          right_i->second->attrs);
+        parallel::iter<attr_map_t> j(left_i->second->attrs,
+                                     right_i->second->attrs);
         // we batch up the modifications until the end, so as not to be
         // changing things around under the parallel::iter's feet
         set<attr_key> left_missing, right_missing;
@@ -1489,7 +1489,7 @@ namespace
     I(new_marking.attrs.empty());
     set<revision_id> singleton;
     singleton.insert(new_rid);
-    for (full_attr_map_t::const_iterator i = n->attrs.begin();
+    for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       new_marking.attrs.insert(make_pair(i->first, singleton));
   }
@@ -1522,12 +1522,12 @@ namespace
                            downcast_to_file_t(n)->content,
                            new_marking.file_content);
 
-    for (full_attr_map_t::const_iterator i = n->attrs.begin();
+    for (attr_map_t::const_iterator i = n->attrs.begin();
            i != n->attrs.end(); ++i)
       {
         set<revision_id> & new_marks = new_marking.attrs[i->first];
         I(new_marks.empty());
-        full_attr_map_t::const_iterator j = parent_n->attrs.find(i->first);
+        attr_map_t::const_iterator j = parent_n->attrs.find(i->first);
         if (j == parent_n->attrs.end())
           new_marks.insert(new_rid);
         else
@@ -1573,12 +1573,12 @@ namespace
                            new_rid, f->content, new_marking.file_content);
       }
     // attrs
-    for (full_attr_map_t::const_iterator i = n->attrs.begin();
+    for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       {
         attr_key const & key = i->first;
-        full_attr_map_t::const_iterator li = ln->attrs.find(key);
-        full_attr_map_t::const_iterator ri = rn->attrs.find(key);
+        attr_map_t::const_iterator li = ln->attrs.find(key);
+        attr_map_t::const_iterator ri = rn->attrs.find(key);
         I(new_marking.attrs.find(key) == new_marking.attrs.end());
         // [], when used to refer to a non-existent element, default
         // constructs that element and returns a reference to it.  We make use
@@ -1617,10 +1617,10 @@ namespace
     // SPEEDUP?: this code could probably be made more efficient -- but very
     // rarely will any node have more than, say, one attribute, so it probably
     // doesn't matter.
-    for (full_attr_map_t::const_iterator i = ln->attrs.begin();
+    for (attr_map_t::const_iterator i = ln->attrs.begin();
          i != ln->attrs.end(); ++i)
       I(n->attrs.find(i->first) != n->attrs.end());
-    for (full_attr_map_t::const_iterator i = rn->attrs.begin();
+    for (attr_map_t::const_iterator i = rn->attrs.begin();
          i != rn->attrs.end(); ++i)
       I(n->attrs.find(i->first) != n->attrs.end());
   }
@@ -1742,17 +1742,17 @@ namespace {
       marking->second.file_content.insert(rid);
     }
 
-    virtual void clear_attr(file_path const & pth, attr_key const & name)
+    virtual void clear_attr(file_path const & path, attr_key const & key)
     {
-      this->editable_roster_base::clear_attr(pth, name);
-      handle_attr(pth, name);
+      this->editable_roster_base::clear_attr(path, key);
+      handle_attr(path, key);
     }
 
-    virtual void set_attr(file_path const & pth, attr_key const & name,
+    virtual void set_attr(file_path const & path, attr_key const & key,
                           attr_value const & val)
     {
-      this->editable_roster_base::set_attr(pth, name, val);
-      handle_attr(pth, name);
+      this->editable_roster_base::set_attr(path, key, val);
+      handle_attr(path, key);
     }
 
     node_id handle_new(node_id nid)
@@ -1972,7 +1972,7 @@ namespace
       {
         safe_insert(cs.dirs_added, pth);
       }
-    for (full_attr_map_t::const_iterator i = n->attrs.begin();
+    for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       if (i->second.first)
         safe_insert(cs.attrs_set,
@@ -2013,7 +2013,7 @@ namespace
 
     // Compare attrs.
     {
-      parallel::iter<full_attr_map_t> i(from_n->attrs, to_n->attrs);
+      parallel::iter<attr_map_t> i(from_n->attrs, to_n->attrs);
       while (i.next())
         {
           MM(i);
@@ -2505,7 +2505,7 @@ roster_t::print_to(basic_io::printer & pr,
         }
 
       // Push the non-dormant part of the attr map
-      for (full_attr_map_t::const_iterator j = curr->attrs.begin();
+      for (attr_map_t::const_iterator j = curr->attrs.begin();
            j != curr->attrs.end(); ++j)
         {
           if (j->second.first)
@@ -2518,7 +2518,7 @@ roster_t::print_to(basic_io::printer & pr,
       if (print_local_parts)
         {
           // Push the dormant part of the attr map
-          for (full_attr_map_t::const_iterator j = curr->attrs.begin();
+          for (attr_map_t::const_iterator j = curr->attrs.begin();
                j != curr->attrs.end(); ++j)
             {
               if (!j->second.first)

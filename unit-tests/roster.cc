@@ -284,7 +284,7 @@ path_component new_component(randomizer & rng)
 }
 
 
-attr_key pick_attr(full_attr_map_t const & attrs, randomizer & rng)
+attr_key pick_attr(attr_map_t const & attrs, randomizer & rng)
 {
   return random_element(attrs, rng)->first;
 }

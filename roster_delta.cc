@@ -135,7 +135,7 @@ namespace
         safe_insert(d.files_added, make_pair(new_loc,
                                              make_pair(nid, content)));
       }
-    for (full_attr_map_t::const_iterator i = new_n->attrs.begin();
+    for (attr_map_t::const_iterator i = new_n->attrs.begin();
          i != new_n->attrs.end(); ++i)
       safe_insert(d.attrs_changed, make_pair(nid, *i));
   }
@@ -162,7 +162,7 @@ namespace
       }
     // attrs?
     {
-      parallel::iter<full_attr_map_t> i(old_n->attrs, new_n->attrs);
+      parallel::iter<attr_map_t> i(old_n->attrs, new_n->attrs);
       MM(i);
       while (i.next())
         {

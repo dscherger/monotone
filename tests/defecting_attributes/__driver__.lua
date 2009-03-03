@@ -22,5 +22,5 @@ check(qgrep("no changes", "stdout"))
 -- update to child
 check(mtn("update", "-r", child), 0, false, false)
 check(mtn("status"), 0, true, false)
-xfail(qgrep("no changes", "stdout"))
+check(qgrep("no changes", "stdout"))
 

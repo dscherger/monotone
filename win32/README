@@ -4,8 +4,9 @@ To create a MinGW release, the 'make dist' target does not work for
 MinGW. Instead, we use Inno Setup. Here are all the steps for
 creating a MinGW release, on a fresh Windows machine:
 
-Install MinGW tools, and a monotone binary; see
-http://monotone.ca/wiki/Building/Windows/
+Install MinGW tools; see ../INSTALL, MinGW section
+
+Install a monotone binary; see http://monotone.ca/
 
 Get a copy of the monotone repository; see
 http://monotone.ca/wiki/SelfHostingInfo/
@@ -16,18 +17,34 @@ mtn -d /path/to/monotone.db checkout -r t:monotone-<version> monotone-<version>
 Build the release. In an MSYS shell:
 cd monotone-<version>
 autoreconf -i
-./configure
+./configure  lua_CFLAGS=-I/usr/local/include lua_LIBS="-L/usr/local/lib -llua" \
+             sqlite_CFLAGS=-I/usr/local/include sqlite_LIBS="-L/usr/local/lib -lsqlite3" \
+             idn_CFLAGS=-I/usr/local/include idn_LIBS="-L/usr/local/lib -lidn"
 make
 
-Install Inno Setup; see http://www.jrsoftware.org/isinfo.php
+Install Inno Setup and Inno Setup preprocessor; see
+http://www.jrsoftware.org/isinfo.php, get the Quick Start Pack.
 
 In Inno Setup, open monotone/win32/monotone.iss
 
-If you have installed MinGW in a non-default place, adjust the Source:
-paths to the mingw dlls to match your mingw installation
+Check that the APPVERS macro is correct.
+
+If you have installed MinGW in a non-default place, adjust the
+MINGWDIR macro to match.
 
 If you have built monotone in a separate build directory, adjust
-the Source: paths to monotone.exe and monotone.html
+the BUILDDIR macro to match.
+
+Update the list of dlls. Current list:
+
+DLL                source
+libiconv-2.dll      ?
+libidn-11.dll       libidn
+libintl-8.dll       gettext
+libpcre-0.dll       pcre
+libpcrecpp-0.dll    pcre
+libpcreposix-0.dll  pcre
+zlib1.dll           zlib
 
 Choose menu Build | Compile (or click the "compile" button). This
 generates monotone-<version>-setup.exe in the monotone/win32

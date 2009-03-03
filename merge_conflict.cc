@@ -2217,7 +2217,7 @@ attach_node (lua_hooks & lua,
   new_roster.attach_node (nid, target_path);
 
   node_t node = new_roster.get_node (nid);
-  for (full_attr_map_t::const_iterator attr = node->attrs.begin();
+  for (attr_map_t::const_iterator attr = node->attrs.begin();
        attr != node->attrs.end();
        ++attr)
     lua.hook_apply_attribute (attr->first(), target_path, attr->second.second());

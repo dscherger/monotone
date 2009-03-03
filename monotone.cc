@@ -142,6 +142,13 @@ get_usage_str(options::options_type const & optset, options & opts)
   return format_usage_strings(names, descriptions, maxnamelen);
 }
 
+void
+mtn_terminate_handler()
+{
+  ui.fatal(F("std::terminate() - exception thrown while handling another exception"));
+  exit(3);
+}
+
 int
 cpp_main(int argc, char ** argv)
 {
@@ -153,6 +160,8 @@ cpp_main(int argc, char ** argv)
   // set up global ui object - must occur before anything that might try to
   // issue a diagnostic
   ui_library acquire_ui;
+
+  std::set_terminate(&mtn_terminate_handler);
 
   // we want to catch any early informative_failures due to charset
   // conversion etc

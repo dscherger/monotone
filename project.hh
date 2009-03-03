@@ -21,6 +21,26 @@ class database;
 class key_store;
 class options;
 class lua_hooks;
+struct globish;
+struct date_t;
+
+// "Special" certs have syntax and semantics essential to correct operation.
+// They add structure to the ancestry graph.
+
+#define branch_cert_name cert_name("branch")
+#define suspend_cert_name cert_name("suspend")
+#define tag_cert_name cert_name("tag")
+
+// "Standard" certs are largely for user information, but their values have
+// conventional syntax and semantics defined by the system, and the
+// revision-trust hook can use them to impose further structure on the
+// ancestry graph.
+
+#define date_cert_name cert_name("date")
+#define author_cert_name cert_name("author")
+#define changelog_cert_name cert_name("changelog")
+#define comment_cert_name cert_name("comment")
+#define testresult_cert_name cert_name("testresult")
 
 class tag_t
 {
@@ -79,14 +99,14 @@ public:
   outdated_indicator get_revision_cert_hashes(revision_id const & rid,
                                               std::vector<id> & hashes);
   outdated_indicator get_revision_certs(revision_id const & id,
-                                        std::vector<revision<cert> > & certs);
+                                        std::vector<cert> & certs);
   outdated_indicator get_revision_certs_by_name(revision_id const & id,
                                                 cert_name const & name,
-                                                std::vector<revision<cert> > & certs);
+                                                std::vector<cert> & certs);
   outdated_indicator get_revision_branches(revision_id const & id,
                                            std::set<branch_name> & branches);
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<revision<cert> > & certs);
+                                      std::vector<cert> & certs);
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,
@@ -101,10 +121,18 @@ public:
                                        branch_name const & branch,
                                        utf8 const & changelog);
 
-  void put_cert(key_store & keys,
+  bool put_cert(key_store & keys,
                 revision_id const & id,
                 cert_name const & name,
                 cert_value const & value);
+
+  // "standard certs"
+  void put_revision_testresult(key_store & keys,
+                               revision_id const & id,
+                               std::string const & results);
+  void put_revision_comment(key_store & keys,
+                            revision_id const & id,
+                            utf8 const & comment);
 };
 
 std::string
@@ -113,6 +141,12 @@ describe_revision(project_t & project, revision_id const & id);
 void
 notify_if_multiple_heads(project_t & project, branch_name const & branchname,
                          bool ignore_suspend_certs);
+
+void
+guess_branch(options & opts, project_t & project, revision_id const & rev,
+             branch_name & branchname);
+void
+guess_branch(options & opts, project_t & project, revision_id const & rev);
 
 #endif
 
