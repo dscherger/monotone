@@ -3545,11 +3545,11 @@ The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
 @option{--set-default} option.
 @item delta-direction
-This tells monotone whether to store @value{reverse} deltas (the default),
-@value{forward} deltas, or @value{both} kinds of deltas for reconstructing
+This tells monotone whether to store @samp{reverse} deltas (the default),
+@samp{forward} deltas, or @samp{both} kinds of deltas for reconstructing
 versions of files. Reverse deltas are faster when inspecting recent files,
 while forward deltas are much faster for sending over the network. This
-should probably be set to @value{both} for a server database, unless disk
+should probably be set to @samp{both} for a server database, unless disk
 space is limited.
 
 Changing this value does not affect deltas that have already been stored.
