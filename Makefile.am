@@ -404,10 +404,9 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 
 $(PACKAGE).pot: $(POTFILES)
 	$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
-	  --package-name=$(PACKAGE) --package-version=$(VERSION) \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
-	  $(XGETTEXT_OPTS) \
+	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
 dist-hook: $(ALL_GMOFILES)
