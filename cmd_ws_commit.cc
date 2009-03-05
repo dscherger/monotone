@@ -714,27 +714,26 @@ CMD_GROUP(attr, "attr", "", CMD_REF(workspace),
           N_("Manages file attributes"),
           N_("This command is used to set, get or drop file attributes."));
 
-CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
-    N_("Removes attributes from a file"),
-    N_("If no attribute is specified, this command removes all attributes "
-       "attached to the file given in PATH.  Otherwise only removes the "
-       "attribute specified in ATTR."),
-    options::opts::none)
+// WARNING: this function is used by both attr_drop and AUTOMATE drop_attribute
+// don't change anything that affects the automate interface contract
+
+static void
+drop_attr(app_state & app, args_vector const & args)
 {
-  E(args.size() > 0 && args.size() < 3, origin::user,
-    F("wrong argument count"));
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
   database db(app);
   workspace work(app);
-  work.get_current_roster_shape(db, nis, new_roster);
+
+  roster_t old_roster;
+  temp_node_id_source nis;
+
+  work.get_current_roster_shape(db, nis, old_roster);
 
   file_path path = file_path_external(idx(args, 0));
 
-  E(new_roster.has_node(path), origin::user,
+  E(old_roster.has_node(path), origin::user,
     F("Unknown path '%s'") % path);
+
+  roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
 
   // Clear all attrs (or a specific attr).
@@ -754,13 +753,31 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
       node->attrs[a_key] = make_pair(false, "");
     }
 
+  cset cs;
+  make_cset(old_roster, new_roster, cs);
+
+  content_merge_empty_adaptor empty;
+  work.perform_content_update(db, cs, empty);
+
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+}
+
+CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
+    N_("Removes attributes from a file"),
+    N_("If no attribute is specified, this command removes all attributes "
+       "attached to the file given in PATH.  Otherwise only removes the "
+       "attribute specified in ATTR."),
+    options::opts::none)
+{
+  if (args.size() != 1 && args.size() != 2)
+    throw usage(execid);
+
+  drop_attr(app, args);
 }
 
 CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
@@ -770,8 +787,8 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
        "attribute specified in ATTR."),
     options::opts::none)
 {
-  E(args.size() > 0 && args.size() < 3, origin::user,
-    F("wrong argument count"));
+  if (args.size() != 1 && args.size() != 2)
+    throw usage(execid);
 
   roster_t new_roster;
   temp_node_id_source nis;
@@ -815,26 +832,26 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     }
 }
 
-CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
-    N_("Sets an attribute on a file"),
-    N_("Sets the attribute given on ATTR to the value specified in VALUE "
-       "for the file mentioned in PATH."),
-    options::opts::none)
+// WARNING: this function is used by both attr_set and AUTOMATE set_attribute
+// don't change anything that affects the automate interface contract
+
+static void
+set_attr(app_state & app, args_vector const & args)
 {
-  E(args.size() == 3, origin::user,
-    F("wrong argument count"));
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
   database db(app);
   workspace work(app);
-  work.get_current_roster_shape(db, nis, new_roster);
+
+  roster_t old_roster;
+  temp_node_id_source nis;
+
+  work.get_current_roster_shape(db, nis, old_roster);
 
   file_path path = file_path_external(idx(args, 0));
 
-  E(new_roster.has_node(path), origin::user,
+  E(old_roster.has_node(path), origin::user,
     F("Unknown path '%s'") % path);
+
+  roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
@@ -842,13 +859,30 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 
   node->attrs[a_key] = make_pair(true, a_value);
 
+  cset cs;
+  make_cset(old_roster, new_roster, cs);
+
+  content_merge_empty_adaptor empty;
+  work.perform_content_update(db, cs, empty);
+
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+}
+
+CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
+    N_("Sets an attribute on a file"),
+    N_("Sets the attribute given on ATTR to the value specified in VALUE "
+       "for the file mentioned in PATH."),
+    options::opts::none)
+{
+  if (args.size() != 3)
+    throw usage(execid);
+
+  set_attr(app, args);
 }
 
 // Name: get_attributes
@@ -997,32 +1031,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
-  database db(app);
-  workspace work(app);
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
-
-  file_path path = file_path_external(idx(args,0));
-
-  E(new_roster.has_node(path), origin::user,
-    F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
-
-  attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
-  attr_value a_value = typecast_vocab<attr_value>(idx(args,2));
-
-  node->attrs[a_key] = make_pair(true, a_value);
-
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+  set_attr(app, args);
 }
 
 // Name: drop_attribute
@@ -1044,42 +1053,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   E(args.size() ==1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
-  database db(app);
-  workspace work(app);
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
-
-  file_path path = file_path_external(idx(args,0));
-
-  E(new_roster.has_node(path), origin::user, F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
-
-  // Clear all attrs (or a specific attr).
-  if (args.size() == 1)
-    {
-      for (attr_map_t::iterator i = node->attrs.begin();
-           i != node->attrs.end(); ++i)
-        i->second = make_pair(false, "");
-    }
-  else
-    {
-      attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
-      E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
-        F("Path '%s' does not have attribute '%s'")
-        % path % a_key);
-      node->attrs[a_key] = make_pair(false, "");
-    }
-
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+  drop_attr(app, args);
 }
 
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),

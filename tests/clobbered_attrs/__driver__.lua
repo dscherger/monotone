@@ -27,7 +27,7 @@ check({"test", "!", "-x","bar"}, 0, false, false)
 -- now tell monotone to set the execute bits on bar
 -- this should not touch foo
 check(mtn("attr", "set", "bar", "mtn:execute", "true"), 0, false, false)
-xfail({"test", "!", "-x","foo"}, 0, false, false)
+check({"test", "!", "-x","foo"}, 0, false, false)
 check({"test", "-x","bar"}, 0, false, false)
 
 -- manually clear the execute bits from foo and bar
