@@ -286,30 +286,37 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       if (is_file_t(node))
         {
           file_t f = downcast_to_file_t(node);
+
+          bool changed = true;
+
           if (file_exists(new_path))
             {
               file_id ident;
               calculate_ident(new_path, ident);
               // don't touch unchanged files
               if (ident == f->content)
-                continue;
-              else
-                L(FL("skipping unchanged %s") % new_path);
+                {
+                  L(FL("skipping unchanged %s") % new_path);
+                  changed = false;;
+                }
             }
 
-          P(F("reverting %s") % new_path);
-          L(FL("reverting %s to [%s]") % new_path
-            % f->content);
+          if (changed)
+            {
+              P(F("reverting %s") % new_path);
+              L(FL("reverting %s to [%s]") % new_path
+                % f->content);
 
-          E(db.file_version_exists(f->content), origin::user,
-            F("no file version %s found in database for %s")
-              % f->content % new_path);
+              E(db.file_version_exists(f->content), origin::user,
+                F("no file version %s found in database for %s")
+                % f->content % new_path);
 
-          file_data dat;
-          L(FL("writing file %s to %s")
-            % f->content % new_path);
-          db.get_file_version(f->content, dat);
-          write_data(new_path, dat.inner());
+              file_data dat;
+              L(FL("writing file %s to %s")
+                % f->content % new_path);
+              db.get_file_version(f->content, dat);
+              write_data(new_path, dat.inner());
+            }
         }
       else
         {
@@ -325,6 +332,22 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
               L(FL("skipping existing %s/") % new_path);
             }
         }
+      
+      // revert attributes on this node -- this doesn't quite catch all cases:
+      // if the execute bits are manually set on some path that doesn't have
+      // a dormant mtn:execute the execute bits will not be cleared
+      // FIXME: check execute bits against mtn:execute explicitly?
+
+      for (attr_map_t::const_iterator a = node->attrs.begin();
+           a != node->attrs.end(); ++a)
+        {
+          P(F("reverting %s on %s") % a->first() % new_path);
+          if (a->second.first)
+            app.lua.hook_set_attribute(a->first(), new_path, 
+                                       a->second.second());
+          else
+            app.lua.hook_clear_attribute(a->first(), new_path);
+        }
     }
 
   // Included_work is thrown away which effectively reverts any adds,
@@ -337,7 +360,6 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
 
   // Race.
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 }
 
