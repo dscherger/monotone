@@ -724,10 +724,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
-
   work.perform_content_update(db, checkout, wca, false);
 
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
   guard.commit();
 }
@@ -1318,7 +1316,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       % prog_name);
   }
 
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 
   {

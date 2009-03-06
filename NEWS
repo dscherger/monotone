@@ -73,6 +73,13 @@
         - The update command previously did not clear execute permissions from
           files that had their associated 'mtn:execute' attribute cleared.
 
+        - Several minor problems with workspace attributes have been fixed.
+          Earlier versions of monotone would reset attributes such as
+          mtn:execute on all files when any workspace modifying command was
+          executed. Applying attribute changes to workspace files is now done
+          much more selectively in the same manner that content and name changes
+          are applied.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets

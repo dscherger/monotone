@@ -338,7 +338,6 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // small race condition here... FIXME: what is it?
   work.put_update_id(old_rid);
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
   work.set_options(app.opts, true);
 
@@ -842,7 +841,6 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   // small race condition here...
   work.perform_content_update(db, update, wca);
   work.put_work_rev(merged_rev);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 
   P(F("updated to result of merge\n"
@@ -1346,7 +1344,6 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 
   // small race condition here...
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
 
   // add a note to the user log file about what we did
   {

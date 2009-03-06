@@ -1804,7 +1804,6 @@ workspace::perform_pivot_root(database & db,
       content_merge_empty_adaptor cmea;
       perform_content_update(db, cs, cmea);
     }
-  update_any_attrs(db);
 }
 
 void
@@ -1839,27 +1838,6 @@ workspace::perform_content_update(database & db,
   update.apply_to(ewt);
 
   delete_dir_shallow(detached);
-}
-
-void
-workspace::update_any_attrs(database & db)
-{
-  temp_node_id_source nis;
-  roster_t new_roster;
-  get_current_roster_shape(db, nis, new_roster);
-  node_map const & nodes = new_roster.all_nodes();
-  for (node_map::const_iterator i = nodes.begin();
-       i != nodes.end(); ++i)
-    {
-      file_path fp;
-      new_roster.get_name(i->first, fp);
-
-      node_t n = i->second;
-      for (attr_map_t::const_iterator j = n->attrs.begin();
-           j != n->attrs.end(); ++j)
-        if (j->second.first)
-          lua.hook_set_attribute(j->first(), fp, j->second.second());
-    }
 }
 
 // Local Variables:

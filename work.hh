@@ -156,7 +156,6 @@ public:
                               content_merge_adaptor const & ca,
                               bool messages = true);
 
-  void update_any_attrs(database & db);
   void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes(database & db);

@@ -20,3 +20,15 @@ check({"test", "!", "-x","foo"}, 0, false, false)
 
 check(mtn("update", "-r", with_x), 0, false, false)
 check({"test", "-x","foo"}, 0, false, false)
+
+-- test checkout with mtn:execute
+
+check(mtn("checkout", "checkout"), 0, false, false)
+check(indir("checkout", {"test", "-x","foo"}, 0, false, false))
+
+-- test clone with mtn:execute
+
+testURI="file:" .. test.root .. "/test.db"
+
+check(nodb_mtn("clone", testURI, "testbranch", "clone"), 0, false, true)
+check(indir("clone", {"test", "-x","foo"}, 0, false, false))
