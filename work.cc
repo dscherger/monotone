@@ -1514,7 +1514,6 @@ workspace::perform_additions(database & db, set<file_path> const & paths,
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs(db);
 }
 
 static bool
@@ -1621,7 +1620,6 @@ workspace::perform_deletions(database & db,
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   put_work_rev(new_work);
-  update_any_attrs(db);
 }
 
 void
@@ -1742,8 +1740,6 @@ workspace::perform_rename(database & db,
                 "skipping filesystem rename") % s % d);
           }
       }
-
-  update_any_attrs(db);
 }
 
 void

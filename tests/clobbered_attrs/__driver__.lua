@@ -45,12 +45,12 @@ check({"test", "!", "-x","bar"}, 0, false, false)
 writefile("baz", "baz data")
 check(mtn("add", "baz"), 0, false, false)
 check({"test", "!", "-x","foo"}, 0, false, false)
-xfail({"test", "!", "-x","bar"}, 0, false, false)
+check({"test", "!", "-x","bar"}, 0, false, false)
 
 -- deleting a file should not change attrs on other files
 check(mtn("drop", "foo"), 0, false, false)
-xfail({"test", "!", "-x","bar"}, 0, false, false)
+check({"test", "!", "-x","bar"}, 0, false, false)
 
 -- renaming a file should not change attrs on other files
 check(mtn("mv", "baz", "faz"), 0, false, false)
-xfail({"test", "!", "-x","bar"}, 0, false, false)
+check({"test", "!", "-x","bar"}, 0, false, false)
