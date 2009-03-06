@@ -206,7 +206,7 @@ void anc_graph::write_certs()
                              origin::internal);
         L(FL("setting epoch for %s to %s")
           % *i % new_epoch);
-        db.set_epoch(branch_name(*i, origin::internal), new_epoch);
+        db.set_epoch(branch_uid(*i, origin::internal), new_epoch);
       }
   }
 
