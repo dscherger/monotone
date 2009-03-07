@@ -217,11 +217,22 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // that are to be *kept*. Then, the changes to revert are those
   // from the new roster *back* to the restricted roster
 
+  // The arguments to revert are paths to be reverted *not* paths to be left
+  // intact. The restriction formed from these arguments will include the
+  // changes to be reverted and excludes the changes to be kept.  To form
+  // the correct restricted roster this restriction must be applied to the
+  // old and new rosters in reverse order, from new *back* to old.
+
   roster_t restricted_roster;
   make_restricted_roster(new_roster, old_roster, restricted_roster,
                          mask);
 
   make_cset(old_roster, restricted_roster, preserved);
+
+  // At this point, all three rosters have accounted for additions,
+  // deletions and renames but they all have content hashes from the
+  // original old roster. This is fine, when reverting files we want to
+  // revert them back to their original content.
 
   // The preserved cset will be left pending in MTN/revision
 
@@ -230,18 +241,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // to get a cset that gets us back to the restricted roster
   // from the current workspace roster
 
-  // the intermediate paths record the paths of all directory nodes
-  // paths we reverted on the fly for descendant nodes below them.
-  // if a children of such a directory node should be recreated, we use
-  // this recorded path here instead of just
-  //  a) the node's old name, which could eventually be wrong if the parent
-  //     path is a rename_target (i.e. a new path), see the
-  //     "revert_drop_not_rename" test
-  //  b) the parent node's new name + the basename of the old name,
-  //     which may be wrong as well in case of a more complex pivot_rename
-
-  std::map<node_id, file_path> intermediate_paths;
-  node_map const & nodes = old_roster.all_nodes();
+  node_map const & nodes = restricted_roster.all_nodes();
 
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
@@ -249,39 +249,14 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       node_id nid = i->first;
       node_t node = i->second;
 
-      if (old_roster.is_root(nid))
+      if (restricted_roster.is_root(nid))
         continue;
 
-      if (!mask.includes(old_roster, nid))
+      if (!mask.includes(restricted_roster, nid))
         continue;
 
-      file_path old_path, new_path, old_parent, new_parent;;
-      path_component base;
-
-      old_roster.get_name(nid, old_path);
-      old_path.dirname_basename(old_parent, base);
-
-      // if we recorded the parent node in this rename already
-      // use the intermediate path (i.e. the new new_path after this
-      // action) as target path for the reverted item)
-      const std::map<node_id, file_path>::iterator it =
-        intermediate_paths.find(node->parent);
-      if (it != intermediate_paths.end())
-      {
-          new_path = it->second / base;
-      }
-      else
-      {
-          if (old_roster.is_root(node->parent))
-          {
-            new_path = file_path() / base;
-          }
-          else
-          {
-            new_roster.get_name(node->parent, new_parent);
-            new_path = new_parent / base;
-          }
-      }
+      file_path path;
+      restricted_roster.get_name(nid, path);
 
       if (is_file_t(node))
         {
@@ -289,47 +264,45 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
 
           bool changed = true;
 
-          if (file_exists(new_path))
+          if (file_exists(path))
             {
               file_id ident;
-              calculate_ident(new_path, ident);
+              calculate_ident(path, ident);
               // don't touch unchanged files
               if (ident == f->content)
                 {
-                  L(FL("skipping unchanged %s") % new_path);
+                  L(FL("skipping unchanged %s") % path);
                   changed = false;;
                 }
             }
 
           if (changed)
             {
-              P(F("reverting %s") % new_path);
-              L(FL("reverting %s to [%s]") % new_path
+              P(F("reverting %s") % path);
+              L(FL("reverting %s to [%s]") % path
                 % f->content);
 
               E(db.file_version_exists(f->content), origin::user,
                 F("no file version %s found in database for %s")
-                % f->content % new_path);
+                % f->content % path);
 
               file_data dat;
               L(FL("writing file %s to %s")
-                % f->content % new_path);
+                % f->content % path);
               db.get_file_version(f->content, dat);
-              write_data(new_path, dat.inner());
+              write_data(path, dat.inner());
             }
         }
       else
         {
-          intermediate_paths.insert(std::pair<node_id, file_path>(nid, new_path));
-
-          if (!directory_exists(new_path))
+          if (!directory_exists(path))
             {
-              P(F("recreating %s/") % new_path);
-              mkdir_p(new_path);
+              P(F("recreating %s/") % path);
+              mkdir_p(path);
             }
           else
             {
-              L(FL("skipping existing %s/") % new_path);
+              L(FL("skipping existing %s/") % path);
             }
         }
       
@@ -341,12 +314,12 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {
-          P(F("reverting %s on %s") % a->first() % new_path);
+          P(F("reverting %s on %s") % a->first() % path);
           if (a->second.first)
-            app.lua.hook_set_attribute(a->first(), new_path, 
+            app.lua.hook_set_attribute(a->first(), path, 
                                        a->second.second());
           else
-            app.lua.hook_clear_attribute(a->first(), new_path);
+            app.lua.hook_clear_attribute(a->first(), path);
         }
     }
 

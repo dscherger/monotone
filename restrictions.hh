@@ -21,6 +21,7 @@
 // diff
 // commit
 // revert
+// log
 //
 // it is important that these commands operate on the same set of files given
 // the same restriction specification.  this allows for destructive commands
