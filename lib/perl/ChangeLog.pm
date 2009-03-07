@@ -107,7 +107,7 @@ sub display_change_log($$;$$)
 
     $instance = get_change_log_window();
     $instance->{changelog_buffer}->set_text("");
-    $instance->{window}->set_title(__x("Revision {rev}",
+    $instance->{window}->set_title(__x("Change Log For {rev}",
 				       rev => ($tag ? $tag : $revision_id)));
     $mtn->certs(\@certs_list, $revision_id);
     $mtn->get_revision(\@revision_details, $revision_id);

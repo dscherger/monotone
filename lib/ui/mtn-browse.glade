@@ -64,7 +64,7 @@
 			  <signal name="activate" handler="new_blank_menu_item_clicked_cb" last_modification_time="Thu, 05 Jun 2008 10:14:27 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image48">
+			    <widget class="GtkImage" id="image62">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-new</property>
 			      <property name="icon_size">1</property>
@@ -107,7 +107,7 @@
 			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 20 Jun 2008 12:07:24 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image49">
+			    <widget class="GtkImage" id="image63">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-quit</property>
 			      <property name="icon_size">1</property>
@@ -153,6 +153,61 @@
 		    <widget class="GtkMenu" id="help1_menu">
 
 		      <child>
+			<widget class="GtkImageMenuItem" id="contents1">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">_Contents</property>
+			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="help_toolbutton_clicked_cb" last_modification_time="Fri, 13 Feb 2009 22:16:51 GMT"/>
+			  <accelerator key="F1" modifiers="0" signal="activate"/>
+
+			  <child internal-child="image">
+			    <widget class="GtkImage" id="image64">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-help</property>
+			      <property name="icon_size">1</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
+			</widget>
+		      </child>
+
+		      <child>
+			<widget class="GtkSeparatorMenuItem" id="separator2">
+			  <property name="visible">True</property>
+			</widget>
+		      </child>
+
+		      <child>
+			<widget class="GtkImageMenuItem" id="home_page1">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">_Home Page</property>
+			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="home_page_activate_cb" last_modification_time="Sun, 15 Feb 2009 17:15:45 GMT"/>
+
+			  <child internal-child="image">
+			    <widget class="GtkImage" id="image65">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-home</property>
+			      <property name="icon_size">1</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
+			</widget>
+		      </child>
+
+		      <child>
+			<widget class="GtkSeparatorMenuItem" id="separator3">
+			  <property name="visible">True</property>
+			</widget>
+		      </child>
+
+		      <child>
 			<widget class="GtkImageMenuItem" id="about1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_ABOUT_ITEM</property>
@@ -191,7 +246,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="new_toolbutton">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">New browser</property>
+		  <property name="tooltip" translatable="yes">New browser window</property>
 		  <property name="stock_id">gtk-new</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
@@ -312,7 +367,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="help_toolbutton">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Help</property>
+		  <property name="tooltip" translatable="yes">Display help contents page</property>
 		  <property name="stock_id">gtk-help</property>
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>

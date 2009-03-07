@@ -132,6 +132,7 @@ sub file_change_history_button_clicked_cb($$);
 sub find_files_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
 sub help_toolbutton_clicked_cb($$);
+sub home_page_activate_cb($$);
 sub main_window_delete_event_cb($$$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
@@ -389,6 +390,50 @@ sub quit_activate_cb($$)
 	     return;
 	 });
     Gtk2->main_quit();
+
+}
+#
+##############################################################################
+#
+#   Routine      - home_page_activate_cb
+#
+#   Description  - Callback routine called when the user selects the home page
+#                  help menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub home_page_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    eval
+    {
+	Gnome2::URL->show("http://www.coosoft.plus.com/software.html");
+    };
+    if ($@ ne "")
+    {
+	my $dialog = Gtk2::MessageDialog->new_with_markup
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("Gnome cannot display Monotone Browser's\n"
+		     . "home page. Gnome gave:\n"
+		 . "<b><i>{gnome_error_message}</i></b>",
+		 gnome_error_message => $@));
+	$dialog->run();
+	$dialog->destroy();
+    }
 
 }
 #
@@ -677,15 +722,7 @@ sub help_toolbutton_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    # Gnome2::Help->display("mtn-browse.xml");
-
-    my $dialog = Gtk2::MessageDialog->new($browser->{window},
-					  ["modal"],
-					  "info",
-					  "close",
-					  __("Not implemented."));
-    $dialog->run();
-    $dialog->destroy();
+    Gnome2::Help->display("mtn-browse.xml");
 
 }
 #
