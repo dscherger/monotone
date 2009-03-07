@@ -13,6 +13,7 @@
 
 #include "vocab.hh"
 #include "rev_types.hh"
+#include "paths.hh"
 
 class database;
 class lua_hooks;
