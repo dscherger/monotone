@@ -7716,9 +7716,8 @@ See @var{automate get_revision}
 
 @item Error conditions:
 
-If the command is executed outside of a workspace, there are no changes in the
-current workspace or the restriction is invalid or has no recorded changes,
-prints an error message to stderr and exits with status 1.
+If the command is executed outside of a workspace, or the restriction is
+invalid, prints an error message to stderr and exits with status 1.
 
 @end table
 
