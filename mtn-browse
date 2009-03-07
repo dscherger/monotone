@@ -1471,6 +1471,9 @@ sub main_window_delete_event_cb($$$)
     hide_find_text($browser->{file_view_sv});
     $browser->{window}->hide();
     $browser->{mtn} = undef;
+
+    # Flush out any cached information.
+
     $browser->{branch_combo_details}->{preset} = 0;
     $browser->{revision_combo_details}->{preset} = 0;
     $browser->{directory_combo_details}->{preset} = 0;
@@ -1567,7 +1570,7 @@ sub get_browser_window(;$$$$$)
 			    "manifest_browser_treeview",
 			    "file_view_scrolledwindow",
 			    "file_name_value_label",
-			    "file_id_value_label",
+			    "file_author_value_label",
 			    "last_update_value_label",
 			    "file_revision_id_value_label",
 			    "file_button_vbox",
@@ -1728,6 +1731,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{revision_combo_details}->{preset} = 0;
 	$browser->{directory_combo_details}->{preset} = 0;
 	$browser->{file_being_viewed_preset_value} = "";
+	$browser->{file_displayed_id} = "";
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 
     }
@@ -1752,6 +1756,7 @@ sub get_browser_window(;$$$$$)
 	$browser->{revision_combo_details}->{preset} = 0;
 	$browser->{directory_combo_details}->{preset} = 0;
 	$browser->{file_being_viewed_preset_value} = "";
+	$browser->{file_displayed_id} = "";
 	$browser->{manifest_browser_treeview}->
 	    set_search_column(MLS_NAME_COLUMN);
 	if ($user_preferences->{show_line_numbers})
@@ -2321,8 +2326,7 @@ sub update_browser_state($$)
 
 	    # Only do anything if the selected file has changed.
 
-	    if ($browser->{file_id_value_label}->get_text()
-		ne $manifest_entry->{file_id})
+	    if ($browser->{file_displayed_id} ne $manifest_entry->{file_id})
 	    {
 
 		my($last_update,
@@ -2371,12 +2375,15 @@ sub update_browser_state($$)
 		$last_update =~ s/T/ /;
 		set_label_value($browser->{file_name_value_label},
 				$manifest_entry->{name});
-		set_label_value($browser->{file_id_value_label},
-				$manifest_entry->{file_id});
+		set_label_value($browser->{file_author_value_label},
+				$manifest_entry->{author});
 		set_label_value($browser->{last_update_value_label},
 				$last_update);
 		set_label_value($browser->{file_revision_id_value_label},
 				$manifest_entry->{last_changed_revision});
+
+		$browser->{file_displayed_id} = $manifest_entry->{file_id};
+
 	    }
 
 	}
@@ -2385,13 +2392,14 @@ sub update_browser_state($$)
 
 	    # Reset the file view buffer and the associated find text window.
 
+	    $browser->{file_displayed_id} = "";
 	    $browser->{file_button_vbox}->set_sensitive(FALSE);
 	    $browser->{file_view_svbuffer}->
 		place_cursor($browser->{file_view_svbuffer}->get_start_iter());
 	    $browser->{file_view_svbuffer}->set_text("");
 	    $browser->{file_view_svbuffer}->set("highlight", FALSE);
 	    set_label_value($browser->{file_name_value_label}, "");
-	    set_label_value($browser->{file_id_value_label}, "");
+	    set_label_value($browser->{file_author_value_label}, "");
 	    set_label_value($browser->{last_update_value_label}, "");
 	    set_label_value($browser->{file_revision_id_value_label}, "");
 	    enable_find_text($browser->{file_view_sv}, 0);

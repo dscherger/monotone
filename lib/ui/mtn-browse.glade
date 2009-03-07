@@ -1013,11 +1013,10 @@ or more search criteria</property>
 				      <child>
 					<widget class="GtkLayout" id="file_name_value_layout">
 					  <property name="visible">True</property>
-					  <property name="tooltip" translatable="yes">Name of the file being displayed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 118 10 106.2 118</property>
-					  <property name="vadjustment">0 0 17 10 15.3 17</property>
+					  <property name="hadjustment">0 0 118 10 106.199996948 118</property>
+					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="file_name_value_label_eventbox">
@@ -1075,11 +1074,10 @@ or more search criteria</property>
 				      <child>
 					<widget class="GtkLayout" id="last_update_value_layout">
 					  <property name="visible">True</property>
-					  <property name="tooltip" translatable="yes">Date of when file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 118 10 106.2 118</property>
-					  <property name="vadjustment">0 0 17 10 15.3 17</property>
+					  <property name="hadjustment">0 0 118 10 106.199996948 118</property>
+					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="last_update_value_label_eventbox">
@@ -1209,7 +1207,7 @@ updated with respect to this revision</property>
 				  <property name="column_spacing">5</property>
 
 				  <child>
-				    <widget class="GtkScrolledWindow" id="file_id_value_scrolledwindow">
+				    <widget class="GtkScrolledWindow" id="file_author_value_scrolledwindow">
 				      <property name="visible">True</property>
 				      <property name="can_focus">True</property>
 				      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
@@ -1218,16 +1216,15 @@ updated with respect to this revision</property>
 				      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 				      <child>
-					<widget class="GtkLayout" id="file_id_value_layout">
+					<widget class="GtkLayout" id="file_author_value_layout">
 					  <property name="visible">True</property>
-					  <property name="tooltip" translatable="yes">File's unique id in database</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 122 10 109.8 122</property>
-					  <property name="vadjustment">0 0 17 10 15.3 17</property>
+					  <property name="hadjustment">0 0 122 10 109.800003052 122</property>
+					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
 
 					  <child>
-					    <widget class="GtkEventBox" id="file_id_value_label_eventbox">
+					    <widget class="GtkEventBox" id="file_author_value_label_eventbox">
 					      <property name="width_request">0</property>
 					      <property name="height_request">0</property>
 					      <property name="visible">True</property>
@@ -1235,7 +1232,7 @@ updated with respect to this revision</property>
 					      <property name="above_child">False</property>
 
 					      <child>
-						<widget class="GtkLabel" id="file_id_value_label">
+						<widget class="GtkLabel" id="file_author_value_label">
 						  <property name="width_request">0</property>
 						  <property name="height_request">0</property>
 						  <property name="visible">True</property>
@@ -1282,12 +1279,10 @@ updated with respect to this revision</property>
 				      <child>
 					<widget class="GtkLayout" id="file_revision_id_value_layout">
 					  <property name="visible">True</property>
-					  <property name="tooltip" translatable="yes">Id of revision when
-file was last changed</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 122 10 109.8 122</property>
-					  <property name="vadjustment">0 0 17 10 15.3 17</property>
+					  <property name="hadjustment">0 0 122 10 109.800003052 122</property>
+					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="file_revision_id_value_label_eventbox">
@@ -1334,16 +1329,16 @@ file was last changed</property>
 				  </child>
 
 				  <child>
-				    <widget class="GtkEventBox" id="file_id_label_eventbox">
+				    <widget class="GtkEventBox" id="file_author_label_eventbox">
 				      <property name="visible">True</property>
-				      <property name="tooltip" translatable="yes">Id of file being displayed</property>
+				      <property name="tooltip" translatable="yes">Author of the file revision being displayed</property>
 				      <property name="visible_window">True</property>
 				      <property name="above_child">False</property>
 
 				      <child>
-					<widget class="GtkLabel" id="file_id_label">
+					<widget class="GtkLabel" id="file_author_label">
 					  <property name="visible">True</property>
-					  <property name="label" translatable="yes">File id:</property>
+					  <property name="label" translatable="yes">Author:</property>
 					  <property name="use_underline">False</property>
 					  <property name="use_markup">False</property>
 					  <property name="justify">GTK_JUSTIFY_LEFT</property>
