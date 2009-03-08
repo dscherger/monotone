@@ -24,7 +24,7 @@ void
 get_change(roster_t const & left, roster_t const & right,
            git_change & change)
 {
-  typedef full_attr_map_t::const_iterator attr_iterator;
+  typedef attr_map_t::const_iterator attr_iterator;
   static attr_key exe_attr("mtn:execute");
 
   parallel::iter<node_map> i(left.all_nodes(), right.all_nodes());

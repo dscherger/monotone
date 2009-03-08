@@ -15,6 +15,7 @@
 #include "git_change.hh"
 #include "git_export.hh"
 #include "outdated_indicator.hh"
+#include "project.hh"
 #include "revision.hh"
 #include "roster.hh"
 #include "simplestring_xform.hh"
@@ -212,7 +213,7 @@ export_changes(database & db,
     {
       revnum++;
 
-      typedef vector< revision<cert> > cert_vector;
+      typedef vector<cert> cert_vector;
       typedef cert_vector::const_iterator cert_iterator;
       typedef map<string, string>::const_iterator lookup_iterator;
 
@@ -240,8 +241,8 @@ export_changes(database & db,
 
       if (author != authors.end())
         {
-          author_name = trim(author->inner().value());
-          author_key  = trim(author->inner().key());
+          author_name = trim(author->value());
+          author_key  = trim(author->key());
         }
 
       // all monotone keys and authors that don't follow the "Name <email>"
@@ -272,14 +273,14 @@ export_changes(database & db,
       cert_iterator date = dates.begin();
 
       if (date != dates.end())
-        author_date = date_t(date->inner().value());
+        author_date = date_t(date->value());
 
       // default to unknown branch if no branch certs exist
       // this may be mapped to a different value with the branches-file option
       string branch_name = "unknown";
 
       if (!branches.empty())
-        branch_name = branches.begin()->inner().value();
+        branch_name = branches.begin()->value();
 
       branch_name = trim(branch_name);
 
@@ -300,7 +301,7 @@ export_changes(database & db,
       for (cert_iterator changelog = changelogs.begin();
            changelog != changelogs.end(); ++changelog)
         {
-          string value = changelog->inner().value();
+          string value = changelog->value();
           if (messages.find(value) == messages.end())
             {
               messages.insert(value);
@@ -374,17 +375,17 @@ export_changes(database & db,
         {
           message << "\n";
           for ( ; author != authors.end(); ++author)
-            message << "Monotone-Author: " << author->inner().value() << "\n";
+            message << "Monotone-Author: " << author->value() << "\n";
 
           for ( ; date != dates.end(); ++date)
-            message << "Monotone-Date: " << date->inner().value() << "\n";
+            message << "Monotone-Date: " << date->value() << "\n";
 
           for (cert_iterator
                  branch = branches.begin() ; branch != branches.end(); ++branch)
-            message << "Monotone-Branch: " << branch->inner().value() << "\n";
+            message << "Monotone-Branch: " << branch->value() << "\n";
 
           for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
-            message << "Monotone-Tag: " << tag->inner().value() << "\n";
+            message << "Monotone-Tag: " << tag->value() << "\n";
         }
 
       string data = message.str();
@@ -428,7 +429,7 @@ export_changes(database & db,
           branch++;
           for ( ; branch != branches.end(); ++branch)
             {
-              branch_name = trim(branch->inner().value());
+              branch_name = trim(branch->value());
 
               lookup_iterator branch_lookup = branch_map.find(branch_name);
 
@@ -442,7 +443,7 @@ export_changes(database & db,
 
       // create tag refs
       for (cert_iterator tag = tags.begin(); tag != tags.end(); ++tag)
-        cout << "reset refs/tags/" << tag->inner().value() << "\n"
+        cout << "reset refs/tags/" << tag->value() << "\n"
              << "from :" << marked_revs[*r] << "\n";
 
       // report progress to the export file which will be reported during import
