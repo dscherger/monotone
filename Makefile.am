@@ -64,6 +64,7 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
+	git_change.cc git_change.hh git_export.cc git_export.hh		\
 	revision.cc ancestry.cc revision.hh				\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
@@ -138,10 +139,10 @@ WIN32_PLATFORM_SOURCES =						\
 # these files (part of the main program) contain code subject to unit testing
 
 UNIT_TESTEES =								\
-	basic_io.cc charset.cc commands.cc cset.cc globish.cc graph.cc	\
-	merge_3way.cc merge_roster.cc mkstemp.cc netcmd.cc		\
-	netxx_pipe.cc option.cc outdated_indicator.cc refiner.cc	\
-	restrictions.cc revision.cc simplestring_xform.cc		\
+	basic_io.cc charset.cc commands.cc cset.cc git_change.cc	\
+	globish.cc graph.cc merge_3way.cc merge_roster.cc mkstemp.cc	\
+	netcmd.cc netxx_pipe.cc option.cc outdated_indicator.cc		\
+	refiner.cc restrictions.cc revision.cc simplestring_xform.cc	\
 	transforms.cc uri.cc vocab.cc xdelta.cc
 
 # these files contain the actual unit tests
@@ -150,17 +151,16 @@ UNIT_TESTEES =								\
 UNIT_TESTERS =								\
 	unit-tests/basic_io.cc unit-tests/charset.cc			\
 	unit-tests/commands.cc unit-tests/cset.cc			\
-	unit-tests/globish.cc unit-tests/graph.cc			\
-	unit-tests/merge_3way.cc unit-tests/merge_roster.cc		\
-	unit-tests/mkstemp.cc unit-tests/netcmd.cc			\
-	unit-tests/netxx_pipe.cc unit-tests/option.cc			\
-	unit-tests/outdated_indicator.cc unit-tests/refiner.cc		\
-	unit-tests/restrictions.cc unit-tests/revision.cc		\
-	unit-tests/simplestring_xform.cc unit-tests/transforms.cc	\
-	unit-tests/uri.cc unit-tests/vocab.cc unit-tests/xdelta.cc	\
-									\
-	unit-tests/numeric_vocab.cc unit-tests/sha1.cc			\
-	unit-tests/string_queue.cc unit_tester.cc
+	unit-tests/git_change.cc unit-tests/globish.cc			\
+	unit-tests/graph.cc unit-tests/merge_3way.cc			\
+	unit-tests/merge_roster.cc unit-tests/mkstemp.cc		\
+	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
+	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
+	unit-tests/refiner.cc unit-tests/restrictions.cc		\
+	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
+	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
+	unit-tests/xdelta.cc unit-tests/numeric_vocab.cc		\
+	unit-tests/sha1.cc unit-tests/string_queue.cc unit_tester.cc
 
 # these files contain unit tests that need access to private interfaces
 # of the code under test, so they #include the code under test.  thus,
