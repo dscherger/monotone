@@ -69,9 +69,9 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
 }
 
 
-CMD(git_export, "git_export", "", CMD_REF(vcs), N_(""),
+CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
     N_("Produces a git fast-export data stream on stdout"),
-    N_(""),
+    (""),
     options::opts::authors_file | options::opts::branches_file |
     options::opts::log_revids | options::opts::log_certs | 
     options::opts::use_one_changelog |
