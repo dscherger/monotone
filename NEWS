@@ -70,6 +70,13 @@
           restrict revisions printed to those touching specific paths. Log now
           allows these options and uses them properly.
 
+        - Performance of the log command has been improved significantly.
+          Previous versions of monotone loaded individual certs by name for each
+          printed revision and this caused sqlite to not use the correct
+          index. Now, all certs are loaded for each printed revision once and
+          individual certs are selected from the full list which allows sqlite
+          to use the preferred index.
+
         - The update command previously did not clear execute permissions from
           files that had their associated 'mtn:execute' attribute cleared.
 

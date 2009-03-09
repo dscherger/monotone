@@ -585,45 +585,46 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
+log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name,
           string label, string separator, bool multiline, bool newline)
 {
-  vector<cert> certs;
   bool first = true;
 
   if (multiline)
     newline = true;
 
-  project.get_revision_certs_by_name(id, name, certs);
   for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
-      if (first)
-        os << label;
-      else
-        os << separator;
+      if (i->name == name)
+        {
+          if (first)
+            os << label;
+          else
+            os << separator;
 
-      if (multiline)
-        os << "\n\n";
-      os << i->value;
-      if (newline)
-        os << '\n';
+          if (multiline)
+            os << "\n\n";
+          os << i->value;
+          if (newline)
+            os << '\n';
 
-      first = false;
+          first = false;
+        }
     }
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
+log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name,
           string label, bool multiline)
 {
-  log_certs(project, os, id, name, label, label, multiline, true);
+  log_certs(certs, os, id, name, label, label, multiline, true);
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name)
+log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name)
 {
-  log_certs(project, os, id, name, " ", ",", false, false);
+  log_certs(certs, os, id, name, " ", ",", false, false);
 }
 
 enum log_direction { log_forward, log_reverse };
@@ -976,20 +977,23 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
       if (print_this)
         {
+          vector<cert> certs;
+          project.get_revision_certs(rid, certs);
+
           ostringstream out;
           if (app.opts.brief)
             {
               out << rid;
-              log_certs(project, out, rid, author_name);
+              log_certs(certs, out, rid, author_name);
               if (app.opts.no_graph)
-                log_certs(project, out, rid, date_name);
+                log_certs(certs, out, rid, date_name);
               else
                 {
                   out << '\n';
-                  log_certs(project, out, rid, date_name,
+                  log_certs(certs, out, rid, date_name,
                             string(), string(), false, false);
                 }
-              log_certs(project, out, rid, branch_name);
+              log_certs(certs, out, rid, branch_name);
               out << '\n';
             }
           else
@@ -1012,10 +1016,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                    anc != ancestors.end(); ++anc)
                 out << "Ancestor: " << *anc << '\n';
 
-              log_certs(project, out, rid, author_name, "Author: ", false);
-              log_certs(project, out, rid, date_name,   "Date: ",   false);
-              log_certs(project, out, rid, branch_name, "Branch: ", false);
-              log_certs(project, out, rid, tag_name,    "Tag: ",    false);
+              log_certs(certs, out, rid, author_name, "Author: ", false);
+              log_certs(certs, out, rid, date_name,   "Date: ",   false);
+              log_certs(certs, out, rid, branch_name, "Branch: ", false);
+              log_certs(certs, out, rid, tag_name,    "Tag: ",    false);
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
@@ -1024,8 +1028,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                   out << '\n';
                 }
 
-              log_certs(project, out, rid, changelog_name, "ChangeLog: ", true);
-              log_certs(project, out, rid, comment_name,   "Comments: ",  true);
+              log_certs(certs, out, rid, changelog_name, "ChangeLog: ", true);
+              log_certs(certs, out, rid, comment_name,   "Comments: ",  true);
             }
 
           if (app.opts.diffs)
