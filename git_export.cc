@@ -217,6 +217,7 @@ export_changes(database & db,
       typedef cert_vector::const_iterator cert_iterator;
       typedef map<string, string>::const_iterator lookup_iterator;
 
+      cert_vector certs;
       cert_vector authors;
       cert_vector branches;
       cert_vector changelogs;
@@ -224,12 +225,23 @@ export_changes(database & db,
       cert_vector dates;
       cert_vector tags;
 
-      db.get_revision_certs(*r, author_cert_name, authors);
-      db.get_revision_certs(*r, branch_cert_name, branches);
-      db.get_revision_certs(*r, changelog_cert_name, changelogs);
-      db.get_revision_certs(*r, comment_cert_name, comments);
-      db.get_revision_certs(*r, date_cert_name, dates);
-      db.get_revision_certs(*r, tag_cert_name, tags);
+      db.get_revision_certs(*r, certs);
+
+      for (cert_iterator i = certs.begin(); i != certs.end(); ++i)
+        {
+          if (i->name == author_cert_name)
+            authors.push_back(*i);
+          else if (i->name == branch_cert_name)
+            branches.push_back(*i);
+          else if (i->name == changelog_cert_name)
+            changelogs.push_back(*i);
+          else if (i->name == date_cert_name)
+            dates.push_back(*i);
+          else if (i->name == tag_cert_name)
+            tags.push_back(*i);
+          else if (i->name == comment_cert_name)
+            comments.push_back(*i);
+        }
 
       // default to <unknown> committer and author if no author certs exist
       // this may be mapped to a different value with the authors-file option
