@@ -872,6 +872,10 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   unset_env("SSH_AUTH_SOCK")
   unset_env("DISPLAY")
 
+  -- tests do not use (interactive) editors for commits
+  unset_env("EDITOR")
+  unset_env("VISUAL")
+
   logfile = io.open(logname, "w")
   chdir(run_dir);
 
