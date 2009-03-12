@@ -77,7 +77,6 @@ ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
 	./configure $(BUILD_AND_HOST) \
-		    --with-system-pcre \
 		    --prefix=/usr --mandir='$${prefix}/share/man' \
 		    --infodir='$${prefix}/share/info' CFLAGS="$(CFLAGS)" \
 		    CXXFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs"
@@ -94,7 +93,7 @@ endif
 # over local domain sockets, coming Real Soon Now from upstream.
 build-arch: build-arch-stamp
 build-arch-stamp: config.status
-	make $(PAR) -C po all
+	make $(PAR) all-local
 	make $(PAR) mtn mtnopt
 ifeq "$(findstring nocheck, $(DEB_BUILD_OPTIONS))" ""
 	make $(PAR) unit_tester tester check_net
@@ -189,7 +188,7 @@ binary-arch: build-arch
 #
 # N.B. DEB_BUILD_OPTIONS=nostrip is handled entirely within dh_strip.
 	$(MAKE) DESTDIR=$(shell pwd)/debian/monotone install-exec-am
-	$(MAKE) DESTDIR=$(shell pwd)/debian/monotone -C po install-data
+	$(MAKE) DESTDIR=$(shell pwd)/debian/monotone install-data-local
 
 # dh_installdirs created etc/bash_completion.d.  dh_install cannot install
 # a file under a different basename.
