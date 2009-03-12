@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 4.2.0), autotools-dev, libz-dev, po-debconf,
  libpcre3-dev (>= 7.6), patch
 Build-Depends-Indep: ps2eps, texlive-base, texlive-generic-recommended,
  texlive-latex-base, texinfo, xpdf-utils
-Standards-Version: 3.8.0
+Standards-Version: 3.8.1
 
 Package: monotone
 Architecture: any
