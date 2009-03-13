@@ -640,10 +640,10 @@ roster_merge(roster_t const & left_parent,
                 }
               // merge attributes
               {
-                full_attr_map_t::const_iterator left_ai = left_n->attrs.begin();
-                full_attr_map_t::const_iterator right_ai = right_n->attrs.begin();
-                parallel::iter<full_attr_map_t> attr_i(left_n->attrs,
-                                                       right_n->attrs);
+                attr_map_t::const_iterator left_ai = left_n->attrs.begin();
+                attr_map_t::const_iterator right_ai = right_n->attrs.begin();
+                parallel::iter<attr_map_t> attr_i(left_n->attrs,
+                                                  right_n->attrs);
                 while(attr_i.next())
                 {
                   switch (attr_i.state())

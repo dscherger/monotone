@@ -453,10 +453,8 @@ CMD(clone, "clone", "", CMD_REF(network),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
-
   work.perform_content_update(db, checkout, wca, false);
 
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
   guard.commit();
   remove_on_fail.commit();

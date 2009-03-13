@@ -383,7 +383,7 @@ struct attr_scalar : public virtual base_scalar, public T
         I(c.key == attr_key("test_key"));
         I(c.left == make_pair(true, attr_value_for(left_val)));
         I(c.right == make_pair(true, attr_value_for(right_val)));
-        full_attr_map_t const & attrs = result.roster.get_node(thing_nid)->attrs;
+        attr_map_t const & attrs = result.roster.get_node(thing_nid)->attrs;
         I(attrs.find(attr_key("test_key")) == attrs.end());
         // resolve the conflict, thus making sure that resolution works and
         // that this was the only conflict signaled

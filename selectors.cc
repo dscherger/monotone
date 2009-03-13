@@ -42,7 +42,9 @@ enum selector_type
     sel_cert,
     sel_earlier,
     sel_later,
+    sel_message,
     sel_parent,
+    sel_update,
     sel_unknown
   };
 
@@ -105,8 +107,14 @@ decode_selector(project_t & project,
         case 'e':
           type = sel_earlier;
           break;
+        case 'm':
+          type = sel_message;
+          break;
         case 'p':
           type = sel_parent;
+          break;
+        case 'u':
+          type = sel_update;
           break;
         default:
           W(F("unknown selector type: %c") % sel[0]);
@@ -194,6 +202,19 @@ decode_selector(project_t & project,
                                   origin::internal);
             }
           break;
+        case sel_update:
+          E(sel.empty(), origin::user,
+            F("no value is allowed with the update selector u:"));
+          {
+            workspace work(opts, lua, F("the update selector u: refers to the "
+                                        "revision before the last update in the "
+                                        "workspace"));
+            revision_id update_id;
+            work.get_update_id(update_id);
+            sel = encode_hexenc(update_id.inner()(), origin::internal);
+          }
+          break;
+
         default: break;
         }
     }
@@ -251,6 +272,10 @@ complete_one_selector(project_t & project,
       project.db.select_parent(value, completions);
       break;
 
+    case sel_update:
+      project.db.complete(value, completions);
+      break;
+
     case sel_author:
       project.db.select_cert(author_cert_name(), value, completions);
       break;
@@ -278,6 +303,16 @@ complete_one_selector(project_t & project,
 
     case sel_later:
       project.db.select_date(value, ">", completions);
+      break;
+
+    case sel_message:
+      {
+        set<revision_id> changelogs, comments;
+        project.db.select_cert(changelog_cert_name(), value, changelogs);
+        project.db.select_cert(comment_cert_name(), value, comments);
+        completions.insert(changelogs.begin(), changelogs.end());
+        completions.insert(comments.begin(), comments.end());
+      }
       break;
 
     case sel_cert:

@@ -15,15 +15,20 @@ check({"test", "-x","foo"}, 0, false, false)
 commit()
 with_x = base_revision()
 
-check(mtn("update", "-r"..without_x), 0, true, true)
--- expected to fail:
--- * we don't call hooks when an attribute is cleared
--- * we don't have a way to clear the x-bit from lua 
---   (that's easy to implement though)
-xfail({"test", "!", "-x","foo"}, 0, false, false)
+check(mtn("update", "-r", without_x), 0, true, true)
+check({"test", "!", "-x","foo"}, 0, false, false)
 
--- note: tests following an xfail are not executed
-
-check(mtn("update", "-r "..with_x), 0, false, false)
+check(mtn("update", "-r", with_x), 0, false, false)
 check({"test", "-x","foo"}, 0, false, false)
 
+-- test checkout with mtn:execute
+
+check(mtn("checkout", "checkout"), 0, false, false)
+check(indir("checkout", {"test", "-x","foo"}, 0, false, false))
+
+-- test clone with mtn:execute
+
+testURI="file:" .. test.root .. "/test.db"
+
+check(nodb_mtn("clone", testURI, "testbranch", "clone"), 0, false, true)
+check(indir("clone", {"test", "-x","foo"}, 0, false, false))

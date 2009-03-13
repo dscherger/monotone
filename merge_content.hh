@@ -13,6 +13,7 @@
 
 #include "vocab.hh"
 #include "rev_types.hh"
+#include "paths.hh"
 
 class database;
 class lua_hooks;
@@ -159,6 +160,30 @@ content_merge_checkout_adaptor
 
 };
 
+
+struct
+content_merge_empty_adaptor
+  : public content_merge_adaptor
+{
+  void record_merge(file_id const & left_ident,
+                    file_id const & right_ident,
+                    file_id const & merged_ident,
+                    file_data const & left_data,
+                    file_data const & right_data,
+                    file_data const & merged_data);
+
+  void record_file(file_id const & parent_ident,
+                   file_id const & merged_ident,
+                   file_data const & parent_data,
+                   file_data const & merged_data);
+
+  void get_ancestral_roster(node_id nid,
+                            revision_id & rid,
+                            boost::shared_ptr<roster_t const> & anc);
+
+  void get_version(file_id const & ident,
+                   file_data & dat) const;
+};
 
 struct content_merger
 {

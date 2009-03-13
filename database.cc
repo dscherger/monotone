@@ -1743,14 +1743,13 @@ database::put_file_delta(file_id const & ident,
                          file_id const & base,
                          file_delta const & del)
 {
-  // nb: delta schema is (id, base, delta)
   I(!null_id(ident));
   I(!null_id(base));
 
   gzip<delta> del_packed;
   encode_gzip(del.inner(), del_packed);
 
-  imp->execute(query("INSERT INTO file_deltas VALUES (?, ?, ?)")
+  imp->execute(query("INSERT INTO file_deltas (id, base, delta) VALUES (?, ?, ?)")
                % blob(ident.inner()())
                % blob(base.inner()())
                % blob(del_packed()));
@@ -2187,8 +2186,6 @@ database::put_file_version(file_id const & old_id,
                            file_delta const & del)
 {
   I(!(old_id == new_id));
-  file_data old_data, new_data;
-  file_delta reverse_delta;
 
   if (!file_version_exists(old_id))
     {
@@ -2197,6 +2194,24 @@ database::put_file_version(file_id const & old_id,
       return;
     }
 
+  var_value delta_direction("reverse");
+  var_key key(var_domain("database"), var_name("delta-direction"));
+  if (var_exists(key))
+    {
+      get_var(key, delta_direction);
+    }
+  bool make_reverse_deltas(delta_direction() == "reverse" ||
+                           delta_direction() == "both");
+  bool make_forward_deltas(delta_direction() == "forward" ||
+                           delta_direction() == "both");
+  if (!make_reverse_deltas && !make_forward_deltas)
+    {
+      W(F("Unknown delta direction '%s'; assuming 'reverse'. Valid "
+          "values are 'reverse', 'forward', 'both'.") % delta_direction);
+      make_reverse_deltas = true;
+    }
+
+  file_data old_data, new_data;
   get_file_version(old_id, old_data);
   {
     data tmp;
@@ -2204,6 +2219,7 @@ database::put_file_version(file_id const & old_id,
     new_data = file_data(tmp);
   }
 
+  file_delta reverse_delta;
   {
     string tmp;
     invert_xdelta(old_data.inner()(), del.inner()(), tmp);
@@ -2217,23 +2233,36 @@ database::put_file_version(file_id const & old_id,
   }
 
   transaction_guard guard(*this);
+  if (make_reverse_deltas)
+    {
+      if (!file_or_manifest_base_exists(new_id, "files"))
+        {
+          imp->schedule_delayed_file(new_id, new_data);
+        }
+      if (!imp->delta_exists(old_id, new_id, "file_deltas"))
+        {
+          put_file_delta(old_id, new_id, reverse_delta);
+        }
+    }
+  if (make_forward_deltas)
+    {
+      if (!imp->delta_exists(new_id, old_id, "file_deltas"))
+        {
+          put_file_delta(new_id, old_id, del);
+        }
+    }
+  else
+    {
+      imp->drop(new_id.inner(), "file_deltas");
+    }
   if (file_or_manifest_base_exists(old_id, "files"))
     {
       // descendent of a head version replaces the head, therefore old head
       // must be disposed of
-      imp->drop_or_cancel_file(old_id);
+      if (delta_exists(old_id.inner(), "file_deltas"))
+        imp->drop_or_cancel_file(old_id);
     }
-  if (!file_or_manifest_base_exists(new_id, "files"))
-    {
-      imp->schedule_delayed_file(new_id, new_data);
-      imp->drop(new_id.inner(), "file_deltas");
-    }
-
-  if (!imp->delta_exists(old_id, new_id, "file_deltas"))
-    {
-      put_file_delta(old_id, new_id, reverse_delta);
-      guard.commit();
-    }
+  guard.commit();
 }
 
 void
@@ -2523,19 +2552,22 @@ database::deltify_revision(revision_id const & rid)
                j = edge_changes(i).deltas_applied.begin();
              j != edge_changes(i).deltas_applied.end(); ++j)
           {
-            if (file_or_manifest_base_exists(delta_entry_src(j), "files") &&
-                file_version_exists(delta_entry_dst(j)))
+            file_id old_id(delta_entry_src(j));
+            file_id new_id(delta_entry_dst(j));
+            // if not yet deltified
+            if (file_or_manifest_base_exists(old_id, "files") &&
+                file_version_exists(new_id))
               {
                 file_data old_data;
                 file_data new_data;
-                get_file_version(delta_entry_src(j), old_data);
-                get_file_version(delta_entry_dst(j), new_data);
+                get_file_version(old_id, old_data);
+                get_file_version(new_id, new_data);
                 delta delt;
                 diff(old_data.inner(), new_data.inner(), delt);
                 file_delta del(delt);
-                imp->drop_or_cancel_file(delta_entry_dst(j));
-                imp->drop(delta_entry_dst(j).inner(), "file_deltas");
-                put_file_version(delta_entry_src(j), delta_entry_dst(j), del);
+                imp->drop_or_cancel_file(new_id);
+                imp->drop(new_id.inner(), "file_deltas");
+                put_file_version(old_id, new_id, del);
               }
           }
       }

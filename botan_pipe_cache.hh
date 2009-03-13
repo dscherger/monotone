@@ -45,6 +45,10 @@ public:
   Botan::Pipe * operator->()
   { I(pipe); return pipe.get(); }
 
+  // To avoid re-using a pipe that's thrown.
+  void reset(Botan::Pipe * p)
+  { pipe.reset(p); }
+
   // ??? operator bool, operator! a la boost::scoped_ptr
   // (what's with the bizarro unspecified_bool_type thing?)
 };

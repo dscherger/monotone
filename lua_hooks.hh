@@ -119,9 +119,11 @@ public:
   // attribute hooks
   bool hook_init_attributes(file_path const & filename,
                             std::map<std::string, std::string> & attrs);
-  bool hook_apply_attribute(std::string const & attr,
-                            file_path const & filename,
-                            std::string const & value);
+  bool hook_set_attribute(std::string const & attr,
+                          file_path const & filename,
+                          std::string const & value);
+  bool hook_clear_attribute(std::string const & attr,
+                            file_path const & filename);
 
   // validation hooks
   bool hook_validate_commit_message(utf8 const & message,

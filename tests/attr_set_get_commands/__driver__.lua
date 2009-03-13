@@ -30,4 +30,4 @@ check(not qgrep("test:test_attr:foo", "stdout"))
 check(qgrep("test:test_attr:a:2", "stdout"))
 
 -- check that files must exist to have attributes set
-check(mtn("attr", "set", "missing", "mtn:execute"), 1, false, false)
+check(mtn("attr", "set", "missing", "mtn:execute", "true"), 1, false, false)

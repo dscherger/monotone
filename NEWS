@@ -21,6 +21,14 @@
 	  been a long-standing request of various redistributors of binary
 	  packages, who prefer the use of globally shared libraries.
 
+        - There is a new db var "database delta-direction", which can have
+          values "reverse" (default), "forward", and "both". This controls
+          what kind of deltas are stored for new file versions. Forward
+          deltas are very fast for netsync, but slow for most other uses.
+          Set this to "both" (or "forward" if you're short on disk space) on
+          an empty db and pull everything into it, to get a database which
+          will be much faster for server usage (especially initial pulls).
+
         Bugs fixed
 
         - In 0.42, a netsync writer would attemts to queue up all outgoing
@@ -30,6 +38,10 @@
           timeouts and dropped connections (for pauses over 10 minutes).
           The bug that caused this is fixed, and that operation now has a
           safety timer that should prevent it from coming back.
+
+        - When the netsync server receives garbage over the network, it
+          should be much better about only terminating the offending connection
+          instead of the entire server.
 
         - Several bugfixes to `mtn automate stdio':
           * it now correctly distinguishs between syntax and command errors by
@@ -54,9 +66,26 @@
 	  own for directory creation and permissions if you take the
 	  key on standard output and redirect it to a file.)
 
-        - The log command was missing --depth and --exclude options used to
+        - The log command was missing '--depth' and '--exclude' options used to
           restrict revisions printed to those touching specific paths. Log now
           allows these options and uses them properly.
+
+        - Performance of the log command has been improved significantly.
+          Previous versions of monotone loaded individual certs by name for each
+          printed revision and this caused sqlite to not use the correct
+          index. Now, all certs are loaded for each printed revision once and
+          individual certs are selected from the full list which allows sqlite
+          to use the preferred index.
+
+        - The update command previously did not clear execute permissions from
+          files that had their associated 'mtn:execute' attribute cleared.
+
+        - Several minor problems with workspace attributes have been fixed.
+          Earlier versions of monotone would reset attributes such as
+          mtn:execute on all files when any workspace modifying command was
+          executed. Applying attribute changes to workspace files is now done
+          much more selectively in the same manner that content and name changes
+          are applied.
 
         New features
 
@@ -69,6 +98,17 @@
 	- Command line options in the EDITOR and/or VISUAL environment
 	  variables are honored; for instance, EDITOR="emacs -nw"
 	  works now.  (Debian bug #320565.)
+
+        - Additional '--revision' option for 'mtn log' allows logging of
+          selected sets of revisions.
+
+        - Additional 'u:' and 'm:' selector types for selecting the revision the
+          workspace was last updated from and revisions matching specified
+          message globs in changelog and comment certs.
+
+        - A monotone database may be exported in the git fast-import format
+          using the git_export command. The output from this command may be
+          piped into git fast-import or other tools supporting this format.
 
         Internal
 

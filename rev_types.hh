@@ -82,7 +82,7 @@ typedef hybrid_map<node_id, node_t> node_map;
 // (true, "val") or (false, "") are both valid attr values (for proper
 // merging, we have to widen the attr_value type to include a first-class
 // "undefined" value).
-typedef std::map<attr_key, std::pair<bool, attr_value> > full_attr_map_t;
+typedef std::map<attr_key, std::pair<bool, attr_value> > attr_map_t;
 
 // full definitions in database.hh
 class database;

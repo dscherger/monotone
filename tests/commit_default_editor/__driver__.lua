@@ -1,0 +1,12 @@
+-- This tests the standard implementation of the edit_comment lua hook,
+-- which should look for an "editor" executable on the PATH and run it
+-- if neither $EDITOR nor $VISUAL is set in the environment.  We have
+-- to override the default test hooks, which disable edit_comment.
+
+mtn_setup()
+addfile("a", "hello there")
+
+check(get("test_hooks.lua")) -- this restores the default edit_comment
+                             -- and provides a fake "editor" executable
+
+check(mtn("--branch", "testbranch", "commit"), 0, false, false)

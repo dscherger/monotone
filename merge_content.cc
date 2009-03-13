@@ -333,6 +333,44 @@ content_merge_checkout_adaptor::get_version(file_id const & ident,
   db.get_file_version(ident, dat);
 }
 
+///////////////////////////////////////////////////////////////////////////
+// content_merge_empty_adaptor
+///////////////////////////////////////////////////////////////////////////
+
+void
+content_merge_empty_adaptor::record_merge(file_id const & left_ident,
+                                          file_id const & right_ident,
+                                          file_id const & merged_ident,
+                                          file_data const & left_data,
+                                          file_data const & right_data,
+                                          file_data const & merged_data)
+{
+  I(false);
+}
+
+void
+content_merge_empty_adaptor::record_file(file_id const & parent_ident,
+                                         file_id const & merged_ident,
+                                         file_data const & parent_data,
+                                         file_data const & merged_data)
+{
+  I(false);
+}
+
+void
+content_merge_empty_adaptor::get_ancestral_roster(node_id nid,
+                                                  revision_id & rid,
+                                                  shared_ptr<roster_t const> & anc)
+{
+  I(false);
+}
+
+void
+content_merge_empty_adaptor::get_version(file_id const & ident,
+                                         file_data & dat) const
+{
+  I(false);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // content_merger

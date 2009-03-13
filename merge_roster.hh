@@ -116,7 +116,7 @@ struct duplicate_name_conflict
 
 // nodes with attribute conflicts are left attached in the resulting tree (unless
 // detached for some other reason), but with the given attribute left out of
-// their full_attr_map_t.  Note that this doesn't actually leave the resulting
+// their attr_map_t.  Note that this doesn't actually leave the resulting
 // roster insane (FIXME: we could put an invalid attr value in instead, like a
 // pair (false, "foo") (since the second value can only be non-null if the
 // first is 'true').  Should we do this?)

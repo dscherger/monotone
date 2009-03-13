@@ -96,7 +96,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 
@@ -311,7 +313,7 @@ function edit_comment(basetext, user_log_message)
    -- anything more complicated than a single word with no metacharacters.
    -- This, unfortunately, means we have to quote the file argument.
 
-   if (not string.find(editor, "[^%w_.+-]")) then
+   if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
 	 io.write(string.format(gettext("Error running editor '%s' "..

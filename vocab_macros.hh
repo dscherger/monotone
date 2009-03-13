@@ -147,7 +147,11 @@ ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
                                              \
 ty const & ty::operator=(ty const & other)   \
-{ s = other.s; return *this; }               \
+{                                            \
+  s = other.s;                               \
+  made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
                                              \
 std::ostream & operator<<(std::ostream & o,  \
                           ty const & a)      \
@@ -198,7 +202,11 @@ ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
                                              \
 ty const & ty::operator=(ty const & other)   \
-{ s = other.s; return *this; }               \
+{                                            \
+  s = other.s;                               \
+  made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
                                              \
 std::ostream & operator<<(std::ostream & o,  \
                           ty const & a)      \
@@ -236,7 +244,11 @@ enc<INNER>::enc(enc<INNER> const & other)                \
 template<typename INNER>                                 \
 enc<INNER> const &                                       \
 enc<INNER>::operator=(enc<INNER> const & other)          \
-  { s = other.s; return *this; }                         \
+{                                                        \
+  s = other.s;                                           \
+  made_from = other.made_from;                           \
+  return *this;                                          \
+}                                                        \
                                                          \
 template <typename INNER>                                \
 std::ostream & operator<<(std::ostream & o,              \

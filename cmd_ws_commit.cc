@@ -217,11 +217,22 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // that are to be *kept*. Then, the changes to revert are those
   // from the new roster *back* to the restricted roster
 
+  // The arguments to revert are paths to be reverted *not* paths to be left
+  // intact. The restriction formed from these arguments will include the
+  // changes to be reverted and excludes the changes to be kept.  To form
+  // the correct restricted roster this restriction must be applied to the
+  // old and new rosters in reverse order, from new *back* to old.
+
   roster_t restricted_roster;
   make_restricted_roster(new_roster, old_roster, restricted_roster,
                          mask);
 
   make_cset(old_roster, restricted_roster, preserved);
+
+  // At this point, all three rosters have accounted for additions,
+  // deletions and renames but they all have content hashes from the
+  // original old roster. This is fine, when reverting files we want to
+  // revert them back to their original content.
 
   // The preserved cset will be left pending in MTN/revision
 
@@ -230,18 +241,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // to get a cset that gets us back to the restricted roster
   // from the current workspace roster
 
-  // the intermediate paths record the paths of all directory nodes
-  // paths we reverted on the fly for descendant nodes below them.
-  // if a children of such a directory node should be recreated, we use
-  // this recorded path here instead of just
-  //  a) the node's old name, which could eventually be wrong if the parent
-  //     path is a rename_target (i.e. a new path), see the
-  //     "revert_drop_not_rename" test
-  //  b) the parent node's new name + the basename of the old name,
-  //     which may be wrong as well in case of a more complex pivot_rename
-
-  std::map<node_id, file_path> intermediate_paths;
-  node_map const & nodes = old_roster.all_nodes();
+  node_map const & nodes = restricted_roster.all_nodes();
 
   for (node_map::const_iterator i = nodes.begin();
        i != nodes.end(); ++i)
@@ -249,81 +249,77 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       node_id nid = i->first;
       node_t node = i->second;
 
-      if (old_roster.is_root(nid))
+      if (restricted_roster.is_root(nid))
         continue;
 
-      if (!mask.includes(old_roster, nid))
+      if (!mask.includes(restricted_roster, nid))
         continue;
 
-      file_path old_path, new_path, old_parent, new_parent;;
-      path_component base;
-
-      old_roster.get_name(nid, old_path);
-      old_path.dirname_basename(old_parent, base);
-
-      // if we recorded the parent node in this rename already
-      // use the intermediate path (i.e. the new new_path after this
-      // action) as target path for the reverted item)
-      const std::map<node_id, file_path>::iterator it =
-        intermediate_paths.find(node->parent);
-      if (it != intermediate_paths.end())
-      {
-          new_path = it->second / base;
-      }
-      else
-      {
-          if (old_roster.is_root(node->parent))
-          {
-            new_path = file_path() / base;
-          }
-          else
-          {
-            new_roster.get_name(node->parent, new_parent);
-            new_path = new_parent / base;
-          }
-      }
+      file_path path;
+      restricted_roster.get_name(nid, path);
 
       if (is_file_t(node))
         {
           file_t f = downcast_to_file_t(node);
-          if (file_exists(new_path))
+
+          bool changed = true;
+
+          if (file_exists(path))
             {
               file_id ident;
-              calculate_ident(new_path, ident);
+              calculate_ident(path, ident);
               // don't touch unchanged files
               if (ident == f->content)
-                continue;
-              else
-                L(FL("skipping unchanged %s") % new_path);
+                {
+                  L(FL("skipping unchanged %s") % path);
+                  changed = false;;
+                }
             }
 
-          P(F("reverting %s") % new_path);
-          L(FL("reverting %s to [%s]") % new_path
-            % f->content);
+          if (changed)
+            {
+              P(F("reverting %s") % path);
+              L(FL("reverting %s to [%s]") % path
+                % f->content);
 
-          E(db.file_version_exists(f->content), origin::user,
-            F("no file version %s found in database for %s")
-              % f->content % new_path);
+              E(db.file_version_exists(f->content), origin::user,
+                F("no file version %s found in database for %s")
+                % f->content % path);
 
-          file_data dat;
-          L(FL("writing file %s to %s")
-            % f->content % new_path);
-          db.get_file_version(f->content, dat);
-          write_data(new_path, dat.inner());
+              file_data dat;
+              L(FL("writing file %s to %s")
+                % f->content % path);
+              db.get_file_version(f->content, dat);
+              write_data(path, dat.inner());
+            }
         }
       else
         {
-          intermediate_paths.insert(std::pair<node_id, file_path>(nid, new_path));
-
-          if (!directory_exists(new_path))
+          if (!directory_exists(path))
             {
-              P(F("recreating %s/") % new_path);
-              mkdir_p(new_path);
+              P(F("recreating %s/") % path);
+              mkdir_p(path);
             }
           else
             {
-              L(FL("skipping existing %s/") % new_path);
+              L(FL("skipping existing %s/") % path);
             }
+        }
+      
+      // revert attributes on this node -- this doesn't quite catch all cases:
+      // if the execute bits are manually set on some path that doesn't have
+      // a dormant mtn:execute the execute bits will not be cleared
+      // FIXME: check execute bits against mtn:execute explicitly?
+
+      for (attr_map_t::const_iterator a = node->attrs.begin();
+           a != node->attrs.end(); ++a)
+        {
+          P(F("reverting %s on %s") % a->first() % path);
+          if (a->second.first)
+            app.lua.hook_set_attribute(a->first(), path, 
+                                       a->second.second());
+          else
+            app.lua.hook_clear_attribute(a->first(), path);
         }
     }
 
@@ -337,7 +333,6 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
 
   // Race.
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 }
 
@@ -702,10 +697,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
-
   work.perform_content_update(db, checkout, wca, false);
 
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
   guard.commit();
 }
@@ -714,33 +707,32 @@ CMD_GROUP(attr, "attr", "", CMD_REF(workspace),
           N_("Manages file attributes"),
           N_("This command is used to set, get or drop file attributes."));
 
-CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
-    N_("Removes attributes from a file"),
-    N_("If no attribute is specified, this command removes all attributes "
-       "attached to the file given in PATH.  Otherwise only removes the "
-       "attribute specified in ATTR."),
-    options::opts::none)
+// WARNING: this function is used by both attr_drop and AUTOMATE drop_attribute
+// don't change anything that affects the automate interface contract
+
+static void
+drop_attr(app_state & app, args_vector const & args)
 {
-  E(args.size() > 0 && args.size() < 3, origin::user,
-    F("wrong argument count"));
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
   database db(app);
   workspace work(app);
-  work.get_current_roster_shape(db, nis, new_roster);
+
+  roster_t old_roster;
+  temp_node_id_source nis;
+
+  work.get_current_roster_shape(db, nis, old_roster);
 
   file_path path = file_path_external(idx(args, 0));
 
-  E(new_roster.has_node(path), origin::user,
+  E(old_roster.has_node(path), origin::user,
     F("Unknown path '%s'") % path);
+
+  roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
 
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
     {
-      for (full_attr_map_t::iterator i = node->attrs.begin();
+      for (attr_map_t::iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
         i->second = make_pair(false, "");
     }
@@ -754,13 +746,31 @@ CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
       node->attrs[a_key] = make_pair(false, "");
     }
 
+  cset cs;
+  make_cset(old_roster, new_roster, cs);
+
+  content_merge_empty_adaptor empty;
+  work.perform_content_update(db, cs, empty);
+
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+}
+
+CMD(attr_drop, "drop", "", CMD_REF(attr), N_("PATH [ATTR]"),
+    N_("Removes attributes from a file"),
+    N_("If no attribute is specified, this command removes all attributes "
+       "attached to the file given in PATH.  Otherwise only removes the "
+       "attribute specified in ATTR."),
+    options::opts::none)
+{
+  if (args.size() != 1 && args.size() != 2)
+    throw usage(execid);
+
+  drop_attr(app, args);
 }
 
 CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
@@ -770,8 +780,8 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
        "attribute specified in ATTR."),
     options::opts::none)
 {
-  E(args.size() > 0 && args.size() < 3, origin::user,
-    F("wrong argument count"));
+  if (args.size() != 1 && args.size() != 2)
+    throw usage(execid);
 
   roster_t new_roster;
   temp_node_id_source nis;
@@ -788,7 +798,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   if (args.size() == 1)
     {
       bool has_any_live_attrs = false;
-      for (full_attr_map_t::const_iterator i = node->attrs.begin();
+      for (attr_map_t::const_iterator i = node->attrs.begin();
            i != node->attrs.end(); ++i)
         if (i->second.first)
           {
@@ -804,7 +814,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     {
       I(args.size() == 2);
       attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
-      full_attr_map_t::const_iterator i = node->attrs.find(a_key);
+      attr_map_t::const_iterator i = node->attrs.find(a_key);
       if (i != node->attrs.end() && i->second.first)
         cout << path << " : "
              << i->first << '='
@@ -815,26 +825,26 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
     }
 }
 
-CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
-    N_("Sets an attribute on a file"),
-    N_("Sets the attribute given on ATTR to the value specified in VALUE "
-       "for the file mentioned in PATH."),
-    options::opts::none)
+// WARNING: this function is used by both attr_set and AUTOMATE set_attribute
+// don't change anything that affects the automate interface contract
+
+static void
+set_attr(app_state & app, args_vector const & args)
 {
-  E(args.size() == 3, origin::user,
-    F("wrong argument count"));
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
   database db(app);
   workspace work(app);
-  work.get_current_roster_shape(db, nis, new_roster);
+
+  roster_t old_roster;
+  temp_node_id_source nis;
+
+  work.get_current_roster_shape(db, nis, old_roster);
 
   file_path path = file_path_external(idx(args, 0));
 
-  E(new_roster.has_node(path), origin::user,
+  E(old_roster.has_node(path), origin::user,
     F("Unknown path '%s'") % path);
+
+  roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
@@ -842,13 +852,30 @@ CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
 
   node->attrs[a_key] = make_pair(true, a_value);
 
+  cset cs;
+  make_cset(old_roster, new_roster, cs);
+
+  content_merge_empty_adaptor empty;
+  work.perform_content_update(db, cs, empty);
+
   parent_map parents;
   work.get_parent_rosters(db, parents);
 
   revision_t new_work;
   make_revision_for_workspace(parents, new_roster, new_work);
   work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+}
+
+CMD(attr_set, "set", "", CMD_REF(attr), N_("PATH ATTR VALUE"),
+    N_("Sets an attribute on a file"),
+    N_("Sets the attribute given on ATTR to the value specified in VALUE "
+       "for the file mentioned in PATH."),
+    options::opts::none)
+{
+  if (args.size() != 3)
+    throw usage(execid);
+
+  set_attr(app, args);
 }
 
 // Name: get_attributes
@@ -908,7 +935,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
 
   // the current node holds all current attributes (unchanged and new ones)
   node_t n = current.get_node(path);
-  for (full_attr_map_t::const_iterator i = n->attrs.begin();
+  for (attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
     std::string value(i->second.second());
@@ -927,7 +954,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         node_t prev_node = base.get_node(path);
 
         // find the attribute in there
-        full_attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
+        attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
         I(j != prev_node->attrs.end());
 
         // was this dropped before? then ignore it
@@ -943,7 +970,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         if (base.has_node(path))
           {
             node_t prev_node = base.get_node(path);
-            full_attr_map_t::const_iterator j =
+            attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
 
             // the attribute is new if it either hasn't been found
@@ -997,32 +1024,7 @@ CMD_AUTOMATE(set_attribute, N_("PATH KEY VALUE"),
   E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
-  database db(app);
-  workspace work(app);
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
-
-  file_path path = file_path_external(idx(args,0));
-
-  E(new_roster.has_node(path), origin::user,
-    F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
-
-  attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
-  attr_value a_value = typecast_vocab<attr_value>(idx(args,2));
-
-  node->attrs[a_key] = make_pair(true, a_value);
-
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+  set_attr(app, args);
 }
 
 // Name: drop_attribute
@@ -1044,42 +1046,7 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
   E(args.size() ==1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
-  database db(app);
-  workspace work(app);
-
-  roster_t new_roster;
-  temp_node_id_source nis;
-
-  work.get_current_roster_shape(db, nis, new_roster);
-
-  file_path path = file_path_external(idx(args,0));
-
-  E(new_roster.has_node(path), origin::user, F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
-
-  // Clear all attrs (or a specific attr).
-  if (args.size() == 1)
-    {
-      for (full_attr_map_t::iterator i = node->attrs.begin();
-           i != node->attrs.end(); ++i)
-        i->second = make_pair(false, "");
-    }
-  else
-    {
-      attr_key a_key = typecast_vocab<attr_key>(idx(args,1));
-      E(node->attrs.find(a_key) != node->attrs.end(), origin::user,
-        F("Path '%s' does not have attribute '%s'")
-        % path % a_key);
-      node->attrs[a_key] = make_pair(false, "");
-    }
-
-  parent_map parents;
-  work.get_parent_rosters(db, parents);
-
-  revision_t new_work;
-  make_revision_for_workspace(parents, new_roster, new_work);
-  work.put_work_rev(new_work);
-  work.update_any_attrs(db);
+  drop_attr(app, args);
 }
 
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
@@ -1322,7 +1289,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       % prog_name);
   }
 
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 
   {
