@@ -101,6 +101,26 @@ options::options()
 # undef OPTSET_REL
 }
 
+const options &
+options::operator = (options const & other)
+{
+# define OPTSET(name)
+# define OPTVAR(group, type, name, default_)    \
+    name = other.name;
+# define OPTION(optset, name, hasarg, optstring, description)   \
+    name ## _given = other.name ## _given;
+# define OPTSET_REL(parent, child)
+
+# include "options_list.hh"
+
+# undef OPTSET
+# undef OPTVAR
+# undef OPTION
+# undef OPTSET_REL
+
+  return *this;
+}
+
 static options::options_type
 collect_children(options::static_options_fun opt)
 {
@@ -188,7 +208,6 @@ options::options_type const & options::opts::all_options()
 # undef OPTVAR
 # undef OPTION
 # undef OPTSET_REL
-
 
 option::option_set<options>
 operator | (option::option_set<options> const & opts,

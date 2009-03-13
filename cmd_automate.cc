@@ -361,6 +361,8 @@ CMD_AUTOMATE(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
+  options original_opts = app.opts;
+
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
@@ -408,11 +410,6 @@ CMD_AUTOMATE(stdio, "",
           cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
 
-          // reset the application's global options
-          options::options_type opts;
-          opts = options::opts::all_options() - options::opts::globals();
-          opts.instantiate(&app.opts).reset();
-
           if (cmd->use_workspace_options())
             {
               // Re-read the ws options file, rather than just copying
@@ -422,9 +419,9 @@ CMD_AUTOMATE(stdio, "",
               workspace::get_options(app.opts);
             }
 
+          options::options_type opts;
           opts = options::opts::globals() | cmd->opts();
           opts.instantiate(&app.opts).from_key_value_pairs(params);
-
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure
@@ -450,6 +447,9 @@ CMD_AUTOMATE(stdio, "",
           automate const * acmd = dynamic_cast< automate const * >(cmd);
           I(acmd);
           acmd->exec_from_automate(app, id, args, os);
+          // set app.opts to the originally given options
+          // so the next command has an identical setup
+          app.opts = original_opts;
         }
       catch(recoverable_failure & f)
         {

@@ -87,6 +87,9 @@
           much more selectively in the same manner that content and name changes
           are applied.
 
+	- mtn automate stdio previously didn't reset global options which were
+          set or changed by a previously executed command; this has been fixed.
+
         New features
 
         - The `mtn_automate' lua function now correctly parses and sets
