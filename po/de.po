@@ -34,7 +34,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2009-03-08 00:34+0100\n"
+"POT-Creation-Date: 2009-03-13 21:09+0100\n"
 "PO-Revision-Date: 2007-08-07 11:35+0200\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -192,7 +192,7 @@ msgstr "%s wurde mit einem ungültigen Parameter aufgerufen"
 msgid "Directory '%s' does not exist"
 msgstr "Das Verzeichnis '%s' existiert nicht"
 
-#: lua.cc:594 cmd_othervcs.cc:54 work.cc:1778
+#: lua.cc:594 cmd_othervcs.cc:61 work.cc:1778
 #, c-format
 msgid "'%s' is not a directory"
 msgstr "'%s' ist kein Verzeichnis"
@@ -512,8 +512,8 @@ msgid "Commands for packet reading and writing"
 msgstr "Kommandos zum Lesen und Schreiben von Datenpaketen"
 
 #: cmd.cc:67
-msgid "Commands for interaction with RCS and CVS"
-msgstr "Kommandos für die Interaktion mit RCS und CVS"
+msgid "Commands for interaction with other version control systems"
+msgstr "Kommandos für die Interaktion mit anderen Versionskontrollsystemen"
 
 #: cmd.cc:70
 msgid "Commands to review revisions"
@@ -2104,16 +2104,16 @@ msgstr "[DATEI [...]]"
 msgid "Calculates diffs of files"
 msgstr "Berechnet die Unterschiede in Dateien"
 
-#: cmd_diff_log.cc:703
+#: cmd_diff_log.cc:704
 msgid "[PATH] ..."
 msgstr "[PFAD] ..."
 
-#: cmd_diff_log.cc:704
+#: cmd_diff_log.cc:705
 msgid "Prints selected history in forward or reverse order"
 msgstr "Gibt die ausgewählte Historie vorwärts oder rückwärts aus"
 
 #
-#: cmd_diff_log.cc:705
+#: cmd_diff_log.cc:706
 msgid ""
 "This command prints selected history in forward or reverse order, filtering "
 "it by PATH if given."
@@ -2121,17 +2121,17 @@ msgstr ""
 "Dieses Kommando gibt die ausgewählte Historie vorwärts oder rückwärts aus, "
 "gefiltert durch PFAD, sofern angegeben."
 
-#: cmd_diff_log.cc:723
+#: cmd_diff_log.cc:724
 #, c-format
 msgid "only one of --last/--next allowed"
 msgstr "'--last' und '--next' sind nur einmal erlaubt"
 
-#: cmd_diff_log.cc:740
+#: cmd_diff_log.cc:741
 #, c-format
 msgid "try passing a --from revision to start at"
 msgstr "Versuchen Sie, über die Option --from eine Startrevision anzugeben."
 
-#: cmd_diff_log.cc:1054
+#: cmd_diff_log.cc:1058
 #, c-format
 msgid "(Revision: %s)"
 msgstr "(Revision: %s)"
@@ -2638,15 +2638,15 @@ msgstr ""
 msgid "Refreshes the inodeprint cache"
 msgstr "Aktualisiert den 'inodeprint'-Cache"
 
-#: cmd_othervcs.cc:21
+#: cmd_othervcs.cc:28
 msgid "RCSFILE..."
 msgstr "RCS_DATEI..."
 
-#: cmd_othervcs.cc:22
+#: cmd_othervcs.cc:29
 msgid "Parses versions in RCS files"
 msgstr "Analysiert Versionen in RCS-Dateien"
 
-#: cmd_othervcs.cc:23
+#: cmd_othervcs.cc:30
 msgid ""
 "This command doesn't reconstruct or import revisions.  You probably want to "
 "use cvs_import."
@@ -2654,23 +2654,47 @@ msgstr ""
 "Durch dieses Kommando werden keine Revision rekonstruiert oder importiert.  "
 "Sie möchten eventuell 'cvs_import' ausführen."
 
-#: cmd_othervcs.cc:36
+#: cmd_othervcs.cc:43
 msgid "CVSROOT"
 msgstr "CVSROOT"
 
-#: cmd_othervcs.cc:37
+#: cmd_othervcs.cc:44
 msgid "Imports all versions in a CVS repository"
 msgstr "Importiert alle Versionen in ein CVS-Depot"
 
-#: cmd_othervcs.cc:49
+#: cmd_othervcs.cc:56
 #, c-format
 msgid "need base --branch argument for importing"
 msgstr "benötige Basis '--branch'-Parameter für den Import"
 
-#: cmd_othervcs.cc:53
+#: cmd_othervcs.cc:60
 #, c-format
 msgid "path %s does not exist"
 msgstr "Pfad %s existiert nicht"
+
+#: cmd_othervcs.cc:73
+msgid "Produces a git fast-export data stream on stdout"
+msgstr "Erzeugt einen `git fast-export'-Datenstrom auf stdout"
+
+#: cmd_othervcs.cc:91
+#, c-format
+msgid "reading author mappings from '%s'"
+msgstr "lese Autorzuordnungen von '%s'"
+
+#: cmd_othervcs.cc:97
+#, c-format
+msgid "reading branch mappings from '%s'"
+msgstr "lese Zweigzuordnungen von '%s'"
+
+#: cmd_othervcs.cc:105
+#, c-format
+msgid "importing revision marks from '%s'"
+msgstr "importierte Revisionsmarkierungen von '%s'"
+
+#: cmd_othervcs.cc:142
+#, c-format
+msgid "exporting revision marks to '%s'"
+msgstr "exportiere Revisionsmarkierungen nach '%s'"
 
 #: cmd_automate.cc:34
 msgid "Interface for scripted execution"
@@ -2710,12 +2734,12 @@ msgstr "Falsche Eingabe für 'automate stdio': Kommandoname fehlt."
 msgid "Automates several commands in one run"
 msgstr "Ermöglicht die Ausführung mehrerer Kommandos in einem Durchgang"
 
-#: cmd_automate.cc:394 cmd_automate.cc:519
+#: cmd_automate.cc:396 cmd_automate.cc:519
 #, c-format
 msgid "no completions for this command"
 msgstr "keine Vervollständigungen für dieses Kommando"
 
-#: cmd_automate.cc:399 cmd_automate.cc:524
+#: cmd_automate.cc:401 cmd_automate.cc:524
 #, c-format
 msgid "multiple completions possible for this command"
 msgstr "mehrere Vervollständigungen für dieses Kommando möglich"
@@ -3720,8 +3744,8 @@ msgid ""
 "Unknown delta direction '%s'; assuming 'reverse'. Valid values are "
 "'reverse', 'forward', 'both'."
 msgstr ""
-"Unbekannte Delta-Richtung '%s'; habe 'reverse' vermutet. Gültige Werte "
-"sind 'reverse', 'forward' und 'both'."
+"Unbekannte Delta-Richtung '%s'; habe 'reverse' vermutet. Gültige Werte sind "
+"'reverse', 'forward' und 'both'."
 
 #: database.cc:2606
 #, c-format
@@ -4668,7 +4692,8 @@ msgstr "Protokoll-Fehler während der Bearbeitung von Peer %s: '%s'"
 #: netsync.cc:2681 netsync.cc:2889
 #, c-format
 msgid "recoverable '%s' error while processing peer %s: '%s'"
-msgstr "Behebbarer Fehler '%s' bei der Bearbeitung von Peer %s aufgetreten: '%s'"
+msgstr ""
+"Behebbarer Fehler '%s' bei der Bearbeitung von Peer %s aufgetreten: '%s'"
 
 #: netsync.cc:2688
 #, c-format
@@ -4929,6 +4954,39 @@ msgstr ""
 #: rcs_import.cc:1259
 msgid "tags"
 msgstr "Marken"
+
+#: git_export.cc:79
+#, c-format
+msgid "ignored invalid mapping '%s'"
+msgstr "ignoriere ungültige Zuordnung '%s'"
+
+#: git_export.cc:99
+#, c-format
+msgid "missing leading ':' in marks file"
+msgstr "fehlender führender ':' in Markierungsdatei"
+
+#: git_export.cc:103
+#, c-format
+msgid "missing space after mark"
+msgstr "fehlendes Leerzeichen nach Markierung"
+
+#: git_export.cc:105
+#, c-format
+msgid "bad revision id in marks file"
+msgstr "ungültige Revisions-ID in Markierungsdatei"
+
+#: git_export.cc:109
+#, c-format
+msgid "incomplete line in marks file"
+msgstr "unvollständige Zeile in Markierungsdatei"
+
+#: git_export.cc:152
+msgid "loading"
+msgstr "lade"
+
+#: git_export.cc:208
+msgid "exporting"
+msgstr "exportiere"
 
 #: revision.cc:28
 #, c-format
@@ -5660,8 +5718,8 @@ msgid ""
 "the update selector u: refers to the revision before the last update in the "
 "workspace"
 msgstr ""
-"der Aktualisierungs-Selektor u: bezieht sich auf Revisionen vor der "
-"letzten Aktualisierung des derzeitigen Arbeitsbereichs"
+"der Aktualisierungs-Selektor u: bezieht sich auf Revisionen vor der letzten "
+"Aktualisierung des derzeitigen Arbeitsbereichs"
 
 #: selectors.cc:415
 #, c-format
@@ -6689,6 +6747,43 @@ msgstr ""
 msgid "file in which to store conflicts"
 msgstr "Datei, in der Konflikte gespeichert werden"
 
+#: options_list.hh:734
+msgid "use only one changelog cert for the git commit message"
+msgstr "benutzte nur ein Logeintragszertifikat für den git-Logeintrag"
+
+#: options_list.hh:742
+msgid "file mapping author names from original to new values"
+msgstr "Datei, die ursprünglichen Autorennamen neue Werte zuweist"
+
+#: options_list.hh:750
+msgid "file mapping branch names from original to new values "
+msgstr "Datei, die ursprünglichen Zweignamen neue Werte zuweist"
+
+#: options_list.hh:758
+msgid "include git refs for 'revs', 'roots' or 'leaves'"
+msgstr "schließe git-Verweis für 'revs', 'roots' oder 'leaves' ein"
+
+#: options_list.hh:765
+#, c-format
+msgid "git ref type must be 'revs', 'roots', or 'leaves'"
+msgstr "git-Verweistyp muss 'revs', 'roots' oder 'leaves' sein"
+
+#: options_list.hh:770
+msgid "include revision ids in commit logs"
+msgstr "schließe Revisions-IDs in Logeinträgen ein"
+
+#: options_list.hh:778
+msgid "include standard cert values in commit logs"
+msgstr "schließe Standard-Zertifikatswerte in Logeinträgen ein"
+
+#: options_list.hh:786
+msgid "load the internal marks table before exporting revisions"
+msgstr "lade die interne Markierungstabelle vor dem Revisionsexport"
+
+#: options_list.hh:794
+msgid "save the internal marks table after exporting revisions"
+msgstr "speichere die interne Markierungstabelle nach dem Revisionsexport"
+
 #: safe_map.hh:25
 #, c-format
 msgid "erasing nonexistent key from %s"
@@ -6912,7 +7007,9 @@ msgstr "Erhielt Anfrage, mehr als %u Bytes von pageant zu lesen"
 #: monotone.cc:148
 #, c-format
 msgid "std::terminate() - exception thrown while handling another exception"
-msgstr "std::terminate() - Ausnahme wurde während der Behandlung einer anderen Ausnahme geworfen"
+msgstr ""
+"std::terminate() - Ausnahme wurde während der Behandlung einer anderen "
+"Ausnahme geworfen"
 
 #: monotone.cc:201
 #, c-format
