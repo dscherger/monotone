@@ -23,7 +23,7 @@ building and installation process for monotone
     - libiconv if the iconv() function is missing.
     - texinfo (to build the documentation).
     - Botan 1.6.3 or later
-    - PCRE 7.6 or later
+    - PCRE 7.4 or later
     - SQLite 3.3.8 or later
     - Lua 5.1
     - GNU IDN Library
