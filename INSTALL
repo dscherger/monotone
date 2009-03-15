@@ -28,7 +28,7 @@ building and installation process for monotone
     - Lua 5.1
     - GNU IDN Library
 
-        on debian and ubuntu:
+        on Debian and Ubuntu:
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
@@ -37,13 +37,13 @@ building and installation process for monotone
 
            (On etch, you may need to use libbotan1.8 from lenny.)
 
-        on freebsd:
+        on FreeBSD:
 
            install the following packages from the ports collection:
              databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
              devel/gmake devel/pcre lang/lua security/botan
 
-        on gentoo:
+        on Gentoo:
 
            emerge the following packages:
              autoconf automake boost botan gettext libpcre libidn lua sqlite
@@ -52,7 +52,7 @@ building and installation process for monotone
            (you might need to add the "~x86" flag to dev-libs/botan, so you
             get at least version 1.6.3, we recommend using at 1.8.0 or newer)
 
-        on fedora:
+        on Fedora:
 
            install the following packages:
              autoconf automake gettext boost boost-devel zlib zlib-devel
@@ -71,7 +71,7 @@ building and installation process for monotone
 
            (FIXME: yet to be confirmed)
 
-        on mac os x:
+        on Mac OS X:
 
            use MacPorts (http://www.macports.org) to install the following
            packages:
