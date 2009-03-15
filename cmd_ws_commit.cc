@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include <deque>
 #include <iostream>
 #include <map>
 
@@ -16,6 +17,7 @@
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"
+#include "selectors.hh"
 #include "transforms.hh"
 #include "work.hh"
 #include "charset.hh"
@@ -1471,6 +1473,287 @@ CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",
   work.maybe_update_inodeprints(db);
 }
 
+CMD_GROUP(bisect, "bisect", "", CMD_REF(informative),
+          N_("Search revisions to find where a change first appeared"),
+          N_("This command subdivides a set of revisions into good and bad sets "
+             "and successively narrows the set to find the revision that introduced "
+             "some change"));
+
+CMD(reset, "reset", "", CMD_REF(bisect), "",
+    N_("Resets the current search information allowing a new search to be started"),
+    N_("All current search information is discarded"),
+    options::opts::none)
+{
+  workspace work(app);
+  work.remove_bisect_info();
+  P(F("bisect reset"));
+}
+
+CMD(bisect_status, "status", "", CMD_REF(bisect), "",
+    N_("Reports on the current status of the search"),
+    N_("Lists the number of revisions remaining to be searched"),
+    options::opts::none)
+{
+  workspace work(app);
+  vector<bisect::entry> bisect;
+  work.get_bisect_info(bisect);
+
+  for (vector<bisect::entry>::const_iterator i = bisect.begin();
+       i != bisect.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::good:
+          std::cerr << "   good " << i->second << std::endl;
+          break;
+        case bisect::bad:
+          std::cerr << "    bad " << i->second << std::endl;
+          break;
+        case bisect::skipped:
+          std::cerr << "skipped " << i->second << std::endl;
+          break;
+        }
+    }
+  
+  // report the number of revs marked as good
+  // report the number of revs marked as bad
+  // report the number of revs marked as skipped
+  // report the number of remaining revs
+  // if --verbose report the number of remaining revs after each good/bad/skip operation
+}
+
+// FIXME: this is copied from cmd_diff_log.cc
+class revision_loader
+{
+ private:
+  database & db;
+  enum load_direction { ancestors, descendants };
+
+  void
+  load_revs(load_direction const direction, set<revision_id> & revs)
+  {
+    std::deque<revision_id> next(revs.begin(), revs.end());
+
+    while (!next.empty())
+      {
+        revision_id const & rid(next.front());
+        MM(rid);
+
+        set<revision_id> relatives;
+        MM(relatives);
+
+        if (direction == ancestors)
+          db.get_revision_parents(rid, relatives);
+        else if (direction == descendants)
+          db.get_revision_children(rid, relatives);
+        else
+          I(false);
+
+        for (set<revision_id>::const_iterator i = relatives.begin();
+             i != relatives.end(); ++i)
+          {
+            if (null_id(*i))
+              continue;
+            pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
+            if (res.second)
+              next.push_back(*i);
+          }
+
+        next.pop_front();
+      }
+  }
+
+ public:
+  revision_loader(database & db) : db(db) {}
+
+  void
+  load_ancestors(set<revision_id> & revs)
+  {
+    load_revs(ancestors, revs);
+  }
+
+  void
+  load_descendants(set<revision_id> & revs)
+  {
+    load_revs(descendants, revs);
+  }
+
+};
+
+
+static void
+bisect_update(app_state & app, bisect::type type)
+{
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+  revision_loader loader(db);
+
+  revision_id rev;
+
+  E(app.opts.revision_selectors.size() < 2, origin::user,
+    F("bisect allows only one revision selector"));
+
+  // FIXME: ensure workspace is clean for bisecting
+
+  if (app.opts.revision_selectors.size() == 0)
+    {
+      // update insists on a single parent workspace so this probably should too
+      // should bisect also insist on a clean workspace?
+      parent_map parents;
+      work.get_parent_rosters(db, parents);
+      E(parents.size() == 1, origin::user,
+        F("this command can only be used in a single-parent workspace"));
+
+      rev = parent_id(*parents.begin());
+    }
+  else if (app.opts.revision_selectors.size() == 1)
+    {
+      set<revision_id> rids;
+      MM(rids);
+      complete(app.opts, app.lua, project, 
+               (*app.opts.revision_selectors.begin())(), rids);
+
+      diagnose_ambiguous_expansion(project, 
+                                   (*app.opts.revision_selectors.begin())(),
+                                   rids);
+
+      I(rids.size() == 1);
+      rev = *rids.begin();
+    }
+  else
+    I(false);
+
+  // FIXME: this should possibly be delated until it's known whether the new
+  // addition is sensible or not. i.e. ignore nonsense revs and don't change
+  // the bisect info
+
+  vector<bisect::entry> bisect;
+  work.get_bisect_info(bisect);
+  bisect.push_back(make_pair(type, rev));
+  work.put_bisect_info(bisect);
+
+  set<revision_id> first_good, good, first_bad, bad, skipped;
+  for (vector<bisect::entry>::const_iterator i = bisect.begin();
+       i != bisect.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::good:
+          if (first_good.empty())
+            first_good.insert(i->second);
+          good.insert(i->second);
+          break;
+        case bisect::bad:
+          if (first_bad.empty())
+            first_bad.insert(i->second);
+          bad.insert(i->second);
+          break;
+        case bisect::skipped:
+          skipped.insert(i->second);
+          break;
+        }
+    }
+
+  if (good.empty() && !bad.empty())
+    {
+      P(F("%d bad revisions selected; specify good revisions to start search")
+        % bad.size());
+      return;
+    }
+  else if (!good.empty() && bad.empty())
+    {
+      P(F("%d good revisions selected; specify bad revisions to start search")
+        % good.size());
+      return;
+    }
+
+  P(F("%d good revisions; %d bad revisions; %d skipped revisions")
+    % good.size() % bad.size() % skipped.size());
+
+  // the initial set of revisions to be searched are those from the first
+  // good revision to the first bad revision. this clamps the search set
+  // between these two revisions.
+
+  loader.load_descendants(first_good);
+  loader.load_ancestors(first_bad);
+  
+  set<revision_id> search;
+  set_intersection(first_bad.begin(), first_bad.end(),
+                   first_good.begin(), first_good.end(),
+                   inserter(search, search.end()));
+  P(F("%d revisions in initial search set") % search.size());
+
+  // good revisions and their ancestors are removed from the search set. 
+  // bad revisions and their descendants are removed from the search set.
+  // skipped revisions are removed from the search set.
+
+  loader.load_ancestors(good);
+  loader.load_descendants(bad);
+
+  P(F("removing %d known good revisions") % good.size());
+  P(F("removing %d known bad revisions") % bad.size());
+  P(F("removing %d skipped revisions") % skipped.size());
+
+  set<revision_id> removed;
+  removed.insert(good.begin(), good.end());
+  removed.insert(bad.begin(), bad.end());
+  removed.insert(skipped.begin(), skipped.end());
+
+  set<revision_id> remaining;
+  set_difference(search.begin(), search.end(),
+                 removed.begin(), removed.end(),
+                 inserter(remaining, remaining.end()));
+
+  P(F("%d remaining revisions") % remaining.size());
+
+  // bisection is done by toposorting the remaining revs and using the
+  // midpoint of the result as the next revision to test
+
+  vector<revision_id> candidates;
+  toposort(db, remaining, candidates);
+
+  for (vector<revision_id>::const_iterator i = candidates.begin();
+       i != candidates.end(); ++i)
+    P(F("candidate %s") % describe_revision(project, *i));
+
+  E(candidates.size() > 0, origin::user,
+    F("no remaining candidate revisions"));
+
+  revision_id target = candidates[candidates.size()/2];
+  P(F("updating %s") % describe_revision(project, target));
+}
+
+CMD(skip, "skip", "", CMD_REF(bisect), "",
+    N_("Excludes the current revision or specified revisions from the search set"),
+    N_("Excluded revisions are removed from the set being searched. Revisions "
+       "that cannot be tested for some reason should be excluded"),
+    options::opts::revision)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::skipped);
+}
+
+CMD(bad, "bad", "", CMD_REF(bisect), "",
+    N_("Marks the current revision or specified revisions as bad"),
+    N_("Bad revisions are included in the set being searched"),
+    options::opts::revision)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::bad);
+}
+
+CMD(good, "good", "", CMD_REF(bisect), "",
+    N_("Marks the current revision or specified revisions as good"),
+    N_("Good revisions are excluded from the set being searched"),
+    options::opts::revision)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::good);
+}
 
 // Local Variables:
 // mode: C++
