@@ -35,7 +35,7 @@ Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006, 2007, 2008 Thomas Keller @*
-Copyright @copyright{} 2007, 2008 Stephen Leake @*
+Copyright @copyright{} 2007 - 2009 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -3990,7 +3990,7 @@ addresses and by convention often includes the display name with the
 email address such as @code{"User Name <user@@example.com>"}. The git
 exporter deals with this difference in several ways:
 @itemize
-@item 
+@item
 revisions that don't have any author certs will default to using
 @code{<unknown>} for both the author and committer.
 @item
@@ -5052,6 +5052,9 @@ removed to confirm the commit.  This allows the user to easily cancel a
 commit, without emptying the entire log message.  If the commit is
 successful, the @file{_MTN/log} file is cleared of all content making it
 ready for another edit/commit cycle.
+
+If @option{--message-file=_MTN/log} is specified, the contents of
+@file{_MTN/log} will be used without confirmation.
 
 If a @option{--branch} option is specified, the @command{commit} command
 commits to this branch (creating it if necessary).  The branch becomes

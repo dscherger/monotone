@@ -441,22 +441,27 @@ describe_revision(project_t & project, revision_id const & id)
   description += encode_hexenc(id.inner()(), id.inner().made_from);
 
   // append authors and date of this revision
-  vector<cert> tmp;
-  project.get_revision_certs_by_name(id, author_name, tmp);
-  for (vector<cert>::const_iterator i = tmp.begin();
-       i != tmp.end(); ++i)
+  vector<cert> certs;
+  project.get_revision_certs(id, certs);
+  string authors;
+  string dates;
+  for (vector<cert>::const_iterator i = certs.begin();
+       i != certs.end(); ++i)
     {
-      description += " ";
-      description += i->value();
-    }
-  project.get_revision_certs_by_name(id, date_name, tmp);
-  for (vector<cert>::const_iterator i = tmp.begin();
-       i != tmp.end(); ++i)
-    {
-      description += " ";
-      description += i->value();
+      if (i->name == author_cert_name)
+        {
+          authors += " ";
+          authors += i->value();
+        }
+      else if (i->name == date_cert_name)
+        {
+          dates += " ";
+          dates += i->value();
+        }
     }
 
+  description += authors;
+  description += dates;
   return description;
 }
 

@@ -305,7 +305,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
               L(FL("skipping existing %s/") % path);
             }
         }
-      
+
       // revert attributes on this node -- this doesn't quite catch all cases:
       // if the execute bits are manually set on some path that doesn't have
       // a dormant mtn:execute the execute bits will not be cleared
@@ -316,7 +316,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
         {
           P(F("reverting %s on %s") % a->first() % path);
           if (a->second.first)
-            app.lua.hook_set_attribute(a->first(), path, 
+            app.lua.hook_set_attribute(a->first(), path,
                                        a->second.second());
           else
             app.lua.hook_clear_attribute(a->first(), path);
@@ -1121,7 +1121,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   process_commit_message_args(app.opts, log_message_given, log_message);
 
-  E(!(log_message_given && work.has_contents_user_log()), origin::user,
+  E(!(log_message_given && work.has_contents_user_log() && app.opts.msgfile() != "_MTN/log"), origin::user,
     F("_MTN/log is non-empty and log message "
       "was specified on command line\n"
       "perhaps move or delete _MTN/log,\n"

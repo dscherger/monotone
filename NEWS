@@ -4,22 +4,17 @@
 
         Changes
 
-        - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
-          longer print global options, thus making the output of specific help
-          requests more compact. You still see all available global options
-          by executing 'mtn help' without any arguments.
+        - The Monotone source distribution no longer includes copies of
+          several third-party libraries.  This means they must be downloaded
+          and built separately, before building monotone.  See INSTALL for a
+          complete list of necessary libraries.
 
-	- The Monotone source distribution no longer includes copies of
-	  several third-party libraries.  This means they must be downloaded
-	  and built separately, before building monotone.  See INSTALL for a
-	  complete list of necessary libraries.  
-
-	  This allows monotone's developers to concentrate on monotone
-	  itself, rather than tracking external library updates, which in
-	  practice did not happen.  By way of illustration, we were still
-	  shipping sqlite 3.4.1, which is years out of date.  This has also
-	  been a long-standing request of various redistributors of binary
-	  packages, who prefer the use of globally shared libraries.
+          This allows monotone's developers to concentrate on monotone
+          itself, rather than tracking external library updates, which in
+          practice did not happen.  By way of illustration, we were still
+          shipping sqlite 3.4.1, which is years out of date.  This has also
+          been a long-standing request of various redistributors of binary
+          packages, who prefer the use of globally shared libraries.
 
         - There is a new db var "database delta-direction", which can have
           values "reverse" (default), "forward", and "both". This controls
@@ -30,9 +25,47 @@
           database which will be much faster for server usage (especially
           initial pulls).
 
+        - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
+          longer print global options, thus making the output of specific help
+          requests more compact. You still see all available global options
+          by executing 'mtn help' without any arguments.
+
+        New features
+
+        - A monotone database may be exported in the git fast-import format
+          using the git_export command. The output from this command may be
+          piped into git fast-import or other tools supporting this format.
+
+        - Additional 'u:' and 'm:' selector types for selecting the revision the
+          workspace was last updated from and revisions matching specified
+          message globs in changelog and comment certs.
+
+        - Additional '--revision' option for 'mtn log' allows logging of
+          selected sets of revisions.
+
+        - Additional '--full' option for 'mtn db info' to display some
+          statistic analysis of the date certs in the database.
+
+        - Command line options in the EDITOR and/or VISUAL environment
+          variables are honored; for instance, EDITOR="emacs -nw"
+          works now.  (Debian bug #320565.)
+
+        - The `mtn_automate' lua function now correctly parses and sets
+          options for executed automate commands.
+
+        - The 'commit' command accepts a non-empty _MTN/log as the log
+          message when '--message-file=_MTN/log' is given.
+
         Bugs fixed
 
-        - In 0.42, a netsync writer would attemts to queue up all outgoing
+        - Performance of the log command has been improved significantly.
+          Previous versions of monotone loaded individual certs by name for each
+          printed revision and this caused sqlite to not use the correct
+          index. Now, all certs are loaded for each printed revision once and
+          individual certs are selected from the full list which allows sqlite
+          to use the preferred index.
+
+        - In 0.42, a netsync writer would attempt to queue up all outgoing
           data as soon as it knew what data to send, in a single operation,
           without servicing the event loop. If there was a large amount of
           data to send, this would cause very long pauses and sometimes
@@ -44,39 +77,9 @@
           should be much better about only terminating the offending connection
           instead of the entire server.
 
-        - Several bugfixes to `mtn automate stdio':
-          * it now correctly distinguishs between syntax and command errors by
-            returning error code 1 for the former and error code 2 for the
-            latter - just as advertised in the documentation.
-          * the stdio event loop no longer quits if a syntax error occurs, but
-            rather discards the wrong state and accepts new (valid) commands.
-          * option errors haven't been catched properly and thus weren't encoded
-            in stdio either; this has been fixed as well.
-
-        - In certain cases, especially also on FreeBSD and Mac OS X, netsync
-          called select() even after read() returned 0 bytes to indicate the
-          end of the file, resulting in a confusing error message. This
-          is fixed by treating EOF specially and prevent further calls
-          to select() on the file handle, as recommended by the
-          select_tut man page.
-
-	- If given a filename, `mtn ssh_agent_export' now creates that
-	  file with the correct permissions (i.e. mode 600), creates
-	  directories as necessary, and does not throw an internal
-	  error if creation or writing fails.  (You're still on your
-	  own for directory creation and permissions if you take the
-	  key on standard output and redirect it to a file.)
-
         - The log command was missing '--depth' and '--exclude' options used to
           restrict revisions printed to those touching specific paths. Log now
           allows these options and uses them properly.
-
-        - Performance of the log command has been improved significantly.
-          Previous versions of monotone loaded individual certs by name for each
-          printed revision and this caused sqlite to not use the correct
-          index. Now, all certs are loaded for each printed revision once and
-          individual certs are selected from the full list which allows sqlite
-          to use the preferred index.
 
         - The update command previously did not clear execute permissions from
           files that had their associated 'mtn:execute' attribute cleared.
@@ -88,31 +91,38 @@
           much more selectively in the same manner that content and name changes
           are applied.
 
-	- mtn automate stdio previously didn't reset global options which were
-          set or changed by a previously executed command; this has been fixed.
+        - In certain cases, especially also on FreeBSD and Mac OS X, netsync
+          called select() even after read() returned 0 bytes to indicate the
+          end of the file, resulting in a confusing error message. This
+          is fixed by treating EOF specially and prevent further calls
+          to select() on the file handle, as recommended by the
+          select_tut man page.
 
-        New features
+        - If given a filename, `mtn ssh_agent_export' now creates that
+          file with the correct permissions (i.e. mode 600), creates
+          directories as necessary, and does not throw an internal
+          error if creation or writing fails.  (You're still on your
+          own for directory creation and permissions if you take the
+          key on standard output and redirect it to a file.)
 
-        - The `mtn_automate' lua function now correctly parses and sets
-          options for executed automate commands.
+        - Several bugfixes to `mtn automate stdio':
 
-        - Additional '--full' option for 'mtn db info' to display some
-          statistic analysis of the date certs in the database.
+          * It now correctly distinguishs between syntax and command errors by
+            returning error code 1 for the former and error code 2 for the
+            latter - just as advertised in the documentation.
 
-	- Command line options in the EDITOR and/or VISUAL environment
-	  variables are honored; for instance, EDITOR="emacs -nw"
-	  works now.  (Debian bug #320565.)
+          * The stdio event loop no longer quits if a syntax error occurs, but
+            rather discards the wrong state and accepts new (valid) commands.
 
-        - Additional '--revision' option for 'mtn log' allows logging of
-          selected sets of revisions.
+          * Option errors haven't been catched properly and thus weren't encoded
+            in stdio either; this has been fixed as well.
 
-        - Additional 'u:' and 'm:' selector types for selecting the revision the
-          workspace was last updated from and revisions matching specified
-          message globs in changelog and comment certs.
-
-        - A monotone database may be exported in the git fast-import format
-          using the git_export command. The output from this command may be
-          piped into git fast-import or other tools supporting this format.
+          * Global options, which were set or changed by a previously executed
+            command, weren't properly reset before the next command was issued.
+            It was f.e. not possible to "unignore" suspended branches for
+            the `branches' command when this option was given in a previous
+            run. Now only those global options persist between executed
+            commands which were given to stdio directly.
 
         Internal
 
