@@ -52,6 +52,9 @@
         - The `mtn_automate' lua function now correctly parses and sets
           options for executed automate commands.
 
+        - The 'commit' command accepts a non-empty _MTN/log as the log
+          message when '--message-file=_MTN/log' is given.
+
         Bugs fixed
 
         - Performance of the log command has been improved significantly.
@@ -61,7 +64,7 @@
           individual certs are selected from the full list which allows sqlite
           to use the preferred index.
 
-        - In 0.42, a netsync writer would attemts to queue up all outgoing
+        - In 0.42, a netsync writer would attempt to queue up all outgoing
           data as soon as it knew what data to send, in a single operation,
           without servicing the event loop. If there was a large amount of
           data to send, this would cause very long pauses and sometimes

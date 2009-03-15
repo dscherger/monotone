@@ -34,6 +34,16 @@ tsha = indir("alt_wrk", {base_revision})[1]()
 check(indir("alt_wrk", mtn("ls", "certs", tsha)), 0, true, false)
 check(qgrep('out out out', "stdout"))
 
+-- --------------------
+-- special case; --message-file='_MTN/log' is ok
+-- --------------------
+
+addfile("input3.txt", "one more file")
+
+writefile("_MTN/log", "Log entry")
+
+check(mtn("--branch=testbranch", "commit", "--message-file=_MTN/log"), 0, true, false)
+
 ----------------------
 --start with the failures: non existing file
 ----------------------
