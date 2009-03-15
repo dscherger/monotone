@@ -57,10 +57,7 @@ building and installation process for monotone
            install the following packages:
              autoconf automake gettext boost boost-devel zlib zlib-devel
              lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
-             libidn-devel gcc-c++ texinfo texinfo-tex
-
-           For Fedora 9, you need to get botan packages from the project
-           website.
+             libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
 
            (FIXME: we currently don't support PCRE 7.3!)
 
