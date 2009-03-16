@@ -457,6 +457,7 @@ function accept_testresult_change(old_results, new_results)
 end
 
 function get_projects()
+   if get_confdir() == nil then return {} end
    local project_dir = get_confdir() .. "/projects"
    local ret = {}
    if isdir(project_dir) then

@@ -13,6 +13,8 @@
 #include "transforms.hh"
 #include "vocab_cast.hh"
 
+#include <boost/bind.hpp>
+
 using boost::shared_ptr;
 
 using std::make_pair;
@@ -186,7 +188,7 @@ namespace
     cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
-		    revision_id const & rid,
+		    id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {
@@ -211,10 +213,9 @@ namespace
 			    cert_name(branch_cert_name),
 			    branch,
 			    certs);
-      erase_bogus_certs(db,
-			boost::bind(&not_in_managed_branch::is_trusted,
-				    this, _1, _2, _3, _4),
-			certs);
+      db.erase_bogus_certs(certs,
+                           boost::bind(&not_in_managed_branch::is_trusted,
+                                       this, _1, _2, _3, _4));
       return certs.empty();
     }
   };
@@ -225,7 +226,7 @@ namespace
     cert_value branch;
     set<rsa_keypair_id> const & trusted_signers;
     bool is_trusted(set<rsa_keypair_id> const & signers,
-		    revision_id const & rid,
+		    id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {
@@ -250,10 +251,9 @@ namespace
 			    cert_name(suspend_cert_name),
 			    branch,
 			    certs);
-      erase_bogus_certs(db,
-			boost::bind(&suspended_in_managed_branch::is_trusted,
-				    this, _1, _2, _3, _4),
-			certs);
+      db.erase_bogus_certs(certs,
+                           boost::bind(&suspended_in_managed_branch::is_trusted,
+                                       this, _1, _2, _3, _4));
       return !certs.empty();
     }
   };

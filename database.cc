@@ -19,6 +19,7 @@
 #include "vector.hh"
 
 #include <string.h>
+#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -3442,15 +3443,10 @@ namespace {
     }
   };
 
-  typedef bool (lua_hooks::*cert_trust_hook_t)(set<rsa_keypair_id> const &,
-                                               id const &,
-                                               cert_name const &,
-                                               cert_value const &);
-
   void
   erase_bogus_certs_internal(vector<cert> & certs,
-                             database & db, lua_hooks & lua,
-                             cert_trust_hook_t hook_get_cert_trust)
+                             database & db,
+                             database::cert_trust_checker const & checker)
   {
     typedef vector<cert>::iterator it;
     it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
@@ -3484,10 +3480,10 @@ namespace {
     for (trust_map::const_iterator i = trust.begin();
          i != trust.end(); ++i)
       {
-        if ((lua.*hook_get_cert_trust)(*(i->second.first),
-                                       get<0>(i->first),
-                                       get<1>(i->first),
-                                       get<2>(i->first)))
+        if (checker(*(i->second.first),
+                    get<0>(i->first),
+                    get<1>(i->first),
+                    get<2>(i->first)))
           {
             if (global_sanity.debug_p())
               L(FL("trust function liked %d signers of %s cert on revision %s")
@@ -3511,8 +3507,15 @@ namespace {
 void
 database::erase_bogus_certs(vector<cert> & certs)
 {
-  erase_bogus_certs_internal(certs, *this, this->lua,
-                             &lua_hooks::hook_get_revision_cert_trust);
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_revision_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
+}
+void
+database::erase_bogus_certs(vector<cert> & certs,
+                            database::cert_trust_checker const & checker)
+{
+  erase_bogus_certs_internal(certs, *this, checker);
 }
 
 // These are only used by migration from old manifest-style ancestry, so we
@@ -3523,16 +3526,18 @@ void
 database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 {
   imp->get_certs(id.inner(), certs, "manifest_certs");
-  erase_bogus_certs_internal(certs, *this, this->lua,
-                             &lua_hooks::hook_get_manifest_cert_trust);
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
 }
 
 void
 database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
   imp->get_certs(name, certs, "manifest_certs");
-  erase_bogus_certs_internal(certs, *this, this->lua,
-                             &lua_hooks::hook_get_manifest_cert_trust);
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
 }
 
 // completions
