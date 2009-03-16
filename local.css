@@ -269,3 +269,25 @@ code {
 #footer {
     text-align: center;
 }
+
+/** the search form and display is crap - it wasn't me doing these hacks here... */
+#content form[name=P] {
+    color: white;
+}
+#content form[name=P] center hr,
+#content form[name=P] center a {
+    display: none;
+}
+#content form[name=P] table td small {
+    font-size: 1.3em;
+}
+#content form[name=P] table td {
+    border: 0;
+    color: black;
+    padding-top: 1em;
+    border-bottom: 1px dotted #474747;
+}
+#content form[name=P] table td + td b a {
+    font-size: 1.4em;
+}
+
