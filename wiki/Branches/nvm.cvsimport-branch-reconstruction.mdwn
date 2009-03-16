@@ -1,5 +1,5 @@
 [[!tag migration-done]]
-Contact: [[People/MarkusSchiltknecht]]
+Contact: [[People/MarkusWanner]]
 
 Features a graph-based cvs import algorithm, loosely based on the concepts of cvs2svn 2.0.
 For more details, see [[CvsImport]]
