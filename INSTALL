@@ -12,17 +12,19 @@ building and installation process for monotone
 
   * software prerequisites:
 
-    - autoconf.
-    - automake.
-    - gettext.
-    - a supported C++ compiler: g++ 3.2 or later.
+    - autoconf
+    - automake
+    - gettext
+    - a supported C++ compiler: g++ 3.2 or later
     - boost 1.33.0 or later: either an installed copy or an extracted
       tarball of its unbuilt sources somewhere in the file system are
-      supported.
-    - zlib 1.1.4 or later.
-    - libiconv if the iconv() function is missing.
-    - texinfo (to build the documentation).
-    - Botan 1.6.3 or later
+      supported
+    - zlib 1.1.4 or later
+    - bzip2, OpenSSL, GnuMP if you 
+    - libiconv if the iconv() function is missing
+    - texinfo (to build the documentation)
+    - Botan 1.6.3 or later (Botan might require bzip2, OpenSSL and / or
+      GnuMP in addition, depending on the package you're using.)
     - PCRE 7.4 or later
     - SQLite 3.3.8 or later
     - Lua 5.1
