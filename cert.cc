@@ -16,19 +16,6 @@
 
 using std::string;
 
-// The alternaive is to #include "cert.hh" in vocab.*, which is even
-// uglier.
-
-#include "vocab_macros.hh"
-cc_DECORATE(revision)
-cc_DECORATE(manifest)
-template <typename T>
-static inline void
-verify(T & val)
-{}
-template class revision<cert>;
-template class manifest<cert>;
-
 bool
 cert::operator<(cert const & other) const
 {

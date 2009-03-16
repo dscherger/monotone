@@ -28,12 +28,13 @@
 #include "simplestring_xform.hh"
 #include "lexical_cast.hh"
 
-using std::string;
+using std::make_pair;
+using std::multimap;
+using std::pair;
 using std::set;
+using std::string;
 using std::vector;
 using std::map;
-using std::multimap;
-using std::make_pair;
 using boost::shared_ptr;
 
 class policy_info
@@ -152,7 +153,7 @@ project_t::get_subpolicies(branch_name const & name,
 }
 
 void
-project_t::get_branch_list(std::set<branch_name> & names,
+project_t::get_branch_list(set<branch_name> & names,
                            bool check_heads)
 {
   if (!project_policy->passthru)
@@ -167,17 +168,17 @@ project_t::get_branch_list(std::set<branch_name> & names,
     }
   if (indicator.outdated())
     {
-      std::vector<std::string> got;
+      vector<string> got;
       indicator = db.get_branches(got);
       branches.clear();
       multimap<revision_id, revision_id> inverse_graph_cache;
 
-      for (std::vector<std::string>::iterator i = got.begin();
+      for (vector<string>::iterator i = got.begin();
            i != got.end(); ++i)
         {
           // check that the branch has at least one non-suspended head
           const branch_name branch(*i, origin::database);
-          std::set<revision_id> heads;
+          set<revision_id> heads;
 
           if (check_heads)
             get_branch_heads(branch, heads, false, &inverse_graph_cache);
@@ -192,7 +193,7 @@ project_t::get_branch_list(std::set<branch_name> & names,
 
 void
 project_t::get_branch_list(globish const & glob,
-                           std::set<branch_name> & names,
+                           set<branch_name> & names,
                            bool check_heads)
 {
   if (!project_policy->passthru)
@@ -207,17 +208,17 @@ project_t::get_branch_list(globish const & glob,
       return;
     }
 
-  std::vector<std::string> got;
+  vector<string> got;
   db.get_branches(glob, got);
   names.clear();
   multimap<revision_id, revision_id> inverse_graph_cache;
 
-  for (std::vector<std::string>::iterator i = got.begin();
+  for (vector<string>::iterator i = got.begin();
        i != got.end(); ++i)
     {
       // check that the branch has at least one non-suspended head
       const branch_name branch(*i, origin::database);
-      std::set<revision_id> heads;
+      set<revision_id> heads;
 
       if (check_heads)
         get_branch_heads(branch, heads, false, &inverse_graph_cache);
@@ -288,7 +289,7 @@ namespace
     {}
     virtual bool operator()(revision_id const & rid)
     {
-      vector< revision<cert> > certs;
+      vector<cert> certs;
       db.get_revision_certs(rid,
                             cert_name(branch_cert_name),
                             typecast_vocab<cert_value>(branch),
@@ -308,7 +309,7 @@ namespace
     {}
     virtual bool operator()(revision_id const & rid)
     {
-      vector< revision<cert> > certs;
+      vector<cert> certs;
       db.get_revision_certs(rid,
                             cert_name(suspend_cert_name),
                             typecast_vocab<cert_value>(branch),
@@ -321,13 +322,13 @@ namespace
 
 void
 project_t::get_branch_heads(branch_name const & name,
-                            std::set<revision_id> & heads,
+                            set<revision_id> & heads,
                             bool ignore_suspend_certs,
                             multimap<revision_id, revision_id> * inverse_graph_cache_ptr)
 {
-  std::pair<branch_name, suspended_indicator>
+  pair<branch_name, suspended_indicator>
     cache_index(name, ignore_suspend_certs);
-  std::pair<outdated_indicator, std::set<revision_id> > &
+  pair<outdated_indicator, set<revision_id> > &
     branch = branch_heads[cache_index];
 
   if (branch.first.outdated())
@@ -348,7 +349,7 @@ project_t::get_branch_heads(branch_name const & name,
           if (!ignore_suspend_certs)
             {
               suspended_in_branch s(db, name);
-              std::set<revision_id>::iterator it = branch.second.begin();
+              set<revision_id>::iterator it = branch.second.begin();
               while (it != branch.second.end())
                 {
                   if (s(*it))
@@ -385,7 +386,7 @@ project_t::revision_is_in_branch(revision_id const & id,
   if (project_policy->passthru)
     {
       branch_uid bid = typecast_vocab<branch_uid>(branch);
-      vector<revision<cert> > certs;
+      vector<cert> certs;
   db.get_revision_certs(id, branch_cert_name,
                         typecast_vocab<cert_value>(bid), certs);
 
@@ -433,7 +434,7 @@ project_t::revision_is_suspended_in_branch(revision_id const & id,
     bid = typecast_vocab<branch_uid>(branch);
   else
     bid = translate_branch(branch);
-  vector<revision<cert> > certs;
+  vector<cert> certs;
   db.get_revision_certs(id, suspend_cert_name,
                         typecast_vocab<cert_value>(branch), certs);
 
@@ -466,14 +467,14 @@ project_t::suspend_revision_in_branch(key_store & keys,
 
 outdated_indicator
 project_t::get_revision_cert_hashes(revision_id const & rid,
-                                    std::vector<id> & hashes)
+                                    vector<id> & hashes)
 {
   return db.get_revision_certs(rid, hashes);
 }
 
 outdated_indicator
 project_t::get_revision_certs(revision_id const & id,
-                              std::vector<revision<cert> > & certs)
+                              vector<cert> & certs)
 {
   return db.get_revision_certs(id, certs);
 }
@@ -481,7 +482,7 @@ project_t::get_revision_certs(revision_id const & id,
 outdated_indicator
 project_t::get_revision_certs_by_name(revision_id const & id,
                                       cert_name const & name,
-                                      std::vector<revision<cert> > & certs)
+                                      vector<cert> & certs)
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
   db.erase_bogus_certs(certs);
@@ -490,21 +491,21 @@ project_t::get_revision_certs_by_name(revision_id const & id,
 
 outdated_indicator
 project_t::get_revision_branches(revision_id const & id,
-                                 std::set<branch_name> & branches)
+                                 set<branch_name> & branches)
 {
-  std::vector<revision<cert> > certs;
+  vector<cert> certs;
   outdated_indicator i = get_revision_certs_by_name(id, branch_cert_name, certs);
   branches.clear();
-  for (std::vector<revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
       if (project_policy->passthru)
-        branches.insert(typecast_vocab<branch_name>(i->inner().value));
+        branches.insert(typecast_vocab<branch_name>(i->value));
       else
         {
           std::set<branch_uid> branchids;
           get_branch_list(branchids);
-          branch_uid bid = typecast_vocab<branch_uid>(i->inner().value);
+          branch_uid bid = typecast_vocab<branch_uid>(i->value);
           if (branchids.find(bid) != branchids.end())
             branches.insert(translate_branch(bid));
         }
@@ -515,7 +516,7 @@ project_t::get_revision_branches(revision_id const & id,
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
-                            std::vector<revision<cert> > & certs)
+                            vector<cert> & certs)
 {
   branch_uid bid;
   if (project_policy->passthru)
@@ -556,15 +557,15 @@ project_t::get_tags(set<tag_t> & tags)
 {
   if (project_policy->passthru)
     {
-      std::vector<revision<cert> > certs;
+      std::vector<cert> certs;
       outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
       db.erase_bogus_certs(certs);
       tags.clear();
-      for (std::vector<revision<cert> >::const_iterator i = certs.begin();
+      for (std::vector<cert>::const_iterator i = certs.begin();
            i != certs.end(); ++i)
-        tags.insert(tag_t(revision_id(i->inner().ident),
-                      typecast_vocab<utf8>(i->inner().value),
-                      i->inner().key));
+        tags.insert(tag_t(revision_id(i->ident),
+                      typecast_vocab<utf8>(i->value),
+                      i->key));
 
       return i;
     }
@@ -688,7 +689,7 @@ project_t::put_cert(key_store & keys,
   load_key_pair(keys, t.key);
   keys.make_signature(db, t.key, signed_text, t.sig);
 
-  revision<cert> cc(t);
+  cert cc(t);
   return db.put_revision_cert(cc);
 }
 
@@ -739,20 +740,20 @@ describe_revision(project_t & project, revision_id const & id)
   description += encode_hexenc(id.inner()(), id.inner().made_from);
 
   // append authors and date of this revision
-  vector< revision<cert> > tmp;
+  vector<cert> tmp;
   project.get_revision_certs_by_name(id, author_name, tmp);
-  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+  for (vector<cert>::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {
       description += " ";
-      description += i->inner().value();
+      description += i->value();
     }
   project.get_revision_certs_by_name(id, date_name, tmp);
-  for (vector< revision<cert> >::const_iterator i = tmp.begin();
+  for (vector<cert>::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)
     {
       description += " ";
-      description += i->inner().value();
+      description += i->value();
     }
 
   return description;

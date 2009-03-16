@@ -353,7 +353,7 @@ lua_hooks::hook_ignore_branch(branch_name const & branch)
 static inline bool
 shared_trust_function_body(Lua & ll,
                            set<rsa_keypair_id> const & signers,
-                           hexenc<id> const & hash,
+                           id const & hash,
                            cert_name const & name,
                            cert_value const & val)
 {
@@ -369,9 +369,10 @@ shared_trust_function_body(Lua & ll,
       ++k;
     }
 
+  hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
   bool ok;
   bool exec_ok = ll
-    .push_str(hash())
+    .push_str(hid())
     .push_str(name())
     .push_str(val())
     .call(4, 1)
@@ -381,59 +382,26 @@ shared_trust_function_body(Lua & ll,
   return exec_ok && ok;
 }
 
-static inline bool
-shared_trust_function_body(Lua & ll,
-                           set<rsa_keypair_id> const & signers,
-                           id const & hash,
-                           cert_name const & name,
-                           cert_value const & val)
-{
-  hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
-  return shared_trust_function_body(ll, signers, hid, name, val);
-};
-
 bool
 lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-                                       hexenc<id> const & id,
+                                       id const & hash,
                                        cert_name const & name,
                                        cert_value const & val)
 {
   Lua ll(st);
   ll.func("get_revision_cert_trust");
-  return shared_trust_function_body(ll, signers, id, name, val);
-}
-
-bool
-lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-                                       revision_id const & id,
-                                       cert_name const & name,
-                                       cert_value const & val)
-{
-  Lua ll(st);
-  ll.func("get_revision_cert_trust");
-  return shared_trust_function_body(ll, signers, id.inner(), name, val);
+  return shared_trust_function_body(ll, signers, hash, name, val);
 }
 
 bool
 lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-                                        hexenc<id> const & id,
+                                        id const & hash,
                                         cert_name const & name,
                                         cert_value const & val)
 {
   Lua ll(st);
   ll.func("get_manifest_cert_trust");
-  return shared_trust_function_body(ll, signers, id, name, val);
-}
-
-bool
-lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-                                        manifest_id const & id,
-                                        cert_name const & name,
-                                        cert_value const & val)
-{
-  Lua ll(st);
-  ll.func("get_manifest_cert_trust");
-  return shared_trust_function_body(ll, signers, id.inner(), name, val);
+  return shared_trust_function_body(ll, signers, hash, name, val);
 }
 
 bool

@@ -127,18 +127,18 @@ public:
   outdated_indicator get_revision_cert_hashes(revision_id const & rid,
                                               std::vector<id> & hashes);
   outdated_indicator get_revision_certs(revision_id const & id,
-                                        std::vector<revision<cert> > & certs);
+                                        std::vector<cert> & certs);
   // This kind of assumes that we'll eventually have certs be for a specific
   // project. There's a fairly good chance that that won't happen, which would
   // mean that this can go away.
   outdated_indicator get_revision_certs_by_name(revision_id const & id,
                                                 cert_name const & name,
-                                                std::vector<revision<cert> > & certs);
+                                                std::vector<cert> & certs);
   // What branches in *this* project does the given revision belong to?
   outdated_indicator get_revision_branches(revision_id const & id,
                                            std::set<branch_name> & branches);
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<revision<cert> > & certs);
+                                      std::vector<cert> & certs);
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,

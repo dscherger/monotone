@@ -38,7 +38,6 @@ struct cert : public origin_aware
   {}
 
   // These understand the netsync serialization.
-  // They also make revision<cert> and manifest<cert> work.
   explicit cert(std::string const & s);
   cert(std::string const & s, origin::type m);
 
@@ -55,9 +54,6 @@ struct cert : public origin_aware
   void signable_text(std::string & out) const;
   void marshal_for_netio(std::string & out) const;
 };
-
-EXTERN template class revision<cert>;
-EXTERN template class manifest<cert>;
 
 #endif // __CERT_HH__
 

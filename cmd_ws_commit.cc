@@ -1335,11 +1335,11 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     // multiple certs with same name, etc. they can inquire further,
     // later.
     map<cert_name, cert_value> certs;
-    vector< revision<cert> > ctmp;
+    vector<cert> ctmp;
     project.get_revision_certs(restricted_rev_id, ctmp);
-    for (vector< revision<cert> >::const_iterator i = ctmp.begin();
+    for (vector<cert>::const_iterator i = ctmp.begin();
          i != ctmp.end(); ++i)
-      certs.insert(make_pair(i->inner().name, i->inner().value));
+      certs.insert(make_pair(i->name, i->value));
 
     revision_data rdat;
     db.get_revision(restricted_rev_id, rdat);

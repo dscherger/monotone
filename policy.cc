@@ -206,7 +206,7 @@ namespace
     {}
     virtual bool operator()(revision_id const & rid)
     {
-      vector< revision<cert> > certs;
+      vector<cert> certs;
       db.get_revision_certs(rid,
 			    cert_name(branch_cert_name),
 			    branch,
@@ -245,7 +245,7 @@ namespace
     {}
     virtual bool operator()(revision_id const & rid)
     {
-      vector< revision<cert> > certs;
+      vector<cert> certs;
       db.get_revision_certs(rid,
 			    cert_name(suspend_cert_name),
 			    branch,

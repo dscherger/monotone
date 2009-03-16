@@ -265,12 +265,12 @@ editable_policy::outdated() const
 void
 editable_policy::init(revision_id const & rev)
 {
-  vector<revision<cert> > certs;
+  vector<cert> certs;
   impl->db.get_revision_certs(rev, branch_cert_name, certs);
   impl->db.erase_bogus_certs(certs);
   if (certs.size() == 1)
     {
-      uid = typecast_vocab<branch_uid>(idx(certs,0).inner().value);
+      uid = typecast_vocab<branch_uid>(idx(certs,0).value);
     }
 
   impl->old_rev_id = rev;

@@ -262,35 +262,35 @@ public:
   //
   // note: this section is ridiculous. please do something about it.
 public:
-  bool revision_cert_exists(revision<cert> const & cert);
+  bool revision_cert_exists(cert const & cert);
   bool revision_cert_exists(revision_id const & hash);
 
-  bool put_revision_cert(revision<cert> const & cert);
+  bool put_revision_cert(cert const & cert);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
                               std::pair<revision_id, rsa_keypair_id> > > & idx);
 
   // Only used by database_check.cc
-  outdated_indicator get_revision_certs(std::vector< revision<cert> > & certs);
+  outdated_indicator get_revision_certs(std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(cert_name const & name,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(revision_id const & ident,
                           cert_name const & name,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by get_branch_certs (project.cc)
   outdated_indicator get_revision_certs(cert_name const & name,
                           cert_value const & val,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by revision_is_in_branch (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
                           cert_name const & name,
                           cert_value const & value,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by get_branch_heads (project.cc)
   outdated_indicator get_revisions_with_cert(cert_name const & name,
@@ -300,23 +300,15 @@ public:
   // Used through project.cc, and by
   // anc_graph::add_node_for_oldstyle_revision (revision.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Used through get_revision_cert_hashes (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<id> & hashes);
 
-  void get_revision_cert(id const & hash,
-                         revision<cert> & c);
+  void get_revision_cert(id const & hash, cert & c);
 
-  void get_manifest_certs(manifest_id const & ident,
-                          std::vector< manifest<cert> > & certs);
-
-  void get_manifest_certs(cert_name const & name,
-                          std::vector< manifest<cert> > & certs);
-
-  void erase_bogus_certs(std::vector< manifest<cert> > & certs);
-  void erase_bogus_certs(std::vector< revision<cert> > & certs);
+  void erase_bogus_certs(std::vector<cert> & certs);
 
   //
   // --== Epochs ==--
@@ -412,8 +404,10 @@ public:
 
   // for changesetify, rosterify
   void delete_existing_revs_and_certs();
-
   void delete_existing_manifests();
+
+  void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
+  void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
 
   // heights
   void get_rev_height(revision_id const & id,

@@ -1501,15 +1501,15 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
   packet_writer pw(output);
 
   revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
-  vector< revision<cert> > certs;
+  vector<cert> certs;
 
   E(db.revision_exists(r_id), origin::user,
     F("no such revision '%s'") % r_id);
   project.get_revision_certs(r_id, certs);
 
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
-    pw.consume_revision_cert(i->inner());
+    pw.consume_revision_cert(*i);
 }
 
 // Name: packet_for_fdata
