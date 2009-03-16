@@ -12,6 +12,7 @@
 
 #include "vector.hh"
 #include <set>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <botan/version.h>
 
@@ -308,7 +309,14 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
+  typedef boost::function<bool(std::set<rsa_keypair_id> const &,
+                               id const &,
+                               cert_name const &,
+                               cert_value const &)> cert_trust_checker;
   void erase_bogus_certs(std::vector<cert> & certs);
+  // permit alternative trust functions
+  void erase_bogus_certs(std::vector<cert> & certs,
+                         cert_trust_checker const & checker);
 
   //
   // --== Epochs ==--
