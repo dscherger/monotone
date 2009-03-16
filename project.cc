@@ -684,7 +684,7 @@ project_t::put_cert(key_store & keys,
 
   cert t(id, name, value, keys.signing_key);
   string signed_text;
-  cert_signable_text(t, signed_text);
+  t.signable_text(signed_text);
   load_key_pair(keys, t.key);
   keys.make_signature(db, t.key, signed_text, t.sig);
 

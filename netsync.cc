@@ -1070,7 +1070,7 @@ session::note_cert(id const & c)
   revision<cert> cert;
   string str;
   project.db.get_revision_cert(c, cert);
-  write_cert(cert.inner(), str);
+  cert.inner().marshal_for_netio(str);
   queue_data_cmd(cert_item, c, str);
   sent_certs.push_back(cert.inner());
 }
@@ -2208,7 +2208,7 @@ session::load_data(netcmd_item_type type,
         revision<cert> c;
         project.db.get_revision_cert(item, c);
         string tmp;
-        write_cert(c.inner(), out);
+        c.inner().marshal_for_netio(out);
       }
       break;
     }
@@ -2302,10 +2302,9 @@ session::process_data_cmd(netcmd_item_type type,
 
     case cert_item:
       {
-        cert c;
-        read_cert(dat, c);
+        cert c(dat);
         id tmp;
-        cert_hash_code(c, tmp);
+        c.hash_code(tmp);
         if (! (tmp == item))
           throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
         if (project.db.put_revision_cert(revision<cert>(c)))
@@ -3359,7 +3358,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
                                 revision_ids, revisions_ticker);
             // Branch certs go in here, others later on.
             id item;
-            cert_hash_code(j->inner(), item);
+            j->inner().hash_code(item);
             cert_refiner.note_local_item(item);
             rev_enumerator.note_cert(rid, item);
             if (inserted_keys.find(j->inner().key) == inserted_keys.end())
