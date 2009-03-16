@@ -3551,7 +3551,11 @@ This tells monotone whether to store @samp{reverse} deltas (the default),
 versions of files. Reverse deltas are faster when inspecting recent files,
 while forward deltas are much faster for sending over the network. This
 should probably be set to @samp{both} for a server database, unless disk
-space is limited.
+space is severely limited. Note that as @emph{receiving} deltas involves
+reconstructing the file version that the delta was made against, a server
+using a database with only forward deltas will be somewhat slower at
+receiving new revisions unless your particular history graph is highly
+linear.
 
 Changing this value does not affect deltas that have already been stored.
 @end table
