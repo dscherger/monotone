@@ -111,7 +111,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   for (size_t i = 0; i < certs.size(); ++i)
     {
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       string washed;
       if (guess_binary(tv()))
@@ -837,7 +837,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   for (size_t i = 0; i < certs.size(); ++i)
     {
       basic_io::stanza st;
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
       set<rsa_keypair_id> signers;

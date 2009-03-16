@@ -24,6 +24,7 @@ class key_store;
 class options;
 class lua_hooks;
 struct globish;
+struct date_t;
 
 // "Special" certs have syntax and semantics essential to correct operation.
 // They add structure to the ancestry graph.

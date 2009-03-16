@@ -16,6 +16,7 @@
 #include "basic_io.hh"
 #include "botan/botan.h"
 #include "database.hh"
+#include "dates.hh"
 #include "key_store.hh"
 #include "outdated_indicator.hh"
 #include "paths.hh"
@@ -266,7 +267,7 @@ editable_policy::init(revision_id const & rev)
 {
   vector<revision<cert> > certs;
   impl->db.get_revision_certs(rev, branch_cert_name, certs);
-  erase_bogus_certs(impl->db, certs);
+  impl->db.erase_bogus_certs(certs);
   if (certs.size() == 1)
     {
       uid = typecast_vocab<branch_uid>(idx(certs,0).inner().value);

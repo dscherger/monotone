@@ -346,7 +346,7 @@ anc_graph::add_node_for_old_manifest(manifest_id const & man)
       // load certs
       vector< manifest<cert> > mcerts;
       db.get_manifest_certs(man, mcerts);
-      erase_bogus_certs(db, mcerts);
+      db.erase_bogus_certs(mcerts);
       for(vector< manifest<cert> >::const_iterator i = mcerts.begin();
           i != mcerts.end(); ++i)
         {
@@ -389,7 +389,7 @@ u64 anc_graph::add_node_for_oldstyle_revision(revision_id const & rev)
       // load certs
       vector< revision<cert> > rcerts;
       db.get_revision_certs(rev, rcerts);
-      erase_bogus_certs(db, rcerts);
+      db.erase_bogus_certs(rcerts);
       for(vector< revision<cert> >::const_iterator i = rcerts.begin();
           i != rcerts.end(); ++i)
         {
@@ -947,7 +947,7 @@ build_changesets_from_manifest_ancestry(database & db, key_store & keys,
 
   vector< manifest<cert> > tmp;
   db.get_manifest_certs(cert_name("ancestor"), tmp);
-  erase_bogus_certs(db, tmp);
+  db.erase_bogus_certs(tmp);
 
   for (vector< manifest<cert> >::const_iterator i = tmp.begin();
        i != tmp.end(); ++i)

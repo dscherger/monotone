@@ -293,7 +293,7 @@ namespace
                             cert_name(branch_cert_name),
                             typecast_vocab<cert_value>(branch),
                             certs);
-      erase_bogus_certs(db, certs);
+      db.erase_bogus_certs(certs);
       return certs.empty();
     }
   };
@@ -313,7 +313,7 @@ namespace
                             cert_name(suspend_cert_name),
                             typecast_vocab<cert_value>(branch),
                             certs);
-      erase_bogus_certs(db, certs);
+      db.erase_bogus_certs(certs);
       return !certs.empty();
     }
   };
@@ -391,7 +391,7 @@ project_t::revision_is_in_branch(revision_id const & id,
 
       int num = certs.size();
 
-      erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
 
       L(FL("found %d (%d valid) %s branch certs on revision %s")
         % num
@@ -439,7 +439,7 @@ project_t::revision_is_suspended_in_branch(revision_id const & id,
 
   int num = certs.size();
 
-  erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
 
   L(FL("found %d (%d valid) %s suspend certs on revision %s")
     % num
@@ -484,7 +484,7 @@ project_t::get_revision_certs_by_name(revision_id const & id,
                                       std::vector<revision<cert> > & certs)
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
-  erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
   return i;
 }
 
@@ -558,7 +558,7 @@ project_t::get_tags(set<tag_t> & tags)
     {
       std::vector<revision<cert> > certs;
       outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
-      erase_bogus_certs(db, certs);
+      db.erase_bogus_certs(certs);
       tags.clear();
       for (std::vector<revision<cert> >::const_iterator i = certs.begin();
            i != certs.end(); ++i)

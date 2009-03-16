@@ -10,12 +10,7 @@
 #ifndef __CERT_HH__
 #define __CERT_HH__
 
-#include <map>
-#include <set>
-#include "vector.hh"
-
 #include "vocab.hh"
-#include "dates.hh"
 
 // Certs associate an opaque name/value pair with a revision ID, and
 // are accompanied by an RSA public-key signature attesting to the
@@ -23,27 +18,22 @@
 // about revisions, using certs, without needing anyone's special
 // permission.
 
-class key_store;
-class database;
-class project_t;
-struct options;
-
 struct cert : public origin_aware
 {
   cert() {}
 
   cert(revision_id const & ident,
-      cert_name const & name,
-      cert_value const & value,
-      rsa_keypair_id const & key)
+       cert_name const & name,
+       cert_value const & value,
+       rsa_keypair_id const & key)
     : ident(ident), name(name), value(value), key(key)
   {}
 
   cert(revision_id const & ident,
-      cert_name const & name,
-      cert_value const & value,
-      rsa_keypair_id const & key,
-      rsa_sha1_signature const & sig)
+       cert_name const & name,
+       cert_value const & value,
+       rsa_keypair_id const & key,
+       rsa_sha1_signature const & sig)
     : ident(ident), name(name), value(value), key(key), sig(sig)
   {}
 
@@ -73,16 +63,6 @@ void cert_hash_code(cert const & t, id & out);
 typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 
 void cert_signable_text(cert const & t,std::string & out);
-cert_status check_cert(database & db, cert const & t);
-
-bool put_simple_revision_cert(database & db,
-                              key_store & keys,
-                              revision_id const & id,
-                              cert_name const & nm,
-                              cert_value const & val);
-
-void erase_bogus_certs(database & db, std::vector< revision<cert> > & certs);
-void erase_bogus_certs(database & db, std::vector< manifest<cert> > & certs);
 
 #endif // __CERT_HH__
 

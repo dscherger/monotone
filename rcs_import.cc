@@ -28,6 +28,7 @@
 #include "constants.hh"
 #include "cycle_detector.hh"
 #include "database.hh"
+#include "dates.hh"
 #include "file_io.hh"
 #include "interner.hh"
 #include "paths.hh"

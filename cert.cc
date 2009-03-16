@@ -8,39 +8,13 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <limits>
-#include <sstream>
-#include "vector.hh"
-
-#include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
-#include "lexical_cast.hh"
 #include "cert.hh"
 #include "constants.hh"
-#include "database.hh"
-#include "keys.hh"
-#include "key_store.hh"
 #include "netio.hh"
-#include "revision.hh"
-#include "sanity.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
-#include "vocab_cast.hh"
 
-using std::make_pair;
-using std::map;
-using std::pair;
-using std::set;
 using std::string;
-using std::vector;
-using std::remove_if;
-
-using boost::shared_ptr;
-using boost::get;
-using boost::tuple;
-using boost::lexical_cast;
 
 // The alternaive is to #include "cert.hh" in vocab.*, which is even
 // uglier.
@@ -54,170 +28,6 @@ verify(T & val)
 {}
 template class revision<cert>;
 template class manifest<cert>;
-
-// FIXME: the bogus-cert family of functions is ridiculous
-// and needs to be replaced, or at least factored.
-
-struct
-bogus_cert_p
-{
-  database & db;
-  bogus_cert_p(database & db) : db(db) {};
-
-  bool cert_is_bogus(cert const & c) const
-  {
-    cert_status status = check_cert(db, c);
-    if (status == cert_ok)
-      {
-        L(FL("cert ok"));
-        return false;
-      }
-    else if (status == cert_bad)
-      {
-        string txt;
-        cert_signable_text(c, txt);
-        W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
-        return true;
-      }
-    else
-      {
-        I(status == cert_unknown);
-        string txt;
-        cert_signable_text(c, txt);
-        W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
-        return true;
-      }
-  }
-
-  bool operator()(revision<cert> const & c) const
-  {
-    return cert_is_bogus(c.inner());
-  }
-
-  bool operator()(manifest<cert> const & c) const
-  {
-    return cert_is_bogus(c.inner());
-  }
-};
-
-void
-erase_bogus_certs(database & db,
-                  vector< manifest<cert> > & certs)
-{
-  typedef vector< manifest<cert> >::iterator it;
-  it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-  certs.erase(e, certs.end());
-
-  vector< manifest<cert> > tmp_certs;
-
-  // Sorry, this is a crazy data structure
-  typedef tuple< manifest_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key,
-    pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
-  trust_map trust;
-
-  for (it i = certs.begin(); i != certs.end(); ++i)
-    {
-      trust_key key = trust_key(manifest_id(i->inner().ident.inner()),
-                                i->inner().name,
-                                i->inner().value);
-      trust_map::iterator j = trust.find(key);
-      shared_ptr< set<rsa_keypair_id> > s;
-      if (j == trust.end())
-        {
-          s.reset(new set<rsa_keypair_id>());
-          trust.insert(make_pair(key, make_pair(s, i)));
-        }
-      else
-        s = j->second.first;
-      s->insert(i->inner().key);
-    }
-
-  for (trust_map::const_iterator i = trust.begin();
-       i != trust.end(); ++i)
-    {
-      if (db.hook_get_manifest_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          get<2>(i->first)))
-        {
-          if (global_sanity.debug_p())
-            L(FL("trust function liked %d signers of %s cert on manifest %s")
-              % i->second.first->size()
-              % get<1>(i->first)
-              % get<0>(i->first));
-          tmp_certs.push_back(*(i->second.second));
-        }
-      else
-        {
-          W(F("trust function disliked %d signers of %s cert on manifest %s")
-            % i->second.first->size()
-            % get<1>(i->first)
-            % get<0>(i->first));
-        }
-    }
-  certs = tmp_certs;
-}
-
-void
-erase_bogus_certs(database & db,
-                  vector< revision<cert> > & certs)
-{
-  typedef vector< revision<cert> >::iterator it;
-  it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-  certs.erase(e, certs.end());
-
-  vector< revision<cert> > tmp_certs;
-
-  // sorry, this is a crazy data structure
-  typedef tuple< revision_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key,
-    pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
-  trust_map trust;
-
-  for (it i = certs.begin(); i != certs.end(); ++i)
-    {
-      trust_key key = trust_key(i->inner().ident,
-                                i->inner().name,
-                                i->inner().value);
-      trust_map::iterator j = trust.find(key);
-      shared_ptr< set<rsa_keypair_id> > s;
-      if (j == trust.end())
-        {
-          s.reset(new set<rsa_keypair_id>());
-          trust.insert(make_pair(key, make_pair(s, i)));
-        }
-      else
-        s = j->second.first;
-      s->insert(i->inner().key);
-    }
-
-  for (trust_map::const_iterator i = trust.begin();
-       i != trust.end(); ++i)
-    {
-      if (db.hook_get_revision_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          get<2>(i->first)))
-        {
-          if (global_sanity.debug_p())
-            L(FL("trust function liked %d signers of %s cert on revision %s")
-              % i->second.first->size()
-              % get<1>(i->first)
-              % get<0>(i->first));
-          tmp_certs.push_back(*(i->second.second));
-        }
-      else
-        {
-          W(F("trust function disliked %d signers of %s cert on revision %s")
-            % i->second.first->size()
-            % get<1>(i->first)
-            % get<0>(i->first));
-        }
-    }
-  certs = tmp_certs;
-}
-
 
 // cert-managing routines
 cert::cert(std::string const & s)
@@ -350,14 +160,6 @@ cert_hash_code(cert const & t, id & out)
 
   data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);
-}
-
-cert_status
-check_cert(database & db, cert const & t)
-{
-  string signed_text;
-  cert_signable_text(t, signed_text);
-  return db.check_signature(t.key, signed_text, t.sig);
 }
 
 // Local Variables:
