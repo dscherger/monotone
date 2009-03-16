@@ -82,7 +82,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   branch_name branch;
   if (args.size() == 1)
@@ -517,7 +517,7 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   set<revision_id> completions;
   expand_selector(app.opts, app.lua, project, idx(args, 0)(), completions);
 
@@ -1497,7 +1497,7 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   packet_writer pw(output);
 
   revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
@@ -1641,7 +1641,7 @@ CMD_AUTOMATE(branches, "",
     F("no arguments needed"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   set<branch_name> names;
 
   project.get_branch_list(names, !app.opts.ignore_suspend_certs);
@@ -1693,7 +1693,7 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
     F("wrong argument count"));
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   globish incl("*", origin::internal);
   bool filtering(false);
 
@@ -2115,7 +2115,7 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
 
   cache_user_key(app.opts, app.lua, db, keys);
 
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   project.put_cert(keys, rid,
                    typecast_vocab<cert_name>(idx(args, 1)),
                    typecast_vocab<cert_value>(idx(args, 2)));
