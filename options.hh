@@ -19,6 +19,7 @@
 
 #include <list>
 
+#include "branch_name.hh"
 #include "option.hh"
 #include "paths.hh"
 #include "dates.hh"

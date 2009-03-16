@@ -314,15 +314,15 @@ public:
   // --== Epochs ==--
   //
 public:
-  void get_epochs(std::map<branch_name, epoch_data> & epochs);
+  void get_epochs(std::map<branch_uid, epoch_data> & epochs);
 
-  void get_epoch(epoch_id const & eid, branch_name & branch, epoch_data & epo);
+  void get_epoch(epoch_id const & eid, branch_uid & branch, epoch_data & epo);
 
   bool epoch_exists(epoch_id const & eid);
 
-  void set_epoch(branch_name const & branch, epoch_data const & epo);
+  void set_epoch(branch_uid const & branch, epoch_data const & epo);
 
-  void clear_epoch(branch_name const & branch);
+  void clear_epoch(branch_uid const & branch);
 
   //
   // --== Database 'vars' ==--
@@ -427,6 +427,8 @@ public:
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
 
+  // This wants to be somewhere with access to a RNG.
+  branch_uid generate_uid() const;
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
