@@ -7674,6 +7674,46 @@ whatever error message would have been given.
 
 @end table
 
+@item mtn automate genkey @var{name} @var{passphrase}
+
+@table @strong
+@item Aguments
+
+@var{name} is the name to associate with the new key, and @var{passphrase} is
+the passphrase that will be used to encrypt the private half.
+
+@item Added in:
+
+3.1
+
+@item Purpose:
+
+Generate a key with the given name and passphrase.
+
+@item Sample output:
+
+@verbatim
+            name "tbrownaw@gmail.com"
+     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+ public_location "database" "keystore"
+private_location "keystore"
+
+@end verbatim
+
+@item Output format:
+
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+@item Error conditions:
+
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
+
+@end table
+
 @item mtn automate get_revision @var{id}
 
 @table @strong
