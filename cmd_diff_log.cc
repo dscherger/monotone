@@ -642,6 +642,8 @@ struct rev_cmp
         return x.first > y.first; // optional with --next N
       case log_reverse:
         return x.first < y.first; // default and with --last N
+      default:
+        I(false);
       }
   }
 };
@@ -846,7 +848,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     }
 
   // if --revision was specified without --from log only the selected revs
-  bool log_selected(!app.opts.revision_selectors.empty() && 
+  bool log_selected(!app.opts.revision_selectors.empty() &&
                     app.opts.from.empty());
 
   if (log_selected)
