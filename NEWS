@@ -147,6 +147,17 @@
           command group to aid performance timing. See `mtn help --hidden db'
           for a list of available commands.
 
+        - Our internal error handling has been overhauled. N() is gone, and E()
+          takes three arguments instead of 2: E(bool, origin::type, i18n_format).
+          origin::type is an enum describing the source of the error, eg network,
+          user, internal. Data types can publically inherit origin_aware (as the
+          vocab types do) to obtain a public origin::type member named
+          'made_from'; this can then be supplied to E() when sanity-checking
+          that data. origin_aware and origin::type are in origin_type.hh.
+          I() will throw a unrecoverable_failure, and E() will throw either a
+          unrecoverable_failure or a recoverable_failure depending on the
+          origin::type provided. informative_failure is gone.
+
 
 Fri Dec 26 22:08:00 UTC 2008
 
