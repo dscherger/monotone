@@ -143,6 +143,7 @@ namespace commands {
   }
 
   static void explain_children(command::children_set const & children,
+                               bool show_hidden_commands,
                                ostream & out)
   {
     I(!children.empty());
@@ -155,7 +156,7 @@ namespace commands {
       {
         command const * child = *i;
 
-        if (child->hidden())
+        if (child->hidden() && !show_hidden_commands)
           continue;
 
         size_t len = display_width(join_words(child->names(), ", ")) +
@@ -173,7 +174,7 @@ namespace commands {
       {
         command const * child = *i;
         describe(join_words(child->names(), ", ")(), child->abstract(),
-                 join_words(child->subcommands(), ", ")(),
+                 join_words(child->subcommands(show_hidden_commands), ", ")(),
                  colabstract, out);
       }
   }
@@ -190,7 +191,9 @@ namespace commands {
     return cmd;
   }
 
-  static void explain_cmd_usage(command_id const & ident, ostream & out)
+  static void explain_cmd_usage(command_id const & ident,
+                                bool show_hidden_commands,
+                                ostream & out)
   {
     I(ident.size() >= 1);
 
@@ -233,7 +236,7 @@ namespace commands {
     // Explain children, if any.
     if (!cmd->is_leaf())
       {
-        explain_children(cmd->children(), out);
+        explain_children(cmd->children(), show_hidden_commands, out);
         out << '\n';
       }
 
@@ -259,14 +262,18 @@ namespace commands {
       }
   }
 
-  void explain_usage(command_id const & ident, ostream & out)
+  void explain_usage(command_id const & ident,
+                     bool show_hidden_commands,
+                     ostream & out)
   {
     command const * cmd = find_command(ident);
 
     if (ident.empty())
       {
         out << format_text(F("Command groups:")) << "\n\n";
-        explain_children(CMD_REF(__root__)->children(), out);
+        explain_children(CMD_REF(__root__)->children(),
+                         show_hidden_commands,
+                         out);
         out << '\n'
             << format_text(F("For information on a specific command, type "
                            "'mtn help <command_name> [subcommand_name ...]'."))
@@ -280,7 +287,7 @@ namespace commands {
             << "\n";
       }
     else
-      explain_cmd_usage(ident, out);
+      explain_cmd_usage(ident, show_hidden_commands, out);
   }
 
   options::options_type command_options(command_id const & ident)
@@ -386,7 +393,7 @@ CMD_NO_WORKSPACE(help, "help", "", CMD_REF(informative),
                  N_("command [ARGS...]"),
     N_("Displays help about commands and options"),
     "",
-    options::opts::none)
+    options::opts::show_hidden_commands)
 {
   if (args.size() < 1)
     {

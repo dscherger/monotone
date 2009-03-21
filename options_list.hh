@@ -353,6 +353,14 @@ GOPT(help, "help,h", bool, false, gettext_noop("display help message"))
 }
 #endif
 
+OPT(show_hidden_commands, "hidden", bool, false,
+     gettext_noop("show hidden commands"))
+#ifdef option_bodies
+{
+  show_hidden_commands = true;
+}
+#endif
+
 OPTVAR(include, args_vector, include_patterns, )
 OPTION(include, include, true, "include",
         gettext_noop("include anything described by its argument"))
@@ -737,8 +745,8 @@ OPT(use_one_changelog, "use-one-changelog", bool, false,
   use_one_changelog = true;
 }
 #endif
-    
-OPT(authors_file, "authors-file", system_path, , 
+
+OPT(authors_file, "authors-file", system_path, ,
     gettext_noop("file mapping author names from original to new values"))
 #ifdef option_bodies
 {
@@ -746,7 +754,7 @@ OPT(authors_file, "authors-file", system_path, ,
 }
 #endif
 
-OPT(branches_file, "branches-file", system_path, , 
+OPT(branches_file, "branches-file", system_path, ,
     gettext_noop("file mapping branch names from original to new values "))
 #ifdef option_bodies
 {
@@ -754,7 +762,7 @@ OPT(branches_file, "branches-file", system_path, ,
 }
 #endif
 
-OPT(refs, "refs", std::set<std::string>, , 
+OPT(refs, "refs", std::set<std::string>, ,
     gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
 #ifdef option_bodies
 {

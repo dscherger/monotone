@@ -343,7 +343,9 @@ cpp_main(int argc, char ** argv)
               usage_stream << get_usage_str(cmd_options, app.opts);
             }
 
-          commands::explain_usage(u.which, usage_stream);
+          commands::explain_usage(u.which,
+                                  app.opts.show_hidden_commands,
+                                  usage_stream);
           if (app.opts.help)
             return 0;
           else
