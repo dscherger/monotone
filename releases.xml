@@ -5,9 +5,188 @@
         <link>http://monotone.ca/releases.xml</link>
         <description>monotone releases with links to the sources.</description>
         <language>en</language>
-        <pubDate>Fri, 26 Dec 2008 22:08:00 +0000</pubDate>
+        <pubDate>Sun, 22 Mar 2009 22:26:00 +0000</pubDate>
+        <item>
+            <title>monotone 0.43 released</title>
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<ul>
+<li>The Monotone source distribution no longer includes copies of
+  several third-party libraries.  This means they must be downloaded
+  and built separately, before building monotone.  See INSTALL for a
+  complete list of necessary libraries.<br /><br />
+
+  This allows monotone's developers to concentrate on monotone
+  itself, rather than tracking external library updates, which in
+  practice did not happen.  By way of illustration, we were still
+  shipping sqlite 3.4.1, which is years out of date.  This has also
+  been a long-standing request of various redistributors of binary
+  packages, who prefer the use of globally shared libraries.
+</li>
+<li>There is a new db var "database delta-direction", which can have
+  values "reverse" (default), "forward", and "both". This controls
+  what kind of deltas are stored for new file versions. Forward
+  deltas are very fast for netsync, but slow for most other uses.
+  Set this to "both" (or perhaps "forward" if you're very short on
+  disk space) on an empty db and pull everything into it, to get a
+  database which will be much faster for server usage (especially
+  initial pulls).
+</li>
+<li>'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
+  longer print global options, thus making the output of specific help
+  requests more compact. You still see all available global options
+  by executing 'mtn help' without any arguments.
+</li>
+<li>'mtn automate get_current_revision' now returns an empty changeset
+  instead of an error if a workspace contains no changes.
+</li>
+</ul>
+
+<h2>New features</h2>
+
+<ul>
+<li>A monotone database may be exported in the git fast-import format
+  using the git_export command. The output from this command may be
+  piped into git fast-import or other tools supporting this format.
+</li>
+<li>Additional 'u:' and 'm:' selector types for selecting the revision the
+  workspace was last updated from and revisions matching specified
+  message globs in changelog and comment certs.
+</li>
+<li>Additional '--revision' option for 'mtn log' allows logging of
+  selected sets of revisions.
+</li>
+<li>Additional '--full' option for 'mtn db info' to display some
+  statistic analysis of the date certs in the database.
+</li>
+<li>Command line options in the EDITOR and/or VISUAL environment
+  variables are honored; for instance, EDITOR="emacs -nw"
+  works now.  (Debian bug #320565.)
+</li>
+<li>The `mtn_automate' lua function now correctly parses and sets
+  options for executed automate commands.
+</li>
+<li>The 'commit' command accepts a non-empty _MTN/log as the log
+  message when '--message-file=_MTN/log' is given.
+</li>
+</ul>
+
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>Performance of the log command has been improved significantly.
+  Previous versions of monotone loaded individual certs by name for each
+  printed revision and this caused sqlite to not use the correct
+  index. Now, all certs are loaded for each printed revision once and
+  individual certs are selected from the full list which allows sqlite
+  to use the preferred index.
+</li>
+<li>In 0.42, a netsync writer would attempt to queue up all outgoing
+  data as soon as it knew what data to send, in a single operation,
+  without servicing the event loop. If there was a large amount of
+  data to send, this would cause very long pauses and sometimes
+  timeouts and dropped connections (for pauses over 10 minutes).
+  The bug that caused this is fixed, and that operation now has a
+  safety timer that should prevent it from coming back.
+</li>
+<li>When the netsync server receives garbage over the network, it
+  should be much better about only terminating the offending connection
+  instead of the entire server.
+</li>
+<li>The log command was missing '--depth' and '--exclude' options used to
+  restrict revisions printed to those touching specific paths. Log now
+  allows these options and uses them properly.
+</li>
+<li>The update command previously did not clear execute permissions from
+  files that had their associated 'mtn:execute' attribute cleared.
+</li>
+<li>Several minor problems with workspace attributes have been fixed.
+  Earlier versions of monotone would reset attributes such as
+  mtn:execute on all files when any workspace modifying command was
+  executed. Applying attribute changes to workspace files is now done
+  much more selectively in the same manner that content and name changes
+  are applied.
+</li>
+<li>In certain cases, especially also on FreeBSD and Mac OS X, netsync
+  called select() even after read() returned 0 bytes to indicate the
+  end of the file, resulting in a confusing error message. This
+  is fixed by treating EOF specially and prevent further calls
+  to select() on the file handle, as recommended by the
+  select_tut man page.
+</li>
+<li>If given a filename, `mtn ssh_agent_export' now creates that
+  file with the correct permissions (i.e. mode 600), creates
+  directories as necessary, and does not throw an internal
+  error if creation or writing fails.  (You're still on your
+  own for directory creation and permissions if you take the
+  key on standard output and redirect it to a file.)
+</li>
+<li>The `p:' selector now accepts single character revision ids.
+</li>
+<li>`mtn merge_into_workspace' no longer crashes if one tries to merge
+  in an ancestor or descendant of a workspace, but gives a helpful
+  error message.
+</li>
+<li>Several bugfixes to `mtn automate stdio':
+<ul>
+  <li>It now correctly distinguishs between syntax and command errors by
+    returning error code 1 for the former and error code 2 for the
+    latter - just as advertised in the documentation.
+  </li>
+  <li>The stdio event loop no longer quits if a syntax error occurs, but
+    rather discards the wrong state and accepts new (valid) commands.
+  </li>
+  <li>Option errors haven't been catched properly and thus weren't encoded
+    in stdio either; this has been fixed as well.
+  </li>
+  <li>Global options, which were set or changed by a previously executed
+    command, weren't properly reset before the next command was issued.
+    It was f.e. not possible to "unignore" suspended branches for
+    the `branches' command when `--ignore-suspend-certs' was given in
+    a previous run. Now only those global options persist between
+    executed commands which were given to stdio directly.
+   </li>
+</ul>
+</li>
+</ul>
+
+<h2>Internal</h2>
+
+<ul>
+<li>Using 64 bit integer values to represent dates internally. This
+  has no user visible effect.
+</li>
+<li>The unit test code has been separated from the main source, thus
+  building the tests no longer requires a full recompilation. Also,
+  the number of modules which are linked into unit tester has
+  decreased tremendously.
+</li>
+<li>A couple of debug commands have been added to the `database'
+  command group to aid performance timing. See `mtn help --hidden db'
+  for a list of available commands.
+</li>
+<li>Our internal error handling has been overhauled. N() is gone, and E()
+  takes three arguments instead of 2: E(bool, origin::type, i18n_format).
+  origin::type is an enum describing the source of the error, eg network,
+  user, internal. Data types can publically inherit origin_aware (as the
+  vocab types do) to obtain a public origin::type member named
+  'made_from'; this can then be supplied to E() when sanity-checking
+  that data. origin_aware and origin::type are in origin_type.hh.
+  I() will throw a unrecoverable_failure, and E() will throw either a
+  unrecoverable_failure or a recoverable_failure depending on the
+  origin::type provided. informative_failure is gone.
+</li>
+</ul>
+]]>
+            </description>
+            <pubDate>Sun, 22 Mar 2009 22:26:00 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.43/monotone-0.43.tar.gz" length="4591647" type="application/octet-stream"/>
+
+    </item>
     <item>
-            <title>monotone 0.41 released</title>
+            <title>monotone 0.42 released</title>
             <description>
 <![CDATA[
 <h2>Changes</h2>
