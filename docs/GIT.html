@@ -1,0 +1,142 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>GIT - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Command-Reference.html#Command-Reference" title="Command Reference">
+<link rel="prev" href="RCS.html#RCS" title="RCS">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="GIT"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="RCS.html#RCS">RCS</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Reference">Command Reference</a>
+<hr>
+</div>
+
+<h3 class="section">5.11 GIT</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn git_export [--authors-file=</span><var>authors-file</var><span class="command">] [--branches-file=</span><var>branches-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dauthors_002dfile_003d_0040var_007bauthors_002dfile_007d_005d-_005b_002d_002dbranches_002dfile_003d_0040var_007bbranches_002dfile_007d_005d-207"></a><dt><samp><span class="command">mtn git_export [--import-marks=</span><var>marks-file</var><span class="command">] [--export-marks=</span><var>marks-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dimport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-_005b_002d_002dexport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-208"></a><dt><samp><span class="command">mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dlog_002drevids_005d-_005b_002d_002dlog_002dcerts_005d-_005b_002d_002duse_002done_002dchangelog_005d-209"></a><dt><samp><span class="command">mtn git_export [--refs=</span><var>type</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002drefs_003d_0040var_007btype_007d_005d-210"></a><dd>
+This command exports all revisions from the current monotone database
+to <code>stdout</code> in a format that can be piped directly to git
+fast-import.
+
+     <p>The <samp><span class="option">--authors-file</span></samp> option may be used to map monotone author
+and committer names to different values in a manner similar to that
+documented in git-svn(1). Mappings are specified in the
+<var>authors-file</var> as:
+<pre class="verbatim">     
+     loginname = Joe User &lt;user@example.com>
+</pre>
+
+     <p>The list of authors that might need to be mapped can be extracted from
+a monotone database with the following sql query:
+<pre class="verbatim">     
+     $ mtn db execute 'select distinct value from revision_certs where name = "author"'
+</pre>
+
+     <p>The list of committers that might need to be mapped can be extracted
+from a monotone database with the following sql query:
+<pre class="verbatim">     
+     $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+</pre>
+
+     <p>The <samp><span class="option">--branches-file</span></samp> option may be used to map monotone branch
+names to different values. This may be required as monotone allows
+branch names that are not valid according to git. Branch mappings are
+specified in the <var>branches-file</var> as:
+<pre class="verbatim">     
+     monotone-branch-name = git-branch-name
+</pre>
+Revisions with no author cert will use &lt;unknown&gt; for both the author
+and the committer. These can be mapped to other values using the
+<var>authors-file</var> option.
+
+     <p>The list of branches that might need to be mapped can be extracted
+from a monotone database with using the <samp><span class="command">ls branches</span></samp> command:
+<pre class="verbatim">     
+     $ mtn ls branches --ignore-suspend-certs
+</pre>
+
+     <p>The <samp><span class="option">--import-marks</span></samp> and <samp><span class="option">--export-marks</span></samp> options are
+similar to those documented in git-fast-export(1) and
+git-fast-import(1). These may be used for incremental exports and may
+also be useful for repository verification. The <var>marks-file</var> is
+read on startup if <samp><span class="option">--import-marks</span></samp> is specified and all marked
+revs are excluded from the export. The <var>marks-file</var> is written on
+completion if <samp><span class="option">--export-marks</span></samp> is specified and will contain
+marks for all revs that were exported in addition to any marks that
+were read on startup. It is safe to use the same file for both
+<samp><span class="option">--import-marks</span></samp> and <samp><span class="option">--export-marks</span></samp> but different
+files may also be used.
+
+     <p>The original monotone revision ids may be included in the exported git
+commit messages using the <samp><span class="option">--log-revids</span></samp> option. These will
+appear as:
+<pre class="verbatim">     
+     Monotone-Parent: ...
+     Monotone-Revision: ...
+</pre>
+in the git commit messages and may be useful for repository
+verification. Merge revisions with two parents will include two
+<code>Monotone-Parent</code> lines.
+
+     <p>The original monotone values for <code>author</code>, <code>date</code>,
+<code>branch</code> and <code>tag</code> certificates may be included in the
+exported git commit messages using the <samp><span class="option">--log-certs</span></samp>
+option. These will appear as:
+<pre class="verbatim">     
+     Monotone-Author: ...
+     Monotone-Date: ...
+     Monotone-Branch: ...
+     Monotone-Tag: ...
+</pre>
+in the git commit messages and may be useful for repository
+verification or maintaining information that is otherwise not
+maintained by git. In particular monotone may have several values for
+each of these certs and git only represents a single <code>author</code> and
+<code>date</code> value.
+
+     <p>By default, the values of all changelog and comment certs on a
+revision are concatenated to form the git commit message for that
+revision. The <samp><span class="option">--use-one-changelog</span></samp> option will prevent this
+behaviour and use the value from the first changelog cert
+encountered. <em>WARNING:</em> this will explicitly lose information in
+the exported data. Changelog certs have no implicit ordering, one will
+be selected arbitrarily to be used as the git commit message and all
+others will be excluded from the exported data. Additionally, all
+comment certs will be excluded from the exported data.
+
+     <p>References to the original monotone branches and tags are exported as
+<code>refs/tags/&lt;tag-name&gt;</code> and <code>refs/heads/&lt;branch-name&gt;</code>. In
+addition, references to the original monotone revision ids, the root
+revisions and the leaf revisions may be exported using
+<samp><span class="option">--refs=revs</span></samp>, <samp><span class="option">--refs=roots</span></samp> and <samp><span class="option">--refs=leaves</span></samp>
+respectively. These references are exported as
+<code>refs/mtn/revs/&lt;id&gt;</code>, <code>refs/mtn/roots/&lt;id&gt;</code> and
+<code>refs/mtn/leaves/&lt;id&gt;</code> and may be useful for repository
+verification. These additional references should probably not be
+maintained after the exported repository has been verified as they
+cause considerable clutter in tools like gitk.
+
+</dl>
+
+   </body></html>
+

@@ -101,7 +101,8 @@ version control tools.
 <li><a href="#Merging">3.14 Merging</a>
 <li><a href="#Migrating-and-Dumping">3.15 Migrating and Dumping</a>
 <li><a href="#Importing-from-CVS">3.16 Importing from CVS</a>
-<li><a href="#Using-packets">3.17 Using packets</a>
+<li><a href="#Exporting-to-GIT">3.17 Exporting to GIT</a>
+<li><a href="#Using-packets">3.18 Using packets</a>
 </li></ul>
 <li><a name="toc_CVS-Phrasebook" href="#CVS-Phrasebook">4 CVS Phrasebook</a>
 <li><a name="toc_Command-Reference" href="#Command-Reference">5 Command Reference</a>
@@ -119,6 +120,7 @@ version control tools.
 <li><a href="#Database">5.8 Database</a>
 <li><a href="#Automation">5.9 Automation</a>
 <li><a href="#RCS">5.10 RCS</a>
+<li><a href="#GIT">5.11 GIT</a>
 </li></ul>
 <li><a name="toc_Hook-Reference" href="#Hook-Reference">6 Hook Reference</a>
 <ul>
@@ -350,6 +352,11 @@ from the <span class="sc">rsa</span> cryptography system, the details of which a
 the scope of this document.
 
    <div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
+
+   <p><b>Warning:</b> because our certificates give the <i>name</i> of the
+signing key instead of the <i>hash</i> (ID), all key names must be
+globally unique forever. If you lose a key and need to generate a
+replacement, make sure that you give the replacement a different name.
 
    <p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
 to be stored, transmitted or retrieved &mdash; above and beyond files,
@@ -2013,6 +2020,9 @@ recorded in your _MTN/options file.
 <br><dt>Date selection<dd>Uses selector type <code>d</code>. For example, <code>d:2004-04</code> matches
 <code>date</code> certs where the cert value begins with
 <code>2004-04</code>. This selector also accepts expanded date syntax (see below). 
+<br><dt>Message selection<dd>Uses selector type <code>m</code>. For example <code>m:*foobar*</code> matches
+<code>changelog</code> and <code>comment</code> certs where the cert value
+contains the glob <code>*foobar*</code>. 
 <br><dt>"Earlier or equal than" selection<dd>Uses selector type <code>e</code>. For example, <code>e:2004-04-25</code> matches
 <code>date</code> certs where the cert value is less or equal than
 <code>2004-04-25T00:00:00</code>. If the time component is unspecified,
@@ -2029,6 +2039,21 @@ revision IDs which begin with <code>0f3a</code>.
 revision IDs which are the parent of the revision ID which begins with
 <code>0f3a</code>. If you give a bare <code>p:</code>, monotone will require you to be in
 a workspace, and query the parent of the base workspace revision. 
+<br><dt>Update selection<dd>Uses selector type <code>u</code>. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID of the workspace before the last <samp><span class="command">update</span></samp> command
+was executed. This can be useful for reviewing incoming
+revisions. After each update operation, or at least before the next
+update operation, run a command similar to the following:
+     <pre class="smallexample">          $ mtn log --to u: --diffs
+     </pre>
+     <p>to log all revisions back to the last update. It can also be
+used for quickly jumping between two different revisions. For example,
+the following command:
+     <pre class="smallexample">          $ mtn update -r u:
+     </pre>
+     <p>will update back to the previous update revision. Repeating this
+command will swap the current and previous update revision. 
 <br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
 <code>tag</code> certs where the cert value begins with <code>monotone-0.11</code>. 
 Values to match for can have shell wildcards. 
@@ -2118,6 +2143,7 @@ changes to files or directories not included by the restriction.
 <li><samp><span class="command">list ignored</span></samp>
 <li><samp><span class="command">list missing</span></samp>
 <li><samp><span class="command">list changed</span></samp>
+<li><samp><span class="command">log</span></samp>
 </ul>
 
    <p>Including either the old or new name of a renamed file or directory will
@@ -2725,6 +2751,18 @@ uses the <samp><span class="option">--set-default</span></samp> option.
 <br><dt><code>default-server</code><dd>The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
 <samp><span class="option">--set-default</span></samp> option. 
+<br><dt><code>delta-direction</code><dd>This tells monotone whether to store `<samp><span class="samp">reverse</span></samp>' deltas (the default),
+`<samp><span class="samp">forward</span></samp>' deltas, or `<samp><span class="samp">both</span></samp>' kinds of deltas for reconstructing
+versions of files. Reverse deltas are faster when inspecting recent files,
+while forward deltas are much faster for sending over the network. This
+should probably be set to `<samp><span class="samp">both</span></samp>' for a server database, unless disk
+space is severely limited. Note that as <em>receiving</em> deltas involves
+reconstructing the file version that the delta was made against, a server
+using a database with only forward deltas will be somewhat slower at
+receiving new revisions unless your particular history graph is highly
+linear.
+
+          <p>Changing this value does not affect deltas that have already been stored. 
 </dl>
 
      <br><dt><code>known-servers</code><dd>Contains key hashes for servers that we have netsynced with in the
@@ -3078,9 +3116,86 @@ checking the resulting head version of the import out into a workspace:
      $ mtn --db=test.mtn --branch=net.example.wobbler cvs_import /usr/local/cvsroot/wobbler
      $ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
 </pre>
-   <p><a name="Using-packets"></a>
+   <p><a name="Exporting-to-GIT"></a>
 
-<h3 class="section">3.17 Using packets</h3>
+<h3 class="section">3.17 Exporting to GIT</h3>
+
+<p>Monotone is capable of exporting the contents of a database to
+<code>stdout</code> in a form suitable to be piped to git-fast-import(1):
+
+<pre class="smallexample">     $ mkdir test.git
+     $ cd test.git
+     $ git init
+     $ mtn --db test.mtn git_export | git fast import
+</pre>
+   <p>While this feature has been tested and verified to some extent with
+various &ldquo;real-world&rdquo; monotone databases it is important to realize
+that translating from one version control system to another can be a
+lossy process. Git represents things somewhat differently than
+monotone does and cannot fully represent some things that monotone
+can. In particular git does not treat directories as first class
+objects as monotone does and does not use certificates to represent
+<code>author</code>, <code>date</code>, <code>branch</code> and <code>tag</code> values so
+some differences are to be expected.
+
+   <p>Git separates the concept of <code>committer</code> from the concept of
+<code>author</code> while monotone allows multiple <code>author</code> certs. In
+an attempt to represent these different concepts the git exporter uses
+the <em>value</em> of the author cert as the git author and the
+<em>key</em> used to sign the author cert as the git committer. When
+there are multiple author certs the git exporter arbitrarily choses
+one of them. The full list of monotone certs may be exported in the
+git commit message using the <samp><span class="option">--log-certs</span></samp> option described in
+<a href="#GIT">GIT</a>.
+
+   <p>Monotone author names often look like raw email addresses such as
+<code>"user@example.com"</code>. These are not considered valid by git
+which requires leading `&lt;' and trailing `&gt;' characters around email
+addresses and by convention often includes the display name with the
+email address such as <code>"User Name &lt;user@example.com&gt;"</code>. The git
+exporter deals with this difference in several ways:
+     <ul>
+<li>revisions that don't have any author certs will default to using
+<code>&lt;unknown&gt;</code> for both the author and committer. 
+<li>revisions that have one or more author certs will use the value of one
+author cert as the author and the key used to sign this cert as
+the committer. 
+<li>both author and committer will be looked up in the file specified by
+the <samp><span class="option">--authors-file</span></samp> option described in <a href="#GIT">GIT</a> and
+translated to the specified value if found. 
+<li>any author or committer that does not contain both `&lt;' and `&gt;'
+characters will have an initial &ldquo;&lt;' character and a final `&gt;'
+character added so that they may form valid values. 
+</ul>
+
+   <p>Branch names used by monotone are allowed to contain characters that
+are not considered valid by git. These may be mapped to other names
+using the <samp><span class="option">--branches-file</span></samp> option described in <a href="#GIT">GIT</a>
+
+   <p>A monotone revision may have multiple <code>changelog</code> certs and
+multiple <code>comment</code> certs. The git exporter deals with these by
+first concatenating all of the changelog certs followed by all of the
+comment certs into one message to use as the git commit
+message. Duplicate changelog or comment cert messages that may exist
+due to automated merges are removed.
+
+   <p>Exporting a database may be a time consuming and involved process,
+depending on the size and nature of the database. A 200MB database
+should export in less than an hour but may take several hours or
+longer depending on factors such as hardware, revision sizes, roster
+sizes and many others. The monotone process exporting such a database
+should require less than 200MB of RAM but may require
+<em>considerably</em> more in some cases. If the exported file is
+written to disk it will likely be <em>substantially</em> larger than the
+associated database, perhaps between 400MB to 4GB in size.
+
+   <p>Anyone using the git exporter must take full responsibility for
+verifying that the exported repository matches their expectations and
+requirements.
+
+<p><a name="Using-packets"></a>
+
+<h3 class="section">3.18 Using packets</h3>
 
 <p>Suppose you made changes to your database, and want to send those
 changes to someone else but for some reason you cannot use netsync.  Or
@@ -3508,7 +3623,7 @@ these entries:
              file "include/hello.h"
           content [c61af2e67eb9b81e46357bb3c409a9a53a7cdfc6]
           
-             file "src/hello.c
+             file "src/hello.c"
           content [97dfc6fd4f486df95868d85b4b81197014ae2a84]
      </pre>
      <p>Then the following files are created:
@@ -3870,6 +3985,9 @@ commit, without emptying the entire log message.  If the commit is
 successful, the <samp><span class="file">_MTN/log</span></samp> file is cleared of all content making it
 ready for another edit/commit cycle.
 
+     <p>If <samp><span class="option">--message-file=_MTN/log</span></samp> is specified, the contents of
+<samp><span class="file">_MTN/log</span></samp> will be used without confirmation.
+
      <p>If a <samp><span class="option">--branch</span></samp> option is specified, the <samp><span class="command">commit</span></samp> command
 commits to this branch (creating it if necessary).  The branch becomes
 the new default branch of the workspace.
@@ -4139,31 +4257,59 @@ will, by default, include <em>all changes</em> in the workspace.
 Specifying only the pathname "." will restrict <samp><span class="command">status</span></samp> to files
 changed within the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-65"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--diffs] [</span><var>file</var><span class="command"> [...]]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bfile_007d-_005b_002e_002e_002e_005d_005d-66"></a><dd>
-This command prints out a log, in reverse-ancestry order, of small
-history summaries.  Each summary contains author, date, changelog and
-comment information associated with a revision.
+     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-65"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--revision=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [</span><var>pathname...</var><span class="command">]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002drevision_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002dno_002dgraph_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-66"></a><dd>
+This command prints out a log, in forward ancestry order by default
+but optionally in reverse ancestry order, of small history summaries. 
+Each summary contains author, date, branch, changelog and comment
+information associated with a revision.
 
-     <p>If <samp><span class="option">--brief</span></samp> is given, the output consists of one line per revision
-with the revision ID, the author, the date and the branches (separated
-with commas).
+     <p>If <samp><span class="option">--brief</span></samp> is given, the output consists of two lines per
+revision with the revision ID, the author, the date and the branches
+(separated with commas). If the <samp><span class="option">--no-graph</span></samp> option is also
+given the output contains only one line per revision.
 
-     <p>If <samp><span class="option">--last=</span></samp><var>n</var> is given, at most <var>n</var> log entries will be
-given.
+     <p>If <samp><span class="option">--last=</span></samp><var>n</var> is given, at most <var>n</var> log entries will
+be given and log will trace through history in reverse-ancestry order,
+from newer revisions to older revisions.
 
-     <p>If <samp><span class="option">--next=</span></samp><var>n</var> is given, at most <var>n</var> log entries towards
-the current head revision will be given from the workspace's base
-revision in forward-ancestry order.  This is useful to review changes
-that will be applied to the workspace when <samp><span class="command">update</span></samp> is run.
+     <p>If <samp><span class="option">--next=</span></samp><var>n</var> is given, at most <var>n</var> log entries will
+be given and log will trace through history in forward-ancestry order,
+from older revisions to newer revisions. This is useful to review
+changes that will be applied to the workspace when <samp><span class="command">update</span></samp> is
+run.
 
-     <p>If <samp><span class="option">--from=</span></samp><var>id</var> is given, the command starts tracing back through
-history from these revisions, otherwise it starts from the base revision of
-your workspace.
+     <p>If <samp><span class="option">--from=</span></samp><var>id</var> is given, log starts tracing through
+history from the specified revisions, otherwise it starts from the
+base revision of your workspace. Log will stop when it reaches the end
+of the revision history or revisions specified by the <samp><span class="option">--to</span></samp>
+option.
 
-     <p>If <samp><span class="option">--to=</span></samp><var>id</var> is given, log will only print entries for revisions
-that would not also be printed when logging from the revisions specified in
-<samp><span class="option">--to</span></samp>. This is useful for reviewing changes between two points
-in history.
+     <p>When tracing through history in reverse-ancestry order and
+<samp><span class="option">--to=</span></samp><var>id</var> is given, log will stop when it reaches the
+specified revisions or any of their ancestors or the end of the
+revision history. When tracing through history in forward-ancestry
+order log will stop when it reaches the specified revisions or any of
+their descendants or the end of the revision history.
+
+     <p>If <samp><span class="option">--revision=</span></samp><var>id</var> is given, log will print only the
+specified revisions.
+
+     <p>If both <samp><span class="option">--from</span></samp> and <samp><span class="option">--revision</span></samp> are given only
+revisions included by both options will be logged. Revisions specified
+by <samp><span class="option">--revision</span></samp> that are beyond the starting points specified
+by <samp><span class="option">--from</span></samp> will be excluded.
+
+     <p>Additionally, each of the <samp><span class="option">--from</span></samp>, <samp><span class="option">--to</span></samp> and
+<samp><span class="option">--revision</span></samp> options accept selectors, see
+<a href="#Selectors">Selectors</a>. These can be used in various ways to log interesting
+revisions.  For example:
+<pre class="verbatim">     
+     $ mtn log --revision b:
+     $ mtn log --revision today
+     $ mtn log --revision bob
+</pre>
+will log all revisions from the current branch, all revisions dated
+today and all revisions with bob as the author, respectively.
 
      <p>By default, the log entries for merge nodes are shown.  If
 <samp><span class="option">--no-merges</span></samp> is given, the log entries for these nodes will be
@@ -4171,6 +4317,9 @@ excluded.
 
      <p>If <samp><span class="option">--no-files</span></samp> is given, the log output excludes the list of
 files changed in each revision.
+
+     <p>If <samp><span class="option">--no-graph</span></samp> is given, the log output excludes the ASCII revision graph
+prefix on log output lines.
 
      <p>Specifying <samp><span class="option">--diffs</span></samp> causes the log output to include a unified
 diff of the changes in each revision.
@@ -6070,7 +6219,7 @@ A packet looks like:
           <p>&lt;command number&gt; is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-          <p>&lt;err code&gt; is 0 for success, 1 for a syntax error, and 2 for any other error.
+          <p>&lt;err code&gt; is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
 
           <p>&lt;last?&gt; is 'l' if this is the last piece of output for this command, and 'm'
 if there is more output to come.
@@ -6092,7 +6241,40 @@ whatever error message would have been given.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-173"></a><dd>
+     <br><dt><samp><span class="command">mtn automate genkey </span><var>name</var> <var>passphrase</var></samp><a name="index-mtn-automate-genkey-_0040var_007bname_007d-_0040var_007bpassphrase_007d-173"></a><dd>
+          <dl>
+<dt><strong>Aguments</strong><dd>
+<var>name</var> is the name to associate with the new key, and <var>passphrase</var> is
+the passphrase that will be used to encrypt the private half.
+
+          <br><dt><strong>Added in:</strong><dd>
+3.1
+
+          <br><dt><strong>Purpose:</strong><dd>
+Generate a key with the given name and passphrase.
+
+          <br><dt><strong>Sample output:</strong><dd>
+<pre class="verbatim">          
+                      name "tbrownaw@gmail.com"
+               public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+              private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+           public_location "database" "keystore"
+          private_location "keystore"
+          
+     </pre>
+
+          <br><dt><strong>Output format:</strong><dd>
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+          <br><dt><strong>Error conditions:</strong><dd>
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
+
+     </dl>
+
+     <br><dt><samp><span class="command">mtn automate get_revision </span><var>id</var></samp><a name="index-mtn-automate-get_005frevision-_0040var_007bid_007d-174"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The argument <var>id</var> specifies the revision id for which the changeset
@@ -6190,7 +6372,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_current_revision [--exclude </span><var>excl</var><span class="command">] [--depth=</span><var>depth</var><span class="command">] [</span><var>path</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-174"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_current_revision [--exclude </span><var>excl</var><span class="command">] [--depth=</span><var>depth</var><span class="command">] [</span><var>path</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-175"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more <var>path</var> arguments restrict the revision to these paths,
@@ -6212,13 +6394,12 @@ See <var>automate get_revision</var>
 See <var>automate get_revision</var>
 
           <br><dt><strong>Error conditions:</strong><dd>
-If the command is executed outside of a workspace, there are no changes in the
-current workspace or the restriction is invalid or has no recorded changes,
-prints an error message to stderr and exits with status 1.
+If the command is executed outside of a workspace, or the restriction is
+invalid, prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_base_revision_id</span></samp><a name="index-mtn-automate-get_005fbase_005frevision_005fid-175"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_base_revision_id</span></samp><a name="index-mtn-automate-get_005fbase_005frevision_005fid-176"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -6244,7 +6425,7 @@ message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_current_revision_id</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision_005fid-176"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_current_revision_id</span></samp><a name="index-mtn-automate-get_005fcurrent_005frevision_005fid-177"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -6271,7 +6452,7 @@ message to stderr, and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_manifest_of</span></samp><a name="index-mtn-automate-get_005fmanifest_005fof-177"></a><br><dt><samp><span class="command">mtn automate get_manifest_of </span><var>revid</var></samp><a name="index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-178"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_manifest_of</span></samp><a name="index-mtn-automate-get_005fmanifest_005fof-178"></a><br><dt><samp><span class="command">mtn automate get_manifest_of </span><var>revid</var></samp><a name="index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-179"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 Specifying the optional <var>revid</var> argument outputs the manifest for the
@@ -6408,7 +6589,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_attributes </span><var>path</var></samp><a name="index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-179"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_attributes </span><var>path</var></samp><a name="index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-180"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The argument <var>path</var> determines which path's attributes should be printed.
@@ -6483,7 +6664,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate set_attribute </span><var>path</var> <var>key</var> <var>value</var></samp><a name="index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-180"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_attribute </span><var>path</var> <var>key</var> <var>value</var></samp><a name="index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-181"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A path, an attribute key and an attribute value.
@@ -6505,7 +6686,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate drop_attribute </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-181"></a><dd>
+     <br><dt><samp><span class="command">mtn automate drop_attribute </span><var>path</var><span class="command"> [</span><var>key</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-182"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A path and an attribute key (optional).
@@ -6529,7 +6710,7 @@ status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-182"></a><dd>
+     <br><dt><samp><span class="command">mtn automate content_diff [--revision=</span><var>id1</var><span class="command"> [--revision=</span><var>id2</var><span class="command">]] [</span><var>files</var><span class="command"> ...]</span></samp><a name="index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-183"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 One or more <var>file</var> arguments restrict the diff output to these files,
@@ -6585,7 +6766,7 @@ restrictions can't be applied, the command prints to stderr and exits as well.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-183"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file </span><var>id</var></samp><a name="index-mtn-automate-get_005ffile-_0040var_007bid_007d-184"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>id</var> argument specifies the file hash of the file to be output.
@@ -6614,7 +6795,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-184"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_file_of </span><var>filename</var><span class="command"> [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-185"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The  <var>filename</var> argument specifies the filename of the file to be output.
@@ -6647,7 +6828,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate file_merge </span><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></samp><a name="index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-185"></a><dd>
+     <br><dt><samp><span class="command">mtn automate file_merge </span><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></samp><a name="index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-186"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>left-rid</var>, <var>left-fid</var>, <var>right-rid</var>, <var>right-fid</var>
@@ -6683,7 +6864,7 @@ merger fails, prints an error message to stderr and exits with status
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-186"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_option </span><var>option</var></samp><a name="index-mtn-automate-get_005foption-_0040var_007boption_007d-187"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>option</var> argument specifies the option name of the option to be output.
@@ -6708,7 +6889,7 @@ with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-187"></a><dd>
+     <br><dt><samp><span class="command">mtn automate keys</span></samp><a name="index-mtn-automate-keys-188"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -6750,7 +6931,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-188"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-189"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output an rdata packet for.
@@ -6782,7 +6963,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-189"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-190"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the revision to output cert packets for.
@@ -6840,7 +7021,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-190"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-191"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies the file to output an fdata packet for.
@@ -6870,7 +7051,7 @@ and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-191"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>from-id</var> <var>to-id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-192"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>from-id</var> specifies the file to use as the base of the delta,
@@ -6902,7 +7083,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-192"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_content_changed </span><var>id</var> <var>file</var></samp><a name="index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-193"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>id</var> specifies a revision ID, from which content change calculations will be based. 
@@ -6934,7 +7115,7 @@ message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-193"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_corresponding_path </span><var>source_id</var> <var>file</var> <var>target_id</var></samp><a name="index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-194"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>source_id</var> specifies a revision ID in which <var>file</var> is current extant. 
@@ -6972,7 +7153,7 @@ revision <var>source_id</var> or is invalid, prints an error message to stderr a
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_db_variables [</span><var>domain</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-194"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_db_variables [</span><var>domain</var><span class="command">]</span></samp><a name="index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-195"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>domain</var> restricts the output to variables only within
@@ -7012,7 +7193,7 @@ to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate set_db_variable </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-195"></a><dd>
+     <br><dt><samp><span class="command">mtn automate set_db_variable </span><var>domain</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-196"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -7040,7 +7221,7 @@ None.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate drop_db_variables </span><var>domain</var><span class="command"> [</span><var>name</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-196"></a><dd>
+     <br><dt><samp><span class="command">mtn automate drop_db_variables </span><var>domain</var><span class="command"> [</span><var>name</var><span class="command">]</span></samp><a name="index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-197"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The <var>domain</var> and <var>name</var> specify the database variable
@@ -7067,7 +7248,7 @@ prints to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-197"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_file [</span><var>base-id</var><span class="command">] </span><var>contents</var></samp><a name="index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-198"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 The optional <var>base-id</var> specifies a file-id on which the contents are
@@ -7096,7 +7277,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-198"></a><dd>
+     <br><dt><samp><span class="command">mtn automate put_revision </span><var>revision-data</var></samp><a name="index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-199"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision-data</var> is the new revision. See example below.  Note that
@@ -7143,7 +7324,7 @@ this fact, but otherwise works as normal.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-199"></a><dd>
+     <br><dt><samp><span class="command">mtn automate cert </span><var>revision</var> <var>name</var> <var>value</var></samp><a name="index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-200"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 <var>revision</var> is an existing revision, <var>name</var> is the certificate name
@@ -7170,7 +7351,7 @@ exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate show_conflicts [</span><var>&ndash;branch BRANCH</var><span class="command">] [</span><var>left_rev right_rev</var><span class="command">]</span></samp><a name="index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-200"></a><dd>
+     <br><dt><samp><span class="command">mtn automate show_conflicts [</span><var>&ndash;branch BRANCH</var><span class="command">] [</span><var>left_rev right_rev</var><span class="command">]</span></samp><a name="index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-201"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 Optional left and right revision ids.
@@ -7460,7 +7641,7 @@ invalid, prints an error message to stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate get_workspace_root</span></samp><a name="index-mtn-automate-get_005fworkspace_005froot-201"></a><dd>
+     <br><dt><samp><span class="command">mtn automate get_workspace_root</span></samp><a name="index-mtn-automate-get_005fworkspace_005froot-202"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 None.
@@ -7485,7 +7666,7 @@ stderr and exits with status 1.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate read_packets </span><var>packet-data</var></samp><a name="index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-202"></a><dd>
+     <br><dt><samp><span class="command">mtn automate read_packets </span><var>packet-data</var></samp><a name="index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-203"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A data packet, <var>packet-data</var>, as produced by <samp><span class="command">mtn pubkey </span><var>keyname</var></samp>.
@@ -7505,7 +7686,7 @@ An error will be produced if the argument is not a valid packet.
 
      </dl>
 
-     <br><dt><samp><span class="command">mtn automate lua </span><var>function_name</var><span class="command"> [</span><var>function_args...</var><span class="command">]</span></samp><a name="index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-203"></a><dd>
+     <br><dt><samp><span class="command">mtn automate lua </span><var>function_name</var><span class="command"> [</span><var>function_args...</var><span class="command">]</span></samp><a name="index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-204"></a><dd>
           <dl>
 <dt><strong>Arguments:</strong><dd>
 A valid Lua function name and zero or more function arguments. Note that string
@@ -7578,14 +7759,14 @@ function could not be called for another reason.
 <h3 class="section">5.10 RCS</h3>
 
      <dl>
-<dt><samp><span class="command">mtn rcs_import </span><var>filename...</var></samp><a name="index-mtn-rcs_005fimport-_0040var_007bfilename_002e_002e_002e_007d-204"></a><dd>
+<dt><samp><span class="command">mtn rcs_import </span><var>filename...</var></samp><a name="index-mtn-rcs_005fimport-_0040var_007bfilename_002e_002e_002e_007d-205"></a><dd>
 This command imports all the file versions in each RCS file listed in
 <var>filename...</var>.  These files should be raw RCS files, ending in
 <code>,v</code>. Monotone parses them directly and inserts them into your
 database.  Note that this does not do any revision reconstruction, and
 is only useful for debugging.
 
-     <br><dt><samp><span class="command">mtn cvs_import </span><var>pathname</var></samp><a name="index-mtn-cvs_005fimport-_0040var_007bpathname_007d-205"></a><dd>
+     <br><dt><samp><span class="command">mtn cvs_import </span><var>pathname</var></samp><a name="index-mtn-cvs_005fimport-_0040var_007bpathname_007d-206"></a><dd>
 This command imports all the file versions in each RCS file found in the
 tree of files starting at <var>pathname</var>, then reconstructs the
 tree-wide history of logical changes by comparing RCS time stamps and
@@ -7598,6 +7779,116 @@ entries, author identifiers, and date stamps to manifest certificates.
 possible to point it at a directory within a module as well.  Whatever
 directory you point it at will become the root of monotone's version of
 the tree.
+
+</dl>
+
+<p><a name="GIT"></a>
+
+<h3 class="section">5.11 GIT</h3>
+
+     <dl>
+<dt><samp><span class="command">mtn git_export [--authors-file=</span><var>authors-file</var><span class="command">] [--branches-file=</span><var>branches-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dauthors_002dfile_003d_0040var_007bauthors_002dfile_007d_005d-_005b_002d_002dbranches_002dfile_003d_0040var_007bbranches_002dfile_007d_005d-207"></a><dt><samp><span class="command">mtn git_export [--import-marks=</span><var>marks-file</var><span class="command">] [--export-marks=</span><var>marks-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dimport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-_005b_002d_002dexport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-208"></a><dt><samp><span class="command">mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dlog_002drevids_005d-_005b_002d_002dlog_002dcerts_005d-_005b_002d_002duse_002done_002dchangelog_005d-209"></a><dt><samp><span class="command">mtn git_export [--refs=</span><var>type</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002drefs_003d_0040var_007btype_007d_005d-210"></a><dd>
+This command exports all revisions from the current monotone database
+to <code>stdout</code> in a format that can be piped directly to git
+fast-import.
+
+     <p>The <samp><span class="option">--authors-file</span></samp> option may be used to map monotone author
+and committer names to different values in a manner similar to that
+documented in git-svn(1). Mappings are specified in the
+<var>authors-file</var> as:
+<pre class="verbatim">     
+     loginname = Joe User &lt;user@example.com>
+</pre>
+
+     <p>The list of authors that might need to be mapped can be extracted from
+a monotone database with the following sql query:
+<pre class="verbatim">     
+     $ mtn db execute 'select distinct value from revision_certs where name = "author"'
+</pre>
+
+     <p>The list of committers that might need to be mapped can be extracted
+from a monotone database with the following sql query:
+<pre class="verbatim">     
+     $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+</pre>
+
+     <p>The <samp><span class="option">--branches-file</span></samp> option may be used to map monotone branch
+names to different values. This may be required as monotone allows
+branch names that are not valid according to git. Branch mappings are
+specified in the <var>branches-file</var> as:
+<pre class="verbatim">     
+     monotone-branch-name = git-branch-name
+</pre>
+Revisions with no author cert will use &lt;unknown&gt; for both the author
+and the committer. These can be mapped to other values using the
+<var>authors-file</var> option.
+
+     <p>The list of branches that might need to be mapped can be extracted
+from a monotone database with using the <samp><span class="command">ls branches</span></samp> command:
+<pre class="verbatim">     
+     $ mtn ls branches --ignore-suspend-certs
+</pre>
+
+     <p>The <samp><span class="option">--import-marks</span></samp> and <samp><span class="option">--export-marks</span></samp> options are
+similar to those documented in git-fast-export(1) and
+git-fast-import(1). These may be used for incremental exports and may
+also be useful for repository verification. The <var>marks-file</var> is
+read on startup if <samp><span class="option">--import-marks</span></samp> is specified and all marked
+revs are excluded from the export. The <var>marks-file</var> is written on
+completion if <samp><span class="option">--export-marks</span></samp> is specified and will contain
+marks for all revs that were exported in addition to any marks that
+were read on startup. It is safe to use the same file for both
+<samp><span class="option">--import-marks</span></samp> and <samp><span class="option">--export-marks</span></samp> but different
+files may also be used.
+
+     <p>The original monotone revision ids may be included in the exported git
+commit messages using the <samp><span class="option">--log-revids</span></samp> option. These will
+appear as:
+<pre class="verbatim">     
+     Monotone-Parent: ...
+     Monotone-Revision: ...
+</pre>
+in the git commit messages and may be useful for repository
+verification. Merge revisions with two parents will include two
+<code>Monotone-Parent</code> lines.
+
+     <p>The original monotone values for <code>author</code>, <code>date</code>,
+<code>branch</code> and <code>tag</code> certificates may be included in the
+exported git commit messages using the <samp><span class="option">--log-certs</span></samp>
+option. These will appear as:
+<pre class="verbatim">     
+     Monotone-Author: ...
+     Monotone-Date: ...
+     Monotone-Branch: ...
+     Monotone-Tag: ...
+</pre>
+in the git commit messages and may be useful for repository
+verification or maintaining information that is otherwise not
+maintained by git. In particular monotone may have several values for
+each of these certs and git only represents a single <code>author</code> and
+<code>date</code> value.
+
+     <p>By default, the values of all changelog and comment certs on a
+revision are concatenated to form the git commit message for that
+revision. The <samp><span class="option">--use-one-changelog</span></samp> option will prevent this
+behaviour and use the value from the first changelog cert
+encountered. <em>WARNING:</em> this will explicitly lose information in
+the exported data. Changelog certs have no implicit ordering, one will
+be selected arbitrarily to be used as the git commit message and all
+others will be excluded from the exported data. Additionally, all
+comment certs will be excluded from the exported data.
+
+     <p>References to the original monotone branches and tags are exported as
+<code>refs/tags/&lt;tag-name&gt;</code> and <code>refs/heads/&lt;branch-name&gt;</code>. In
+addition, references to the original monotone revision ids, the root
+revisions and the leaf revisions may be exported using
+<samp><span class="option">--refs=revs</span></samp>, <samp><span class="option">--refs=roots</span></samp> and <samp><span class="option">--refs=leaves</span></samp>
+respectively. These references are exported as
+<code>refs/mtn/revs/&lt;id&gt;</code>, <code>refs/mtn/roots/&lt;id&gt;</code> and
+<code>refs/mtn/leaves/&lt;id&gt;</code> and may be useful for repository
+verification. These additional references should probably not be
+maintained after the exported repository has been verified as they
+cause considerable clutter in tools like gitk.
 
 </dl>
 
@@ -7664,7 +7955,7 @@ such as generating email.
 are taken.
 
      <dl>
-<dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-206"></a><dd>
+<dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-211"></a><dd>
 Called by monotone after the version <var>new_id</var> is committed. The
 second parameter, <var>revision</var> is the text of the revision, what would
 be given by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. The third
@@ -7679,7 +7970,7 @@ hook is only intended as an aid for integrating monotone with informal
 commit-notification systems such as mailing lists or news services. It
 should not perform any security-critical operations.
 
-     <br><dt><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code><a name="index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-207"></a><dd><var>remote_host</var>, <var>remote_keyname</var>, <var>includes</var>, <var>excludes</var>)
+     <br><dt><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code><a name="index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-212"></a><dd><var>remote_host</var>, <var>remote_keyname</var>, <var>includes</var>, <var>excludes</var>)
 
      <p>Called by monotone before any other of the netsync notification hooks
 are called.  The <var>session_id</var> helps keep track of the current netsync
@@ -7710,7 +8001,7 @@ The include and exclude patterns used by the client.
 
      </dl>
 
-     <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-208"></a><dd>
+     <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-213"></a><dd>
 Called by monotone after the revision <var>new_id</var> is received through
 netsync. <var>revision</var> is the text of the revision, what would be given
 by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. <var>certs</var> is a
@@ -7722,12 +8013,12 @@ and the value of the cert. There is no default definition for this hook.
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-209"></a><dd>
+     <br><dt><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-214"></a><dd>
 Called by monotone after the revision <var>rev_id</var> is sent through
 netsync. The arguments are the same as for
 <var>note_netsync_revision_received</var>.
 
-     <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-210"></a><dd>
+     <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-215"></a><dd>
 Called by monotone after a cert is received through netsync, if the revision
 that the cert is attached to was not also received in the same netsync
 operation. <var>rev_id</var> is the revision id that the cert is attached to,
@@ -7738,24 +8029,24 @@ definition for this hook.
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-211"></a><dd>
+     <br><dt><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-216"></a><dd>
 Called by monotone after a cert is sent through netsync, if the revision
 that the cert is attached to was not also sent in the same netsync
 operation. The arguments are the same as for
 <var>note_netsync_cert_received</var>.
 
-     <br><dt><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-212"></a><dd>
+     <br><dt><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-217"></a><dd>
 Called by monotone after a pubkey is received through netsync. <var>keyname</var>
 is the name of the key received. There is no default definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_pubkey_sent (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-213"></a><dd>
+     <br><dt><code>note_netsync_pubkey_sent (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-218"></a><dd>
 Called by monotone after a pubkey is sent through netsync. The arguments are the same as for
 <var>note_netsync_pubkey_received</var>.
 
-     <br><dt><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>,</code><a name="index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-214"></a><dd><var>bytes_in</var>, <var>bytes_out</var>, <var>certs_in</var>, <var>certs_out</var>,
+     <br><dt><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>,</code><a name="index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-219"></a><dd><var>bytes_in</var>, <var>bytes_out</var>, <var>certs_in</var>, <var>certs_out</var>,
 <var>revs_in</var>, <var>revs_out</var>, <var>keys_in</var>, <var>keys_out</var>)
 
      <p>Called by monotone after all other the netsync notification hooks have
@@ -7803,7 +8094,7 @@ error, and 5xx means there was a protocol error. xx1 means some data may
 have been transferred, xx2 means no data was transferred, and xx0 means all
 data was transferred.
 
-     <br><dt><code>note_mtn_startup (...)</code><a name="index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-215"></a><dd>
+     <br><dt><code>note_mtn_startup (...)</code><a name="index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-220"></a><dd>
 Called by monotone when it is first started, this hook was added so that
 usage of monotone could be monitored for user interface testing.  Note
 that by default, no monitoring occurs.  The arguments to the hook
@@ -7828,7 +8119,7 @@ default values for a number of parameters the user might otherwise be
 prompted for.
 
      <dl>
-<dt><code>get_branch_key (</code><var>branchname</var><code>)</code><a name="index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-216"></a><dd>
+<dt><code>get_branch_key (</code><var>branchname</var><code>)</code><a name="index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-221"></a><dd>
 Returns a string which is the name of an <span class="sc">rsa</span> private key used to sign
 certificates in a particular branch <var>branchname</var>. There is no
 default definition for this hook. The command-line option
@@ -7838,7 +8129,7 @@ do not need to define this function or provide a
 <samp><span class="option">--key=</span><var>keyname</var></samp> option; monotone will guess that you want
 to use the unique private key.
 
-     <br><dt><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-217"></a><dd>
+     <br><dt><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-222"></a><dd>
 Returns a string which is the name of the key to use to authenticate
 the given netsync connection. When called by the <samp><span class="command">serve</span></samp> command,
 <var>server</var> is the address monotone is listening on, <var>include</var> is
@@ -7848,7 +8139,7 @@ the given netsync connection. When called by the <samp><span class="command">ser
 <samp><span class="option">--key=</span><var>keyname</var></samp> overrides any value returned from this
 hook function.
 
-     <br><dt><code>get_default_command_options(</code><var>command</var><code>)</code><a name="index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-218"></a><dd>
+     <br><dt><code>get_default_command_options(</code><var>command</var><code>)</code><a name="index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-223"></a><dd>
 Returns a table of program options, either valid for the given command or
 valid global options. The <var>command</var> argument is given as a table of command
 parts, i.e. for commands with subcommands like <samp><span class="command">automate</span></samp> or <samp><span class="command">db</span></samp>
@@ -7871,7 +8162,7 @@ by default:
               return default_options
           end
      </pre>
-     <br><dt><code>get_passphrase (</code><var>keypair_id</var><code>)</code><a name="index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-219"></a><dd>
+     <br><dt><code>get_passphrase (</code><var>keypair_id</var><code>)</code><a name="index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-224"></a><dd>
 Returns a string which is the passphrase used to encrypt the private
 half of <var>keypair_id</var> in your database, using the <span class="sc">arc4</span> symmetric
 cipher.  <var>keypair_id</var> is a Lua string containing the label that you
@@ -7880,7 +8171,7 @@ used when you created your key &mdash; something like
 this hook is not defined or returns false, monotone will prompt you for
 a passphrase each time it needs to use a private key.
 
-     <br><dt><code>get_author (</code><var>branchname</var><code>, </code><var>keypair_id</var><code>)</code><a name="index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkeypair_005fid_007d_0029-220"></a><dd>
+     <br><dt><code>get_author (</code><var>branchname</var><code>, </code><var>keypair_id</var><code>)</code><a name="index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkeypair_005fid_007d_0029-225"></a><dd>
 Returns a string which is used as a value for automatically generated
 <code>author</code> certificates when you commit changes to
 <var>branchname</var> with the keypair identity <var>keypair_id</var>.  Generally
@@ -7906,7 +8197,7 @@ definitions might be:
                   return keypair_id
           end
      </pre>
-     <br><dt><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code><a name="index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-221"></a><dd>
+     <br><dt><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code><a name="index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-226"></a><dd>
 Returns a log entry for a given set of changes, described in
 <var>commentary</var>.  The commentary is identical to the output of
 <samp><span class="command">mtn status</span></samp>. This hook is intended to interface with
@@ -7923,7 +8214,7 @@ the system up for another edit/commit cycle.
 
      <p>For the default definition of this hook, see <a href="#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>persist_phrase_ok ()</code><a name="index-persist_005fphrase_005fok-_0028_0029-222"></a><dd>
+     <br><dt><code>persist_phrase_ok ()</code><a name="index-persist_005fphrase_005fok-_0028_0029-227"></a><dd>
 Returns <code>true</code> if you want monotone to remember the passphrase of
 a private key for the duration of a single command, or <code>false</code> if
 you want monotone to prompt you for a passphrase for each certificate
@@ -7936,7 +8227,7 @@ probably want this hook to return <code>true</code>.
                   return true
           end
      </pre>
-     <br><dt><code>use_inodeprints ()</code><a name="index-use_005finodeprints-_0028_0029-223"></a><dd>
+     <br><dt><code>use_inodeprints ()</code><a name="index-use_005finodeprints-_0028_0029-228"></a><dd>
 Returns <code>true</code> if you want monotone to automatically enable
 <a href="#Inodeprints">Inodeprints</a> support in all workspaces.  Only affects working
 copies created after you modify the hook.
@@ -7946,7 +8237,7 @@ copies created after you modify the hook.
                   return false
           end
      </pre>
-     <br><dt><code>ignore_file (</code><var>filename</var><code>)</code><a name="index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-224"></a><dd>
+     <br><dt><code>ignore_file (</code><var>filename</var><code>)</code><a name="index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-229"></a><dd>
 Returns <code>true</code> if <var>filename</var> should be ignored while adding,
 dropping, or moving files. Otherwise returns <code>false</code>. This is
 most important when performing recursive actions on directories, which
@@ -7959,7 +8250,7 @@ this hook will read a list of regular expressions from the file, one per
 line, and ignore all files matching one of these expressions. For the
 default definition of this hook, see <a href="#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>ignore_branch (</code><var>branchname</var><code>)</code><a name="index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-225"></a><dd>
+     <br><dt><code>ignore_branch (</code><var>branchname</var><code>)</code><a name="index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-230"></a><dd>
 Returns <code>true</code> if <var>branchname</var> should be ignored while listing
 branches. Otherwise returns <code>false</code>. This hook has no default
 definition, therefore the default behavior is to list all branches.
@@ -7976,7 +8267,7 @@ order to reload the hook definitions if the <samp><span class="file">montonerc</
 changed.
 
      <dl>
-<dt><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-226"></a><dd>
+<dt><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-231"></a><dd>
 Returns <code>true</code> if a peer authenticated as key <var>identity</var>
 should be allowed to read from your database certs, revisions,
 manifests, and files associated with <var>branch</var>; otherwise <code>false</code>. 
@@ -8018,7 +8309,7 @@ keys in your database to have the same ID. Make sure you confirm the
 key fingerprints of each key in your database, as key ID strings are
 &ldquo;convenience names&rdquo;, not security tokens.
 
-     <br><dt><code>get_netsync_write_permitted (</code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bidentity_007d_0029-227"></a><dd>
+     <br><dt><code>get_netsync_write_permitted (</code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bidentity_007d_0029-232"></a><dd>
 Returns <code>true</code> if a peer authenticated as key <var>identity</var> should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise <code>false</code>. The default definition of this hook reads a file
@@ -8057,7 +8348,7 @@ host argument as a network name (possibly with a port number) and open
 a TCP socket.
 
      <dl>
-<dt><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code><a name="index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-228"></a><dd>
+<dt><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code><a name="index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-233"></a><dd>
 Returns a table describing a command to run to connect to the
 specified host. The <var>uri</var> argument is a table containing
 between 0 and 7 components:
@@ -8136,7 +8427,7 @@ components:
                   return argv
           end
      </pre>
-     <br><dt><code>use_transport_auth (</code><var>uri</var><code>)</code><a name="index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-229"></a><dd>
+     <br><dt><code>use_transport_auth (</code><var>uri</var><code>)</code><a name="index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-234"></a><dd>
 Returns a boolean indicating whether monotone should use transport
 authentication mechanisms when communicating with <var>uri</var>. If this
 hook fails, the return value is assumed to be <code>true</code>. The form of
@@ -8162,7 +8453,7 @@ authentication assumptions.
                   end
           end
      </pre>
-     <br><dt><code>get_mtn_command(</code><var>host</var><code>)</code><a name="index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-230"></a><dd>
+     <br><dt><code>get_mtn_command(</code><var>host</var><code>)</code><a name="index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-235"></a><dd>
 Returns a string containing the monotone command to be executed on
 <var>host</var> when communicating over <samp><span class="command">ssh</span></samp>.  The <var>host</var>
 argument is a string containing the name of the host to which
@@ -8194,7 +8485,7 @@ implementation of these hooks, and thus a different filtered view of
 valid revisions, according to their own preferences and purposes.
 
      <dl>
-<dt><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code><a name="index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-231"></a><dd>
+<dt><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code><a name="index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-236"></a><dd>
 Returns whether or not you <em>trust</em> the assertion
 <var>name</var>=<var>value</var> on a given revision <var>id</var>, given a valid
 signature from all the keys in <var>signers</var>. The <var>signers</var>
@@ -8240,7 +8531,7 @@ by at least one of three &ldquo;trusted&rdquo; keys, unless it is an
 the revision has been approved by an extra &ldquo;reviewer&rdquo; who used the
 <samp><span class="command">approve</span></samp> command.
 
-     <br><dt><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code><a name="index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-232"></a><dd>
+     <br><dt><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code><a name="index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-237"></a><dd>
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is
 acceptable. The hook is called with two tables, each of which maps a
@@ -8278,7 +8569,7 @@ according to user preference and file type. These hooks allow
 customisation of the way file differences are shown.
 
      <dl>
-<dt><code>get_encloser_pattern (</code><var>file_path</var><code>)</code><a name="index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-233"></a><dd>
+<dt><code>get_encloser_pattern (</code><var>file_path</var><code>)</code><a name="index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-238"></a><dd>
 Called for each file unless <samp><span class="command">diff</span></samp> is given the
 <samp><span class="option">--no-show-encloser</span></samp> option (or the
 <samp><span class="option">--external</span></samp> option).  <var>file_path</var> is the pathname of the
@@ -8294,7 +8585,7 @@ hook; and if you send it to the monotone developers, we will likely
 make it the default for that language.  See <a href="#Regexps">Regexps</a>, for the
 regular expression syntax.
 
-     <br><dt><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code><a name="index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-234"></a><dd>
+     <br><dt><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code><a name="index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-239"></a><dd>
 Called for each file when <samp><span class="command">diff</span></samp> is given the
 <samp><span class="option">--external</span></samp> option.  <var>file_path</var> is the pathname of the
 file that is being diffed.  <var>old_data</var> and <var>new_data</var> are the
@@ -8328,7 +8619,7 @@ you have a tool specific to certain file types.
 
      <dl>
 <a name="merge3"></a>
-<dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-235"></a><dd>
+<dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-240"></a><dd>
 This hook is called to resolve merges that monotone could not resolve
 automatically.  The actual ancestor, left, and right contents of the
 file are passed in the <var>ancestor_text</var>, <var>left_text</var>, and
@@ -8351,7 +8642,7 @@ and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in <a href="#Default-hooks">Default hooks</a>.
 
      <p><a name="get_005fpreferred_005fmerge3_005fcommand"></a>
-<br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-236"></a><dd>
+<br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-241"></a><dd>
 Returns the results of running an external merge on three strings. 
 <var>tbl</var> wraps up the various arguments for each merge command and
 is always provided by <a href="#merge3">merge3</a>. If there is a particular editor
@@ -8371,7 +8662,7 @@ expand them to their full form.
    <p>For more detail on the use of selectors, see <a href="#Selectors">Selectors</a>.
 
      <dl>
-<dt><code>expand_selector (</code><var>str</var><code>)</code><a name="index-expand_005fselector-_0028_0040var_007bstr_007d_0029-237"></a><dd>
+<dt><code>expand_selector (</code><var>str</var><code>)</code><a name="index-expand_005fselector-_0028_0040var_007bstr_007d_0029-242"></a><dd>
 Attempts to expand <var>str</var> as a selector. Expansion generally means
 providing a type prefix for the selector, such as <code>a:</code> for authors
 or <code>d:</code> for dates. This hook is called once for each element of a
@@ -8379,7 +8670,7 @@ combined selector string (between <code>/</code> separators) prior to
 evaluation of the selector. For the default definition of this hook, see
 <a href="#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>expand_date (</code><var>str</var><code>)</code><a name="index-expand_005fdate-_0028_0040var_007bstr_007d_0029-238"></a><dd>
+     <br><dt><code>expand_date (</code><var>str</var><code>)</code><a name="index-expand_005fdate-_0028_0040var_007bstr_007d_0029-243"></a><dd>
 Attempts to expand <var>str</var> as a date expression. Expansion means
 recognizing and interpreting special words such as <code>yesterday</code> or
 <code>6 months ago</code> and converting them into well formed date
@@ -8395,22 +8686,31 @@ merged &ndash; see <a href="#Merging">Merging</a>), or they may represent execut
 or programs.
 
    <p>Monotone allows each file (or directory) in a repository to carry
-arbitrary <a href="#File-Attributes">File Attributes</a>.  Persistent attributes are stored
+arbitrary <a href="#File-Attributes">File Attributes</a>.  Persistent attributes are stored in
 each revision's manifest. The hooks in this section allow files to be
 automatically recognised as having certain attributes at the time
 they're added, and for custom triggers to be invoked on each file
 according to its attributes when the workspace is changed.
 
      <dl>
-<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-239"></a><dd>
+<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-244"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_functions</code>, at table
 entry <var>attribute</var>, is a function taking a file name <var>filename</var>
-and a attribute value <var>value</var>. The function should &ldquo;apply&rdquo; the
-attribute to the file, possibly in a platform-specific way.
+and an attribute value <var>value</var>. The function should &ldquo;apply&rdquo; the
+attribute to the file, possibly in a platform-specific way.  When
+called to set an attribute the value this hook receives will be a
+string representing the value of the attribute. When called to clear
+an attribute the value this hook receives will be <code>nil</code>.
 
-     <p>Hook functions from this table are called for each existing attr,
-after any command which modifies the workspace. This facility can
+     <p>Hook functions from this table are called for each existing attribute,
+after any command which modifies the workspace. These functions are
+also called during creation and modification of a workspace by the
+<samp><span class="command">update</span></samp>, <samp><span class="command">merge_into_workspace</span></samp>, <samp><span class="command">pluck</span></samp>,
+<samp><span class="command">clone</span></samp> and <samp><span class="command">checkout</span></samp> commands to set or clear
+attributes as they change.
+
+     <p>This facility can
 be used to extend monotone's understanding of files with
 platform-specific attributes, such as permission bits, access control
 lists, or special file types.
@@ -8420,12 +8720,14 @@ attribute. Its definition is:
 
      <pre class="smallexample">          attr_functions["mtn:execute"] =
             function(filename, value)
-                  if (value == "true") then
-                   make_executable(filename)
+                if (value == "true") then
+                   set_executable(filename)
+                else
+                   clear_executable(filename)
                 end
              end
      </pre>
-     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-240"></a><dd>
+     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-245"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_init_functions</code>, at
 table entry <var>attribute</var>, is a function taking a file (or
@@ -8465,7 +8767,7 @@ definition is:
 allow a client to validate or reject certain behaviors.
 
      <dl>
-<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-241"></a><dd>
+<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-246"></a><dd>
 This hook is called after the user has entered his/her commit message. 
 <var>message</var> is the commit message that the user has entered and
 <var>revision_text</var> is the full text of the changes for this revision,
@@ -8485,7 +8787,7 @@ rejects empty log messages.
 special generalized "meta hook". See <samp><span class="command">automate lua</span></samp> for more information.
 
      <dl>
-<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-242"></a><dd>
+<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-247"></a><dd>
 This hook is explicitely called on every execution of <samp><span class="command">automate lua</span></samp>. 
 It takes a function name and zero or more string function arguments which are
 internally evaluated into Lua code. It returns a dump of the return value of
@@ -8501,11 +8803,11 @@ the called function in Lua code on success.
 hook writers.
 
      <dl>
-<dt><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code><a name="index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-243"></a><dd>
+<dt><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code><a name="index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-248"></a><dd>
 This function adds a new alias for a monotone command.  A call to this function would
 normally be placed directly in the <samp><span class="file">monotonerc</span></samp> file, rather than in a hook function.
 
-     <br><dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-244"></a><dd>
+     <br><dt><code>existonpath(</code><var>possible_command</var><code>)</code><a name="index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-249"></a><dd>
 This function receives a string containing the name of an external
 program and returns 0 if it exists on path and is executable, -1
 otherwise. 
@@ -8515,56 +8817,56 @@ On Windows, this function automatically appends &ldquo;.exe&rdquo; to the
 program name. In the previous example, <code>existonpath</code> would search
 for &ldquo;xxdiff.exe&rdquo;.
 
-     <br><dt><code>get_confdir()</code><a name="index-get_005fconfdir_0028_0029-245"></a><dd>
+     <br><dt><code>get_confdir()</code><a name="index-get_005fconfdir_0028_0029-250"></a><dd>
 Returns the path to the configuration directory, either implied or given
 with <samp><span class="option">--confdir</span></samp>.
 
-     <br><dt><code>get_ostype()</code><a name="index-get_005fostype_0028_0029-246"></a><dd>
+     <br><dt><code>get_ostype()</code><a name="index-get_005fostype_0028_0029-251"></a><dd>
 Returns the operating system flavor as a string.
 
-     <br><dt><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-247"></a><dd>
+     <br><dt><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code><a name="index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-252"></a><dd>
 Returns true if the file appears to be binary, i.e. contains one or
 more of the following characters:
      <pre class="smallexample">          0x00 thru 0x06
           0x0E thru 0x1a
           0x1c thru 0x1f
      </pre>
-     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-248"></a><dd>
+     <br><dt><code>include(</code><var>scriptfile</var><code>)</code><a name="index-include_0028_0040var_007bscriptfile_007d_0029-253"></a><dd>
 This function tries to load and execute the script contained into
 scriptfile.  It returns true for success and false if there is an
 error.
 
-     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-249"></a><dd>
+     <br><dt><code>includedir(</code><var>scriptpath</var><code>)</code><a name="index-includedir_0028_0040var_007bscriptpath_007d_0029-254"></a><dd>
 This function loads and executes in alphabetical order all the scripts
 contained into the directory scriptpath. 
 If one of the scripts has an error, the functions doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-250"></a><dd>
+     <br><dt><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code><a name="index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-255"></a><dd>
 This function loads and executes in alphabetical order all the scripts
 contained into the directory scriptpath that match the given pattern. 
 If one of the scripts has an error, the functions doesn't process the
 remaining scripts and immediately returns false.
 
-     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-251"></a><dd>
+     <br><dt><code>is_executable(</code><var>filespec</var><code>)</code><a name="index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-256"></a><dd>
 This function returns true if the file is executable, false
 otherwise.  On Windows this function returns always false.
 
-     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-252"></a><dd>
+     <br><dt><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code><a name="index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-257"></a><dd>
 This function calls the kill() C library function on POSIX systems and
 TerminateProcess on Win32 (in that case <var>pid</var> is the process
 handle).  If the optional <var>signal</var> parameter is missing, SIGTERM
 will be used. 
 Returns 0 on success, -1 on error.
 
-     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-253"></a><dd>
+     <br><dt><code>make_executable(</code><var>filespec</var><code>)</code><a name="index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-258"></a><dd>
 This function marks the named file as executable.  On Windows has no
 effect.
 
-     <br><dt><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code><a name="index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-254"></a><dd>
+     <br><dt><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code><a name="index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-259"></a><dd>
 Returns true if <var>glob</var> matches <var>str</var>, return false otherwise.
 
-     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-255"></a><dd>
+     <br><dt><code>mkstemp(</code><var>template</var><code>)</code><a name="index-mkstemp_0028_0040var_007btemplate_007d_0029-260"></a><dd>
 Like its C library counterpart,  mkstemp creates a unique name and
 returns a file descriptor for the newly created file. 
 The value of template should be a pointer to a character buffer loaded
@@ -8586,7 +8888,7 @@ option.  <code>temp_file()</code> builds on <code>mkstemp()</code> and creates a
 file in the standard TMP/TEMP directories. 
 For the definition of <code>temp_file()</code>, see <a href="#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>mtn_automate( ... )</code><a name="index-mtn_005fautomate_0028-_002e_002e_002e-_0029-256"></a><dd>
+     <br><dt><code>mtn_automate( ... )</code><a name="index-mtn_005fautomate_0028-_002e_002e_002e-_0029-261"></a><dd>
 The <code>mtn_automate</code> Lua function calls the Monotone
 <samp><span class="command">automate</span></samp> command passed in its arguments. The result of the
 call is a pair consisting of a boolean return code, indicating whether
@@ -8595,7 +8897,7 @@ output from the <samp><span class="command">automate</span></samp> command. This
 in ordinary Lua hooks, but rather for Lua based commands as defined by
 the Lua function <code>register_command</code>.
 
-     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-257"></a><dd>
+     <br><dt><code>parse_basic_io(</code><var>data</var><code>)</code><a name="index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-262"></a><dd>
 Parse the string <var>data</var>, which should be in basic_io format. It returns nil
 if it can't parse the string; otherwise it returns a table. This will be a list
 of all statements, with each entry being a table having a "name" element that is
@@ -8617,17 +8919,17 @@ the arguments.
              4 = { name = "frob", values = { 1 = "oops" } }
           }
      </pre>
-     <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-258"></a><dd>
+     <br><dt><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code><a name="index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-263"></a><dd>
 Returns true if a match for <var>regexp</var> is found in <var>str</var>, return
 false otherwise.  See <a href="#Regexps">Regexps</a>, for the syntax of <var>regexp</var>.
 
-     <br><dt><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code><a name="index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-259"></a><dd>
+     <br><dt><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code><a name="index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-264"></a><dd>
 Add a command named <var>name</var> to the <var>user</var> command group in monotone.  This function is
 normally called directly from a <samp><span class="file">monotonerc</span></samp> file rather than a hook.  When the user issues the
 registered command, monotone will call the lua <var>function</var> name supplied.  That function would
 then normally use mtn_automate() calls to service the request.
 
-     <br><dt><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-260"></a><dd>
+     <br><dt><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-265"></a><dd>
 Initiate a netsync connection to the server at <var>address</var>, with the
 given include and exclude patterns, of type <samp><span class="option">sync</span></samp>, <samp><span class="option">push</span></samp>,
 or <samp><span class="option">pull</span></samp>, as given by the <var>what</var> argument.
@@ -8635,10 +8937,10 @@ or <samp><span class="option">pull</span></samp>, as given by the <var>what</var
      <p>When called by a monotone instance which is not running the <samp><span class="option">serve</span></samp>
 command, this function has no effect.
 
-     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-261"></a><dd>
+     <br><dt><code>sleep(</code><var>seconds</var><code>)</code><a name="index-sleep_0028_0040var_007bseconds_007d_0029-266"></a><dd>
 Makes the calling process sleep for the specified number of seconds.
 
-     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-262"></a><dd>
+     <br><dt><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-267"></a><dd>
 Starts the named executable with the given arguments.  Returns the
 process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error. 
@@ -8650,17 +8952,17 @@ function, unless you need to run monotone with the <samp><span class="option">--
 option.  <code>execute()</code> builds on <code>spawn()</code> and <code>wait()</code>
 in a standardized way.
 
-     <br><dt><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-263"></a><dd>
+     <br><dt><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-268"></a><dd>
 Like spawn(), but returns three values, where the first two are the
 subprocess' standard input and standard output, and the last is the
 process PID on POSIX systems, the process handle on Win32 or -1 if
 there was an error.
 
-     <br><dt><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-264"></a><dd>
+     <br><dt><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code><a name="index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-269"></a><dd>
 Like spawn(), but with standard input, standard output and standard
 error redirected to the given files.
 
-     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-265"></a><dd>
+     <br><dt><code>wait(</code><var>pid</var><code>)</code><a name="index-wait_0028_0040var_007bpid_007d_0029-270"></a><dd>
 Wait until the process with given PID (process handle on Win32) exits. 
 Returns two values: a result value and the exit code of the waited-for
 process. 
@@ -12534,7 +12836,15 @@ that is built in to the monotone executable, and read before any user
 hooks files (unless <samp><span class="option">--nostd</span></samp> is passed).  It contains the
 default values for all hooks.
 
-<pre class="verbatim">
+<pre class="verbatim">-- Copyright (C) 2003 Graydon Hoare &lt;graydon@pobox.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
+
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
 
@@ -12624,7 +12934,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 
@@ -12681,9 +12993,11 @@ function ignore_file(name)
                        .. name .. "':\n")
            warn_reported_file = true
         end
-            io.stderr:write(".mtn-ignore:" .. i .. ": warning: " .. result
-                    .. "\n\t- skipping this regex for "
-                .. "all remaining files.\n")
+        local prefix = ".mtn-ignore:" .. i .. ": warning: "
+            io.stderr:write(prefix
+                            .. string.gsub(result, "\n", "\n" .. prefix)
+                               .. "\n\t- skipping this regex for "
+                               .. "all remaining files.\n")
             ignored_files[i] = nil
          end
       end
@@ -12803,21 +13117,21 @@ end
 
 function edit_comment(basetext, user_log_message)
    local exe = nil
-   if (program_exists_in_path("vi")) then exe = "vi" end
-   if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
-   local debian_editor = io.open("/usr/bin/editor")
-   if (debian_editor ~= nil) then
-      debian_editor:close()
-      exe = "/usr/bin/editor"
-   end
-   local visual = os.getenv("VISUAL")
-   if (visual ~= nil) then exe = visual end
-   local editor = os.getenv("EDITOR")
-   if (editor ~= nil) then exe = editor end
 
-   if (exe == nil) then
-      io.write("Could not find editor to enter commit message\n"
-               .. "Try setting the environment variable EDITOR\n")
+   -- top priority is VISUAL, then EDITOR, then a series of hardcoded
+   -- defaults, if available.
+
+   local visual = os.getenv("VISUAL")
+   local editor = os.getenv("EDITOR")
+   if (visual ~= nil) then exe = visual
+   elseif (editor ~= nil) then exe = editor
+   elseif (program_exists_in_path("editor")) then exe = "editor"
+   elseif (program_exists_in_path("vi")) then exe = "vi"
+   elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
+	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+   else
+      io.write(gettext("Could not find editor to enter commit message\n"
+		       .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
@@ -12831,11 +13145,44 @@ function edit_comment(basetext, user_log_message)
    tmp:write(basetext)
    io.close(tmp)
 
-   if (execute(exe, tname) ~= 0) then
-      io.write(string.format(gettext("Error running editor '%s' to enter log message\n"),
-                             exe))
-      os.remove(tname)
-      return nil
+   -- By historical convention, VISUAL and EDITOR can contain arguments
+   -- (and, in fact, arbitrarily complicated shell constructs).  Since Lua
+   -- has no word-splitting functionality, we invoke the shell to deal with
+   -- anything more complicated than a single word with no metacharacters.
+   -- This, unfortunately, means we have to quote the file argument.
+
+   if (not string.find(exe, "[^%w_.+-]")) then
+      -- safe to call spawn directly
+      if (execute(exe, tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
+   else
+      -- must use shell
+      local shell = os.getenv("SHELL")
+      if (shell == nil) then shell = "sh" end
+      if (not program_exists_in_path(shell)) then
+	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+					"but '%s' is not to be found"),
+			        exe, shell))
+	 os.remove(tname)
+	 return nil
+      end
+
+      -- Single-quoted strings in both Bourne shell and csh can contain
+      -- anything but a single quote.
+      local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
+
+      if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
    end
 
    tmp = io.open(tname, "r")
@@ -13775,12 +14122,12 @@ do
       local s = "continue"
       local v = nil
       for _,n in pairs(hook_functions) do
-     if n[f] then
-        s,v = n[f](...)
-     end
-     if s ~= "continue" then
-        break
-     end
+         if n[f] then
+            s,v = n[f](...)
+         end
+         if s ~= "continue" then
+            break
+         end
       end
       return v
    end
@@ -13814,38 +14161,38 @@ do
 
    function add_hook_functions(functions, precedence)
       if type(functions) ~= "table" or type(precedence) ~= "number" then
-     return false, "Invalid type"
+         return false, "Invalid type"
       end
       if hook_functions[precedence] then
-     return false, "Precedence already taken"
+         return false, "Precedence already taken"
       end
 
       local unknown_items = ""
       local warning = nil
       local is_member =
-     function (s,t)
-        for k,v in pairs(t) do if s == v then return true end end
-        return false
-     end
+         function (s,t)
+            for k,v in pairs(t) do if s == v then return true end end
+            return false
+         end
 
       for n,f in pairs(functions) do
-     if type(n) == "string" then
-        if not is_member(n, supported_items) then
-           if unknown_items ~= "" then
-          unknown_items = unknown_items .. ","
-           end
-           unknown_items = unknown_items .. n
-        end
-        if type(f) ~= "function" then
-           return false, "Value for functions item "..n.." isn't a function"
-        end
-     else
-        warning = "Non-string item keys found in functions table"
-     end
+         if type(n) == "string" then
+            if not is_member(n, supported_items) then
+               if unknown_items ~= "" then
+                  unknown_items = unknown_items .. ","
+               end
+               unknown_items = unknown_items .. n
+            end
+            if type(f) ~= "function" then
+               return false, "Value for functions item "..n.." isn't a function"
+            end
+         else
+            warning = "Non-string item keys found in functions table"
+         end
       end
 
       if warning == nil and unknown_items ~= "" then
-     warning = "Unknown item(s) " .. unknown_items .. " in functions table"
+         warning = "Unknown item(s) " .. unknown_items .. " in functions table"
       end
 
       hook_functions[precedence] = functions
@@ -13870,44 +14217,44 @@ end
 <h2 class="unnumbered">General Index</h2>
 
 <ul class="index-cp" compact>
-<li><a href="#index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-232"><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-243"><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-239"><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-240"><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-237"><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-alias_005fcommand_0028_0040var_007boriginal_007d_002c-_0040var_007balias_007d_0029-248"><code>alias_command(</code><var>original</var><code>, </code><var>alias</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-244"><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-245"><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-drop-25"><code>drop</code></a>: <a href="#Conflicts">Conflicts</a></li>
-<li><a href="#index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-221"><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-244"><code>existonpath(</code><var>possible_command</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-expand_005fdate-_0028_0040var_007bstr_007d_0029-238"><code>expand_date (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-expand_005fselector-_0028_0040var_007bstr_007d_0029-237"><code>expand_selector (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-234"><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkeypair_005fid_007d_0029-220"><code>get_author (</code><var>branchname</var><code>, </code><var>keypair_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-216"><code>get_branch_key (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fconfdir_0028_0029-245"><code>get_confdir()</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-218"><code>get_default_command_options(</code><var>command</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-233"><code>get_encloser_pattern (</code><var>file_path</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-230"><code>get_mtn_command(</code><var>host</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-228"><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-217"><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-226"><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bidentity_007d_0029-227"><code>get_netsync_write_permitted (</code><var>identity</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fostype_0028_0029-246"><code>get_ostype()</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-219"><code>get_passphrase (</code><var>keypair_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-236"><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-231"><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-247"><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-242"><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-225"><code>ignore_branch (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-224"><code>ignore_file (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-include_0028_0040var_007bscriptfile_007d_0029-248"><code>include(</code><var>scriptfile</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-includedir_0028_0040var_007bscriptpath_007d_0029-249"><code>includedir(</code><var>scriptpath</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-250"><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-226"><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-existonpath_0028_0040var_007bpossible_005fcommand_007d_0029-249"><code>existonpath(</code><var>possible_command</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-expand_005fdate-_0028_0040var_007bstr_007d_0029-243"><code>expand_date (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-expand_005fselector-_0028_0040var_007bstr_007d_0029-242"><code>expand_selector (</code><var>str</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-239"><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkeypair_005fid_007d_0029-225"><code>get_author (</code><var>branchname</var><code>, </code><var>keypair_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-221"><code>get_branch_key (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fconfdir_0028_0029-250"><code>get_confdir()</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-223"><code>get_default_command_options(</code><var>command</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-238"><code>get_encloser_pattern (</code><var>file_path</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-235"><code>get_mtn_command(</code><var>host</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-233"><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-222"><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-231"><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bidentity_007d_0029-232"><code>get_netsync_write_permitted (</code><var>identity</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fostype_0028_0029-251"><code>get_ostype()</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-224"><code>get_passphrase (</code><var>keypair_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-241"><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-236"><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-guess_005fbinary_005ffile_005fcontents_0028_0040var_007bfilespec_007d_0029-252"><code>guess_binary_file_contents(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-247"><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-230"><code>ignore_branch (</code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-229"><code>ignore_file (</code><var>filename</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-include_0028_0040var_007bscriptfile_007d_0029-253"><code>include(</code><var>scriptfile</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-includedir_0028_0040var_007bscriptpath_007d_0029-254"><code>includedir(</code><var>scriptpath</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-includedirpattern_0028_0040var_007bscriptpath_007d_002c-_0040var_007bpattern_007d_0029-255"><code>includedirpattern(</code><var>scriptpath</var><code>, </code><var>pattern</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-interactive-_0040var_007bfile_007d-23"><code>interactive </code><var>file</var></a>: <a href="#Conflicts">Conflicts</a></li>
-<li><a href="#index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-251"><code>is_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-252"><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-253"><code>make_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-254"><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-235"><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-mkstemp_0028_0040var_007btemplate_007d_0029-255"><code>mkstemp(</code><var>template</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-is_005fexecutable_0028_0040var_007bfilespec_007d_0029-256"><code>is_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-kill_0028_0040var_007bpid_007d-_005b_002c-_0040var_007bsignal_007d_005d_0029-257"><code>kill(</code><var>pid</var><code> [, </code><var>signal</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-make_005fexecutable_0028_0040var_007bfilespec_007d_0029-258"><code>make_executable(</code><var>filespec</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-match_0028_0040var_007bglob_007d_002c-_0040var_007bstring_007d_0029-259"><code>match(</code><var>glob</var><code>, </code><var>string</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-240"><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-mkstemp_0028_0040var_007btemplate_007d_0029-260"><code>mkstemp(</code><var>template</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-mtn-_002d_002dbranch_003d_0040var_007bbranchname_007d-checkout-_0040var_007bdirectory_007d-5"><code>mtn --branch=</code><var>branchname</var><code> checkout </code><var>directory</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-_002d_002dbranch_003d_0040var_007bbranchname_007d-co-_0040var_007bdirectory_007d-6"><code>mtn --branch=</code><var>branchname</var><code> co </code><var>directory</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-_005b_002d_002dbookkeep_002donly_005d-drop-_0040var_007bpathname_002e_002e_002e_007d-32"><code>mtn [--bookkeep-only] drop </code><var>pathname...</var></a>: <a href="#Workspace">Workspace</a></li>
@@ -13924,55 +14271,56 @@ end
 <li><a href="#index-mtn-automate-ancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-155"><code>mtn automate ancestors </code><var>rev1</var><code> [</code><var>rev2</var><code> [...]]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-ancestry_005fdifference-_0040var_007bnew_007d-_005b_0040var_007bold1_007d-_005b_0040var_007bold2_007d-_005b_002e_002e_002e_005d_005d_005d-163"><code>mtn automate ancestry_difference </code><var>new</var><code> [</code><var>old1</var><code> [</code><var>old2</var><code> [...]]]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-branches-166"><code>mtn automate branches</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-199"><code>mtn automate cert </code><var>revision</var> <var>name</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-cert-_0040var_007brevision_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-200"><code>mtn automate cert </code><var>revision</var> <var>name</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-certs-_0040var_007bid_007d-171"><code>mtn automate certs </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-children-_0040var_007brev_007d-159"><code>mtn automate children </code><var>rev</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-common_005fancestors-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-156"><code>mtn automate common_ancestors </code><var>rev1</var><code> [</code><var>rev2</var><code> [...]]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-182"><code>mtn automate content_diff [--revision=</code><var>id1</var><code> [--revision=</code><var>id2</var><code>]] [</code><var>files</var><code> ...]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-content_005fdiff-_005b_002d_002drevision_003d_0040var_007bid1_007d-_005b_002d_002drevision_003d_0040var_007bid2_007d_005d_005d-_005b_0040var_007bfiles_007d-_002e_002e_002e_005d-183"><code>mtn automate content_diff [--revision=</code><var>id1</var><code> [--revision=</code><var>id2</var><code>]] [</code><var>files</var><code> ...]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-descendents-_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d-158"><code>mtn automate descendents </code><var>rev1</var><code> [</code><var>rev2</var><code> [...]]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-181"><code>mtn automate drop_attribute </code><var>path</var><code> [</code><var>key</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-196"><code>mtn automate drop_db_variables </code><var>domain</var><code> [</code><var>name</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-drop_005fattribute-_0040var_007bpath_007d-_005b_0040var_007bkey_007d_005d-182"><code>mtn automate drop_attribute </code><var>path</var><code> [</code><var>key</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-drop_005fdb_005fvariables-_0040var_007bdomain_007d-_005b_0040var_007bname_007d_005d-197"><code>mtn automate drop_db_variables </code><var>domain</var><code> [</code><var>name</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-erase_005fancestors-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-161"><code>mtn automate erase_ancestors [</code><var>rev1</var><code> [</code><var>rev2</var><code> [...]]]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-185"><code>mtn automate file_merge </code><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-179"><code>mtn automate get_attributes </code><var>path</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fbase_005frevision_005fid-175"><code>mtn automate get_base_revision_id</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-192"><code>mtn automate get_content_changed </code><var>id</var> <var>file</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-193"><code>mtn automate get_corresponding_path </code><var>source_id</var> <var>file</var> <var>target_id</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-174"><code>mtn automate get_current_revision [--exclude </code><var>excl</var><code>] [--depth=</code><var>depth</var><code>] [</code><var>path</var><code> ...]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fcurrent_005frevision_005fid-176"><code>mtn automate get_current_revision_id</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-194"><code>mtn automate get_db_variables [</code><var>domain</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005ffile-_0040var_007bid_007d-183"><code>mtn automate get_file </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-184"><code>mtn automate get_file_of </code><var>filename</var><code> [--revision=</code><var>id</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fmanifest_005fof-177"><code>mtn automate get_manifest_of</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-178"><code>mtn automate get_manifest_of </code><var>revid</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005foption-_0040var_007boption_007d-186"><code>mtn automate get_option </code><var>option</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005frevision-_0040var_007bid_007d-173"><code>mtn automate get_revision </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-get_005fworkspace_005froot-201"><code>mtn automate get_workspace_root</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-file_005fmerge-_0040var_007bleft_002drid_007d-_0040var_007bleft_002dpath_007d-_0040var_007bright_002drid_007d-_0040var_007bright_002dpath_007d-186"><code>mtn automate file_merge </code><var>left-rid</var> <var>left-path</var> <var>right-rid</var> <var>right-path</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-genkey-_0040var_007bname_007d-_0040var_007bpassphrase_007d-173"><code>mtn automate genkey </code><var>name</var> <var>passphrase</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fattributes-_0040var_007bpath_007d-180"><code>mtn automate get_attributes </code><var>path</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fbase_005frevision_005fid-176"><code>mtn automate get_base_revision_id</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fcontent_005fchanged-_0040var_007bid_007d-_0040var_007bfile_007d-193"><code>mtn automate get_content_changed </code><var>id</var> <var>file</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fcorresponding_005fpath-_0040var_007bsource_005fid_007d-_0040var_007bfile_007d-_0040var_007btarget_005fid_007d-194"><code>mtn automate get_corresponding_path </code><var>source_id</var> <var>file</var> <var>target_id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fcurrent_005frevision-_005b_002d_002dexclude-_0040var_007bexcl_007d_005d-_005b_002d_002ddepth_003d_0040var_007bdepth_007d_005d-_005b_0040var_007bpath_007d-_002e_002e_002e_005d-175"><code>mtn automate get_current_revision [--exclude </code><var>excl</var><code>] [--depth=</code><var>depth</var><code>] [</code><var>path</var><code> ...]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fcurrent_005frevision_005fid-177"><code>mtn automate get_current_revision_id</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fdb_005fvariables-_005b_0040var_007bdomain_007d_005d-195"><code>mtn automate get_db_variables [</code><var>domain</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005ffile-_0040var_007bid_007d-184"><code>mtn automate get_file </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005ffile_005fof-_0040var_007bfilename_007d-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-185"><code>mtn automate get_file_of </code><var>filename</var><code> [--revision=</code><var>id</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fmanifest_005fof-178"><code>mtn automate get_manifest_of</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fmanifest_005fof-_0040var_007brevid_007d-179"><code>mtn automate get_manifest_of </code><var>revid</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005foption-_0040var_007boption_007d-187"><code>mtn automate get_option </code><var>option</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005frevision-_0040var_007bid_007d-174"><code>mtn automate get_revision </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-get_005fworkspace_005froot-202"><code>mtn automate get_workspace_root</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-graph-160"><code>mtn automate graph</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-heads-_005b_0040var_007bbranch_007d_005d-154"><code>mtn automate heads [</code><var>branch</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-identify-_0040var_007bpath_007d-169"><code>mtn automate identify </code><var>path</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-interface_005fversion-153"><code>mtn automate interface_version</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-inventory-_005b_0040option_007boptions_002e_002e_002e_007d_005d-_005b_0040var_007bfiles_002e_002e_002e_007d_005d-170"><code>mtn automate inventory [<samp></code><span class="option">options...</span><code></samp>] [</code><var>files...</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-keys-187"><code>mtn automate keys</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-keys-188"><code>mtn automate keys</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-leaves-164"><code>mtn automate leaves</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-203"><code>mtn automate lua </code><var>function_name</var><code> [</code><var>function_args...</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-189"><code>mtn automate packet_for_certs </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-lua-_0040var_007bfunction_005fname_007d-_005b_0040var_007bfunction_005fargs_002e_002e_002e_007d_005d-204"><code>mtn automate lua </code><var>function_name</var><code> [</code><var>function_args...</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-packet_005ffor_005fcerts-_0040var_007bid_007d-190"><code>mtn automate packet_for_certs </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-133"><code>mtn automate packet_for_fdata </code><var>id</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
-<li><a href="#index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-190"><code>mtn automate packet_for_fdata </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-191"><code>mtn automate packet_for_fdelta </code><var>from-id</var> <var>to-id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-191"><code>mtn automate packet_for_fdata </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bfrom_002did_007d-_0040var_007bto_002did_007d-192"><code>mtn automate packet_for_fdelta </code><var>from-id</var> <var>to-id</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bid1_007d-_0040var_007bid2_007d-135"><code>mtn automate packet_for_fdelta </code><var>id1</var> <var>id2</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
-<li><a href="#index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-188"><code>mtn automate packet_for_rdata </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-134"><code>mtn automate packet_for_rdata </code><var>id</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
+<li><a href="#index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-189"><code>mtn automate packet_for_rdata </code><var>id</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-packets_005ffor_005fcerts-_0040var_007bid_007d-132"><code>mtn automate packets_for_certs </code><var>id</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
 <li><a href="#index-mtn-automate-parents-_0040var_007brev_007d-157"><code>mtn automate parents </code><var>rev</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-197"><code>mtn automate put_file [</code><var>base-id</var><code>] </code><var>contents</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-198"><code>mtn automate put_revision </code><var>revision-data</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-202"><code>mtn automate read_packets </code><var>packet-data</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-put_005ffile-_005b_0040var_007bbase_002did_007d_005d-_0040var_007bcontents_007d-198"><code>mtn automate put_file [</code><var>base-id</var><code>] </code><var>contents</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-put_005frevision-_0040var_007brevision_002ddata_007d-199"><code>mtn automate put_revision </code><var>revision-data</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-read_005fpackets-_0040var_007bpacket_002ddata_007d-203"><code>mtn automate read_packets </code><var>packet-data</var></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-roots-165"><code>mtn automate roots</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-select-_0040var_007bselector_007d-168"><code>mtn automate select </code><var>selector</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-180"><code>mtn automate set_attribute </code><var>path</var> <var>key</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-195"><code>mtn automate set_db_variable </code><var>domain</var> <var>name</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
-<li><a href="#index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-200"><code>mtn automate show_conflicts [</code><var>&ndash;branch BRANCH</var><code>] [</code><var>left_rev right_rev</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-set_005fattribute-_0040var_007bpath_007d-_0040var_007bkey_007d-_0040var_007bvalue_007d-181"><code>mtn automate set_attribute </code><var>path</var> <var>key</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-set_005fdb_005fvariable-_0040var_007bdomain_007d-_0040var_007bname_007d-_0040var_007bvalue_007d-196"><code>mtn automate set_db_variable </code><var>domain</var> <var>name</var> <var>value</var></a>: <a href="#Automation">Automation</a></li>
+<li><a href="#index-mtn-automate-show_005fconflicts-_005b_0040var_007b_002d_002dbranch-BRANCH_007d_005d-_005b_0040var_007bleft_005frev-right_005frev_007d_005d-201"><code>mtn automate show_conflicts [</code><var>&ndash;branch BRANCH</var><code>] [</code><var>left_rev right_rev</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-stdio-172"><code>mtn automate stdio</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-tags-_005b_0040var_007bbranch_005fpattern_007d_005d-167"><code>mtn automate tags [</code><var>branch_pattern</var><code>]</code></a>: <a href="#Automation">Automation</a></li>
 <li><a href="#index-mtn-automate-toposort-_005b_0040var_007brev1_007d-_005b_0040var_007brev2_007d-_005b_002e_002e_002e_005d_005d_005d-162"><code>mtn automate toposort [</code><var>rev1</var><code> [</code><var>rev2</var><code> [...]]]</code></a>: <a href="#Automation">Automation</a></li>
@@ -14007,7 +14355,7 @@ end
 <li><a href="#index-mtn-conflicts-_002d_002dconflicts_002dfile_003d_0040var_007bfile_007d-show_005fremaining-18"><code>mtn conflicts --conflicts-file=</code><var>file</var><code> show_remaining</code></a>: <a href="#Conflicts">Conflicts</a></li>
 <li><a href="#index-mtn-conflicts-_002d_002dconflicts_002dfile_003d_0040var_007bfile_007d-store-_0040var_007bleft_005frev_005fid_007d-_0040var_007bright_005frev_005fid_007d-16"><code>mtn conflicts --conflicts-file=</code><var>file</var><code> store </code><var>left_rev_id</var> <var>right_rev_id</var></a>: <a href="#Conflicts">Conflicts</a></li>
 <li><a href="#index-mtn-conflicts-clean-22"><code>mtn conflicts clean</code></a>: <a href="#Conflicts">Conflicts</a></li>
-<li><a href="#index-mtn-cvs_005fimport-_0040var_007bpathname_007d-205"><code>mtn cvs_import </code><var>pathname</var></a>: <a href="#RCS">RCS</a></li>
+<li><a href="#index-mtn-cvs_005fimport-_0040var_007bpathname_007d-206"><code>mtn cvs_import </code><var>pathname</var></a>: <a href="#RCS">RCS</a></li>
 <li><a href="#index-mtn-db-check-_002d_002ddb_003d_0040var_007bdbfile_007d-148"><code>mtn db check --db=</code><var>dbfile</var></a>: <a href="#Database">Database</a></li>
 <li><a href="#index-mtn-db-dump-_002d_002ddb_003d_0040var_007bdbfile_007d-145"><code>mtn db dump --db=</code><var>dbfile</var></a>: <a href="#Database">Database</a></li>
 <li><a href="#index-mtn-db-execute-_0040var_007bsql_002dstatement_007d-152"><code>mtn db execute </code><var>sql-statement</var></a>: <a href="#Database">Database</a></li>
@@ -14032,6 +14380,10 @@ end
 <li><a href="#index-mtn-dropkey-_0040var_007bkeyid_007d-118"><code>mtn dropkey </code><var>keyid</var></a>: <a href="#Key-and-Cert-Trust">Key and Cert Trust</a></li>
 <li><a href="#index-mtn-explicit_005fmerge-_0040var_007bid_007d-_0040var_007bid_007d-_0040var_007bdestbranch_007d-12"><code>mtn explicit_merge </code><var>id</var> <var>id</var> <var>destbranch</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-genkey-_0040var_007bkeyid_007d-117"><code>mtn genkey </code><var>keyid</var></a>: <a href="#Key-and-Cert-Trust">Key and Cert Trust</a></li>
+<li><a href="#index-mtn-git_005fexport-_005b_002d_002dauthors_002dfile_003d_0040var_007bauthors_002dfile_007d_005d-_005b_002d_002dbranches_002dfile_003d_0040var_007bbranches_002dfile_007d_005d-207"><code>mtn git_export [--authors-file=</code><var>authors-file</var><code>] [--branches-file=</code><var>branches-file</var><code>]</code></a>: <a href="#GIT">GIT</a></li>
+<li><a href="#index-mtn-git_005fexport-_005b_002d_002dimport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-_005b_002d_002dexport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-208"><code>mtn git_export [--import-marks=</code><var>marks-file</var><code>] [--export-marks=</code><var>marks-file</var><code>]</code></a>: <a href="#GIT">GIT</a></li>
+<li><a href="#index-mtn-git_005fexport-_005b_002d_002dlog_002drevids_005d-_005b_002d_002dlog_002dcerts_005d-_005b_002d_002duse_002done_002dchangelog_005d-209"><code>mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]</code></a>: <a href="#GIT">GIT</a></li>
+<li><a href="#index-mtn-git_005fexport-_005b_002d_002drefs_003d_0040var_007btype_007d_005d-210"><code>mtn git_export [--refs=</code><var>type</var><code>]</code></a>: <a href="#GIT">GIT</a></li>
 <li><a href="#index-mtn-heads-_002d_002dbranch_003d_0040var_007bbranchname_007d-9"><code>mtn heads --branch=</code><var>branchname</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-import-_002d_002dbranch_003d_0040var_007bbranch_007d-_005b_002d_002dmessage_003d_0040var_007bmessage_007d_005d-_005b_002d_002ddry_002drun_005d-_0040var_007bdir_007d-14"><code>mtn import --branch=</code><var>branch</var><code> [--message=</code><var>message</var><code>] [--dry-run] </code><var>dir</var></a>: <a href="#Tree">Tree</a></li>
 <li><a href="#index-mtn-import-_002d_002drevision_003d_0040var_007brevision_007d-_005b_002d_002dmessage_003d_0040var_007bmessage_007d_005d-_005b_002d_002ddry_002drun_005d-_0040var_007bdir_007d-15"><code>mtn import --revision=</code><var>revision</var><code> [--message=</code><var>message</var><code>] [--dry-run] </code><var>dir</var></a>: <a href="#Tree">Tree</a></li>
@@ -14054,7 +14406,7 @@ end
 <li><a href="#index-mtn-list-vars-92"><code>mtn list vars</code></a>: <a href="#Informative">Informative</a></li>
 <li><a href="#index-mtn-list-vars-_0040var_007bdomain_007d-94"><code>mtn list vars </code><var>domain</var></a>: <a href="#Informative">Informative</a></li>
 <li><a href="#index-mtn-log-65"><code>mtn log</code></a>: <a href="#Informative">Informative</a></li>
-<li><a href="#index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bfile_007d-_005b_002e_002e_002e_005d_005d-66"><code>mtn log [--last=</code><var>n</var><code>] [--next=</code><var>n</var><code>] [--from=</code><var>id</var><code> [...]] [--to=</code><var>id</var><code> [...]] [--brief] [--no-merges] [--no-files] [--diffs] [</code><var>file</var><code> [...]]</code></a>: <a href="#Informative">Informative</a></li>
+<li><a href="#index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002drevision_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002dno_002dgraph_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-66"><code>mtn log [--last=</code><var>n</var><code>] [--next=</code><var>n</var><code>] [--from=</code><var>id</var><code> [...]] [--to=</code><var>id</var><code> [...]] [--revision=</code><var>id</var><code> [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [</code><var>pathname...</var><code>]</code></a>: <a href="#Informative">Informative</a></li>
 <li><a href="#index-mtn-ls-branches-89"><code>mtn ls branches</code></a>: <a href="#Informative">Informative</a></li>
 <li><a href="#index-mtn-ls-certs-_0040var_007bid_007d-81"><code>mtn ls certs </code><var>id</var></a>: <a href="#Informative">Informative</a></li>
 <li><a href="#index-mtn-ls-changed-113"><code>mtn ls changed</code></a>: <a href="#Informative">Informative</a></li>
@@ -14084,7 +14436,7 @@ end
 <li><a href="#index-mtn-pubkey-_0040var_007bkeyid_007d-137"><code>mtn pubkey </code><var>keyid</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
 <li><a href="#index-mtn-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-60"><code>mtn pull [--set-default] [</code><var>uri-or-address</var><code>] [</code><var>glob</var><code> [...] [--exclude=</code><var>exclude-glob</var><code>]]]</code></a>: <a href="#Network">Network</a></li>
 <li><a href="#index-mtn-push-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-61"><code>mtn push [--set-default] [</code><var>uri-or-address</var><code>] [</code><var>glob</var><code> [...] [--exclude=</code><var>exclude-glob</var><code>]]]</code></a>: <a href="#Network">Network</a></li>
-<li><a href="#index-mtn-rcs_005fimport-_0040var_007bfilename_002e_002e_002e_007d-204"><code>mtn rcs_import </code><var>filename...</var></a>: <a href="#RCS">RCS</a></li>
+<li><a href="#index-mtn-rcs_005fimport-_0040var_007bfilename_002e_002e_002e_007d-205"><code>mtn rcs_import </code><var>filename...</var></a>: <a href="#RCS">RCS</a></li>
 <li><a href="#index-mtn-read-138"><code>mtn read</code></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
 <li><a href="#index-mtn-read-_0040var_007bfile1_007d-_0040var_007bfile2_002e_002e_002e_007d-139"><code>mtn read </code><var>file1</var> <var>file2...</var></a>: <a href="#Packet-I_002fO">Packet I/O</a></li>
 <li><a href="#index-mtn-refresh_005finodeprints-56"><code>mtn refresh_inodeprints</code></a>: <a href="#Workspace">Workspace</a></li>
@@ -14108,32 +14460,32 @@ end
 <li><a href="#index-mtn-unset-_0040var_007bdomain_007d-_0040var_007bname_007d-141"><code>mtn unset </code><var>domain</var> <var>name</var></a>: <a href="#Database">Database</a></li>
 <li><a href="#index-mtn-update-52"><code>mtn update</code></a>: <a href="#Workspace">Workspace</a></li>
 <li><a href="#index-mtn-update-_002d_002drevision_003d_0040var_007brevision_007d-53"><code>mtn update --revision=</code><var>revision</var></a>: <a href="#Workspace">Workspace</a></li>
-<li><a href="#index-mtn_005fautomate_0028-_002e_002e_002e-_0029-256"><code>mtn_automate( ... )</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-206"><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-215"><code>note_mtn_startup (...)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-210"><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-211"><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-214"><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-212"><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-213"><code>note_netsync_pubkey_sent (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-208"><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-209"><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-207"><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-257"><code>parse_basic_io(</code><var>data</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-persist_005fphrase_005fok-_0028_0029-222"><code>persist_phrase_ok ()</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-258"><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-259"><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-mtn_005fautomate_0028-_002e_002e_002e-_0029-261"><code>mtn_automate( ... )</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-211"><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-220"><code>note_mtn_startup (...)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-215"><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-216"><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-219"><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-217"><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-218"><code>note_netsync_pubkey_sent (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-213"><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-214"><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-212"><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-parse_005fbasic_005fio_0028_0040var_007bdata_007d_0029-262"><code>parse_basic_io(</code><var>data</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-persist_005fphrase_005fok-_0028_0029-227"><code>persist_phrase_ok ()</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-regex_002esearch_0028_0040var_007bregexp_007d_002c-_0040var_007bstring_007d_0029-263"><code>regex.search(</code><var>regexp</var><code>, </code><var>string</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-register_005fcommand_0028_0040var_007bname_007d_002c-_0040var_007bparams_007d_002c-_0040var_007babstract_007d_002c-_0040var_007bdescription_007d_002c-_0040var_007bfunction_007d_0029-264"><code>register_command(</code><var>name</var><code>, </code><var>params</var><code>, </code><var>abstract</var><code>, </code><var>description</var><code>, </code><var>function</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
 <li><a href="#index-rename-_0040var_007bfilename_007d-26"><code>rename </code><var>filename</var></a>: <a href="#Conflicts">Conflicts</a></li>
-<li><a href="#index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-260"><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-sleep_0028_0040var_007bseconds_007d_0029-261"><code>sleep(</code><var>seconds</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-262"><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-263"><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-264"><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
-<li><a href="#index-use_005finodeprints-_0028_0029-223"><code>use_inodeprints ()</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-229"><code>use_transport_auth (</code><var>uri</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-server_005frequest_005fsync_0028_0040var_007bwhat_007d_002c-_0040var_007baddress_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-265"><code>server_request_sync(</code><var>what</var><code>, </code><var>address</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-sleep_0028_0040var_007bseconds_007d_0029-266"><code>sleep(</code><var>seconds</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-spawn_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-267"><code>spawn(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-spawn_005fpipe_0028_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-268"><code>spawn_pipe(</code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-spawn_005fredirected_0028_0040var_007binfile_007d_002c-_0040var_007boutfile_007d_002c-_0040var_007berrfile_007d_002c-_0040var_007bexecutable_007d-_005b_002c-_0040var_007bargs-_002e_002e_002e_007d_005d_0029-269"><code>spawn_redirected(</code><var>infile</var><code>, </code><var>outfile</var><code>, </code><var>errfile</var><code>, </code><var>executable</var><code> [, </code><var>args ...</var><code>])</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-use_005finodeprints-_0028_0029-228"><code>use_inodeprints ()</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-234"><code>use_transport_auth (</code><var>uri</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
 <li><a href="#index-user-_0040var_007bfile_007d-24"><code>user </code><var>file</var></a>: <a href="#Conflicts">Conflicts</a></li>
-<li><a href="#index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-241"><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
-<li><a href="#index-wait_0028_0040var_007bpid_007d_0029-265"><code>wait(</code><var>pid</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
+<li><a href="#index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-246"><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code></a>: <a href="#Hooks">Hooks</a></li>
+<li><a href="#index-wait_0028_0040var_007bpid_007d_0029-270"><code>wait(</code><var>pid</var><code>)</code></a>: <a href="#Additional-Lua-Functions">Additional Lua Functions</a></li>
    </ul><div class="footnote">
 <hr>
 <a name="texinfo-footnotes-in-document"></a><h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> We

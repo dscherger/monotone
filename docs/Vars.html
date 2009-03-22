@@ -72,6 +72,18 @@ uses the <samp><span class="option">--set-default</span></samp> option.
 <br><dt><code>default-server</code><dd>The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
 <samp><span class="option">--set-default</span></samp> option. 
+<br><dt><code>delta-direction</code><dd>This tells monotone whether to store `<samp><span class="samp">reverse</span></samp>' deltas (the default),
+`<samp><span class="samp">forward</span></samp>' deltas, or `<samp><span class="samp">both</span></samp>' kinds of deltas for reconstructing
+versions of files. Reverse deltas are faster when inspecting recent files,
+while forward deltas are much faster for sending over the network. This
+should probably be set to `<samp><span class="samp">both</span></samp>' for a server database, unless disk
+space is severely limited. Note that as <em>receiving</em> deltas involves
+reconstructing the file version that the delta was made against, a server
+using a database with only forward deltas will be somewhat slower at
+receiving new revisions unless your particular history graph is highly
+linear.
+
+          <p>Changing this value does not affect deltas that have already been stored. 
 </dl>
 
      <br><dt><code>known-servers</code><dd>Contains key hashes for servers that we have netsynced with in the

@@ -38,7 +38,15 @@ that is built in to the monotone executable, and read before any user
 hooks files (unless <samp><span class="option">--nostd</span></samp> is passed).  It contains the
 default values for all hooks.
 
-<pre class="verbatim">
+<pre class="verbatim">-- Copyright (C) 2003 Graydon Hoare &lt;graydon@pobox.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
+
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
 
@@ -128,7 +136,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 
@@ -185,9 +195,11 @@ function ignore_file(name)
                        .. name .. "':\n")
            warn_reported_file = true
         end
-            io.stderr:write(".mtn-ignore:" .. i .. ": warning: " .. result
-                    .. "\n\t- skipping this regex for "
-                .. "all remaining files.\n")
+        local prefix = ".mtn-ignore:" .. i .. ": warning: "
+            io.stderr:write(prefix
+                            .. string.gsub(result, "\n", "\n" .. prefix)
+                               .. "\n\t- skipping this regex for "
+                               .. "all remaining files.\n")
             ignored_files[i] = nil
          end
       end
@@ -307,21 +319,21 @@ end
 
 function edit_comment(basetext, user_log_message)
    local exe = nil
-   if (program_exists_in_path("vi")) then exe = "vi" end
-   if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
-   local debian_editor = io.open("/usr/bin/editor")
-   if (debian_editor ~= nil) then
-      debian_editor:close()
-      exe = "/usr/bin/editor"
-   end
-   local visual = os.getenv("VISUAL")
-   if (visual ~= nil) then exe = visual end
-   local editor = os.getenv("EDITOR")
-   if (editor ~= nil) then exe = editor end
 
-   if (exe == nil) then
-      io.write("Could not find editor to enter commit message\n"
-               .. "Try setting the environment variable EDITOR\n")
+   -- top priority is VISUAL, then EDITOR, then a series of hardcoded
+   -- defaults, if available.
+
+   local visual = os.getenv("VISUAL")
+   local editor = os.getenv("EDITOR")
+   if (visual ~= nil) then exe = visual
+   elseif (editor ~= nil) then exe = editor
+   elseif (program_exists_in_path("editor")) then exe = "editor"
+   elseif (program_exists_in_path("vi")) then exe = "vi"
+   elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
+	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+   else
+      io.write(gettext("Could not find editor to enter commit message\n"
+		       .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
@@ -335,11 +347,44 @@ function edit_comment(basetext, user_log_message)
    tmp:write(basetext)
    io.close(tmp)
 
-   if (execute(exe, tname) ~= 0) then
-      io.write(string.format(gettext("Error running editor '%s' to enter log message\n"),
-                             exe))
-      os.remove(tname)
-      return nil
+   -- By historical convention, VISUAL and EDITOR can contain arguments
+   -- (and, in fact, arbitrarily complicated shell constructs).  Since Lua
+   -- has no word-splitting functionality, we invoke the shell to deal with
+   -- anything more complicated than a single word with no metacharacters.
+   -- This, unfortunately, means we have to quote the file argument.
+
+   if (not string.find(exe, "[^%w_.+-]")) then
+      -- safe to call spawn directly
+      if (execute(exe, tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
+   else
+      -- must use shell
+      local shell = os.getenv("SHELL")
+      if (shell == nil) then shell = "sh" end
+      if (not program_exists_in_path(shell)) then
+	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+					"but '%s' is not to be found"),
+			        exe, shell))
+	 os.remove(tname)
+	 return nil
+      end
+
+      -- Single-quoted strings in both Bourne shell and csh can contain
+      -- anything but a single quote.
+      local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
+
+      if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
    end
 
    tmp = io.open(tname, "r")
@@ -1279,12 +1324,12 @@ do
       local s = "continue"
       local v = nil
       for _,n in pairs(hook_functions) do
-     if n[f] then
-        s,v = n[f](...)
-     end
-     if s ~= "continue" then
-        break
-     end
+         if n[f] then
+            s,v = n[f](...)
+         end
+         if s ~= "continue" then
+            break
+         end
       end
       return v
    end
@@ -1318,38 +1363,38 @@ do
 
    function add_hook_functions(functions, precedence)
       if type(functions) ~= "table" or type(precedence) ~= "number" then
-     return false, "Invalid type"
+         return false, "Invalid type"
       end
       if hook_functions[precedence] then
-     return false, "Precedence already taken"
+         return false, "Precedence already taken"
       end
 
       local unknown_items = ""
       local warning = nil
       local is_member =
-     function (s,t)
-        for k,v in pairs(t) do if s == v then return true end end
-        return false
-     end
+         function (s,t)
+            for k,v in pairs(t) do if s == v then return true end end
+            return false
+         end
 
       for n,f in pairs(functions) do
-     if type(n) == "string" then
-        if not is_member(n, supported_items) then
-           if unknown_items ~= "" then
-          unknown_items = unknown_items .. ","
-           end
-           unknown_items = unknown_items .. n
-        end
-        if type(f) ~= "function" then
-           return false, "Value for functions item "..n.." isn't a function"
-        end
-     else
-        warning = "Non-string item keys found in functions table"
-     end
+         if type(n) == "string" then
+            if not is_member(n, supported_items) then
+               if unknown_items ~= "" then
+                  unknown_items = unknown_items .. ","
+               end
+               unknown_items = unknown_items .. n
+            end
+            if type(f) ~= "function" then
+               return false, "Value for functions item "..n.." isn't a function"
+            end
+         else
+            warning = "Non-string item keys found in functions table"
+         end
       end
 
       if warning == nil and unknown_items ~= "" then
-     warning = "Unknown item(s) " .. unknown_items .. " in functions table"
+         warning = "Unknown item(s) " .. unknown_items .. " in functions table"
       end
 
       hook_functions[precedence] = functions

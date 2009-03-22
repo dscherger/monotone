@@ -57,31 +57,59 @@ will, by default, include <em>all changes</em> in the workspace.
 Specifying only the pathname "." will restrict <samp><span class="command">status</span></samp> to files
 changed within the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-65"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--diffs] [</span><var>file</var><span class="command"> [...]]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bfile_007d-_005b_002e_002e_002e_005d_005d-66"></a><dd>
-This command prints out a log, in reverse-ancestry order, of small
-history summaries.  Each summary contains author, date, changelog and
-comment information associated with a revision.
+     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-65"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--revision=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [</span><var>pathname...</var><span class="command">]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002drevision_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002dno_002dgraph_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-66"></a><dd>
+This command prints out a log, in forward ancestry order by default
+but optionally in reverse ancestry order, of small history summaries. 
+Each summary contains author, date, branch, changelog and comment
+information associated with a revision.
 
-     <p>If <samp><span class="option">--brief</span></samp> is given, the output consists of one line per revision
-with the revision ID, the author, the date and the branches (separated
-with commas).
+     <p>If <samp><span class="option">--brief</span></samp> is given, the output consists of two lines per
+revision with the revision ID, the author, the date and the branches
+(separated with commas). If the <samp><span class="option">--no-graph</span></samp> option is also
+given the output contains only one line per revision.
 
-     <p>If <samp><span class="option">--last=</span></samp><var>n</var> is given, at most <var>n</var> log entries will be
-given.
+     <p>If <samp><span class="option">--last=</span></samp><var>n</var> is given, at most <var>n</var> log entries will
+be given and log will trace through history in reverse-ancestry order,
+from newer revisions to older revisions.
 
-     <p>If <samp><span class="option">--next=</span></samp><var>n</var> is given, at most <var>n</var> log entries towards
-the current head revision will be given from the workspace's base
-revision in forward-ancestry order.  This is useful to review changes
-that will be applied to the workspace when <samp><span class="command">update</span></samp> is run.
+     <p>If <samp><span class="option">--next=</span></samp><var>n</var> is given, at most <var>n</var> log entries will
+be given and log will trace through history in forward-ancestry order,
+from older revisions to newer revisions. This is useful to review
+changes that will be applied to the workspace when <samp><span class="command">update</span></samp> is
+run.
 
-     <p>If <samp><span class="option">--from=</span></samp><var>id</var> is given, the command starts tracing back through
-history from these revisions, otherwise it starts from the base revision of
-your workspace.
+     <p>If <samp><span class="option">--from=</span></samp><var>id</var> is given, log starts tracing through
+history from the specified revisions, otherwise it starts from the
+base revision of your workspace. Log will stop when it reaches the end
+of the revision history or revisions specified by the <samp><span class="option">--to</span></samp>
+option.
 
-     <p>If <samp><span class="option">--to=</span></samp><var>id</var> is given, log will only print entries for revisions
-that would not also be printed when logging from the revisions specified in
-<samp><span class="option">--to</span></samp>. This is useful for reviewing changes between two points
-in history.
+     <p>When tracing through history in reverse-ancestry order and
+<samp><span class="option">--to=</span></samp><var>id</var> is given, log will stop when it reaches the
+specified revisions or any of their ancestors or the end of the
+revision history. When tracing through history in forward-ancestry
+order log will stop when it reaches the specified revisions or any of
+their descendants or the end of the revision history.
+
+     <p>If <samp><span class="option">--revision=</span></samp><var>id</var> is given, log will print only the
+specified revisions.
+
+     <p>If both <samp><span class="option">--from</span></samp> and <samp><span class="option">--revision</span></samp> are given only
+revisions included by both options will be logged. Revisions specified
+by <samp><span class="option">--revision</span></samp> that are beyond the starting points specified
+by <samp><span class="option">--from</span></samp> will be excluded.
+
+     <p>Additionally, each of the <samp><span class="option">--from</span></samp>, <samp><span class="option">--to</span></samp> and
+<samp><span class="option">--revision</span></samp> options accept selectors, see
+<a href="Selectors.html#Selectors">Selectors</a>. These can be used in various ways to log interesting
+revisions.  For example:
+<pre class="verbatim">     
+     $ mtn log --revision b:
+     $ mtn log --revision today
+     $ mtn log --revision bob
+</pre>
+will log all revisions from the current branch, all revisions dated
+today and all revisions with bob as the author, respectively.
 
      <p>By default, the log entries for merge nodes are shown.  If
 <samp><span class="option">--no-merges</span></samp> is given, the log entries for these nodes will be
@@ -89,6 +117,9 @@ excluded.
 
      <p>If <samp><span class="option">--no-files</span></samp> is given, the log output excludes the list of
 files changed in each revision.
+
+     <p>If <samp><span class="option">--no-graph</span></samp> is given, the log output excludes the ASCII revision graph
+prefix on log output lines.
 
      <p>Specifying <samp><span class="option">--diffs</span></samp> causes the log output to include a unified
 diff of the changes in each revision.

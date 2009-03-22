@@ -95,6 +95,9 @@ recorded in your _MTN/options file.
 <br><dt>Date selection<dd>Uses selector type <code>d</code>. For example, <code>d:2004-04</code> matches
 <code>date</code> certs where the cert value begins with
 <code>2004-04</code>. This selector also accepts expanded date syntax (see below). 
+<br><dt>Message selection<dd>Uses selector type <code>m</code>. For example <code>m:*foobar*</code> matches
+<code>changelog</code> and <code>comment</code> certs where the cert value
+contains the glob <code>*foobar*</code>. 
 <br><dt>"Earlier or equal than" selection<dd>Uses selector type <code>e</code>. For example, <code>e:2004-04-25</code> matches
 <code>date</code> certs where the cert value is less or equal than
 <code>2004-04-25T00:00:00</code>. If the time component is unspecified,
@@ -111,6 +114,21 @@ revision IDs which begin with <code>0f3a</code>.
 revision IDs which are the parent of the revision ID which begins with
 <code>0f3a</code>. If you give a bare <code>p:</code>, monotone will require you to be in
 a workspace, and query the parent of the base workspace revision. 
+<br><dt>Update selection<dd>Uses selector type <code>u</code>. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID of the workspace before the last <samp><span class="command">update</span></samp> command
+was executed. This can be useful for reviewing incoming
+revisions. After each update operation, or at least before the next
+update operation, run a command similar to the following:
+     <pre class="smallexample">          $ mtn log --to u: --diffs
+     </pre>
+     <p>to log all revisions back to the last update. It can also be
+used for quickly jumping between two different revisions. For example,
+the following command:
+     <pre class="smallexample">          $ mtn update -r u:
+     </pre>
+     <p>will update back to the previous update revision. Repeating this
+command will swap the current and previous update revision. 
 <br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
 <code>tag</code> certs where the cert value begins with <code>monotone-0.11</code>. 
 Values to match for can have shell wildcards. 

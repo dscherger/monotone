@@ -74,6 +74,11 @@ the scope of this document.
 
    <div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
 
+   <p><b>Warning:</b> because our certificates give the <i>name</i> of the
+signing key instead of the <i>hash</i> (ID), all key names must be
+globally unique forever. If you lose a key and need to generate a
+replacement, make sure that you give the replacement a different name.
+
    <p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
 to be stored, transmitted or retrieved &mdash; above and beyond files,
 manifests, and revisions &mdash; is kept in the form of certs. This
