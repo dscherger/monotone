@@ -5,7 +5,7 @@
 #define PACKAGE_STRING "monotone 0.42"
 #define PACKAGE_BUGREPORT "monotone-devel@nongnu.org"
 #define LC_MESSAGES LC_CTYPE
-#define VERSION "0.42"
+#define VERSION "0.43"
 
 #ifdef _MSC_VER
 typedef unsigned long pid_t;

@@ -10,7 +10,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.58)
-AC_INIT([monotone], [0.43dev], [monotone-devel@nongnu.org])
+AC_INIT([monotone], [0.43], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
@@ -55,7 +55,7 @@ case "$host" in
 esac
 AM_CONDITIONAL(WIN32_PLATFORM, $WIN32_PLATFORM)
 AC_DEFINE_UNQUOTED(os_err_t, $os_err_t,
-		   [Define as the best type to hold an OS error code.])
+           [Define as the best type to hold an OS error code.])
 
 
 # Checks for programs.
@@ -66,7 +66,7 @@ AC_PROG_CXX_PCH
 dnl needed for 'txt2c'
 dnl There ought to be an AC_PROG_CXX_FOR_BUILD, but there isn't.
 AC_ARG_VAR([CXX_FOR_BUILD],
-	   [C++ compiler command for programs to run on build machine])
+       [C++ compiler command for programs to run on build machine])
 if test $cross_compiling = yes; then
   CXX_FOR_BUILD='c++'
 else
@@ -121,22 +121,22 @@ dnl problem described above.
 AC_CHECK_TYPE([off_t],
   [],
   [AC_DEFINE([off_t], [long int],
-	     [Define to `long int' if <sys/types.h> does not define.])],
+         [Define to `long int' if <sys/types.h> does not define.])],
   [#include <sys/types.h>])
 
 AC_CHECK_TYPE([pid_t],
   [],
   [AC_DEFINE([pid_t], [int],
-	     [Define to `int' if <sys/types.h> does not define.])],
+         [Define to `int' if <sys/types.h> does not define.])],
   [#include <sys/types.h>])
 
 AC_CHECK_MEMBERS([struct stat.st_ctim.tv_nsec,
-		  struct stat.st_mtim.tv_nsec,
-		  struct stat.st_ctimespec.tv_nsec,
-		  struct stat.st_mtimespec.tv_nsec,
-		  struct stat.st_ctimensec,
-		  struct stat.st_mtimensec],
-		  [], [], [#include <sys/stat.h>])
+          struct stat.st_mtim.tv_nsec,
+          struct stat.st_ctimespec.tv_nsec,
+          struct stat.st_mtimespec.tv_nsec,
+          struct stat.st_ctimensec,
+          struct stat.st_mtimensec],
+          [], [], [#include <sys/stat.h>])
 AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 
 # Checks for library functions.
@@ -144,6 +144,6 @@ AC_CHECK_MEMBERS([struct dirent.d_type], [], [], [#include <dirent.h>])
 # complicated check for it.
 
 AC_CHECK_FUNCS([__cxa_current_exception_type __cxa_demangle dirfd \
-		fstatat mkdtemp mmap putenv setenv strptime unsetenv])
+        fstatat mkdtemp mmap putenv setenv strptime unsetenv])
 
 AC_OUTPUT
