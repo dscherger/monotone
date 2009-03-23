@@ -1,3 +1,24 @@
+xxx xxx xx xx:xx:xx UTC 2009
+
+        0.44 release.
+
+        - FIXME - bump automate major version, correct automate commands
+          documented as changed (or added) in version FIXME. Also remove
+          this note.
+
+        Changes
+
+        - Private keys no longer have a separate hash from the associated
+          public key. This changes the hashes output by 'ls keys', and also
+          changes the format of 'automate keys' and 'automate genkey'.
+
+        New features
+
+        Bugs fixed
+
+        Internal
+
+
 Sun Mar 22 22:26:00 UTC 2009
 
         0.43 release.

@@ -343,7 +343,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
           keypair kp;
           id hash_code;
           keys.get_key_pair(*i, kp);
-          key_hash_code(*i, kp.priv, hash_code);
+          key_hash_code(*i, kp.pub, hash_code);
           cout << hash_code << ' ' << *i << '\n';
         }
       cout << '\n';
@@ -636,8 +636,7 @@ namespace
     symbol const value("value");
     symbol const trust("trust");
 
-    symbol const public_hash("public_hash");
-    symbol const private_hash("private_hash");
+    symbol const hash("hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
   }
@@ -691,8 +690,8 @@ CMD_AUTOMATE(keys, "",
 
   vector<rsa_keypair_id> dbkeys;
   vector<rsa_keypair_id> kskeys;
-  // public_hash, private_hash, public_location, private_location
-  map<string, boost::tuple<id, id,
+  // hash, public_location, private_location
+  map<string, boost::tuple<id,
                            vector<string>,
                            vector<string> > > items;
   if (db.database_specified())
@@ -708,7 +707,7 @@ CMD_AUTOMATE(keys, "",
       db.get_key(*i, pub_encoded);
       key_hash_code(*i, pub_encoded, hash_code);
       items[(*i)()].get<0>() = hash_code;
-      items[(*i)()].get<2>().push_back("database");
+      items[(*i)()].get<1>().push_back("database");
     }
 
   for (vector<rsa_keypair_id>::iterator i = kskeys.begin();
@@ -718,26 +717,22 @@ CMD_AUTOMATE(keys, "",
       id privhash, pubhash;
       keys.get_key_pair(*i, kp);
       key_hash_code(*i, kp.pub, pubhash);
-      key_hash_code(*i, kp.priv, privhash);
       items[(*i)()].get<0>() = pubhash;
-      items[(*i)()].get<1>() = privhash;
+      items[(*i)()].get<1>().push_back("keystore");
       items[(*i)()].get<2>().push_back("keystore");
-      items[(*i)()].get<3>().push_back("keystore");
     }
   basic_io::printer prt;
-  for (map<string, boost::tuple<id, id,
+  for (map<string, boost::tuple<id,
                                 vector<string>,
                                 vector<string> > >::iterator
          i = items.begin(); i != items.end(); ++i)
     {
       basic_io::stanza stz;
       stz.push_str_pair(syms::name, i->first);
-      stz.push_binary_pair(syms::public_hash, i->second.get<0>());
-      if (!i->second.get<1>()().empty())
-        stz.push_binary_pair(syms::private_hash, i->second.get<1>());
-      stz.push_str_multi(syms::public_location, i->second.get<2>());
-      if (!i->second.get<3>().empty())
-        stz.push_str_multi(syms::private_location, i->second.get<3>());
+      stz.push_binary_pair(syms::hash, i->second.get<0>());
+      stz.push_str_multi(syms::public_location, i->second.get<1>());
+      if (!i->second.get<2>().empty())
+        stz.push_str_multi(syms::private_location, i->second.get<2>());
       prt.print_stanza(stz);
     }
   output.write(prt.buf.data(), prt.buf.size());

@@ -126,16 +126,6 @@ key_hash_code(rsa_keypair_id const & ident,
   calculate_ident(tdat, out);
 }
 
-void
-key_hash_code(rsa_keypair_id const & ident,
-              rsa_priv_key const & priv,
-              id & out)
-{
-  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()),
-            origin::internal);
-  calculate_ident(tdat, out);
-}
-
 // helper to compare if two keys have the same hash
 // (ie are the same key)
 bool
@@ -143,18 +133,6 @@ keys_match(rsa_keypair_id const & id1,
            rsa_pub_key const & key1,
            rsa_keypair_id const & id2,
            rsa_pub_key const & key2)
-{
-  id hash1, hash2;
-  key_hash_code(id1, key1, hash1);
-  key_hash_code(id2, key2, hash2);
-  return hash1 == hash2;
-}
-
-bool
-keys_match(rsa_keypair_id const & id1,
-           rsa_priv_key const & key1,
-           rsa_keypair_id const & id2,
-           rsa_priv_key const & key2)
 {
   id hash1, hash2;
   key_hash_code(id1, key1, hash1);
