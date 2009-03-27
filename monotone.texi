@@ -7674,6 +7674,51 @@ whatever error message would have been given.
 
 @end table
 
+@item mtn automate genkey @var{name} @var{passphrase}
+
+@table @strong
+@item Aguments
+
+@var{name} is the name to associate with the new key, and @var{passphrase} is
+the passphrase that will be used to encrypt the private half.
+
+@item Changes:
+@itemize
+@item
+FIXME -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+3.1 -- initial
+@end itemize
+
+@item Purpose:
+
+Generate a key with the given name and passphrase.
+
+@item Sample output:
+
+@verbatim
+            name "tbrownaw@gmail.com"
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+ public_location "database" "keystore"
+private_location "keystore"
+
+@end verbatim
+
+@item Output format:
+
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+@item Error conditions:
+
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
+
+@end table
+
 @item mtn automate get_revision @var{id}
 
 @table @strong
@@ -8405,9 +8450,17 @@ with status 1.
 
 None.
 
-@item Added in:
+@item Changes:
 
-1.1
+@itemize
+@item
+FIXME -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+1.1 -- initial
+
+@end itemize
 
 @item Purpose:
 
@@ -8417,18 +8470,16 @@ Print all keys in basic_io format.
 
 @verbatim
             name "tbrownaw@gmail.com"
-     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
  public_location "database" "keystore"
 private_location "keystore"
 
            name "tomfa@debian.org"
-    public_hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
 public_location "database"
 
             name "underwater@fishtank.net"
-     public_hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-    private_hash [b520d2cfe7d30e4ea1725fc4f34646fc5469b13d]
+            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
  public_location "keystore"
 private_location "keystore"
 

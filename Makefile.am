@@ -305,7 +305,7 @@ info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
 									\

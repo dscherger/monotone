@@ -552,8 +552,7 @@ void
 key_store::create_key_pair(database & db,
                            rsa_keypair_id const & ident,
                            utf8 const * maybe_passphrase,
-                           id * maybe_pubhash,
-                           id * maybe_privhash)
+                           id * maybe_hash)
 {
   conditional_transaction_guard guard(db);
 
@@ -624,10 +623,8 @@ key_store::create_key_pair(database & db,
       guard.commit();
     }
 
-  if (maybe_pubhash)
-    key_hash_code(ident, kp.pub, *maybe_pubhash);
-  if (maybe_privhash)
-    key_hash_code(ident, kp.priv, *maybe_privhash);
+  if (maybe_hash)
+    key_hash_code(ident, kp.pub, *maybe_hash);
 }
 
 void

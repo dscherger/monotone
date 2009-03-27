@@ -44,10 +44,6 @@ void key_hash_code(rsa_keypair_id const & ident,
                    rsa_pub_key const & pub,
                    id & out);
 
-void key_hash_code(rsa_keypair_id const & ident,
-                   rsa_priv_key const & priv,
-                   id & out);
-
 bool keys_match(rsa_keypair_id const & id1,
                 rsa_pub_key const & key1,
                 rsa_keypair_id const & id2,

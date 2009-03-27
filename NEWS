@@ -1,4 +1,25 @@
-??? ??? ?? ??:??:?? UTC 2009
+xxx xxx xx xx:xx:xx UTC 2009
+
+        0.44 release.
+
+        - FIXME - bump automate major version, correct automate commands
+          documented as changed (or added) in version FIXME. Also remove
+          this note.
+
+        Changes
+
+        - Private keys no longer have a separate hash from the associated
+          public key. This changes the hashes output by 'ls keys', and also
+          changes the format of 'automate keys' and 'automate genkey'.
+
+        New features
+
+        Bugs fixed
+
+        Internal
+
+
+Sun Mar 22 22:26:00 UTC 2009
 
         0.43 release.
 
@@ -29,6 +50,9 @@
           longer print global options, thus making the output of specific help
           requests more compact. You still see all available global options
           by executing 'mtn help' without any arguments.
+
+        - 'mtn automate get_current_revision' now returns an empty changeset
+          instead of an error if a workspace contains no changes.
 
         New features
 
@@ -105,6 +129,12 @@
           own for directory creation and permissions if you take the
           key on standard output and redirect it to a file.)
 
+        - The `p:' selector now accepts single character revision ids.
+
+        - `mtn merge_into_workspace' no longer crashes if one tries to merge
+          in an ancestor or descendant of a workspace, but gives a helpful
+          error message.
+
         - Several bugfixes to `mtn automate stdio':
 
           * It now correctly distinguishs between syntax and command errors by
@@ -120,14 +150,34 @@
           * Global options, which were set or changed by a previously executed
             command, weren't properly reset before the next command was issued.
             It was f.e. not possible to "unignore" suspended branches for
-            the `branches' command when this option was given in a previous
-            run. Now only those global options persist between executed
-            commands which were given to stdio directly.
+            the `branches' command when `--ignore-suspend-certs' was given in
+            a previous run. Now only those global options persist between
+            executed commands which were given to stdio directly.
 
         Internal
 
         - Using 64 bit integer values to represent dates internally. This
           has no user visible effect.
+
+        - The unit test code has been separated from the main source, thus
+          building the tests no longer requires a full recompilation. Also,
+          the number of modules which are linked into unit tester has
+          decreased tremendously.
+
+        - A couple of debug commands have been added to the `database'
+          command group to aid performance timing. See `mtn help --hidden db'
+          for a list of available commands.
+
+        - Our internal error handling has been overhauled. N() is gone, and E()
+          takes three arguments instead of 2: E(bool, origin::type, i18n_format).
+          origin::type is an enum describing the source of the error, eg network,
+          user, internal. Data types can publically inherit origin_aware (as the
+          vocab types do) to obtain a public origin::type member named
+          'made_from'; this can then be supplied to E() when sanity-checking
+          that data. origin_aware and origin::type are in origin_type.hh.
+          I() will throw a unrecoverable_failure, and E() will throw either a
+          unrecoverable_failure or a recoverable_failure depending on the
+          origin::type provided. informative_failure is gone.
 
 
 Fri Dec 26 22:08:00 UTC 2008

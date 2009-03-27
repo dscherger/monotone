@@ -224,12 +224,32 @@ building and installation process for monotone
 
         on Windows (using Cygwin):
 
-           FIXME: add exact name of needed packages
+           Monotone needs the following packages to compile:
 
+             Runtime requirements:
+               cygwin-1.5.24 or newer
+               libiconv2-1.11 or newer
+               libintl8-0.15 or newer
+               zlib-1.2.3-2 or newer
+
+             Build requirements:
+               gcc-3.4.4 or newer
+               binutils-20050610 or newer
+               boost-devel-1.33.1 or newer
+               gettext-0.14.5 or newer
+               zlib-1.2.3-2 or newer
+               perl-5.8.7 or newer
+               sqlite3-3.6.2-1 or newer
+               libidn-devel-1.9-1 or newer
+               lua-5.1.4-1 or newer (*)
+               botan-1.8.0-1 or newer (*)
+           
            currently every prerequisite is avaialble as packages except
-           lua and botan; lua is available on Cygwin Ports though
+           lua and botan; an official Cygwin package for monotone and 
+           all its dependencies will be available soon after release
 
-           an official Cygwin package for monotone will be available soon
+           the following is needed to succesfulyl configure
+             CXXFLAGS+="-I/usr/include/boost-1_33_1/"
 
         on other systems:
 
