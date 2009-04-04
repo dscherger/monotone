@@ -261,9 +261,9 @@ sub view_button_clicked_cb($$);
 	{
 	    my $db;
 	    $mtn = Monotone::AutomateStdio->new();
+	    $mtn->get_option(\$db, "database");
 	    if ($user_preferences->{workspace}->{auto_select})
 	    {
-		$mtn->get_option(\$db, "database");
 		$mtn->get_option(\$branch, "branch");
 		$mtn->get_base_revision_id(\$revision_id);
 

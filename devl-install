@@ -170,6 +170,11 @@ use IO::File;
 
     system("cd ${lib_dir}/perl ; ln -s $mas_dir .");
 
+    # Link in the help files.
+
+    system("mkdir -p share/gnome/help/mtn-browse ; "
+	   . "ln -s locale/help/C share/gnome/help/mtn-browse/.");
+
     exit(0);
 
 }

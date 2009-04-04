@@ -1,0 +1,1695 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book
+  PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
+  [
+
+    <!ENTITY APP "Monotone Browser">
+    <!ENTITY APP-CMD "mtn-browse">
+    <!ENTITY VERSION "0.01">
+
+  ]
+>
+
+<!--
+PLEASE READ
+===========
+
+Details About Taking Screen Shots
+=================================
+
+The screenshots were taken using Gimp using either the window or
+full-screen-shot options. The desktop was KDE 3.3, using the Plastik widget and
+window decoration style. The colour scheme was KDE 2.
+
+Use any text editor to edit this document, but I used xemacs as it has an XML
+mode that allows one to insert the correct tokens.
+
+References And Id Tags
+======================
+
+Each chapter and section down to and including level 2 has an id tag. These id
+tags are not only used within this document to refer to other sections but also
+used by Monotone Browser's context sensitive help. However Monotone Browser
+passes all such strings through the locale library and so if you are
+translating this document then all you have to do is make sure that the id tags
+used in this document match the translations list in the associated .po
+file. All such id tags start with `mtnb-' (for MTN-Browser).
+-->
+
+<!--
+The following determines how many levels of heading appear on the contents page
+and in the section pane to the left. I do not know whether this is specific to
+GNOME or DocBook.
+-->
+
+<?yelp:chunk-depth 3?>
+
+<!-- Monotone Browser Manual -->
+
+<book id="monotone-browse" lang="en"> <!-- please do not change the id -->
+
+  <bookinfo>
+    <title>Monotone Browser Manual</title>
+
+    <copyright>
+      <year>2009</year>
+      <holder>Anthony Cooper</holder>
+    </copyright>
+
+    <legalnotice id="legal-notice">
+      <para>Permission is granted to copy, distribute and/or modify this document under the terms of the <citetitle>GNU Free Documentation License</citetitle>, Version 1.1 or any later version published by the Free Software Foundation with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. You may obtain a copy of the <citetitle>GNU Free Documentation License</citetitle> from the Free Software Foundation by visiting <ulink type="http" url="http://www.fsf.org">their Web site</ulink> or by writing to: Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</para>
+      <para>Many of the names used by companies to distinguish their products and services are claimed as trademarks. Where those names appear in any &APP; documentation, and those trademarks are made aware to the members of the &APP; Project, the names have been printed in caps or initial caps.</para>
+    </legalnotice>
+
+    <authorgroup>
+      <author>
+        <firstname>Anthony</firstname>
+        <surname>Cooper</surname>
+        <affiliation>
+          <orgname>CooSoft</orgname>
+          <address><email>support@coosoft.plus.com</email></address>
+        </affiliation>
+      </author>
+
+      <!-- This is appropriate place for other contributors: translators,
+           maintainers,  etc. Commented out by default.
+      <othercredit role="reviewer">
+        <firstname>Anthony</firstname>
+        <surname>Cooper provided information from ...</surname>
+        <contrib>Acknowledgements</contrib>
+      </othercredit>
+      <othercredit role="translator">
+        <firstname>Latin</firstname>
+        <surname>Translator 1</surname>
+        <affiliation>
+          <orgname>Latin Translation Team</orgname>
+          <address><email>translator@gnome.org</email></address>
+        </affiliation>
+        <contrib>Latin translation</contrib>
+      </othercredit>
+      -->
+
+    </authorgroup>
+
+    <!--
+    According to GNU FDL, revision history is mandatory if you are
+    modifying/reusing someone else's document.  If not, you can omit it.
+    -->
+    <revhistory>
+      <!--
+      Remember to remove the &VERSION; entity from the revision entries other
+      than the current revision
+      -->
+      <revision>
+        <revnumber>&APP; Manual V&VERSION;</revnumber>
+        <date>11 February 2009</date>
+        <revdescription>
+          <para role="author">Anthony Cooper</para>
+          <para role="publisher">CooSoft</para>
+        </revdescription>
+      </revision>
+    </revhistory>
+    <releaseinfo>This is version &VERSION; of the &APP; manual.</releaseinfo>
+    <legalnotice>
+      <title>Feedback</title>
+      <para>To report a fault or make a suggestion regarding the <application>&APP;</application> application or this manual, please email <email>support@coosoft.plus.com</email>.</para>
+      <!-- Translators may also add here feedback address for translations -->
+    </legalnotice>
+
+  </bookinfo>
+
+  <!-- Chapter One: Introduction -->
+
+  <chapter label="1" id="mtnb-ic">
+    <title>Introduction</title>
+
+    <para><application>&APP;</application> is a Gnome application for browsing Monotone VCS (Version Control System) databases. There is no need to have a workspace, one can simply open the database directly with this application and start browsing straight away.</para>
+
+    <para>A sample of what one can do with <application>&APP;</application> includes:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Easily select a revision from within a branch.</para>
+      </listitem>
+      <listitem>
+        <para>Find a revision using complex queries.</para>
+      </listitem>
+      <listitem>
+        <para>Navigate the contents of a revision using a built in file manager.</para>
+      </listitem>
+      <listitem>
+        <para>Display file contents, either using the internal viewer or an external helper application.</para>
+      </listitem>
+      <listitem>
+        <para>Compare the changes between different revisions or versions of a file either using the internal difference viewer or an external application.</para>
+      </listitem>
+      <listitem>
+        <para>Find files within a revision based on detailed search criteria.</para>
+      </listitem>
+      <listitem>
+        <para>Display file annotations and easily refer back to the corresponding change documentation.</para>
+      </listitem>
+      <listitem>
+        <para>Save files to disk.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect1 id="mtnb-ic-monotone">
+      <title>Monotone</title>
+
+      <para>Monotone is a distributed VCS that supports change set check-ins, disconnected operation with an efficient synchronisation mechanism, history sensitive merging and many more features. It provides a simple, clean and consistent interface to the user.</para>
+
+      <para>For more general information please go to <ulink url="http://monotone.ca/">Monotone's</ulink> web site. There is also an extensive online <ulink url="http://monotone.ca/monotone.html">user guide</ulink>.</para>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Two: Getting Started -->
+
+  <chapter label="2" id="mtnb-gsc">
+    <title>Getting Started</title>
+
+    <para>This chapter covers the basic usage of <application>&APP;</application>. For more advanced usage topics please look at the subsequent chapters.</para>
+
+    <sect1 id="mtnb-gsc-opening-database">
+      <title>Opening A Database</title>
+
+      <para>When <application>&APP;</application> first starts up, nearly everything is greyed out. You need to select a Monotone database by using the <guilabel>Open</guilabel> tool-bar button or the <menuchoice><guimenu>File</guimenu><guimenuitem>Open</guimenuitem></menuchoice> menu option. Use the <guilabel>Open Database</guilabel> dialog window to select the database and left click on the <guilabel>Open</guilabel> button to finish.</para>
+
+        <figure>
+          <title>Opening A Monotone Database</title>
+          <screenshot>
+          <screeninfo>Opening a Monotone database using the <guilabel>Open Database</guilabel> dialog window.</screeninfo>
+            <graphic fileref="figures/open-database-dialog.png" format="png"/>
+          </screenshot>
+        </figure>
+
+    </sect1>
+
+    <sect1 id="mtnb-gsc-main-window-at-a-glance">
+      <title>Monotone Browser Window - At A Glance</title>
+
+      <para>Once a database has been opened you will be presented with a window like the one shown below.</para>
+
+      <figure>
+        <title>An Empty Monotone Browser Window</title>
+        <screenshot>
+          <screeninfo>An empty <guilabel>Monotone Browser</guilabel> window before anything has been selected.</screeninfo>
+          <graphic fileref="figures/main-window-empty.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>Below the tool-bar the main part of the window is split into four distinctive areas:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><guilabel>View</guilabel> - This panel allows one to select the project branch and revision that you wish to browse. The buttons to the right act on the selected revision.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Revision Browser</guilabel> - This panel allows you to navigate around the selected revision and search for specific files.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>File Viewer</guilabel> - This panel displays details about the selected file, including its contents. The buttons to the right act on the selected file.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Details</guilabel> - This panel displays general details about the database and revision.</para>
+        </listitem>
+      </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="mtnb-gsc-browsing">
+      <title>Browsing The Database</title>
+
+      <para>This section covers how to quickly select a branch and revision and then get at the files within that revision.</para>
+
+      <sect2 id="mtnb-gsc-selection">
+        <title>Selecting A Branch And Revision</title>
+
+        <para>Before any information can be viewed, one has to select not only the database to use, but also the branch and revision that you wish to view. This is done by using the <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields inside the <guilabel>View</guilabel> panel. There are a number of things that <application>&APP;</application> will do to help you select the item you want.</para>
+
+        <para>For example, when entering the branch name one can simply select it from the pull down list that is provided when you left click on the <inlinegraphic fileref="figures/combobox-entry-down-button.png" format="png" valign="middle"/>&nbsp; button just to the right of the combobox entry field. However, the list of branch names can be very long and so it may be easier to start typing it in directly. As you start typing, <application>&APP;</application> will attempt to auto-complete it for you and update the pull down list so as to only contain those remaining valid completions.</para>
+
+        <para>So if you typed in <literal>net.venge.monotone.contrib.lib.automate-stdio</literal> as the branch and then left clicked on the <inlinegraphic fileref="figures/combobox-entry-down-button.png" format="png" valign="middle"/>&nbsp; button then you would have something looking like that shown in the figure below.</para>
+
+        <figure>
+          <title>A Branch ComboBox Entry Field Showing Its Completion List</title>
+          <screenshot>
+            <screeninfo>Branch combobox entry field showing a reduced set of completion options via its pull down list.</screeninfo>
+            <graphic fileref="figures/branch-combobox-entry-with-completion.png" format="png"/>
+          </screenshot>
+        </figure>
+
+        <note>
+          <orderedlist numeration="arabic">
+            <listitem>
+              <para>Entering a space will trigger auto-completion. This is especially useful when starting off with a blank combobox entry field or when a value was pasted in and you want to update the display.</para>
+            </listitem>
+            <listitem>
+              <para>With a very large number of branches, performance can suffer. There is a preference option that can be used to prevent the updates to the pull down lists (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para>
+            </listitem>
+          </orderedlist>
+        </note>
+
+        <para>Entering a revision id is done in much the same way as with a branch name. The revision ids are limited to those that are on the selected branch. One can also select a revision by its tag name simply by making sure that <guilabel>Tagged</guilabel> is ticked.</para>
+
+        <note>
+          <para>If you wish to select a revision that is not on a branch or select a specific revision out of several labelled with the same tag on the same branch then one has to use the <guilabel>Advanced Find</guilabel> dialog window (see <xref linkend="mtnb-mcqc"/>).</para>
+        </note>
+
+      </sect2>
+
+      <sect2 id="mtnb-gsc-selecting-file">
+        <title>Selecting A File To Display</title>
+
+        <para>Once a revision has been displayed then the contents of that revision will be displayed in the <guilabel>Revision Browser</guilabel> panel. This acts as a simple file manager. Single left clicking on a file will display its contents and double left clicking on a directory will change into that directory.</para>
+
+        <para>Basically anything that could be accessed in a clean Monotone workspace can be accessed here. The file viewer is capable of displaying some image files, text files with syntax highlighting and if it is a file format that cannot be handled internally then it will display its MIME type followed by a hexadecimal dump of the file's contents. This behaviour can be controlled through a preference option (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para>
+
+        <figure>
+          <title>A Monotone Browser Window Displaying A Text File</title>
+          <screenshot>
+            <screeninfo>A <guilabel>Monotone Browser</guilabel> window displaying a text file with syntax highlighting.</screeninfo>
+            <graphic fileref="figures/main-window-showing-file.png" format="png"/>
+          </screenshot>
+        </figure>
+
+        <figure>
+          <title>A Monotone Browser Window Displaying An Image File</title>
+          <screenshot>
+            <screeninfo>A <guilabel>Monotone Browser</guilabel> window displaying an image (.png) file.</screeninfo>
+            <graphic fileref="figures/main-window-showing-image-file.png" format="png"/>
+          </screenshot>
+        </figure>
+
+        <figure>
+          <title>A Monotone Browser Window Displaying A Hex Dump</title>
+          <screenshot>
+            <screeninfo>A <guilabel>Monotone Browser</guilabel> window displaying a hex dump of a file it cannot display natively.</screeninfo>
+            <graphic fileref="figures/main-window-showing-hex-dump.png" format="png"/>
+          </screenshot>
+        </figure>
+
+      </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-gsc-main-window-a-closer-look">
+      <title>Monotone Browser Window - A Closer Look</title>
+
+      <para>This section looks at the <guilabel>Monotone Browser</guilabel> window in greater detail, going through the menu options and buttons.</para>
+
+      <sect2 id="mtnb-gsc-menu">
+        <title>Menus</title>
+
+        <para>The menus on a <guilabel>Monotone Browser</guilabel> window largely provide an alternative means of accessing the functions provided by the tool-bar buttons. For example the <menuchoice><guimenu>File</guimenu><guimenuitem>Open</guimenuitem></menuchoice> menu option does exactly the same thing as the <guilabel>Open</guilabel> tool-bar button. As the tool-bar buttons are discussed in the next section, I will not bother to elaborate on their menu counterparts here. However there are a few extra menu options that do not appear anywhere else:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><menuchoice><guimenu>File</guimenu><guimenuitem>New Blank</guimenuitem></menuchoice> - Displays a new <guilabel>Monotone Browser</guilabel> window but in its closed state rather than initially duplicating the contents of the existing window. This is particularly useful if the first thing you are going to do is to open a completely different database.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>File</guimenu><guimenuitem>Quit</guimenuitem></menuchoice> - This completely quits out of the application regardless of what windows you may have open. Normally the application only exits when all of its <guilabel>Monotone Browser</guilabel> windows have been closed.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Home Page</guimenuitem></menuchoice> - Displays the home page for the <application>&APP;</application> application.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>About</guimenuitem></menuchoice> - Displays the obligatory <guilabel>About</guilabel> window that nurses the ego of the author and rightly mentions those people kind enough to contribute their time and effort to this project.</para>
+          </listitem>
+        </itemizedlist>
+
+      </sect2>
+
+      <sect2 id="mtnb-gsc-tool-bar">
+        <title>Tool-Bar</title>
+
+        <para>The tool-bar provides the following buttons:</para>
+
+        <informaltable>
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry><para>Button</para></entry>
+                <entry><para>Description</para></entry>
+              </row>
+            </thead>
+            <tbody>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/new-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays a new <guilabel>Monotone Browser</guilabel> window with the same branch and revision pre-selected. If you want to open another database in the new window then you may wish to use the <menuchoice><guimenu>File</guimenu><guimenuitem>New Blank</guimenuitem></menuchoice> menu option instead, as this way no time is wasted needlessly selecting something you do not want.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/open-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Allows you to open a different database via the <guilabel>Open Database</guilabel> dialog window. Any database currently oen in the browser window will automatically be closed first.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/close-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Closes the database currently open in the <guilabel>Monotone Browser</guilabel> window. The vast majority of the window is disabled, greyed out, until another database is opened.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/reload-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Reopens the database currently open in the <guilabel>Monotone Browser</guilabel> window and then forcibly refreshes the window's contents. This is particularly useful if you have done an <command>mtn sync</command> on the command line and wish to update your list of branches.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/preferences-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays the <guilabel>Preferences</guilabel> window (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/help-toolbar-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays the contents page of this help manual.</para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+      </sect2>
+
+      <sect2 id="mtnb-gsc-browser-buttons">
+        <title>Browser Buttons</title>
+
+        <sect3>
+          <title>View Buttons</title>
+
+          <para>These buttons are located on the right hand side of the <guilabel>View</guilabel> panel. They do the following:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Button</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/find-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays the <guilabel>Advanced Find</guilabel> dialog window that allows one to enter more complex database queries (see <xref linkend="mtnb-mcqc"/>).</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/montone-viz-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Runs <application>Monotone Viz</application>. Any selected branch and revision details will be passed to <application>Monotone Viz</application> so that it can graph the specific branch and select the revision on that branch.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/information-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a <guilabel>Revision History</guilabel> window for the selected revision, showing its change history right back to the earliest revision on that path (see <xref linkend="mtnb-lachc-the-revision-and-file-history-windows"/>).</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/changelog-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a <guilabel>Change Log</guilabel> window for the selected revision, showing all the details about that revision (see <xref linkend="mtnb-lachc-the-change-log-window"/>).</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+        <sect3>
+          <title>Revision Browser Buttons</title>
+
+          <para>These buttons are located on the right hand side of the <guilabel>Revision Browser</guilabel> panel. They do the following:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Button</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/up-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Moves the revision browser up one directory level.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/find-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays the <guilabel>Find Files</guilabel> window that allows one to search for files in the currently selected revision. Its capabilities are very similar to those found in most desktop file managers (see <xref linkend="mtnb-ffwar"/>).</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+        <sect3>
+          <title>File Viewer Buttons</title>
+
+          <para>These buttons are located on the right hand side of the <guilabel>File Viewer</guilabel> panel. They do the following:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Button</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/line-numbers-toggle-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Toggles the displaying of line numbers in the file viewer.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/find-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a <guilabel>Find Text</guilabel> dialog window that allows one to search for text within the currently displayed file. Within the dialog window there are a number of options. The <guilabel>Case sensitive</guilabel> and <guilabel>Search backwards</guilabel> options affect the search in the way that one would expect. The <guilabel>Regular expression</guilabel> option, when ticked, allows one to enter search terms that are extended regular expressions (RE). Please see <literal>regex(7)</literal> for further details on regular expressions.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/save-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a standard <guilabel>Save As</guilabel> dialog window, allowing one to save the contents of the currently selected file to disk.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/file-viewer-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Launches the desktop's helper application for the currently selected file. The helper application for a given MIME type can be specified or overridden in the <guilabel>Preferences</guilabel> dialog window (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/annotate-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a <guilabel>Annotated Listing</guilabel> window for the currently selected file. This window shows who changed what, when they did it and the revision under which the change was made.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/information-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Displays a <guilabel>File History</guilabel> window for the currently selected file, showing its change history right back to the earliest revision of that file (see <xref linkend="mtnb-lachc-the-revision-and-file-history-windows"/>).</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+      </sect2>
+
+      <sect2 id="mtnb-gsc-information-fields">
+        <title>Information Fields</title>
+
+        <sect3>
+          <title>File Viewer Fields</title>
+
+          <para>These fields are located at the top of the <guilabel>File Viewer</guilabel> panel and show the most up to date information about the file being shown, relative to the currently selected revision. They provide the following information:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Field</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><guilabel>File</guilabel></para></entry>
+                  <entry><para>Displays the file's full path and file name. If one were looking for that file in a workspace then the path is of course relative to the workspace's base directory.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Author</guilabel></para></entry>
+                  <entry><para>Displays the author responsible for this version of the file.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Last Update</guilabel></para></entry>
+                  <entry><para>Displays the modification date and time when this version of the file was checked in.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Revision Id</guilabel></para></entry>
+                  <entry><para>Displays the id of the revision under which this version of the file was checked in.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+        <sect3>
+          <title>General Details Fields</title>
+
+          <para>These fields are located in the <guilabel>Details</guilabel> panel and show general information about the database and revision. They provide the following information:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Field</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><guilabel>Database</guilabel></para></entry>
+                  <entry><para>Displays the the full path and file name of the monotone database that is currently being viewed.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Date</guilabel></para></entry>
+                  <entry><para>Displays the date and time when the currently selected revision was created.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Author</guilabel></para></entry>
+                  <entry><para>Displays the author responsible for the currently selected revision.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Change Log</guilabel></para></entry>
+                  <entry><para>Displays the first line of the change log for the currently selected revision.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+      </sect2>
+
+      <sect2 id="mtnb-gsc-tool-tips-and-selection">
+        <title>Tool-Tips And Selection</title>
+
+        <para>Tool-tips in this application work as expected. For most widgets, hovering over them will display an explanatory tool-tip after a few seconds. However, in the case of entry fields, in order not to interfere with typing, tool-tips only come up when you hover over an entry field's label rather than the entry box itself. Tool-tips are also used on the values displayed in information fields so that if they get truncated by the size of the window then one can always view their full value via a tool-tip.</para>
+
+        <para>Most text items can be selected in the normal way with the mouse. However, the values in all information fields can also be selected. In the case where the value gets truncated then one can still select the entire value by treble left clicking with the mouse.</para>
+
+        <para>The following figure illustrates the two points made above in a rather artificial way. It shows a <guilabel>Monotone Browser</guilabel> window where the user has treble left clicked on the value inside the <guilabel>File</guilabel> field and then moved the mouse over to the <guilabel>Change Log</guilabel> field.</para>
+
+        <figure>
+          <title>A Monotone Browser Window Showing Tool-Tips And Text Selection</title>
+          <screenshot>
+            <screeninfo>A <guilabel>Monotone Browser</guilabel> window showing a tool-tip and the selection of text inside an information label.</screeninfo>
+            <graphic fileref="figures/main-window-showing-tooltip-and-selection.png" format="png"/>
+          </screenshot>
+        </figure>
+
+      </sect2>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Three: More Complex Queries -->
+
+  <chapter label="3" id="mtnb-mcqc">
+    <title>More Complex Queries</title>
+
+    <para>This chapter covers the <guilabel>Advanced Find</guilabel> dialog window and how it can be used to perform more complex queries on a database.</para>
+
+    <note>
+      <para>This dialog window concerns itself with finding a particular revision in the database. If you want to find a particular file based upon some search criteria within a revision then, once the revision has been displayed, use the <guilabel>Monotone Browser</guilabel> window's  <guilabel>Find Files</guilabel> button to actually search for the file(s).</para>
+    </note>
+
+    <sect1 id="mtnb-mcqc-the-advanced-find-dialog-window">
+      <title>The Advanced Find Dialog Window</title>
+
+      <para>When you left click on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Advanced Find</guilabel> button you will be presented with a dialog window like the one shown below.</para>
+
+      <figure>
+        <title>An Empty Advanced Find Dialog Window</title>
+        <screenshot>
+          <screeninfo>An empty <guilabel>Advanced Find</guilabel> dialog window.</screeninfo>
+          <graphic fileref="figures/advanced-find-window-empty.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>Like the <guilabel>Monotone Browser</guilabel> window, this one is also split into five distinctive areas:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><guilabel>Mode</guilabel> - This panel simply allows you to select the type of query that you wish to perform, either a simple query or an advanced one.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Simple Query</guilabel> - This panel operates in a very similar fashion to the <guilabel>View</guilabel> panel found on a <guilabel>Monotone Browser</guilabel> window (see <xref linkend="mtnb-gsc-selection"/>), apart from all the revision buttons are missing and it operates in a slightly less restrictive manor.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Advanced Query</guilabel> - This panel allows one to directly enter Monotone database queries, it also provides some tools to help those that are not familiar with Monotone's query syntax.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Revisions</guilabel> - This panel displays a list of revisions that match the query, along with details about the branches that they are on, their dates and their authors.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Details</guilabel> - This panel simply displays the full change log for the revision currently selected in the <guilabel>Revisions</guilabel> panel.</para>
+        </listitem>
+      </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="mtnb-mcqc-simple-queries">
+      <title>Simple Queries</title>
+
+      <para>This is the default query mode. Having read the previous section, one would be forgiven for thinking <quote>what is the point?</quote>. Well there are two reasons why you may want to use this mode:</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>You may simply want to look at a revision's change log before selecting it.</para>
+        </listitem>
+        <listitem>
+          <para>The tagged revision that you attempted to select in the parent <guilabel>Monotone Browser</guilabel> window is not unique on the currently selected branch and something like the following dialog window popped up.</para>
+          <figure>
+            <title>A `Non-Unique Tag' Dialog Window</title>
+            <screenshot>
+              <screeninfo>A non-unique tag dialog window.</screeninfo>
+              <graphic fileref="figures/non-unique-tag-dialog.png" format="png"/>
+            </screenshot>
+          </figure>
+        </listitem>
+      </orderedlist>
+
+      <para>Once you have completed your simple query, a list of matching revisions will be displayed in the <guilabel>Revisions</guilabel> panel. When one of these revisions is selected, its full change log is displayed in the <guilabel>Details</guilabel> panel on the right. Left clicking on the <guilabel>OK</guilabel> button will dismiss the <guilabel>Advanced Find</guilabel> dialog window and load the selected revision into the parent <guilabel>Monotone Browser</guilabel> window.</para>
+
+      <note>
+        <para>Double left clicking on a revision will select that revision and then proceed as if the <guilabel>OK</guilabel> button had been pressed.</para>
+      </note>
+
+      <figure>
+        <title>An Example Of A Simple Query</title>
+        <screenshot>
+          <screeninfo>An <guilabel>Advanced Find</guilabel> dialog window displayed in its <quote>simple query</quote> configuration showing a typical query.</screeninfo>
+          <graphic fileref="figures/advanced-find-window-simple-mode.png" format="png"/>
+        </screenshot>
+      </figure>
+
+    </sect1>
+
+    <sect1 id="mtnb-mcqc-advanced-queries">
+      <title>Advanced Queries</title>
+
+      <para>This mode allows one to directly enter Monotone queries as would be given to an <command>mtn automate select</command> command. There are a number of <quote>helper</quote> tools that assist those users not familiar with the query syntax.</para>
+
+      <sect2 id="mtnb-mcqc-helper-tools">
+        <title>Helper Tools</title>
+
+        <sect3>
+          <title>Extra Buttons</title>
+
+          <para>There are a number of extra buttons in this mode that do the following:</para>
+
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Button</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/execute-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Runs the query entered into the <guilabel>Search term</guilabel> combobox entry field.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/stop-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Stops the currently running query. This is very useful when you make a mistake and accidentally enter a valid query that returns many hundreds of matches.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><inlinegraphic fileref="figures/up-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para>Enters the currently selected selector term into the <guilabel>Search term</guilabel> combobox entry field.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+        </sect3>
+
+        <sect3>
+          <title>Selector Terms</title>
+
+          <para>The part of the window shown below is solely dedicated to helping the user to enter valid selector terms. If you are familiar with Monotone's query syntax then you can simply enter the query directly into the <guilabel>Search term</guilabel> combobox entry field.</para>
+
+          <figure>
+            <title>Selector Term Helper</title>
+            <screenshot>
+              <screeninfo>The selector term helper.</screeninfo>
+              <graphic fileref="figures/advanced-find-helper-widgets.png" format="png"/>
+            </screenshot>
+          </figure>
+
+          <para>The selector term combobox, the combobox that has <guilabel>Author</guilabel> showing in the above figure, has the following values:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><guilabel>Author</guilabel> - This selector allows one to select revisions based upon their author. This is Monotone's <literal>a:</literal> selector. It takes one parameter, the name of an author, normally in the form of an email address (but this does depend upon your naming conventions).</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Branch</guilabel> - This selector allows one to select revisions based upon which branches they belong to. This is Monotone's <literal>b:</literal> selector. It takes one parameter, the name of a branch, normally in the form of a full qualified reverse DNS style project path (but again this does depend upon your naming conventions).</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Cert</guilabel> - This selector allows one to select revisions based upon whether they have a particular certificate. This is Monotone's <literal>c:</literal> selector. It takes one parameter, the name of a Monotone certificate.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Date (=)</guilabel> - This selector allows one to select revisions based upon their creation date. This is Monotone's <literal>d:</literal> selector.  It takes one parameter, the date and time to be compared against.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Date (&lt;=)</guilabel> - This selector allows one to select revisions based upon whether their creation date is less than or equal to the specified date. This is Monotone's <literal>e:</literal> selector. It takes one parameter, the date and time to be compared against.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Date (&gt;)</guilabel> - This selector allows one to select revisions based upon whether their creation date is greater than the specified date. This is Monotone's <literal>l:</literal> selector. It takes one parameter, the date and time to be compared against.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Head Revision</guilabel> - This selector allows one to select revisions based upon whether they are the head revision of the specified branch. This is Monotone's <literal>h:</literal> selector. It takes one parameter, the name of a branch. If the branch name is not specified then the branch in the current workspace is assumed.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Identifier</guilabel> - This selector allows one to select revisions based upon their revision id. This is Monotone's <literal>i:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Parent</guilabel> - This selector allows one to select revisions that are parents of the specified revision id. This is Monotone's <literal>p:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Separator</guilabel> - This is actually a logical AND operator. Currently Monotone does not directly support an OR operator. This is Monotone's <literal>/</literal> selector operator. It takes no parameters but rather combines to other selectors together.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>Tag</guilabel> - This selector allows one to select revisions based upon whether they are tagged with a particular tag. This is Monotone's <literal>t:</literal> selector. It takes one parameter, the name of a tag.</para>
+            </listitem>
+          </itemizedlist>
+
+          <note>
+            <orderedlist numeration="arabic">
+              <listitem>
+                <para>If no argument is given to a selector term when it is inserted into the search term, then a comment will be inserted. This should be replaced with the actual argument or removed if the argument is optional.</para>
+              </listitem>
+              <listitem>
+                <para>When inserting dates and times into a search term, one can remove the time field if you wish to. For example, Monotone will accept <literal>2009-02-22T16:47:00</literal>, <literal>2009-02-22</literal>, <literal>2009-02</literal> and <literal>2009</literal> as valid date/time values.</para>
+              </listitem>
+            </orderedlist>
+          </note>
+
+        </sect3>
+
+      </sect2>
+
+      <sect2 id="mtnb-mcqc-an-example">
+        <title>An Example</title>
+
+        <para>Let us suppose that you want to find all of the revisions made by one of the Monotone developers, <literal>mtn-dev@zackw.users.panix.com</literal>, since the beginning of February 2009, but you do not understand Monotone's query syntax. This is how you would go about constructing the query:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Make sure that <guilabel>Advanced query</guilabel> is selected.</para>
+          </listitem>
+          <listitem>
+            <para>Check that the <guilabel>Search term</guilabel> combobox entry field is empty.</para>
+          </listitem>
+          <listitem>
+            <para>Select <guilabel>Author</guilabel> in the selector term combobox.</para>
+          </listitem>
+          <listitem>
+            <para>Enter <literal>mtn-dev@zackw.users.panix.com</literal> into the adjacent argument entry field.</para>
+          </listitem>
+          <listitem>
+            <para>Left click on the <inlinegraphic fileref="figures/up-button-small.png" format="png" valign="middle"/>&nbsp; button to insert that selector term into the <guilabel>Search term</guilabel> combobox entry field.</para>
+          </listitem>
+          <listitem>
+            <para>Select <guilabel>Separator</guilabel> in the selector term combobox.</para>
+          </listitem>
+          <listitem>
+            <para>Left click on the <inlinegraphic fileref="figures/up-button-small.png" format="png" valign="middle"/>&nbsp; button to insert that selector term into the <guilabel>Search term</guilabel> combobox entry field.</para>
+          </listitem>
+          <listitem>
+            <para>Select <guilabel>Date (&gt;)</guilabel> in the selector term combobox.</para>
+          </listitem>
+          <listitem>
+            <para>Use the calendar to select any date in February 2009.</para>
+          </listitem>
+          <listitem>
+            <para>Left click on the <inlinegraphic fileref="figures/up-button-small.png" format="png" valign="middle"/>&nbsp; button to insert that selector term into the <guilabel>Search term</guilabel> combobox entry field.</para>
+          </listitem>
+          <listitem>
+            <para>Edit the <guilabel>Search term</guilabel> combobox entry field so as to remove the time and day fields and any trailing hyphen from the end of the value inserted by the previous step.</para>
+          </listitem>
+          <listitem>
+            <para>Left click on the <inlinegraphic fileref="figures/execute-button-small.png" format="png" valign="middle"/>&nbsp; button to execute the query.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Assuming that you then selected a revision listed in the <guilabel>Revisions</guilabel> panel, then you should end up with an <guilabel>Advanced Find</guilabel> dialog window looking something like that shown in the figure below.</para>
+
+        <figure>
+          <title>An Example Of An Advanced Query</title>
+          <screenshot>
+            <screeninfo>An <guilabel>Advanced Find</guilabel> dialog window displayed in its <quote>advanced query</quote> configuration showing a typical query.</screeninfo>
+            <graphic fileref="figures/advanced-find-window-advanced-mode.png" format="png"/>
+          </screenshot>
+        </figure>
+
+      </sect2>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Four: Finding Files Within A Revision -->
+
+  <chapter label="4" id="mtnb-ffwar">
+    <title>Finding Files Within A Revision</title>
+
+    <para>This chapter covers the <guilabel>Find Files</guilabel> window and how it can be used to find specific files within a revision.</para>
+
+    <sect1 id="mtnb-ffwarc-the-find-files-window">
+      <title>The Find Files Window</title>
+
+      <para>When you left click on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Find Files</guilabel> button you will be presented with a window like the one shown below.</para>
+
+      <figure>
+        <title>An Empty Find Files Window</title>
+        <screenshot>
+          <screeninfo>An empty <guilabel>Find Files</guilabel> window.</screeninfo>
+          <graphic fileref="figures/find-files-window-empty.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>This window is split into two distinctive areas:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><guilabel>Query</guilabel> - This panel allows one to enter fairly complex search criteria and perform file searches. The behaviour of this panel should be familiar to anyone that has used a similar facility inside a file manager.</para>
+        </listitem>
+        <listitem>
+          <para><guilabel>Results</guilabel> - This panel displays a list of files that match the query. The information fields at the bottom display the same sort of information as that displayed in a <guilabel>Monotone Browser</guilabel>'s <guilabel>File Viewer</guilabel> panel (see <xref linkend="mtnb-gsc-information-fields"/>) apart from the <guilabel>File id</guilabel> field, which displays the selected file's unique Monotone id.</para>
+        </listitem>
+      </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="mtnb-ffwarc-query-fields">
+      <title>Query Fields</title>
+
+      <para>Query fields are grouped into three tabbed panes as follows:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><guilabel>Name</guilabel> Tab</para>
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Field</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><guilabel>Searching from</guilabel></para></entry>
+                  <entry><para>Displays the directory from which the search will be conducted. This field will be blank if the search is being done from the upper most directory.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Files named</guilabel></para></entry>
+                  <entry><para>Combobox entry field where one can enter a file name pattern that is to be searched for. File name patterns can be those used with commands like <literal>ls(1)</literal>.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Case sensitive</guilabel></para></entry>
+                  <entry><para>When ticked, make any file name pattern matching case sensitive, otherwise case is unimportant.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Search subdirectories</guilabel></para></entry>
+                  <entry><para>When ticked, recursively search all directories from the current one downwards, otherwise only search the current directory.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+        <listitem>
+          <para><guilabel>Contents</guilabel> Tab</para>
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Field</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><guilabel>Files containing</guilabel></para></entry>
+                  <entry><para>Combobox entry field where one can enter a text pattern that is to be searched for inside each file.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Case sensitive</guilabel></para></entry>
+                  <entry><para>When ticked, make any text pattern searching case sensitive, otherwise case is unimportant.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Regular expression</guilabel></para></entry>
+                  <entry><para>When ticked, treat any text pattern as an extended regular expression (RE), otherwise the text pattern is treated as an ordinary sequence of characters. Please see <literal>regex(7)</literal> for further details on regular expressions.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Search binary files</guilabel></para></entry>
+                  <entry><para>When ticked, search binary files as well as text files, otherwise only search text files. A file is deemed to be binary if it contains more than a small percentage of non-text data.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+        <listitem>
+          <para><guilabel>Properties</guilabel> Tab</para>
+          <informaltable>
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry><para>Field</para></entry>
+                  <entry><para>Description</para></entry>
+                </row>
+              </thead>
+              <tbody>
+                <row valign="top">
+                  <entry><para><guilabel>Find all files created or modified</guilabel></para></entry>
+                  <entry><para>When ticked, enable the ability to search based on a file's modification time, otherwise modification time is unimportant.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>between</guilabel></para></entry>
+                  <entry><para>When selected, one can enter a time range in which a file's modification time has to fall in order to be selected (i.e. <quote>select files changed between x and y</quote>).</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>during the previous</guilabel></para></entry>
+                  <entry><para>When selected, one can enter how recent a file's modification time has to be in order to be selected (i.e. <quote>select files changed within the last x minutes/hours/days/months/years</quote>).</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>File size is</guilabel></para></entry>
+                  <entry><para>When set to something other than <guilabel>Any Size</guilabel>, enable the ability to search based on a file's size, otherwise size is unimportant.</para></entry>
+                </row>
+                <row valign="top">
+                  <entry><para><guilabel>Files last modified by</guilabel></para></entry>
+                  <entry><para>Combobox entry field where one can enter the id of the author that is to be searched for on each file.</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+      </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="mtnb-ffwarc-query-buttons">
+      <title>Query Buttons</title>
+
+      <para>These buttons are located on the right hand side of the <guilabel>Query</guilabel> panel. They do the following:</para>
+
+      <informaltable>
+        <tgroup cols="2">
+          <thead>
+            <row>
+              <entry><para>Button</para></entry>
+              <entry><para>Description</para></entry>
+            </row>
+          </thead>
+          <tbody>
+            <row valign="top">
+              <entry><para><inlinegraphic fileref="figures/execute-button.png" format="png" valign="middle"/></para></entry>
+              <entry><para>Runs the query entered into the forms on the corresponding tabs.</para></entry>
+            </row>
+            <row valign="top">
+              <entry><para><inlinegraphic fileref="figures/stop-button.png" format="png" valign="middle"/></para></entry>
+              <entry><para>Stops the currently running query. This is very useful when you are performing a complex search on a revision containing many files.</para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+    </sect1>
+
+    <sect1 id="mtnb-ffwarc-an-example">
+      <title>An Example</title>
+
+      <para>Let us suppose that you want to find all of the C++ source code files modified by one of the Monotone developers, <literal>me@thomaskeller.biz</literal>, in the last 10 years that contain the text <quote>roster</quote> (for the sake of argument we will assume that the <guilabel>Find Files</guilabel> button was clicked whilst viewing the top level directory of the revision tagged with <literal>monotone-0.42</literal>). This is how you would go about doing the search:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Make sure that <guilabel>Name</guilabel> tab is visible.</para>
+        </listitem>
+        <listitem>
+          <para>Enter <literal>*.[cC][cp]*</literal> into the <guilabel>Files named</guilabel> combobox entry field. Although not fool proof, we will assume all C++ source code files have the extensions <literal>.cc</literal>, <literal>.cpp</literal> or <literal>.C</literal> which they seem to do on the Monotone project.</para>
+        </listitem>
+        <listitem>
+          <para>Check that <guilabel>Case sensitive</guilabel> is unticked and <guilabel>Search subdirectories</guilabel> is ticked.</para>
+        </listitem>
+        <listitem>
+          <para>Switch to the <guilabel>Contents</guilabel> tab.</para>
+        </listitem>
+        <listitem>
+          <para>Enter <literal>roster</literal> into the <guilabel>Files containing</guilabel> combobox entry field.</para>
+        </listitem>
+        <listitem>
+          <para>Check that <guilabel>Case sensitive</guilabel>, <guilabel>Regular expression</guilabel> and <guilabel>Search binary files</guilabel> are unticked.</para>
+        </listitem>
+        <listitem>
+          <para>Switch to the <guilabel>Properties</guilabel> tab.</para>
+        </listitem>
+        <listitem>
+          <para>Check that <guilabel>Find files created or modified</guilabel> is ticked and <guilabel>during the previous</guilabel> is selected.</para>
+        </listitem>
+        <listitem>
+          <para>Enter <literal>10</literal> into the <guilabel>during the previous</guilabel> entry field.</para>
+        </listitem>
+        <listitem>
+          <para>Select <guilabel>Year(s)</guilabel> in the adjacent combobox.</para>
+        </listitem>
+        <listitem>
+          <para>Make sure the <guilabel>File size is</guilabel> combobox is set to <guilabel>Any Size</guilabel>.</para>
+        </listitem>
+        <listitem>
+          <para>Enter <literal>me@thomaskeller.biz</literal> into the <guilabel>Files last modified by</guilabel> combobox entry field.</para>
+        </listitem>
+        <listitem>
+          <para>Left click on the <inlinegraphic fileref="figures/execute-button-small.png" format="png" valign="middle"/>&nbsp; button to execute the query.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Assuming that you then selected a file listed in the <guilabel>Results</guilabel> panel, then you should end up with a <guilabel>Find Files</guilabel> window looking something like that shown in the figure below.</para>
+
+      <figure>
+        <title>An Example Of A Find Files Query</title>
+        <screenshot>
+          <screeninfo>An <guilabel>Find Files</guilabel> window showing a typical query.</screeninfo>
+          <graphic fileref="figures/find-files-window-query.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <note>
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Double left clicking on a file will display the file's contents in a new <guilabel>Monotone Browser</guilabel> window.</para>
+          </listitem>
+          <listitem>
+            <para>Some queries can take a long time to execute depending upon the nature of the search and the number of files being searched. However the next time such a query is made, the speed will be greatly increased. This is because <application>&APP;</application> caches certain information after the first search. This cache is only cleared when the currently selected revision is replaced in the parent <guilabel>Monotone Browser</guilabel> window.</para>
+          </listitem>
+        </orderedlist>
+      </note>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Five: Looking At Change Histories -->
+
+  <chapter label="5" id="mtnb-lachc">
+    <title>Looking At Change Histories</title>
+
+    <para>This chapter covers the examining of revision and file histories, doing comparisons between revisions and files and finding out who was responsible for a particular piece of text within a file.</para>
+
+    <sect1 id="mtnb-lachc-the-revision-and-file-history-windows">
+      <title>The Revision And File History Windows</title>
+
+      <para>In fact as you will see, these windows are nearly identical. Therefore I will only concentrate on the <guilabel>Revision History</guilabel> window.</para>
+
+      <para>When you left click on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Revision History</guilabel> button you will be presented with a window like the one shown below.</para>
+
+      <figure>
+        <title>A Revision History Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Revision History</guilabel> window.</screeninfo>
+          <graphic fileref="figures/revision-history-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>The <guilabel>Revision History</guilabel> window shows the change history from the revision currently displayed in the parent <guilabel>Monotone Browser</guilabel> window right back to the base revision. Each revision has a summary change log displayed, separated from the next revision by a red line.</para>
+
+      <note>
+        <para>Whilst the <guilabel>Number of revisions</guilabel> field is pretty self explanatory, please remember that it shows the number of revisions actually displayed and may be less than what could have been found in the database if the <guilabel>Stop</guilabel> button was pressed. For example, above I pressed the <guilabel>Stop</guilabel> button early on but had I not done so then the number of revisions would have been more like eight thousand rather than one hundred.</para>
+      </note>
+
+      <warning>
+        <para>Do think twice before loading up revision histories that are very large. Normally one would only want to look at the first fifty or so items. Do make use of the <guilabel>Stop</guilabel> button. Although it will work as expected, displaying thousands of revisions will take a very long time in both gathering the information and cleaning up afterwards.</para>
+      </warning>
+
+      <sect2 id="mtnb-lachc-history-buttons">
+        <title>History Buttons</title>
+
+        <para>These buttons are located after each summary change log and just below the scrolling history window. They do the following:</para>
+
+        <informaltable>
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry><para>Button</para></entry>
+                <entry><para>Description</para></entry>
+              </row>
+            </thead>
+            <tbody>
+              <row valign="top">
+                <entry><para><guilabel>Select As Id 1</guilabel></para></entry>
+                <entry><para>Selects that revision as the first revision that is to be compared. It's revision id is displayed in the <guilabel>First revision id</guilabel> field at the bottom of the window.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><guilabel>Select As Id 2</guilabel></para></entry>
+                <entry><para>Selects that revision as the second revision that is to be compared. It's revision id is displayed in the <guilabel>Second revision id</guilabel> field at the bottom of the window.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><guilabel>Browse Revision</guilabel></para></entry>
+                <entry><para>Displays a new <guilabel>Monotone Browser</guilabel> window showing the contents of that revision. This button is only displayed in <guilabel>Revision History</guilabel> windows.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><guilabel>Browse File</guilabel></para></entry>
+                <entry><para>Displays a new <guilabel>Monotone Browser</guilabel> window showing the contents of that version of the file. This button is only displayed in <guilabel>File History</guilabel> windows.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><guilabel>Full Change Log</guilabel></para></entry>
+                <entry><para>Displays a <guilabel>Change Log</guilabel> window containing the full change log for that revision. In addition to the summary information already displayed, a full change log also contains the list of files changed and the parent and manifest ids.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/stop-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>When pressed the first time, this button stops the traversing of revision and file histories. When pressed a second time, it stops the gathering of information about each revision. This is very useful when looking at revision histories, as these can be massive, or when looking at file histories, as these take a long time to calculate where each change happened.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/compare-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays a <guilabel>Differences</guilabel> window that shows all of the differences between the two selected revisions. The two revisions in question are selected by using the <guilabel>Select As Id</guilabel>... buttons mentioned above (see <xref linkend="mtnb-lachc-the-differences-window"/>).</para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+      </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-lachc-the-differences-window">
+      <title>The Differences Window</title>
+
+      <para>When two revisions or files are compared inside a <guilabel>Revision History</guilabel> window, you will be presented with a window like the one shown below.</para>
+
+      <figure>
+        <title>A Differences Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Differences</guilabel> window showing highlighted changes for a file.</screeninfo>
+          <graphic fileref="figures/differences-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>The <guilabel>Differences</guilabel> window shows the differences between the two revisions or files selected in the parent <guilabel>Revision History</guilabel> or <guilabel>File History</guilabel> window. Additions are highlighted in green and deletions are highlighted in red.</para>
+
+      <note>
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Regardless of the order in which the revisions or files were selected, the text highlighted in green is <emphasis>always</emphasis> what <emphasis>is</emphasis> present in the more recent version of the file that is <emphasis>not</emphasis> present in the older version. Likewise the text highlighted in red is <emphasis>always</emphasis> what is <emphasis>not</emphasis> present in the more recent version of the file that <emphasis>is</emphasis> present in the older version.</para>
+          </listitem>
+          <listitem>
+            <para>Please remember that the highlighted changes could have occurred anywhere between the selected revisions or files.</para>
+          </listitem>
+        </orderedlist>
+      </note>
+
+      <warning>
+        <para>Do think twice before displaying very large differences as this can take a very long time in both formatting the information and cleaning up afterwards. Do make use of the <guilabel>Stop</guilabel> button. However, unlike viewing histories, if you really need to view very large comparisons then one always has the option of turning off the coloured formatting feature via the relevant preference option (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para>
+      </warning>
+
+      <sect2 id="mtnb-lachc-differences-buttons">
+        <title>Differences Buttons</title>
+
+        <para>These buttons are located at the top and bottom of the <guilabel>Differences</guilabel> window. They do the following:</para>
+
+        <informaltable>
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry><para>Button</para></entry>
+                <entry><para>Description</para></entry>
+              </row>
+            </thead>
+            <tbody>
+              <row valign="top">
+                <entry><para><guilabel>Jump to file</guilabel></para></entry>
+                <entry><para>Allows one to navigate around the comparison results by jumping from one file to another. The special entry <guilabel>Summary</guilabel> will take you to the top of the results where a summary of the differences found is displayed.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/external-compare-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Performs a comparison of the file selected in the <guilabel>Jump to file</guilabel> button using the external helper application specified in the <guilabel>Preferences</guilabel> dialog window (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>). This is set to <command>kompare</command> by default.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/save-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Displays a standard <guilabel>Save As</guilabel> dialog window, allowing one to save the entire comparison results in its original <quote>unified diff</quote> <literal>patch(1)</literal> format to disk.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><inlinegraphic fileref="figures/stop-button.png" format="png" valign="middle"/></para></entry>
+                <entry><para>Stops the current formatting and highlight process. This is very useful when you accidentally generate a much larger comparison result than expected.</para></entry>
+              </row>
+              <row valign="top">
+                <entry><para><guilabel>Revision Change Log</guilabel></para></entry>
+                <entry><para>These buttons display <guilabel>Change Log</guilabel> windows for the two revisions on which the comparison was based. The red button displays the change log for the older revision that contains the text highlighted in red. Likewise the green button displays the change log for the newer revision that contains the text highlighted in green.</para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+      </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-lachc-the-change-log-window">
+      <title>The Change Log Window</title>
+
+      <para>The <guilabel>Change Log</guilabel> window is displayed when ever a full change log entry is to be displayed. It simply shows some nicely formatted text describing the relevant change log. A typical <guilabel>Change Log</guilabel> window is shown below.</para>
+
+      <figure>
+        <title>A Change Log Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Change Log</guilabel> window showing the full change log for a revision.</screeninfo>
+          <graphic fileref="figures/change-log-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+    </sect1>
+
+    <sect1 id="mtnb-lachc-the-annotated-listing-window">
+      <title>The Annotated Listing Window</title>
+
+      <para>When you left click on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Annotate File Contents</guilabel> button you will be presented with a window like the one shown below.</para>
+
+      <figure>
+        <title>An Annotated Listing Window</title>
+        <screenshot>
+          <screeninfo>An <guilabel>Annotated Listing</guilabel> window showing what changes were done by whom and when to a file.</screeninfo>
+          <graphic fileref="figures/annotate-window-with-menu.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>The <guilabel>Annotated Listing</guilabel> window shows the revision and author responsible for each line of text within a file, along with the date on which that change was made. If one right clicks on the window then a menu pops up that allows you to extract certain information about the revision responsible for the text directly under the mouse cursor. These menu options do the following:</para>
+
+      <informaltable>
+        <tgroup cols="2">
+          <thead>
+            <row>
+              <entry><para>Menu Option</para></entry>
+              <entry><para>Description</para></entry>
+            </row>
+          </thead>
+          <tbody>
+            <row valign="top">
+              <entry><para><guilabel>Display Change Log</guilabel></para></entry>
+              <entry><para>Displays the full change log for that revision.</para></entry>
+            </row>
+            <row valign="top">
+              <entry><para><guilabel>Display File History</guilabel></para></entry>
+              <entry><para>Displays the file's change history from that revision back to when the file was added.</para></entry>
+            </row>
+            <row valign="top">
+              <entry><para><guilabel>Display Revision History</guilabel></para></entry>
+              <entry><para>Displays the revision's history from that revision back to the first revision.</para></entry>
+            </row>
+            <row valign="top">
+              <entry><para><guilabel>Compare File With Previous Version</guilabel></para></entry>
+              <entry><para>Compares the version of the file found in that revision with the previous version of that file.</para></entry>
+            </row>
+            <row valign="top">
+              <entry><para><guilabel>Compare Revision With Parent</guilabel></para></entry>
+              <entry><para>Compares the revision with its parent. The comparison is not restricted to just the annotated file.</para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Six: User Preferences -->
+
+  <chapter label="6" id="mtnb-upc">
+    <title>User Preferences</title>
+
+    <para>This chapter covers the <guilabel>Preferences</guilabel> dialog window and what can be customised.</para>
+
+      <note>
+        <para>Some preference settings only take effect when <application>&APP;</application> is restarted.</para>
+      </note>
+
+    <sect1 id="mtnb-upc-the-preferences-dialog-window">
+      <title>The Preferences Dialog Window</title>
+
+      <para>When you left click on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Preferences</guilabel> tool-bar button you will be presented with a dialog window like the one shown below.</para>
+
+      <figure>
+        <title>A Preferences Dialog Window</title>
+        <screenshot>
+          <screeninfo>A <guilabel>Preferences</guilabel> dialog window.</screeninfo>
+          <graphic fileref="figures/preferences-window.png" format="png"/>
+        </screenshot>
+      </figure>
+
+      <para>This window allows you to change the behaviour of <application>&APP;</application>. The preference settings are grouped into three tabbed panes as follows:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><guilabel>General</guilabel> Tab</para>
+          <itemizedlist>
+            <listitem>
+              <para><guilabel>Startup Defaults</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Database to open</guilabel></para></entry>
+                      <entry><para>This entry field contains the default Monotone database that is to be opened automatically when <application>&APP;</application> starts. Left click on the <guilabel>Browse</guilabel> button to display an <guilabel>Open Database</guilabel> dialog window that will help you select a database.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Takes precedence</guilabel></para></entry>
+                      <entry><para>If this is ticked and <application>&APP;</application> is launched from within a Monotone workspace then the database details for that workspace take precedence over the default database. Otherwise the workspace is completely ignored.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Auto select branch and revision</guilabel></para></entry>
+                      <entry><para>If this is ticked and <application>&APP;</application> is launched from within a Monotone workspace then the workspace's branch and revision are selected and displayed by default in <application>&APP;</application>. Otherwise no branch and revision are selected.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>Revision Selection</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Auto select head revision</guilabel></para></entry>
+                      <entry><para>If this is ticked then whenever a branch is selected, it's head revision is automatically selected as well. Otherwise the revision has to be selected manually.</para><note><para>This option only works when revisions are selected by their id rather than by their tag name, i.e. <guilabel>Tagged</guilabel> is unticked in the <guilabel>Monotone Browser</guilabel> window.</para></note></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>ComboBox Settings</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Tagged lists</guilabel></para></entry>
+                      <entry><para>Controls the displaying of tagged revisions within a <guilabel>Revision</guilabel> combobox entry's pull down list. The <guilabel>Limit to</guilabel> entry field stipulates how many items will be displayed in a pull down list (if this is set to <literal>0</literal> then the list is unlimited). <guilabel>Sort chronologically</guilabel> and <guilabel>Sort by name</guilabel> determine whether the items are sorted by date or by their name respectively.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Id lists</guilabel></para></entry>
+                      <entry><para>Controls the displaying of revision ids within a <guilabel>Revision</guilabel> combobox entry's pull down list. The remaining fields have the same purpose as those discussed under <guilabel>Tagged lists</guilabel>, the only difference being that the sort by name option is called <guilabel>Sort by id</guilabel> rather than <guilabel>Sort by name</guilabel>.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>History size</guilabel></para></entry>
+                      <entry><para>Determines how much history is retained for ordinary combobox entry's fields via their pull down lists. This history is saved to disk so that it is available the next time you run <application>&APP;</application>. This does not apply to <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields as they are used to select items out of specific lists retrieved from the database.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+              <note>
+                <orderedlist numeration="arabic">
+                  <listitem>
+                    <para><guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> pull down lists display their items ordered from left to right and then top to bottom.</para>
+                  </listitem>
+                  <listitem>
+                    <para>Histories are displayed with the most recent items uppermost.</para>
+                  </listitem>
+                </orderedlist>
+              </note>
+            </listitem>
+            <listitem>
+              <para><guilabel>Browser Display Options</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Show suspended revisions</guilabel></para></entry>
+                      <entry><para>If this is ticked then suspended revisions are included in <guilabel>Branch</guilabel> combobox entry pull down lists. Otherwise only active branches are listed.</para><note><para>Apart from the obvious use for this setting, it can be useful when there are a large number of branches in the database, as not bothering to weed out suspended branches speeds things up considerably.</para></note></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Detailed file listings</guilabel></para></entry>
+                      <entry><para>If this is ticked then the <guilabel>Last Update</guilabel> and <guilabel>Author</guilabel> columns are shown in Revision Browser panels. Otherwise only the file's icon and name are shown. Not displaying these two columns speeds up the displaying of a directory's contents at the expense of less information.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Show line numbers</guilabel></para></entry>
+                      <entry><para>If this is ticked then line numbers are shown by default when viewing the contents of files. Otherwise no line numbers are shown by default.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Static branch and revision lists</guilabel></para></entry>
+                      <entry><para>If this is ticked then the pull down lists on <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields are not updated each time the user enters something into the corresponding entry field. Otherwise the pull down lists are updated on each key press.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>External File Comparison Application</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Application</guilabel></para></entry>
+                      <entry><para>This entry field contains the name of the program that is to be used when comparing two files with the external helper application. Although <application>&APP;</application> normally uses Monotone to compare files internally, there are occasions when Monotone is unable to do this (due to files being renamed or moved) or when the user feels that comparisons are better viewed in a tool dedicated to that purpose. Under these circumstances the application specified here is use. <literal>{file1}</literal> and <literal>{file2}</literal> are special tokens that are replaced with the corresponding file names.</para>
+                        <note>
+                          <orderedlist numeration="arabic">
+                            <listitem>
+                              <para>If the <guilabel>Application</guilabel> entry field is left blank then all facilities associated with launching an external comparison tool are disabled. For example, the <guilabel>External Differences</guilabel> button on the <guilabel>Differences</guilabel> window will be permanently greyed out.</para>
+                            </listitem>
+                            <listitem>
+                              <para>The <literal>{file1}</literal> and <literal>{file2}</literal> tokens are mandatory and it would probably be a good idea to enclose them in single quotes so that if a file name contains spaces then this does not cause a problem.</para>
+                            </listitem>
+                            <listitem>
+                              <para>The file referred to by the <literal>{file1}</literal> token will be an older version to that referred to by the <literal>{file2}</literal> token.</para>
+                            </listitem>
+                          </orderedlist>
+                        </note></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+        <listitem>
+          <para><guilabel>Appearance</guilabel> Tab</para>
+          <itemizedlist>
+            <listitem>
+              <para><guilabel>Fonts</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>File content/report font</guilabel></para></entry>
+                      <entry><para>This font button specifies the font to use for displaying the contents of text files. When you left click on the button you are presented with a standard <guilabel>Pick A Font</guilabel> dialog window.</para><note><para>It is best that the font you pick is a non-proportional or fixed space font (where each character has the same width) as this is what most text editors use.</para></note></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>File/Revision Comparison</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Coloured comparison listings</guilabel></para></entry>
+                      <entry><para>If this is ticked then revision and file comparisons are formatted using colour in order to make the differences stand out more clearly. Otherwise the comparison output is displayed as plain text in its original <quote>unified diff</quote> <literal>patch(1)</literal> format.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>Colours</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Annotation prefix 1</guilabel> down to <guilabel>Annotation text 2</guilabel></para></entry>
+                      <entry><para>Determines the colours used when displaying text in an <guilabel>Annotated Listing</guilabel> window. As you will have observed, each block of labelled text is displayed in alternating colours in order to differentiate it from its neighbours above and below. In addition, the label, or prefix, on the left hand side of each text block is also displayed in its own colour so as to not only differentiate it from its neighbours but also from its accompanying text on the right. Therefore the colours for this window are broken down into four distinct groups, each having a foreground and background colour. When you left click on a colour button you are presented with a standard <guilabel>Pick A Colour</guilabel> dialog window.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Revision 1</guilabel> and <guilabel>Revision 2</guilabel></para></entry>
+                      <entry><para>Determines the colours used when displaying comparisons between revisions and files. As you will have observed, changes from each revision are displayed in different colours so as to highlight the differences. The foreground and background colours are used for showing the actual differences, whereas the highlight colours are used when displaying file context information in the dark grey status lines. When you left click on a colour button you are presented with a standard <guilabel>Pick A Colour</guilabel> dialog window.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+        <listitem>
+          <para><guilabel>MIME Types</guilabel> Tab</para>
+          <itemizedlist>
+            <listitem>
+              <para><guilabel>MIME Types</guilabel> Panel</para>
+              <para>This panel basically contains a list of MIME types known to <application>&APP;</application>, their associated file name patterns and a helper application that can handle that MIME type. Below this list is an entry field where one can enter new MIME types and then left click on the <guilabel>+</guilabel> button just to the right of this entry field to add it to the list above. Likewise, when you left click on the <guilabel>-</guilabel> then the currently selected MIME type is removed from the list.</para>
+              <para>When <application>&APP;</application> is first run, it initialises the MIME types list from the system's MIME type database, usually <filename>/usr/share/mime/globs</filename>. However, there is always a chance that you may need to add some extra MIME types yourself.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>File Name Patterns</guilabel> Panel</para>
+              <para>This panel contains a list of file name patterns associated with the currently selected MIME type in the <guilabel>MIME Types</guilabel> panel. To the right of this list is an entry field where one can enter new file name patterns and then left click on the <guilabel>+</guilabel> button just to the right of this entry field to add it to the list . Likewise, when you left click on the <guilabel>-</guilabel> then the currently selected file name pattern is removed from the list.</para>
+            </listitem>
+            <listitem>
+              <para><guilabel>File Actions</guilabel> Panel</para>
+              <para>This panel contains some settings for the currently selected MIME type in the <guilabel>MIME Types</guilabel> panel.</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Display internally</guilabel></para></entry>
+                      <entry><para>If this is ticked then files of that MIME type will be displayed in <application>&APP;</application>'s file viewer when selected. Otherwise just the file's MIME type is displayed. If <application>&APP;</application> is not able to make sense of that particular MIME type then it will resort to displaying a hex dump of a file's contents instead.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Syntax highlight</guilabel></para></entry>
+                      <entry><para>If this is ticked then files of that MIME type will be syntax highlighted, if at all possible, when displayed in <application>&APP;</application>'s file viewer. Otherwise no syntax highlighting will take place and the text is just displayed in plain black.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Helper application</guilabel></para></entry>
+                      <entry><para>This entry field contains the name of the program that is to be used to display a file of this type when the user left clicks on a <guilabel>Monotone Browser</guilabel> window's <guilabel>Load Into Viewer</guilabel> button. <literal>{file}</literal> is a special token that is replaced with the corresponding file name.</para>
+                        <note>
+                          <orderedlist numeration="arabic">
+                            <listitem>
+                              <para>If the <guilabel>Helper application</guilabel> entry field is left blank then the file's default desktop application is used.</para>
+                            </listitem>
+                            <listitem>
+                              <para>The <literal>{file}</literal> token is optional but if it is not present then it is automatically appended to the command in the entry field. If you do use this token then it would probably be a good idea to enclose it in single quotes so that if a file name contains spaces then this does not cause a problem.</para>
+                            </listitem>
+                          </orderedlist>
+                        </note></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+      <para>When one left clicks on the <guilabel>Defaults</guilabel> button right at the bottom of the <guiicon>Preferences</guiicon> dialog window then all of the settings on the currently displayed tab are reset to their default values.</para>
+
+    </sect1>
+
+    <sect1 id="mtnb-upc-the-preferences-file">
+      <title>The Preferences File</title>
+
+      <para>User preferences are stored in a file called <filename>.mtn-browser</filename> under the user's home directory. This file must remain writable for the user as it is updated every time a combobox entry field's history is changed.</para>
+
+      <para>Should it become necessary to change the format of the preferences file in later versions of this application then <application>&APP;</application> will automatically upgrade any existing preferences to the new format. However, once upgraded, the new format of preferences file cannot be used with older versions of <application>&APP;</application>.</para>
+
+      <warning>
+        <para>Editing the preferences file by hand may cause <application>&APP;</application> to fail. If you must change it, take a copy of the preferences file beforehand just in case there are problems. </para>
+      </warning>
+
+    </sect1>
+
+  </chapter>
+
+  <!-- Chapter Seven: Tips And Tricks -->
+
+  <chapter label="7" id="mtnb-tatc">
+    <title>Tips And Tricks</title>
+
+    <para>This chapter covers some, hopefully helpful, tips and tricks that will enable you to get the most out of using <application>&APP;</application>.</para>
+
+    <sect1 id="mtnb-tatc-improving-performance">
+      <title>Improving Performance</title>
+
+      <para>Here are some basic tips that will hopefully help you improve performance of <application>&APP;</application> should you need to:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis>Slow Startup</emphasis> - This could be because you are not running the <command>dbus-daemon-1</command> daemon. Gnome applications, of which <application>&APP;</application> is one, use this message bus service to pass messages around. Or see the next tip.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>Takes A Long Time To Get A List Of Branches</emphasis> - Try ticking <guilabel>Show suspended revisions</guilabel> under user preferences. Monotone does have to work quite hard to determine whether a branch is suspended or not and with this option ticked it can simply list every branch with the minimum of fuss.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>Takes A Long Time To Display The Contents Of A Folder</emphasis> - Try unticking <guilabel>Detailed file listings</guilabel> under user preferences. For each file displayed, <application>&APP;</application> has to fetch modification times and author details. Depending upon the version of Monotone being used, this can be a costly process (Monotone versions 0.40 and 0.41 are particularly badly affected by this).</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>Takes A Long Time Searching For Files</emphasis> - The first time this is done on a revision, <application>&APP;</application> caches certain items of information about each scanned file. The next time a search is done it will be a lot faster.</para>
+          <note>
+            <para>The file information cache is only kept whilst the current revision remains selected in that <guilabel>Monotone Browser</guilabel> window.</para>
+          </note>
+        </listitem>
+        <listitem>
+          <para><emphasis>Handling Revision Comparisons Is Very Slow</emphasis> - If it takes a long time during the <literal>Formatting and displaying differences</literal> stage then try unticking <guilabel>Coloured comparison listings</guilabel> under user preferences. If it takes a long time during the <literal>Calculating differences</literal> stage then that is down to the performance of Monotone rather than <application>&APP;</application>.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>It Is Slow When Entering Branch And Revision Names</emphasis> - Try ticking <guilabel>Static branch and revision lists</guilabel> under user preferences. Each time you enter a character into a <guilabel>Branch</guilabel> or <guilabel>Revision</guilabel> combobox entry field, <application>&APP;</application> revises the completion list accordingly. For branch lists in particular, as their size is unrestricted, this can take some time to do. However, with this option ticked completion lists are left unaltered.</para>
+        </listitem>
+      </itemizedlist>
+
+    </sect1>
+
+    <sect1 id="mtnb-tatc-finding-text">
+      <title>Finding Text</title>
+
+      <sect2 id="mtnb-tatc-inside-text-windows">
+        <title>Inside Text Windows</title>
+
+        <para>Only the <guilabel>File Viewer</guilabel> panel inside a <guilabel>Monotone Browser</guilabel> window has a <guilabel>Find Text</guilabel> button. However, it is possible to call up a <guilabel>Find Text</guilabel> dialog window on virtually any text window. Simply go to the text window that you want to search and either enter <keycombo><keysym>Ctrl</keysym><keycap>F</keycap></keycombo> or right click and select the <guilabel>Find</guilabel> menu option. A <guilabel>Find Text</guilabel> dialog window will then be displayed.</para>
+
+      </sect2>
+
+      <sect2 id="mtnb-tatc-inside-tables">
+        <title>Inside Tables</title>
+
+        <para>It is also possible to search for text inside tables (these are used to display the contents of folders, search results and MIME type file associations). Make sure that the table is selected, the easiest way to do this is to select a row inside it, and then enter <keycombo><keysym>Ctrl</keysym><keycap>F</keycap></keycombo>. A small text entry field will appear at the table's bottom right hand corner. When text is entered into this entry field, the first matching row in the table is searched for. The format of the search term is an extended regular expression (RE). Please see <literal>regex(7)</literal> for further details on regular expressions.</para>
+
+        <para>Only one column is selected for searching at any one time. Normally the most sensible column is automatically selected for you. However, if you want to search a different column then right click on the heading of the column that you wish to search and then select the <guilabel>Select As Search Column</guilabel> menu option. This will remain in effect until another column is selected or the window containing the table is dismissed.</para>
+
+      </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-tatc-minimising-file-information-cache-refreshes">
+      <title>Minimising File Information Cache Refreshes</title>
+
+      <para>In order to speed things up, <application>&APP;</application> caches file information whenever it is fetched from Monotone. This helps to speed up certain actions such as displaying the contents of a folder or searching through files. Consequently the first time such an action is performed it will take the normal amount of time, but thereafter it will be much faster if not instantaneous.</para>
+
+      <para>Each <guilabel>Monotone Browser</guilabel> window has its own cache to store information about the revision currently being viewed. If that revision changes or the user left licks on the <guilabel>Reload</guilabel> tool-bar button then the associated cache is emptied and any file information is re-fetched from Monotone.</para>
+
+      <para>There may be times when you want to reload the database (such as to have access to new branches that have been added as a result of doing an <command>mtn sync</command>) but you do not want to invalidate your cache as you know it will come in useful later on. One way you can do this is to launch a new <guilabel>Monotone Browser</guilabel> window by left clicking on the <guilabel>New</guilabel> tool-bar button, within this new window left click on the <guilabel>Reload</guilabel> tool-bar button and then dismiss the window once it has finished reloading. This way the new database gets reloaded into <application>&APP;</application> without affecting the cache associated with the original <guilabel>Monotone Browser</guilabel> window.</para>
+
+    </sect1>
+
+  </chapter>
+
+  <chapter label="10" id="mtnb-ac">
+    <title>Authors</title>
+
+    <para><application>&APP;</application> was written by Anthony Cooper and is currently maintained by him as well. To find more information about <application>&APP;</application>, please visit the official web page, <ulink url="http://www.coosoft.plus.com/software.html" type="http"> www.coosoft.plus.com/software.html</ulink>.  Please send all comments, suggestions and problem reports to <email>support@coosoft.plus.com</email>.</para>
+
+    <para>This manual was written by Anthony Cooper. Please send all comments and suggestions regarding this manual to <email>support@coosoft.plus.com</email>.</para>
+
+    <!-- For translations: uncomment this:
+    <para>Latin translation was done by ME (<address><email>MYNAME@MYADDRESS</email></address>). Please send all  comments  and suggestions regarding this translation to SOMEWHERE.</para>
+    -->
+
+  </chapter>
+
+</book>

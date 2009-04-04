@@ -60,7 +60,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 7;
+use constant PREFERENCES_FORMAT_VERSION => 8;
 
 # Text viewable application mime types.
 
@@ -1006,10 +1006,10 @@ sub get_preferences_window($$)
 			    "auto_select_checkbutton",
 			    "auto_select_head_checkbutton",
 			    "tagged_lists_limit_spinbutton",
-			    "tagged_lists_sort_cronologically_radiobutton",
+			    "tagged_lists_sort_chronologically_radiobutton",
 			    "tagged_lists_sort_by_name_radiobutton",
 			    "id_lists_limit_spinbutton",
-			    "id_lists_sort_cronologically_radiobutton",
+			    "id_lists_sort_chronologically_radiobutton",
 			    "id_lists_sort_by_id_radiobutton",
 			    "history_size_spinbutton",
 			    "show_suspended_revisions_checkbutton",
@@ -1086,7 +1086,7 @@ sub get_preferences_window($$)
 	    set_model($instance->{mime_types_liststore});
 
 	$tv_column = Gtk2::TreeViewColumn->new();
-	$tv_column->set_title(__("Mime Type"));
+	$tv_column->set_title(__("MIME Type"));
 	$tv_column->set_resizable(TRUE);
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_NAME_COLUMN);
@@ -1221,9 +1221,9 @@ sub load_preferences_into_gui($)
 		   TRUE : FALSE);
     $instance->{tagged_lists_limit_spinbutton}->
 	set_value($instance->{preferences}->{query}->{tagged}->{limit});
-    if ($instance->{preferences}->{query}->{tagged}->{sort_cronologically})
+    if ($instance->{preferences}->{query}->{tagged}->{sort_chronologically})
     {
-	$instance->{tagged_lists_sort_cronologically_radiobutton}->
+	$instance->{tagged_lists_sort_chronologically_radiobutton}->
 	    set_active(TRUE);
     }
     else
@@ -1232,9 +1232,9 @@ sub load_preferences_into_gui($)
     }
     $instance->{id_lists_limit_spinbutton}->
 	set_value($instance->{preferences}->{query}->{id}->{limit});
-    if ($instance->{preferences}->{query}->{id}->{sort_cronologically})
+    if ($instance->{preferences}->{query}->{id}->{sort_chronologically})
     {
-	$instance->{id_lists_sort_cronologically_radiobutton}->
+	$instance->{id_lists_sort_chronologically_radiobutton}->
 	    set_active(TRUE);
     }
     else
@@ -1403,13 +1403,13 @@ sub save_preferences_from_gui($)
 	$instance->{auto_select_head_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{query}->{tagged}->{limit} =
 	$instance->{tagged_lists_limit_spinbutton}->get_value_as_int();
-    $instance->{preferences}->{query}->{tagged}->{sort_cronologically} =
-	$instance->{tagged_lists_sort_cronologically_radiobutton}->get_active()
-	? 1 : 0;
+    $instance->{preferences}->{query}->{tagged}->{sort_chronologically} =
+	$instance->{tagged_lists_sort_chronologically_radiobutton}->
+	get_active() ? 1 : 0;
     $instance->{preferences}->{query}->{id}->{limit} =
 	$instance->{id_lists_limit_spinbutton}->get_value_as_int();
-    $instance->{preferences}->{query}->{id}->{sort_cronologically} =
-	$instance->{id_lists_sort_cronologically_radiobutton}->get_active() ?
+    $instance->{preferences}->{query}->{id}->{sort_chronologically} =
+	$instance->{id_lists_sort_chronologically_radiobutton}->get_active() ?
 	1 : 0;
     $instance->{preferences}->{history_size} =
 	$instance->{history_size_spinbutton}->get_value_as_int();
@@ -1589,6 +1589,16 @@ sub upgrade_preferences($)
 	$preferences->{static_lists} = 0;
 	$preferences->{version} = 7;
     }
+    if ($preferences->{version} == 7)
+    {
+	$preferences->{query}->{tagged}->{sort_chronologically} =
+	    $preferences->{query}->{tagged}->{sort_cronologically};
+	delete($preferences->{query}->{tagged}->{sort_cronologically});
+	$preferences->{query}->{id}->{sort_chronologically} =
+	    $preferences->{query}->{id}->{sort_cronologically};
+	delete($preferences->{query}->{id}->{sort_cronologically});
+	$preferences->{version} = 8;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1622,10 +1632,10 @@ sub initialise_preferences()
 	 workspace         => {takes_precedence => 1,
 			       auto_select      => 1},
 	 auto_select_head  => 0,
-	 query             => {tagged => {limit               => 200,
-					  sort_cronologically => 1},
-			       id     => {limit               => 200,
-					  sort_cronologically => 1}},
+	 query             => {tagged => {limit                => 200,
+					  sort_chronologically => 1},
+			       id     => {limit                => 200,
+					  sort_chronologically => 1}},
 	 history_size      => 20,
 	 show_suspended    => 0,
 	 show_file_details => 1,
@@ -1664,7 +1674,7 @@ sub initialise_preferences()
 #   Routine      - initialise_mime_info_table
 #
 #   Description  - Creates a brand new MIME information table based upon the
-#                  system's Mime database.
+#                  system's MIME database.
 #
 #   Data         - Return Value : A reference to the newly created MIME
 #                                 information table on success, otherwise

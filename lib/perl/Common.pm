@@ -757,7 +757,7 @@ sub get_branch_revisions($$$$$)
 
 	if (($user_preferences->{query}->{tagged}->{limit} > 0
 	     && scalar(@tags) > $user_preferences->{query}->{tagged}->{limit})
-	    || $user_preferences->{query}->{tagged}->{sort_cronologically})
+	    || $user_preferences->{query}->{tagged}->{sort_chronologically})
 	{
 
 	    # Yes tags are to be either sorted by date or need to be truncated
@@ -814,7 +814,8 @@ sub get_branch_revisions($$$$$)
 	# aplhabetically if required.
 
 	@$revisions = sort(@$revisions)
-	    if (! $user_preferences->{query}->{tagged}->{sort_cronologically});
+	    if (! $user_preferences->{query}->{tagged}->
+		    {sort_chronologically});
 
     }
     else
@@ -836,7 +837,7 @@ sub get_branch_revisions($$$$$)
 
 	    # No so simply sort it.
 
-	    if ($user_preferences->{query}->{id}->{sort_cronologically})
+	    if ($user_preferences->{query}->{id}->{sort_chronologically})
 	    {
 		$appbar->set_progress_percentage(0.33) if (defined($appbar));
 		WindowManager->update_gui();
@@ -866,7 +867,7 @@ sub get_branch_revisions($$$$$)
 		   0,
 		   scalar(@$revisions)
 		       - $user_preferences->{query}->{id}->{limit});
-	    if ($user_preferences->{query}->{id}->{sort_cronologically})
+	    if ($user_preferences->{query}->{id}->{sort_chronologically})
 	    {
 		@$revisions = reverse(@$revisions);
 	    }

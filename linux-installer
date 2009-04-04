@@ -88,6 +88,7 @@ use Installer;
        $lib_dest_dir,
        $lib_dir,
        $lib_prefix_dir,
+       $locale,
        $man,
        $mas_path,
        $outfile,
@@ -351,17 +352,42 @@ use Installer;
     # Install translation files.
 
     die("IO::Dir failed with $!")
-	if (! defined($dir = IO::Dir->new("translations")));
+	if (! defined($dir = IO::Dir->new("locale")));
     while (defined($file = $dir->read()))
     {
 	if ($file =~ m/(.*)\.po$/)
 	{
 	    my $locale = $1;
-	    system("msgfmt --output-file=translations/${locale}.mo "
-		   . "translations/$file");
-	    $installer->install("translations/${locale}.mo",
+	    system("msgfmt --output-file=locale/${locale}.mo locale/$file");
+	    $installer->install("locale/${locale}.mo",
 				"${prefix_dest_dir}/share/locale/${locale}/"
-				. "LC_MESSAGES/mtn-browse.mo");
+				    . "LC_MESSAGES/mtn-browse.mo");
+	}
+    }
+    $dir->close();
+
+    # Install help files.
+
+    die("IO::Dir failed with $!")
+	if (! defined($dir = IO::Dir->new("locale/help")));
+    while (defined($locale = $dir->read()))
+    {
+	next if ($locale eq "." || $locale eq "..");
+	my($figures_dir,
+	   $img_file);
+	$installer->install("locale/help/${locale}/mtn-browse.xml",
+			    "${prefix_dest_dir}/share/gnome/help/mtn-browse/"
+			        . "${locale}/mtn-browse.xml");
+	die("IO::Dir failed with $!")
+	    if (! defined($figures_dir =
+			  IO::Dir->new("locale/help/${locale}/figures")));
+	while (defined($img_file = $figures_dir->read()))
+	{
+	    next if ($img_file eq "." || $img_file eq "..");
+	    $installer->install("locale/help/${locale}/figures/$img_file",
+				"${prefix_dest_dir}/share/gnome/help/"
+				    . "mtn-browse/${locale}/figures/"
+				    . "$img_file");
 	}
     }
     $dir->close();

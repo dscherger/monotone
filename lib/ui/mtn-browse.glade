@@ -5054,13 +5054,13 @@ revision ids in ComboBox menus</property>
 			      <property name="spacing">5</property>
 
 			      <child>
-				<widget class="GtkRadioButton" id="id_lists_sort_cronologically_radiobutton">
+				<widget class="GtkRadioButton" id="id_lists_sort_chronologically_radiobutton">
 				  <property name="visible">True</property>
-				  <property name="tooltip" translatable="yes">Select Sort cronologically if you
+				  <property name="tooltip" translatable="yes">Select Sort chronologically if you
 want the ids to be order on date,
 starting with the newest</property>
 				  <property name="can_focus">True</property>
-				  <property name="label" translatable="yes">Sort cronologically</property>
+				  <property name="label" translatable="yes">Sort chronologically</property>
 				  <property name="use_underline">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
@@ -5088,7 +5088,7 @@ tags to be order aphabetically</property>
 				  <property name="active">False</property>
 				  <property name="inconsistent">False</property>
 				  <property name="draw_indicator">True</property>
-				  <property name="group">id_lists_sort_cronologically_radiobutton</property>
+				  <property name="group">id_lists_sort_chronologically_radiobutton</property>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -5114,13 +5114,13 @@ tags to be order aphabetically</property>
 			      <property name="spacing">5</property>
 
 			      <child>
-				<widget class="GtkRadioButton" id="tagged_lists_sort_cronologically_radiobutton">
+				<widget class="GtkRadioButton" id="tagged_lists_sort_chronologically_radiobutton">
 				  <property name="visible">True</property>
-				  <property name="tooltip" translatable="yes">Select Sort cronologically if you
+				  <property name="tooltip" translatable="yes">Select Sort chronologically if you
 want the tags to be order on date,
 starting with the newest</property>
 				  <property name="can_focus">True</property>
-				  <property name="label" translatable="yes">Sort cronologically</property>
+				  <property name="label" translatable="yes">Sort chronologically</property>
 				  <property name="use_underline">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
@@ -5148,7 +5148,7 @@ the tags to be order aphabetically</property>
 				  <property name="active">False</property>
 				  <property name="inconsistent">False</property>
 				  <property name="draw_indicator">True</property>
-				  <property name="group">tagged_lists_sort_cronologically_radiobutton</property>
+				  <property name="group">tagged_lists_sort_chronologically_radiobutton</property>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -6985,7 +6985,7 @@ MIME type from the list</property>
 		  <child>
 		    <widget class="GtkLabel" id="mime_types_label">
 		      <property name="visible">True</property>
-		      <property name="label" translatable="yes">&lt;b&gt;Mime Types&lt;/b&gt;</property>
+		      <property name="label" translatable="yes">&lt;b&gt;MIME Types&lt;/b&gt;</property>
 		      <property name="use_underline">False</property>
 		      <property name="use_markup">True</property>
 		      <property name="justify">GTK_JUSTIFY_LEFT</property>
