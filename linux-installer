@@ -134,6 +134,7 @@ use Installer;
     {
 
 	my(%deps,
+	   $err_msg,
 	   $met);
 
 	# Build up the dependency list.
@@ -151,11 +152,18 @@ use Installer;
 
 	# Do the check.
 
-	$met = DependencyChecker::check(\%deps);
+	$met = DependencyChecker::check(\%deps, \$err_msg);
 
 	# Deal with the result depending upon what the user wants.
 
-	exit($met ? 0 : 1) if ($dep_level == 1 || ($dep_level == 2 && ! $met));
+	if (! $met)
+	{
+	    printf(STDERR "%s: %s\n",
+		   ($dep_level == 2) ? "Error" : "Warning",
+		   $err_msg);
+	    exit(1) if ($dep_level < 3);
+	}
+	exit(0) if ($dep_level == 1);
 
     }
 
@@ -220,8 +228,10 @@ use Installer;
 	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
 	    $lib_dir = $input if ($input ne "");
 	}
-	$lib_prefix_dir = $prefix_dir . $lib_dir;
-	$lib_dest_dir = $dest_dir . $prefix_dir. $lib_dir;
+	$lib_prefix_dir = $prefix_dir . "/" . $lib_dir;
+	$lib_prefix_dir =~ s/\/\//\//g;
+	$lib_dest_dir = $dest_dir . $prefix_dir. "/" . $lib_dir;
+	$lib_dest_dir =~ s/\/\//\//g;
 	if (-e $lib_dest_dir && (! -d $lib_dest_dir || ! -w $lib_dest_dir))
 	{
 	    print("Error: Directory `" . $lib_dest_dir . "' is unwritable or "
@@ -251,7 +261,7 @@ use Installer;
 	    print("GLOBS_FILE = " . $globs_file . "\n");
 	    print("PREFIX_DIR = " . $prefix_dir . "\n");
 	    print("DEST_DIR   = " . $dest_dir . "\n");
-	    print("LIB_DIR    = <PREFIX_DIR>" . $lib_dir . "\n");
+	    print("LIB_DIR    = <PREFIX_DIR>/" . $lib_dir . "\n");
 	    print("Use my MAS = " . ($use_dists_mas_lib ? "Yes" : "No")
 		  . "\n");
 	}
@@ -416,9 +426,9 @@ linux-installer [options]
 
   Options:
     --confirm            -c           Print out what will happen first
-    --dep-level              LEVEL    Specify type of dependency checking
+    --dep-level=             LEVEL    Specify type of dependency checking
     --destdir=           -d  DIR      Specify temp installation location
-    --globs-file=        -g  FILE     Location of mime globs file
+    --globs-file=        -g  FILE     Location of MIME globs file
     --interactive        -i           Ask questions interactively
     --libdir=            -l  DIR      Library dir relative to PREFIX_DIR
     --prefix=            -p  DIR      Installation location
@@ -435,7 +445,7 @@ linux-installer [options]
 
 Print out what will be done before actually doing it.
 
-=item B<--dep-level LEVEL>
+=item B<--dep-level=LEVEL>
 
 Specify type of dependency checking. Valid values are:
 

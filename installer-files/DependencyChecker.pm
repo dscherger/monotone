@@ -57,7 +57,7 @@ use warnings;
 
 # Public routines.
 
-sub check($);
+sub check($$);
 
 # ***** PACKAGE INFORMATION *****
 
@@ -79,6 +79,9 @@ our $VERSION = 0.1;
 #                                  name and the value is the required version
 #                                  number. If the version number is zero then
 #                                  only the presence of the package is tested.
+#                  $err_msg      : A reference to a buffer that is to contain
+#                                  the error message if a dependency is not
+#                                  found.
 #                  Return Value  : True if the dependencies are met, otherwise
 #                                  false if they are not.
 #
@@ -86,12 +89,14 @@ our $VERSION = 0.1;
 
 
 
-sub check($)
+sub check($$)
 {
 
-    my $dependencies = $_[0];
+    my($dependencies, $err_msg) = @_;
 
     my $met = 1;
+
+    $$err_msg = undef;
 
     foreach my $dep (sort(keys(%$dependencies)))
     {
@@ -108,9 +113,9 @@ sub check($)
 
 	    # Not installed.
 
-	    printf(STDERR "Warning: prerequisite %s %s not found.\n",
-		   $dep,
-		   $dependencies->{$dep});
+	    $$err_msg = sprintf("Prerequisite %s %s not found.",
+				$dep,
+				$dependencies->{$dep});
 	    $met = undef;
 
 	}
@@ -131,11 +136,11 @@ sub check($)
 
 	    if ($version < $dependencies->{$dep})
 	    {
-		printf(STDERR
-		       "Warning: prerequisite %s %s not found. We have %s.\n",
-		       $dep,
-		       $dependencies->{$dep},
-		       $version);
+		$$err_msg =
+		    sprintf("Prerequisite %s %s not found. We have %s.",
+			    $dep,
+			    $dependencies->{$dep},
+			    $version);
 		$met = undef;
 	    }
 

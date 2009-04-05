@@ -48,9 +48,23 @@ Those of you familiar with CPAN will recognise the above as the standard
 mechanism for installing Perl modules (or libraries). However, there does not
 seem to be a standard way of installing a Perl application. Since Perl is
 largely platform independent, the ./configure; make; make install approach of
-automake does not seem right so I have decided to write a custom Makefile.PL
-script that supports some basic installation capability. Please note that
-Makefile.PL only supports those arguments documented above.
+automake does not seem right. So I have decided to write a custom Makefile.PL
+script that supports some basic installation capability.
+
+In fact Makefile.PL simply calls the installer script, passing any arguments
+through to it. The installer script supports some additional options that can
+also be specified via Makefile.PL, meaning that the full list of arguments are:
+
+    perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH> LIBDIR=<PATH> \
+                     GLOBS_FILE=<PATH> NO_USE_DISTS_MAS=1
+
+For further information on what these options mean please run:
+
+    ./linux-installer -m
+
+PREFIX equates to --prefix, DESTDIR equates to --destdir, LIBDIR equates to
+--libdir, GLOBS_FILE equates to --globs-file and NO_USE_DISTS_MAS equates to
+--no-use-dists-mas.
 
 Alternatively one can run the installer directly. See the next subsection.
 
@@ -88,36 +102,91 @@ place using the following directory structure:
     <Install Location>
     |-- bin
     |   `-- mtn-browse
-    `-- lib
-        `-- mtn-browse
-            |-- perl
-            |   |-- AdvancedFind.pm
-            |   |-- Annotate.pm
-            |   |-- ChangeLog.pm
-            |   |-- ComboAutoCompletion.pm
-            |   |-- Common.pm
-            |   |-- Completion.pm
-            |   |-- FindFiles.pm
-            |   |-- FindText.pm
-            |   |-- Globals.pm
-            |   |-- History.pm
-            |   |-- Monotone               <- 1)
-            |   |   |-- AutomateStdio.pm
-            |   |   `-- AutomateStdio.pod
-            |   |-- Preferences.pm
-            |   `-- WindowManager.pm
-            `-- ui
-                |-- annotate.png
-                |-- diffs.png
-                |-- external-diffs.png
-                |-- line.png
-                |-- monotone-viz.png
-                |-- mtn-browse-large.png
-                |-- mtn-browse.glade
-                `-- mtn-browse.png
+    |-- lib
+    |   `-- mtn-browse
+    |       |-- perl
+    |       |   |-- AdvancedFind.pm
+    |       |   |-- Annotate.pm
+    |       |   |-- ChangeLog.pm
+    |       |   |-- ComboAutoCompletion.pm
+    |       |   |-- Common.pm
+    |       |   |-- Completion.pm
+    |       |   |-- FindFiles.pm
+    |       |   |-- FindText.pm
+    |       |   |-- Globals.pm
+    |       |   |-- History.pm
+    |       |   |-- Monotone               <- 1)
+    |       |   |   |-- AutomateStdio.pm
+    |       |   |   `-- AutomateStdio.pod
+    |       |   |-- Preferences.pm
+    |       |   `-- WindowManager.pm
+    |       `-- ui
+    |           |-- annotate.png
+    |           |-- diffs.png
+    |           |-- external-diffs.png
+    |           |-- line.png
+    |           |-- monotone-viz.png
+    |           |-- mtn-browse-large.png
+    |           |-- mtn-browse.glade
+    |           `-- mtn-browse.png
+    `-- share
+        |-- gnome
+        |   `-- help
+        |       `-- mtn-browse
+        |           `-- C
+        |               |-- figures
+        |               |   |-- advanced-find-helper-widgets.png
+        |               |   |-- advanced-find-window-advanced-mode.png
+        |               |   |-- advanced-find-window-empty.png
+        |               |   |-- advanced-find-window-simple-mode.png
+        |               |   |-- annotate-button.png
+        |               |   |-- annotate-window-with-menu.png
+        |               |   |-- branch-combobox-entry-with-completion.png
+        |               |   |-- change-log-window.png
+        |               |   |-- changelog-button.png
+        |               |   |-- close-toolbar-button.png
+        |               |   |-- combobox-entry-down-button.png
+        |               |   |-- compare-button.png
+        |               |   |-- differences-window.png
+        |               |   |-- execute-button-small.png
+        |               |   |-- execute-button.png
+        |               |   |-- external-compare-button.png
+        |               |   |-- file-viewer-button.png
+        |               |   |-- find-button.png
+        |               |   |-- find-files-window-empty.png
+        |               |   |-- find-files-window-query.png
+        |               |   |-- help-toolbar-button.png
+        |               |   |-- information-button.png
+        |               |   |-- line-numbers-toggle-button.png
+        |               |   |-- main-window-empty.png
+        |               |   |-- main-window-showing-file.png
+        |               |   |-- main-window-showing-hex-dump.png
+        |               |   |-- main-window-showing-image-file.png
+        |               |   |-- main-window-showing-tooltip-and-selection.png
+        |               |   |-- montone-viz-button.png
+        |               |   |-- new-toolbar-button.png
+        |               |   |-- non-unique-tag-dialog.png
+        |               |   |-- open-database-dialog.png
+        |               |   |-- open-toolbar-button.png
+        |               |   |-- preferences-toolbar-button.png
+        |               |   |-- preferences-window.png
+        |               |   |-- reload-toolbar-button.png
+        |               |   |-- revision-history-window.png
+        |               |   |-- save-button.png
+        |               |   |-- stop-button.png
+        |               |   |-- up-button-small.png
+        |               |   `-- up-button.png
+        |               `-- mtn-browse.xml
+        `-- locale
+            `-- <Locale>
+                `-- LC_MESSAGES
+                    `-- mtn-browse.mo
 
 The only file that needs to be executable is the mtn-browse file under the bin
 directory.
+
+The mtn-browse.mo file is generated from the relevant .po file by using the
+msgfmt(1) command.
 
 Once the files are in place then edit the mtn-browse executable and change the
 constants at the top containing the "@INST:LIB_DIR@", "@INST:GLOBS_FILE@" and
