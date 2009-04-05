@@ -59,7 +59,7 @@ find_key(options & opts,
   if (!opts.signing_key().empty())
     return;
 
-  rsa_keypair_id key;
+  key_name key;
 
   utf8 host(info.client.unparsed);
   if (!info.client.u.host.empty())

@@ -432,9 +432,9 @@ check_ancestry(database & db,
 
 static void
 check_keys(database & db,
-           map<rsa_keypair_id, checked_key> & checked_keys)
+           map<key_name, checked_key> & checked_keys)
 {
-  vector<rsa_keypair_id> pubkeys;
+  vector<key_name> pubkeys;
 
   db.get_public_keys(pubkeys);
 
@@ -442,7 +442,7 @@ check_keys(database & db,
 
   ticker ticks(_("keys"), "k", 1);
 
-  for (vector<rsa_keypair_id>::const_iterator i = pubkeys.begin();
+  for (vector<key_name>::const_iterator i = pubkeys.begin();
        i != pubkeys.end(); ++i)
     {
       db.get_key(*i, checked_keys[*i].pub);
@@ -455,7 +455,7 @@ check_keys(database & db,
 static void
 check_certs(database & db,
             map<revision_id, checked_revision> & checked_revisions,
-            map<rsa_keypair_id, checked_key> & checked_keys,
+            map<key_name, checked_key> & checked_keys,
             size_t & total_certs)
 {
   vector<cert> certs;
@@ -763,10 +763,10 @@ report_revisions(map<revision_id, checked_revision> const & checked_revisions,
 }
 
 static void
-report_keys(map<rsa_keypair_id, checked_key> const & checked_keys,
+report_keys(map<key_name, checked_key> const & checked_keys,
             size_t & missing_keys)
 {
-  for (map<rsa_keypair_id, checked_key>::const_iterator
+  for (map<key_name, checked_key>::const_iterator
          i = checked_keys.begin(); i != checked_keys.end(); ++i)
     {
       checked_key key = i->second;
@@ -898,7 +898,7 @@ check_db(database & db)
   set<manifest_id> found_manifests;
   map<revision_id, checked_roster> checked_rosters;
   map<revision_id, checked_revision> checked_revisions;
-  map<rsa_keypair_id, checked_key> checked_keys;
+  map<key_name, checked_key> checked_keys;
   map<revision_id, checked_height> checked_heights;
 
   size_t missing_files = 0;

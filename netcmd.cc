@@ -206,7 +206,7 @@ netcmd::write_error_cmd(string const & errmsg)
 
 
 void
-netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
+netcmd::read_hello_cmd(key_name & server_keyname,
                        rsa_pub_key & server_key,
                        id & nonce) const
 {
@@ -215,7 +215,7 @@ netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
   string skn_str, sk_str;
   extract_variable_length_string(payload, skn_str, pos,
                                  "hello netcmd, server key name");
-  server_keyname = rsa_keypair_id(skn_str, origin::network);
+  server_keyname = key_name(skn_str, origin::network);
   extract_variable_length_string(payload, sk_str, pos,
                                  "hello netcmd, server key");
   server_key = rsa_pub_key(sk_str, origin::network);
@@ -226,7 +226,7 @@ netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
 }
 
 void
-netcmd::write_hello_cmd(rsa_keypair_id const & server_keyname,
+netcmd::write_hello_cmd(key_name const & server_keyname,
                         rsa_pub_key const & server_key,
                         id const & nonce)
 {

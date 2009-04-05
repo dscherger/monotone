@@ -33,7 +33,7 @@ using std::memset;
 // if that key pair is not available.
 
 void
-load_key_pair(key_store & keys, rsa_keypair_id const & id)
+load_key_pair(key_store & keys, key_name const & id)
 {
   E(keys.key_pair_exists(id), origin::user,
     F("no key pair '%s' found in key store '%s'")
@@ -42,7 +42,7 @@ load_key_pair(key_store & keys, rsa_keypair_id const & id)
 
 void
 load_key_pair(key_store & keys,
-              rsa_keypair_id const & id,
+              key_name const & id,
               keypair & kp)
 {
   load_key_pair(keys, id);
@@ -55,7 +55,7 @@ load_key_pair(key_store & keys,
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
-             database & db, key_store & keys, rsa_keypair_id & key)
+             database & db, key_store & keys, key_name & key)
 {
   if (!keys.signing_key().empty())
     {
@@ -69,7 +69,7 @@ get_user_key(options const & opts, lua_hooks & lua,
     ; // the lua hook sets the key
   else
     {
-      vector<rsa_keypair_id> all_privkeys;
+      vector<key_name> all_privkeys;
       keys.get_key_ids(all_privkeys);
       E(!all_privkeys.empty(), origin::user,
         F("you have no private key to make signatures with\n"
@@ -112,12 +112,12 @@ void
 cache_user_key(options const & opts, lua_hooks & lua,
                database & db, key_store & keys)
 {
-  rsa_keypair_id key;
+  key_name key;
   get_user_key(opts, lua, db, keys, key);
 }
 
 void
-key_hash_code(rsa_keypair_id const & ident,
+key_hash_code(key_name const & ident,
               rsa_pub_key const & pub,
               id & out)
 {
@@ -129,9 +129,9 @@ key_hash_code(rsa_keypair_id const & ident,
 // helper to compare if two keys have the same hash
 // (ie are the same key)
 bool
-keys_match(rsa_keypair_id const & id1,
+keys_match(key_name const & id1,
            rsa_pub_key const & key1,
-           rsa_keypair_id const & id2,
+           key_name const & id2,
            rsa_pub_key const & key2)
 {
   id hash1, hash2;

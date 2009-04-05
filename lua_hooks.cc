@@ -229,7 +229,7 @@ lua_hooks::hook_exists(std::string const & func_name)
 // nb: if you're hooking lua to return your passphrase, you don't care if we
 // keep a couple extra temporaries of your passphrase around.
 bool
-lua_hooks::hook_get_passphrase(rsa_keypair_id const & k, string & phrase)
+lua_hooks::hook_get_passphrase(key_name const & k, string & phrase)
 {
   return Lua(st)
     .func("get_passphrase")
@@ -279,7 +279,7 @@ lua_hooks::hook_expand_date(string const & sel,
 
 bool
 lua_hooks::hook_get_branch_key(branch_name const & branchname,
-                               rsa_keypair_id & k)
+                               key_name & k)
 {
   string key;
   bool ok = Lua(st)
@@ -289,13 +289,13 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .extract_str(key)
     .ok();
 
-  k = rsa_keypair_id(key, origin::user);
+  k = key_name(key, origin::user);
   return ok;
 }
 
 bool
 lua_hooks::hook_get_author(branch_name const & branchname,
-                           rsa_keypair_id const & k,
+                           key_name const & k,
                            string & author)
 {
   return Lua(st)
@@ -352,7 +352,7 @@ lua_hooks::hook_ignore_branch(branch_name const & branch)
 
 static inline bool
 shared_trust_function_body(Lua & ll,
-                           set<rsa_keypair_id> const & signers,
+                           set<key_name> const & signers,
                            id const & hash,
                            cert_name const & name,
                            cert_value const & val)
@@ -360,7 +360,7 @@ shared_trust_function_body(Lua & ll,
   ll.push_table();
 
   int k = 1;
-  for (set<rsa_keypair_id>::const_iterator v = signers.begin();
+  for (set<key_name>::const_iterator v = signers.begin();
        v != signers.end(); ++v)
     {
       ll.push_int(k);
@@ -383,7 +383,7 @@ shared_trust_function_body(Lua & ll,
 }
 
 bool
-lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
+lua_hooks::hook_get_revision_cert_trust(set<key_name> const & signers,
                                        id const & hash,
                                        cert_name const & name,
                                        cert_value const & val)
@@ -394,7 +394,7 @@ lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
 }
 
 bool
-lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
+lua_hooks::hook_get_manifest_cert_trust(set<key_name> const & signers,
                                         id const & hash,
                                         cert_name const & name,
                                         cert_value const & val)
@@ -405,15 +405,15 @@ lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
 }
 
 bool
-lua_hooks::hook_accept_testresult_change(map<rsa_keypair_id, bool> const & old_results,
-                                         map<rsa_keypair_id, bool> const & new_results)
+lua_hooks::hook_accept_testresult_change(map<key_name, bool> const & old_results,
+                                         map<key_name, bool> const & new_results)
 {
   Lua ll(st);
   ll
     .func("accept_testresult_change")
     .push_table();
 
-  for (map<rsa_keypair_id, bool>::const_iterator i = old_results.begin();
+  for (map<key_name, bool>::const_iterator i = old_results.begin();
        i != old_results.end(); ++i)
     {
       ll.push_str(i->first());
@@ -423,7 +423,7 @@ lua_hooks::hook_accept_testresult_change(map<rsa_keypair_id, bool> const & old_r
 
   ll.push_table();
 
-  for (map<rsa_keypair_id, bool>::const_iterator i = new_results.begin();
+  for (map<key_name, bool>::const_iterator i = new_results.begin();
        i != new_results.end(); ++i)
     {
       ll.push_str(i->first());
@@ -595,7 +595,7 @@ bool
 lua_hooks::hook_get_netsync_key(utf8 const & server_address,
                                 globish const & include,
                                 globish const & exclude,
-                                rsa_keypair_id & k)
+                                key_name & k)
 {
   string key_id;
   bool exec_ok
@@ -610,7 +610,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
 
   if (!exec_ok)
     key_id = "";
-  k = rsa_keypair_id(key_id, origin::user);
+  k = key_name(key_id, origin::user);
   return exec_ok;
 }
 
@@ -737,7 +737,7 @@ lua_hooks::hook_use_transport_auth(uri const & u)
 
 bool
 lua_hooks::hook_get_netsync_read_permitted(string const & branch,
-                                           rsa_keypair_id const & identity)
+                                           key_name const & identity)
 {
   bool permitted = false, exec_ok = false;
 
@@ -770,7 +770,7 @@ lua_hooks::hook_get_netsync_read_permitted(string const & branch)
 }
 
 bool
-lua_hooks::hook_get_netsync_write_permitted(rsa_keypair_id const & identity)
+lua_hooks::hook_get_netsync_write_permitted(key_name const & identity)
 {
   bool permitted = false, exec_ok = false;
 
@@ -903,7 +903,7 @@ lua_hooks::hook_note_commit(revision_id const & new_id,
 bool
 lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
                                    int sync_type, string remote_host,
-                                   rsa_keypair_id remote_keyname,
+                                   key_name remote_keyname,
                                    globish include_pattern,
                                    globish exclude_pattern)
 {
@@ -940,7 +940,7 @@ lua_hooks::hook_note_netsync_start(size_t session_id, string my_role,
 bool
 lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
                                                revision_data const & rdat,
-                                               set<pair<rsa_keypair_id,
+                                               set<pair<key_name,
                                                pair<cert_name,
                                                cert_value> > > const & certs,
                                                size_t session_id)
@@ -953,7 +953,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 
   ll.push_table();
 
-  typedef set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > cdat;
+  typedef set<pair<key_name, pair<cert_name, cert_value> > > cdat;
 
   int n = 1;
   for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)
@@ -977,7 +977,7 @@ lua_hooks::hook_note_netsync_revision_received(revision_id const & new_id,
 bool
 lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
                                            revision_data const & rdat,
-                                           set<pair<rsa_keypair_id,
+                                           set<pair<key_name,
                                            pair<cert_name,
                                            cert_value> > > const & certs,
                                            size_t session_id)
@@ -990,7 +990,7 @@ lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
 
   ll.push_table();
 
-  typedef set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > cdat;
+  typedef set<pair<key_name, pair<cert_name, cert_value> > > cdat;
 
   int n = 1;
   for (cdat::const_iterator i = certs.begin(); i != certs.end(); ++i)
@@ -1012,7 +1012,7 @@ lua_hooks::hook_note_netsync_revision_sent(revision_id const & new_id,
 }
 
 bool
-lua_hooks::hook_note_netsync_pubkey_received(rsa_keypair_id const & kid,
+lua_hooks::hook_note_netsync_pubkey_received(key_name const & kid,
                                              size_t session_id)
 {
   Lua ll(st);
@@ -1026,7 +1026,7 @@ lua_hooks::hook_note_netsync_pubkey_received(rsa_keypair_id const & kid,
 }
 
 bool
-lua_hooks::hook_note_netsync_pubkey_sent(rsa_keypair_id const & kid,
+lua_hooks::hook_note_netsync_pubkey_sent(key_name const & kid,
                                              size_t session_id)
 {
   Lua ll(st);
@@ -1041,7 +1041,7 @@ lua_hooks::hook_note_netsync_pubkey_sent(rsa_keypair_id const & kid,
 
 bool
 lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
-                                           rsa_keypair_id const & kid,
+                                           key_name const & kid,
                                            cert_name const & name,
                                            cert_value const & value,
                                            size_t session_id)
@@ -1061,7 +1061,7 @@ lua_hooks::hook_note_netsync_cert_received(revision_id const & rid,
 
 bool
 lua_hooks::hook_note_netsync_cert_sent(revision_id const & rid,
-                                           rsa_keypair_id const & kid,
+                                           key_name const & kid,
                                            cert_name const & name,
                                            cert_value const & value,
                                            size_t session_id)

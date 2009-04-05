@@ -82,7 +82,7 @@ verify(cert_name const & val)
 }
 
 inline void
-verify(rsa_keypair_id const & val)
+verify(key_name const & val)
 {
   string::size_type pos = val().find_first_not_of(constants::legal_key_name_bytes);
   E(pos == string::npos, val.made_from,

@@ -55,7 +55,7 @@ using boost::lexical_cast;
 static void
 get_test_results_for_revision(project_t & project,
                               revision_id const & id,
-                              map<rsa_keypair_id, bool> & results)
+                              map<key_name, bool> & results)
 {
   vector<cert> certs;
   project.get_revision_certs_by_name(id, cert_name(testresult_cert_name),
@@ -81,7 +81,7 @@ acceptable_descendent(lua_hooks & lua,
                       project_t & project,
                       branch_name const & branch,
                       revision_id const & base,
-                      map<rsa_keypair_id, bool> & base_results,
+                      map<key_name, bool> & base_results,
                       revision_id const & target)
 {
   L(FL("Considering update target %s") % target);
@@ -94,7 +94,7 @@ acceptable_descendent(lua_hooks & lua,
     }
 
   // step 2: check the testresults
-  map<rsa_keypair_id, bool> target_results;
+  map<key_name, bool> target_results;
   get_test_results_for_revision(project, target, target_results);
   if (lua.hook_accept_testresult_change(base_results, target_results))
     {
@@ -119,7 +119,7 @@ pick_update_candidates(lua_hooks & lua,
   I(!null_id(base));
   I(!branch().empty());
 
-  map<rsa_keypair_id, bool> base_results;
+  map<key_name, bool> base_results;
   get_test_results_for_revision(project, base, base_results);
 
   candidates.clear();

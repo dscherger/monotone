@@ -1791,8 +1791,8 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   database db(app);
   key_store keys(app);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name ident;
+  internalize_key_name(idx(args, 0), ident);
 
   utf8 passphrase = idx(args, 1);
 

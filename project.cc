@@ -278,7 +278,7 @@ project_t::get_branch_certs(branch_name const & branch,
 
 tag_t::tag_t(revision_id const & ident,
              utf8 const & name,
-             rsa_keypair_id const & key)
+             key_name const & key)
   : ident(ident), name(name), key(key)
 {}
 
@@ -366,7 +366,7 @@ project_t::put_standard_certs_from_options(options const & opts,
   string author = opts.author();
   if (author.empty())
     {
-      rsa_keypair_id key;
+      key_name key;
       get_user_key(opts, lua, db, keys, key);
 
       if (!lua.hook_get_author(branch, key, author))

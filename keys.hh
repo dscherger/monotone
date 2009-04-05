@@ -26,27 +26,27 @@ struct keypair;
 // N()'s out if there is no unique key for us to use
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys,
-                  rsa_keypair_id & key);
+                  key_name & key);
 
 void cache_user_key(options const & opts, lua_hooks & lua,
                     database & db, key_store & keys);
 
 void load_key_pair(key_store & keys,
-                   rsa_keypair_id const & id);
+                   key_name const & id);
 
 void load_key_pair(key_store & keys,
-                   rsa_keypair_id const & id,
+                   key_name const & id,
                    keypair & kp);
 
 // netsync stuff
 
-void key_hash_code(rsa_keypair_id const & ident,
+void key_hash_code(key_name const & ident,
                    rsa_pub_key const & pub,
                    id & out);
 
-bool keys_match(rsa_keypair_id const & id1,
+bool keys_match(key_name const & id1,
                 rsa_pub_key const & key1,
-                rsa_keypair_id const & id2,
+                key_name const & id2,
                 rsa_pub_key const & key2);
 
 #endif // __KEYS_HH__

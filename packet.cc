@@ -83,7 +83,7 @@ packet_writer::consume_revision_cert(cert const & t)
 }
 
 void
-packet_writer::consume_public_key(rsa_keypair_id const & ident,
+packet_writer::consume_public_key(key_name const & ident,
                                   rsa_pub_key const & k)
 {
   ost << "[pubkey " << ident() << "]\n"
@@ -92,7 +92,7 @@ packet_writer::consume_public_key(rsa_keypair_id const & ident,
 }
 
 void
-packet_writer::consume_key_pair(rsa_keypair_id const & ident,
+packet_writer::consume_key_pair(key_name const & ident,
                                 keypair const & kp)
 {
   ost << "[keypair " << ident() << "]\n"
@@ -102,7 +102,7 @@ packet_writer::consume_key_pair(rsa_keypair_id const & ident,
 }
 
 void
-packet_writer::consume_old_private_key(rsa_keypair_id const & ident,
+packet_writer::consume_old_private_key(key_name const & ident,
                                        old_arc4_rsa_priv_key const & k)
 {
   ost << "[privkey " << ident() << "]\n"
@@ -228,7 +228,7 @@ namespace
       cert t = cert(hash,
                     cert_name(name, made_from),
                     decode_base64_as<cert_value>(val, made_from),
-                    rsa_keypair_id(keyid, made_from),
+                    key_name(keyid, made_from),
                     decode_base64_as<rsa_sha1_signature>(body, made_from));
       cons.consume_revision_cert(t);
     }
@@ -239,7 +239,7 @@ namespace
       validate_key(args);
       validate_base64(body);
 
-      cons.consume_public_key(rsa_keypair_id(args, made_from),
+      cons.consume_public_key(key_name(args, made_from),
                               decode_base64_as<rsa_pub_key>(body, made_from));
     }
 
@@ -253,7 +253,7 @@ namespace
       validate_key(args);
       validate_base64(pub);
       validate_base64(priv);
-      cons.consume_key_pair(rsa_keypair_id(args, made_from),
+      cons.consume_key_pair(key_name(args, made_from),
                             keypair(decode_base64_as<rsa_pub_key>(pub, made_from),
                                     decode_base64_as<rsa_priv_key>(priv, made_from)));
     }
@@ -263,7 +263,7 @@ namespace
       L(FL("read privkey packet"));
       validate_key(args);
       validate_base64(body);
-      cons.consume_old_private_key(rsa_keypair_id(args, made_from),
+      cons.consume_old_private_key(key_name(args, made_from),
                                    decode_base64_as<old_arc4_rsa_priv_key>(body, made_from));
     }
 

@@ -59,16 +59,16 @@ struct key_store_state
   string const ssh_sign_mode;
   bool have_read;
   lua_hooks & lua;
-  map<rsa_keypair_id, keypair> keys;
-  map<id, rsa_keypair_id> hashes;
+  map<key_name, keypair> keys;
+  map<id, key_name> hashes;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   boost::shared_ptr<lazy_rng> rng;
 #endif
 
   // These are used to cache keys and signers (if the hook allows).
-  map<rsa_keypair_id, shared_ptr<RSA_PrivateKey> > privkey_cache;
-  map<rsa_keypair_id, shared_ptr<PK_Signer> > signer_cache;
+  map<key_name, shared_ptr<RSA_PrivateKey> > privkey_cache;
+  map<key_name, shared_ptr<PK_Signer> > signer_cache;
 
   // Initialized when first required.
   scoped_ptr<ssh_agent> agent;
@@ -89,15 +89,15 @@ struct key_store_state
   }
 
   // internal methods
-  void get_key_file(rsa_keypair_id const & ident, system_path & file);
-  void write_key(rsa_keypair_id const & ident, keypair const & kp);
+  void get_key_file(key_name const & ident, system_path & file);
+  void write_key(key_name const & ident, keypair const & kp);
   void maybe_read_key_dir();
-  shared_ptr<RSA_PrivateKey> decrypt_private_key(rsa_keypair_id const & id,
+  shared_ptr<RSA_PrivateKey> decrypt_private_key(key_name const & id,
                                                  bool force_from_user = false);
 
   // just like put_key_pair except that the key is _not_ written to disk.
   // for internal use in reading keys back from disk.
-  bool put_key_pair_memory(rsa_keypair_id const & ident,
+  bool put_key_pair_memory(key_name const & ident,
                            keypair const & kp);
 
   // wrapper around accesses to agent, initializes as needed
@@ -110,11 +110,11 @@ struct key_store_state
 
   // duplicates of key_store interfaces for use by key_store_state methods
   // and the keyreader.
-  bool maybe_get_key_pair(rsa_keypair_id const & ident,
+  bool maybe_get_key_pair(key_name const & ident,
                           keypair & kp);
-  bool put_key_pair(rsa_keypair_id const & ident,
+  bool put_key_pair(key_name const & ident,
                     keypair const & kp);
-  void migrate_old_key_pair(rsa_keypair_id const & id,
+  void migrate_old_key_pair(key_name const & id,
                             old_arc4_rsa_priv_key const & old_priv,
                             rsa_pub_key const & pub);
 };
@@ -141,11 +141,11 @@ namespace
     {E(false, origin::system, F("Extraneous data in key store."));}
 
 
-    virtual void consume_public_key(rsa_keypair_id const & ident,
+    virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
     {E(false, origin::system, F("Extraneous data in key store."));}
 
-    virtual void consume_key_pair(rsa_keypair_id const & ident,
+    virtual void consume_key_pair(key_name const & ident,
                                   keypair const & kp)
     {
       L(FL("reading key pair '%s' from key store") % ident);
@@ -157,7 +157,7 @@ namespace
     }
 
     // for backward compatibility
-    virtual void consume_old_private_key(rsa_keypair_id const & ident,
+    virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
       W(F("converting old-format private key '%s'") % ident);
@@ -224,39 +224,39 @@ key_store_state::maybe_read_key_dir()
 
 void
 key_store::get_key_ids(globish const & pattern,
-                       vector<rsa_keypair_id> & priv)
+                       vector<key_name> & priv)
 {
   s->maybe_read_key_dir();
   priv.clear();
-  for (map<rsa_keypair_id, keypair>::const_iterator
+  for (map<key_name, keypair>::const_iterator
          i = s->keys.begin(); i != s->keys.end(); ++i)
     if (pattern.matches((i->first)()))
       priv.push_back(i->first);
 }
 
 void
-key_store::get_key_ids(vector<rsa_keypair_id> & priv)
+key_store::get_key_ids(vector<key_name> & priv)
 {
   s->maybe_read_key_dir();
   priv.clear();
-  for (map<rsa_keypair_id, keypair>::const_iterator
+  for (map<key_name, keypair>::const_iterator
          i = s->keys.begin(); i != s->keys.end(); ++i)
     priv.push_back(i->first);
 }
 
 bool
-key_store::key_pair_exists(rsa_keypair_id const & ident)
+key_store::key_pair_exists(key_name const & ident)
 {
   s->maybe_read_key_dir();
   return s->keys.find(ident) != s->keys.end();
 }
 
 bool
-key_store_state::maybe_get_key_pair(rsa_keypair_id const & ident,
+key_store_state::maybe_get_key_pair(key_name const & ident,
                                     keypair & kp)
 {
   maybe_read_key_dir();
-  map<rsa_keypair_id, keypair>::const_iterator i = keys.find(ident);
+  map<key_name, keypair>::const_iterator i = keys.find(ident);
   if (i == keys.end())
     return false;
   kp = i->second;
@@ -264,14 +264,14 @@ key_store_state::maybe_get_key_pair(rsa_keypair_id const & ident,
 }
 
 bool
-key_store::maybe_get_key_pair(rsa_keypair_id const & ident,
+key_store::maybe_get_key_pair(key_name const & ident,
                               keypair & kp)
 {
   return s->maybe_get_key_pair(ident, kp);
 }
 
 void
-key_store::get_key_pair(rsa_keypair_id const & ident,
+key_store::get_key_pair(key_name const & ident,
                         keypair & kp)
 {
   bool found = maybe_get_key_pair(ident, kp);
@@ -280,15 +280,15 @@ key_store::get_key_pair(rsa_keypair_id const & ident,
 
 bool
 key_store::maybe_get_key_pair(id const & hash,
-                              rsa_keypair_id & keyid,
+                              key_name & keyid,
                               keypair & kp)
 {
   s->maybe_read_key_dir();
-  map<id, rsa_keypair_id>::const_iterator hi = s->hashes.find(hash);
+  map<id, key_name>::const_iterator hi = s->hashes.find(hash);
   if (hi == s->hashes.end())
     return false;
 
-  map<rsa_keypair_id, keypair>::const_iterator ki = s->keys.find(hi->second);
+  map<key_name, keypair>::const_iterator ki = s->keys.find(hi->second);
   if (ki == s->keys.end())
     return false;
   keyid = hi->second;
@@ -297,7 +297,7 @@ key_store::maybe_get_key_pair(id const & hash,
 }
 
 void
-key_store_state::get_key_file(rsa_keypair_id const & ident,
+key_store_state::get_key_file(key_name const & ident,
                               system_path & file)
 {
   // filename is the keypair id, except that some characters can't be put in
@@ -311,7 +311,7 @@ key_store_state::get_key_file(rsa_keypair_id const & ident,
 }
 
 void
-key_store_state::write_key(rsa_keypair_id const & ident,
+key_store_state::write_key(key_name const & ident,
                            keypair const & kp)
 {
   ostringstream oss;
@@ -328,7 +328,7 @@ key_store_state::write_key(rsa_keypair_id const & ident,
 }
 
 bool
-key_store_state::put_key_pair(rsa_keypair_id const & ident,
+key_store_state::put_key_pair(key_name const & ident,
                               keypair const & kp)
 {
   maybe_read_key_dir();
@@ -339,18 +339,18 @@ key_store_state::put_key_pair(rsa_keypair_id const & ident,
 }
 
 bool
-key_store::put_key_pair(rsa_keypair_id const & ident,
+key_store::put_key_pair(key_name const & ident,
                         keypair const & kp)
 {
   return s->put_key_pair(ident, kp);
 }
 
 bool
-key_store_state::put_key_pair_memory(rsa_keypair_id const & ident,
+key_store_state::put_key_pair_memory(key_name const & ident,
                                      keypair const & kp)
 {
   L(FL("putting key pair '%s'") % ident);
-  pair<map<rsa_keypair_id, keypair>::iterator, bool> res;
+  pair<map<key_name, keypair>::iterator, bool> res;
   res = keys.insert(make_pair(ident, kp));
   if (res.second)
     {
@@ -371,15 +371,15 @@ key_store_state::put_key_pair_memory(rsa_keypair_id const & ident,
 }
 
 void
-key_store::delete_key(rsa_keypair_id const & ident)
+key_store::delete_key(key_name const & ident)
 {
   s->maybe_read_key_dir();
-  map<rsa_keypair_id, keypair>::iterator i = s->keys.find(ident);
+  map<key_name, keypair>::iterator i = s->keys.find(ident);
   if (i != s->keys.end())
     {
       id hash;
       key_hash_code(ident, i->second.pub, hash);
-      map<id, rsa_keypair_id>::iterator j = s->hashes.find(hash);
+      map<id, key_name>::iterator j = s->hashes.find(hash);
       I(j != s->hashes.end());
       s->hashes.erase(j);
       s->keys.erase(i);
@@ -401,7 +401,7 @@ key_store::delete_key(rsa_keypair_id const & ident)
 // match.  Prompts are worded slightly differently if GENERATING_KEY is true.
 static void
 get_passphrase(utf8 & phrase,
-               rsa_keypair_id const & keyid,
+               key_name const & keyid,
                bool confirm_phrase,
                bool generating_key)
 {
@@ -455,11 +455,11 @@ get_passphrase(utf8 & phrase,
 
 
 shared_ptr<RSA_PrivateKey>
-key_store_state::decrypt_private_key(rsa_keypair_id const & id,
+key_store_state::decrypt_private_key(key_name const & id,
                                      bool force_from_user)
 {
   // See if we have this key in the decrypted key cache.
-  map<rsa_keypair_id, shared_ptr<RSA_PrivateKey> >::const_iterator
+  map<key_name, shared_ptr<RSA_PrivateKey> >::const_iterator
     cpk = privkey_cache.find(id);
   if (cpk != privkey_cache.end())
     return cpk->second;
@@ -533,7 +533,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
 }
 
 void
-key_store::cache_decrypted_key(const rsa_keypair_id & id)
+key_store::cache_decrypted_key(const key_name & id)
 {
   signing_key = id;
   keypair key;
@@ -550,7 +550,7 @@ key_store::cache_decrypted_key(const rsa_keypair_id & id)
 
 void
 key_store::create_key_pair(database & db,
-                           rsa_keypair_id const & ident,
+                           key_name const & ident,
                            utf8 const * maybe_passphrase,
                            id * maybe_hash)
 {
@@ -628,7 +628,7 @@ key_store::create_key_pair(database & db,
 }
 
 void
-key_store::change_key_passphrase(rsa_keypair_id const & id)
+key_store::change_key_passphrase(key_name const & id)
 {
   keypair kp;
   load_key_pair(*this, id, kp);
@@ -654,7 +654,7 @@ key_store::change_key_passphrase(rsa_keypair_id const & id)
 }
 
 void
-key_store::decrypt_rsa(rsa_keypair_id const & id,
+key_store::decrypt_rsa(key_name const & id,
                        rsa_oaep_sha_data const & ciphertext,
                        string & plaintext)
 {
@@ -682,7 +682,7 @@ key_store::decrypt_rsa(rsa_keypair_id const & id,
 
 void
 key_store::make_signature(database & db,
-                          rsa_keypair_id const & id,
+                          key_name const & id,
                           string const & tosign,
                           rsa_sha1_signature & signature)
 {
@@ -806,7 +806,7 @@ key_store::make_signature(database & db,
 //
 
 void
-key_store::add_key_to_agent(rsa_keypair_id const & id)
+key_store::add_key_to_agent(key_name const & id)
 {
   ssh_agent & agent = s->get_agent();
   E(agent.connected(), origin::user,
@@ -817,7 +817,7 @@ key_store::add_key_to_agent(rsa_keypair_id const & id)
 }
 
 void
-key_store::export_key_for_agent(rsa_keypair_id const & id,
+key_store::export_key_for_agent(key_name const & id,
                                 std::ostream & os)
 {
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
@@ -847,7 +847,7 @@ key_store::export_key_for_agent(rsa_keypair_id const & id,
 
 void
 key_store_state::migrate_old_key_pair
-    (rsa_keypair_id const & id,
+    (key_name const & id,
      old_arc4_rsa_priv_key const & old_priv,
      rsa_pub_key const & pub)
 {
@@ -938,7 +938,7 @@ key_store_state::migrate_old_key_pair
 
 void
 key_store::migrate_old_key_pair
-    (rsa_keypair_id const & id,
+    (key_name const & id,
      old_arc4_rsa_priv_key const & old_priv,
      rsa_pub_key const & pub)
 {

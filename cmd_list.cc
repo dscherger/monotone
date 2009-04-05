@@ -77,7 +77,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
     certs.push_back(idx(ts, i));
 
   {
-    set<rsa_keypair_id> checked;
+    set<key_name> checked;
     for (size_t i = 0; i < certs.size(); ++i)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
@@ -261,8 +261,8 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   database db(app);
   key_store keys(app);
 
-  vector<rsa_keypair_id> pubs;
-  vector<rsa_keypair_id> privkeys;
+  vector<key_name> pubs;
+  vector<key_name> privkeys;
   globish pattern("*", origin::internal);
   if (args.size() == 1)
     pattern = globish(idx(args, 0)(), origin::user);
@@ -275,15 +275,15 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   keys.get_key_ids(pattern, privkeys);
 
   // true if it is in the database, false otherwise
-  map<rsa_keypair_id, bool> pubkeys;
-  for (vector<rsa_keypair_id>::const_iterator i = pubs.begin();
+  map<key_name, bool> pubkeys;
+  for (vector<key_name>::const_iterator i = pubs.begin();
        i != pubs.end(); i++)
     pubkeys[*i] = true;
 
-  set<rsa_keypair_id> bad_keys;
+  set<key_name> bad_keys;
 
   bool all_in_db = true;
-  for (vector<rsa_keypair_id>::const_iterator i = privkeys.begin();
+  for (vector<key_name>::const_iterator i = privkeys.begin();
        i != privkeys.end(); i++)
     {
       if (pubkeys.find(*i) == pubkeys.end())
@@ -306,12 +306,12 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   if (!pubkeys.empty())
     {
       cout << "\n[public keys]\n";
-      for (map<rsa_keypair_id, bool>::iterator i = pubkeys.begin();
+      for (map<key_name, bool>::iterator i = pubkeys.begin();
            i != pubkeys.end(); i++)
         {
           rsa_pub_key pub_encoded;
           id hash_code;
-          rsa_keypair_id keyid = i->first;
+          key_name keyid = i->first;
           bool indb = i->second;
 
           if (indb)
@@ -337,7 +337,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   if (!privkeys.empty())
     {
       cout << "\n[private keys]\n";
-      for (vector<rsa_keypair_id>::iterator i = privkeys.begin();
+      for (vector<key_name>::iterator i = privkeys.begin();
            i != privkeys.end(); i++)
         {
           keypair kp;
@@ -353,7 +353,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
     {
       W(F("Some keys in the database have the same ID as, "
           "but different hashes to, keys in your local key store!"));
-      for (set<rsa_keypair_id>::const_iterator i = bad_keys.begin(); i != bad_keys.end(); i++)
+      for (set<key_name>::const_iterator i = bad_keys.begin(); i != bad_keys.end(); i++)
         {
           W(F("Mismatched Key: %s") % *i);
         }
@@ -688,8 +688,8 @@ CMD_AUTOMATE(keys, "",
   database db(app);
   key_store keys(app);
 
-  vector<rsa_keypair_id> dbkeys;
-  vector<rsa_keypair_id> kskeys;
+  vector<key_name> dbkeys;
+  vector<key_name> kskeys;
   // hash, public_location, private_location
   map<string, boost::tuple<id,
                            vector<string>,
@@ -699,7 +699,7 @@ CMD_AUTOMATE(keys, "",
 
   keys.get_key_ids(kskeys);
 
-  for (vector<rsa_keypair_id>::iterator i = dbkeys.begin();
+  for (vector<key_name>::iterator i = dbkeys.begin();
        i != dbkeys.end(); i++)
     {
       rsa_pub_key pub_encoded;
@@ -710,7 +710,7 @@ CMD_AUTOMATE(keys, "",
       items[(*i)()].get<1>().push_back("database");
     }
 
-  for (vector<rsa_keypair_id>::iterator i = kskeys.begin();
+  for (vector<key_name>::iterator i = kskeys.begin();
        i != kskeys.end(); i++)
     {
       keypair kp;
@@ -797,7 +797,7 @@ CMD_AUTOMATE(certs, N_("REV"),
     certs.push_back(idx(ts, i));
 
   {
-    set<rsa_keypair_id> checked;
+    set<key_name> checked;
     for (size_t i = 0; i < certs.size(); ++i)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
@@ -820,9 +820,9 @@ CMD_AUTOMATE(certs, N_("REV"),
       cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
-      set<rsa_keypair_id> signers;
+      set<key_name> signers;
 
-      rsa_keypair_id keyid = idx(certs, i).key;
+      key_name keyid = idx(certs, i).key;
       signers.insert(keyid);
 
       bool trusted =
