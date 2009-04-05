@@ -254,39 +254,6 @@ ancestors for the specified old revisions.
 
 Get a list of branches.
 
-=item B<$mtn-E<gt>can($feature)>
-
-Determine whether a certain feature is available with the version of Monotone
-that is currently being used by this object. The list of valid features are:
-
-    MTN_DB_GET
-    MTN_DROP_ATTRIBUTE
-    MTN_DROP_DB_VARIABLES
-    MTN_FILE_MERGE
-    MTN_GET_ATTRIBUTES
-    MTN_GET_CURRENT_REVISION
-    MTN_GET_DB_VARIABLES
-    MTN_GET_WORKSPACE_ROOT
-    MTN_IGNORE_SUSPEND_CERTS
-    MTN_INVENTORY_IN_IO_STANZA_FORMAT
-    MTN_INVENTORY_INCLUDE_BIRTH_ID
-    MTN_INVENTORY_TAKE_OPTIONS
-    MTN_LUA
-    MTN_READ_PACKETS
-    MTN_SET_ATTRIBUTE
-    MTN_SET_DB_VARIABLE
-    MTN_SHOW_CONFLICTS
-    MTN_USE_P_SELECTOR
-
-In order to get these constants into your namespace you need to use the
-following to load in this library.
-
-    use Monotone::AutomateStdio qw(:capabilities);
-
-Please note that if you see (feature: ...) then this means that whatever is
-being discussed is only available if $mtn-E<gt>can() returns true for the
-specified feature.
-
 =item B<$mtn-E<gt>cert($revision_id, $name, $value)>
 
 Add the specified certificate to the specified revision.
@@ -608,7 +575,7 @@ are honoured (in which case any suspended revisions and branches that only have
 suspended revisions on their heads will not be listed). The default behaviour
 is to honour suspend certificates.
 
-(feature: MTN_IGNORE_SUSPEND_CERTS)
+(feature: MTN_IGNORING_OF_SUSPEND_CERTS)
 
 =item B<$mtn-E<gt>interface_version(\$buffer)>
 
@@ -645,7 +612,7 @@ each one containing one or more of the following fields:
                    been renamed in the revision manifest.
         birth_id - The revision id in which the node was first
                    added. Only from version 0.41 of Monotone
-                   onwards. (feature: MTN_INVENTORY_INCLUDE_BIRTH_ID)
+                   onwards. (feature: MTN_INVENTORY_WITH_BIRTH_ID)
         status   - A list of status flags. Values can be one of
                    "added", "dropped", "ignored", "invalid", "known",
                    "missing", "rename_source", "rename_target" or
@@ -659,7 +626,7 @@ each one containing one or more of the following fields:
 
 The $options argument is a list of valid options, with some having
 arguments. For example, one could call this method specifying all of the
-options like this (feature: MTN_INVENTORY_TAKE_OPTIONS):
+options like this (feature: MTN_INVENTORY_TAKING_OPTIONS):
 
     $mtn->inventory(\@result,
                     ["depth"   => 1,
@@ -836,6 +803,39 @@ or more of the following fields:
         to determine their presence and not defined()).
 
 (feature: MTN_SHOW_CONFLICTS)
+
+=item B<$mtn-E<gt>supports($feature)>
+
+Determine whether a certain feature is available with the version of Monotone
+that is currently being used by this object. The list of valid features are:
+
+    MTN_DB_GET
+    MTN_DROP_ATTRIBUTE
+    MTN_DROP_DB_VARIABLES
+    MTN_FILE_MERGE
+    MTN_GET_ATTRIBUTES
+    MTN_GET_CURRENT_REVISION
+    MTN_GET_DB_VARIABLES
+    MTN_GET_WORKSPACE_ROOT
+    MTN_IGNORING_OF_SUSPEND_CERTS
+    MTN_INVENTORY_IN_IO_STANZA_FORMAT
+    MTN_INVENTORY_TAKING_OPTIONS
+    MTN_INVENTORY_WITH_BIRTH_ID
+    MTN_LUA
+    MTN_P_SELECTOR
+    MTN_READ_PACKETS
+    MTN_SET_ATTRIBUTE
+    MTN_SET_DB_VARIABLE
+    MTN_SHOW_CONFLICTS
+
+In order to get these constants into your namespace you need to use the
+following to load in this library.
+
+    use Monotone::AutomateStdio qw(:capabilities);
+
+Please note that if you see (feature: ...) then this means that whatever is
+being discussed is only available if $mtn-E<gt>supports() returns true for the
+specified feature.
 
 =item B<$mtn-E<gt>tags(\$buffer | \@list[, $branch_pattern])>
 

@@ -71,24 +71,24 @@ use Symbol qw(gensym);
 # Constants used to represent the different types of capability Monotone may or
 # may not provide depending upon its version.
 
-use constant MTN_DB_GET                           => 0;
-use constant MTN_DROP_ATTRIBUTE                   => 1;
-use constant MTN_DROP_DB_VARIABLES                => 2;
-use constant MTN_FILE_MERGE                       => 3;
-use constant MTN_GET_ATTRIBUTES                   => 4;
-use constant MTN_GET_CURRENT_REVISION             => 5;
-use constant MTN_GET_DB_VARIABLES                 => 6;
-use constant MTN_GET_WORKSPACE_ROOT               => 7;
-use constant MTN_IGNORE_SUSPEND_CERTS             => 8;
-use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT    => 9;
-use constant MTN_INVENTORY_INCLUDE_BIRTH_ID       => 10;
-use constant MTN_INVENTORY_TAKE_OPTIONS           => 11;
-use constant MTN_LUA                              => 12;
-use constant MTN_READ_PACKETS                     => 13;
-use constant MTN_SET_ATTRIBUTE                    => 14;
-use constant MTN_SET_DB_VARIABLE                  => 15;
-use constant MTN_SHOW_CONFLICTS                   => 16;
-use constant MTN_USE_P_SELECTOR                   => 17;
+use constant MTN_DB_GET                        => 0;
+use constant MTN_DROP_ATTRIBUTE                => 1;
+use constant MTN_DROP_DB_VARIABLES             => 2;
+use constant MTN_FILE_MERGE                    => 3;
+use constant MTN_GET_ATTRIBUTES                => 4;
+use constant MTN_GET_CURRENT_REVISION          => 5;
+use constant MTN_GET_DB_VARIABLES              => 6;
+use constant MTN_GET_WORKSPACE_ROOT            => 7;
+use constant MTN_IGNORING_OF_SUSPEND_CERTS     => 8;
+use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 9;
+use constant MTN_INVENTORY_TAKING_OPTIONS      => 10;
+use constant MTN_INVENTORY_WITH_BIRTH_ID       => 11;
+use constant MTN_LUA                           => 12;
+use constant MTN_P_SELECTOR                    => 13;
+use constant MTN_READ_PACKETS                  => 14;
+use constant MTN_SET_ATTRIBUTE                 => 15;
+use constant MTN_SET_DB_VARIABLE               => 16;
+use constant MTN_SHOW_CONFLICTS                => 17;
 
 # Constants used to represent the different error levels.
 
@@ -224,7 +224,6 @@ my($db_locked_handler_data,
 sub ancestors($$@);
 sub ancestry_difference($$$;@);
 sub branches($$);
-sub can($$);
 sub cert($$$$);
 sub certs($$$);
 sub children($$$);
@@ -283,6 +282,7 @@ sub select($$$);
 sub set_attribute($$$$);
 sub set_db_variable($$$$);
 sub show_conflicts($$;$$$);
+sub supports($$);
 sub switch_to_ws_root($$);
 sub tags($$;$);
 sub toposort($$@);
@@ -324,16 +324,16 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_GET_CURRENT_REVISION
 					MTN_GET_DB_VARIABLES
 					MTN_GET_WORKSPACE_ROOT
-					MTN_IGNORE_SUSPEND_CERTS
+					MTN_IGNORING_OF_SUSPEND_CERTS
 					MTN_INVENTORY_IN_IO_STANZA_FORMAT
-					MTN_INVENTORY_INCLUDE_BIRTH_ID
-					MTN_INVENTORY_TAKE_OPTIONS
+					MTN_INVENTORY_TAKING_OPTIONS
+					MTN_INVENTORY_WITH_BIRTH_ID
 					MTN_LUA
+					MTN_P_SELECTOR
 					MTN_READ_PACKETS
 					MTN_SET_ATTRIBUTE
 					MTN_SET_DB_VARIABLE
-					MTN_SHOW_CONFLICTS
-					MTN_USE_P_SELECTOR)],
+					MTN_SHOW_CONFLICTS)],
 		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
 					MTN_SEVERITY_WARNING)]);
@@ -1069,7 +1069,7 @@ sub get_attributes($$$)
 
     # This command was renamed in version 0.36 (i/f version 5.x).
 
-    if (can($this, MTN_GET_ATTRIBUTES))
+    if (supports($this, MTN_GET_ATTRIBUTES))
     {
 	$cmd = "get_attributes";
     }
@@ -1965,7 +1965,7 @@ sub inventory($$;$@)
 	# The output format of this command was switched over to a basic_io
 	# stanza in 0.37 (i/f version 6.x).
 
-	if (can($this, MTN_INVENTORY_IN_IO_STANZA_FORMAT))
+	if (supports($this, MTN_INVENTORY_IN_IO_STANZA_FORMAT))
 	{
 
 	    my $i;
@@ -2508,7 +2508,7 @@ sub set_db_variable($$$$)
 
     # This command was renamed in version 0.39 (i/f version 7.x).
 
-    if (can($this, MTN_SET_DB_VARIABLE))
+    if (supports($this, MTN_SET_DB_VARIABLE))
     {
 	$cmd = "set_db_variable";
     }
@@ -2757,7 +2757,7 @@ sub toposort($$@)
 #
 ##############################################################################
 #
-#   Routine      - can
+#   Routine      - supports
 #
 #   Description  - Determine whether a certain feature is available with the
 #                  version of Monotone that is currently being used.
@@ -2772,7 +2772,7 @@ sub toposort($$@)
 
 
 
-sub can($$)
+sub supports($$)
 {
 
     my($this, $feature) = @_;
@@ -2787,9 +2787,9 @@ sub can($$)
 	return 1 if ($this->{mtn_aif_major} >= 5);
 
     }
-    elsif ($feature == MTN_IGNORE_SUSPEND_CERTS
+    elsif ($feature == MTN_IGNORING_OF_SUSPEND_CERTS
 	   || $feature == MTN_INVENTORY_IN_IO_STANZA_FORMAT
-	   || $feature == MTN_USE_P_SELECTOR)
+	   || $feature == MTN_P_SELECTOR)
     {
 
 	# These are only available from version 0.37 (i/f version 6.x).
@@ -2800,7 +2800,7 @@ sub can($$)
     elsif ($feature == MTN_DROP_DB_VARIABLES
 	   || $feature == MTN_GET_CURRENT_REVISION
 	   || $feature == MTN_GET_DB_VARIABLES
-	   || $feature == MTN_INVENTORY_TAKE_OPTIONS
+	   || $feature == MTN_INVENTORY_TAKING_OPTIONS
 	   || $feature == MTN_SET_DB_VARIABLE)
     {
 
@@ -2818,7 +2818,7 @@ sub can($$)
 
     }
     elsif ($feature == MTN_GET_WORKSPACE_ROOT
-	   || $feature == MTN_INVENTORY_INCLUDE_BIRTH_ID
+	   || $feature == MTN_INVENTORY_WITH_BIRTH_ID
 	   || $feature == MTN_SHOW_CONFLICTS)
     {
 
@@ -3081,7 +3081,7 @@ sub ignore_suspend_certs($$)
 
     if ($this->{honour_suspend_certs} && $ignore)
     {
-	if (can($this, MTN_IGNORE_SUSPEND_CERTS))
+	if (supports($this, MTN_IGNORING_OF_SUSPEND_CERTS))
 	{
 	    $this->{honour_suspend_certs} = undef;
 	    closedown($this);
