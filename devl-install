@@ -173,7 +173,7 @@ use IO::File;
     # Link in the help files.
 
     system("mkdir -p share/gnome/help/mtn-browse ; "
-	   . "ln -s locale/help/C share/gnome/help/mtn-browse/.");
+	   . "ln -s `pwd`/locale/help/C share/gnome/help/mtn-browse/.");
 
     exit(0);
 
