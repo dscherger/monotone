@@ -701,6 +701,20 @@ char const migrate_to_binary_hashes[] =
   "UPDATE manifest_certs    SET id=unhex(id), hash=unhex(hash);"
   ;
 
+char const migrate_certs_to_key_hash[] =
+  "ALTER TABLE revision_certs RENAME TO revision_certs_by_keyname;"
+  "ALTER INDEX revision_certs__id RENAME TO revision_certs_by_keyname__id;"
+  "CREATE TABLE revision_certs_by_keyname"
+  "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
+  "    revision_id not null,   -- joins with revisions.id"
+  "    name not null,          -- opaque string chosen by user\n"
+  "    value not null,         -- opaque blob\n"
+  "    keypair_id not null,    -- joins with public_keys.id\n"
+  "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
+  "    unique(name, value, revision_id, keypair_id, signature)"
+  "  );"
+  "CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);"
+  ;
 
 // these must be listed in order so that ones listed earlier override ones
 // listed later
@@ -708,6 +722,7 @@ enum upgrade_regime
   {
     upgrade_changesetify,
     upgrade_rosterify,
+    upgrade_cert_link,
     upgrade_regen_caches,
     upgrade_none,
   };
@@ -718,6 +733,7 @@ dump(enum upgrade_regime const & regime, string & out)
     {
     case upgrade_changesetify:  out = "upgrade_changesetify"; break;
     case upgrade_rosterify:     out = "upgrade_rosterify"; break;
+    case upgrade_cert_link:     out = "upgrade_cert_link"; break;
     case upgrade_regen_caches:  out = "upgrade_regen_caches"; break;
     case upgrade_none:          out = "upgrade_none"; break;
     default: out = (FL("upgrade_regime(%d)") % regime).str(); break;
@@ -783,9 +799,12 @@ const migration_event migration_events[] = {
   { "7ca81b45279403419581d7fde31ed888a80bd34e",
     migrate_to_binary_hashes, 0, upgrade_none },
 
+  { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
+    migrate_certs_to_key_hash, 0, upgrade_cert_link },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955", 0, 0, upgrade_none }
+  { "e52bb32ddec599ae6aca885d2c30f2429a77bf6c", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
@@ -1098,6 +1117,11 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
             "see the file UPGRADE for instructions on running '%s db %s'")
           % prog_name % command_str);
       }
+      break;
+    case upgrade_cert_link:
+      P(F("NOTE: the upgrade changes how certs are linked to the key that\n"
+          "signed them. You should now run '%s db migrate_certs_to_key_hashes'")
+        % prog_name);
       break;
     case upgrade_regen_caches:
       P(F("NOTE: this upgrade cleared monotone's caches\n"

@@ -85,6 +85,7 @@ public:
   bool is_dbfile(any_path const & file);
   bool database_specified();
   void check_is_not_rosterified();
+  void check_certs_not_by_hash();
 
   void ensure_open();
   void ensure_open_for_format_changes();
@@ -413,9 +414,12 @@ public:
   // for changesetify, rosterify
   void delete_existing_revs_and_certs();
   void delete_existing_manifests();
+  void delete_certs_with_keynames();
 
   void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
   void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
+  void get_revision_certs_with_keynames(revision_id const & id,
+                                        std::vector<cert> & certs);
 
   // heights
   void get_rev_height(revision_id const & id,
