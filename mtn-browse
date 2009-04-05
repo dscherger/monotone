@@ -2676,7 +2676,7 @@ sub setup_mtn_object($$)
 
     if ($user_preferences->{show_suspended})
     {
-	if ($mtn->can(MTN_IGNORE_SUSPEND_CERTS))
+	if ($mtn->supports(MTN_IGNORING_OF_SUSPEND_CERTS))
 	{
 	    $mtn->ignore_suspend_certs(1);
 	}
