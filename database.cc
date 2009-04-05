@@ -514,6 +514,16 @@ database::check_is_not_rosterified()
 }
 
 void
+database::check_certs_not_by_hash()
+{
+  results res;
+  imp->fetch(res, one_col, any_rows,
+             query("SELECT 1 FROM revision_certs LIMIT 1"));
+  E(res.empty(), origin::user,
+    F("this database already has certs linked by key hash"));
+}
+
+void
 database_impl::check_format()
 {
   results res;
@@ -527,6 +537,8 @@ database_impl::check_format()
   bool have_rosters = !res.empty();
   fetch(res, one_col, any_rows, query("SELECT 1 FROM heights LIMIT 1"));
   bool have_heights = !res.empty();
+  fetch(res, one_col, any_rows, query("SELECT 1 FROM revision_certs_by_keyname LIMIT 1"));
+  bool have_certs_by_keyname = !res.empty();
 
 
   if (!have_manifests)
@@ -538,6 +550,12 @@ database_impl::check_format()
         origin::no_fault,
         F("database %s lacks some cached data\n"
           "run '%s db regenerate_caches' to restore use of this database")
+        % filename % prog_name);
+
+      E(!have_certs_by_keyname, origin::no_fault,
+        F("database %s has certs linked to keys by key name.\n"
+          "Please run '%s db migrate_certs_to_key_hashes' to have"
+          "certs linked to keys by key hashes instead")
         % filename % prog_name);
     }
   else

@@ -1009,6 +1009,11 @@ regenerate_caches(database & db)
   P(F("finished regenerating cached rosters and heights"));
 }
 
+void
+migrate_certs_to_use_key_hash(database & db)
+{
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

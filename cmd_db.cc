@@ -283,6 +283,22 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
                                                    app.opts.attrs_to_drop);
 }
 
+CMD(db_migrate_certs_to_key_hashes,
+    "migrate_certs_to_key_hashes", "", CMD_REF(db), "",
+    N_("Converts the database to link certs to keys by hash"),
+    "",
+    options::opts::none)
+{
+  database db(app);
+  key_store keys(app);
+
+  E(args.size() == 0, origin::user,
+    F("no arguments needed"));
+
+  db.ensure_open_for_format_changes();
+  db.check_certs_not_by_hash();
+}
+
 CMD(db_regenerate_caches, "regenerate_caches", "", CMD_REF(db), "",
     N_("Regenerates the caches stored in the database"),
     "",
