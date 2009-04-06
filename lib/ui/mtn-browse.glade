@@ -1015,8 +1015,8 @@ or more search criteria</property>
 					  <property name="visible">True</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 118 10 106.199996948 118</property>
-					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+					  <property name="hadjustment">0 0 118 10 106.2 118</property>
+					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="file_name_value_label_eventbox">
@@ -1076,8 +1076,8 @@ or more search criteria</property>
 					  <property name="visible">True</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 118 10 106.199996948 118</property>
-					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+					  <property name="hadjustment">0 0 118 10 106.2 118</property>
+					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="last_update_value_label_eventbox">
@@ -1220,8 +1220,8 @@ updated with respect to this revision</property>
 					  <property name="visible">True</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 122 10 109.800003052 122</property>
-					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+					  <property name="hadjustment">0 0 122 10 109.8 122</property>
+					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="file_author_value_label_eventbox">
@@ -1281,8 +1281,8 @@ updated with respect to this revision</property>
 					  <property name="visible">True</property>
 					  <property name="width">1</property>
 					  <property name="height">1</property>
-					  <property name="hadjustment">0 0 122 10 109.800003052 122</property>
-					  <property name="vadjustment">0 0 17 10 15.3000001907 17</property>
+					  <property name="hadjustment">0 0 122 10 109.8 122</property>
+					  <property name="vadjustment">0 0 17 10 15.3 17</property>
 
 					  <child>
 					    <widget class="GtkEventBox" id="file_revision_id_value_label_eventbox">
@@ -2700,8 +2700,8 @@ Date (&lt;=)
 Date (&gt;)
 Head Revision
 Identifier
+Logical And
 Parent
-Separator
 Tag</property>
 				  <signal name="changed" handler="term_combobox_changed_cb" last_modification_time="Sat, 19 Jan 2008 16:11:23 GMT"/>
 				</widget>

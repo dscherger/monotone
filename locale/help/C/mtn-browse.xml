@@ -744,10 +744,10 @@ GNOME or DocBook.
               <para><guilabel>Identifier</guilabel> - This selector allows one to select revisions based upon their revision id. This is Monotone's <literal>i:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
             </listitem>
             <listitem>
-              <para><guilabel>Parent</guilabel> - This selector allows one to select revisions that are parents of the specified revision id. This is Monotone's <literal>p:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
+              <para><guilabel>Logical And</guilabel> - This is a logical AND operator. Currently Monotone does not directly support an OR operator. This is Monotone's <literal>/</literal> selector operator. It takes no parameters but instead combines two other selectors together.</para>
             </listitem>
             <listitem>
-              <para><guilabel>Separator</guilabel> - This is actually a logical AND operator. Currently Monotone does not directly support an OR operator. This is Monotone's <literal>/</literal> selector operator. It takes no parameters but rather combines to other selectors together.</para>
+              <para><guilabel>Parent</guilabel> - This selector allows one to select revisions that are parents of the specified revision id. This is Monotone's <literal>p:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
             </listitem>
             <listitem>
               <para><guilabel>Tag</guilabel> - This selector allows one to select revisions based upon whether they are tagged with a particular tag. This is Monotone's <literal>t:</literal> selector. It takes one parameter, the name of a tag.</para>
@@ -791,7 +791,7 @@ GNOME or DocBook.
             <para>Left click on the <inlinegraphic fileref="figures/up-button-small.png" format="png" valign="middle"/>&nbsp; button to insert that selector term into the <guilabel>Search term</guilabel> combobox entry field.</para>
           </listitem>
           <listitem>
-            <para>Select <guilabel>Separator</guilabel> in the selector term combobox.</para>
+            <para>Select <guilabel>Logical And</guilabel> in the selector term combobox.</para>
           </listitem>
           <listitem>
             <para>Left click on the <inlinegraphic fileref="figures/up-button-small.png" format="png" valign="middle"/>&nbsp; button to insert that selector term into the <guilabel>Search term</guilabel> combobox entry field.</para>

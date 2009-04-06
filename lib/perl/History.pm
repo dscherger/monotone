@@ -917,20 +917,8 @@ sub display_revision_comparison($$$;$)
 	}
 	++ $i;
     }
+    $instance->{file_comparison_combobox}->set_active(0);
     $instance->{appbar}->set_progress_percentage(1);
-    $wm->update_gui();
-    if (defined($file_name))
-    {
-	$instance->{file_comparison_combobox}->set_active(1);
-	$instance->{external_diffs_button}->set_sensitive(TRUE);
-    }
-    else
-    {
-	$instance->{file_comparison_combobox}->set_active(0);
-    }
-    $instance->{appbar}->set_progress_percentage(0);
-    $instance->{appbar}->set_status("");
-    $wm->update_gui();
 
     # Make sure we are at the top.
 
@@ -938,6 +926,25 @@ sub display_revision_comparison($$$;$)
 	place_cursor($instance->{comparison_buffer}->get_start_iter());
     $instance->{comparison_scrolledwindow}->get_vadjustment()->set_value(0);
     $instance->{comparison_scrolledwindow}->get_hadjustment()->set_value(0);
+    $wm->update_gui();
+
+    # Move to the file if a file comparison is being done.
+
+    if (defined($file_name))
+    {
+
+	# Simply let the combobox's change callback fire after setting its
+	# value.
+
+	local $instance->{in_cb} = 0;
+	$instance->{file_comparison_combobox}->set_active(1);
+	$wm->update_gui();
+
+    }
+
+    $instance->{appbar}->set_progress_percentage(0);
+    $instance->{appbar}->set_status("");
+    $wm->update_gui();
 
     $instance->{appbar}->pop();
     $wm->make_busy($instance, 0);

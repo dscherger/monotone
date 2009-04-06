@@ -334,13 +334,13 @@ sub populate_button_clicked_cb($$)
     {
 	$to_insert = "i:" . (($arg eq "") ? __("<Revision Id>") : $arg);
     }
+    elsif ($selector eq __("Logical And"))
+    {
+	$to_insert = "/";
+    }
     elsif ($selector eq __("Parent"))
     {
 	$to_insert = "p:" . (($arg eq "") ? __("<Revision Id>") : $arg);
-    }
-    elsif ($selector eq __("Separator"))
-    {
-	$to_insert = "/";
     }
     elsif ($selector eq __("Tag"))
     {
@@ -381,6 +381,7 @@ sub term_combobox_changed_cb($$)
     local $advanced_find->{in_cb} = 1;
 
     my($arg,
+       $date,
        $pos,
        $selector,
        $time_val,
@@ -391,13 +392,13 @@ sub term_combobox_changed_cb($$)
 
     $selector = $advanced_find->{term_combobox}->get_model()->get
 	($advanced_find->{term_combobox}->get_active_iter(), 0);
-
-    if ($selector =~ m/^Date .*$/)
+    $date = __("Date");
+    if ($selector =~ m/^${date} .*$/)
     {
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(TRUE);
     }
-    elsif ($selector eq __("Separator"))
+    elsif ($selector eq __("Logical And"))
     {
 	$advanced_find->{argument_entry}->set_sensitive(FALSE);
 	$advanced_find->{date_dateedit}->set_sensitive(FALSE);
