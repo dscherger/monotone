@@ -745,13 +745,13 @@ sub get_annotation_window()
 	create_format_tags($instance->{annotation_buffer});
 	$instance->{annotation_textview}->modify_font($mono_font);
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
-	$wm->manage($instance,
-		    $window_type,
-		    $instance->{window},
-		    undef,
-		    $instance->{annotation_textview}->get_window("text"));
+	$wm->manage($instance, $window_type, $instance->{window});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => undef,
+	      help_ref => __("mtnb-lachc-the-annotated-listing-window")});
     }
     else
     {

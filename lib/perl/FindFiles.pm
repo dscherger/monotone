@@ -982,12 +982,24 @@ sub get_find_files_window()
 	    $widget->set_sensitive(FALSE);
 	}
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
 		    $instance->{stop_button});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => "name_vbox",
+	      help_ref => __("mtnb-ffwarc-query-fields")},
+	     {widget   => "contents_vbox",
+	      help_ref => __("mtnb-ffwarc-query-fields")},
+	     {widget   => "properties_table",
+	      help_ref => __("mtnb-ffwarc-query-fields")},
+	     {widget   => "button_vbox",
+	      help_ref => __("mtnb-ffwarc-query-buttons")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-ffwarc-the-find-files-window")});
 
     }
     else

@@ -64,7 +64,7 @@
 			  <signal name="activate" handler="new_blank_menu_item_clicked_cb" last_modification_time="Thu, 05 Jun 2008 10:14:27 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image62">
+			    <widget class="GtkImage" id="image65">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-new</property>
 			      <property name="icon_size">1</property>
@@ -107,7 +107,7 @@
 			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 20 Jun 2008 12:07:24 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image63">
+			    <widget class="GtkImage" id="image66">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-quit</property>
 			      <property name="icon_size">1</property>
@@ -153,15 +153,37 @@
 		    <widget class="GtkMenu" id="help1_menu">
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="contents1">
+			<widget class="GtkImageMenuItem" id="help_contents1">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">_Contents</property>
+			  <property name="label" translatable="yes">_Help Contents</property>
 			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="help_toolbutton_clicked_cb" last_modification_time="Fri, 13 Feb 2009 22:16:51 GMT"/>
+			  <signal name="activate" handler="help_toolbutton_clicked_cb" last_modification_time="Thu, 09 Apr 2009 14:20:06 GMT"/>
 			  <accelerator key="F1" modifiers="0" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image64">
+			    <widget class="GtkImage" id="image67">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-help</property>
+			      <property name="icon_size">1</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
+			</widget>
+		      </child>
+
+		      <child>
+			<widget class="GtkImageMenuItem" id="context_help1">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">_Context Help</property>
+			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="context_help_activate_cb" last_modification_time="Thu, 09 Apr 2009 14:20:06 GMT"/>
+			  <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
+
+			  <child internal-child="image">
+			    <widget class="GtkImage" id="image68">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -188,7 +210,7 @@
 			  <signal name="activate" handler="home_page_activate_cb" last_modification_time="Sun, 15 Feb 2009 17:15:45 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image65">
+			    <widget class="GtkImage" id="image69">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-home</property>
 			      <property name="icon_size">1</property>
@@ -318,7 +340,7 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkToolButton" id="properties_toolbutton">
+		<widget class="GtkToolButton" id="reload_toolbutton">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Reload the current database</property>
 		  <property name="label" translatable="yes">Reload</property>
@@ -7494,14 +7516,14 @@ of the command</property>
 			  <property name="enable_popup">False</property>
 
 			  <child>
-			    <widget class="GtkVBox" id="named_vbox">
+			    <widget class="GtkVBox" id="name_vbox">
 			      <property name="border_width">5</property>
 			      <property name="visible">True</property>
 			      <property name="homogeneous">False</property>
 			      <property name="spacing">5</property>
 
 			      <child>
-				<widget class="GtkTable" id="named_table">
+				<widget class="GtkTable" id="name_table">
 				  <property name="visible">True</property>
 				  <property name="n_rows">2</property>
 				  <property name="n_columns">2</property>
@@ -7523,7 +7545,7 @@ of the command</property>
 				  </child>
 
 				  <child>
-				    <widget class="GtkEventBox" id="named_label_eventbox">
+				    <widget class="GtkEventBox" id="files_named_label_eventbox">
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Enter the file name pattern
 that is to be searched for</property>
@@ -7752,7 +7774,7 @@ subdirectories or not</property>
 				  <property name="spacing">5</property>
 
 				  <child>
-				    <widget class="GtkEventBox" id="containing_label_eventbox">
+				    <widget class="GtkEventBox" id="files_containing_label_eventbox">
 				      <property name="visible">True</property>
 				      <property name="tooltip" translatable="yes">Enter the text that is to be
 searched for inside files</property>

@@ -690,13 +690,20 @@ sub get_advanced_find_window($)
 	local $instance->{in_cb} = 1;
 	$instance->{window}->show_all();
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button},
-		    $instance->{details_textview}->get_window("text"));
+		    $instance->{stop_button});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => "simple_frame",
+	      help_ref => __("mtnb-mcqc-simple-queries")},
+	     {widget   => "advanced_frame",
+	      help_ref => __("mtnb-mcqc-helper-tools")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-mcqc-the-advanced-find-dialog-window")});
 
     }
     else

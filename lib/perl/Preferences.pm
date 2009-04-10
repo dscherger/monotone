@@ -1151,9 +1151,13 @@ sub get_preferences_window($$)
 	local $instance->{in_cb} = 1;
 	$instance->{window}->show_all();
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
-	$wm->manage($instance, $window_type, $instance->{window}, undef);
+	$wm->manage($instance, $window_type, $instance->{window});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => undef,
+	      help_ref => __("mtnb-upc-the-preferences-dialog-window")});
 
     }
     else

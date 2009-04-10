@@ -70,6 +70,7 @@ sub glade_signal_autoconnect($$);
 sub handle_comboxentry_history($$;$);
 sub hex_dump($);
 sub open_database($$$);
+sub register_help_callbacks($@);
 sub run_command($@);
 sub save_as_file($$$);
 sub set_label_value($$);
@@ -1183,6 +1184,48 @@ sub handle_comboxentry_history($$;$)
 #
 ##############################################################################
 #
+#   Routine      - register_help_callbacks
+#
+#   Description  - Register all of the context sensitive help callbacks for
+#                  the specified window instance.
+#
+#   Data         - $instance : The window instance.
+#                  $details  : A list of records containing the widget and
+#                              help reference for that widget. If a widget is
+#                              set to undef then that entry represents the
+#                              default help callback for that entire window.
+#
+##############################################################################
+
+
+
+sub register_help_callbacks($@)
+{
+
+    my($instance, @details) = @_;
+
+    my $wm = WindowManager->instance();
+
+    foreach my $entry (@details)
+    {
+	my $help_ref = $entry->{help_ref};
+	my $widget = defined($entry->{widget})
+	    ? $instance->{glade}->get_widget($entry->{widget}) : undef;
+	$wm->help_connect($instance,
+			  $widget,
+			  sub {
+			      my($widget, $instance) = @_;
+			      return if ($instance->{in_cb});
+			      local $instance->{in_cb} = 1;
+			      Gnome2::Help->display("mtn-browse.xml",
+						    $help_ref);
+			  });
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - create_format_tags
 #
 #   Description  - Creates the Gtk2::TextBuffer tags that are used to pretty
@@ -1405,7 +1448,7 @@ sub set_label_value($$)
     my($widget, $value) = @_;
 
     $widget->set_text($value);
-    $tooltips->set_tip($widget->parent(), $value);
+    $tooltips->set_tip($widget->get_parent(), $value);
 
 }
 #

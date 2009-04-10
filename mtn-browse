@@ -125,6 +125,7 @@ sub about_activate_cb($$);
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
+sub context_help_activate_cb($$);
 sub determine_mime_type($$$$);
 sub directory_up_button_clicked_cb($$);
 sub display_file($$);
@@ -342,6 +343,11 @@ sub view_button_clicked_cb($$);
     }
     $mtn = undef;
 
+    # Setup the callback for the <F1> accelerator key for all windows.
+
+    WindowManager->instance()->help_connect
+	(undef, undef, sub { Gnome2::Help->display("mtn-browse.xml"); });
+
     # Hand control over to Gtk2.
 
     Gtk2->main();
@@ -360,8 +366,8 @@ sub view_button_clicked_cb($$);
 #
 #   Routine      - quit_activate_cb
 #
-#   Description  - Callback routine called when the user selects the quit file
-#                  menu option.
+#   Description  - Callback routine called when the user selects the quit menu
+#                  option.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -395,10 +401,37 @@ sub quit_activate_cb($$)
 #
 ##############################################################################
 #
+#   Routine      - context_help_activate_cb
+#
+#   Description  - Callback routine called when the user selects the context
+#                  help menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub context_help_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    WindowManager->instance()->activate_context_sensitive_help(1);
+
+}
+#
+##############################################################################
+#
 #   Routine      - home_page_activate_cb
 #
 #   Description  - Callback routine called when the user selects the home page
-#                  help menu option.
+#                  menu option.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -442,7 +475,7 @@ sub home_page_activate_cb($$)
 #   Routine      - about_activate_cb
 #
 #   Description  - Callback routine called when the user selects the about
-#                  help menu option.
+#                  menu option.
 #
 #   Data         - $widget  : The widget object that received the signal.
 #                  $browser : The browser instance that is associated with
@@ -1559,7 +1592,7 @@ sub get_browser_window(;$$$$$)
 			    "main_vbox",
 			    "browser_hpaned",
 			    "close_toolbutton",
-			    "properties_toolbutton",
+			    "reload_toolbutton",
 			    "branch_comboboxentry",
 			    "revision_comboboxentry",
 			    "tagged_checkbutton",
@@ -1717,13 +1750,33 @@ sub get_browser_window(;$$$$$)
 	local $browser->{in_cb} = 1;
 	$browser->{window}->show_all();
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
-	$wm->manage($browser,
-		    $window_type,
-		    $browser->{window},
-		    undef,
-		    $browser->{file_view_sv}->get_window("text"));
+	$wm->manage($browser, $window_type, $browser->{window});
+	register_help_callbacks
+	    ($browser,
+	     {widget   => "menubar_bonobodockitem",
+	      help_ref => __("mtnb-gsc-menus")},
+	     {widget   => "toolbar_bonobodockitem",
+	      help_ref => __("mtnb-gsc-tool-bar")},
+	     {widget   => "view_frame",
+	      help_ref => __("mtnb-gsc-selecting-a-branch-and-revision")},
+	     {widget   => "view_button_hbox",
+	      help_ref => __("mtnb-gsc-browser-buttons")},
+	     {widget   => "revision_browser_frame",
+	      help_ref => __("mtnb-gsc-selecting-a-file-to-display")},
+	     {widget   => "directory_button_hbox",
+	      help_ref => __("mtnb-gsc-browser-buttons")},
+	     {widget   => "file_viewer_frame",
+	      help_ref => __("mtnb-gsc-selecting-a-file-to-display")},
+	     {widget   => "file_details_hbox",
+	      help_ref => __("mtnb-gsc-information-fields")},
+	     {widget   => "file_button_vbox",
+	      help_ref => __("mtnb-gsc-browser-buttons")},
+	     {widget   => "details_frame",
+	      help_ref => __("mtnb-gsc-information-fields")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-gsc-monotone-browser-window-at-a-glance")});
 
 	# Update the browser's internal state.
 
@@ -1855,7 +1908,7 @@ sub update_browser_state($$)
 	    # Disable the browser as no database is associated with it.
 
 	    $browser->{close_toolbutton}->set_sensitive(FALSE);
-	    $browser->{properties_toolbutton}->set_sensitive(FALSE);
+	    $browser->{reload_toolbutton}->set_sensitive(FALSE);
 	    $browser->{main_vbox}->set_sensitive(FALSE);
 	    set_label_value($browser->{database_name_value_label}, "");
 
@@ -1866,7 +1919,7 @@ sub update_browser_state($$)
 	    # Enable the browser as there is a database associated with it.
 
 	    $browser->{close_toolbutton}->set_sensitive(TRUE);
-	    $browser->{properties_toolbutton}->set_sensitive(TRUE);
+	    $browser->{reload_toolbutton}->set_sensitive(TRUE);
 	    $browser->{main_vbox}->set_sensitive(TRUE);
 	    if (! defined($browser->{mtn}->get_db_name()))
 	    {

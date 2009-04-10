@@ -427,13 +427,13 @@ sub get_change_log_window()
 	create_format_tags($instance->{changelog_buffer});
 	$instance->{changelog_textview}->modify_font($mono_font);
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
-	$wm->manage($instance,
-		    $window_type,
-		    $instance->{window},
-		    undef,
-		    $instance->{changelog_textview}->get_window("text"));
+	$wm->manage($instance, $window_type, $instance->{window});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => undef,
+	      help_ref => __("mtnb-lachc-the-change-log-window")});
     }
     else
     {

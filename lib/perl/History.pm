@@ -1554,13 +1554,21 @@ sub get_history_window()
 	create_format_tags($instance->{history_buffer});
 	$instance->{history_textview}->modify_font($mono_font);
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button},
-		    $instance->{history_textview}->get_window("text"));
+		    $instance->{stop_button});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => "stop_button",
+	      help_ref => __("mtnb-lachc-history-buttons")},
+	     {widget   => "compare_button",
+	      help_ref => __("mtnb-lachc-history-buttons")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-lachc-the-revision-and-file-history-"
+			     . "windows")});
     }
     else
     {
@@ -1839,13 +1847,20 @@ sub get_revision_comparison_window()
 		set_text(__("+ Revision Change Log"));
 	}
 
-	# Register the window for management.
+	# Register the window for management and set up the help callbacks.
 
 	$wm->manage($instance,
 		    $window_type,
 		    $instance->{window},
-		    $instance->{stop_button},
-		    $instance->{comparison_textview}->get_window("text"));
+		    $instance->{stop_button});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => "file_comparison_hbox",
+	      help_ref => __("mtnb-lachc-differences-buttons")},
+	     {widget   => "comparison_hbuttonbox",
+	      help_ref => __("mtnb-lachc-differences-buttons")},
+	     {widget   => undef,
+	      help_ref => __("mtnb-lachc-the-differences-window")});
     }
     else
     {

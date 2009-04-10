@@ -173,7 +173,7 @@ GNOME or DocBook.
 
     <para>This chapter covers the basic usage of <application>&APP;</application>. For more advanced usage topics please look at the subsequent chapters.</para>
 
-    <sect1 id="mtnb-gsc-opening-database">
+    <sect1 id="mtnb-gsc-opening-a-database">
       <title>Opening A Database</title>
 
       <para>When <application>&APP;</application> first starts up, nearly everything is greyed out. You need to select a Monotone database by using the <guilabel>Open</guilabel> tool-bar button or the <menuchoice><guimenu>File</guimenu><guimenuitem>Open</guimenuitem></menuchoice> menu option. Use the <guilabel>Open Database</guilabel> dialog window to select the database and left click on the <guilabel>Open</guilabel> button to finish.</para>
@@ -188,7 +188,7 @@ GNOME or DocBook.
 
     </sect1>
 
-    <sect1 id="mtnb-gsc-main-window-at-a-glance">
+    <sect1 id="mtnb-gsc-monotone-browser-window-at-a-glance">
       <title>Monotone Browser Window - At A Glance</title>
 
       <para>Once a database has been opened you will be presented with a window like the one shown below.</para>
@@ -220,12 +220,12 @@ GNOME or DocBook.
 
     </sect1>
 
-    <sect1 id="mtnb-gsc-browsing">
+    <sect1 id="mtnb-gsc-browsing-the-database">
       <title>Browsing The Database</title>
 
       <para>This section covers how to quickly select a branch and revision and then get at the files within that revision.</para>
 
-      <sect2 id="mtnb-gsc-selection">
+      <sect2 id="mtnb-gsc-selecting-a-branch-and-revision">
         <title>Selecting A Branch And Revision</title>
 
         <para>Before any information can be viewed, one has to select not only the database to use, but also the branch and revision that you wish to view. This is done by using the <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields inside the <guilabel>View</guilabel> panel. There are a number of things that <application>&APP;</application> will do to help you select the item you want.</para>
@@ -261,7 +261,7 @@ GNOME or DocBook.
 
       </sect2>
 
-      <sect2 id="mtnb-gsc-selecting-file">
+      <sect2 id="mtnb-gsc-selecting-a-file-to-display">
         <title>Selecting A File To Display</title>
 
         <para>Once a revision has been displayed then the contents of that revision will be displayed in the <guilabel>Revision Browser</guilabel> panel. This acts as a simple file manager. Single left clicking on a file will display its contents and double left clicking on a directory will change into that directory.</para>
@@ -296,12 +296,12 @@ GNOME or DocBook.
 
     </sect1>
 
-    <sect1 id="mtnb-gsc-main-window-a-closer-look">
+    <sect1 id="mtnb-gsc-monotone-browser-window-a-closer-look">
       <title>Monotone Browser Window - A Closer Look</title>
 
       <para>This section looks at the <guilabel>Monotone Browser</guilabel> window in greater detail, going through the menu options and buttons.</para>
 
-      <sect2 id="mtnb-gsc-menu">
+      <sect2 id="mtnb-gsc-menus">
         <title>Menus</title>
 
         <para>The menus on a <guilabel>Monotone Browser</guilabel> window largely provide an alternative means of accessing the functions provided by the tool-bar buttons. For example the <menuchoice><guimenu>File</guimenu><guimenuitem>Open</guimenuitem></menuchoice> menu option does exactly the same thing as the <guilabel>Open</guilabel> tool-bar button. As the tool-bar buttons are discussed in the next section, I will not bother to elaborate on their menu counterparts here. However there are a few extra menu options that do not appear anywhere else:</para>
@@ -611,7 +611,7 @@ GNOME or DocBook.
           <para><guilabel>Mode</guilabel> - This panel simply allows you to select the type of query that you wish to perform, either a simple query or an advanced one.</para>
         </listitem>
         <listitem>
-          <para><guilabel>Simple Query</guilabel> - This panel operates in a very similar fashion to the <guilabel>View</guilabel> panel found on a <guilabel>Monotone Browser</guilabel> window (see <xref linkend="mtnb-gsc-selection"/>), apart from all the revision buttons are missing and it operates in a slightly less restrictive manor.</para>
+          <para><guilabel>Simple Query</guilabel> - This panel operates in a very similar fashion to the <guilabel>View</guilabel> panel found on a <guilabel>Monotone Browser</guilabel> window (see <xref linkend="mtnb-gsc-selecting-a-branch-and-revision"/>), apart from all the revision buttons are missing and it operates in a slightly less restrictive manor.</para>
         </listitem>
         <listitem>
           <para><guilabel>Advanced Query</guilabel> - This panel allows one to directly enter Monotone database queries, it also provides some tools to help those that are not familiar with Monotone's query syntax.</para>

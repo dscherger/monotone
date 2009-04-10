@@ -305,7 +305,7 @@ sub find_text_textview_key_press_event_cb($$$)
 
     # Ignore the state of the caps-lock key.
 
-    $state = $event->state() - "lock_mask";
+    $state = $event->state() - "lock-mask";
 
     # Work out what the key is having taken into account any modifier keys
     # (except caps-lock).
@@ -319,7 +319,7 @@ sub find_text_textview_key_press_event_cb($$$)
     # We are only interested in Ctrl-f.
 
     if (defined($keyval) && $keyval == $Gtk2::Gdk::Keysyms{f}
-	&& ($state - $consumed_modifiers) == "control_mask")
+	&& ($state - $consumed_modifiers) eq "control-mask")
     {
 	find_text($instance->{window}, $widget);
 	return TRUE;
@@ -774,9 +774,17 @@ sub get_find_text_window($$)
     $instance->{find_comboboxentry}->child()->grab_focus();
     $instance->{find_comboboxentry}->child()->set_position(-1);
 
-    # If necessary, register the window for management.
+    # If necessary, register the window for management and set up the help
+    # callbacks.
 
-    $wm->manage($instance, $window_type, $instance->{window}, undef) if ($new);
+    if ($new)
+    {
+	$wm->manage($instance, $window_type, $instance->{window});
+	register_help_callbacks
+	    ($instance,
+	     {widget   => undef,
+	      help_ref => __("mtnb-gsc-browser-buttons")});
+    }
 
     return $instance;
 
