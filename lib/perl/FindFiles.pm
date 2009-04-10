@@ -324,6 +324,10 @@ sub search_files_button_clicked_cb($$)
     $query = save_query_from_gui($instance);
     return if (! validate_query($instance, $query));
 
+    $wm->make_busy($instance, 1);
+    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
+    $wm->update_gui();
+
     # Update the comboxentries histories.
 
     handle_comboxentry_history($instance->{files_named_comboboxentry},
@@ -490,10 +494,6 @@ sub search_files_button_clicked_cb($$)
 	    $size = $query->{file_size} * 1024 * 1024;
 	}
     }
-
-    $wm->make_busy($instance, 1);
-    $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
-    $wm->update_gui();
 
     $instance->{appbar}->set_status(__("Finding matching files"));
     $instance->{results_liststore}->clear();
@@ -856,7 +856,7 @@ sub get_find_files_window()
 
 	$instance->{window} = $instance->{glade}->get_widget($window_type);
 	foreach my $widget ("appbar",
-			    "execute_button",
+			    "search_files_button",
 			    "stop_button",
 
 			    "searching_from_value_label",
@@ -1220,10 +1220,29 @@ sub save_query_from_gui($)
 	}
 	else
 	{
+
+	    # The following fix is needed so as to get the correct value out of
+	    # the spinbutton. There seems to be a bug with the widget in that
+	    # it needs to loose focus before it realises the user has changed
+	    # its value via its entry widget. Therefore if it has the focus,
+	    # temporarily change the focus to the execute button and then
+	    # switch it back again. Please note, remember that the buttons on
+	    # this page are set to not have the focus on click (which would
+	    # also fix the problem but it doesn't look as nice).
+
+	    if ($instance->{time_spinbutton}->has_focus())
+	    {
+		my $pos = $instance->{time_spinbutton}->get_position();
+		$instance->{search_files_button}->grab_focus();
+		$instance->{time_spinbutton}->grab_focus();
+		$instance->{time_spinbutton}->set_position($pos);
+	    }
+
 	    $query{period} =
 		$instance->{time_spinbutton}->get_value_as_int();
 	    $query{period_units} =
 		$instance->{time_units_combobox}->get_active();
+
 	}
     }
     if ($instance->{size_comparitor_combobox}->get_active() != CMP_ANY_SIZE)

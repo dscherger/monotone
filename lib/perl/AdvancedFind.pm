@@ -680,13 +680,6 @@ sub get_advanced_find_window($)
 	create_format_tags($instance->{details_textview}->get_buffer());
 	$instance->{details_textview}->modify_font($mono_font);
 
-	# Update the advanced find dialog's state.
-
-	$instance->{window}->set_transient_for($browser->{window});
-	$instance->{branch_combo_details}->{preset} = 0;
-	$instance->{revision_combo_details}->{preset} = 0;
-	&{$instance->{update_handler}}($instance, NEW_FIND);
-
 	local $instance->{in_cb} = 1;
 	$instance->{window}->show_all();
 
@@ -704,6 +697,13 @@ sub get_advanced_find_window($)
 	      help_ref => __("mtnb-mcqc-helper-tools")},
 	     {widget   => undef,
 	      help_ref => __("mtnb-mcqc-the-advanced-find-dialog-window")});
+
+	# Update the advanced find dialog's state.
+
+	$instance->{window}->set_transient_for($browser->{window});
+	$instance->{branch_combo_details}->{preset} = 0;
+	$instance->{revision_combo_details}->{preset} = 0;
+	&{$instance->{update_handler}}($instance, NEW_FIND);
 
     }
     else
@@ -763,14 +763,9 @@ sub update_advanced_find_state($$)
     my($advanced_find, $changed) = @_;
 
     my $matches;
-    my $made_busy = 0;
     my $wm = WindowManager->instance();
 
-    if ($advanced_find->{window}->realized())
-    {
-	$made_busy = 1;
-	$wm->make_busy($advanced_find, 1);
-    }
+    $wm->make_busy($advanced_find, 1);
     $advanced_find->{appbar}->
 	push($advanced_find->{appbar}->get_status()->get_text());
     $wm->update_gui();
@@ -1159,8 +1154,6 @@ sub update_advanced_find_state($$)
     }
 
     $advanced_find->{appbar}->pop();
-    $wm->make_busy($advanced_find, 0) if ($made_busy);
-
     if (defined($matches))
     {
 	if ($matches > 0)
@@ -1176,6 +1169,7 @@ sub update_advanced_find_state($$)
 	    $advanced_find->{appbar}->set_status(__("Nothing found"));
 	}
     }
+    $wm->make_busy($advanced_find, 0);
 
 }
 
