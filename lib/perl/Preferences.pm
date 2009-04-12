@@ -1395,6 +1395,13 @@ sub save_preferences_from_gui($)
 
     my $instance = $_[0];
 
+    # Please note that the update method needs to be called on all spinbuttons
+    # so as to make sure that it's internal state is completely up to date (the
+    # user might have entered a value directly into the entry field). Updates
+    # are usually done when it looses the focus, which is fine for the
+    # preferences dialog window as it stands but it's probably best not to rely
+    # on the presence of any focus stealing buttons.
+
     # Do the general page.
 
     $instance->{preferences}->{default_mtn_db} =
@@ -1405,16 +1412,19 @@ sub save_preferences_from_gui($)
 	$instance->{auto_select_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{auto_select_head} =
 	$instance->{auto_select_head_checkbutton}->get_active() ? 1 : 0;
+    $instance->{tagged_lists_limit_spinbutton}->update();
     $instance->{preferences}->{query}->{tagged}->{limit} =
 	$instance->{tagged_lists_limit_spinbutton}->get_value_as_int();
     $instance->{preferences}->{query}->{tagged}->{sort_chronologically} =
 	$instance->{tagged_lists_sort_chronologically_radiobutton}->
 	get_active() ? 1 : 0;
+    $instance->{id_lists_limit_spinbutton}->update();
     $instance->{preferences}->{query}->{id}->{limit} =
 	$instance->{id_lists_limit_spinbutton}->get_value_as_int();
     $instance->{preferences}->{query}->{id}->{sort_chronologically} =
 	$instance->{id_lists_sort_chronologically_radiobutton}->get_active() ?
 	1 : 0;
+    $instance->{history_size_spinbutton}->update();
     $instance->{preferences}->{history_size} =
 	$instance->{history_size_spinbutton}->get_value_as_int();
     $instance->{preferences}->{show_suspended} =

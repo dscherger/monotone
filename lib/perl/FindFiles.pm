@@ -1221,23 +1221,14 @@ sub save_query_from_gui($)
 	else
 	{
 
-	    # The following fix is needed so as to get the correct value out of
-	    # the spinbutton. There seems to be a bug with the widget in that
-	    # it needs to loose focus before it realises the user has changed
-	    # its value via its entry widget. Therefore if it has the focus,
-	    # temporarily change the focus to the execute button and then
-	    # switch it back again. Please note, remember that the buttons on
-	    # this page are set to not have the focus on click (which would
-	    # also fix the problem but it doesn't look as nice).
+	    # Please note that the update method needs to be called on the
+	    # spinbutton so as to make sure that it's internal state is
+	    # completely up to date (the user might have entered a value
+	    # directly into the entry field). Updates are usually done when it
+	    # looses the focus, however this window does not make use of any
+	    # focus stealing buttons.
 
-	    if ($instance->{time_spinbutton}->has_focus())
-	    {
-		my $pos = $instance->{time_spinbutton}->get_position();
-		$instance->{search_files_button}->grab_focus();
-		$instance->{time_spinbutton}->grab_focus();
-		$instance->{time_spinbutton}->set_position($pos);
-	    }
-
+	    $instance->{time_spinbutton}->update();
 	    $query{period} =
 		$instance->{time_spinbutton}->get_value_as_int();
 	    $query{period_units} =
