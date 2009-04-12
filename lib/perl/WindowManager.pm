@@ -408,7 +408,6 @@ sub make_busy($$$;$)
 
     my($head,
        @list);
-    my $entry = $this->find_record($instance);
 
     # When making things busy filter out keyboard and mouse button events
     # unless they relate to the grab widget (usually a `stop' button) and make
@@ -417,6 +416,7 @@ sub make_busy($$$;$)
 
     if ($busy)
     {
+	my $entry = $this->find_record($instance);
 	Gtk2::Gdk::Event->handler_set(\&busy_event_filter,
 				      {singleton   => $this,
 				       grab_widget => $entry->{grab_widget}})
@@ -437,7 +437,7 @@ sub make_busy($$$;$)
 	}
 	push(@{$this->{busy_state_stack}},
 	     {exclude     => $exclude,
-	      grab_widget => $instance->{grab_widget},
+	      grab_widget => $entry->{grab_widget},
 	      window_list => \@list});
     }
     else
@@ -482,7 +482,7 @@ sub make_busy($$$;$)
 		Gtk2::Gdk::Event->handler_set
 		    (\&busy_event_filter,
 		     {singleton   => $this,
-		      grab_widget => $entry->{grab_widget}});
+		      grab_widget => $head->{grab_widget}});
 	    }
 	}
     }
