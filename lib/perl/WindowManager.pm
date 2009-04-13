@@ -97,9 +97,11 @@ sub update_gui();
 # Private routines.
 
 sub busy_event_filter($$);
+sub find_active_record($);
 sub find_gdk_windows($$);
 sub find_record($$);
 sub help_event_filter($$);
+sub window_is_busy($$);
 
 # ***** PACKAGE INFORMATION *****
 
@@ -406,9 +408,6 @@ sub make_busy($$$;$)
 
     my($this, $instance, $busy, $exclude) = @_;
 
-    my($head,
-       @list);
-
     # When making things busy filter out keyboard and mouse button events
     # unless they relate to the grab widget (usually a `stop' button) and make
     # the mouse cursor busy. Making things unbusy is simply the reverse. Also
@@ -417,17 +416,22 @@ sub make_busy($$$;$)
     if ($busy)
     {
 	my $entry = $this->find_record($instance);
+	my $exclude_window = $exclude ? $entry->{window} : undef;
+	my @list;
 	Gtk2::Gdk::Event->handler_set(\&busy_event_filter,
-				      {singleton   => $this,
-				       grab_widget => $entry->{grab_widget}})
-	    unless ($exclude);
+				      {singleton      => $this,
+				       grab_widget    => $entry->{grab_widget},
+				       exclude_window => $exclude_window});
 	foreach my $win_instance (@{$this->{windows}})
 	{
 	    if (! $exclude || $win_instance->{instance} != $instance)
 	    {
 		foreach my $window (@{$win_instance->{gdk_windows}})
 		{
-		    if ($window->is_visible())
+		    if ($window->is_visible()
+			&& (! defined ($exclude_window)
+			    || (defined($exclude_window)
+				&& $exclude_window->window() != $window)))
 		    {
 			$window->set_cursor($this->{busy_cursor});
 			push(@list, $window);
@@ -436,9 +440,10 @@ sub make_busy($$$;$)
 	    }
 	}
 	push(@{$this->{busy_state_stack}},
-	     {exclude     => $exclude,
-	      grab_widget => $entry->{grab_widget},
-	      window_list => \@list});
+	     {exclude        => $exclude,
+	      grab_widget    => $entry->{grab_widget},
+	      exclude_window => $exclude_window,
+	      window_list    => \@list});
     }
     else
     {
@@ -449,7 +454,8 @@ sub make_busy($$$;$)
 	}
 	else
 	{
-	    $head = $this->{busy_state_stack}->[$#{$this->{busy_state_stack}}];
+	    my $head =
+		$this->{busy_state_stack}->[$#{$this->{busy_state_stack}}];
 	    foreach my $win_instance (@{$this->{windows}})
 	    {
 		foreach my $window (@{$win_instance->{gdk_windows}})
@@ -473,17 +479,11 @@ sub make_busy($$$;$)
 		    }
 		}
 	    }
-	    if ($head->{exclude})
-	    {
-		Gtk2::Gdk::Event->handler_set(undef);
-	    }
-	    else
-	    {
-		Gtk2::Gdk::Event->handler_set
-		    (\&busy_event_filter,
-		     {singleton   => $this,
-		      grab_widget => $head->{grab_widget}});
-	    }
+	    Gtk2::Gdk::Event->handler_set
+		(\&busy_event_filter,
+		 {singleton      => $this,
+		  grab_widget    => $head->{grab_widget},
+		  exclude_window => $head->{exclude_window}});
 	}
     }
 
@@ -641,16 +641,30 @@ sub activate_context_sensitive_help($$)
     {
 
 	# Deactivate context sensitive help. Simply do this by reinstating the
-	# default event handling and then resetting the mouse cursor on all of
-	# those windows that had their cursor changed in the first place.
+	# previous event handling setup and then resetting the mouse cursor on
+	# all of those windows that had their cursor changed in the first
+	# place.
 
 	$this->{help_active} = 0;
-	Gtk2::Gdk::Event->handler_set(undef);
-	foreach my $window (@{$this->{help_gdk_windows}})
+	if (scalar(@{$this->{busy_state_stack}}) == 0)
 	{
-	    $window->set_cursor(undef);
+	    $this->reset_state();
 	}
-	$this->{help_gdk_windows} = [];
+	else
+	{
+	    my $head =
+		$this->{busy_state_stack}->[$#{$this->{busy_state_stack}}];
+	    Gtk2::Gdk::Event->handler_set
+		(\&busy_event_filter,
+		 {singleton      => $this,
+		  grab_widget    => $head->{grab_widget},
+		  exclude_window => $head->{exclude_window}});
+	    foreach my $window (@{$this->{help_gdk_windows}})
+	    {
+		$window->set_cursor(undef);
+	    }
+	    $this->{help_gdk_windows} = [];
+	}
 
     }
 
@@ -734,15 +748,52 @@ sub find_gdk_windows($$)
 #
 ##############################################################################
 #
+#   Routine      - window_is_busy
+#
+#   Description  - Determine whether the specified top level window is busy or
+#                  not.
+#
+#   Data         - $this        : The object.
+#                  $window      : The Gtk2::Window object that is to be
+#                                 tested.
+#                  Return Value : True if the window is busy, otherwise false.
+#
+##############################################################################
+
+
+
+sub window_is_busy($$)
+{
+
+    my($this, $window) = @_;
+
+    my $gdk_window = $window->window();
+    my $head;
+
+    return if (scalar(@{$this->{busy_state_stack}}) == 0);
+
+    $head = $this->{busy_state_stack}->[$#{$this->{busy_state_stack}}];
+    foreach my $gdk_busy_window (@{$head->{window_list}})
+    {
+	return 1 if ($gdk_window == $gdk_busy_window);
+    }
+
+    return;
+
+}
+#
+##############################################################################
+#
 #   Routine      - find_record
 #
-#   Description  - Find and return the management record for the specified
-#                  instance.
+#   Description  - Find and return the internal management record for the
+#                  specified window instance.
 #
 #   Data         - $this        : The object.
 #                  $instance    : The window instance that is to be found.
-#                  Return Value : A reference to the management record that
-#                                 manages the specified window instance.
+#                  Return Value : A reference to the internal management
+#                                 record that manages the specified window
+#                                 instance.
 #
 ##############################################################################
 
@@ -758,6 +809,37 @@ sub find_record($$)
 	return $win_instance if ($win_instance->{instance} == $instance);
     }
     croak("Called with an unmanaged instance record");
+
+}
+#
+##############################################################################
+#
+#   Routine      - find_active_record
+#
+#   Description  - Find and return the internal management record relating to
+#                  the currently active top level window.
+#
+#   Data         - $this        : The object.
+#                  Return Value : A reference to the internal management
+#                                 record that manages the currently active
+#                                 window, otherwise undef if one cannot be
+#                                 found.
+#
+##############################################################################
+
+
+
+sub find_active_record($)
+{
+
+    my $this = $_[0];
+
+    foreach my $win_instance (@{$this->{windows}})
+    {
+	return $win_instance if ($win_instance->{window}->is_active());
+    }
+
+    return;
 
 }
 #
@@ -782,38 +864,85 @@ sub busy_event_filter($$)
 
     my($event, $client_data) = @_;
 
-    my($event_for_grab_widget,
-       $widget);
-    my $grab_widget = $client_data->{grab_widget};
-    my $this        = $client_data->{singleton};
-    my $type        = $event->type();
+    my $exclude_window = $client_data->{exclude_window};
+    my $grab_widget    = $client_data->{grab_widget};
+    my $this           = $client_data->{singleton};
+    my $type           = $event->type();
+    my $widget         = Gtk2->get_event_widget($event);
 
-    $event_for_grab_widget =
-	(defined($grab_widget)
-	 && defined($widget = Gtk2->get_event_widget($event))
-	 && $grab_widget == $widget)
-	? 1 : 0;
-
-    # Ignore the event if we are blocking input, the event is input related and
-    # it isn't destined for the grab widget (if there is one).
-
-    return if (! $this->{allow_input}
-	       && exists($filtered_events{$type})
-	       && ! $event_for_grab_widget);
-
-    # If there is a grab widget then reset the mouse cursor to the default
-    # whilst it is inside that widget.
-
-    if ($event_for_grab_widget)
+    if (defined($exclude_window))
     {
-	if ($type eq "enter-notify")
+
+	my $allow_event;
+
+	# There is an excluded window so allow all user input events destined
+	# for that window and any other window that wasn't made busy in the
+	# first place (like subordinate dialog windows), otherwise filter them
+	# out if we are currently blocking input.
+
+	# Find out whether the event is destined for the excluded window.
+
+	if (defined($widget))
 	{
-	    $grab_widget->window()->set_cursor(undef);
+
+	    my($current,
+	       $parent);
+
+	    # Find the top level window for the widget that received the event.
+
+	    $current = $parent = $widget;
+	    while (defined($parent = $current->get_parent()))
+	    {
+		$current = $parent;
+	    }
+
+	    # Allow the event if it is for the excluded window or for a newly
+	    # displayed non-busy window.
+
+	    $allow_event = 1 if ($exclude_window == $current
+				 || ! $this->window_is_busy($current));
+
 	}
-	elsif ($type eq "leave-notify")
+
+	# Filter out unwanted events.
+
+	return if (! $this->{allow_input} && ! $allow_event
+		   && exists($filtered_events{$type}));
+
+    }
+    else
+    {
+
+	# No excluded windows so only allow user input events into the grab
+	# widget if one is defined.
+
+	my $event_for_grab_widget =
+	    (defined($grab_widget) && defined($widget)
+	     && $grab_widget == $widget)
+	    ? 1 : undef;
+
+	# Ignore the event if we are blocking input, the event is input related
+	# and it isn't destined for the grab widget (if there is one).
+
+	return if (! $this->{allow_input}
+		   && exists($filtered_events{$type})
+		   && ! $event_for_grab_widget);
+
+	# If there is a grab widget then reset the mouse cursor to the default
+	# whilst it is inside that widget.
+
+	if ($event_for_grab_widget)
 	{
-	    $grab_widget->window()->set_cursor($this->{busy_cursor});
+	    if ($type eq "enter-notify")
+	    {
+		$grab_widget->window()->set_cursor(undef);
+	    }
+	    elsif ($type eq "leave-notify")
+	    {
+		$grab_widget->window()->set_cursor($this->{busy_cursor});
+	    }
 	}
+
     }
 
     # Actually process the event.
@@ -844,9 +973,9 @@ sub help_event_filter($$)
 
     my($event, $this) = @_;
 
-    my $type   = $event->type();
+    my $type = $event->type();
 
-    # See if it is an event we are interested in (pressing the <F1> key or
+    # See if it is an event we are interested in (pressing Shift-<F1> key or
     # pressing the left mouse button).
 
     # Key presses.
@@ -855,6 +984,7 @@ sub help_event_filter($$)
     {
 
 	my($consumed_modifiers,
+	   $entry,
 	   $keymap,
 	   $keyval,
 	   $state);
@@ -872,9 +1002,15 @@ sub help_event_filter($$)
 	    ($keymap->translate_keyboard_state
 	     ($event->hardware_keycode(), $state, $event->group()))[0, 3];
 
-	# We are only interested in <F1> (in which case just let it through to
-	# be processed in the normal way, which in turn will deactivate context
-	# sensitive help mode).
+	# Make sure that there is an active window for the event and that it
+	# isn't busy.
+
+	return unless (defined($entry = $this->find_active_record())
+		       && ! $this->window_is_busy($entry->{window}));
+
+	# We are only interested in Shift-<F1> (in which case just let it
+	# through to be processed in the normal way, which in turn will
+	# deactivate context sensitive help mode).
 
 	return if (! (defined($keyval) && $keyval == $Gtk2::Gdk::Keysyms{F1}
 		      && ($state - $consumed_modifiers) eq "shift-mask"));
@@ -895,22 +1031,15 @@ sub help_event_filter($$)
 	    if (defined($event_widget = Gtk2->get_event_widget($event)))
 	    {
 
-		my ($entry,
-		    $help_cb,
-		    $widget);
+		my($entry,
+		   $help_cb,
+		   $widget);
 
-		# Assume that the top level window that is currently active is
-		# the one that was clicked on.
+		# Find the active window for the event. Ignore the event if
+		# there isn't active window or if it is busy.
 
-		foreach my $win_instance (@{$this->{windows}})
-		{
-		    if ($win_instance->{window}->is_active())
-		    {
-			$entry = $win_instance;
-			last;
-		    }
-		}
-		return unless (defined($entry));
+		return unless (defined($entry = $this->find_active_record())
+			       && ! $this->window_is_busy($entry->{window}));
 
 		# Now find the relevant help callback for the widget or one of
 		# its containing parents. If nothing is found then check to see
