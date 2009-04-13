@@ -369,10 +369,10 @@ sub open_database($$$)
 	if ($chooser_dialog->run() eq "ok")
 	{
 
-	    my ($err,
-		$fh,
-		$fname,
-		$mtn_obj);
+	    my($err,
+	       $fh,
+	       $fname,
+	       $mtn_obj);
 
 	    $fname = $chooser_dialog->get_filename();
 
@@ -487,8 +487,8 @@ sub save_as_file($$$)
 	if ($chooser_dialog->run() eq "ok")
 	{
 
-	    my ($fh,
-		$fname);
+	    my($fh,
+	       $fname);
 
 	    $continue = 1;
 	    $fname = $chooser_dialog->get_filename();
@@ -1318,9 +1318,9 @@ sub hex_dump($)
 
     my $data = $_[0];
 
-    my ($buffer,
-	$counter,
-	@line);
+    my($buffer,
+       $counter,
+       @line);
 
     $counter = 0;
     foreach my $byte (split(//, $$data))

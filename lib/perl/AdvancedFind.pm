@@ -139,6 +139,7 @@ sub advanced_find($$$)
 	Gtk2->main_iteration();
     }
     $wm->make_busy($advanced_find, 0);
+    hide_find_text($advanced_find->{details_textview});
     $advanced_find->{window}->hide();
 
     # Deal with the result.
@@ -1006,13 +1007,13 @@ sub update_advanced_find_state($$)
 		 ++ $i, ++ $nr_revisions)
 	    {
 
-		my ($author,
-		    @certs,
-		    $date,
-		    $found,
-		    $key,
-		    %unique,
-		    $value);
+		my($author,
+		   @certs,
+		   $date,
+		   $found,
+		   $key,
+		   %unique,
+		   $value);
 
 		$advanced_find->{mtn}->certs(\@certs, $revision_ids[$i]);
 

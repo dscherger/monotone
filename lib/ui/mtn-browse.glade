@@ -2175,7 +2175,7 @@ into a viewer</property>
   <property name="title" translatable="yes">Advanced Find</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
-  <property name="modal">True</property>
+  <property name="modal">False</property>
   <property name="default_width">750</property>
   <property name="default_height">550</property>
   <property name="resizable">True</property>
@@ -2957,6 +2957,8 @@ Tag</property>
 			      <property name="right_margin">0</property>
 			      <property name="indent">0</property>
 			      <property name="text" translatable="yes"></property>
+			      <signal name="populate_popup" handler="find_text_textview_populate_popup_cb" last_modification_time="Mon, 13 Apr 2009 17:26:51 GMT"/>
+			      <signal name="key_press_event" handler="find_text_textview_key_press_event_cb" last_modification_time="Mon, 13 Apr 2009 17:27:24 GMT"/>
 			    </widget>
 			  </child>
 			</widget>
@@ -4513,7 +4515,7 @@ search patterns</property>
   <property name="title" translatable="yes">Preferences</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
-  <property name="modal">True</property>
+  <property name="modal">False</property>
   <property name="default_width">970</property>
   <property name="default_height">440</property>
   <property name="resizable">True</property>
