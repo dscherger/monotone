@@ -53,8 +53,7 @@ namespace pcre
   {
   private:
     // disable the default and copy constructors - we never need to copy
-    // these, and this lets us use bare pointers below instead of
-    // boost::shared_ptr.
+    // these.  This makes it safe to use bare pointers below.
     regex();
     regex(regex const &);
     regex & operator=(regex const &);

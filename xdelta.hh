@@ -10,7 +10,7 @@
 #ifndef __XDELTA_HH__
 #define __XDELTA_HH__
 
-#include <boost/shared_ptr.hpp>
+#include "intrusive_ptr.hh"
 #include "vocab.hh"
 
 void
@@ -35,7 +35,7 @@ void patch(data const & olddata,
            data & newdata);
 
 
-struct delta_applicator
+struct delta_applicator : intrusively_refcounted
 {
   virtual ~delta_applicator () {}
   virtual void begin(std::string const & base) = 0;
@@ -46,10 +46,10 @@ struct delta_applicator
   virtual void insert(std::string const & str) = 0;
 };
 
-boost::shared_ptr<delta_applicator> new_simple_applicator();
-boost::shared_ptr<delta_applicator> new_piecewise_applicator();
+boost::intrusive_ptr<delta_applicator> new_simple_applicator();
+boost::intrusive_ptr<delta_applicator> new_piecewise_applicator();
 
-void apply_delta(boost::shared_ptr<delta_applicator> da,
+void apply_delta(boost::intrusive_ptr<delta_applicator> da,
                  std::string const & delta);
 
 u64 measure_delta_target_size(std::string const & delta);

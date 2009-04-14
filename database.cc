@@ -86,6 +86,7 @@ using std::string;
 using std::vector;
 using std::accumulate;
 
+using boost::intrusive_ptr;
 using boost::shared_ptr;
 using boost::shared_dynamic_cast;
 using boost::lexical_cast;
@@ -1828,7 +1829,7 @@ database_impl::get_version(id const & ident,
   else
     get_file_or_manifest_base_unchecked(curr, begin, data_table);
 
-  shared_ptr<delta_applicator> appl = new_piecewise_applicator();
+  intrusive_ptr<delta_applicator> appl = new_piecewise_applicator();
   appl->begin(begin());
 
   for (reconstruction_path::reverse_iterator i = selected_path.rbegin();
