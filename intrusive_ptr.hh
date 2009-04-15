@@ -14,9 +14,9 @@
 #include "sanity.hh"
 
 // By convention, intrusively reference-counted objects should have a
-// private member of type intrusive_refcnt_t, named "refcnt", and be
-// friends with these functions.  Since monotone is single-threaded,
-// we do not worry about locking.
+// private member of type "mutable intrusive_refcnt_t", named
+// "refcnt", and be friends with these functions.  Since monotone is
+// single-threaded, we do not worry about locking.
 
 typedef long intrusive_refcnt_t;
 
@@ -34,6 +34,24 @@ template <class T> inline void intrusive_ptr_release(T * ptr)
     delete ptr;
 }
 
+// It is necessary to reiterate the above definitions for a
+// pointer to T const.
+
+template <class T> inline void intrusive_ptr_add_ref(T const * ptr)
+{
+  ptr->refcnt++;
+  I(ptr->refcnt > 0);
+}
+
+template <class T> inline void intrusive_ptr_release(T const * ptr)
+{
+  ptr->refcnt--;
+  I(ptr->refcnt >= 0);
+  if (ptr->refcnt == 0)
+    delete ptr;
+}
+
+
 // This base class takes care of the above conventions for you.
 // Note that intrusive_ptr_add_ref/release still need to be template
 // functions, as one must apply delete to a pointer with the true type
@@ -41,10 +59,12 @@ template <class T> inline void intrusive_ptr_release(T * ptr)
 
 class intrusively_refcounted
 {
-  intrusive_refcnt_t refcnt;
+  mutable intrusive_refcnt_t refcnt;
   // sadly, no way to say "any subclass of this"
   template <class T> friend void intrusive_ptr_add_ref(T *);
   template <class T> friend void intrusive_ptr_release(T *);
+  template <class T> friend void intrusive_ptr_add_ref(T const *);
+  template <class T> friend void intrusive_ptr_release(T const *);
 public:
   intrusively_refcounted() : refcnt(0) {}
 };

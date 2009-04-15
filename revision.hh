@@ -13,6 +13,7 @@
 #include <set>
 #include "vector.hh"
 #include "rev_types.hh"
+#include "roster.hh" // need parent_map
 
 class key_store;
 class node_restriction;
@@ -150,7 +151,7 @@ ancestry_difference(database & db, revision_id const & a,
 
 
 // FIXME: can probably optimize this passing a lookaside cache of the active
-// frontier set of shared_ptr<roster_t>s, while traversing history.
+// frontier set of intrusive_ptr<roster_t>s, while traversing history.
 void
 select_nodes_modified_by_rev(database & db,
                              revision_t const & rev,

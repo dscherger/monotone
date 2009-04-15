@@ -40,7 +40,7 @@ using std::string;
 using std::vector;
 using std::strlen;
 
-using boost::shared_ptr;
+using boost::intrusive_ptr;
 
 static void
 add_dormant_attrs(node_t const parent, node_t child)
@@ -287,7 +287,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
     = parent_cached_roster(parents.begin()).first;
   MM(*old_roster);
 
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> working_roster(new roster_t());
 
   MM(*working_roster);
   work.get_current_roster_shape(db, nis, *working_roster);
@@ -746,7 +746,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
 {
   revision_id left_id, right_id;
   cached_roster left, right;
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> working_roster = intrusive_ptr<roster_t>(new roster_t());
 
   if (args.size() != 1)
     throw usage(execid);
@@ -955,8 +955,8 @@ show_conflicts_core (database & db,
       return;
     }
 
-  shared_ptr<roster_t> l_roster = shared_ptr<roster_t>(new roster_t());
-  shared_ptr<roster_t> r_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> l_roster = intrusive_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> r_roster = intrusive_ptr<roster_t>(new roster_t());
   marking_map l_marking, r_marking;
   db.get_roster(l_id, *l_roster, l_marking);
   db.get_roster(r_id, *r_roster, r_marking);
@@ -1163,7 +1163,7 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   revision_id ancestor_rid;
   file_path ancestor_path;
   file_id ancestor_fid;
-  shared_ptr<roster_t const> ancestor_roster;
+  intrusive_ptr<roster_t const> ancestor_roster;
   adaptor.get_ancestral_roster(left_n->self, ancestor_rid, ancestor_roster);
   ancestor_roster->get_file_details(left_n->self, ancestor_fid, ancestor_path);
 
@@ -1252,12 +1252,12 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   temp_node_id_source nis;
 
   // Get the FROM roster
-  shared_ptr<roster_t> from_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> from_roster = intrusive_ptr<roster_t>(new roster_t());
   MM(*from_roster);
   db.get_roster(from_rid, *from_roster);
 
   // Get the WORKING roster
-  shared_ptr<roster_t> working_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> working_roster = intrusive_ptr<roster_t>(new roster_t());
   MM(*working_roster);
   work.get_current_roster_shape(db, nis, *working_roster);
 
@@ -1284,7 +1284,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   }
   E(!from_to_to.empty(), origin::user, F("no changes to be applied"));
   // ...and use it to create the TO roster
-  shared_ptr<roster_t> to_roster = shared_ptr<roster_t>(new roster_t());
+  intrusive_ptr<roster_t> to_roster = intrusive_ptr<roster_t>(new roster_t());
   MM(*to_roster);
   {
     *to_roster = *from_roster;

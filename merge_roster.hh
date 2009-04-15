@@ -264,9 +264,9 @@ struct roster_merge_result
                            revision_id const & ancestor_rid,
                            revision_id const & left_rid,
                            revision_id const & right_rid,
-                           boost::shared_ptr<roster_t> left_roster,
+                           boost::intrusive_ptr<roster_t> left_roster,
                            marking_map const & left_marking,
-                           boost::shared_ptr<roster_t> right_roster,
+                           boost::intrusive_ptr<roster_t> right_roster,
                            marking_map const & right_marking);
 };
 

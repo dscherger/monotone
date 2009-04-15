@@ -15,6 +15,7 @@
 #include "paths.hh"
 #include "rev_types.hh"
 #include "cset.hh" // need full definition of editable_tree
+#include "intrusive_ptr.hh"
 
 struct node_id_source
 {
@@ -148,7 +149,7 @@ template <> void dump(std::set<revision_id> const & revids, std::string & out);
 template <> void dump(marking_t const & marking, std::string & out);
 template <> void dump(marking_map const & marking_map, std::string & out);
 
-class roster_t
+class roster_t : public intrusively_refcounted
 {
 public:
   roster_t() {}
@@ -309,6 +310,12 @@ protected:
   node_id_source & nis;
 };
 
+typedef boost::intrusive_ptr<roster_t const> roster_t_cp;
+typedef boost::shared_ptr<marking_map const> marking_map_cp;
+typedef std::pair<roster_t_cp, marking_map_cp> cached_roster;
+
+typedef std::map<revision_id, cached_roster> parent_map;
+typedef parent_map::value_type parent_entry;
 
 void
 make_cset(roster_t const & from,

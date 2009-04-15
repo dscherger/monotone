@@ -89,13 +89,6 @@ class database;
 class conditional_transaction_guard;
 class transaction_guard;
 
-typedef boost::shared_ptr<roster_t const> roster_t_cp;
-typedef boost::shared_ptr<marking_map const> marking_map_cp;
-typedef std::pair<roster_t_cp, marking_map_cp> cached_roster;
-
-typedef std::map<revision_id, cached_roster> parent_map;
-typedef parent_map::value_type parent_entry;
-
 #endif // __REV_TYPES_HH__
 
 // Local Variables:

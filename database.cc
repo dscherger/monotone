@@ -2047,7 +2047,7 @@ database::get_roster_version(revision_id const & ros_id,
   selected_path.pop_back();
   // we know that this isn't already in the cache (because of the early exit
   // above), so we should create new objects and spend time filling them in.
-  shared_ptr<roster_t> roster(new roster_t);
+  intrusive_ptr<roster_t> roster(new roster_t);
   shared_ptr<marking_map> marking(new marking_map);
   imp->get_roster_base(revision_id(curr), *roster, *marking);
 
@@ -2741,7 +2741,7 @@ database::put_roster_for_revision(revision_id const & new_id,
 {
   // Construct, the roster, sanity-check the manifest id, and then write it
   // to the db
-  shared_ptr<roster_t> ros_writeable(new roster_t); MM(*ros_writeable);
+  intrusive_ptr<roster_t> ros_writeable(new roster_t); MM(*ros_writeable);
   shared_ptr<marking_map> mm_writeable(new marking_map); MM(*mm_writeable);
   manifest_id roster_manifest_id;
   MM(roster_manifest_id);

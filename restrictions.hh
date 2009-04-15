@@ -31,6 +31,7 @@
 #include <set>
 #include "vocab.hh"
 #include "rev_types.hh"
+#include "roster.hh"
 #include "paths.hh"
 
 // between any two related revisions, A and B, there is a set of changes (a
