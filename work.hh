@@ -13,6 +13,7 @@
 #include <set>
 #include "paths.hh"
 #include "rev_types.hh"
+#include "roster.hh"
 
 class path_restriction;
 class node_restriction;

@@ -40,11 +40,12 @@ using std::set;
 using std::string;
 using std::vector;
 using boost::shared_ptr;
+using boost::intrusive_ptr;
 
 // Stuff related to rebuilding the revision graph. Unfortunately this is a
 // real enough error case that we need support code for it.
 
-typedef map<u64, pair<shared_ptr<roster_t>, shared_ptr<marking_map> > >
+typedef map<u64, pair<intrusive_ptr<roster_t>, shared_ptr<marking_map> > >
 parent_roster_map;
 
 template <> void
@@ -430,7 +431,7 @@ not_dead_yet(node_id nid, u64 birth_rev,
   for (parent_roster_map::const_iterator r = parent_rosters.begin();
        r != parent_rosters.end(); ++r)
     {
-      shared_ptr<roster_t> parent = r->second.first;
+      intrusive_ptr<roster_t> parent = r->second.first;
       // L(FL("node %d %s in parent roster %d")
       //             % nid
       //             % (parent->has_node(n->first) ? "exists" : "does not exist" )
@@ -539,7 +540,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
   for (parent_roster_map::const_iterator i = parent_rosters.begin();
        i != parent_rosters.end(); ++i)
     {
-      shared_ptr<roster_t> parent_roster = i->second.first;
+      intrusive_ptr<roster_t> parent_roster = i->second.first;
       shared_ptr<marking_map> parent_marking = i->second.second;
 
       node_map const & nodes = parent_roster->all_nodes();
@@ -573,7 +574,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
           for (parent_roster_map::const_iterator j = parent_rosters.begin();
                j != parent_rosters.end(); ++j)
             {
-              shared_ptr<roster_t> parent_roster = j->second.first;
+              intrusive_ptr<roster_t> parent_roster = j->second.first;
 
               if (!parent_roster->has_node(n))
                 continue;
@@ -727,7 +728,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
               u64 parent = i->second;
               if (parent_rosters.find(parent) == parent_rosters.end())
                 {
-                  shared_ptr<roster_t> ros = shared_ptr<roster_t>(new roster_t());
+                  intrusive_ptr<roster_t> ros = intrusive_ptr<roster_t>(new roster_t());
                   shared_ptr<marking_map> mm = shared_ptr<marking_map>(new marking_map());
                   db.get_roster(safe_get(node_to_new_rev, parent), *ros, *mm);
                   safe_insert(parent_rosters, make_pair(parent, make_pair(ros, mm)));
@@ -822,7 +823,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
             {
               u64 parent = i->first;
               revision_id parent_rid = safe_get(node_to_new_rev, parent);
-              shared_ptr<roster_t> parent_roster = i->second.first;
+              intrusive_ptr<roster_t> parent_roster = i->second.first;
               shared_ptr<cset> cs = shared_ptr<cset>(new cset());
               MM(*cs);
               make_cset(*parent_roster, child_roster, *cs);
@@ -837,7 +838,7 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
           if (rev.edges.empty())
             {
               revision_id parent_rid;
-              shared_ptr<roster_t> parent_roster = shared_ptr<roster_t>(new roster_t());
+              intrusive_ptr<roster_t> parent_roster = intrusive_ptr<roster_t>(new roster_t());
               shared_ptr<cset> cs = shared_ptr<cset>(new cset());
               MM(*cs);
               make_cset(*parent_roster, child_roster, *cs);

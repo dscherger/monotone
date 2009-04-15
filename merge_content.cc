@@ -33,6 +33,7 @@ using std::set;
 using std::string;
 using std::vector;
 using boost::shared_ptr;
+using boost::intrusive_ptr;
 
 ///////////////////////////////////////////////////////////////////////////
 // content_merge_database_adaptor
@@ -104,17 +105,17 @@ content_merge_database_adaptor::record_file(file_id const & parent_ident,
 
 void
 content_merge_database_adaptor::cache_roster(revision_id const & rid,
-                                             boost::shared_ptr<roster_t const> roster)
+                                             boost::intrusive_ptr<roster_t const> roster)
 {
   safe_insert(rosters, make_pair(rid, roster));
 };
 
 static void
 load_and_cache_roster(database & db, revision_id const & rid,
-                      map<revision_id, shared_ptr<roster_t const> > & rmap,
-                      shared_ptr<roster_t const> & rout)
+                      map<revision_id, intrusive_ptr<roster_t const> > & rmap,
+                      intrusive_ptr<roster_t const> & rout)
 {
-  map<revision_id, shared_ptr<roster_t const> >::const_iterator i = rmap.find(rid);
+  map<revision_id, intrusive_ptr<roster_t const> >::const_iterator i = rmap.find(rid);
   if (i != rmap.end())
     rout = i->second;
   else
@@ -129,7 +130,7 @@ load_and_cache_roster(database & db, revision_id const & rid,
 void
 content_merge_database_adaptor::get_ancestral_roster(node_id nid,
                                                      revision_id & rid,
-                                                     shared_ptr<roster_t const> & anc)
+                                                     intrusive_ptr<roster_t const> & anc)
 {
   // Given a file, if the lca is nonzero and its roster contains the file,
   // then we use its roster.  Otherwise we use the roster at the file's
@@ -185,7 +186,7 @@ content_merge_database_adaptor::get_version(file_id const & ident,
 
 void
 content_merge_workspace_adaptor::cache_roster(revision_id const & rid,
-                                              boost::shared_ptr<roster_t const> roster)
+                                              boost::intrusive_ptr<roster_t const> roster)
 {
   rosters.insert(std::make_pair(rid, roster));
 }
@@ -226,7 +227,7 @@ content_merge_workspace_adaptor::record_file(file_id const & parent_id,
 void
 content_merge_workspace_adaptor::get_ancestral_roster(node_id nid,
                                                       revision_id & rid,
-                                                      shared_ptr<roster_t const> & anc)
+                                                      intrusive_ptr<roster_t const> & anc)
 {
   // Begin by loading any non-empty file lca roster
   if (base->has_node(nid))
@@ -321,7 +322,7 @@ content_merge_checkout_adaptor::record_file(file_id const & parent_ident,
 void
 content_merge_checkout_adaptor::get_ancestral_roster(node_id nid,
                                                      revision_id & rid,
-                                                     shared_ptr<roster_t const> & anc)
+                                                     intrusive_ptr<roster_t const> & anc)
 {
   I(false);
 }
@@ -360,7 +361,7 @@ content_merge_empty_adaptor::record_file(file_id const & parent_ident,
 void
 content_merge_empty_adaptor::get_ancestral_roster(node_id nid,
                                                   revision_id & rid,
-                                                  shared_ptr<roster_t const> & anc)
+                                                  intrusive_ptr<roster_t const> & anc)
 {
   I(false);
 }
@@ -586,7 +587,7 @@ try_to_merge_files(lua_hooks & lua,
       MM(conflict);
 
       revision_id rid;
-      shared_ptr<roster_t const> roster_for_file_lca;
+      intrusive_ptr<roster_t const> roster_for_file_lca;
       adaptor.get_ancestral_roster(conflict.nid, rid, roster_for_file_lca);
 
       // Now we should certainly have a roster, which has the node.

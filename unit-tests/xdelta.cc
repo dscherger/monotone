@@ -21,7 +21,7 @@ boost::uniform_smallint<size_t> xdelta_editgen(3, 10);
 boost::uniform_smallint<size_t> xdelta_lengen(1, 256);
 
 using std::string;
-using boost::shared_ptr;
+using boost::intrusive_ptr;
 
 UNIT_TEST(basic)
 {
@@ -48,7 +48,7 @@ apply_via_normal(string const & base, string const & delta)
 static string
 apply_via_piecewise(string const & base, string const & delta)
 {
-  shared_ptr<delta_applicator> appl = new_piecewise_applicator();
+  intrusive_ptr<delta_applicator> appl = new_piecewise_applicator();
   appl->begin(base);
   apply_delta(appl, delta);
   appl->next();
@@ -170,7 +170,7 @@ UNIT_TEST(random_piecewise_delta)
     {
       string prev, next, got;
       xdelta_random_string(prev);
-      shared_ptr<delta_applicator> appl = new_piecewise_applicator();
+      intrusive_ptr<delta_applicator> appl = new_piecewise_applicator();
       appl->begin(prev);
       for (int j = 0; j < 5; ++j)
         {

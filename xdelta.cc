@@ -51,6 +51,7 @@ using std::vector;
 using std::memcmp;
 using std::lower_bound;
 
+using boost::intrusive_ptr;
 using boost::shared_ptr;
 
 struct identity {size_t operator()(u32 const & v) const { return static_cast<size_t>(v);}};
@@ -398,7 +399,7 @@ read_num(string::const_iterator &i,
 }
 
 void
-apply_delta(shared_ptr<delta_applicator> da,
+apply_delta(intrusive_ptr<delta_applicator> da,
             string const & delta)
 {
   string::const_iterator i = delta.begin();
@@ -444,7 +445,7 @@ apply_delta(string const & a,
             string const & delta,
             string & b)
 {
-  shared_ptr<delta_applicator> da(new simple_applicator());
+  intrusive_ptr<delta_applicator> da(new simple_applicator());
   da->begin(a);
   apply_delta(da, delta);
   da->next();
@@ -695,16 +696,16 @@ piecewise_applicator
 
 // these just hide our implementation types from outside
 
-shared_ptr<delta_applicator>
+intrusive_ptr<delta_applicator>
 new_simple_applicator()
 {
-  return shared_ptr<delta_applicator>(new simple_applicator());
+  return intrusive_ptr<delta_applicator>(new simple_applicator());
 }
 
-shared_ptr<delta_applicator>
+intrusive_ptr<delta_applicator>
 new_piecewise_applicator()
 {
-  return shared_ptr<delta_applicator>(new piecewise_applicator());
+  return intrusive_ptr<delta_applicator>(new piecewise_applicator());
 }
 
 
@@ -813,7 +814,8 @@ invert_xdelta(string const & old_str,
               string const & delta,
               string & delta_inverse)
 {
-  shared_ptr<delta_applicator> da(new inverse_delta_writing_applicator(old_str));
+  intrusive_ptr<delta_applicator>
+    da(new inverse_delta_writing_applicator(old_str));
   apply_delta(da, delta);
   da->finish(delta_inverse);
 }

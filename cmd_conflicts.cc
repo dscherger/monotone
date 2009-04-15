@@ -23,14 +23,14 @@ struct conflicts_t
 {
   roster_merge_result result;
   revision_id ancestor_rid, left_rid, right_rid;
-  boost::shared_ptr<roster_t> ancestor_roster;
-  boost::shared_ptr<roster_t> left_roster;
-  boost::shared_ptr<roster_t> right_roster;
+  boost::intrusive_ptr<roster_t> ancestor_roster;
+  boost::intrusive_ptr<roster_t> left_roster;
+  boost::intrusive_ptr<roster_t> right_roster;
   marking_map left_marking, right_marking;
 
   conflicts_t(database & db, bookkeeping_path const & file):
-    left_roster(boost::shared_ptr<roster_t>(new roster_t())),
-    right_roster(boost::shared_ptr<roster_t>(new roster_t()))
+    left_roster(boost::intrusive_ptr<roster_t>(new roster_t())),
+    right_roster(boost::intrusive_ptr<roster_t>(new roster_t()))
   {
     result.clear(); // default constructor doesn't do this.
 
@@ -182,7 +182,7 @@ do_interactive_merge(database & db,
 
   if (!conflicts.ancestor_roster)
     {
-      conflicts.ancestor_roster = boost::shared_ptr<roster_t>(new roster_t());
+      conflicts.ancestor_roster = boost::intrusive_ptr<roster_t>(new roster_t());
       db.get_roster(conflicts.ancestor_rid, *conflicts.ancestor_roster);
     }
 

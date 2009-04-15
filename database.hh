@@ -17,6 +17,7 @@
 #include <botan/version.h>
 
 #include "rev_types.hh"
+#include "roster.hh" // parent_map
 #include "cert.hh"
 
 class app_state;
