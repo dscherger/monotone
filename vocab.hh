@@ -23,14 +23,11 @@
 // than string refcopy on my system (g++ 4). This only happens because
 // we tell Boost not to worry about threads... but I don't recognize any
 // thread stuff in the string headers.
-namespace
-{
-  std::string empty;
-}
 
 class immutable_string
 {
   boost::shared_ptr<std::string> _rep;
+  static std::string empty;
 
 public:
   immutable_string()
@@ -47,9 +44,6 @@ public:
       return empty;
   }
 };
-
-
-
 
 #include "vocab_macros.hh"
 #define ENCODING(enc) hh_ENCODING(enc)

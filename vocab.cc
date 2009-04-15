@@ -18,6 +18,8 @@
 
 using std::string;
 
+std::string immutable_string::empty;
+
 // verifiers for various types of data
 
 // Every ENCODING and ATOMIC type not defined with the _NOVERIFY variant in
