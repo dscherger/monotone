@@ -21,35 +21,35 @@ OPTION(globals, positionals, true, "--", "")
 #endif
 
 OPTVAR(branch, branch_name, branchname, )
-OPTION(branch, branch, true, "branch,b", N_("select branch cert for operation"))
+OPTION(branch, branch, true, "branch,b", gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
   branchname = branch_name(arg, origin::user);
 }
 #endif
 
-OPT(since, "since", std::string, , N_("set history start for CVS pull"))
+OPT(since, "since", std::string, , gettext_noop("set history start for CVS pull"))
 #ifdef option_bodies
 {
   since = std::string(arg);
 }
 #endif
 
-OPT(full, "full", bool, false, N_("ignore already pulled CVS revisions"))
+OPT(full, "full", bool, false, gettext_noop("ignore already pulled CVS revisions"))
 #ifdef option_bodies
 {
   full = true;
 }
 #endif
 
-OPT(no_time, "no-time", bool, false, N_("do not send Checkin-time command on push"))
+OPT(no_time, "no-time", bool, false, gettext_noop("do not send Checkin-time command on push"))
 #ifdef option_bodies
 {
   no_time = true;
 }
 #endif
 
-OPT(first, "first", bool, false, N_("take first child if choice necessary"))
+OPT(first, "first", bool, false, gettext_noop("take first child if choice necessary"))
 #ifdef option_bodies
 {
   first = true;
@@ -58,7 +58,7 @@ OPT(first, "first", bool, false, N_("take first child if choice necessary"))
 
 OPTVAR(revision, std::vector<revision_id>, revisions, )
 OPTION(revision, revision, true, "revision,r", 
-      N_("select revision id(s) for operation"))
+      gettext_noop("select revision id(s) for operation"))
 #ifdef option_bodies
 {
   revisions.push_back(revision_id(decode_hexenc(arg, origin::user),origin::user));
@@ -139,7 +139,7 @@ GOPT(domain, "domain", std::string, "cvs", gettext_noop("synchronization domain"
 #endif
 
 OPTVAR(globals, std::vector<std::string>, mtn_options, )
-OPTION(globals, mtn_option, true, "mtn-option", N_("pass option to monotone"))
+OPTION(globals, mtn_option, true, "mtn-option", gettext_noop("pass option to monotone"))
 #ifdef option_bodies
 {
   mtn_options.push_back(std::string(arg));
@@ -174,14 +174,14 @@ OPTION(globals, dump, true, "dump",
 #endif
 
 // these options are passed transparently
-TRANSOPT3(db, "db,d", N_("passed: set name of database"));
-TRANSOPT(rcfile, N_("passed: load extra rc file"));
-TRANSOPT_BOOL(nostd, N_("passed: do not load standard lua hooks"));
-TRANSOPT(keydir, N_("passed: set location of key store"));
-TRANSOPT3(key, "key,k", N_("passed: set key for signatures"));
-TRANSOPT_BOOL(norc, N_("passed: do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"));
-TRANSOPT(root, N_("passed: limit search for workspace to specified root"));
-TRANSOPT(confdir, N_("passed: set location of configuration directory"));
+TRANSOPT3(db, "db,d", gettext_noop("passed: set name of database"));
+TRANSOPT(rcfile, gettext_noop("passed: load extra rc file"));
+TRANSOPT_BOOL(nostd, gettext_noop("passed: do not load standard lua hooks"));
+TRANSOPT(keydir, gettext_noop("passed: set location of key store"));
+TRANSOPT3(key, "key,k", gettext_noop("passed: set key for signatures"));
+TRANSOPT_BOOL(norc, gettext_noop("passed: do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"));
+TRANSOPT(root, gettext_noop("passed: limit search for workspace to specified root"));
+TRANSOPT(confdir, gettext_noop("passed: set location of configuration directory"));
 
 #undef TRANSOPT3
 #undef TRANSOPT_BOOL
