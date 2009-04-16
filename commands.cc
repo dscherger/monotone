@@ -498,12 +498,8 @@ namespace commands
   {
     return split_into_words(utf8(path, origin::user));
   }
-#ifndef LIBMTN_COMPILE
-#endif
-#ifndef LIBMTN_COMPILE
 }
 
-#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76

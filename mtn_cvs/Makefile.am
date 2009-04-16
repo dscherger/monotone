@@ -1,11 +1,12 @@
-AM_CXXFLAGS=-I. -I.. -DLIBMTN_COMPILE -I../lua
+AM_CXXFLAGS=-I. -I.. -DLIBMTN_COMPILE -I../lua $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS) \
+	      $(lua_CFLAGS) $(idn_CFLAGS)
 
 noinst_LIBRARIES=libmtn.a
 
 libmtn_a_SOURCES=../netxx_pipe.cc ../sanity.cc ../ui.cc \
 	../transforms.cc ../vocab.cc ../paths.cc ../charset.cc \
 	../simplestring_xform.cc ../constants.cc ../xdelta.cc \
-	../commands.cc ../basic_io.cc botan/md5.cpp piece_table.cc \
+	../commands.cc ../basic_io.cc piece_table.cc \
 	../mtn-sanity.cc ../package_revision.cc ../option.cc \
 	../file_io.cc ../ssh_agent.cc ../specialized_lexical_cast.cc \
 	../gzip.cc ../lua.cc ../globish.cc ../pcrewrap.cc
