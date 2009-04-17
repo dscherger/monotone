@@ -10,22 +10,23 @@
 #include <config.h>
 #include "base.hh"
 #include "options.hh"
-#include <i18n.h>
+//#include <i18n.h>
 #include <sanity.hh>
 #include <charset.hh>
 #include <sstream>
 #include <cleanup.hh>
-#include <boost/filesystem/path.hpp>
-#include <commands.hh>
+//#include <boost/filesystem/path.hpp>
+#include "../commands.hh"
 #include <iostream>
-#include <ui.hh>
+#include "../ui.hh"
 #include <botan/init.h>
 #include <botan/allocate.h>
-#include <cmd.hh>
+#include "../cmd.hh"
 #include "mtncvs_state.hh"
-#include <cvs_sync.hh>
-#include <constants.hh>
-#include <database.hh>
+#include "cvs_sync.hh"
+#include "../constants.hh"
+#include "../database.hh"
+#include "../mt_version.hh"
 #include "../botan_pipe_cache.hh"
 #include "../simplestring_xform.hh"
 
@@ -164,8 +165,6 @@ CMD(last_sync, "last_sync", "", CMD_REF(debug), "",
   std::cout << cvs_sync::last_sync(myapp) << '\n';
 }
 
-#include <package_revision.h>
-
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -176,9 +175,9 @@ void
 get_version(string & out)
 {
   out = (F("%s (base revision: %s)")
-         % PACKAGE_STRING % string(package_revision_constant)).str();
-}
-
+         % PACKAGE_STRING % string(package_full_revision_constant)).str();
+ }
+ 
 void
 print_version()
 {
@@ -189,7 +188,7 @@ print_version()
 
 void
 get_full_version(std::string & out)
-{ out="mtn_cvs version 0.1 ("+std::string(package_revision_constant)+")";
+{ out="mtn_cvs version 0.1 ("+std::string(package_full_revision_constant)+")";
 }
 
 //namespace po = boost::program_options;
@@ -250,6 +249,17 @@ commands::command_id  read_options(options & opts, option::concrete_option_set &
 	    }
 
 	  return cmd;
+}
+
+string
+get_usage_str(options::options_type const & optset, options & opts)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  return format_usage_strings(names, descriptions, maxnamelen);
 }
 
 void
@@ -416,19 +426,19 @@ cpp_main(int argc, char ** argv)
             visibleid = join_words(vector< utf8 >(u.which.begin() + 1,
                                                   u.which.end()))();
 
-      usage_stream << F("Usage: %s [OPTION...] command [ARG...]") % ui.prog_name << "\n\n";
-      usage_stream << options::opts::globals().instantiate(&app.opts).get_usage_str() << "\n";
+      usage_stream << F("Usage: %s [OPTION...] command [ARG...]") % prog_name << "\n\n";
+      usage_stream << get_usage_str(options::opts::globals(), app.opts);
 
       // Make sure to hide documentation that's not part of
       // the current command.
       options::options_type cmd_options = commands::command_options(u.which);
       if (!cmd_options.empty())
         {
-          usage_stream << F("Options specific to '%s %s':") % ui.prog_name % visibleid << "\n\n";
-          usage_stream << cmd_options.instantiate(&app.opts).get_usage_str() << "\n";
+          usage_stream << F("Options specific to '%s %s':") % prog_name % visibleid << "\n\n";
+          usage_stream << get_usage_str(cmd_options, app.opts);
         }
 
-      commands::explain_usage(u.which, usage_stream);
+      commands::explain_usage(u.which, /*app.opts.show_hidden_commands*/ true, usage_stream);
       if (app.opts.help)
         return 0;
       else
@@ -477,5 +487,225 @@ cpp_main(int argc, char ** argv)
   // control cannot reach this point
   ui.fatal("impossible: reached end of cpp_main");
   return 3;
+}
+
+//#include "../work.hh"
+
+using std::ostream;
+
+// taken from cmds.cc
+namespace commands {
+
+  // monotone.cc calls this function after option processing.
+  void process(app_state & app, command_id const & ident,
+               args_vector const & args)
+  {
+    command const * cmd = CMD_REF(__root__)->find_command(ident);
+
+    string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
+                                                 ident.end()))();
+
+    I(cmd->is_leaf() || cmd->is_group());
+    E(!(cmd->is_group() && cmd->parent() == CMD_REF(__root__)),
+      origin::user,
+      F("command '%s' is invalid; it is a group") % join_words(ident));
+
+    E(!(!cmd->is_leaf() && args.empty()), origin::user,
+      F("no subcommand specified for '%s'") % visibleid);
+
+    E(!(!cmd->is_leaf() && !args.empty()), origin::user,
+      F("could not match '%s' to a subcommand of '%s'") %
+      join_words(args) % visibleid);
+
+    L(FL("executing command '%s'") % visibleid);
+
+    // at this point we process the data from _MTN/options if
+    // the command needs it.
+/*    if (cmd->use_workspace_options())
+      {
+        workspace::check_format();
+        workspace::get_options(app.opts);
+      }*/
+
+    cmd->exec(app, ident, args);
+  }
+
+  // Prints the abstract description of the given command or command group
+  // properly indented.  The tag starts at column two.  The description has
+  // to start, at the very least, two spaces after the tag's end position;
+  // this is given by the colabstract parameter.
+  static void describe(const string & tag, const string & abstract,
+                       const string & subcommands, size_t colabstract,
+                       ostream & out)
+  {
+    I(colabstract > 0);
+
+    size_t col = 0;
+    out << "  " << tag << " ";
+    col += display_width(utf8(tag + "   ", origin::internal));
+
+    out << string(colabstract - col, ' ');
+    col = colabstract;
+    string desc(abstract);
+    if (!subcommands.empty())
+      {
+        desc += " (" + subcommands + ')';
+      }
+    out << format_text(desc, colabstract, col) << '\n';
+  }
+
+  static void explain_children(command::children_set const & children,
+                               bool show_hidden_commands,
+                               ostream & out)
+  {
+    I(!children.empty());
+
+    vector< command const * > sorted;
+
+    size_t colabstract = 0;
+    for (command::children_set::const_iterator i = children.begin();
+         i != children.end(); i++)
+      {
+        command const * child = *i;
+
+        if (child->hidden() && !show_hidden_commands)
+          continue;
+
+        size_t len = display_width(join_words(child->names(), ", ")) +
+            display_width(utf8("    "));
+        if (colabstract < len)
+          colabstract = len;
+
+        sorted.push_back(child);
+      }
+
+    sort(sorted.begin(), sorted.end(), std::greater< command const * >());
+
+    for (vector< command const * >::const_iterator i = sorted.begin();
+         i != sorted.end(); i++)
+      {
+        command const * child = *i;
+        describe(join_words(child->names(), ", ")(), child->abstract(),
+                 join_words(child->subcommands(show_hidden_commands), ", ")(),
+                 colabstract, out);
+      }
+  }
+
+  static command const *
+  find_command(command_id const & ident)
+  {
+    command const * cmd = CMD_REF(__root__)->find_command(ident);
+
+    // This function is only used internally with an identifier returned
+    // by complete_command.  Therefore, it must always exist.
+    I(cmd != NULL);
+
+    return cmd;
+  }
+
+  static void explain_cmd_usage(command_id const & ident,
+                                bool show_hidden_commands,
+                                ostream & out)
+  {
+    I(ident.size() >= 1);
+
+    vector< string > lines;
+    command const * cmd = find_command(ident);
+
+    string visibleid = join_words(vector< utf8 >(ident.begin() + 1,
+                                                 ident.end()))();
+
+    // Print command parameters.
+    string params = cmd->params();
+    split_into_lines(params, lines);
+
+    if (visibleid.empty())
+      out << format_text(F("Commands in group '%s':") %
+                         join_words(ident)())
+          << "\n\n";
+    else
+      {
+        if (!cmd->children().empty())
+          out << format_text(F("Subcommands of '%s %s':") %
+                             prog_name % visibleid)
+              << "\n\n";
+        else if (!lines.empty())
+          out << format_text(F("Syntax specific to '%s %s':") %
+                             prog_name % visibleid)
+              << "\n\n";
+      }
+
+    // lines might be empty, but only when specific syntax is to be
+    // displayed, not in the other cases.
+    if (!lines.empty())
+      {
+        for (vector<string>::const_iterator j = lines.begin();
+             j != lines.end(); ++j)
+          out << "  " << visibleid << ' ' << *j << '\n';
+        out << '\n';
+      }
+
+    // Explain children, if any.
+    if (!cmd->is_leaf())
+      {
+        explain_children(cmd->children(), show_hidden_commands, out);
+        out << '\n';
+      }
+
+    // Print command description.
+    if (visibleid.empty())
+      out << format_text(F("Purpose of group '%s':") %
+                         join_words(ident)())
+          << "\n\n";
+    else
+      out << format_text(F("Description for '%s %s':") %
+                         prog_name % visibleid)
+          << "\n\n";
+    out << format_text(cmd->desc(), 2) << "\n\n";
+
+    // Print all available aliases.
+    if (cmd->names().size() > 1)
+      {
+        command::names_set othernames = cmd->names();
+        othernames.erase(ident[ident.size() - 1]);
+        out << format_text(F("Aliases: %s.") %
+                           join_words(othernames, ", ")(), 2)
+            << '\n';
+      }
+  }
+
+  void explain_usage(command_id const & ident,
+                     bool show_hidden_commands,
+                     ostream & out)
+  {
+    command const * cmd = find_command(ident);
+
+    if (ident.empty())
+      {
+        out << format_text(F("Command groups:")) << "\n\n";
+        explain_children(CMD_REF(__root__)->children(),
+                         show_hidden_commands,
+                         out);
+        out << '\n'
+            << format_text(F("For information on a specific command, type "
+                           "'mtn help <command_name> [subcommand_name ...]'."))
+            << "\n\n"
+            << format_text(F("To see more details about the commands of a "
+                           "particular group, type 'mtn help <group_name>'."))
+            << "\n\n"
+            << format_text(F("Note that you can always abbreviate a command "
+                           "name as long as it does not conflict with other "
+                           "names."))
+            << "\n";
+      }
+    else
+      explain_cmd_usage(ident, show_hidden_commands, out);
+  }
+
+  options::options_type command_options(command_id const & ident)
+  {
+    command const * cmd = find_command(ident);
+    return cmd->opts();
+  }
 }
 
