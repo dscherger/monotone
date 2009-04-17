@@ -25,6 +25,7 @@ using std::istreambuf_iterator;
 using std::ostream;
 using std::ostringstream;
 using std::ofstream;
+using std::rename;
 using std::strerror;
 using std::string;
 

@@ -19,6 +19,7 @@
 #include "constants.hh"
 
 using std::logic_error;
+using std::search;
 using boost::shared_ptr;
 
 static void

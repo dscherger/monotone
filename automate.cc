@@ -50,6 +50,7 @@ using std::allocator;
 using std::basic_ios;
 using std::basic_stringbuf;
 using std::char_traits;
+using std::find;
 using std::inserter;
 using std::make_pair;
 using std::map;

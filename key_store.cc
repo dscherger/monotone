@@ -52,6 +52,8 @@ using Botan::PKCS8_PrivateKey;
 using Botan::PK_Decryptor;
 using Botan::PK_Signer;
 using Botan::Pipe;
+using Botan::get_pk_decryptor;
+using Botan::get_cipher;
 
 struct key_store_state
 {
