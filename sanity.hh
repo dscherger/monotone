@@ -98,6 +98,13 @@ struct sanity {
   void push_musing(MusingI const *musing);
   void pop_musing(MusingI const *musing);
 
+  // debugging aid, see DUMP() below
+  void print_var(std::string const & value,
+                 char const * var,
+                 char const * file,
+                 int const line,
+                 char const * func);
+
 private:
   std::string do_format(format_base const & fmt,
                         char const * file, int line);
@@ -111,7 +118,9 @@ private:
 };
 
 extern sanity & global_sanity;
-extern std::string const & prog_name;
+// we think this is less ugly than any available tricks with references
+extern std::string const * prog_name_ptr;
+#define prog_name (*prog_name_ptr)
 
 typedef std::runtime_error oops;
 
@@ -470,19 +479,13 @@ Musing<T>::gasp(std::string & out) const
 
 // debugging utility to dump out vars like MM but without requiring a crash
 
-extern void print_var(std::string const & value,
-                      char const * var,
-                      char const * file,
-                      int const line,
-                      char const * func);
-
 template <typename T> void
 dump(T const & t, char const *var,
      char const * file, int const line, char const * func)
 {
   std::string value;
   dump(t, value);
-  print_var(value, var, file, line, func);
+  global_sanity.print_var(value, var, file, line, func);
 };
 
 #define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
