@@ -10,7 +10,6 @@
 
 #include "base.hh"
 #include <iterator>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <locale.h>
@@ -33,8 +32,6 @@
 #include "platform.hh"
 #include "work.hh"
 
-using std::cout;
-using std::cerr;
 using std::string;
 using std::ios_base;
 using std::ostringstream;
@@ -73,15 +70,6 @@ using std::ios_base;
 // else that produces a C++ exception caught in this file, the debug logs
 // will be dumped out.  if the fatal condition is only caught in the lower-
 // level handlers in main.cc, at least we'll get a friendly error message.
-
-// Wrapper class which ensures proper setup and teardown of the global ui
-// object.  (We do not want to use global con/destructors for this, as they
-// execute outside the protection of main.cc's signal handlers.)
-struct ui_library
-{
-  ui_library() { ui.initialize(); }
-  ~ui_library() { ui.deinitialize(); }
-};
 
 // define the global objects needed by botan_pipe_cache.hh
 pipe_cache_cleanup * global_pipe_cleanup_object;
@@ -131,21 +119,11 @@ commands::command_id read_options(options & opts, option::concrete_option_set & 
   return cmd;
 }
 
-string
-get_usage_str(options::options_type const & optset, options & opts)
-{
-  vector<string> names;
-  vector<string> descriptions;
-  unsigned int maxnamelen;
-
-  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
-  return format_usage_strings(names, descriptions, maxnamelen);
-}
-
 void
 mtn_terminate_handler()
 {
-  ui.fatal(F("std::terminate() - exception thrown while handling another exception"));
+  ui.fatal(F("std::terminate() - "
+             "exception thrown while handling another exception"));
   exit(3);
 }
 
@@ -153,7 +131,7 @@ int
 cpp_main(int argc, char ** argv)
 {
   // go-go gadget i18n
-  setlocale(LC_ALL, "");
+  char const * localename = setlocale(LC_ALL, "");
   bindtextdomain(PACKAGE, get_locale_dir().c_str());
   textdomain(PACKAGE);
 
@@ -170,7 +148,7 @@ cpp_main(int argc, char ** argv)
       // Set up the global sanity object.  No destructor is needed and
       // therefore no wrapper object is needed either.  This has the
       // side effect of making the 'prog_name' global usable.
-      global_sanity.initialize(argc, argv, setlocale(LC_ALL, 0));
+      global_sanity.initialize(argc, argv, localename);
 
       // Set up secure memory allocation etc
       Botan::LibraryInitializer acquire_botan("thread_safe=0 selftest=0 "
@@ -312,44 +290,8 @@ cpp_main(int argc, char ** argv)
         }
       catch (usage & u)
         {
-          // we send --help output to stdout, so that "mtn --help | less" works
-          // but we send error-triggered usage information to stderr, so that if
-          // you screw up in a script, you don't just get usage information sent
-          // merrily down your pipes.
-          std::ostream & usage_stream = (app.opts.help ? cout : cerr);
-
-          string visibleid;
-          if (!u.which.empty())
-            visibleid = join_words(vector< utf8 >(u.which.begin() + 1,
-                                                  u.which.end()))();
-
-          usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
-                          prog_name << "\n\n";
-
-          if (u.which.empty())
-            usage_stream << get_usage_str(options::opts::globals(), app.opts);
-
-          // Make sure to hide documentation that's not part of
-          // the current command.
-          options::options_type cmd_options =
-            commands::command_options(u.which);
-          if (!cmd_options.empty())
-            {
-              usage_stream
-                << F("Options specific to '%s %s' "
-                     "(run '%s help' to see global options):")
-                    % prog_name % visibleid % prog_name
-                << "\n\n";
-              usage_stream << get_usage_str(cmd_options, app.opts);
-            }
-
-          commands::explain_usage(u.which,
-                                  app.opts.show_hidden_commands,
-                                  usage_stream);
-          if (app.opts.help)
-            return 0;
-          else
-            return 2;
+          ui.inform_usage(u, app.opts);
+          return app.opts.help ? 0 : 2;
         }
     }
   catch (option::option_error const & inf)

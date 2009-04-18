@@ -20,6 +20,7 @@
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "constants.hh"
+#include "commands.hh"
 
 #include <iostream>
 #include <fstream>
@@ -432,8 +433,6 @@ void tick_write_dot::clear_line()
 // global, and we don't want global constructors/destructors doing
 // any real work.  see monotone.cc for how this is handled.
 
-user_interface::user_interface() : imp(0) {}
-
 void user_interface::initialize()
 {
   imp = new user_interface::impl;
@@ -448,9 +447,6 @@ void user_interface::initialize()
   else
     set_tick_write_dot();
 }
-
-user_interface::~user_interface()
-{}
 
 void user_interface::deinitialize()
 {
@@ -770,7 +766,7 @@ format_text(i18n_format const & text, size_t const col, size_t curcol)
 }
 
 // Format a block of options and their descriptions.
-string
+static string
 format_usage_strings(vector<string> const & names,
                      vector<string> const & descriptions,
                      unsigned int namelen)
@@ -812,6 +808,53 @@ format_usage_strings(vector<string> const & names,
   return result;
 }
 
+static string
+get_usage_str(options::options_type const & optset, options & opts)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  return format_usage_strings(names, descriptions, maxnamelen);
+}
+
+void
+user_interface::inform_usage(usage const & u, options & opts)
+{
+  // we send --help output to stdout, so that "mtn --help | less" works
+  // but we send error-triggered usage information to stderr, so that if
+  // you screw up in a script, you don't just get usage information sent
+  // merrily down your pipes.
+  std::ostream & usage_stream = (opts.help ? cout : clog);
+
+  string visibleid;
+  if (!u.which.empty())
+    visibleid = join_words(vector< utf8 >(u.which.begin() + 1,
+                                          u.which.end()))();
+
+  usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
+    prog_name << "\n\n";
+
+  if (u.which.empty())
+    usage_stream << get_usage_str(options::opts::globals(), opts);
+
+  // Make sure to hide documentation that's not part of
+  // the current command.
+  options::options_type cmd_options =
+    commands::command_options(u.which);
+  if (!cmd_options.empty())
+    {
+      usage_stream
+        << F("Options specific to '%s %s' "
+             "(run '%s help' to see global options):")
+        % prog_name % visibleid % prog_name
+        << "\n\n";
+      usage_stream << get_usage_str(cmd_options, opts);
+    }
+
+  commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
+}
 
 // Local Variables:
 // mode: C++
