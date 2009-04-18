@@ -132,6 +132,7 @@ sub display_file($$);
 sub file_change_history_button_clicked_cb($$);
 sub find_files_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
+sub help_on_window_activate_cb($$);
 sub help_toolbutton_clicked_cb($$);
 sub home_page_activate_cb($$);
 sub main_window_delete_event_cb($$$);
@@ -396,6 +397,33 @@ sub quit_activate_cb($$)
 	     return;
 	 });
     Gtk2->main_quit();
+
+}
+#
+##############################################################################
+#
+#   Routine      - help_on_window_activate_cb
+#
+#   Description  - Callback routine called when the user selects the help on
+#                  window menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub help_on_window_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    # No need to protect against recursion here as this simply activates a help
+    # callback which deals with it.
+
+    WindowManager->instance()->display_window_help($browser);
 
 }
 #

@@ -1145,11 +1145,14 @@ sub update_advanced_find_state($$)
 	    }
 
 	    $advanced_find->{ok_button}->set_sensitive(TRUE);
+	    reset_find_text($advanced_find->{details_textview});
+	    enable_find_text($advanced_find->{details_textview}, 1);
 	}
 	else
 	{
 	    $advanced_find->{ok_button}->set_sensitive(FALSE);
 	    $advanced_find->{details_buffer}->set_text("");
+	    enable_find_text($advanced_find->{details_textview}, 0);
 	}
 
     }
