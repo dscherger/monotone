@@ -142,6 +142,7 @@ sub display_revision_change_history($$$)
 				           $tag : $revision_id));
     $instance->{history_label}->set_markup(__("<b>Revision History</b>"));
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
@@ -344,6 +345,7 @@ sub display_file_change_history($$$)
 				       file => $instance->{file_name}));
     $instance->{history_label}->set_markup(__("<b>File History</b>"));
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
@@ -553,6 +555,7 @@ sub display_revision_comparison($$$;$)
 	    set_markup(__("<b>Revision Comparison</b>"));
     }
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());

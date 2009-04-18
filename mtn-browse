@@ -1777,6 +1777,7 @@ sub get_browser_window(;$$$$$)
 
 	local $browser->{in_cb} = 1;
 	$browser->{window}->show_all();
+	$browser->{window}->present();
 
 	# Register the window for management and set up the help callbacks.
 
@@ -1852,6 +1853,7 @@ sub get_browser_window(;$$$$$)
 	}
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
 	$browser->{window}->show_all();
+	$browser->{window}->present();
 
 	# Now update with the details of the specified database.
 

@@ -1150,6 +1150,7 @@ sub get_preferences_window($$)
 
 	local $instance->{in_cb} = 1;
 	$instance->{window}->show_all();
+	$instance->{window}->present();
 
 	# Register the window for management and set up the help callbacks.
 
@@ -1179,6 +1180,7 @@ sub get_preferences_window($$)
 	$instance->{mime_types_treeview}->set_search_column(MTLS_NAME_COLUMN);
 	load_preferences_into_gui($instance);
 	$instance->{window}->show_all();
+	$instance->{window}->present();
 
     }
 

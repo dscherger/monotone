@@ -132,6 +132,7 @@ sub display_find_files($$$$$)
 		    $instance->{starting_point});
 
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
 }
 #

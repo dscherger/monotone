@@ -681,8 +681,13 @@ sub get_advanced_find_window($)
 	create_format_tags($instance->{details_textview}->get_buffer());
 	$instance->{details_textview}->modify_font($mono_font);
 
+	# Reparent the advanced find window to the specified browser.
+
+	$instance->{window}->set_transient_for($browser->{window});
+
 	local $instance->{in_cb} = 1;
 	$instance->{window}->show_all();
+	$instance->{window}->present();
 
 	# Register the window for management and set up the help callbacks.
 
@@ -701,7 +706,6 @@ sub get_advanced_find_window($)
 
 	# Update the advanced find dialog's state.
 
-	$instance->{window}->set_transient_for($browser->{window});
 	$instance->{branch_combo_details}->{preset} = 0;
 	$instance->{revision_combo_details}->{preset} = 0;
 	&{$instance->{update_handler}}($instance, NEW_FIND);
@@ -732,6 +736,7 @@ sub get_advanced_find_window($)
 	    set_search_column(AFLS_REVISION_ID_COLUMN);
 	&{$instance->{update_handler}}($instance, NEW_FIND);
 	$instance->{window}->show_all();
+	$instance->{window}->present();
 
     }
 

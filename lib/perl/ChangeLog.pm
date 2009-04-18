@@ -124,6 +124,7 @@ sub display_change_log($$;$$)
 	$instance->{changelog_scrolledwindow}->get_hadjustment()->set_value(0);
     }
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
 }
 #

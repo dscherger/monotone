@@ -768,6 +768,7 @@ sub get_find_text_window($$)
 
     $instance->{window}->set_transient_for($parent);
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
     # Make sure that the find comboboxentry has the focus.
 

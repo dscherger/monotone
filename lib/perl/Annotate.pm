@@ -104,6 +104,7 @@ sub display_annotation($$$)
     $instance->{window}->set_title(__x("Annotated Listing Of {file}",
 				       file => $instance->{file_name}));
     $instance->{window}->show_all();
+    $instance->{window}->present();
 
     $wm->make_busy($instance, 1);
     $instance->{appbar}->push($instance->{appbar}->get_status()->get_text());
