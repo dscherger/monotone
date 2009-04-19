@@ -52,6 +52,11 @@ use warnings;
 use constant CHUNK_SIZE => 10240;
 use constant THRESHOLD  => 20;
 
+# The saved directory locations where assorted Gtk2::FileChooserDialog dialog
+# windows were last used.
+
+my %file_chooser_dir_locations;
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -363,6 +368,9 @@ sub open_database($$$)
 						   "open",
 						   "gtk-cancel" => "cancel",
 						   "gtk-open" => "ok");
+    $chooser_dialog->
+	set_current_folder($file_chooser_dir_locations{open_db_dir})
+	if (exists($file_chooser_dir_locations{open_db_dir}));
 
     do
     {
@@ -441,6 +449,8 @@ sub open_database($$$)
     }
     while (! $done);
 
+    $file_chooser_dir_locations{open_db_dir} =
+	$chooser_dialog->get_current_folder();
     $chooser_dialog->destroy();
 
     return $ret_val;
@@ -479,8 +489,10 @@ sub save_as_file($$$)
 						   "save",
 						   "gtk-cancel" => "cancel",
 						   "gtk-save" => "ok");
-    $chooser_dialog->set_current_name
-	($file_name) if ($file_name ne "");
+    $chooser_dialog->set_current_name($file_name) if ($file_name ne "");
+    $chooser_dialog->
+	set_current_folder($file_chooser_dir_locations{save_as_dir})
+	if (exists($file_chooser_dir_locations{save_as_dir}));
 
     do
     {
@@ -543,6 +555,8 @@ sub save_as_file($$$)
     }
     while (! $done);
 
+    $file_chooser_dir_locations{save_as_dir} =
+	$chooser_dialog->get_current_folder();
     $chooser_dialog->destroy();
 
 }
