@@ -10,36 +10,54 @@
 #ifndef __VOCAB_HH__
 #define __VOCAB_HH__
 
-#include <boost/shared_ptr.hpp>
-
 #include "sanity.hh"
+#include "intrusive_ptr.hh"
+#include <boost/noncopyable.hpp>
 
 // the purpose of this file is to wrap things which are otherwise strings
 // in a bit of typesafety, set up enumerations and tuple-types, and
 // generally describe the "vocabulary" (nouns anyways) that modules in this
 // program use.
 
-// For some reason, shared_ptr copy is about a hundred times faster
-// than string refcopy on my system (g++ 4). This only happens because
-// we tell Boost not to worry about threads... but I don't recognize any
-// thread stuff in the string headers.
+// Vocab strings are immutable once constructed, and references to them are
+// extensively copied around.  We don't know whether the standard string is
+// copy-on-write, and even if it is, that mechanism has surprising overhead
+// due to thread safety (unnecessary for this application) and the large set
+// of conditions where it has to unshare.  So we wrap the actual string in
+// this pair of classes which collectively have immutable, ref-counting
+// semantics.
+
+class immutable_string_data : public intrusively_refcounted,
+                              public boost::noncopyable
+{
+protected:
+  std::string const data;
+private:
+  immutable_string_data(); // disallowed
+public:
+  immutable_string_data(std::string const & s)
+    : data(s)
+  {}
+  ~immutable_string_data() {}
+  std::string const & get() { return data; }
+};
 
 class immutable_string
 {
-  boost::shared_ptr<std::string> _rep;
+  boost::intrusive_ptr<immutable_string_data> _rep;
   static std::string empty;
 
 public:
   immutable_string()
   {}
   immutable_string(std::string const & s)
-    : _rep(new std::string(s))
+    : _rep(new immutable_string_data(s))
   {}
 
   std::string const & get() const
   {
     if (_rep)
-      return *_rep;
+      return _rep->get();
     else
       return empty;
   }

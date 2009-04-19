@@ -9,6 +9,7 @@
 
 #include "base.hh"
 #include <iterator>
+#include <typeinfo>
 #include <botan/botan.h>
 #include <botan/sha160.h>
 
