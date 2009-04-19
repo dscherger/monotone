@@ -48,7 +48,6 @@ BEGIN
     use constant MIME_GLOB_FILE => "@INST:GLOBS_FILE@";
     use constant PREFIX_DIR     => "@INST:PREFIX_DIR@";
 }
-use lib LIB_DIR . "/perl";
 use locale;
 use strict;
 use warnings;
@@ -80,6 +79,10 @@ use Symbol qw(gensym);
 use Text::Tabs;
 use Time::Local;
 
+# Add custom module directories to the module load search path.
+
+use lib File::Spec->catfile(LIB_DIR, "perl");
+
 # Monotone AutomateStdio module.
 
 use Monotone::AutomateStdio qw(:capabilities :severities);
@@ -109,6 +112,10 @@ use constant MLS_DATE_COLUMN           => 2;
 use constant MLS_AUTHOR_COLUMN         => 3;
 use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
+# Constants for various file paths.
+
+use constant UI_DIR => File::Spec->catfile(LIB_DIR, "ui");
+
 # The type of window that is going to be managed by this module.
 
 my $window_type = "main_window";
@@ -126,6 +133,7 @@ sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
 sub context_help_activate_cb($$);
+sub create_browser_widgets();
 sub determine_mime_type($$$$);
 sub directory_up_button_clicked_cb($$);
 sub display_file($$);
@@ -186,10 +194,10 @@ sub view_button_clicked_cb($$);
 	 undef,
 	 app_datadir => File::Spec->catfile(PREFIX_DIR, "share"));
     setup_sigchld_handler(\&sigchld_handler);
-    $glade_file = File::Spec->catfile(LIB_DIR, "ui", "mtn-browse.glade");
+    $glade_file = File::Spec->catfile(UI_DIR, "mtn-browse.glade");
     $tooltips = Gtk2::Tooltips->new();
-    $line_image = Gtk2::Gdk::Pixbuf->new_from_file
-	(File::Spec->catfile(LIB_DIR, "ui", "line.png"));
+    $line_image = Gtk2::Gdk::Pixbuf->
+	new_from_file(File::Spec->catfile(UI_DIR, "line.png"));
 
     # Set up the default database locked and I/O wait handlers for the Monotone
     # class.
@@ -1597,9 +1605,7 @@ sub get_browser_window(;$$$$$)
 
 	$browser = {};
 	$browser->{mtn} = $mtn;
-	$browser->{glade} = Gtk2::GladeXML->new($glade_file,
-						$window_type,
-						APPLICATION_NAME);
+	$browser->{glade} = create_browser_widgets();
 
 	# Flag to stop recursive calling of callbacks.
 
@@ -1896,6 +1902,109 @@ sub get_browser_window(;$$$$$)
     $browser->{branch_comboboxentry}->child()->set_position(-1);
 
     return $browser;
+
+}
+#
+##############################################################################
+#
+#   Routine      - create_browser_widgets
+#
+#   Description  - Basically calls Gtk2::GladeXML->new() having first modified
+#                  the Glade XML GUI specification data so as to take into
+#                  account the user's toolbar appearance settings
+#                  (unfortunately these settings have to be in place at
+#                  creation time).
+#
+#   Data         - Return Value : The newly create Glade object.
+#
+##############################################################################
+
+
+
+sub create_browser_widgets()
+{
+
+    # If the user's preferences indicate non-default toolbar settings then
+    # pre-edit the XML before passing it to Gtk2::GladeXML->new_from_buffer(),
+    # otherwise proceed as normal.
+
+    if ($user_preferences->{toolbar_settings}->{hide_text}
+	|| $user_preferences->{toolbar_settings}->{fixed})
+    {
+
+	my($file,
+	   @glade_data,
+	   $seen_toolbar);
+	my $fixed     = $user_preferences->{toolbar_settings}->{fixed};
+	my $hide_text = $user_preferences->{toolbar_settings}->{hide_text};
+
+	# Open the Glade file and read it into an array.
+
+	die(__x("open failed: {error_message}\n", error_message => $!))
+	    unless (defined($file = IO::File->new($glade_file, "r")));
+	@glade_data = $file->getlines();
+	$file->close();
+
+	# Change the XML data depending upon the user's preferences.
+
+	foreach my $line (@glade_data)
+	{
+
+	    # Deal with the toolbar's icon only or both setting.
+
+	    if ($hide_text && $line =~ m/>GTK_TOOLBAR_BOTH</)
+	    {
+		$line =~ s/>GTK_TOOLBAR_BOTH</>GTK_TOOLBAR_ICONS</g;
+		$hide_text = undef;
+	    }
+	    if ($fixed)
+	    {
+		if ($seen_toolbar)
+		{
+		    if ($line =~ m/BONOBO_DOCK_ITEM_BEH_EXCLUSIVE/)
+		    {
+			$line =~
+			    s/<\/prop/|BONOBO_DOCK_ITEM_BEH_LOCKED<\/prop/g;
+			$fixed = undef;
+		    }
+		}
+		elsif ($line =~ m/id="toolbar_bonobodockitem">/)
+		{
+		    $seen_toolbar = 1;
+		}
+	    }
+
+	    # Deal with the toolbar's fixed or floating setting.
+
+	    if ($hide_text && $line =~ m/>GTK_TOOLBAR_BOTH</)
+	    {
+		$line =~ s/>GTK_TOOLBAR_BOTH</>GTK_TOOLBAR_ICONS</g;
+		$hide_text = undef;
+	    }
+
+	    # We need to include the full path for any custom image files (this
+	    # is needed as Gtk2::GladeXML assumes that the image files are
+	    # relative to the XML file otherwise, but we didn't give it an XML
+	    # file and so it doesn't know where the directory is).
+
+	    $line = $1 . File::Spec->catfile(UI_DIR, $2) . $3
+		if ($line =~ m/^(.*>)([^<>]+\.png)(<.*)$/);
+
+	}
+
+	# Create and return the Glade object.
+
+	return Gtk2::GladeXML->new_from_buffer(join("", @glade_data),
+					       $window_type,
+					       APPLICATION_NAME);
+
+    }
+    else
+    {
+	return Gtk2::GladeXML->new($glade_file,
+				   $window_type,
+				   APPLICATION_NAME);
+    }
 
 }
 #
@@ -2996,8 +3105,8 @@ sub setup_sigchld_handler($)
     # with Gtk2 as a file activity handler. This is efficient and safer than
     # some alternatives.
 
-    pipe($reader, $writer)
-	or die(__x("pipe failed: {error_message}", error_message => $!));
+    die(__x("pipe failed: {error_message}", error_message => $!))
+	unless (pipe($reader, $writer));
     $SIG{CHLD} = sub { syswrite($writer, "\n", 1); };
     Gtk2::Helper->add_watch(fileno($reader), "in",
 			    sub {

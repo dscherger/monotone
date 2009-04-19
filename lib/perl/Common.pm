@@ -697,12 +697,20 @@ sub treeview_column_searcher($$$$)
 
     $value = $model->get($iter, $column);
 
-    # Compile the user's regular expression and return a no-match if it doesn't
-    # compile.
+    # Compile the user's search term (either as a regular expression or plain
+    # text depending upon the user's preferences) and return a no-match if it
+    # doesn't compile.
 
     eval
     {
-	$re = qr/$key/;
+	if ($user_preferences->{list_search_as_re})
+	{
+	    $re = qr/$key/;
+	}
+	else
+	{
+	    $re = qr/\Q$key\E/;
+	}
     };
     return TRUE if ($@ ne "");
 

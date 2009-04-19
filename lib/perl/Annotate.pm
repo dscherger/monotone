@@ -819,7 +819,7 @@ sub mtn_annotate($$$$)
     eval
     {
 	die("chdir failed: " . $!) unless (chdir(File::Spec->rootdir()));
-	run_command(\$buffer, @cmd) or return;
+	return unless (run_command(\$buffer, @cmd));
     };
     $err = $@;
     chdir($cwd);

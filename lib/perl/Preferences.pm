@@ -6,6 +6,25 @@
 #                  module contains all the routines for implementing the
 #                  preferences dialog.
 #
+#                  Please note that when adding a new preference setting one
+#                  needs to:
+#                      1) Up the preferences format version number by one.
+#                      2) Possibly add the field to the field lists in the
+#                         defaults_button_clicked_cb routine.
+#                      3) Get the corresponding widget in the
+#                         get_preferences_window routine and possibly
+#                         initialise it.
+#                      4) Set the field's value in the
+#                         load_preferences_into_gui routine.
+#                      5) Get the field's value in the
+#                         save_preferences_from_gui routine.
+#                      6) Update the upgrade_preferences routine to upgrade an
+#                         existing preferences record to contain the new
+#                         settings (set to their default value).
+#                      7) Update the initialise_preferences routine so as to
+#                         include the new settings (again set to their default
+#                         value).
+#
 #   Author       - A.E.Cooper.
 #
 #   Legal Stuff  - Copyright (c) 2007 Anthony Edward Cooper
@@ -60,7 +79,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 8;
+use constant PREFERENCES_FORMAT_VERSION => 9;
 
 # Text viewable application mime types.
 
@@ -294,8 +313,8 @@ sub load_preferences()
 
     if (-f $file_name)
     {
-	defined($prefs_file = IO::File->new($file_name, "r"))
-	    or die(__x("open failed: {error_message}\n", error_message => $!));
+	die(__x("open failed: {error_message}\n", error_message => $!))
+	    unless (defined($prefs_file = IO::File->new($file_name, "r")));
 	eval(join("", $prefs_file->getlines()));
 	die(__x("Invalid user preferences file: {error_message}\n",
 		error_message => $@))
@@ -345,8 +364,8 @@ sub save_preferences($)
 
     # Write out the preferences record to disk.
 
-    defined($prefs_file = IO::File->new($file_name, "w"))
-	or die(__x("open failed: {error_message}\n", error_message => $!));
+    die(__x("open failed: {error_message}\n", error_message => $!))
+	unless (defined($prefs_file = IO::File->new($file_name, "w")));
     $prefs_file->print("#\n");
     $prefs_file->
 	print(__("# DO NOT EDIT! This is an automatically generated file.\n"));
@@ -442,11 +461,15 @@ sub defaults_button_clicked_cb($$)
 		   "show_file_details",
 		   "show_line_numbers",
 		   "static_lists",
+		   "list_search_as_re",
 		   "diffs_application");
     }
     elsif ($page_nr == 1)
     {
-	@fields = ("fixed_font", "coloured_diffs", "colours");
+	@fields = ("fixed_font",
+		   "toolbar_settings",
+		   "coloured_diffs",
+		   "colours");
     }
     else
     {
@@ -1016,11 +1039,14 @@ sub get_preferences_window($$)
 			    "detailed_file_listing_checkbutton",
 			    "show_line_numbers_checkbutton",
 			    "static_lists_checkbutton",
+			    "search_as_regular_expression_checkbutton",
 			    "external_diffs_app_entry",
 
 			    # Appearance pane widgets.
 
 			    "fonts_fontbutton",
+			    "hide_text_checkbutton",
+			    "fixed_checkbutton",
 			    "comparison_pretty_print_checkbutton",
 			    "annotation_prefix_1_foreground_colorbutton",
 			    "annotation_prefix_1_background_colorbutton",
@@ -1259,6 +1285,9 @@ sub load_preferences_into_gui($)
 		   TRUE : FALSE);
     $instance->{static_lists_checkbutton}->
 	set_active($instance->{preferences}->{static_lists} ? TRUE : FALSE);
+    $instance->{search_as_regular_expression_checkbutton}->
+	set_active($instance->{preferences}->{list_search_as_re} ?
+		   TRUE : FALSE);
     $instance->{external_diffs_app_entry}->
 	set_text($instance->{preferences}->{diffs_application});
 
@@ -1266,6 +1295,12 @@ sub load_preferences_into_gui($)
 
     $instance->{fonts_fontbutton}->
 	set_font_name($instance->{preferences}->{fixed_font});
+    $instance->{hide_text_checkbutton}->
+	set_active($instance->{preferences}->{toolbar_settings}->{hide_text}
+		   ? TRUE : FALSE);
+    $instance->{fixed_checkbutton}->
+	set_active($instance->{preferences}->{toolbar_settings}->{fixed}
+		   ? TRUE : FALSE);
     $instance->{comparison_pretty_print_checkbutton}->
 	set_active($instance->{preferences}->{coloured_diffs} ? TRUE : FALSE);
     for my $item (@colour_mapping_table)
@@ -1438,6 +1473,9 @@ sub save_preferences_from_gui($)
 	$instance->{show_line_numbers_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{static_lists} =
 	$instance->{static_lists_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{list_search_as_re} =
+	$instance->{search_as_regular_expression_checkbutton}->get_active() ?
+	1 : 0;
     $instance->{preferences}->{diffs_application} =
 	$instance->{external_diffs_app_entry}->get_text();
 
@@ -1445,6 +1483,10 @@ sub save_preferences_from_gui($)
 
     $instance->{preferences}->{fixed_font} =
 	$instance->{fonts_fontbutton}->get_font_name();
+    $instance->{preferences}->{toolbar_settings}->{hide_text} =
+	$instance->{hide_text_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{toolbar_settings}->{fixed} =
+	$instance->{fixed_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{coloured_diffs} =
 	$instance->{comparison_pretty_print_checkbutton}->get_active() ? 1 : 0;
     for my $item (@colour_mapping_table)
@@ -1615,6 +1657,13 @@ sub upgrade_preferences($)
 	delete($preferences->{query}->{id}->{sort_cronologically});
 	$preferences->{version} = 8;
     }
+    if ($preferences->{version} == 8)
+    {
+	$preferences->{list_search_as_re} = 0;
+	$preferences->{toolbar_settings} = {hide_text => 0,
+					    fixed     => 0};
+	$preferences->{version} = 9;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1640,8 +1689,8 @@ sub initialise_preferences()
     my($mime_table,
        %preferences);
 
-    defined($mime_table = initialise_mime_info_table())
-	or die(__("Cannot load system MIME types.\n"));
+    die(__("Cannot load system MIME types.\n"))
+	unless (defined($mime_table = initialise_mime_info_table()));
     %preferences =
 	(version           => PREFERENCES_FORMAT_VERSION,
 	 default_mtn_db    => "",
@@ -1657,8 +1706,11 @@ sub initialise_preferences()
 	 show_file_details => 1,
 	 show_line_numbers => 0,
 	 static_lists      => 0,
+	 list_search_as_re => 0,
 	 diffs_application => "kompare '{file1}' '{file2}'",
 	 fixed_font        => "monospace 10",
+	 toolbar_settings  => {hide_text => 0,
+			       fixed     => 0},
 	 coloured_diffs    => 1,
 	 colours           => {annotate_prefix_1 => {fg => "AliceBlue",
 						     bg => "CadetBlue"},
