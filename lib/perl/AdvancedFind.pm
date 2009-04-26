@@ -339,6 +339,10 @@ sub populate_button_clicked_cb($$)
     {
 	$to_insert = "/";
     }
+    elsif ($selector eq __("Message"))
+    {
+	$to_insert = "m:" . (($arg eq "") ? __("<Message Text>") : $arg);
+    }
     elsif ($selector eq __("Parent"))
     {
 	$to_insert = "p:" . (($arg eq "") ? __("<Revision Id>") : $arg);
@@ -535,7 +539,9 @@ sub get_advanced_find_window($)
     if (! defined($instance = $wm->find_unused($window_type)))
     {
 
-	my($renderer,
+	my(@delete_list,
+	   $index,
+	   $renderer,
 	   $tv_column);
 
 	$instance = {};
@@ -598,7 +604,7 @@ sub get_advanced_find_window($)
 	$instance->{stop_button}->signal_connect
 	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
-	# Setup the comboboxes.
+	# Setup the empty comboboxes.
 
 	$instance->{branch_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
@@ -611,9 +617,29 @@ sub get_advanced_find_window($)
 	$instance->{search_term_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$instance->{search_term_comboboxentry}->set_text_column(0);
-	$instance->{term_combobox}->set_active(0);
 	handle_comboxentry_history($instance->{search_term_comboboxentry},
 				   "advanced_find");
+
+	# Remove any unsupported selectors from the term combobox.
+
+	$index = 0;
+	$instance->{term_combobox}->get_model()->foreach
+	    (sub {
+		 my($model, $path, $iter) = @_;
+		 my $value = $model->get($iter, 0);
+		 push(@delete_list, $index)
+		     if (($value eq __("Message")
+			  && ! $instance->{mtn}->supports(MTN_M_SELECTOR))
+			 || ($value eq __("Parent")
+			     && ! $instance->{mtn}->supports(MTN_P_SELECTOR)));
+		 ++ $index;
+		 return FALSE;
+	     });
+	foreach my $row (reverse(@delete_list))
+	{
+	    $instance->{term_combobox}->remove_text($row);
+	}
+	$instance->{term_combobox}->set_active(0);
 
 	# Setup the revisions list browser.
 

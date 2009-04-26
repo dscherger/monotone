@@ -2745,6 +2745,7 @@ Date (&gt;)
 Head Revision
 Identifier
 Logical And
+Message
 Parent
 Tag</property>
 				  <signal name="changed" handler="term_combobox_changed_cb" last_modification_time="Sat, 19 Jan 2008 16:11:23 GMT"/>
