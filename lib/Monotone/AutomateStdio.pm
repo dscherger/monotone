@@ -2,7 +2,7 @@
 #
 #   File Name    - AutomateStdio.pm
 #
-#   Description  - Class module that provides an interface to Monotone's
+#   Description  - A class module that provides an interface to Monotone's
 #                  automate stdio interface.
 #
 #   Authors      - A.E.Cooper. With contributions from T.Keller.
@@ -84,11 +84,13 @@ use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 9;
 use constant MTN_INVENTORY_TAKING_OPTIONS      => 10;
 use constant MTN_INVENTORY_WITH_BIRTH_ID       => 11;
 use constant MTN_LUA                           => 12;
-use constant MTN_P_SELECTOR                    => 13;
-use constant MTN_READ_PACKETS                  => 14;
-use constant MTN_SET_ATTRIBUTE                 => 15;
-use constant MTN_SET_DB_VARIABLE               => 16;
-use constant MTN_SHOW_CONFLICTS                => 17;
+use constant MTN_M_SELECTOR                    => 13;
+use constant MTN_P_SELECTOR                    => 14;
+use constant MTN_READ_PACKETS                  => 15;
+use constant MTN_SET_ATTRIBUTE                 => 16;
+use constant MTN_SET_DB_VARIABLE               => 17;
+use constant MTN_SHOW_CONFLICTS                => 18;
+use constant MTN_U_SELECTOR                    => 19;
 
 # Constants used to represent the different error levels.
 
@@ -219,6 +221,13 @@ my($db_locked_handler_data,
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
+# Constructors and destructor.
+
+sub new_from_db($;$$);
+sub new_from_ws($;$$);
+*new = *new_from_db;
+sub DESTROY($);
+
 # Public methods.
 
 sub ancestors($$@);
@@ -264,8 +273,6 @@ sub inventory($$;$@);
 sub keys($$);
 sub leaves($$);
 sub lua($$$;@);
-sub new_from_db($;$$);
-sub new_from_ws($;$$);
 sub packet_for_fdata($$$);
 sub packet_for_fdelta($$$$);
 sub packet_for_rdata($$$);
@@ -290,7 +297,6 @@ sub toposort($$@);
 # Public aliased methods.
 
 *attributes = *get_attributes;
-*new = *new_from_db;
 *db_set = *set_db_variable;
 
 # Private methods and routines.
@@ -329,11 +335,13 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_INVENTORY_TAKING_OPTIONS
 					MTN_INVENTORY_WITH_BIRTH_ID
 					MTN_LUA
+					MTN_M_SELECTOR
 					MTN_P_SELECTOR
 					MTN_READ_PACKETS
 					MTN_SET_ATTRIBUTE
 					MTN_SET_DB_VARIABLE
-					MTN_SHOW_CONFLICTS)],
+					MTN_SHOW_CONFLICTS
+					MTN_U_SELECTOR)],
 		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
 					MTN_SEVERITY_WARNING)]);
@@ -470,13 +478,13 @@ sub new_from_ws($;$$)
 #
 #   Description  - Class destructor.
 #
-#   Data         - None.
+#   Data         - $this : The object.
 #
 ##############################################################################
 
 
 
-sub DESTROY
+sub DESTROY($)
 {
 
     my $this = $_[0];
@@ -2828,6 +2836,16 @@ sub supports($$)
 	return 1 if ($this->{mtn_aif_major} >= 9);
 
     }
+    elsif ($feature == MTN_M_SELECTOR || $feature == MTN_U_SELECTOR)
+    {
+
+	# These are only available from version 0.43 (i/f version 9.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 10
+		     || ($this->{mtn_aif_major} == 9
+			 && $this->{mtn_version} eq "0.43"));
+
+    }
     else
     {
 
@@ -3127,13 +3145,16 @@ sub register_db_locked_handler(;$$$)
 {
 
     my $this;
-    if (ref($_[0]) eq __PACKAGE__)
+    if ($_[0]->isa(__PACKAGE__))
     {
-	$this = shift();
-    }
-    elsif ($_[0] eq __PACKAGE__)
-    {
-	shift();
+	if (ref($_[0]) ne "")
+	{
+	    $this = shift();
+	}
+	else
+	{
+	    shift();
+	}
     }
     my($handler, $client_data) = @_;
 
@@ -3192,7 +3213,7 @@ sub register_db_locked_handler(;$$$)
 sub register_error_handler($;$$$)
 {
 
-    shift() if ($_[0] eq __PACKAGE__ || ref($_[0]) eq __PACKAGE__);
+    shift() if ($_[0]->isa(__PACKAGE__));
     my($severity, $handler, $client_data) = @_;
 
     if ($severity == MTN_SEVERITY_ERROR)
@@ -3278,13 +3299,16 @@ sub register_io_wait_handler(;$$$$)
 {
 
     my $this;
-    if (ref($_[0]) eq __PACKAGE__)
+    if ($_[0]->isa(__PACKAGE__))
     {
-	$this = shift();
-    }
-    elsif ($_[0] eq __PACKAGE__)
-    {
-	shift();
+	if (ref($_[0]) ne "")
+	{
+	    $this = shift();
+	}
+	else
+	{
+	    shift();
+	}
     }
     my($handler, $timeout, $client_data) = @_;
 
@@ -3357,13 +3381,16 @@ sub switch_to_ws_root($$)
 {
 
     my $this;
-    if (ref($_[0]) eq __PACKAGE__)
+    if ($_[0]->isa(__PACKAGE__))
     {
-	$this = shift();
-    }
-    elsif ($_[0] eq __PACKAGE__)
-    {
-	shift();
+	if (ref($_[0]) ne "")
+	{
+	    $this = shift();
+	}
+	else
+	{
+	    shift();
+	}
     }
     my $switch = $_[0];
 
@@ -4093,6 +4120,26 @@ sub startup($)
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
 	    ($version =~ m/^(\d+)\.(\d+)$/);
 
+	# If necessary get the version of the actual application (sometimes
+	# needed to differentiate when certain features were introduced that do
+	# not affect the automate stdio interface version.
+
+	if ($this->{mtn_aif_major} == 9)
+	{
+	    my($file,
+	       $line);
+	    &$croaker("Could not run command `mtn --version'")
+		unless (defined($file = IO::File->new("mtn --version |")));
+	    while (defined($line = $file->getline()))
+	    {
+		if ($line =~ m/^monotone (\d+\.\d*) ./)
+		{
+		    $this->{mtn_version} = $1;
+		}
+	    }
+	    $file->close();
+	}
+
     }
 
 }
@@ -4273,6 +4320,7 @@ sub create_object_data()
 	    honour_suspend_certs    => 1,
 	    mtn_aif_major           => 0,
 	    mtn_aif_minor           => 0,
+	    mtn_version             => undef,
 	    cmd_cnt                 => 0,
 	    db_is_locked            => undef,
 	    db_locked_handler       => undef,

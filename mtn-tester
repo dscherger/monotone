@@ -229,7 +229,7 @@ my @test_list =
 		  system("mtn add NEW.txt");
 	      },
       posc => sub {
-	          system("mtn revert .");
+	          system("mtn --quiet revert .");
 		  system("rm NEW.txt");
 	      },
       type => RECORD_LIST,
@@ -246,7 +246,7 @@ my @test_list =
 		  system("mtn add NEW.txt");
 	      },
       posc => sub {
-	          system("mtn revert .");
+	          system("mtn --quiet revert .");
 		  system("rm NEW.txt");
 	      },
       type => RECORD_LIST,
@@ -264,7 +264,7 @@ my @test_list =
 		  system("mtn add NEW.txt");
 	      },
       posc => sub {
-	          system("mtn revert .");
+	          system("mtn --quiet revert .");
 		  system("rm NEW.txt");
 	      },
       type => RECORD_LIST,
@@ -282,7 +282,7 @@ my @test_list =
 		  system("mtn add NEW.txt");
 	      },
       posc => sub {
-	          system("mtn revert .");
+	          system("mtn --quiet revert .");
 		  system("rm NEW.txt");
 	      },
       type => RECORD_LIST,
@@ -299,7 +299,7 @@ my @test_list =
 		  system("mtn add NEW.txt");
 	      },
       posc => sub {
-	          system("mtn revert .");
+	          system("mtn --quiet revert .");
 		  system("rm NEW.txt");
 	      },
       type => RECORD_LIST,
@@ -401,20 +401,20 @@ my @test_list =
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (depth option)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [["depth" => 1]]},
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (depth + exclude play.cc options)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [["depth"   => 1,
 		"exclude" => "play.cc"]]},
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (most options)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [["depth"   => 1,
 		"exclude" => "play.cc",
@@ -424,7 +424,7 @@ my @test_list =
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (all options generates nothing)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [["depth"   => 1,
 		"exclude" => "play.cc",
@@ -436,7 +436,7 @@ my @test_list =
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (just changed unknown files)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [["no-unchanged"]],
       prec => sub {
@@ -449,7 +449,7 @@ my @test_list =
 
      {fn   => \&Monotone::AutomateStdio::inventory,
       desc => "inventory (restrict output to those files under unix)",
-      feat => MTN_INVENTORY_TAKE_OPTIONS,
+      feat => MTN_INVENTORY_TAKING_OPTIONS,
       type => RECORD_LIST,
       args => [[],
 	       "unix"]},
@@ -658,7 +658,7 @@ readline(STDIN);
 $mtn = Monotone::AutomateStdio->new(["--key" => $key_id]);
 
 $data = undef;
-if ($mtn->can(MTN_DB_GET))
+if ($mtn->supports(MTN_DB_GET))
 {
     $data = undef if (! $mtn->db_get(\$data, "database", "default-server"));
 }
@@ -695,7 +695,7 @@ Monotone::AutomateStdio->register_error_handler
 
 foreach my $test (@test_list)
 {
-    if (! exists($test->{feat}) || $mtn->can($test->{feat}))
+    if (! exists($test->{feat}) || $mtn->supports($test->{feat}))
     {
 	printf(" ========== %s ==========\n", $test->{desc});
 	if (exists($test->{prec}))

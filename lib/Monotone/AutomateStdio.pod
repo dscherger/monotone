@@ -822,11 +822,13 @@ that is currently being used by this object. The list of valid features are:
     MTN_INVENTORY_TAKING_OPTIONS
     MTN_INVENTORY_WITH_BIRTH_ID
     MTN_LUA
+    MTN_M_SELECTOR
     MTN_P_SELECTOR
     MTN_READ_PACKETS
     MTN_SET_ATTRIBUTE
     MTN_SET_DB_VARIABLE
     MTN_SHOW_CONFLICTS
+    MTN_U_SELECTOR
 
 In order to get these constants into your namespace you need to use the
 following to load in this library.
@@ -1007,7 +1009,7 @@ alarm(). Anyway if you want to do something periodically it is usually better
 to have a thread do that for you rather than use signals. If you have different
 opinions on this then please let me know.
 
-==head2 General
+=head2 General
 
 When the output of a command from the automate stdio interface changes
 dramatically, it will probably not be possible to protect Perl applications
