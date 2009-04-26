@@ -408,14 +408,13 @@ sub open_database($$$)
 		# Ok it is a readable file, try and open it but deal with any
 		# errors in a nicer way than normal.
 
-		Monotone::AutomateStdio->register_error_handler
-		    (MTN_SEVERITY_ALL);
+		CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL);
 		eval
 		{
-		    $mtn_obj = Monotone::AutomateStdio->new($fname);
+		    $mtn_obj = CachingAutomateStdio->new($fname);
 		};
 		$err = $@;
-		Monotone::AutomateStdio->register_error_handler
+		CachingAutomateStdio->register_error_handler
 		    (MTN_SEVERITY_ALL, \&mtn_error_handler);
 		if ($err ne "")
 		{

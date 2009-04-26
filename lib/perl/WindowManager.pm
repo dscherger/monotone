@@ -2,8 +2,9 @@
 #
 #   File Name    - WindowManager.pm
 #
-#   Description  - Class module that provides a class for managing application
-#                  windows, i.e. their recycling, busy cursor management etc.
+#   Description  - A class module for managing application windows, i.e. their
+#                  recycling, busy cursor management and application help
+#                  management.
 #
 #   Author       - A.E.Cooper.
 #
@@ -80,16 +81,19 @@ my $singleton;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
+# Singleton instance constructor/accessor and destructor methods.
+
+sub instance($);
+sub cleanup($);
+
 # Public methods.
 
 sub activate_context_sensitive_help($$);
 sub allow_input($&);
-sub cleanup($);
 sub cond_find($$&);
 sub display_window_help($$);
 sub find_unused($$);
 sub help_connect($$$$);
-sub instance($);
 sub make_busy($$$;$);
 sub manage($$$$;$);
 sub reset_state($);

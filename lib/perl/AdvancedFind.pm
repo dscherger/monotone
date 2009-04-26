@@ -964,7 +964,7 @@ sub update_advanced_find_state($$)
 	    # Remember the user can type in any old rubbish with advanced
 	    # queries! So protect ourselves.
 
-	    Monotone::AutomateStdio->register_error_handler
+	    CachingAutomateStdio->register_error_handler
 		(MTN_SEVERITY_ALL,
 		 sub {
 		     my($severity, $message) = @_;
@@ -987,8 +987,8 @@ sub update_advanced_find_state($$)
 		$matches = scalar(@revision_ids);
 	    };
 	    $err = $@;
-	    Monotone::AutomateStdio->register_error_handler
-		(MTN_SEVERITY_ALL, \&mtn_error_handler);
+	    CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
+							 \&mtn_error_handler);
 
 	    # If the query was valid then store it in the history.
 

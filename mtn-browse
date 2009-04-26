@@ -83,9 +83,9 @@ use Time::Local;
 
 use lib File::Spec->catfile(LIB_DIR, "perl");
 
-# Monotone AutomateStdio module.
+# Monotone AutomateStdio module (via derived caching class).
 
-use Monotone::AutomateStdio qw(:capabilities :severities);
+use CachingAutomateStdio qw(:capabilities :severities);
 
 # Modules specific to this application.
 
@@ -202,9 +202,8 @@ sub view_button_clicked_cb($$);
     # Set up the default database locked and I/O wait handlers for the Monotone
     # class.
 
-    Monotone::AutomateStdio->
-	register_db_locked_handler(\&mtn_db_locked_handler);
-    Monotone::AutomateStdio->register_io_wait_handler
+    CachingAutomateStdio->register_db_locked_handler(\&mtn_db_locked_handler);
+    CachingAutomateStdio->register_io_wait_handler
 	(sub { WindowManager->instance()->update_gui(); }, 1);
 
     # Load in user preferences.
@@ -270,7 +269,7 @@ sub view_button_clicked_cb($$);
 	eval
 	{
 	    my $db;
-	    $mtn = Monotone::AutomateStdio->new();
+	    $mtn = CachingAutomateStdio->new();
 	    $mtn->get_option(\$db, "database");
 	    if ($user_preferences->{workspace}->{auto_select})
 	    {
@@ -284,7 +283,7 @@ sub view_button_clicked_cb($$);
 		$branch = undef if (! defined($revision_id));
 	    }
 	    $mtn = undef;
-	    $mtn = Monotone::AutomateStdio->new($db);
+	    $mtn = CachingAutomateStdio->new($db);
 	};
 
     }
@@ -295,7 +294,7 @@ sub view_button_clicked_cb($$);
 
 	eval
 	{
-	    $mtn = Monotone::AutomateStdio->
+	    $mtn = CachingAutomateStdio->
 		new($user_preferences->{default_mtn_db});
 	};
 	if ($@ ne "")
@@ -315,8 +314,8 @@ sub view_button_clicked_cb($$);
 
     # Set up the error handlers for the Monotone class.
 
-    Monotone::AutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
-						    \&mtn_error_handler);
+    CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
+						 \&mtn_error_handler);
 
     # Create the browser window and display it. Please note that updating the
     # browser to reflect the current database or workspace is done in an idle

@@ -2,7 +2,7 @@
 #
 #   File Name    - Completion.pm
 #
-#   Description  - Class module that provides a basic auto-completion
+#   Description  - A class module that provides a basic auto-completion
 #                  mechanism.
 #
 #   Author       - A.E.Cooper.
@@ -53,10 +53,14 @@ use warnings;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
+# Constructor and destructor.
+
+sub new($;$);
+sub DESTROY($);
+
 # Public methods.
 
 sub get_completion($$$$);
-sub new($;$);
 
 # ***** PACKAGE INFORMATION *****
 
