@@ -48,6 +48,7 @@ private:
 
 public:
   rsa_keypair_id signing_key;
+  bool have_signing_key() const;
 
   explicit key_store(app_state & a);
   ~key_store();
