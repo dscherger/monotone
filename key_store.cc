@@ -177,6 +177,12 @@ key_store::key_store(app_state & a)
 key_store::~key_store()
 {}
 
+bool
+key_store::have_signing_key() const
+{
+  return !signing_key().empty();
+}
+
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 Botan::RandomNumberGenerator &
 key_store::get_rng()
