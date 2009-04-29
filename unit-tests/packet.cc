@@ -127,21 +127,21 @@ UNIT_TEST(roundabout)
     // cert now accepts revision_id exclusively, so we need to cast the
     // file_id to create a cert to test the packet writer with.
     cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
-           rsa_keypair_id("fun@moonman.com"), sig);
+           key_name("fun@moonman.com"), sig);
     pw.consume_revision_cert(c);
 
     keypair kp;
     // a public key packet
     kp.pub = rsa_pub_key("this is not a real rsa key");
-    pw.consume_public_key(rsa_keypair_id("test@lala.com"), kp.pub);
+    pw.consume_public_key(key_name("test@lala.com"), kp.pub);
 
     // a keypair packet
     kp.priv = rsa_priv_key("this is not a real rsa key either!");
-    pw.consume_key_pair(rsa_keypair_id("test@lala.com"), kp);
+    pw.consume_key_pair(key_name("test@lala.com"), kp);
 
     // an old privkey packet
     old_arc4_rsa_priv_key oldpriv("and neither is this!");
-    pw.consume_old_private_key(rsa_keypair_id("test@lala.com"), oldpriv);
+    pw.consume_old_private_key(key_name("test@lala.com"), oldpriv);
 
     tmp = oss.str();
   }

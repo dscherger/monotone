@@ -533,7 +533,7 @@ migrate_to_external_privkeys(sqlite3 * db, key_store & keys)
 
     while (stmt.step())
       {
-        rsa_keypair_id ident(stmt.column_string(0), origin::database);
+        key_name ident(stmt.column_string(0), origin::database);
         base64<old_arc4_rsa_priv_key> old_priv(stmt.column_string(1),
                                                origin::database);
         base64<rsa_pub_key> pub;

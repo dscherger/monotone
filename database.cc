@@ -188,7 +188,7 @@ namespace
   typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
   typedef hashmap::hash_map<revision_id, rev_height> height_map;
 
-  typedef hashmap::hash_map<rsa_keypair_id,
+  typedef hashmap::hash_map<key_name,
                             pair<shared_ptr<Botan::PK_Verifier>,
                                  shared_ptr<Botan::RSA_PublicKey> >
                             > verifier_cache;
@@ -351,7 +351,7 @@ private:
   //
   // --== Keys ==--
   //
-  void get_keys(string const & table, vector<rsa_keypair_id> & keys);
+  void get_keys(string const & table, vector<key_name> & keys);
 
   // cache of verifiers for public keys
   verifier_cache verifiers;
@@ -2854,7 +2854,7 @@ database::delete_tag_named(cert_value const & tag)
 // crypto key management
 
 void
-database::get_key_ids(vector<rsa_keypair_id> & pubkeys)
+database::get_key_ids(vector<key_name> & pubkeys)
 {
   pubkeys.clear();
   results res;
@@ -2862,12 +2862,12 @@ database::get_key_ids(vector<rsa_keypair_id> & pubkeys)
   imp->fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
 
   for (size_t i = 0; i < res.size(); ++i)
-    pubkeys.push_back(rsa_keypair_id(res[i][0], origin::database));
+    pubkeys.push_back(key_name(res[i][0], origin::database));
 }
 
 void
 database::get_key_ids(globish const & pattern,
-                      vector<rsa_keypair_id> & pubkeys)
+                      vector<key_name> & pubkeys)
 {
   pubkeys.clear();
   results res;
@@ -2876,21 +2876,21 @@ database::get_key_ids(globish const & pattern,
 
   for (size_t i = 0; i < res.size(); ++i)
     if (pattern.matches(res[i][0]))
-      pubkeys.push_back(rsa_keypair_id(res[i][0], origin::database));
+      pubkeys.push_back(key_name(res[i][0], origin::database));
 }
 
 void
-database_impl::get_keys(string const & table, vector<rsa_keypair_id> & keys)
+database_impl::get_keys(string const & table, vector<key_name> & keys)
 {
   keys.clear();
   results res;
   fetch(res, one_col, any_rows, query("SELECT id FROM " + table));
   for (size_t i = 0; i < res.size(); ++i)
-    keys.push_back(rsa_keypair_id(res[i][0], origin::database));
+    keys.push_back(key_name(res[i][0], origin::database));
 }
 
 void
-database::get_public_keys(vector<rsa_keypair_id> & keys)
+database::get_public_keys(vector<key_name> & keys)
 {
   imp->get_keys("public_keys", keys);
 }
@@ -2909,7 +2909,7 @@ database::public_key_exists(id const & hash)
 }
 
 bool
-database::public_key_exists(rsa_keypair_id const & id)
+database::public_key_exists(key_name const & id)
 {
   results res;
   imp->fetch(res, one_col, any_rows,
@@ -2923,19 +2923,19 @@ database::public_key_exists(rsa_keypair_id const & id)
 
 void
 database::get_pubkey(id const & hash,
-                     rsa_keypair_id & id,
+                     key_name & id,
                      rsa_pub_key & pub)
 {
   results res;
   imp->fetch(res, 2, one_row,
              query("SELECT id, keydata FROM public_keys WHERE hash = ?")
              % blob(hash()));
-  id = rsa_keypair_id(res[0][0], origin::database);
+  id = key_name(res[0][0], origin::database);
   pub = rsa_pub_key(res[0][1], origin::database);
 }
 
 void
-database::get_key(rsa_keypair_id const & pub_id,
+database::get_key(key_name const & pub_id,
                   rsa_pub_key & pub)
 {
   results res;
@@ -2946,7 +2946,7 @@ database::get_key(rsa_keypair_id const & pub_id,
 }
 
 bool
-database::put_key(rsa_keypair_id const & pub_id,
+database::put_key(key_name const & pub_id,
                   rsa_pub_key const & pub)
 {
   if (public_key_exists(pub_id))
@@ -2974,14 +2974,14 @@ database::put_key(rsa_keypair_id const & pub_id,
 }
 
 void
-database::delete_public_key(rsa_keypair_id const & pub_id)
+database::delete_public_key(key_name const & pub_id)
 {
   imp->execute(query("DELETE FROM public_keys WHERE id = ?")
                % text(pub_id()));
 }
 
 void
-database::encrypt_rsa(rsa_keypair_id const & pub_id,
+database::encrypt_rsa(key_name const & pub_id,
                       string const & plaintext,
                       rsa_oaep_sha_data & ciphertext)
 {
@@ -3019,7 +3019,7 @@ database::encrypt_rsa(rsa_keypair_id const & pub_id,
 }
 
 cert_status
-database::check_signature(rsa_keypair_id const & id,
+database::check_signature(key_name const & id,
                           string const & alleged_text,
                           rsa_sha1_signature const & signature)
 {
@@ -3133,7 +3133,7 @@ database_impl::results_to_certs(results const & res,
       t = cert(revision_id(res[i][0], origin::database),
                cert_name(res[i][1], origin::database),
                cert_value(res[i][2], origin::database),
-               rsa_keypair_id(res[i][3], origin::database),
+               key_name(res[i][3], origin::database),
                rsa_sha1_signature(res[i][4], origin::database));
       certs.push_back(t);
     }
@@ -3279,7 +3279,7 @@ database::put_revision_cert(cert const & cert)
 
 outdated_indicator
 database::get_revision_cert_nobranch_index(vector< pair<revision_id,
-                                           pair<revision_id, rsa_keypair_id> > > & idx)
+                                           pair<revision_id, key_name> > > & idx)
 {
   // share some storage
   id::symtab id_syms;
@@ -3295,7 +3295,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
     {
       idx.push_back(make_pair(revision_id((*i)[0], origin::database),
                               make_pair(revision_id((*i)[1], origin::database),
-                                        rsa_keypair_id((*i)[2], origin::database))));
+                                        key_name((*i)[2], origin::database))));
     }
   return imp->cert_stamper.get_indicator();
 }
@@ -3460,7 +3460,7 @@ namespace {
     // sorry, this is a crazy data structure
     typedef tuple<id, cert_name, cert_value> trust_key;
     typedef map< trust_key,
-      pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
+      pair< shared_ptr< set<key_name> >, it > > trust_map;
     trust_map trust;
 
     for (it i = certs.begin(); i != certs.end(); ++i)
@@ -3469,10 +3469,10 @@ namespace {
                                   i->name,
                                   i->value);
         trust_map::iterator j = trust.find(key);
-        shared_ptr< set<rsa_keypair_id> > s;
+        shared_ptr< set<key_name> > s;
         if (j == trust.end())
           {
-            s.reset(new set<rsa_keypair_id>());
+            s.reset(new set<key_name>());
             trust.insert(make_pair(key, make_pair(s, i)));
           }
         else

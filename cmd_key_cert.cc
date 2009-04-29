@@ -40,8 +40,8 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name ident;
+  internalize_key_name(idx(args, 0), ident);
 
   keys.create_key_pair(db, ident);
 }
@@ -59,7 +59,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  key_name ident = typecast_vocab<key_name>(idx(args, 0));
   if (db.database_specified())
     {
       transaction_guard guard(db);
@@ -100,8 +100,8 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name ident;
+  internalize_key_name(idx(args, 0), ident);
 
   keys.change_key_passphrase(ident);
   P(F("passphrase changed"));
@@ -119,7 +119,7 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
   if (args.size() > 1)
     throw usage(execid);
 
-  rsa_keypair_id id;
+  key_name id;
   get_user_key(app.opts, app.lua, db, keys, id);
 
   if (args.empty())
@@ -146,7 +146,7 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
   if (args.size() > 1)
     throw usage(execid);
 
-  rsa_keypair_id id;
+  key_name id;
   get_user_key(app.opts, app.lua, db, keys, id);
   keys.add_key_to_agent(id);
 }
@@ -213,11 +213,11 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
-  set<rsa_keypair_id> signers;
+  set<key_name> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
     {
-      rsa_keypair_id keyid;
-      internalize_rsa_keypair_id(idx(args, i), keyid);
+      key_name keyid;
+      internalize_key_name(idx(args, i), keyid);
       signers.insert(keyid);
     }
 
@@ -229,7 +229,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   ostringstream all_signers;
   copy(signers.begin(), signers.end(),
-       ostream_iterator<rsa_keypair_id>(all_signers, " "));
+       ostream_iterator<key_name>(all_signers, " "));
 
   cout << (F("if a cert on: %s\n"
             "with key: %s\n"

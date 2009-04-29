@@ -63,7 +63,7 @@ read_cert(string const & in, cert & t)
 
   cert tmp(ident, cert_name(name, origin::network),
            cert_value(val, origin::network),
-           rsa_keypair_id(key, origin::network),
+           key_name(key, origin::network),
            rsa_sha1_signature(sig, origin::network));
 
   id check;

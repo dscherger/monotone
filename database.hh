@@ -229,31 +229,31 @@ private:
   // --== Keys ==--
   //
 public:
-  void get_key_ids(std::vector<rsa_keypair_id> & pubkeys);
+  void get_key_ids(std::vector<key_name> & pubkeys);
   void get_key_ids(globish const & pattern,
-                   std::vector<rsa_keypair_id> & pubkeys);
+                   std::vector<key_name> & pubkeys);
 
-  void get_public_keys(std::vector<rsa_keypair_id> & pubkeys);
+  void get_public_keys(std::vector<key_name> & pubkeys);
 
   bool public_key_exists(id const & hash);
-  bool public_key_exists(rsa_keypair_id const & ident);
+  bool public_key_exists(key_name const & ident);
 
   void get_pubkey(id const & hash,
-                  rsa_keypair_id & ident,
+                  key_name & ident,
                   rsa_pub_key & pub);
 
-  void get_key(rsa_keypair_id const & ident, rsa_pub_key & pub);
-  bool put_key(rsa_keypair_id const & ident, rsa_pub_key const & pub);
+  void get_key(key_name const & ident, rsa_pub_key & pub);
+  bool put_key(key_name const & ident, rsa_pub_key const & pub);
 
-  void delete_public_key(rsa_keypair_id const & pub_id);
+  void delete_public_key(key_name const & pub_id);
 
   // Crypto operations
 
-  void encrypt_rsa(rsa_keypair_id const & pub_id,
+  void encrypt_rsa(key_name const & pub_id,
                    std::string const & plaintext,
                    rsa_oaep_sha_data & ciphertext);
 
-  cert_status check_signature(rsa_keypair_id const & id,
+  cert_status check_signature(key_name const & id,
                               std::string const & alleged_text,
                               rsa_sha1_signature const & signature);
   cert_status check_cert(cert const & t);
@@ -270,7 +270,7 @@ public:
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
-                              std::pair<revision_id, rsa_keypair_id> > > & idx);
+                              std::pair<revision_id, key_name> > > & idx);
 
   // Only used by database_check.cc
   outdated_indicator get_revision_certs(std::vector<cert> & certs);
@@ -309,7 +309,7 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<rsa_keypair_id> const &,
+  typedef boost::function<bool(std::set<key_name> const &,
                                id const &,
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;

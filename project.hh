@@ -47,8 +47,8 @@ class tag_t
 public:
   revision_id ident;
   utf8 name;
-  rsa_keypair_id key;
-  tag_t(revision_id const & ident, utf8 const & name, rsa_keypair_id const & key);
+  key_name key;
+  tag_t(revision_id const & ident, utf8 const & name, key_name const & key);
 };
 bool operator < (tag_t const & a, tag_t const & b);
 

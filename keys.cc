@@ -33,7 +33,7 @@ using std::memset;
 // if that key pair is not available.
 
 void
-load_key_pair(key_store & keys, rsa_keypair_id const & id)
+load_key_pair(key_store & keys, key_name const & id)
 {
   E(keys.key_pair_exists(id), origin::user,
     F("no key pair '%s' found in key store '%s'")
@@ -42,7 +42,7 @@ load_key_pair(key_store & keys, rsa_keypair_id const & id)
 
 void
 load_key_pair(key_store & keys,
-              rsa_keypair_id const & id,
+              key_name const & id,
               keypair & kp)
 {
   load_key_pair(keys, id);
@@ -52,7 +52,7 @@ load_key_pair(key_store & keys,
 namespace {
   void check_and_save_chosen_key(database & db,
                                  key_store & keys,
-                                 rsa_keypair_id const & chosen_key)
+                                 key_name const & chosen_key)
   {
     // Ensure that the specified key actually exists.
     keypair priv_key;
@@ -79,9 +79,9 @@ namespace {
     // Decrypt and cache the key now.
     keys.cache_decrypted_key(chosen_key);
   }
-  bool get_only_key(key_store & keys, bool required, rsa_keypair_id & key)
+  bool get_only_key(key_store & keys, bool required, key_name & key)
   {
-    vector<rsa_keypair_id> all_privkeys;
+    vector<key_name> all_privkeys;
     keys.get_key_ids(all_privkeys);
     E(!required || !all_privkeys.empty(), origin::user,
       F("you have no private key to make signatures with\n"
@@ -105,7 +105,7 @@ namespace {
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
-             database & db, key_store & keys, rsa_keypair_id & key)
+             database & db, key_store & keys, key_name & key)
 {
   if (keys.have_signing_key())
     {
@@ -151,7 +151,7 @@ cache_netsync_key(options const & opts, lua_hooks & lua,
     }
 
   bool found_key = false;
-  rsa_keypair_id key;
+  key_name key;
 
   // key_given is not set if the key option was extracted from the workspace
   if (opts.key_given || !opts.signing_key().empty())
@@ -181,12 +181,12 @@ void
 cache_user_key(options const & opts, lua_hooks & lua,
                database & db, key_store & keys)
 {
-  rsa_keypair_id key;
+  key_name key;
   get_user_key(opts, lua, db, keys, key);
 }
 
 void
-key_hash_code(rsa_keypair_id const & ident,
+key_hash_code(key_name const & ident,
               rsa_pub_key const & pub,
               id & out)
 {
@@ -198,9 +198,9 @@ key_hash_code(rsa_keypair_id const & ident,
 // helper to compare if two keys have the same hash
 // (ie are the same key)
 bool
-keys_match(rsa_keypair_id const & id1,
+keys_match(key_name const & id1,
            rsa_pub_key const & key1,
-           rsa_keypair_id const & id2,
+           key_name const & id2,
            rsa_pub_key const & key2)
 {
   id hash1, hash2;

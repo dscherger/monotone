@@ -97,7 +97,7 @@ UNIT_TEST(functions)
         L(FL("checking i/o round trip on hello_cmd"));
         netcmd out_cmd, in_cmd;
         string buf;
-        rsa_keypair_id out_server_keyname("server@there"), in_server_keyname;
+        key_name out_server_keyname("server@there"), in_server_keyname;
         rsa_pub_key out_server_key("9387938749238792874"), in_server_key;
         id out_nonce(raw_sha1("nonce it up"), origin::internal), in_nonce;
         out_cmd.write_hello_cmd(out_server_keyname, out_server_key, out_nonce);

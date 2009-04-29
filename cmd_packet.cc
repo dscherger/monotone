@@ -34,7 +34,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  key_name ident = typecast_vocab<key_name>(idx(args, 0));
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))
@@ -66,7 +66,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  key_name ident = typecast_vocab<key_name>(idx(args, 0));
   E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
@@ -124,7 +124,7 @@ namespace
       guard.commit();
     }
 
-    virtual void consume_public_key(rsa_keypair_id const & ident,
+    virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
     {
       transaction_guard guard(db);
@@ -132,13 +132,13 @@ namespace
       guard.commit();
     }
 
-    virtual void consume_key_pair(rsa_keypair_id const & ident,
+    virtual void consume_key_pair(key_name const & ident,
                                   keypair const & kp)
     {
       keys.put_key_pair(ident, kp);
     }
 
-    virtual void consume_old_private_key(rsa_keypair_id const & ident,
+    virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
       rsa_pub_key dummy;

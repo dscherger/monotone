@@ -372,7 +372,7 @@ internalize_cert_name(external const & ext, cert_name & c)
 }
 
 void
-internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
+internalize_key_name(utf8 const & utf, key_name & key)
 {
   string tmp;
   typedef boost::tokenizer<char_separator<char> >
@@ -393,19 +393,19 @@ internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
       if (*i == "@")
         in_domain = true;
     }
-  key = rsa_keypair_id(tmp, utf.made_from);
+  key = key_name(tmp, utf.made_from);
 }
 
 void
-internalize_rsa_keypair_id(external const & ext, rsa_keypair_id & key)
+internalize_key_name(external const & ext, key_name & key)
 {
   utf8 utf;
   system_to_utf8(ext, utf);
-  internalize_rsa_keypair_id(utf, key);
+  internalize_key_name(utf, key);
 }
 
 void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
+externalize_key_name(key_name const & key, utf8 & utf)
 {
   string tmp;
   typedef boost::tokenizer<char_separator<char> >
@@ -430,10 +430,10 @@ externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
 }
 
 void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, external & ext)
+externalize_key_name(key_name const & key, external & ext)
 {
   utf8 utf;
-  externalize_rsa_keypair_id(key, utf);
+  externalize_key_name(key, utf);
   utf8_to_system_strict(utf, ext);
 }
 

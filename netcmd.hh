@@ -116,10 +116,10 @@ public:
   void read_error_cmd(std::string & errmsg) const;
   void write_error_cmd(std::string const & errmsg);
 
-  void read_hello_cmd(rsa_keypair_id & server_keyname,
+  void read_hello_cmd(key_name & server_keyname,
                       rsa_pub_key & server_key,
                       id & nonce) const;
-  void write_hello_cmd(rsa_keypair_id const & server_keyname,
+  void write_hello_cmd(key_name const & server_keyname,
                        rsa_pub_key const & server_key,
                        id const & nonce);
 

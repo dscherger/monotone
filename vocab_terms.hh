@@ -33,7 +33,7 @@ ATOMIC_NOVERIFY(var_domain);  // symbol-of-your-choosing
 ATOMIC_NOVERIFY(var_name);    // symbol-of-your-choosing
 ATOMIC_NOVERIFY(var_value);   // symbol-of-your-choosing
 
-ATOMIC(rsa_keypair_id);              // keyname@domain.you.own
+ATOMIC(key_name);              // keyname@domain.you.own
 ATOMIC_NOVERIFY(rsa_pub_key);        // some nice numbers
 ATOMIC_NOVERIFY(rsa_priv_key);       // some nice numbers
 ATOMIC_NOVERIFY(old_arc4_rsa_priv_key); // ... in the old storage format
