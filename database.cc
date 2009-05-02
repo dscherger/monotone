@@ -365,9 +365,15 @@ private:
   void put_cert(cert const & t, string const & table);
   void results_to_certs(results const & res,
                         vector<cert> & certs);
+  void oldstyle_results_to_certs(results const & res,
+                                 vector<cert> & certs);
 
   void get_certs(vector<cert> & certs,
                  string const & table);
+
+  void get_oldstyle_certs(id const & ident,
+                          vector<cert> & certs,
+                          string const & table);
 
   void get_certs(id const & ident,
                  vector<cert> & certs,
@@ -376,6 +382,10 @@ private:
   void get_certs(cert_name const & name,
                  vector<cert> & certs,
                  string const & table);
+
+  void get_oldstyle_certs(cert_name const & name,
+                          vector<cert> & certs,
+                          string const & table);
 
   void get_certs(id const & ident,
                  cert_name const & name,
@@ -2979,12 +2989,12 @@ database::put_key(key_name const & pub_id,
 
   L(FL("putting public key %s") % pub_id);
 
-  id thash;
+  key_id thash;
   key_hash_code(pub_id, pub, thash);
   I(!public_key_exists(thash));
 
   imp->execute(query("INSERT INTO public_keys VALUES(?, ?, ?)")
-               % blob(thash())
+               % blob(thash.inner()())
                % text(pub_id())
                % blob(pub()));
 
@@ -3037,7 +3047,7 @@ database::encrypt_rsa(key_name const & pub_id,
 }
 
 cert_status
-database::check_signature(key_name const & id,
+database::check_signature(key_id const & id,
                           string const & alleged_text,
                           rsa_sha1_signature const & signature)
 {
@@ -3104,15 +3114,15 @@ database_impl::cert_exists(cert const & t,
                            string const & table)
 {
   results res;
-  query q = query("SELECT id FROM " + table + " WHERE id = ? "
+  query q = query("SELECT revision_id FROM " + table + " WHERE revision_id = ? "
                   "AND name = ? "
                   "AND value = ? "
-                  "AND keypair = ? "
+                  "AND keypair_id = ? "
                   "AND signature = ?")
     % blob(t.ident.inner()())
     % text(t.name())
     % blob(t.value())
-    % text(t.key())
+    % text(t.key.inner()())
     % blob(t.sig());
 
   fetch(res, 1, any_rows, q);
@@ -3136,7 +3146,7 @@ database_impl::put_cert(cert const & t,
           % blob(t.ident.inner()())
           % text(t.name())
           % blob(t.value())
-          % text(t.key())
+          % text(t.key.inner()())
           % blob(t.sig()));
 }
 
@@ -3151,9 +3161,40 @@ database_impl::results_to_certs(results const & res,
       t = cert(revision_id(res[i][0], origin::database),
                cert_name(res[i][1], origin::database),
                cert_value(res[i][2], origin::database),
-               key_name(res[i][3], origin::database),
+               key_id(res[i][3], origin::database),
                rsa_sha1_signature(res[i][4], origin::database));
       certs.push_back(t);
+    }
+}
+
+void
+database_impl::oldstyle_results_to_certs(results const & res,
+                                         vector<cert> & certs)
+{
+  certs.clear();
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      revision_id rev_id(res[i][0], origin::database);
+      cert_name name(res[i][1], origin::database);
+      cert_value value(res[i][2], origin::database);
+
+      key_name k_name(res[i][3], origin::database);
+      key_id k_id;
+      {
+        results key_res;
+        query lookup_key("SELECT id FROM public_keys WHERE name = ?");
+        fetch(key_res, 1, any_rows, lookup_key % k_name);
+        if (key_res.size() == 0)
+          break; // no key, cert is bogus
+        else if (key_res.size() == 1)
+          k_id = key_id(key_res[0][0], origin::database);
+        else
+          E(false, origin::database,
+            F("Your database contains multiple keys named %s") % k_name);
+      }
+
+      rsa_sha1_signature sig(res[i][4], origin::database);
+      certs.push_back(cert(rev_id, name, value, k_id, sig));
     }
 }
 
@@ -3180,11 +3221,24 @@ database_impl::get_certs(vector<cert> & certs,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table);
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table);
   fetch(res, 5, any_rows, q);
   results_to_certs(res, certs);
 }
 
+
+void
+database_impl::get_oldstyle_certs(id const & ident,
+                                  vector<cert> & certs,
+                                  string const & table)
+{
+  results res;
+  query q("SELECT id, name, value, keypair, signature FROM " + table +
+          " WHERE id = ?");
+
+  fetch(res, 5, any_rows, q % blob(ident()));
+  oldstyle_results_to_certs(res, certs);
+}
 
 void
 database_impl::get_certs(id const & ident,
@@ -3192,13 +3246,12 @@ database_impl::get_certs(id const & ident,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table +
-          " WHERE id = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
+          " WHERE revision_id = ?");
 
   fetch(res, 5, any_rows, q % blob(ident()));
   results_to_certs(res, certs);
 }
-
 
 void
 database_impl::get_certs(cert_name const & name,
@@ -3206,12 +3259,23 @@ database_impl::get_certs(cert_name const & name,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table +
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
           " WHERE name = ?");
   fetch(res, 5, any_rows, q % text(name()));
   results_to_certs(res, certs);
 }
 
+void
+database_impl::get_oldstyle_certs(cert_name const & name,
+                                  vector<cert> & certs,
+                                  string const & table)
+{
+  results res;
+  query q("SELECT id, name, value, keypair, signature FROM " + table +
+          " WHERE name = ?");
+  fetch(res, 5, any_rows, q % text(name()));
+  oldstyle_results_to_certs(res, certs);
+}
 
 void
 database_impl::get_certs(id const & ident,
@@ -3220,8 +3284,8 @@ database_impl::get_certs(id const & ident,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table +
-          " WHERE id = ? AND name = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
+          " WHERE revision_id = ? AND name = ?");
 
   fetch(res, 5, any_rows,
         q % blob(ident())
@@ -3236,7 +3300,7 @@ database_impl::get_certs(cert_name const & name,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table +
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
           " WHERE name = ? AND value = ?");
 
   fetch(res, 5, any_rows,
@@ -3254,8 +3318,8 @@ database_impl::get_certs(id const & ident,
                          string const & table)
 {
   results res;
-  query q("SELECT id, name, value, keypair, signature FROM " + table +
-          " WHERE id = ? AND name = ? AND value = ?");
+  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
+          " WHERE revision_id = ? AND name = ? AND value = ?");
 
   fetch(res, 5, any_rows,
         q % blob(ident())
@@ -3384,6 +3448,14 @@ database::get_revision_certs(revision_id const & id,
 }
 
 outdated_indicator
+database::get_oldstyle_revision_certs(revision_id const & id,
+                                      vector<cert> & certs)
+{
+  imp->get_oldstyle_certs(id.inner(), certs, "revision_certs");
+  return imp->cert_stamper.get_indicator();
+}
+
+outdated_indicator
 database::get_revision_certs(revision_id const & ident,
                              vector<id> & ids)
 {
@@ -3450,7 +3522,7 @@ namespace {
         {
           string txt;
           c.signable_text(txt);
-          W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
+          W(F("ignoring bad signature by '%s' on '%s'") % c.key % txt);
           return true;
         }
       else
@@ -3458,7 +3530,7 @@ namespace {
           I(status == cert_unknown);
           string txt;
           c.signable_text(txt);
-          W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
+          W(F("ignoring unknown signature by '%s' on '%s'") % c.key % txt);
           return true;
         }
     }
@@ -3478,7 +3550,7 @@ namespace {
     // sorry, this is a crazy data structure
     typedef tuple<id, cert_name, cert_value> trust_key;
     typedef map< trust_key,
-      pair< shared_ptr< set<key_name> >, it > > trust_map;
+      pair< shared_ptr< set<key_id> >, it > > trust_map;
     trust_map trust;
 
     for (it i = certs.begin(); i != certs.end(); ++i)
@@ -3487,10 +3559,10 @@ namespace {
                                   i->name,
                                   i->value);
         trust_map::iterator j = trust.find(key);
-        shared_ptr< set<key_name> > s;
+        shared_ptr< set<key_id> > s;
         if (j == trust.end())
           {
-            s.reset(new set<key_name>());
+            s.reset(new set<key_id>());
             trust.insert(make_pair(key, make_pair(s, i)));
           }
         else
@@ -3546,7 +3618,7 @@ database::erase_bogus_certs(vector<cert> & certs,
 void
 database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), certs, "manifest_certs");
+  imp->get_oldstyle_certs(id.inner(), certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
                              boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
                                          &this->lua, _1, _2, _3, _4));
@@ -3555,7 +3627,7 @@ database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 void
 database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
-  imp->get_certs(name, certs, "manifest_certs");
+  imp->get_oldstyle_certs(name, certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
                              boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
                                          &this->lua, _1, _2, _3, _4));

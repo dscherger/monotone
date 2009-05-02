@@ -16,6 +16,7 @@
 #include "database.hh"
 #include "key_store.hh"
 #include "packet.hh"
+#include "project.hh"
 #include "vocab_cast.hh"
 
 using std::cin;
@@ -34,7 +35,9 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name ident = typecast_vocab<key_name>(idx(args, 0));
+  key_id ident;
+  project_t project(db);
+  project.lookup_key_by_name(typecast_vocab<key_name>(idx(args, 0)), ident);
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))

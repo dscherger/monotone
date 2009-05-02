@@ -29,7 +29,7 @@ class globish;
 // form, so as not to bother the user for their passphrase later.
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys,
-                  key_name & key);
+                  key_id & key);
 
 // As above, but does not report which key has been selected; for use when
 // the important thing is to have selected one and cached the decrypted key.
@@ -48,10 +48,10 @@ void cache_netsync_key(options const & opts, lua_hooks & lua,
                        netsync_key_requiredness key_requiredness);
 
 void load_key_pair(key_store & keys,
-                   key_name const & id);
+                   key_id const & id);
 
 void load_key_pair(key_store & keys,
-                   key_name const & id,
+                   key_id const & id,
                    keypair & kp);
 
 // netsync stuff

@@ -59,7 +59,10 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name ident = typecast_vocab<key_name>(idx(args, 0));
+  key_id ident;
+  project_t project(db);
+  project.lookup_key_by_name(typecast_vocab<key_name>(idx(args, 0)), ident);
+
   if (db.database_specified())
     {
       transaction_guard guard(db);
@@ -119,7 +122,7 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
   if (args.size() > 1)
     throw usage(execid);
 
-  key_name id;
+  key_id id;
   get_user_key(app.opts, app.lua, db, keys, id);
 
   if (args.empty())
@@ -146,7 +149,7 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
   if (args.size() > 1)
     throw usage(execid);
 
-  key_name id;
+  key_id id;
   get_user_key(app.opts, app.lua, db, keys, id);
   keys.add_key_to_agent(id);
 }
@@ -213,12 +216,10 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
-  set<key_name> signers;
+  set<key_id> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
     {
-      key_name keyid;
-      internalize_key_name(idx(args, i), keyid);
-      signers.insert(keyid);
+      signers.insert(decode_hexenc_as<key_id>(idx(args, i)(), origin::user));
     }
 
 
@@ -229,7 +230,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   ostringstream all_signers;
   copy(signers.begin(), signers.end(),
-       ostream_iterator<key_name>(all_signers, " "));
+       ostream_iterator<key_id>(all_signers, " "));
 
   cout << (F("if a cert on: %s\n"
             "with key: %s\n"

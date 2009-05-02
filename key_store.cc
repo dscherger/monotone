@@ -253,7 +253,7 @@ key_store::get_key_ids(vector<key_name> & priv)
 }
 
 bool
-key_store::key_pair_exists(key_name const & ident)
+key_store::key_pair_exists(key_id const & ident)
 {
   s->maybe_read_key_dir();
   return s->keys.find(ident) != s->keys.end();
@@ -379,7 +379,7 @@ key_store_state::put_key_pair_memory(key_name const & ident,
 }
 
 void
-key_store::delete_key(key_name const & ident)
+key_store::delete_key(key_id const & ident)
 {
   s->maybe_read_key_dir();
   map<key_name, keypair>::iterator i = s->keys.find(ident);

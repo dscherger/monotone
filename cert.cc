@@ -63,7 +63,7 @@ read_cert(string const & in, cert & t)
 
   cert tmp(ident, cert_name(name, origin::network),
            cert_value(val, origin::network),
-           key_name(key, origin::network),
+           key_id(key, origin::network),
            rsa_sha1_signature(sig, origin::network));
 
   id check;
@@ -97,7 +97,7 @@ cert::marshal_for_netio(string & out) const
   out.append(this->ident.inner()());
   insert_variable_length_string(this->name(), out);
   insert_variable_length_string(this->value(), out);
-  insert_variable_length_string(this->key(), out);
+  insert_variable_length_string(this->key.inner()(), out);
   insert_variable_length_string(this->sig(), out);
 }
 
@@ -133,14 +133,14 @@ cert::hash_code(id & out) const
   string tmp;
   tmp.reserve(4 + ident_encoded.size()
               + this->name().size() + val_encoded().size()
-              + this->key().size() + sig_encoded().size());
+              + this->key.inner()().size() + sig_encoded().size());
   tmp.append(ident_encoded);
   tmp += ':';
   tmp.append(this->name());
   tmp += ':';
   append_without_ws(tmp, val_encoded());
   tmp += ':';
-  tmp.append(this->key());
+  tmp.append(this->key.inner()());
   tmp += ':';
   append_without_ws(tmp, sig_encoded());
 

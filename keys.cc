@@ -33,7 +33,7 @@ using std::memset;
 // if that key pair is not available.
 
 void
-load_key_pair(key_store & keys, key_name const & id)
+load_key_pair(key_store & keys, key_id const & id)
 {
   E(keys.key_pair_exists(id), origin::user,
     F("no key pair '%s' found in key store '%s'")
@@ -42,7 +42,7 @@ load_key_pair(key_store & keys, key_name const & id)
 
 void
 load_key_pair(key_store & keys,
-              key_name const & id,
+              key_id const & id,
               keypair & kp)
 {
   load_key_pair(keys, id);
@@ -105,7 +105,7 @@ namespace {
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
-             database & db, key_store & keys, key_name & key)
+             database & db, key_store & keys, key_id & key)
 {
   if (keys.have_signing_key())
     {
@@ -183,6 +183,19 @@ cache_user_key(options const & opts, lua_hooks & lua,
 {
   key_name key;
   get_user_key(opts, lua, db, keys, key);
+}
+
+void
+get_netsync_key(options const & opts, lua_hooks & lua,
+                database & db, key_store & keys,
+                netsync_key_requiredness key_requiredness,
+                key_id & key)
+{
+  if (!keys.signing_key().empty())
+    {
+      key = keys.signing_key;
+      return;
+    }
 }
 
 void

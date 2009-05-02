@@ -47,7 +47,7 @@ private:
   boost::scoped_ptr<key_store_state> s;
 
 public:
-  key_name signing_key;
+  key_id signing_key;
   bool have_signing_key() const;
 
   explicit key_store(app_state & a);
@@ -61,15 +61,13 @@ public:
 
   // Basic key I/O
 
-  void get_key_ids(std::vector<key_name> & priv);
-  void get_key_ids(globish const & pattern,
-                   std::vector<key_name> & priv);
+  void get_key_ids(std::vector<key_id> & priv);
 
-  bool key_pair_exists(key_name const & ident);
+  bool key_pair_exists(key_id const & ident);
 
-  void get_key_pair(key_name const & ident,
+  void get_key_pair(key_id const & ident,
                     keypair & kp);
-  bool maybe_get_key_pair(key_name const & ident,
+  bool maybe_get_key_pair(key_id const & ident,
                           keypair & kp);
   bool maybe_get_key_pair(id const & hash,
                           key_name & ident,
@@ -78,30 +76,30 @@ public:
   bool put_key_pair(key_name const & ident,
                     keypair const & kp);
 
-  void delete_key(key_name const & ident);
+  void delete_key(key_id const & ident);
 
   // Crypto operations
 
-  void cache_decrypted_key(key_name const & id);
+  void cache_decrypted_key(key_id const & id);
 
   void create_key_pair(database & db, key_name const & ident,
                        utf8 const * maybe_passphrase = NULL,
                        id * maybe_hash = NULL);
 
-  void change_key_passphrase(key_name const & id);
+  void change_key_passphrase(key_id const & id);
 
-  void decrypt_rsa(key_name const & id,
+  void decrypt_rsa(key_id const & id,
                    rsa_oaep_sha_data const & ciphertext,
                    std::string & plaintext);
 
-  void make_signature(database & db, key_name const & id,
+  void make_signature(database & db, key_id const & id,
                       std::string const & tosign,
                       rsa_sha1_signature & signature);
 
   // Interoperation with ssh-agent
 
-  void add_key_to_agent(key_name const & id);
-  void export_key_for_agent(key_name const & id,
+  void add_key_to_agent(key_id const & id);
+  void export_key_for_agent(key_id const & id,
                             std::ostream & os);
 
   // Migration from old databases

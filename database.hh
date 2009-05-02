@@ -230,31 +230,29 @@ private:
   // --== Keys ==--
   //
 public:
-  void get_key_ids(std::vector<key_name> & pubkeys);
-  void get_key_ids(globish const & pattern,
-                   std::vector<key_name> & pubkeys);
+  void get_key_ids(std::vector<key_id> & pubkeys);
 
   void get_public_keys(std::vector<key_name> & pubkeys);
 
-  bool public_key_exists(id const & hash);
+  bool public_key_exists(key_id const & hash);
   bool public_key_exists(key_name const & ident);
 
   void get_pubkey(id const & hash,
                   key_name & ident,
                   rsa_pub_key & pub);
 
-  void get_key(key_name const & ident, rsa_pub_key & pub);
+  void get_key(key_id const & ident, rsa_pub_key & pub);
   bool put_key(key_name const & ident, rsa_pub_key const & pub);
 
-  void delete_public_key(key_name const & pub_id);
+  void delete_public_key(key_id const & pub_id);
 
   // Crypto operations
 
-  void encrypt_rsa(key_name const & pub_id,
+  void encrypt_rsa(key_id const & pub_id,
                    std::string const & plaintext,
                    rsa_oaep_sha_data & ciphertext);
 
-  cert_status check_signature(key_name const & id,
+  cert_status check_signature(key_id const & id,
                               std::string const & alleged_text,
                               rsa_sha1_signature const & signature);
   cert_status check_cert(cert const & t);
@@ -299,9 +297,12 @@ public:
                                cert_value const & value,
                                std::set<revision_id> & revisions);
 
-  // Used through project.cc, and by
-  // anc_graph::add_node_for_oldstyle_revision (revision.cc)
+  // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
+                          std::vector<cert> & certs);
+
+  // used by anc_graph::add_node_for_oldstyle_revision (revision.cc)
+  outdated_indicator get_oldstyle_revision_certs(revision_id const & ident,
                           std::vector<cert> & certs);
 
   // Used through get_revision_cert_hashes (project.cc)
@@ -310,7 +311,7 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<key_name> const &,
+  typedef boost::function<bool(std::set<key_id> const &,
                                id const &,
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;

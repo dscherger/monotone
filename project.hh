@@ -47,8 +47,8 @@ class tag_t
 public:
   revision_id ident;
   utf8 name;
-  key_name key;
-  tag_t(revision_id const & ident, utf8 const & name, key_name const & key);
+  key_id key;
+  tag_t(revision_id const & ident, utf8 const & name, key_id const & key);
 };
 bool operator < (tag_t const & a, tag_t const & b);
 
@@ -133,6 +133,17 @@ public:
   void put_revision_comment(key_store & keys,
                             revision_id const & id,
                             utf8 const & comment);
+
+  // lookup the key ID associated with a particular key name
+  void lookup_key_by_name(key_name const & name, key_id & id);
+  // the reverse
+  void get_name_of_key(key_store const & keys,
+                       key_id const & id,
+                       key_name & name);
+  // get the name given when creating the key
+  void get_canonical_name_of_key(key_store const & keys,
+                                 key_id const & id,
+                                 key_name & name);
 };
 
 std::string
