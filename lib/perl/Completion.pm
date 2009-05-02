@@ -53,10 +53,9 @@ use warnings;
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
-# Constructor and destructor.
+# Constructor.
 
 sub new($;$);
-sub DESTROY($);
 
 # Public methods.
 

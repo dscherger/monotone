@@ -103,7 +103,7 @@ GNOME or DocBook.
       -->
       <revision>
         <revnumber>&APP; Manual V&VERSION;</revnumber>
-        <date>11 February 2009</date>
+        <date>02 May 2009</date>
         <revdescription>
           <para role="author">Anthony Cooper</para>
           <para role="publisher">CooSoft</para>
@@ -314,12 +314,25 @@ GNOME or DocBook.
             <para><menuchoice><guimenu>File</guimenu><guimenuitem>Quit</guimenuitem></menuchoice> - This completely quits out of the application regardless of what windows you may have open. Normally the application only exits when all of its <guilabel>Monotone Browser</guilabel> windows have been closed.</para>
           </listitem>
           <listitem>
+            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Help Contents</guimenuitem></menuchoice> - Displays the contents page of the <application>&APP;</application> manual.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Help On Window</guimenuitem></menuchoice> - Displays the relevant section in the <application>&APP;</application> manual for the current window.</para>
+          </listitem>
+          <listitem>
+            <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Context Help</guimenuitem></menuchoice> - This puts the application into a context sensitive help mode where one can select a specific widget on a window and display the relevant section in the <application>&APP;</application> manual for that widget or group of widgets.</para>
+          </listitem>
+          <listitem>
             <para><menuchoice><guimenu>Help</guimenu><guimenuitem>Home Page</guimenuitem></menuchoice> - Displays the home page for the <application>&APP;</application> application.</para>
           </listitem>
           <listitem>
             <para><menuchoice><guimenu>Help</guimenu><guimenuitem>About</guimenuitem></menuchoice> - Displays the obligatory <guilabel>About</guilabel> window that nurses the ego of the author and rightly mentions those people kind enough to contribute their time and effort to this project.</para>
           </listitem>
         </itemizedlist>
+
+        <note>
+          <para>The keyboard shortcuts shown against the <menuchoice><guimenu>Help</guimenu></menuchoice> menu options work on nearly all <application>&APP;</application> windows.</para>
+        </note>
 
       </sect2>
 
@@ -355,7 +368,7 @@ GNOME or DocBook.
               </row>
               <row valign="top">
                 <entry><para><inlinegraphic fileref="figures/preferences-toolbar-button.png" format="png" valign="middle"/></para></entry>
-                <entry><para>Displays the <guilabel>Preferences</guilabel> window (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para></entry>
+                <entry><para>Displays the <guilabel>Preferences</guilabel> dialog window (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>).</para></entry>
               </row>
               <row valign="top">
                 <entry><para><inlinegraphic fileref="figures/help-toolbar-button.png" format="png" valign="middle"/></para></entry>
@@ -747,6 +760,9 @@ GNOME or DocBook.
               <para><guilabel>Logical And</guilabel> - This is a logical AND operator. Currently Monotone does not directly support an OR operator. This is Monotone's <literal>/</literal> selector operator. It takes no parameters but instead combines two other selectors together.</para>
             </listitem>
             <listitem>
+              <para><guilabel>Message</guilabel> - This selector allows one to select revisions based upon whether their <literal>changelog</literal> or <literal>comment</literal> certificates contain certain text phrases. This is Monotone's <literal>m:</literal> selector. It takes one parameter, the text that is to be matched, with <literal>*</literal> being a wildcard character.</para>
+            </listitem>
+            <listitem>
               <para><guilabel>Parent</guilabel> - This selector allows one to select revisions that are parents of the specified revision id. This is Monotone's <literal>p:</literal> selector. It takes one parameter, the id of a revision, in the form of a hexadecimal string. The revision id need not be complete.</para>
             </listitem>
             <listitem>
@@ -761,6 +777,12 @@ GNOME or DocBook.
               </listitem>
               <listitem>
                 <para>When inserting dates and times into a search term, one can remove the time field if you wish to. For example, Monotone will accept <literal>2009-02-22T16:47:00</literal>, <literal>2009-02-22</literal>, <literal>2009-02</literal> and <literal>2009</literal> as valid date/time values.</para>
+              </listitem>
+              <listitem>
+                <para>Monotone's <literal>u:</literal> selector is not supported by <application>&APP;</application> as it can only be used from within a Monotone workspace, which are largely ignored by this application.</para>
+              </listitem>
+              <listitem>
+                <para>Some of the selectors mentioned above may not be available to you from the selector term combobox, as only those supported by your version of Monotone are listed.</para>
               </listitem>
             </orderedlist>
           </note>
@@ -1435,6 +1457,25 @@ GNOME or DocBook.
               </informaltable>
             </listitem>
             <listitem>
+              <para><guilabel>List Options</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Search as regular expression</guilabel></para></entry>
+                      <entry><para>If this is ticked then whenever a table is searched, by entering <keycombo><keysym>Ctrl</keysym><keycap>F</keycap></keycombo>, the search term entered into the data entry field is treated as a regular expression. Otherwise the search term is treated as plain text.</para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
               <para><guilabel>External File Comparison Application</guilabel> Panel</para>
               <informaltable>
                 <tgroup cols="2">
@@ -1485,6 +1526,29 @@ GNOME or DocBook.
                     <row valign="top">
                       <entry><para><guilabel>File content/report font</guilabel></para></entry>
                       <entry><para>This font button specifies the font to use for displaying the contents of text files. When you left click on the button you are presented with a standard <guilabel>Pick A Font</guilabel> dialog window.</para><note><para>It is best that the font you pick is a non-proportional or fixed space font (where each character has the same width) as this is what most text editors use.</para></note></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+            <listitem>
+              <para><guilabel>Toolbar Settings</guilabel> Panel</para>
+              <informaltable>
+                <tgroup cols="2">
+                  <thead>
+                    <row>
+                      <entry><para>Field</para></entry>
+                      <entry><para>Description</para></entry>
+                    </row>
+                  </thead>
+                  <tbody>
+                    <row valign="top">
+                      <entry><para><guilabel>Hide text</guilabel></para></entry>
+                      <entry><para>If this is ticked then the text just below the tool-bar buttons on a <guilabel>Monotone Browser</guilabel> window will not be displayed. Otherwise the explanatory text will be displayed.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Fixed</guilabel></para></entry>
+                      <entry><para>If this is ticked then the tool-bar on a <guilabel>Monotone Browser</guilabel> window will be fixed in position and will not be movable. Otherwise the tool-bar can be moved or made to float outside of any window.</para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1597,7 +1661,7 @@ GNOME or DocBook.
 
       <para>User preferences are stored in a file called <filename>.mtn-browser</filename> under the user's home directory. This file must remain writable for the user as it is updated every time a combobox entry field's history is changed.</para>
 
-      <para>Should it become necessary to change the format of the preferences file in later versions of this application then <application>&APP;</application> will automatically upgrade any existing preferences to the new format. However, once upgraded, the new format of preferences file cannot be used with older versions of <application>&APP;</application>.</para>
+      <para>Should it become necessary to change the format of the preferences file in later versions of this application then <application>&APP;</application> will automatically upgrade any existing preferences file to the new format. However, once upgraded, the new format of preferences file cannot be used with older versions of <application>&APP;</application>.</para>
 
       <warning>
         <para>Editing the preferences file by hand may cause <application>&APP;</application> to fail. If you must change it, take a copy of the preferences file beforehand just in case there are problems. </para>
@@ -1658,11 +1722,18 @@ GNOME or DocBook.
       <sect2 id="mtnb-tatc-inside-tables">
         <title>Inside Tables</title>
 
-        <para>It is also possible to search for text inside tables (these are used to display the contents of folders, search results and MIME type file associations). Make sure that the table is selected, the easiest way to do this is to select a row inside it, and then enter <keycombo><keysym>Ctrl</keysym><keycap>F</keycap></keycombo>. A small text entry field will appear at the table's bottom right hand corner. When text is entered into this entry field, the first matching row in the table is searched for. The format of the search term is an extended regular expression (RE). Please see <literal>regex(7)</literal> for further details on regular expressions.</para>
+        <para>It is also possible to search for text inside tables (these are used to display the contents of folders, search results and MIME type file associations). Make sure that the table is selected, the easiest way to do this is to select a row inside it, and then enter <keycombo><keysym>Ctrl</keysym><keycap>F</keycap></keycombo>. A small text entry field will appear at the table's bottom right hand corner. When text is entered into this entry field, the first matching row in the table is searched for. The format of the search term can either be plain text or an extended regular expression (RE) depending upon what you have selected in the relevant preference option (see <xref linkend="mtnb-upc-the-preferences-dialog-window"/>). Please see <literal>regex(7)</literal> for further details on regular expressions.</para>
 
         <para>Only one column is selected for searching at any one time. Normally the most sensible column is automatically selected for you. However, if you want to search a different column then right click on the heading of the column that you wish to search and then select the <guilabel>Select As Search Column</guilabel> menu option. This will remain in effect until another column is selected or the window containing the table is dismissed.</para>
 
       </sect2>
+
+    </sect1>
+
+    <sect1 id="mtnb-tatc-accessing-hidden-disk-files">
+      <title>Accessing Hidden Disk Files</title>
+
+      <para>At some point you may want to open a file on disk that is hidden in some way, but you find that the standard `open file' dialog windows only show visible files. However, this can be changed. Simply right click on the list of files displayed in the table on the right hand side of the dialog window and then select the <guilabel>Show Hidden Files</guilabel> menu option. This is actually standard behaviour for all such dialog windows displayed using the Gnome toolkit.</para>
 
     </sect1>
 
