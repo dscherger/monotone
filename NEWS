@@ -1,3 +1,48 @@
+Overview Of Changes In mtn-browse 0.62 (2009-05-03 18:00:00)
+============================================================
+
+New:
+- Added the new relevant selectors introduced in Monotone 0.43.
+- Implemented the help sub-system and wrote the manual. This not only supports
+  displaying the help manual but also `help on window' and `context sensitive
+  help' features.
+- Added the home page help menu option.
+- Added a user preference option for determining how a list search is done
+  (either plain text or as a re).
+- Added user preference options for controlling the look of the toolbar.
+- Added Thomas Keller's German locale file for mtn-browse.
+
+Changes:
+- Implemented a caching class derived from Monotone::AutomateStdio for caching
+  branch list information. Switched the rest of the application over to this
+  new class.
+- Now weed out unsupported selectors from the GUI depending upon the version of
+  Monotone being used.
+- Gtk2::FileChooserDialog dialog windows now have their current directory
+  location saved between invocations.
+- Enabled the use of the Find Text dialog window within the Advanced Find
+  dialog window.
+- References to MIME are now correctly in upper case.
+- Corrected spelling of cronologically to chronologically.
+- Reinstated the Gnome save window settings setting.
+- Now display a file's author instead of file id in the main browser window.
+- Renamed the `Separator' selector to `Logical And', it makes more sense.
+
+Bugs Fixed:
+- Added calls to the present() method after each call to show()/show_all() for
+  each window (fixes the focus issue with windows not shown by default on
+  desktops that use click to focus).
+- Started using the update method on spinbuttons in order to make sure that
+  their internal state is consistent.
+- Corrected a few stack handling issues in the WindowManager class.
+- mtn-browse now correctly gets the name of the database from a workspace
+  regardless of the user's `auto_select' setting.
+- When a single file is selected for comparison, the results window is now
+  scrolled to that file.
+- Fixed a bug whereby the external file comparison button remained enabled when
+  a lone binary file was selected for comparison.
+
+
 Overview Of Changes In mtn-browse 0.61 (2009-02-08 18:00:00)
 ============================================================
 

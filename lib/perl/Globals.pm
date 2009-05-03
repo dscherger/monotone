@@ -56,7 +56,7 @@ use warnings;
 # Constants for the name and version of this application.
 
 use constant APPLICATION_NAME    => "mtn-browse";
-use constant APPLICATION_VERSION => 0.61;
+use constant APPLICATION_VERSION => 0.62;
 
 # Constants used to represent the different groups of widgets.
 

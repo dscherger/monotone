@@ -1,4 +1,7 @@
-Copy the mtn-browse.pot file to <Locale>.po, e.g. de_DE.po, and then edit as
+Creating A New Translation File
+===============================
+
+Copy the mtn-browse.pot file to <Locale>.po, e.g. de.po, and then edit as
 appropriate. The installer will convert the po files to mo format and store them
 under:
 
@@ -7,6 +10,51 @@ under:
 e.g.
 
     .../share/locale/de_DE/LC_MESSAGES/mtn-browse.mo
+
+
+Updating An Existing .PO File With Changes From The Latest .POT File
+====================================================================
+
+Unfortunately from time to time there will be changes made to the code that
+affect the corresponding .POT file, and so all the .PO files have to be updated
+as well.
+
+When you want to update your .po file to contain the latest message strings from
+the .POT file, use a command like:
+
+    msgmerge -u <Locale>.po mtn-browse.pot
+
+For example:
+
+    msgmerge -u de.po mtn-browse.pot
+
+This will update de.po with the changes from the new mtn-browse.pot file. The
+state of the message entries in the updated file will be one of:
+
+    Translated   - Exact match found, existing translation used.
+    Fuzzy        - Close enough to the original to use its old translation but
+                   will need some attention.
+    Untranslated - No match found, needs a new translation.
+    Obsolete     - No longer required, can be deleted.
+
+Emacs has a .PO file mode and has a quite few useful commands to help you. Some
+are:
+
+    t/T - Find next/previous translated entry.
+    z/Z - Find next/previous fuzzy entry.
+    u/U - Find next/previous untranslated entry.
+    o/O - Find next/previous obsolete entry.
+
+For more information please see info gettext updating for more information.
+
+Please note that message entries of the form mtnb-.... (for example
+mtnb-gsc-menus) are reference labels used by the application to call up specific
+sections in the help documentation. If or when you translate the help manual, it
+is up to you whether you bother to translate these labels into your native
+language (these are never displayed to the user) or leave them alone. Either
+way, please make sure that these labels are consistent across the mtn-browse.xml
+file and the .PO file.
+
 
 Thank you.
 

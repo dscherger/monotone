@@ -1,4 +1,4 @@
-mtn-browse Version 0.61
+mtn-browse Version 0.62
 =======================
 
 mtn-browse is an application for browsing Monotone VCS databases without the
@@ -107,6 +107,7 @@ place using the following directory structure:
     |       |-- perl
     |       |   |-- AdvancedFind.pm
     |       |   |-- Annotate.pm
+    |       |   |-- CachingAutomateStdio.pm
     |       |   |-- ChangeLog.pm
     |       |   |-- ComboAutoCompletion.pm
     |       |   |-- Common.pm

@@ -537,8 +537,8 @@ sub about_activate_cb($$)
 	 __("Copyright \xa9 2007-2009 Anthony Cooper"),
 	 __("A graphical front-end browser for Monotone VCS databases"),
 	 ["Anthony Cooper <support\@coosoft.plus.com>"],
-	 __("TBD"),
-	 __("TBD"),
+	 __("Anthony Cooper <support\@coosoft.plus.com>"),
+	 __("Thomas Keller <me\@thomaskeller.biz> (German translation)"),
 	 $large_logo)->run();
 
 }
