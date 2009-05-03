@@ -56,7 +56,9 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     F("public key '%s' does not exist") % idx(args, 0)());
 
   packet_writer pw(cout);
-  pw.consume_public_key(ident, key);
+  key_name canonical_name;
+  project.get_canonical_name_of_key(keys, ident, canonical_name);
+  pw.consume_public_key(canonical_name, key);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
@@ -64,20 +66,25 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     "",
     options::opts::none)
 {
+  database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name ident = typecast_vocab<key_name>(idx(args, 0));
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
+  key_id ident;
+  project.lookup_key_by_name(name, ident);
   E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
 
   packet_writer pw(cout);
   keypair kp;
-  keys.get_key_pair(ident, kp);
-  pw.consume_key_pair(ident, kp);
+  key_name given_name;
+  keys.get_key_pair(ident, given_name, kp);
+  pw.consume_key_pair(given_name, kp);
 }
 
 namespace

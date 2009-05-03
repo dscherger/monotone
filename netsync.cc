@@ -3477,7 +3477,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
         {
           rsa_pub_key pub;
           project.db.get_key(*key, pub);
-          id keyhash;
+          key_id keyhash;
           key_hash_code(*key, pub, keyhash);
 
           if (global_sanity.debug_p())
@@ -3485,7 +3485,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
               % *key
               % keyhash);
 
-          key_refiner.note_local_item(keyhash);
+          key_refiner.note_local_item(keyhash.inner());
           ++keys_ticker;
         }
     }

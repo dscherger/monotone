@@ -103,10 +103,10 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name ident;
-  internalize_key_name(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
 
-  keys.change_key_passphrase(ident);
+  keys.change_key_passphrase(name);
   P(F("passphrase changed"));
 }
 
@@ -118,12 +118,13 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() > 1)
     throw usage(execid);
 
   key_id id;
-  get_user_key(app.opts, app.lua, db, keys, id);
+  get_user_key(app.opts, app.lua, db, keys, project, id);
 
   if (args.empty())
     keys.export_key_for_agent(id, cout);
@@ -145,12 +146,13 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() > 1)
     throw usage(execid);
 
   key_id id;
-  get_user_key(app.opts, app.lua, db, keys, id);
+  get_user_key(app.opts, app.lua, db, keys, project, id);
   keys.add_key_to_agent(id);
 }
 
@@ -175,7 +177,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   cert_value val;
   if (args.size() == 3)
@@ -260,7 +262,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_tag(keys, r, idx(args, 1)());
 }
 
@@ -281,7 +283,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
@@ -304,7 +306,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_in_branch(keys, r, app.opts.branch);
 }
 
@@ -326,7 +328,7 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
 }
 
@@ -361,7 +363,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_comment(keys, r, comment);
 }
 

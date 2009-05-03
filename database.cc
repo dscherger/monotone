@@ -188,7 +188,7 @@ namespace
   typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
   typedef hashmap::hash_map<revision_id, rev_height> height_map;
 
-  typedef hashmap::hash_map<key_name,
+  typedef hashmap::hash_map<key_id,
                             pair<shared_ptr<Botan::PK_Verifier>,
                                  shared_ptr<Botan::RSA_PublicKey> >
                             > verifier_cache;
@@ -2882,7 +2882,7 @@ database::delete_tag_named(cert_value const & tag)
 // crypto key management
 
 void
-database::get_key_ids(vector<key_name> & pubkeys)
+database::get_key_ids(vector<key_id> & pubkeys)
 {
   pubkeys.clear();
   results res;
@@ -2890,21 +2890,7 @@ database::get_key_ids(vector<key_name> & pubkeys)
   imp->fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
 
   for (size_t i = 0; i < res.size(); ++i)
-    pubkeys.push_back(key_name(res[i][0], origin::database));
-}
-
-void
-database::get_key_ids(globish const & pattern,
-                      vector<key_name> & pubkeys)
-{
-  pubkeys.clear();
-  results res;
-
-  imp->fetch(res, one_col, any_rows, query("SELECT id FROM public_keys"));
-
-  for (size_t i = 0; i < res.size(); ++i)
-    if (pattern.matches(res[i][0]))
-      pubkeys.push_back(key_name(res[i][0], origin::database));
+    pubkeys.push_back(key_id(res[i][0], origin::database));
 }
 
 void
@@ -2924,12 +2910,12 @@ database::get_public_keys(vector<key_name> & keys)
 }
 
 bool
-database::public_key_exists(id const & hash)
+database::public_key_exists(key_id const & hash)
 {
   results res;
   imp->fetch(res, one_col, any_rows,
              query("SELECT id FROM public_keys WHERE hash = ?")
-             % blob(hash()));
+             % blob(hash.inner()()));
   I((res.size() == 1) || (res.empty()));
   if (res.size() == 1)
     return true;
@@ -2963,13 +2949,13 @@ database::get_pubkey(id const & hash,
 }
 
 void
-database::get_key(key_name const & pub_id,
+database::get_key(key_id const & pub_id,
                   rsa_pub_key & pub)
 {
   results res;
   imp->fetch(res, one_col, one_row,
              query("SELECT keydata FROM public_keys WHERE id = ?")
-             % text(pub_id()));
+             % text(pub_id.inner()()));
   pub = rsa_pub_key(res[0][0], origin::database);
 }
 
@@ -2977,21 +2963,17 @@ bool
 database::put_key(key_name const & pub_id,
                   rsa_pub_key const & pub)
 {
-  if (public_key_exists(pub_id))
+  key_id thash;
+  key_hash_code(pub_id, pub, thash);
+  I(!public_key_exists(thash));
+
+  if (public_key_exists(thash))
     {
-      rsa_pub_key tmp;
-      get_key(pub_id, tmp);
-      if (!keys_match(pub_id, tmp, pub_id, pub))
-        W(F("key '%s' is not equal to key '%s' in database") % pub_id % pub_id);
       L(FL("skipping existing public key %s") % pub_id);
       return false;
     }
 
   L(FL("putting public key %s") % pub_id);
-
-  key_id thash;
-  key_hash_code(pub_id, pub, thash);
-  I(!public_key_exists(thash));
 
   imp->execute(query("INSERT INTO public_keys VALUES(?, ?, ?)")
                % blob(thash.inner()())
@@ -3002,14 +2984,14 @@ database::put_key(key_name const & pub_id,
 }
 
 void
-database::delete_public_key(key_name const & pub_id)
+database::delete_public_key(key_id const & pub_id)
 {
   imp->execute(query("DELETE FROM public_keys WHERE id = ?")
-               % text(pub_id()));
+               % text(pub_id.inner()()));
 }
 
 void
-database::encrypt_rsa(key_name const & pub_id,
+database::encrypt_rsa(key_id const & pub_id,
                       string const & plaintext,
                       rsa_oaep_sha_data & ciphertext)
 {
@@ -3074,7 +3056,7 @@ database::check_signature(key_id const & id,
       shared_ptr<RSA_PublicKey> pub_key
         = boost::shared_dynamic_cast<RSA_PublicKey>(x509_key);
 
-      E(pub_key, id.made_from,
+      E(pub_key, id.inner().made_from,
         F("Failed to get RSA verifying key for %s") % id);
 
       verifier.reset(get_pk_verifier(*pub_key, "EMSA3(SHA-1)"));
@@ -3183,7 +3165,7 @@ database_impl::oldstyle_results_to_certs(results const & res,
       {
         results key_res;
         query lookup_key("SELECT id FROM public_keys WHERE name = ?");
-        fetch(key_res, 1, any_rows, lookup_key % k_name);
+        fetch(key_res, 1, any_rows, lookup_key % text(k_name()));
         if (key_res.size() == 0)
           break; // no key, cert is bogus
         else if (key_res.size() == 1)

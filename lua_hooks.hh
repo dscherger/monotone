@@ -27,6 +27,7 @@ class app_state;
 struct lua_State;
 struct globish;
 struct options;
+class project_t;
 
 extern app_state* get_app_state(lua_State *LS);
 
@@ -48,8 +49,11 @@ public:
   // cert hooks
   bool hook_expand_selector(std::string const & sel, std::string & exp);
   bool hook_expand_date(std::string const & sel, std::string & exp);
-  bool hook_get_branch_key(branch_name const & branchname, key_name & k);
-  bool hook_get_passphrase(key_name const & k, std::string & phrase);
+  bool hook_get_branch_key(branch_name const & branchname,
+                           project_t & project, key_id & k);
+  bool hook_get_passphrase(key_name const & name,
+                           key_id const & id,
+                           std::string & phrase);
   bool hook_get_author(branch_name const & branchname,
                        key_id const & k,
                        std::string & author);

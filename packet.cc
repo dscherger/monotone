@@ -76,7 +76,7 @@ packet_writer::consume_revision_cert(cert const & t)
   ost << "[rcert " << encode_hexenc(t.ident.inner()(),
                                     t.ident.inner().made_from) << '\n'
       << "       " << t.name() << '\n'
-      << "       " << t.key() << '\n'
+      << "       " << t.key.inner() << '\n'
       << "       " << trim(encode_base64(t.value)()) << "]\n"
       << trim(encode_base64(t.sig)()) << '\n'
       << "[end]\n";
@@ -217,7 +217,7 @@ namespace
       istringstream iss(args);
       string certid; iss >> certid; validate_id(certid);
       string name;   iss >> name;   validate_certname(name);
-      string keyid;  iss >> keyid;  validate_key(keyid);
+      string keyid;  iss >> keyid;  validate_id(keyid);
       string val;
       read_rest(iss,val);           validate_arg_base64(val);
 
@@ -228,7 +228,7 @@ namespace
       cert t = cert(hash,
                     cert_name(name, made_from),
                     decode_base64_as<cert_value>(val, made_from),
-                    key_name(keyid, made_from),
+                    decode_hexenc_as<key_id>(keyid, made_from),
                     decode_base64_as<rsa_sha1_signature>(body, made_from));
       cons.consume_revision_cert(t);
     }

@@ -367,12 +367,12 @@ project_t::put_standard_certs_from_options(options const & opts,
   if (author.empty())
     {
       key_id key;
-      get_user_key(opts, lua, db, keys, key);
+      get_user_key(opts, lua, db, keys, *this, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
           key_name name;
-          get_name_of_key(key, name);
+          get_name_of_key(keys, key, name);
           author = name();
         }
     }

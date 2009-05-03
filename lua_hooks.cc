@@ -25,6 +25,7 @@
 #include "vocab.hh"
 #include "transforms.hh"
 #include "paths.hh"
+#include "project.hh"
 #include "uri.hh"
 #include "cmd.hh"
 #include "commands.hh"
@@ -229,12 +230,15 @@ lua_hooks::hook_exists(std::string const & func_name)
 // nb: if you're hooking lua to return your passphrase, you don't care if we
 // keep a couple extra temporaries of your passphrase around.
 bool
-lua_hooks::hook_get_passphrase(key_name const & k, string & phrase)
+lua_hooks::hook_get_passphrase(key_name const & name,
+                               key_id const & id,
+                               string & phrase)
 {
   return Lua(st)
     .func("get_passphrase")
-    .push_str(k())
-    .call(1,1)
+    .push_str(name())
+    .push_str(id.inner()())
+    .call(2,1)
     .extract_classified_str(phrase)
     .ok();
 }
@@ -279,7 +283,8 @@ lua_hooks::hook_expand_date(string const & sel,
 
 bool
 lua_hooks::hook_get_branch_key(branch_name const & branchname,
-                               key_name & k)
+                               project_t & project,
+                               key_id & k)
 {
   string key;
   bool ok = Lua(st)
@@ -289,7 +294,8 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .extract_str(key)
     .ok();
 
-  k = key_name(key, origin::user);
+  key_name name(key, origin::user);
+  project.lookup_key_by_name(name, k);
   return ok;
 }
 

@@ -19,6 +19,7 @@
 #include "charset.hh"
 #include "lua_hooks.hh"
 #include "options.hh"
+#include "project.hh"
 #include "key_store.hh"
 #include "database.hh"
 
@@ -49,26 +50,37 @@ load_key_pair(key_store & keys,
   keys.get_key_pair(id, kp);
 }
 
+void
+load_key_pair(key_store & keys,
+              key_id const & id,
+              key_name & name,
+              keypair & kp)
+{
+  load_key_pair(keys, id);
+  keys.get_key_pair(id, name, kp);
+}
+
 namespace {
   void check_and_save_chosen_key(database & db,
                                  key_store & keys,
-                                 key_name const & chosen_key)
+                                 key_id const & chosen_key)
   {
     // Ensure that the specified key actually exists.
+    key_name name;
     keypair priv_key;
-    load_key_pair(keys, chosen_key, priv_key);
+    load_key_pair(keys, chosen_key, name, priv_key);
 
     if (db.database_specified())
       {
         // If the database doesn't have this public key, add it now; otherwise
         // make sure the database and key-store agree on the public key.
         if (!db.public_key_exists(chosen_key))
-          db.put_key(chosen_key, priv_key.pub);
+          db.put_key(name, priv_key.pub);
         else
           {
             rsa_pub_key pub_key;
             db.get_key(chosen_key, pub_key);
-            E(keys_match(chosen_key, pub_key, chosen_key, priv_key.pub),
+            E(keys_match(name, pub_key, name, priv_key.pub),
               origin::no_fault,
               F("The key '%s' stored in your database does\n"
                 "not match the version in your local key store!")
@@ -79,9 +91,9 @@ namespace {
     // Decrypt and cache the key now.
     keys.cache_decrypted_key(chosen_key);
   }
-  bool get_only_key(key_store & keys, bool required, key_name & key)
+  bool get_only_key(key_store & keys, bool required, key_id & key)
   {
-    vector<key_name> all_privkeys;
+    vector<key_id> all_privkeys;
     keys.get_key_ids(all_privkeys);
     E(!required || !all_privkeys.empty(), origin::user,
       F("you have no private key to make signatures with\n"
@@ -105,7 +117,8 @@ namespace {
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
-             database & db, key_store & keys, key_id & key)
+             database & db, key_store & keys,
+             project_t & project, key_id & key)
 {
   if (keys.have_signing_key())
     {
@@ -118,7 +131,14 @@ get_user_key(options const & opts, lua_hooks & lua,
     {
       if (!opts.signing_key().empty())
         {
-          key = opts.signing_key;
+          if (!opts.signing_key_id.inner()().empty())
+            {
+              key = opts.signing_key_id;
+            }
+          else if (!opts.signing_key().empty())
+            {
+              project.lookup_key_by_name(opts.signing_key, key);
+            }
         }
       else
         {
@@ -127,7 +147,7 @@ get_user_key(options const & opts, lua_hooks & lua,
               "was given with an empty argument"));
         }
     }
-  else if (lua.hook_get_branch_key(opts.branch, key))
+  else if (lua.hook_get_branch_key(opts.branch, project, key))
     ; // the lua hook sets the key
   else
     {
@@ -138,8 +158,11 @@ get_user_key(options const & opts, lua_hooks & lua,
 }
 
 void
-cache_netsync_key(options const & opts, lua_hooks & lua,
-                  database & db, key_store & keys,
+cache_netsync_key(options const & opts,
+                  database & db,
+                  key_store & keys,
+                  lua_hooks & lua,
+                  project_t & project,
                   utf8 const & host,
                   globish const & include,
                   globish const & exclude,
@@ -151,14 +174,19 @@ cache_netsync_key(options const & opts, lua_hooks & lua,
     }
 
   bool found_key = false;
-  key_name key;
+  key_id key;
 
   // key_given is not set if the key option was extracted from the workspace
   if (opts.key_given || !opts.signing_key().empty())
     {
-      if (!opts.signing_key().empty())
+      if (!opts.signing_key_id.inner()().empty())
         {
-          key = opts.signing_key;
+          key = opts.signing_key_id;
+          found_key = true;
+        }
+      else if (!opts.signing_key().empty())
+        {
+          project.lookup_key_by_name(opts.signing_key, key);
           found_key = true;
         }
     }
@@ -179,33 +207,23 @@ cache_netsync_key(options const & opts, lua_hooks & lua,
 
 void
 cache_user_key(options const & opts, lua_hooks & lua,
-               database & db, key_store & keys)
+               database & db, key_store & keys,
+               project_t & project)
 {
-  key_name key;
-  get_user_key(opts, lua, db, keys, key);
-}
-
-void
-get_netsync_key(options const & opts, lua_hooks & lua,
-                database & db, key_store & keys,
-                netsync_key_requiredness key_requiredness,
-                key_id & key)
-{
-  if (!keys.signing_key().empty())
-    {
-      key = keys.signing_key;
-      return;
-    }
+  key_id key;
+  get_user_key(opts, lua, db, keys, project, key);
 }
 
 void
 key_hash_code(key_name const & ident,
               rsa_pub_key const & pub,
-              id & out)
+              key_id & out)
 {
   data tdat(ident() + ":" + remove_ws(encode_base64(pub)()),
             origin::internal);
-  calculate_ident(tdat, out);
+  id tmp;
+  calculate_ident(tdat, tmp);
+  out = key_id(tmp);
 }
 
 // helper to compare if two keys have the same hash
@@ -216,7 +234,7 @@ keys_match(key_name const & id1,
            key_name const & id2,
            rsa_pub_key const & key2)
 {
-  id hash1, hash2;
+  key_id hash1, hash2;
   key_hash_code(id1, key1, hash1);
   key_hash_code(id2, key2, hash2);
   return hash1 == hash2;

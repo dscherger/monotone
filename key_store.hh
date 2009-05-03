@@ -69,11 +69,14 @@ public:
                     keypair & kp);
   bool maybe_get_key_pair(key_id const & ident,
                           keypair & kp);
-  bool maybe_get_key_pair(id const & hash,
+  void get_key_pair(key_id const & hash,
+                    key_name & ident,
+                    keypair & kp);
+  bool maybe_get_key_pair(key_id const & hash,
                           key_name & ident,
                           keypair & kp);
 
-  bool put_key_pair(key_name const & ident,
+  bool put_key_pair(key_name const & name,
                     keypair const & kp);
 
   void delete_key(key_id const & ident);
@@ -84,9 +87,11 @@ public:
 
   void create_key_pair(database & db, key_name const & ident,
                        utf8 const * maybe_passphrase = NULL,
-                       id * maybe_hash = NULL);
+                       key_id * const maybe_hash = NULL);
 
-  void change_key_passphrase(key_id const & id);
+  // This is always your own key, so you probably want to
+  // always use the given name.
+  void change_key_passphrase(key_name const & id);
 
   void decrypt_rsa(key_id const & id,
                    rsa_oaep_sha_data const & ciphertext,
