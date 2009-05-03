@@ -889,7 +889,7 @@ session::session(options & opts,
        i != opts.keys_to_push.end(); ++i)
     {
       key_id ident;
-      project.lookup_key_by_name(*i, ident);
+      project.lookup_key_by_name(keys, *i, ident);
       keys_to_push.push_back(ident);
     }
 }

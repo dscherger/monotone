@@ -137,7 +137,7 @@ get_user_key(options const & opts, lua_hooks & lua,
             }
           else if (!opts.signing_key().empty())
             {
-              project.lookup_key_by_name(opts.signing_key, key);
+              project.lookup_key_by_name(keys, opts.signing_key, key);
             }
         }
       else
@@ -147,7 +147,7 @@ get_user_key(options const & opts, lua_hooks & lua,
               "was given with an empty argument"));
         }
     }
-  else if (lua.hook_get_branch_key(opts.branch, project, key))
+  else if (lua.hook_get_branch_key(opts.branch, keys, project, key))
     ; // the lua hook sets the key
   else
     {
@@ -186,7 +186,7 @@ cache_netsync_key(options const & opts,
         }
       else if (!opts.signing_key().empty())
         {
-          project.lookup_key_by_name(opts.signing_key, key);
+          project.lookup_key_by_name(keys, opts.signing_key, key);
           found_key = true;
         }
     }

@@ -283,6 +283,7 @@ lua_hooks::hook_expand_date(string const & sel,
 
 bool
 lua_hooks::hook_get_branch_key(branch_name const & branchname,
+                               key_store & keys,
                                project_t & project,
                                key_id & k)
 {
@@ -295,7 +296,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .ok();
 
   key_name name(key, origin::user);
-  project.lookup_key_by_name(name, k);
+  project.lookup_key_by_name(keys, name, k);
   return ok;
 }
 

@@ -61,7 +61,9 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
 
   key_id ident;
   project_t project(db);
-  project.lookup_key_by_name(typecast_vocab<key_name>(idx(args, 0)), ident);
+  project.lookup_key_by_name(keys,
+                             typecast_vocab<key_name>(idx(args, 0)),
+                             ident);
 
   if (db.database_specified())
     {

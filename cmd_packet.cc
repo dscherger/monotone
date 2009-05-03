@@ -37,7 +37,9 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
 
   key_id ident;
   project_t project(db);
-  project.lookup_key_by_name(typecast_vocab<key_name>(idx(args, 0)), ident);
+  project.lookup_key_by_name(keys,
+                             typecast_vocab<key_name>(idx(args, 0)),
+                             ident);
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))
@@ -75,7 +77,7 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
   key_id ident;
-  project.lookup_key_by_name(name, ident);
+  project.lookup_key_by_name(keys, name, ident);
   E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());

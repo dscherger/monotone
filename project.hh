@@ -135,13 +135,15 @@ public:
                             utf8 const & comment);
 
   // lookup the key ID associated with a particular key name
-  void lookup_key_by_name(key_name const & name, key_id & id);
+  void lookup_key_by_name(key_store & keys,
+                          key_name const & name,
+                          key_id & id);
   // the reverse
-  void get_name_of_key(key_store const & keys,
+  void get_name_of_key(key_store & keys,
                        key_id const & id,
                        key_name & name);
   // get the name given when creating the key
-  void get_canonical_name_of_key(key_store const & keys,
+  void get_canonical_name_of_key(key_store & keys,
                                  key_id const & id,
                                  key_name & name);
 };

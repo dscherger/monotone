@@ -432,6 +432,88 @@ project_t::put_revision_testresult(key_store & keys,
            cert_value(lexical_cast<string>(passed), origin::internal));
 }
 
+void
+project_t::lookup_key_by_name(key_store & keys,
+                              key_name const & name,
+                              key_id & id)
+{
+  try
+    {
+      id = key_id(name(), origin::no_fault);
+    }
+  catch (recoverable_failure &)
+    {
+      // FIXME: try a lua hook first
+      // or lookup in the policy branches (once those are implemented)
+
+      set<key_id> found;
+      vector<key_id> dbkeys;
+      db.get_key_ids(dbkeys);
+      for (vector<key_id>::const_iterator i = dbkeys.begin();
+           i != dbkeys.end(); ++i)
+        {
+          key_name i_name;
+          rsa_pub_key pub;
+          db.get_pubkey(*i, i_name, pub);
+          if (i_name == name)
+            {
+              found.insert(*i);
+            }
+        }
+
+      vector<key_id> storekeys;
+      keys.get_key_ids(storekeys);
+      for (vector<key_id>::const_iterator i = storekeys.begin();
+           i != storekeys.end(); ++i)
+        {
+          key_name i_name;
+          keypair kp;
+          keys.get_key_pair(*i, i_name, kp);
+          if (i_name == name)
+            {
+              found.insert(*i);
+            }
+        }
+      E(!found.empty(), origin::user,
+        F("you don't have a key names '%s'") % name);
+      E(found.size() == 1, origin::user,
+        F("you have %n keys named '%s'") % found.size() % name);
+      id = *found.begin();
+    }
+}
+
+void
+project_t::get_name_of_key(key_store & keys,
+                           key_id const & id,
+                           key_name & name)
+{
+  // FIXME: try a lua hook first
+  // or lookup in the policy branches (once those are implemented)
+  get_canonical_name_of_key(keys, id, name);
+}
+
+void
+project_t::get_canonical_name_of_key(key_store & keys,
+                                     key_id const & id,
+                                     key_name & name)
+{
+  if (db.public_key_exists(id))
+    {
+      rsa_pub_key pub;
+      db.get_pubkey(id, name, pub);
+    }
+  else if (keys.key_pair_exists(id))
+    {
+      keypair kp;
+      keys.get_key_pair(id, name, kp);
+    }
+  else
+    {
+      E(false, origin::internal,
+        F("key %s does not exist") % id);
+    }
+}
+
 // These should maybe be converted to member functions.
 
 string

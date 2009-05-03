@@ -24,6 +24,7 @@
 
 struct uri;
 class app_state;
+class key_store;
 struct lua_State;
 struct globish;
 struct options;
@@ -50,6 +51,7 @@ public:
   bool hook_expand_selector(std::string const & sel, std::string & exp);
   bool hook_expand_date(std::string const & sel, std::string & exp);
   bool hook_get_branch_key(branch_name const & branchname,
+                           key_store & keys,
                            project_t & project, key_id & k);
   bool hook_get_passphrase(key_name const & name,
                            key_id const & id,
