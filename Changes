@@ -1,5 +1,20 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+0.04  Sun May 3 19:19:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Updated for Monotone version 0.43, (added support for the m: and u:
+	  selectors).
+	- Corrected and simplified the `Have I got a class thingy as my first
+	  argument?' logic in light of issues encountered when I tried to
+	  derive from this class.
+	- Updated the test harness in light of previous interface changes and
+	  the fact that mtn revert is more noisy now (use the -quiet switch).
+	- Updated the POD documentation.
+	- Switched to the OO way of calling methods, more consistent.
+	- Renamed the can() method to supports() so as not to conflict with
+	  Perl's UNIVERSAL can() method.
+	- Renamed some of the capability constants so as to fit in more
+	  naturally with the method renamed above.
+
 0.03  Sun Feb 8 18:22:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Switched all Perl scripts over to demanding Perl 5.8.5.
 	- Improved an error message (which was causing compilation to fail

@@ -347,7 +347,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities));
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 #
 ##############################################################################
 #
