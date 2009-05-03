@@ -2936,14 +2936,14 @@ database::public_key_exists(key_name const & id)
 }
 
 void
-database::get_pubkey(id const & hash,
+database::get_pubkey(key_id const & hash,
                      key_name & id,
                      rsa_pub_key & pub)
 {
   results res;
   imp->fetch(res, 2, one_row,
              query("SELECT id, keydata FROM public_keys WHERE hash = ?")
-             % blob(hash()));
+             % blob(hash.inner()()));
   id = key_name(res[0][0], origin::database);
   pub = rsa_pub_key(res[0][1], origin::database);
 }
@@ -3343,14 +3343,14 @@ database::put_revision_cert(cert const & cert)
 
 outdated_indicator
 database::get_revision_cert_nobranch_index(vector< pair<revision_id,
-                                           pair<revision_id, key_name> > > & idx)
+                                           pair<revision_id, key_id> > > & idx)
 {
   // share some storage
   id::symtab id_syms;
 
   results res;
   imp->fetch(res, 3, any_rows,
-             query("SELECT hash, id, keypair "
+             query("SELECT hash, id, keypair_id "
                    "FROM 'revision_certs' WHERE name != 'branch'"));
 
   idx.clear();
@@ -3359,7 +3359,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
     {
       idx.push_back(make_pair(revision_id((*i)[0], origin::database),
                               make_pair(revision_id((*i)[1], origin::database),
-                                        key_name((*i)[2], origin::database))));
+                                        key_id((*i)[2], origin::database))));
     }
   return imp->cert_stamper.get_indicator();
 }

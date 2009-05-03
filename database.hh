@@ -237,7 +237,7 @@ public:
   bool public_key_exists(key_id const & hash);
   bool public_key_exists(key_name const & ident);
 
-  void get_pubkey(id const & hash,
+  void get_pubkey(key_id const & hash,
                   key_name & ident,
                   rsa_pub_key & pub);
 
@@ -269,7 +269,7 @@ public:
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
-                              std::pair<revision_id, key_name> > > & idx);
+                              std::pair<revision_id, key_id> > > & idx);
 
   // Only used by database_check.cc
   outdated_indicator get_revision_certs(std::vector<cert> & certs);

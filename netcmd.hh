@@ -138,14 +138,14 @@ public:
   void read_auth_cmd(protocol_role & role,
                      globish & include_pattern,
                      globish & exclude_pattern,
-                     id & client,
+                     key_id & client,
                      id & nonce1,
                      rsa_oaep_sha_data & hmac_key_encrypted,
                      rsa_sha1_signature & signature) const;
   void write_auth_cmd(protocol_role role,
                       globish const & include_pattern,
                       globish const & exclude_pattern,
-                      id const & client,
+                      key_id const & client,
                       id const & nonce1,
                       rsa_oaep_sha_data const & hmac_key_encrypted,
                       rsa_sha1_signature const & signature);

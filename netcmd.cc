@@ -303,7 +303,7 @@ void
 netcmd::read_auth_cmd(protocol_role & role,
                       globish & include_pattern,
                       globish & exclude_pattern,
-                      id & client,
+                      key_id & client,
                       id & nonce1,
                       rsa_oaep_sha_data & hmac_key_encrypted,
                       rsa_sha1_signature & signature) const
@@ -325,10 +325,10 @@ netcmd::read_auth_cmd(protocol_role & role,
   extract_variable_length_string(payload, pattern_string, pos,
                                  "auth(hmac) netcmd, exclude_pattern");
   exclude_pattern = globish(pattern_string, origin::network);
-  client = id(extract_substring(payload, pos,
-                                constants::merkle_hash_length_in_bytes,
-                                "auth(hmac) netcmd, client identifier"),
-              origin::network);
+  client = key_id(extract_substring(payload, pos,
+                                    constants::merkle_hash_length_in_bytes,
+                                    "auth(hmac) netcmd, client identifier"),
+                  origin::network);
   nonce1 = id(extract_substring(payload, pos,
                                 constants::merkle_hash_length_in_bytes,
                                 "auth(hmac) netcmd, nonce1"),
@@ -348,18 +348,18 @@ void
 netcmd::write_auth_cmd(protocol_role role,
                        globish const & include_pattern,
                        globish const & exclude_pattern,
-                       id const & client,
+                       key_id const & client,
                        id const & nonce1,
                        rsa_oaep_sha_data const & hmac_key_encrypted,
                        rsa_sha1_signature const & signature)
 {
   cmd_code = auth_cmd;
-  I(client().size() == constants::merkle_hash_length_in_bytes);
+  I(client.inner()().size() == constants::merkle_hash_length_in_bytes);
   I(nonce1().size() == constants::merkle_hash_length_in_bytes);
   payload += static_cast<char>(role);
   insert_variable_length_string(include_pattern(), payload);
   insert_variable_length_string(exclude_pattern(), payload);
-  payload += client();
+  payload += client.inner()();
   payload += nonce1();
   insert_variable_length_string(hmac_key_encrypted(), payload);
   insert_variable_length_string(signature(), payload);
