@@ -4,7 +4,7 @@ You can easily host monotone anywhere you can run a daemon.  With the "dumb serv
 
 If those two options don't work for you, here are some other options to consider:
 
- * <http://mtn-host.prjek.net> provides **free public monotone hosting**, with an easy-to-use web management interface.
- * Virtual servers quite capable of running monotone are easily available in the $15-20/month USD range -- for example, [here](http://prgmr.com/xen/), [here](http://www.tektonic.net/vds.php?op=budget_plans), [here](http://www.budgetdedicated.com/), or [here](http://www.slicehost.com/) (we have not used any of these services, and this is not a particular recommendation -- if you have recommendations, by all means add them here).
+ * <http://mtn-host.prjek.net> provides free public monotone hosting, with an easy-to-use web management interface.
+ * Virtual servers quite capable of running monotone are easily available in the $15-20/month USD range -- for example mtn-host.prjek.net runs on a $20/month USD [linode](http://www.linode.com/index.cfm) virtual server, currently called a "Linode 360". Similar virtual servers can be found [here](http://prgmr.com/xen/), [here](http://www.tektonic.net/vps.php), [here](http://www.budgetdedicated.com/) (this one is priced in Euros), or [here](http://www.slicehost.com/) (we have not used these services, and this is not a particular recommendation -- if you have recommendations, by all means add them here).
 
-If you want to setup your own server instance, note that the monotone server can be a bit cpu and memory hungry -- we're working on reducing this, but in the mean time, you probably don't want the very smallest servers available.
+If you want to setup your own server instance, note that the monotone server can be a bit cpu and memory hungry, for example serving net.venge.monotone* takes upwards of 130 MB -- we're working on reducing this, but in the mean time, you probably don't want the very smallest servers available.
