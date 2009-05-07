@@ -19,6 +19,9 @@ xxx xxx xx xx:xx:xx UTC 2009
 
         Bugs fixed
 
+        - Exceptions in Lua extension functions will now be converted into a
+          Lua error catchable with pcall, instead of causing a horrible crash.
+
         Internal
 
 
