@@ -127,7 +127,7 @@ UNIT_TEST(roundabout)
     // cert now accepts revision_id exclusively, so we need to cast the
     // file_id to create a cert to test the packet writer with.
     cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
-           decode_hexenc_as<key_id>("cccccccccccccccccccccccccccccccccccccc",
+           decode_hexenc_as<key_id>("cccccccccccccccccccccccccccccccccccccccc",
                                     origin::internal),
            sig);
     pw.consume_revision_cert(c);
