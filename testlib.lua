@@ -455,7 +455,7 @@ end
 function samelines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false
@@ -478,7 +478,7 @@ end
 function greplines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false

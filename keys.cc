@@ -49,65 +49,134 @@ load_key_pair(key_store & keys,
   keys.get_key_pair(id, kp);
 }
 
-// Find the key to be used for signing certs.  If possible, ensure the
-// database and the key_store agree on that key, and cache it in decrypted
-// form, so as not to bother the user for their passphrase later.
+namespace {
+  void check_and_save_chosen_key(database & db,
+                                 key_store & keys,
+                                 rsa_keypair_id const & chosen_key)
+  {
+    // Ensure that the specified key actually exists.
+    keypair priv_key;
+    load_key_pair(keys, chosen_key, priv_key);
+
+    if (db.database_specified())
+      {
+        // If the database doesn't have this public key, add it now; otherwise
+        // make sure the database and key-store agree on the public key.
+        if (!db.public_key_exists(chosen_key))
+          db.put_key(chosen_key, priv_key.pub);
+        else
+          {
+            rsa_pub_key pub_key;
+            db.get_key(chosen_key, pub_key);
+            E(keys_match(chosen_key, pub_key, chosen_key, priv_key.pub),
+              origin::no_fault,
+              F("The key '%s' stored in your database does\n"
+                "not match the version in your local key store!")
+              % chosen_key);
+          }
+      }
+
+    // Decrypt and cache the key now.
+    keys.cache_decrypted_key(chosen_key);
+  }
+  bool get_only_key(key_store & keys, bool required, rsa_keypair_id & key)
+  {
+    vector<rsa_keypair_id> all_privkeys;
+    keys.get_key_ids(all_privkeys);
+    E(!required || !all_privkeys.empty(), origin::user,
+      F("you have no private key to make signatures with\n"
+        "perhaps you need to 'genkey <your email>'"));
+    E(!required || all_privkeys.size() < 2, origin::user,
+      F("you have multiple private keys\n"
+        "pick one to use for signatures by adding "
+        "'-k<keyname>' to your command"));
+
+    if (all_privkeys.size() == 1)
+      {
+        key = all_privkeys[0];
+        return true;
+      }
+    else
+      {
+        return false;
+      }
+  }
+}
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
              database & db, key_store & keys, rsa_keypair_id & key)
 {
-  if (!keys.signing_key().empty())
+  if (keys.have_signing_key())
     {
       key = keys.signing_key;
       return;
     }
 
-  if (!opts.signing_key().empty())
-    key = opts.signing_key;
+  // key_given is not set if the key option was extracted from the workspace
+  if (opts.key_given || !opts.signing_key().empty())
+    {
+      if (!opts.signing_key().empty())
+        {
+          key = opts.signing_key;
+        }
+      else
+        {
+          E(false, origin::user,
+            F("a key is required for this operation, but the --key option "
+              "was given with an empty argument"));
+        }
+    }
   else if (lua.hook_get_branch_key(opts.branch, key))
     ; // the lua hook sets the key
   else
     {
-      vector<rsa_keypair_id> all_privkeys;
-      keys.get_key_ids(all_privkeys);
-      E(!all_privkeys.empty(), origin::user,
-        F("you have no private key to make signatures with\n"
-          "perhaps you need to 'genkey <your email>'"));
-      E(all_privkeys.size() < 2, origin::user,
-        F("you have multiple private keys\n"
-          "pick one to use for signatures by adding "
-          "'-k<keyname>' to your command"));
-
-      key = all_privkeys[0];
+      get_only_key(keys, true, key);
     }
 
-  // Ensure that the specified key actually exists.
-  keypair priv_key;
-  load_key_pair(keys, key, priv_key);
-
-  if (db.database_specified())
-    {
-      // If the database doesn't have this public key, add it now; otherwise
-      // make sure the database and key-store agree on the public key.
-      if (!db.public_key_exists(key))
-        db.put_key(key, priv_key.pub);
-      else
-        {
-          rsa_pub_key pub_key;
-          db.get_key(key, pub_key);
-          E(keys_match(key, pub_key, key, priv_key.pub), origin::no_fault,
-            F("The key '%s' stored in your database does\n"
-              "not match the version in your local key store!") % key);
-        }
-    }
-
-  // Decrypt and cache the key now.
-  keys.cache_decrypted_key(key);
+  check_and_save_chosen_key(db, keys, key);
 }
 
-// As above, but does not report which key has been selected; for use when
-// the important thing is to have selected one and cached the decrypted key.
+void
+cache_netsync_key(options const & opts, lua_hooks & lua,
+                  database & db, key_store & keys,
+                  utf8 const & host,
+                  globish const & include,
+                  globish const & exclude,
+                  netsync_key_requiredness key_requiredness)
+{
+  if (keys.have_signing_key())
+    {
+      return;
+    }
+
+  bool found_key = false;
+  rsa_keypair_id key;
+
+  // key_given is not set if the key option was extracted from the workspace
+  if (opts.key_given || !opts.signing_key().empty())
+    {
+      if (!opts.signing_key().empty())
+        {
+          key = opts.signing_key;
+          found_key = true;
+        }
+    }
+  else if (lua.hook_get_netsync_key(host, include, exclude, key))
+    {
+      found_key = true;
+    }
+  else
+    {
+      found_key = get_only_key(keys, key_requiredness == KEY_REQUIRED, key);
+    }
+
+  if (found_key)
+    {
+      check_and_save_chosen_key(db, keys, key);
+    }
+}
+
 void
 cache_user_key(options const & opts, lua_hooks & lua,
                database & db, key_store & keys)

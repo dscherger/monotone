@@ -56,22 +56,14 @@ find_key(options & opts,
          netsync_connection_info const & info,
          bool need_key = true)
 {
-  if (!opts.signing_key().empty())
-    return;
-
-  rsa_keypair_id key;
-
   utf8 host(info.client.unparsed);
   if (!info.client.u.host.empty())
     host = utf8(info.client.u.host, origin::user);
 
-  if (!lua.hook_get_netsync_key(host,
-                                info.client.include_pattern,
-                                info.client.exclude_pattern, key)
-      && need_key)
-    get_user_key(opts, lua, db, keys, key);
-
-  opts.signing_key = key;
+  cache_netsync_key(opts, lua, db, keys, host,
+                    info.client.include_pattern,
+                    info.client.exclude_pattern,
+                    need_key ? KEY_REQUIRED : KEY_OPTIONAL);
 }
 
 static void
@@ -265,7 +257,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  args, info, false);
 
-  if (app.opts.signing_key() == "")
+  if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
   run_netsync_protocol(app.opts, app.lua, project, keys,
@@ -396,7 +388,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   build_client_connection_info(app.opts, app.lua, db, keys,
                                info, true, true, false);
 
-  if (app.opts.signing_key() == "")
+  if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
   // make sure we're back in the original dir so that file: URIs work
