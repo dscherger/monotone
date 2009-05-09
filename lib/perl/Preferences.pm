@@ -1009,6 +1009,7 @@ sub get_preferences_window($$)
 	# Flag to stop recursive calling of callbacks.
 
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 
 	# Connect Glade registered signal handlers.
 
@@ -1174,7 +1175,8 @@ sub get_preferences_window($$)
 	$instance->{preferences} = $preferences;
 	load_preferences_into_gui($instance);
 
-	local $instance->{in_cb} = 1;
+	# Display the window.
+
 	$instance->{window}->show_all();
 	$instance->{window}->present();
 

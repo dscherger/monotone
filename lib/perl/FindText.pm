@@ -682,6 +682,7 @@ sub get_find_text_window($$)
 	# Flag to stop recursive calling of callbacks.
 
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 
 	# Connect Glade registered signal handlers.
 
@@ -739,6 +740,7 @@ sub get_find_text_window($$)
     {
 	$new = 0;
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 	$instance->{main_vbox}->set_sensitive(TRUE);
     }
 

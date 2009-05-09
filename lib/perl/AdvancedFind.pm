@@ -553,6 +553,7 @@ sub get_advanced_find_window($)
 	# Flag to stop recursive calling of callbacks.
 
 	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
 
 	# Connect Glade registered signal handlers.
 
@@ -711,7 +712,8 @@ sub get_advanced_find_window($)
 
 	$instance->{window}->set_transient_for($browser->{window});
 
-	local $instance->{in_cb} = 1;
+	# Display the window.
+
 	$instance->{window}->show_all();
 	$instance->{window}->present();
 
