@@ -314,7 +314,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {
-          P(F("reverting %s on %s") % a->first() % path);
+          L(FL("reverting %s on %s") % a->first() % path);
           if (a->second.first)
             app.lua.hook_set_attribute(a->first(), path,
                                        a->second.second());
