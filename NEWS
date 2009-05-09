@@ -22,6 +22,11 @@ xxx xxx xx xx:xx:xx UTC 2009
         - Exceptions in Lua extension functions will now be converted into a
           Lua error catchable with pcall, instead of causing a horrible crash.
 
+        - If the use of an invalid selector is detected then the command
+          errors right away rather than carrying on with the selection
+          process. Also if this happens via automate stdio then the error
+          is now reported in band on stdout rather than stderr.
+
         Internal
 
 
