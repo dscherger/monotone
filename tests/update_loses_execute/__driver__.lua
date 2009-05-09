@@ -26,7 +26,7 @@ check({"test", "-x","foo"}, 0, false, false)
 -- to 0.43 and permissions are now handled through the editable_tree interface.
 
 check(mtn("update", "-r", "p:"), 0, false, false)
-xfail({"test", "-x","foo"}, 0, false, false)
+check({"test", "-x","foo"}, 0, false, false)
 
 check(mtn("update"), 0, false, false)
-xfail({"test", "-x","foo"}, 0, false, false)
+check({"test", "-x","foo"}, 0, false, false)

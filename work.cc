@@ -1165,7 +1165,7 @@ editable_working_tree::apply_delta(file_path const & pth,
   calculate_ident(pth, curr_id);
   E(curr_id == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
-  P(F("modifying %s") % pth);
+  P(F("updating %s") % pth);
 
   file_data dat;
   source.get_version(new_id, dat);
@@ -1749,18 +1749,19 @@ workspace::perform_pivot_root(database & db,
                               bool bookkeep_only)
 {
   temp_node_id_source nis;
-  roster_t new_roster;
+  roster_t old_roster, new_roster;
+  MM(old_roster);
   MM(new_roster);
-  get_current_roster_shape(db, nis, new_roster);
+  get_current_roster_shape(db, nis, old_roster);
 
-  I(new_roster.has_root());
-  E(new_roster.has_node(new_root), origin::user,
+  I(old_roster.has_root());
+  E(old_roster.has_node(new_root), origin::user,
     F("proposed new root directory '%s' is not versioned or does not exist")
     % new_root);
-  E(is_dir_t(new_roster.get_node(new_root)), origin::user,
+  E(is_dir_t(old_roster.get_node(new_root)), origin::user,
     F("proposed new root directory '%s' is not a directory") % new_root);
   {
-    E(!new_roster.has_node(new_root / bookkeeping_root_component), origin::user,
+    E(!old_roster.has_node(new_root / bookkeeping_root_component), origin::user,
       F("proposed new root directory '%s' contains illegal path %s")
       % new_root % bookkeeping_root);
   }
@@ -1770,14 +1771,14 @@ workspace::perform_pivot_root(database & db,
     file_path current_path_to_put_old_parent
       = current_path_to_put_old.dirname();
 
-    E(new_roster.has_node(current_path_to_put_old_parent), origin::user,
+    E(old_roster.has_node(current_path_to_put_old_parent), origin::user,
       F("directory '%s' is not versioned or does not exist")
       % current_path_to_put_old_parent);
-    E(is_dir_t(new_roster.get_node(current_path_to_put_old_parent)),
+    E(is_dir_t(old_roster.get_node(current_path_to_put_old_parent)),
       origin::user,
       F("'%s' is not a directory")
       % current_path_to_put_old_parent);
-    E(!new_roster.has_node(current_path_to_put_old),
+    E(!old_roster.has_node(current_path_to_put_old),
       origin::user,
       F("'%s' is in the way") % current_path_to_put_old);
   }
@@ -1787,6 +1788,7 @@ workspace::perform_pivot_root(database & db,
   safe_insert(cs.nodes_renamed, make_pair(new_root, file_path_internal("")));
 
   {
+    new_roster = old_roster;
     editable_roster_base e(new_roster, nis);
     cs.apply_to(e);
   }
@@ -1802,20 +1804,20 @@ workspace::perform_pivot_root(database & db,
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
-      perform_content_update(db, cs, cmea);
+      perform_content_update(old_roster, new_roster, cs, cmea);
     }
 }
 
 void
-workspace::perform_content_update(database & db,
+workspace::perform_content_update(roster_t const & old_roster,
+                                  roster_t const & new_roster,
                                   cset const & update,
                                   content_merge_adaptor const & ca,
                                   bool const messages)
 {
-  roster_t roster;
+  roster_t test_roster;
   temp_node_id_source nis;
   set<file_path> known;
-  roster_t new_roster;
   bookkeeping_path detached = path_for_detached_nids();
 
   E(!directory_exists(detached), origin::user,
@@ -1823,19 +1825,36 @@ workspace::perform_content_update(database & db,
       "you must clean up and remove the %s directory")
     % detached);
 
-  get_current_roster_shape(db, nis, new_roster);
-  new_roster.extract_path_set(known);
+  old_roster.extract_path_set(known);
 
-  workspace_itemizer itemizer(roster, known, nis);
+  workspace_itemizer itemizer(test_roster, known, nis);
   walk_tree(file_path(), itemizer);
 
-  simulated_working_tree swt(roster, nis);
+  simulated_working_tree swt(test_roster, nis);
   update.apply_to(swt);
 
   mkdir_p(detached);
 
   editable_working_tree ewt(*this, this->lua, ca, messages);
   update.apply_to(ewt);
+
+  // attributes on updated files must be reset because apply_delta writes
+  // new versions of files to _MTN/tmp and then renames them over top of the
+  // old versions and doesn't reset attributes (mtn:execute).
+
+  for (map<file_path, pair<file_id, file_id> >::const_iterator
+         i = update.deltas_applied.begin(); i != update.deltas_applied.end();
+       ++i)
+    {
+      node_t node = new_roster.get_node(i->first);
+      for (attr_map_t::const_iterator a = node->attrs.begin();
+           a != node->attrs.end(); ++a)
+        {
+          if (a->second.first)
+            this->lua.hook_set_attribute(a->first(), i->first,
+                                         a->second.second());
+        }
+    }
 
   delete_dir_shallow(detached);
 }

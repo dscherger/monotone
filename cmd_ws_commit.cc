@@ -697,7 +697,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
-  work.perform_content_update(db, checkout, wca, false);
+  work.perform_content_update(empty_roster, current_roster, checkout, wca, false);
 
   work.maybe_update_inodeprints(db);
   guard.commit();
@@ -750,7 +750,7 @@ drop_attr(app_state & app, args_vector const & args)
   make_cset(old_roster, new_roster, cs);
 
   content_merge_empty_adaptor empty;
-  work.perform_content_update(db, cs, empty);
+  work.perform_content_update(old_roster, new_roster, cs, empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -856,7 +856,7 @@ set_attr(app_state & app, args_vector const & args)
   make_cset(old_roster, new_roster, cs);
 
   content_merge_empty_adaptor empty;
-  work.perform_content_update(db, cs, empty);
+  work.perform_content_update(old_roster, new_roster, cs, empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
