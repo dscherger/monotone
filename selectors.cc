@@ -120,8 +120,7 @@ decode_selector(options const & opts, lua_hooks & lua,
           type = sel_base;
           break;
         default:
-          W(F("unknown selector type: %c") % sel[0]);
-          break;
+          E(false, origin::user, F("unknown selector type: %c") % sel[0]);
         }
       sel.erase(0,2);
 
