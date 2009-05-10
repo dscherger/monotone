@@ -7689,7 +7689,7 @@ the passphrase that will be used to encrypt the private half.
 @item Changes:
 @itemize
 @item
-FIXME -- The separate hashes for the private half of a key really didn't
+10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
 @code{public_hash [...]} and @code{private_hash [...]} lines.
 @item
@@ -8458,7 +8458,7 @@ None.
 
 @itemize
 @item
-FIXME -- The separate hashes for the private half of a key really didn't
+10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
 @code{public_hash [...]} and @code{private_hash [...]} lines.
 @item

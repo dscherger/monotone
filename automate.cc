@@ -1768,7 +1768,7 @@ namespace
 //   1: the key ID
 //   2: the key passphrase
 // Added in: 3.1
-// Changed in: FIXME
+// Changed in: 10.0
 // Purpose: Generates a key with the given ID and passphrase
 //
 // Output format: a basic_io stanza for the new key, as for ls keys
