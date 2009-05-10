@@ -11,65 +11,65 @@ The rules to determine if the release version identifier X.Y is raised or not, a
 This table shows all interface versions to date and the particular monotone releases which implemented them:
 
 [[!table data="""
-interface versions       | 0.0 | 0.1 | 0.2 | 1.0 | 1.1 | 2.0 | 2.1 | 2.2 | 3.0 | 3.1 | 4.0 | 4.1 | 4.3 | 5.0 | 6.0 | 7.0 | 8.0 | 9.0 |
-monotone releases        | 0.17 | 0.18 | 0.19 | 0.20-0.23 | 0.24-0.25 | 0.26 | 0.27 | 0.28 | 0.29 | 0.30 | 0.31-0.33 | 0.34 | 0.35 | 0.36 | 0.37-0.38 | 0.39-0.40 | 0.41 | 0.42-0.43 |
+interface versions       | 0.0 | 0.1 | 0.2 | 1.0 | 1.1 | 2.0 | 2.1 | 2.2 | 3.0 | 3.1 | 4.0 | 4.1 | 4.3 | 5.0 | 6.0 | 7.0 | 8.0 | 9.0 | 10.0 |
+monotone releases        | 0.17 | 0.18 | 0.19 | 0.20-0.23 | 0.24-0.25 | 0.26 | 0.27 | 0.28 | 0.29 | 0.30 | 0.31-0.33 | 0.34 | 0.35 | 0.36 | 0.37-0.38 | 0.39-0.40 | 0.41 | 0.42-0.43 | 0.44 |
 """ ]]
 
 The following table gives you an overview at which time certain functionalities have been added or altered in monotone's automation interface:
 
 [[!table data="""
-interface versions          | 0.0 | 0.1 | 0.2 | 1.0 | 1.1 | 2.0 | 2.1 | 2.2 | 3.0 | 3.1 | 4.0 | 4.1 | 4.3 | 5.0 | 6.0 | 7.0 <sup>1</sup>| 8.0 | 9.0 |
-ancestors                   |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-ancestry\_difference        |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-branches                    |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |
-cert                        |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |
-certs                       |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-children                    |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-common\_ancestors           |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |
-content\_diff               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  B  |
-descendents                 |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-drop\_attribute             |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |
-drop\_db\_variables         |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |
-erase\_ancestors            |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-file\_merge                 |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |
-genkey                      |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_attributes             |     |     |     |     |     |     |     |     |  A  |     |     |     |     |  C  |     |     |     |     |
-get\_base\_revision\_id     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_content\_changed       |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |
-get\_corresponding\_path    |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |
-get\_current\_revision      |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |
-get\_current\_revision\_id  |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_db\_variables          |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |  C  |     |     |
-get\_file                   |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_file\_of               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_manifest\_of           |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-get\_option                 |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |
-get\_revision               |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |  C  |     |     |
-get\_workspace\_root        |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |
-graph                       |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-heads                       |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-identify                    |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |
-interface\_version          |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-inventory                   |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |  C  |  C  |  C  |     |
-keys                        |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
-leaves                      |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-lua                         |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |
-packet\_for\_fdata          |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-packet\_for\_fdelta         |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-packet\_for\_rdata          |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-packets\_for\_certs         |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
-parents                     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-put\_file                   |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |
-put\_revision               |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |
-read\_packets               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |
-roots                       |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |
-select                      |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-show\_conflicts             |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |  C  |
-set\_attribute              |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |
-set\_db\_variable           |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |  C  |     |     |
-stdio                       |     |     |     |  A  |     |     |     |     |     |  B  |     |     |     |     |     |     |     |     |
-tags                        |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |
-toposort                    |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+interface versions          | 0.0 | 0.1 | 0.2 | 1.0 | 1.1 | 2.0 | 2.1 | 2.2 | 3.0 | 3.1 | 4.0 | 4.1 | 4.3 | 5.0 | 6.0 | 7.0 <sup>1</sup>| 8.0 | 9.0 | 10.0 |
+ancestors                   |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+ancestry\_difference        |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+branches                    |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |
+cert                        |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |
+certs                       |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+children                    |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+common\_ancestors           |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |
+content\_diff               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  B  |     |
+descendents                 |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+drop\_attribute             |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |
+drop\_db\_variables         |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |
+erase\_ancestors            |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+file\_merge                 |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |
+genkey                      |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  C  |
+get\_attributes             |     |     |     |     |     |     |     |     |  A  |     |     |     |     |  C  |     |     |     |     |     |
+get\_base\_revision\_id     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+get\_content\_changed       |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |
+get\_corresponding\_path    |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |
+get\_current\_revision      |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |
+get\_current\_revision\_id  |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+get\_db\_variables          |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |  C  |     |     |     |
+get\_file                   |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+get\_file\_of               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+get\_manifest\_of           |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+get\_option                 |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |
+get\_revision               |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |  C  |     |     |     |
+get\_workspace\_root        |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |
+graph                       |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+heads                       |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+identify                    |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |
+interface\_version          |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+inventory                   |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |  C  |  C  |  C  |     |     |
+keys                        |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |  C  |
+leaves                      |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+lua                         |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |
+packet\_for\_fdata          |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+packet\_for\_fdelta         |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+packet\_for\_rdata          |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+packets\_for\_certs         |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |
+parents                     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+put\_file                   |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |
+put\_revision               |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |
+read\_packets               |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |
+roots                       |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |
+select                      |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+show\_conflicts             |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |  C  |     |
+set\_attribute              |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |
+set\_db\_variable           |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |  C  |     |     |     |
+stdio                       |     |     |     |  A  |     |     |     |     |     |  B  |     |     |     |     |     |     |     |     |     |
+tags                        |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |
+toposort                    |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
 """ ]]
 
 ###Legend
