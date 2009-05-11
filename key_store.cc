@@ -616,6 +616,7 @@ key_store::create_key_pair(database & db,
 
   if (db.database_specified())
     {
+      guard.acquire();
       P(F("storing public key '%s' in %s") % ident % db.get_filename());
       db.put_key(ident, kp.pub);
       guard.commit();
