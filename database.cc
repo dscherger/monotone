@@ -2841,7 +2841,7 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   L(FL("Killing revision %s locally") % rid);
 
   // Kill the certs, ancestry, and revision.
-  imp->execute(query("DELETE from revision_certs WHERE id = ?")
+  imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
   imp->cert_stamper.note_change();
 
@@ -2912,9 +2912,10 @@ database::get_public_keys(vector<key_name> & keys)
 bool
 database::public_key_exists(key_id const & hash)
 {
+  MM(hash);
   results res;
   imp->fetch(res, one_col, any_rows,
-             query("SELECT id FROM public_keys WHERE hash = ?")
+             query("SELECT id FROM public_keys WHERE id = ?")
              % blob(hash.inner()()));
   I((res.size() == 1) || (res.empty()));
   if (res.size() == 1)
@@ -2925,9 +2926,10 @@ database::public_key_exists(key_id const & hash)
 bool
 database::public_key_exists(key_name const & id)
 {
+  MM(id);
   results res;
   imp->fetch(res, one_col, any_rows,
-             query("SELECT id FROM public_keys WHERE id = ?")
+             query("SELECT id FROM public_keys WHERE name = ?")
              % text(id()));
   I((res.size() == 1) || (res.empty()));
   if (res.size() == 1)
@@ -2940,9 +2942,10 @@ database::get_pubkey(key_id const & hash,
                      key_name & id,
                      rsa_pub_key & pub)
 {
+  MM(hash);
   results res;
   imp->fetch(res, 2, one_row,
-             query("SELECT id, keydata FROM public_keys WHERE hash = ?")
+             query("SELECT name, keydata FROM public_keys WHERE id = ?")
              % blob(hash.inner()()));
   id = key_name(res[0][0], origin::database);
   pub = rsa_pub_key(res[0][1], origin::database);
@@ -2952,10 +2955,11 @@ void
 database::get_key(key_id const & pub_id,
                   rsa_pub_key & pub)
 {
+  MM(pub_id);
   results res;
   imp->fetch(res, one_col, one_row,
              query("SELECT keydata FROM public_keys WHERE id = ?")
-             % text(pub_id.inner()()));
+             % blob(pub_id.inner()()));
   pub = rsa_pub_key(res[0][0], origin::database);
 }
 
@@ -2963,6 +2967,8 @@ bool
 database::put_key(key_name const & pub_id,
                   rsa_pub_key const & pub)
 {
+  MM(pub_id);
+  MM(pub);
   key_id thash;
   key_hash_code(pub_id, pub, thash);
   I(!public_key_exists(thash));
@@ -2975,7 +2981,7 @@ database::put_key(key_name const & pub_id,
 
   L(FL("putting public key %s") % pub_id);
 
-  imp->execute(query("INSERT INTO public_keys VALUES(?, ?, ?)")
+  imp->execute(query("INSERT INTO public_keys(id, name, keydata) VALUES(?, ?, ?)")
                % blob(thash.inner()())
                % text(pub_id())
                % blob(pub()));
@@ -2986,8 +2992,9 @@ database::put_key(key_name const & pub_id,
 void
 database::delete_public_key(key_id const & pub_id)
 {
+  MM(pub_id);
   imp->execute(query("DELETE FROM public_keys WHERE id = ?")
-               % text(pub_id.inner()()));
+               % blob(pub_id.inner()()));
 }
 
 void
@@ -2995,6 +3002,7 @@ database::encrypt_rsa(key_id const & pub_id,
                       string const & plaintext,
                       rsa_oaep_sha_data & ciphertext)
 {
+  MM(pub_id);
   rsa_pub_key pub;
   get_key(pub_id, pub);
 
@@ -3033,6 +3041,8 @@ database::check_signature(key_id const & id,
                           string const & alleged_text,
                           rsa_sha1_signature const & signature)
 {
+  MM(id);
+  MM(alleged_text);
   shared_ptr<PK_Verifier> verifier;
 
   verifier_cache::const_iterator i = imp->verifiers.find(id);
@@ -3350,7 +3360,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 
   results res;
   imp->fetch(res, 3, any_rows,
-             query("SELECT hash, id, keypair_id "
+             query("SELECT hash, revision_id, keypair_id "
                    "FROM 'revision_certs' WHERE name != 'branch'"));
 
   idx.clear();
@@ -3405,7 +3415,7 @@ database::get_revisions_with_cert(cert_name const & name,
 {
   revisions.clear();
   results res;
-  query q("SELECT id FROM revision_certs WHERE name = ? AND value = ?");
+  query q("SELECT revision_id FROM revision_certs WHERE name = ? AND value = ?");
   imp->fetch(res, one_col, any_rows, q % text(name()) % blob(val()));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     revisions.insert(revision_id((*i)[0], origin::database));
@@ -3445,7 +3455,7 @@ database::get_revision_certs(revision_id const & ident,
   imp->fetch(res, one_col, any_rows,
              query("SELECT hash "
                    "FROM revision_certs "
-                   "WHERE id = ?")
+                   "WHERE revision_id = ?")
              % blob(ident.inner()()));
   ids.clear();
   for (size_t i = 0; i < res.size(); ++i)
@@ -3460,7 +3470,7 @@ database::get_revision_cert(id const & hash,
   results res;
   vector<cert> certs;
   imp->fetch(res, 5, one_row,
-             query("SELECT id, name, value, keypair, signature "
+             query("SELECT revision_id, name, value, keypair, signature "
                    "FROM revision_certs "
                    "WHERE hash = ?")
              % blob(hash()));
@@ -3475,7 +3485,7 @@ database::revision_cert_exists(revision_id const & hash)
   results res;
   vector<cert> certs;
   imp->fetch(res, one_col, any_rows,
-             query("SELECT id "
+             query("SELECT revision_id "
                    "FROM revision_certs "
                    "WHERE hash = ?")
              % blob(hash.inner()()));
@@ -3696,9 +3706,9 @@ database::complete(string const & partial,
 {
   results res;
   completions.clear();
-  query q("SELECT hash, id FROM public_keys WHERE ");
+  query q("SELECT id, name FROM public_keys WHERE ");
 
-  imp->add_prefix_matching_constraint("hash", partial, q);
+  imp->add_prefix_matching_constraint("id", partial, q);
   imp->fetch(res, 2, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3731,7 +3741,7 @@ database::select_cert(string const & certname,
   completions.clear();
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT id FROM revision_certs WHERE name = ?")
+             query("SELECT DISTINCT revision_id FROM revision_certs WHERE name = ?")
              % text(certname));
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3746,7 +3756,7 @@ database::select_cert(string const & certname, string const & certvalue,
   completions.clear();
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT id FROM revision_certs"
+             query("SELECT DISTINCT revision_id FROM revision_certs"
                    " WHERE name = ? AND CAST(value AS TEXT) GLOB ?")
              % text(certname) % text(certvalue));
 
@@ -3764,7 +3774,7 @@ database::select_author_tag_or_branch(string const & partial,
   string pattern = partial + "*";
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT id FROM revision_certs"
+             query("SELECT DISTINCT revision_id FROM revision_certs"
                    " WHERE (name=? OR name=? OR name=?)"
                    " AND CAST(value AS TEXT) GLOB ?")
              % text(author_cert_name()) % text(tag_cert_name())
@@ -3782,7 +3792,7 @@ database::select_date(string const & date, string const & comparison,
   completions.clear();
 
   query q;
-  q.sql_cmd = ("SELECT DISTINCT id FROM revision_certs "
+  q.sql_cmd = ("SELECT DISTINCT revision_id FROM revision_certs "
                "WHERE name = ? AND CAST(value AS TEXT) ");
   q.sql_cmd += comparison;
   q.sql_cmd += " ?";
