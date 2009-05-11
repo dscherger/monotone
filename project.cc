@@ -475,9 +475,9 @@ project_t::lookup_key_by_name(key_store & keys,
             }
         }
       E(!found.empty(), origin::user,
-        F("you don't have a key names '%s'") % name);
+        F("there is no key named '%s'") % name);
       E(found.size() == 1, origin::user,
-        F("you have %n keys named '%s'") % found.size() % name);
+        F("there are %n keys named '%s'") % found.size() % name);
       id = *found.begin();
     }
 }

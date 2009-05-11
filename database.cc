@@ -990,7 +990,7 @@ database::info(ostream & out, bool analyze)
                           "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
                           "length(hash) + length(id) + length(name)"
-                          "+ length(value) + length(keypair)"
+                          "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
                           total));
@@ -3224,6 +3224,7 @@ database_impl::get_oldstyle_certs(id const & ident,
                                   vector<cert> & certs,
                                   string const & table)
 {
+  MM(ident);
   results res;
   query q("SELECT id, name, value, keypair, signature FROM " + table +
           " WHERE id = ?");
@@ -3237,6 +3238,7 @@ database_impl::get_certs(id const & ident,
                          vector<cert> & certs,
                          string const & table)
 {
+  MM(ident);
   results res;
   query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
           " WHERE revision_id = ?");
@@ -3250,6 +3252,7 @@ database_impl::get_certs(cert_name const & name,
                          vector<cert> & certs,
                          string const & table)
 {
+  MM(name);
   results res;
   query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
           " WHERE name = ?");
@@ -3470,7 +3473,7 @@ database::get_revision_cert(id const & hash,
   results res;
   vector<cert> certs;
   imp->fetch(res, 5, one_row,
-             query("SELECT revision_id, name, value, keypair, signature "
+             query("SELECT revision_id, name, value, keypair_id, signature "
                    "FROM revision_certs "
                    "WHERE hash = ?")
              % blob(hash()));
