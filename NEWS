@@ -2,10 +2,6 @@ xxx xxx xx xx:xx:xx UTC 2009
 
         0.44 release.
 
-        - FIXME - bump automate major version, correct automate commands
-          documented as changed (or added) in version FIXME. Also remove
-          this note.
-
         Changes
 
         - Private keys no longer have a separate hash from the associated
@@ -22,12 +18,27 @@ xxx xxx xx xx:xx:xx UTC 2009
         - Exceptions in Lua extension functions will now be converted into a
           Lua error catchable with pcall, instead of causing a horrible crash.
 
+        - When a locally modified file was updated, its filesystem attributes,
+          like f.e. the execute bit, got lost. This has been fixed. Monotone
+          now also informs the user when execute permissions are changed.
+
         - If the use of an invalid selector is detected then the command
           errors right away rather than carrying on with the selection
           process. Also if this happens via automate stdio then the error
           is now reported in band on stdout rather than stderr.
 
+        - monotone no longer uses transliteration when doing "best-effort"
+          character set conversions, but rather as fallback if the conversion
+          fails otherwise. This should help with charset issues on glibc-based
+          systems.
+
         Internal
+
+        - Various smaller code changes have been applied to make monotone
+          compile under (Open) Solaris using Sun Studio and fix compilation
+          problems with Visual C++.
+
+        - monotone.spec has been removed from the distribution.
 
 
 Sun Mar 22 22:26:00 UTC 2009
