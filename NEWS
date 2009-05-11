@@ -15,28 +15,33 @@ xxx xxx xx xx:xx:xx UTC 2009
 
         Bugs fixed
 
-        - Exceptions in Lua extension functions will now be converted into a
-          Lua error catchable with pcall, instead of causing a horrible crash.
+        - C++ exceptions in Lua extension functions are now converted into
+          Lua errors catchable with pcall, instead of causing a crash.
 
-        - When a locally modified file was updated, its filesystem attributes,
-          like f.e. the execute bit, got lost. This has been fixed. Monotone
-          now also informs the user when execute permissions are changed.
+        - Updating a locally-modified file no longer clobbers file system
+	  properties (such as the execute bit) as long as those properties
+	  correspond to versioned attributes on the file (such as
+	  mtn:execute).  Monotone now also informs the user when execute
+	  permissions are changed.
 
-        - If the use of an invalid selector is detected then the command
-          errors right away rather than carrying on with the selection
-          process. Also if this happens via automate stdio then the error
-          is now reported in band on stdout rather than stderr.
+        - Invalid revision selectors now cause an immediate error instead of
+	  being dropped from the selection.  The old behavior could produce
+	  undesired effects from typoed commands, such as spewing a list of
+	  all revisions in the database.
 
-        - monotone no longer uses transliteration when doing "best-effort"
-          character set conversions, but rather as fallback if the conversion
-          fails otherwise. This should help with charset issues on glibc-based
-          systems.
+	- If "automate stdio" is in use, invalid selectors are reported via
+          the automate protocol rather than on stderr.
+
+        - "Best-effort" character set conversions now work again; 'mtn log'
+	  will not crash just because there is a change log entry with a
+	  character not representable in your locale.  However, if your system
+	  iconv(3) implementation does not support the //TRANSLIT extension,
+	  you may see garbage characters in the above scenario.
 
         Internal
 
-        - Various smaller code changes have been applied to make monotone
-          compile under (Open) Solaris using Sun Studio and fix compilation
-          problems with Visual C++.
+        - Various small code changes to make monotone compile under (Open)
+          Solaris using Sun Studio, and under Windows with Visual C++.
 
         - monotone.spec has been removed from the distribution.
 
