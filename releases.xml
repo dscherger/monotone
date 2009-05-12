@@ -5,7 +5,75 @@
         <link>http://monotone.ca/releases.xml</link>
         <description>monotone releases with links to the sources.</description>
         <language>en</language>
-        <pubDate>Sun, 22 Mar 2009 22:26:00 +0000</pubDate>
+        <pubDate>Tue, 12 May 2009 20:44:00 +0000</pubDate>
+        <item>
+            <title>monotone 0.44 released</title>
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<ul>
+<li>Private keys no longer have a separate hash from the associated
+  public key. This changes the hashes output by 'ls keys', and also
+  changes the format of 'automate keys' and 'automate genkey'.
+</li>
+</ul>
+
+<h2>New features</h2>
+
+<ul>
+<li>New 'w:' selector type for selecting the revision the workspace
+  is based on.
+</li>
+</ul>
+
+<h2>Bugs fixed</h2>
+
+<ul>
+<li>C++ exceptions in Lua extension functions are now converted into
+  Lua errors catchable with pcall, instead of causing a crash.
+</li>
+<li>In 0.43 revert became excessively noisy and would report changes to
+  all attributes on included files and directories regardless of whether
+  the attributes had been changed or not. This has been silenced.
+  Monotone will now specifically report changes to execute permissions
+  only when they occur.
+</li>
+<li>In 0.43 monotone would lose execute permissions on all files modified
+  during an update operation. Execute permissions are now reset on
+  updated files that have the mtn:execute attribute set to true.
+</li>
+<li>Invalid revision selectors now cause an immediate error instead of
+  being dropped from the selection.  The old behavior could produce
+  undesired effects from typoed commands, such as spewing a list of
+  all revisions in the database.
+</li>
+<li>If "automate stdio" is in use, invalid selectors are reported via
+  the automate protocol rather than on stderr.
+</li>
+<li>"Best-effort" character set conversions now work again; 'mtn log'
+  will not crash just because there is a change log entry with a
+  character not representable in your locale.  However, if your system
+  iconv(3) implementation does not support the //TRANSLIT extension,
+  you may see garbage characters in the above scenario.
+</li>
+</ul>
+
+<h2>Internal</h2>
+
+<ul>
+<li>Various small code changes to make monotone compile under (Open)
+  Solaris using Sun Studio, and under Windows with Visual C++.
+</li>
+<li>monotone.spec has been removed from the distribution.
+</li>
+</ul>
+]]>
+            </description>
+            <pubDate>Tue, 12 May 2009 20:44:00 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.44/monotone-0.44.tar.gz" length="4603920" type="application/octet-stream"/>
+
+        </item>
         <item>
             <title>monotone 0.43 released</title>
             <description>
@@ -34,7 +102,7 @@
   database which will be much faster for server usage (especially
   initial pulls).
 </li>
-<li>'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
+<li>'mtn help &lt;command_or_group>' or 'mtn &lt;command_or_group> --help' no
   longer print global options, thus making the output of specific help
   requests more compact. You still see all available global options
   by executing 'mtn help' without any arguments.
