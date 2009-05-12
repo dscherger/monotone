@@ -64,6 +64,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   database db(app);
   project_t project(db);
+  key_store keys(app);
   vector<cert> certs;
 
   transaction_guard guard(db, false);
@@ -92,7 +93,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   // particular.
   sort(certs.begin(), certs.end());
 
-  string str     = _("Key   : %s\n"
+  string str     = _("Key   : %s (%s)\n"
                      "Sig   : %s\n"
                      "Name  : %s\n"
                      "Value : %s\n");
@@ -139,9 +140,13 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
       split_into_lines(washed, lines);
       std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
 
+      key_id keyid = idx(certs, i).key;
+      key_name keyname;
+      project.get_name_of_key(keys, keyid, keyname);
+
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
-               % idx(certs, i).key
+               % keyid % keyname
                % stat
                % idx(certs, i).name
                % value_first_line);

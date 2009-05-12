@@ -633,6 +633,7 @@ key_store::change_key_passphrase(key_name const & name)
   keypair kp;
   {
     bool found = false;
+    s->maybe_read_key_dir();
     for (key_map::const_iterator i = s->keys.begin();
          i != s->keys.end(); ++i)
       {
@@ -645,6 +646,8 @@ key_store::change_key_passphrase(key_name const & name)
             kp = i->second.second;
           }
       }
+    E(found, origin::user, F("no key pair '%s' found in key store '%s'")
+      % name % s->key_dir);
   }
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id, true);
 
