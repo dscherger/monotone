@@ -81,7 +81,9 @@ using std::map;
 using std::multimap;
 using std::ostream;
 using std::pair;
+using std::remove_if;
 using std::set;
+using std::sort;
 using std::string;
 using std::vector;
 using std::accumulate;
@@ -98,6 +100,7 @@ using Botan::PK_Verifier;
 using Botan::SecureVector;
 using Botan::X509_PublicKey;
 using Botan::RSA_PublicKey;
+using Botan::get_pk_encryptor;
 
 int const one_row = 1;
 int const one_col = 1;
@@ -973,12 +976,12 @@ database::info(ostream & out, bool analyze)
       = max_element(counts.begin(), counts.end(), longest_number)->length();
     for(vector<string>::iterator i = counts.begin(); i != counts.end(); i++)
       if (width > i->length() && (*i)[0] != '[')
-        i->insert(0, width - i->length(), ' ');
+        i->insert(0U, width - i->length(), ' ');
 
     width = max_element(bytes.begin(), bytes.end(), longest_number)->length();
     for(vector<string>::iterator i = bytes.begin(); i != bytes.end(); i++)
       if (width > i->length() && (*i)[0] != '[')
-        i->insert(0, width - i->length(), ' ');
+        i->insert(0U, width - i->length(), ' ');
   }
 
   i18n_format form =

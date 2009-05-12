@@ -50,6 +50,7 @@ using std::allocator;
 using std::basic_ios;
 using std::basic_stringbuf;
 using std::char_traits;
+using std::find;
 using std::inserter;
 using std::make_pair;
 using std::map;
@@ -1753,8 +1754,7 @@ namespace
     symbol const value("value");
     symbol const trust("trust");
 
-    symbol const public_hash("public_hash");
-    symbol const private_hash("private_hash");
+    symbol const hash("hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
 
@@ -1768,14 +1768,14 @@ namespace
 //   1: the key ID
 //   2: the key passphrase
 // Added in: 3.1
+// Changed in: 10.0
 // Purpose: Generates a key with the given ID and passphrase
 //
 // Output format: a basic_io stanza for the new key, as for ls keys
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
@@ -1797,8 +1797,8 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
 
   utf8 passphrase = idx(args, 1);
 
-  id pubhash, privhash;
-  keys.create_key_pair(db, ident, &passphrase, &pubhash, &privhash);
+  id hash;
+  keys.create_key_pair(db, ident, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;
@@ -1809,8 +1809,7 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   privlocs.push_back("keystore");
 
   stz.push_str_pair(syms::name, ident());
-  stz.push_binary_pair(syms::public_hash, pubhash);
-  stz.push_binary_pair(syms::private_hash, privhash);
+  stz.push_binary_pair(syms::hash, hash);
   stz.push_str_multi(syms::public_location, publocs);
   stz.push_str_multi(syms::private_location, privlocs);
   prt.print_stanza(stz);

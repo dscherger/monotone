@@ -49,21 +49,31 @@ charset_convert(string const & src_charset,
     dst = src;
   else
     {
-      string tmp_charset(dst_charset);
+      // Always try converting without special treatment first.
+      char const * converted = stringprep_convert(src.c_str(),
+                                                  dst_charset.c_str(),
+                                                  src_charset.c_str());
 
-#ifdef ICONV_TRANSLIT
-      if (best_effort)
-        tmp_charset += "//TRANSLIT";
-#endif
+      if (best_effort && !converted)
+        {
+          // Not all iconv implementations support this.
+          string tmp_charset(dst_charset);
+          tmp_charset += "//TRANSLIT";
+          converted = stringprep_convert(src.c_str(),
+                                         tmp_charset.c_str(),
+                                         src_charset.c_str());
 
-      char * converted = stringprep_convert(src.c_str(),
-                                            tmp_charset.c_str(),
-                                            src_charset.c_str());
+          // If that didn't work just give up.
+          if (!converted)
+            converted = src.c_str();
+        }
+
       E(converted != NULL, whence,
         F("failed to convert string from %s to %s: '%s'")
-         % src_charset % tmp_charset % src);
+         % src_charset % dst_charset % src);
       dst = string(converted);
-      free(converted);
+      if (converted != src.c_str())
+        free(const_cast<char*>(converted));
     }
 }
 

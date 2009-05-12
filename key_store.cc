@@ -52,6 +52,8 @@ using Botan::PKCS8_PrivateKey;
 using Botan::PK_Decryptor;
 using Botan::PK_Signer;
 using Botan::Pipe;
+using Botan::get_pk_decryptor;
+using Botan::get_cipher;
 
 struct key_store_state
 {
@@ -176,6 +178,12 @@ key_store::key_store(app_state & a)
 
 key_store::~key_store()
 {}
+
+bool
+key_store::have_signing_key() const
+{
+  return !signing_key().empty();
+}
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 Botan::RandomNumberGenerator &
@@ -552,8 +560,7 @@ void
 key_store::create_key_pair(database & db,
                            rsa_keypair_id const & ident,
                            utf8 const * maybe_passphrase,
-                           id * maybe_pubhash,
-                           id * maybe_privhash)
+                           id * maybe_hash)
 {
   conditional_transaction_guard guard(db);
 
@@ -624,10 +631,8 @@ key_store::create_key_pair(database & db,
       guard.commit();
     }
 
-  if (maybe_pubhash)
-    key_hash_code(ident, kp.pub, *maybe_pubhash);
-  if (maybe_privhash)
-    key_hash_code(ident, kp.priv, *maybe_privhash);
+  if (maybe_hash)
+    key_hash_code(ident, kp.pub, *maybe_hash);
 }
 
 void

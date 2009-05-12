@@ -1,3 +1,55 @@
+xxx xxx xx xx:xx:xx UTC 2009
+
+        0.44 release.
+
+        Changes
+
+        - Private keys no longer have a separate hash from the associated
+          public key. This changes the hashes output by 'ls keys', and also
+          changes the format of 'automate keys' and 'automate genkey'.
+
+        New features
+
+        - New 'w:' selector type for selecting the revision the workspace
+          is based on.
+
+        Bugs fixed
+
+        - C++ exceptions in Lua extension functions are now converted into
+          Lua errors catchable with pcall, instead of causing a crash.
+
+        - In 0.43 revert became excessively noisy and would report changes to
+          all attributes on included files and directories regardless of whether
+          the attributes had been changed or not. This has been silenced.
+          Monotone will now specifically report changes to execute permissions
+          only when they occur.
+
+        - In 0.43 monotone would lose execute permissions on all files modified
+          during an update operation. Execute permissions are now reset on
+          updated files that have the mtn:execute attribute set to true.
+
+        - Invalid revision selectors now cause an immediate error instead of
+          being dropped from the selection.  The old behavior could produce
+          undesired effects from typoed commands, such as spewing a list of
+          all revisions in the database.
+
+        - If "automate stdio" is in use, invalid selectors are reported via
+          the automate protocol rather than on stderr.
+
+        - "Best-effort" character set conversions now work again; 'mtn log'
+          will not crash just because there is a change log entry with a
+          character not representable in your locale.  However, if your system
+          iconv(3) implementation does not support the //TRANSLIT extension,
+          you may see garbage characters in the above scenario.
+
+        Internal
+
+        - Various small code changes to make monotone compile under (Open)
+          Solaris using Sun Studio, and under Windows with Visual C++.
+
+        - monotone.spec has been removed from the distribution.
+
+
 Sun Mar 22 22:26:00 UTC 2009
 
         0.43 release.

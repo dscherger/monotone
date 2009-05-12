@@ -2811,6 +2811,10 @@ command will swap the current and previous update revision.
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
 Values to match for can have shell wildcards.
+@item Workspace base revision
+Uses selector type @code{w}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID(s) this workspace is based on.
 @end table
 
 Further selector types may be added in the future.
@@ -7682,9 +7686,15 @@ whatever error message would have been given.
 @var{name} is the name to associate with the new key, and @var{passphrase} is
 the passphrase that will be used to encrypt the private half.
 
-@item Added in:
-
-3.1
+@item Changes:
+@itemize
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+3.1 -- initial
+@end itemize
 
 @item Purpose:
 
@@ -7694,8 +7704,7 @@ Generate a key with the given name and passphrase.
 
 @verbatim
             name "tbrownaw@gmail.com"
-     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
  public_location "database" "keystore"
 private_location "keystore"
 
@@ -8445,9 +8454,17 @@ with status 1.
 
 None.
 
-@item Added in:
+@item Changes:
 
-1.1
+@itemize
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+1.1 -- initial
+
+@end itemize
 
 @item Purpose:
 
@@ -8457,18 +8474,16 @@ Print all keys in basic_io format.
 
 @verbatim
             name "tbrownaw@gmail.com"
-     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
  public_location "database" "keystore"
 private_location "keystore"
 
            name "tomfa@debian.org"
-    public_hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
 public_location "database"
 
             name "underwater@fishtank.net"
-     public_hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-    private_hash [b520d2cfe7d30e4ea1725fc4f34646fc5469b13d]
+            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
  public_location "keystore"
 private_location "keystore"
 

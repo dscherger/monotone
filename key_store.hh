@@ -48,6 +48,7 @@ private:
 
 public:
   rsa_keypair_id signing_key;
+  bool have_signing_key() const;
 
   explicit key_store(app_state & a);
   ~key_store();
@@ -85,8 +86,7 @@ public:
 
   void create_key_pair(database & db, rsa_keypair_id const & ident,
                        utf8 const * maybe_passphrase = NULL,
-                       id * maybe_pubhash = NULL,
-                       id * maybe_privhash = NULL);
+                       id * maybe_hash = NULL);
 
   void change_key_passphrase(rsa_keypair_id const & id);
 

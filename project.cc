@@ -382,7 +382,7 @@ project_t::put_cert(key_store & keys,
                     cert_name const & name,
                     cert_value const & value)
 {
-  I(!keys.signing_key().empty());
+  I(keys.have_signing_key());
 
   cert t(id, name, value, keys.signing_key);
   string signed_text;
