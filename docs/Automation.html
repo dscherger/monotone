@@ -1252,8 +1252,13 @@ whatever error message would have been given.
 <var>name</var> is the name to associate with the new key, and <var>passphrase</var> is
 the passphrase that will be used to encrypt the private half.
 
-          <br><dt><strong>Added in:</strong><dd>
-3.1
+          <br><dt><strong>Changes:</strong><dd>
+               <ul>
+<li>10.0 &ndash; The separate hashes for the private half of a key really didn't
+make much sense; have one <code>hash [...]</code> line instead of separate
+<code>public_hash [...]</code> and <code>private_hash [...]</code> lines. 
+<li>3.1 &ndash; initial
+</ul>
 
           <br><dt><strong>Purpose:</strong><dd>
 Generate a key with the given name and passphrase.
@@ -1261,8 +1266,7 @@ Generate a key with the given name and passphrase.
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
                       name "tbrownaw@gmail.com"
-               public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-              private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+                      hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
            public_location "database" "keystore"
           private_location "keystore"
           
@@ -1899,8 +1903,14 @@ with status 1.
 <dt><strong>Arguments:</strong><dd>
 None.
 
-          <br><dt><strong>Added in:</strong><dd>
-1.1
+          <br><dt><strong>Changes:</strong><dd>
+               <ul>
+<li>10.0 &ndash; The separate hashes for the private half of a key really didn't
+make much sense; have one <code>hash [...]</code> line instead of separate
+<code>public_hash [...]</code> and <code>private_hash [...]</code> lines. 
+<li>1.1 &ndash; initial
+
+          </ul>
 
           <br><dt><strong>Purpose:</strong><dd>
 Print all keys in basic_io format.
@@ -1908,18 +1918,16 @@ Print all keys in basic_io format.
           <br><dt><strong>Sample output:</strong><dd>
 <pre class="verbatim">          
                       name "tbrownaw@gmail.com"
-               public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-              private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+                      hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
            public_location "database" "keystore"
           private_location "keystore"
           
                      name "tomfa@debian.org"
-              public_hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+                     hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
           public_location "database"
           
                       name "underwater@fishtank.net"
-               public_hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-              private_hash [b520d2cfe7d30e4ea1725fc4f34646fc5469b13d]
+                      hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
            public_location "keystore"
           private_location "keystore"
           

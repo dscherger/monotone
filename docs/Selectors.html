@@ -132,6 +132,9 @@ command will swap the current and previous update revision.
 <br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
 <code>tag</code> certs where the cert value begins with <code>monotone-0.11</code>. 
 Values to match for can have shell wildcards. 
+<br><dt>Workspace base revision<dd>Uses selector type <code>w</code>. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID(s) this workspace is based on. 
 </dl>
 
    <p>Further selector types may be added in the future.

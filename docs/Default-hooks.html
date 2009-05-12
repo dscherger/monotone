@@ -481,9 +481,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *CENTER* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*CENTER* file."))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -529,9 +530,10 @@ mergers.vim = {
      return execute_redirected("", string.gsub(out, "\\", "/"), "", unpack(diff3_args))
       end
 
-      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *LEFT* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
