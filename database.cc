@@ -531,7 +531,7 @@ database::check_certs_not_by_hash()
 {
   results res;
   imp->fetch(res, one_col, any_rows,
-             query("SELECT 1 FROM revision_certs LIMIT 1"));
+             query("SELECT 1 FROM revision_certs_by_keyhash LIMIT 1"));
   E(res.empty(), origin::user,
     F("this database already has certs linked by key hash"));
 }
@@ -550,8 +550,10 @@ database_impl::check_format()
   bool have_rosters = !res.empty();
   fetch(res, one_col, any_rows, query("SELECT 1 FROM heights LIMIT 1"));
   bool have_heights = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM revision_certs_by_keyname LIMIT 1"));
+  fetch(res, one_col, any_rows, query("SELECT 1 FROM revision_certs LIMIT 1"));
   bool have_certs_by_keyname = !res.empty();
+  fetch(res, one_col, any_rows, query("SELECT 1 FROM revision_certs_by_keyhash LIMIT 1"));
+  bool have_certs_by_keyhash = !res.empty();
 
 
   if (!have_manifests)
@@ -565,9 +567,9 @@ database_impl::check_format()
           "run '%s db regenerate_caches' to restore use of this database")
         % filename % prog_name);
 
-      E(!have_certs_by_keyname, origin::no_fault,
+      E(!have_certs_by_keyname || have_certs_by_keyhash, origin::no_fault,
         F("database %s has certs linked to keys by key name.\n"
-          "Please run '%s db migrate_certs_to_key_hashes' to have"
+          "Please run '%s db migrate_certs_to_key_hashes' to have "
           "certs linked to keys by key hashes instead")
         % filename % prog_name);
     }
@@ -950,7 +952,7 @@ database::info(ostream & out, bool analyze)
   counts.push_back(imp->count("file_deltas"));
   counts.push_back(imp->count("revisions"));
   counts.push_back(imp->count("revision_ancestry"));
-  counts.push_back(imp->count("revision_certs"));
+  counts.push_back(imp->count("revision_certs_by_keyhash"));
 
   {
     results res;
@@ -988,7 +990,7 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("revisions", "length(id) + length(data)", total));
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
-    bytes.push_back(imp->space("revision_certs",
+    bytes.push_back(imp->space("revision_certs_by_keyhash",
                           "length(hash) + length(id) + length(name)"
                           "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
@@ -1063,7 +1065,7 @@ database::info(ostream & out, bool analyze)
   vector<cert> certs;
 
   L(FL("fetching revision dates"));
-  imp->get_certs(date_cert_name, certs, "revision_certs");
+  imp->get_certs(date_cert_name, certs, "revision_certs_by_keyhash");
 
   L(FL("analyzing revision dates"));
   rev_date::iterator d;
@@ -2800,7 +2802,7 @@ database::delete_existing_revs_and_certs()
 {
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
-  imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM revision_certs_by_keyhash"));
 }
 
 void
@@ -2841,7 +2843,7 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   L(FL("Killing revision %s locally") % rid);
 
   // Kill the certs, ancestry, and revision.
-  imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
+  imp->execute(query("DELETE from revision_certs_by_keyhash WHERE revision_id = ?")
                % blob(rid.inner()()));
   imp->cert_stamper.note_change();
 
@@ -2862,7 +2864,7 @@ void
 database::delete_branch_named(cert_value const & branch)
 {
   L(FL("Deleting all references to branch %s") % branch);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
+  imp->execute(query("DELETE FROM revision_certs_by_keyhash WHERE name='branch' AND value =?")
                % blob(branch()));
   imp->cert_stamper.note_change();
   imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
@@ -2874,7 +2876,7 @@ void
 database::delete_tag_named(cert_value const & tag)
 {
   L(FL("Deleting all references to tag %s") % tag);
-  imp->execute(query("DELETE FROM revision_certs WHERE name='tag' AND value =?")
+  imp->execute(query("DELETE FROM revision_certs_by_keyhash WHERE name='tag' AND value =?")
                % blob(tag()));
   imp->cert_stamper.note_change();
 }
@@ -3328,7 +3330,7 @@ database_impl::get_certs(id const & ident,
 bool
 database::revision_cert_exists(cert const & cert)
 {
-  return imp->cert_exists(cert, "revision_certs");
+  return imp->cert_exists(cert, "revision_certs_by_keyhash");
 }
 
 bool
@@ -3349,7 +3351,7 @@ database::put_revision_cert(cert const & cert)
       return false;
     }
 
-  imp->put_cert(cert, "revision_certs");
+  imp->put_cert(cert, "revision_certs_by_keyhash");
   imp->cert_stamper.note_change();
   return true;
 }
@@ -3364,7 +3366,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
   results res;
   imp->fetch(res, 3, any_rows,
              query("SELECT hash, revision_id, keypair_id "
-                   "FROM 'revision_certs' WHERE name != 'branch'"));
+                   "FROM revision_certs_by_keyhash WHERE name != 'branch'"));
 
   idx.clear();
   idx.reserve(res.size());
@@ -3380,7 +3382,7 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 outdated_indicator
 database::get_revision_certs(vector<cert> & certs)
 {
-  imp->get_certs(certs, "revision_certs");
+  imp->get_certs(certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3388,7 +3390,7 @@ outdated_indicator
 database::get_revision_certs(cert_name const & name,
                             vector<cert> & certs)
 {
-  imp->get_certs(name, certs, "revision_certs");
+  imp->get_certs(name, certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3397,7 +3399,7 @@ database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), name, certs, "revision_certs");
+  imp->get_certs(id.inner(), name, certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3407,7 +3409,7 @@ database::get_revision_certs(revision_id const & id,
                              cert_value const & val,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), name, val, certs, "revision_certs");
+  imp->get_certs(id.inner(), name, val, certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3418,7 +3420,7 @@ database::get_revisions_with_cert(cert_name const & name,
 {
   revisions.clear();
   results res;
-  query q("SELECT revision_id FROM revision_certs WHERE name = ? AND value = ?");
+  query q("SELECT revision_id FROM revision_certs_by_keyhash WHERE name = ? AND value = ?");
   imp->fetch(res, one_col, any_rows, q % text(name()) % blob(val()));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     revisions.insert(revision_id((*i)[0], origin::database));
@@ -3430,7 +3432,7 @@ database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
                              vector<cert> & certs)
 {
-  imp->get_certs(name, val, certs, "revision_certs");
+  imp->get_certs(name, val, certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3438,7 +3440,7 @@ outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              vector<cert> & certs)
 {
-  imp->get_certs(id.inner(), certs, "revision_certs");
+  imp->get_certs(id.inner(), certs, "revision_certs_by_keyhash");
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3457,7 +3459,7 @@ database::get_revision_certs(revision_id const & ident,
   results res;
   imp->fetch(res, one_col, any_rows,
              query("SELECT hash "
-                   "FROM revision_certs "
+                   "FROM revision_certs_by_keyhash "
                    "WHERE revision_id = ?")
              % blob(ident.inner()()));
   ids.clear();
@@ -3474,7 +3476,7 @@ database::get_revision_cert(id const & hash,
   vector<cert> certs;
   imp->fetch(res, 5, one_row,
              query("SELECT revision_id, name, value, keypair_id, signature "
-                   "FROM revision_certs "
+                   "FROM revision_certs_by_keyhash "
                    "WHERE hash = ?")
              % blob(hash()));
   imp->results_to_certs(res, certs);
@@ -3489,7 +3491,7 @@ database::revision_cert_exists(revision_id const & hash)
   vector<cert> certs;
   imp->fetch(res, one_col, any_rows,
              query("SELECT revision_id "
-                   "FROM revision_certs "
+                   "FROM revision_certs_by_keyhash "
                    "WHERE hash = ?")
              % blob(hash.inner()()));
   I(res.empty() || res.size() == 1);
@@ -3744,7 +3746,7 @@ database::select_cert(string const & certname,
   completions.clear();
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT revision_id FROM revision_certs WHERE name = ?")
+             query("SELECT DISTINCT revision_id FROM revision_certs_by_keyhash WHERE name = ?")
              % text(certname));
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3759,7 +3761,7 @@ database::select_cert(string const & certname, string const & certvalue,
   completions.clear();
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT revision_id FROM revision_certs"
+             query("SELECT DISTINCT revision_id FROM revision_certs_by_keyhash"
                    " WHERE name = ? AND CAST(value AS TEXT) GLOB ?")
              % text(certname) % text(certvalue));
 
@@ -3777,7 +3779,7 @@ database::select_author_tag_or_branch(string const & partial,
   string pattern = partial + "*";
 
   imp->fetch(res, 1, any_rows,
-             query("SELECT DISTINCT revision_id FROM revision_certs"
+             query("SELECT DISTINCT revision_id FROM revision_certs_by_keyhash"
                    " WHERE (name=? OR name=? OR name=?)"
                    " AND CAST(value AS TEXT) GLOB ?")
              % text(author_cert_name()) % text(tag_cert_name())
@@ -3795,7 +3797,7 @@ database::select_date(string const & date, string const & comparison,
   completions.clear();
 
   query q;
-  q.sql_cmd = ("SELECT DISTINCT revision_id FROM revision_certs "
+  q.sql_cmd = ("SELECT DISTINCT revision_id FROM revision_certs_by_keyhash "
                "WHERE name = ? AND CAST(value AS TEXT) ");
   q.sql_cmd += comparison;
   q.sql_cmd += " ?";
@@ -3942,7 +3944,7 @@ outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT value FROM revision_certs_by_keyhash WHERE name = ?");
     string cert_name = "branch";
     imp->fetch(res, one_col, any_rows, q % text(cert_name));
     for (size_t i = 0; i < res.size(); ++i)
@@ -3957,7 +3959,7 @@ database::get_branches(globish const & glob,
                        vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT value FROM revision_certs_by_keyhash WHERE name = ?");
     string cert_name = "branch";
     imp->fetch(res, one_col, any_rows, q % text(cert_name));
     for (size_t i = 0; i < res.size(); ++i)

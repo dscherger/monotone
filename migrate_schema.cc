@@ -702,18 +702,26 @@ char const migrate_to_binary_hashes[] =
   ;
 
 char const migrate_certs_to_key_hash[] =
-  "ALTER TABLE revision_certs RENAME TO revision_certs_by_keyname;"
-  "ALTER INDEX revision_certs__id RENAME TO revision_certs_by_keyname__id;"
-  "CREATE TABLE revision_certs_by_keyname"
+  "ALTER TABLE public_keys rename to public_keys_tmp;\n"
+  "CREATE TABLE public_keys\n"
+  "  ( id primary key,         -- hash of remaining fields separated by \":\"\n"
+  "    name not null,          -- key identifier chosen by user\n"
+  "    keydata not null        -- RSA public params\n"
+  "  );\n"
+  "INSERT INTO public_keys (id, name, keydata)"
+  "   select hash, id, keydata from public_keys_tmp;\n"
+  "DROP TABLE public_keys_tmp;\n"
+
+  "CREATE TABLE revision_certs_by_keyhash\n"
   "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
-  "    revision_id not null,   -- joins with revisions.id"
+  "    revision_id not null,   -- joins with revisions.id\n"
   "    name not null,          -- opaque string chosen by user\n"
   "    value not null,         -- opaque blob\n"
   "    keypair_id not null,    -- joins with public_keys.id\n"
   "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
-  "    unique(name, value, revision_id, keypair_id, signature)"
-  "  );"
-  "CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);"
+  "    unique(name, value, revision_id, keypair_id, signature)\n"
+  "  );\n"
+  "CREATE INDEX revision_certs_by_keyhash__revision_id ON revision_certs_by_keyhash (revision_id);"
   ;
 
 // these must be listed in order so that ones listed earlier override ones
@@ -804,7 +812,7 @@ const migration_event migration_events[] = {
 
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "e52bb32ddec599ae6aca885d2c30f2429a77bf6c", 0, 0, upgrade_none }
+  { "f5de2b122a2594d39756517eaf40ca8723b3ea44", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);

@@ -415,7 +415,6 @@ public:
   // for changesetify, rosterify
   void delete_existing_revs_and_certs();
   void delete_existing_manifests();
-  void delete_certs_with_keynames();
 
   void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
   void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
