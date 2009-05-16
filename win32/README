@@ -50,4 +50,14 @@ Choose menu Build | Compile (or click the "compile" button). This
 generates monotone-<version>-setup.exe in the monotone/win32
 directory.
 
-Publish the binary on the monotone website: TBD
+Publish the binary on the monotone website:
+
+scp monotone-<version>/mtn.exe mtn-uploads@monotone.ca:downloads/<version>
+
+checkout the web files:
+
+mtn -d /path/to/monotone.db checkout -r net.venge.monotone.web monotone.web
+
+Edit monotone.web/index.html; search for <li>Windows, uncomment the native target (leave Cygwin commented)
+
+Commit and sync.
