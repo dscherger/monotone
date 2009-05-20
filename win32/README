@@ -52,7 +52,7 @@ directory.
 
 Publish the binary on the monotone website:
 
-scp monotone-<version>/mtn.exe mtn-uploads@monotone.ca:downloads/<version>
+scp monotone-<version>/win32/monotone-0.44-setup.exe mtn-uploads@monotone.ca:downloads/<version>
 
 checkout the web files:
 
