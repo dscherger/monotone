@@ -122,11 +122,11 @@ class Dumbtone:
             key_packets = {}
             for stanza in keys:
                 keyid = find_stanza_entry(stanza, "name")[0]
-                publicHash = find_stanza_entry(stanza, "public_hash")[0]
+                hash = find_stanza_entry(stanza, "hash")[0]
                 publicLocations = find_stanza_entry(stanza, "public_location")                
                 if "database" in publicLocations:
                     kp = DelegateFunctor(self.monotone.get_pubkey_packet,keyid)
-                    ids = "\n".join((keyid,publicHash))
+                    ids = "\n".join((keyid,hash))
                     id = sha.new(ids).hexdigest()
                     key_packets[keyid] = (id, kp) # keys are queued for export
                                                   # and are exported only if used 
