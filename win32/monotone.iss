@@ -35,9 +35,6 @@ Source: "{#MINGWDIR}\bin\libiconv-2.dll"; DestDir: "{app}"
 Source: "{#MINGWDIR}\local\bin\libidn-11.dll"; DestDir: "{app}"
 Source: "{#MINGWDIR}\bin\libintl-8.dll"; DestDir: "{app}"
 Source: "{#MINGWDIR}\local\bin\libpcre-0.dll"; DestDir: "{app}"
-Source: "{#MINGWDIR}\local\bin\libpcrecpp-0.dll"; DestDir: "{app}"
-Source: "{#MINGWDIR}\local\bin\libpcreposix-0.dll"; DestDir: "{app}"
-Source: "{#MINGWDIR}\bin\zlib1.dll"; DestDir: "{app}"
 
 [Tasks]
 Name: modifypath; Description: "Add monotone to your path"; GroupDescription: "Get up and running"; Flags: unchecked

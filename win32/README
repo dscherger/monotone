@@ -42,9 +42,8 @@ libiconv-2.dll      ?
 libidn-11.dll       libidn
 libintl-8.dll       gettext
 libpcre-0.dll       pcre
-libpcrecpp-0.dll    pcre
-libpcreposix-0.dll  pcre
-zlib1.dll           zlib
+
+You can check the dlls needed by running the Depends tool from
 
 Choose menu Build | Compile (or click the "compile" button). This
 generates monotone-<version>-setup.exe in the monotone/win32
@@ -61,3 +60,5 @@ mtn -d /path/to/monotone.db checkout -r net.venge.monotone.web monotone.web
 Edit monotone.web/index.html; search for <li>Windows, uncomment the native target (leave Cygwin commented)
 
 Commit and sync.
+
+Download from the web and test!
