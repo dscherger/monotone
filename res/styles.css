@@ -122,8 +122,8 @@ ul {
 .box h1 {
     font-size: 1em;
     padding-top: 0.7em;
+    padding-bottom: 0.2em;
     padding-left: 2.5em;
-    height: 2em;
 }
 
 .box ul {
@@ -131,15 +131,19 @@ ul {
     margin-bottom: 1em;
 }
 
-.getit h1 {
+h1.getit {
     background: url(getit.png) no-repeat;
 }
 
-.useit h1 {
+h1.getitdistro {
+    background: url(getitdistro.png) no-repeat;
+}
+
+h1.useit {
     background: url(useit.png) no-repeat;
 }
 
-.improveit h1 {
+h1.improveit {
     background: url(improveit.png) no-repeat;
 }
 
