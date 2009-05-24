@@ -57,6 +57,11 @@ use constant THRESHOLD  => 20;
 
 my %file_chooser_dir_locations;
 
+# A map for converting Gnome help references into valid file based URLs for the
+# HTML help mode (used when yelp is not available).
+
+my %help_ref_to_url_map;
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
@@ -65,6 +70,7 @@ sub cache_extra_file_info($$$);
 sub colour_to_string($);
 sub create_format_tags($);
 sub data_is_binary($);
+sub display_help(;$);
 sub file_glob_to_regexp($);
 sub generate_tmp_path($);
 sub get_branch_revisions($$$$$);
@@ -81,6 +87,10 @@ sub save_as_file($$$);
 sub set_label_value($$);
 sub treeview_column_searcher($$$$);
 sub treeview_setup_search_column_selection($@);
+
+# Private routines.
+
+sub build_help_ref_to_url_map();
 #
 ##############################################################################
 #
@@ -1205,13 +1215,97 @@ sub handle_comboxentry_history($$;$)
 #
 ##############################################################################
 #
+#   Routine      - display_help
+#
+#   Description  - Displays the specified help section either in Gnome's
+#                  native help browser or the desktop's HTML viewer, depending
+#                  upon installation settings.
+#
+#   Data         - $section - The help section to display. If undef is given
+#                             then the content page is displayed. This is
+#                             optional.
+#
+##############################################################################
+
+
+
+sub display_help(;$)
+{
+
+    my $section = $_[0];
+
+    if (HELP_VIEWER_CMD eq "")
+    {
+
+	# Simply let Gnome handle it using yelp.
+
+	if (defined($section))
+	{
+	    Gnome2::Help->display("mtn-browse.xml", $section);
+	}
+	else
+	{
+	    Gnome2::Help->display("mtn-browse.xml");
+	}
+
+    }
+    else
+    {
+
+	my($cmd,
+	   $url);
+
+	# Use the specified HTML viewer to display the help section.
+
+	$section = "index" unless defined($section);
+	if (exists($help_ref_to_url_map{$section}))
+	{
+	    $url = $help_ref_to_url_map{$section};
+	}
+	else
+	{
+	    $url = $help_ref_to_url_map{"index"};
+	}
+	if (! defined($url) || $url eq "")
+	{
+	    my $dialog = Gtk2::MessageDialog->new
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __("The requested help section\n"
+		    . "cannot be found or is not known."));
+	    WindowManager->instance()->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+	}
+	$cmd = HELP_VIEWER_CMD;
+	if ($cmd =~ m/\{url\}/)
+	{
+	    $cmd =~ s/\{url\}/$url/g;
+	}
+	else
+	{
+	    $cmd .= " " . $url;
+	}
+
+	# Launch it.
+
+	system($cmd . " &");
+
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - register_help_callbacks
 #
 #   Description  - Register all of the context sensitive help callbacks for
 #                  the specified window instance.
 #
 #   Data         - $instance : The window instance.
-#                  $details  : A list of records containing the widget and
+#                  $details  : A list of records containing the widget and the
 #                              help reference for that widget. If a widget is
 #                              set to undef then that entry represents the
 #                              default help callback for that entire window.
@@ -1227,6 +1321,9 @@ sub register_help_callbacks($@)
 
     my $wm = WindowManager->instance();
 
+    build_help_ref_to_url_map()
+	if (HELP_VIEWER_CMD ne "" && keys(%help_ref_to_url_map) == 0);
+
     foreach my $entry (@details)
     {
 	my $help_ref = $entry->{help_ref};
@@ -1238,8 +1335,7 @@ sub register_help_callbacks($@)
 			      my($widget, $instance) = @_;
 			      return if ($instance->{in_cb});
 			      local $instance->{in_cb} = 1;
-			      Gnome2::Help->display("mtn-browse.xml",
-						    $help_ref);
+			      display_help($help_ref);
 			  });
     }
 
@@ -1517,6 +1613,147 @@ sub glade_signal_autoconnect($$)
 			    $connect_object ? $connect_object : $user_data);
 	 },
 	 $client_data);
+
+}
+#
+##############################################################################
+#
+#   Routine      - build_help_ref_to_url_map
+#
+#   Description  - Build up a map that translates an HTML help file link name
+#                  into a fully qualified URL.
+#
+#   Data         - None.
+#
+##############################################################################
+
+
+
+sub build_help_ref_to_url_map()
+{
+
+    my($dir,
+       $dir_path,
+       $fname,
+       $locale,
+       @lparts,
+       $nr_parts,
+       $prog,
+       $tmp);
+
+    # Ask Gnome where the based help directory is.
+
+    return unless (defined($prog = Gnome2::Program->get_program()));
+    ($dir_path) = $prog->locate_file("app-help", "mtn-browse.xml", FALSE);
+    $dir_path = dirname($dir_path);
+
+    # Work out the locale component, going from the most specific to the least.
+    # If a specific locale directory isn't found then fall back onto the
+    # POSIX/C locale.
+
+    $locale = setlocale(LC_MESSAGES);
+    @lparts = split(/[_.@]/, $locale);
+    $nr_parts = scalar(@lparts);
+    if (-d ($tmp = File::Spec->catfile($dir_path, $locale)))
+    {
+	$dir_path = $tmp;
+    }
+    elsif ($nr_parts >= 3
+	   && -d ($tmp = File::Spec->catfile($dir_path,
+					     $lparts[0] . "_"
+					     . $lparts[1] . "."
+					     . $lparts[2])))
+    {
+	$dir_path = $tmp;
+    }
+    elsif ($nr_parts >= 2
+	   && -d ($tmp = File::Spec->catfile($dir_path,
+					     $lparts[0] . "_" . $lparts[1])))
+    {
+	$dir_path = $tmp;
+    }
+    elsif ($nr_parts >= 1
+	   && -d ($tmp = File::Spec->catfile($dir_path, $lparts[0])))
+    {
+	$dir_path = $tmp;
+    }
+    elsif (-d ($tmp = File::Spec->catfile($dir_path, "POSIX")))
+    {
+	$dir_path = $tmp;
+    }
+    elsif (-d ($tmp = File::Spec->catfile($dir_path, "C")))
+    {
+	$dir_path = $tmp;
+    }
+    else
+    {
+	return;
+    }
+
+    # Now open the directory and scan all HTML files for links.
+
+    return unless (defined($dir = IO::Dir->new($dir_path)));
+    while (defined($fname = $dir->read()))
+    {
+	my($file,
+	   $full_name);
+	$full_name = File::Spec->catfile($dir_path, $fname);
+	$full_name = File::Spec->rel2abs($full_name);
+
+	# Only scan HTML files.
+
+	if ($fname =~ m/^.*\.html$/
+	    && defined($file = IO::File->new($full_name, "r")))
+	{
+	    my $line;
+	    while (defined($line = $file->getline()))
+	    {
+
+		my($dir_string,
+		   @dirs,
+		   $file_name,
+		   @list,
+		   $url,
+		   $volume);
+
+		# Mangle the file name into a URL.
+
+		($volume, $dir_string, $file_name) =
+		    File::Spec->splitpath($full_name);
+		@dirs = File::Spec->splitdir($dir_string);
+		$url = "file://";
+		$url .= "/" . $volume . "/" if ($volume ne "");
+		$url .= join("/", @dirs);
+		$url .= "/" if ($url =~ m/.*[^\/]$/);
+		$url .= $file_name;
+
+		# Process each link of the form <a name="..."> but filter out
+		# the internally generated ones (used for all figures).
+
+		@list = ($line =~ m/<a name=\"([^\"]+)\">/g);
+		foreach my $link (@list)
+		{
+		    $help_ref_to_url_map{$link} = $url . "#" . $link
+			if ($link !~ m/^id\d+$/);
+		}
+
+		# Special case the contents page making sure that it has
+		# appropiate default entries pointing to it.
+
+		if ($fname eq "monotone-browse.html")
+		{
+		    $help_ref_to_url_map{""} = $url;
+		    $help_ref_to_url_map{"contents"} = $url;
+		    $help_ref_to_url_map{"index"} = $url;
+		}
+
+	    }
+	    $file->close();
+	}
+    }
+    $dir->close();
+
+    return;
 
 }
 

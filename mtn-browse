@@ -44,9 +44,10 @@ require 5.008005;
 
 BEGIN
 {
-    use constant LIB_DIR        => "@INST:LIB_DIR@";
-    use constant MIME_GLOB_FILE => "@INST:GLOBS_FILE@";
-    use constant PREFIX_DIR     => "@INST:PREFIX_DIR@";
+    use constant HELP_VIEWER_CMD => "@INST:HELP_VIEWER_CMD@";
+    use constant LIB_DIR         => "@INST:LIB_DIR@";
+    use constant MIME_GLOB_FILE  => "@INST:GLOBS_FILE@";
+    use constant PREFIX_DIR      => "@INST:PREFIX_DIR@";
 }
 use locale;
 use strict;
@@ -72,6 +73,7 @@ use Gtk2::Pango;
 use Gtk2::SourceView;
 use Locale::TextDomain ("mtn-browse",
 			File::Spec->catfile(PREFIX_DIR, "share", "locale"));
+use IO::Dir;
 use IO::File;
 use IPC::Open3;
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
@@ -353,8 +355,9 @@ sub view_button_clicked_cb($$);
 
     # Setup the callback for the <F1> accelerator key for all windows.
 
-    WindowManager->instance()->help_connect
-	(undef, undef, sub { Gnome2::Help->display("mtn-browse.xml"); });
+    WindowManager->instance()->help_connect(undef,
+					    undef,
+					    sub { display_help(); });
 
     # Hand control over to Gtk2.
 
@@ -790,7 +793,7 @@ sub help_toolbutton_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    Gnome2::Help->display("mtn-browse.xml");
+    display_help();
 
 }
 #
