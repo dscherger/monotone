@@ -1,0 +1,50 @@
+How to prepare a mtn-browse-m.nn.tar.gz distribution:
+
+1) Update software. Update the version number in lib/perl/Globals and update
+   the "About" dialog details in mtn-browse if necessary to include additional
+   contributors etc.
+
+2) Update the ChangeLog with the update history taken from Monotone. Only
+   dedupe entries or remove entries that negate one another so that we only
+   list net changes (e,g, remove things like "Added X." followed by "Removed X
+   because it didn't work."). All other entries stay, grouped and sorted on
+   significance.
+
+3) Likewise update the NEWS file. However this time break changes into New
+   Changes and Bugs Fixed. Keep entries high level and user centric so no need
+   to go into all of the gory details.
+
+4) Update the README file with any relevant details. The most likely will be
+   version related, what files get installed and where (shown in the text art
+   listing), installation changes such as extra switches and dependency details
+   (especially with respect to the Monotone::AutomateStdio module).
+
+5) Run generate-pot-file and update the locale/mtn-browse.pot file.
+
+6) Clean up and check all your changes in, making sure mtn-browse is not in its
+   installed state (check the BEGIN block at the top of the file).
+
+7) Generate the tar ball by doing the following:
+
+   - Generate the HTML help files in the locale/help directories by using the
+     following command in each locale directory:
+
+         xsltproc /usr/share/sgml/docbook/yelp/db2html.xsl mtn-browse.xml
+
+   - Get the latest stable version of the Monotone::AutomateStdio module and
+     place the one pm and one pod file under lib/perl/Monotone (you will need
+     to create the Monotone directory). Make sure permissions are consistent
+     with other files and directories (which they should be).
+
+   - Remove unneeded files by doing the following:
+
+         rm -rf .mtn-ignore _MTN artwork distro-readme generate-pot-file
+
+   - Rename the parent directory from mtn-browse to mtn-browse-m.nn. Where m
+     and nn are the major and minor version numbers of the release.
+
+   - Create the compressed tar ball by doing:
+
+         tar cvzf mtn-browse-m.nn.tar.gz ./mtn-browse-m.nn
+
+Tony.
