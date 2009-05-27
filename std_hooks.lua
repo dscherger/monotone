@@ -372,6 +372,19 @@ function use_inodeprints()
    return false
 end
 
+function get_date_format_spec()
+   -- Return the strftime(3) specification to be used to print dates
+   -- in human-readable format after conversion to the local timezone.
+   -- The default produces output like this: 22 May 2009, 09:06:14 AM
+   -- (the month names are localized).
+   return "%d %b %Y, %I:%M:%S %p"
+
+   -- A sampling of other possible formats you might want:
+   --   default for your locale: "%c" (may include a confusing timezone label)
+   --   like ctime(3):  "%a %b %d %H:%M:%S %Y"
+   --   email style:    "%a, %d %b %Y %H:%M:%S"
+   --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
+end
 
 -- trust evaluation hooks
 
@@ -1199,6 +1212,10 @@ function get_mtn_command(host)
         return "mtn"
 end
 
+function get_remote_unix_socket_command(host)
+    return "socat"
+end
+
 function get_default_command_options(command)
    local default_args = {}
    return default_args
@@ -1249,11 +1266,6 @@ function hook_wrapper(func_name, ...)
     end
     local res = { _G[func_name](unpack(args, 1, args.n)) }
     return hook_wrapper_dump._table(res)
-end
-
-
-function get_remote_unix_socket_command(host)
-    return "socat"
 end
 
 do

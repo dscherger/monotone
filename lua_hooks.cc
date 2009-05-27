@@ -559,6 +559,23 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
   return ll.ok() && !args.empty();
 }
 
+bool
+lua_hooks::hook_get_date_format_spec(std::string & spec)
+{
+  bool exec_ok
+    = Lua(st)
+    .func("get_date_format_spec")
+    .call(0, 1)
+    .extract_str(spec)
+    .ok();
+
+  // If the hook fails, disable date formatting.
+  if (!exec_ok)
+    spec = "";
+  return exec_ok;
+}
+
+
 bool lua_hooks::hook_hook_wrapper(std::string const & func_name,
                                   std::vector<std::string> const & args,
                                   std::string & out)

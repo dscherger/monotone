@@ -113,6 +113,8 @@ public:
   bool hook_get_default_command_options(commands::command_id const & cmd,
                                         args_vector & args);
 
+  bool hook_get_date_format_spec(std::string & spec);
+
   // workspace hooks
   bool hook_use_inodeprints();
 

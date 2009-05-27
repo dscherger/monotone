@@ -1,5 +1,5 @@
-// Copyright (C) 2007, 2008 Zack Weinberg <zackw@panix.com>
-//                          Markus Wanner <markus@bluegap.ch>
+// Copyright (C) 2007-2009 Zack Weinberg <zackw@panix.com>
+//                         Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -36,14 +36,24 @@
 //    for 'time_t'.  This is only a problem because we support reading
 //    CVS/RCS ,v files, which encode times as decimal seconds since the Unix
 //    epoch; so we must support that epoch regardless of what the system does.
-
+//
+// Note that while we track dates to the millisecond in memory, we do not
+// record milliseconds in the database, nor do we ask the system for
+// sub-second resolution when retrieving the current time, nor do we display
+// milliseconds to the user.  There isn't much point in fixing one of these
+// problems if we don't fix all of them, and while the first two would be
+// straightforward, the third is very hard -- it would require us to
+// reimplement strftime() with our own extension for the purpose.
 
 // On Solaris, these macros are already defined by system includes. We want
 // to use our own, so we undef them here.
 #undef SEC
 #undef MILLISEC
 
+using std::ostream;
 using std::string;
+using std::time_t;
+using std::tm;
 
 // Our own "struct tm"-like struct to represent broken-down times
 struct broken_down_time {
@@ -121,7 +131,7 @@ inline s32
 days_in_year(s32 year)
 {
   return is_leap_year(year) ? 366 : 365;
- }
+}
 
 inline bool
 valid_ms_count(s64 d)
@@ -130,7 +140,7 @@ valid_ms_count(s64 d)
 }
 
 static void
-our_gmtime(s64 ts, broken_down_time & tm)
+our_gmtime(s64 ts, broken_down_time & tb)
 {
   // validate our assumptions about which basic type is u64 (see above).
   I(PROBABLE_S64_MAX == std::numeric_limits<s64>::max());
@@ -149,14 +159,14 @@ our_gmtime(s64 ts, broken_down_time & tm)
   u64 days = t / MILLISEC(DAY);
   u32 ms_in_day = t % MILLISEC(DAY);
 
-  tm.millisec = ms_in_day % 1000;
+  tb.millisec = ms_in_day % 1000;
   ms_in_day /= 1000;
 
-  tm.sec = ms_in_day % 60;
+  tb.sec = ms_in_day % 60;
   ms_in_day /= 60;
 
-  tm.min = ms_in_day % 60;
-  tm.hour = ms_in_day / 60;
+  tb.min = ms_in_day % 60;
+  tb.hour = ms_in_day / 60;
 
   // This is the result of inverting the equation
   //    yb = y*365 + y/4 - y/100 + y/400
@@ -181,7 +191,7 @@ our_gmtime(s64 ts, broken_down_time & tm)
     }
   I(0 <= delta && delta < days_in_year(year));
 
-  tm.year = year;
+  tb.year = year;
   days = delta;
 
   // <yakko> Now, the months digit!
@@ -198,47 +208,47 @@ our_gmtime(s64 ts, broken_down_time & tm)
       month++;
       I(month <= 12);
     }
-  tm.month = month;
-  tm.day = days + 1;
+  tb.month = month;
+  tb.day = days + 1;
 }
 
 static s64
-our_timegm(broken_down_time const & tm)
+our_timegm(broken_down_time const & tb)
 {
   s64 d;
 
   // range checks
-  I(tm.year  >  0    && tm.year  <= 292278994);
-  I(tm.month >= 1    && tm.month <= 12);
-  I(tm.day   >= 1    && tm.day   <= 31);
-  I(tm.hour  >= 0    && tm.hour  <= 23);
-  I(tm.min   >= 0    && tm.min   <= 59);
-  I(tm.sec   >= 0    && tm.sec   <= 60);
-  I(tm.millisec >= 0 && tm.millisec <= 999);
+  I(tb.year  >  0    && tb.year  <= 292278994);
+  I(tb.month >= 1    && tb.month <= 12);
+  I(tb.day   >= 1    && tb.day   <= 31);
+  I(tb.hour  >= 0    && tb.hour  <= 23);
+  I(tb.min   >= 0    && tb.min   <= 59);
+  I(tb.sec   >= 0    && tb.sec   <= 60);
+  I(tb.millisec >= 0 && tb.millisec <= 999);
 
   // years (since 1970)
-  d = YEAR * (tm.year - 1970);
+  d = YEAR * (tb.year - 1970);
   // leap days to add (or subtract)
-  int add_leap_days = (tm.year - 1) / 4 - 492;
-  add_leap_days -= (tm.year - 1) / 100 - 19;
-  add_leap_days += (tm.year - 1) / 400 - 4;
+  int add_leap_days = (tb.year - 1) / 4 - 492;
+  add_leap_days -= (tb.year - 1) / 100 - 19;
+  add_leap_days += (tb.year - 1) / 400 - 4;
   d += add_leap_days * DAY;
 
   // months
-  for (int m = 1; m < tm.month; ++m)
+  for (int m = 1; m < tb.month; ++m)
     {
       d += DAYS_PER_MONTH[m-1] * DAY;
-      if (m == 2 && is_leap_year(tm.year))
+      if (m == 2 && is_leap_year(tb.year))
         d += DAY;
     }
 
   // days within month, and so on
-  d += (tm.day - 1) * DAY;
-  d += tm.hour * HOUR;
-  d += tm.min * MIN;
-  d += tm.sec * SEC;
+  d += (tb.day - 1) * DAY;
+  d += tb.hour * HOUR;
+  d += tb.min * MIN;
+  d += tb.sec * SEC;
 
-  return MILLISEC(d) + tm.millisec;
+  return MILLISEC(d) + tb.millisec;
 }
 
 // In a few places we need to know the offset between the Unix epoch and the
@@ -253,8 +263,8 @@ get_epoch_offset()
   if (know_epoch_offset)
     return epoch_offset;
 
-  std::time_t epoch = 0;
-  std::tm t = *std::gmtime(&epoch);
+  time_t epoch = 0;
+  tm t = *std::gmtime(&epoch);
 
   our_t.millisec = 0;
   our_t.sec = t.tm_sec;
@@ -304,8 +314,7 @@ date_t::date_t(int year, int month, int day,
   broken_down_time t;
   t.millisec = millisec;
   t.sec = sec;
-  t.min = min;
-  t.hour = hour;
+  t.min = min;  t.hour = hour;
   t.day = day;
   t.month = month;
   t.year = year;
@@ -317,7 +326,7 @@ date_t::date_t(int year, int month, int day,
 date_t
 date_t::now()
 {
-  std::time_t t = std::time(0);
+  time_t t = std::time(0);
   s64 tu = s64(t) * 1000 + get_epoch_offset();
   E(valid_ms_count(tu), origin::system,
     F("current date '%s' is outside usable range\n"
@@ -329,24 +338,57 @@ date_t::now()
 string
 date_t::as_iso_8601_extended() const
 {
-  broken_down_time tm;
+  broken_down_time tb;
   I(valid());
-  our_gmtime(d, tm);
+  our_gmtime(d, tb);
   return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
-             % tm.year % tm.month % tm.day
-             % tm.hour % tm.min % tm.sec).str();
+             % tb.year % tb.month % tb.day
+             % tb.hour % tb.min % tb.sec).str();
 }
 
-std::ostream &
-operator<< (std::ostream & o, date_t const & d)
+ostream &
+operator<< (ostream & o, date_t const & d)
 {
   return o << d.as_iso_8601_extended();
 }
 
 template <> void
-dump(date_t const & d, std::string & s)
+dump(date_t const & d, string & s)
 {
   s = d.as_iso_8601_extended();
+}
+
+string
+date_t::as_formatted_localtime(string const & fmt) const
+{
+  time_t t(d/1000 - get_epoch_offset());
+  tm tb(*std::localtime(&t));
+  char buf[128];
+
+  // Poison the buffer so we can tell whether strftime() produced
+  // no output at all.
+  buf[0] = '#';
+
+  size_t wrote = strftime(buf, sizeof buf, fmt.c_str(), &tb);
+
+  if (wrote > 0)
+    return string(buf); // yay, it worked
+
+  if (wrote == 0 && buf[0] == '\0') // no output
+    {
+      static bool warned = false;
+      if (!warned)
+        {
+          warned = true;
+          W(F("time format specification '%s' produces no output") % fmt);
+        }
+      return string();
+    }
+
+  E(false, origin::user,
+    F("date '%s' is too long when formatted using '%s'"
+      " (the result must fit in %d characters)")
+    % (sizeof buf - 1));
 }
 
 s64
