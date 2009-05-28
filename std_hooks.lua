@@ -384,6 +384,8 @@ function get_date_format_spec()
    --   like ctime(3):  "%a %b %d %H:%M:%S %Y"
    --   email style:    "%a, %d %b %Y %H:%M:%S"
    --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
+   --
+   --   ISO 8601, no timezone conversion: ""
 end
 
 -- trust evaluation hooks

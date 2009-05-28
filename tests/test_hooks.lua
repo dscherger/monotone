@@ -57,6 +57,10 @@ function get_author(branchname)
 	return "tester@test.net"
 end
 
+function get_date_format_spec()
+        return ""
+end
+
 function ignore_file(name)
 	if (string.find(name, "ts-std", 1, true)) then return true end
 	if (string.find(name, "testsuite.log")) then return true end
