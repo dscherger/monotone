@@ -15,12 +15,40 @@
 
 namespace http
 {
+
   static std::string const version("HTTP/1.1");
+
   static std::string const post("POST");
   static std::string const get("GET");
   static std::string const put("PUT");
 
+  namespace status
+  {
+    struct value
+    {
+      value() : code(0), message("") {}
+      value(size_t code, std::string const message) : code(code), message(message) {}
+      size_t code;
+      std::string message;
+
+      bool operator==(value const & other) const
+      {
+        return code == other.code;
+      }
+    };
+
+    static const value ok(200, "OK");
+
+    static const value bad_request(400, "Bad Request");
+    static const value not_found(404, "Not Found");
+    static const value method_not_allowed(405, "Method Not Allowed");
+    static const value not_acceptable(406, "Not Acceptable");
+
+    static const value internal_server_error(500, "Internal Server Error");
+  }
+
   typedef std::map<std::string, std::string> header_map;
+  typedef header_map::const_iterator header_iterator;
 
   struct message
   {
@@ -46,8 +74,7 @@ namespace http
   struct response : public message
   {
     std::string version;
-    size_t status_code;
-    std::string status_message;
+    status::value status;
   };
 
   class connection

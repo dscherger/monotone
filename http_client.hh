@@ -46,6 +46,46 @@ struct http_client
   void execute(http::request const & request, http::response & response);
 };
 
+class raw_channel
+  : public channel
+{
+  http_client & client;
+public:
+  raw_channel(http_client & c)
+    : client(c)
+    { };
+
+  virtual void inquire_about_revs(std::set<revision_id> const & query_set,
+                                    std::set<revision_id> & theirs) const;
+  virtual void get_descendants(std::set<revision_id> const & common_revs,
+                               std::vector<revision_id> & inbound_revs) const;
+
+  virtual void push_full_rev(revision_id const & rid,
+                             revision_t const & rev,
+                             std::vector<file_data_record> const & data_records,
+                             std::vector<file_delta_record> const & delta_records) const;
+
+  virtual void pull_full_rev(revision_id const & rid,
+                             revision_t & rev,
+                             std::vector<file_data_record> & data_records,
+                             std::vector<file_delta_record> & delta_records) const;
+
+  virtual void push_file_data(file_id const & id,
+                              file_data const & data) const;
+  virtual void push_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta const & delta) const;
+
+  virtual void push_rev(revision_id const & rid, revision_t const & rev) const;
+  virtual void pull_rev(revision_id const & rid, revision_t & rev) const;
+
+  virtual void pull_file_data(file_id const & id,
+                              file_data & data) const;
+  virtual void pull_file_delta(file_id const & old_id,
+                               file_id const & new_id,
+                               file_delta & delta) const;
+};
+
 class json_channel
   : public channel
 {

@@ -441,10 +441,10 @@ run_gsync_protocol(lua_hooks & lua, database & db, channel const & ch,
   // always received before child revisions.
 
   if (pushing)
-    push_full_revs(db, ch, outbound_revs, dryrun);
+    push_revs(db, ch, outbound_revs, dryrun);
 
   if (pulling)
-    pull_full_revs(db, ch, inbound_revs, dryrun);
+    pull_revs(db, ch, inbound_revs, dryrun);
 }
 
 #ifdef BUILD_UNIT_TESTS

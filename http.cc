@@ -19,8 +19,6 @@ using std::string;
 
 using boost::lexical_cast;
 
-typedef http::header_map::const_iterator header_iterator;
-
 namespace http
 {
 
@@ -61,12 +59,12 @@ namespace http
   {
     bool good =
       read(r.version, " ") &&
-      read(r.status_code, " ") &&
-      read(r.status_message, "\r\n");
+      read(r.status.code, " ") &&
+      read(r.status.message, "\r\n");
 
     if (good)
       L(FL("read http response: %s %s %s") 
-        % r.version % r.status_code % r.status_message);
+        % r.version % r.status.code % r.status.message);
 
     return good && read_headers(r) && read_body(r);
   }
@@ -74,10 +72,10 @@ namespace http
   void
   connection::write(response const & r)
   {
-    L(FL("write http response: %s %s %s") % r.version % r.status_code % r.status_message);
+    L(FL("write http response: %s %s %s") % r.version % r.status.code % r.status.message);
     write(r.version, " ");
-    write(r.status_code, " ");
-    write(r.status_message, "\r\n");
+    write(r.status.code, " ");
+    write(r.status.message, "\r\n");
 
     write_headers(r);
     write_body(r);
@@ -149,7 +147,11 @@ namespace http
   connection::read_body(message & m)
   {
     if (m.headers.find("Content-Length") == m.headers.end())
-      return false;
+      {
+        L(FL("missing content length header"));
+        // FIXME return 411 Length Required here
+        return false;
+      }
 
     size_t length = lexical_cast<size_t>(m.headers["Content-Length"]);
     L(FL("reading http body: %d bytes") % length);

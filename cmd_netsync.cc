@@ -540,7 +540,8 @@ CMD(gsync, "gsync", "", CMD_REF(network),
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
 
-  // how do we select between json and basic_io?
+  // FIXME how do we select between json_channel with json messages and
+  // raw_channel with old basic_io messages?
 
   http_client h(app.opts, app.lua, info);
   run_gsync_protocol(app.lua, db, json_channel(h),

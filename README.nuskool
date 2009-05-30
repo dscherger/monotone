@@ -38,3 +38,36 @@ Here's what you need to do to try out the nuskool sync protocol using raw HTTP
 
    $ mtn --db client.db gsync http://localhost:8008 '*' --debug
 
+
+
+Here's a quick tour through the nuskool code base:
+
+* cmd_scgi.cc (gserve): server command to start gsync server
+  (process_request): called to handle each inbound http request and return a
+  suitable response
+
+* cmd_netsync.cc (gsync): client command to push/pull/sync using gsync;
+  selection of http channel is currently hard-coded here
+
+* gsync.{cc,hh} (run_gsync_protocol): main protocol driver called by gsync
+  command above
+  (channel): declaration of generic channel
+
+* http_client.{cc,hh}: http request/response execution; implementation of raw
+  and json channels
+
+* http.{cc,hh}: generic http request/response io and connection handling
+
+* json_msgs.{cc,hh}: json messages used with gsync protocol; transcoding between
+  existing revision formats and equivalent json representations for transport
+  over http
+
+* json_io.{cc,hh}: json message printing and parsing
+
+
+TODO
+
+* replace various connection options (--bind, --http, etc.) with nice url's
+* do something rsync or netsync like to handle certs after rev transmission
+* see if this can be made to go as fast as netsync
+* possibly remove the overly verbose and repetetive json stuff

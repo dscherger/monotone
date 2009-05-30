@@ -99,6 +99,9 @@ http_client::execute(http::request const & request, http::response & response)
 
   // the uri in this request is relative to the server uri and needs to be adjusted
   http::connection connection(*io);
+
+  P(F("http request: %s %s %s") % request.method % request.uri % request.version);
+
   connection.write(request);
 
   if (io->good())
@@ -110,7 +113,11 @@ http_client::execute(http::request const & request, http::response & response)
   if (io->eof())
     L(FL("connection is eof"));
 
+  // FIXME: this should really attempt to pipeline several requests
+
   I(connection.read(response));
+
+  P(F("http response: %s %d %s") % response.version % response.status.code % response.status.message);
 
   if (io->good())
     L(FL("connection is good"));
@@ -144,9 +151,152 @@ http_client::execute(http::request const & request, http::response & response)
       open = false;
     }
 
-  E(response.status_code == 200, origin::network,
+  E(response.status == http::status::ok, origin::network,
+  // E(response.status_code == 200, origin::network,
     F("request failed: %s %d %s") 
-    % response.version % response.status_code % response.status_message);
+    % response.version % response.status.code % response.status.message);
+}
+
+/////////////////////////////////////////////////////////////////////
+// raw_channel adaptor
+/////////////////////////////////////////////////////////////////////
+
+void
+raw_channel::inquire_about_revs(set<revision_id> const & query_set,
+                                set<revision_id> & theirs) const
+{
+  theirs.clear();
+  ostringstream request_data;
+
+  for (set<revision_id>::const_iterator i = query_set.begin(); 
+       i != query_set.end(); ++i)
+    request_data << *i << "\n";
+
+  string body = request_data.str();
+
+  http::request request;
+  http::response response;
+
+  request.method = http::post;
+  request.uri = client.resolve("/inquire");
+  request.version = http::version;
+  request.headers["Content-Type"] = "text/plain";
+  request.headers["Content-Length"] = lexical_cast<string>(body.size());
+
+  request.body = body;
+
+  client.execute(request, response);
+
+  istringstream response_data(response.body);
+  while (response_data.good())
+    {
+      string rev;
+      std::getline(response_data, rev);
+      theirs.insert(revision_id(decode_hexenc(rev, origin::network), origin::network));
+    }
+}
+
+void
+raw_channel::get_descendants(set<revision_id> const & common_revs,
+                             vector<revision_id> & inbound_revs) const
+{
+  inbound_revs.clear();
+  ostringstream request_data;
+
+  for (set<revision_id>::const_iterator i = common_revs.begin(); 
+       i != common_revs.end(); ++i)
+    request_data << *i << "\n";
+
+  string body = request_data.str();
+
+  http::request request;
+  http::response response;
+
+  request.method = http::post;
+  request.uri = client.resolve("/descendants");
+  request.version = http::version;
+  request.headers["Content-Type"] = "text/plain";
+  request.headers["Content-Length"] = lexical_cast<string>(body.size());
+  //request.headers["Accept"] = "text/plain";
+  //request.headers["Accept-Encoding"] = "identity";
+  // FIXME: put a real host value in here (lighttpd seems to require a host header)
+  request.headers["Host"] = "localhost";
+  request.body = body;
+
+  client.execute(request, response);
+
+  istringstream response_data(response.body);
+  while (response_data.good())
+    {
+      string rev;
+      std::getline(response_data, rev);
+      inbound_revs.push_back(revision_id(decode_hexenc(rev, origin::network), origin::network));
+    }
+}
+
+void
+raw_channel::push_full_rev(revision_id const & rid,
+                           revision_t const & rev,
+                           vector<file_data_record> const & data_records,
+                           vector<file_delta_record> const & delta_records) const
+{
+  // file data records
+  // file delta records
+  // revision text
+
+  // name args length\n
+  // data
+}
+
+void
+raw_channel::pull_full_rev(revision_id const & rid,
+                           revision_t & rev,
+                           vector<file_data_record> & data_records,
+                           vector<file_delta_record> & delta_records) const
+{
+  // file data records
+  // file delta records
+  // revision text
+
+  // name args length\n
+  // data
+}
+
+void
+raw_channel::push_file_data(file_id const & id,
+                            file_data const & data) const
+{
+}
+
+void
+raw_channel::push_file_delta(file_id const & old_id,
+                             file_id const & new_id,
+                             file_delta const & delta) const
+{
+}
+
+void
+raw_channel::push_rev(revision_id const & rid,
+                      revision_t const & rev) const
+{
+}
+
+void
+raw_channel::pull_rev(revision_id const & rid, revision_t & rev) const
+{
+}
+
+void
+raw_channel::pull_file_data(file_id const & id,
+                            file_data & data) const
+{
+}
+
+void
+raw_channel::pull_file_delta(file_id const & old_id,
+                             file_id const & new_id,
+                             file_delta & delta) const
+{
 }
 
 /////////////////////////////////////////////////////////////////////

@@ -12,6 +12,8 @@
 #include <sstream>
 #include <map>
 
+#include <boost/shared_ptr.hpp>
+
 #include "app_state.hh"
 #include "cmd.hh"
 #include "constants.hh"
@@ -50,6 +52,7 @@ using std::string;
 using std::vector;
 
 using boost::lexical_cast;
+using boost::shared_ptr;
 
 // SCGI interface is pretty straightforward
 //
@@ -270,90 +273,187 @@ do_cmd(database & db, json_io::json_object_t cmd_obj)
 }
 
 
-void
-process_json_request(database & db, 
-                     http::request const & request, http::response & response)
+struct request_handler
 {
-  json_io::input_source in(request.body, "json");
-  json_io::tokenizer tok(in);
-  json_io::parser p(tok);
-  json_io::json_object_t obj = p.parse_object();
+  string method;
+  http::header_map headers;
+  request_handler(string const & method) : method(method) {}
+  virtual ~request_handler() {}
+  virtual void execute(database & db,
+                       http::request const & request, 
+                       http::response & response) const = 0;
 
-  if (static_cast<bool>(obj))
-    {
-      transaction_guard guard(db);
-      L(FL("read JSON object"));
+  bool verify_method(http::request const & request) const
+  {
+    return method == request.method;
+  }
 
-      json_io::json_value_t res = do_cmd(db, obj); // process json request
+  bool verify_headers(http::request const & request) const
+  {
+    for (http::header_iterator i = headers.begin(); i != headers.end(); ++i)
+      {
+        http::header_iterator j = request.headers.find(i->first);
+        if (j == request.headers.end()) return false;
+        if (j->second != i->second) return false;
+      }
+    return true;
+  }
 
-      if (static_cast<bool>(res))
-        {
-          json_io::printer out_data;
-          res->write(out_data);
-          L(FL("sending JSON %d-byte response") % (out_data.buf.size()));
+};
 
-          response.version = http::version;
-          response.status_code = 200;
-          response.status_message = "OK";
-          response.headers["Connection"] = "close";
-          response.headers["Status"] = "200 OK";
-          response.headers["Content-Length"] = lexical_cast<string>(out_data.buf.size());
-          response.headers["Content-Type"] = "application/jsonrequest";
-          response.body = out_data.buf;
-        }
-    }
-  else
-    {
-      // FIXME: do something better for reporting errors from the server
-      std::cerr << "parse error" << std::endl;
-    }
-}
+typedef map<string, shared_ptr<request_handler const> > handler_map;
+
+struct json_handler : public request_handler
+{
+  json_handler() : request_handler(http::post)
+  {
+    headers["Content-Type"] = "application/jsonrequest";
+    headers["Accept"] = "application/jsonrequest";
+  }
+
+  void execute(database & db, 
+               http::request const & request, http::response & response) const
+  {
+    json_io::input_source in(request.body, "json");
+    json_io::tokenizer tok(in);
+    json_io::parser p(tok);
+    json_io::json_object_t obj = p.parse_object();
+
+    if (static_cast<bool>(obj))
+      {
+        transaction_guard guard(db);
+        L(FL("read JSON object"));
+
+        json_io::json_value_t res = do_cmd(db, obj); // process json request
+
+        if (static_cast<bool>(res))
+          {
+            json_io::printer out_data;
+            res->write(out_data);
+            L(FL("sending JSON %d-byte response") % (out_data.buf.size()));
+
+            response.status = http::status::ok;
+            response.headers["Content-Type"] = "application/jsonrequest";
+            response.body = out_data.buf;
+          }
+        // else ?!?
+      }
+    else
+      {
+        response.status = http::status::bad_request;
+      }
+  }
+};
+
+struct inquire_handler : public request_handler
+{
+  inquire_handler() : request_handler(http::post)
+  {
+    headers["Content-Type"] = "text/plain";
+    headers["Accept"] = "text/plain";
+  }
+
+  void execute(database & db, 
+               http::request const & request, http::response & response) const
+  {
+  }
+};
+
 
 void
-process_request(database & db, http::connection & connection)
+process_request(database & db, http::connection & connection, 
+                handler_map const & handlers)
 {
   http::request request;
   http::response response;
 
+  // 411 Length Required -- this should be in the reader
   if (connection.read(request))
     {
       try
         {
-          if (request.method == http::post && 
-              request.headers["Content-Type"] == "application/jsonrequest")
-            process_json_request(db, request, response);
+          // note that the following uri's may be prefixed with a scgi mount
+          // point such as "/monotone" from the lighttpd.conf. the
+          // strip-request-uri option sounds like it could help with this
+          // but doesn't seem to work and apache doesn't seem to have any
+          // configurable way of removing the mount point. this should
+          // possibly be using PATH_INFO instead of REQUEST_URI or should be
+          // stripping the prefix as specified in the service url.
+
+          string uri = request.uri;
+          L(FL("checking uri: %s") % uri);
+          if (uri.find("/monotone") != string::npos)
+            {
+              // FIXME: this assumes the scgi mount point is /monotone!
+              uri = uri.substr(9);
+              L(FL("removed uri prefix: %s") % uri);
+            }
+              
+          size_t pos = uri.find_last_of('/');
+          string id;
+          if (pos != string::npos && pos != 0)
+            {
+              id = uri.substr(pos+1);
+              uri = uri.substr(0, pos);
+              L(FL("split uri: %s + %s") % uri % id);
+            }
+
+          handler_map::const_iterator h = handlers.find(uri);
+
+          // FIXME make handler_map a std::multimap with url as the key
+          //
+          // (1) lookup set of handlers for a given url
+          // (2) remove handlers not matching method
+          //     return method_not_allowed if no remaining handlers
+          // (3) remove handlers not matching headers
+          //     return not_acceptable if no remaining handlers
+          //
+          // if more than one handler remains return internal_server_error
+
+          if (h != handlers.end())
+            {
+              request_handler const & handler = *(h->second);
+
+              if (!handler.verify_method(request))
+                {
+                  response.status = http::status::method_not_allowed;
+                }
+              else if (!handler.verify_headers(request)) 
+                {
+                  response.status = http::status::not_acceptable;
+                }
+              else
+                handler.execute(db, request, response);
+            }
           else
-            I(false);
+            {
+              response.status = http::status::not_found;
+            }
         }
       catch (gserve_error & e)
         {
           std::cerr << "gserve error -- " << e.msg << std::endl;
-          response.version = connection.version();
-          response.status_code = 500;
-          response.status_message = "Internal Server Error";
-          response.headers["Status"] = "500 Internal Server Error";
+          response.status = http::status::internal_server_error;
         }
       catch (recoverable_failure & e)
         {
           std::cerr << "recoverable failure -- " << e.what() << std::endl;
-          response.version = connection.version();
-          response.status_code = 500;
-          response.status_message = "Internal Server Error";
-          response.headers["Status"] = "500 Internal Server Error";
+          response.status = http::status::internal_server_error;
         } 
     }
   else
     {
-      std::cerr << "bad request" << std::endl;
-
-      response.version = connection.version();
-      response.status_code = 400;
-      response.status_message = "Bad Request";
-      response.headers["Status"] = "400 Bad Request";
+      response.status = http::status::bad_request;
     }
 
-  connection.write(response);
+  response.version = connection.version();
+  response.headers["Status"] = 
+    lexical_cast<string>(response.status.code) + " " + response.status.message;
+  response.headers["Content-Length"] = 
+    lexical_cast<string>(response.body.size());
+  // Connection: close ?!?
 
+  connection.write(response);
 }
 
 
@@ -399,6 +499,36 @@ CMD_NO_WORKSPACE(gserve,           // C
     }
   else if (!app.opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used in combination with --stdio"));
+
+  handler_map handlers;
+  handlers["/"] = shared_ptr<request_handler const>(new json_handler);
+
+  handlers["/inquire"] = shared_ptr<request_handler const>(new inquire_handler);
+
+  // POST /             Accept/Content-Type: application/jsonrequest
+
+  // POST /inquire      Accept/Content-Type: text/plain
+  // POST /descendants  Accept/Content-Type: text/plain
+
+  // GET  /revision/... Accept: text/plain
+  // PUT  /revision/... Content-Type: text/plain
+
+  // GET  /revision/... Accept: multipart/mixed; boundary=...
+  // PUT  /revision/... Content-Type: multipart/mixed; boundary=...
+
+  // GET  /data/...     Accept: application/octet-stream
+  // PUT  /data/...     Content-Type: application/octet-stream
+
+  // GET  /delta/.-.    Accept: application/octet-stream
+  // PUT  /delta/.-.    Content-Type: application/octet-stream
+
+  // GET  /certs/...    Accept: application/octet-stream
+  // PUT  /certs/...    Content-Type: application/octet-stream
+
+  // GET  /key/...      Accept: application/octet-stream
+  // PUT  /key/...      Content-Type: application/octet-stream
+
+  // allow multipart GET/PUT revisions that include all associated file data
 
 //   if (app.opts.bind_stdio)
 //     process_request(type, db, std::cin, std::cout);
@@ -456,12 +586,12 @@ CMD_NO_WORKSPACE(gserve,           // C
                       if (app.opts.bind_http)
                         {
                           http::connection connection(io);
-                          process_request(db, connection);
+                          process_request(db, connection, handlers);
                         }
                       else
                         {
                           scgi::connection connection(io);
-                          process_request(db, connection);
+                          process_request(db, connection, handlers);
                         }
                       stream.close();
                     }
