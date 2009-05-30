@@ -1008,7 +1008,7 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
 void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
 #endif
 
-void
+migration_status
 migrate_sql_schema(sqlite3 * db, key_store & keys,
                    system_path const & filename)
 {
@@ -1041,7 +1041,7 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
     if (cat == SCHEMA_MATCHES)
       {
         P(F("no migration performed; database schema already up-to-date"));
-        return;
+        return migration_status(false);
       }
 
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
@@ -1093,20 +1093,16 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
       {
         string command_str = (regime == upgrade_changesetify
                               ? "changesetify" : "rosterify");
-        P(F("NOTE: because this database was last used by a rather old version\n"
-            "of monotone, you're not done yet.  If you're a project leader, then\n"
-            "see the file UPGRADE for instructions on running '%s db %s'")
-          % prog_name % command_str);
+        return migration_status(false, command_str);
       }
       break;
     case upgrade_regen_caches:
-      P(F("NOTE: this upgrade cleared monotone's caches\n"
-          "you should now run '%s db regenerate_caches'")
-        % prog_name);
+      return migration_status(true);
       break;
     case upgrade_none:
       break;
     }
+  return migration_status(false);
 }
 
 // test_migration_step runs the migration step from SCHEMA to its successor,

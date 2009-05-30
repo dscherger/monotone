@@ -1184,10 +1184,10 @@ database::version(ostream & out)
 }
 
 void
-database::migrate(key_store & keys)
+database::migrate(key_store & keys, migration_status & mstat)
 {
   ensure_open_for_maintenance();
-  migrate_sql_schema(imp->__sql, keys, get_filename());
+  mstat = migrate_sql_schema(imp->__sql, keys, get_filename());
 }
 
 void

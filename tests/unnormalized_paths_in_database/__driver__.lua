@@ -16,6 +16,6 @@ mtn_setup()
 
 check(get("bad.db"))
 
-check(mtn("db", "migrate", "-d", "bad.db"), 0, false, false)
+check(mtn("db", "migrate", "-d", "bad.db"), 3, false, false)
 
-check(mtn("db", "regenerate_caches", "-d", "bad.db"), 3, false, true)
+--check(mtn("db", "regenerate_caches", "-d", "bad.db"), 3, false, true)

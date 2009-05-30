@@ -26,8 +26,22 @@ class system_path;
 
 std::string describe_sql_schema(sqlite3 * db);
 void check_sql_schema(sqlite3 * db, system_path const & filename);
-void migrate_sql_schema(sqlite3 * db, key_store & keys,
-                        system_path const & filename);
+
+class migration_status {
+  bool _need_regen;
+  std::string _flag_day_name;
+public:
+  migration_status(){}
+  explicit migration_status(bool regen, std::string flag_day_name = "")
+    : _need_regen(regen),
+      _flag_day_name(flag_day_name)
+  {}
+  bool need_regen() const { return _need_regen; }
+  bool need_flag_day() const { return !_flag_day_name.empty(); }
+  std::string flag_day_name() const { return _flag_day_name; }
+};
+migration_status migrate_sql_schema(sqlite3 * db, key_store & keys,
+                                    system_path const & filename);
 
 // utility routine shared with database.cc
 void assert_sqlite3_ok(sqlite3 * db);

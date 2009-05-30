@@ -83,7 +83,9 @@ function check_migrate_from(id)
   check(qgrep(id, "stdout"))
   -- migrate it
   check(mtn("--db="..id..".mtn", "db", "migrate"), 0, false, false)
+  check(mtn("--db="..id..".mtn", "ls", "branches"), 1, false, false)
   check(mtn("--db="..id..".mtn", "db", "rosterify"), 0, false, false)
+  check(mtn("--db="..id..".mtn", "ls", "branches"), 0, false, false)
   check_same_db_contents(id..".mtn", "latest.mtn")
 end
 
