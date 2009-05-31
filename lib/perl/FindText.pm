@@ -373,44 +373,49 @@ sub find_text_button_clicked_cb($$)
     $use_regexp = $instance->{regular_expression_checkbutton}->get_active();
 
     # Precompile the regular expression based upon the search term. When the
-    # user themselves is using regular expressions then check for errors.
+    # user themselves is using regular expressions then check for errors. Also
+    # use the bytes pragma as $search_term could potentially be used against
+    # binary data.
 
-    if ($use_regexp)
     {
-	eval
+	use bytes;
+	if ($use_regexp)
 	{
-	    if ($case_sensitive)
+	    eval
 	    {
-		$expr = qr/$search_term/;
-	    }
-	    else
+		if ($case_sensitive)
+		{
+		    $expr = qr/$search_term/;
+		}
+		else
+		{
+		    $expr = qr/$search_term/i;
+		}
+	    };
+	    if ($@ ne "")
 	    {
-		$expr = qr/$search_term/i;
+		my $dialog = Gtk2::MessageDialog->new
+		    ($instance->{window},
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __x("`{pattern}' is an invalid\ncontent search pattern.",
+			 pattern => $search_term));
+		$dialog->run();
+		$dialog->destroy();
+		return;
 	    }
-	};
-	if ($@ ne "")
-	{
-	    my $dialog = Gtk2::MessageDialog->new
-		($instance->{window},
-		 ["modal"],
-		 "warning",
-		 "close",
-		 __x("`{pattern}' is an invalid\ncontent search pattern.",
-		     pattern => $search_term));
-	    $dialog->run();
-	    $dialog->destroy();
-	    return;
-	}
-    }
-    else
-    {
-	if ($case_sensitive)
-	{
-	    $expr = qr/\Q$search_term\E/;
 	}
 	else
 	{
-	    $expr = qr/\Q$search_term\E/i;
+	    if ($case_sensitive)
+	    {
+		$expr = qr/\Q$search_term\E/;
+	    }
+	    else
+	    {
+		$expr = qr/\Q$search_term\E/i;
+	    }
 	}
     }
 

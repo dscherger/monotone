@@ -110,7 +110,7 @@ sub comboboxentry_changed_cb($$)
     # So, put simply, only do something inside this callback if the value is a
     # direct match to one in our list.
 
-    $value = encode_utf8($widget->child()->get_text());
+    $value = $widget->child()->get_text();
     foreach $item (@{$combo_details->{list}})
     {
 	if ($value eq $item)
@@ -202,7 +202,7 @@ sub comboboxentry_key_release_event_cb($$$)
     $complete = 0;
     $old_complete = $combo_details->{complete};
     $old_value = $combo_details->{value};
-    $value = encode_utf8($entry->get_text());
+    $value = $entry->get_text();
     if ($value ne $old_value)
     {
 
@@ -241,7 +241,7 @@ sub comboboxentry_key_release_event_cb($$$)
 	    {
 		$instance->{appbar}->push(__x("Invalid {name} name `{value}'",
 					      name  => $name,
-					      value => decode_utf8($value)));
+					      value => $value));
 	    }
 	    $value = $completion;
 	    $len = length($value);
@@ -263,7 +263,7 @@ sub comboboxentry_key_release_event_cb($$$)
 	    $combo->get_model()->clear();
 	    foreach $item (@{$combo_details->{list}})
 	    {
-		$combo->append_text(decode_utf8($item))
+		$combo->append_text($item)
 		    if ($value eq substr($item, 0, $len));
 
 		# The following check is needed in the case when the user is

@@ -846,8 +846,7 @@ sub update_advanced_find_state($$)
 	$advanced_find->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
-	    $advanced_find->{branch_comboboxentry}->
-		append_text(decode_utf8($branch));
+	    $advanced_find->{branch_comboboxentry}->append_text($branch);
 	    if (($counter % 10) == 0)
 	    {
 		$advanced_find->{appbar}->set_progress_percentage
@@ -859,8 +858,7 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->set_progress_percentage(1);
 	$wm->update_gui();
 	$advanced_find->{branch_comboboxentry}->child()->
-	    set_text(decode_utf8($advanced_find->{branch_combo_details}->
-				 {value}));
+	    set_text($advanced_find->{branch_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
 	$wm->update_gui();
@@ -912,8 +910,7 @@ sub update_advanced_find_state($$)
 	$advanced_find->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
-	    $advanced_find->{revision_comboboxentry}->
-		append_text(decode_utf8($revision));
+	    $advanced_find->{revision_comboboxentry}->append_text($revision);
 	    if (($counter % 10) == 0)
 	    {
 		$advanced_find->{appbar}->set_progress_percentage
@@ -925,8 +922,7 @@ sub update_advanced_find_state($$)
 	$advanced_find->{appbar}->set_progress_percentage(1);
 	$wm->update_gui();
 	$advanced_find->{revision_comboboxentry}->child()->
-	    set_text(decode_utf8($advanced_find->{revision_combo_details}->
-				 {value}));
+	    set_text($advanced_find->{revision_combo_details}->{value});
 	$advanced_find->{appbar}->set_progress_percentage(0);
 	$advanced_find->{appbar}->set_status("");
 	$wm->update_gui();
@@ -989,8 +985,7 @@ sub update_advanced_find_state($$)
 		     die("Bad query"); });
 	    eval
 	    {
-		$advanced_find->{mtn}->select(\@revision_ids,
-					      encode_utf8($query));
+		$advanced_find->{mtn}->select(\@revision_ids, $query);
 		$matches = scalar(@revision_ids);
 	    };
 	    $err = $@;
@@ -1126,9 +1121,9 @@ sub update_advanced_find_state($$)
 		$advanced_find->{revisions_liststore}->
 		    set($advanced_find->{revisions_liststore}->append(),
 			AFLS_REVISION_ID_COLUMN, $item->{revision_id},
-			AFLS_BRANCH_COLUMN, decode_utf8($branch),
+			AFLS_BRANCH_COLUMN, $branch,
 			AFLS_DATE_COLUMN, $item->{date},
-			AFLS_AUTHOR_COLUMN, decode_utf8($item->{author}));
+			AFLS_AUTHOR_COLUMN, $item->{author});
 	    }
 
 	}
