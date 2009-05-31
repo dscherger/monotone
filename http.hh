@@ -24,27 +24,34 @@ namespace http
 
   namespace status
   {
-    struct value
+    struct code
     {
-      value() : code(0), message("") {}
-      value(size_t code, std::string const message) : code(code), message(message) {}
-      size_t code;
+      code() : value(0), message("") {}
+      code(size_t value, std::string const message) : value(value), message(message) {}
+      size_t value;
       std::string message;
 
-      bool operator==(value const & other) const
+      bool operator==(code const & other) const
       {
-        return code == other.code;
+        return value == other.value;
+      }
+
+      bool operator!=(code const & other) const
+      {
+        return value != other.value;
       }
     };
 
-    static const value ok(200, "OK");
+    static const code ok(200, "OK");
 
-    static const value bad_request(400, "Bad Request");
-    static const value not_found(404, "Not Found");
-    static const value method_not_allowed(405, "Method Not Allowed");
-    static const value not_acceptable(406, "Not Acceptable");
+    static const code bad_request(400, "Bad Request");
+    static const code not_found(404, "Not Found");
+    static const code method_not_allowed(405, "Method Not Allowed");
+    static const code not_acceptable(406, "Not Acceptable");
+    static const code length_required(411, "Length Required");
 
-    static const value internal_server_error(500, "Internal Server Error");
+    static const code internal_server_error(500, "Internal Server Error");
+    static const code not_implemented(501, "Not Implemented");
   }
 
   typedef std::map<std::string, std::string> header_map;
@@ -74,7 +81,7 @@ namespace http
   struct response : public message
   {
     std::string version;
-    status::value status;
+    status::code status;
   };
 
   class connection
@@ -84,23 +91,23 @@ namespace http
     virtual ~connection() {};
 
     virtual std::string version();
-    virtual bool read(request & r);
+    virtual status::code read(request & r);
     void write(request const & r);
 
-    bool read(response & r);
+    status::code read(response & r);
     virtual void write(response const & r);
 
   protected:
     std::iostream & io;
       
     bool read(std::string & value, std::string const & end);
-    bool read(size_t & value, std::string const & end);
+    bool  read(size_t & value, std::string const & end);
       
     void write(std::string const & value, std::string const & end);
     virtual void write(size_t const value, std::string const & end);
       
-    bool read_headers(message & m);
-    bool read_body(message & m);
+    status::code read_headers(message & m);
+    status::code read_body(message & m);
       
     void write_headers(message const & m);
     void write_body(message const & m);

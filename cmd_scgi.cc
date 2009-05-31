@@ -91,12 +91,14 @@ namespace scgi
     connection(std::iostream & io) : http::connection(io) {}
     virtual ~connection() {}
 
-    string version()
+    string
+    version()
     {
       return scgi::version;
     }
 
-    bool read(string & value)
+    bool
+    read(string & value)
     {
       while (io.good())
         {
@@ -108,16 +110,20 @@ namespace scgi
       return io.good();
     }
 
-    bool read(http::request & r)
+    http::status::code
+    read(http::request & r)
     {
       size_t len;
-      if (!http::connection::read(len, ":")) return false;
+      if (!http::connection::read(len, ":"))
+        return http::status::bad_request;
+
       L(FL("read scgi netstring length: %d") % len);
       while (len > 0)
         {
           string key, val;
-          if (!read(key)) return false;
-          if (!read(val)) return false;
+          if (!read(key) || !read(val))
+            return http::status::bad_request;
+
           len -= key.size();
           len -= val.size();
           len -= 2;
@@ -139,10 +145,14 @@ namespace scgi
       L(FL("read scgi request: %s %s %s") % r.method % r.uri % r.version);
 
       // this is a loose interpretation of the scgi "spec"
-      if (r.version != scgi::version) return false;
-      if (r.headers.find("Content-Length") == r.headers.end()) return false;
+      if (r.version != scgi::version)
+        return http::status::not_implemented;
 
-      if (!io.good()) return false;
+      if (r.headers.find("Content-Length") == r.headers.end())
+        return http::status::length_required;
+
+      if (!io.good())
+        return http::status::bad_request;
 
       char comma = static_cast<char>(io.get());
 
@@ -367,8 +377,9 @@ process_request(database & db, http::connection & connection,
   http::request request;
   http::response response;
 
-  // 411 Length Required -- this should be in the reader
-  if (connection.read(request))
+  http::status::code status = connection.read(request);
+
+  if (status == http::status::ok)
     {
       try
         {
@@ -443,12 +454,12 @@ process_request(database & db, http::connection & connection,
     }
   else
     {
-      response.status = http::status::bad_request;
+      response.status = status;
     }
 
   response.version = connection.version();
   response.headers["Status"] = 
-    lexical_cast<string>(response.status.code) + " " + response.status.message;
+    lexical_cast<string>(response.status.value) + " " + response.status.message;
   response.headers["Content-Length"] = 
     lexical_cast<string>(response.body.size());
   // Connection: close ?!?

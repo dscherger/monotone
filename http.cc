@@ -28,18 +28,22 @@ namespace http
     return http::version;
   }
 
-  bool
+  status::code
   connection::read(request & r)
   {
-    bool good = 
-      read(r.method, " ") &&
-      read(r.uri, " ") &&
-      read(r.version, "\r\n");
-      
-    if (good)
-      L(FL("read http request: %s %s %s") % r.method % r.uri % r.version);
-      
-    return good && read_headers(r) && read_body(r);
+    if (!read(r.method, " ") ||
+        !read(r.uri, " ") ||
+        !read(r.version, "\r\n"))
+      return status::bad_request;
+
+    L(FL("read http request: %s %s %s") % r.method % r.uri % r.version);
+
+    status::code s = read_headers(r);
+
+    if (s != status::ok)
+      return s;
+    else
+      return read_body(r);
   }
 
   void
@@ -54,27 +58,31 @@ namespace http
     write_body(r);
   }
 
-  bool
+  status::code
   connection::read(response & r)
   {
-    bool good =
-      read(r.version, " ") &&
-      read(r.status.code, " ") &&
-      read(r.status.message, "\r\n");
+    if (!read(r.version, " ") ||
+        !read(r.status.value, " ") ||
+        !read(r.status.message, "\r\n"))
+      return status::bad_request;
 
-    if (good)
-      L(FL("read http response: %s %s %s") 
-        % r.version % r.status.code % r.status.message);
+    L(FL("read http response: %s %s %s") 
+      % r.version % r.status.value % r.status.message);
 
-    return good && read_headers(r) && read_body(r);
+    status::code s = read_headers(r);
+
+    if (s != status::ok)
+      return s;
+    else
+      return read_body(r);
   }
 
   void
   connection::write(response const & r)
   {
-    L(FL("write http response: %s %s %s") % r.version % r.status.code % r.status.message);
+    L(FL("write http response: %s %s %s") % r.version % r.status.value % r.status.message);
     write(r.version, " ");
-    write(r.status.code, " ");
+    write(r.status.value, " ");
     write(r.status.message, "\r\n");
 
     write_headers(r);
@@ -117,15 +125,15 @@ namespace http
     io << value << end;
   }
 
-  bool
+  status::code
   connection::read_headers(message & m)
   {
     m.headers.clear();
     while (io.good() && io.peek() != '\r')
       {
         string key, val;
-        if (!read(key, ": ")) return false;
-        if (!read(val, "\r\n")) return false;
+        if (!read(key, ": ") || !read(val, "\r\n"))
+          return status::bad_request;
 
         m.headers[key] = val;
 
@@ -134,24 +142,23 @@ namespace http
 
     L(FL("read http header end"));
 
-    if (!io.good()) return false;
+    if (!io.good())
+      return status::bad_request;
 
     char cr = static_cast<char>(io.get());
     char lf = static_cast<char>(io.get());
 
-    return cr == '\r' && lf == '\n';
-
+    if (cr == '\r' && lf == '\n')
+      return status::ok;
+    else
+      return status::bad_request;
   }
 
-  bool
+  status::code
   connection::read_body(message & m)
   {
     if (m.headers.find("Content-Length") == m.headers.end())
-      {
-        L(FL("missing content length header"));
-        // FIXME return 411 Length Required here
-        return false;
-      }
+      return status::length_required;
 
     size_t length = lexical_cast<size_t>(m.headers["Content-Length"]);
     L(FL("reading http body: %d bytes") % length);
@@ -170,7 +177,10 @@ namespace http
 
     L(FL("%s") % m.body);
 
-    return (length == 0);
+    if (length == 0)
+      return status::ok;
+    else
+      return status::bad_request;
   }
 
   void

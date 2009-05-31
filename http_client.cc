@@ -51,10 +51,6 @@ using std::ostringstream;
 
 using Netxx::Netbuf;
 using Netxx::Timeout;
-using Netxx::StreamBase;
-using Netxx::Stream;
-using Netxx::PipeStream;
-
 
 http_client::http_client(options & opts, lua_hooks & lua,
                          netsync_connection_info const & info)
@@ -63,7 +59,7 @@ http_client::http_client(options & opts, lua_hooks & lua,
     info(info),
     stream(build_stream_to_server(opts, lua, info,
               info.client.u.parse_port(constants::default_http_port),
-              Netxx::Timeout(static_cast<long>(
+              Timeout(static_cast<long>(
                   constants::netsync_timeout_seconds)))),
     nb(new Netbuf<constants::bufsz>(*stream)),
     io(new iostream(&(*nb))),
@@ -84,7 +80,7 @@ http_client::execute(http::request const & request, http::response & response)
       L(FL("reopening connection"));
       stream = build_stream_to_server(opts, lua, info,
                 info.client.u.parse_port(constants::default_http_port),
-                Netxx::Timeout(static_cast<long>(
+                Timeout(static_cast<long>(
                     constants::netsync_timeout_seconds)));
       nb = shared_ptr< Netbuf<constants::bufsz> >(
                             new Netbuf<constants::bufsz>(*stream));
@@ -97,10 +93,13 @@ http_client::execute(http::request const & request, http::response & response)
   I(io);
   I(open);
 
-  // the uri in this request is relative to the server uri and needs to be adjusted
+  // the uri in this request is relative to the server uri and needs to be
+  // adjusted
+
   http::connection connection(*io);
 
-  P(F("http request: %s %s %s") % request.method % request.uri % request.version);
+  P(F("http request: %s %s %s")
+    % request.method % request.uri % request.version);
 
   connection.write(request);
 
@@ -115,9 +114,10 @@ http_client::execute(http::request const & request, http::response & response)
 
   // FIXME: this should really attempt to pipeline several requests
 
-  I(connection.read(response));
+  I(connection.read(response) == http::status::ok);
 
-  P(F("http response: %s %d %s") % response.version % response.status.code % response.status.message);
+  P(F("http response: %s %d %s")
+    % response.version % response.status.value % response.status.message);
 
   if (io->good())
     L(FL("connection is good"));
@@ -152,9 +152,8 @@ http_client::execute(http::request const & request, http::response & response)
     }
 
   E(response.status == http::status::ok, origin::network,
-  // E(response.status_code == 200, origin::network,
     F("request failed: %s %d %s") 
-    % response.version % response.status.code % response.status.message);
+    % response.version % response.status.value % response.status.message);
 }
 
 /////////////////////////////////////////////////////////////////////
