@@ -21,6 +21,10 @@ struct uri
   std::string path;
   std::string query;
   std::string fragment;
+
+  // returns the port number, if given - a falback
+  // port otherwise
+  size_t parse_port(size_t const default_port) const;
 };
 
 void

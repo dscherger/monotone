@@ -22,6 +22,8 @@
 #include "hmac.hh"
 #include "string_queue.hh"
 
+#include "netxx/types.h"
+
 struct globish;
 class database;
 class project_t;
@@ -200,6 +202,27 @@ void run_netsync_protocol(options & opts, lua_hooks & lua,
                           protocol_voice voice,
                           protocol_role role,
                           netsync_connection_info const & info);
+
+// stuff added for nuskool - this was originally in net_common.{cc,hh} but
+// that causes merge problems so it has been moved back here for now
+
+namespace Netxx {
+  class Address;
+  class Timeout;
+  class StreamBase;
+}
+
+boost::shared_ptr<Netxx::StreamBase>
+build_stream_to_server(options & opts, lua_hooks & lua,
+                       netsync_connection_info info,
+                       Netxx::port_type default_port,
+                       Netxx::Timeout timeout);
+
+void
+add_address_names(Netxx::Address & addr,
+                  std::list<utf8> const & addresses,
+                  Netxx::port_type default_port);
+
 
 #endif // __NETCMD_HH__
 

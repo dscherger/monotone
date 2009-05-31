@@ -289,6 +289,73 @@ get_uncommon_ancestors(revision_id const & a,
       }
     else
       I(false);
+  }  
+}
+
+void
+get_all_ancestors(set<revision_id> const & start, 
+                  rev_ancestry_map const & child_to_parent_map,
+                  set<revision_id> & ancestors)
+{
+  ancestors.clear();
+  vector<revision_id> frontier(start.begin(), start.end());
+  while (!frontier.empty())
+    {
+      revision_id rid = frontier.back();
+      frontier.pop_back();
+      if (ancestors.find(rid) != ancestors.end())
+        continue;
+      safe_insert(ancestors, rid);
+      typedef rev_ancestry_map::const_iterator ci;
+      pair<ci,ci> range = child_to_parent_map.equal_range(rid);
+      for (ci i = range.first; i != range.second; ++i)
+        frontier.push_back(i->second);
+    }
+}
+
+#ifdef BUILD_UNIT_TESTS
+
+#include <map>
+#include "unit_tests.hh"
+#include "randomizer.hh"
+#include "roster.hh"
+
+
+static void
+get_all_ancestors(revision_id const & start, rev_ancestry_map const & child_to_parent_map,
+                  set<revision_id> & ancestors)
+{
+  set<revision_id> start_set;
+  start_set.insert(start);
+  get_all_ancestors(start, child_to_parent_map, ancestors);
+}
+
+struct mock_rev_graph : rev_graph
+{
+  mock_rev_graph(rev_ancestry_map const & child_to_parent_map)
+    : child_to_parent_map(child_to_parent_map)
+  {
+    // assign sensible heights
+    height_map.clear();
+    
+    // toposort expects parent->child
+    rev_ancestry_map parent_to_child;
+    for (rev_ancestry_map::const_iterator i = child_to_parent_map.begin();
+      i != child_to_parent_map.end(); i++)
+    {
+      parent_to_child.insert(make_pair(i->second, i->first));
+    }
+    vector<revision_id> topo_revs;
+    toposort_rev_ancestry(parent_to_child, topo_revs);
+    
+    // this is ugly but works. just give each one a sequential number.
+    rev_height top = rev_height::root_height();
+    u32 num = 1;
+    for (vector<revision_id>::const_iterator r = topo_revs.begin();
+      r != topo_revs.end(); r++, num++)
+    {
+      height_map.insert(make_pair(*r, top.child_height(num)));
+    }
   }
 }
 

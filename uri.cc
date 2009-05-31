@@ -10,9 +10,20 @@
 #include "base.hh"
 #include "sanity.hh"
 #include "uri.hh"
+#include "lexical_cast.hh"
 
 using std::string;
+using boost::lexical_cast;
 typedef string::size_type stringpos;
+
+size_t
+uri::parse_port(size_t const default_port) const
+{
+  if (port.empty())
+    return default_port;
+  else
+    return lexical_cast<size_t, string>(port);
+}
 
 static void
 parse_authority(string const & in, uri & u, origin::type made_from)

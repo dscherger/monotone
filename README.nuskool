@@ -1,0 +1,73 @@
+Here's what you need to do to try out the nuskool sync protocol using SCGI
+
+1. install lighttpd (apache should work too but the config below is for lighty)
+
+2. add something like the following to /etc/lighttpd/lighttpd.conf
+
+scgi.server = (
+        "/monotone" => ((
+                "host" => "127.0.0.1",
+                "port" => 3000,
+                "max-procs" => 1,
+                "idle-timeout" => 30,
+                "check-local" => "disable"
+        ))
+)
+
+3. start lighttpd
+
+   $ /etc/init.d/lighttpd start
+
+4. start the gsync server for lighttpd to proxy to
+
+   $ mtn gserve --db server.db
+
+5. run the gsync client
+
+   $ mtn --db client.db gsync http://localhost/monotone '*' --debug
+
+
+
+Here's what you need to do to try out the nuskool sync protocol using raw HTTP
+
+1. start the gsync server listening for direct http connections on port 8008
+
+   $ mtn gserve --db server.db --http
+
+2. run the gsync client and specify the alternate http port 8008
+
+   $ mtn --db client.db gsync http://localhost:8008 '*' --debug
+
+
+
+Here's a quick tour through the nuskool code base:
+
+* cmd_scgi.cc (gserve): server command to start gsync server
+  (process_request): called to handle each inbound http request and return a
+  suitable response
+
+* cmd_netsync.cc (gsync): client command to push/pull/sync using gsync;
+  selection of http channel is currently hard-coded here
+
+* gsync.{cc,hh} (run_gsync_protocol): main protocol driver called by gsync
+  command above
+  (channel): declaration of generic channel
+
+* http_client.{cc,hh}: http request/response execution; implementation of raw
+  and json channels
+
+* http.{cc,hh}: generic http request/response io and connection handling
+
+* json_msgs.{cc,hh}: json messages used with gsync protocol; transcoding between
+  existing revision formats and equivalent json representations for transport
+  over http
+
+* json_io.{cc,hh}: json message printing and parsing
+
+
+TODO
+
+* replace various connection options (--bind, --http, etc.) with nice url's
+* do something rsync or netsync like to handle certs after rev transmission
+* see if this can be made to go as fast as netsync
+* possibly remove the overly verbose and repetetive json stuff

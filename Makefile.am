@@ -32,6 +32,7 @@ LUAEXT_SOURCES = 							\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
 	lua.cc lua.hh mkstemp.cc file_io.cc file_io.hh			\
 	globish.cc globish.hh basic_io.cc basic_io.hh			\
+	json_io.cc json_io.hh json_msgs.cc json_msgs.hh			\
 	char_classifiers.hh
 
 MOST_SOURCES = 								\
@@ -59,6 +60,7 @@ MOST_SOURCES = 								\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
+	gsync.cc gsync.hh            					\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
@@ -89,6 +91,7 @@ MOST_SOURCES = 								\
 	rev_height.cc rev_height.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
+	http.cc http.hh http_client.cc http_client.hh			\
 									\
 	lru_writeback_cache.hh hybrid_map.hh lazy_rng.hh		\
 									\

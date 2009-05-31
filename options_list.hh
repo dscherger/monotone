@@ -94,10 +94,11 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
 OPTSET(bind_opts)
 OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
 OPTVAR(bind_opts, bool, bind_stdio, false)
+OPTVAR(bind_opts, bool, bind_http, false)
 OPTVAR(bind_opts, bool, use_transport_auth, true)
 
 OPTION(bind_opts, bind, true, "bind",
-       gettext_noop("address:port to listen on (default :4691)"))
+       gettext_noop("address:port to listen on (netsync default :4691; scgi default :3000; http default :8008)"))
 #ifdef option_bodies
 {
   bind_uris.push_back(utf8(arg, origin::user));
@@ -112,10 +113,17 @@ OPTION(bind_opts, no_transport_auth, false, "no-transport-auth",
 }
 #endif
 OPTION(bind_opts, bind_stdio, false, "stdio",
-       gettext_noop("serve netsync on stdio"))
+       gettext_noop("serve netsync/gsync on stdio"))
 #ifdef option_bodies
 {
   bind_stdio = true;
+}
+#endif
+OPTION(bind_opts, bind_http, false, "http",
+       gettext_noop("serve gsync over raw http (without scgi)"))
+#ifdef option_bodies
+{
+  bind_http = true;
 }
 #endif
 

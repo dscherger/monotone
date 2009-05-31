@@ -52,6 +52,11 @@ get_uncommon_ancestors(revision_id const & a,
                        std::set<revision_id> & a_uncommon_ancs,
                        std::set<revision_id> & b_uncommon_ancs);
 
+void
+get_all_ancestors(std::set<revision_id> const & start, 
+                  rev_ancestry_map const & child_to_parent_map,
+                  std::set<revision_id> & ancestors);
+                       
 
 
 #endif // __GRAPH__HH__

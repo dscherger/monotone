@@ -96,6 +96,7 @@ EXTERN template class hexenc<rsa_sha1_signature>;
 
 EXTERN template class base64<cert_value>;
 EXTERN template class base64<data>;
+EXTERN template class base64<delta>;
 EXTERN template class base64<merkle>;
 EXTERN template class base64<old_arc4_rsa_priv_key>;
 EXTERN template class base64<rsa_priv_key>;
