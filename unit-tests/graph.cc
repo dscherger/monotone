@@ -139,26 +139,13 @@ UNIT_TEST(random_get_reconstruction_path)
 #include "randomizer.hh"
 #include "roster.hh"
 
-
 static void
 get_all_ancestors(revision_id const & start, rev_ancestry_map const & child_to_parent_map,
                   set<revision_id> & ancestors)
 {
-  ancestors.clear();
-  vector<revision_id> frontier;
-  frontier.push_back(start);
-  while (!frontier.empty())
-    {
-      revision_id rid = frontier.back();
-      frontier.pop_back();
-      if (ancestors.find(rid) != ancestors.end())
-        continue;
-      safe_insert(ancestors, rid);
-      typedef rev_ancestry_map::const_iterator ci;
-      pair<ci,ci> range = child_to_parent_map.equal_range(rid);
-      for (ci i = range.first; i != range.second; ++i)
-        frontier.push_back(i->second);
-    }
+  set<revision_id> start_set;
+  start_set.insert(start);
+  get_all_ancestors(start, child_to_parent_map, ancestors);
 }
 
 struct mock_rev_graph : rev_graph
