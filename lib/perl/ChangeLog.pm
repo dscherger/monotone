@@ -197,6 +197,9 @@ sub generate_revision_report($$$$;$)
 
     # Certs.
 
+    # Find the maximum cert name length, for padding purposes (ignoring
+    # changelog certs as these are handled separately).
+
     $cert_max_len = 0;
     foreach my $cert (@$certs_list)
     {
@@ -204,35 +207,61 @@ sub generate_revision_report($$$$;$)
 	    if ($cert->{name} ne "changelog"
 		&& length($cert->{name}) > $cert_max_len);
     }
+
+    # Process each cert in turn.
+
     foreach my $cert (@$certs_list)
     {
+
+	# Collect all changelog certs together for output as one collection
+	# after the other certs.
+
 	if ($cert->{name} eq "changelog")
 	{
 	    my $change_log = $cert->{value};
 	    $change_log =~ s/\s+$//s;
+	    $change_log = decode_utf8($change_log);
 	    push(@change_logs, $change_log) if ($change_log ne "");
 	}
 	else
 	{
+
+	    # All other remaining certs.
+
+	    # Format date values so that they look nice.
+
 	    if ($cert->{name} eq "date")
 	    {
 		$cert->{value} =~ s/T/ /;
 	    }
+
+	    # Otherwise if the cert value contains newline characters then
+	    # indent subsequent lines so as to match the first line.
+
 	    elsif (index($cert->{value}, "\n") >= 0)
 	    {
 		my $padding = sprintf("\n%-*s", $cert_max_len + 2, "");
 		$cert->{value} =~ s/\n/$padding/g;
 	    }
+
+	    # Print out the cert's name.
+
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
 		 sprintf("\n%-*s ",
-			 $cert_max_len + 1, ucfirst($cert->{name}) . ":"),
+			 $cert_max_len + 1,
+			 ucfirst(decode_utf8($cert->{name})) . ":"),
 		 $bold);
+
+	    # Print out the cert's value.
+
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
-		 sprintf("%s", $cert->{value}),
+		 sprintf("%s", decode_utf8($cert->{value})),
 		 $normal);
+
 	}
+
     }
 
     # Change log(s).
@@ -273,39 +302,44 @@ sub generate_revision_report($$$$;$)
 	{
 	    if ($change->{type} eq "add_dir")
 	    {
-		push(@{$revision_data{$__added}}, $change->{name} . "/");
+		push(@{$revision_data{$__added}},
+		     decode_utf8($change->{name}) . "/");
 	    }
 	    elsif ($change->{type} eq "add_file")
 	    {
-		push(@{$revision_data{$__added}}, $change->{name});
+		push(@{$revision_data{$__added}},
+		     decode_utf8($change->{name}));
 	    }
 	    elsif ($change->{type} eq "delete")
 	    {
-		push(@{$revision_data{$__removed}}, $change->{name});
+		push(@{$revision_data{$__removed}},
+		     decode_utf8($change->{name}));
 	    }
 	    elsif ($change->{type} eq "patch")
 	    {
-		push(@{$revision_data{$__changed}}, $change->{name});
+		push(@{$revision_data{$__changed}},
+		     decode_utf8($change->{name}));
 	    }
 	    elsif ($change->{type} eq "rename")
 	    {
 		push(@{$revision_data{$__renamed}},
-		     $change->{from_name} . " -> " . $change->{to_name});
+		     decode_utf8($change->{from_name}) . " -> "
+		         . decode_utf8($change->{to_name}));
 	    }
 	    elsif ($change->{type} eq "clear")
 	    {
 		push(@{$revision_data{$__attributes}},
 		     __x("{name}: {attribute} was cleared",
-			 name      => $change->{name},
-			 attribute => $change->{attribute}));
+			 name      => decode_utf8($change->{name}),
+			 attribute => decode_utf8($change->{attribute})));
 	    }
 	    elsif ($change->{type} eq "set")
 	    {
 		push(@{$revision_data{$__attributes}},
 		     sprintf("%s: %s = %s",
-			     $change->{name},
-			     $change->{attribute},
-			     $change->{value}));
+			     decode_utf8($change->{name}),
+			     decode_utf8($change->{attribute}),
+			     decode_utf8($change->{value})));
 	    }
 	    elsif ($change->{type} eq "old_revision")
 	    {

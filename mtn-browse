@@ -44,10 +44,14 @@ require 5.008005;
 
 BEGIN
 {
-    use constant HELP_VIEWER_CMD => "@INST:HELP_VIEWER_CMD@";
-    use constant LIB_DIR         => "@INST:LIB_DIR@";
-    use constant MIME_GLOB_FILE  => "@INST:GLOBS_FILE@";
-    use constant PREFIX_DIR      => "@INST:PREFIX_DIR@";
+#    use constant HELP_VIEWER_CMD => "firefox {url}";
+    use constant HELP_VIEWER_CMD => "";
+#    use constant LIB_DIR         => "@INST:LIB_DIR@";
+    use constant LIB_DIR         => "/home/aecoope/code/monotone.ca/mtn-browse/lib";
+#    use constant MIME_GLOB_FILE  => "@INST:GLOBS_FILE@";
+    use constant MIME_GLOB_FILE  => "/usr/share/mime/globs";
+#    use constant PREFIX_DIR      => "@INST:PREFIX_DIR@";
+    use constant PREFIX_DIR      => "/home/aecoope/code/monotone.ca/mtn-browse";
 }
 use locale;
 use strict;
@@ -59,6 +63,7 @@ use warnings;
 
 use Cwd qw(getcwd);
 use Data::Dumper;
+use Encode;
 use File::Basename;
 use File::Spec;
 use File::Temp qw(tempdir);
@@ -2123,7 +2128,8 @@ sub update_browser_state($$)
 	$browser->{branch_comboboxentry}->get_model()->clear();
 	foreach my $branch (@branch_list)
 	{
-	    $browser->{branch_comboboxentry}->append_text($branch);
+	    $browser->{branch_comboboxentry}->
+		append_text(decode_utf8($branch));
 	    if (($counter % 10) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
@@ -2135,7 +2141,7 @@ sub update_browser_state($$)
 	$browser->{appbar}->set_progress_percentage(1);
 	$wm->update_gui();
 	$browser->{branch_comboboxentry}->child()->
-	    set_text($browser->{branch_combo_details}->{value});
+	    set_text(decode_utf8($browser->{branch_combo_details}->{value}));
 	$browser->{branch_comboboxentry}->child()->set_position(-1);
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
@@ -2229,7 +2235,8 @@ sub update_browser_state($$)
 	$browser->{revision_comboboxentry}->get_model()->clear();
 	foreach my $revision (@revision_list)
 	{
-	    $browser->{revision_comboboxentry}->append_text($revision);
+	    $browser->{revision_comboboxentry}->
+		append_text(decode_utf8($revision));
 	    if (($counter % 10) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
@@ -2241,7 +2248,13 @@ sub update_browser_state($$)
 	$browser->{appbar}->set_progress_percentage(1);
 	$wm->update_gui();
 	$browser->{revision_comboboxentry}->child()->
-	    set_text($browser->{revision_combo_details}->{value});
+	    set_text(decode_utf8($browser->{revision_combo_details}->{value}));
+
+
+# You really should do this in the MAS class. Give the option to turn off
+# utf8 support perhaps. Also use of use bytes I think is wrong in FindText
+# and maybe in FindFile (well at least use encode_utf8 instead).
+
 	$browser->{appbar}->set_progress_percentage(0);
 	$browser->{appbar}->set_status("");
 	$wm->update_gui();
@@ -2321,11 +2334,11 @@ sub update_browser_state($$)
 		{
 		    if ($cert->{name} eq "author")
 		    {
-			$author = $cert->{value};
+			$author = decode_utf8($cert->{value});
 		    }
 		    elsif ($cert->{name} eq "changelog")
 		    {
-			$change_log = $cert->{value};
+			$change_log = decode_utf8($cert->{value});
 			$change_log =~ s/\s+$//s;
 		    }
 		    elsif ($cert->{name} eq "date")
@@ -2364,7 +2377,8 @@ sub update_browser_state($$)
 	$browser->{directory_comboboxentry}->get_model()->clear();
 	foreach my $item (@directory_list)
 	{
-	    $browser->{directory_comboboxentry}->append_text($item);
+	    $browser->{directory_comboboxentry}->
+		append_text(decode_utf8($item));
 	    if (($counter % 10) == 0)
 	    {
 		$browser->{appbar}->set_progress_percentage
@@ -2469,9 +2483,9 @@ sub update_browser_state($$)
 		    MLS_ICON_COLUMN,
 		        ($item->{manifest_entry}->{type} eq "directory")
 		        ? "gtk-open" : "gtk-file",
-		    MLS_NAME_COLUMN, $item->{name},
+		    MLS_NAME_COLUMN, decode_utf8($item->{name}),
 		    MLS_DATE_COLUMN, $last_update,
-		    MLS_AUTHOR_COLUMN, $author,
+		    MLS_AUTHOR_COLUMN, decode_utf8($author),
 		    MLS_MANIFEST_ENTRY_COLUMN, $item->{manifest_entry});
 
 	    if ($browser->{file_being_viewed_preset_value} ne ""
@@ -2570,9 +2584,9 @@ sub update_browser_state($$)
 		$last_update = $manifest_entry->{last_update};
 		$last_update =~ s/T/ /;
 		set_label_value($browser->{file_name_value_label},
-				$manifest_entry->{name});
+				decode_utf8($manifest_entry->{name}));
 		set_label_value($browser->{file_author_value_label},
-				$manifest_entry->{author});
+				decode_utf8($manifest_entry->{author}));
 		set_label_value($browser->{last_update_value_label},
 				$last_update);
 		set_label_value($browser->{file_revision_id_value_label},
@@ -2754,8 +2768,9 @@ sub display_file($$)
 		    $browser->{file_view_svbuffer}->set_language($lang);
 		}
 
-		# Load in the contents.
+		# Load in the contents (ensuring UTF-8 encoding).
 
+		$contents = decode_utf8($contents);
 		$browser->{file_view_svbuffer}->set_text($contents);
 
 	    }
