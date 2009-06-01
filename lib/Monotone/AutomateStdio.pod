@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.04
+0.05
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious. :-) Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.43). If you happen to be using a newer version of Monotone
+version (currently 0.44). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
@@ -186,12 +186,22 @@ background processing whilst waiting for the mtn subprocess to do
 something. For example, mtn-browse uses this handler to process any outstanding
 Gtk2 events so that the application can keep its windows up to date.
 
+=item B<Monotone::AutomateStdio-E<gt>suppress_utf8_conversion($suppress)>
+
+Controls whether UTF-8 conversion should be done on the data sent to and from
+the mtn subprocess by this class. If $suppress is true then UTF-8 conversion is
+not done, otherwise it is. The default action is to do UTF-8 conversion. This
+is both a class method as well as an object one. When used as a class method,
+the setting is used for all applicable Monotone::AutomateStdio objects that do
+not specify their own setting.
+
 =item B<Monotone::AutomateStdio-E<gt>switch_to_ws_root($switch)>
 
 Controls whether this class automatically switches to a workspace's root
-directory before running the mtn subprocess. The default action is to do so as
-this is generally safer. This setting only affects objects constructed from
-calling Monotone::AutomateStdio-E<gt>new() and
+directory before running the mtn subprocess. If $switch is true then the switch
+to the workspace's root directory is done, otherwise it is not. The default
+action is to do the switch as this is generally safer. This setting only
+affects objects constructed from calling Monotone::AutomateStdio-E<gt>new() and
 Monotone::AutomateStdio-E<gt>new_from_db(). This is both a class method as well
 as an object one. When used as a class method, the setting is used for all
 applicable Monotone::AutomateStdio objects that do not specify their own
@@ -829,6 +839,7 @@ that is currently being used by this object. The list of valid features are:
     MTN_SET_DB_VARIABLE
     MTN_SHOW_CONFLICTS
     MTN_U_SELECTOR
+    MTN_W_SELECTOR
 
 In order to get these constants into your namespace you need to use the
 following to load in this library.
@@ -889,6 +900,7 @@ The following methods do not return anything:
     Monotone::AutomateStdio->register_db_locked_handler()
     Monotone::AutomateStdio->register_error_handler()
     Monotone::AutomateStdio->register_io_wait_handler()
+    Monotone::AutomateStdio->suppress_utf8_conversion()
     $mtn->closedown()
 
 Please note that the boolean true and false values used by this class are
@@ -981,6 +993,43 @@ method to before calling Monotone::AutomateStdio-E<gt>new() without specifying
 a database.
 
 Any changing of directory does not affect the caller.
+
+=head2 UTF-8 Handling
+
+A Monotone database may contain UTF-8 characters. These characters would most
+commonly appear inside text files but may also appear in the names of files,
+branches and even in certificates. Later versions of Perl have built in support
+for UTF-8 strings and can represent this sort of data quite naturally without
+the developer really having to worry too much. For this reason this class
+automatically converts any data sent between Perl and a mtn subprocess to and
+from Perl's internal UTF-8 string format and the standard binary octet
+notation.
+
+There may be times when this built in conversion is inappropriate and so one
+can simply switch it off by using the
+Monotone::AutomateStdio-E<gt>suppress_utf8_conversion() method to before
+calling Monotone::AutomateStdio-E<gt>new().
+
+Please note that not everything is converted when using this class's built in
+UTF-8 conversion mechanism. This is mainly for efficiency. For example, there
+is no real point in converting revision or file ids as these are always
+represented as forty character hexadecimal strings. Likewise packet data is not
+converted as this is always formatted to use seven bit ASCII. However there is
+one case where no conversion is done for reasons other than efficiency, and
+that is when handling file content data. Apart from differentiating between
+binary and non-binary data, Monotone just treats file content data as a
+sequence of bytes. In order to decide whether a file's contents contains UTF-8
+data this may involve looking for assorted patterns in the data or checking the
+file name's extension, all of which being beyond the scope of this class. Also
+it is a good idea to treat file content data as a simple sequence of octets
+anyway. Probably the only time that one would need to worry about UTF-8 based
+file content data is when an application is displaying it using something like
+Gtk2 (the Gtk2 bindings for Perl uses Perl's internal UTF-8 flag to determine
+whether a string needs to be handled as a UTF-8 string or as a simple sequence
+of octets). In this case, once a file's contents has been determined to contain
+text oriented data, one can use Perl's decode_utf8() function to do the
+conversion. For more information on Perl's handling of UTF-8 please see the
+documentation for Encode.
 
 =head2 Process Handling
 

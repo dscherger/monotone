@@ -58,6 +58,7 @@ use warnings;
 
 use Carp;
 use Cwd qw(abs_path getcwd);
+use Encode;
 use File::Basename;
 use File::Spec;
 use IO::File;
@@ -91,6 +92,7 @@ use constant MTN_SET_ATTRIBUTE                 => 16;
 use constant MTN_SET_DB_VARIABLE               => 17;
 use constant MTN_SHOW_CONFLICTS                => 18;
 use constant MTN_U_SELECTOR                    => 19;
+use constant MTN_W_SELECTOR                    => 20;
 
 # Constants used to represent the different error levels.
 
@@ -204,6 +206,11 @@ my %tags_keys = ("branches"       => NULL | STRING_LIST,
 
 my $cd_to_ws_root = 1;
 
+# Flag for detemining whether UTF-8 conversion should be done on the data sent
+# to and from the mtn subprocess.
+
+my $convert_to_utf8 = 1;
+
 # Error, database locked and io wait callback routine references and associated
 # client data.
 
@@ -290,6 +297,7 @@ sub set_attribute($$$$);
 sub set_db_variable($$$$);
 sub show_conflicts($$;$$$);
 sub supports($$);
+sub suppress_utf8_conversion($$);
 sub switch_to_ws_root($$);
 sub tags($$;$);
 sub toposort($$@);
@@ -305,8 +313,8 @@ sub create_object_data();
 sub error_handler_wrapper($);
 sub get_quoted_value($$$);
 sub get_ws_details($$$);
-sub mtn_command($$$;@);
-sub mtn_command_with_options($$$$;@);
+sub mtn_command($$$$$;@);
+sub mtn_command_with_options($$$$$$;@);
 sub mtn_read_output($$);
 sub parse_kv_record($$$$;$);
 sub parse_revision_data($$);
@@ -347,7 +355,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities));
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 #
 ##############################################################################
 #
@@ -534,7 +542,7 @@ sub ancestors($$@)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("ancestors", $list, @revision_ids);
+    return $this->mtn_command("ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -565,6 +573,8 @@ sub ancestry_difference($$$;@)
     my($this, $list, $new_revision_id, @old_revision_ids) = @_;
 
     return $this->mtn_command("ancestry_difference",
+			      0,
+			      0,
 			      $list,
 			      $new_revision_id,
 			      @old_revision_ids);
@@ -591,7 +601,7 @@ sub branches($$)
 
     my($this, $list) = @_;
 
-    return $this->mtn_command("branches", $list);
+    return $this->mtn_command("branches", 0, 1, $list);
 
 }
 #
@@ -619,7 +629,13 @@ sub cert($$$$)
 
     my $dummy;
 
-    return $this->mtn_command("cert", \$dummy, $revision_id, $name, $value);
+    return $this->mtn_command("cert",
+			      1,
+			      1,
+			      \$dummy,
+			      $revision_id,
+			      $name,
+			      $value);
 
 }
 #
@@ -650,7 +666,7 @@ sub certs($$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("certs", $ref, $revision_id);
+	return $this->mtn_command("certs", 0, 1, $ref, $revision_id);
     }
     else
     {
@@ -658,7 +674,7 @@ sub certs($$$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command("certs", \@lines, $revision_id))
+	if (! $this->mtn_command("certs", 0, 1, \@lines, $revision_id))
 	{
 	    return;
 	}
@@ -716,7 +732,7 @@ sub children($$$)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("children", $list, @revision_ids);
+    return $this->mtn_command("children", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -744,7 +760,7 @@ sub common_ancestors($$@)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("common_ancestors", $list, @revision_ids);
+    return $this->mtn_command("common_ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -799,6 +815,8 @@ sub content_diff($$;$$$@)
 	unless (! defined($revision_id2));
 
     return $this->mtn_command_with_options("content_diff",
+					   1,
+					   1,
 					   $buffer,
 					   \@opts,
 					   @file_names);
@@ -827,7 +845,7 @@ sub db_get($$$$)
 
     my($this, $buffer, $domain, $name) = @_;
 
-    return $this->mtn_command("db_get", $buffer, $domain, $name);
+    return $this->mtn_command("db_get", 1, 1, $buffer, $domain, $name);
 
 }
 #
@@ -854,7 +872,7 @@ sub descendents($$@)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("descendents", $list, @revision_ids);
+    return $this->mtn_command("descendents", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -883,7 +901,7 @@ sub drop_attribute($$$)
 
     my $dummy;
 
-    return $this->mtn_command("drop_attribute", \$dummy, $path, $key);
+    return $this->mtn_command("drop_attribute", 1, 0, \$dummy, $path, $key);
 
 }
 #
@@ -912,7 +930,12 @@ sub drop_db_variables($$;$)
 
     my $dummy;
 
-    return $this->mtn_command("drop_db_variables", \$dummy, $domain, $name);
+    return $this->mtn_command("drop_db_variables",
+			      1,
+			      0,
+			      \$dummy,
+			      $domain,
+			      $name);
 
 }
 #
@@ -940,7 +963,7 @@ sub erase_ancestors($$;@)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("erase_ancestors", $list, @revision_ids);
+    return $this->mtn_command("erase_ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -978,6 +1001,8 @@ sub file_merge($$$$$$)
        $right_file_name) = @_;
 
     return $this->mtn_command("file_merge",
+			      1,
+			      1,
 			      $buffer,
 			      $left_revision_id,
 			      $left_file_name,
@@ -1013,7 +1038,7 @@ sub genkey($$$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("genkey", $ref, $key_id, $pass_phrase);
+	return $this->mtn_command("genkey", 1, 1, $ref, $key_id, $pass_phrase);
     }
     else
     {
@@ -1022,7 +1047,12 @@ sub genkey($$$$)
 	   $kv_record,
 	   @lines);
 
-	if (! $this->mtn_command("genkey", \@lines, $key_id, $pass_phrase))
+	if (! $this->mtn_command("genkey",
+				 1,
+				 1,
+				 \@lines,
+				 $key_id,
+				 $pass_phrase))
 	{
 	    return;
 	}
@@ -1088,7 +1118,7 @@ sub get_attributes($$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command($cmd, $ref, $file_name);
+	return $this->mtn_command($cmd, 1, 1, $ref, $file_name);
     }
     else
     {
@@ -1096,7 +1126,7 @@ sub get_attributes($$$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command($cmd, \@lines, $file_name))
+	if (! $this->mtn_command($cmd, 1, 1, \@lines, $file_name))
 	{
 	    return;
 	}
@@ -1160,7 +1190,7 @@ sub get_base_revision_id($$)
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("get_base_revision_id", \@list))
+    if (! $this->mtn_command("get_base_revision_id", 0, 0, \@list))
     {
 	return;
     }
@@ -1201,6 +1231,8 @@ sub get_content_changed($$$$)
     # Run the command and get the data.
 
     if (! $this->mtn_command("get_content_changed",
+			     1,
+			     0,
 			     \@lines,
 			     $revision_id,
 			     $file_name))
@@ -1256,6 +1288,8 @@ sub get_corresponding_path($$$$$)
     # Run the command and get the data.
 
     if (! $this->mtn_command("get_corresponding_path",
+			     1,
+			     1,
 			     \@lines,
 			     $source_revision_id,
 			     $file_name,
@@ -1332,6 +1366,8 @@ sub get_current_revision($$;$@)
     if (ref($ref) eq "SCALAR")
     {
 	return $this->mtn_command_with_options("get_current_revision",
+					       1,
+					       1,
 					       $ref,
 					       \@opts,
 					       @paths);
@@ -1342,6 +1378,8 @@ sub get_current_revision($$;$@)
 	my @lines;
 
 	if (! $this->mtn_command_with_options("get_current_revision",
+					      1,
+					      1,
 					      \@lines,
 					      \@opts,
 					      @paths))
@@ -1380,7 +1418,7 @@ sub get_current_revision_id($$)
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("get_current_revision_id", \@list))
+    if (! $this->mtn_command("get_current_revision_id", 0, 0, \@list))
     {
 	return;
     }
@@ -1418,7 +1456,7 @@ sub get_db_variables($$;$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_db_variables", $ref, $domain);
+	return $this->mtn_command("get_db_variables", 1, 1, $ref, $domain);
     }
     else
     {
@@ -1429,7 +1467,7 @@ sub get_db_variables($$;$)
 	   $name,
 	   $value);
 
-	if (! $this->mtn_command("get_db_variables", \@lines, $domain))
+	if (! $this->mtn_command("get_db_variables", 1, 1, \@lines, $domain))
 	{
 	    return;
 	}
@@ -1490,7 +1528,7 @@ sub get_file($$$)
 
     my($this, $buffer, $file_id) = @_;
 
-    return $this->mtn_command("get_file", $buffer, $file_id);
+    return $this->mtn_command("get_file", 0, 0, $buffer, $file_id);
 
 }
 #
@@ -1525,6 +1563,8 @@ sub get_file_of($$$;$)
 	unless (! defined($revision_id));
 
     return $this->mtn_command_with_options("get_file_of",
+					   1,
+					   0,
 					   $buffer,
 					   \@opts,
 					   $file_name);
@@ -1558,7 +1598,7 @@ sub get_manifest_of($$;$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_manifest_of", $ref, $revision_id);
+	return $this->mtn_command("get_manifest_of", 0, 1, $ref, $revision_id);
     }
     else
     {
@@ -1572,7 +1612,11 @@ sub get_manifest_of($$;$)
 	   $type,
 	   $value);
 
-	if (! $this->mtn_command("get_manifest_of", \@lines, $revision_id))
+	if (! $this->mtn_command("get_manifest_of",
+				 0,
+				 1,
+				 \@lines,
+				 $revision_id))
 	{
 	    return;
 	}
@@ -1658,7 +1702,7 @@ sub get_option($$$)
 
     my($this, $buffer, $option_name) = @_;
 
-    if (! $this->mtn_command("get_option", $buffer, $option_name))
+    if (! $this->mtn_command("get_option", 1, 1, $buffer, $option_name))
     {
 	return;
     }
@@ -1696,14 +1740,14 @@ sub get_revision($$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_revision", $ref, $revision_id);
+	return $this->mtn_command("get_revision", 0, 1, $ref, $revision_id);
     }
     else
     {
 
 	my @lines;
 
-	if (! $this->mtn_command("get_revision", \@lines, $revision_id))
+	if (! $this->mtn_command("get_revision", 0, 1, \@lines, $revision_id))
 	{
 	    return;
 	}
@@ -1736,7 +1780,7 @@ sub get_workspace_root($$)
 
     my($this, $buffer) = @_;
 
-    if (! $this->mtn_command("get_workspace_root", $buffer))
+    if (! $this->mtn_command("get_workspace_root", 0, 1, $buffer))
     {
 	return;
     }
@@ -1771,7 +1815,7 @@ sub graph($$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("graph", $ref);
+	return $this->mtn_command("graph", 0, 0, $ref);
     }
     else
     {
@@ -1780,7 +1824,7 @@ sub graph($$)
 	   @lines,
 	   @parent_ids);
 
-	if (! $this->mtn_command("graph", \@lines))
+	if (! $this->mtn_command("graph", 0, 0, \@lines))
 	{
 	    return;
 	}
@@ -1821,7 +1865,7 @@ sub heads($$;$)
 
     my($this, $list, $branch_name) = @_;
 
-    return $this->mtn_command("heads", $list, $branch_name);
+    return $this->mtn_command("heads", 1, 0, $list, $branch_name);
 
 }
 #
@@ -1850,7 +1894,7 @@ sub identify($$$)
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("identify", \@list, $file_name))
+    if (! $this->mtn_command("identify", 1, 0, \@list, $file_name))
     {
 	return;
     }
@@ -1883,7 +1927,7 @@ sub interface_version($$)
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("interface_version", \@list))
+    if (! $this->mtn_command("interface_version", 0, 0, \@list))
     {
 	return;
     }
@@ -1945,6 +1989,8 @@ sub inventory($$;$@)
     if (ref($ref) eq "SCALAR")
     {
 	return $this->mtn_command_with_options("inventory",
+					       1,
+					       1,
 					       $ref,
 					       \@opts,
 					       @paths);
@@ -1955,6 +2001,8 @@ sub inventory($$;$@)
 	my @lines;
 
 	if (! $this->mtn_command_with_options("inventory",
+					      1,
+					      1,
 					      \@lines,
 					      \@opts,
 					      @paths))
@@ -1993,6 +2041,7 @@ sub inventory($$;$@)
 		    push(@$ref, $kv_record);
 		}
 	    }
+
 	}
 	else
 	{
@@ -2045,7 +2094,7 @@ sub keys($$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("keys", $ref);
+	return $this->mtn_command("keys", 0, 1, $ref);
     }
     else
     {
@@ -2053,7 +2102,7 @@ sub keys($$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command("keys", \@lines))
+	if (! $this->mtn_command("keys", 0, 1, \@lines))
 	{
 	    return;
 	}
@@ -2117,7 +2166,7 @@ sub leaves($$)
 
     my($this, $list) = @_;
 
-    return $this->mtn_command("leaves", $list);
+    return $this->mtn_command("leaves", 0, 0, $list);
 
 }
 #
@@ -2147,7 +2196,7 @@ sub lua($$$;@)
 
     my($this, $buffer, $lua_function, @arguments) = @_;
 
-    return $this->mtn_command("lua", $buffer, $lua_function, @arguments);
+    return $this->mtn_command("lua", 1, 1, $buffer, $lua_function, @arguments);
 
 }
 #
@@ -2174,7 +2223,7 @@ sub packet_for_fdata($$$)
 
     my($this, $buffer, $file_id) = @_;
 
-    return $this->mtn_command("packet_for_fdata", $buffer, $file_id);
+    return $this->mtn_command("packet_for_fdata", 0, 0, $buffer, $file_id);
 
 }
 #
@@ -2205,6 +2254,8 @@ sub packet_for_fdelta($$$$)
     my($this, $buffer, $from_file_id, $to_file_id) = @_;
 
     return $this->mtn_command("packet_for_fdelta",
+			      0,
+			      0,
 			      $buffer,
 			      $from_file_id,
 			      $to_file_id);
@@ -2234,7 +2285,7 @@ sub packet_for_rdata($$$)
 
     my($this, $buffer, $revision_id) = @_;
 
-    return $this->mtn_command("packet_for_rdata", $buffer, $revision_id);
+    return $this->mtn_command("packet_for_rdata", 0, 0, $buffer, $revision_id);
 
 }
 #
@@ -2261,7 +2312,11 @@ sub packets_for_certs($$$)
 
     my($this, $buffer, $revision_id) = @_;
 
-    return $this->mtn_command("packets_for_certs", $buffer, $revision_id);
+    return $this->mtn_command("packets_for_certs",
+			      0,
+			      0,
+			      $buffer,
+			      $revision_id);
 
 }
 #
@@ -2287,7 +2342,7 @@ sub parents($$$)
 
     my($this, $list, $revision_id) = @_;
 
-    return $this->mtn_command("parents", $list, $revision_id);
+    return $this->mtn_command("parents", 0, 0, $list, $revision_id);
 
 }
 #
@@ -2323,6 +2378,8 @@ sub put_file($$$$)
     if (defined($base_file_id))
     {
 	if (! $this->mtn_command("put_file",
+				 0,
+				 0,
 				 \@list,
 				 $base_file_id,
 				 $contents))
@@ -2332,7 +2389,7 @@ sub put_file($$$$)
     }
     else
     {
-	if (! $this->mtn_command("put_file", \@list, $contents))
+	if (! $this->mtn_command("put_file", 0, 0, \@list, $contents))
 	{
 	    return;
 	}
@@ -2367,7 +2424,7 @@ sub put_revision($$$)
 
     my @list;
 
-    if (! $this->mtn_command("put_revision", \@list, $contents))
+    if (! $this->mtn_command("put_revision", 1, 0, \@list, $contents))
     {
 	return;
     }
@@ -2399,7 +2456,7 @@ sub read_packets($$)
 
     my $dummy;
 
-    return $this->mtn_command("read_packets", \$dummy, $packet_data);
+    return $this->mtn_command("read_packets", 0, 0, \$dummy, $packet_data);
 
 }
 #
@@ -2424,7 +2481,7 @@ sub roots($$)
 
     my($this, $list) = @_;
 
-    return $this->mtn_command("roots", $list);
+    return $this->mtn_command("roots", 0, 0, $list);
 
 }
 #
@@ -2450,7 +2507,7 @@ sub select($$$)
 
     my($this, $list, $selector) = @_;
 
-    return $this->mtn_command("select", $list, $selector);
+    return $this->mtn_command("select", 1, 0, $list, $selector);
 
 }
 #
@@ -2479,7 +2536,13 @@ sub set_attribute($$$$)
 
     my $dummy;
 
-    return $this->mtn_command("set_attribute", \$dummy, $path, $key, $value);
+    return $this->mtn_command("set_attribute",
+			      1,
+			      0,
+			      \$dummy,
+			      $path,
+			      $key,
+			      $value);
 
 }
 #
@@ -2517,7 +2580,7 @@ sub set_db_variable($$$$)
     {
 	$cmd = "db_set";
     }
-    return $this->mtn_command($cmd, \$dummy, $domain, $name, $value);
+    return $this->mtn_command($cmd, 1, 0, \$dummy, $domain, $name, $value);
 
 }
 #
@@ -2586,6 +2649,8 @@ sub show_conflicts($$;$$$)
     if (ref($ref) eq "SCALAR")
     {
 	return $this->mtn_command_with_options("show_conflicts",
+					       1,
+					       1,
 					       $ref,
 					       \@opts,
 					       $left_revision_id,
@@ -2598,6 +2663,8 @@ sub show_conflicts($$;$$$)
 	   @lines);
 
 	if (! $this->mtn_command_with_options("show_conflicts",
+					      1,
+					      1,
 					      \@lines,
 					      \@opts,
 					      $left_revision_id,
@@ -2674,7 +2741,7 @@ sub tags($$;$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("tags", $ref, $branch_pattern);
+	return $this->mtn_command("tags", 1, 1, $ref, $branch_pattern);
     }
     else
     {
@@ -2682,7 +2749,7 @@ sub tags($$;$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command("tags", \@lines, $branch_pattern))
+	if (! $this->mtn_command("tags", 1, 1, \@lines, $branch_pattern))
 	{
 	    return;
 	}
@@ -2750,113 +2817,7 @@ sub toposort($$@)
 
     my($this, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("toposort", $list, @revision_ids);
-
-}
-#
-##############################################################################
-#
-#   Routine      - supports
-#
-#   Description  - Determine whether a certain feature is available with the
-#                  version of Monotone that is currently being used.
-#
-#   Data         - $this         : The object.
-#                  $feature      : A constant specifying the feature that is
-#                                  to be checked for.
-#                  Return Value  : True if the feature is supported, otherwise
-#                                  false if it is not.
-#
-##############################################################################
-
-
-
-sub supports($$)
-{
-
-    my($this, $feature) = @_;
-
-    if ($feature == MTN_DROP_ATTRIBUTE
-	|| $feature == MTN_GET_ATTRIBUTES
-	|| $feature == MTN_SET_ATTRIBUTE)
-    {
-
-	# These are only available from version 0.36 (i/f version 5.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 5);
-
-    }
-    elsif ($feature == MTN_IGNORING_OF_SUSPEND_CERTS
-	   || $feature == MTN_INVENTORY_IN_IO_STANZA_FORMAT
-	   || $feature == MTN_P_SELECTOR)
-    {
-
-	# These are only available from version 0.37 (i/f version 6.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 6);
-
-    }
-    elsif ($feature == MTN_DROP_DB_VARIABLES
-	   || $feature == MTN_GET_CURRENT_REVISION
-	   || $feature == MTN_GET_DB_VARIABLES
-	   || $feature == MTN_INVENTORY_TAKING_OPTIONS
-	   || $feature == MTN_SET_DB_VARIABLE)
-    {
-
-	# These are only available from version 0.39 (i/f version 7.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 7);
-
-    }
-    elsif ($feature == MTN_DB_GET)
-    {
-
-	# This is only available prior version 0.39 (i/f version 7.x).
-
-	return 1 if ($this->{mtn_aif_major} < 7);
-
-    }
-    elsif ($feature == MTN_GET_WORKSPACE_ROOT
-	   || $feature == MTN_INVENTORY_WITH_BIRTH_ID
-	   || $feature == MTN_SHOW_CONFLICTS)
-    {
-
-	# These are only available from version 0.41 (i/f version 8.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 8);
-
-    }
-    elsif ($feature == MTN_FILE_MERGE
-	   || $feature == MTN_LUA
-	   || $feature == MTN_READ_PACKETS)
-    {
-
-	# These are only available from version 0.42 (i/f version 9.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 9);
-
-    }
-    elsif ($feature == MTN_M_SELECTOR || $feature == MTN_U_SELECTOR)
-    {
-
-	# These are only available from version 0.43 (i/f version 9.x).
-
-	return 1 if ($this->{mtn_aif_major} >= 10
-		     || ($this->{mtn_aif_major} == 9
-			 && $this->{mtn_version} eq "0.43"));
-
-    }
-    else
-    {
-
-	# An unknown feature was requested.
-
-	$this->{error_msg} = "Unknown feature requested";
-	&$carper($this->{error_msg});
-
-    }
-
-    return;
+    return $this->mtn_command("toposort", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -3359,6 +3320,170 @@ sub register_io_wait_handler(;$$$$)
 #
 ##############################################################################
 #
+#   Routine      - supports
+#
+#   Description  - Determine whether a certain feature is available with the
+#                  version of Monotone that is currently being used.
+#
+#   Data         - $this         : The object.
+#                  $feature      : A constant specifying the feature that is
+#                                  to be checked for.
+#                  Return Value  : True if the feature is supported, otherwise
+#                                  false if it is not.
+#
+##############################################################################
+
+
+
+sub supports($$)
+{
+
+    my($this, $feature) = @_;
+
+    if ($feature == MTN_DROP_ATTRIBUTE
+	|| $feature == MTN_GET_ATTRIBUTES
+	|| $feature == MTN_SET_ATTRIBUTE)
+    {
+
+	# These are only available from version 0.36 (i/f version 5.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 5);
+
+    }
+    elsif ($feature == MTN_IGNORING_OF_SUSPEND_CERTS
+	   || $feature == MTN_INVENTORY_IN_IO_STANZA_FORMAT
+	   || $feature == MTN_P_SELECTOR)
+    {
+
+	# These are only available from version 0.37 (i/f version 6.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 6);
+
+    }
+    elsif ($feature == MTN_DROP_DB_VARIABLES
+	   || $feature == MTN_GET_CURRENT_REVISION
+	   || $feature == MTN_GET_DB_VARIABLES
+	   || $feature == MTN_INVENTORY_TAKING_OPTIONS
+	   || $feature == MTN_SET_DB_VARIABLE)
+    {
+
+	# These are only available from version 0.39 (i/f version 7.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 7);
+
+    }
+    elsif ($feature == MTN_DB_GET)
+    {
+
+	# This is only available prior version 0.39 (i/f version 7.x).
+
+	return 1 if ($this->{mtn_aif_major} < 7);
+
+    }
+    elsif ($feature == MTN_GET_WORKSPACE_ROOT
+	   || $feature == MTN_INVENTORY_WITH_BIRTH_ID
+	   || $feature == MTN_SHOW_CONFLICTS)
+    {
+
+	# These are only available from version 0.41 (i/f version 8.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 8);
+
+    }
+    elsif ($feature == MTN_FILE_MERGE
+	   || $feature == MTN_LUA
+	   || $feature == MTN_READ_PACKETS)
+    {
+
+	# These are only available from version 0.42 (i/f version 9.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 9);
+
+    }
+    elsif ($feature == MTN_M_SELECTOR || $feature == MTN_U_SELECTOR)
+    {
+
+	# These are only available from version 0.43 (i/f version 9.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 10
+		     || ($this->{mtn_aif_major} == 9
+			 && $this->{mtn_version} eq "0.43"));
+
+    }
+    elsif ($feature == MTN_W_SELECTOR)
+    {
+
+	# This is only available from version 0.44 (i/f version 10.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 10);
+
+    }
+    else
+    {
+
+	# An unknown feature was requested.
+
+	$this->{error_msg} = "Unknown feature requested";
+	&$carper($this->{error_msg});
+
+    }
+
+    return;
+
+}
+#
+##############################################################################
+#
+#   Routine      - suppress_utf8_conversion
+#
+#   Description  - Controls whether UTF-8 conversion should be done on the
+#                  data sent to and from the mtn subprocess by this class.
+#                  This is both a class as well as an object method. When used
+#                  as a class method, the specified setting is used as the
+#                  default for all those objects that do not specify their own
+#                  setting. The default setting is to perform UTF-8
+#                  conversion.
+#
+#   Data         - $this     : Either the object, the package name or not
+#                              present depending upon how this method is
+#                              called.
+#                  $suppress : True if UTF-8 conversion is not to be done,
+#                              otherwise false if it is.
+#
+##############################################################################
+
+
+
+sub suppress_utf8_conversion($$)
+{
+
+    my $this;
+    if ($_[0]->isa(__PACKAGE__))
+    {
+	if (ref($_[0]) ne "")
+	{
+	    $this = shift();
+	}
+	else
+	{
+	    shift();
+	}
+    }
+    my $suppress = $_[0];
+
+    if (defined($this))
+    {
+	$this->{convert_to_utf8} = $suppress ? 0 : 1;
+    }
+    else
+    {
+	$convert_to_utf8 = $suppress ? 0 : 1;
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - switch_to_ws_root
 #
 #   Description  - Control whether this class automatically switches to a
@@ -3657,6 +3782,19 @@ sub parse_kv_record($$$$;$)
 #
 #   Data         - $this        : The object.
 #                  $cmd         : The mtn automate command that is to be run.
+#                  $out_as_utf8 : True if any data output to mtn should be
+#                                 converted into raw UTF-8, otherwise false if
+#                                 the data should be treated as binary. If
+#                                 UTF-8 conversion has been disabled by a call
+#                                 to the suppress_utf8_conversion() method
+#                                 then this argument is ignored.
+#                  $in_as_utf8  : True if any data input from mtn should be
+#                                 converted into Perl's internal UTF-8 string
+#                                 format, otherwise false if the data should
+#                                 be treated as binary. If UTF-8 conversion
+#                                 has been disabled by a call to the
+#                                 suppress_utf8_conversion() method then this
+#                                 argument is ignored.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  @parameters  : A list of parameters to be applied to the
@@ -3667,12 +3805,17 @@ sub parse_kv_record($$$$;$)
 
 
 
-sub mtn_command($$$;@)
+sub mtn_command($$$$$;@)
 {
 
-    my($this, $cmd, $ref, @parameters) = @_;
+    my($this, $cmd, $out_as_utf8, $in_as_utf8, $ref, @parameters) = @_;
 
-    return $this->mtn_command_with_options($cmd, $ref, [], @parameters);
+    return $this->mtn_command_with_options($cmd,
+					   $out_as_utf8,
+					   $in_as_utf8,
+					   $ref,
+					   [],
+					   @parameters);
 
 }
 #
@@ -3687,6 +3830,19 @@ sub mtn_command($$$;@)
 #
 #   Data         - $this        : The object.
 #                  $cmd         : The mtn automate command that is to be run.
+#                  $out_as_utf8 : True if any data output to mtn should be
+#                                 converted into raw UTF-8, otherwise false if
+#                                 the data should be treated as binary. If
+#                                 UTF-8 conversion has been disabled by a call
+#                                 to the suppress_utf8_conversion() method
+#                                 then this argument is ignored.
+#                  $in_as_utf8  : True if any data input from mtn should be
+#                                 converted into Perl's internal UTF-8 string
+#                                 format, otherwise false if the data should
+#                                 be treated as binary. If UTF-8 conversion
+#                                 has been disabled by a call to the
+#                                 suppress_utf8_conversion() method then this
+#                                 argument is ignored.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $options     : A reference to a list containing key/value
@@ -3699,10 +3855,11 @@ sub mtn_command($$$;@)
 
 
 
-sub mtn_command_with_options($$$$;@)
+sub mtn_command_with_options($$$$$$;@)
 {
 
-    my($this, $cmd, $ref, $options, @parameters) = @_;
+    my($this, $cmd, $out_as_utf8, $in_as_utf8, $ref, $options, @parameters)
+	= @_;
 
     my($buffer,
        $buffer_ref,
@@ -3715,6 +3872,17 @@ sub mtn_command_with_options($$$$;@)
        $param,
        $read_ok,
        $retry);
+
+    # Work out whether UTF-8 conversion is to be done at all.
+
+    if (defined($this->{convert_to_utf8}))
+    {
+	$out_as_utf8 = $in_as_utf8 = 0 unless ($this->{convert_to_utf8});
+    }
+    else
+    {
+	$out_as_utf8 = $in_as_utf8 = 0 unless ($convert_to_utf8);
+    }
 
     # Work out what database locked handler is to be used.
 
@@ -3765,11 +3933,27 @@ sub mtn_command_with_options($$$$;@)
 	    printf($in "o");
 	    foreach $opt (@$options)
 	    {
+		my($key,
+		   $key_ref,
+		   $value,
+		   $value_ref);
+		if ($out_as_utf8)
+		{
+		    $key = encode_utf8($opt->{key});
+		    $value = encode_utf8($opt->{value});
+		    $key_ref = \$key;
+		    $value_ref = \$value;
+		}
+		else
+		{
+		    $key_ref = \$opt->{key};
+		    $value_ref = \$opt->{value};
+		}
 		printf($in "%d:%s%d:%s",
-		       length($opt->{key}),
-		       $opt->{key},
-		       length($opt->{value}),
-		       $opt->{value});
+		       length($$key_ref),
+		       $$key_ref,
+		       length($$value_ref),
+		       $$value_ref);
 	    }
 	    printf($in "e ");
 	}
@@ -3784,14 +3968,33 @@ sub mtn_command_with_options($$$$;@)
 
 	    if (defined $param)
 	    {
+		my($data,
+		   $param_ref);
 		if (ref($param) ne "")
 		{
-		    printf($in "%d:%s", length($$param), $$param);
+		    if ($out_as_utf8)
+		    {
+			$data = encode_utf8($$param);
+			$param_ref = \$data;
+		    }
+		    else
+		    {
+			$param_ref = $param;
+		    }
 		}
 		else
 		{
-		    printf($in "%d:%s", length($param), $param);
+		    if ($out_as_utf8)
+		    {
+			$data = encode_utf8($param);
+			$param_ref = \$data;
+		    }
+		    else
+		    {
+			$param_ref = \$param;
+		    }
 		}
+		printf($in "%d:%s", length($$param_ref), $$param_ref);
 	    }
 
 	}
@@ -3804,6 +4007,7 @@ sub mtn_command_with_options($$$$;@)
 	eval
 	{
 	    $read_ok = $this->mtn_read_output($buffer_ref);
+	    $$buffer_ref = decode_utf8($$buffer_ref) if ($in_as_utf8);
 	};
 	$exception = $@;
 	if ($exception ne "")
@@ -4310,6 +4514,7 @@ sub create_object_data()
 	    ws_path                 => undef,
 	    ws_constructed          => undef,
 	    cd_to_ws_root           => $cd_to_ws_root,
+	    convert_to_utf8         => undef,
 	    mtn_options             => undef,
 	    mtn_pid                 => 0,
 	    mtn_in                  => undef,
