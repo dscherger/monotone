@@ -876,6 +876,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   unset_env("EDITOR")
   unset_env("VISUAL")
 
+  -- tests should not be timezone sensitive
+  set_env("TZ", "UTC")
+
   logfile = io.open(logname, "w")
   chdir(run_dir);
 

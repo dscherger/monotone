@@ -1,3 +1,27 @@
+??? ?? ?? ??:??:?? UTC ????
+
+	0.45 release.
+
+	Changes
+
+	New features
+
+	- The 'log' command now, by default, converts all dates it
+	  prints to your timezone instead of leaving them in UTC, and
+	  uses a somewhat more friendly format for the dates.
+
+	  You can customize the date format with the new
+	  "get_date_format_spec" Lua hook, which returns a strftime(3)
+	  format string.  You can also override the format for one
+	  command with the new --date-format option, disable date
+	  conversion for one command with --no-format-dates, or
+	  disable it by default by having the above Lua hook return an
+	  empty string.
+
+	Bugs fixed
+
+	Internal
+
 Tue May 12 20:44:00 UTC 2009
 
         0.44 release.

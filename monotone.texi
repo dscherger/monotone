@@ -10024,6 +10024,14 @@ Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
+@item get_date_format_spec ()
+
+Returns a @code{strftime} format specification, which @command{mtn
+log} and similar commands will use to format dates, unless instructed
+otherwise.  The default definition returns @samp{@w{"%d %b %Y,
+%I:%M:%S %p"}}, which produces output like this: @samp{@w{22 May 2009,
+09:06:14 AM}}.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
