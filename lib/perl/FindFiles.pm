@@ -393,31 +393,33 @@ sub search_files_button_clicked_cb($$)
     if ($query->{contents_pattern} ne "")
     {
 
-	# Need the following pragma as $contents_re could potentially be used
-	# against binary data.
+	my $pattern;
 
-	use bytes;
+	# We need to convert the contents pattern from possibly UTF-8 to binary
+	# as we may have to search binary data.
+
+	$pattern = encode_utf8($query->{contents_pattern});
 
 	if ($query->{contents_pattern_is_regexp})
 	{
 	    if ($query->{contents_case_sensitive})
 	    {
-		$contents_re = qr/$query->{contents_pattern}/;
+		$contents_re = qr/$pattern/;
 	    }
 	    else
 	    {
-		$contents_re = qr/$query->{contents_pattern}/i;
+		$contents_re = qr/$pattern/i;
 	    }
 	}
 	else
 	{
 	    if ($query->{contents_case_sensitive})
 	    {
-		$contents_re = qr/\Q$query->{contents_pattern}\E/;
+		$contents_re = qr/\Q$pattern\E/;
 	    }
 	    else
 	    {
-		$contents_re = qr/\Q$query->{contents_pattern}\E/i;
+		$contents_re = qr/\Q$pattern\E/i;
 	    }
 	}
 

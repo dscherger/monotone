@@ -197,6 +197,9 @@ sub generate_revision_report($$$$;$)
 
     # Certs.
 
+    # Find the maximum cert name length, for padding purposes (ignoring
+    # changelog certs as these are handled separately).
+
     $cert_max_len = 0;
     foreach my $cert (@$certs_list)
     {
@@ -204,8 +207,15 @@ sub generate_revision_report($$$$;$)
 	    if ($cert->{name} ne "changelog"
 		&& length($cert->{name}) > $cert_max_len);
     }
+
+    # Process each cert in turn.
+
     foreach my $cert (@$certs_list)
     {
+
+	# Collect all changelog certs together for output as one collection
+	# after the other certs.
+
 	if ($cert->{name} eq "changelog")
 	{
 	    my $change_log = $cert->{value};
@@ -214,25 +224,42 @@ sub generate_revision_report($$$$;$)
 	}
 	else
 	{
+
+	    # All other remaining certs.
+
+	    # Format date values so that they look nice.
+
 	    if ($cert->{name} eq "date")
 	    {
 		$cert->{value} =~ s/T/ /;
 	    }
+
+	    # Otherwise if the cert value contains newline characters then
+	    # indent subsequent lines so as to match the first line.
+
 	    elsif (index($cert->{value}, "\n") >= 0)
 	    {
 		my $padding = sprintf("\n%-*s", $cert_max_len + 2, "");
 		$cert->{value} =~ s/\n/$padding/g;
 	    }
+
+	    # Print out the cert's name.
+
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
 		 sprintf("\n%-*s ",
 			 $cert_max_len + 1, ucfirst($cert->{name}) . ":"),
 		 $bold);
+
+	    # Print out the cert's value.
+
 	    $text_buffer->insert_with_tags_by_name
 		($text_buffer->get_end_iter(),
 		 sprintf("%s", $cert->{value}),
 		 $normal);
+
 	}
+
     }
 
     # Change log(s).

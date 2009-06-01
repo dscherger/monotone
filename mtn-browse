@@ -59,6 +59,7 @@ use warnings;
 
 use Cwd qw(getcwd);
 use Data::Dumper;
+use Encode;
 use File::Basename;
 use File::Spec;
 use File::Temp qw(tempdir);
@@ -2754,8 +2755,9 @@ sub display_file($$)
 		    $browser->{file_view_svbuffer}->set_language($lang);
 		}
 
-		# Load in the contents.
+		# Load in the contents (ensuring UTF-8 encoding).
 
+		$contents = decode_utf8($contents);
 		$browser->{file_view_svbuffer}->set_text($contents);
 
 	    }
