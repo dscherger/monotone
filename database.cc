@@ -183,7 +183,8 @@ namespace
 
   enum open_mode { normal_mode = 0,
                    schema_bypass_mode,
-                   format_bypass_mode };
+                   format_bypass_mode,
+                   cache_bypass_mode };
 
   typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
   typedef hashmap::hash_map<revision_id, rev_height> height_map;
@@ -221,6 +222,9 @@ private:
   void open();
   void close();
   void check_format();
+  void check_caches();
+
+  bool table_has_data(string const & name);
 
   //
   // --== Basic SQL interface and statement caching ==--
@@ -509,47 +513,28 @@ database::database_specified()
 void
 database::check_is_not_rosterified()
 {
-  results res;
-  imp->fetch(res, one_col, any_rows,
-             query("SELECT 1 FROM rosters LIMIT 1"));
-  E(res.empty(), origin::user,
+  E(!imp->table_has_data("rosters"), origin::user,
     F("this database already contains rosters"));
+}
+
+bool
+database_impl::table_has_data(string const & name)
+{
+  results res;
+  fetch(res, one_col, any_rows, query("SELECT 1 FROM " + name + " LIMIT 1"));
+  return !res.empty();
 }
 
 void
 database_impl::check_format()
 {
-  results res;
-
-  // Check for manifests, revisions, rosters, and heights.
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM manifests LIMIT 1"));
-  bool have_manifests = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM revisions LIMIT 1"));
-  bool have_revisions = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM rosters LIMIT 1"));
-  bool have_rosters = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM heights LIMIT 1"));
-  bool have_heights = !res.empty();
-
-
-  if (!have_manifests)
-    {
-      // Must have been changesetified and rosterified already.
-      // Or else the database was just created.
-      // Do we need to regenerate cached data?
-      E(!have_revisions || (have_rosters && have_heights),
-        origin::no_fault,
-        F("database %s lacks some cached data\n"
-          "run '%s db regenerate_caches' to restore use of this database")
-        % filename % prog_name);
-    }
-  else
+  if (table_has_data("manifests"))
     {
       // The rosters and heights tables should be empty.
-      I(!have_rosters && !have_heights);
+      I(!table_has_data("rosters") && !table_has_data("heights"));
 
       // they need to either changesetify or rosterify.  which?
-      if (have_revisions)
+      if (table_has_data("revisions"))
         E(false, origin::no_fault,
           F("database %s contains old-style revisions\n"
             "if you are a project leader or doing local testing:\n"
@@ -565,6 +550,19 @@ database_impl::check_format()
             "this is a very old database; it needs to be upgraded\n"
             "please see README.changesets for details")
           % filename);
+    }
+}
+
+void
+database_impl::check_caches()
+{
+  if (table_has_data("revisions"))
+    {
+      E(table_has_data("rosters") && table_has_data("heights"),
+        origin::no_fault,
+        F("database %s lacks some cached data\n"
+          "run '%s db regenerate_caches' to restore use of this database")
+        % filename % prog_name);
     }
 }
 
@@ -597,7 +595,12 @@ database_impl::sql(enum open_mode mode)
           check_sql_schema(__sql, filename);
 
           if (mode != format_bypass_mode)
-            check_format();
+            {
+              check_format();
+
+              if (mode != cache_bypass_mode)
+                check_caches();
+            }
         }
 
       install_functions();
@@ -1207,6 +1210,12 @@ void
 database::ensure_open_for_format_changes()
 {
   imp->sql(format_bypass_mode);
+}
+
+void
+database::ensure_open_for_cache_reset()
+{
+  imp->sql(cache_bypass_mode);
 }
 
 void

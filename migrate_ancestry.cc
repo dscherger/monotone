@@ -980,7 +980,7 @@ regenerate_caches(database & db)
 {
   P(F("regenerating cached rosters and heights"));
 
-  db.ensure_open_for_format_changes();
+  db.ensure_open_for_cache_reset();
 
   transaction_guard guard(db);
 

@@ -90,6 +90,7 @@ public:
 
   void ensure_open();
   void ensure_open_for_format_changes();
+  void ensure_open_for_cache_reset();
 private:
   void ensure_open_for_maintenance();
 
