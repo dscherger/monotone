@@ -90,7 +90,7 @@ CREATE TABLE public_keys
 	keydata not null        -- RSA public params
 	);
 
-CREATE TABLE revision_certs_by_keyhash
+CREATE TABLE revision_certs
 	(
 	hash not null unique,   -- hash of remaining fields separated by ":"
 	revision_id not null,   -- joins with revisions.id
@@ -101,7 +101,7 @@ CREATE TABLE revision_certs_by_keyhash
 	unique(name, value, revision_id, keypair_id, signature)
 	);
 
-CREATE INDEX revision_certs_by_keyhash__revision_id ON revision_certs_by_keyhash (revision_id);
+CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);
 
 CREATE TABLE branch_epochs
 	(
@@ -149,17 +149,5 @@ CREATE TABLE manifest_certs
 	signature not null,     -- RSA/SHA1 signature of "[name@id:val]"
 	unique(name, id, value, keypair, signature)
 	);
-
-CREATE TABLE revision_certs
-	(
-	hash not null unique,   -- hash of remaining fields separated by ":"
-	id not null,            -- joins with revisions.id
-	name not null,          -- opaque string chosen by user
-	value not null,         -- opaque blob
-	keypair not null,       -- joins with public_keys.id
-	signature not null,     -- RSA/SHA1 signature of "[name@id:val]"
-	unique(name, value, id, keypair, signature)
-	);
-CREATE INDEX revision_certs__id ON revision_certs (id);
 
 COMMIT;

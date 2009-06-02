@@ -585,8 +585,9 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 
 static void
-log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name,
-          string label, string separator, bool multiline, bool newline)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
+          char const * label, char const * separator,
+          bool multiline, bool newline)
 {
   bool first = true;
 
@@ -615,16 +616,64 @@ log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name na
 }
 
 static void
-log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name,
-          string label, bool multiline)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
+          char const * label, bool multiline)
 {
-  log_certs(certs, os, id, name, label, label, multiline, true);
+  log_certs(certs, os, name, label, label, multiline, true);
 }
 
 static void
-log_certs(vector<cert> const & certs, ostream & os, revision_id id, cert_name name)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name)
 {
-  log_certs(certs, os, id, name, " ", ",", false, false);
+  log_certs(certs, os, name, " ", ",", false, false);
+}
+
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
+               char const * label, char const * separator,
+               bool multiline, bool newline)
+{
+  cert_name const date_name(date_cert_name);
+
+  bool first = true;
+  if (multiline)
+    newline = true;
+
+  for (vector<cert>::const_iterator i = certs.begin();
+       i != certs.end(); ++i)
+    {
+      if (i->name == date_name)
+        {
+          if (first)
+            os << label;
+          else
+            os << separator;
+
+          if (multiline)
+            os << "\n\n";
+          if (fmt.empty())
+            os << i->value;
+          else
+            os << date_t(i->value()).as_formatted_localtime(fmt);
+          if (newline)
+            os << '\n';
+
+          first = false;
+        }
+    }
+}
+
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
+               char const * label, bool multiline)
+{
+  log_date_certs(certs, os, fmt, label, label, multiline, true);
+}
+
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt)
+{
+  log_date_certs(certs, os, fmt, " ", ",", false, false);
 }
 
 enum log_direction { log_forward, log_reverse };
@@ -710,12 +759,22 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::last | options::opts::next |
     options::opts::from | options::opts::to | options::opts::revision |
     options::opts::brief | options::opts::diffs |
+    options::opts::format_dates | options::opts::date_fmt |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
     options::opts::no_graph)
 {
   database db(app);
   project_t project(db);
+
+  string date_fmt;
+  if (app.opts.format_dates)
+    {
+      if (!app.opts.date_fmt.empty())
+        date_fmt = app.opts.date_fmt;
+      else
+        app.lua.hook_get_date_format_spec(date_fmt);
+    }
 
   long last = app.opts.last;
   long next = app.opts.next;
@@ -874,12 +933,11 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
       L(FL("log %d starting revisions") % starting_revs.size());
     }
 
-  cert_name author_name(author_cert_name);
-  cert_name date_name(date_cert_name);
-  cert_name branch_name(branch_cert_name);
-  cert_name tag_name(tag_cert_name);
-  cert_name changelog_name(changelog_cert_name);
-  cert_name comment_name(comment_cert_name);
+  cert_name const author_name(author_cert_name);
+  cert_name const branch_name(branch_cert_name);
+  cert_name const tag_name(tag_cert_name);
+  cert_name const changelog_name(changelog_cert_name);
+  cert_name const comment_name(comment_cert_name);
 
   // we can use the markings if we walk backwards for a restricted log
   bool use_markings(direction == log_reverse && !mask.empty());
@@ -986,16 +1044,15 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
           if (app.opts.brief)
             {
               out << rid;
-              log_certs(certs, out, rid, author_name);
+              log_certs(certs, out, author_name);
               if (app.opts.no_graph)
-                log_certs(certs, out, rid, date_name);
+                log_date_certs(certs, out, date_fmt);
               else
                 {
                   out << '\n';
-                  log_certs(certs, out, rid, date_name,
-                            string(), string(), false, false);
+                  log_date_certs(certs, out, date_fmt, "", "", false, false);
                 }
-              log_certs(certs, out, rid, branch_name);
+              log_certs(certs, out, branch_name);
               out << '\n';
             }
           else
@@ -1018,10 +1075,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                    anc != ancestors.end(); ++anc)
                 out << "Ancestor: " << *anc << '\n';
 
-              log_certs(certs, out, rid, author_name, "Author: ", false);
-              log_certs(certs, out, rid, date_name,   "Date: ",   false);
-              log_certs(certs, out, rid, branch_name, "Branch: ", false);
-              log_certs(certs, out, rid, tag_name,    "Tag: ",    false);
+              log_certs(certs, out, author_name, "Author: ", false);
+              log_date_certs(certs, out, date_fmt, "Date: ", false);
+              log_certs(certs, out, branch_name, "Branch: ", false);
+              log_certs(certs, out, tag_name,    "Tag: ",    false);
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
@@ -1030,8 +1087,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                   out << '\n';
                 }
 
-              log_certs(certs, out, rid, changelog_name, "ChangeLog: ", true);
-              log_certs(certs, out, rid, comment_name,   "Comments: ",  true);
+              log_certs(certs, out, changelog_name, "ChangeLog: ", true);
+              log_certs(certs, out, comment_name,   "Comments: ",  true);
             }
 
           if (app.opts.diffs)

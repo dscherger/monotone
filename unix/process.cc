@@ -77,7 +77,7 @@ read_umask()
 
 int change_xbits(const char *path, const bool set)
 {
-  mode_t mode;
+  mode_t old_mode, new_mode;
   struct stat s;
   int fd = open(path, O_RDONLY);
   if (fd == -1)
@@ -88,21 +88,38 @@ int change_xbits(const char *path, const bool set)
     }
   if (fstat(fd, &s))
     return -1;
-  mode = s.st_mode;
+  old_mode = s.st_mode;
   if (set) {
-    mode |= ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+    new_mode = old_mode | ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
   } else {
-    mode &= (~(S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+    new_mode = old_mode & (~(S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
   }
-  L(FL("setting execute permission on path %s with mode %s") % path % mode);
-  int ret = fchmod(fd, mode);
+
+  int status = 0;
+  if (new_mode != old_mode)
+    {
+      if (set)
+        {
+          P(F("setting execute permission on %s") % path);
+          L(FL("setting execute permission on %s with mode %s") % path % new_mode);
+        }
+      else
+        {
+          P(F("clearing execute permission on %s") % path);
+          L(FL("clearing execute permission on %s with mode %s") % path % new_mode);
+        }
+
+      status = fchmod(fd, new_mode);
+    }
+
   if (close(fd) != 0)
     {
       const int err = errno;
       E(false, origin::system,
         F("error closing file %s: %s") % path % os_strerror(err));
     }
-  return ret;
+
+  return status;
 }
 
 int set_executable(const char *path)

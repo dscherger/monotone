@@ -180,6 +180,22 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
+OPT(date_fmt, "date-format", std::string, ,
+    gettext_noop("strftime(3) format specification for printing dates"))
+#ifdef option_bodies
+{
+  date_fmt = arg;
+}
+#endif
+
+OPT(format_dates, "no-format-dates", bool, true,
+    gettext_noop("print date certs exactly as stored in the database"))
+#ifdef option_bodies
+{
+  format_dates = false;
+}
+#endif
+
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {

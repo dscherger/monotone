@@ -386,7 +386,7 @@ u64 anc_graph::add_node_for_oldstyle_revision(revision_id const & rev)
 
       // load certs
       vector<cert> rcerts;
-      db.get_oldstyle_revision_certs(rev, rcerts);
+      db.get_revision_certs(rev, rcerts);
       db.erase_bogus_certs(rcerts);
       for(vector<cert>::const_iterator i = rcerts.begin();
           i != rcerts.end(); ++i)
@@ -980,7 +980,7 @@ regenerate_caches(database & db)
 {
   P(F("regenerating cached rosters and heights"));
 
-  db.ensure_open_for_format_changes();
+  db.ensure_open_for_cache_reset();
 
   transaction_guard guard(db);
 

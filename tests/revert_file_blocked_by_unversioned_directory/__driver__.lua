@@ -1,12 +1,8 @@
-
 mtn_setup()
 
--- this test is a bug report
---
--- reverting a file that has been replaced by a (non-versioned) directory
--- should do something sensible. I'm not sure what that is though.
--- this is almost a working copy conflict but it seems silly that revert
--- would ever encounter a conflict.
+-- reverting a renamed file that has been replaced by an unversioned directory
+-- should remove the unversioned directory, recreate the original file and
+-- remove the renamed file
 
 addfile("foo", "foo")
 
@@ -17,4 +13,6 @@ check(mtn("mv", "foo", "bar"), 0, false, false)
 -- create directory blocking revert of foo
 mkdir("foo")
 
-xfail_if(true, mtn("revert", "."), 0, false, false)
+xfail(mtn("revert", "."), 0, false, false)
+
+xfail_if(exists("bar"))

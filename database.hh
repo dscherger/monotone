@@ -28,6 +28,8 @@ class outdated_indicator;
 class rev_height;
 class lazy_rng;
 
+class migration_status;
+
 typedef std::pair<var_domain, var_name> var_key;
 typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 
@@ -85,10 +87,10 @@ public:
   bool is_dbfile(any_path const & file);
   bool database_specified();
   void check_is_not_rosterified();
-  void check_certs_not_by_hash();
 
   void ensure_open();
   void ensure_open_for_format_changes();
+  void ensure_open_for_cache_reset();
 private:
   void ensure_open_for_maintenance();
 
@@ -301,10 +303,6 @@ public:
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<cert> & certs);
 
-  // used by anc_graph::add_node_for_oldstyle_revision (revision.cc)
-  outdated_indicator get_oldstyle_revision_certs(revision_id const & ident,
-                          std::vector<cert> & certs);
-
   // Used through get_revision_cert_hashes (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<id> & hashes);
@@ -390,7 +388,7 @@ public:
   void load(std::istream &);
   void info(std::ostream &, bool analyze);
   void version(std::ostream &);
-  void migrate(key_store &);
+  void migrate(key_store &, migration_status &);
   void test_migration_step(key_store &, std::string const &);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);

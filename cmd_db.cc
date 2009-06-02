@@ -116,8 +116,26 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
-  database db(app);
-  db.migrate(keys);
+  migration_status mstat;
+  {
+    database db(app);
+    db.migrate(keys, mstat);
+    app.dbcache.reset();
+  }
+
+  if (mstat.need_regen())
+    {
+      database db(app);
+      regenerate_caches(db);
+    }
+
+  if (mstat.need_flag_day())
+    {
+      P(F("NOTE: because this database was last used by a rather old version\n"
+          "of monotone, you're not done yet.  If you're a project leader, then\n"
+          "see the file UPGRADE for instructions on running '%s db %s'")
+        % prog_name % mstat.flag_day_name());
+    }
 }
 
 CMD(db_execute, "execute", "", CMD_REF(db), "",
@@ -283,22 +301,6 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 
   build_roster_style_revs_from_manifest_style_revs(db, keys,
                                                    app.opts.attrs_to_drop);
-}
-
-CMD(db_migrate_certs_to_key_hashes,
-    "migrate_certs_to_key_hashes", "", CMD_REF(db), "",
-    N_("Converts the database to link certs to keys by hash"),
-    "",
-    options::opts::none)
-{
-  database db(app);
-  key_store keys(app);
-
-  E(args.size() == 0, origin::user,
-    F("no arguments needed"));
-
-  db.ensure_open_for_format_changes();
-  db.check_certs_not_by_hash();
 }
 
 CMD(db_regenerate_caches, "regenerate_caches", "", CMD_REF(db), "",

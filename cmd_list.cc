@@ -711,13 +711,13 @@ namespace
 // Name: keys
 // Arguments: none
 // Added in: 1.1
+// Changed in: 10.0
 // Purpose: Prints all keys in the keystore, and if a database is given
 //   also all keys in the database, in basic_io format.
 // Output format: For each key, a basic_io stanza is printed. The items in
 //   the stanza are:
 //     name - the key identifier
-//     public_hash - the hash of the public half of the key
-//     private_hash - the hash of the private half of the key
+//     hash - the hash of the key
 //     public_location - where the public half of the key is stored
 //     private_location - where the private half of the key is stored
 //   The *_location items may have multiple values, as shown below
@@ -727,18 +727,16 @@ namespace
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
 //              name "njs@pobox.com"
-//       public_hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
+//              hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
 //   public_location "database"
 //
 //               name "foo@bar.com"
-//        public_hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
-//       private_hash [bfc3263e3257087f531168850801ccefc668312d]
+//               hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
 //    public_location "keystore"
 //   private_location "keystore"
 //

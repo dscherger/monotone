@@ -2811,6 +2811,10 @@ command will swap the current and previous update revision.
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
 Values to match for can have shell wildcards.
+@item Workspace base revision
+Uses selector type @code{w}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID(s) this workspace is based on.
 @end table
 
 Further selector types may be added in the future.
@@ -7685,7 +7689,7 @@ the passphrase that will be used to encrypt the private half.
 @item Changes:
 @itemize
 @item
-FIXME -- The separate hashes for the private half of a key really didn't
+10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
 @code{public_hash [...]} and @code{private_hash [...]} lines.
 @item
@@ -8454,7 +8458,7 @@ None.
 
 @itemize
 @item
-FIXME -- The separate hashes for the private half of a key really didn't
+10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
 @code{public_hash [...]} and @code{private_hash [...]} lines.
 @item
@@ -10019,6 +10023,14 @@ default definition of this hook, see @ref{Default hooks}.
 Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
+
+@item get_date_format_spec ()
+
+Returns a @code{strftime} format specification, which @command{mtn
+log} and similar commands will use to format dates, unless instructed
+otherwise.  The default definition returns @samp{@w{"%d %b %Y,
+%I:%M:%S %p"}}, which produces output like this: @samp{@w{22 May 2009,
+09:06:14 AM}}.
 
 @end ftable
 

@@ -115,6 +115,8 @@ namespace
       L(FL("executing SQL '%s'") % cmd);
 
       sqlite3_prepare_v2(db, cmd, strlen(cmd), &s, &after);
+      MM(cmd);
+      MM(after);
       assert_sqlite3_ok(db);
 
       I(s);
@@ -701,6 +703,7 @@ char const migrate_to_binary_hashes[] =
   "UPDATE manifest_certs    SET id=unhex(id), hash=unhex(hash);"
   ;
 
+
 char const migrate_certs_to_key_hash[] =
   "ALTER TABLE public_keys rename to public_keys_tmp;\n"
   "CREATE TABLE public_keys\n"
@@ -709,10 +712,11 @@ char const migrate_certs_to_key_hash[] =
   "    keydata not null        -- RSA public params\n"
   "  );\n"
   "INSERT INTO public_keys (id, name, keydata)"
-  "   select hash, id, keydata from public_keys_tmp;\n"
+  "   SELECT hash, id, keydata FROM public_keys_tmp;\n"
   "DROP TABLE public_keys_tmp;\n"
 
-  "CREATE TABLE revision_certs_by_keyhash\n"
+  "ALTER TABLE revision_certs rename to revision_certs_tmp;\n"
+  "CREATE TABLE revision_certs\n"
   "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
   "    revision_id not null,   -- joins with revisions.id\n"
   "    name not null,          -- opaque string chosen by user\n"
@@ -721,7 +725,14 @@ char const migrate_certs_to_key_hash[] =
   "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
   "    unique(name, value, revision_id, keypair_id, signature)\n"
   "  );\n"
-  "CREATE INDEX revision_certs_by_keyhash__revision_id ON revision_certs_by_keyhash (revision_id);"
+  "CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);\n"
+
+  "INSERT INTO revision_certs(hash, revision_id, name, value, keypair_id, signature)\n"
+  "SELECT a.hash, a.id, a.name, a.value, b.id, a.signature\n"
+  "FROM revision_certs_tmp a JOIN public_keys b\n"
+  "ON a.keypair = b.name;\n"
+
+  "DROP TABLE revision_certs_tmp;"
   ;
 
 // these must be listed in order so that ones listed earlier override ones
@@ -730,7 +741,6 @@ enum upgrade_regime
   {
     upgrade_changesetify,
     upgrade_rosterify,
-    upgrade_cert_link,
     upgrade_regen_caches,
     upgrade_none,
   };
@@ -741,7 +751,6 @@ dump(enum upgrade_regime const & regime, string & out)
     {
     case upgrade_changesetify:  out = "upgrade_changesetify"; break;
     case upgrade_rosterify:     out = "upgrade_rosterify"; break;
-    case upgrade_cert_link:     out = "upgrade_cert_link"; break;
     case upgrade_regen_caches:  out = "upgrade_regen_caches"; break;
     case upgrade_none:          out = "upgrade_none"; break;
     default: out = (FL("upgrade_regime(%d)") % regime).str(); break;
@@ -808,11 +817,11 @@ const migration_event migration_events[] = {
     migrate_to_binary_hashes, 0, upgrade_none },
 
   { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
-    migrate_certs_to_key_hash, 0, upgrade_cert_link },
+    migrate_certs_to_key_hash, 0, upgrade_none },
 
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "f5de2b122a2594d39756517eaf40ca8723b3ea44", 0, 0, upgrade_none }
+  { "9c8d5a9ea8e29c69be6459300982a68321b0ec12", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
@@ -1035,7 +1044,8 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
 void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
 #endif
 
-void
+
+migration_status
 migrate_sql_schema(sqlite3 * db, key_store & keys,
                    system_path const & filename)
 {
@@ -1068,7 +1078,7 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
     if (cat == SCHEMA_MATCHES)
       {
         P(F("no migration performed; database schema already up-to-date"));
-        return;
+        return migration_status(false);
       }
 
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
@@ -1120,25 +1130,16 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
       {
         string command_str = (regime == upgrade_changesetify
                               ? "changesetify" : "rosterify");
-        P(F("NOTE: because this database was last used by a rather old version\n"
-            "of monotone, you're not done yet.  If you're a project leader, then\n"
-            "see the file UPGRADE for instructions on running '%s db %s'")
-          % prog_name % command_str);
+        return migration_status(false, command_str);
       }
       break;
-    case upgrade_cert_link:
-      P(F("NOTE: the upgrade changes how certs are linked to the key that\n"
-          "signed them. You should now run '%s db migrate_certs_to_key_hashes'")
-        % prog_name);
-      break;
     case upgrade_regen_caches:
-      P(F("NOTE: this upgrade cleared monotone's caches\n"
-          "you should now run '%s db regenerate_caches'")
-        % prog_name);
+      return migration_status(true);
       break;
     case upgrade_none:
       break;
     }
+  return migration_status(false);
 }
 
 // test_migration_step runs the migration step from SCHEMA to its successor,

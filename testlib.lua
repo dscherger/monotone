@@ -455,7 +455,7 @@ end
 function samelines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false
@@ -478,7 +478,7 @@ end
 function greplines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false
@@ -875,6 +875,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   -- tests do not use (interactive) editors for commits
   unset_env("EDITOR")
   unset_env("VISUAL")
+
+  -- tests should not be timezone sensitive
+  set_env("TZ", "UTC")
 
   logfile = io.open(logname, "w")
   chdir(run_dir);

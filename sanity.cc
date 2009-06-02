@@ -126,7 +126,7 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
   // this does not bother with conversion to utf8.
   {
     string av0 = argv[0];
-    if (av0.rfind(".exe") == av0.size() - 4)
+    if (av0.size() > 4 && av0.rfind(".exe") == av0.size() - 4)
       av0.erase(av0.size() - 4);
     string::size_type last_slash = av0.find_last_of("/\\");
     if (last_slash != string::npos)
@@ -441,6 +441,11 @@ sanity::gasp()
 
 template <> void
 dump(string const & obj, string & out)
+{
+  out = obj;
+}
+template<> void
+dump(char const * const & obj, string & out)
 {
   out = obj;
 }

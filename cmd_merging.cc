@@ -329,7 +329,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // Now finally modify the workspace
   cset update;
   make_cset(*working_roster, merged_roster, update);
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca);
 
   revision_t remaining;
   make_revision_for_workspace(chosen_rid, chosen_roster,
@@ -839,7 +839,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   make_cset(*left.first, merge_result.roster, update);
 
   // small race condition here...
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*left.first, merge_result.roster, update, wca);
   work.put_work_rev(merged_rev);
   work.maybe_update_inodeprints(db);
 
@@ -1333,7 +1333,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   MM(update);
   make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), origin::no_fault, F("no changes were applied"));
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca);
 
   P(F("applied changes to workspace"));
 

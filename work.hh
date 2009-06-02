@@ -151,7 +151,8 @@ public:
                           file_path const & put_old,
                           bool bookkeep_only);
 
-  void perform_content_update(database & db,
+  void perform_content_update(roster_t const & old_roster,
+                              roster_t const & new_roster,
                               cset const & cs,
                               content_merge_adaptor const & ca,
                               bool messages = true);
