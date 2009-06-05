@@ -764,7 +764,7 @@ CMD_AUTOMATE(keys, "",
       stz.push_str_pair(syms::name, i->second.get<0>());
       stz.push_str_pair(syms::name, i->second.get<1>());/* FIXME */
       stz.push_str_multi(syms::public_location, i->second.get<2>());
-      if (!i->second.get<2>().empty())
+      if (!i->second.get<3>().empty())
         stz.push_str_multi(syms::private_location, i->second.get<3>());
       prt.print_stanza(stz);
     }
@@ -862,7 +862,9 @@ CMD_AUTOMATE(certs, N_("REV"),
         app.lua.hook_get_revision_cert_trust(signers, rid.inner(),
                                              name, tv);
 
-      st.push_str_pair(syms::key, keyid.inner()());
+      hexenc<id> keyid_enc;
+      encode_hexenc(keyid.inner(), keyid_enc);
+      st.push_hex_pair(syms::key, keyid_enc);
 
       string stat;
       switch (status)

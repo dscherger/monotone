@@ -447,19 +447,6 @@ project_t::lookup_key_by_name(key_store & keys,
       // or lookup in the policy branches (once those are implemented)
 
       set<key_id> found;
-      vector<key_id> dbkeys;
-      db.get_key_ids(dbkeys);
-      for (vector<key_id>::const_iterator i = dbkeys.begin();
-           i != dbkeys.end(); ++i)
-        {
-          key_name i_name;
-          rsa_pub_key pub;
-          db.get_pubkey(*i, i_name, pub);
-          if (i_name == name)
-            {
-              found.insert(*i);
-            }
-        }
 
       vector<key_id> storekeys;
       keys.get_key_ids(storekeys);
@@ -469,6 +456,23 @@ project_t::lookup_key_by_name(key_store & keys,
           key_name i_name;
           keypair kp;
           keys.get_key_pair(*i, i_name, kp);
+          if (i_name == name)
+            {
+              found.insert(*i);
+            }
+        }
+
+      vector<key_id> dbkeys;
+      if (db.database_specified())
+        {
+          db.get_key_ids(dbkeys);
+        }
+      for (vector<key_id>::const_iterator i = dbkeys.begin();
+           i != dbkeys.end(); ++i)
+        {
+          key_name i_name;
+          rsa_pub_key pub;
+          db.get_pubkey(*i, i_name, pub);
           if (i_name == name)
             {
               found.insert(*i);
@@ -497,15 +501,15 @@ project_t::get_canonical_name_of_key(key_store & keys,
                                      key_id const & id,
                                      key_name & name)
 {
-  if (db.public_key_exists(id))
-    {
-      rsa_pub_key pub;
-      db.get_pubkey(id, name, pub);
-    }
-  else if (keys.key_pair_exists(id))
+  if (keys.key_pair_exists(id))
     {
       keypair kp;
       keys.get_key_pair(id, name, kp);
+    }
+  else if (db.public_key_exists(id))
+    {
+      rsa_pub_key pub;
+      db.get_pubkey(id, name, pub);
     }
   else
     {
