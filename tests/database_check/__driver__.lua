@@ -99,10 +99,10 @@ check(qgrep('4 missing revision', "stderr"))
 -- ROSTER TODO
 --check(grep '2 revisions with bad history' stderr, 0, false, false)
 
-writefile("tosum", revs[2]..":comment:this is a test:tester@test.net:bogus sig")
+writefile("tosum", revs[2]..":comment:this is a test:46ec58576f9e4f34a9eede521422aa5fd299dc50:bogus sig")
 hash = sha1("tosum")
 
-dbex("insert into revision_certs values (x'%s', x'%s', 'comment', 'this is a test', 'tester@test.net', 'bogus sig')", hash, revs[2])
+dbex("insert into revision_certs values (x'%s', x'%s', 'comment', 'this is a test', x'46ec58576f9e4f34a9eede521422aa5fd299dc50', 'bogus sig')", hash, revs[2])
 check(mtn("db", "check", "--ticker=dot"), 1, false, true)
 check(qgrep('1 bad sig', "stderr"))
 
