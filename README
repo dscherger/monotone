@@ -1,5 +1,5 @@
-Monotone::AutomateStdio Version 0.4
-===================================
+Monotone::AutomateStdio Version 0.05
+====================================
 
 This is a Perl library module for accessing Monotone's automate stdio
 interface. Monotone is a distributed, change-set, based VCS system. It has a

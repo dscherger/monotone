@@ -1,5 +1,25 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+0.05  Fri Jun 5 17:49:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Updated for Monotone version 0.44:
+	  - Added support for the w: selector (feature MTN_W_SELECTOR).
+	  - Modified the genkey() and keys() methods to cope with the common
+	    single hash as against separate private and public ones (feature
+	    MTN_COMMON_KEY_HASH).
+	- The type field has been dropped from the records returned by the
+	  keys() method. It wasn't really needed as only one field is sometimes
+	  not available.
+	- Updated mtn-tester so as to reduce avoidable churn in the test output
+	  and to also correctly deal with the data returned by the
+	  get_revision() method.
+	- Updated and tidied up the POD documentation to reflect the above
+	  changes.
+	- Now supports the conversion of UTF-8 data into and out of Perl's
+	  internal UTF-8 string format for data read in from and sent out to
+	  the mtn subprocess.
+	- Added a suppress_utf8_conversion() meoth for disabling the above
+	  conversion if so desired.
+
 0.04  Sun May 3 19:19:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Updated for Monotone version 0.43, (added support for the m: and u:
 	  selectors).
