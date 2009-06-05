@@ -117,7 +117,10 @@ use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
 # Constants for various file paths.
 
-use constant UI_DIR => File::Spec->catfile(LIB_DIR, "ui");
+use constant UI_DIR => File::Spec->catfile(PREFIX_DIR,
+					   "share",
+					   "mtn-browse",
+					   "glade");
 
 # The type of window that is going to be managed by this module.
 

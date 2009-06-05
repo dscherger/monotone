@@ -81,6 +81,7 @@ use Installer;
        $file,
        $globs_file,
        $help,
+       $help_viewer,
        $infile,
        $input,
        $installer,
@@ -105,6 +106,7 @@ use Installer;
     $globs_file = "/usr/share/mime/globs";
     $prefix_dir = "/usr";
     $lib_dir = "/lib/mtn-browse";
+    $help_viewer = "";
     $use_dists_mas_lib = 1;
 
     # Process any command line options.
@@ -115,6 +117,7 @@ use Installer;
 			      "dep-level=i"     => \$dep_level,
 			      "destdir|d=s"     => \$dest_dir,
 			      "globs-file|g=s"  => \$globs_file,
+			      "help-viewer=s"   => \$help_viewer,
 			      "interactive|i"   => \$interactive,
 			      "libdir|l=s"      => \$lib_dir,
 			      "prefix|p=s"      => \$prefix_dir,
@@ -140,15 +143,15 @@ use Installer;
 	# Build up the dependency list.
 
 	%deps = ("Glib"               => 1.144,
-		 "Gnome2"             => 1.042,
+		 "Gnome2"             => 1.040,
 		 "Gnome2::Canvas"     => 1.002,
-		 "Gnome2::Print"      => 1.000,
+		 "Gnome2::Print"      => 0.950,
 		 "Gnome2::VFS"        => 1.080,
 		 "Gtk2"               => 1.146,
 		 "Gtk2::GladeXML"     => 1.006,
 		 "Gtk2::SourceView"   => 1.000,
 		 "Locale::TextDomain" => 1.16);
-	$deps{"Monotone::AutomateStdio"} = 0.02 if (! $use_dists_mas_lib);
+	$deps{"Monotone::AutomateStdio"} = 0.05 if (! $use_dists_mas_lib);
 
 	# Do the check.
 
@@ -242,6 +245,47 @@ use Installer;
 
 	if ($interactive)
 	{
+	    print("Use Yelp or web browser to display help (HELP_VIEWER_CMD)? "
+		  . "[Use Yelp]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $help_viewer = $input if ($input ne "");
+	}
+	if ($help_viewer ne "")
+	{
+	    my $found;
+
+	    # Check full paths or scan $PATH for it.
+
+	    if ($help_viewer =~ m/^\//)
+	    {
+		$found = 1 if (-x $help_viewer);
+	    }
+	    else
+	    {
+		my $cmd;
+		$cmd = (split(/[[:blank:]]/, $help_viewer))[0];
+		foreach my $dir (split(/:/, $ENV{PATH}))
+		{
+		    if (-x "${dir}/$cmd")
+		    {
+			$found = 1;
+			last;
+		    }
+		}
+	    }
+
+	    if (! $found)
+	    {
+		print("Error: Program `" . $help_viewer
+		      . "' cannot be found or is not executable.\n");
+		exit(1) if (! $interactive);
+		next;
+	    }
+	}
+
+	if ($interactive)
+	{
 	    print("Use the Monotone::AutomateStdio (MAS) library that came "
 		  . "with this package? [Y]: ");
 	    chomp($input = <STDIN>);
@@ -258,11 +302,13 @@ use Installer;
 	if ($confirm || $interactive || ! $quiet)
 	{
 	    print("\nInstallation options are:\n");
-	    print("GLOBS_FILE = " . $globs_file . "\n");
-	    print("PREFIX_DIR = " . $prefix_dir . "\n");
-	    print("DEST_DIR   = " . $dest_dir . "\n");
-	    print("LIB_DIR    = <PREFIX_DIR>/" . $lib_dir . "\n");
-	    print("Use my MAS = " . ($use_dists_mas_lib ? "Yes" : "No")
+	    print("GLOBS_FILE      = " . $globs_file . "\n");
+	    print("PREFIX_DIR      = " . $prefix_dir . "\n");
+	    print("DEST_DIR        = " . $dest_dir . "\n");
+	    print("LIB_DIR         = <PREFIX_DIR>/" . $lib_dir . "\n");
+	    print("HELP_VIEWER_CMD = "
+		  . (($help_viewer ne "") ? $help_viewer : "Use Yelp") . "\n");
+	    print("Use my MAS      = " . ($use_dists_mas_lib ? "Yes" : "No")
 		  . "\n");
 	}
 	if ($interactive)
@@ -297,6 +343,7 @@ use Installer;
 	if (! defined($outfile = IO::File->new("mtn-browse.out", "w")));
     while (defined($input = $infile->getline()))
     {
+	$input =~ s/\@INST:HELP_VIEWER_CMD\@/$help_viewer/g;
 	$input =~ s/\@INST:LIB_DIR\@/$lib_prefix_dir/g;
 	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
 	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
@@ -349,12 +396,14 @@ use Installer;
     # Install GUI components.
 
     $installer->install("lib/ui/mtn-browse.glade",
-			"${lib_dest_dir}/ui/mtn-browse.glade");
+			"${prefix_dest_dir}/share/mtn-browse/glade/"
+			    . "mtn-browse.glade");
     die("IO::Dir failed with $!")
 	if (! defined($dir = IO::Dir->new("lib/ui/pixmaps")));
     while (defined($file = $dir->read()))
     {
-	$installer->install("lib/ui/pixmaps/$file", "${lib_dest_dir}/ui/$file")
+	$installer->install("lib/ui/pixmaps/$file",
+			    "${prefix_dest_dir}/share/mtn-browse/glade/$file")
 	    if ($file =~ m/.*\.png$/);
     }
     $dir->close();
@@ -385,9 +434,49 @@ use Installer;
 	next if ($locale eq "." || $locale eq "..");
 	my($figures_dir,
 	   $img_file);
-	$installer->install("locale/help/${locale}/mtn-browse.xml",
-			    "${prefix_dest_dir}/share/gnome/help/mtn-browse/"
-			        . "${locale}/mtn-browse.xml");
+	if ($help_viewer ne "")
+	{
+	    my($html_file,
+	       $subdir);
+	    die("IO::Dir failed with $!")
+		if (! defined($subdir =
+			      IO::Dir->new("locale/help/${locale}")));
+	    while (defined($html_file = $subdir->read()))
+	    {
+		next unless ($html_file =~ m/^[^.]+\.html$/);
+		$installer->install("locale/help/${locale}/$html_file",
+				    "${prefix_dest_dir}/share/gnome/help/"
+					. "mtn-browse/${locale}/$html_file");
+	    }
+	    die("IO::Dir failed with $!")
+		if (! defined($subdir =
+			      IO::Dir->new("locale/help/${locale}/images")));
+	    while (defined($img_file = $subdir->read()))
+	    {
+		next if ($img_file eq "." || $img_file eq "..");
+		$installer->install("locale/help/${locale}/images/$img_file",
+				    "${prefix_dest_dir}/share/gnome/help/"
+					. "mtn-browse/${locale}/images/"
+					. "$img_file");
+	    }
+	}
+	else
+	{
+	    $installer->install("locale/help/${locale}/mtn-browse.xml",
+				"${prefix_dest_dir}/share/gnome/help/"
+				    . "mtn-browse/${locale}/mtn-browse.xml");
+	}
+	die("IO::Dir failed with $!")
+	    if (! defined($figures_dir =
+			  IO::Dir->new("locale/help/${locale}/figures")));
+	while (defined($img_file = $figures_dir->read()))
+	{
+	    next if ($img_file eq "." || $img_file eq "..");
+	    $installer->install("locale/help/${locale}/figures/$img_file",
+				"${prefix_dest_dir}/share/gnome/help/"
+				    . "mtn-browse/${locale}/figures/"
+				    . "$img_file");
+	}
 	die("IO::Dir failed with $!")
 	    if (! defined($figures_dir =
 			  IO::Dir->new("locale/help/${locale}/figures")));
@@ -429,6 +518,7 @@ linux-installer [options]
     --dep-level=             LEVEL    Specify type of dependency checking
     --destdir=           -d  DIR      Specify temp installation location
     --globs-file=        -g  FILE     Location of MIME globs file
+    --help-viewer            PATH     Viewer used to display help files
     --interactive        -i           Ask questions interactively
     --libdir=            -l  DIR      Library dir relative to PREFIX_DIR
     --prefix=            -p  DIR      Installation location
@@ -468,6 +558,22 @@ maintainers.
 
 Specify the location of the system's MIME globs file. The default is
 /usr/share/mime/globs.
+
+=item B<--help-viewer>
+
+Specify the the program used to display the HTML help pages. Normally Yelp
+style help documentation is installed (in the form of XML files). Whilst Yelp
+is the Gnome desktop's help system there are some installations where Yelp
+itself is not available. In these situations one can specify the name of a web
+browser that can be used to display the help documentation in the form of HTML
+files (i.e. there is no need for the web browser to understand Yelp XML files).
+
+Specifying this switch has two effects. Firstly mtn-browse is configured to run
+the specified web browser when it needs to display help documentation, and
+secondly HTML documentation is installed in the place of the Yelp XML
+documentation.
+
+The default is to use Yelp and simply install the XML documentation files.
 
 =item B<--interactive or -i>
 

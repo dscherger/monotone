@@ -20,6 +20,44 @@ For further details on Monotone see http://monotone.ca. For further details on
 mtn-browse see http://www.coosoft.plus.com/software.html.
 
 
+DEPENDENCIES
+------------
+
+This module requires these other modules and libraries:
+
+    * Perl 5.8.5 or later
+    * Gnome and Gtk2
+    * The following Perl CPAN modules:
+          - Glib (1.144) *
+          - Gnome2 (1.040) *
+          - Gnome2-Canvas (1.002) *
+          - Gnome2-Print (0.950) *
+          - Gnome2-VFS (1.080) *
+          - Gtk2 (1.146) *
+          - Gtk2-GladeXML (1.006) *
+          - Gtk2-SourceView (1.000) *
+          - libintl-perl (1.16)
+          - Monotone::AutomateStdio (0.05 or later)
+
+Please note that the Gtk2 CPAN bundle will probably satisfy all of the
+dependencies marked with * at the end of the line.
+
+Older versions of Perl may work but these have not been tested at this point in
+time.
+
+Monotone::AutomateStdio Library
+-------------------------------
+
+This library module is a Perl interface to Monotone's automate stdio interface
+and is heavily used by mtn-browse. As such it is probably best to upgrade this
+library each time you upgrade Monotone itself. For this reason you may decide
+to just install this library as a part of mtn-browse. If you need to upgrade
+the library then all you need do is just copy the new version into place.
+
+The installation process will, by default, install a copy of this library in
+mtn-browse's lib directory.
+
+
 INSTALLATION
 ------------
 
@@ -56,15 +94,15 @@ through to it. The installer script supports some additional options that can
 also be specified via Makefile.PL, meaning that the full list of arguments are:
 
     perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH> LIBDIR=<PATH> \
-                     GLOBS_FILE=<PATH> NO_USE_DISTS_MAS=1
+                     GLOBS_FILE=<PATH> HELP_VIEWER=<PATH> NO_USE_DISTS_MAS=1
 
 For further information on what these options mean please run:
 
     ./linux-installer -m
 
 PREFIX equates to --prefix, DESTDIR equates to --destdir, LIBDIR equates to
---libdir, GLOBS_FILE equates to --globs-file and NO_USE_DISTS_MAS equates to
---no-use-dists-mas.
+--libdir, GLOBS_FILE equates to --globs-file, HELP_VIEWER equates to
+--help-viewer and NO_USE_DISTS_MAS equates to --no-use-dists-mas.
 
 Alternatively one can run the installer directly. See the next subsection.
 
@@ -92,150 +130,6 @@ In particular, package maintainers may find the following useful:
 This tells the installer to configure the installation as if it were going
 under /opt/mtn-browse but actually installs it under /tmp/install-dir (i.e. the
 application can be found at /tmp/install-dir/opt/mtn-browse/bin/mtn-browse).
-
-Manual Installation
--------------------
-
-If you prefer to install this application manually then copy the files into
-place using the following directory structure:
-
-    <Install Location>
-    |-- bin
-    |   `-- mtn-browse
-    |-- lib
-    |   `-- mtn-browse
-    |       |-- perl
-    |       |   |-- AdvancedFind.pm
-    |       |   |-- Annotate.pm
-    |       |   |-- CachingAutomateStdio.pm
-    |       |   |-- ChangeLog.pm
-    |       |   |-- ComboAutoCompletion.pm
-    |       |   |-- Common.pm
-    |       |   |-- Completion.pm
-    |       |   |-- FindFiles.pm
-    |       |   |-- FindText.pm
-    |       |   |-- Globals.pm
-    |       |   |-- History.pm
-    |       |   |-- Monotone               <- 1)
-    |       |   |   |-- AutomateStdio.pm
-    |       |   |   `-- AutomateStdio.pod
-    |       |   |-- Preferences.pm
-    |       |   `-- WindowManager.pm
-    |       `-- ui
-    |           |-- annotate.png
-    |           |-- diffs.png
-    |           |-- external-diffs.png
-    |           |-- line.png
-    |           |-- monotone-viz.png
-    |           |-- mtn-browse-large.png
-    |           |-- mtn-browse.glade
-    |           `-- mtn-browse.png
-    `-- share
-        |-- gnome
-        |   `-- help
-        |       `-- mtn-browse
-        |           `-- C
-        |               |-- figures
-        |               |   |-- advanced-find-helper-widgets.png
-        |               |   |-- advanced-find-window-advanced-mode.png
-        |               |   |-- advanced-find-window-empty.png
-        |               |   |-- advanced-find-window-simple-mode.png
-        |               |   |-- annotate-button.png
-        |               |   |-- annotate-window-with-menu.png
-        |               |   |-- branch-combobox-entry-with-completion.png
-        |               |   |-- change-log-window.png
-        |               |   |-- changelog-button.png
-        |               |   |-- close-toolbar-button.png
-        |               |   |-- combobox-entry-down-button.png
-        |               |   |-- compare-button.png
-        |               |   |-- differences-window.png
-        |               |   |-- execute-button-small.png
-        |               |   |-- execute-button.png
-        |               |   |-- external-compare-button.png
-        |               |   |-- file-viewer-button.png
-        |               |   |-- find-button.png
-        |               |   |-- find-files-window-empty.png
-        |               |   |-- find-files-window-query.png
-        |               |   |-- help-toolbar-button.png
-        |               |   |-- information-button.png
-        |               |   |-- line-numbers-toggle-button.png
-        |               |   |-- main-window-empty.png
-        |               |   |-- main-window-showing-file.png
-        |               |   |-- main-window-showing-hex-dump.png
-        |               |   |-- main-window-showing-image-file.png
-        |               |   |-- main-window-showing-tooltip-and-selection.png
-        |               |   |-- montone-viz-button.png
-        |               |   |-- new-toolbar-button.png
-        |               |   |-- non-unique-tag-dialog.png
-        |               |   |-- open-database-dialog.png
-        |               |   |-- open-toolbar-button.png
-        |               |   |-- preferences-toolbar-button.png
-        |               |   |-- preferences-window.png
-        |               |   |-- reload-toolbar-button.png
-        |               |   |-- revision-history-window.png
-        |               |   |-- save-button.png
-        |               |   |-- stop-button.png
-        |               |   |-- up-button-small.png
-        |               |   `-- up-button.png
-        |               `-- mtn-browse.xml
-        `-- locale
-            `-- <Locale>
-                `-- LC_MESSAGES
-                    `-- mtn-browse.mo
-
-The only file that needs to be executable is the mtn-browse file under the bin
-directory.
-
-The mtn-browse.mo file is generated from the relevant .po file by using the
-msgfmt(1) command.
-
-Once the files are in place then edit the mtn-browse executable and change the
-constants at the top containing the "@INST:LIB_DIR@", "@INST:GLOBS_FILE@" and
-"@INST:PREFIX_DIR@" values so that they contain the correct values. It is
-probably best that you actually run the installer as a non-privileged user and
-install it somewhere under your home directory and then change the paths
-accordingly.
-
-1) The Monotone directory is only needed if the Monotone::AutomateStdio package
-   from CPAN has not already been installed.
-
-Monotone::AutomateStdio Library
--------------------------------
-
-This library module is a Perl interface to Monotone's automate stdio interface
-and is heavily used by mtn-browse. As such it is probably best to upgrade this
-library each time you upgrade Monotone itself. For this reason you may decide
-to just install this library as a part of mtn-browse. If you need to upgrade
-the library then all you need do is just copy the new version into place.
-
-The installation process will, by default, install a copy of this library in
-mtn-browse's lib directory.
-
-
-DEPENDENCIES
-------------
-
-This module requires these other modules and libraries:
-
-    * Perl 5.8.5 or later
-    * Gnome and Gtk2
-    * The following Perl CPAN modules:
-          - Glib (1.144) *
-          - Gnome2 (1.042) *
-          - Gnome2-Canvas (1.002) *
-          - Gnome2-Print (1.000) *
-          - Gnome2-VFS (1.080) *
-          - Gtk2 (1.146) *
-          - Gtk2-GladeXML (1.006) *
-          - Gtk2-SourceView (1.000) *
-          - libintl-perl (1.16)
-          - Monotone::AutomateStdio (0.02 or later)
-
-Please note that the Gtk2 CPAN bundle will probably satisfy all of the
-dependencies marked with * at the end of the line.
-
-Older versions of Perl may work but these have not been tested at this point in
-time.
 
 
 COPYRIGHT AND LICENCE

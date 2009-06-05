@@ -5,12 +5,14 @@ use IO::File;
 
 my($dest_dir,
    $globs_file,
+   $help_viewer,
    $lib_dir,
    $makefile,
    $no_use_dists_mas,
    $prefix_dir);
 my %valid_options = (DESTDIR          => \$dest_dir,
 		     GLOBS_FILE       => \$globs_file,
+		     HELP_VIEWER      => \$help_viewer,
 		     LIBDIR           => \$lib_dir,
 		     NO_USE_DISTS_MAS => \$no_use_dists_mas,
 		     PREFIX           => \$prefix_dir);
@@ -30,10 +32,11 @@ foreach my $arg (@ARGV)
     else
     {
 	print(STDERR
-	      "usage: perl Makefile.PL [PREFIX=<PATH>] [DESTDIR=<PATH] "
+	      "usage: perl Makefile.PL [PREFIX=<PATH>] [DESTDIR=<PATH>] "
 	          . "[LIBDIR=<PATH>]\n"
 	          . "                        [GLOBS_FILE=<PATH>] "
-	          . "[NO_USE_DISTS_MAS=1]\n");
+	          . "[HELP_VIEWER=<PATH>]\n"
+	          . "                        [NO_USE_DISTS_MAS=1]\n");
 	exit(1);
     }
 }
@@ -55,10 +58,11 @@ print("Writing Makefile for mtn-browse\n");
 die("IO::File failed with $!")
     if (! defined($makefile = IO::File->new("Makefile", "w")));
 $makefile->print(<<EOF
-DESTDIR=$dest_dir
-GLOBS_FILE=$globs_file
-LIBDIR=$lib_dir
-PREFIX=$prefix_dir
+DESTDIR="$dest_dir"
+GLOBS_FILE="$globs_file"
+HELP_VIEWER="$help_viewer"
+LIBDIR="$lib_dir"
+PREFIX="$prefix_dir"
 INSTALLER=./linux-installer
 
 all: \$(INSTALLER)
@@ -70,10 +74,11 @@ test: \$(INSTALLER)
 install: \$(INSTALLER)
 EOF
 );
-$makefile->print("	\$(INSTALLER)");
+$makefile->print("\t\$(INSTALLER)");
 $makefile->print(" --globs-file=\$(GLOBS_FILE)") if (defined($globs_file));
 $makefile->print(" --destdir=\$(DESTDIR)") if (defined($dest_dir));
 $makefile->print(" --libdir=\$(LIBDIR)") if (defined($lib_dir));
+$makefile->print(" --help-viewer=\$(HELP_VIEWER)") if (defined($help_viewer));
 $makefile->print(" --no-use-dists-mas")
     if (defined($no_use_dists_mas) && $no_use_dists_mas != 0);
 $makefile->print(" --prefix=\$(PREFIX)") if (defined($prefix_dir));

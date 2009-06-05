@@ -149,6 +149,7 @@ use IO::File;
     while (defined($input = $infile->getline()))
     {
 	my $orig = $input;
+	$input =~ s/\@INST:HELP_VIEWER_CMD\@//g;
 	$input =~ s/\@INST:LIB_DIR\@/$lib_dir/g;
 	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
 	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
@@ -162,9 +163,12 @@ use IO::File;
     rename("mtn-browse.out", "mtn-browse");
     chmod(0755, "mtn-browse");
 
-    # Do the pixmap symlinks.
+    # Link in Glade and the pixmaps.
 
-    system("cd ${lib_dir}/ui ; ln -s pixmaps/*.png .");
+    system("mkdir -p share/mtn-browse ; "
+	   . "ln -s `pwd`/lib/ui share/mtn-browse/glade ; "
+	   . "cd ${lib_dir}/ui ; "
+	   . "ln -s pixmaps/*.png .");
 
     # Link in Monotone::AutomateStdio.
 
