@@ -34,7 +34,7 @@ called. The subprocess is terminated on object destruction or when
 $mtn-E<gt>closedown() is called.
 
 All automate commands have been implemented in this class except for the
-`stdio' command, hopefully the reason is obvious. :-) Versions of Monotone that
+`stdio' command, hopefully the reason is obvious :-). Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
 version (currently 0.44). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
@@ -364,15 +364,27 @@ output from the command is simply placed into the variable. However if \%hash
 is passed then the output is returned as one anonymous hash containing the
 following fields:
 
-    name              - The name of the key.
-    public_hash       - The public hash code.
-    private_hash      - The private hash code.
-    public_locations  - A list of locations for the public hash code.
-                        Values can be one of "database" or
-                        "keystore".
-    private_locations - A list of locations for the private hash
-                        code. Values can be one of "database" or
-                        "keystore".
+    Prior to version 0.44 of Monotone:
+        name              - The name of the key.
+        public_hash       - The public hash code.
+        private_hash      - The private hash code.
+        public_locations  - A list of locations for the public hash
+                            code. Values can be one of "database" or
+                            "keystore".
+        private_locations - A list of locations for the private hash
+                            code. Values can be one of "database" or
+                            "keystore".
+
+    From version 0.44 of Monotone onwards
+    (feature: MTN_COMMON_KEY_HASH):
+        name              - The name of the key.
+        hash              - The hash code (both public and private).
+        public_locations  - A list of locations for the public hash
+                            code. Values can be one of "database" or
+                            "keystore".
+        private_locations - A list of locations for the private hash
+                            code. Values can be one of "database" or
+                            "keystore".
 
 =item B<$mtn-E<gt>get_attributes(\$buffer | \@list, $file_name)>
 
@@ -654,19 +666,33 @@ from the command is simply placed into the variable. However if \@list is
 passed then the output is returned as a list of anonymous hashes, each one
 containing the following fields:
 
-    type              - The type of entry. Values can be one of
-                        "public" or "public-private".
-    name              - The name of the key.
-    public_hash       - The public hash code.
-    private_hash      - The private hash code. This field is only
-                        present if type is set to "public-private".
-    public_locations  - A list of locations for the public hash code.
-                        Values can be one of "database" or
-                        "keystore".
-    private_locations - A list of locations for the private hash
-                        code. Values can be one of "database" or
-                        "keystore". This field is only present if
-                        type is set to "public-private".
+    Prior to version 0.44 of Monotone:
+        name              - The name of the key.
+        public_hash       - The public hash code.
+        private_hash      - The private hash code.
+        public_locations  - A list of locations for the public hash
+                            code. Values can be one of "database" or
+                            "keystore".
+        private_locations - A list of locations for the private hash
+                            code. Values can be one of "database" or
+                            "keystore". This field is only present if
+                            there is a private key.
+
+    From version 0.44 of Monotone onwards
+    (feature: MTN_COMMON_KEY_HASH):
+        name              - The name of the key.
+        hash              - The hash code (both public and private).
+        public_locations  - A list of locations for the public hash
+                            code. Values can be one of "database" or
+                            "keystore".
+        private_locations - A list of locations for the private hash
+                            code. Values can be one of "database" or
+                            "keystore". This field is only present if
+                            there is a private key.
+
+            Please note that some fields are not used by all entries,
+            in which case they are not present (use Perl's exists()
+            function to determine their presence and not defined()).
 
 =item B<$mtn-E<gt>leaves(\@list)>
 
@@ -819,6 +845,7 @@ or more of the following fields:
 Determine whether a certain feature is available with the version of Monotone
 that is currently being used by this object. The list of valid features are:
 
+    MTN_COMMON_KEY_HASH
     MTN_DB_GET
     MTN_DROP_ATTRIBUTE
     MTN_DROP_DB_VARIABLES
@@ -980,7 +1007,8 @@ into paths relative to the workspace's root directory (i.e. given a path of
 the include directory the file name gets changed to include/system.h).
 
 This makes perfect sense on the command line but possibly less so when using
-mtn from inside an application. This is why this class runs the mtn subprocess
+mtn from inside a GUI application where the directory in which the application
+was launched is not as relevant. This is why this class runs the mtn subprocess
 in specific directories depending upon how the object is constructed. If the
 object is constructed by calling Monotone::AutomateStdio-E<gt>new() or
 Monotone::AutomateStdio-E<gt>new_from_db() with the name of a database, then

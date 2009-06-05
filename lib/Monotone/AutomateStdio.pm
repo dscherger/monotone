@@ -72,27 +72,28 @@ use Symbol qw(gensym);
 # Constants used to represent the different types of capability Monotone may or
 # may not provide depending upon its version.
 
-use constant MTN_DB_GET                        => 0;
-use constant MTN_DROP_ATTRIBUTE                => 1;
-use constant MTN_DROP_DB_VARIABLES             => 2;
-use constant MTN_FILE_MERGE                    => 3;
-use constant MTN_GET_ATTRIBUTES                => 4;
-use constant MTN_GET_CURRENT_REVISION          => 5;
-use constant MTN_GET_DB_VARIABLES              => 6;
-use constant MTN_GET_WORKSPACE_ROOT            => 7;
-use constant MTN_IGNORING_OF_SUSPEND_CERTS     => 8;
-use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 9;
-use constant MTN_INVENTORY_TAKING_OPTIONS      => 10;
-use constant MTN_INVENTORY_WITH_BIRTH_ID       => 11;
-use constant MTN_LUA                           => 12;
-use constant MTN_M_SELECTOR                    => 13;
-use constant MTN_P_SELECTOR                    => 14;
-use constant MTN_READ_PACKETS                  => 15;
-use constant MTN_SET_ATTRIBUTE                 => 16;
-use constant MTN_SET_DB_VARIABLE               => 17;
-use constant MTN_SHOW_CONFLICTS                => 18;
-use constant MTN_U_SELECTOR                    => 19;
-use constant MTN_W_SELECTOR                    => 20;
+use constant MTN_COMMON_KEY_HASH               => 0;
+use constant MTN_DB_GET                        => 1;
+use constant MTN_DROP_ATTRIBUTE                => 2;
+use constant MTN_DROP_DB_VARIABLES             => 3;
+use constant MTN_FILE_MERGE                    => 4;
+use constant MTN_GET_ATTRIBUTES                => 5;
+use constant MTN_GET_CURRENT_REVISION          => 6;
+use constant MTN_GET_DB_VARIABLES              => 7;
+use constant MTN_GET_WORKSPACE_ROOT            => 8;
+use constant MTN_IGNORING_OF_SUSPEND_CERTS     => 9;
+use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 10;
+use constant MTN_INVENTORY_TAKING_OPTIONS      => 11;
+use constant MTN_INVENTORY_WITH_BIRTH_ID       => 12;
+use constant MTN_LUA                           => 13;
+use constant MTN_M_SELECTOR                    => 14;
+use constant MTN_P_SELECTOR                    => 15;
+use constant MTN_READ_PACKETS                  => 16;
+use constant MTN_SET_ATTRIBUTE                 => 17;
+use constant MTN_SET_DB_VARIABLE               => 18;
+use constant MTN_SHOW_CONFLICTS                => 19;
+use constant MTN_U_SELECTOR                    => 20;
+use constant MTN_W_SELECTOR                    => 21;
 
 # Constants used to represent the different error levels.
 
@@ -140,6 +141,7 @@ my %certs_keys = ("key"       => STRING,
 		  "trust"     => STRING_ENUM,
 		  "value"     => STRING);
 my %genkey_keys = ("name"             => STRING,
+		   "hash"             => HEX_ID,
 		   "public_hash"      => HEX_ID,
 		   "private_hash"     => HEX_ID,
 		   "public_location"  => STRING_LIST,
@@ -330,7 +332,8 @@ sub warning_handler_wrapper($);
 
 use base qw(Exporter);
 
-our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
+our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
+					MTN_DB_GET
 					MTN_DROP_ATTRIBUTE
 					MTN_DROP_DB_VARIABLES
 					MTN_FILE_MERGE
@@ -349,7 +352,8 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_DB_GET
 					MTN_SET_ATTRIBUTE
 					MTN_SET_DB_VARIABLE
 					MTN_SHOW_CONFLICTS
-					MTN_U_SELECTOR)],
+					MTN_U_SELECTOR
+					MTN_W_SELECTOR)],
 		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
 					MTN_SEVERITY_WARNING)]);
@@ -2122,19 +2126,14 @@ sub keys($$)
 
 		# Validate it in terms of expected fields and store.
 
-		foreach my $key ("name", "public_hash", "public_location")
+		foreach my $key ("name",
+				 ($this->supports(MTN_COMMON_KEY_HASH)
+				      ? "hash" : "public_hash"),
+				 "public_location")
 		{
 		    &$croaker("Corrupt keys list, expected " . $key
 			      . " field but didn't find it")
 			unless (exists($kv_record->{$key}));
-		}
-		if (exists($kv_record->{private_hash}))
-		{
-		    $kv_record->{type} = "public-private";
-		}
-		else
-		{
-		    $kv_record->{type} = "public";
 		}
 		push(@$ref, $kv_record);
 	    }
@@ -3410,10 +3409,10 @@ sub supports($$)
 			 && $this->{mtn_version} eq "0.43"));
 
     }
-    elsif ($feature == MTN_W_SELECTOR)
+    elsif ($feature == MTN_COMMON_KEY_HASH || $feature == MTN_W_SELECTOR)
     {
 
-	# This is only available from version 0.44 (i/f version 10.x).
+	# These are only available from version 0.44 (i/f version 10.x).
 
 	return 1 if ($this->{mtn_aif_major} >= 10);
 
