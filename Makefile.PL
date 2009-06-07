@@ -4,15 +4,17 @@ use strict;
 use IO::File;
 
 my($dest_dir,
+   $file_comparison,
    $globs_file,
-   $help_viewer,
+   $html_viewer,
    $lib_dir,
    $makefile,
    $no_use_dists_mas,
    $prefix_dir);
 my %valid_options = (DESTDIR          => \$dest_dir,
+		     FILE_COMPARISON  => \$file_comparison,
 		     GLOBS_FILE       => \$globs_file,
-		     HELP_VIEWER      => \$help_viewer,
+		     HTML_VIEWER      => \$html_viewer,
 		     LIBDIR           => \$lib_dir,
 		     NO_USE_DISTS_MAS => \$no_use_dists_mas,
 		     PREFIX           => \$prefix_dir);
@@ -35,8 +37,9 @@ foreach my $arg (@ARGV)
 	      "usage: perl Makefile.PL [PREFIX=<PATH>] [DESTDIR=<PATH>] "
 	          . "[LIBDIR=<PATH>]\n"
 	          . "                        [GLOBS_FILE=<PATH>] "
-	          . "[HELP_VIEWER=<PATH>]\n"
-	          . "                        [NO_USE_DISTS_MAS=1]\n");
+	          . "[HTML_VIEWER=<PATH>]\n"
+	          . "                        [FILE_COMPARISON=<PATH>] "
+	          . "[NO_USE_DISTS_MAS=1]\n");
 	exit(1);
     }
 }
@@ -59,8 +62,9 @@ die("IO::File failed with $!")
     if (! defined($makefile = IO::File->new("Makefile", "w")));
 $makefile->print(<<EOF
 DESTDIR="$dest_dir"
+FILE_COMPARISON="$file_comparison"
 GLOBS_FILE="$globs_file"
-HELP_VIEWER="$help_viewer"
+HTML_VIEWER="$html_viewer"
 LIBDIR="$lib_dir"
 PREFIX="$prefix_dir"
 INSTALLER=./linux-installer
@@ -75,10 +79,12 @@ install: \$(INSTALLER)
 EOF
 );
 $makefile->print("\t\$(INSTALLER)");
-$makefile->print(" --globs-file=\$(GLOBS_FILE)") if (defined($globs_file));
 $makefile->print(" --destdir=\$(DESTDIR)") if (defined($dest_dir));
+$makefile->print(" --file-comparison=\$(FILE_COMPARISON)")
+    if (defined($file_comparison));
+$makefile->print(" --globs-file=\$(GLOBS_FILE)") if (defined($globs_file));
+$makefile->print(" --html-viewer=\$(HTML_VIEWER)") if (defined($html_viewer));
 $makefile->print(" --libdir=\$(LIBDIR)") if (defined($lib_dir));
-$makefile->print(" --help-viewer=\$(HELP_VIEWER)") if (defined($help_viewer));
 $makefile->print(" --no-use-dists-mas")
     if (defined($no_use_dists_mas) && $no_use_dists_mas != 0);
 $makefile->print(" --prefix=\$(PREFIX)") if (defined($prefix_dir));

@@ -1615,7 +1615,8 @@ sub upgrade_preferences($)
     if ($preferences->{version} == 1)
     {
 	$preferences->{coloured_diffs} = 1;
-	$preferences->{diffs_application} = "kompare '{file1}' '{file2}'";
+	$preferences->{diffs_application} =
+	    FILE_COMPARE_CMD . " '{file1}' '{file2}'";
 	$preferences->{version} = 2;
     }
     if ($preferences->{version} == 2)
@@ -1709,7 +1710,7 @@ sub initialise_preferences()
 	 show_line_numbers => 0,
 	 static_lists      => 0,
 	 list_search_as_re => 0,
-	 diffs_application => "kompare '{file1}' '{file2}'",
+	 diffs_application => FILE_COMPARE_CMD . " '{file1}' '{file2}'",
 	 fixed_font        => "monospace 10",
 	 toolbar_settings  => {hide_text => 0,
 			       fixed     => 0},

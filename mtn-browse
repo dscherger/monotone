@@ -44,10 +44,11 @@ require 5.008005;
 
 BEGIN
 {
-    use constant HELP_VIEWER_CMD => "@INST:HELP_VIEWER_CMD@";
-    use constant LIB_DIR         => "@INST:LIB_DIR@";
-    use constant MIME_GLOB_FILE  => "@INST:GLOBS_FILE@";
-    use constant PREFIX_DIR      => "@INST:PREFIX_DIR@";
+    use constant FILE_COMPARE_CMD => "@INST:FILE_COMPARE_CMD@";
+    use constant HTML_VIEWER_CMD  => "@INST:HTML_VIEWER_CMD@";
+    use constant LIB_DIR          => "@INST:LIB_DIR@";
+    use constant MIME_GLOB_FILE   => "@INST:GLOBS_FILE@";
+    use constant PREFIX_DIR       => "@INST:PREFIX_DIR@";
 }
 use locale;
 use strict;
@@ -119,7 +120,7 @@ use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
 use constant UI_DIR => File::Spec->catfile(PREFIX_DIR,
 					   "share",
-					   "mtn-browse",
+					   APPLICATION_NAME,
 					   "glade");
 
 # The type of window that is going to be managed by this module.
@@ -241,7 +242,9 @@ sub view_button_clicked_cb($$);
 
     eval
     {
-	$tmp_dir = tempdir("mtn-browse_XXXXXXXXXX", TMPDIR => 1, CLEANUP => 1);
+	$tmp_dir = tempdir(APPLICATION_NAME . "_XXXXXXXXXX",
+			   TMPDIR => 1,
+			   CLEANUP => 1);
     };
     if ($@ ne "")
     {
@@ -493,7 +496,7 @@ sub home_page_activate_cb($$)
 
     eval
     {
-	Gnome2::URL->show("http://www.coosoft.plus.com/software.html");
+	display_html("http://www.coosoft.plus.com/software.html");
     };
     if ($@ ne "")
     {
@@ -536,7 +539,7 @@ sub about_activate_cb($$)
     local $browser->{in_cb} = 1;
 
     $large_logo = Gtk2::Gdk::Pixbuf->new_from_file
-	(File::Spec->catfile(LIB_DIR, "ui", "mtn-browse-large.png"))
+	(File::Spec->catfile(UI_DIR, "mtn-browse-large.png"))
 	if (! defined($large_logo));
     Gnome2::About->new
 	(APPLICATION_NAME,

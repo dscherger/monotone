@@ -71,6 +71,7 @@ sub colour_to_string($);
 sub create_format_tags($);
 sub data_is_binary($);
 sub display_help(;$);
+sub display_html($);
 sub file_glob_to_regexp($);
 sub generate_tmp_path($);
 sub get_branch_revisions($$$$$);
@@ -1218,7 +1219,7 @@ sub handle_comboxentry_history($$;$)
 #   Routine      - display_help
 #
 #   Description  - Displays the specified help section either in Gnome's
-#                  native help browser or the desktop's HTML viewer, depending
+#                  native help browser or the specified HTML viewer, depending
 #                  upon installation settings.
 #
 #   Data         - $section - The help section to display. If undef is given
@@ -1234,7 +1235,7 @@ sub display_help(;$)
 
     my $section = $_[0];
 
-    if (HELP_VIEWER_CMD eq "")
+    if (HTML_VIEWER_CMD eq "")
     {
 
 	# Simply let Gnome handle it using yelp.
@@ -1252,8 +1253,7 @@ sub display_help(;$)
     else
     {
 
-	my($cmd,
-	   $url);
+	my $url;
 
 	# Use the specified HTML viewer to display the help section.
 
@@ -1279,7 +1279,44 @@ sub display_help(;$)
 	    $dialog->destroy();
 	    return;
 	}
-	$cmd = HELP_VIEWER_CMD;
+	display_html($url);
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - display_html
+#
+#   Description  - Displays the specified HTML URL either in Gnome's native
+#                  web browser or the specified HTML viewer, depending upon
+#                  installation settings.
+#
+#   Data         - $url - The HTML URL that is to be displayed.
+#
+##############################################################################
+
+
+
+sub display_html($)
+{
+
+    my $url = $_[0];
+
+    if (HTML_VIEWER_CMD eq "")
+    {
+
+	# Simply let Gnome handle it.
+
+	Gnome2::URL->show($url);
+
+    }
+    else
+    {
+
+	my $cmd = HTML_VIEWER_CMD;
+
 	if ($cmd =~ m/\{url\}/)
 	{
 	    $cmd =~ s/\{url\}/$url/g;
@@ -1322,7 +1359,7 @@ sub register_help_callbacks($@)
     my $wm = WindowManager->instance();
 
     build_help_ref_to_url_map()
-	if (HELP_VIEWER_CMD ne "" && keys(%help_ref_to_url_map) == 0);
+	if (HTML_VIEWER_CMD ne "" && keys(%help_ref_to_url_map) == 0);
 
     foreach my $entry (@details)
     {
@@ -1641,11 +1678,23 @@ sub build_help_ref_to_url_map()
        $prog,
        $tmp);
 
-    # Ask Gnome where the based help directory is.
+    # Ask Gnome where the based help directory is, failing that have an
+    # educated guess.
 
-    return unless (defined($prog = Gnome2::Program->get_program()));
-    ($dir_path) = $prog->locate_file("app-help", "mtn-browse.xml", FALSE);
-    $dir_path = dirname($dir_path);
+    if (HTML_VIEWER_CMD eq ""
+	&& defined($prog = Gnome2::Program->get_program()))
+    {
+	($dir_path) = $prog->locate_file("app-help", "mtn-browse.xml", FALSE);
+	$dir_path = dirname($dir_path);
+    }
+    else
+    {
+	$dir_path = File::Spec->catfile(PREFIX_DIR,
+					"share",
+					"gnome",
+					"help",
+					APPLICATION_NAME);
+    }
 
     # Work out the locale component, going from the most specific to the least.
     # If a specific locale directory isn't found then fall back onto the

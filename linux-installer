@@ -79,9 +79,10 @@ use Installer;
        $dest_dir,
        $dir,
        $file,
+       $file_comparison,
        $globs_file,
        $help,
-       $help_viewer,
+       $html_viewer,
        $infile,
        $input,
        $installer,
@@ -103,28 +104,30 @@ use Installer;
 
     $dep_level = 2;
     $dest_dir = "";
+    $file_comparison = "kompare";
     $globs_file = "/usr/share/mime/globs";
+    $html_viewer = "";
     $prefix_dir = "/usr";
     $lib_dir = "/lib/mtn-browse";
-    $help_viewer = "";
     $use_dists_mas_lib = 1;
 
     # Process any command line options.
 
     $parser = Getopt::Long::Parser->new();
     $parser->configure("bundling");
-    if (! $parser->getoptions("confirm|c"       => \$confirm,
-			      "dep-level=i"     => \$dep_level,
-			      "destdir|d=s"     => \$dest_dir,
-			      "globs-file|g=s"  => \$globs_file,
-			      "help-viewer=s"   => \$help_viewer,
-			      "interactive|i"   => \$interactive,
-			      "libdir|l=s"      => \$lib_dir,
-			      "prefix|p=s"      => \$prefix_dir,
-			      "quiet|q"         => \$quiet,
-			      "use-dists-mas!"  => \$use_dists_mas_lib,
-			      "help|?"          => \$help,
-			      "man|m"           => \$man))
+    if (! $parser->getoptions("confirm|c"           => \$confirm,
+			      "dep-level=i"         => \$dep_level,
+			      "destdir|d=s"         => \$dest_dir,
+			      "file-comparison|f=s" => \$file_comparison,
+			      "globs-file|g=s"      => \$globs_file,
+			      "html-viewer=s"       => \$html_viewer,
+			      "interactive|i"       => \$interactive,
+			      "libdir|l=s"          => \$lib_dir,
+			      "prefix|p=s"          => \$prefix_dir,
+			      "quiet|q"             => \$quiet,
+			      "use-dists-mas!"      => \$use_dists_mas_lib,
+			      "help|?"              => \$help,
+			      "man|m"               => \$man))
     {
 	pod2usage(1);
     }
@@ -245,26 +248,26 @@ use Installer;
 
 	if ($interactive)
 	{
-	    print("Use Yelp or web browser to display help (HELP_VIEWER_CMD)? "
-		  . "[Use Yelp]: ");
+	    print("Program to use for file comparisons (FILE_COMPARE_CMD)? "
+		  . "[" . $file_comparison . "]: ");
 	    chomp($input = <STDIN>);
 	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
-	    $help_viewer = $input if ($input ne "");
+	    $file_comparison = $input if ($input ne "");
 	}
-	if ($help_viewer ne "")
+	if ($file_comparison ne "")
 	{
 	    my $found;
 
 	    # Check full paths or scan $PATH for it.
 
-	    if ($help_viewer =~ m/^\//)
+	    if ($file_comparison =~ m/^\//)
 	    {
-		$found = 1 if (-x $help_viewer);
+		$found = 1 if (-x $file_comparison);
 	    }
 	    else
 	    {
 		my $cmd;
-		$cmd = (split(/[[:blank:]]/, $help_viewer))[0];
+		$cmd = (split(/[[:blank:]]/, $file_comparison))[0];
 		foreach my $dir (split(/:/, $ENV{PATH}))
 		{
 		    if (-x "${dir}/$cmd")
@@ -277,7 +280,49 @@ use Installer;
 
 	    if (! $found)
 	    {
-		print("Error: Program `" . $help_viewer
+		print("Error: Program `" . $file_comparison
+		      . "' cannot be found or is not executable.\n");
+		exit(1) if (! $interactive);
+		next;
+	    }
+	}
+
+	if ($interactive)
+	{
+	    print("Use Yelp or web browser to display help (HTML_VIEWER_CMD)? "
+		  . "[" . (($html_viewer ne "") ? $html_viewer : "Use Yelp")
+		  . "]: ");
+	    chomp($input = <STDIN>);
+	    ($input) = ($input =~ m/^\s*(.*)\s*$/);
+	    $html_viewer = $input if ($input ne "");
+	}
+	if ($html_viewer ne "")
+	{
+	    my $found;
+
+	    # Check full paths or scan $PATH for it.
+
+	    if ($html_viewer =~ m/^\//)
+	    {
+		$found = 1 if (-x $html_viewer);
+	    }
+	    else
+	    {
+		my $cmd;
+		$cmd = (split(/[[:blank:]]/, $html_viewer))[0];
+		foreach my $dir (split(/:/, $ENV{PATH}))
+		{
+		    if (-x "${dir}/$cmd")
+		    {
+			$found = 1;
+			last;
+		    }
+		}
+	    }
+
+	    if (! $found)
+	    {
+		print("Error: Program `" . $html_viewer
 		      . "' cannot be found or is not executable.\n");
 		exit(1) if (! $interactive);
 		next;
@@ -302,13 +347,14 @@ use Installer;
 	if ($confirm || $interactive || ! $quiet)
 	{
 	    print("\nInstallation options are:\n");
-	    print("GLOBS_FILE      = " . $globs_file . "\n");
-	    print("PREFIX_DIR      = " . $prefix_dir . "\n");
-	    print("DEST_DIR        = " . $dest_dir . "\n");
-	    print("LIB_DIR         = <PREFIX_DIR>/" . $lib_dir . "\n");
-	    print("HELP_VIEWER_CMD = "
-		  . (($help_viewer ne "") ? $help_viewer : "Use Yelp") . "\n");
-	    print("Use my MAS      = " . ($use_dists_mas_lib ? "Yes" : "No")
+	    print("GLOBS_FILE       = " . $globs_file . "\n");
+	    print("PREFIX_DIR       = " . $prefix_dir . "\n");
+	    print("DEST_DIR         = " . $dest_dir . "\n");
+	    print("LIB_DIR          = <PREFIX_DIR>/" . $lib_dir . "\n");
+	    print("FILE_COMPARE_CMD = " . $file_comparison . "\n");
+	    print("HTML_VIEWER_CMD  = "
+		  . (($html_viewer ne "") ? $html_viewer : "Use Yelp") . "\n");
+	    print("Use my MAS       = " . ($use_dists_mas_lib ? "Yes" : "No")
 		  . "\n");
 	}
 	if ($interactive)
@@ -343,7 +389,8 @@ use Installer;
 	if (! defined($outfile = IO::File->new("mtn-browse.out", "w")));
     while (defined($input = $infile->getline()))
     {
-	$input =~ s/\@INST:HELP_VIEWER_CMD\@/$help_viewer/g;
+	$input =~ s/\@INST:FILE_COMPARE_CMD\@/$file_comparison/g;
+	$input =~ s/\@INST:HTML_VIEWER_CMD\@/$html_viewer/g;
 	$input =~ s/\@INST:LIB_DIR\@/$lib_prefix_dir/g;
 	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
 	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
@@ -434,7 +481,7 @@ use Installer;
 	next if ($locale eq "." || $locale eq "..");
 	my($figures_dir,
 	   $img_file);
-	if ($help_viewer ne "")
+	if ($html_viewer ne "")
 	{
 	    my($html_file,
 	       $subdir);
@@ -517,8 +564,9 @@ linux-installer [options]
     --confirm            -c           Print out what will happen first
     --dep-level=             LEVEL    Specify type of dependency checking
     --destdir=           -d  DIR      Specify temp installation location
+    --file-comparison    -f  PATH     File comparison command
     --globs-file=        -g  FILE     Location of MIME globs file
-    --help-viewer            PATH     Viewer used to display help files
+    --html-viewer            PATH     Viewer used to display help files
     --interactive        -i           Ask questions interactively
     --libdir=            -l  DIR      Library dir relative to PREFIX_DIR
     --prefix=            -p  DIR      Installation location
@@ -554,26 +602,34 @@ directory paths in the application will still assume that it is installed in
 the PREFIX_DIR directory. This option is particularly useful for package
 maintainers.
 
+=item B<--file-comparison=PATH or -f PATH>
+
+Specify the name of the command used for doing detailed, side by side, file
+comparisons. This defaults to kompare.
+
 =item B<--globs-file=FILE or -g FILE>
 
 Specify the location of the system's MIME globs file. The default is
 /usr/share/mime/globs.
 
-=item B<--help-viewer>
+=item B<--html-viewer>
 
-Specify the the program used to display the HTML help pages. Normally Yelp
-style help documentation is installed (in the form of XML files). Whilst Yelp
-is the Gnome desktop's help system there are some installations where Yelp
-itself is not available. In these situations one can specify the name of a web
-browser that can be used to display the help documentation in the form of HTML
-files (i.e. there is no need for the web browser to understand Yelp XML files).
+Specify the the program used to display the HTML help pages and URLs. Normally
+Yelp style help documentation is installed (in the form of XML files) and
+Gnome's default help and web browser are used. Whilst Yelp is the Gnome
+desktop's help system there are some installations where Yelp itself or parts
+of Gnome are not available. In these situations one can specify the name of a
+web browser that can be used to display the help documentation in the form of
+HTML files (i.e. there is no need for the web browser to understand Yelp XML
+files) and normal URLs.
 
 Specifying this switch has two effects. Firstly mtn-browse is configured to run
-the specified web browser when it needs to display help documentation, and
-secondly HTML documentation is installed in the place of the Yelp XML
+the specified web browser when it needs to display help documentation or URLs,
+and secondly HTML documentation is installed in the place of the Yelp XML
 documentation.
 
-The default is to use Yelp and simply install the XML documentation files.
+The default is to use Yelp, use Gnome's default web browser and install the XML
+documentation files.
 
 =item B<--interactive or -i>
 

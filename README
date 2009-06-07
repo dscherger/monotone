@@ -94,7 +94,8 @@ through to it. The installer script supports some additional options that can
 also be specified via Makefile.PL, meaning that the full list of arguments are:
 
     perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH> LIBDIR=<PATH> \
-                     GLOBS_FILE=<PATH> HELP_VIEWER=<PATH> NO_USE_DISTS_MAS=1
+                     GLOBS_FILE=<PATH> FILE_COMPARISON=<PATH> \
+                     HELP_VIEWER=<PATH> NO_USE_DISTS_MAS=1
 
 For further information on what these options mean please run:
 

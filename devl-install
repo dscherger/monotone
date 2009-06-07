@@ -149,7 +149,8 @@ use IO::File;
     while (defined($input = $infile->getline()))
     {
 	my $orig = $input;
-	$input =~ s/\@INST:HELP_VIEWER_CMD\@//g;
+	$input =~ s/\@INST:FILE_COMPARE_CMD\@/kompare/g;
+	$input =~ s/\@INST:HTML_VIEWER_CMD\@//g;
 	$input =~ s/\@INST:LIB_DIR\@/$lib_dir/g;
 	$input =~ s/\@INST:GLOBS_FILE\@/$globs_file/g;
 	$input =~ s/\@INST:PREFIX_DIR\@/$prefix_dir/g;
