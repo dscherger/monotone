@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mtn-browse 0.1\n"
 "Report-Msgid-Bugs-To: support@coosoft.plus.com\n"
-"POT-Creation-Date: 2009-06-05 21:11+0100\n"
+"POT-Creation-Date: 2009-06-07 16:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,26 +17,26 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: mtn-browse:231
+#: mtn-browse:232
 #, perl-brace-format
 msgid ""
 "Your preferences cannot be loaded:\n"
 "{error_message}"
 msgstr ""
 
-#: mtn-browse:253
+#: mtn-browse:256
 #, perl-brace-format
 msgid ""
 "{error_message}\n"
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:313
+#: mtn-browse:316
 #, perl-brace-format
 msgid "Cannot open database {database_name}."
 msgstr ""
 
-#: mtn-browse:505
+#: mtn-browse:508
 #, perl-brace-format
 msgid ""
 "Gnome cannot display Monotone Browser's\n"
@@ -44,39 +44,39 @@ msgid ""
 "<b><i>{gnome_error_message}</i></b>"
 msgstr ""
 
-#: mtn-browse:544
+#: mtn-browse:547
 msgid "Copyright © 2007-2009 Anthony Cooper"
 msgstr ""
 
-#: mtn-browse:545
+#: mtn-browse:548
 msgid "A graphical front-end browser for Monotone VCS databases"
 msgstr ""
 
-#: mtn-browse:547
+#: mtn-browse:550
 msgid "Anthony Cooper <support@coosoft.plus.com>"
 msgstr ""
 
-#: mtn-browse:548
+#: mtn-browse:551
 msgid "Thomas Keller <me@thomaskeller.biz> (German translation)"
 msgstr ""
 
-#: mtn-browse:1212 lib/perl/History.pm:1966
+#: mtn-browse:1215 lib/perl/History.pm:1966
 #, perl-brace-format
 msgid ""
 "Cannot generate temporary file name:\n"
 "{error_message}."
 msgstr ""
 
-#: mtn-browse:1228 lib/perl/Common.pm:545 lib/perl/History.pm:1983
+#: mtn-browse:1231 lib/perl/Common.pm:546 lib/perl/History.pm:1983
 #, perl-brace-format
 msgid "{error_message}."
 msgstr ""
 
-#: mtn-browse:1288
+#: mtn-browse:1291
 msgid "Unknown file type, not viewing."
 msgstr ""
 
-#: mtn-browse:1305
+#: mtn-browse:1308
 #, perl-brace-format
 msgid ""
 "Gnome cannot launch the helper application\n"
@@ -85,7 +85,7 @@ msgid ""
 "<b><i>{gnome_error_message}</i></b>"
 msgstr ""
 
-#: mtn-browse:1321
+#: mtn-browse:1324
 #, perl-brace-format
 msgid ""
 "No application is associated with\n"
@@ -93,69 +93,69 @@ msgid ""
 "using Vi instead."
 msgstr ""
 
-#: mtn-browse:1713
+#: mtn-browse:1716
 msgid "File Name"
 msgstr ""
 
-#: mtn-browse:1728
+#: mtn-browse:1731
 msgid "Last Update"
 msgstr ""
 
-#: mtn-browse:1738 lib/perl/AdvancedFind.pm:306 lib/perl/AdvancedFind.pm:688
+#: mtn-browse:1741 lib/perl/AdvancedFind.pm:306 lib/perl/AdvancedFind.pm:688
 msgid "Author"
 msgstr ""
 
-#: mtn-browse:1802
+#: mtn-browse:1805
 msgid "mtnb-gsc-menus"
 msgstr ""
 
-#: mtn-browse:1804
+#: mtn-browse:1807
 msgid "mtnb-gsc-tool-bar"
 msgstr ""
 
-#: mtn-browse:1806
+#: mtn-browse:1809
 msgid "mtnb-gsc-selecting-a-branch-and-revision"
 msgstr ""
 
-#: mtn-browse:1808 mtn-browse:1812 mtn-browse:1818 lib/perl/FindText.pm:784
+#: mtn-browse:1811 mtn-browse:1815 mtn-browse:1821 lib/perl/FindText.pm:784
 msgid "mtnb-gsc-browser-buttons"
 msgstr ""
 
-#: mtn-browse:1810 mtn-browse:1814
+#: mtn-browse:1813 mtn-browse:1817
 msgid "mtnb-gsc-selecting-a-file-to-display"
 msgstr ""
 
-#: mtn-browse:1816 mtn-browse:1820
+#: mtn-browse:1819 mtn-browse:1823
 msgid "mtnb-gsc-information-fields"
 msgstr ""
 
-#: mtn-browse:1822
+#: mtn-browse:1825
 msgid "mtnb-gsc-monotone-browser-window-at-a-glance"
 msgstr ""
 
-#: mtn-browse:1951 lib/perl/Preferences.pm:316 lib/perl/Preferences.pm:367
+#: mtn-browse:1954 lib/perl/Preferences.pm:316 lib/perl/Preferences.pm:367
 #, perl-brace-format
 msgid "open failed: {error_message}\n"
 msgstr ""
 
-#: mtn-browse:2075
+#: mtn-browse:2078
 #, perl-brace-format
 msgid "<WorkSpace> ({database_name})"
 msgstr ""
 
-#: mtn-browse:2117 lib/perl/AdvancedFind.pm:835
+#: mtn-browse:2120 lib/perl/AdvancedFind.pm:835
 msgid "Fetching branch list"
 msgstr ""
 
-#: mtn-browse:2124 lib/perl/AdvancedFind.pm:843
+#: mtn-browse:2127 lib/perl/AdvancedFind.pm:843
 msgid "Populating branch list"
 msgstr ""
 
-#: mtn-browse:2166
+#: mtn-browse:2169
 msgid "Auto selecting head revision"
 msgstr ""
 
-#: mtn-browse:2181
+#: mtn-browse:2184
 #, perl-brace-format
 msgid ""
 "The `{branch}' branch has multiple heads\n"
@@ -164,20 +164,20 @@ msgid ""
 "The head revision ids are:"
 msgstr ""
 
-#: mtn-browse:2217 lib/perl/AdvancedFind.pm:892 lib/perl/History.pm:156
+#: mtn-browse:2220 lib/perl/AdvancedFind.pm:892 lib/perl/History.pm:156
 #: lib/perl/History.pm:358
 msgid "Fetching revision list"
 msgstr ""
 
-#: mtn-browse:2230 lib/perl/AdvancedFind.pm:907
+#: mtn-browse:2233 lib/perl/AdvancedFind.pm:907
 msgid "Populating revision list"
 msgstr ""
 
-#: mtn-browse:2286
+#: mtn-browse:2289
 msgid "Fetching manifest"
 msgstr ""
 
-#: mtn-browse:2296
+#: mtn-browse:2299
 #, perl-brace-format
 msgid ""
 "The `{tag_name}' tag is not unique on this branch.\n"
@@ -186,40 +186,40 @@ msgid ""
 "The matching revision ids are:"
 msgstr ""
 
-#: mtn-browse:2365
+#: mtn-browse:2368
 msgid "Populating directory list"
 msgstr ""
 
-#: mtn-browse:2437
+#: mtn-browse:2440
 msgid "Populating file details"
 msgstr ""
 
-#: mtn-browse:2677
+#: mtn-browse:2680
 msgid "Unknown Contents"
 msgstr ""
 
-#: mtn-browse:2734
+#: mtn-browse:2737
 msgid "Hex dump:\n"
 msgstr ""
 
-#: mtn-browse:2891
+#: mtn-browse:2894
 msgid ""
 "Your version of Monotone does not support\n"
 "suspend certificates. I will adjusted your\n"
 "preferences accordingly."
 msgstr ""
 
-#: mtn-browse:2909 lib/perl/Common.pm:1193 lib/perl/Preferences.pm:269
+#: mtn-browse:2912 lib/perl/Common.pm:1194 lib/perl/Preferences.pm:269
 msgid "Your preferences could not be saved:\n"
 msgstr ""
 
-#: mtn-browse:2950
+#: mtn-browse:2953
 msgid ""
 "The Monotone database is currently locked, please\n"
 "dismiss this dialog when this is no longer the case."
 msgstr ""
 
-#: mtn-browse:2990
+#: mtn-browse:2993
 #, perl-brace-format
 msgid ""
 "Problem with monotone request, got:\n"
@@ -227,7 +227,7 @@ msgid ""
 "This should not be happening!"
 msgstr ""
 
-#: mtn-browse:3007
+#: mtn-browse:3010
 #, perl-brace-format
 msgid ""
 "Monotone process unexpectedly exiting with:\n"
@@ -235,17 +235,17 @@ msgid ""
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:3059
+#: mtn-browse:3062
 #, perl-brace-format
 msgid "terminated by signal {number}"
 msgstr ""
 
-#: mtn-browse:3064
+#: mtn-browse:3067
 #, perl-brace-format
 msgid "exited with status {number}"
 msgstr ""
 
-#: mtn-browse:3072
+#: mtn-browse:3075
 #, perl-brace-format
 msgid ""
 "The mtn subprocess just unexpectedly\n"
@@ -254,12 +254,12 @@ msgid ""
 "It will be restarted when needed."
 msgstr ""
 
-#: mtn-browse:3087
+#: mtn-browse:3090
 #, perl-brace-format
 msgid "waitpid failed: {error_message}"
 msgstr ""
 
-#: mtn-browse:3117
+#: mtn-browse:3120
 #, perl-brace-format
 msgid "pipe failed: {error_message}"
 msgstr ""
@@ -561,7 +561,7 @@ msgstr ""
 msgid "Invalid {name} name `{value}'"
 msgstr ""
 
-#: lib/perl/Common.pm:189
+#: lib/perl/Common.pm:190
 #, perl-brace-format
 msgid ""
 "The {name} subprocess could not start,\n"
@@ -569,14 +569,14 @@ msgid ""
 "<b><i>{error_message}</b></i>"
 msgstr ""
 
-#: lib/perl/Common.pm:246
+#: lib/perl/Common.pm:247
 #, perl-brace-format
 msgid ""
 "waitpid failed with:\n"
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/Common.pm:261
+#: lib/perl/Common.pm:262
 #, perl-brace-format
 msgid ""
 "The {name} subprocess failed with an exit status\n"
@@ -584,34 +584,34 @@ msgid ""
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/Common.pm:278
+#: lib/perl/Common.pm:279
 #, perl-brace-format
 msgid "The {name} subprocess was terminated by signal {number}."
 msgstr ""
 
-#: lib/perl/Common.pm:376
+#: lib/perl/Common.pm:377
 msgid "Open Database"
 msgstr ""
 
-#: lib/perl/Common.pm:436
+#: lib/perl/Common.pm:437
 msgid "Not a valid Monotone database."
 msgstr ""
 
-#: lib/perl/Common.pm:496
+#: lib/perl/Common.pm:497
 msgid "Save As"
 msgstr ""
 
-#: lib/perl/Common.pm:527
+#: lib/perl/Common.pm:528
 msgid ""
 "File already exists.\n"
 "Do you want to replace it?"
 msgstr ""
 
-#: lib/perl/Common.pm:528
+#: lib/perl/Common.pm:529
 msgid "Confirm"
 msgstr ""
 
-#: lib/perl/Common.pm:639
+#: lib/perl/Common.pm:640
 msgid "Select As Search Column"
 msgstr ""
 
@@ -955,7 +955,7 @@ msgid ""
 "invalid, please correct before attempting to resave."
 msgstr ""
 
-#: lib/perl/Preferences.pm:1694
+#: lib/perl/Preferences.pm:1695
 msgid "Cannot load system MIME types.\n"
 msgstr ""
 
