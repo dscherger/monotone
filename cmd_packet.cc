@@ -29,28 +29,26 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     "",
     options::opts::none)
 {
-  database db(app);
-  key_store keys(app);
-
   if (args.size() != 1)
     throw usage(execid);
 
-  key_id ident;
+  database db(app);
+  key_store keys(app);
   project_t project(db);
-  project.lookup_key_by_name(keys,
-                             typecast_vocab<key_name>(idx(args, 0)),
-                             ident);
+
+  key_identity_info identity;
+  project.get_key_identity(keys, idx(args, 0), identity);
   bool exists(false);
   rsa_pub_key key;
-  if (db.database_specified() && db.public_key_exists(ident))
+  if (db.database_specified() && db.public_key_exists(identity.id))
     {
-      db.get_key(ident, key);
+      db.get_key(identity.id, key);
       exists = true;
     }
-  if (keys.key_pair_exists(ident))
+  if (keys.key_pair_exists(identity.id))
     {
       keypair kp;
-      keys.get_key_pair(ident, kp);
+      keys.get_key_pair(identity.id, kp);
       key = kp.pub;
       exists = true;
     }
@@ -58,9 +56,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     F("public key '%s' does not exist") % idx(args, 0)());
 
   packet_writer pw(cout);
-  key_name canonical_name;
-  project.get_canonical_name_of_key(keys, ident, canonical_name);
-  pw.consume_public_key(canonical_name, key);
+  pw.consume_public_key(identity.given_name, key);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
@@ -76,16 +72,16 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     throw usage(execid);
 
   key_name name = typecast_vocab<key_name>(idx(args, 0));
-  key_id ident;
-  project.lookup_key_by_name(keys, name, ident);
-  E(keys.key_pair_exists(ident), origin::user,
+  key_identity_info identity;
+  project.get_key_identity(idx(args, 0), identity);
+  E(keys.key_pair_exists(identity.id), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
 
   packet_writer pw(cout);
   keypair kp;
   key_name given_name;
-  keys.get_key_pair(ident, given_name, kp);
+  keys.get_key_pair(identity.id, given_name, kp);
   pw.consume_key_pair(given_name, kp);
 }
 

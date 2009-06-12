@@ -59,29 +59,27 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_id ident;
+  key_identity_info identity;
   project_t project(db);
-  project.lookup_key_by_name(keys,
-                             typecast_vocab<key_name>(idx(args, 0)),
-                             ident);
+  project.get_key_identity(keys, idx(args, 0), identity);
 
   if (db.database_specified())
     {
       transaction_guard guard(db);
-      if (db.public_key_exists(ident))
+      if (db.public_key_exists(identity.id))
         {
-          P(F("dropping public key '%s' from database") % ident);
-          db.delete_public_key(ident);
+          P(F("dropping public key '%s' from database") % identity.id);
+          db.delete_public_key(identity.id);
           key_deleted = true;
         }
       guard.commit();
       checked_db = true;
     }
 
-  if (keys.key_pair_exists(ident))
+  if (keys.key_pair_exists(identity.id))
     {
-      P(F("dropping key pair '%s' from keystore") % ident);
-      keys.delete_key(ident);
+      P(F("dropping key pair '%s' from keystore") % identity.id);
+      keys.delete_key(identity.id);
       key_deleted = true;
     }
 
@@ -201,6 +199,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     N_("The current settings are used to run the test."),
     options::opts::none)
 {
+  key_store keys(app); // so the user can name keys that aren't in the db
   database db(app);
   project_t project(db);
 
@@ -220,10 +219,12 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
-  set<key_id> signers;
+  set<key_identity_info> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
     {
-      signers.insert(decode_hexenc_as<key_id>(idx(args, i)(), origin::user));
+      key_identity_info identity;
+      project.get_key_identity(keys, idx(args, i), identity);
+      signers.insert(identity);
     }
 
 
@@ -234,7 +235,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   ostringstream all_signers;
   copy(signers.begin(), signers.end(),
-       ostream_iterator<key_id>(all_signers, " "));
+       ostream_iterator<key_identity_info>(all_signers, " "));
 
   cout << (F("if a cert on: %s\n"
             "with key: %s\n"

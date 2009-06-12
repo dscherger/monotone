@@ -19,6 +19,7 @@
 #include "key_store.hh"
 #include "file_io.hh"
 #include "packet.hh"
+#include "project.hh"
 #include "database.hh"
 #include "keys.hh"
 #include "globish.hh"
@@ -485,7 +486,10 @@ key_store_state::decrypt_private_key(key_id const & id,
       utf8 phrase;
       string lua_phrase;
           // See whether a lua hook will tell us the passphrase.
-      if (!force_from_user && lua.hook_get_passphrase(name, id, lua_phrase))
+      key_identity_info identity;
+      identity.id = id;
+      identity.given_name = name;
+      if (!force_from_user && lua.hook_get_passphrase(identity, lua_phrase))
         phrase = utf8(lua_phrase, origin::user);
       else
         get_passphrase(phrase, name, id, false, false);
@@ -887,8 +891,10 @@ key_store_state::migrate_old_key_pair
   shared_ptr<RSA_PrivateKey> priv_key;
 
   // See whether a lua hook will tell us the passphrase.
+  key_identity_info identity;
+  identity.given_name = id;
   string lua_phrase;
-  if (lua.hook_get_passphrase(id, key_id(), lua_phrase))
+  if (lua.hook_get_passphrase(identity, lua_phrase))
     phrase = utf8(lua_phrase, origin::user);
   else
     get_passphrase(phrase, id, key_id(), false, false);

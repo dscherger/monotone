@@ -27,6 +27,7 @@ class key_store;
 class outdated_indicator;
 class rev_height;
 class lazy_rng;
+class project_t;
 
 class migration_status;
 
@@ -73,6 +74,7 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 // the program. I don't know if there's any way to make it clearer.
 
 class database_impl;
+struct key_identity_info;
 
 class database
 {
@@ -313,7 +315,8 @@ public:
                                id const &,
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;
-  void erase_bogus_certs(std::vector<cert> & certs);
+  // this takes a project_t so it can translate key names for the trust hook
+  void erase_bogus_certs(project_t & project, std::vector<cert> & certs);
   // permit alternative trust functions
   void erase_bogus_certs(std::vector<cert> & certs,
                          cert_trust_checker const & checker);

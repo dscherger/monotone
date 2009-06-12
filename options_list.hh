@@ -395,20 +395,11 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 #endif
 
 
-OPTVAR(key, key_name, signing_key, )
-OPTVAR(key, key_id, signing_key_id, )
+OPTVAR(key, arg_type, signing_key, )
 OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
 #ifdef option_bodies
 {
-  internalize_key_name(utf8(arg, origin::user), signing_key);
-  try
-    {
-      signing_key_id = key_id(arg, origin::user);
-    }
-  catch(recoverable_failure &)
-    {
-      // not a valid ID, will have to be looked up later
-    }
+  signing_key = arg_type(arg, origin::user);
 }
 #endif
 
@@ -423,14 +414,12 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
-OPTVAR(key_to_push, std::vector<key_name>, keys_to_push, )
+OPTVAR(key_to_push, std::vector<arg_type>, keys_to_push, )
 OPTION(key_to_push, key_to_push, true, "key-to-push",
         gettext_noop("push the specified key even if it hasn't signed anything"))
 #ifdef option_bodies
 {
-  key_name keyid;
-  internalize_key_name(utf8(arg, origin::user), keyid);
-  keys_to_push.push_back(keyid);
+  keys_to_push.push_back(arg_type(arg, origin::user));
 }
 #endif
 

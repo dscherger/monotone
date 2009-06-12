@@ -885,12 +885,12 @@ session::session(options & opts,
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
-  for (vector<key_name>::const_iterator i = opts.keys_to_push.begin();
+  for (vector<arg_type>::const_iterator i = opts.keys_to_push.begin();
        i != opts.keys_to_push.end(); ++i)
     {
-      key_id ident;
-      project.lookup_key_by_name(keys, *i, ident);
-      keys_to_push.push_back(ident);
+      key_identity_info ident;
+      project.get_key_identity(keys, *i, ident);
+      keys_to_push.push_back(ident.id);
     }
 }
 
@@ -929,7 +929,10 @@ session::~session()
       for (vector<key_id>::iterator i = written_keys.begin();
            i != written_keys.end(); ++i)
         {
-          lua.hook_note_netsync_pubkey_received(*i, session_id);
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, identity);
+          lua.hook_note_netsync_pubkey_received(identity, session_id);
         }
 
       //Revisions
@@ -937,10 +940,15 @@ session::~session()
            i != written_revisions.end(); ++i)
         {
           vector<cert> & ctmp(rev_written_certs[*i]);
-          set<pair<key_id, pair<cert_name, cert_value> > > certs;
+          set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
           for (vector<cert>::const_iterator j = ctmp.begin();
                j != ctmp.end(); ++j)
-            certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
+            {
+              key_identity_info identity;
+              identity.id = j->key;
+              project.complete_key_identity(keys, identity);
+              certs.insert(make_pair(identity, make_pair(j->name, j->value)));
+            }
 
           revision_data rdat;
           project.db.get_revision(*i, rdat);
@@ -951,8 +959,13 @@ session::~session()
       //Certs (not attached to a new revision)
       for (vector<cert>::iterator i = unattached_written_certs.begin();
            i != unattached_written_certs.end(); ++i)
-        lua.hook_note_netsync_cert_received(revision_id(i->ident), i->key,
-                                            i->name, i->value, session_id);
+        {
+          key_identity_info identity;
+          identity.id = i->key;
+          project.complete_key_identity(keys, identity);
+          lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
+                                              i->name, i->value, session_id);
+        }
     }
 
   if (!sent_keys.empty()
@@ -980,7 +993,10 @@ session::~session()
       for (vector<key_id>::iterator i = sent_keys.begin();
            i != sent_keys.end(); ++i)
         {
-          lua.hook_note_netsync_pubkey_sent(*i, session_id);
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, identity);
+          lua.hook_note_netsync_pubkey_sent(identity, session_id);
         }
 
       //Revisions
@@ -988,10 +1004,15 @@ session::~session()
            i != sent_revisions.end(); ++i)
         {
           vector<cert> & ctmp(rev_sent_certs[*i]);
-          set<pair<key_id, pair<cert_name, cert_value> > > certs;
+          set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
           for (vector<cert>::const_iterator j = ctmp.begin();
                j != ctmp.end(); ++j)
-            certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
+            {
+              key_identity_info identity;
+              identity.id = j->key;
+              project.complete_key_identity(keys, identity);
+              certs.insert(make_pair(identity, make_pair(j->name, j->value)));
+            }
 
           revision_data rdat;
           project.db.get_revision(*i, rdat);
@@ -1002,8 +1023,13 @@ session::~session()
       //Certs (not attached to a new revision)
       for (vector<cert>::iterator i = unattached_sent_certs.begin();
            i != unattached_sent_certs.end(); ++i)
-        lua.hook_note_netsync_cert_sent(revision_id(i->ident), i->key,
-                                            i->name, i->value, session_id);
+        {
+          key_identity_info identity;
+          identity.id = i->key;
+          project.complete_key_identity(keys, identity);
+          lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
+                                          i->name, i->value, session_id);
+        }
     }
 
   lua.hook_note_netsync_end(session_id, error_code,
@@ -1591,14 +1617,14 @@ session::process_hello_cmd(key_name const & their_keyname,
   I(!this->received_remote_key);
   I(this->saved_nonce().empty());
 
+  key_identity_info their_identity;
   if (use_transport_auth)
     {
-      key_id their_key_hash;
-      key_hash_code(their_keyname, their_key, their_key_hash);
+      key_hash_code(their_keyname, their_key, their_identity.id);
       var_value printable_key_hash;
       {
         hexenc<id> encoded_key_hash;
-        encode_hexenc(their_key_hash.inner(), encoded_key_hash);
+        encode_hexenc(their_identity.id.inner(), encoded_key_hash);
         printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
       }
       L(FL("server key has name %s, hash %s")
@@ -1635,7 +1661,7 @@ session::process_hello_cmd(key_name const & their_keyname,
           project.db.set_var(their_key_key, printable_key_hash);
         }
 
-      if (!project.db.public_key_exists(their_key_hash))
+      if (!project.db.public_key_exists(their_identity.id))
         {
           // this should now always return true since we just checked
           // for the existence of this particular key
@@ -1650,11 +1676,12 @@ session::process_hello_cmd(key_name const & their_keyname,
           % printable_key_hash % hnonce);
       }
 
-      I(project.db.public_key_exists(their_key_hash));
+      I(project.db.public_key_exists(their_identity.id));
+      project.complete_key_identity(keys, their_identity);
 
       // save their identity
       this->received_remote_key = true;
-      this->remote_peer_key_id = their_key_hash;
+      this->remote_peer_key_id = their_identity.id;
     }
 
   // clients always include in the synchronization set, every branch that the
@@ -1693,7 +1720,7 @@ session::process_hello_cmd(key_name const & their_keyname,
     }
 
   lua.hook_note_netsync_start(session_id, "client", this->role,
-                              peer_id, their_keyname,
+                              peer_id, their_identity,
                               our_include_pattern, our_exclude_pattern);
   return true;
 }
@@ -1716,7 +1743,7 @@ session::process_anonymous_cmd(protocol_role their_role,
   //
 
   lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, key_name(),
+                              peer_id, key_identity_info(),
                               their_include_pattern, their_exclude_pattern);
 
   // Client must be a sink and server must be a source (anonymous
@@ -1848,9 +1875,12 @@ session::process_auth_cmd(protocol_role their_role,
   key_name their_id;
   rsa_pub_key their_key;
   project.db.get_pubkey(client, their_id, their_key);
+  key_identity_info client_identity;
+  client_identity.id = client;
+  project.complete_key_identity(keys, client_identity);
 
   lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, their_id,
+                              peer_id, client_identity,
                               their_include_pattern, their_exclude_pattern);
 
   // Check that they replied with the nonce we asked for.
@@ -1892,7 +1922,7 @@ session::process_auth_cmd(protocol_role their_role,
     {
       if (their_matcher((*i)()))
         {
-          if (!lua.hook_get_netsync_read_permitted((*i)(), client))
+          if (!lua.hook_get_netsync_read_permitted((*i)(), client_identity))
             {
               error(not_permitted,
                     (F("denied '%s' read permission for '%s' excluding '%s' because of branch '%s'")
@@ -1920,7 +1950,7 @@ session::process_auth_cmd(protocol_role their_role,
                  % their_id % their_include_pattern % their_exclude_pattern).str());
         }
 
-      if (!lua.hook_get_netsync_write_permitted(client))
+      if (!lua.hook_get_netsync_write_permitted(client_identity))
         {
           this->saved_nonce = id("");
           error(not_permitted,

@@ -3573,14 +3573,58 @@ namespace {
       }
     certs = tmp_certs;
   }
+  // the lua hook wants key_identity_info, but all that's been
+  // pulled from the certs is key_id. So this is needed to translate.
+  // use pointers for project and lua so bind() doesn't make copies
+  bool check_revision_cert_trust(project_t * const project,
+                                 lua_hooks * const lua,
+                                 set<key_id> const & signers,
+                                 id const & hash,
+                                 cert_name const & name,
+                                 cert_value const & value)
+  {
+    set<key_identity_info> signer_identities;
+    for (set<key_id>::const_iterator i = signers.begin();
+         i != signers.end(); ++i)
+      {
+        key_identity_info identity;
+        identity.id = *i;
+        project->complete_key_identity(identity);
+        signer_identities.insert(identity);
+      }
+
+    return lua->hook_get_revision_cert_trust(signer_identities,
+                                             hash, name, value);
+  }
+  // and the lua hook for manifest trust checking wants a key_name
+  bool check_manifest_cert_trust(database * const db,
+                                 lua_hooks * const lua,
+                                 set<key_id> const & signers,
+                                 id const & hash,
+                                 cert_name const & name,
+                                 cert_value const & value)
+  {
+    set<key_name> signer_names;
+    for (set<key_id>::const_iterator i = signers.begin();
+         i != signers.end(); ++i)
+      {
+        key_name name;
+        rsa_pub_key pub;
+        db->get_pubkey(*i, name, pub);
+        signer_names.insert(name);
+      }
+
+    return lua->hook_get_manifest_cert_trust(signer_names,
+                                             hash, name, value);
+  }
 } // anonymous namespace
 
 void
-database::erase_bogus_certs(vector<cert> & certs)
+database::erase_bogus_certs(project_t & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&lua_hooks::hook_get_revision_cert_trust,
-                                         &this->lua, _1, _2, _3, _4));
+                             boost::bind(&check_revision_cert_trust,
+                                         &project, &this->lua, _1, _2, _3, _4));
 }
 void
 database::erase_bogus_certs(vector<cert> & certs,
@@ -3598,8 +3642,8 @@ database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(id.inner(), certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
-                                         &this->lua, _1, _2, _3, _4));
+                             boost::bind(&check_manifest_cert_trust,
+                                         this, &this->lua, _1, _2, _3, _4));
 }
 
 void
@@ -3607,8 +3651,8 @@ database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
   imp->get_oldstyle_certs(name, certs, "manifest_certs");
   erase_bogus_certs_internal(certs, *this,
-                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
-                                         &this->lua, _1, _2, _3, _4));
+                             boost::bind(&check_manifest_cert_trust,
+                                         this, &this->lua, _1, _2, _3, _4));
 }
 
 // completions

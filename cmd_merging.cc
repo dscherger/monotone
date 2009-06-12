@@ -125,14 +125,15 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
 }
 
 static bool
-pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
+pick_branch_for_update(options & opts, database & db,
+                       project_t & project, revision_id chosen_rid)
 {
   bool switched_branch = false;
 
   // figure out which branches the target is in
   vector<cert> certs;
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  db.erase_bogus_certs(certs);
+  db.erase_bogus_certs(project, certs);
 
   set< branch_name > branches;
   for (vector<cert>::const_iterator i = certs.begin();
@@ -258,7 +259,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
 
   // Fiddle around with branches, in an attempt to guess what the user
   // wants.
-  bool switched_branch = pick_branch_for_update(app.opts, db, chosen_rid);
+  bool switched_branch = pick_branch_for_update(app.opts, db, project, chosen_rid);
   if (switched_branch)
     P(F("switching to branch %s") % app.opts.branch());
 

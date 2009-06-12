@@ -131,14 +131,9 @@ get_user_key(options const & opts, lua_hooks & lua,
     {
       if (!opts.signing_key().empty())
         {
-          if (!opts.signing_key_id.inner()().empty())
-            {
-              key = opts.signing_key_id;
-            }
-          else if (!opts.signing_key().empty())
-            {
-              project.lookup_key_by_name(keys, opts.signing_key, key);
-            }
+          key_identity_info identity;
+          project.get_key_identity(keys, opts.signing_key, identity);
+          key = identity.id;
         }
       else
         {
@@ -179,18 +174,16 @@ cache_netsync_key(options const & opts,
   // key_given is not set if the key option was extracted from the workspace
   if (opts.key_given || !opts.signing_key().empty())
     {
-      if (!opts.signing_key_id.inner()().empty())
+      key_identity_info identity;
+      // maybe they specifically requested no key ("--key ''")
+      if (!opts.signing_key().empty())
         {
-          key = opts.signing_key_id;
-          found_key = true;
-        }
-      else if (!opts.signing_key().empty())
-        {
-          project.lookup_key_by_name(keys, opts.signing_key, key);
+          project.get_key_identity(keys, opts.signing_key, identity);
+          key = identity.id;
           found_key = true;
         }
     }
-  else if (lua.hook_get_netsync_key(host, include, exclude, key))
+  else if (lua.hook_get_netsync_key(host, include, exclude, keys, project, key))
     {
       found_key = true;
     }

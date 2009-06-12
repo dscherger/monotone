@@ -278,7 +278,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
   // early short-circuit to avoid failure after lots of work
   cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_changesets_from_manifest_ancestry(db, keys, set<string>());
+  build_changesets_from_manifest_ancestry(db, keys, project, set<string>());
 }
 
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
@@ -299,7 +299,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   // early short-circuit to avoid failure after lots of work
   cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_roster_style_revs_from_manifest_style_revs(db, keys,
+  build_roster_style_revs_from_manifest_style_revs(db, keys, project,
                                                    app.opts.attrs_to_drop);
 }
 

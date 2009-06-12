@@ -123,10 +123,12 @@ namespace {
 
 struct anc_graph
 {
-  anc_graph(bool existing, database & db, key_store & keys) :
+  anc_graph(bool existing, database & db, key_store & keys,
+            project_t & project) :
     existing_graph(existing),
     db(db),
     keys(keys),
+    project(project),
     max_node(0),
     n_nodes("nodes", "n", 1),
     n_certs_in("certs in", "c", 1),
@@ -137,6 +139,7 @@ struct anc_graph
   bool existing_graph;
   database & db;
   key_store & keys;
+  project_t & project;
   u64 max_node;
 
   ticker n_nodes;
@@ -212,7 +215,6 @@ void anc_graph::write_certs()
 
 
   typedef multimap<u64, pair<cert_name, cert_value> >::const_iterator ci;
-  project_t project(db);
 
   for (map<u64,revision_id>::const_iterator i = node_to_new_rev.begin();
        i != node_to_new_rev.end(); ++i)
@@ -387,7 +389,7 @@ u64 anc_graph::add_node_for_oldstyle_revision(revision_id const & rev)
       // load certs
       vector<cert> rcerts;
       db.get_revision_certs(rev, rcerts);
-      db.erase_bogus_certs(rcerts);
+      db.erase_bogus_certs(project, rcerts);
       for(vector<cert>::const_iterator i = rcerts.begin();
           i != rcerts.end(); ++i)
         {
@@ -892,9 +894,10 @@ anc_graph::construct_revisions_from_ancestry(set<string> const & attrs_to_drop)
 
 void
 build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys,
+                                                 project_t & project,
                                                  set<string> const & attrs_to_drop)
 {
-  anc_graph graph(true, db, keys);
+  anc_graph graph(true, db, keys, project);
 
   P(F("converting existing revision graph to new roster-style revisions"));
   multimap<revision_id, revision_id> existing_graph;
@@ -937,9 +940,10 @@ build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys
 
 void
 build_changesets_from_manifest_ancestry(database & db, key_store & keys,
+                                        project_t & project,
                                         set<string> const & attrs_to_drop)
 {
-  anc_graph graph(false, db, keys);
+  anc_graph graph(false, db, keys, project);
 
   P(F("rebuilding revision graph from manifest certs"));
 

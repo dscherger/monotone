@@ -140,13 +140,13 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
       split_into_lines(washed, lines);
       std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
 
-      key_id keyid = idx(certs, i).key;
-      key_name keyname;
-      project.get_name_of_key(keys, keyid, keyname);
+      key_identity_info identity;
+      identity.id = idx(certs, i).key;
+      project.complete_key_identity(keys, identity);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
-               % keyid % keyname
+               % identity.id % identity.official_name
                % stat
                % idx(certs, i).name
                % value_first_line);
@@ -279,12 +279,11 @@ namespace {
           for (vector<key_id>::iterator i = dbkeys.begin();
                i != dbkeys.end(); i++)
             {
-              key_name name;
-              project.get_canonical_name_of_key(keys, *i, name);
-              items[*i].get<0>() = name();
-              key_name alias;
-              project.get_name_of_key(keys, *i, alias);
-              items[*i].get<1>() = alias();
+              key_identity_info identity;
+              identity.id = *i;
+              project.complete_key_identity(identity);
+              items[*i].get<0>() = identity.official_name();
+              items[*i].get<1>() = identity.given_name();
               items[*i].get<2>().push_back("database");
             }
         }
@@ -295,12 +294,11 @@ namespace {
       for (vector<key_id>::iterator i = kskeys.begin();
            i != kskeys.end(); i++)
         {
-          key_name name;
-          project.get_canonical_name_of_key(keys, *i, name);
-          items[*i].get<0>() = name();
-          key_name alias;
-          project.get_name_of_key(keys, *i, alias);
-          items[*i].get<1>() = alias();
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, identity);
+          items[*i].get<0>() = identity.official_name();
+          items[*i].get<1>() = identity.given_name();
           items[*i].get<2>().push_back("keystore");
           items[*i].get<3>().push_back("keystore");
         }
@@ -853,17 +851,19 @@ CMD_AUTOMATE(certs, N_("REV"),
       cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
-      set<key_id> signers;
+      set<key_identity_info> signers;
 
-      key_id keyid = idx(certs, i).key;
-      signers.insert(keyid);
+      key_identity_info identity;
+      identity.id = idx(certs, i).key;
+      project.complete_key_identity(identity);
+      signers.insert(identity);
 
       bool trusted =
         app.lua.hook_get_revision_cert_trust(signers, rid.inner(),
                                              name, tv);
 
       hexenc<id> keyid_enc;
-      encode_hexenc(keyid.inner(), keyid_enc);
+      encode_hexenc(identity.id.inner(), keyid_enc);
       st.push_hex_pair(syms::key, keyid_enc);
 
       string stat;
