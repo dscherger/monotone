@@ -16,6 +16,7 @@
 #include "tester-plaf.hh"
 
 #include <sys/stat.h>
+#include <sys/times.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -435,6 +436,59 @@ static void child(test_invoker const & invoke, string const & tdir,
   _exit(invoke(tname));
 }
 
+struct test_info
+{
+  test_to_run test;
+  time_t start_time;
+
+  test_info(test_to_run t) : test(t), start_time(::time(0)) {}
+};
+namespace {
+  typedef map<pid_t, test_info> child_map;
+  enum wait_type {WAIT_HANG, WAIT_NOHANG};
+
+  void wait_for_children(child_map & children, wait_type waitinfo,
+                         test_cleaner const & cleanup,
+                         std::string const & run_dir)
+  {
+    static int ticks_per_second = sysconf(_SC_CLK_TCK);
+    for (;;)
+      {
+        struct tms before, after;
+        int status;
+        // could use wait4(), but I don't think that's available everywhere
+        ::times(&before);
+        pid_t pid = waitpid(-1, &status, waitinfo == WAIT_NOHANG ? WNOHANG : 0);
+        ::times(&after);
+        if (pid == 0)
+          break;
+        if (pid == -1)
+          {
+            if (errno == ECHILD)
+              break;
+            if (errno == EINTR)
+              continue;
+            E(false, origin::system,
+              F("waitpid failed: %s") % os_strerror(errno));
+          }
+
+        map<pid_t, test_info>::iterator tfin = children.find(pid);
+        I(tfin != children.end());
+
+        int wall_seconds = ::time(0) - tfin->second.start_time;
+        intmax_t user_cpu_ticks = after.tms_cutime - before.tms_cutime;
+        intmax_t sys_cpu_ticks = after.tms_cstime - before.tms_cstime;
+        intmax_t cpu_ticks = user_cpu_ticks + sys_cpu_ticks;
+        int cpu_seconds = cpu_ticks / ticks_per_second;
+
+        if (cleanup(tfin->second.test, status, wall_seconds, cpu_seconds))
+          do_remove_recursive(run_dir + "/" + tfin->second.test.name);
+        children.erase(tfin);
+        release_token();
+      }
+  }
+}
+
 void run_tests_in_children(test_enumerator const & next_test,
                            test_invoker const & invoke,
                            test_cleaner const & cleanup,
@@ -445,7 +499,7 @@ void run_tests_in_children(test_enumerator const & next_test,
 {
   test_to_run t;
   string testdir;
-  map<pid_t, test_to_run> children;
+  child_map children;
 
   if (jobsvr_read_dup != -1)
     {
@@ -468,29 +522,7 @@ void run_tests_in_children(test_enumerator const & next_test,
           if (jobsvr_read_dup == -1)
             jobsvr_read_dup = dup(jobsvr_read);
 
-          for (;;)
-            {
-              int status;
-              pid_t pid = waitpid(-1, &status, WNOHANG);
-              if (pid == 0)
-                break;
-              if (pid == -1)
-                {
-                  if (errno == ECHILD)
-                    break;
-                  if (errno == EINTR)
-                    continue;
-                  E(false, origin::system,
-                    F("waitpid failed: %s") % os_strerror(errno));
-                }
-
-              map<pid_t, test_to_run>::iterator tfin = children.find(pid);
-              I(tfin != children.end());
-              if (cleanup(tfin->second, status))
-                do_remove_recursive(run_dir + "/" + tfin->second.name);
-              children.erase(tfin);
-              release_token();
-            }
+          wait_for_children(children, WAIT_NOHANG, cleanup, run_dir);
         }
       while (acquire_token());
 
@@ -506,7 +538,7 @@ void run_tests_in_children(test_enumerator const & next_test,
         }
       catch (...)
         {
-          cleanup(t, 121);
+          cleanup(t, 121, 0, 0);
           release_token();
           continue;
         }
@@ -519,7 +551,7 @@ void run_tests_in_children(test_enumerator const & next_test,
         child(invoke, testdir, t.name);
       else if (pid == -1)
         {
-          if (cleanup(t, 122))
+          if (cleanup(t, 122, 0, 0))
             do_remove_recursive(testdir);
           release_token();
         }
@@ -528,29 +560,7 @@ void run_tests_in_children(test_enumerator const & next_test,
     }
 
   // Now wait for any unfinished children.
-  for (;;)
-    {
-      int status;
-      pid_t pid = waitpid(-1, &status, 0);
-      if (pid == 0)
-        break;
-      if (pid == -1)
-        {
-          if (errno == ECHILD)
-            break;
-          if (errno == EINTR)
-            continue;
-          E(false, origin::system,
-            F("waitpid failed: %s") % os_strerror(errno));
-        }
-
-      map<pid_t, test_to_run>::iterator tfin = children.find(pid);
-      I(tfin != children.end());
-      if (cleanup(tfin->second, status))
-        do_remove_recursive(run_dir + "/" + tfin->second.name);
-      children.erase(tfin);
-      release_token();
-    }
+  wait_for_children(children, WAIT_HANG, cleanup, run_dir);
 
   I(tokens_held == 0);
   I(children.size() == 0);

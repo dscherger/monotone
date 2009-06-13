@@ -977,9 +977,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   }
 
   -- callback closure passed to run_tests_in_children
-  local function report_one_test(tno, tname, status)
+  local function report_one_test(tno, tname, status, wall_seconds, cpu_seconds)
      local tdir = run_dir .. "/" .. tname
-     local test_header = string.format("%3d %-45s ", tno, tname)
+     local test_header = string.format("%3d %-45s", tno, tname)
      local what
      local can_delete
      -- the child should always exit successfully, just to avoid
@@ -1029,7 +1029,10 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      end
 
      counts.total = counts.total + 1
-     P(string.format("%s%s\n", test_header, what))
+     local times = string.format("%d:%02d, %d:%02d on CPU",
+                                 wall_seconds / 60, wall_seconds % 60,
+                                 cpu_seconds / 60, cpu_seconds % 60);
+     P(string.format("%s %s %s\n", test_header, what, times))
      return (can_delete and not debugging)
   end
 
