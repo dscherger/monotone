@@ -1029,9 +1029,18 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      end
 
      counts.total = counts.total + 1
-     local times = string.format("%d:%02d, %d:%02d on CPU",
-                                 wall_seconds / 60, wall_seconds % 60,
-                                 cpu_seconds / 60, cpu_seconds % 60);
+     local format_seconds = function (seconds)
+                               return string.format("%d:%02d",
+                                                    seconds / 60,
+                                                    seconds % 60)
+                            end
+     local times = ""
+     if wall_seconds > -1 then
+        times = format_seconds(wall_seconds)
+        if cpu_seconds > -1 then
+           times = times . ", " . format_seconds(cpu_seconds) . " on CPU"
+        end
+     end
      P(string.format("%s %s %s\n", test_header, what, times))
      return (can_delete and not debugging)
   end
