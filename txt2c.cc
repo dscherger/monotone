@@ -151,7 +151,11 @@ atomic_update_if_changed(char const *ofname, string const & text)
   }
 
   if (rename(tfname.c_str(), ofname))
-    throw ioerror(ofname, "rename");
+    {
+      remove(ofname);
+      if (rename(tfname.c_str(), ofname))
+        throw ioerror(ofname, "rename");
+    }
 }
 
 int
