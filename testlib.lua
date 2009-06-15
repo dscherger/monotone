@@ -1038,7 +1038,7 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      if wall_seconds > -1 then
         times = format_seconds(wall_seconds)
         if cpu_seconds > -1 then
-           times = times . ", " . format_seconds(cpu_seconds) . " on CPU"
+           times = times .. ", " .. format_seconds(cpu_seconds) .. " on CPU"
         end
      end
      P(string.format("%s %s %s\n", test_header, what, times))
