@@ -27,6 +27,7 @@
 #include "database.hh"
 #include "roster.hh"
 #include "vocab_cast.hh"
+#include "ui.hh"
 
 #include <fstream>
 
@@ -293,26 +294,44 @@ CMD(sync, "sync", "", CMD_REF(network),
 class dir_cleanup_helper
 {
 public:
-  dir_cleanup_helper(system_path const & new_dir, bool i_db) :
-                  commited(false), internal_db(i_db), dir(new_dir) {}
+  dir_cleanup_helper(system_path const & new_dir, bool i_db)
+    : committed(false), internal_db(i_db), dir(new_dir)
+  {}
   ~dir_cleanup_helper()
   {
-    if (!commited && directory_exists(dir))
+    if (!committed && directory_exists(dir))
       {
-#ifdef WIN32
+        // Don't need to worry about where the db is on Unix.
+#ifndef WIN32
+        internal_db = false;
+#endif
+
+        // This is probably happening in the middle of another exception.
+        // Do not let anything that delete_dir_recursive throws escape, or
+        // the runtime will call std::terminate...
         if (!internal_db)
-          delete_dir_recursive(dir);
-#else
-        delete_dir_recursive(dir);
-#endif /* WIN32 */
+          {
+            try
+              {
+                delete_dir_recursive(dir);
+              }
+            catch (std::exception const & ex)
+              {
+                ui.fatal_exception(ex);
+              }
+            catch (...)
+              {
+                ui.fatal_exception();
+              }
+          }
       }
   }
   void commit(void)
   {
-    commited = true;
+    committed = true;
   }
 private:
-  bool commited;
+  bool committed;
   bool internal_db;
   system_path dir;
 };

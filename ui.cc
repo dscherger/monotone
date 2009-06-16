@@ -555,51 +555,83 @@ user_interface::fatal_db(string const & fatal)
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is from the std::exception hierarchy.  In this case we
-// can access the exception object.
-void
+// can access the exception object, and we can try to figure out what it
+// really is by typeinfo operations.
+int
 user_interface::fatal_exception(std::exception const & ex)
 {
-  using std::strcmp;
-  using std::strncmp;
-  char const * ex_name = typeid(ex).name();
-  char const * ex_dem  = demangle_typename(ex_name);
-  char const * ex_what = ex.what();
+  char const * what = ex.what();
+  unrecoverable_failure const * inf;
 
-  if (ex_dem == 0)
-    ex_dem = ex_name;
+  if (dynamic_cast<option::option_error const *>(&ex)
+      || dynamic_cast<recoverable_failure const *>(&ex))
+    {
+      this->inform(what);
+      return 1;
+    }
+  else if ((inf = dynamic_cast<unrecoverable_failure const *>(&ex)))
+    {
+      if (inf->caused_by() == origin::database)
+        this->fatal_db(what);
+      else
+        this->fatal(what);
+      return 3;
+    }
+  else if (dynamic_cast<ios_base::failure const *>(&ex))
+    {
+      // an error has already been printed
+      return 1;
+    }
+  else if (dynamic_cast<std::bad_alloc const *>(&ex))
+    {
+      this->inform(_("error: memory exhausted"));
+      return 1;
+    }
+  else // we can at least produce the class name and the what()...
+    {
+      using std::strcmp;
+      using std::strncmp;
+      char const * name = typeid(ex).name();
+      char const * dem  = demangle_typename(name);
 
-  // some demanglers stick "class" at the beginning of their output,
-  // which looks dumb in this context
-  if (!strncmp(ex_dem, "class ", 6))
-    ex_dem += 6;
+      if (dem == 0)
+        dem = name;
 
-  // only print what() if it's interesting, i.e. nonempty and different
-  // from the name (mangled or otherwise) of the exception type.
-  if (ex_what == 0 || ex_what[0] == 0
-      || !strcmp(ex_what, ex_name)
-      || !strcmp(ex_what, ex_dem))
-    this->fatal(ex_dem);
-  else
-    this->fatal(i18n_format("%s: %s") % ex_dem % ex_what);
+      // some demanglers stick "class" at the beginning of their output,
+      // which looks dumb in this context
+      if (!strncmp(dem, "class ", 6))
+        dem += 6;
+
+      // only print what() if it's interesting, i.e. nonempty and different
+      // from the name (mangled or otherwise) of the exception type.
+      if (what == 0 || what[0] == 0
+          || !strcmp(what, name)
+          || !strcmp(what, dem))
+        this->fatal(dem);
+      else
+        this->fatal(i18n_format("%s: %s") % dem % what);
+      return 3;
+    }
 }
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is of unknown type.  If we have the <cxxabi.h> interfaces,
 // we can at least get the type_info object.
-void
+int
 user_interface::fatal_exception()
 {
-  std::type_info *ex_type = get_current_exception_type();
-  if (ex_type)
+  std::type_info *type = get_current_exception_type();
+  if (type)
     {
-      char const * ex_name = ex_type->name();
-      char const * ex_dem  = demangle_typename(ex_name);
-      if (ex_dem == 0)
-        ex_dem = ex_name;
-      this->fatal(ex_dem);
+      char const * name = type->name();
+      char const * dem  = demangle_typename(name);
+      if (dem == 0)
+        dem = name;
+      this->fatal(dem);
     }
   else
-    this->fatal("exception of unknown type");
+    this->fatal(_("C++ exception of unknown type"));
+  return 3;
 }
 
 string

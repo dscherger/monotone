@@ -294,43 +294,13 @@ cpp_main(int argc, char ** argv)
           return app.opts.help ? 0 : 2;
         }
     }
-  catch (option::option_error const & inf)
-    {
-      ui.inform(inf.what());
-      return 1;
-    }
-  catch (recoverable_failure & inf)
-    {
-      ui.inform(inf.what());
-      return 1;
-    }
-  catch (unrecoverable_failure & inf)
-    {
-      if (inf.caused_by() == origin::database)
-        ui.fatal_db(inf.what());
-      else
-        ui.fatal(inf.what());
-      return 3;
-    }
-  catch (ios_base::failure const & ex)
-    {
-      // an error has already been printed
-      return 1;
-    }
-  catch (std::bad_alloc)
-    {
-      ui.inform(_("error: memory exhausted"));
-      return 1;
-    }
   catch (std::exception const & ex)
     {
-      ui.fatal_exception (ex);
-      return 3;
+      return ui.fatal_exception(ex);
     }
   catch (...)
     {
-      ui.fatal_exception ();
-      return 3;
+      return ui.fatal_exception();
     }
 
   // control cannot reach this point
