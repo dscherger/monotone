@@ -1736,7 +1736,7 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
           basic_io::stanza stz;
           stz.push_str_pair(symbol("tag"), tag->name());
           stz.push_binary_pair(symbol("revision"), tag->ident.inner());
-          stz.push_str_pair(symbol("signer"), tag->key());
+          stz.push_binary_pair(symbol("signer"), tag->key.inner());
           stz.push_str_multi(symbol("branches"), branch_names);
           prt.print_stanza(stz);
         }
@@ -1792,13 +1792,21 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   database db(app);
   key_store keys(app);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
+
+  E(!keys.key_pair_exists(name), origin::user,
+    F("you already have a key named '%s'") % name);
+  if (db.database_specified())
+    {
+      E(!db.public_key_exists(name), origin::user,
+        F("there is another key named '%s'") % name);
+    }
 
   utf8 passphrase = idx(args, 1);
 
-  id hash;
-  keys.create_key_pair(db, ident, &passphrase, &hash);
+  key_id hash;
+  keys.create_key_pair(db, name, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;
@@ -1808,8 +1816,8 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   publocs.push_back("keystore");
   privlocs.push_back("keystore");
 
-  stz.push_str_pair(syms::name, ident());
-  stz.push_binary_pair(syms::hash, hash);
+  stz.push_str_pair(syms::name, name());
+  stz.push_binary_pair(syms::hash, hash.inner());
   stz.push_str_multi(syms::public_location, publocs);
   stz.push_str_multi(syms::private_location, privlocs);
   prt.print_stanza(stz);
@@ -2104,15 +2112,15 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
 
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   hexenc<id> hrid(idx(args, 0)(), origin::user);
   revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
   E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % hrid);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
-  project_t project(db);
   project.put_cert(keys, rid,
                    typecast_vocab<cert_name>(idx(args, 1)),
                    typecast_vocab<cert_value>(idx(args, 2)));

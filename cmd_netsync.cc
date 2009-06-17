@@ -51,9 +51,10 @@ static char const ws_internal_db_file_name[] = "mtn.db";
 
 static void
 find_key(options & opts,
-         lua_hooks & lua,
          database & db,
          key_store & keys,
+         lua_hooks & lua,
+         project_t & project,
          netsync_connection_info const & info,
          bool need_key = true)
 {
@@ -61,7 +62,7 @@ find_key(options & opts,
   if (!info.client.u.host.empty())
     host = utf8(info.client.u.host, origin::user);
 
-  cache_netsync_key(opts, lua, db, keys, host,
+  cache_netsync_key(opts, db, keys, lua, project, host,
                     info.client.include_pattern,
                     info.client.exclude_pattern,
                     need_key ? KEY_REQUIRED : KEY_OPTIONAL);
@@ -72,6 +73,7 @@ build_client_connection_info(options & opts,
                              lua_hooks & lua,
                              database & db,
                              key_store & keys,
+                             project_t & project,
                              netsync_connection_info & info,
                              bool address_given,
                              bool include_or_exclude_given,
@@ -191,7 +193,7 @@ build_client_connection_info(options & opts,
   opts.use_transport_auth = lua.hook_use_transport_auth(info.client.u);
   if (opts.use_transport_auth)
     {
-      find_key(opts, lua, db, keys, info, need_key);
+      find_key(opts, db, keys, lua, project, info, need_key);
     }
 }
 
@@ -200,6 +202,7 @@ extract_client_connection_info(options & opts,
                                lua_hooks & lua,
                                database & db,
                                key_store & keys,
+                               project_t & project,
                                args_vector const & args,
                                netsync_connection_info & info,
                                bool need_key = true)
@@ -219,7 +222,7 @@ extract_client_connection_info(options & opts,
       info.client.include_pattern = globish(args.begin() + 1, args.end());
       info.client.exclude_pattern = globish(opts.exclude_patterns);
     }
-  build_client_connection_info(opts, lua, db, keys,
+  build_client_connection_info(opts, lua, db, keys, project,
                                info, have_address, have_include_exclude,
                                need_key);
 }
@@ -237,7 +240,8 @@ CMD(push, "push", "", CMD_REF(network),
   project_t project(db);
 
   netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
+  extract_client_connection_info(app.opts, app.lua, db, keys,
+                                 project, args, info);
 
   run_netsync_protocol(app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
@@ -255,7 +259,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   project_t project(db);
 
   netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys,
+  extract_client_connection_info(app.opts, app.lua, db, keys, project,
                                  args, info, false);
 
   if (!keys.have_signing_key())
@@ -278,7 +282,8 @@ CMD(sync, "sync", "", CMD_REF(network),
   project_t project(db);
 
   netsync_connection_info info;
-  extract_client_connection_info(app.opts, app.lua, db, keys, args, info);
+  extract_client_connection_info(app.opts, app.lua, db, keys,
+                                 project, args, info);
 
   if (app.opts.set_default && workspace::found)
     {
@@ -404,7 +409,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   info.client.include_pattern = globish(branchname(), origin::user);
   info.client.exclude_pattern = globish(app.opts.exclude_patterns);
 
-  build_client_connection_info(app.opts, app.lua, db, keys,
+  build_client_connection_info(app.opts, app.lua, db, keys, project,
                                info, true, true, false);
 
   if (!keys.have_signing_key())
@@ -531,7 +536,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
       info.client.exclude_pattern = globish("", origin::internal);
       if (!app.opts.bind_uris.empty())
         info.client.unparsed = *app.opts.bind_uris.begin();
-      find_key(app.opts, app.lua, db, keys, info);
+      find_key(app.opts, db, keys, app.lua, project, info);
     }
   else if (!app.opts.bind_stdio)
     W(F("The --no-transport-auth option is usually only used "

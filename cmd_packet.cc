@@ -16,6 +16,7 @@
 #include "database.hh"
 #include "key_store.hh"
 #include "packet.hh"
+#include "project.hh"
 #include "vocab_cast.hh"
 
 using std::cin;
@@ -28,24 +29,26 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     "",
     options::opts::none)
 {
-  database db(app);
-  key_store keys(app);
-
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  key_identity_info identity;
+  project.get_key_identity(keys, idx(args, 0), identity);
   bool exists(false);
   rsa_pub_key key;
-  if (db.database_specified() && db.public_key_exists(ident))
+  if (db.database_specified() && db.public_key_exists(identity.id))
     {
-      db.get_key(ident, key);
+      db.get_key(identity.id, key);
       exists = true;
     }
-  if (keys.key_pair_exists(ident))
+  if (keys.key_pair_exists(identity.id))
     {
       keypair kp;
-      keys.get_key_pair(ident, kp);
+      keys.get_key_pair(identity.id, kp);
       key = kp.pub;
       exists = true;
     }
@@ -53,7 +56,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     F("public key '%s' does not exist") % idx(args, 0)());
 
   packet_writer pw(cout);
-  pw.consume_public_key(ident, key);
+  pw.consume_public_key(identity.given_name, key);
 }
 
 CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
@@ -61,20 +64,25 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     "",
     options::opts::none)
 {
+  database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
-  E(keys.key_pair_exists(ident), origin::user,
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
+  key_identity_info identity;
+  project.get_key_identity(idx(args, 0), identity);
+  E(keys.key_pair_exists(identity.id), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
 
   packet_writer pw(cout);
   keypair kp;
-  keys.get_key_pair(ident, kp);
-  pw.consume_key_pair(ident, kp);
+  key_name given_name;
+  keys.get_key_pair(identity.id, given_name, kp);
+  pw.consume_key_pair(given_name, kp);
 }
 
 namespace
@@ -124,7 +132,7 @@ namespace
       guard.commit();
     }
 
-    virtual void consume_public_key(rsa_keypair_id const & ident,
+    virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
     {
       transaction_guard guard(db);
@@ -132,13 +140,13 @@ namespace
       guard.commit();
     }
 
-    virtual void consume_key_pair(rsa_keypair_id const & ident,
+    virtual void consume_key_pair(key_name const & ident,
                                   keypair const & kp)
     {
       keys.put_key_pair(ident, kp);
     }
 
-    virtual void consume_old_private_key(rsa_keypair_id const & ident,
+    virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
       rsa_pub_key dummy;
