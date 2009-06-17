@@ -40,10 +40,18 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name ident;
-  internalize_key_name(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
 
-  keys.create_key_pair(db, ident);
+  E(!keys.key_pair_exists(name), origin::user,
+    F("you already have a key named '%s'") % name);
+  if (db.database_specified())
+    {
+      E(!db.public_key_exists(name), origin::user,
+        F("there is another key named '%s'") % name);
+    }
+
+  keys.create_key_pair(db, name);
 }
 
 CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),

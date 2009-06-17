@@ -254,6 +254,19 @@ key_store::key_pair_exists(key_id const & ident)
 }
 
 bool
+key_store::key_pair_exists(key_name const & name)
+{
+  s->maybe_read_key_dir();
+  for (key_map::const_iterator i = s->keys.begin();
+       i != s->keys.end(); ++i)
+    {
+      if (i->second.first == name)
+        return true;
+    }
+  return false;
+}
+
+bool
 key_store_state::maybe_get_key_pair(key_id const & ident,
                                     key_name & name,
                                     keypair & kp)

@@ -64,6 +64,7 @@ public:
   void get_key_ids(std::vector<key_id> & priv);
 
   bool key_pair_exists(key_id const & ident);
+  bool key_pair_exists(key_name const & name);
 
   void get_key_pair(key_id const & ident,
                     keypair & kp);

@@ -1792,13 +1792,21 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   database db(app);
   key_store keys(app);
 
-  key_name ident;
-  internalize_key_name(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
+
+  E(!keys.key_pair_exists(name), origin::user,
+    F("you already have a key named '%s'") % name);
+  if (db.database_specified())
+    {
+      E(!db.public_key_exists(name), origin::user,
+        F("there is another key named '%s'") % name);
+    }
 
   utf8 passphrase = idx(args, 1);
 
   key_id hash;
-  keys.create_key_pair(db, ident, &passphrase, &hash);
+  keys.create_key_pair(db, name, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;
@@ -1808,7 +1816,7 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   publocs.push_back("keystore");
   privlocs.push_back("keystore");
 
-  stz.push_str_pair(syms::name, ident());
+  stz.push_str_pair(syms::name, name());
   stz.push_binary_pair(syms::hash, hash.inner());
   stz.push_str_multi(syms::public_location, publocs);
   stz.push_str_multi(syms::private_location, privlocs);
