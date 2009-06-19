@@ -26,6 +26,7 @@ using std::ostream;
 using std::ostringstream;
 using std::ofstream;
 using std::rename;
+using std::remove;
 using std::strerror;
 using std::string;
 
