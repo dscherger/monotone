@@ -56,6 +56,7 @@ public:
                            project_t & project, key_id & k);
   bool hook_get_passphrase(key_identity_info const & info,
                            std::string & phrase);
+  bool hook_get_local_key_name(key_identity_info & info);
   bool hook_get_author(branch_name const & branchname,
                        key_identity_info const & info,
                        std::string & author);

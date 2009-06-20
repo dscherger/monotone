@@ -363,6 +363,11 @@ function edit_comment(basetext, user_log_message)
 end
 
 
+function get_local_key_name(key_identity)
+   return key_identity.given_name
+end
+
+
 function persist_phrase_ok()
    return true
 end

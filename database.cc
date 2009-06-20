@@ -3589,7 +3589,7 @@ namespace {
       {
         key_identity_info identity;
         identity.id = *i;
-        project->complete_key_identity(identity);
+        project->complete_key_identity(*lua, identity);
         signer_identities.insert(identity);
       }
 

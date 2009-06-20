@@ -889,7 +889,7 @@ session::session(options & opts,
        i != opts.keys_to_push.end(); ++i)
     {
       key_identity_info ident;
-      project.get_key_identity(keys, *i, ident);
+      project.get_key_identity(keys, lua, *i, ident);
       keys_to_push.push_back(ident.id);
     }
 }
@@ -931,7 +931,7 @@ session::~session()
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, identity);
+          project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_pubkey_received(identity, session_id);
         }
 
@@ -946,7 +946,7 @@ session::~session()
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, identity);
+              project.complete_key_identity(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -962,7 +962,7 @@ session::~session()
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, identity);
+          project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
                                               i->name, i->value, session_id);
         }
@@ -995,7 +995,7 @@ session::~session()
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, identity);
+          project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_pubkey_sent(identity, session_id);
         }
 
@@ -1010,7 +1010,7 @@ session::~session()
             {
               key_identity_info identity;
               identity.id = j->key;
-              project.complete_key_identity(keys, identity);
+              project.complete_key_identity(keys, lua, identity);
               certs.insert(make_pair(identity, make_pair(j->name, j->value)));
             }
 
@@ -1026,7 +1026,7 @@ session::~session()
         {
           key_identity_info identity;
           identity.id = i->key;
-          project.complete_key_identity(keys, identity);
+          project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
                                           i->name, i->value, session_id);
         }
@@ -1677,7 +1677,7 @@ session::process_hello_cmd(key_name const & their_keyname,
       }
 
       I(project.db.public_key_exists(their_identity.id));
-      project.complete_key_identity(keys, their_identity);
+      project.complete_key_identity(keys, lua, their_identity);
 
       // save their identity
       this->received_remote_key = true;
@@ -1877,7 +1877,7 @@ session::process_auth_cmd(protocol_role their_role,
   project.db.get_pubkey(client, their_id, their_key);
   key_identity_info client_identity;
   client_identity.id = client;
-  project.complete_key_identity(keys, client_identity);
+  project.complete_key_identity(keys, lua, client_identity);
 
   lua.hook_note_netsync_start(session_id, "server", their_role,
                               peer_id, client_identity,

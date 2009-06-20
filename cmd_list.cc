@@ -142,7 +142,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(keys, identity);
+      project.complete_key_identity(keys, app.lua, identity);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
@@ -266,6 +266,7 @@ typedef map<key_id, key_info> key_map;
 namespace {
   void get_key_list(database & db,
                     key_store & keys,
+                    lua_hooks & lua,
                     project_t & project,
                     key_map & items)
   {
@@ -281,7 +282,7 @@ namespace {
             {
               key_identity_info identity;
               identity.id = *i;
-              project.complete_key_identity(identity);
+              project.complete_key_identity(lua, identity);
               items[*i].get<0>() = identity.official_name();
               items[*i].get<1>() = identity.given_name();
               items[*i].get<2>().push_back("database");
@@ -296,7 +297,7 @@ namespace {
         {
           key_identity_info identity;
           identity.id = *i;
-          project.complete_key_identity(keys, identity);
+          project.complete_key_identity(keys, lua, identity);
           items[*i].get<0>() = identity.official_name();
           items[*i].get<1>() = identity.given_name();
           items[*i].get<2>().push_back("keystore");
@@ -319,7 +320,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   project_t project(db);
 
   key_map items;
-  get_key_list(db, keys, project, items);
+  get_key_list(db, keys, app.lua, project, items);
 
   if (items.empty())
     {
@@ -752,7 +753,7 @@ CMD_AUTOMATE(keys, "",
   project_t project(db);
 
   key_map items;
-  get_key_list(db, keys, project, items);
+  get_key_list(db, keys, app.lua, project, items);
 
   basic_io::printer prt;
   for (key_map::iterator i = items.begin(); i != items.end(); ++i)
@@ -855,7 +856,7 @@ CMD_AUTOMATE(certs, N_("REV"),
 
       key_identity_info identity;
       identity.id = idx(certs, i).key;
-      project.complete_key_identity(identity);
+      project.complete_key_identity(app.lua, identity);
       signers.insert(identity);
 
       bool trusted =

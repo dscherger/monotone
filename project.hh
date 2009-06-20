@@ -151,29 +151,32 @@ public:
 private:
   // lookup the key ID associated with a particular key name
   void lookup_key_by_name(key_store * const keys,
+                          lua_hooks & lua,
                           key_name const & name,
                           key_id & id);
-  // the reverse
-  void get_name_of_key(key_store * const keys,
-                       key_id const & id,
-                       key_name & name);
   // get the name given when creating the key
   void get_canonical_name_of_key(key_store * const keys,
                                  key_id const & id,
                                  key_name & name);
   void complete_key_identity(key_store * const keys,
+                             lua_hooks & lua,
                              key_identity_info & info);
   void get_key_identity(key_store * const keys,
+                        lua_hooks & lua,
                         arg_type const & input,
                         key_identity_info & output);
 public:
   void complete_key_identity(key_store & keys,
+                             lua_hooks & lua,
                              key_identity_info & info);
-  void complete_key_identity(key_identity_info & info);
+  void complete_key_identity(lua_hooks & lua,
+                             key_identity_info & info);
   void get_key_identity(key_store & keys,
+                        lua_hooks & lua,
                         arg_type const & input,
                         key_identity_info & output);
-  void get_key_identity(arg_type const & input,
+  void get_key_identity(lua_hooks & lua,
+                        arg_type const & input,
                         key_identity_info & output);
 };
 

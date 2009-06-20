@@ -393,7 +393,7 @@ project_t::put_standard_certs_from_options(options const & opts,
     {
       key_identity_info key;
       get_user_key(opts, lua, db, keys, *this, key.id);
-      complete_key_identity(key);
+      complete_key_identity(lua, key);
 
       if (!lua.hook_get_author(branch, key, author))
         {
@@ -458,69 +458,86 @@ project_t::put_revision_testresult(key_store & keys,
 
 void
 project_t::lookup_key_by_name(key_store * const keys,
+                              lua_hooks & lua,
                               key_name const & name,
                               key_id & id)
 {
-  try
-    {
-      id = key_id(name(), origin::no_fault);
-    }
-  catch (recoverable_failure &)
-    {
-      // FIXME: try a lua hook first
-      // or lookup in the policy branches (once those are implemented)
+  set<key_id> ks_match_by_local_name;
+  set<key_id> db_match_by_local_name;
+  set<key_id> ks_match_by_given_name;
 
-      set<key_id> found;
-
-      if (keys)
+  if (keys)
+    {
+      vector<key_id> storekeys;
+      keys->get_key_ids(storekeys);
+      for (vector<key_id>::const_iterator i = storekeys.begin();
+           i != storekeys.end(); ++i)
         {
-          vector<key_id> storekeys;
-          keys->get_key_ids(storekeys);
-          for (vector<key_id>::const_iterator i = storekeys.begin();
-               i != storekeys.end(); ++i)
+          key_name i_name;
+          keypair kp;
+          keys->get_key_pair(*i, i_name, kp);
+
+          if (i_name == name)
+            ks_match_by_given_name.insert(*i);
+
+          key_identity_info identity;
+          identity.id = *i;
+          identity.given_name = i_name;
+          if (lua.hook_get_local_key_name(identity))
             {
-              key_name i_name;
-              keypair kp;
-              keys->get_key_pair(*i, i_name, kp);
-              if (i_name == name)
-                {
-                  found.insert(*i);
-                }
+              if (identity.official_name == name)
+                ks_match_by_local_name.insert(*i);
             }
         }
-
+    }
+  if (db.database_specified())
+    {
       vector<key_id> dbkeys;
-      if (db.database_specified())
-        {
-          db.get_key_ids(dbkeys);
-        }
+      db.get_key_ids(dbkeys);
       for (vector<key_id>::const_iterator i = dbkeys.begin();
            i != dbkeys.end(); ++i)
         {
           key_name i_name;
           rsa_pub_key pub;
           db.get_pubkey(*i, i_name, pub);
-          if (i_name == name)
+
+          key_identity_info identity;
+          identity.id = *i;
+          identity.given_name = i_name;
+          if (lua.hook_get_local_key_name(identity))
             {
-              found.insert(*i);
+              if (identity.official_name == name)
+                db_match_by_local_name.insert(*i);
             }
         }
-      E(!found.empty(), origin::user,
-        F("there is no key named '%s'") % name);
-      E(found.size() == 1, origin::user,
-        F("there are %n keys named '%s'") % found.size() % name);
-      id = *found.begin();
     }
-}
 
-void
-project_t::get_name_of_key(key_store * const keys,
-                           key_id const & id,
-                           key_name & name)
-{
-  // FIXME: try a lua hook first
-  // or lookup in the policy branches (once those are implemented)
-  get_canonical_name_of_key(keys, id, name);
+  E(ks_match_by_local_name.size() < 2, origin::user,
+    F("you have %n keys named '%s'") %
+    ks_match_by_local_name.size() % name);
+  if (ks_match_by_local_name.size() == 1)
+    {
+      id = *ks_match_by_local_name.begin();
+      return;
+    }
+  E(db_match_by_local_name.size() < 2, origin::user,
+    F("there are %n keys named '%s'") %
+    db_match_by_local_name.size() % name);
+  if (db_match_by_local_name.size() == 1)
+    {
+      id = *ks_match_by_local_name.begin();
+      return;
+    }
+  E(ks_match_by_given_name.size() < 2, origin::user,
+    F("you have %n keys named '%s'") %
+    ks_match_by_local_name.size() % name);
+  if (ks_match_by_given_name.size() == 1)
+    {
+      id = *ks_match_by_given_name.begin();
+      return;
+    }
+  E(false, origin::user,
+    F("there is no key names '%s'") % name);
 }
 
 void
@@ -547,42 +564,46 @@ project_t::get_canonical_name_of_key(key_store * const keys,
 
 void
 project_t::complete_key_identity(key_store * const keys,
+                                 lua_hooks & lua,
                                  key_identity_info & info)
 {
   if (!info.id.inner()().empty())
     {
-      get_name_of_key(keys, info.id, info.official_name);
       get_canonical_name_of_key(keys, info.id, info.given_name);
+      lua.hook_get_local_key_name(info);
     }
   else if (!info.official_name().empty())
     {
-      lookup_key_by_name(keys, info.official_name, info.id);
+      lookup_key_by_name(keys, lua, info.official_name, info.id);
       get_canonical_name_of_key(keys, info.id, info.given_name);
     }
-  else if (!info.given_name().empty())
-    {
-      lookup_key_by_name(keys, info.given_name, info.id);
-      get_name_of_key(keys, info.id, info.official_name);
-    }
+  //else if (!info.given_name().empty())
+  //  {
+  //    lookup_key_by_name(keys, info.given_name, info.id);
+  //    get_name_of_key(keys, info.id, info.official_name);
+  //  }
   else
     I(false);
 }
 
 void
 project_t::complete_key_identity(key_store & keys,
+                                 lua_hooks & lua,
                                  key_identity_info & info)
 {
-  complete_key_identity(&keys, info);
+  complete_key_identity(&keys, lua, info);
 }
 
 void
-project_t::complete_key_identity(key_identity_info & info)
+project_t::complete_key_identity(lua_hooks & lua,
+                                 key_identity_info & info)
 {
-  complete_key_identity(0, info);
+  complete_key_identity(0, lua, info);
 }
 
 void
 project_t::get_key_identity(key_store * const keys,
+                            lua_hooks & lua,
                             arg_type const & input,
                             key_identity_info & output)
 {
@@ -608,22 +629,24 @@ project_t::get_key_identity(key_store * const keys,
     {
       output.official_name = typecast_vocab<key_name>(input);
     }
-  complete_key_identity(keys, output);
+  complete_key_identity(keys, lua, output);
 }
 
 void
 project_t::get_key_identity(key_store & keys,
+                            lua_hooks & lua,
                             arg_type const & input,
                             key_identity_info & output)
 {
-  get_key_identity(&keys, input, output);
+  get_key_identity(&keys, lua, input, output);
 }
 
 void
-project_t::get_key_identity(arg_type const & input,
+project_t::get_key_identity(lua_hooks & lua,
+                            arg_type const & input,
                             key_identity_info & output)
 {
-  get_key_identity(0, input, output);
+  get_key_identity(0, lua, input, output);
 }
 
 // These should maybe be converted to member functions.

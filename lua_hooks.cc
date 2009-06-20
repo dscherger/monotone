@@ -257,6 +257,24 @@ lua_hooks::hook_get_passphrase(key_identity_info const & identity,
 }
 
 bool
+lua_hooks::hook_get_local_key_name(key_identity_info & info)
+{
+  string local_name;
+  Lua ll(st);
+  ll.func("get_local_key_name");
+  push_key_identity_info(ll, info);
+  ll.call(1, 1)
+    .extract_str(local_name);
+  if (ll.ok())
+    {
+      info.official_name = key_name(local_name, origin::user);
+      return true;
+    }
+  else
+    return false;
+}
+
+bool
 lua_hooks::hook_persist_phrase_ok()
 {
   bool persist_ok = false;
@@ -309,7 +327,7 @@ lua_hooks::hook_get_branch_key(branch_name const & branchname,
     .ok();
 
   key_identity_info identity;
-  project.get_key_identity(keys, arg_type(key, origin::user), identity);
+  project.get_key_identity(keys, *this, arg_type(key, origin::user), identity);
   k = identity.id;
   return ok;
 }
@@ -671,7 +689,7 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
     name = "";
 
   key_identity_info identity;
-  project.get_key_identity(keys, arg_type(name, origin::user), identity);
+  project.get_key_identity(keys, *this, arg_type(name, origin::user), identity);
   k = identity.id;
 
   return exec_ok;

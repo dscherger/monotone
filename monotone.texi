@@ -9940,6 +9940,13 @@ cipher.  This hook has no default definition. If
 this hook is not defined or returns false, monotone will prompt you for
 a passphrase each time it needs to use a private key.
 
+@item get_local_key_name (@var{key_identity})
+
+Return the local alias for the given key. The @var{id} and @var{given_name}
+fields of @var{key_identity} will be populated, and the @var{name} field
+will not be. The return value indicates what the @var{name} field should
+contain. The default implementation make this the same as @var{given_name}.
+
 @item get_author (@var{branchname}, @var{keyidentity})
 
 Returns a string which is used as a value for automatically generated
