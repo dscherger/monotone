@@ -119,6 +119,12 @@ namespace
   query_param
   text(string const & txt)
   {
+    MM(txt);
+    for (string::const_iterator i = txt.begin();
+         i != txt.end(); ++i)
+      {
+        I(*i >= 10 && *i < 127);
+      }
     query_param q = {
       query_param::text,
       txt,
@@ -3105,7 +3111,7 @@ database_impl::cert_exists(cert const & t,
     % blob(t.ident.inner()())
     % text(t.name())
     % blob(t.value())
-    % text(t.key.inner()())
+    % blob(t.key.inner()())
     % blob(t.sig());
 
   fetch(res, 1, any_rows, q);
@@ -3129,7 +3135,7 @@ database_impl::put_cert(cert const & t,
           % blob(t.ident.inner()())
           % text(t.name())
           % blob(t.value())
-          % text(t.key.inner()())
+          % blob(t.key.inner()())
           % blob(t.sig()));
 }
 
