@@ -567,6 +567,9 @@ project_t::complete_key_identity(key_store * const keys,
                                  lua_hooks & lua,
                                  key_identity_info & info)
 {
+  MM(info.id);
+  MM(info.official_name);
+  MM(info.given_name);
   if (!info.id.inner()().empty())
     {
       get_canonical_name_of_key(keys, info.id, info.given_name);

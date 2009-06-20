@@ -372,7 +372,9 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         }
       seen_aliases.insert(alias);
 
-      string rendered_basic = id.inner()() + string(" ") + alias;
+      hexenc< ::id> hid;
+      encode_hexenc(id.inner(), hid);
+      string rendered_basic = hid() + string(" ") + alias;
       if (given_name != alias)
         {
           rendered_basic += string(" (") + given_name + string(")");
@@ -385,7 +387,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
               idx(public_locations, 0) == "keystore")
             {
               have_keystore_only_key = true;
-              rendered_basic += "   (*)";
+              rendered += "   (*)";
             }
           public_rendered.insert(make_pair(alias, rendered));
         }
