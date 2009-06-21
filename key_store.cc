@@ -97,6 +97,7 @@ struct key_store_state
 
   // internal methods
   void get_key_file(key_id const & ident, system_path & file);
+  void get_old_key_file(key_name const & name, system_path & file);
   void write_key(full_key_info const & info);
   void maybe_read_key_dir();
   shared_ptr<RSA_PrivateKey> decrypt_private_key(key_id const & id,
@@ -329,6 +330,21 @@ key_store_state::get_key_file(key_id const & ident,
 }
 
 void
+key_store_state::get_old_key_file(key_name const & name,
+                                  system_path & file)
+{
+  // filename is the keypair id, except that some characters can't be put in
+  // filenames (especially on windows).
+  string leaf = name();
+  for (unsigned int i = 0; i < leaf.size(); ++i)
+    if (leaf.at(i) == '+')
+      leaf.at(i) = '_';
+
+  file = key_dir / path_component(leaf, origin::internal);
+
+}
+
+void
 key_store_state::write_key(full_key_info const & info)
 {
   ostringstream oss;
@@ -343,6 +359,11 @@ key_store_state::write_key(full_key_info const & info)
   L(FL("writing key '%s' to file '%s' in dir '%s'")
     % info.first % file % key_dir);
   write_data_userprivate(file, dat, key_dir);
+
+  system_path old_file;
+  get_old_key_file(info.second.first, old_file);
+  if (file_exists(old_file))
+    delete_file(old_file);
 }
 
 bool
