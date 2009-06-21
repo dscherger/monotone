@@ -11,7 +11,7 @@ check(mtn("dropkey", "john@doe.com"), 0, false, false)
 
 check(mtn("privkey", "john@doe.com"), 1, false, true)
 
-check(qgrep('no_key_named', "stderr"))
+check(qgrep('no key named', "stderr"))
 
 check(mtn("pubkey", "john@doe.com"), 1, false, true)
 

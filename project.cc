@@ -537,7 +537,7 @@ project_t::lookup_key_by_name(key_store * const keys,
       return;
     }
   E(false, origin::user,
-    F("there is no key names '%s'") % name);
+    F("there is no key named '%s'") % name);
 }
 
 void
