@@ -389,11 +389,11 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
               have_keystore_only_key = true;
               rendered += "   (*)";
             }
-          public_rendered.insert(make_pair(alias, rendered));
+          public_rendered.insert(make_pair(alias + id.inner()(), rendered));
         }
       if (!private_locations.empty())
         {
-          private_rendered.insert(make_pair(alias, rendered_basic));
+          private_rendered.insert(make_pair(alias + id.inner()(), rendered_basic));
         }
     }
 
