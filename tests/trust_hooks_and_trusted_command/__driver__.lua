@@ -12,6 +12,10 @@ end
 good = string.rep("1", 40)
 bad = string.rep("0", 40)
 
+check(mtn("automate", "genkey", "foo@bar.com", "foo@bar.com"), 0, false, false)
+check(mtn("automate", "genkey", "alice@trusted.com", "alice@trusted.com"), 0, false, false)
+check(mtn("automate", "genkey", "mallory@evil.com", "mallory@evil.com"), 0, false, false)
+
 -- Idea here is to check a bunch of combinations, to make sure that
 -- trust hooks get all information correctly
 check(trusted(good, "foo", "bar", "foo@bar.com"))
