@@ -525,7 +525,7 @@ project_t::lookup_key_by_name(key_store * const keys,
     db_match_by_local_name.size() % name);
   if (db_match_by_local_name.size() == 1)
     {
-      id = *ks_match_by_local_name.begin();
+      id = *db_match_by_local_name.begin();
       return;
     }
   E(ks_match_by_given_name.size() < 2, origin::user,
@@ -612,17 +612,8 @@ project_t::get_key_identity(key_store * const keys,
 {
   try
     {
-      string in = input();
-      id ident;
-      try
-        {
-          string in2 = decode_hexenc(in, origin::no_fault);
-          ident = id(in2, origin::no_fault);
-        }
-      catch (recoverable_failure &)
-        {
-          ident = id(in, origin::no_fault);
-        }
+      string in2 = decode_hexenc(input(), origin::no_fault);
+      id ident(in2, origin::no_fault);
       // set this separately so we can ensure that the key_id() calls
       // above throw recoverable_failure instead of unrecoverable_failure
       ident.made_from = input.made_from;
