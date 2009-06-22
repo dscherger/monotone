@@ -2281,12 +2281,16 @@ session::process_data_cmd(netcmd_item_type type,
             // It is safe to call 'error' here, because if we get here,
             // then the current netcmd packet cannot possibly have
             // written anything to the database.
+            hexenc<data> my_epoch;
+            hexenc<data> their_epoch;
+            encode_hexenc(i->second.inner(), my_epoch);
+            encode_hexenc(epoch.inner(), their_epoch);
             error(mixing_versions,
                   (F("Mismatched epoch on branch %s."
                      " Server has '%s', client has '%s'.")
                    % branch
-                   % (voice == server_voice ? i->second : epoch)
-                   % (voice == server_voice ? epoch : i->second)).str());
+                   % (voice == server_voice ? my_epoch : their_epoch)()
+                   % (voice == server_voice ? their_epoch : my_epoch)()).str());
           }
       }
       maybe_note_epochs_finished();
