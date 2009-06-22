@@ -18,5 +18,11 @@ cmd = quote_for_shell(raw_mtn("--keydir=keys", "genkey", "foobar"))
 check({ "sh", "-c", "umask 0000; exec" .. cmd },
       0, false, false, string.rep("foobar\n", 2))
 
-check({ "ls", "-l", "keys/foobar" }, 0, true, nil)
-check(qgrep("^-rw------- .*keys/foobar", "stdout"))
+check(mtn("ls", "keys"), 0, true)
+check(grep(" foobar$", "stdout"), 0, true)
+
+line = readfile("stdout")
+keyid = string.sub(line, 0, 40)
+
+check({ "ls", "-l", "keys/" .. keyid }, 0, true, nil)
+check(qgrep("^-rw------- .*keys/" .. keyid, "stdout"))

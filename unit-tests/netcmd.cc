@@ -97,7 +97,7 @@ UNIT_TEST(functions)
         L(FL("checking i/o round trip on hello_cmd"));
         netcmd out_cmd, in_cmd;
         string buf;
-        rsa_keypair_id out_server_keyname("server@there"), in_server_keyname;
+        key_name out_server_keyname("server@there"), in_server_keyname;
         rsa_pub_key out_server_key("9387938749238792874"), in_server_key;
         id out_nonce(raw_sha1("nonce it up"), origin::internal), in_nonce;
         out_cmd.write_hello_cmd(out_server_keyname, out_server_key, out_nonce);
@@ -153,9 +153,10 @@ UNIT_TEST(functions)
         netcmd out_cmd, in_cmd;
         protocol_role out_role = source_and_sink_role, in_role;
         string buf;
-        id out_client(raw_sha1("happy client day"), origin::internal);
+        key_id out_client(raw_sha1("happy client day"), origin::internal);
         id out_nonce1(raw_sha1("nonce me amadeus"), origin::internal);
-        id in_client, in_nonce1;
+        key_id in_client;
+        id in_nonce1;
         // total cheat, since we don't actually verify that rsa_oaep_sha_data
         // is sensible anywhere here...
         rsa_oaep_sha_data out_key("nonce start my heart"), in_key;

@@ -8,7 +8,7 @@ function get_author(branch) return "alice" end
 
 function get_revision_cert_trust(signers, id, name, val)
    for k,v in pairs(signers) do 
-        if (v ~= "bob") then return true end
+        if (v.given_name ~= "bob") then return true end
    end
    return false
 end

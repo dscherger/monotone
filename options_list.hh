@@ -395,11 +395,11 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 #endif
 
 
-OPTVAR(key, rsa_keypair_id, signing_key, )
+OPTVAR(key, arg_type, signing_key, )
 OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
 #ifdef option_bodies
 {
-  internalize_rsa_keypair_id(utf8(arg, origin::user), signing_key);
+  signing_key = arg_type(arg, origin::user);
 }
 #endif
 
@@ -414,14 +414,12 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
-OPTVAR(key_to_push, std::vector<rsa_keypair_id>, keys_to_push, )
+OPTVAR(key_to_push, std::vector<arg_type>, keys_to_push, )
 OPTION(key_to_push, key_to_push, true, "key-to-push",
         gettext_noop("push the specified key even if it hasn't signed anything"))
 #ifdef option_bodies
 {
-  rsa_keypair_id keyid;
-  internalize_rsa_keypair_id(utf8(arg, origin::user), keyid);
-  keys_to_push.push_back(keyid);
+  keys_to_push.push_back(arg_type(arg, origin::user));
 }
 #endif
 

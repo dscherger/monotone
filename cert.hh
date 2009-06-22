@@ -25,14 +25,14 @@ struct cert : public origin_aware
   cert(revision_id const & ident,
        cert_name const & name,
        cert_value const & value,
-       rsa_keypair_id const & key)
+       key_id const & key)
     : ident(ident), name(name), value(value), key(key)
   {}
 
   cert(revision_id const & ident,
        cert_name const & name,
        cert_value const & value,
-       rsa_keypair_id const & key,
+       key_id const & key,
        rsa_sha1_signature const & sig)
     : ident(ident), name(name), value(value), key(key), sig(sig)
   {}
@@ -44,7 +44,7 @@ struct cert : public origin_aware
   revision_id ident;
   cert_name name;
   cert_value value;
-  rsa_keypair_id key;
+  key_id key;
   rsa_sha1_signature sig;
 
   bool operator<(cert const & other) const;

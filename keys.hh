@@ -13,6 +13,7 @@
 #include "vocab.hh"
 
 struct options;
+class project_t;
 class lua_hooks;
 class key_store;
 class database;
@@ -29,40 +30,44 @@ class globish;
 // form, so as not to bother the user for their passphrase later.
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys,
-                  rsa_keypair_id & key);
+                  project_t & project, key_id & key);
 
 // As above, but does not report which key has been selected; for use when
 // the important thing is to have selected one and cached the decrypted key.
 void cache_user_key(options const & opts, lua_hooks & lua,
-                    database & db, key_store & keys);
+                    database & db, key_store & keys,
+                    project_t & project);
 
 // Find the key to be used for netsync authentication.  If possible, ensure the
 // database and the key_store agree on that key, and cache it in decrypted
 // form, so as not to bother the user for their passphrase later.
 enum netsync_key_requiredness {KEY_OPTIONAL, KEY_REQUIRED};
-void cache_netsync_key(options const & opts, lua_hooks & lua,
-                       database & db, key_store & keys,
+void cache_netsync_key(options const & opts,
+                       database & db,
+                       key_store & keys,
+                       lua_hooks & lua,
+                       project_t & project,
                        utf8 const & host,
                        globish const & include,
                        globish const & exclude,
                        netsync_key_requiredness key_requiredness);
 
 void load_key_pair(key_store & keys,
-                   rsa_keypair_id const & id);
+                   key_id const & id);
 
 void load_key_pair(key_store & keys,
-                   rsa_keypair_id const & id,
+                   key_id const & id,
                    keypair & kp);
 
 // netsync stuff
 
-void key_hash_code(rsa_keypair_id const & ident,
+void key_hash_code(key_name const & ident,
                    rsa_pub_key const & pub,
-                   id & out);
+                   key_id & out);
 
-bool keys_match(rsa_keypair_id const & id1,
+bool keys_match(key_name const & id1,
                 rsa_pub_key const & key1,
-                rsa_keypair_id const & id2,
+                key_name const & id2,
                 rsa_pub_key const & key2);
 
 #endif // __KEYS_HH__

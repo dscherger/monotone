@@ -40,10 +40,18 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
 
-  keys.create_key_pair(db, ident);
+  E(!keys.key_pair_exists(name), origin::user,
+    F("you already have a key named '%s'") % name);
+  if (db.database_specified())
+    {
+      E(!db.public_key_exists(name), origin::user,
+        F("there is another key named '%s'") % name);
+    }
+
+  keys.create_key_pair(db, name);
 }
 
 CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
@@ -59,24 +67,27 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  key_identity_info identity;
+  project_t project(db);
+  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+
   if (db.database_specified())
     {
       transaction_guard guard(db);
-      if (db.public_key_exists(ident))
+      if (db.public_key_exists(identity.id))
         {
-          P(F("dropping public key '%s' from database") % ident);
-          db.delete_public_key(ident);
+          P(F("dropping public key '%s' from database") % identity.id);
+          db.delete_public_key(identity.id);
           key_deleted = true;
         }
       guard.commit();
       checked_db = true;
     }
 
-  if (keys.key_pair_exists(ident))
+  if (keys.key_pair_exists(identity.id))
     {
-      P(F("dropping key pair '%s' from keystore") % ident);
-      keys.delete_key(ident);
+      P(F("dropping key pair '%s' from keystore") % identity.id);
+      keys.delete_key(identity.id);
       key_deleted = true;
     }
 
@@ -100,10 +111,10 @@ CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident;
-  internalize_rsa_keypair_id(idx(args, 0), ident);
+  key_name name;
+  internalize_key_name(idx(args, 0), name);
 
-  keys.change_key_passphrase(ident);
+  keys.change_key_passphrase(name);
   P(F("passphrase changed"));
 }
 
@@ -115,12 +126,13 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() > 1)
     throw usage(execid);
 
-  rsa_keypair_id id;
-  get_user_key(app.opts, app.lua, db, keys, id);
+  key_id id;
+  get_user_key(app.opts, app.lua, db, keys, project, id);
 
   if (args.empty())
     keys.export_key_for_agent(id, cout);
@@ -142,12 +154,13 @@ CMD(ssh_agent_add, "ssh_agent_add", "", CMD_REF(key_and_cert), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   if (args.size() > 1)
     throw usage(execid);
 
-  rsa_keypair_id id;
-  get_user_key(app.opts, app.lua, db, keys, id);
+  key_id id;
+  get_user_key(app.opts, app.lua, db, keys, project, id);
   keys.add_key_to_agent(id);
 }
 
@@ -172,7 +185,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   cert_value val;
   if (args.size() == 3)
@@ -194,6 +207,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     N_("The current settings are used to run the test."),
     options::opts::none)
 {
+  key_store keys(app); // so the user can name keys that aren't in the db
   database db(app);
   project_t project(db);
 
@@ -213,12 +227,12 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
-  set<rsa_keypair_id> signers;
+  set<key_identity_info> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
     {
-      rsa_keypair_id keyid;
-      internalize_rsa_keypair_id(idx(args, i), keyid);
-      signers.insert(keyid);
+      key_identity_info identity;
+      project.get_key_identity(keys, app.lua, idx(args, i), identity);
+      signers.insert(identity);
     }
 
 
@@ -229,7 +243,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
 
   ostringstream all_signers;
   copy(signers.begin(), signers.end(),
-       ostream_iterator<rsa_keypair_id>(all_signers, " "));
+       ostream_iterator<key_identity_info>(all_signers, " "));
 
   cout << (F("if a cert on: %s\n"
             "with key: %s\n"
@@ -259,7 +273,7 @@ CMD(tag, "tag", "", CMD_REF(review), N_("REVISION TAGNAME"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_tag(keys, r, idx(args, 1)());
 }
 
@@ -280,7 +294,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
@@ -303,7 +317,7 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for approval"));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_in_branch(keys, r, app.opts.branch);
 }
 
@@ -325,7 +339,7 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument to suspend"));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
 }
 
@@ -360,7 +374,7 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_comment(keys, r, comment);
 }
 

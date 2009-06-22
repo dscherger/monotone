@@ -22,6 +22,7 @@
 struct sqlite3;
 class key_store;
 class database;
+class project_t;
 class system_path;
 
 std::string describe_sql_schema(sqlite3 * db);
@@ -68,10 +69,12 @@ const unsigned int mtn_creator_code = ((('_'*256 + 'M')*256 + 'T')*256 + 'N');
 
 void
 build_changesets_from_manifest_ancestry(database & db, key_store & keys,
+                                        project_t & project,
                                         std::set<std::string> const & attrs_to_drop);
 
 void
 build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys,
+                                                 project_t & project,
                                                  std::set<std::string> const & attrs_to_drop);
 
 void
