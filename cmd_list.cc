@@ -54,6 +54,48 @@ CMD_GROUP(list, "list", "ls", CMD_REF(informative),
              "or known, unknown, intentionally ignored, missing, or "
              "changed-state files."));
 
+namespace {
+  // for 'ls certs' and 'ls tags'
+  string format_key(key_identity_info const & info)
+  {
+    string out;
+
+    hexenc<id> hexid;
+    encode_hexenc(info.id.inner(), hexid);
+
+    out += info.official_name();
+    out += " (";
+    out += hexid().substr(0, 10) + "...";
+    if (info.given_name != info.official_name)
+      {
+        out += "; ";
+        out += info.given_name();
+      }
+    out += ")";
+
+    return out;
+  }
+  string format_key_for_ls_keys(key_identity_info const & info)
+  {
+    string out;
+
+    hexenc<id> hexid;
+    encode_hexenc(info.id.inner(), hexid);
+
+    out += hexid();
+    out += " ";
+    out += info.official_name();
+    if (info.given_name != info.official_name)
+      {
+        out += " (";
+        out += info.given_name();
+        out += ")";
+      }
+
+    return out;
+  }
+}
+
 CMD(certs, "certs", "", CMD_REF(list), "ID",
     N_("Lists certificates attached to an identifier"),
     "",
@@ -93,7 +135,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   // particular.
   sort(certs.begin(), certs.end());
 
-  string str     = _("Key   : %s (%s)\n"
+  string str     = _("Key   : %s\n"
                      "Sig   : %s\n"
                      "Name  : %s\n"
                      "Value : %s\n");
@@ -146,7 +188,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
-               % identity.id % identity.official_name
+               % format_key(identity)
                % stat
                % idx(certs, i).name
                % value_first_line);
@@ -258,10 +300,13 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     }
 }
 
-// hash => (given name, alias, public_location, private_location)
-typedef boost::tuple<string, string,
-                     vector<string>, vector<string> > key_info;
-typedef map<key_id, key_info> key_map;
+struct key_location_info
+{
+  key_identity_info identity;
+  vector<string> public_locations;
+  vector<string> private_locations;
+};
+typedef map<key_id, key_location_info> key_map;
 
 namespace {
   void get_key_list(database & db,
@@ -283,9 +328,8 @@ namespace {
               key_identity_info identity;
               identity.id = *i;
               project.complete_key_identity(lua, identity);
-              items[*i].get<0>() = identity.official_name();
-              items[*i].get<1>() = identity.given_name();
-              items[*i].get<2>().push_back("database");
+              items[*i].identity = identity;
+              items[*i].public_locations.push_back("database");
             }
         }
     }
@@ -298,10 +342,9 @@ namespace {
           key_identity_info identity;
           identity.id = *i;
           project.complete_key_identity(keys, lua, identity);
-          items[*i].get<0>() = identity.official_name();
-          items[*i].get<1>() = identity.given_name();
-          items[*i].get<2>().push_back("keystore");
-          items[*i].get<3>().push_back("keystore");
+          items[*i].identity = identity;
+          items[*i].public_locations.push_back("keystore");
+          items[*i].private_locations.push_back("keystore");
         }
     }
   }
@@ -333,7 +376,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
       globish pattern(idx(args, 0)(), origin::user);
       for (key_map::iterator i = items.begin(); i != items.end(); ++i)
         {
-          string const & alias = i->second.get<1>();
+          string const & alias = i->second.identity.official_name();
           if (pattern.matches(alias))
             {
               matched_items.insert(*i);
@@ -360,11 +403,10 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
   for (key_map::iterator i = matched_items.begin();
        i != matched_items.end(); ++i)
     {
-      key_id const & id = i->first;
-      string const & given_name = i->second.get<0>();
-      string const & alias = i->second.get<1>();
-      vector<string> const & public_locations = i->second.get<2>();
-      vector<string> const & private_locations = i->second.get<3>();
+      key_identity_info const & identity = i->second.identity;
+      string const & alias = i->second.identity.official_name();
+      vector<string> const & public_locations = i->second.public_locations;
+      vector<string> const & private_locations = i->second.private_locations;
 
       if (seen_aliases.find(alias) != seen_aliases.end())
         {
@@ -372,13 +414,8 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         }
       seen_aliases.insert(alias);
 
-      hexenc< ::id> hid;
-      encode_hexenc(id.inner(), hid);
-      string rendered_basic = hid() + string(" ") + alias;
-      if (given_name != alias)
-        {
-          rendered_basic += string(" (") + given_name + string(")");
-        }
+      string rendered_basic = format_key_for_ls_keys(identity);
+      string sort_key = alias + identity.id.inner()();
 
       if (!public_locations.empty())
         {
@@ -389,11 +426,11 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
               have_keystore_only_key = true;
               rendered += "   (*)";
             }
-          public_rendered.insert(make_pair(alias + id.inner()(), rendered));
+          public_rendered.insert(make_pair(sort_key, rendered));
         }
       if (!private_locations.empty())
         {
-          private_rendered.insert(make_pair(alias + id.inner()(), rendered_basic));
+          private_rendered.insert(make_pair(sort_key, rendered_basic));
         }
     }
 
@@ -506,9 +543,12 @@ CMD(tags, "tags", "", CMD_REF(list), "",
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
+      key_identity_info identity;
+      identity.id = i->key;
+      project.complete_key_identity(app.lua, identity);
       cout << i->name << ' '
            << i->ident << ' '
-           << i->key  << '\n';
+           << format_key(identity)  << '\n';
     }
 }
 
@@ -697,13 +737,17 @@ namespace
 {
   namespace syms
   {
+    // certs
     symbol const key("key");
     symbol const signature("signature");
     symbol const name("name");
     symbol const value("value");
     symbol const trust("trust");
 
+    // keys
     symbol const hash("hash");
+    symbol const given_name("given_name");
+    symbol const local_name("local_name");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
   }
@@ -762,11 +806,11 @@ CMD_AUTOMATE(keys, "",
     {
       basic_io::stanza stz;
       stz.push_binary_pair(syms::hash, i->first.inner());
-      stz.push_str_pair(syms::name, i->second.get<0>());
-      stz.push_str_pair(syms::name, i->second.get<1>());/* FIXME */
-      stz.push_str_multi(syms::public_location, i->second.get<2>());
-      if (!i->second.get<3>().empty())
-        stz.push_str_multi(syms::private_location, i->second.get<3>());
+      stz.push_str_pair(syms::given_name, i->second.identity.given_name());
+      stz.push_str_pair(syms::local_name, i->second.identity.official_name());
+      stz.push_str_multi(syms::public_location, i->second.public_locations);
+      if (!i->second.private_locations.empty())
+        stz.push_str_multi(syms::private_location, i->second.private_locations);
       prt.print_stanza(stz);
     }
   output.write(prt.buf.data(), prt.buf.size());

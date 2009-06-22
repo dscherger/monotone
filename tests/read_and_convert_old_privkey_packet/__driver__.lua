@@ -10,7 +10,7 @@ check(qgrep("read 1 packet", "stderr"))
 
 
 check(mtn("ls", "keys"), 0, true)
-check(grep(" foo@bar.com$", "stdout"), 0, true)
+check(grep(" foo@bar.com ", "stdout"), 0, true)
 line = readfile("stdout")
 keyid = string.sub(line, 0, 40)
 
