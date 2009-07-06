@@ -48,15 +48,11 @@ package Globals;
 
 require 5.008005;
 
+use locale;
 use strict;
 use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
-
-# Constants for the name and version of this application.
-
-use constant APPLICATION_NAME    => "mtn-browse";
-use constant APPLICATION_VERSION => 0.62;
 
 # Constants used to represent the different groups of widgets.
 
@@ -119,8 +115,6 @@ our $suppress_mtn_warnings;
 use base qw(Exporter);
 
 our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
-				     APPLICATION_NAME
-				     APPLICATION_VERSION
 				     BRANCH
 				     BRANCH_CHANGED
 				     DATABASE_CHANGED

@@ -44,11 +44,13 @@ require 5.008005;
 
 BEGIN
 {
-    use constant FILE_COMPARE_CMD => "@INST:FILE_COMPARE_CMD@";
-    use constant HTML_VIEWER_CMD  => "@INST:HTML_VIEWER_CMD@";
-    use constant LIB_DIR          => "@INST:LIB_DIR@";
-    use constant MIME_GLOB_FILE   => "@INST:GLOBS_FILE@";
-    use constant PREFIX_DIR       => "@INST:PREFIX_DIR@";
+    use constant APPLICATION_NAME    => "mtn-browse";
+    use constant APPLICATION_VERSION => 0.62;
+    use constant FILE_COMPARE_CMD    => "@INST:FILE_COMPARE_CMD@";
+    use constant HTML_VIEWER_CMD     => "@INST:HTML_VIEWER_CMD@";
+    use constant LIB_DIR             => "@INST:LIB_DIR@";
+    use constant MIME_GLOB_FILE      => "@INST:GLOBS_FILE@";
+    use constant PREFIX_DIR          => "@INST:PREFIX_DIR@";
 }
 use locale;
 use strict;
@@ -73,11 +75,11 @@ use Gtk2::GladeXML;
 use Gtk2::Helper;
 use Gtk2::Pango;
 use Gtk2::SourceView;
-use Locale::TextDomain ("mtn-browse",
-			File::Spec->catfile(PREFIX_DIR, "share", "locale"));
 use IO::Dir;
 use IO::File;
 use IPC::Open3;
+use Locale::TextDomain (APPLICATION_NAME,
+			File::Spec->catfile(PREFIX_DIR, "share", "locale"));
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
 use Symbol qw(gensym);
 use Text::Tabs;
@@ -94,6 +96,7 @@ use CachingAutomateStdio qw(:capabilities :severities);
 # Modules specific to this application.
 
 use Globals qw(:constants :variables);
+use LocaleEnableUtf8;
 use AdvancedFind;
 use Annotate;
 use ChangeLog;

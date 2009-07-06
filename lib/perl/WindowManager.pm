@@ -48,7 +48,7 @@ package WindowManager;
 
 require 5.008005;
 
-use integer;
+use locale;
 use strict;
 use warnings;
 

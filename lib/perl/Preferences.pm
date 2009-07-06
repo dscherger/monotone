@@ -61,6 +61,7 @@
 
 require 5.008005;
 
+use locale;
 use strict;
 use warnings;
 
