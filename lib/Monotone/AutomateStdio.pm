@@ -62,7 +62,7 @@ use Encode;
 use File::Basename;
 use File::Spec;
 use IO::File;
-use IO::Poll qw(POLLIN POLLPRI);
+use IO::Poll qw(POLLHUP POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h);
 use Symbol qw(gensym);
@@ -100,6 +100,10 @@ use constant MTN_W_SELECTOR                    => 21;
 use constant MTN_SEVERITY_ALL     => 0x03;
 use constant MTN_SEVERITY_ERROR   => 0x01;
 use constant MTN_SEVERITY_WARNING => 0x02;
+
+# Constant used to represent the exception thrown when interrupting waitpid().
+
+use constant WAITPID_INTERRUPT => __PACKAGE__ . "::waitpid-interrupt";
 
 # Constants used to represent different value formats.
 
@@ -2837,39 +2841,59 @@ sub closedown($)
 
     my $this = $_[0];
 
-    my($err_msg,
-       $i,
-       $ret_val);
-
     if ($this->{mtn_pid} != 0)
     {
+
+	# Close off all file descriptors to the mtn subprocess. This should be
+	# enough to cause it to exit gracefully.
+
 	close($this->{mtn_in});
 	close($this->{mtn_out});
 	close($this->{mtn_err});
-	for ($i = 0; $i < 3; ++ $i)
-	{
-	    $ret_val = 0;
 
-	    # Make sure that the eval block below does not affect any existing
-	    # exception status.
+	# Reap the mtn subprocess and deal with any errors.
+
+	for (my $i = 0; $i < 4; ++ $i)
+	{
+
+	    my $wait_status = 0;
+
+	    # Wait for the mtn subprocess to exit (preserving the current state
+	    # of $@ so that any exception that has already occurred is not
+	    # lost, also ignore any errors resulting from waitpid()
+	    # interruption).
 
 	    {
 		local $@;
 		eval
 		{
-		    local $SIG{ALRM} = sub { die("internal sigalarm"); };
+		    local $SIG{ALRM} = sub { die(WAITPID_INTERRUPT); };
 		    alarm(5);
-		    $ret_val = waitpid($this->{mtn_pid}, 0);
+		    $wait_status = waitpid($this->{mtn_pid}, 0);
 		    alarm(0);
 		};
+		$wait_status = 0
+		    if ($@ eq WAITPID_INTERRUPT && $wait_status < 0
+			&& $! == EINTR);
 	    }
-	    if ($ret_val == $this->{mtn_pid})
+
+	    # The mtn subprocess has terminated.
+
+	    if ($wait_status == $this->{mtn_pid})
 	    {
 		last;
 	    }
-	    elsif ($ret_val == 0)
+
+	    # The mtn subprocess is still there so try and kill it unless it's
+	    # time to just give up.
+
+	    elsif ($i < 3 && $wait_status == 0)
 	    {
 		if ($i == 0)
+		{
+		    kill("INT", $this->{mtn_pid});
+		}
+		elsif ($i == 1)
 		{
 		    kill("TERM", $this->{mtn_pid});
 		}
@@ -2878,18 +2902,30 @@ sub closedown($)
 		    kill("KILL", $this->{mtn_pid});
 		}
 	    }
-	    else
+
+	    # Stop if we don't have any relevant children to wait for anymore.
+
+	    elsif ($wait_status < 0 && $! == ECHILD)
 	    {
-		if ($! != ECHILD)
-		{
-		    $err_msg = $!;
-		    kill("KILL", $this->{mtn_pid});
-		    &$croaker("waitpid failed: $err_msg");
-		}
+		last;
 	    }
+
+	    # Either there is some other error with waitpid() or a child
+	    # process has been reaped that we aren't interested in (in which
+	    # case just ignore it).
+
+	    elsif ($wait_status < 0)
+	    {
+		my $err_msg = $!;
+		kill("KILL", $this->{mtn_pid});
+		&$croaker("waitpid failed: " . $err_msg);
+	    }
+
 	}
+
 	$this->{poll} = undef;
 	$this->{mtn_pid} = 0;
+
     }
 
 }
@@ -4009,7 +4045,7 @@ sub mtn_command_with_options($$$$$$;@)
 	    $$buffer_ref = decode_utf8($$buffer_ref) if ($in_as_utf8);
 	};
 	$exception = $@;
-	if ($exception ne "")
+	if ($exception)
 	{
 	    if ($exception =~ m/$database_locked_re/)
 	    {
@@ -4212,7 +4248,7 @@ sub mtn_read_output($$)
 						$size,
 						$offset)))
 	    {
-		croak("sysread failed: $!");
+		croak("sysread failed: " . $!);
 	    }
 	    $size -= $bytes_read;
 	    $offset += $bytes_read;
@@ -4257,13 +4293,14 @@ sub startup($)
 
     my $this = $_[0];
 
-    my(@args,
-       $cwd,
-       $err,
-       $version);
-
     if ($this->{mtn_pid} == 0)
     {
+
+	my(@args,
+	   $cwd,
+	   $err,
+	   $my_pid,
+	   $version);
 
 	# Switch to the default locale. We only want to parse the output from
 	# Monotone in one language!
@@ -4292,6 +4329,7 @@ sub startup($)
 	# feature if it wishes to do so).
 
 	$cwd = getcwd();
+	$my_pid = $$;
 	eval
 	{
 	    if (defined($this->{db_name}))
@@ -4310,12 +4348,37 @@ sub startup($)
 	};
 	$err = $@;
 	chdir($cwd);
-	&$croaker($err) if ($err ne "");
+
+	# Check for errors (remember that open3() errors can happen in both the
+	# parent and child processes).
+
+	if ($err)
+	{
+	    if ($$ != $my_pid)
+	    {
+
+		# In the child process so all we can do is complain and exit.
+
+		print(STDERR "open3 failed: " . $err);
+		exit(1);
+
+	    }
+	    else
+	    {
+
+		# In the parent process so deal with the error in the usual
+		# way.
+
+		&$croaker($err);
+
+	    }
+	}
+
+	# Ok so reset the command count and setup polling.
 
 	$this->{cmd_cnt} = 0;
 	$this->{poll} = IO::Poll->new();
-	$this->{poll}->mask($this->{mtn_out} => POLLIN,
-			    $this->{mtn_out} => POLLPRI);
+	$this->{poll}->mask($this->{mtn_out}, POLLIN | POLLPRI | POLLHUP);
 
 	# Get the interface version.
 
@@ -4325,7 +4388,7 @@ sub startup($)
 
 	# If necessary get the version of the actual application (sometimes
 	# needed to differentiate when certain features were introduced that do
-	# not affect the automate stdio interface version.
+	# not affect the automate stdio interface version).
 
 	if ($this->{mtn_aif_major} == 9)
 	{
