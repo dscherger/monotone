@@ -53,6 +53,10 @@ use warnings;
 use constant CHUNK_SIZE => 10240;
 use constant THRESHOLD  => 20;
 
+# Constant used to represent the exception thrown when interrupting waitpid().
+
+use constant WAITPID_INTERRUPT => "waitpid-interrupt";
+
 # The saved directory locations where assorted Gtk2::FileChooserDialog dialog
 # windows were last used.
 
@@ -167,9 +171,8 @@ sub run_command($@)
        $fd_err,
        $fd_in,
        $fd_out,
+       $my_pid,
        $pid,
-       $ret_val,
-       $status,
        $stop,
        $total_bytes,
        $watcher);
@@ -177,28 +180,49 @@ sub run_command($@)
     # Run the command.
 
     $fd_err = gensym();
+    $my_pid = $$;
     eval
     {
 	$pid = open3($fd_in, $fd_out, $fd_err, @args);
     };
-    if ($@ ne "")
+
+    # Check for errors (remember that open3() errors can happen in both the
+    # parent and child processes).
+
+    if ($@)
     {
-	my $dialog = Gtk2::MessageDialog->new
-	    (undef,
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("The {name} subprocess could not start,\n"
-		     . "the system gave:\n<b><i>{error_message}</b></i>",
-		 name => Glib::Markup::escape_text($args[0]),
-		 error_message => Glib::Markup::escape_text($@)));
-	WindowManager->instance()->allow_input(sub { $dialog->run(); });
-	$dialog->destroy();
-	return;
+	if ($$ != $my_pid)
+	{
+
+	    # In the child process so all we can do is complain and exit.
+
+	    warn(__x("open3 failed: {error_message}", error_message => $@));
+	    exit(1);
+
+	}
+	else
+	{
+
+	    # In the parent process so deal with the error in the usual way.
+
+	    my $dialog = Gtk2::MessageDialog->new
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __x("The {name} subprocess could not start,\n"
+		         . "the system gave:\n<b><i>{error_message}</b></i>",
+		     name => Glib::Markup::escape_text($args[0]),
+		     error_message => Glib::Markup::escape_text($@)));
+	    WindowManager->instance()->allow_input(sub { $dialog->run(); });
+	    $dialog->destroy();
+	    return;
+
+	}
     }
 
-    # Setup a watch handler to get read our data and handle GTK2 events whilst
-    # the command is running.
+    # Setup a watch handler to read our data and handle GTK2 events whilst the
+    # command is running.
 
     $stop = $total_bytes = 0;
     $$buffer = "";
@@ -236,10 +260,107 @@ sub run_command($@)
 
     # Reap the process and deal with any errors.
 
-    if (($ret_val = waitpid($pid, 0)) == -1)
+    for (my $i = 0; $i < 4; ++ $i)
     {
-	if ($! != ECHILD)
+
+	my $wait_status = 0;
+
+	# Wait for the subprocess to exit (preserving the current state of $@
+	# so that any exception that has already occurred is not lost, also
+	# ignore any errors resulting from waitpid() interruption).
+
 	{
+	    local $@;
+	    eval
+	    {
+		local $SIG{ALRM} = sub { die(WAITPID_INTERRUPT); };
+		alarm(5);
+		$wait_status = waitpid($pid, 0);
+		alarm(0);
+	    };
+	    $wait_status = 0
+		if ($@ eq WAITPID_INTERRUPT && $wait_status < 0
+		    && $! == EINTR);
+	}
+
+	# The subprocess has terminated.
+
+	if ($wait_status == $pid)
+	{
+	    my $exit_status = $?;
+	    if (WIFEXITED($exit_status) && WEXITSTATUS($exit_status) != 0)
+	    {
+		my $dialog = Gtk2::MessageDialog->new_with_markup
+		    (undef,
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __x("The {name} subprocess failed with an exit status\n"
+			     . "of {exit_code} and printed the following on "
+			     . "stderr:\n"
+			     . "<b><i>{error_message}</i></b>",
+			 name => Glib::Markup::escape_text($args[0]),
+			 exit_code => WEXITSTATUS($exit_status),
+			 error_message => Glib::Markup::escape_text
+                                          (join("", @err))));
+		WindowManager->instance()->allow_input
+		    (sub { $dialog->run(); });
+		$dialog->destroy();
+		return;
+	    }
+	    elsif (WIFSIGNALED($exit_status))
+	    {
+		my $dialog = Gtk2::MessageDialog->new
+		    (undef,
+		     ["modal"],
+		     "warning",
+		     "close",
+		     __x("The {name} subprocess was terminated by signal "
+			     . "{number}.",
+			 name   => Glib::Markup::escape_text($args[0]),
+			 number => WTERMSIG($exit_status)));
+		WindowManager->instance()->allow_input
+		    (sub { $dialog->run(); });
+		$dialog->destroy();
+		return;
+	    }
+	    last;
+	}
+
+	# The subprocess is still there so try and kill it unless it's time to
+	# just give up.
+
+	elsif ($i < 3 && $wait_status == 0)
+	{
+	    if ($i == 0)
+	    {
+		kill("INT", $pid);
+	    }
+	    elsif ($i == 1)
+	    {
+		kill("TERM", $pid);
+	    }
+	    else
+	    {
+		kill("KILL", $pid);
+	    }
+	}
+
+	# Stop if we don't have any relevant children to wait for anymore.
+
+	elsif ($wait_status < 0 && $! == ECHILD)
+	{
+	    last;
+	}
+
+	# Either there is some other error with waitpid() or a child process
+	# has been reaped that we aren't interested in (in which case just
+	# ignore it).
+
+	elsif ($wait_status < 0)
+	{
+	    my $err_msg = $!;
+	    kill("KILL", $pid);
 	    my $dialog = Gtk2::MessageDialog->new_with_markup
 		(undef,
 		 ["modal"],
@@ -251,38 +372,7 @@ sub run_command($@)
 	    $dialog->destroy();
 	    return;
 	}
-    }
-    $status = $?;
-    if (WIFEXITED($status) && WEXITSTATUS($status) != 0)
-    {
-	my $dialog = Gtk2::MessageDialog->new_with_markup
-	    (undef,
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("The {name} subprocess failed with an exit status\n"
-		     . "of {exit_code} and printed the following on stderr:\n"
-		     . "<b><i>{error_message}</i></b>",
-		 name => Glib::Markup::escape_text($args[0]),
-		 exit_code => WEXITSTATUS($status),
-		 error_message => Glib::Markup::escape_text(join("", @err))));
-	WindowManager->instance()->allow_input(sub { $dialog->run(); });
-	$dialog->destroy();
-	return;
-    }
-    elsif (WIFSIGNALED($status))
-    {
-	my $dialog = Gtk2::MessageDialog->new
-	    (undef,
-	     ["modal"],
-	     "warning",
-	     "close",
-	     __x("The {name} subprocess was terminated by signal {number}.",
-		 name   => Glib::Markup::escape_text($args[0]),
-		 number => WTERMSIG($status)));
-	WindowManager->instance()->allow_input(sub { $dialog->run(); });
-	$dialog->destroy();
-	return;
+
     }
 
     return 1;

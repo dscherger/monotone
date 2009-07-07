@@ -3037,15 +3037,14 @@ sub mtn_error_handler($$)
 sub sigchld_handler()
 {
 
-    my($pid,
-       $status);
+    my $pid;
 
     my $wm = WindowManager->instance();
 
     while (($pid = waitpid(-1, WNOHANG)) > 0)
     {
-	$status = $?;
-	if (WIFEXITED($status) || WIFSIGNALED($status))
+	my $exit_status = $?;
+	if (WIFEXITED($exit_status) || WIFSIGNALED($exit_status))
 	{
 
 	    # If it is an mtn process then close down the relevant object so
@@ -3060,15 +3059,16 @@ sub sigchld_handler()
 		     {
 			 my $message;
 			 $instance->{mtn}->closedown();
-			 if (WIFSIGNALED($status))
+			 if (WIFSIGNALED($exit_status))
 			 {
 			     $message = __x("terminated by signal {number}",
-					    number => WTERMSIG($status));
+					    number => WTERMSIG($exit_status));
 			 }
 			 else
 			 {
-			     $message = __x("exited with status {number}",
-					    number => WEXITSTATUS($status));
+			     $message =
+				 __x("exited with status {number}",
+				     number => WEXITSTATUS($exit_status));
 			 }
 			 my $dialog = Gtk2::MessageDialog->new
 			     (undef,
