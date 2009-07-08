@@ -602,7 +602,8 @@ sub display_revision_comparison($$$;$)
 
 	# Find the longest line for future padding, having expanded tabs
 	# (except for file details lines as tab is used as a separator (these
-	# are expanded later)).
+	# are expanded later)). Please note that the use of unpack un-utf8s the
+	# returned strings.
 
 	$max_len = $separator = 0;
 	foreach my $line (@lines)
@@ -620,6 +621,8 @@ sub display_revision_comparison($$$;$)
 	    else
 	    {
 		($char, $rest) = unpack("a1a*", $line);
+		$char = decode_utf8($char);
+		$rest = decode_utf8($rest);
 		$rest =~ s/\s+$//;
 		$rest = expand($rest);
 		$max_len = $len if (($len = length($rest)) > $max_len);

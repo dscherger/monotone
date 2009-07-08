@@ -184,6 +184,7 @@ sub run_command($@)
     eval
     {
 	$pid = open3($fd_in, $fd_out, $fd_err, @args);
+	binmode($fd_out, ":utf8");
     };
 
     # Check for errors (remember that open3() errors can happen in both the

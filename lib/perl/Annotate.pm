@@ -121,7 +121,8 @@ sub display_annotation($$$)
 		 $instance->{file_name});
 
     # Find the longest line for future padding and also split each line into
-    # their prefix and text parts.
+    # their prefix and text parts. Please note that the use of unpack un-utf8s
+    # the returned strings.
 
     $max_len = 0;
     if (scalar(@lines) > 0)
@@ -136,6 +137,8 @@ sub display_annotation($$$)
     for ($i = 0; $i < scalar(@lines); ++ $i)
     {
 	($prefix[$i], $lines[$i]) = (unpack($template, $lines[$i]))[0, 2];
+	$prefix[$i] = decode_utf8($prefix[$i]);
+	$lines[$i] = decode_utf8($lines[$i]);
 	$lines[$i] =~ s/\s+$//;
 	$lines[$i] = expand($lines[$i]);
 	$max_len = $len if (($len = length($lines[$i])) > $max_len);
