@@ -119,12 +119,13 @@ use constant MLS_DATE_COLUMN           => 2;
 use constant MLS_AUTHOR_COLUMN         => 3;
 use constant MLS_MANIFEST_ENTRY_COLUMN => 4;
 
-# Constants for various file paths.
+# Constants for various program names and file paths.
 
-use constant UI_DIR => File::Spec->catfile(PREFIX_DIR,
-					   "share",
-					   APPLICATION_NAME,
-					   "glade");
+use constant MONOTONE_VIZ => "monotone-viz";
+use constant UI_DIR       => File::Spec->catfile(PREFIX_DIR,
+						 "share",
+						 APPLICATION_NAME,
+						 "glade");
 
 # The type of window that is going to be managed by this module.
 
@@ -970,10 +971,14 @@ sub monotone_viz_button_clicked_cb($$)
        $db_name,
        @revision_ids);
 
+    # Make sure we have monotone-viz installed first.
+
+    return unless (program_valid(MONOTONE_VIZ, $browser->{window}));
+
     # Build up the monotone-viz command, we need the database name and then
     # optionally the branch and revision ids.
 
-    $cmd = "monotone-viz ";
+    $cmd = MONOTONE_VIZ . " ";
     if (! defined($db_name = $browser->{mtn}->get_db_name()))
     {
 	$browser->{mtn}->get_option(\$db_name, "database");
@@ -1215,6 +1220,7 @@ sub view_button_clicked_cb($$)
 	    ($browser->{window},
 	     ["modal"],
 	     "warning",
+	     "close",
 	     __x("Cannot generate temporary file name:\n{error_message}.",
 		 error_message => $!));
 	$dialog->run();
@@ -1257,10 +1263,12 @@ sub view_button_clicked_cb($$)
     if (defined($mime_details) && $mime_details->{helper_application} ne "")
     {
 
-	# Use the specified helper application, replacing `{file}' with the
-	# real file name.
+	# Use the specified helper application (having validated it first),
+	# replacing `{file}' with the real file name.
 
 	$helper = $mime_details->{helper_application};
+	return unless (program_valid((split(/[[:blank:]]/, $helper))[0],
+				     $browser->{window}));
 	if ($helper =~ m/\{file\}/)
 	{
 	    $helper =~ s/\{file\}/$file_name/g;
@@ -3050,7 +3058,7 @@ sub sigchld_handler()
 	    # If it is an mtn process then close down the relevant object so
 	    # that it will automatically restart when needed.
 
-	    WindowManager->instance()->cond_find
+	    $wm->cond_find
 		(undef,
 		 sub {
 		     my $instance = $_[0];

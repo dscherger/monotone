@@ -1954,6 +1954,10 @@ sub external_diffs($$$$$$)
 	$dialog->destroy();
 	return;
     }
+    return unless (program_valid((split(/[[:blank:]]/,
+					$user_preferences->{diffs_application})
+				  )[0],
+				 $parent));
 
     # Generate temporary disk file names.
 

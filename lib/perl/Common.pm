@@ -87,6 +87,7 @@ sub glade_signal_autoconnect($$);
 sub handle_comboxentry_history($$;$);
 sub hex_dump($);
 sub open_database($$$);
+sub program_valid($;$);
 sub register_help_callbacks($@);
 sub run_command($@);
 sub save_as_file($$$);
@@ -1215,6 +1216,71 @@ sub file_glob_to_regexp($)
     $re_text .= "\$";
 
     return $re_text;
+
+}
+#
+##############################################################################
+#
+#   Routine      - program_valid
+#
+#   Description  - Validate the specified program by seeing if it can be
+#                  found. If a parent window is provided and the specified
+#                  program cannot be found then display a dialog window
+#                  telling the user about the problem.
+#
+#   Data         - $program     : The name of the program or the full path to
+#                                 the program that is to be validated.
+#                  $parent      : The parent window for any dialogs that are
+#                                 to be displayed. This is optional.
+#                  Return Value : True if the program is valid, otherwise
+#                                 false if it is not.
+#
+##############################################################################
+
+
+
+sub program_valid($;$)
+{
+
+    my($program, $parent) = @_;
+
+    my $found;
+
+    if (File::Spec->file_name_is_absolute($program))
+    {
+	$found = 1 if (-x $program || -f ($program . ".exe"));
+    }
+    else
+    {
+	foreach my $dir (File::Spec->path())
+	{
+	    if (-x File::Spec->catfile($dir, $program)
+		|| -f File::Spec->catfile($dir, $program . ".exe"))
+	    {
+		$found = 1;
+		last;
+	    }
+	}
+    }
+
+    # Tell the user that the program can't be found if that is the case and the
+    # caller wants us to inform the user.
+
+    if (! $found && defined($parent))
+    {
+	my $dialog = Gtk2::MessageDialog->new
+	    ($parent,
+	     ["modal"],
+	     "info",
+	     "close",
+	     __x("The program `{program_name}' cannot be found.\n"
+		     . "Is it installed?",
+		 program_name => $program));
+	WindowManager->instance()->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+    }
+
+    return $found;
 
 }
 #
