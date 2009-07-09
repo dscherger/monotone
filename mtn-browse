@@ -225,7 +225,7 @@ sub view_button_clicked_cb($$);
 	$mime_match_table =
 	    build_mime_match_table($user_preferences->{mime_table});
     };
-    if ($@ ne "")
+    if ($@)
     {
 	chomp($@);
 	my $dialog = Gtk2::MessageDialog->new
@@ -250,7 +250,7 @@ sub view_button_clicked_cb($$);
 			   TMPDIR => 1,
 			   CLEANUP => 1);
     };
-    if ($@ ne "")
+    if ($@)
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    (undef,
@@ -310,7 +310,7 @@ sub view_button_clicked_cb($$);
 	    $mtn = CachingAutomateStdio->
 		new($user_preferences->{default_mtn_db});
 	};
-	if ($@ ne "")
+	if ($@)
 	{
 	    my $dialog = Gtk2::MessageDialog->new
 		(undef,
@@ -502,7 +502,7 @@ sub home_page_activate_cb($$)
     {
 	display_html("http://www.coosoft.plus.com/software.html");
     };
-    if ($@ ne "")
+    if ($@)
     {
 	my $dialog = Gtk2::MessageDialog->new_with_markup
 	    ($browser->{window},
@@ -2715,8 +2715,8 @@ sub display_file($$)
 	    {
 		$loader->close();
 	    };
-	    $exception = $@ if ($@ ne "");
-	    if ($exception eq "")
+	    $exception = $@ if ($@);
+	    if (! $exception)
 	    {
 		$browser->{file_view_svbuffer}->insert_pixbuf
 		    ($browser->{file_view_svbuffer}->get_start_iter(),
@@ -2912,7 +2912,7 @@ sub setup_mtn_object($$)
 	    {
 		save_preferences($user_preferences);
 	    };
-	    if ($@ ne "")
+	    if ($@)
 	    {
 		chomp($@);
 		my $dialog = Gtk2::MessageDialog->new

@@ -200,7 +200,7 @@ sub preferences($)
     {
 	$preferences = load_preferences();
     };
-    if ($@ ne "")
+    if ($@)
     {
 	chomp($@);
 	my $dialog = Gtk2::MessageDialog->new
@@ -259,7 +259,7 @@ sub preferences($)
 	{
 	    save_preferences($preferences);
 	};
-	if ($@ ne "")
+	if ($@)
 	{
 	    chomp($@);
 	    my $dialog = Gtk2::MessageDialog->new
@@ -319,7 +319,7 @@ sub load_preferences()
 	eval(join("", $prefs_file->getlines()));
 	die(__x("Invalid user preferences file: {error_message}\n",
 		error_message => $@))
-	    if ($@ ne "");
+	    if ($@);
 	$prefs_file->close();
 	die(__x("Preferences file, `{file_name}',\n", file_name => $file_name)
 	    . __("is corrupt, please remove it.\n"))
@@ -861,7 +861,7 @@ sub add_file_name_pattern_button_clicked_cb($$)
     {
 	qr/$re_text/;
     };
-    if ($@ ne "")
+    if ($@)
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($instance->{window},

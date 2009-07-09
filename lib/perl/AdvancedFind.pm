@@ -958,7 +958,7 @@ sub update_advanced_find_state($$)
 	else
 	{
 
-	    my($err,
+	    my($exception,
 	       $query);
 
 	    $query = $advanced_find->{search_term_comboboxentry}->child()->
@@ -989,13 +989,13 @@ sub update_advanced_find_state($$)
 		$advanced_find->{mtn}->select(\@revision_ids, $query);
 		$matches = scalar(@revision_ids);
 	    };
-	    $err = $@;
+	    $exception = $@;
 	    CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL,
 							 \&mtn_error_handler);
 
 	    # If the query was valid then store it in the history.
 
-	    if ($err eq "")
+	    if (! $exception)
 	    {
 		if (scalar(@revision_ids) == 0)
 		{

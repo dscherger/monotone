@@ -2051,7 +2051,7 @@ sub mtn_diff($$$$;$)
     my($buffer,
        @cmd,
        $cwd,
-       $err);
+       $exception);
 
     # Run mtn diff in the root directory so as to avoid any workspace
     # conflicts.
@@ -2071,9 +2071,9 @@ sub mtn_diff($$$$;$)
 	die("chdir failed: " . $!) unless (chdir(File::Spec->rootdir()));
 	return unless (run_command(\$buffer, @cmd));
     };
-    $err = $@;
+    $exception = $@;
     chdir($cwd);
-    if ($err ne "")
+    if ($exception)
     {
 	my $dialog = Gtk2::MessageDialog->new_with_markup
 	    (undef,
@@ -2083,7 +2083,7 @@ sub mtn_diff($$$$;$)
 	     __x("Problem running mtn diff, got:\n"
 		     . "<b><i>{error_message}</i></b>\n"
 		     . "This should not be happening!",
-		 error_message => Glib::Markup::escape_text($err)));
+		 error_message => Glib::Markup::escape_text($exception)));
 	WindowManager->instance()->allow_input(sub { $dialog->run(); });
 	$dialog->destroy();
 	return;

@@ -389,7 +389,7 @@ sub find_text_button_clicked_cb($$)
 		$expr = qr/$search_term/i;
 	    }
 	};
-	if ($@ ne "")
+	if ($@)
 	{
 	    my $dialog = Gtk2::MessageDialog->new
 		($instance->{window},

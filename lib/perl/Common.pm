@@ -481,7 +481,7 @@ sub open_database($$$)
 	if ($chooser_dialog->run() eq "ok")
 	{
 
-	    my($err,
+	    my($exception,
 	       $fh,
 	       $fname,
 	       $mtn_obj);
@@ -517,10 +517,10 @@ sub open_database($$$)
 		{
 		    $mtn_obj = CachingAutomateStdio->new($fname);
 		};
-		$err = $@;
+		$exception = $@;
 		CachingAutomateStdio->register_error_handler
 		    (MTN_SEVERITY_ALL, \&mtn_error_handler);
-		if ($err ne "")
+		if ($exception)
 		{
 		    my $dialog = Gtk2::MessageDialog->new
 			($parent,
@@ -815,7 +815,7 @@ sub treeview_column_searcher($$$$)
 	    $re = qr/\Q$key\E/;
 	}
     };
-    return TRUE if ($@ ne "");
+    return TRUE if ($@);
 
     # Actually do the match.
 
@@ -1341,7 +1341,7 @@ sub handle_comboxentry_history($$;$)
 	    {
 		save_preferences($user_preferences);
 	    };
-	    if ($@ ne "")
+	    if ($@)
 	    {
 		chomp($@);
 		my $dialog = Gtk2::MessageDialog->new

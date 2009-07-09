@@ -1072,7 +1072,7 @@ sub validate_query($$)
     {
 	qr/$re_text/;
     };
-    if ($@ ne "")
+    if ($@)
     {
 	my $dialog = Gtk2::MessageDialog->new
 	    ($instance->{window},
@@ -1095,7 +1095,7 @@ sub validate_query($$)
 	{
 	    qr/$re_text/;
 	};
-	if ($@ ne "")
+	if ($@)
 	{
 	    my $dialog = Gtk2::MessageDialog->new
 		($instance->{window},
