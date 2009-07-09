@@ -3899,7 +3899,6 @@ sub mtn_command_with_options($$$$$$;@)
     my($buffer,
        $buffer_ref,
        $db_locked_exception,
-       $exception,
        $handler,
        $handler_data,
        $in,
@@ -4038,16 +4037,15 @@ sub mtn_command_with_options($$$$$$;@)
 	# Attempt to read the output of the command, rethrowing any exception
 	# that does not relate to locked databases.
 
-	$db_locked_exception = $read_ok = $retry = 0;
+	$db_locked_exception = $read_ok = $retry = undef;
 	eval
 	{
 	    $read_ok = $this->mtn_read_output($buffer_ref);
 	    $$buffer_ref = decode_utf8($$buffer_ref) if ($in_as_utf8);
 	};
-	$exception = $@;
-	if ($exception)
+	if ($@)
 	{
-	    if ($exception =~ m/$database_locked_re/)
+	    if ($@ =~ m/$database_locked_re/)
 	    {
 
 		# We need to properly closedown the mtn subprocess at this
@@ -4065,7 +4063,7 @@ sub mtn_command_with_options($$$$$$;@)
 	    }
 	    else
 	    {
-		&$croaker($exception);
+		&$croaker($@);
 	    }
 	}
 
@@ -4097,6 +4095,7 @@ sub mtn_command_with_options($$$$$$;@)
 		&$carper($this->{error_msg});
 		return;
 	    }
+
 	}
 
     }
@@ -4168,7 +4167,6 @@ sub mtn_read_output($$)
 
     $$buffer = "";
     $chunk_start = 1;
-    $err_occurred = 0;
     $last = "m";
     $offset = 0;
     do
@@ -4235,7 +4233,7 @@ sub mtn_read_output($$)
 		      . join("", <$err>));
 	    }
 
-	    $chunk_start = 0;
+	    $chunk_start = undef;
 
 	}
 
@@ -4298,7 +4296,7 @@ sub startup($)
 
 	my(@args,
 	   $cwd,
-	   $err,
+	   $exception,
 	   $my_pid,
 	   $version);
 
@@ -4346,20 +4344,20 @@ sub startup($)
 				     $this->{mtn_err},
 				     @args);
 	};
-	$err = $@;
+	$exception = $@;
 	chdir($cwd);
 
 	# Check for errors (remember that open3() errors can happen in both the
 	# parent and child processes).
 
-	if ($err)
+	if ($exception)
 	{
 	    if ($$ != $my_pid)
 	    {
 
 		# In the child process so all we can do is complain and exit.
 
-		print(STDERR "open3 failed: " . $err);
+		print(STDERR "open3 failed: " . $exception);
 		exit(1);
 
 	    }
@@ -4369,7 +4367,7 @@ sub startup($)
 		# In the parent process so deal with the error in the usual
 		# way.
 
-		&$croaker($err);
+		&$croaker($exception);
 
 	    }
 	}
