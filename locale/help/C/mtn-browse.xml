@@ -651,10 +651,10 @@ GNOME or DocBook.
         <listitem>
           <para>The tagged revision that you attempted to select in the parent <guilabel>Monotone Browser</guilabel> window is not unique on the currently selected branch and something like the following dialog window popped up.</para>
           <figure>
-            <title>A `Non-Unique Tag' Dialog Window</title>
+            <title>A `Multiple Revisions' Dialog Window</title>
             <screenshot>
-              <screeninfo>A non-unique tag dialog window.</screeninfo>
-              <graphic fileref="figures/non-unique-tag-dialog.png" format="png"/>
+              <screeninfo>A multiple revisions dialog window.</screeninfo>
+              <graphic fileref="figures/multiple-revisions-dialog.png" format="png"/>
             </screenshot>
           </figure>
         </listitem>

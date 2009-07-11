@@ -4,7 +4,7 @@
 #
 #   Description  - The preferences module for the mtn-browse application. This
 #                  module contains all the routines for implementing the
-#                  preferences dialog.
+#                  preferences dialog window.
 #
 #                  Please note that when adding a new preference setting one
 #                  needs to:
@@ -1119,7 +1119,7 @@ sub get_preferences_window($$)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_NAME_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => MTLS_NAME_COLUMN);
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
@@ -1129,7 +1129,7 @@ sub get_preferences_window($$)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_PATTERNS_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => MTLS_PATTERNS_COLUMN);
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
@@ -1139,7 +1139,7 @@ sub get_preferences_window($$)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(MTLS_HELPER_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => MTLS_HELPER_COLUMN);
 	$instance->{mime_types_treeview}->append_column($tv_column);
 
@@ -1159,7 +1159,7 @@ sub get_preferences_window($$)
 	$tv_column = Gtk2::TreeViewColumn->new();
 	$tv_column->set_sizing("grow-only");
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => 0);
 	$instance->{file_name_patterns_treeview}->append_column($tv_column);
 

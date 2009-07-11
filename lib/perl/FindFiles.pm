@@ -972,7 +972,7 @@ sub get_find_files_window()
 	$tv_column = Gtk2::TreeViewColumn->new();
 	$tv_column->set_sort_column_id(0);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => 0);
 	$instance->{results_treeview}->append_column($tv_column);
 	$instance->{results_treeview}->set_search_column(0);
@@ -1022,6 +1022,8 @@ sub get_find_files_window()
 	$instance->{appbar}->clear_stack();
 
     }
+
+    local $instance->{in_cb} = 1;
 
     $instance->{stop} = 0;
     $instance->{results_liststore}->clear();

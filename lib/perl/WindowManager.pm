@@ -536,7 +536,7 @@ sub make_busy($$$;$)
 
 	    # Reinstate the event handling context for the head of the state
 	    # stack (although a handler is registered, really the only thing
-	    # that has changed is its client data, it's still have same
+	    # that has changed is its client data, it's still the same
 	    # handler).
 
 	    Gtk2::Gdk::Event->handler_set

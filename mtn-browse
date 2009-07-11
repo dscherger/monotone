@@ -106,6 +106,7 @@ use Completion;
 use FindFiles;
 use FindText;
 use History;
+use MultipleRevisions;
 use Preferences;
 use WindowManager;
 
@@ -151,6 +152,7 @@ sub display_file($$);
 sub file_change_history_button_clicked_cb($$);
 sub find_files_button_clicked_cb($$);
 sub get_browser_window(;$$$$$);
+sub handle_advanced_find($);
 sub help_on_window_activate_cb($$);
 sub help_toolbutton_clicked_cb($$);
 sub home_page_activate_cb($$);
@@ -831,52 +833,7 @@ sub advanced_find_button_clicked_cb($$)
     return if ($browser->{in_cb});
     local $browser->{in_cb} = 1;
 
-    my(@branches,
-       $preset_branch,
-       $revision_id,
-       $state);
-
-    if (advanced_find($browser, \$revision_id, \@branches))
-    {
-
-	# Preset branch name. If we already have a selected branch then try and
-	# match branch names, if that fails then just pick the first name.
-
-	$preset_branch = 1;
-	$state = BRANCH_CHANGED;
-	if ($browser->{branch_combo_details}->{complete})
-	{
-	    foreach my $name (@branches)
-	    {
-		if ($name eq $browser->{branch_combo_details}->{value})
-		{
-		    $preset_branch = 0;
-		    last;
-		}
-	    }
-	}
-	if ($preset_branch)
-	{
-	    $browser->{branch_combo_details}->{preset} = 1;
-	    $browser->{branch_combo_details}->{value} =
-		(scalar(@branches) > 0) ? $branches[0] : "";
-	    $state = ALL_CHANGED;
-	}
-
-	# Preset revision id.
-
-	$browser->{revision_combo_details}->{preset} = 1;
-	$browser->{revision_combo_details}->{value} = $revision_id;
-
-	# A revision id is what is returned so switch off the listing of tag
-	# names.
-
-	$browser->{tagged_checkbutton}->set_active(FALSE);
-
-	$browser->{appbar}->clear_stack();
-	&{$browser->{update_handler}}($browser, $state);
-
-    }
+    handle_advanced_find($browser);
 
 }
 #
@@ -1730,7 +1687,7 @@ sub get_browser_window(;$$$$$)
 	$tv_column->set_fixed_width(180);
 	$tv_column->set_sort_column_id(MLS_NAME_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => MLS_NAME_COLUMN);
 	$browser->{manifest_browser_treeview}->append_column($tv_column);
 
@@ -1744,7 +1701,7 @@ sub get_browser_window(;$$$$$)
 	    $tv_column->set_sizing("grow-only");
 	    $tv_column->set_sort_column_id(MLS_DATE_COLUMN);
 	    $renderer = Gtk2::CellRendererText->new();
-	    $tv_column->pack_start($renderer, FALSE);
+	    $tv_column->pack_start($renderer, TRUE);
 	    $tv_column->set_attributes($renderer, "text" => MLS_DATE_COLUMN);
 	    $browser->{manifest_browser_treeview}->append_column($tv_column);
 
@@ -1754,7 +1711,7 @@ sub get_browser_window(;$$$$$)
 	    $tv_column->set_sizing("grow-only");
 	    $tv_column->set_sort_column_id(MLS_AUTHOR_COLUMN);
 	    $renderer = Gtk2::CellRendererText->new();
-	    $tv_column->pack_start($renderer, FALSE);
+	    $tv_column->pack_start($renderer, TRUE);
 	    $tv_column->set_attributes($renderer, "text" => MLS_AUTHOR_COLUMN);
 	    $browser->{manifest_browser_treeview}->append_column($tv_column);
 
@@ -2050,6 +2007,7 @@ sub update_browser_state($$)
 
     my($browser, $changed) = @_;
 
+    my $use_advanced_find;
     my $wm = WindowManager->instance();
 
     $wm->make_busy($browser, 1);
@@ -2176,38 +2134,100 @@ sub update_browser_state($$)
 	    && $browser->{branch_combo_details}->{complete}
 	    && ! $browser->{revision_combo_details}->{preset})
 	{
+
 	    my @revision_ids;
+
+	    # Get the head revision(s) for the branch.
+
 	    $browser->{appbar}->set_status(__("Auto selecting head revision"));
 	    $wm->update_gui();
 	    $browser->{mtn}->select
 		(\@revision_ids,
 		 "h:" . $browser->{branch_combo_details}->{value});
+
+	    # One head on the branch.
+
 	    if (scalar(@revision_ids) == 1)
 	    {
 		$browser->{revision_combo_details}->{preset} = 1;
 		$browser->{revision_combo_details}->{value} = $revision_ids[0];
 		$browser->{tagged_checkbutton}->set_active(FALSE);
 	    }
+
+	    # Multiple heads on the branch.
+
 	    elsif (scalar(@revision_ids) > 1)
 	    {
-		my $message;
-		$message =
-		    __x("The `{branch}' branch has multiple heads\nand "
-			    . "<i>Auto select head revision</i> is switched "
-			    . "on.\nPlease manually select the revision.\n"
-			    . "The head revision ids are:",
-			branch => $browser->{branch_combo_details}->{value});
-		foreach my $item (@revision_ids)
+
+		my($response,
+		   $revision_id);
+
+		# Ask the user what they want to do.
+
+		$response = multiple_revisions_selection
+		    ($browser->{window},
+		     __x("The `{branch}' branch\n"
+			     . "has multiple heads and <i>Auto select head "
+			     . "revision</i> is switched\n"
+			     . "on. Please either select the revision by its "
+			     . "id using the combobox\n"
+			     . "below or use the <i>Advanced Find</i> "
+			     . "feature.",
+			 branch => $browser->{branch_combo_details}->{value}),
+		     \$revision_id,
+		     @revision_ids);
+
+		# Deal with their response (either they have selected a
+		# revision, they have asked to use the advanced find dialog
+		# window or they have aborted in some way).
+
+		if ($response eq "ok")
 		{
-		    $message .= "\n" . Glib::Markup::escape_text($item);
+
+		    # We have single revision id so simply preset the revision
+		    # selection to that revision.
+
+		    $browser->{revision_combo_details}->{preset} = 1;
+		    $browser->{revision_combo_details}->{value} = $revision_id;
+		    $browser->{tagged_checkbutton}->set_active(FALSE);
+
 		}
-		my $dialog = Gtk2::MessageDialog->new_with_markup
-		    ($browser->{window}, ["modal"], "info", "close", $message);
-		$wm->allow_input(sub { $dialog->run(); });
-		$dialog->destroy();
+		else
+		{
+
+		    # The user has either selected advanced find or aborted in
+		    # some way.
+
+		    # If necessary flag the fact that the user wants to use
+		    # advanced find.
+
+		    $use_advanced_find = 1 if ($response eq "advanced-find");
+
+		    # Either way, no revision is currently selected so we need
+		    # to blank out all the revision selection details and
+		    # proceed as normal (this will blank out the rest of the
+		    # browser).
+
+		    $browser->{revision_combo_details}->{complete} = 0;
+		    $browser->{revision_combo_details}->{value} = "";
+		    $browser->{tagged_checkbutton}->set_active(FALSE);
+
+		}
+
 	    }
+
+	    # No heads or revisions on the branch.
+
+	    else
+	    {
+		$browser->{revision_combo_details}->{complete} = 0;
+		$browser->{revision_combo_details}->{value} = "";
+		$browser->{tagged_checkbutton}->set_active(FALSE);
+	    }
+
 	    $browser->{appbar}->set_status("");
 	    $wm->update_gui();
+
 	}
 
 	# Reset the revision selection.
@@ -2301,39 +2321,101 @@ sub update_browser_state($$)
 	$wm->update_gui();
 	if ($browser->{revision_combo_details}->{complete})
 	{
-	    my @revision_ids;
+
+	    my($revision_id,
+	       @revision_ids);
+
+	    # Get the revision id(s) that match what the user has selected.
+	    # More than one revision id may be returned if the selected tag
+	    # isn't unique on that branch.
+
 	    get_revision_ids($browser, \@revision_ids);
+
+	    # Deal with more than one revision id being selected.
+
 	    if (scalar(@revision_ids) > 1)
 	    {
-		my $message;
-		$message =
-		    __x("The `{tag_name}' tag is not unique on this branch.\n"
-			    . "Please either select the revision by its id\n"
-			    . "or use the <i>Advanced Find</i> feature.\n"
-			    . "The matching revision ids are:",
-			tag_name =>
-			    $browser->{revision_combo_details}->{value});
-		foreach my $item (@revision_ids)
+
+		my $response;
+
+		# More than one revision matches the tag that was selected by
+		# the user. Ask them what they want to do.
+
+		$response = multiple_revisions_selection
+		    ($browser->{window},
+		     __x("The `{tag_name}' tag is not unique on this\n"
+			     . "branch. Please either select the revision by "
+			     . "its id using the\n"
+			     . "combobox below or use the "
+			     . "<i>Advanced Find</i> feature.",
+			 tag_name =>
+			     $browser->{revision_combo_details}->{value}),
+		     \$revision_id,
+		     @revision_ids);
+
+		# Deal with their response (either they have selected a
+		# revision, they have asked to use the advanced find dialog
+		# window or they have aborted in some way).
+
+		if ($response eq "ok")
 		{
-		    $message .= "\n" . Glib::Markup::escape_text($item);
+
+		    # We have single revision id so we need to redo the
+		    # revision selection bit but with tag names switched off.
+		    # The easiest way to do this is to recursively call this
+		    # routine with $changed set to just REVISION. Afterwards
+		    # just carry on as if a revision id had been selected in
+		    # the first place.
+
+		    $browser->{revision_combo_details}->{preset} = 1;
+		    $browser->{revision_combo_details}->{value} = $revision_id;
+		    $browser->{tagged_checkbutton}->set_active(FALSE);
+		    &{$browser->{update_handler}}($browser, REVISION);
+
 		}
-		my $dialog = Gtk2::MessageDialog->new_with_markup
-		    ($browser->{window}, ["modal"], "info", "close", $message);
-		$wm->allow_input(sub { $dialog->run(); });
-		$dialog->destroy();
-		$browser->{revision_combo_details}->{complete} = 0;
-		$browser->{revision_combo_details}->{value} = "";
-		$browser->{revision_comboboxentry}->child()->set_text("");
+		else
+		{
+
+		    # The user has either selected advanced find or aborted in
+		    # some way.
+
+		    # If necessary flag the fact that the user wants to use
+		    # advanced find.
+
+		    $use_advanced_find = 1 if ($response eq "advanced-find");
+
+		    # Either way, no revision is currently selected so we need
+		    # to blank out all the revision selection details and
+		    # proceed as normal (this will blank out the rest of the
+		    # browser).
+
+		    $browser->{revision_combo_details}->{complete} = 0;
+		    $browser->{revision_combo_details}->{value} = "";
+		    $browser->{revision_comboboxentry}->child()->set_text("");
+
+		}
+
 	    }
 	    else
+	    {
+
+		# Only one revision id was selected. This is the norm.
+
+		$revision_id = $revision_ids[0];
+
+	    }
+
+	    # If we now have one revision selected then get its details.
+
+	    if (defined($revision_id))
 	    {
 		my($author,
 		   @certs_list,
 		   $change_log,
 		   $date);
 		$browser->{mtn}->get_manifest_of(\@manifest_list,
-						 $revision_ids[0]);
-		$browser->{mtn}->certs(\@certs_list, $revision_ids[0]);
+						 $revision_id);
+		$browser->{mtn}->certs(\@certs_list, $revision_id);
 		$author = $change_log = $date = "";
 		foreach my $cert (@certs_list)
 		{
@@ -2357,6 +2439,7 @@ sub update_browser_state($$)
 		set_label_value($browser->{change_log_value_label},
 				$change_log);
 	    }
+
 	}
 	$browser->{manifest} = \@manifest_list;
 
@@ -2624,6 +2707,80 @@ sub update_browser_state($$)
 
     $browser->{appbar}->pop();
     $wm->make_busy($browser, 0);
+
+    # All done. Now check to see if during the update process the user asked to
+    # call up the advanced find dialog window, if so then display it now.
+
+    handle_advanced_find($browser) if ($use_advanced_find);
+
+}
+#
+##############################################################################
+#
+#   Routine      - handle_advanced_find
+#
+#   Description  - Call up the advanced find dialog window for the specified
+#                  browser and then populate that browser with any results
+#                  that come back from that search.
+#
+#   Data         - $browser : The browser instance from which the advanced
+#                             find is to be done.
+#
+##############################################################################
+
+
+
+sub handle_advanced_find($)
+{
+
+    my $browser = $_[0];
+
+    my(@branches,
+       $preset_branch,
+       $revision_id,
+       $state);
+
+    if (advanced_find($browser, \$revision_id, \@branches))
+    {
+
+	# Preset branch name. If we already have a selected branch then try and
+	# match branch names, if that fails then just pick the first name.
+
+	$preset_branch = 1;
+	$state = BRANCH_CHANGED;
+	if ($browser->{branch_combo_details}->{complete})
+	{
+	    foreach my $name (@branches)
+	    {
+		if ($name eq $browser->{branch_combo_details}->{value})
+		{
+		    $preset_branch = 0;
+		    last;
+		}
+	    }
+	}
+	if ($preset_branch)
+	{
+	    $browser->{branch_combo_details}->{preset} = 1;
+	    $browser->{branch_combo_details}->{value} =
+		(scalar(@branches) > 0) ? $branches[0] : "";
+	    $state = ALL_CHANGED;
+	}
+
+	# Preset revision id.
+
+	$browser->{revision_combo_details}->{preset} = 1;
+	$browser->{revision_combo_details}->{value} = $revision_id;
+
+	# A revision id is what is returned so switch off the listing of tag
+	# names.
+
+	$browser->{tagged_checkbutton}->set_active(FALSE);
+
+	$browser->{appbar}->clear_stack();
+	&{$browser->{update_handler}}($browser, $state);
+
+    }
 
 }
 #

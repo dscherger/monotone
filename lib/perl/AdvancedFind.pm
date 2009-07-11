@@ -4,7 +4,7 @@
 #
 #   Description  - The advanced find module for the mtn-browse application.
 #                  This module contains all the routines for implementing the
-#                  advanced find dialog.
+#                  advanced find dialog window.
 #
 #   Author       - A.E.Cooper.
 #
@@ -660,7 +660,7 @@ sub get_advanced_find_window($)
 	$tv_column->set_fixed_width(100);
 	$tv_column->set_sort_column_id(AFLS_REVISION_ID_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer,
 				   "text" => AFLS_REVISION_ID_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
@@ -671,7 +671,7 @@ sub get_advanced_find_window($)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(AFLS_BRANCH_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => AFLS_BRANCH_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
 
@@ -681,7 +681,7 @@ sub get_advanced_find_window($)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(AFLS_DATE_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => AFLS_DATE_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
 
@@ -691,7 +691,7 @@ sub get_advanced_find_window($)
 	$tv_column->set_sizing("grow-only");
 	$tv_column->set_sort_column_id(AFLS_AUTHOR_COLUMN);
 	$renderer = Gtk2::CellRendererText->new();
-	$tv_column->pack_start($renderer, FALSE);
+	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => AFLS_AUTHOR_COLUMN);
 	$instance->{revisions_treeview}->append_column($tv_column);
 

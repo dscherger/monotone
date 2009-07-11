@@ -734,11 +734,12 @@ sub get_find_text_window($$)
     }
     else
     {
-	$new = 0;
 	$instance->{in_cb} = 0;
 	local $instance->{in_cb} = 1;
 	$instance->{main_vbox}->set_sensitive(TRUE);
     }
+
+    local $instance->{in_cb} = 1;
 
     # Reset the search context.
 
