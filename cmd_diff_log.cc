@@ -1,4 +1,5 @@
-// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2002, 2009 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -361,11 +362,17 @@ prepare_diff(app_state & app,
   ostringstream header;
   cset excluded;
 
+  // The resulting diff is output in 'included'. Not clear what 'excluded'
+  // is for.
+
   // initialize before transaction so we have a database to work with.
   project_t project(db);
 
   E(app.opts.revision_selectors.size() <= 2, origin::user,
     F("more than two revisions given"));
+
+  E(!app.opts.reverse || app.opts.revision_selectors.size() == 1, origin::user,
+    F("--reverse only allowed with exactly one revision"));
 
   if (app.opts.revision_selectors.empty())
     {
@@ -422,8 +429,17 @@ prepare_diff(app_state & app,
       make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
 
-      make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
+      if (app.opts.reverse)
+        {
+          // FIXME: this breaks something in graph.cc
+          make_cset(new_roster, restricted_roster, excluded);
+          make_cset(restricted_roster, old_roster, included);
+        }
+      else
+        {
+          make_cset(old_roster, restricted_roster, included);
+          make_cset(restricted_roster, new_roster, excluded);
+        }
 
       new_is_archived = false;
       header << "# old_revision [" << r_old_id << "]\n";
