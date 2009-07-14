@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <string.h>
 #include <map>
+#include <stdint.h>
 
 using std::string;
 using std::map;
