@@ -238,6 +238,7 @@ dump_diffs(lua_hooks & lua,
            std::ostream & output,
            diff_type diff_format,
            bool new_is_archived,
+           bool old_is_archived,
            bool show_encloser,
            bool limit_paths = false)
 {
@@ -299,8 +300,16 @@ dump_diffs(lua_hooks & lua,
 
       output << patch_sep << '\n';
 
-      db.get_file_version(delta_entry_src(i), f_old);
-      data_old = f_old.inner();
+      if (old_is_archived)
+        {
+          db.get_file_version(delta_entry_src(i), f_old);
+          data_old = f_old.inner();
+        }
+      else
+        {
+          I(new_is_archived);
+          read_data(delta_entry_path(i), data_old);
+        }
 
       if (new_is_archived)
         {
@@ -310,6 +319,7 @@ dump_diffs(lua_hooks & lua,
         }
       else
         {
+          I(old_is_archived);
           read_data(delta_entry_path(i), data_new);
         }
 
@@ -340,11 +350,12 @@ dump_diffs(lua_hooks & lua,
            std::ostream & output,
            diff_type diff_format,
            bool new_is_archived,
+           bool old_is_archived,
            bool show_encloser)
 {
   set<file_path> dummy;
   dump_diffs(lua, db, cs, dummy, output,
-             diff_format, new_is_archived, show_encloser);
+             diff_format, new_is_archived, old_is_archived, show_encloser);
 }
 
 // common functionality for diff and automate content_diff to determine
@@ -356,14 +367,13 @@ prepare_diff(app_state & app,
              cset & included,
              args_vector args,
              bool & new_is_archived,
+             bool & old_is_archived,
              std::string & revheader)
 {
   temp_node_id_source nis;
   ostringstream header;
-  cset excluded;
 
-  // The resulting diff is output in 'included'. Not clear what 'excluded'
-  // is for.
+  // The resulting diff is output in 'included'.
 
   // initialize before transaction so we have a database to work with.
   project_t project(db);
@@ -403,9 +413,9 @@ prepare_diff(app_state & app,
                              mask);
 
       make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = false;
+      old_is_archived = true;
       header << "# old_revision [" << old_rid << "]\n";
     }
   else if (app.opts.revision_selectors.size() == 1)
@@ -431,17 +441,17 @@ prepare_diff(app_state & app,
 
       if (app.opts.reverse)
         {
-          // FIXME: this breaks something in graph.cc
-          make_cset(new_roster, restricted_roster, excluded);
           make_cset(restricted_roster, old_roster, included);
+          new_is_archived = true;
+          old_is_archived = false;
         }
       else
         {
           make_cset(old_roster, restricted_roster, included);
-          make_cset(restricted_roster, new_roster, excluded);
+          new_is_archived = false;
+          old_is_archived = true;
         }
 
-      new_is_archived = false;
       header << "# old_revision [" << r_old_id << "]\n";
     }
   else if (app.opts.revision_selectors.size() == 2)
@@ -486,9 +496,10 @@ prepare_diff(app_state & app,
                              mask);
 
       make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = true;
+      old_is_archived = true;
+
     }
   else
     {
@@ -544,9 +555,10 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   cset included;
   std::string revs;
   bool new_is_archived;
+  bool old_is_archived;
   database db(app);
 
-  prepare_diff(app, db, included, args, new_is_archived, revs);
+  prepare_diff(app, db, included, args, new_is_archived, old_is_archived, revs);
 
   if (!app.opts.without_header)
     {
@@ -560,7 +572,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   else
     {
       dump_diffs(app.lua, db, included, cout,
-                 app.opts.diff_format, new_is_archived,
+                 app.opts.diff_format, new_is_archived, old_is_archived,
                  !app.opts.no_show_encloser);
     }
 }
@@ -580,14 +592,15 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              "",
              options::opts::with_header | options::opts::without_header |
              options::opts::revision | options::opts::depth |
-             options::opts::exclude)
+             options::opts::exclude | options::opts::reverse)
 {
   cset included;
   std::string dummy_header;
   bool new_is_archived;
+  bool old_is_archived;
   database db(app);
 
-  prepare_diff(app, db, included, args, new_is_archived, dummy_header);
+  prepare_diff(app, db, included, args, new_is_archived, old_is_archived, dummy_header);
 
 
   if (app.opts.with_header)
@@ -596,7 +609,7 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
     }
 
   dump_diffs(app.lua, db, included, output,
-             app.opts.diff_format, new_is_archived, !app.opts.no_show_encloser);
+             app.opts.diff_format, new_is_archived, old_is_archived, !app.opts.no_show_encloser);
 }
 
 
