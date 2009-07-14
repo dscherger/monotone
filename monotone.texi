@@ -5498,21 +5498,25 @@ $ mtn complete revision 01f
 @itemx mtn diff --context [--no-show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
-@itemx mtn diff --revision=@var{id}
+@itemx mtn diff [--reverse] --revision=@var{id}
 @itemx mtn diff --revision=@var{id} @var{pathname...}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
 
 These commands print out GNU ``unified diff format'' textual difference
 listings between various manifest versions. With no @option{--revision}
-options, @command{diff} will print the differences between the
-base revision and the current revision in the workspace.
+options, @command{diff} will print the difference from the
+base revision to the current revision in the workspace.
 
 With one @option{--revision} option, @command{diff} will print the
-differences between the revision @var{id} and the current revision in
-the workspace.  With two @option{--revision} options @command{diff}
-will print the differences between revisions @var{id1} and @var{id2},
-ignoring any workspace.
+difference from the revision @var{id} to the current revision in the
+workspace. If @option{--reverse} is given, the order of the diff is
+reversed.
+
+With two @option{--revision} options @command{diff} will print the
+difference from revision @var{id1} to @var{id2}, ignoring any
+workspace.
+
 
 In all cases, monotone will print a textual summary -- identical to
 the summary presented by @command{mtn status} -- of the logical
@@ -8227,7 +8231,7 @@ status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{files} ...]
 
 @table @strong
 @item Arguments:
@@ -8240,13 +8244,14 @@ If zero or more revisions are given, the command behaves as follows:
 
 @itemize
 @item
-no revision: the diff is done between the workspace revision and the
-parent (base) revision of this workspace
+no revision: the diff is done from the parent (base) revision of this
+workspace to the workspace revision.
 @item
-one revision: the diff is done between the workspace revision and the
-given revision @option{id1},
+one revision: if @option{--reverse} is not given, the diff is done
+from the given revision @option{id1} to the workspace revision. If
+@option{--reverse} is not given, the order is reversed.
 @item
-two revisions: the diff is done between @option{id1} and @option{id2}; no
+two revisions: the diff is done from @option{id1} to @option{id2}; no
 workspace is needed in this case.
 @end itemize
 

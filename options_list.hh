@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -233,6 +233,14 @@ OPTION(diff_options, external_diff_args, true, "diff-args",
 }
 #endif
 
+OPTVAR(diff_options, bool, reverse, false)
+OPTION(diff_options, reverse, false, "reverse",
+        gettext_noop("reverse order of diff"))
+#ifdef option_bodies
+{
+  reverse = true;
+}
+#endif
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
