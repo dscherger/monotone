@@ -240,7 +240,7 @@ dump_diffs(lua_hooks & lua,
            bool new_is_archived,
            bool old_is_archived,
            bool show_encloser,
-           bool limit_paths = false)
+           bool limit_paths)
 {
   // 60 is somewhat arbitrary, but less than 80
   string patch_sep = string(60, '=');
@@ -355,7 +355,7 @@ dump_diffs(lua_hooks & lua,
 {
   set<file_path> dummy;
   dump_diffs(lua, db, cs, dummy, output,
-             diff_format, new_is_archived, old_is_archived, show_encloser);
+             diff_format, new_is_archived, old_is_archived, show_encloser, false);
 }
 
 // common functionality for diff and automate content_diff to determine
@@ -1125,7 +1125,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
                 dump_diffs(app.lua, db, edge_changes(e), diff_paths, out,
-                           app.opts.diff_format, true,
+                           app.opts.diff_format, true, true,
                            !app.opts.no_show_encloser, !mask.empty());
             }
 
