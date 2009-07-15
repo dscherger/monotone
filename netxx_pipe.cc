@@ -13,6 +13,7 @@
 #include "platform.hh"
 #include <netxx/streamserver.h>
 #include <ostream> // for operator<<
+#include <cstring> // strerror
 
 #ifdef WIN32
 #include <windows.h>
@@ -23,7 +24,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <errno.h>
-#include <cstring> // strerror
 #endif
 
 using std::vector;

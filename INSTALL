@@ -74,52 +74,78 @@ building and installation process for monotone
 
         on Windows (using MinGW):
 
-           tools and packages needed:
+           Many tools and packages are available on the SourceForge
+           MinGW download site:
 
-           Package  | Version | URL
+           https://sourceforge.net/projects/mingw/files/
+
+           That site is organized into several hierarchical lists of
+           files. We give the hierarchy names here, rather than a
+           complete download URL, to make it easy to check for new
+           versions. The versions given here were used to build the
+           current release of monontone.
+
+           Trying a new version of Boost can be dangerous.
+
+           These instructions work on a new computer, with only
+           Windows XP installed.
+
+           Package  | Version | location
            --------------------------
-           MingGW   | 5.1.3   | http://prdownloads.sf.net/mingw/MinGW-5.1.3.exe?download
-           MSYS     | 1.0.10  | http://prdownloads.sf.net/mingw/MSYS-1.0.10.exe?download
-           msysDTK  | 1.0.1   | http://prdownloads.sf.net/mingw/msysDTK-1.0.1.exe?download
-           libiconv | 1.11    | http://prdownloads.sf.net/mingw/libiconv-1.11-mingwPORT-20070423-1.tar.bz2?download
-           autoconf | 2.59    | http://prdownloads.sf.net/mingw/autoconf-2.59-mingwPORT.tar.bz2?download
-           automake | 1.9.5   | http://prdownloads.sf.net/mingw/automake-1.9.5-mingwPORT.tar.bz2?download
-           zlib     | 1.2.3   | http://prdownloads.sf.net/mingw/zlib-1.2.3-mingwPORT.tar.bz2?download
-           gettext  | 0.16.1  | ftp://aeneas.mit.edu/pub/gnu/gettext/gettext-0.16.1.tar.gz
+           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
+           MSYS     | 1.0.10  | MSYS Base System | Current Release: msys-1.0.10 | MSYS-1.0.10.exe
+           msysDTK  | 1.0.1   | MSYS Supplementary Tools | Current Release: msysDTK-1.0.1 | msysDTK-1.0.1.exe
+           libiconv | 1.13    | MinGW Libs: libiconv | Current Release: libiconv-1.13-mingw32 |
+                    |         |  libiconv-1.13-mingw32-bin.tar.gz
+                    |         |  libiconv-1.13-mingw32-dev.tar.gz
+                    |         |  libiconv-1.13-mingw32-dll-2.tar.gz
+           wget     | 1.9.1   | User Contributed: mingwPORT | Current Releases | wget-1.9.1-mingwPORT.tar.bz2
+           zlib     | 1.2.3   | User Contributed: mingwPORT | Current Releases | zlib-1.2.3-mingwPORT-1.tar.bz2
+           gettext  | 0.17    | ftp://aeneas.mit.edu/pub/gnu/gettext/gettext-0.17.tar.gz
            boost    | 1.34.1  | http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download
-           Lua      | 5.1     | http://www.lua.org/
-           pcre     | 7.8     | http://www.pcre.org/
-           botan    | 1.8     | http://botan.randombit.net/news/
-           sqlite3  | 3.6.10  | http://www.sqlite.org/download.html - sqlite-amalgamation-3_6_10.tar.gz, with makefile
-           libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn
+           Lua      | 5.1     | http://www.lua.org/ | lua-5.1.4.tar.gz
+           pcre     | 7.8     | http://www.pcre.org/ | pcre-7.8.tar.bz2
+           botan    | 1.8.4   | http://botan.randombit.net/news/ | Botan-1.8.4.tbz
+           sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3_6_16.tar.gz, with makefile
+           libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
+           autoconf | 2.59    | User Contributed: mingwPORT | Current Releases | autoconf-2.59-mingwPORT.tar.bz2
 
-           The installer defaults put MinGW in `c:\MinGW` and MSYS in
-           `c:\Msys`. However, later steps sometimes install new items
-           in `c:\MinGW\bin`, and sometimes in `c:\Msys\bin`. So it is
-           difficult to ensure that the new items are always first in
-           path. Installing MinGW and MSYS both to `c:\MinGW` avoids
-           this issue. However, in this case the MSYS installer
-           mistakenly renames 'make' to 'mingw32-make', so we need to
-           change it back.
+           The MinGW and MSYS installer defaults put MinGW in
+           `c:\MinGW` and MSYS in `c:\Msys`. However, later steps
+           sometimes install new items in `c:\MinGW\bin`, and
+           sometimes in `c:\Msys\bin`. So it is difficult to ensure
+           that the new items are always first in path. Installing
+           MinGW and MSYS both to `c:\MinGW` avoids this issue.
+           However, in this case the MSYS installer mistakenly renames
+           'make' to 'mingw32-make', so we need to change it back.
 
-           msysDTK installs Perl, CVS, crypt, and other tools needed
-           by the autoconf tools. The installed autoconf scripts are a
-           little broken, so we need to manually fix them.
+           msysDTK installs autoconf, automake, Perl, CVS, crypt, and
+           other tools needed by the autoconf tools.
 
-           1. MinGW - install, accept defaults but add g++ on the package selection page
-           2. MSYS - install to same directory as MinGW (`c:\MinGW`), otherwise accept defaults
-           3. msysDTK - install into MinGW directory
+           However, monotone requires a newer autoconf and automake.
+           The build/install process leaves 'c:/' scattered around,
+           which doesn't work for MSYS, so we have to fix it.
+
+           1. MinGW - run installer, accept defaults but add g++ on the package selection page
+           2. MSYS - run installer, install to same directory as MinGW (`c:\MinGW`), otherwise accept defaults
+           3. msysDTK - run installer, install into MinGW directory
            4. Rename `make`:
+              Start the MSYS shell. In it:
               $ mv /bin/mingw32-make.exe /bin/make.exe
 
            5. libiconv
+              $ cd /
+              $ tar zxf libiconv-1.13-mingw32-bin.tar.gz
+              $ tar zxf libiconv-1.13-mingw32-dev.tar.gz
+              $ tar zxf libiconv-1.13-mingw32-dll-2.tar.gz
+
+           6. wget
               $ cd /usr/src
-              $ export SRCROOT=/usr/src
-              $ tar jxf libiconv-1.11-mingwPORT.tar.bz2
-              $ cd libiconv-1.11/mingwPORT
+              $ tar jxf wget-1.9.1-mingwPORT.tar.bz2
+              $ cd wget-1.9.1/mingwPORT
               $ ./mingwPORT.sh
 
-           6. Accept all defaults by hitting the enter key. The following steps also always accept all defaults.
+              Accept all defaults by hitting the enter key.
 
            7. autoconf
               $ cd /usr/src
@@ -127,83 +153,80 @@ building and installation process for monotone
               $ cd autoconf-2.59/mingwPORT
               $ ./mingwPORT.sh
 
-           8. Open `/mingw/bin/autoconf` in an editor and change the following line from something like
+           8. automake
+              $ cd /usr/src
+              $ tar jxf automake-1.9.5-mingwPORT.tar.bz2
+              $ cd automake-1.9.5/mingwPORT
+              $ ./mingwPORT.sh
 
-              : ${AUTOM4TE='c:/mingw/bin/autom4te'}
+           9. Fix autoconf, automake. Edit the files '/mingw/bin/aclocal',
+              '/mingw/bin/aclocal-1.9', and all files matching
+              'auto*'; replace 'c:/' with '/'.
 
-              to
-
-              : ${AUTOM4TE='/mingw/bin/autom4te'}
-
-           9. automake
-               $ cd /usr/src
-               $ tar jxf automake-1.9.5-mingwPORT.tar.bz2
-               $ cd automake-1.9.5/mingwPORT
-               $ ./mingwPORT.sh
-
-           10. Open the files `/mingw/bin/aclocal`,
-               `/mingw/bin/aclocal-1.9`, and all files matching
-               `auto*` in an editor and delete `c:/` from all paths,
-               as was done above for `autoconf`.
-
-           11. zlib
-               $ cd /usr/src
+           10. zlib
+               $ export PATH=$PATH:/c/GnuWin32/bin
                $ tar jxf zlib-1.2.3-mingwPORT.tar.bz2
                $ cd zlib-1.2.3/mingwPORT
                $ ./mingwPORT.sh
 
-           12. gettext
+           11. gettext
                $ cd /usr/src
                $ tar zxf gettext-0.17.tar.gz
                $ cd gettext-0.17
-               $ ./configure --prefix=/usr/local
+               $ ./configure
                $ make install
 
-           13. boost; only need headers
+           12. boost; only need headers
                $ cd /usr/src
                $ tar jxf boost_1_34_1.tar.bz2
                $ cd boost_1_34_1
                $ cp -a boost /mingw/include
 
-           14. Lua
+           13. Lua
                $ cd /usr/src
                $ tar zxf lua-5.1.4.tar.gz
                $ cd lua-5.1.4
-               $ make mingw
-               $ make install
+               $ make mingw INSTALL_TOP=/usr
+               $ make install INSTALL_TOP=/usr
 
-           15. pcre
+           14. pcre
                $ cd /usr/src
-               $ tar zxf pcre-7.8.tar.gz
+               $ tar jxf pcre-7.8.tar.bz2
                $ cd pcre-7.8
-               $ ./configure
+               $ ./configure --prefix=/usr
                $ make install
 
-           16. botan
+           15. botan
+               15.1 unpack, configure:
+                    $ cd /usr/src
+                    $ tar jxf Botan-1.8.4.tbz
+                    $ cd Botan-1.8.4
+                    $ ./configure.pl --with-tr1=none
+               15.2 edit Makefile, delete -ansi from LANG_FLAGS
+               15.3 install:
+                    $ make install
+
+           16. sqlite3
                $ cd /usr/src
-               $ tar zxf Botan-1.8.0.tgz
-               $ cd Botan-1.8
-               $ ./configure.pl --with-tr1=none
+               $ tar zxf sqlite-amalgamation-3_6_16.tar.gz
+               $ cd sqlite-amalgamation-3.6.16
+               $ ./configure --prefix=/usr
                $ make install
 
-           17. sqlite3
-               $ cd /usrsrc
-               $ tar zxf sqlite-amalgamation-3_6_10.tar.gz
-               $ cd sqlite-amalgamation-3.6.10
-               $ ./configure
-               $ make install
-
-           18. libidn
+           17. libidn
                $ cd /usr/src
                $ tar zxf libidn-1.9.tar.gz
                $ cd libidn-1.9
-               $ ./configure
+               $ ./configure --prefix=/usr
                $ make install
 
-            cd monotone
-            ./configure lua_CFLAGS=-I/usr/local/include lua_LIBS="-L/usr/local/lib -llua" \
-                        sqlite_CFLAGS=-I/usr/local/include sqlite_LIBS="-L/usr/local/lib -lsqlite3" \
-                        idn_CFLAGS=-I/usr/local/include idn_LIBS="-L/usr/local/lib -lidn"
+           18. build monotone
+               $ cd /c/.../monotone
+               $ autoreconf -i
+                 you'll get an error about AC_PROG_MKDIR_P; ignore it and try again
+               $ autoreconf -i
+               $ ./configure sqlite_LIBS=-lsqlite3
+               $ make
 
            # Notes
 
@@ -217,9 +240,9 @@ building and installation process for monotone
              [MsysBuildEnvironment](http://www.mingw.org/MinGWiki/index.php/MsysBuildEnvironment)
              for a detailed explanation.
 
-             * If you get strange errors from perl when running
-               `autoreconf -i`, check that you edited the paths
-               correctly in `aclocal-*` and `auto*`.
+           * If you get strange errors from perl when running
+             'autoreconf -i', check that you edited the paths
+             correctly in 'aclocal-*' and 'auto*'.
 
         on Windows (using Cygwin):
 
@@ -242,9 +265,9 @@ building and installation process for monotone
                libidn-devel-1.9-1 or newer
                lua-5.1.4-1 or newer (*)
                botan-1.8.0-1 or newer (*)
-           
+
            currently every prerequisite is avaialble as packages except
-           lua and botan; an official Cygwin package for monotone and 
+           lua and botan; an official Cygwin package for monotone and
            all its dependencies will be available soon after release
 
            the following is needed to succesfulyl configure
