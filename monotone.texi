@@ -8247,9 +8247,9 @@ If zero or more revisions are given, the command behaves as follows:
 no revision: the diff is done from the parent (base) revision of this
 workspace to the workspace revision.
 @item
-one revision: if @option{--reverse} is not given, the diff is done
-from the given revision @option{id1} to the workspace revision. If
-@option{--reverse} is not given, the order is reversed.
+one revision: the diff is done from the given revision @option{id1} to
+the workspace revision. If @option{--reverse} is given, the order is
+reversed.
 @item
 two revisions: the diff is done from @option{id1} to @option{id2}; no
 workspace is needed in this case.
