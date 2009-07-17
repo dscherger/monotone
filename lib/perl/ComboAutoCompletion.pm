@@ -47,21 +47,107 @@ use locale;
 use strict;
 use warnings;
 
+# ***** GLOBAL DATA DECLARATIONS *****
+
+# The type of window that is going to be managed by this module.
+
+my $window_type = "tooltip_window";
+
 # ***** FUNCTIONAL PROTOTYPES *****
 
 # Public routines.
 
-sub comboboxentry_changed_cb($$);
-sub comboboxentry_key_release_event_cb($$$);
+sub activate_auto_completion($$);
 sub tagged_checkbutton_toggled_cb($$);
+
+# Private routines.
+
+sub auto_completion_comboboxentry_changed_cb($$);
+sub auto_completion_comboboxentry_key_release_event_cb($$$);
+sub get_tooltip_window($$$$);
+sub hide_tooltip_window();
 #
 ##############################################################################
 #
-#   Routine      - comboboxentry_changed_cb
+#   Routine      - activate_auto_completion
+#
+#   Description  - Sets up the specified comboboxentry widget for
+#                  auto-completion.
+#
+#   Data         - $comboboxentry : The comboboxentry widget that is to be set
+#                                   up for auto-completion.
+#                  $instance      : The window instance that is associated
+#                                   with this widget. It is expected to have
+#                                   window, appbar, update_handler and
+#                                   combobox details fields.
+#
+##############################################################################
+
+
+
+sub activate_auto_completion($$)
+{
+
+    my($comboboxentry, $instance) = @_;
+
+    my($change_state,
+       $combo_details,
+       $details,
+       $name);
+
+    # Sort out the precise details depending upon which comboboxentry widget
+    # has been passed.
+
+    if ($comboboxentry == $instance->{branch_comboboxentry})
+    {
+	$change_state = BRANCH_CHANGED;
+	$combo_details = $instance->{branch_combo_details};
+	$name = __("branch");
+    }
+    elsif ($comboboxentry == $instance->{revision_comboboxentry})
+    {
+	$change_state = REVISION_CHANGED;
+	$combo_details = $instance->{revision_combo_details};
+	$name = __("revision");
+    }
+    elsif ($comboboxentry == $instance->{directory_comboboxentry})
+    {
+	$change_state = DIRECTORY_CHANGED;
+	$combo_details = $instance->{directory_combo_details};
+	$name = __("directory");
+    }
+    else
+    {
+	return;
+    }
+
+    # Set up all the required callbacks.
+
+    $details = {instance      => $instance,
+		change_state  => $change_state,
+		combo_details => $combo_details,
+		name          => $name};
+    $comboboxentry->signal_connect("changed",
+				   \&auto_completion_comboboxentry_changed_cb,
+				   $details);
+    $comboboxentry->signal_connect
+	("key_release_event",
+	 \&auto_completion_comboboxentry_key_release_event_cb,
+	 $details);
+    $comboboxentry->child()->signal_connect("focus_out_event",
+					    sub {
+						hide_tooltip_window();
+						return FALSE;
+					    });
+
+}
+#
+##############################################################################
+#
+#   Routine      - tagged_checkbutton_toggled_cb
 #
 #   Description  - Callback routine called when the user changes the value of
-#                  a branch or revision comboboxentry by selecting an entry
-#                  from its pulldown list.
+#                  the tagged check button.
 #
 #   Data         - $widget   : The widget object that received the signal.
 #                  $instance : The window instance that is associated with
@@ -71,7 +157,7 @@ sub tagged_checkbutton_toggled_cb($$);
 
 
 
-sub comboboxentry_changed_cb($$)
+sub tagged_checkbutton_toggled_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -79,30 +165,41 @@ sub comboboxentry_changed_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($change_state,
-       $combo_details,
-       $item,
-       $value);
+    $instance->{appbar}->clear_stack();
+    &{$instance->{update_handler}}($instance, BRANCH_CHANGED);
 
-    if ($widget == $instance->{branch_comboboxentry})
-    {
-	$change_state = BRANCH_CHANGED;
-	$combo_details = $instance->{branch_combo_details};
-    }
-    elsif ($widget == $instance->{revision_comboboxentry})
-    {
-	$change_state = REVISION_CHANGED;
-	$combo_details = $instance->{revision_combo_details};
-    }
-    elsif ($widget == $instance->{directory_comboboxentry})
-    {
-	$change_state = DIRECTORY_CHANGED;
-	$combo_details = $instance->{directory_combo_details};
-    }
-    else
-    {
-	return;
-    }
+}
+#
+##############################################################################
+#
+#   Routine      - auto_completion_comboboxentry_changed_cb
+#
+#   Description  - Callback routine called when the user changes the value of
+#                  a branch, revision or directory comboboxentry by selecting
+#                  an entry from its pulldown list.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A reference to an anonymous hash containing the
+#                             window instance, change state, comboboxentry
+#                             details and the name for that comboboxentry.
+#
+##############################################################################
+
+
+
+sub auto_completion_comboboxentry_changed_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    my $instance = $details->{instance};
+
+    return if ($instance->{in_cb});
+    local $instance->{in_cb} = 1;
+
+    my $value;
+    my $change_state = $details->{change_state};
+    my $combo_details = $details->{combo_details};
 
     # For some reason best known to itself, Gtk+ calls this callback when the
     # user presses a key for the first time (but not subsequently) after a
@@ -112,7 +209,7 @@ sub comboboxentry_changed_cb($$)
     # direct match to one in our list.
 
     $value = $widget->child()->get_text();
-    foreach $item (@{$combo_details->{list}})
+    foreach my $item (@{$combo_details->{list}})
     {
 	if ($value eq $item)
 	{
@@ -120,6 +217,7 @@ sub comboboxentry_changed_cb($$)
 	    $combo_details->{complete} = 1;
 	    $instance->{appbar}->clear_stack();
 	    &{$instance->{update_handler}}($instance, $change_state);
+	    hide_tooltip_window();
 	    last;
 	}
     }
@@ -128,7 +226,7 @@ sub comboboxentry_changed_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - comboboxentry_key_release_event_cb
+#   Routine      - auto_completion_comboboxentry_key_release_event_cb
 #
 #   Description  - Callback routine called when the user changes the value of
 #                  a branch or revision comboboxentry by entering a character
@@ -137,8 +235,10 @@ sub comboboxentry_changed_cb($$)
 #   Data         - $widget      : The widget object that received the signal.
 #                  $event       : A Gtk2::Gdk::Event object describing the
 #                                 event that has occurred.
-#                  $instance    : The window instance that is associated with
-#                                 this widget.
+#                  $details     : A reference to an anonymous hash containing
+#                                 the window instance, change state,
+#                                 comboboxentry details and the name for that
+#                                 comboboxentry.
 #                  Return Value : TRUE if the event has been handled and needs
 #                                 no further handling, otherwise false if the
 #                                 event should carry on through the remaining
@@ -148,54 +248,28 @@ sub comboboxentry_changed_cb($$)
 
 
 
-sub comboboxentry_key_release_event_cb($$$)
+sub auto_completion_comboboxentry_key_release_event_cb($$$)
 {
 
-    my($widget, $event, $instance) = @_;
+    my($widget, $event, $details) = @_;
+
+    my $instance = $details->{instance};
 
     return FALSE if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my($change_state,
-       $combo,
-       $combo_details,
-       $complete,
+    my($complete,
        $completion,
-       $entry,
        $item,
        $len,
-       $name,
        $old_complete,
        $old_value,
        $success,
        $value);
-
-    if ($widget == $instance->{branch_comboboxentry})
-    {
-	$combo = $instance->{branch_comboboxentry};
-	$change_state = BRANCH_CHANGED;
-	$combo_details = $instance->{branch_combo_details};
-	$name = __("branch");
-    }
-    elsif ($widget == $instance->{revision_comboboxentry})
-    {
-	$combo = $instance->{revision_comboboxentry};
-	$change_state = REVISION_CHANGED;
-	$combo_details = $instance->{revision_combo_details};
-	$name = __("revision");
-    }
-    elsif ($widget == $instance->{directory_comboboxentry})
-    {
-	$combo = $instance->{directory_comboboxentry};
-	$change_state = DIRECTORY_CHANGED;
-	$combo_details = $instance->{directory_combo_details};
-	$name = __("directory");
-    }
-    else
-    {
-	return FALSE;
-    }
-    $entry = $widget->child();
+    my $change_state = $details->{change_state};
+    my $combo_details = $details->{combo_details};
+    my $entry = $widget->child();
+    my $name = $details->{name};
 
     # The user has typed something in then validate it and auto-complete it if
     # necessary.
@@ -237,12 +311,37 @@ sub comboboxentry_key_release_event_cb($$$)
 	    if ($success)
 	    {
 		$instance->{appbar}->clear_stack();
+		hide_tooltip_window();
 	    }
 	    else
 	    {
-		$instance->{appbar}->push(__x("Invalid {name} name `{value}'",
-					      name  => $name,
-					      value => $value));
+
+		my($height,
+		   $message,
+		   $root_x,
+		   $root_y,
+		   $x,
+		   $y);
+
+		# Tell the user what is wrong via the status bar.
+
+		$message = __x("Invalid {name} name `{value}'",
+				  name  => $name,
+				  value => $value);
+		$instance->{appbar}->push($message);
+
+		# Also via a tooltip as well (need to position it to be just
+		# below the comboboxentry widget).
+
+		($x, $y) =
+		    $widget->translate_coordinates($instance->{window}, 0, 0);
+		$height = ($widget->child()->window()->get_geometry())[3];
+		($root_x, $root_y) =
+		    $instance->{window}->window()->get_origin();
+		$x += $root_x - 10;
+		$y += $height + $root_y + 5;
+		get_tooltip_window($instance->{window}, $message, $x, $y);
+
 	    }
 	    $value = $completion;
 	    $len = length($value);
@@ -253,6 +352,7 @@ sub comboboxentry_key_release_event_cb($$$)
 	else
 	{
 	    $instance->{appbar}->clear_stack();
+	    hide_tooltip_window();
 	}
 	$combo_details->{value} = $value;
 	$combo_details->{complete} = $complete;
@@ -261,10 +361,10 @@ sub comboboxentry_key_release_event_cb($$$)
 
 	if (! $user_preferences->{static_lists})
 	{
-	    $combo->get_model()->clear();
+	    $widget->get_model()->clear();
 	    foreach $item (@{$combo_details->{list}})
 	    {
-		$combo->append_text($item)
+		$widget->append_text($item)
 		    if ($value eq substr($item, 0, $len));
 
 		# The following check is needed in the case when the user is
@@ -289,29 +389,140 @@ sub comboboxentry_key_release_event_cb($$$)
 #
 ##############################################################################
 #
-#   Routine      - tagged_checkbutton_toggled_cb
+#   Routine      - get_tooltip_window
 #
-#   Description  - Callback routine called when the user changes the value of
-#                  the tagged check button.
+#   Description  - Creates or prepares an existing tooltip window for use.
 #
-#   Data         - $widget   : The widget object that received the signal.
-#                  $instance : The window instance that is associated with
-#                              this widget.
+#   Data         - $parent       : The parent window widget for the multiple
+#                                  revisions dialog window.
+#                  $message      : The tooltip that is to be displayed.
+#                  $x            : The x coordinate for where the tooltip
+#                                  window is to be placed.
+#                  $y            : The y coordinate for where the tooltip
+#                                  window is to be placed.
+#                  Return Value  : A reference to the newly created or unused
+#                                  multiple revisions instance record.
 #
 ##############################################################################
 
 
 
-sub tagged_checkbutton_toggled_cb($$)
+sub get_tooltip_window($$$$)
 {
 
-    my($widget, $instance) = @_;
+    my($parent, $message, $x, $y) = @_;
 
-    return if ($instance->{in_cb});
+    my($instance,
+       $new);
+    my $wm = WindowManager->instance();
+
+    # Create a new tooltip window if an existing one wasn't found, otherwise
+    # reuse an existing unused one.
+
+    if (! defined($instance = $wm->cond_find($window_type, sub { return 1; })))
+    {
+
+	$new = 1;
+	$instance = {};
+	$instance->{glade} = Gtk2::GladeXML->new($glade_file,
+						 $window_type,
+						 APPLICATION_NAME);
+
+	# Flag to stop recursive calling of callbacks.
+
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+
+	# Connect Glade registered signal handlers.
+
+	glade_signal_autoconnect($instance->{glade}, $instance);
+
+	# Get the widgets that we are interested in.
+
+	$instance->{window} = $instance->{glade}->get_widget($window_type);
+	foreach my $widget ("eventbox", "message_label")
+	{
+	    $instance->{$widget} = $instance->{glade}->get_widget($widget);
+	}
+
+	# Setup the colours used for the tooltip window.
+
+	$instance->{window}->modify_bg("normal",
+				       Gtk2::Gdk::Color->parse("Black"));
+	$instance->{eventbox}->modify_bg("normal",
+					 Gtk2::Gdk::Color->parse("Pink"));
+
+    }
+    else
+    {
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+	$instance->{window}->hide();
+	Glib::Source->remove($instance->{timeout_source_id});
+    }
+
     local $instance->{in_cb} = 1;
 
-    $instance->{appbar}->clear_stack();
-    &{$instance->{update_handler}}($instance, BRANCH_CHANGED);
+    # Update the tooltip message text and setup a timout handler to dismiss the
+    # window after three seconds.
+
+    $instance->{message_label}->set_text($message);
+    $instance->{timeout_source_id} =
+	Glib::Timeout->add(3000,
+			   sub {
+			       my $instance = $_[0];
+			       $instance->{window}->hide();
+			       return FALSE;
+			   },
+			   $instance);
+
+    # Position it, reparent window and display it.
+
+    $instance->{window}->move($x, $y);
+    $instance->{window}->set_transient_for($parent);
+    $instance->{window}->show_all();
+    $instance->{window}->present();
+
+    # If necessary, register the window for management.
+
+    $wm->manage($instance, $window_type, $instance->{window}) if ($new);
+
+    return $instance;
+
+}
+#
+##############################################################################
+#
+#   Routine      - hide_tooltip_window
+#
+#   Description  - Hides the tooltip window if it is visible.
+#
+#   Data         - None.
+#
+##############################################################################
+
+
+
+sub hide_tooltip_window()
+{
+
+    my $instance;
+
+    # Look for a mapped tooltip window, if found then hide it and cancel its
+    # hide timeout handler.
+
+    if (defined($instance = WindowManager->instance()->cond_find
+		($window_type,
+		 sub {
+		     my $instance = $_[0];
+		     return $instance->{window}->mapped();
+		 })))
+    {
+	$instance->{in_cb} = 0;
+	local $instance->{in_cb} = 1;
+	$instance->{window}->hide();
+	Glib::Source->remove($instance->{timeout_source_id});
+    }
 
 }
 

@@ -606,7 +606,7 @@ sub get_advanced_find_window($)
 	$instance->{stop_button}->signal_connect
 	    ("clicked", sub { $_[1]->{stop} = 1; }, $instance);
 
-	# Setup the empty comboboxes.
+	# Setup the comboboxes.
 
 	$instance->{branch_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
@@ -738,6 +738,13 @@ sub get_advanced_find_window($)
 	$instance->{branch_combo_details}->{preset} = 0;
 	$instance->{revision_combo_details}->{preset} = 0;
 	&{$instance->{update_handler}}($instance, NEW_FIND);
+
+	# Now the advanced find instance is completely initialised, set up the
+	# branch and revision comboboxentry widgets for auto-completion.
+
+	activate_auto_completion($instance->{branch_comboboxentry}, $instance);
+	activate_auto_completion($instance->{revision_comboboxentry},
+				 $instance);
 
     }
     else

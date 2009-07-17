@@ -1648,14 +1648,14 @@ sub get_browser_window(;$$$$$)
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$browser->{branch_comboboxentry}->set_text_column(0);
 	$browser->{branch_comboboxentry}->set_wrap_width(2);
-	$browser->{directory_comboboxentry}->
-	    set_model(Gtk2::ListStore->new("Glib::String"));
-	$browser->{directory_comboboxentry}->set_text_column(0);
-	$browser->{directory_comboboxentry}->set_wrap_width(2);
 	$browser->{revision_comboboxentry}->
 	    set_model(Gtk2::ListStore->new("Glib::String"));
 	$browser->{revision_comboboxentry}->set_text_column(0);
 	$browser->{revision_comboboxentry}->set_wrap_width(2);
+	$browser->{directory_comboboxentry}->
+	    set_model(Gtk2::ListStore->new("Glib::String"));
+	$browser->{directory_comboboxentry}->set_text_column(0);
+	$browser->{directory_comboboxentry}->set_wrap_width(2);
 
 	# Setup the tree view manifest file browser.
 
@@ -1800,6 +1800,15 @@ sub get_browser_window(;$$$$$)
 	$browser->{file_being_viewed_preset_value} = "";
 	$browser->{file_displayed_id} = "";
 	&{$browser->{update_handler}}($browser, ALL_CHANGED);
+
+	# Now the browser instance is completely initialised, set up the
+	# branch, revision and directory comboboxentry widgets for
+	# auto-completion.
+
+	activate_auto_completion($browser->{branch_comboboxentry}, $browser);
+	activate_auto_completion($browser->{revision_comboboxentry}, $browser);
+	activate_auto_completion($browser->{directory_comboboxentry},
+				 $browser);
 
     }
     else

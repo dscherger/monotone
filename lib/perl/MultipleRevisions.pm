@@ -54,7 +54,7 @@ sub multiple_revisions_selection($$$@);
 
 # Private routines.
 
-sub get_multiple_revisions_window($$@);
+sub get_multiple_revisions_window($);
 #
 ##############################################################################
 #
@@ -88,9 +88,22 @@ sub multiple_revisions_selection($$$@)
     my($instance,
        $response);
 
-    $instance = get_multiple_revisions_window($parent,
-					      $message,
-					      @revision_ids);
+    $instance = get_multiple_revisions_window($parent);
+    local $instance->{in_cb} = 1;
+
+    # Update the message text and the revisions combobox with the supplied
+    # information.
+
+    $instance->{message_label}->set_markup($message);
+    $instance->{revisions_combobox}->get_model()->clear();
+    foreach my $revision_id (@revision_ids)
+    {
+	$instance->{revisions_combobox}->append_text($revision_id);
+    }
+    $instance->{revisions_combobox}->set_active(0);
+
+    # Wait for the user to respond.
+
     WindowManager->instance()->allow_input
 	(sub { $response = $instance->{window}->run(); });
     $instance->{window}->hide();
@@ -124,9 +137,6 @@ sub multiple_revisions_selection($$$@)
 #
 #   Data         - $parent       : The parent window widget for the multiple
 #                                  revisions dialog window.
-#                  $message      : The message that is to be displayed.
-#                  @revision_ids : A list of revision ids that the user is to
-#                                  select from.
 #                  Return Value  : A reference to the newly created or unused
 #                                  multiple revisions instance record.
 #
@@ -134,10 +144,10 @@ sub multiple_revisions_selection($$$@)
 
 
 
-sub get_multiple_revisions_window($$@)
+sub get_multiple_revisions_window($)
 {
 
-    my($parent, $message, @revision_ids) = @_;
+    my $parent = $_[0];
 
     my($instance,
        $new);
@@ -190,17 +200,6 @@ sub get_multiple_revisions_window($$@)
     }
 
     local $instance->{in_cb} = 1;
-
-    # Update the message text and the revisions combobox with the supplied
-    # information.
-
-    $instance->{message_label}->set_markup($message);
-    $instance->{revisions_combobox}->get_model()->clear();
-    foreach my $revision_id (@revision_ids)
-    {
-	$instance->{revisions_combobox}->append_text($revision_id);
-    }
-    $instance->{revisions_combobox}->set_active(0);
 
     # Reparent window and display it.
 
