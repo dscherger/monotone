@@ -14,17 +14,18 @@
 #include "sanity.hh"
 #include "platform.hh"
 #include "tester-plaf.hh"
+#include <map>
 
 #include <sys/stat.h>
 #include <sys/times.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
-#include <string.h>
-#include <map>
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 using std::string;
 using std::map;
