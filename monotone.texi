@@ -3147,14 +3147,19 @@ accidently pick the same name.
 These conflicts are reported when someone tries to merge the two
 revisions containing the new files.
 
+There are similar conflicts for directories; the process for resolving
+them is different, because we need to worry about the files in the
+directories.
+
 @subsubheading Same file
 For the first case, the conflict is resolved by dropping one file,
 using @command{conflicts} commands. The contents should be manually
 merged, in case they are slightly different. Typically, a user will
 have one of the files in their current workspace; the other can be
 retrieved via @command{automate get_file_of}; the revision id is shown
-in the merge error message. The process can be confusing; here's a
-detailed example.
+in the merge error message.
+
+The process for files can be confusing; here's a detailed example.
 
 Suppose Beth and Abe each commit a new file @file{checkout.sh}. When
 Beth attempts to merge the two heads, she gets a message like:
@@ -3233,6 +3238,15 @@ mtn update
 
 Now she has her file in @file{thermostat-honeywell}, and Abe's in
 @file{thermostat-westinghouse}.
+
+@subsubheading Directories
+When two directories are given the same name, there are still the two
+basic approaches to resolving the conflict; drop or rename. However,
+if a directory is dropped, all the files in it must also be dropped.
+Therefore, it is almost always better to first rename one of the
+directories to a temporary name as the conflict resolution, and
+then deal with the files individually, renaming or merging and
+dropping each. Then finally drop the temporary directory.
 
 @subheading Missing Root Conflict
 
@@ -4875,6 +4889,12 @@ conflicts file.
 For two file conflicts, the possible resolutions are:
 
 @ftable @command
+@item keep
+The file is kept in the merge.
+
+This inserts a @var{resolved_keep_left} or @var{resolved_keep_right}
+conflict resolution in the conflicts file.
+
 @item drop
 The file is dropped in the merge.
 
@@ -9278,6 +9298,8 @@ right_name ""
 
 All possible conflict resolutions:
 @verbatim
+   resolved_keep_left
+  resolved_keep_right
    resolved_drop_left
   resolved_drop_right
     resolved_internal

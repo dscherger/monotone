@@ -21,7 +21,13 @@
         - The 'diff' and 'automate context_diff' commands take a
           '--reverse' option when one revision is specified, to
           control the order of the diff with the workspace.
-        
+
+        - The 'conflict' commands can now handle duplicate name
+          conflicts for directories.
+
+        - The 'conflict' resolution commands now take the 'keep'
+          resolution.
+
 	Bugs fixed
 
 	Internal
