@@ -1,0 +1,10 @@
+[[!tag developer]]
+## Stephen Leake ()
+
+ * uses monotone since May 2007
+ * works on monotone since May 2007
+ * involved in automate inventory, file sutures (abandoned), conflict resolution
+ * contact: stephen_leake AT stephe-leake DOT org
+ * Homepage: http://stephe-leake.org
+
+Also Emacs DVC monotone frontend developer.
