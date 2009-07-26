@@ -11,6 +11,7 @@
 #include "vector.hh"
 
 #include "cert.hh"
+#include "charset.hh" // internalize_key_name
 #include "database.hh"
 #include "project.hh"
 #include "revision.hh"
@@ -607,7 +608,7 @@ project_t::complete_key_identity(lua_hooks & lua,
 void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
-                            arg_type const & input,
+                            external_key_name const & input,
                             key_identity_info & output)
 {
   try
@@ -621,9 +622,27 @@ project_t::get_key_identity(key_store * const keys,
     }
   catch (recoverable_failure &)
     {
-      output.official_name = typecast_vocab<key_name>(input);
+      internalize_key_name(typecast_vocab<external>(input),
+                           output.official_name);
     }
   complete_key_identity(keys, lua, output);
+}
+
+void
+project_t::get_key_identity(key_store & keys,
+                            lua_hooks & lua,
+                            external_key_name const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(&keys, lua, input, output);
+}
+
+void
+project_t::get_key_identity(lua_hooks & lua,
+                            external_key_name const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(0, lua, input, output);
 }
 
 void
@@ -632,7 +651,7 @@ project_t::get_key_identity(key_store & keys,
                             arg_type const & input,
                             key_identity_info & output)
 {
-  get_key_identity(&keys, lua, input, output);
+  get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
 }
 
 void
@@ -640,8 +659,9 @@ project_t::get_key_identity(lua_hooks & lua,
                             arg_type const & input,
                             key_identity_info & output)
 {
-  get_key_identity(0, lua, input, output);
+  get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
 }
+
 
 // These should maybe be converted to member functions.
 

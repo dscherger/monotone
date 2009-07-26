@@ -163,7 +163,7 @@ private:
                              key_identity_info & info);
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
-                        arg_type const & input,
+                        external_key_name const & input,
                         key_identity_info & output);
 public:
   void complete_key_identity(key_store & keys,
@@ -171,6 +171,13 @@ public:
                              key_identity_info & info);
   void complete_key_identity(lua_hooks & lua,
                              key_identity_info & info);
+  void get_key_identity(key_store & keys,
+                        lua_hooks & lua,
+                        external_key_name const & input,
+                        key_identity_info & output);
+  void get_key_identity(lua_hooks & lua,
+                        external_key_name const & input,
+                        key_identity_info & output);
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         arg_type const & input,

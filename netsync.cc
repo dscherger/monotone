@@ -885,7 +885,7 @@ session::session(options & opts,
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
-  for (vector<arg_type>::const_iterator i = opts.keys_to_push.begin();
+  for (vector<external_key_name>::const_iterator i = opts.keys_to_push.begin();
        i != opts.keys_to_push.end(); ++i)
     {
       key_identity_info ident;
