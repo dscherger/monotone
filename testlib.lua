@@ -171,6 +171,16 @@ function readfile(filename)
   return readfile_q(filename)
 end
 
+function readfile_lines(filename)
+   L(locheader(), "readfile_lines ", filename, "\n")
+   local file = open_or_err(filename, "rb", 2)
+   local dat = {}
+   for line in file:lines() do
+      table.insert(dat, line)
+   end
+   return dat
+end
+
 function readstdfile(filename)
   return readfile(testdir.."/"..filename)
 end

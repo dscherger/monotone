@@ -400,7 +400,7 @@ static void
 read_options_file(any_path const & optspath,
                   system_path & workspace_database,
                   branch_name & workspace_branch,
-                  rsa_keypair_id & workspace_key,
+                  external_key_name & workspace_key,
                   system_path & workspace_keydir)
 {
   data dat;
@@ -429,7 +429,7 @@ read_options_file(any_path const & optspath,
       else if (opt == "branch")
         workspace_branch = branch_name(val, origin::workspace);
       else if (opt == "key")
-        internalize_rsa_keypair_id(utf8(val, origin::workspace), workspace_key);
+        workspace_key = external_key_name(val, origin::workspace);
       else if (opt == "keydir")
         workspace_keydir = system_path(val, origin::workspace);
       else
@@ -444,7 +444,7 @@ static void
 write_options_file(bookkeeping_path const & optspath,
                    system_path const & workspace_database,
                    branch_name const & workspace_branch,
-                   rsa_keypair_id const & workspace_key,
+                   external_key_name const & workspace_key,
                    system_path const & workspace_keydir)
 {
   basic_io::stanza st;
@@ -454,9 +454,7 @@ write_options_file(bookkeeping_path const & optspath,
     st.push_str_pair(symbol("branch"), workspace_branch());
   if (!workspace_key().empty())
     {
-      utf8 key;
-      externalize_rsa_keypair_id(workspace_key, key);
-      st.push_str_pair(symbol("key"), key());
+      st.push_str_pair(symbol("key"), workspace_key());
     }
   if (!workspace_keydir.as_internal().empty())
     st.push_str_pair(symbol("keydir"), workspace_keydir.as_internal());
@@ -481,7 +479,7 @@ workspace::get_options(options & opts)
 
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   bookkeeping_path o_path;
@@ -519,7 +517,7 @@ workspace::get_database_option(system_path const & workspace,
                                system_path & workspace_database)
 {
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   system_path o_path = (workspace
@@ -542,7 +540,7 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
   // as is in _MTN/options, not write out an empty option.
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   if (file_exists(o_path))
@@ -581,7 +579,7 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
 
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
   read_options_file(o_path,
                     workspace_database, workspace_branch, 

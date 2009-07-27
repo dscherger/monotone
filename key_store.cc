@@ -19,6 +19,7 @@
 #include "key_store.hh"
 #include "file_io.hh"
 #include "packet.hh"
+#include "project.hh"
 #include "database.hh"
 #include "keys.hh"
 #include "globish.hh"
@@ -55,22 +56,26 @@ using Botan::Pipe;
 using Botan::get_pk_decryptor;
 using Botan::get_cipher;
 
+
+typedef pair<key_name, keypair> key_info;
+typedef pair<key_id, key_info> full_key_info;
+typedef map<key_id, key_info> key_map;
+
 struct key_store_state
 {
   system_path const key_dir;
   string const ssh_sign_mode;
   bool have_read;
   lua_hooks & lua;
-  map<rsa_keypair_id, keypair> keys;
-  map<id, rsa_keypair_id> hashes;
+  key_map keys;
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   boost::shared_ptr<lazy_rng> rng;
 #endif
 
   // These are used to cache keys and signers (if the hook allows).
-  map<rsa_keypair_id, shared_ptr<RSA_PrivateKey> > privkey_cache;
-  map<rsa_keypair_id, shared_ptr<PK_Signer> > signer_cache;
+  map<key_id, shared_ptr<RSA_PrivateKey> > privkey_cache;
+  map<key_id, shared_ptr<PK_Signer> > signer_cache;
 
   // Initialized when first required.
   scoped_ptr<ssh_agent> agent;
@@ -91,16 +96,16 @@ struct key_store_state
   }
 
   // internal methods
-  void get_key_file(rsa_keypair_id const & ident, system_path & file);
-  void write_key(rsa_keypair_id const & ident, keypair const & kp);
+  void get_key_file(key_id const & ident, system_path & file);
+  void get_old_key_file(key_name const & name, system_path & file);
+  void write_key(full_key_info const & info);
   void maybe_read_key_dir();
-  shared_ptr<RSA_PrivateKey> decrypt_private_key(rsa_keypair_id const & id,
+  shared_ptr<RSA_PrivateKey> decrypt_private_key(key_id const & id,
                                                  bool force_from_user = false);
 
   // just like put_key_pair except that the key is _not_ written to disk.
   // for internal use in reading keys back from disk.
-  bool put_key_pair_memory(rsa_keypair_id const & ident,
-                           keypair const & kp);
+  bool put_key_pair_memory(full_key_info const & info);
 
   // wrapper around accesses to agent, initializes as needed
   ssh_agent & get_agent()
@@ -112,11 +117,11 @@ struct key_store_state
 
   // duplicates of key_store interfaces for use by key_store_state methods
   // and the keyreader.
-  bool maybe_get_key_pair(rsa_keypair_id const & ident,
+  bool maybe_get_key_pair(key_id const & ident,
+                          key_name & name,
                           keypair & kp);
-  bool put_key_pair(rsa_keypair_id const & ident,
-                    keypair const & kp);
-  void migrate_old_key_pair(rsa_keypair_id const & id,
+  bool put_key_pair(full_key_info const & info);
+  void migrate_old_key_pair(key_name const & id,
                             old_arc4_rsa_priv_key const & old_priv,
                             rsa_pub_key const & pub);
 };
@@ -143,23 +148,26 @@ namespace
     {E(false, origin::system, F("Extraneous data in key store."));}
 
 
-    virtual void consume_public_key(rsa_keypair_id const & ident,
+    virtual void consume_public_key(key_name const & ident,
                                     rsa_pub_key const & k)
     {E(false, origin::system, F("Extraneous data in key store."));}
 
-    virtual void consume_key_pair(rsa_keypair_id const & ident,
+    virtual void consume_key_pair(key_name const & name,
                                   keypair const & kp)
     {
-      L(FL("reading key pair '%s' from key store") % ident);
+      L(FL("reading key pair '%s' from key store") % name);
 
-      E(kss.put_key_pair_memory(ident, kp), origin::system,
-        F("Key store has multiple keys with id '%s'.") % ident);
+      key_id ident;
+      key_hash_code(name, kp.pub, ident);
+      E(kss.put_key_pair_memory(full_key_info(ident, key_info(name, kp))),
+        origin::system,
+        F("Key store has multiple copies of the key with id '%s'.") % ident);
 
       L(FL("successfully read key pair '%s' from key store") % ident);
     }
 
     // for backward compatibility
-    virtual void consume_old_private_key(rsa_keypair_id const & ident,
+    virtual void consume_old_private_key(key_name const & ident,
                                          old_arc4_rsa_priv_key const & k)
     {
       W(F("converting old-format private key '%s'") % ident);
@@ -182,7 +190,7 @@ key_store::~key_store()
 bool
 key_store::have_signing_key() const
 {
-  return !signing_key().empty();
+  return !signing_key.inner()().empty();
 }
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
@@ -231,55 +239,58 @@ key_store_state::maybe_read_key_dir()
 }
 
 void
-key_store::get_key_ids(globish const & pattern,
-                       vector<rsa_keypair_id> & priv)
+key_store::get_key_ids(vector<key_id> & priv)
 {
   s->maybe_read_key_dir();
   priv.clear();
-  for (map<rsa_keypair_id, keypair>::const_iterator
-         i = s->keys.begin(); i != s->keys.end(); ++i)
-    if (pattern.matches((i->first)()))
-      priv.push_back(i->first);
-}
-
-void
-key_store::get_key_ids(vector<rsa_keypair_id> & priv)
-{
-  s->maybe_read_key_dir();
-  priv.clear();
-  for (map<rsa_keypair_id, keypair>::const_iterator
-         i = s->keys.begin(); i != s->keys.end(); ++i)
+  for (key_map::const_iterator i = s->keys.begin(); i != s->keys.end(); ++i)
     priv.push_back(i->first);
 }
 
 bool
-key_store::key_pair_exists(rsa_keypair_id const & ident)
+key_store::key_pair_exists(key_id const & ident)
 {
   s->maybe_read_key_dir();
   return s->keys.find(ident) != s->keys.end();
 }
 
 bool
-key_store_state::maybe_get_key_pair(rsa_keypair_id const & ident,
+key_store::key_pair_exists(key_name const & name)
+{
+  s->maybe_read_key_dir();
+  for (key_map::const_iterator i = s->keys.begin();
+       i != s->keys.end(); ++i)
+    {
+      if (i->second.first == name)
+        return true;
+    }
+  return false;
+}
+
+bool
+key_store_state::maybe_get_key_pair(key_id const & ident,
+                                    key_name & name,
                                     keypair & kp)
 {
   maybe_read_key_dir();
-  map<rsa_keypair_id, keypair>::const_iterator i = keys.find(ident);
+  key_map::const_iterator i = keys.find(ident);
   if (i == keys.end())
     return false;
-  kp = i->second;
+  name = i->second.first;
+  kp = i->second.second;
   return true;
 }
 
 bool
-key_store::maybe_get_key_pair(rsa_keypair_id const & ident,
+key_store::maybe_get_key_pair(key_id const & ident,
                               keypair & kp)
 {
-  return s->maybe_get_key_pair(ident, kp);
+  key_name name;
+  return s->maybe_get_key_pair(ident, name, kp);
 }
 
 void
-key_store::get_key_pair(rsa_keypair_id const & ident,
+key_store::get_key_pair(key_id const & ident,
                         keypair & kp)
 {
   bool found = maybe_get_key_pair(ident, kp);
@@ -287,109 +298,114 @@ key_store::get_key_pair(rsa_keypair_id const & ident,
 }
 
 bool
-key_store::maybe_get_key_pair(id const & hash,
-                              rsa_keypair_id & keyid,
+key_store::maybe_get_key_pair(key_id const & hash,
+                              key_name & keyid,
                               keypair & kp)
 {
-  s->maybe_read_key_dir();
-  map<id, rsa_keypair_id>::const_iterator hi = s->hashes.find(hash);
-  if (hi == s->hashes.end())
-    return false;
-
-  map<rsa_keypair_id, keypair>::const_iterator ki = s->keys.find(hi->second);
+  key_map::const_iterator ki = s->keys.find(hash);
   if (ki == s->keys.end())
     return false;
-  keyid = hi->second;
-  kp = ki->second;
+  keyid = ki->second.first;
+  kp = ki->second.second;
   return true;
 }
 
 void
-key_store_state::get_key_file(rsa_keypair_id const & ident,
+key_store::get_key_pair(key_id const & hash,
+                        key_name & keyid,
+                        keypair & kp)
+{
+  bool found = maybe_get_key_pair(hash, keyid, kp);
+  I(found);
+}
+
+void
+key_store_state::get_key_file(key_id const & ident,
                               system_path & file)
+{
+  hexenc<id> encoded;
+  encode_hexenc(ident.inner(), encoded);
+
+  file = key_dir / path_component(encoded(), origin::internal);
+}
+
+void
+key_store_state::get_old_key_file(key_name const & name,
+                                  system_path & file)
 {
   // filename is the keypair id, except that some characters can't be put in
   // filenames (especially on windows).
-  string leaf = ident();
+  string leaf = name();
   for (unsigned int i = 0; i < leaf.size(); ++i)
     if (leaf.at(i) == '+')
       leaf.at(i) = '_';
 
   file = key_dir / path_component(leaf, origin::internal);
+
 }
 
 void
-key_store_state::write_key(rsa_keypair_id const & ident,
-                           keypair const & kp)
+key_store_state::write_key(full_key_info const & info)
 {
   ostringstream oss;
   packet_writer pw(oss);
-  pw.consume_key_pair(ident, kp);
-  data dat(oss.str(), ident.made_from);
+  pw.consume_key_pair(info.second.first, info.second.second);
+  data dat(oss.str(), info.second.first.made_from);
 
   system_path file;
-  get_key_file(ident, file);
+  get_key_file(info.first, file);
 
   // Make sure the private key is not readable by anyone other than the user.
-  L(FL("writing key '%s' to file '%s' in dir '%s'") % ident % file % key_dir);
+  L(FL("writing key '%s' to file '%s' in dir '%s'")
+    % info.first % file % key_dir);
   write_data_userprivate(file, dat, key_dir);
+
+  system_path old_file;
+  get_old_key_file(info.second.first, old_file);
+  if (file_exists(old_file))
+    delete_file(old_file);
 }
 
 bool
-key_store_state::put_key_pair(rsa_keypair_id const & ident,
-                              keypair const & kp)
+key_store_state::put_key_pair(full_key_info const & info)
 {
   maybe_read_key_dir();
-  bool newkey = put_key_pair_memory(ident, kp);
+  bool newkey = put_key_pair_memory(info);
   if (newkey)
-    write_key(ident, kp);
+    write_key(info);
   return newkey;
 }
 
 bool
-key_store::put_key_pair(rsa_keypair_id const & ident,
+key_store::put_key_pair(key_name const & name,
                         keypair const & kp)
 {
-  return s->put_key_pair(ident, kp);
+  key_id ident;
+  key_hash_code(name, kp.pub, ident);
+  return s->put_key_pair(full_key_info(ident, key_info(name, kp)));
 }
 
 bool
-key_store_state::put_key_pair_memory(rsa_keypair_id const & ident,
-                                     keypair const & kp)
+key_store_state::put_key_pair_memory(full_key_info const & info)
 {
-  L(FL("putting key pair '%s'") % ident);
-  pair<map<rsa_keypair_id, keypair>::iterator, bool> res;
-  res = keys.insert(make_pair(ident, kp));
-  if (res.second)
+  L(FL("putting key pair '%s'") % info.first);
+  pair<key_map::iterator, bool> res;
+  res = keys.insert(info);
+  if (!res.second)
     {
-      id hash;
-      key_hash_code(ident, kp.pub, hash);
-      I(hashes.insert(make_pair(hash, ident)).second);
-      return true;
-    }
-  else
-    {
-      E(keys_match(ident, res.first->second.pub, ident, kp.pub),
-        origin::system,
-        F("Cannot store key '%s': a different key by that name exists.")
-          % ident);
-      L(FL("skipping existing key pair %s") % ident);
+      L(FL("skipping existing key pair %s") % info.first);
       return false;
     }
+  return true;
 }
 
 void
-key_store::delete_key(rsa_keypair_id const & ident)
+key_store::delete_key(key_id const & ident)
 {
   s->maybe_read_key_dir();
-  map<rsa_keypair_id, keypair>::iterator i = s->keys.find(ident);
+  key_map::iterator i = s->keys.find(ident);
   if (i != s->keys.end())
     {
-      id hash;
-      key_hash_code(ident, i->second.pub, hash);
-      map<id, rsa_keypair_id>::iterator j = s->hashes.find(hash);
-      I(j != s->hashes.end());
-      s->hashes.erase(j);
       s->keys.erase(i);
       s->signer_cache.erase(ident);
       s->privkey_cache.erase(ident);
@@ -409,7 +425,8 @@ key_store::delete_key(rsa_keypair_id const & ident)
 // match.  Prompts are worded slightly differently if GENERATING_KEY is true.
 static void
 get_passphrase(utf8 & phrase,
-               rsa_keypair_id const & keyid,
+               key_name const & keyname,
+               key_id const & keyid,
                bool confirm_phrase,
                bool generating_key)
 {
@@ -418,13 +435,20 @@ get_passphrase(utf8 & phrase,
   char pass2[constants::maxpasswd];
   int i = 0;
 
+  hexenc<id> hexid;
+  encode_hexenc(keyid.inner(), hexid);
+  string const short_id = hexid().substr(0, 8) + "...";
+
   if (confirm_phrase && !generating_key)
-    prompt1 = (F("enter new passphrase for key ID [%s]: ") % keyid).str();
+    prompt1 = (F("enter new passphrase for key ID [%s] (%s): ")
+               % keyname % short_id).str();
   else
-    prompt1 = (F("enter passphrase for key ID [%s]: ") % keyid).str();
+    prompt1 = (F("enter passphrase for key ID [%s] (%s): ")
+               % keyname % short_id).str();
 
   if (confirm_phrase)
-    prompt2 = (F("confirm passphrase for key ID [%s]: ") % keyid).str();
+    prompt2 = (F("confirm passphrase for key ID [%s] (%s): ")
+               % keyname % short_id).str();
 
   try
     {
@@ -463,17 +487,18 @@ get_passphrase(utf8 & phrase,
 
 
 shared_ptr<RSA_PrivateKey>
-key_store_state::decrypt_private_key(rsa_keypair_id const & id,
+key_store_state::decrypt_private_key(key_id const & id,
                                      bool force_from_user)
 {
   // See if we have this key in the decrypted key cache.
-  map<rsa_keypair_id, shared_ptr<RSA_PrivateKey> >::const_iterator
+  map<key_id, shared_ptr<RSA_PrivateKey> >::const_iterator
     cpk = privkey_cache.find(id);
   if (cpk != privkey_cache.end())
     return cpk->second;
 
   keypair kp;
-  E(maybe_get_key_pair(id, kp), origin::user,
+  key_name name;
+  E(maybe_get_key_pair(id, name, kp), origin::user,
     F("no key pair '%s' found in key store '%s'") % id % key_dir);
 
   L(FL("%d-byte private key") % kp.priv().size());
@@ -495,10 +520,13 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
       utf8 phrase;
       string lua_phrase;
           // See whether a lua hook will tell us the passphrase.
-      if (!force_from_user && lua.hook_get_passphrase(id, lua_phrase))
+      key_identity_info identity;
+      identity.id = id;
+      identity.given_name = name;
+      if (!force_from_user && lua.hook_get_passphrase(identity, lua_phrase))
         phrase = utf8(lua_phrase, origin::user);
       else
-        get_passphrase(phrase, id, false, false);
+        get_passphrase(phrase, name, id, false, false);
 
       int cycles = 1;
       for (;;)
@@ -520,7 +548,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
               F("failed to decrypt old private RSA key, "
                 "probably incorrect passphrase"));
 
-            get_passphrase(phrase, id, false, false);
+            get_passphrase(phrase, name, id, false, false);
             cycles++;
             continue;
           }
@@ -541,7 +569,7 @@ key_store_state::decrypt_private_key(rsa_keypair_id const & id,
 }
 
 void
-key_store::cache_decrypted_key(const rsa_keypair_id & id)
+key_store::cache_decrypted_key(const key_id & id)
 {
   signing_key = id;
   keypair key;
@@ -558,24 +586,24 @@ key_store::cache_decrypted_key(const rsa_keypair_id & id)
 
 void
 key_store::create_key_pair(database & db,
-                           rsa_keypair_id const & ident,
+                           key_name const & ident,
                            utf8 const * maybe_passphrase,
-                           id * maybe_hash)
+                           key_id * const maybe_hash)
 {
   conditional_transaction_guard guard(db);
 
-  bool exists = key_pair_exists(ident);
-  if (db.database_specified())
+  bool exists = false;
+  for (key_map::iterator i = s->keys.begin(); i != s->keys.end(); ++i)
     {
-      guard.acquire();
-      exists = exists || db.public_key_exists(ident);
+      if (i->second.first == ident)
+        exists = true;
     }
   E(!exists, origin::user, F("key '%s' already exists") % ident);
 
   utf8 prompted_passphrase;
   if (!maybe_passphrase)
     {
-      get_passphrase(prompted_passphrase, ident, true, true);
+      get_passphrase(prompted_passphrase, ident, key_id(), true, true);
       maybe_passphrase = &prompted_passphrase;
     }
 
@@ -626,6 +654,7 @@ key_store::create_key_pair(database & db,
 
   if (db.database_specified())
     {
+      guard.acquire();
       P(F("storing public key '%s' in %s") % ident % db.get_filename());
       db.put_key(ident, kp.pub);
       guard.commit();
@@ -636,14 +665,32 @@ key_store::create_key_pair(database & db,
 }
 
 void
-key_store::change_key_passphrase(rsa_keypair_id const & id)
+key_store::change_key_passphrase(key_name const & name)
 {
+  key_id id;
   keypair kp;
-  load_key_pair(*this, id, kp);
+  {
+    bool found = false;
+    s->maybe_read_key_dir();
+    for (key_map::const_iterator i = s->keys.begin();
+         i != s->keys.end(); ++i)
+      {
+        if (i->second.first == name)
+          {
+            E(!found, origin::user,
+              F("you have multiple private keys name '%s'") % name);
+            found = true;
+            id = i->first;
+            kp = i->second.second;
+          }
+      }
+    E(found, origin::user, F("no key pair '%s' found in key store '%s'")
+      % name % s->key_dir);
+  }
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id, true);
 
   utf8 new_phrase;
-  get_passphrase(new_phrase, id, true, false);
+  get_passphrase(new_phrase, name, id, true, false);
 
   unfiltered_pipe->start_msg();
   Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
@@ -658,11 +705,11 @@ key_store::change_key_passphrase(rsa_keypair_id const & id)
                          origin::internal);
 
   delete_key(id);
-  put_key_pair(id, kp);
+  put_key_pair(name, kp);
 }
 
 void
-key_store::decrypt_rsa(rsa_keypair_id const & id,
+key_store::decrypt_rsa(key_id const & id,
                        rsa_oaep_sha_data const & ciphertext,
                        string & plaintext)
 {
@@ -690,16 +737,17 @@ key_store::decrypt_rsa(rsa_keypair_id const & id,
 
 void
 key_store::make_signature(database & db,
-                          rsa_keypair_id const & id,
+                          key_id const & id,
                           string const & tosign,
                           rsa_sha1_signature & signature)
 {
+  key_name name;
   keypair key;
-  get_key_pair(id, key);
+  get_key_pair(id, name, key);
 
   // If the database doesn't have this public key, add it now.
   if (!db.public_key_exists(id))
-    db.put_key(id, key.pub);
+    db.put_key(name, key.pub);
 
   string sig_string;
   ssh_agent & agent = s->get_agent();
@@ -763,8 +811,8 @@ key_store::make_signature(database & db,
           if (agent.connected()
               && s->ssh_sign_mode != "only"
               && s->ssh_sign_mode != "no") {
-            L(FL("make_signature: adding private key (%s) to ssh-agent") % id());
-            agent.add_identity(*priv_key, id());
+            L(FL("make_signature: adding private key (%s) to ssh-agent") % id);
+            agent.add_identity(*priv_key, name());
           }
           signer = shared_ptr<PK_Signer>(get_pk_signer(*priv_key, "EMSA3(SHA-1)"));
 
@@ -814,23 +862,34 @@ key_store::make_signature(database & db,
 //
 
 void
-key_store::add_key_to_agent(rsa_keypair_id const & id)
+key_store::add_key_to_agent(key_id const & id)
 {
   ssh_agent & agent = s->get_agent();
   E(agent.connected(), origin::user,
     F("no ssh-agent is available, cannot add key '%s'") % id);
 
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
-  agent.add_identity(*priv, id());
+
+  key_name name;
+  keypair kp;
+  s->maybe_get_key_pair(id, name, kp);
+  agent.add_identity(*priv, name());
 }
 
 void
-key_store::export_key_for_agent(rsa_keypair_id const & id,
+key_store::export_key_for_agent(key_id const & id,
                                 std::ostream & os)
 {
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id);
+
+  key_name name;
+  {
+    keypair kp;
+    I(s->maybe_get_key_pair(id, name, kp));
+  }
+
   utf8 new_phrase;
-  get_passphrase(new_phrase, id, true, false);
+  get_passphrase(new_phrase, name, id, true, false);
 
   // This pipe cannot sensibly be recycled.
   Pipe p(new Botan::DataSink_Stream(os));
@@ -855,7 +914,7 @@ key_store::export_key_for_agent(rsa_keypair_id const & id,
 
 void
 key_store_state::migrate_old_key_pair
-    (rsa_keypair_id const & id,
+    (key_name const & id,
      old_arc4_rsa_priv_key const & old_priv,
      rsa_pub_key const & pub)
 {
@@ -866,11 +925,13 @@ key_store_state::migrate_old_key_pair
   shared_ptr<RSA_PrivateKey> priv_key;
 
   // See whether a lua hook will tell us the passphrase.
+  key_identity_info identity;
+  identity.given_name = id;
   string lua_phrase;
-  if (lua.hook_get_passphrase(id, lua_phrase))
+  if (lua.hook_get_passphrase(identity, lua_phrase))
     phrase = utf8(lua_phrase, origin::user);
   else
-    get_passphrase(phrase, id, false, false);
+    get_passphrase(phrase, id, key_id(), false, false);
 
   int cycles = 1;
   for (;;)
@@ -905,7 +966,7 @@ key_store_state::migrate_old_key_pair
           F("failed to decrypt old private RSA key, "
             "probably incorrect passphrase"));
 
-        get_passphrase(phrase, id, false, false);
+        get_passphrase(phrase, id, key_id(), false, false);
         cycles++;
         continue;
       }
@@ -941,12 +1002,14 @@ key_store_state::migrate_old_key_pair
   if (!pub().empty() && !keys_match(id, pub, id, kp.pub))
     W(F("public and private keys for %s don't match") % id);
 
-  put_key_pair(id, kp);
+  key_id hash;
+  key_hash_code(id, kp.pub, hash);
+  put_key_pair(full_key_info(hash, key_info(id, kp)));
 }
 
 void
 key_store::migrate_old_key_pair
-    (rsa_keypair_id const & id,
+    (key_name const & id,
      old_arc4_rsa_priv_key const & old_priv,
      rsa_pub_key const & pub)
 {
