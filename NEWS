@@ -18,7 +18,7 @@
 	  disable it by default by having the above Lua hook return an
 	  empty string.
 
-        - The 'diff' and 'automate context_diff' commands take a
+        - The 'diff' and 'automate content_diff' commands take a
           '--reverse' option when one revision is specified, to
           control the order of the diff with the workspace.
         
