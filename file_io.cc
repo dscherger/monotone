@@ -234,11 +234,19 @@ namespace
   {
     fill_pc_vec(vector<path_component> & v) : v(v) { v.clear(); }
 
-    // FIXME BUG: this treats 's' as being already utf8, but it is actually
-    // in the external character set.  Also, will I() out on invalid
-    // pathnames, when it should N() or perhaps W() and skip.
+    // FIXME BUG: this treats 's' as being already utf8,
+    // but it is actually in the external character set.
     virtual void consume(char const * s)
-    { v.push_back(path_component(s)); }
+    {
+      try
+      {
+        v.push_back(path_component(s));
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % s);
+      }
+    }
 
   private:
     vector<path_component> & v;
@@ -249,8 +257,14 @@ namespace
     file_deleter(any_path const & p) : parent(p) {}
     virtual void consume(char const * f)
     {
-      // FIXME: same bug as above.
-      do_remove((parent / path_component(f)).as_external());
+      try
+      {
+        do_remove((parent / path_component(f)).as_external());
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % f);
+      }
     }
   private:
     any_path const & parent;

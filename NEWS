@@ -24,6 +24,9 @@
         
 	Bugs fixed
 
+        - Monotone now sanely skips paths with invalid characters
+          it encounters during 'add' or 'automate inventory'.
+
 	Internal
 
 Tue May 12 20:44:00 UTC 2009
