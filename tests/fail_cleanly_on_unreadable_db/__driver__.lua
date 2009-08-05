@@ -59,7 +59,19 @@ check(mtn("--db=subdir/foo.db"), 2, false, false)
 check(mtn("--db=subdir/foo.db", "ls", "branches"), 0, false, false)
 check(mtn("--db=subdir/foo.db", "db", "info"), 0, false, false)
 check(mtn("--db=subdir/foo.db", "db", "version"), 0, false, false)
-check(mtn("--db=subdir/foo.db", "db", "migrate"), 0, false, false)
 check(mtn("--db=subdir/bar.db", "db", "load"), 0, false, false)
-check(mtn("--db=subdir/baz.db", "db", "init"), 0, false, false)
+
+-- Since at least sqlite 3.5.9, these operations fail if the parent
+-- directory is not readable. This is caused by sqlite3 trying to
+-- read-write open a journal file in the same directory where the database
+-- itself resides. So migrate and init fail, because they contain writing
+-- transactions. On older sqlite versions (for sure 3.3.8 and before)
+-- these tests succeed, because no journal file is opened and the db file
+-- itself is still writable.
+--
+-- See: http://www.sqlite.org/tempfiles.html
+--
+-- check(mtn("--db=subdir/foo.db", "db", "migrate"), 0, false, false)
+-- check(mtn("--db=subdir/baz.db", "db", "init"), 0, false, false)
+
 check({"chmod", "a+r", "subdir"})

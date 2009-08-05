@@ -1,3 +1,11 @@
+-- Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
 
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
@@ -88,7 +96,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 
@@ -102,18 +112,26 @@ function dir_matches(name, dir)
    return false
 end
 
+function portable_readline(f)
+    line = f:read()
+    if line ~= nil then
+        line = string.gsub(line, "\r$","") -- strip possible \r left from windows editing
+    end
+    return line
+end
+
 function ignore_file(name)
    -- project specific
    if (ignored_files == nil) then
       ignored_files = {}
       local ignfile = io.open(".mtn-ignore", "r")
       if (ignfile ~= nil) then
-         local line = ignfile:read()
+         local line = portable_readline(ignfile)
          while (line ~= nil) do
             if line ~= "" then
                 table.insert(ignored_files, line)
             end
-            line = ignfile:read()
+            line = portable_readline(ignfile)
          end
          io.close(ignfile)
       end
@@ -137,9 +155,11 @@ function ignore_file(name)
                        .. name .. "':\n")
            warn_reported_file = true
         end
-            io.stderr:write(".mtn-ignore:" .. i .. ": warning: " .. result
-                    .. "\n\t- skipping this regex for "
-                .. "all remaining files.\n")
+        local prefix = ".mtn-ignore:" .. i .. ": warning: "
+            io.stderr:write(prefix
+                            .. string.gsub(result, "\n", "\n" .. prefix)
+                               .. "\n\t- skipping this regex for "
+                               .. "all remaining files.\n")
             ignored_files[i] = nil
          end
       end
@@ -259,21 +279,21 @@ end
 
 function edit_comment(basetext, user_log_message)
    local exe = nil
-   if (program_exists_in_path("vi")) then exe = "vi" end
-   if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
-   local debian_editor = io.open("/usr/bin/editor")
-   if (debian_editor ~= nil) then
-      debian_editor:close()
-      exe = "/usr/bin/editor"
-   end
-   local visual = os.getenv("VISUAL")
-   if (visual ~= nil) then exe = visual end
-   local editor = os.getenv("EDITOR")
-   if (editor ~= nil) then exe = editor end
 
-   if (exe == nil) then
-      io.write("Could not find editor to enter commit message\n"
-               .. "Try setting the environment variable EDITOR\n")
+   -- top priority is VISUAL, then EDITOR, then a series of hardcoded
+   -- defaults, if available.
+
+   local visual = os.getenv("VISUAL")
+   local editor = os.getenv("EDITOR")
+   if (visual ~= nil) then exe = visual
+   elseif (editor ~= nil) then exe = editor
+   elseif (program_exists_in_path("editor")) then exe = "editor"
+   elseif (program_exists_in_path("vi")) then exe = "vi"
+   elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
+	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+   else
+      io.write(gettext("Could not find editor to enter commit message\n"
+		       .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
@@ -287,11 +307,44 @@ function edit_comment(basetext, user_log_message)
    tmp:write(basetext)
    io.close(tmp)
 
-   if (execute(exe, tname) ~= 0) then
-      io.write(string.format(gettext("Error running editor '%s' to enter log message\n"),
-                             exe))
-      os.remove(tname)
-      return nil
+   -- By historical convention, VISUAL and EDITOR can contain arguments
+   -- (and, in fact, arbitrarily complicated shell constructs).  Since Lua
+   -- has no word-splitting functionality, we invoke the shell to deal with
+   -- anything more complicated than a single word with no metacharacters.
+   -- This, unfortunately, means we have to quote the file argument.
+
+   if (not string.find(exe, "[^%w_.+-]")) then
+      -- safe to call spawn directly
+      if (execute(exe, tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
+   else
+      -- must use shell
+      local shell = os.getenv("SHELL")
+      if (shell == nil) then shell = "sh" end
+      if (not program_exists_in_path(shell)) then
+	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+					"but '%s' is not to be found"),
+			        exe, shell))
+	 os.remove(tname)
+	 return nil
+      end
+
+      -- Single-quoted strings in both Bourne shell and csh can contain
+      -- anything but a single quote.
+      local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
+
+      if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
    end
 
    tmp = io.open(tname, "r")
@@ -319,6 +372,21 @@ function use_inodeprints()
    return false
 end
 
+function get_date_format_spec()
+   -- Return the strftime(3) specification to be used to print dates
+   -- in human-readable format after conversion to the local timezone.
+   -- The default produces output like this: 22 May 2009, 09:06:14 AM
+   -- (the month names are localized).
+   return "%d %b %Y, %I:%M:%S %p"
+
+   -- A sampling of other possible formats you might want:
+   --   default for your locale: "%c" (may include a confusing timezone label)
+   --   like ctime(3):  "%a %b %d %H:%M:%S %Y"
+   --   email style:    "%a, %d %b %Y %H:%M:%S"
+   --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
+   --
+   --   ISO 8601, no timezone conversion: ""
+end
 
 -- trust evaluation hooks
 
@@ -388,9 +456,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *CENTER* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*CENTER* file."))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -436,9 +505,10 @@ mergers.vim = {
      return execute_redirected("", string.gsub(out, "\\", "/"), "", unpack(diff3_args))
       end
 
-      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *LEFT* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
@@ -470,7 +540,7 @@ mergers.vim = {
       os.rename(lfile_merged, tbl.lfile)
       os.rename(rfile_merged, tbl.rfile)
 
-      local ret = execute(vim, "-f", "-d", "-c", string.format("file %s", tbl.outfile),
+      local ret = execute(vim, "-f", "-d", "-c", string.format("silent file %s", tbl.outfile),
                           tbl.lfile, tbl.rfile)
       if (ret ~= 0) then
          io.write(string.format(gettext("Error running merger '%s'\n"), vim))
@@ -1144,14 +1214,60 @@ function get_mtn_command(host)
         return "mtn"
 end
 
+function get_remote_unix_socket_command(host)
+    return "socat"
+end
+
 function get_default_command_options(command)
    local default_args = {}
    return default_args
 end
 
+hook_wrapper_dump                = {}
+hook_wrapper_dump.depth          = 0
+hook_wrapper_dump._string        = function(s) return string.format("%q", s) end
+hook_wrapper_dump._number        = function(n) return tostring(n) end
+hook_wrapper_dump._boolean       = function(b) if (b) then return "true" end return "false" end
+hook_wrapper_dump._userdata      = function(u) return "nil --[[userdata]]" end
+-- if we really need to return / serialize functions we could do it
+-- like cbreak@irc.freenode.net did here: http://lua-users.org/wiki/TablePersistence
+hook_wrapper_dump._function      = function(f) return "nil --[[function]]" end
+hook_wrapper_dump._nil           = function(n) return "nil" end
+hook_wrapper_dump._thread        = function(t) return "nil --[[thread]]" end
+hook_wrapper_dump._lightuserdata = function(l) return "nil --[[lightuserdata]]" end
 
-function get_remote_unix_socket_command(host)
-    return "socat"
+hook_wrapper_dump._table = function(t)
+    local buf = ''
+    if (hook_wrapper_dump.depth > 0) then
+        buf = buf .. '{\n'
+    end
+    hook_wrapper_dump.depth = hook_wrapper_dump.depth + 1;
+    for k,v in pairs(t) do
+        buf = buf..string.format('%s[%s] = %s;\n',
+              string.rep("\t", hook_wrapper_dump.depth - 1),
+              hook_wrapper_dump["_" .. type(k)](k),
+              hook_wrapper_dump["_" .. type(v)](v))
+    end
+    hook_wrapper_dump.depth = hook_wrapper_dump.depth - 1;
+    if (hook_wrapper_dump.depth > 0) then
+        buf = buf .. string.rep("\t", hook_wrapper_dump.depth - 1) .. '}'
+    end
+    return buf
+end
+
+function hook_wrapper(func_name, ...)
+    -- we have to ensure that nil arguments are restored properly for the
+    -- function call, see http://lua-users.org/wiki/StoringNilsInTables
+    local args = { n=select('#', ...), ... }
+    for i=1,args.n do
+        local val = assert(loadstring("return " .. args[i]),
+                         "argument "..args[i].." could not be evaluated")()
+        assert(val ~= nil or args[i] == "nil",
+               "argument "..args[i].." was evaluated to nil")
+        args[i] = val
+    end
+    local res = { _G[func_name](unpack(args, 1, args.n)) }
+    return hook_wrapper_dump._table(res)
 end
 
 do
@@ -1184,12 +1300,12 @@ do
       local s = "continue"
       local v = nil
       for _,n in pairs(hook_functions) do
-     if n[f] then
-        s,v = n[f](...)
-     end
-     if s ~= "continue" then
-        break
-     end
+         if n[f] then
+            s,v = n[f](...)
+         end
+         if s ~= "continue" then
+            break
+         end
       end
       return v
    end
@@ -1223,38 +1339,38 @@ do
 
    function add_hook_functions(functions, precedence)
       if type(functions) ~= "table" or type(precedence) ~= "number" then
-     return false, "Invalid type"
+         return false, "Invalid type"
       end
       if hook_functions[precedence] then
-     return false, "Precedence already taken"
+         return false, "Precedence already taken"
       end
 
       local unknown_items = ""
       local warning = nil
       local is_member =
-     function (s,t)
-        for k,v in pairs(t) do if s == v then return true end end
-        return false
-     end
+         function (s,t)
+            for k,v in pairs(t) do if s == v then return true end end
+            return false
+         end
 
       for n,f in pairs(functions) do
-     if type(n) == "string" then
-        if not is_member(n, supported_items) then
-           if unknown_items ~= "" then
-          unknown_items = unknown_items .. ","
-           end
-           unknown_items = unknown_items .. n
-        end
-        if type(f) ~= "function" then
-           return false, "Value for functions item "..n.." isn't a function"
-        end
-     else
-        warning = "Non-string item keys found in functions table"
-     end
+         if type(n) == "string" then
+            if not is_member(n, supported_items) then
+               if unknown_items ~= "" then
+                  unknown_items = unknown_items .. ","
+               end
+               unknown_items = unknown_items .. n
+            end
+            if type(f) ~= "function" then
+               return false, "Value for functions item "..n.." isn't a function"
+            end
+         else
+            warning = "Non-string item keys found in functions table"
+         end
       end
 
       if warning == nil and unknown_items ~= "" then
-     warning = "Unknown item(s) " .. unknown_items .. " in functions table"
+         warning = "Unknown item(s) " .. unknown_items .. " in functions table"
       end
 
       hook_functions[precedence] = functions

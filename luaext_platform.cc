@@ -1,3 +1,11 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include "lua.hh"
@@ -14,56 +22,63 @@ LUAEXT(get_ostype, )
 {
   std::string str;
   get_system_flavour(str);
-  lua_pushstring(L, str.c_str());
+  lua_pushstring(LS, str.c_str());
   return 1;
 }
 
 LUAEXT(existsonpath, )
 {
-  const char *exe = luaL_checkstring(L, -1);
-  lua_pushnumber(L, existsonpath(exe));
+  const char *exe = luaL_checkstring(LS, -1);
+  lua_pushnumber(LS, existsonpath(exe));
   return 1;
 }
 
 LUAEXT(is_executable, )
 {
-  const char *path = luaL_checkstring(L, -1);
-  lua_pushboolean(L, is_executable(path));
+  const char *path = luaL_checkstring(LS, -1);
+  lua_pushboolean(LS, is_executable(path));
   return 1;
 }
 
-LUAEXT(make_executable, )
+LUAEXT(set_executable, )
 {
-  const char *path = luaL_checkstring(L, -1);
-  lua_pushnumber(L, make_executable(path));
+  const char *path = luaL_checkstring(LS, -1);
+  lua_pushnumber(LS, set_executable(path));
+  return 1;
+}
+
+LUAEXT(clear_executable, )
+{
+  const char *path = luaL_checkstring(LS, -1);
+  lua_pushnumber(LS, clear_executable(path));
   return 1;
 }
 
 LUAEXT(spawn, )
 {
-  int n = lua_gettop(L);
-  const char *path = luaL_checkstring(L, 1);
+  int n = lua_gettop(LS);
+  const char *path = luaL_checkstring(LS, 1);
   char **argv = (char**)malloc((n+1)*sizeof(char*));
   int i;
   pid_t ret;
   if (argv==NULL)
     return 0;
   argv[0] = (char*)path;
-  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(L, i+1);
+  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(LS, i+1);
   argv[i] = NULL;
   ret = process_spawn(argv);
   free(argv);
-  lua_pushnumber(L, ret);
+  lua_pushnumber(LS, ret);
   return 1;
 }
 
 LUAEXT(spawn_redirected, )
 {
-  int n = lua_gettop(L);
-  char const * infile = luaL_checkstring(L, 1);
-  char const * outfile = luaL_checkstring(L, 2);
-  char const * errfile = luaL_checkstring(L, 3);
-  const char *path = luaL_checkstring(L, 4);
+  int n = lua_gettop(LS);
+  char const * infile = luaL_checkstring(LS, 1);
+  char const * outfile = luaL_checkstring(LS, 2);
+  char const * errfile = luaL_checkstring(LS, 3);
+  const char *path = luaL_checkstring(LS, 4);
   n -= 3;
   char **argv = (char**)malloc((n+1)*sizeof(char*));
   int i;
@@ -71,11 +86,11 @@ LUAEXT(spawn_redirected, )
   if (argv==NULL)
     return 0;
   argv[0] = (char*)path;
-  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(L,  i+4);
+  for (i=1; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+4);
   argv[i] = NULL;
   ret = process_spawn_redirected(infile, outfile, errfile, argv);
   free(argv);
-  lua_pushnumber(L, ret);
+  lua_pushnumber(LS, ret);
   return 1;
 }
 
@@ -84,31 +99,31 @@ LUAEXT(spawn_redirected, )
 // There is a Lua FAQ entitled:
 // "Why does my library-created file segfault on :close() but work otherwise?"
 
-#define topfile(L)	((FILE **)luaL_checkudata(L, 1, LUA_FILEHANDLE))
+#define topfile(LS)     ((FILE **)luaL_checkudata(LS, 1, LUA_FILEHANDLE))
 
-static int io_fclose (lua_State *L) {
-  FILE **p = topfile(L);
+static int io_fclose (lua_State *LS) {
+  FILE **p = topfile(LS);
   int ok = (fclose(*p) == 0);
   *p = NULL;
-  lua_pushboolean(L, ok);
+  lua_pushboolean(LS, ok);
   return 1;
 }
 
-static FILE **newfile (lua_State *L) {
-  FILE **pf = (FILE **)lua_newuserdata(L, sizeof(FILE *));
+static FILE **newfile (lua_State *LS) {
+  FILE **pf = (FILE **)lua_newuserdata(LS, sizeof(FILE *));
   *pf = NULL;  /* file handle is currently `closed' */
-  luaL_getmetatable(L, LUA_FILEHANDLE);
-  lua_setmetatable(L, -2);
+  luaL_getmetatable(LS, LUA_FILEHANDLE);
+  lua_setmetatable(LS, -2);
 
-  lua_pushcfunction(L, io_fclose);
-  lua_setfield(L, LUA_ENVIRONINDEX, "__close");
+  lua_pushcfunction(LS, io_fclose);
+  lua_setfield(LS, LUA_ENVIRONINDEX, "__close");
 
   return pf;
 }
 
 LUAEXT(spawn_pipe, )
 {
-  int n = lua_gettop(L);
+  int n = lua_gettop(LS);
   char **argv = (char**)malloc((n+1)*sizeof(char*));
   int i;
   pid_t pid;
@@ -116,57 +131,57 @@ LUAEXT(spawn_pipe, )
     return 0;
   if (n<1)
     return 0;
-  for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(L,  i+1);
+  for (i=0; i<n; i++) argv[i] = (char*)luaL_checkstring(LS,  i+1);
   argv[i] = NULL;
-  
+
   int infd;
-  FILE **inpf = newfile(L);
+  FILE **inpf = newfile(LS);
   int outfd;
-  FILE **outpf = newfile(L);
+  FILE **outpf = newfile(LS);
 
   pid = process_spawn_pipe(argv, inpf, outpf);
   free(argv);
 
-  lua_pushnumber(L, pid);
+  lua_pushnumber(LS, pid);
 
   return 3;
 }
 
 LUAEXT(wait, )
 {
-  pid_t pid = static_cast<pid_t>(luaL_checknumber(L, -1));
+  pid_t pid = static_cast<pid_t>(luaL_checknumber(LS, -1));
   int res;
   int ret;
   ret = process_wait(pid, &res);
-  lua_pushnumber(L, res);
-  lua_pushnumber(L, ret);
+  lua_pushnumber(LS, res);
+  lua_pushnumber(LS, ret);
   return 2;
 }
 
 LUAEXT(kill, )
 {
-  int n = lua_gettop(L);
-  pid_t pid = static_cast<pid_t>(luaL_checknumber(L, -2));
+  int n = lua_gettop(LS);
+  pid_t pid = static_cast<pid_t>(luaL_checknumber(LS, -2));
   int sig;
   if (n>1)
-    sig = static_cast<int>(luaL_checknumber(L, -1));
+    sig = static_cast<int>(luaL_checknumber(LS, -1));
   else
     sig = SIGTERM;
-  lua_pushnumber(L, process_kill(pid, sig));
+  lua_pushnumber(LS, process_kill(pid, sig));
   return 1;
 }
 
 LUAEXT(sleep, )
 {
-  int seconds = static_cast<int>(luaL_checknumber(L, -1));
-  lua_pushnumber(L, process_sleep(seconds));
+  int seconds = static_cast<int>(luaL_checknumber(LS, -1));
+  lua_pushnumber(LS, process_sleep(seconds));
   return 1;
 }
 
 LUAEXT(get_pid, )
 {
   pid_t pid = get_process_id();
-  lua_pushnumber(L, pid);
+  lua_pushnumber(LS, pid);
   return 1;
 }
 
@@ -177,4 +192,3 @@ LUAEXT(get_pid, )
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

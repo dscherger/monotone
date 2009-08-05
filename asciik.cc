@@ -1,6 +1,6 @@
 // Copyright (C) 2006 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 Lapo Luchini <lapo@lapo.it>
-// Copyright (C) 2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
+//               2007 Lapo Luchini <lapo@lapo.it>
+//               2007 Gabriele Dini Ciacci <dark.schneider@iol.it>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -245,7 +245,7 @@ asciik::draw(size_t const curr_items,
   if (num_lines < 2)
     lines.push_back(string(""));
   // ignore empty lines at the end
-  while ((num_lines > 2) && (lines[num_lines - 1].size() == 0))
+  while ((num_lines > 2) && (lines[num_lines - 1].empty()))
     --num_lines;
 
   // prints it out
@@ -314,7 +314,7 @@ asciik::try_draw(vector<revision_id> const & next_row,
     preservation_crosses.begin(), preservation_crosses.end(),
     parent_crosses.begin(), parent_crosses.end(),
     insert_iterator<set<size_t> >(intersection_crosses, intersection_crosses.begin()));
-  if (intersection_crosses.size() > 0)
+  if (!intersection_crosses.empty())
     return false;
 
   set<pair<size_t, size_t> > links(preservation_links);
@@ -360,7 +360,7 @@ asciik::print(revision_id const & rev,
     curr_row = no_ghost;
   else if (try_draw(next_row, curr_loc, parents, annotation))
     curr_row = next_row;
-  else if (new_revs.size() == 0) // this line has disappeared
+  else if (new_revs.empty()) // this line has disappeared
     {
       vector<revision_id> extra_ghost(next_row);
       I(curr_loc < extra_ghost.size());
@@ -375,7 +375,7 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
     "",
     options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   set<revision_id> revs;
@@ -395,6 +395,15 @@ CMD(asciik, "asciik", "", CMD_REF(debug), N_("SELECTOR"),
       set<revision_id> parents;
       db.get_revision_parents(*rev, parents);
       parents.erase(ghost); // remove the fake parent that root nodes have
-      graph.print(*rev, parents, encode_hexenc(rev->inner()()));
+      graph.print(*rev, parents, encode_hexenc(rev->inner()(),
+                                               rev->inner().made_from));
     }
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

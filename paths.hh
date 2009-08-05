@@ -1,7 +1,5 @@
-#ifndef __PATHS_HH__
-#define __PATHS_HH__
-
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -9,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __PATHS_HH__
+#define __PATHS_HH__
 
 // safe, portable, fast, simple path handling -- in that order.
 // but they all count.
@@ -48,12 +49,14 @@
 //          is extremely fast.  such strings are interpreted as being relative
 //          to the project root.
 //        file_path_external: use this for strings that come from the user.
-//          these strings are normalized before being checked, and if there is
-//          a problem trigger N() invariants rather than I() invariants.  if in
-//          a workspace, such strings are interpreted as being
-//          _relative to the user's original directory_.
-//          if not in a workspace, strings are treated as referring to some
-//          database object directly.
+//          these strings are normalized before being checked, and if there
+//          is a problem trigger N() invariants rather than I() invariants.
+//          if in a workspace, such strings are interpreted as being
+//          _relative to the user's original directory_. if not in a
+//          workspace, strings are treated as relative to the tree root. The
+//          null string is accepted as referring to the workspace root
+//          directory, because that is how file_path.as_external() outputs
+//          that directory.
 //      file_path's also provide optimized splitting and joining
 //      functionality.
 //
@@ -80,8 +83,10 @@
 //       representing this path for internal use.  for instance, this is the
 //       string that should be embedded into the text of revisions.
 //    -- a method .as_external(), which returns a std::string suitable for
-//       passing to filesystem interface functions.  in practice, this means
-//       that it is recoded into an appropriate character set, etc.
+//       passing to filesystem interface functions. in practice, this means
+//       that it is recoded into an appropriate character set, etc. For
+//       bookkeeping_path and file_path, .as_external() is relative to the
+//       workspace root.
 //    -- a operator<< for ostreams.  this should always be used when writing
 //       out paths for display to the user.  at the moment it just calls one
 //       of the above functions, but this is _not_ correct.  there are
@@ -96,6 +101,11 @@
 //       i.e., nothing fancy necessary, for purposes of F() just treat it like
 //       it were a string
 
+#include <boost/shared_ptr.hpp>
+#include <boost/concept_check.hpp>
+#include "origin_type.hh"
+#include <map>
+
 class any_path;
 class file_path;
 class roster_t;
@@ -107,12 +117,12 @@ class utf8;
 // for the basename of the root directory.  It resembles, but is not, a
 // vocab type.
 
-class path_component
+class path_component : public origin_aware
 {
 public:
   path_component() : data() {}
   explicit path_component(utf8 const &);
-  explicit path_component(std::string const &);
+  path_component(std::string const &, origin::type);
   explicit path_component(char const *);
 
   std::string const & operator()() const { return data; }
@@ -146,7 +156,7 @@ template <> void dump(path_component const &, std::string &);
 // It's possible this will become a proper virtual interface in the future,
 // but since the implementation is exactly the same in all cases, there isn't
 // much point ATM...
-class any_path
+class any_path : public origin_aware
 {
 public:
   // converts to native charset and path syntax
@@ -166,13 +176,14 @@ public:
   any_path dirname() const;
 
   any_path(any_path const & other)
-    : data(other.data) {}
+    : origin_aware(other.made_from), data(other.data) {}
   any_path & operator=(any_path const & other)
-  { data = other.data; return *this; }
+  { made_from = other.made_from; data = other.data; return *this; }
 
 protected:
   std::string data;
   any_path() {}
+  any_path(origin::type whence) : origin_aware(whence) {}
 
 private:
   any_path(std::string const & path,
@@ -256,15 +267,17 @@ private:
   // external paths:
   //   -- are converted to internal syntax (/ rather than \, etc.)
   //   -- normalized
-  //   -- assumed to be relative to the user's cwd, and munged
-  //      to become relative to root of the workspace instead
+  //   -- if not 'to_workspace_root', assumed to be relative to the user's
+  //      cwd, and munged to become relative to root of the workspace
+  //      instead
   // internal and external paths:
   //   -- are confirmed to be normalized and relative
   //   -- not to be in _MTN/
-  file_path(source_type type, std::string const & path);
-  file_path(source_type type, utf8 const & path);
+  file_path(source_type type, std::string const & path, bool to_workspace_root);
+  file_path(source_type type, utf8 const & path, bool to_workspace_root);
   friend file_path file_path_internal(std::string const & path);
   friend file_path file_path_external(utf8 const & path);
+  friend file_path file_path_external_ws(utf8 const & path);
 
   // private substring constructor, does no validation.  used by dirname()
   // and operator/ with a path_component.
@@ -279,14 +292,21 @@ private:
   friend class roster_t;
 };
 
-// these are the public file_path constructors
+// these are the public file_path constructors. path is relative to the
+// current working directory.
 inline file_path file_path_internal(std::string const & path)
 {
-  return file_path(file_path::internal, path);
+  return file_path(file_path::internal, path, false);
 }
 inline file_path file_path_external(utf8 const & path)
 {
-  return file_path(file_path::external, path);
+  return file_path(file_path::external, path, false);
+}
+
+// path is relative to the workspace root
+inline file_path file_path_external_ws(utf8 const & path)
+{
+  return file_path(file_path::external, path, true);
 }
 
 class bookkeeping_path : public any_path
@@ -296,7 +316,8 @@ public:
   // path _should_ contain the leading _MTN/
   // and _should_ look like an internal path
   // usually you should just use the / operator as a constructor!
-  bookkeeping_path(std::string const &);
+  explicit bookkeeping_path(char const * const path);
+  bookkeeping_path(std::string const &, origin::type made_from);
   bookkeeping_path operator /(char const *) const;
   bookkeeping_path operator /(path_component const &) const;
   bookkeeping_path operator /(file_path const & to_append) const;
@@ -351,8 +372,9 @@ public:
   // this path can contain anything, and it will be absolutified and
   // tilde-expanded.  it will considered to be relative to the directory
   // monotone started in.  it should be in utf8.
-  system_path(std::string const & path);
-  system_path(utf8 const & path);
+  explicit system_path(char const * const path);
+  system_path(std::string const & path, origin::type from);
+  explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
   { return data== other.data; }
@@ -377,6 +399,36 @@ template <> void dump(file_path const & sp, std::string & out);
 template <> void dump(bookkeeping_path const & sp, std::string & out);
 template <> void dump(system_path const & sp, std::string & out);
 
+// Base class for predicate functors on paths.  T must be one of the path
+// classes.
+template <class T>
+struct path_predicate
+{
+  BOOST_CLASS_REQUIRE2(T, any_path, boost, ConvertibleConcept);
+  virtual bool operator()(T const &) const = 0;
+protected:
+  path_predicate() {}
+  virtual ~path_predicate() {}
+};
+
+// paths.cc provides always-true and always-false predicates.
+template <class T>
+struct path_always_true : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+template <class T>
+struct path_always_false : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+
+// Return a file_path, bookkeeping_path, or system_path, as appropriate.
+// 'path' is an external path. If to_workspace_root, path is relative to
+// workspace root, or absolute. Otherwise, it is relative to the current
+// working directory, or absolute.
+boost::shared_ptr<any_path> new_optimal_path(std::string path, bool to_workspace_root);
+
 // record the initial path.  must be called before any use of system_path.
 void
 save_initial_path();
@@ -393,6 +445,12 @@ go_to_workspace(system_path const & new_workspace);
 
 void mark_std_paths_used(void);
 
+file_path
+find_new_path_for(std::map<file_path, file_path> const & renames,
+                  file_path const & old_path);
+
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -400,5 +458,3 @@ void mark_std_paths_used(void);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

@@ -1,11 +1,16 @@
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include "file_io.hh"
 #include "option.hh"
 #include "sanity.hh"
-#include "ui.hh"
 
 using std::map;
 using std::pair;
@@ -48,8 +53,9 @@ bad_arg_internal::bad_arg_internal(string const & str)
 
 
 
-void splitname(string const & from, string & name, string & n)
+void splitname(char const * f, string & name, string & n)
 {
+  string from(f);
   // from looks like "foo" or "foo,f"
   string::size_type comma = from.find(',');
   name = from.substr(0, comma);
@@ -73,15 +79,15 @@ concrete_option::concrete_option()
   : has_arg(false)
 {}
 
-concrete_option::concrete_option(std::string const & names,
-                                 std::string const & desc,
+concrete_option::concrete_option(char const * names,
+                                 char const * desc,
                                  bool arg,
                                  boost::function<void (std::string)> set,
                                  boost::function<void ()> reset)
 {
   description = desc;
   splitname(names, longname, shortname);
-  I(!description.empty() || !longname.empty() || !shortname.empty());
+  I((desc && desc[0]) || !longname.empty() || !shortname.empty());
   // If an option has a name (ie, can be set), it must have a setter function
   I(set || (longname.empty() && shortname.empty()));
   has_arg = arg;
@@ -129,8 +135,8 @@ class discard_argument
 };
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void ()> set,
                                 boost::function<void ()> reset)
 {
@@ -139,8 +145,8 @@ concrete_option_set::operator()(string const & names,
 }
 
 concrete_option_set &
-concrete_option_set::operator()(string const & names,
-                                string const & desc,
+concrete_option_set::operator()(char const * names,
+                                char const * desc,
                                 boost::function<void (string)> set,
                                 boost::function<void ()> reset)
 {
@@ -177,7 +183,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
   string cur;
   quote_type type = none;
   bool have_tok(false);
-  
+
   for (string::const_iterator i = from.begin(); i != from.end(); ++i)
     {
       if (*i == '\'')
@@ -208,7 +214,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
         {
           if (type != one)
             ++i;
-          N(i != from.end(), F("Invalid escape in --xargs file"));
+          E(i != from.end(), origin::user, F("Invalid escape in --xargs file"));
           cur += *i;
           have_tok = true;
         }
@@ -217,7 +223,7 @@ tokenize_for_command_line(string const & from, args_vector & to)
           if (type == none)
             {
               if (have_tok)
-                to.push_back(arg_type(cur));
+                to.push_back(arg_type(cur, origin::user));
               cur.clear();
               have_tok = false;
             }
@@ -234,14 +240,14 @@ tokenize_for_command_line(string const & from, args_vector & to)
         }
     }
   if (have_tok)
-    to.push_back(arg_type(cur));
+    to.push_back(arg_type(cur, origin::user));
 }
 
 void concrete_option_set::from_command_line(int argc, char const * const * argv)
 {
   args_vector arguments;
   for (int i = 1; i < argc; ++i)
-    arguments.push_back(arg_type(argv[i]));
+    arguments.push_back(arg_type(argv[i], origin::user));
   from_command_line(arguments, true);
 }
 
@@ -316,17 +322,17 @@ void concrete_option_set::from_command_line(args_vector & args,
                   arg = idx(args,i+1);
                 }
               else
-                arg = arg_type(idx(args,i)().substr(equals+1));
+                arg = arg_type(idx(args,i)().substr(equals+1), origin::user);
             }
         }
       else if (idx(args,i)().substr(0,1) == "-")
         {
           name = idx(args,i)().substr(1,1);
-          
+
           o = getopt(by_name, name);
           if (!o.has_arg && idx(args,i)().size() != 2)
             throw extra_arg(name);
-          
+
           if (o.has_arg)
             {
               if (idx(args,i)().size() == 2)
@@ -337,7 +343,7 @@ void concrete_option_set::from_command_line(args_vector & args,
                   arg = idx(args,i+1);
                 }
               else
-                arg = arg_type(idx(args,i)().substr(2));
+                arg = arg_type(idx(args,i)().substr(2), origin::user);
             }
         }
       else
@@ -354,7 +360,7 @@ void concrete_option_set::from_command_line(args_vector & args,
           read_data_for_command_line(arg, dat);
           args_vector fargs;
           tokenize_for_command_line(dat(), fargs);
-          
+
           args.erase(args.begin() + i);
           if (separate_arg)
             args.erase(args.begin() + i);
@@ -393,7 +399,7 @@ void concrete_option_set::from_key_value_pairs(vector<pair<string, string> > con
        i != keyvals.end(); ++i)
     {
       string const & key(i->first);
-      arg_type const & value(arg_type(i->second));
+      arg_type const & value(arg_type(i->second, origin::user));
 
       concrete_option o = getopt(by_name, key);
 
@@ -437,122 +443,29 @@ static string usagestr(concrete_option const & opt)
     return out;
 }
 
-std::string concrete_option_set::get_usage_str() const
+void
+concrete_option_set::get_usage_strings(vector<string> & names,
+                                       vector<string> & descriptions,
+                                       unsigned int & maxnamelen) const
 {
   unsigned int namelen = 0; // the longest option name string
+  names.clear();
+  descriptions.clear();
   for (std::set<concrete_option>::const_iterator i = options.begin();
        i != options.end(); ++i)
     {
-      string names = usagestr(*i);
-      if (names.size() > namelen)
-        namelen = names.size();
+      string name = usagestr(*i);
+      if (name.size() > namelen)
+        namelen = name.size();
+      names.push_back(name);
+      descriptions.push_back(gettext(i->description));
     }
-
-  // "    --long [ -s ] <arg>    description goes here"
-  //  ^  ^^                 ^^  ^^                          ^
-  //  |  | \    namelen    / |  | \        descwidth       /| <- edge of screen
-  //  ^^^^                   ^^^^
-  // pre_indent              space
-  string result;
-  int pre_indent = 2; // empty space on the left
-  int space = 2; // space after the longest option, before the description
-  int termwidth = guess_terminal_width();
-  int descindent = pre_indent + namelen + space;
-  int descwidth = termwidth - descindent;
-  for (std::set<concrete_option>::const_iterator i = options.begin();
-       i != options.end(); ++i)
-    {
-      string names = usagestr(*i);
-      if (names.empty())
-        continue;
-
-      result += string(pre_indent, ' ')
-              + names + string(namelen - names.size(), ' ');
-
-      if (!i->description.empty())
-        {
-          result += string(space, ' ');
-          result += format_text(i->description, descindent, descindent);
-        }
-
-      result += '\n';
-    }
-  return result;
+  maxnamelen = namelen;
 }
 
 } // namespace option
 
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-UNIT_TEST(option, concrete_options)
-{
-  bool b = false;
-  string s;
-  int i = -1;
-  vector<string> v;
-
-  option::concrete_option_set os;
-  os("--", "", option::setter(v), option::resetter(v))
-    ("bool,b", "", option::setter(b), option::resetter(b, false))
-    ("s", "", option::setter(s))
-    ("int", "", option::setter(i));
-
-  {
-    char const * cmdline[] = {"progname", "pos", "-s", "str ing", "--int", "10",
-                              "--int", "45", "--", "--bad", "foo", "-b"};
-    os.from_command_line(12, cmdline);
-  }
-  UNIT_TEST_CHECK(!b);
-  UNIT_TEST_CHECK(i == 45);
-  UNIT_TEST_CHECK(s == "str ing");
-  UNIT_TEST_CHECK(v.size() == 4);// pos --bad foo -b
-  os.reset();
-  UNIT_TEST_CHECK(v.empty());
-
-  {
-    args_vector cmdline;
-    cmdline.push_back(arg_type("--bool"));
-    cmdline.push_back(arg_type("-s"));
-    cmdline.push_back(arg_type("-s"));
-    cmdline.push_back(arg_type("foo"));
-    os.from_command_line(cmdline);
-  }
-  UNIT_TEST_CHECK(b);
-  UNIT_TEST_CHECK(s == "-s");
-  UNIT_TEST_CHECK(v.size() == 1);
-  UNIT_TEST_CHECK(v[0] == "foo");
-  os.reset();
-  UNIT_TEST_CHECK(!b);
-
-  {
-    char const * cmdline[] = {"progname", "--bad_arg", "x"};
-    UNIT_TEST_CHECK_THROW(os.from_command_line(3, cmdline), option::unknown_option);
-  }
-
-  {
-    char const * cmdline[] = {"progname", "--bool=x"};
-    UNIT_TEST_CHECK_THROW(os.from_command_line(2, cmdline), option::extra_arg);
-  }
-
-  {
-    char const * cmdline[] = {"progname", "-bx"};
-    UNIT_TEST_CHECK_THROW(os.from_command_line(2, cmdline), option::extra_arg);
-  }
-
-  {
-    char const * cmdline[] = {"progname", "-s"};
-    UNIT_TEST_CHECK_THROW(os.from_command_line(2, cmdline), option::missing_arg);
-  }
-
-  {
-    char const * cmdline[] = {"progname", "--int=x"};
-    UNIT_TEST_CHECK_THROW(os.from_command_line(2, cmdline), option::bad_arg);
-  }
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++
@@ -561,4 +474,3 @@ UNIT_TEST(option, concrete_options)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

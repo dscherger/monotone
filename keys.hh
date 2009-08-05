@@ -1,6 +1,3 @@
-#ifndef __KEYS_HH__
-#define __KEYS_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,6 +7,9 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __KEYS_HH__
+#define __KEYS_HH__
+
 #include "vocab.hh"
 
 struct options;
@@ -17,25 +17,35 @@ class lua_hooks;
 class key_store;
 class database;
 struct keypair;
+class globish;
 
 // keys.{hh,cc} does all the "delicate" crypto (meaning: that which needs
 // to read passphrases and manipulate raw, decrypted private keys). it
 // could in theory be in transforms.cc too, but that file's already kinda
 // big and this stuff "feels" different, imho.
 
-void
-get_passphrase(utf8 & phrase,
-               rsa_keypair_id const & keyid,
-               bool confirm_phrase,
-               bool generating_key);
-
-// N()'s out if there is no unique key for us to use
+// Find the key to be used for signing certs.  If possible, ensure the
+// database and the key_store agree on that key, and cache it in decrypted
+// form, so as not to bother the user for their passphrase later.
 void get_user_key(options const & opts, lua_hooks & lua,
-                  database & db, key_store & keys, 
+                  database & db, key_store & keys,
                   rsa_keypair_id & key);
 
+// As above, but does not report which key has been selected; for use when
+// the important thing is to have selected one and cached the decrypted key.
 void cache_user_key(options const & opts, lua_hooks & lua,
                     database & db, key_store & keys);
+
+// Find the key to be used for netsync authentication.  If possible, ensure the
+// database and the key_store agree on that key, and cache it in decrypted
+// form, so as not to bother the user for their passphrase later.
+enum netsync_key_requiredness {KEY_OPTIONAL, KEY_REQUIRED};
+void cache_netsync_key(options const & opts, lua_hooks & lua,
+                       database & db, key_store & keys,
+                       utf8 const & host,
+                       globish const & include,
+                       globish const & exclude,
+                       netsync_key_requiredness key_requiredness);
 
 void load_key_pair(key_store & keys,
                    rsa_keypair_id const & id);
@@ -50,14 +60,12 @@ void key_hash_code(rsa_keypair_id const & ident,
                    rsa_pub_key const & pub,
                    id & out);
 
-void key_hash_code(rsa_keypair_id const & ident,
-                   rsa_priv_key const & priv,
-                   id & out);
-
 bool keys_match(rsa_keypair_id const & id1,
                 rsa_pub_key const & key1,
                 rsa_keypair_id const & id2,
                 rsa_pub_key const & key2);
+
+#endif // __KEYS_HH__
 
 // Local Variables:
 // mode: C++
@@ -66,5 +74,3 @@ bool keys_match(rsa_keypair_id const & id1,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __KEYS_HH__

@@ -48,7 +48,7 @@ check(mtn("commit", "--branch=testbranch1", "--message-file=blah_blah.txt"), 0, 
 
 check(get("old_revs_propagate_log"))
 check(mtn("propagate", "testbranch2", "testbranch1",
-          "--message-file=old_revs_propagate_log"), 0, false, false)
+          "--message-file=old_revs_propagate_log", "--no-prefix"), 0, false, false)
 check(mtn("update"), 0, false, false)
 
 check(mtn("drop", "--bookkeep-only", "testfile1"), 0, false, false)
@@ -83,7 +83,9 @@ function check_migrate_from(id)
   check(qgrep(id, "stdout"))
   -- migrate it
   check(mtn("--db="..id..".mtn", "db", "migrate"), 0, false, false)
+  check(mtn("--db="..id..".mtn", "ls", "branches"), 1, false, false)
   check(mtn("--db="..id..".mtn", "db", "rosterify"), 0, false, false)
+  check(mtn("--db="..id..".mtn", "ls", "branches"), 0, false, false)
   check_same_db_contents(id..".mtn", "latest.mtn")
 end
 

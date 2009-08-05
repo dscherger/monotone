@@ -61,6 +61,6 @@ check(mtn("commit", "-m", "blah"), 3, false, false)
 for _,i in pairs({"files", "dirs"}) do
   get(i..".db.dumped", "stdin")
   check(mtn("db", "load", "-d", i..".mtn"), 0, false, false, true)
-  check(mtn("db", "migrate", "-d", i..".mtn"), 0, false, false)
-  check(mtn("-d", i..".mtn", "db", "regenerate_caches"), 3, false, false)
+  check(mtn("db", "migrate", "-d", i..".mtn"), 3, false, false)
+  --check(mtn("-d", i..".mtn", "db", "regenerate_caches"), 3, false, false)
 end

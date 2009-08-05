@@ -12,9 +12,8 @@
 #include <sstream>
 
 #include <boost/dynamic_bitset.hpp>
-
-#include "botan/botan.h"
-#include "botan/sha160.h"
+#include <botan/botan.h>
+#include <botan/sha160.h>
 
 #include "constants.hh"
 #include "merkle_tree.hh"
@@ -37,7 +36,7 @@ bitset_to_prefix(dynamic_bitset<unsigned char> const & pref,
 {
   string s(pref.num_blocks(), 0x00);
   to_block_range(pref, s.begin());
-  rawpref = prefix(s);
+  rawpref = prefix(s, origin::internal);
 }
 
 void
@@ -75,7 +74,7 @@ raw_sha1(string const & in)
 {
   Botan::SHA_160 hash;
   hash.update(reinterpret_cast<Botan::byte const *>(in.data()),
-	      static_cast<unsigned int>(in.size()));
+              static_cast<unsigned int>(in.size()));
   char digest[constants::sha1_digest_length];
   hash.final(reinterpret_cast<Botan::byte *>(digest));
   string out(digest, constants::sha1_digest_length);
@@ -298,7 +297,7 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
           string slot_val = extract_substring(inbuf, pos,
                                               constants::merkle_hash_length_in_bytes,
                                               "slot value");
-          out.set_raw_slot(slot, id(slot_val));
+          out.set_raw_slot(slot, id(slot_val, origin::network));
         }
     }
 
@@ -306,7 +305,8 @@ read_node(string const & inbuf, size_t & pos, merkle_node & out)
   out.check_invariants();
   if (hash != checkhash)
     throw bad_decode(F("mismatched node hash value %s, expected %s")
-		     % xform<Botan::Hex_Encoder>(checkhash) % xform<Botan::Hex_Encoder>(hash));
+                     % id(checkhash, origin::internal)
+                     % id(hash, origin::network));
 }
 
 
@@ -319,7 +319,8 @@ hash_merkle_node(merkle_node const & node)
   string out;
   write_node(node, out);
   I(out.size() >= constants::merkle_hash_length_in_bytes);
-  return id(out.substr(0, constants::merkle_hash_length_in_bytes));
+  return id(out.substr(0, constants::merkle_hash_length_in_bytes),
+            origin::internal);
 }
 
 void

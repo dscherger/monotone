@@ -7,9 +7,6 @@
 ^compile$
 ^config\.(guess|h(\.in)?|log|rpath|status|sub)$
 ^configure$
-^debian/files$
-^debian/monotone
-^debian/monotone\.substvars$
 ^depcomp$
 ^html
 ^install-sh$
@@ -60,7 +57,6 @@
 ^testlib\.c$
 ^texinfo\.tex$
 ^txt2c$
-^unit-tests$
 ^unit_tester$
 ^unit_tests\.status$
 ^version\.texi$

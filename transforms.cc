@@ -9,13 +9,13 @@
 
 #include "base.hh"
 #include <iterator>
+#include <botan/botan.h>
+#include <botan/sha160.h>
+
 #include "botan_pipe_cache.hh"
-#include "botan/botan.h"
-#include "botan/sha160.h"
 #include "gzip.hh"
 
 #include "transforms.hh"
-#include "xdelta.hh"
 #include "char_classifiers.hh"
 
 using std::string;
@@ -56,17 +56,13 @@ using Botan::Hash_Filter;
 NORETURN(static inline void error_in_transform(Botan::Exception & e));
 
 static inline void
-error_in_transform(Botan::Exception & e)
+error_in_transform(Botan::Exception & e, origin::type caused_by)
 {
-  // why do people make up their own out-of-memory exceptions?
-  if (typeid(e) == typeid(Botan::Memory_Exhaustion))
-    throw std::bad_alloc();
-
   // these classes can all indicate data corruption
-  else if (typeid(e) == typeid(Botan::Encoding_Error)
-           || typeid(e) == typeid(Botan::Decoding_Error)
-           || typeid(e) == typeid(Botan::Stream_IO_Error)
-           || typeid(e) == typeid(Botan::Integrity_Failure))
+  if (typeid(e) == typeid(Botan::Encoding_Error)
+      || typeid(e) == typeid(Botan::Decoding_Error)
+      || typeid(e) == typeid(Botan::Stream_IO_Error)
+      || typeid(e) == typeid(Botan::Integrity_Failure))
     {
       // clean up the what() string a little: throw away the
       // "botan: TYPE: " part...
@@ -83,7 +79,7 @@ error_in_transform(Botan::Exception & e)
             *p = ' ';
         }
 
-      E(false,
+      E(false, caused_by,
         F("%s\n"
           "this may be due to a memory glitch, data corruption during\n"
           "a network transfer, corruption of your database or workspace,\n"
@@ -100,12 +96,12 @@ error_in_transform(Botan::Exception & e)
 // full specializations for the usable cases of xform<XFM>()
 // use extra error checking in base64 and hex decoding
 #define SPECIALIZE_XFORM(T, carg)                               \
-  template<> string xform<T>(string const & in)                 \
+  template<> string xform<T>(string const & in, origin::type made_from) \
   {                                                             \
     string out;                                                 \
+    static cached_botan_pipe pipe(new Pipe(new T(carg)));       \
     try                                                         \
       {                                                         \
-        static cached_botan_pipe pipe(new Pipe(new T(carg)));   \
         /* this might actually be a problem here */             \
         I(pipe->message_count() < Pipe::LAST_MESSAGE);          \
         pipe->process_msg(in);                                  \
@@ -113,7 +109,8 @@ error_in_transform(Botan::Exception & e)
       }                                                         \
     catch (Botan::Exception & e)                                \
       {                                                         \
-        error_in_transform(e);                                  \
+        pipe.reset(new Pipe(new T(carg)));                      \
+        error_in_transform(e, made_from);                       \
       }                                                         \
     return out;                                                 \
   }
@@ -121,7 +118,8 @@ error_in_transform(Botan::Exception & e)
 SPECIALIZE_XFORM(Base64_Encoder,);
 SPECIALIZE_XFORM(Base64_Decoder, Botan::IGNORE_WS);
 //SPECIALIZE_XFORM(Hex_Encoder, Hex_Encoder::Lowercase);
-template<> string xform<Botan::Hex_Encoder>(string const & in)
+template<> string xform<Botan::Hex_Encoder>(string const & in,
+                                            origin::type made_from)
 {
   string out;
   out.reserve(in.size()<<1);
@@ -142,7 +140,8 @@ template<> string xform<Botan::Hex_Encoder>(string const & in)
   return out;
 }
 //SPECIALIZE_XFORM(Hex_Decoder, Botan::IGNORE_WS);
-template<> string xform<Botan::Hex_Decoder>(string const & in)
+template<> string xform<Botan::Hex_Decoder>(string const & in,
+                                            origin::type made_from)
 {
   string out;
   out.reserve(in.size()>>1);
@@ -176,7 +175,7 @@ template<> string xform<Botan::Hex_Decoder>(string const & in)
             }
           catch(Botan::Exception & e)
             {
-              error_in_transform(e);
+              error_in_transform(e, made_from);
             }
         }
       if (high)
@@ -199,39 +198,50 @@ template<> string xform<Botan::Hex_Decoder>(string const & in)
 SPECIALIZE_XFORM(Gzip_Compression,);
 SPECIALIZE_XFORM(Gzip_Decompression,);
 
+template <>
+std::string decode_base64_as<std::string>(std::string const & in,
+                                          origin::type made_from)
+{
+  return xform<Botan::Base64_Decoder>(in, made_from);
+}
+
 template <typename T>
 void pack(T const & in, base64< gzip<T> > & out)
 {
   string tmp;
   tmp.reserve(in().size()); // FIXME: do some benchmarking and make this a constant::
 
+  static cached_botan_pipe pipe(new Pipe(new Gzip_Compression,
+                                         new Base64_Encoder));
   try
     {
-      static cached_botan_pipe pipe(new Pipe(new Gzip_Compression,
-                                             new Base64_Encoder));
       pipe->process_msg(in());
       tmp = pipe->read_all_as_string(Pipe::LAST_MESSAGE);
-      out = base64< gzip<T> >(tmp);
+      out = base64< gzip<T> >(tmp, in.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      pipe.reset(new Pipe(new Gzip_Compression,
+                          new Base64_Encoder));
+      error_in_transform(e, in.made_from);
     }
 }
 
 template <typename T>
 void unpack(base64< gzip<T> > const & in, T & out)
 {
+  static cached_botan_pipe pipe(new Pipe(new Base64_Decoder,
+                                         new Gzip_Decompression));
   try
     {
-      static cached_botan_pipe pipe(new Pipe(new Base64_Decoder,
-                                             new Gzip_Decompression));
       pipe->process_msg(in());
-      out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE));
+      out = T(pipe->read_all_as_string(Pipe::LAST_MESSAGE), in.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      pipe.reset(new Pipe(new Base64_Decoder,
+                          new Gzip_Decompression));
+      error_in_transform(e, in.made_from);
     }
 }
 
@@ -248,15 +258,16 @@ void
 calculate_ident(data const & dat,
                 id & ident)
 {
+  static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
   try
     {
-      static cached_botan_pipe p(new Pipe(new Hash_Filter("SHA-160")));
       p->process_msg(dat());
-      ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE));
+      ident = id(p->read_all_as_string(Pipe::LAST_MESSAGE), dat.made_from);
     }
   catch (Botan::Exception & e)
     {
-      error_in_transform(e);
+      p.reset(new Pipe(new Hash_Filter("SHA-160")));
+      error_in_transform(e, dat.made_from);
     }
 }
 
@@ -287,63 +298,6 @@ calculate_ident(revision_data const & dat,
   ident = revision_id(tmp);
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-#include <stdlib.h>
-
-UNIT_TEST(transform, enc)
-{
-  data d2, d1("the rain in spain");
-  gzip<data> gzd1, gzd2;
-  base64< gzip<data> > bgzd;
-  encode_gzip(d1, gzd1);
-  bgzd = encode_base64(gzd1);
-  gzd2 = decode_base64(bgzd);
-  UNIT_TEST_CHECK(gzd2 == gzd1);
-  decode_gzip(gzd2, d2);
-  UNIT_TEST_CHECK(d2 == d1);
-}
-
-UNIT_TEST(transform, rdiff)
-{
-  data dat1(string("the first day of spring\nmakes me want to sing\n"));
-  data dat2(string("the first day of summer\nis a major bummer\n"));
-  delta del;
-  diff(dat1, dat2, del);
-
-  data dat3;
-  patch(dat1, del, dat3);
-  UNIT_TEST_CHECK(dat3 == dat2);
-}
-
-UNIT_TEST(transform, calculate_ident)
-{
-  data input(string("the only blender which can be turned into the most powerful vaccum cleaner"));
-  id output;
-  string ident("86e03bdb3870e2a207dfd0dcbfd4c4f2e3bc97bd");
-  calculate_ident(input, output);
-  UNIT_TEST_CHECK(output() == decode_hexenc(ident));
-}
-
-UNIT_TEST(transform, corruption_check)
-{
-  data input(string("i'm so fragile, fragile when you're here"));
-  gzip<data> gzd;
-  encode_gzip(input, gzd);
-
-  // fake a single-bit error
-  string gzs = gzd();
-  string::iterator i = gzs.begin();
-  while (*i != '+')
-    i++;
-  *i = 'k';
-
-  gzip<data> gzbad(gzs);
-  data output;
-  UNIT_TEST_CHECK_THROW(decode_gzip(gzbad, output), informative_failure);
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

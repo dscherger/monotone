@@ -10,10 +10,9 @@
 #include "base.hh"
 #include <algorithm>
 #include <iterator>
-#include <iostream>
 #include <fstream>
-#include "vector.hh"
 #include <sstream>
+#include "vector.hh"
 
 #include <boost/format.hpp>
 #include <boost/circular_buffer.hpp>
@@ -31,10 +30,38 @@ using std::ofstream;
 using std::ostream;
 using std::ostream_iterator;
 using std::ostringstream;
+using std::out_of_range;
 using std::string;
 using std::vector;
 
 using boost::format;
+
+// set by sanity::initialize
+std::string const * prog_name_ptr;
+
+string
+origin::type_to_string(origin::type t)
+{
+  switch (t)
+    {
+    case internal:
+      return string("internal");
+    case network:
+      return string("network");
+    case database:
+      return string("database");
+    case system:
+      return string("system");
+    case user:
+      return string("user");
+    case workspace:
+      return string("workspace");
+    case no_fault:
+      return string("general");
+    default:
+      return string("invalid error type");
+    }
+}
 
 struct sanity::impl
 {
@@ -42,6 +69,7 @@ struct sanity::impl
   bool quiet;
   bool reallyquiet;
   boost::circular_buffer<char> logbuf;
+  std::string real_prog_name;
   std::string filename;
   std::string gasp_dump;
   bool already_dumping;
@@ -93,6 +121,19 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
     lc_all = "n/a";
   PERM_MM(string(lc_all));
   L(FL("set locale: LC_ALL=%s") % lc_all);
+
+  // find base name of executable and save in the prog_name global. note that
+  // this does not bother with conversion to utf8.
+  {
+    string av0 = argv[0];
+    if (av0.size() > 4 && av0.rfind(".exe") == av0.size() - 4)
+      av0.erase(av0.size() - 4);
+    string::size_type last_slash = av0.find_last_of("/\\");
+    if (last_slash != string::npos)
+      av0.erase(0, last_slash+1);
+    imp->real_prog_name = av0;
+    prog_name_ptr = &imp->real_prog_name;
+  }
 }
 
 void
@@ -272,48 +313,41 @@ sanity::warning(i18n_format const & i18nfmt,
 }
 
 void
-sanity::naughty_failure(char const * expr, i18n_format const & explain,
+sanity::generic_failure(char const * expr,
+                        origin::type caused_by,
+                        i18n_format const & explain,
                         char const * file, int line)
 {
-  string message;
   if (!imp)
-    throw std::logic_error("sanity::naughty_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL("%s:%d: usage constraint '%s' violated") % file % line % expr,
-        file, line);
-  prefix_lines_with(_("misuse: "), do_format(explain, file, line), message);
-  gasp();
-  throw informative_failure(message);
-}
+    throw std::logic_error("sanity::generic_failure occured "
+                           "before sanity::initialize");
 
-void
-sanity::error_failure(char const * expr, i18n_format const & explain,
-                      char const * file, int line)
-{
-  string message;
-  if (!imp)
-    throw std::logic_error("sanity::error_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL("%s:%d: detected error '%s' violated") % file % line % expr,
-        file, line);
+  log(FL("Encountered an error while musing upon the following:"),
+      file, line);
   gasp();
-  prefix_lines_with(_("error: "), do_format(explain, file, line), message);
-  throw informative_failure(message);
-}
+  log(FL("%s:%d: detected %s error, '%s' violated")
+      % file % line % origin::type_to_string(caused_by) % expr,
+      file, line);
 
-void
-sanity::invariant_failure(char const * expr, char const * file, int line)
-{
-  char const * pattern = N_("%s:%d: invariant '%s' violated");
-  if (!imp)
-    throw std::logic_error("sanity::invariant_failure occured "
-                            "before sanity::initialize");
-  if (imp->debug)
-    log(FL(pattern) % file % line % expr, file, line);
-  gasp();
-  throw logic_error((F(pattern) % file % line % expr).str());
+  string prefix;
+  if (caused_by == origin::user)
+    {
+      prefix = _("misuse: ");
+    }
+  else
+    {
+      prefix = _("error: ");
+    }
+  string message;
+  prefix_lines_with(prefix, do_format(explain, file, line), message);
+  switch (caused_by)
+    {
+    case origin::database:
+    case origin::internal:
+      throw unrecoverable_failure(caused_by, message);
+    default:
+      throw recoverable_failure(caused_by, message);
+    }
 }
 
 void
@@ -332,8 +366,8 @@ sanity::index_failure(char const * vec_expr,
     log(FL(pattern) % file % line % idx_expr % idx % vec_expr % sz,
         file, line);
   gasp();
-  throw logic_error((F(pattern)
-                     % file % line % idx_expr % idx % vec_expr % sz).str());
+  throw out_of_range((F(pattern)
+                      % file % line % idx_expr % idx % vec_expr % sz).str());
 }
 
 // Last gasp dumps
@@ -388,7 +422,7 @@ sanity::gasp()
           out << "<caught logic_error>\n";
           L(FL("ignoring error trigged by saving work set to debug log"));
         }
-      catch (informative_failure)
+      catch (recoverable_failure)
         {
           out << tmp;
           out << "<caught informative_failure>\n";
@@ -412,14 +446,14 @@ dump(string const & obj, string & out)
 }
 
 void
-print_var(std::string const & value, char const * var,
-          char const * file, int const line, char const * func)
+sanity::print_var(std::string const & value, char const * var,
+                  char const * file, int const line, char const * func)
 {
-  std::cout << (FL("----- begin '%s' (in %s, at %s:%d)\n") 
-                % var % func % file % line)
-            << value
-            << (FL("\n-----   end '%s' (in %s, at %s:%d)\n\n") 
-                % var % func % file % line);
+  inform_message((FL("----- begin '%s' (in %s, at %s:%d)")
+                  % var % func % file % line).str());
+  inform_message(value);
+  inform_message((FL("-----   end '%s' (in %s, at %s:%d)\n\n")
+                  % var % func % file % line).str());
 }
 
 void MusingBase::gasp_head(string & out) const

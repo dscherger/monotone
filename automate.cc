@@ -1,5 +1,5 @@
-// Copyright (C) 2004, 2007 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 - 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
+//               2007 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -44,11 +44,13 @@
 #include "work.hh"
 #include "xdelta.hh"
 #include "database.hh"
+#include "vocab_cast.hh"
 
 using std::allocator;
 using std::basic_ios;
 using std::basic_stringbuf;
 using std::char_traits;
+using std::find;
 using std::inserter;
 using std::make_pair;
 using std::map;
@@ -77,7 +79,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
              "",
              options::opts::none)
 {
-  N(args.size() < 2,
+  E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -86,11 +88,11 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
   branch_name branch;
   if (args.size() == 1)
     // branchname was explicitly given, use that
-    branch = branch_name(idx(args, 0)());
+    branch = typecast_vocab<branch_name>(idx(args, 0));
   else
     {
       workspace::require_workspace(F("with no argument, this command prints the heads of the workspace's branch"));
-      branch = app.opts.branchname;
+      branch = app.opts.branch;
     }
 
   set<revision_id> heads;
@@ -114,7 +116,7 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  N(args.size() > 0,
+  E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -123,8 +125,9 @@ CMD_AUTOMATE(ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   vector<revision_id> frontier;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid(decode_hexenc((*i)()));
-      N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("no such revision '%s'") % rid);
       frontier.push_back(rid);
     }
   while (!frontier.empty())
@@ -166,7 +169,7 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  N(args.size() > 0,
+  E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -175,8 +178,9 @@ CMD_AUTOMATE(descendents, N_("REV1 [REV2 [REV3 [...]]]"),
   vector<revision_id> frontier;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid(decode_hexenc((*i)()));
-      N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("no such revision '%s'") % rid);
       frontier.push_back(rid);
     }
   while (!frontier.empty())
@@ -224,8 +228,9 @@ CMD_AUTOMATE(erase_ancestors, N_("[REV1 [REV2 [REV3 [...]]]]"),
   set<revision_id> revs;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid(decode_hexenc((*i)()));
-      N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("no such revision '%s'") % rid);
       revs.insert(rid);
     }
   erase_ancestors(db, revs);
@@ -253,8 +258,9 @@ CMD_AUTOMATE(toposort, N_("[REV1 [REV2 [REV3 [...]]]]"),
   set<revision_id> revs;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid(decode_hexenc((*i)()));
-      N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("no such revision '%s'") % rid);
       revs.insert(rid);
     }
   vector<revision_id> sorted;
@@ -286,7 +292,7 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
              "",
              options::opts::none)
 {
-  N(args.size() > 0,
+  E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -294,12 +300,14 @@ CMD_AUTOMATE(ancestry_difference, N_("NEW_REV [OLD_REV1 [OLD_REV2 [...]]]"),
   revision_id a;
   set<revision_id> bs;
   args_vector::const_iterator i = args.begin();
-  a = revision_id(decode_hexenc((*i)()));
-  N(db.revision_exists(a), F("no such revision '%s'") % a);
+  a = decode_hexenc_as<revision_id>((*i)(), origin::user);
+  E(db.revision_exists(a), origin::user,
+    F("no such revision '%s'") % a);
   for (++i; i != args.end(); ++i)
     {
-      revision_id b(decode_hexenc((*i)()));
-      N(db.revision_exists(b), F("no such revision '%s'") % b);
+      revision_id b(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(b), origin::user,
+        F("no such revision '%s'") % b);
       bs.insert(b);
     }
   set<revision_id> ancestors;
@@ -330,7 +338,7 @@ CMD_AUTOMATE(leaves, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -356,7 +364,7 @@ CMD_AUTOMATE(roots, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -386,13 +394,14 @@ CMD_AUTOMATE(parents, N_("REV"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
-  revision_id rid(decode_hexenc(idx(args, 0)()));
-  N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  E(db.revision_exists(rid), origin::user,
+    F("no such revision '%s'") % rid);
   set<revision_id> parents;
   db.get_revision_parents(rid, parents);
   for (set<revision_id>::const_iterator i = parents.begin();
@@ -416,13 +425,14 @@ CMD_AUTOMATE(children, N_("REV"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
-  revision_id rid(decode_hexenc(idx(args, 0)()));
-  N(db.revision_exists(rid), F("no such revision '%s'") % rid);
+  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  E(db.revision_exists(rid), origin::user,
+    F("no such revision '%s'") % rid);
   set<revision_id> children;
   db.get_revision_children(rid, children);
   for (set<revision_id>::const_iterator i = children.begin();
@@ -456,7 +466,7 @@ CMD_AUTOMATE(graph, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -504,7 +514,7 @@ CMD_AUTOMATE(select, N_("SELECTOR"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -526,7 +536,7 @@ struct node_info
   node_id id;
   path::status type;
   file_id ident;
-  full_attr_map_t attrs;
+  attr_map_t attrs;
 
   node_info() : exists(false), id(the_null_node), type(path::nonexistent) {}
 };
@@ -966,7 +976,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
       if (item.new_node.type == path::file)
         changes.push_back("content");
 
-      if (item.new_node.attrs.size() > 0)
+      if (!item.new_node.attrs.empty())
         changes.push_back("attrs");
     }
 }
@@ -1018,8 +1028,8 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
   work.get_parent_rosters(db, parents);
   // for now, until we've figured out what the format could look like
   // and what conceptional model we can implement
-  // see: http://www.venge.net/mtn-wiki/MultiParentWorkspaceFallout
-  N(parents.size() == 1,
+  // see: http://monotone.ca/wiki/MultiParentWorkspaceFallout/
+  E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   roster_t new_roster, old_roster = parent_roster(parents.begin());
@@ -1046,11 +1056,13 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
            inserter(excludes, excludes.end()));
     }
 
-  node_restriction nmask(work, includes, excludes, app.opts.depth, old_roster, new_roster);
+  node_restriction nmask(includes, excludes, app.opts.depth,
+                         old_roster, new_roster, ignored_file(work));
   // skip the check of the workspace paths because some of them might
   // be missing and the user might want to query the recorded structure
   // of them anyways
-  path_restriction pmask(work, includes, excludes, app.opts.depth, path_restriction::skip_check);
+  path_restriction pmask(includes, excludes, app.opts.depth,
+                         path_restriction::skip_check);
 
   inventory_rosters(old_roster, new_roster, nmask, pmask, inventory);
   inventory_filesystem(work, pmask, inventory);
@@ -1228,14 +1240,14 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
   revision_data dat;
-  revision_id rid(decode_hexenc(idx(args, 0)()));
-  N(db.revision_exists(rid),
+  revision_id rid(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  E(db.revision_exists(rid), origin::user,
     F("no revision %s found in database") % rid);
   db.get_revision(rid, dat);
 
@@ -1249,8 +1261,7 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
 // Added in: 7.0
 // Purpose: Outputs (an optionally restricted) revision based on
 //          changes in the current workspace
-// Error conditions: If there are no changes in the current workspace or the
-// restriction is invalid or has no recorded changes, prints an error message
+// Error conditions: If the restriction is invalid, prints an error message
 // to stderr and exits with status 1. A workspace is required.
 CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
              N_("Shows change information for a workspace"),
@@ -1282,7 +1293,6 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
   make_restricted_revision(old_rosters, new_roster, mask, rev,
                            excluded, join_words(execid));
   rev.check_sane();
-  N(rev.is_nontrivial(), F("no changes to commit"));
 
   calculate_ident(rev, ident);
   write_revision(rev, dat);
@@ -1304,7 +1314,7 @@ CMD_AUTOMATE(get_base_revision_id, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -1312,7 +1322,7 @@ CMD_AUTOMATE(get_base_revision_id, "",
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
-  N(parents.size() == 1,
+  E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
   output << parent_id(parents.begin()) << '\n';
@@ -1332,7 +1342,7 @@ CMD_AUTOMATE(get_current_revision_id, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   workspace work(app);
@@ -1403,7 +1413,7 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
 {
   database db(app);
 
-  N(args.size() < 2,
+  E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
   manifest_data dat;
@@ -1421,8 +1431,8 @@ CMD_AUTOMATE(get_manifest_of, N_("[REVID]"),
     }
   else
     {
-      revision_id rid = revision_id(decode_hexenc(idx(args, 0)()));
-      N(db.revision_exists(rid),
+      revision_id rid = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+      E(db.revision_exists(rid), origin::user,
         F("no revision %s found in database") % rid);
       db.get_roster(rid, new_roster);
     }
@@ -1450,17 +1460,18 @@ CMD_AUTOMATE(packet_for_rdata, N_("REVID"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
   packet_writer pw(output);
 
-  revision_id r_id(decode_hexenc(idx(args, 0)()));
+  revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
   revision_data r_data;
 
-  N(db.revision_exists(r_id), F("no such revision '%s'") % r_id);
+  E(db.revision_exists(r_id), origin::user,
+    F("no such revision '%s'") % r_id);
   db.get_revision(r_id, r_data);
   pw.consume_revision_data(r_id, r_data);
 }
@@ -1481,20 +1492,21 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
   project_t project(db);
   packet_writer pw(output);
 
-  revision_id r_id(decode_hexenc(idx(args, 0)()));
-  vector< revision<cert> > certs;
+  revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
+  vector<cert> certs;
 
-  N(db.revision_exists(r_id), F("no such revision '%s'") % r_id);
+  E(db.revision_exists(r_id), origin::user,
+    F("no such revision '%s'") % r_id);
   project.get_revision_certs(r_id, certs);
 
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     pw.consume_revision_cert(*i);
 }
@@ -1514,17 +1526,18 @@ CMD_AUTOMATE(packet_for_fdata, N_("FILEID"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
   packet_writer pw(output);
 
-  file_id f_id(decode_hexenc(idx(args, 0)()));
+  file_id f_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
   file_data f_data;
 
-  N(db.file_version_exists(f_id), F("no such file '%s'") % f_id);
+  E(db.file_version_exists(f_id), origin::user,
+    F("no such file '%s'") % f_id);
   db.get_file_version(f_id, f_data);
   pw.consume_file_data(f_id, f_data);
 }
@@ -1545,20 +1558,20 @@ CMD_AUTOMATE(packet_for_fdelta, N_("OLD_FILE NEW_FILE"),
              "",
              options::opts::none)
 {
-  N(args.size() == 2,
+  E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
   packet_writer pw(output);
 
-  file_id f_old_id(decode_hexenc(idx(args, 0)()));
-  file_id f_new_id(decode_hexenc(idx(args, 1)()));
+  file_id f_old_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
+  file_id f_new_id(decode_hexenc_as<file_id>(idx(args, 1)(), origin::user));
   file_data f_old_data, f_new_data;
 
-  N(db.file_version_exists(f_old_id),
+  E(db.file_version_exists(f_old_id), origin::user,
     F("no such revision '%s'") % f_old_id);
-  N(db.file_version_exists(f_new_id),
+  E(db.file_version_exists(f_new_id), origin::user,
     F("no such revision '%s'") % f_new_id);
   db.get_file_version(f_old_id, f_old_data);
   db.get_file_version(f_new_id, f_new_data);
@@ -1585,7 +1598,7 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
              "",
              options::opts::none)
 {
-  N(args.size() > 0,
+  E(args.size() > 0, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -1593,8 +1606,9 @@ CMD_AUTOMATE(common_ancestors, N_("REV1 [REV2 [REV3 [...]]]"),
   set<revision_id> revs, common_ancestors;
   for (args_vector::const_iterator i = args.begin(); i != args.end(); ++i)
     {
-      revision_id rid(decode_hexenc((*i)()));
-      N(db.revision_exists(rid), F("No such revision %s") % rid);
+      revision_id rid(decode_hexenc_as<revision_id>((*i)(), origin::user));
+      E(db.revision_exists(rid), origin::user,
+        F("No such revision %s") % rid);
       revs.insert(rid);
     }
 
@@ -1622,7 +1636,7 @@ CMD_AUTOMATE(branches, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -1674,16 +1688,16 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
              "",
              options::opts::none)
 {
-  N(args.size() < 2,
+  E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
   project_t project(db);
-  globish incl("*");
+  globish incl("*", origin::internal);
   bool filtering(false);
 
   if (args.size() == 1) {
-    incl = globish(idx(args, 0)());
+    incl = globish(idx(args, 0)(), origin::user);
     filtering = true;
   }
 
@@ -1740,8 +1754,7 @@ namespace
     symbol const value("value");
     symbol const trust("trust");
 
-    symbol const public_hash("public_hash");
-    symbol const private_hash("private_hash");
+    symbol const hash("hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
 
@@ -1755,14 +1768,14 @@ namespace
 //   1: the key ID
 //   2: the key passphrase
 // Added in: 3.1
+// Changed in: 10.0
 // Purpose: Generates a key with the given ID and passphrase
 //
 // Output format: a basic_io stanza for the new key, as for ls keys
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
@@ -1773,7 +1786,7 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
              "",
              options::opts::none)
 {
-  N(args.size() == 2,
+  E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -1784,8 +1797,8 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
 
   utf8 passphrase = idx(args, 1);
 
-  id pubhash, privhash;
-  keys.create_key_pair(db, ident, &passphrase, &pubhash, &privhash);
+  id hash;
+  keys.create_key_pair(db, ident, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;
@@ -1796,8 +1809,7 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   privlocs.push_back("keystore");
 
   stz.push_str_pair(syms::name, ident());
-  stz.push_binary_pair(syms::public_hash, pubhash);
-  stz.push_binary_pair(syms::private_hash, privhash);
+  stz.push_binary_pair(syms::hash, hash);
   stz.push_str_multi(syms::public_location, publocs);
   stz.push_str_multi(syms::private_location, privlocs);
   prt.print_stanza(stz);
@@ -1822,11 +1834,11 @@ CMD_AUTOMATE(get_option, N_("OPTION"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   workspace work(app);
-  work.print_ws_option(args[0], output);
+  work.print_option(args[0], output);
 }
 
 // Name: get_content_changed
@@ -1855,7 +1867,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
              "",
              options::opts::none)
 {
-  N(args.size() == 2,
+  E(args.size() == 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -1864,13 +1876,13 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
   revision_id ident;
   marking_map mm;
 
-  ident = revision_id(decode_hexenc(idx(args, 0)()));
-  N(db.revision_exists(ident),
+  ident = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+  E(db.revision_exists(ident), origin::user,
     F("no revision %s found in database") % ident);
   db.get_roster(ident, new_roster, mm);
 
   file_path path = file_path_external(idx(args,1));
-  N(new_roster.has_node(path),
+  E(new_roster.has_node(path), origin::user,
     F("file %s is unknown for revision %s")
     % path % ident);
 
@@ -1920,7 +1932,7 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
              "",
              options::opts::none)
 {
-  N(args.size() == 3,
+  E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -1928,18 +1940,18 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
   roster_t new_roster, old_roster;
   revision_id ident, old_ident;
 
-  ident = revision_id(decode_hexenc(idx(args, 0)()));
-  N(db.revision_exists(ident),
+  ident = decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user);
+  E(db.revision_exists(ident), origin::user,
     F("no revision %s found in database") % ident);
   db.get_roster(ident, new_roster);
 
-  old_ident = revision_id(decode_hexenc(idx(args, 2)()));
-  N(db.revision_exists(old_ident),
+  old_ident = decode_hexenc_as<revision_id>(idx(args, 2)(), origin::user);
+  E(db.revision_exists(old_ident), origin::user,
     F("no revision %s found in database") % old_ident);
   db.get_roster(old_ident, old_roster);
 
   file_path path = file_path_external(idx(args,1));
-  N(new_roster.has_node(path),
+  E(new_roster.has_node(path), origin::user,
     F("file %s is unknown for revision %s") % path % ident);
 
   node_t node = new_roster.get_node(path);
@@ -1972,7 +1984,7 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1 || args.size() == 2,
+  E(args.size() == 1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -1981,17 +1993,17 @@ CMD_AUTOMATE(put_file, N_("[FILEID] CONTENTS"),
   transaction_guard tr(db);
   if (args.size() == 1)
     {
-      file_data dat(idx(args, 0)());
+      file_data dat = typecast_vocab<file_data>(idx(args, 0));
       calculate_ident(dat, sha1sum);
 
       db.put_file(sha1sum, dat);
     }
   else if (args.size() == 2)
     {
-      file_data dat(idx(args, 1)());
+      file_data dat = typecast_vocab<file_data>(idx(args, 1));
       calculate_ident(dat, sha1sum);
-      file_id base_id(decode_hexenc(idx(args, 0)()));
-      N(db.file_version_exists(base_id),
+      file_id base_id(decode_hexenc_as<file_id>(idx(args, 0)(), origin::user));
+      E(db.file_version_exists(base_id), origin::user,
         F("no file version %s found in database") % base_id);
 
       // put_file_version won't do anything if the target ID already exists,
@@ -2027,13 +2039,13 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
   revision_t rev;
-  read_revision(revision_data(idx(args, 0)()), rev);
+  read_revision(typecast_vocab<revision_data>(idx(args, 0)), rev);
 
   // recalculate manifest
   temp_node_id_source nis;
@@ -2064,6 +2076,7 @@ CMD_AUTOMATE(put_revision, N_("REVISION-DATA"),
   // If the database refuses the revision, make sure this is because it's
   // already there.
   E(db.put_revision(id, rev) || db.revision_exists(id),
+    origin::user,
     F("missing prerequisite for revision %s") % id);
 
   output << id << '\n';
@@ -2086,20 +2099,23 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
              "",
              options::opts::none)
 {
-  N(args.size() == 3,
+  E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
   database db(app);
   key_store keys(app);
 
-  hexenc<id> hrid(idx(args, 0)());
-  revision_id rid(decode_hexenc(hrid()));
-  N(db.revision_exists(rid),
+  hexenc<id> hrid(idx(args, 0)(), origin::user);
+  revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
+  E(db.revision_exists(rid), origin::user,
     F("no such revision '%s'") % hrid);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  put_simple_revision_cert(db, keys, rid, cert_name(idx(args, 1)()),
-                           cert_value(idx(args, 2)()));
+
+  project_t project(db);
+  project.put_cert(keys, rid,
+                   typecast_vocab<cert_name>(idx(args, 1)),
+                   typecast_vocab<cert_value>(idx(args, 2)));
 }
 
 // Name: get_db_variables
@@ -2119,7 +2135,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
              "",
              options::opts::none)
 {
-  N(args.size() < 2,
+  E(args.size() < 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -2128,7 +2144,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
   if (args.size() == 1)
     {
       filter_by_domain = true;
-      filter = var_domain(idx(args, 0)());
+      filter = typecast_vocab<var_domain>(idx(args, 0));
     }
 
   map<var_key, var_value> vars;
@@ -2150,7 +2166,7 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
       if (cur_domain != i->first.first)
         {
           // check if we need to print a previous stanza
-          if (st.entries.size() > 0)
+          if (!st.entries.empty())
             {
               pr.print_stanza(st);
               st.entries.clear();
@@ -2162,12 +2178,12 @@ CMD_AUTOMATE(get_db_variables, N_("[DOMAIN]"),
       st.push_str_triple(syms::entry, i->first.second(), i->second());
     }
 
-    N(found_something,
-      F("No variables found or invalid domain specified"));
+  E(found_something, origin::user,
+    F("No variables found or invalid domain specified"));
 
-    // print the last stanza
-    pr.print_stanza(st);
-    output.write(pr.buf.data(), pr.buf.size());
+  // print the last stanza
+  pr.print_stanza(st);
+  output.write(pr.buf.data(), pr.buf.size());
 }
 
 // Name: set_db_variable
@@ -2189,16 +2205,16 @@ CMD_AUTOMATE(set_db_variable, N_("DOMAIN NAME VALUE"),
              "",
              options::opts::none)
 {
-  N(args.size() == 3,
+  E(args.size() == 3, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
-  var_domain domain = var_domain(idx(args, 0)());
+  var_domain domain = typecast_vocab<var_domain>(idx(args, 0));
   utf8 name = idx(args, 1);
   utf8 value = idx(args, 2);
-  var_key key(domain, var_name(name()));
-  db.set_var(key, var_value(value()));
+  var_key key(domain, typecast_vocab<var_name>(name));
+  db.set_var(key, typecast_vocab<var_value>(value));
 }
 
 // Name: drop_db_variables
@@ -2219,18 +2235,18 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1 || args.size() == 2,
+  E(args.size() == 1 || args.size() == 2, origin::user,
     F("wrong argument count"));
 
   database db(app);
 
-  var_domain domain(idx(args, 0)());
+  var_domain domain = typecast_vocab<var_domain>(idx(args, 0));
 
   if (args.size() == 2)
     {
-      var_name name(idx(args, 1)());
+      var_name name = typecast_vocab<var_name>(idx(args, 1));
       var_key  key(domain, name);
-      N(db.var_exists(key),
+      E(db.var_exists(key), origin::user,
         F("no var with name %s in domain %s") % name % domain);
       db.clear_var(key);
     }
@@ -2250,7 +2266,7 @@ CMD_AUTOMATE(drop_db_variables, N_("DOMAIN [NAME]"),
             }
         }
 
-      N(found_something,
+      E(found_something, origin::user,
         F("no variables found in domain %s") % domain);
     }
 }
@@ -2274,6 +2290,51 @@ CMD_AUTOMATE(get_workspace_root, "",
 {
   workspace work(app);
   output << get_current_working_dir() << '\n';
+}
+
+// Name: lua
+// Arguments:
+//   A lua function name
+//   Zero or more function arguments
+// Changes:
+//   9.0 (added)
+// Purpose:
+//   Execute lua functions and return their results.
+// Output format:
+//   Lua parsable output.
+// Error conditions:
+//   a runtime exception is thrown if the function does not exists, the arguments cannot be parsed
+//   or the function cannot be executed for some other reason.
+
+CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
+             N_("Executes the given lua function and returns the result"),
+             "",
+             options::opts::none)
+{
+  E(args.size() >= 1, origin::user,
+    F("wrong argument count"));
+
+    std::string func = idx(args, 0)();
+
+    E(app.lua.hook_exists(func), origin::user,
+      F("lua function '%s' does not exist") % func);
+
+    std::vector<std::string> func_args;
+    if (args.size() > 1)
+      {
+        for (unsigned int i=1; i<args.size(); i++)
+        {
+          func_args.push_back(idx(args, i)());
+        }
+      }
+
+    std::string out;
+    E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
+      F("lua call '%s' failed") % func);
+
+    // the output already contains a trailing newline, so we don't add
+    // another one here
+    output << out;
 }
 
 // Local Variables:

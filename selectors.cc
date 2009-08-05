@@ -42,16 +42,18 @@ enum selector_type
     sel_cert,
     sel_earlier,
     sel_later,
+    sel_message,
     sel_parent,
+    sel_update,
+    sel_base,
     sel_unknown
   };
 
 typedef vector<pair<selector_type, string> > selector_list;
 
 static void
-decode_selector(project_t & project,
-                options const & opts,
-                lua_hooks & lua,
+decode_selector(options const & opts, lua_hooks & lua,
+                project_t & project,
                 string const & orig_sel,
                 selector_type & type,
                 string & sel)
@@ -105,12 +107,20 @@ decode_selector(project_t & project,
         case 'e':
           type = sel_earlier;
           break;
+        case 'm':
+          type = sel_message;
+          break;
         case 'p':
           type = sel_parent;
           break;
-        default:
-          W(F("unknown selector type: %c") % sel[0]);
+        case 'u':
+          type = sel_update;
           break;
+        case 'w':
+          type = sel_base;
+          break;
+        default:
+          E(false, origin::user, F("unknown selector type: %c") % sel[0]);
         }
       sel.erase(0,2);
 
@@ -121,8 +131,8 @@ decode_selector(project_t & project,
         case sel_later:
         case sel_earlier:
           if (lua.hook_exists("expand_date"))
-            { 
-              N(lua.hook_expand_date(sel, tmp),
+            {
+              E(lua.hook_expand_date(sel, tmp), origin::user,
                 F("selector '%s' is not a valid date\n") % sel);
             }
           else
@@ -140,7 +150,7 @@ decode_selector(project_t & project,
             tmp += "-01T00:00:00";
           else if (tmp.size()<11 && (sel_later==type || sel_earlier==type))
             tmp += "T00:00:00";
-          N(tmp.size()==19 || sel_date==type, 
+          E(tmp.size()==19 || sel_date==type, origin::user,
             F("selector '%s' is not a valid date (%s)") % sel % tmp);
 
           if (sel != tmp)
@@ -163,12 +173,12 @@ decode_selector(project_t & project,
                 : F("the empty head selector h: refers to "
                     "the head of the current branch");
               workspace::require_workspace(msg);
-              sel = opts.branchname();
+              sel = opts.branch();
             }
           break;
 
         case sel_cert:
-          N(!sel.empty(),
+          E(!sel.empty(), origin::user,
             F("the cert selector c: may not be empty"));
           break;
 
@@ -190,20 +200,35 @@ decode_selector(project_t & project,
                 }
 
               diagnose_ambiguous_expansion(project, "p:", parent_ids);
-              sel = (* parent_ids.begin()).inner()();
+              sel = encode_hexenc((* parent_ids.begin()).inner()(),
+                                  origin::internal);
             }
-          else
-            sel = decode_hexenc(sel);
           break;
+        case sel_update:
+          E(sel.empty(), origin::user,
+            F("no value is allowed with the update selector u:"));
+          {
+            workspace work(opts, lua, F("the update selector u: refers to the "
+                                        "revision before the last update in the "
+                                        "workspace"));
+            revision_id update_id;
+            work.get_update_id(update_id);
+            sel = encode_hexenc(update_id.inner()(), origin::internal);
+          }
+          break;
+        case sel_base:
+          E(sel.empty(), origin::user,
+            F("no value is allowed with the base revision selector w:"));
+          break;
+
         default: break;
         }
     }
 }
 
-static void 
-parse_selector(project_t & project,
-               options const & opts,
-               lua_hooks & lua,
+static void
+parse_selector(options const & opts, lua_hooks & lua,
+               project_t & project,
                string const & str, selector_list & sels)
 {
   sels.clear();
@@ -230,14 +255,15 @@ parse_selector(project_t & project,
           string sel;
           selector_type type = sel_unknown;
 
-          decode_selector(project, opts, lua, *i, type, sel);
+          decode_selector(opts, lua, project,  *i, type, sel);
           sels.push_back(make_pair(type, sel));
         }
     }
 }
 
 static void
-complete_one_selector(project_t & project,
+complete_one_selector(options const & opts, lua_hooks & lua,
+                      project_t & project,
                       selector_type ty, string const & value,
                       set<revision_id> & completions)
 {
@@ -251,7 +277,11 @@ complete_one_selector(project_t & project,
       I(!value.empty());
       project.db.select_parent(value, completions);
       break;
-        
+
+    case sel_update:
+      project.db.complete(value, completions);
+      break;
+
     case sel_author:
       project.db.select_cert(author_cert_name(), value, completions);
       break;
@@ -281,6 +311,16 @@ complete_one_selector(project_t & project,
       project.db.select_date(value, ">", completions);
       break;
 
+    case sel_message:
+      {
+        set<revision_id> changelogs, comments;
+        project.db.select_cert(changelog_cert_name(), value, changelogs);
+        project.db.select_cert(comment_cert_name(), value, comments);
+        completions.insert(changelogs.begin(), changelogs.end());
+        completions.insert(comments.begin(), comments.end());
+      }
+      break;
+
     case sel_cert:
       {
         I(!value.empty());
@@ -308,7 +348,7 @@ complete_one_selector(project_t & project,
         // get branch names
         set<branch_name> branch_names;
         I(!value.empty());
-        project.get_branch_list(globish(value), branch_names);
+        project.get_branch_list(globish(value, origin::user), branch_names);
 
         L(FL("found %d matching branches") % branch_names.size());
 
@@ -324,11 +364,27 @@ complete_one_selector(project_t & project,
           }
       }
       break;
+
+    case sel_base:
+      {
+        workspace work(opts, lua, F("the selector w: returns the "
+                                    "base revision(s) of the workspace"));
+        parent_map parents;
+        work.get_parent_rosters(project.db, parents);
+
+        for (parent_map::const_iterator i = parents.begin();
+             i != parents.end(); ++i)
+          {
+            completions.insert(i->first);
+          }
+      }
+      break;
     }
 }
 
 static void
-complete_selector(project_t & project,
+complete_selector(options const & opts, lua_hooks & lua,
+                  project_t & project,
                   selector_list const & limit,
                   set<revision_id> & completions)
 {
@@ -339,14 +395,14 @@ complete_selector(project_t & project,
     }
 
   selector_list::const_iterator i = limit.begin();
-  complete_one_selector(project, i->first, i->second, completions);
+  complete_one_selector(opts, lua, project, i->first, i->second, completions);
   i++;
 
   while (i != limit.end())
     {
       set<revision_id> candidates;
       set<revision_id> intersection;
-      complete_one_selector(project, i->first, i->second, candidates);
+      complete_one_selector(opts, lua, project, i->first, i->second, candidates);
 
       intersection.clear();
       set_intersection(completions.begin(), completions.end(),
@@ -365,23 +421,23 @@ complete(options const & opts, lua_hooks & lua,
          set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(opts, lua, project, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
-      N(project.db.revision_exists(*completions.begin()),
+      completions.insert(decode_hexenc_as<revision_id>(sels[0].second, origin::user));
+      E(project.db.revision_exists(*completions.begin()), origin::user,
         F("no such revision '%s'") % *completions.begin());
       return;
     }
 
   P(F("expanding selection '%s'") % str);
-  complete_selector(project, sels, completions);
+  complete_selector(opts, lua, project, sels, completions);
 
-  N(completions.size() != 0,
+  E(!completions.empty(), origin::user,
     F("no match for selection '%s'") % str);
 
   for (set<revision_id>::const_iterator i = completions.begin();
@@ -391,7 +447,7 @@ complete(options const & opts, lua_hooks & lua,
 
       // This may be impossible, but let's make sure.
       // All the callers used to do it.
-      N(project.db.revision_exists(*i),
+      E(project.db.revision_exists(*i), origin::user,
         F("no such revision '%s'") % *i);
     }
 }
@@ -406,7 +462,7 @@ complete(options const & opts, lua_hooks & lua,
 
   complete(opts, lua, project, str, completions);
 
-  I(completions.size() > 0);
+  I(!completions.empty());
   diagnose_ambiguous_expansion(project, str, completions);
 
   completion = *completions.begin();
@@ -420,18 +476,19 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(opts, lua, project, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
       && sels[0].first == sel_ident
       && sels[0].second.size() == constants::idlen)
     {
-      completions.insert(revision_id(decode_hexenc(sels[0].second)));
+      completions.insert(decode_hexenc_as<revision_id>(sels[0].second,
+                                                       origin::user));
       return;
     }
 
-  complete_selector(project, sels, completions);
+  complete_selector(opts, lua, project, sels, completions);
 }
 
 void
@@ -448,7 +505,7 @@ diagnose_ambiguous_expansion(project_t & project,
        i != completions.end(); ++i)
     err += ("\n" + describe_revision(project, *i));
 
-  N(false, i18n_format(err));
+  E(false, origin::user, i18n_format(err));
 }
 
 

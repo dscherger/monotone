@@ -18,6 +18,7 @@
 #include "vocab.hh"
 #include "transforms.hh"
 #include "cert.hh"
+#include "project.hh"
 #include "rev_height.hh"
 #include "roster.hh"
 #include "outdated_indicator.hh"
@@ -48,11 +49,11 @@ using std::string;
 using std::vector;
 
 struct checked_cert {
-  revision<cert> rcert;
+  cert rcert;
   bool found_key;
   bool good_sig;
 
-  checked_cert(revision<cert> const & c): rcert(c), found_key(false), good_sig(false) {}
+  checked_cert(cert const & c): rcert(c), found_key(false), good_sig(false) {}
 };
 
 struct checked_key {
@@ -139,7 +140,7 @@ static void
 check_db_integrity_check(database & db)
 {
     L(FL("asking sqlite to check db integrity"));
-    E(db.check_integrity(),
+    E(db.check_integrity(), origin::database,
       F("file structure is corrupted; cannot check further"));
 }
 
@@ -179,9 +180,9 @@ check_rosters_manifest(database & db,
 
   db.get_roster_ids(rosters);
   L(FL("checking %d rosters, manifest pass") % rosters.size());
-  
+
   ticker ticks(_("rosters"), "r", rosters.size()/70+1);
-  
+
   for (set<revision_id>::const_iterator i = rosters.begin();
        i != rosters.end(); ++i)
     {
@@ -457,7 +458,7 @@ check_certs(database & db,
             map<rsa_keypair_id, checked_key> & checked_keys,
             size_t & total_certs)
 {
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   db.get_revision_certs(certs);
 
   total_certs = certs.size();
@@ -466,23 +467,22 @@ check_certs(database & db,
 
   ticker ticks(_("certs"), "c", certs.size()/70+1);
 
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
       checked_cert checked(*i);
-      checked.found_key = checked_keys[i->inner().key].found;
+      checked.found_key = checked_keys[i->key].found;
 
       if (checked.found_key)
         {
           string signed_text;
-          cert_signable_text(i->inner(), signed_text);
+          i->signable_text(signed_text);
           checked.good_sig
-            = (db.check_signature(i->inner().key,
-                                  signed_text, i->inner().sig) == cert_ok);
+            = (db.check_signature(i->key, signed_text, i->sig) == cert_ok);
         }
 
-      checked_keys[i->inner().key].sigs++;
-      checked_revisions[revision_id(i->inner().ident)].checked_certs.push_back(checked);
+      checked_keys[i->key].sigs++;
+      checked_revisions[i->ident].checked_certs.push_back(checked);
 
       ++ticks;
     }
@@ -503,7 +503,7 @@ check_heights(database & db,
     revision_id null_id;
     heights.insert(null_id);
   }
-  
+
   L(FL("checking %d heights") % heights.size());
 
   set<rev_height> seen;
@@ -514,7 +514,7 @@ check_heights(database & db,
        i != heights.end(); ++i)
     {
       L(FL("checking height for %s") % *i);
-      
+
       rev_height h;
       try
         {
@@ -573,7 +573,7 @@ check_heights_relation(database & db,
         L(FL("checking heights for edges %s -> %s")
           % p_id
           % c_id);
-      
+
       rev_height parent, child;
       db.get_rev_height(p_id, parent);
       db.get_rev_height(c_id, child);
@@ -815,19 +815,19 @@ report_certs(map<revision_id, checked_revision> const & checked_revisions,
               unchecked_sigs++;
               P(F("revision %s unchecked signature in %s cert from missing key %s")
                 % i->first
-                % checked->rcert.inner().name
-                % checked->rcert.inner().key);
+                % checked->rcert.name
+                % checked->rcert.key);
             }
           else if (!checked->good_sig)
             {
               bad_sigs++;
               P(F("revision %s bad signature in %s cert from key %s")
                 % i->first
-                % checked->rcert.inner().name
-                % checked->rcert.inner().key);
+                % checked->rcert.name
+                % checked->rcert.key);
             }
 
-          cert_counts[checked->rcert.inner().name]++;
+          cert_counts[checked->rcert.name]++;
         }
 
       for (set<cert_name>::const_iterator n = cnames.begin();
@@ -1055,7 +1055,11 @@ check_db(database & db)
     % checked_heights.size());
   P(F("total problems detected: %d (%d serious)") % total % serious);
   if (serious)
-    E(false, F("serious problems detected"));
+    {
+      // should be origin::database, but that gives the "almost certainly a bug"
+      // message, which we don't want.
+      E(false, origin::no_fault, F("serious problems detected"));
+    }
   else if (total)
     P(F("minor problems detected"));
   else

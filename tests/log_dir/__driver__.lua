@@ -47,12 +47,12 @@ for n,x in pairs{[""]  = {0,0,0,0,0,0,0},
                  dir1  = {1,0,1,0,0,1,1},
                  dir2  = {1,1,0,0,1,0,0}} do
   if n == "" then
-    check(mtn("log"), 0, true)
+    check(mtn("log", "--no-graph"), 0, true)
   else
-    check(mtn("log", n), 0, true)
+    check(mtn("log", "--no-graph", n), 0, true)
   end
   for i,v in pairs(x) do
     L("Checking log of '", n, "' for revision ", i, "\n")
-    check((v == 0) == qgrep("^[\\|\\\\\/ ]+Revision: "..revs[i], "stdout"))
+    check((v == 0) == qgrep("^Revision: "..revs[i], "stdout"))
   end
 end

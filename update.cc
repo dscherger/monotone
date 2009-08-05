@@ -57,17 +57,17 @@ get_test_results_for_revision(project_t & project,
                               revision_id const & id,
                               map<rsa_keypair_id, bool> & results)
 {
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   project.get_revision_certs_by_name(id, cert_name(testresult_cert_name),
                                      certs);
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
-      cert_value cv = i->inner().value;
+      cert_value cv = i->value;
       try
         {
           bool test_ok = lexical_cast<bool>(cv());
-          results.insert(make_pair(i->inner().key, test_ok));
+          results.insert(make_pair(i->key, test_ok));
         }
       catch(boost::bad_lexical_cast &)
         {
@@ -161,7 +161,7 @@ pick_update_candidates(lua_hooks & lua,
 
   if (ignore_suspend_certs)
     return;
-  
+
    set<revision_id> active_candidates;
    for (set<revision_id>::const_iterator i = candidates.begin();
         i != candidates.end(); i++)

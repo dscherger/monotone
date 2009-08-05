@@ -1,7 +1,7 @@
 building and installation process for monotone
 ==============================================
 
-1. prerequisites: 
+1. prerequisites:
 
   * hardware prerequisites:
 
@@ -12,46 +12,280 @@ building and installation process for monotone
 
   * software prerequisites:
 
-    - autoconf.
-    - automake.
-    - gettext.
-    - a supported C++ compiler: g++ 3.2 or later.
+    - autoconf
+    - automake
+    - gettext
+    - a supported C++ compiler: g++ 3.2 or later
     - boost 1.33.0 or later: either an installed copy or an extracted
       tarball of its unbuilt sources somewhere in the file system are
-      supported.
-    - zlib 1.1.4 or later.
-    - libiconv if the iconv() function is missing.
+      supported
+    - zlib 1.1.4 or later
+    - libiconv if the iconv() function is missing
+    - texinfo (to build the documentation)
+    - Botan 1.6.3 or later (Botan might require bzip2, OpenSSL and / or
+      GnuMP in addition, depending on the package you're using.)
+    - PCRE 7.4 or later
+    - SQLite 3.3.8 or later
+    - Lua 5.1
+    - GNU IDN Library
 
-        on debian: 
+        on Debian and Ubuntu:
 
-           apt-get install autoconf
-           apt-get install automake
-           apt-get install gettext
-           apt-get install libboost-dev
-           apt-get install libz-dev
-           apt-get install g++
+           install the following packages:
+             autoconf automake gettext g++ libboost-dev libz-dev
+             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev texinfo
 
-        on fedora: 
+           (On etch, you may need to use libbotan1.8 from lenny.)
 
-           yum install autoconf
-           yum install automake
-           yum install gettext
-           yum install boost-devel 
-           yum install zlib-devel
-           yum install gcc-c++
+        on FreeBSD:
 
-        on Windows (incomplete):
+           install the following packages from the ports collection:
+             databases/sqlite3 devel/automake1.9 devel/boost devel/gettext
+             devel/gmake devel/pcre lang/lua security/botan
 
-           libiconv (http://gnuwin32.sourceforge.net/packages/libiconv.htm)
+        on Gentoo:
+
+           emerge the following packages:
+             autoconf automake boost botan gettext libpcre libidn lua sqlite
+             zlib
+
+           (you might need to add the "~x86" flag to dev-libs/botan, so you
+            get at least version 1.6.3, we recommend using at 1.8.0 or newer)
+
+        on Fedora:
+
+           install the following packages:
+             autoconf automake gettext boost boost-devel zlib zlib-devel
+             lua lua-devel pcre pcre-devel sqlite sqlite-devel libidn
+             libidn-devel gcc-c++ texinfo texinfo-tex botan botan-devel
+
+        on Mac OS X:
+
+           use MacPorts (http://www.macports.org) to install the following
+           packages:
+             autoconf automake gettext boost zlib lua pcre botan
+             sqlite3 libidn libiconv texinfo
+
+           monotone only uses header-only libraries from boost, so if you don't
+           like to spend a lot of time building boost via MacPorts, you can also
+           download and extract it manually and let CXXFLAGS point to the
+           include/ directory of the extracted version.
+
+        on Windows (using MinGW):
+
+           Many tools and packages are available on the SourceForge
+           MinGW download site:
+
+           https://sourceforge.net/projects/mingw/files/
+
+           That site is organized into several hierarchical lists of
+           files. We give the hierarchy names here, rather than a
+           complete download URL, to make it easy to check for new
+           versions. The versions given here were used to build the
+           current release of monontone.
+
+           Trying a new version of Boost can be dangerous.
+
+           These instructions work on a new computer, with only
+           Windows XP installed.
+
+           Package  | Version | location
+           --------------------------
+           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
+           MSYS     | 1.0.10  | MSYS Base System | Current Release: msys-1.0.10 | MSYS-1.0.10.exe
+           msysDTK  | 1.0.1   | MSYS Supplementary Tools | Current Release: msysDTK-1.0.1 | msysDTK-1.0.1.exe
+           libiconv | 1.13    | MinGW Libs: libiconv | Current Release: libiconv-1.13-mingw32 |
+                    |         |  libiconv-1.13-mingw32-bin.tar.gz
+                    |         |  libiconv-1.13-mingw32-dev.tar.gz
+                    |         |  libiconv-1.13-mingw32-dll-2.tar.gz
+           wget     | 1.9.1   | User Contributed: mingwPORT | Current Releases | wget-1.9.1-mingwPORT.tar.bz2
+           zlib     | 1.2.3   | User Contributed: mingwPORT | Current Releases | zlib-1.2.3-mingwPORT-1.tar.bz2
+           gettext  | 0.17    | ftp://aeneas.mit.edu/pub/gnu/gettext/gettext-0.17.tar.gz
+           boost    | 1.34.1  | http://prdownloads.sf.net/boost/boost_1_34_1.tar.bz2?download
+           Lua      | 5.1     | http://www.lua.org/ | lua-5.1.4.tar.gz
+           pcre     | 7.8     | http://www.pcre.org/ | pcre-7.8.tar.bz2
+           botan    | 1.8.4   | http://botan.randombit.net/news/ | Botan-1.8.4.tbz
+           sqlite3  | 3.6.16  | http://www.sqlite.org/download.html | sqlite-amalgamation-3_6_16.tar.gz, with makefile
+           libidn   | 1.9     | ftp://ftp.gnu.org/gnu/libidn | libidn-1.9.tar.gz
+           autoconf | 2.59    | User Contributed: mingwPORT | Current Releases | autoconf-2.59-mingwPORT.tar.bz2
+
+           The MinGW and MSYS installer defaults put MinGW in
+           `c:\MinGW` and MSYS in `c:\Msys`. However, later steps
+           sometimes install new items in `c:\MinGW\bin`, and
+           sometimes in `c:\Msys\bin`. So it is difficult to ensure
+           that the new items are always first in path. Installing
+           MinGW and MSYS both to `c:\MinGW` avoids this issue.
+           However, in this case the MSYS installer mistakenly renames
+           'make' to 'mingw32-make', so we need to change it back.
+
+           msysDTK installs autoconf, automake, Perl, CVS, crypt, and
+           other tools needed by the autoconf tools.
+
+           However, monotone requires a newer autoconf and automake.
+           The build/install process leaves 'c:/' scattered around,
+           which doesn't work for MSYS, so we have to fix it.
+
+           1. MinGW - run installer, accept defaults but add g++ on the package selection page
+           2. MSYS - run installer, install to same directory as MinGW (`c:\MinGW`), otherwise accept defaults
+           3. msysDTK - run installer, install into MinGW directory
+           4. Rename `make`:
+              Start the MSYS shell. In it:
+              $ mv /bin/mingw32-make.exe /bin/make.exe
+
+           5. libiconv
+              $ cd /
+              $ tar zxf libiconv-1.13-mingw32-bin.tar.gz
+              $ tar zxf libiconv-1.13-mingw32-dev.tar.gz
+              $ tar zxf libiconv-1.13-mingw32-dll-2.tar.gz
+
+           6. wget
+              $ cd /usr/src
+              $ tar jxf wget-1.9.1-mingwPORT.tar.bz2
+              $ cd wget-1.9.1/mingwPORT
+              $ ./mingwPORT.sh
+
+              Accept all defaults by hitting the enter key.
+
+           7. autoconf
+              $ cd /usr/src
+              $ tar jxf autoconf-2.59-mingwPORT.tar.bz2
+              $ cd autoconf-2.59/mingwPORT
+              $ ./mingwPORT.sh
+
+           8. automake
+              $ cd /usr/src
+              $ tar jxf automake-1.9.5-mingwPORT.tar.bz2
+              $ cd automake-1.9.5/mingwPORT
+              $ ./mingwPORT.sh
+
+           9. Fix autoconf, automake. Edit the files '/mingw/bin/aclocal',
+              '/mingw/bin/aclocal-1.9', and all files matching
+              'auto*'; replace 'c:/' with '/'.
+
+           10. zlib
+               $ export PATH=$PATH:/c/GnuWin32/bin
+               $ tar jxf zlib-1.2.3-mingwPORT.tar.bz2
+               $ cd zlib-1.2.3/mingwPORT
+               $ ./mingwPORT.sh
+
+           11. gettext
+               $ cd /usr/src
+               $ tar zxf gettext-0.17.tar.gz
+               $ cd gettext-0.17
+               $ ./configure
+               $ make install
+
+           12. boost; only need headers
+               $ cd /usr/src
+               $ tar jxf boost_1_34_1.tar.bz2
+               $ cd boost_1_34_1
+               $ cp -a boost /mingw/include
+
+           13. Lua
+               $ cd /usr/src
+               $ tar zxf lua-5.1.4.tar.gz
+               $ cd lua-5.1.4
+               $ make mingw INSTALL_TOP=/usr
+               $ make install INSTALL_TOP=/usr
+
+           14. pcre
+               $ cd /usr/src
+               $ tar jxf pcre-7.8.tar.bz2
+               $ cd pcre-7.8
+               $ ./configure --prefix=/usr
+               $ make install
+
+           15. botan
+               15.1 unpack, configure:
+                    $ cd /usr/src
+                    $ tar jxf Botan-1.8.4.tbz
+                    $ cd Botan-1.8.4
+                    $ ./configure.pl --with-tr1=none
+               15.2 edit Makefile, delete -ansi from LANG_FLAGS
+               15.3 install:
+                    $ make install
+
+           16. sqlite3
+               $ cd /usr/src
+               $ tar zxf sqlite-amalgamation-3_6_16.tar.gz
+               $ cd sqlite-amalgamation-3.6.16
+               $ ./configure --prefix=/usr
+               $ make install
+
+           17. libidn
+               $ cd /usr/src
+               $ tar zxf libidn-1.9.tar.gz
+               $ cd libidn-1.9
+               $ ./configure --prefix=/usr
+               $ make install
+
+           18. build monotone
+               $ cd /c/.../monotone
+               $ autoreconf -i
+                 you'll get an error about AC_PROG_MKDIR_P; ignore it and try again
+               $ autoreconf -i
+               $ ./configure sqlite_LIBS=-lsqlite3
+               $ make
+
+           # Notes
+
+           * If the `./configure` step of the monotone build fails
+             claiming your system is unrecognized while checking the
+             build system type, it may be caused by `uname -s`
+             returning a string containing MSYS rather than MINGW.
+             This indicates that your build environment is in a
+             special mode for producing MSYS binaries, which is not
+             what you want when building monotone. See
+             [MsysBuildEnvironment](http://www.mingw.org/MinGWiki/index.php/MsysBuildEnvironment)
+             for a detailed explanation.
+
+           * If you get strange errors from perl when running
+             'autoreconf -i', check that you edited the paths
+             correctly in 'aclocal-*' and 'auto*'.
+
+        on Windows (using Cygwin):
+
+           Monotone needs the following packages to compile:
+
+             Runtime requirements:
+               cygwin-1.5.24 or newer
+               libiconv2-1.11 or newer
+               libintl8-0.15 or newer
+               zlib-1.2.3-2 or newer
+
+             Build requirements:
+               gcc-3.4.4 or newer
+               binutils-20050610 or newer
+               boost-devel-1.33.1 or newer
+               gettext-0.14.5 or newer
+               zlib-1.2.3-2 or newer
+               perl-5.8.7 or newer
+               sqlite3-3.6.2-1 or newer
+               libidn-devel-1.9-1 or newer
+               lua-5.1.4-1 or newer (*)
+               botan-1.8.0-1 or newer (*)
+
+           currently every prerequisite is avaialble as packages except
+           lua and botan; an official Cygwin package for monotone and
+           all its dependencies will be available soon after release
+
+           the following is needed to succesfulyl configure
+             CXXFLAGS+="-I/usr/include/boost-1_33_1/"
 
         on other systems:
 
-           check your system package repository, you may need to 
+           check your system package repository, you may need to
            build some of these from source. if your package repository
            does not contain the libraries, see:
 
-                http://gcc.gnu.org/      for g++
-                http://www.boost.org/    for boost
+                http://gcc.gnu.org/                  for g++
+                http://www.boost.org/                for Boost
+                http://www.pcre.org/                 for PCRE
+                http://www.lua.org/                  for Lua
+                http://www.sqlite.org/               for SQLite
+                http://botan.randombit.net/          for Botan
+                http://www.gnu.org/software/libidn/  for GNU IDN
 
 1.1 using boost in the build process:
 
@@ -101,7 +335,7 @@ building and installation process for monotone
 2. configuring monotone:
 
   * if there is no ./configure script in your source tree you'll need
-    to create one before proceeding to the next step. one of the 
+    to create one before proceeding to the next step. one of the
     following auto* commands should work:
 
         $ aclocal-1.9 && autoreconf --install
@@ -126,11 +360,6 @@ building and installation process for monotone
        catalogs. you might like to do this if you do not have a
        working installation of GNU gettext.
 
-     --disable-large-file
-
-       this will disable large file support from the builtin sqlite, to
-       achieve maximum binary compatibility with old systems.
-
      --enable-pch
 
        this will enable precompiled headers, which should improve compile
@@ -139,8 +368,10 @@ building and installation process for monotone
 
 3. building monotone
 
-  * type "make". this should produce a mtn binary in your current
-    directory. if not, please send a build log to 
+  * type "make" to invoke GNU make (please notice it might be named
+    "gmake" on systems where system make is not GNU make).
+    this should produce a mtn binary in your current directory.
+    if not, please send a build log to
     monotone-devel@nongnu.org with a description of the failure.
 
 4. testing monotone
@@ -156,13 +387,13 @@ building and installation process for monotone
 
     You might also like to try fetching monotone's sources from our
     monotone server. this process will transfer the complete development
-    history (about 40 megabytes) to your database, and you will then
+    history (about 70 megabytes) to your database, and you will then
     be free to share it with others or make changes and submit them to
     us:
 
         mtn --db=mt.mtn db init
 
-        mtn --db=mt.mtn pull monotone.ca "net.venge.monotone*"
+        mtn --db=mt.mtn pull monotone.ca net.venge.monotone
 
         mtn --db=mt.mtn --branch=net.venge.monotone checkout monotone-sources
 

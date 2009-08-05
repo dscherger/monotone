@@ -1,3 +1,12 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include "base.hh"
 #include "simplestring_xform.hh"
 #include "sanity.hh"
@@ -113,7 +122,7 @@ void split_into_lines(string const & in,
         if (diff_compat) {
           // special handling: produce diff(1) compatible output
           s += (in.find_first_of("\r") != string::npos ? "\r\n" : "\n");
-          s += "\\ No newline at end of file"; 
+          s += "\\ No newline at end of file";
         }
         out.push_back(s);
       }
@@ -201,134 +210,38 @@ remove_ws(string const & s)
 }
 
 string
-trim_ws(string const & s)
+trim_left(string const & s, string const & chars)
 {
   string tmp = s;
-  string::size_type pos = tmp.find_last_not_of("\n\r\t ");
-  if (pos < string::npos)
-    tmp.erase(++pos);
-  pos = tmp.find_first_not_of("\n\r\t ");
+  string::size_type pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
   return tmp;
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-#include "vocab.hh"
-
-UNIT_TEST(simplestring_xform, caseconv)
+string
+trim_right(string const & s, string const & chars)
 {
-  UNIT_TEST_CHECK(uppercase("hello") == "HELLO");
-  UNIT_TEST_CHECK(uppercase("heLlO") == "HELLO");
-  UNIT_TEST_CHECK(lowercase("POODLE DAY") == "poodle day");
-  UNIT_TEST_CHECK(lowercase("PooDLe DaY") == "poodle day");
-  UNIT_TEST_CHECK(uppercase("!@#$%^&*()") == "!@#$%^&*()");
-  UNIT_TEST_CHECK(lowercase("!@#$%^&*()") == "!@#$%^&*()");
+  string tmp = s;
+  string::size_type pos = tmp.find_last_not_of(chars);
+  if (pos < string::npos)
+    tmp.erase(++pos);
+  return tmp;
 }
 
-UNIT_TEST(simplestring_xform, join_lines)
+string
+trim(string const & s, string const & chars)
 {
-  vector<string> strs;
-  string joined;
-
-  strs.clear();
-  join_lines(strs, joined);
-  UNIT_TEST_CHECK(joined == "");
-
-  strs.push_back("hi");
-  join_lines(strs, joined);
-  UNIT_TEST_CHECK(joined == "hi\n");
-
-  strs.push_back("there");
-  join_lines(strs, joined);
-  UNIT_TEST_CHECK(joined == "hi\nthere\n");
-
-  strs.push_back("user");
-  join_lines(strs, joined);
-  UNIT_TEST_CHECK(joined == "hi\nthere\nuser\n");
+  string tmp = s;
+  string::size_type pos = tmp.find_last_not_of(chars);
+  if (pos < string::npos)
+    tmp.erase(++pos);
+  pos = tmp.find_first_not_of(chars);
+  if (pos < string::npos)
+    tmp = tmp.substr(pos);
+  return tmp;
 }
 
-UNIT_TEST(simplestring_xform, join_words)
-{
-  vector< utf8 > v;
-  set< utf8 > s;
-
-  v.clear();
-  UNIT_TEST_CHECK(join_words(v)() == "");
-
-  v.clear();
-  v.push_back(utf8("a"));
-  UNIT_TEST_CHECK(join_words(v)() == "a");
-  UNIT_TEST_CHECK(join_words(v, ", ")() == "a");
-
-  s.clear();
-  s.insert(utf8("a"));
-  UNIT_TEST_CHECK(join_words(s)() == "a");
-  UNIT_TEST_CHECK(join_words(s, ", ")() == "a");
-
-  v.clear();
-  v.push_back(utf8("a"));
-  v.push_back(utf8("b"));
-  UNIT_TEST_CHECK(join_words(v)() == "a b");
-  UNIT_TEST_CHECK(join_words(v, ", ")() == "a, b");
-
-  s.clear();
-  s.insert(utf8("b"));
-  s.insert(utf8("a"));
-  UNIT_TEST_CHECK(join_words(s)() == "a b");
-  UNIT_TEST_CHECK(join_words(s, ", ")() == "a, b");
-
-  v.clear();
-  v.push_back(utf8("a"));
-  v.push_back(utf8("b"));
-  v.push_back(utf8("c"));
-  UNIT_TEST_CHECK(join_words(v)() == "a b c");
-  UNIT_TEST_CHECK(join_words(v, ", ")() == "a, b, c");
-
-  s.clear();
-  s.insert(utf8("b"));
-  s.insert(utf8("a"));
-  s.insert(utf8("c"));
-  UNIT_TEST_CHECK(join_words(s)() == "a b c");
-  UNIT_TEST_CHECK(join_words(s, ", ")() == "a, b, c");
-}
-
-UNIT_TEST(simplestring_xform, split_into_words)
-{
-  vector< utf8 > words;
-
-  words = split_into_words(utf8(""));
-  UNIT_TEST_CHECK(words.size() == 0);
-
-  words = split_into_words(utf8("foo"));
-  UNIT_TEST_CHECK(words.size() == 1);
-  UNIT_TEST_CHECK(words[0]() == "foo");
-
-  words = split_into_words(utf8("foo bar"));
-  UNIT_TEST_CHECK(words.size() == 2);
-  UNIT_TEST_CHECK(words[0]() == "foo");
-  UNIT_TEST_CHECK(words[1]() == "bar");
-
-  // describe() in commands.cc assumes this behavior.  If it ever changes,
-  // remember to modify that function accordingly!
-  words = split_into_words(utf8("foo  bar"));
-  UNIT_TEST_CHECK(words.size() == 3);
-  UNIT_TEST_CHECK(words[0]() == "foo");
-  UNIT_TEST_CHECK(words[1]() == "");
-  UNIT_TEST_CHECK(words[2]() == "bar");
-}
-
-UNIT_TEST(simplestring_xform, strip_ws)
-{
-  UNIT_TEST_CHECK(trim_ws("\n  leading space") == "leading space");
-  UNIT_TEST_CHECK(trim_ws("trailing space  \n") == "trailing space");
-  UNIT_TEST_CHECK(trim_ws("\t\n both \r \n\r\n") == "both");
-  UNIT_TEST_CHECK(remove_ws("  I like going\tfor walks\n  ")
-              == "Ilikegoingforwalks");
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

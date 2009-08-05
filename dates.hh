@@ -15,35 +15,66 @@
 // user's time zone.
 
 #include "numeric_vocab.hh"
-#include "sanity.hh"
 
 struct date_t
 {
-  // For the benefit of the --date option.
-  date_t() : d("") {}
-  bool valid() const { return d != ""; }
+  // initialize to an invalid date
+  date_t();
 
-  // Return the local system's idea of the current date.
+  // initialize from milliseconds since the unix epoch
+  date_t(s64 d);
+
+  // initialize from broken-down time
+  date_t(int year, int month, int day,
+         int hour=0, int min=0, int sec=0, int millisec=0);
+
+  // initialize from a string; presently recognizes only
+  // ISO 8601 "basic" and "extended" time formats.
+  date_t(std::string const & s);
+
+  // initialize to the current date and time
   static date_t now();
 
-  // Return the date corresponding to an unsigned 64-bit count of seconds
-  // since the Unix epoch (1970-01-01T00:00:00).
-  static date_t from_unix_epoch(u64);
+  bool valid() const;
 
-  // Return the date corresponding to a string.  Presently this recognizes
-  // only ISO 8601 "basic" and "extended" time formats.
-  static date_t from_string(std::string const &);
+  // Retrieve the date as a string.
+  std::string as_iso_8601_extended() const;
 
-  // Write out date as a string.
-  std::string const & as_iso_8601_extended() const;
+  // Retrieve the date as a string, formatted using the strftime(3)
+  // specification in 'fmt', and converted to local time.  For user
+  // display only.
+  std::string as_formatted_localtime(std::string const & fmt) const;
+
+  // Retrieve the internal milliseconds count since the Unix epoch.
+  s64 as_millisecs_since_unix_epoch() const;
+
+  // Date comparison operators
+  bool operator <(date_t const & other) const
+    { return d < other.d; };
+  bool operator <=(date_t const & other) const
+    { return d <= other.d; };
+  bool operator >(date_t const & other) const
+    { return d > other.d; };
+  bool operator >=(date_t const & other) const
+    { return d >= other.d; };
+  bool operator ==(date_t const & other) const
+    { return d == other.d; };
+  bool operator !=(date_t const & other) const
+    { return d != other.d; };
+
+  // Addition and subtraction of millisecond amounts
+  date_t & operator +=(s64 const other);
+  date_t & operator -=(s64 const other);
+  date_t operator +(s64 const other) const;
+  date_t operator -(s64 const other) const;
+
+  // Difference between two dates in milliseconds
+  s64 operator -(date_t const & other) const;
 
 private:
-  // For what we do with dates, it is most convenient to store them as
-  // strings in the ISO 8601 extended time format.
-  std::string d;
-
-  // used by the above factory functions
-  date_t(std::string const & s) : d(s) {};
+  // The date as a signed 64-bit count of milliseconds since
+  // the Unix epoch (1970-01-01T00:00:00.000).
+  s64 d;
 };
 
 std::ostream & operator<< (std::ostream & o, date_t const & d);

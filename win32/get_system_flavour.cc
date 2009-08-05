@@ -1,11 +1,16 @@
-// copyright (C) 2004 graydon hoare <graydon@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2004 graydon hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include "sanity.hh"
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 struct table_entry
@@ -14,9 +19,9 @@ struct table_entry
   char *val;
 };
 
-void key_to_string(unsigned long key, 
+void key_to_string(unsigned long key,
                    table_entry *table,
-                   std::string & str, 
+                   std::string & str,
                    std::string const & def)
 {
   while (table->val != 0)
@@ -73,7 +78,7 @@ static table_entry processor_types[] = {
 
 static table_entry processors[] = {
 #ifdef PROCESSOR_ARCHITECTURE_INTEL
-  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },  
+  { PROCESSOR_ARCHITECTURE_INTEL, "ia32" },
 #endif
 #ifdef PROCESSOR_ARCHITECTURE_IA64
   { PROCESSOR_ARCHITECTURE_IA64, "ia64" },
@@ -129,7 +134,7 @@ void get_system_flavour(std::string & ident)
 
   GetSystemInfo(&si);
   I(GetVersionEx(&vi));
-  
+
   std::string family, processor;
 
   key_to_string(vi.dwPlatformId, families, family, "unknown");
@@ -160,7 +165,7 @@ void get_system_flavour(std::string & ident)
     }
 
   ident = (F("Windows %s (%d.%d, build %d, %s) on %s")
-           % family 
+           % family
            % vi.dwMajorVersion
            % vi.dwMinorVersion
            % vi.dwBuildNumber

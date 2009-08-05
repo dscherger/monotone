@@ -16,13 +16,14 @@
 #include "database.hh"
 #include "key_store.hh"
 #include "packet.hh"
+#include "vocab_cast.hh"
 
 using std::cin;
 using std::cout;
 using std::istringstream;
 using std::vector;
 
-CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"), 
+CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     N_("Prints a public key packet"),
     "",
     options::opts::none)
@@ -33,7 +34,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   bool exists(false);
   rsa_pub_key key;
   if (db.database_specified() && db.public_key_exists(ident))
@@ -48,14 +49,14 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
       key = kp.pub;
       exists = true;
     }
-  N(exists,
+  E(exists, origin::user,
     F("public key '%s' does not exist") % idx(args, 0)());
 
   packet_writer pw(cout);
   pw.consume_public_key(ident, key);
 }
 
-CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"), 
+CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     N_("Prints a private key packet"),
     "",
     options::opts::none)
@@ -65,8 +66,8 @@ CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
-  N(keys.key_pair_exists(ident),
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
+  E(keys.key_pair_exists(ident), origin::user,
     F("public and private key '%s' do not exist in keystore")
     % idx(args, 0)());
 
@@ -115,8 +116,8 @@ namespace
       db.put_revision(ident, dat);
       guard.commit();
     }
-    
-    virtual void consume_revision_cert(revision<cert> const & t)
+
+    virtual void consume_revision_cert(cert const & t)
     {
       transaction_guard guard(db);
       db.put_revision_cert(t);
@@ -130,7 +131,7 @@ namespace
       db.put_key(ident, k);
       guard.commit();
     }
-    
+
     virtual void consume_key_pair(rsa_keypair_id const & ident,
                                   keypair const & kp)
     {
@@ -146,6 +147,35 @@ namespace
   };
 }
 
+// Name : read_packets
+// Arguments:
+//   packet-data
+// Added in: 9.0
+// Purpose:
+//   Store public keys (and incidentally anything else that can be
+//   represented as a packet) into the database.
+// Input format:
+//   The format of the packet-data argument is identical to the output
+//   of "mtn pubkey <keyname>" (or other packet output commands).
+// Output format:
+//   No output.
+// Error conditions:
+//   Invalid input formatting.
+CMD_AUTOMATE(read_packets, N_("PACKET-DATA"),
+             N_("Load the given packets into the database."),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+  packet_db_writer dbw(db, keys);
+
+  istringstream ss(idx(args,0)());
+  read_packets(ss, dbw);
+}
 
 CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
     N_("Reads packets from files"),
@@ -159,11 +189,11 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
   if (args.empty())
     {
       count += read_packets(cin, dbw);
-      N(count != 0, F("no packets found on stdin"));
+      E(count != 0, origin::user, F("no packets found on stdin"));
     }
   else
     {
-      for (args_vector::const_iterator i = args.begin(); 
+      for (args_vector::const_iterator i = args.begin();
            i != args.end(); ++i)
         {
           data dat;
@@ -171,9 +201,10 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
           istringstream ss(dat());
           count += read_packets(ss, dbw);
         }
-      N(count != 0, FP("no packets found in given file",
-                       "no packets found in given files",
-                       args.size()));
+      E(count != 0, origin::user,
+        FP("no packets found in given file",
+           "no packets found in given files",
+           args.size()));
     }
   P(FP("read %d packet", "read %d packets", count) % count);
 }

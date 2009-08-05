@@ -1,6 +1,3 @@
-#ifndef __DATABASE_HH__
-#define __DATABASE_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,9 +7,15 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __DATABASE_HH__
+#define __DATABASE_HH__
+
 #include "vector.hh"
 #include <set>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <botan/version.h>
+
 #include "rev_types.hh"
 #include "cert.hh"
 
@@ -23,8 +26,12 @@ struct globish;
 class key_store;
 class outdated_indicator;
 class rev_height;
+class lazy_rng;
+
+class migration_status;
 
 typedef std::pair<var_domain, var_name> var_key;
+typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 
 // this file defines a public, typed interface to the database.
 // the database class encapsulates all knowledge about sqlite,
@@ -83,6 +90,7 @@ public:
 
   void ensure_open();
   void ensure_open_for_format_changes();
+  void ensure_open_for_cache_reset();
 private:
   void ensure_open_for_maintenance();
 
@@ -243,7 +251,7 @@ public:
   void delete_public_key(rsa_keypair_id const & pub_id);
 
   // Crypto operations
-  
+
   void encrypt_rsa(rsa_keypair_id const & pub_id,
                    std::string const & plaintext,
                    rsa_oaep_sha_data & ciphertext);
@@ -251,41 +259,42 @@ public:
   cert_status check_signature(rsa_keypair_id const & id,
                               std::string const & alleged_text,
                               rsa_sha1_signature const & signature);
+  cert_status check_cert(cert const & t);
 
   //
   // --== Certs ==--
   //
   // note: this section is ridiculous. please do something about it.
 public:
-  bool revision_cert_exists(revision<cert> const & cert);
+  bool revision_cert_exists(cert const & cert);
   bool revision_cert_exists(revision_id const & hash);
 
-  bool put_revision_cert(revision<cert> const & cert);
+  bool put_revision_cert(cert const & cert);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
                               std::pair<revision_id, rsa_keypair_id> > > & idx);
 
   // Only used by database_check.cc
-  outdated_indicator get_revision_certs(std::vector< revision<cert> > & certs);
+  outdated_indicator get_revision_certs(std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(cert_name const & name,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   outdated_indicator get_revision_certs(revision_id const & ident,
                           cert_name const & name,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by get_branch_certs (project.cc)
   outdated_indicator get_revision_certs(cert_name const & name,
                           cert_value const & val,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by revision_is_in_branch (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
                           cert_name const & name,
                           cert_value const & value,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Only used by get_branch_heads (project.cc)
   outdated_indicator get_revisions_with_cert(cert_name const & name,
@@ -295,20 +304,22 @@ public:
   // Used through project.cc, and by
   // anc_graph::add_node_for_oldstyle_revision (revision.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
-                          std::vector< revision<cert> > & certs);
+                          std::vector<cert> & certs);
 
   // Used through get_revision_cert_hashes (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<id> & hashes);
 
-  void get_revision_cert(id const & hash,
-                         revision<cert> & c);
+  void get_revision_cert(id const & hash, cert & c);
 
-  void get_manifest_certs(manifest_id const & ident,
-                          std::vector< manifest<cert> > & certs);
-
-  void get_manifest_certs(cert_name const & name,
-                          std::vector< manifest<cert> > & certs);
+  typedef boost::function<bool(std::set<rsa_keypair_id> const &,
+                               id const &,
+                               cert_name const &,
+                               cert_value const &)> cert_trust_checker;
+  void erase_bogus_certs(std::vector<cert> & certs);
+  // permit alternative trust functions
+  void erase_bogus_certs(std::vector<cert> & certs,
+                         cert_trust_checker const & checker);
 
   //
   // --== Epochs ==--
@@ -378,9 +389,9 @@ public:
   void debug(std::string const & sql, std::ostream & out);
   void dump(std::ostream &);
   void load(std::istream &);
-  void info(std::ostream &);
+  void info(std::ostream &, bool analyze);
   void version(std::ostream &);
-  void migrate(key_store &);
+  void migrate(key_store &, migration_status &);
   void test_migration_step(key_store &, std::string const &);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
@@ -404,8 +415,10 @@ public:
 
   // for changesetify, rosterify
   void delete_existing_revs_and_certs();
-
   void delete_existing_manifests();
+
+  void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
+  void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
 
   // heights
   void get_rev_height(revision_id const & id,
@@ -413,7 +426,7 @@ public:
 
   void put_rev_height(revision_id const & id,
                       rev_height const & height);
-  
+
   bool has_rev_height(rev_height const & height);
   void delete_existing_heights();
 
@@ -425,65 +438,16 @@ public:
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
 
-  // We make these lua hooks available via the database context;
-  // see comments above their definition for rationale and plans.
-  bool hook_get_manifest_cert_trust(std::set<rsa_keypair_id> const & signers,
-    manifest_id const & id, cert_name const & name, cert_value const & val);
-  bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
-    revision_id const & id, cert_name const & name, cert_value const & val);
-
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
+  boost::shared_ptr<lazy_rng> rng;
+#endif
 };
 
 // not a member function, defined in database_check.cc
 void check_db(database & db);
-
-// Parent maps are used in a number of places to keep track of all the
-// parent rosters of a given revision.
-
-inline revision_id const & parent_id(parent_entry const & p)
-{
-  return p.first;
-}
-
-inline revision_id const & parent_id(parent_map::const_iterator i)
-{
-  return i->first;
-}
-
-inline cached_roster const &
-parent_cached_roster(parent_entry const & p)
-{
-  return p.second;
-}
-
-inline cached_roster const &
-parent_cached_roster(parent_map::const_iterator i)
-{
-  return i->second;
-}
-
-inline roster_t const & parent_roster(parent_entry const & p)
-{
-  return *(p.second.first);
-}
-
-inline roster_t const & parent_roster(parent_map::const_iterator i)
-{
-  return *(i->second.first);
-}
-
-inline marking_map const & parent_marking(parent_entry const & p)
-{
-  return *(p.second.second);
-}
-
-inline marking_map const & parent_marking(parent_map::const_iterator i)
-{
-  return *(i->second.second);
-}
 
 // Transaction guards nest. Acquire one in any scope you'd like
 // transaction-protected, and it'll make sure the db aborts a transaction
@@ -582,6 +546,8 @@ public:
   }
 };
 
+#endif // __DATABASE_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -589,5 +555,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __DATABASE_HH__

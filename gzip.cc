@@ -1,6 +1,7 @@
 /*************************************************
 * Gzip Compressor Source File                    *
-* (C) 1999-2004 The Botan Project                *
+* (C) 2001 Peter J Jones (pjones@pmade.org)      *
+*     2001-2004 Jack Lloyd                       *
 *                                                *
 * Based on the comp_zlib module, modified        *
 * by Matt Johnston. This is not a complete       *
@@ -14,9 +15,15 @@
 
 #include <base.hh>
 #include <gzip.hh>
+
+#include <botan/botan.h>
+
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 #include <botan/loadstor.h>
 #include <botan/filters.h>
 #include <botan/bit_ops.h>
+#endif
+
 #include <cstring>
 #include <map>
 #include <zlib.h>
@@ -361,7 +368,7 @@ void Gzip_Decompression::check_footer()
       throw Exception("Gzip_Decompression: Error finalizing decompression");
 
    pipe.end_msg();
-   
+
    // 4 byte CRC32, and 4 byte length field
    SecureVector<byte> buf(4);
    SecureVector<byte> tmpbuf(4);
@@ -412,3 +419,11 @@ void Gzip_Decompression::clear()
    }
 
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

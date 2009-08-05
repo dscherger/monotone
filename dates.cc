@@ -1,4 +1,5 @@
-// Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
+// Copyright (C) 2007-2009 Zack Weinberg <zackw@panix.com>
+//                         Markus Wanner <markus@bluegap.ch>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -9,77 +10,65 @@
 
 #include "base.hh"
 #include "dates.hh"
+#include "sanity.hh"
 
 #include <ctime>
 #include <climits>
 
+// Generic date handling routines for Monotone.
+//
+// The routines in this file substantively duplicate functionality of the
+// standard C library, so one might wonder why they are needed.  There are
+// three fundamental portability problems which together force us to
+// implement our own date handling:
+//
+// 1. We want millisecond precision in our dates, and, at the same time, the
+//    ability to represent dates far in the future.  Support for dates far
+//    in the future (in particular, past 2038) is currently only common on
+//    64-bit systems.  Support for sub-second resolution is not available at
+//    all in the standard 'broken-down time' format (struct tm).
+//
+// 2. There is no standardized way to convert from 'struct tm' to 'time_t'
+//    without treating the 'struct tm' as local time.  Some systems do
+//    provide a 'timegm' function but it is not widespread.
+//
+// 3. Some (rare, nowadays) systems do not use the Unix epoch as the epoch
+//    for 'time_t'.  This is only a problem because we support reading
+//    CVS/RCS ,v files, which encode times as decimal seconds since the Unix
+//    epoch; so we must support that epoch regardless of what the system does.
+//
+// Note that while we track dates to the millisecond in memory, we do not
+// record milliseconds in the database, nor do we ask the system for
+// sub-second resolution when retrieving the current time, nor do we display
+// milliseconds to the user.  There isn't much point in fixing one of these
+// problems if we don't fix all of them, and while the first two would be
+// straightforward, the third is very hard -- it would require us to
+// reimplement strftime() with our own extension for the purpose.
+
+// On Solaris, these macros are already defined by system includes. We want
+// to use our own, so we undef them here.
+#undef SEC
+#undef MILLISEC
+
+using std::ostream;
 using std::string;
+using std::time_t;
+using std::tm;
 
-// Writing a 64-bit constant is tricky.  We cannot use the macros that
-// <stdint.h> provides in C99 (UINT64_C, or even UINT64_MAX) because those
-// macros are not in C++'s version of <stdint.h>.  std::numeric_limits<u64>
-// cannot be used directly, so we have to resort to #ifdef chains on the old
-// skool C limits macros.  BOOST_STATIC_ASSERT is defined in a way that
-// doesn't let us use std::numeric_limits<u64>::max(), so we have to
-// postpone checking it until runtime (date_t::from_unix_epoch), bleah.
-// However, the check will be optimized out, and the unit tests exercise it.
-#if defined ULONG_MAX && ULONG_MAX > UINT_MAX
-  #define PROBABLE_U64_MAX ULONG_MAX
-  #define u64_C(x) x##UL
-#elif defined ULLONG_MAX && ULLONG_MAX > UINT_MAX
-  #define PROBABLE_U64_MAX ULLONG_MAX
-  #define u64_C(x) x##ULL
-#elif defined ULONG_LONG_MAX && ULONG_LONG_MAX > UINT_MAX
-  #define PROBABLE_U64_MAX ULONG_LONG_MAX
-  #define u64_C(x) x##ULL
-#else
-  #error "How do I write a constant of type u64?"
-#endif
-
-const string &
-date_t::as_iso_8601_extended() const 
-{
-  I(this->valid());
-  return d;
-}
-
-std::ostream &
-operator<< (std::ostream & o, date_t const & d)
-{
-  return o << d.as_iso_8601_extended();
-}
-
-template <> void
-dump(date_t const & d, std::string & s)
-{
-  s = d.as_iso_8601_extended();
-}
-
-date_t
-date_t::now()
-{
-  using std::time_t;
-  using std::time;
-  using std::tm;
-  using std::gmtime;
-  using std::strftime;
-
-  time_t t = time(0);
-  struct tm b = *gmtime(&t);
-
-  // in CE 10000, you will need to increase the size of 'buf'.
-  I(b.tm_year <= 9999);
-
-  char buf[20];
-  strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%S", &b);
-  return date_t(string(buf));
-}
+// Our own "struct tm"-like struct to represent broken-down times
+struct broken_down_time {
+  int millisec;    /* milliseconds (0 - 999) */
+  int sec;         /* seconds (0 - 59) */
+  int min;         /* minutes (0 - 59) */
+  int hour;        /* hours (0 - 23) */
+  int day;         /* day of the month (1 - 31) */
+  int month;       /* month (1 - 12) */
+  int year;        /* years (anno Domini, i.e. 1999) */
+};
 
 // The Unix epoch is 1970-01-01T00:00:00 (in UTC).  As we cannot safely
 //  assume that the system's epoch is the Unix epoch, we implement the
 //  conversion to broken-down time by hand instead of relying on gmtime().
-//  The algorithm below has been tested on one value from every day in the
-//  range [1970-01-01T00:00:00, 36812-02-20T00:36:16) -- that is, [0, 2**40).
 //
 // Unix time_t values are a linear count of seconds since the epoch,
 // and should be interpreted according to the Gregorian calendar:
@@ -92,15 +81,32 @@ date_t::now()
 //  - Years divisible by 400 have 366 days.
 //
 //  The last two rules are the Gregorian correction to the Julian calendar.
-//  We make no attempt to handle leap seconds.
+//  Note that dates before 1582 are treated as if the Gregorian calendar had
+//  been in effect on that day in history (the 'proleptic' calendar).  Also,
+//  we make no attempt to handle leap seconds.
 
-unsigned int const MIN = 60;
-unsigned int const HOUR = MIN * 60;
-unsigned int const DAY = HOUR * 24;
-unsigned int const YEAR = DAY * 365;
-unsigned int const LEAP = DAY * 366;
+s64 const INVALID = PROBABLE_S64_MAX;
 
-unsigned char const MONTHS[] = {
+// This is the date 292278994-01-01T00:00:00.000. The year 292,278,994
+// overflows a signed 64-bit millisecond counter somewhere in August, so
+// we've rounded down to the last whole year that fits.
+s64 const LATEST_SUPPORTED_DATE = s64_C(9223372017129600000);
+
+// This is the date 0001-01-01T00:00:00.000.  There is no year zero in the
+// Gregorian calendar, and what are you doing using monotone to version
+// data from before the common era, anyway?
+s64 const EARLIEST_SUPPORTED_DATE = s64_C(-62135596800000);
+
+// These constants are all in seconds.
+u32 const SEC  = 1;
+u32 const MIN  = 60*SEC;
+u32 const HOUR = 60*MIN;
+u64 const DAY  = 24*HOUR;
+u64 const YEAR = 365*DAY;
+
+inline s64 MILLISEC(s64 n) { return n * 1000; }
+
+unsigned char const DAYS_PER_MONTH[] = {
   31, // jan
   28, // feb (non-leap)
   31, // mar
@@ -115,449 +121,465 @@ unsigned char const MONTHS[] = {
   31, // dec
 };
 
-
 inline bool
-is_leap_year(unsigned int year)
+is_leap_year(s32 year)
 {
   return (year % 4 == 0
-	  && (year % 100 != 0 || year % 400 == 0));
+    && (year % 100 != 0 || year % 400 == 0));
 }
-inline u32
-secs_in_year(unsigned int year)
+inline s32
+days_in_year(s32 year)
 {
-  return is_leap_year(year) ? LEAP : YEAR;
+  return is_leap_year(year) ? 366 : 365;
+}
+
+inline bool
+valid_ms_count(s64 d)
+{
+  return (d >= EARLIEST_SUPPORTED_DATE && d <= LATEST_SUPPORTED_DATE);
+}
+
+static void
+our_gmtime(s64 ts, broken_down_time & tb)
+{
+  // validate our assumptions about which basic type is u64 (see above).
+  I(PROBABLE_S64_MAX == std::numeric_limits<s64>::max());
+  I(LATEST_SUPPORTED_DATE < PROBABLE_S64_MAX);
+
+  I(valid_ms_count(ts));
+
+  // All subsequent calculations are easier if 't' is always positive, so we
+  // make zero be EARLIEST_SUPPORTED_DATE, which happens to be
+  // 0001-01-01T00:00:00 and is thus a convenient fixed point for leap year
+  // calculations.
+
+  u64 t = u64(ts) - u64(EARLIEST_SUPPORTED_DATE);
+
+  // sub-day components
+  u64 days = t / MILLISEC(DAY);
+  u32 ms_in_day = t % MILLISEC(DAY);
+
+  tb.millisec = ms_in_day % 1000;
+  ms_in_day /= 1000;
+
+  tb.sec = ms_in_day % 60;
+  ms_in_day /= 60;
+
+  tb.min = ms_in_day % 60;
+  tb.hour = ms_in_day / 60;
+
+  // This is the result of inverting the equation
+  //    yb = y*365 + y/4 - y/100 + y/400
+  // it approximates years since the epoch for any day count.
+  u32 year = (400*days / 146097);
+
+  // Compute the _exact_ number of days from the epoch to the beginning of
+  // the approximate year determined above.
+  u64 yearbeg;
+  yearbeg = widen<u64,u32>(year)*365 + year/4 - year/100 + year/400;
+
+  // Our epoch is year 1, not year 0 (there is no year 0).
+  year++;
+
+  s64 delta = days - yearbeg;
+  // The approximation above occasionally guesses the year before the
+  // correct one, but never the year after, or any further off than that.
+  if (delta >= days_in_year(year))
+    {
+      delta -= days_in_year(year);
+      year++;
+    }
+  I(0 <= delta && delta < days_in_year(year));
+
+  tb.year = year;
+  days = delta;
+
+  // <yakko> Now, the months digit!
+  u32 month = 1;
+  for (;;)
+    {
+      u32 this_month = DAYS_PER_MONTH[month-1];
+      if (month == 2 && is_leap_year(year))
+        this_month += 1;
+      if (days < this_month)
+        break;
+
+      days -= this_month;
+      month++;
+      I(month <= 12);
+    }
+  tb.month = month;
+  tb.day = days + 1;
+}
+
+static s64
+our_timegm(broken_down_time const & tb)
+{
+  s64 d;
+
+  // range checks
+  I(tb.year  >  0    && tb.year  <= 292278994);
+  I(tb.month >= 1    && tb.month <= 12);
+  I(tb.day   >= 1    && tb.day   <= 31);
+  I(tb.hour  >= 0    && tb.hour  <= 23);
+  I(tb.min   >= 0    && tb.min   <= 59);
+  I(tb.sec   >= 0    && tb.sec   <= 60);
+  I(tb.millisec >= 0 && tb.millisec <= 999);
+
+  // years (since 1970)
+  d = YEAR * (tb.year - 1970);
+  // leap days to add (or subtract)
+  int add_leap_days = (tb.year - 1) / 4 - 492;
+  add_leap_days -= (tb.year - 1) / 100 - 19;
+  add_leap_days += (tb.year - 1) / 400 - 4;
+  d += add_leap_days * DAY;
+
+  // months
+  for (int m = 1; m < tb.month; ++m)
+    {
+      d += DAYS_PER_MONTH[m-1] * DAY;
+      if (m == 2 && is_leap_year(tb.year))
+        d += DAY;
+    }
+
+  // days within month, and so on
+  d += (tb.day - 1) * DAY;
+  d += tb.hour * HOUR;
+  d += tb.min * MIN;
+  d += tb.sec * SEC;
+
+  return MILLISEC(d) + tb.millisec;
+}
+
+// In a few places we need to know the offset between the Unix epoch and the
+// system epoch.
+static s64
+get_epoch_offset()
+{
+  static s64 epoch_offset;
+  static bool know_epoch_offset = false;
+  broken_down_time our_t;
+
+  if (know_epoch_offset)
+    return epoch_offset;
+
+  time_t epoch = 0;
+  tm t = *std::gmtime(&epoch);
+
+  our_t.millisec = 0;
+  our_t.sec = t.tm_sec;
+  our_t.min = t.tm_min;
+  our_t.hour = t.tm_hour;
+  our_t.day = t.tm_mday;
+  our_t.month = t.tm_mon + 1;
+  our_t.year = t.tm_year + 1900;
+
+  epoch_offset = our_timegm(our_t);
+
+  L(FL("time epoch offset is %d\n") % epoch_offset);
+
+  know_epoch_offset = true;
+  return epoch_offset;
+}
+
+
+//
+// date_t methods
+//
+bool
+date_t::valid() const
+{
+  return valid_ms_count(d);
+}
+
+// initialize to an invalid date
+date_t::date_t()
+  : d(INVALID)
+{
+  I(!valid());
+}
+
+date_t::date_t(s64 d)
+  : d(d)
+{
+  // When initialized from a millisecods since Unix epoch value, we require
+  // it to be in a valid range. Use the constructor without any argument to
+  // generate an invalid date.
+  I(valid());
+}
+
+date_t::date_t(int year, int month, int day,
+               int hour, int min, int sec, int millisec)
+{
+  broken_down_time t;
+  t.millisec = millisec;
+  t.sec = sec;
+  t.min = min;  t.hour = hour;
+  t.day = day;
+  t.month = month;
+  t.year = year;
+
+  d = our_timegm(t);
+  I(valid());
 }
 
 date_t
-date_t::from_unix_epoch(u64 t)
+date_t::now()
 {
-  // these types hint to the compiler that narrowing divides are safe
-  u64 yearbeg;
-  u32 year;
-  u32 month;
-  u32 day;
-  u32 secofday;
-  u16 hour;
-  u16 secofhour;
-  u8 min;
-  u8 sec;
+  time_t t = std::time(0);
+  s64 tu = s64(t) * 1000 + get_epoch_offset();
+  E(valid_ms_count(tu), origin::system,
+    F("current date '%s' is outside usable range\n"
+      "(your system clock may not be set correctly)")
+    % std::ctime(&t));
+  return date_t(tu);
+}
 
-  // validate our assumptions about which basic type is u64 (see above).
-  I(PROBABLE_U64_MAX == std::numeric_limits<u64>::max());
-  
-  // time_t values after this point will overflow a signed 32-bit year
-  // counter.  'year' above is unsigned, but the system's struct tm almost
-  // certainly uses a signed tm_year; it is best to be consistent.
-  I(t <= u64_C(67767976233532799));
+string
+date_t::as_iso_8601_extended() const
+{
+  broken_down_time tb;
+  I(valid());
+  our_gmtime(d, tb);
+  return (FL("%04u-%02u-%02uT%02u:%02u:%02u")
+             % tb.year % tb.month % tb.day
+             % tb.hour % tb.min % tb.sec).str();
+}
 
-  // There are 31556952 seconds (365d 5h 43m 12s) in the average Gregorian
-  // year.  This will therefore approximate the correct year (minus 1970).
-  // It may be off in either direction, but by no more than one year
-  // (empirically tested for every year from 1970 to 2**32 - 1).
-  year = t/31556952;
+ostream &
+operator<< (ostream & o, date_t const & d)
+{
+  return o << d.as_iso_8601_extended();
+}
 
-  // Given the above approximation, recalculate the _exact_ number of
-  // seconds to the beginning of that year.  For this to work correctly
-  // (i.e. for the year/4, year/100, year/400 terms to increment exactly
-  // when they ought to) it is necessary to count years from 1601 (as if the
-  // Gregorian calendar had been in effect at that time) and then correct
-  // the final number of seconds back to the 1970 epoch.
-  year += 369;
+template <> void
+dump(date_t const & d, string & s)
+{
+  s = d.as_iso_8601_extended();
+}
 
-  yearbeg = (widen<u64,u32>(year)*365 + year/4 - year/100 + year/400)*DAY;
-  yearbeg -= (widen<u64,u32>(369)*365 + 369/4 - 369/100 + 369/400)*DAY;
+string
+date_t::as_formatted_localtime(string const & fmt) const
+{
+  time_t t(d/1000 - get_epoch_offset());
+  tm tb(*std::localtime(&t));
+  char buf[128];
 
-  // *now* we want year to have its true value.
-  year += 1601;
+  // Poison the buffer so we can tell whether strftime() produced
+  // no output at all.
+  buf[0] = '#';
 
-  // Linear search for the range of seconds that really contains t.
-  // At most one of these loops should iterate, and only once.
-  while (yearbeg > t)
-    yearbeg -= secs_in_year(--year);
-  while (yearbeg + secs_in_year(year) <= t)
-    yearbeg += secs_in_year(year++);
+  size_t wrote = strftime(buf, sizeof buf, fmt.c_str(), &tb);
 
-  t -= yearbeg;
+  if (wrote > 0)
+    return string(buf); // yay, it worked
 
-  // <yakko> Now, the months digit!
-  month = 0;
-  for (;;)
+  if (wrote == 0 && buf[0] == '\0') // no output
     {
-      unsigned int this_month = MONTHS[month] * DAY;
-      if (month == 1 && is_leap_year(year))
-	this_month += DAY;
-      if (t < this_month)
-	break;
-
-      t -= this_month;
-      month++;
-      L(FL("from_unix_epoch: month >= %u, t now %llu") % month % t);
-      I(month < 12);
+      static bool warned = false;
+      if (!warned)
+        {
+          warned = true;
+          W(F("time format specification '%s' produces no output") % fmt);
+        }
+      return string();
     }
 
-  // the rest is straightforward.
-  day = t / DAY;
-  secofday = t % DAY;
+  E(false, origin::user,
+    F("date '%s' is too long when formatted using '%s'"
+      " (the result must fit in %d characters)")
+    % (sizeof buf - 1));
+}
 
-  hour = secofday / HOUR;
-  secofhour = secofday % HOUR;
-
-  min = secofhour / MIN;
-  sec = secofhour % MIN;
-
-  // the widen<>s here are necessary because boost::format *ignores the
-  // format specification* and prints u8s as characters.
-  return date_t((FL("%u-%02u-%02uT%02u:%02u:%02u")
-                 % year % (month + 1) % (day + 1)
-                 % hour % widen<u32,u8>(min) % widen<u32,u8>(sec)).str());
+s64
+date_t::as_millisecs_since_unix_epoch() const
+{
+  return d;
 }
 
 // We might want to consider teaching this routine more time formats.
 // gnulib has a rather nice date parser, except that it requires Bison
 // (not even just yacc).
 
-date_t
-date_t::from_string(string const & s)
+date_t::date_t(string const & s)
 {
   try
     {
-      string d = s;
-      size_t i = d.size() - 1;  // last character of the array
+      size_t i = s.size() - 1;  // last character of the array
+
+      // check the first character which is not a digit
+      while (s.at(i) >= '0' && s.at(i) <= '9')
+        i--;
+
+      // ignore fractional seconds, if present, or go back to the end of the
+      // date string to parse the digits for seconds.
+      if (s.at(i) == '.')
+        i--;
+      else
+        i = s.size() - 1;
 
       // seconds
-      N(d.at(i) >= '0' && d.at(i) <= '9'
-        && d.at(i-1) >= '0' && d.at(i-1) <= '5',
+      u8 sec;
+      E(s.at(i) >= '0' && s.at(i) <= '9'
+        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
+      sec = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
+      E(sec <= 60, origin::user,
+        F("seconds out of range"));
 
       // optional colon
-      if (d.at(i) == ':')
+      if (s.at(i) == ':')
         i--;
-      else
-        d.insert(i+1, 1, ':');
 
       // minutes
-      N(d.at(i) >= '0' && d.at(i) <= '9'
-        && d.at(i-1) >= '0' && d.at(i-1) <= '5',
+      u8 min;
+      E(s.at(i) >= '0' && s.at(i) <= '9'
+        && s.at(i-1) >= '0' && s.at(i-1) <= '5', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
+      min = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
+      E(min < 60, origin::user,
+        F("minutes out of range"));
 
       // optional colon
-      if (d.at(i) == ':')
+      if (s.at(i) == ':')
         i--;
-      else
-        d.insert(i+1, 1, ':');
 
       // hours
-      N((d.at(i-1) >= '0' && d.at(i-1) <= '1'
-         && d.at(i) >= '0' && d.at(i) <= '9')
-        || (d.at(i-1) == '2' && d.at(i) >= '0' && d.at(i) <= '3'),
+      u8 hour;
+      E((s.at(i-1) >= '0' && s.at(i-1) <= '1'
+         && s.at(i) >= '0' && s.at(i) <= '9')
+        || (s.at(i-1) == '2' && s.at(i) >= '0' && s.at(i) <= '3'), origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
+      hour = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
+      E(hour < 24, origin::user,
+        F("hour out of range"));
 
-      // 'T' is required at this point; we also accept a space
-      N(d.at(i) == 'T' || d.at(i) == ' ',
+      // We accept 'T' as well as spaces between the date and the time
+      E(s.at(i) == 'T' || s.at(i) == ' ', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-
-      if (d.at(i) == ' ')
-        d.at(i) = 'T';
       i--;
 
       // day
       u8 day;
-      N(d.at(i-1) >= '0' && d.at(i-1) <= '3'
-        && d.at(i) >= '0' && d.at(i) <= '9',
+      E(s.at(i-1) >= '0' && s.at(i-1) <= '3'
+        && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      day = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
+      day = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
       i -= 2;
 
       // optional dash
-      if (d.at(i) == '-')
+      if (s.at(i) == '-')
         i--;
-      else
-        d.insert(i+1, 1, '-');
 
       // month
       u8 month;
-      N(d.at(i-1) >= '0' && d.at(i-1) <= '1'
-        && d.at(i) >= '0' && d.at(i) <= '9',
+      E(s.at(i-1) >= '0' && s.at(i-1) <= '1'
+        && s.at(i) >= '0' && s.at(i) <= '9', origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
-      month = (d.at(i-1) - '0')*10 + (d.at(i) - '0');
-      N(month >= 1 && month <= 12,
-        F("month out of range in '%s'") % d);
+      month = (s.at(i-1) - '0')*10 + (s.at(i) - '0');
+      E(month >= 1 && month <= 12, origin::user,
+        F("month out of range in '%s'") % s);
       i -= 2;
 
       // optional dash
-      if (d.at(i) == '-')
+      if (s.at(i) == '-')
         i--;
-      else
-        d.insert(i+1, 1, '-');
 
       // year
-      N(i >= 3,
+      E(i >= 3, origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
 
       // this counts down through zero and stops when it wraps around
       // (size_t being unsigned)
       u32 year = 0;
       u32 digit = 1;
-      while (i < d.size())
+      while (i < s.size())
         {
-          N(d.at(i) >= '0' && d.at(i) <= '9',
+          E(s.at(i) >= '0' && s.at(i) <= '9', origin::user,
             F("unrecognized date (monotone only understands ISO 8601 format)"));
-          year += (d.at(i) - '0')*digit;
+          year += (s.at(i) - '0')*digit;
           i--;
           digit *= 10;
         }
 
-      N(year >= 1970,
-        F("date too early (monotone only goes back to 1970-01-01T00:00:00)"));
+      E(year >= 1, origin::user,
+        F("date too early (monotone only goes back to 0001-01-01T00:00:00)"));
+      E(year <= 292278994, origin::user,
+        F("date too late (monotone only goes forward to year 292,278,993)"));
 
       u8 mdays;
       if (month == 2 && is_leap_year(year))
-        mdays = MONTHS[month-1] + 1;
+        mdays = DAYS_PER_MONTH[month-1] + 1;
       else
-        mdays = MONTHS[month-1];
+        mdays = DAYS_PER_MONTH[month-1];
 
-      N(day >= 1 && day <= mdays,
-        F("day out of range for its month in '%s'") % d);
+      E(day >= 1 && day <= mdays, origin::user,
+        F("day out of range for its month in '%s'") % s);
 
-      return date_t(d);
+      broken_down_time t;
+      t.millisec = 0;
+      t.sec = sec;
+      t.min = min;
+      t.hour = hour;
+      t.day = day;
+      t.month = month;
+      t.year = year;
+
+      d = our_timegm(t);
     }
   catch (std::out_of_range)
     {
-      N(false,
+      E(false, origin::user,
         F("unrecognized date (monotone only understands ISO 8601 format)"));
     }
 }
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-UNIT_TEST(date, from_string)
+date_t &
+date_t::operator +=(s64 const other)
 {
-#define OK(x,y) UNIT_TEST_CHECK(date_t::from_string(x).as_iso_8601_extended() \
-                            == (y))
-#define NO(x) UNIT_TEST_CHECK_THROW(date_t::from_string(x), informative_failure)
-  
-  // canonical format
-  OK("2007-03-01T18:41:13", "2007-03-01T18:41:13");
-  // squashed format
-  OK("20070301T184113", "2007-03-01T18:41:13");
-  // space between date and time
-  OK("2007-03-01 18:41:13", "2007-03-01T18:41:13");
-  // squashed, space
-  OK("20070301 184113", "2007-03-01T18:41:13");
-  // more than four digits in the year
-  OK("120070301T184113", "12007-03-01T18:41:13");
+  // only operate on vaild dates, prevent turning an invalid
+  // date into a valid one.
+  I(valid());
 
-  // inappropriate character at every possible position
-  NO("x007-03-01T18:41:13");
-  NO("2x07-03-01T18:41:13");
-  NO("20x7-03-01T18:41:13");
-  NO("200x-03-01T18:41:13");
-  NO("2007x03-01T18:41:13");
-  NO("2007-x3-01T18:41:13");
-  NO("2007-0x-01T18:41:13");
-  NO("2007-03x01T18:41:13");
-  NO("2007-03-x1T18:41:13");
-  NO("2007-03-0xT18:41:13");
-  NO("2007-03-01x18:41:13");
-  NO("2007-03-01Tx8:41:13");
-  NO("2007-03-01T1x:41:13");
-  NO("2007-03-01T18x41:13");
-  NO("2007-03-01T18:x1:13");
-  NO("2007-03-01T18:4x:13");
-  NO("2007-03-01T18:41x13");
-  NO("2007-03-01T18:41:x3");
-  NO("2007-03-01T18:41:1x");
+  d += other;
 
-  NO("x0070301T184113");
-  NO("2x070301T184113");
-  NO("20x70301T184113");
-  NO("200x0301T184113");
-  NO("2007x301T184113");
-  NO("20070x01T184113");
-  NO("200703x1T184113");
-  NO("2007030xT184113");
-  NO("20070301x184113");
-  NO("20070301Tx84113");
-  NO("20070301T1x4113");
-  NO("20070301T18x113");
-  NO("20070301T184x13");
-  NO("20070301T1841x3");
-  NO("20070301T18411x");
+  I(valid());
 
-  // two digit years are not accepted
-  NO("07-03-01T18:41:13");
-  
-  // components out of range
-  NO("1969-03-01T18:41:13");
-
-  NO("2007-00-01T18:41:13");
-  NO("2007-13-01T18:41:13");
-
-  NO("2007-01-00T18:41:13");
-  NO("2007-01-32T18:41:13");
-  NO("2007-02-29T18:41:13");
-  NO("2007-03-32T18:41:13");
-  NO("2007-04-31T18:41:13");
-  NO("2007-05-32T18:41:13");
-  NO("2007-06-31T18:41:13");
-  NO("2007-07-32T18:41:13");
-  NO("2007-08-32T18:41:13");
-  NO("2007-09-31T18:41:13");
-  NO("2007-10-32T18:41:13");
-  NO("2007-11-31T18:41:13");
-  NO("2007-03-32T18:41:13");
-
-  NO("2007-03-01T24:41:13");
-  NO("2007-03-01T18:60:13");
-  NO("2007-03-01T18:41:60");
-
-  // leap year February
-  OK("2008-02-29T18:41:13", "2008-02-29T18:41:13");
-  NO("2008-02-30T18:41:13");
-  
-  // maybe we should support these, but we don't
-  NO("2007-03-01");
-  NO("18:41");
-  NO("18:41:13");
-  NO("Thu Mar 1 18:41:13 PST 2007");
-  NO("Thu, 01 Mar 2007 18:47:22");
-  NO("Thu, 01 Mar 2007 18:47:22 -0800");
-  NO("torsdag, mars 01, 2007, 18.50.10");
-  // et cetera
-#undef OK
-#undef NO
+  return *this;
 }
 
-UNIT_TEST(date, from_unix_epoch)
+date_t &
+date_t::operator -=(s64 const other)
 {
-#define OK(x,y) do {                                                    \
-    string s_ = date_t::from_unix_epoch(x).as_iso_8601_extended();      \
-    L(FL("from_unix_epoch: %lu -> %s") % (x) % s_);                     \
-    UNIT_TEST_CHECK(s_ == (y));                                             \
-  } while (0)
-
-  // every month boundary in 1970
-  OK(0,       "1970-01-01T00:00:00");
-  OK(2678399, "1970-01-31T23:59:59");
-  OK(2678400, "1970-02-01T00:00:00");
-  OK(5097599, "1970-02-28T23:59:59");
-  OK(5097600, "1970-03-01T00:00:00");
-  OK(7775999, "1970-03-31T23:59:59");
-  OK(7776000, "1970-04-01T00:00:00");
-  OK(10367999, "1970-04-30T23:59:59");
-  OK(10368000, "1970-05-01T00:00:00");
-  OK(13046399, "1970-05-31T23:59:59");
-  OK(13046400, "1970-06-01T00:00:00");
-  OK(15638399, "1970-06-30T23:59:59");
-  OK(15638400, "1970-07-01T00:00:00");
-  OK(18316799, "1970-07-31T23:59:59");
-  OK(18316800, "1970-08-01T00:00:00");
-  OK(20995199, "1970-08-31T23:59:59");
-  OK(20995200, "1970-09-01T00:00:00");
-  OK(23587199, "1970-09-30T23:59:59");
-  OK(23587200, "1970-10-01T00:00:00");
-  OK(26265599, "1970-10-31T23:59:59");
-  OK(26265600, "1970-11-01T00:00:00");
-  OK(28857599, "1970-11-30T23:59:59");
-  OK(28857600, "1970-12-01T00:00:00");
-  OK(31535999, "1970-12-31T23:59:59");
-  OK(31536000, "1971-01-01T00:00:00");
-
-  // every month boundary in 1972 (an ordinary leap year)
-  OK(63071999, "1971-12-31T23:59:59");
-  OK(63072000, "1972-01-01T00:00:00");
-  OK(65750399, "1972-01-31T23:59:59");
-  OK(65750400, "1972-02-01T00:00:00");
-  OK(68255999, "1972-02-29T23:59:59");
-  OK(68256000, "1972-03-01T00:00:00");
-  OK(70934399, "1972-03-31T23:59:59");
-  OK(70934400, "1972-04-01T00:00:00");
-  OK(73526399, "1972-04-30T23:59:59");
-  OK(73526400, "1972-05-01T00:00:00");
-  OK(76204799, "1972-05-31T23:59:59");
-  OK(76204800, "1972-06-01T00:00:00");
-  OK(78796799, "1972-06-30T23:59:59");
-  OK(78796800, "1972-07-01T00:00:00");
-  OK(81475199, "1972-07-31T23:59:59");
-  OK(81475200, "1972-08-01T00:00:00");
-  OK(84153599, "1972-08-31T23:59:59");
-  OK(84153600, "1972-09-01T00:00:00");
-  OK(86745599, "1972-09-30T23:59:59");
-  OK(86745600, "1972-10-01T00:00:00");
-  OK(89423999, "1972-10-31T23:59:59");
-  OK(89424000, "1972-11-01T00:00:00");
-  OK(92015999, "1972-11-30T23:59:59");
-  OK(92016000, "1972-12-01T00:00:00");
-  OK(94694399, "1972-12-31T23:59:59");
-  OK(94694400, "1973-01-01T00:00:00");
-
-  // every month boundary in 2000 (a leap year per rule 5)
-  OK(946684799, "1999-12-31T23:59:59");
-  OK(946684800, "2000-01-01T00:00:00");
-  OK(949363199, "2000-01-31T23:59:59");
-  OK(949363200, "2000-02-01T00:00:00");
-  OK(951868799, "2000-02-29T23:59:59");
-  OK(951868800, "2000-03-01T00:00:00");
-  OK(954547199, "2000-03-31T23:59:59");
-  OK(954547200, "2000-04-01T00:00:00");
-  OK(957139199, "2000-04-30T23:59:59");
-  OK(957139200, "2000-05-01T00:00:00");
-  OK(959817599, "2000-05-31T23:59:59");
-  OK(959817600, "2000-06-01T00:00:00");
-  OK(962409599, "2000-06-30T23:59:59");
-  OK(962409600, "2000-07-01T00:00:00");
-  OK(965087999, "2000-07-31T23:59:59");
-  OK(965088000, "2000-08-01T00:00:00");
-  OK(967766399, "2000-08-31T23:59:59");
-  OK(967766400, "2000-09-01T00:00:00");
-  OK(970358399, "2000-09-30T23:59:59");
-  OK(970358400, "2000-10-01T00:00:00");
-  OK(973036799, "2000-10-31T23:59:59");
-  OK(973036800, "2000-11-01T00:00:00");
-  OK(975628799, "2000-11-30T23:59:59");
-  OK(975628800, "2000-12-01T00:00:00");
-  OK(978307199, "2000-12-31T23:59:59");
-  OK(978307200, "2001-01-01T00:00:00");
-
-  // every month boundary in 2100 (a normal year per rule 4)
-  OK(u64_C(4102444800), "2100-01-01T00:00:00");
-  OK(u64_C(4105123199), "2100-01-31T23:59:59");
-  OK(u64_C(4105123200), "2100-02-01T00:00:00");
-  OK(u64_C(4107542399), "2100-02-28T23:59:59");
-  OK(u64_C(4107542400), "2100-03-01T00:00:00");
-  OK(u64_C(4110220799), "2100-03-31T23:59:59");
-  OK(u64_C(4110220800), "2100-04-01T00:00:00");
-  OK(u64_C(4112812799), "2100-04-30T23:59:59");
-  OK(u64_C(4112812800), "2100-05-01T00:00:00");
-  OK(u64_C(4115491199), "2100-05-31T23:59:59");
-  OK(u64_C(4115491200), "2100-06-01T00:00:00");
-  OK(u64_C(4118083199), "2100-06-30T23:59:59");
-  OK(u64_C(4118083200), "2100-07-01T00:00:00");
-  OK(u64_C(4120761599), "2100-07-31T23:59:59");
-  OK(u64_C(4120761600), "2100-08-01T00:00:00");
-  OK(u64_C(4123439999), "2100-08-31T23:59:59");
-  OK(u64_C(4123440000), "2100-09-01T00:00:00");
-  OK(u64_C(4126031999), "2100-09-30T23:59:59");
-  OK(u64_C(4126032000), "2100-10-01T00:00:00");
-  OK(u64_C(4128710399), "2100-10-31T23:59:59");
-  OK(u64_C(4128710400), "2100-11-01T00:00:00");
-  OK(u64_C(4131302399), "2100-11-30T23:59:59");
-  OK(u64_C(4131302400), "2100-12-01T00:00:00");
-  OK(u64_C(4133980799), "2100-12-31T23:59:59");
-
-  // limit of a (signed) 32-bit year counter
-  OK(u64_C(67767976233532799), "2147483647-12-31T23:59:59");
-  UNIT_TEST_CHECK_THROW(date_t::from_unix_epoch(u64_C(67768036191676800)),
-                    std::logic_error);
-
-#undef OK
+  // simply use the addition operator with inversed sign
+  return operator+=(-other);
 }
 
-#endif
+date_t
+date_t::operator +(s64 const other) const
+{
+  date_t result(d);
+  result += other;
+  return result;
+}
+
+date_t
+date_t::operator -(s64 const other) const
+{
+  date_t result(d);
+  result += -other;
+  return result;
+}
+
+s64
+date_t::operator -(date_t const & other) const
+{
+  return d - other.d;
+}
+
 
 // Local Variables:
 // mode: C++

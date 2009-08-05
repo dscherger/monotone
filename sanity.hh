@@ -1,6 +1,3 @@
-#ifndef __SANITY_HH__
-#define __SANITY_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,13 +7,17 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __SANITY_HH__
+#define __SANITY_HH__
+
 #include <stdexcept>
 #include <ostream>
+#include <cstdio>
 
 #include "boost/current_function.hpp"
 
-#include "i18n.h"
 #include "numeric_vocab.hh"
+#include "origin_type.hh"
 
 // our assertion / sanity / error logging system *was* based on GNU Nana,
 // but we're only using a small section of it, and have anyways rewritten
@@ -26,12 +27,29 @@
 // message to make it to the user, not a diagnostic error indicating
 // internal failure but a suggestion that they do something differently.
 
-class informative_failure : public std::exception {
-  std::string const whatmsg;
+namespace origin {
+  std::string type_to_string(type t);
+}
+
+// An error that may have had an external source.
+class recoverable_failure : public std::runtime_error {
+  origin::type _caused_by;
 public:
-  explicit informative_failure(std::string const & s) : whatmsg(s) {};
-  virtual ~informative_failure() throw() {};
-  virtual char const * what() const throw() { return whatmsg.c_str(); }
+  recoverable_failure(origin::type o, std::string const & s)
+    : std::runtime_error(s), _caused_by(o) {};
+  origin::type caused_by() const { return _caused_by; }
+  virtual ~recoverable_failure() throw() {}
+};
+
+// An error that indicates either an immediate logic bug or
+// a corrupt database. You don't want to catch these.
+class unrecoverable_failure : public std::logic_error {
+  origin::type _caused_by;
+public:
+  unrecoverable_failure(origin::type o, std::string const & s)
+    : std::logic_error(s), _caused_by(o) {};
+  origin::type caused_by() const { return _caused_by; }
+  virtual ~unrecoverable_failure() throw() {}
 };
 
 class MusingI;
@@ -67,12 +85,10 @@ struct sanity {
                 char const * file, int line);
   void warning(i18n_format const & fmt,
                char const * file, int line);
-  NORETURN(void naughty_failure(char const * expr, i18n_format const & explain,
-                       char const * file, int line));
-  NORETURN(void error_failure(char const * expr, i18n_format const & explain,
-                     char const * file, int line));
-  NORETURN(void invariant_failure(char const * expr,
-                         char const * file, int line));
+  NORETURN(void generic_failure(char const * expr,
+                                origin::type caused_by,
+                                i18n_format const & explain,
+                                char const * file, int line));
   NORETURN(void index_failure(char const * vec_expr,
                      char const * idx_expr,
                      unsigned long sz,
@@ -81,6 +97,13 @@ struct sanity {
   void gasp();
   void push_musing(MusingI const *musing);
   void pop_musing(MusingI const *musing);
+
+  // debugging aid, see DUMP() below
+  void print_var(std::string const & value,
+                 char const * var,
+                 char const * file,
+                 int const line,
+                 char const * func);
 
 private:
   std::string do_format(format_base const & fmt,
@@ -95,6 +118,9 @@ private:
 };
 
 extern sanity & global_sanity;
+// we think this is less ugly than any available tricks with references
+extern std::string const * prog_name_ptr;
+#define prog_name (*prog_name_ptr)
 
 typedef std::runtime_error oops;
 
@@ -321,32 +347,39 @@ do { \
 #define UNLIKELY(zz) (zz)
 #endif
 
+struct bad_decode {
+  bad_decode(i18n_format const & fmt) : what(fmt.str()) {}
+  std::string what;
+};
+
 // I is for invariants that "should" always be true
 // (if they are wrong, there is a *bug*)
-#define I(e) \
-do { \
-  if(UNLIKELY(!(e))) { \
-    global_sanity.invariant_failure("I("#e")", __FILE__, __LINE__); \
-  } \
-} while(0)
 
-// N is for naughtyness on behalf of the user
-// (if they are wrong, the user just did something wrong)
-#define N(e, explain)\
-do { \
-  if(UNLIKELY(!(e))) { \
-    global_sanity.naughty_failure("N("#e")", (explain), __FILE__, __LINE__); \
-  } \
-} while(0)
+#define FILE_LINE_INNER(line) __FILE__ ":" #line
+#define FILE_LINE_MIDDLE(line) FILE_LINE_INNER(line)
+#define FILE_LINE FILE_LINE_MIDDLE(__LINE__)
+
+#define I(e)                                                            \
+  do {                                                                  \
+    if (UNLIKELY(!(e)))                                                 \
+      {                                                                 \
+        global_sanity.generic_failure("I("#e")", origin::internal,      \
+                                      F("%s") % FILE_LINE": I("#e")",   \
+                                      __FILE__, __LINE__);              \
+      }                                                                 \
+  } while (0)
 
 // E is for errors; they are normal (i.e., not a bug), but not necessarily
 // attributable to user naughtiness
-#define E(e, explain)\
-do { \
-  if(UNLIKELY(!(e))) { \
-    global_sanity.error_failure("E("#e")", (explain), __FILE__, __LINE__); \
-  } \
-} while(0)
+#define E(e, whence, explain)                                          \
+  do {                                                                 \
+    if (UNLIKELY(!(e)))                                                \
+      {                                                                \
+        global_sanity.generic_failure("E("#e")", (whence),             \
+                                      (explain),                       \
+                                      __FILE__, __LINE__);             \
+      }                                                                \
+  } while (0)
 
 // Last gasp dumps
 
@@ -446,30 +479,23 @@ Musing<T>::gasp(std::string & out) const
 
 // debugging utility to dump out vars like MM but without requiring a crash
 
-extern void print_var(std::string const & value,
-                      char const * var,
-                      char const * file,
-                      int const line,
-                      char const * func);
-
 template <typename T> void
 dump(T const & t, char const *var,
      char const * file, int const line, char const * func)
 {
   std::string value;
   dump(t, value);
-  print_var(value, var, file, line, func);
+  global_sanity.print_var(value, var, file, line, func);
 };
 
 #define DUMP(foo) dump(foo, #foo, __FILE__, __LINE__, BOOST_CURRENT_FUNCTION)
 
-//////////////////////////////////////////////////////////////////////////
+#endif // __SANITY_HH__
+
 // Local Variables:
 // mode: C++
+// fill-column: 76
 // c-file-style: "gnu"
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-//////////////////////////////////////////////////////////////////////////
-
-#endif // __SANITY_HH__

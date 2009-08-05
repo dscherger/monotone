@@ -1,7 +1,11 @@
-// copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <iostream>
@@ -104,7 +108,12 @@ bool is_executable(const char *path)
   return false; /* Basically meaningless on win32 */
 }
 
-int make_executable(const char *path)
+int set_executable(const char *path)
+{
+  return 0; /* Basically meaningless on win32 */
+}
+
+int clear_executable(const char *path)
 {
   return 0; /* Basically meaningless on win32 */
 }
@@ -170,7 +179,7 @@ redir::redir(int which, char const * filename)
   sa.nLength = sizeof(SECURITY_ATTRIBUTES);
   sa.lpSecurityDescriptor = 0;
   sa.bInheritHandle = true;
-  
+
   file = CreateFile(filename,
                     (which==0?GENERIC_READ:GENERIC_WRITE),
                     FILE_SHARE_READ,

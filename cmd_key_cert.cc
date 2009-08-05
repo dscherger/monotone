@@ -10,24 +10,24 @@
 #include "base.hh"
 #include <iostream>
 #include <sstream>
-#include <fstream>
 #include <iterator>
 
 #include "charset.hh"
 #include "cmd.hh"
 #include "app_state.hh"
 #include "database.hh"
+#include "file_io.hh"
 #include "project.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "transforms.hh"
+#include "vocab_cast.hh"
 
 using std::cout;
 using std::ostream_iterator;
 using std::ostringstream;
 using std::set;
 using std::string;
-using std::ofstream;
 
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
     N_("Generates an RSA key-pair"),
@@ -59,7 +59,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   if (args.size() != 1)
     throw usage(execid);
 
-  rsa_keypair_id ident(idx(args, 0)());
+  rsa_keypair_id ident = typecast_vocab<rsa_keypair_id>(idx(args, 0));
   if (db.database_specified())
     {
       transaction_guard guard(db);
@@ -87,7 +87,7 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   else
     fmt = F("public or private key '%s' does not exist "
             "in keystore, and no database was specified");
-  N(key_deleted, fmt % idx(args, 0)());
+  E(key_deleted, origin::user, fmt % idx(args, 0)());
 }
 
 CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
@@ -122,13 +122,16 @@ CMD(ssh_agent_export, "ssh_agent_export", "", CMD_REF(key_and_cert),
   rsa_keypair_id id;
   get_user_key(app.opts, app.lua, db, keys, id);
 
-  if (args.size() == 0)
+  if (args.empty())
     keys.export_key_for_agent(id, cout);
   else
     {
-      string external_path = system_path(idx(args, 0)).as_external();
-      ofstream fout(external_path.c_str(), ofstream::out);
+      ostringstream fout;
       keys.export_key_for_agent(id, fout);
+      data keydat(fout.str(), origin::system);
+
+      system_path fname(idx(args, 0));
+      write_data_userprivate(fname, keydat, fname.dirname());
     }
 }
 
@@ -173,19 +176,19 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
 
   cert_value val;
   if (args.size() == 3)
-    val = cert_value(idx(args, 2)());
+    val = typecast_vocab<cert_value>(idx(args, 2));
   else
     {
       data dat;
       read_data_stdin(dat);
-      val = cert_value(dat());
+      val = typecast_vocab<cert_value>(dat);
     }
 
   project.put_cert(keys, rid, cname, val);
   guard.commit();
 }
 
-CMD(trusted, "trusted", "", CMD_REF(key_and_cert), 
+CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     N_("REVISION NAME VALUE SIGNER1 [SIGNER2 [...]]"),
     N_("Tests whether a hypothetical certificate would be trusted"),
     N_("The current settings are used to run the test."),
@@ -208,7 +211,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   cert_name cname;
   internalize_cert_name(idx(args, 1), cname);
 
-  cert_value value(idx(args, 2)());
+  cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
   set<rsa_keypair_id> signers;
   for (unsigned int i = 3; i != args.size(); ++i)
@@ -219,7 +222,8 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
     }
 
 
-  bool trusted = app.lua.hook_get_revision_cert_trust(signers, ident,
+  bool trusted = app.lua.hook_get_revision_cert_trust(signers,
+                                                      ident.inner(),
                                                       cname, value);
 
 
@@ -277,7 +281,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  cert_revision_testresult(db, keys, r, idx(args, 1)());
+  project.put_revision_testresult(keys, r, idx(args, 1)());
 }
 
 
@@ -296,10 +300,11 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument for approval"));
+  E(!app.opts.branch().empty(), origin::user,
+    F("need --branch argument for approval"));
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.put_revision_in_branch(keys, r, app.opts.branchname);
+  project.put_revision_in_branch(keys, r, app.opts.branch);
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
@@ -317,10 +322,11 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
   guess_branch(app.opts, project, r);
-  N(app.opts.branchname() != "", F("need --branch argument to suspend"));
+  E(!app.opts.branch().empty(), origin::user,
+    F("need --branch argument to suspend"));
 
   cache_user_key(app.opts, app.lua, db, keys);
-  project.suspend_revision_in_branch(keys, r, app.opts.branchname);
+  project.suspend_revision_in_branch(keys, r, app.opts.branch);
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
@@ -341,19 +347,21 @@ CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
   else
     {
       external comment_external;
-      N(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+      E(app.lua.hook_edit_comment(external(""), external(""), comment_external),
+        origin::user,
         F("edit comment failed"));
       system_to_utf8(comment_external, comment);
     }
 
-  N(comment().find_first_not_of("\n\r\t ") != string::npos,
+  E(comment().find_first_not_of("\n\r\t ") != string::npos,
+    origin::user,
     F("empty comment"));
 
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  cert_revision_comment(db, keys, r, comment);
+  project.put_revision_comment(keys, r, comment);
 }
 
 // Local Variables:

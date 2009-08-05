@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "botan/botan.h"
+#include <botan/botan.h>
 #include "botan_pipe_cache.hh"
 
 #include "file_io.hh"
@@ -20,6 +20,7 @@
 #include "charset.hh"
 #include "platform-wrapped.hh"
 #include "numeric_vocab.hh"
+#include "vocab_cast.hh"
 
 // this file deals with talking to the filesystem, loading and
 // saving files.
@@ -27,7 +28,6 @@
 using std::cin;
 using std::ifstream;
 using std::ios_base;
-using std::ofstream;
 using std::logic_error;
 using std::string;
 using std::vector;
@@ -54,7 +54,7 @@ void
 require_path_is_nonexistent(any_path const & path,
                             i18n_format const & message)
 {
-  N(!path_exists(path), message);
+  E(!path_exists(path), origin::user, message);
 }
 
 void
@@ -65,12 +65,12 @@ require_path_is_file(any_path const & path,
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      N(false, message_if_nonexistent);
+      E(false, origin::user, message_if_nonexistent);
       break;
     case path::file:
       return;
     case path::directory:
-      N(false, message_if_directory);
+      E(false, origin::user, message_if_directory);
       break;
     }
 }
@@ -83,10 +83,10 @@ require_path_is_directory(any_path const & path,
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      N(false, message_if_nonexistent);
+      E(false, origin::user, message_if_nonexistent);
       break;
     case path::file:
-      N(false, message_if_file);
+      E(false, origin::user, message_if_file);
     case path::directory:
       return;
       break;
@@ -183,7 +183,8 @@ mkdir_p(any_path const & p)
     case path::directory:
       return;
     case path::file:
-      E(false, F("could not create directory '%s': it is a file") % p);
+      E(false, origin::system,
+        F("could not create directory '%s': it is a file") % p);
     case path::nonexistent:
       std::string const current = p.as_external();
       any_path const parent = p.dirname();
@@ -222,7 +223,8 @@ delete_dir_shallow(any_path const & p)
 void
 delete_file_or_dir_shallow(any_path const & p)
 {
-  N(path_exists(p), F("object to delete, '%s', does not exist") % p);
+  E(path_exists(p), origin::user,
+    F("object to delete, '%s', does not exist") % p);
   do_remove(p.as_external());
 }
 
@@ -232,11 +234,19 @@ namespace
   {
     fill_pc_vec(vector<path_component> & v) : v(v) { v.clear(); }
 
-    // FIXME BUG: this treats 's' as being already utf8, but it is actually
-    // in the external character set.  Also, will I() out on invalid
-    // pathnames, when it should N() or perhaps W() and skip.
+    // FIXME BUG: this treats 's' as being already utf8,
+    // but it is actually in the external character set.
     virtual void consume(char const * s)
-    { v.push_back(path_component(s)); }
+    {
+      try
+      {
+        v.push_back(path_component(s));
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % s);
+      }
+    }
 
   private:
     vector<path_component> & v;
@@ -247,8 +257,14 @@ namespace
     file_deleter(any_path const & p) : parent(p) {}
     virtual void consume(char const * f)
     {
-      // FIXME: same bug as above.
-      do_remove((parent / path_component(f)).as_external());
+      try
+      {
+        do_remove((parent / path_component(f)).as_external());
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % f);
+      }
     }
   private:
     any_path const & parent;
@@ -317,7 +333,7 @@ void
 move_path(any_path const & old_path,
           any_path const & new_path)
 {
-  N(path_exists(old_path),
+  E(path_exists(old_path), origin::user,
     F("rename source path '%s' does not exist") % old_path);
   require_path_is_nonexistent(new_path,
                               F("rename target '%s' already exists")
@@ -334,11 +350,15 @@ read_data(any_path const & p, data & dat)
 
   ifstream file(p.as_external().c_str(),
                 ios_base::in | ios_base::binary);
-  N(file, F("cannot open file %s for reading") % p);
+  E(file, origin::user, F("cannot open file %s for reading") % p);
   unfiltered_pipe->start_msg();
   file >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  origin::type data_from = p.made_from;
+  if (data_from != origin::internal || data_from == origin::database)
+    data_from = origin::system;
+  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+             data_from);
 }
 
 void read_directory(any_path const & path,
@@ -348,7 +368,8 @@ void read_directory(any_path const & path,
   vector<path_component> special_files;
   fill_pc_vec ff(files), df(dirs), sf(special_files);
   do_read_directory(path.as_external(), ff, df, sf);
-  E(special_files.empty(), F("cannot handle special files in dir '%s'") % path);
+  E(special_files.empty(), origin::system,
+    F("cannot handle special files in dir '%s'") % path);
 }
 
 // This function can only be called once per run.
@@ -356,12 +377,14 @@ void
 read_data_stdin(data & dat)
 {
   static bool have_consumed_stdin = false;
-  N(!have_consumed_stdin, F("Cannot read standard input multiple times"));
+  E(!have_consumed_stdin, origin::user,
+    F("Cannot read standard input multiple times"));
   have_consumed_stdin = true;
   unfiltered_pipe->start_msg();
   cin >> *unfiltered_pipe;
   unfiltered_pipe->end_msg();
-  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+             origin::user);
 }
 
 void
@@ -385,7 +408,7 @@ write_data_impl(any_path const & p,
                 any_path const & tmp,
                 bool user_private)
 {
-  N(!directory_exists(p),
+  E(!directory_exists(p), origin::user,
     F("file '%s' cannot be overwritten as data; it is a directory") % p);
 
   make_dir_for(p);
@@ -455,9 +478,9 @@ safe_compose(file_path const & path, path_component const & pc, bool isdir,
       // sort of diagnostic to issue.
       utf8 badpth;
       if (path.empty())
-        badpth = utf8(pc());
+        badpth = typecast_vocab<utf8>(pc);
       else
-        badpth = utf8(path.as_internal() + "/" + pc());
+        badpth = utf8(path.as_internal() + "/" + pc(), pc.made_from);
 
       if (!isdir)
         W(F("skipping file '%s' with unsupported name") % badpth);
@@ -481,7 +504,7 @@ walk_tree_recursive(file_path const & path,
   // describing _this_ directory pinned on the heap.  Then our recursive
   // call itself made another recursive call, etc., causing a huge spike in
   // peak memory.  By splitting the loop in half, we avoid this problem.
-  // 
+  //
   // [1] http://lkml.org/lkml/2006/2/24/215
   vector<path_component> files, dirs;
   read_directory(path, files, dirs);
@@ -517,7 +540,7 @@ walk_tree(file_path const & path, tree_walker & walker)
   switch (get_path_status(path))
     {
     case path::nonexistent:
-      N(false, F("no such file or directory: '%s'") % path);
+      E(false, origin::user, F("no such file or directory: '%s'") % path);
       break;
     case path::file:
       walker.visit_file(path);
@@ -566,7 +589,8 @@ calculate_ident(file_path const & file,
   Botan::DataSource_Stream infile(file.as_external(), true);
   p->process_msg(infile);
 
-  ident = file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE));
+  ident = file_id(p->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
+                  origin::internal);
 }
 
 // Local Variables:

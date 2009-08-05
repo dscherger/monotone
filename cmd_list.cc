@@ -33,6 +33,7 @@
 #include "vocab_cast.hh"
 #include "app_state.hh"
 #include "project.hh"
+#include "vocab_cast.hh"
 #include "work.hh"
 
 using std::cout;
@@ -69,11 +70,11 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   revision_id ident;
   complete(app.opts, app.lua,  project, idx(args, 0)(), ident);
-  vector< revision<cert> > ts;
+  vector<cert> ts;
   project.get_revision_certs(ident, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
-    certs.push_back(idx(ts, i).inner());
+    certs.push_back(idx(ts, i));
 
   {
     set<rsa_keypair_id> checked;
@@ -102,13 +103,13 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
   if (colon_pos != string::npos)
     {
       string substr(str, 0, colon_pos);
-      colon_pos = display_width(utf8(substr));
+      colon_pos = display_width(utf8(substr, origin::internal));
       extra_str = string(colon_pos, ' ') + ": %s\n";
     }
 
   for (size_t i = 0; i < certs.size(); ++i)
     {
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       string washed;
       if (guess_binary(tv()))
@@ -136,7 +137,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
       vector<string> lines;
       split_into_lines(washed, lines);
-      std::string value_first_line = lines.size() > 0 ? idx(lines, 0) : "";
+      std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
 
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
@@ -149,7 +150,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
         cout << (i18n_format(extra_str) % idx(lines, i));
     }
 
-  if (certs.size() > 0)
+  if (!certs.empty())
     cout << '\n';
 
   guard.commit();
@@ -161,7 +162,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     "",
     options::opts::revision)
 {
-  if (args.size() != 0)
+  if (!args.empty())
     throw usage(execid);
 
   revision_id rev_id;
@@ -169,10 +170,10 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
   database db(app);
   project_t project(db);
 
-  N(app.opts.revision_selectors.size() <= 1,
+  E(app.opts.revision_selectors.size() <= 1, origin::user,
     F("more than one revision given"));
 
-  if (app.opts.revision_selectors.size() == 0)
+  if (app.opts.revision_selectors.empty())
     {
       workspace work(app);
       temp_node_id_source nis;
@@ -183,7 +184,7 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     {
       complete(app.opts, app.lua, project,
                idx(app.opts.revision_selectors, 0)(), rev_id);
-      N(db.revision_exists(rev_id),
+      E(db.revision_exists(rev_id), origin::user,
         F("no revision %s found in database") % rev_id);
       db.get_roster(rev_id, roster);
     }
@@ -262,9 +263,9 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
 
   vector<rsa_keypair_id> pubs;
   vector<rsa_keypair_id> privkeys;
-  globish pattern("*");
+  globish pattern("*", origin::internal);
   if (args.size() == 1)
-    pattern = globish(idx(args, 0)());
+    pattern = globish(idx(args, 0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -302,7 +303,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         }
     }
 
-  if (pubkeys.size() > 0)
+  if (!pubkeys.empty())
     {
       cout << "\n[public keys]\n";
       for (map<rsa_keypair_id, bool>::iterator i = pubkeys.begin();
@@ -333,7 +334,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
       cout << '\n';
     }
 
-  if (privkeys.size() > 0)
+  if (!privkeys.empty())
     {
       cout << "\n[private keys]\n";
       for (vector<rsa_keypair_id>::iterator i = privkeys.begin();
@@ -342,7 +343,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
           keypair kp;
           id hash_code;
           keys.get_key_pair(*i, kp);
-          key_hash_code(*i, kp.priv, hash_code);
+          key_hash_code(*i, kp.pub, hash_code);
           cout << hash_code << ' ' << *i << '\n';
         }
       cout << '\n';
@@ -358,10 +359,9 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
         }
     }
 
-  if (pubkeys.size() == 0 &&
-      privkeys.size() == 0)
+  if (pubkeys.empty() && privkeys.empty())
     {
-      if (args.size() == 0)
+      if (args.empty())
         P(F("no keys found"));
       else
         W(F("no keys found matching '%s'") % idx(args, 0)());
@@ -373,9 +373,9 @@ CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
     "",
     options::opts::exclude)
 {
-  globish inc("*");
+  globish inc("*", origin::internal);
   if (args.size() == 1)
-    inc = globish(idx(args,0)());
+    inc = globish(idx(args,0)(), origin::user);
   else if (args.size() > 1)
     throw usage(execid);
 
@@ -400,13 +400,15 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
   map<branch_name, epoch_data> epochs;
   db.get_epochs(epochs);
 
-  if (args.size() == 0)
+  if (args.empty())
     {
       for (map<branch_name, epoch_data>::const_iterator
              i = epochs.begin();
            i != epochs.end(); ++i)
         {
-          cout << encode_hexenc(i->second.inner()()) << ' ' << i->first << '\n';
+          cout << encode_hexenc(i->second.inner()(),
+                                i->second.inner().made_from)
+               << ' ' << i->first << '\n';
         }
     }
   else
@@ -415,9 +417,12 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
            i != args.end();
            ++i)
         {
-          map<branch_name, epoch_data>::const_iterator j = epochs.find(branch_name((*i)()));
-          N(j != epochs.end(), F("no epoch for branch %s") % *i);
-          cout << encode_hexenc(j->second.inner()()) << ' ' << j->first << '\n';
+          map<branch_name, epoch_data>::const_iterator j =
+            epochs.find(typecast_vocab<branch_name>((*i)));
+          E(j != epochs.end(), origin::user, F("no epoch for branch %s") % *i);
+          cout << encode_hexenc(j->second.inner()(),
+                                j->second.inner().made_from)
+               << ' ' << j->first << '\n';
         }
     }
 }
@@ -447,7 +452,7 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
 {
   bool filterp;
   var_domain filter;
-  if (args.size() == 0)
+  if (args.empty())
     {
       filterp = false;
     }
@@ -487,10 +492,10 @@ CMD(known, "known", "", CMD_REF(list), "",
   temp_node_id_source nis;
   work.get_current_roster_shape(db, nis, new_roster);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        new_roster);
+                        new_roster, ignored_file(work));
 
   // to be printed sorted
   vector<file_path> print_paths;
@@ -524,8 +529,8 @@ CMD(unknown, "unknown", "ignored", CMD_REF(list), "",
   workspace work(app);
 
   vector<file_path> roots = args_to_paths(args);
-  path_restriction mask(work, roots, args_to_paths(app.opts.exclude_patterns),
-                        app.opts.depth);
+  path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+                        app.opts.depth, ignored_file(work));
   set<file_path> unknown, ignored;
 
   // if no starting paths have been specified use the workspace root
@@ -556,10 +561,10 @@ CMD(missing, "missing", "", CMD_REF(list), "",
   temp_node_id_source nis;
   roster_t current_roster_shape;
   work.get_current_roster_shape(db, nis, current_roster_shape);
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        current_roster_shape);
+                        current_roster_shape, ignored_file(work));
 
   set<file_path> missing;
   work.find_missing(current_roster_shape, mask, missing);
@@ -585,10 +590,10 @@ CMD(changed, "changed", "", CMD_REF(list), "",
 
   work.get_parent_rosters(db, parents);
 
-  node_restriction mask(work, args_to_paths(args),
+  node_restriction mask(args_to_paths(args),
                         args_to_paths(app.opts.exclude_patterns),
                         app.opts.depth,
-                        parents, new_roster);
+                        parents, new_roster, ignored_file(work));
 
   revision_t rrev;
   make_restricted_revision(parents, new_roster, mask, rrev);
@@ -631,8 +636,7 @@ namespace
     symbol const value("value");
     symbol const trust("trust");
 
-    symbol const public_hash("public_hash");
-    symbol const private_hash("private_hash");
+    symbol const hash("hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
   }
@@ -641,13 +645,13 @@ namespace
 // Name: keys
 // Arguments: none
 // Added in: 1.1
+// Changed in: 10.0
 // Purpose: Prints all keys in the keystore, and if a database is given
 //   also all keys in the database, in basic_io format.
 // Output format: For each key, a basic_io stanza is printed. The items in
 //   the stanza are:
 //     name - the key identifier
-//     public_hash - the hash of the public half of the key
-//     private_hash - the hash of the private half of the key
+//     hash - the hash of the key
 //     public_location - where the public half of the key is stored
 //     private_location - where the private half of the key is stored
 //   The *_location items may have multiple values, as shown below
@@ -657,18 +661,16 @@ namespace
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
 //              name "njs@pobox.com"
-//       public_hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
+//              hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
 //   public_location "database"
 //
 //               name "foo@bar.com"
-//        public_hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
-//       private_hash [bfc3263e3257087f531168850801ccefc668312d]
+//               hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
 //    public_location "keystore"
 //   private_location "keystore"
 //
@@ -678,7 +680,7 @@ CMD_AUTOMATE(keys, "",
              "",
              options::opts::none)
 {
-  N(args.size() == 0,
+  E(args.empty(), origin::user,
     F("no arguments needed"));
 
   database db(app);
@@ -686,8 +688,8 @@ CMD_AUTOMATE(keys, "",
 
   vector<rsa_keypair_id> dbkeys;
   vector<rsa_keypair_id> kskeys;
-  // public_hash, private_hash, public_location, private_location
-  map<string, boost::tuple<id, id,
+  // hash, public_location, private_location
+  map<string, boost::tuple<id,
                            vector<string>,
                            vector<string> > > items;
   if (db.database_specified())
@@ -703,7 +705,7 @@ CMD_AUTOMATE(keys, "",
       db.get_key(*i, pub_encoded);
       key_hash_code(*i, pub_encoded, hash_code);
       items[(*i)()].get<0>() = hash_code;
-      items[(*i)()].get<2>().push_back("database");
+      items[(*i)()].get<1>().push_back("database");
     }
 
   for (vector<rsa_keypair_id>::iterator i = kskeys.begin();
@@ -713,26 +715,22 @@ CMD_AUTOMATE(keys, "",
       id privhash, pubhash;
       keys.get_key_pair(*i, kp);
       key_hash_code(*i, kp.pub, pubhash);
-      key_hash_code(*i, kp.priv, privhash);
       items[(*i)()].get<0>() = pubhash;
-      items[(*i)()].get<1>() = privhash;
+      items[(*i)()].get<1>().push_back("keystore");
       items[(*i)()].get<2>().push_back("keystore");
-      items[(*i)()].get<3>().push_back("keystore");
     }
   basic_io::printer prt;
-  for (map<string, boost::tuple<id, id,
+  for (map<string, boost::tuple<id,
                                 vector<string>,
                                 vector<string> > >::iterator
          i = items.begin(); i != items.end(); ++i)
     {
       basic_io::stanza stz;
       stz.push_str_pair(syms::name, i->first);
-      stz.push_binary_pair(syms::public_hash, i->second.get<0>());
-      if (!i->second.get<1>()().empty())
-        stz.push_binary_pair(syms::private_hash, i->second.get<1>());
-      stz.push_str_multi(syms::public_location, i->second.get<2>());
-      if (!i->second.get<3>().empty())
-        stz.push_str_multi(syms::private_location, i->second.get<3>());
+      stz.push_binary_pair(syms::hash, i->second.get<0>());
+      stz.push_str_multi(syms::public_location, i->second.get<1>());
+      if (!i->second.get<2>().empty())
+        stz.push_str_multi(syms::private_location, i->second.get<2>());
       prt.print_stanza(stz);
     }
   output.write(prt.buf.data(), prt.buf.size());
@@ -772,7 +770,7 @@ CMD_AUTOMATE(certs, N_("REV"),
              "",
              options::opts::none)
 {
-  N(args.size() == 1,
+  E(args.size() == 1, origin::user,
     F("wrong argument count"));
 
   database db(app);
@@ -782,18 +780,19 @@ CMD_AUTOMATE(certs, N_("REV"),
 
   transaction_guard guard(db, false);
 
-  hexenc<id> hrid(idx(args, 0)());
-  revision_id rid(decode_hexenc(hrid()));
+  hexenc<id> hrid(idx(args, 0)(), origin::user);
+  revision_id rid(decode_hexenc_as<revision_id>(hrid(), origin::user));
 
-  N(db.revision_exists(rid), F("no such revision '%s'") % hrid);
+  E(db.revision_exists(rid), origin::user,
+    F("no such revision '%s'") % hrid);
 
-  vector< revision<cert> > ts;
+  vector<cert> ts;
   // FIXME_PROJECTS: after projects are implemented,
   // use the db version instead if no project is specified.
   project.get_revision_certs(rid, ts);
 
   for (size_t i = 0; i < ts.size(); ++i)
-    certs.push_back(idx(ts, i).inner());
+    certs.push_back(idx(ts, i));
 
   {
     set<rsa_keypair_id> checked;
@@ -816,7 +815,7 @@ CMD_AUTOMATE(certs, N_("REV"),
   for (size_t i = 0; i < certs.size(); ++i)
     {
       basic_io::stanza st;
-      cert_status status = check_cert(db, idx(certs, i));
+      cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
       set<rsa_keypair_id> signers;
@@ -825,7 +824,7 @@ CMD_AUTOMATE(certs, N_("REV"),
       signers.insert(keyid);
 
       bool trusted =
-        app.lua.hook_get_revision_cert_trust(signers, rid,
+        app.lua.hook_get_revision_cert_trust(signers, rid.inner(),
                                              name, tv);
 
       st.push_str_pair(syms::key, keyid());
