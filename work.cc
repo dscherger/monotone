@@ -1308,8 +1308,11 @@ simulated_working_tree::set_attr(file_path const & path,
 void
 simulated_working_tree::commit()
 {
-  E(conflicts == 0, origin::user,
-    F("%d workspace conflicts") % conflicts);
+  // This used to error out on any conflicts, but now some can be resolved
+  // (by --move-conflicting-paths), so we just warn. The non-resolved
+  // conflicts generate other errors downstream.
+  if (conflicts > 0)
+    F("%d workspace conflicts") % conflicts;
 }
 
 simulated_working_tree::~simulated_working_tree()
@@ -1324,8 +1327,7 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
 {
   I(leftover_paths.size() > 0);
 
-  string now = date_t::now().as_iso_8601_extended();
-  bookkeeping_path leftover_path = bookkeeping_root / "conflicts" / now.data();
+  bookkeeping_path leftover_path = bookkeeping_root / "resolutions";
   require_path_is_nonexistent(leftover_path,
                               F("cannot move conflicting paths - "
                                 "base path %s already exists") % leftover_path);
@@ -1877,13 +1879,13 @@ workspace::perform_content_update(roster_t const & old_roster,
   simulated_working_tree swt(test_roster, nis);
   update.apply_to(swt);
 
-  // if we have found paths during the test-run which will conflict with newly
-  // attached or to-be-dropped nodes, move these paths out of the way into
-  // _MTN/leftover while keeping the path to these paths intact in case the
-  // user wants them back
+  // if we have found paths during the test-run which will conflict with
+  // newly attached or to-be-dropped nodes, move these paths out of the way
+  // into _MTN while keeping the path to these paths intact in case the user
+  // wants them back
   if (swt.has_conflicting_paths())
     {
-      E(move_conflicting_paths,
+      E(move_conflicting_paths, origin::user,
         F("re-run this command with --move-conflicting-paths to move "
           "conflicting paths out of the way."));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
