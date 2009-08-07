@@ -52,6 +52,7 @@ check(mtn("drop", "somedir/fourthfile"), 0, nil, true)
 check(mtn("drop", "somedir/anotherfile"), 0, nil, true)
 check(mtn("drop", "somedir"), 0, nil, true)
 commit("testbranch", "two")
+rev_two = base_revision()
 
 revert_to(rev_one)
 
@@ -66,6 +67,34 @@ check(mtn("update", "--move-conflicting-paths"), 0, nil, true)
 check(qgrep("moved conflicting", "stderr"))
 check(readfile("_MTN/resolutions/somedir/fifthfile")=="fifthfile content 1")
 
--- FIXME: do checkout, pluck, pivot_root
+-- checkout
+remove("_MTN")
+
+-- complains about conflicting files, but creates _MTN
+check(mtn("checkout", "--branch=testbranch", "."), 1, nil, true)
+check(qgrep("blocked by unversioned path", "stderr"))
+
+remove("_MTN")
+
+-- moves them out of the way
+check(mtn("checkout", "--branch=testbranch", "--move-conflicting-paths", "."), 0, nil, true)
+check(qgrep("moved conflicting", "stderr"))
+check(readfile("_MTN/resolutions/somefile")=="somefile content")
+
+-- pluck
+remove("_MTN/resolutions")
+
+revert_to(rev_one)
+writefile("somedir/fifthfile", "fifthfile content 2")
+
+check(mtn("pluck", "-r", rev_two), 1, nil, true)
+check(qgrep("cannot drop non-empty directory", "stderr"))
+
+-- moves them out of the way
+check(mtn("pluck", "--move-conflicting-paths", "-r", rev_two), 0, nil, true)
+check(qgrep("moved conflicting", "stderr"))
+check(readfile("_MTN/resolutions/somedir/fifthfile")=="fifthfile content 2")
+
+-- pivot_root. Not clear how to set up a case where --move-conflicting-paths would help
 
 -- end of file
