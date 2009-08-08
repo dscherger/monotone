@@ -1327,6 +1327,23 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
 {
   I(leftover_paths.size() > 0);
 
+  // There is some concern that this fixed bookkeeping path will cause
+  // problems, if a user forgets to clean up, and then does something that
+  // involves the same name again. However, I can't think of a reasonable
+  // use case that does that, so I can't think of a reasonable solution. One
+  // solution is to generate a random directory name, another is to use the
+  // current time in some format to generate a directory name.
+  //
+  // now().as_iso_8601_extended doesn't work on Windows, because it has
+  // colons in it.
+  //
+  // Random or time based directory names significantly complicate testing,
+  // since you can't predict the directory name.
+  //
+  // If this turns out to be a problem, a modification of
+  // now().as_iso_8601_extended to eliminate the colons, or some appropriate
+  // format for now().as_formatted_localtime would be simple and
+  // probably adequate.
   bookkeeping_path leftover_path = bookkeeping_root / "resolutions";
   require_path_is_nonexistent(leftover_path,
                               F("cannot move conflicting paths - "
