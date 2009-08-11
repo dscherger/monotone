@@ -1,3 +1,4 @@
+// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -1345,9 +1346,6 @@ move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
   // format for now().as_formatted_localtime would be simple and
   // probably adequate.
   bookkeeping_path leftover_path = bookkeeping_root / "resolutions";
-  require_path_is_nonexistent(leftover_path,
-                              F("cannot move conflicting paths - "
-                                "base path %s already exists") % leftover_path);
 
   mkdir_p(leftover_path);
 
