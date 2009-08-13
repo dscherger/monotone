@@ -18,11 +18,21 @@
 	  disable it by default by having the above Lua hook return an
 	  empty string.
 
-        - The 'diff' and 'automate context_diff' commands take a
+        - The 'diff' and 'automate content_diff' commands take a
           '--reverse' option when one revision is specified, to
           control the order of the diff with the workspace.
-        
+
+        - The 'update', 'checkout', 'pluck', and 'pivot_root' commands
+	  take an option '--move-conflicting-paths', to handle
+	  unversioned files that are blocking the action. The
+	  unversioned files are moved to
+	  _MTN/resolutions/<workspace_path>, so the action can
+	  succeed, and the user can recover the files if necessary.
+
 	Bugs fixed
+
+        - Monotone now sanely skips paths with invalid characters
+          it encounters during 'add' or 'automate inventory'.
 
 	Internal
 

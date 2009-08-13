@@ -27,14 +27,19 @@ Source: "{#BUILDDIR}\mtn.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#BUILDDIR}\monotone.html"; DestDir: "{app}\documentation"; Flags: ignoreversion
 Source: "{#BUILDDIR}\figures\*.png"; DestDir: "{app}\documentation\figures"; Flags: ignoreversion
 Source: "..\COPYING"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\monotone.info"; DestDir: "{app}\documentation"; Flags: ignoreversion
+Source: "..\monotone.info-1"; DestDir: "{app}\documentation"; Flags: ignoreversion
+Source: "..\monotone.info-2"; DestDir: "{app}\documentation"; Flags: ignoreversion
+Source: "..\monotone.info-3"; DestDir: "{app}\documentation"; Flags: ignoreversion
 Source: "{#BUILDDIR}\de.gmo"; DestDir: "{app}\locale\de\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
 Source: "{#BUILDDIR}\es.gmo"; DestDir: "{app}\locale\es\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
 Source: "{#BUILDDIR}\it.gmo"; DestDir: "{app}\locale\it\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
 Source: "{#BUILDDIR}\sv.gmo"; DestDir: "{app}\locale\sv\LC_MESSAGES"; DestName: "monotone.mo"; Flags: ignoreversion
 Source: "{#MINGWDIR}\bin\libiconv-2.dll"; DestDir: "{app}"
-Source: "{#MINGWDIR}\local\bin\libidn-11.dll"; DestDir: "{app}"
+Source: "{#MINGWDIR}\bin\libidn-11.dll"; DestDir: "{app}"
 Source: "{#MINGWDIR}\bin\libintl-8.dll"; DestDir: "{app}"
-Source: "{#MINGWDIR}\local\bin\libpcre-0.dll"; DestDir: "{app}"
+Source: "{#MINGWDIR}\bin\libpcre-0.dll"; DestDir: "{app}"
+Source: "{#MINGWDIR}\bin\libz-1.dll"; DestDir: "{app}"
 
 [Tasks]
 Name: modifypath; Description: "Add monotone to your path"; GroupDescription: "Get up and running"; Flags: unchecked
