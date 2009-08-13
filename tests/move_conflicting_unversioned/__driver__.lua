@@ -46,7 +46,7 @@ check(readfile("_MTN/resolutions/somedir/fourthfile")=="fourthfile content 2")
 
 remove("_MTN/resolutions")
 
---  Use case 2.
+--  Use case 2. Also with leftover _MTN/resolutions from some other use, such as conflict resolution
 revert_to(rev_one)
 check(mtn("drop", "somedir/fourthfile"), 0, nil, true)
 check(mtn("drop", "somedir/anotherfile"), 0, nil, true)
@@ -61,6 +61,9 @@ writefile("somedir/fifthfile", "fifthfile content 1")
 -- reports conflicts with unversioned files
 check(mtn("update"), 1, nil, true)
 check(qgrep("cannot drop non-empty directory", "stderr"))
+
+mkdir("_MTN/resolutions")
+writefile("_MTN/resolutions/conflicts", "conflict stuff")
 
 -- moves them out of the way
 check(mtn("update", "--move-conflicting-paths"), 0, nil, true)
