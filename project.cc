@@ -622,7 +622,7 @@ project_t::get_key_identity(key_store * const keys,
     }
   catch (recoverable_failure &)
     {
-      internalize_key_name(typecast_vocab<external>(input),
+      internalize_key_name(typecast_vocab<utf8>(input),
                            output.official_name);
     }
   complete_key_identity(keys, lua, output);

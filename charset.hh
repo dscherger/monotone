@@ -38,16 +38,16 @@ size_t display_width(utf8 const & utf);
 
 // Specific internal / external conversions for various vocab terms.
 void internalize_cert_name(utf8 const & utf, cert_name & c);
-void internalize_cert_name(external const & ext, cert_name & c);
-void externalize_cert_name(cert_name const & c, utf8 & utf);
-void externalize_cert_name(cert_name const & c, external & ext);
+//void internalize_cert_name(external const & ext, cert_name & c);
+//void externalize_cert_name(cert_name const & c, utf8 & utf);
+//void externalize_cert_name(cert_name const & c, external & ext);
 void internalize_key_name(utf8 const & utf, key_name & key);
-void internalize_key_name(external const & ext, key_name & key);
-void externalize_key_name(key_name const & key, utf8 & utf);
-void externalize_key_name(key_name const & key, external & ext);
+//void internalize_key_name(external const & ext, key_name & key);
+//void externalize_key_name(key_name const & key, utf8 & utf);
+//void externalize_key_name(key_name const & key, external & ext);
 void internalize_var_domain(utf8 const & utf, var_domain & d);
-void internalize_var_domain(external const & ext, var_domain & d);
-void externalize_var_domain(var_domain const & d, utf8 & utf);
+//void internalize_var_domain(external const & ext, var_domain & d);
+//void externalize_var_domain(var_domain const & d, utf8 & utf);
 void externalize_var_domain(var_domain const & d, external & ext);
 
 #endif
