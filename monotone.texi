@@ -9975,7 +9975,7 @@ fields of @var{key_identity} will be populated, and the @var{name} field
 will not be. The return value indicates what the @var{name} field should
 contain. The default implementation make this the same as @var{given_name}.
 
-@item get_author (@var{branchname}, @var{keyidentity})
+@item get_author (@var{branchname}, @var{key_identity})
 
 Returns a string which is used as a value for automatically generated
 @code{author} certificates when you commit changes to
