@@ -5586,7 +5586,7 @@ indicate:
 @item
 Whether the signature on the certificate is @code{ok} or @code{bad}
 @item
-The key ID of the signer of the certificate
+The key used to sign the certificate
 @item
 The name of the certificate
 @item
@@ -5603,22 +5603,22 @@ $ mtn list certs 4a96
 mtn: expanding partial id '4a96'
 mtn: expanded to '4a96a230293456baa9c6e7167cafb3c5b52a8e7f'
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : author
 Value : graydon@@dub.venge.net
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : branch
 Value : monotone
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : date
 Value : 2003-10-17T03:20:27
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : changelog
 Value : 2003-10-16  graydon hoare  <graydon@@pobox.com>
@@ -5818,9 +5818,11 @@ key @var{id}.
 This command lets you test your revision trust hook
 @code{get_revision_cert_trust} (see @ref{Hook Reference}).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
-key IDs, and it will tell you whether, under your current settings,
+key IDs or key names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
+
+The specified keys mist exist either in your keystore or in the database.
 
 @item mtn ssh_agent_add
 
@@ -7527,6 +7529,12 @@ A revision ID @var{id}, for which any certificates will be printed.
 
 1.0
 
+@item Changes:
+@itemize
+@item
+FIXME -- Keys are now listed by hash instead of name.
+@end itemize
+
 @item Purpose:
 
 Prints all certificates associated with the given revision ID.
@@ -7534,7 +7542,7 @@ Each certificate is contained in a basic IO stanza. For each certificate,
 the following values are provided:
 @verbatim
 'key'
-      a string indicating the key used to sign this certificate.
+      the hex-encoded hash of the key used to sign this certificate.
 'signature'
       a string indicating the status of the signature. Possible
       values of this string are:
@@ -7555,19 +7563,19 @@ the following values are provided:
 @item Sample output:
 
 @verbatim
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "author"
     value "emile@alumni.reed.edu"
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "branch"
     value "net.venge.monotone"
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "changelog"
     value "propagate from branch 'net.venge.monotone.annotate' (head 76a886ef7c8ae12a4bba5fc2bd252557bf863aff)
@@ -7575,7 +7583,7 @@ signature "ok"
 "
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "date"
     value "2005-05-20T20:19:25"
@@ -8468,6 +8476,9 @@ None.
 
 @itemize
 @item
+FIXME -- Instead of having a "name" item, there are
+"given_name" and "local_name" items.
+@item
 10.0 -- The separate hashes for the private half of a key really didn't
 make much sense; have one @code{hash [...]} line instead of separate
 @code{public_hash [...]} and @code{private_hash [...]} lines.
@@ -8483,17 +8494,20 @@ Print all keys in basic_io format.
 @item Sample output:
 
 @verbatim
-            name "tbrownaw@gmail.com"
             hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+      given_name "tbrownaw@gmail.com"
+      local_name "tbrownaw@gmail.com"
  public_location "database" "keystore"
 private_location "keystore"
 
-           name "tomfa@debian.org"
            hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+      given_name "tomfa@debian.org"
+      local_name "tomfa@debian.org"
 public_location "database"
 
-            name "underwater@fishtank.net"
             hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
+      given_name "underwater@fishtank.net"
+      local_name "underwater@fishtank.net"
  public_location "keystore"
 private_location "keystore"
 
@@ -8502,9 +8516,13 @@ private_location "keystore"
 @item Output format:
 
 For each key, a basic_io stanza is printed. The public_location and
-private_location items may have multiple values as shown above for public_location, one value for each place that the key is stored. If the
+private_location items may have multiple values as shown above for public_location,
+one value for each place that the key is stored. If the
 private key does not exist, then the private_hash and private_location
-items will be absent. The keys are ordered alphabetically by name.
+items will be absent. given_name is the name provided when the key was created,
+and local_name is the name returned by the @code{get_local_key_name} hook.
+
+The keys are ordered by hash value.
 
 @item Error conditions:
 

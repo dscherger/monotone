@@ -1,3 +1,15 @@
+certs-by-keyhash branch:
+        'trusted' requires the given keys to exist
+        'ls certs' and 'ls tags' give the first part of the key hash
+        monotone can now handle multiple keys with the same name
+        'automate keys' output has changed
+        'automate certs' output lists keys by hash instead of by name
+        netsync version has been bumped
+        'db migrate' is required. Everyone can do this themselved; there's no
+                need for a project leader to migrate and everyone else to pull
+                a fresh database
+        the automate major version needs to be bumped
+
 ??? ?? ?? ??:??:?? UTC ????
 
 	0.45 release.
