@@ -16,6 +16,7 @@
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 
+#include "char_classifiers.hh"
 #include "key_store.hh"
 #include "file_io.hh"
 #include "packet.hh"
@@ -96,7 +97,8 @@ struct key_store_state
   }
 
   // internal methods
-  void get_key_file(key_id const & ident, system_path & file);
+  void get_key_file(key_id const & ident, key_name const & name,
+                    system_path & file);
   void get_old_key_file(key_name const & name, system_path & file);
   void write_key(full_key_info const & info);
   void maybe_read_key_dir();
@@ -321,12 +323,31 @@ key_store::get_key_pair(key_id const & hash,
 
 void
 key_store_state::get_key_file(key_id const & ident,
+                              key_name const & name,
                               system_path & file)
 {
   hexenc<id> encoded;
   encode_hexenc(ident.inner(), encoded);
 
-  file = key_dir / path_component(encoded(), origin::internal);
+  static const string allowed_special_chars("@%^_-+=.,;~[]");
+  string basename;
+  for (string::const_iterator iter = name().begin();
+       iter != name().end(); ++iter)
+    {
+      if (is_alnum(*iter) ||
+          is_space(*iter) ||
+          allowed_special_chars.find(*iter) != string::npos)
+        {
+          basename += *iter;
+        }
+      else
+        {
+          basename += '?';
+        }
+    }
+
+  file = key_dir / path_component(basename + "." + encoded(),
+                                  origin::internal);
 }
 
 void
@@ -353,7 +374,7 @@ key_store_state::write_key(full_key_info const & info)
   data dat(oss.str(), info.second.first.made_from);
 
   system_path file;
-  get_key_file(info.first, file);
+  get_key_file(info.first, info.second.first, file);
 
   // Make sure the private key is not readable by anyone other than the user.
   L(FL("writing key '%s' to file '%s' in dir '%s'")
@@ -406,13 +427,14 @@ key_store::delete_key(key_id const & ident)
   key_map::iterator i = s->keys.find(ident);
   if (i != s->keys.end())
     {
+      system_path file;
+      s->get_key_file(ident, i->second.first, file);
+      delete_file(file);
+
       s->keys.erase(i);
       s->signer_cache.erase(ident);
       s->privkey_cache.erase(ident);
     }
-  system_path file;
-  s->get_key_file(ident, file);
-  delete_file(file);
 }
 
 //
@@ -587,6 +609,7 @@ key_store::cache_decrypted_key(const key_id & id)
 void
 key_store::create_key_pair(database & db,
                            key_name const & ident,
+                           create_key_pair_mode create_mode,
                            utf8 const * maybe_passphrase,
                            key_id * const maybe_hash)
 {
@@ -608,7 +631,14 @@ key_store::create_key_pair(database & db,
     }
 
   // okay, now we can create the key
-  P(F("generating key-pair '%s'") % ident);
+  if (create_mode == create_verbose)
+    {
+      P(F("generating key-pair '%s'") % ident);
+    }
+  else
+    {
+      L(FL("generating key-pair '%s'") % ident);
+    }
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   RSA_PrivateKey priv(s->rng->get(),
                       static_cast<Botan::u32bit>(constants::keylen));
@@ -649,19 +679,39 @@ key_store::create_key_pair(database & db,
     % kp.priv().size());
 
   // and save it.
-  P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+  if (create_mode == create_verbose)
+    {
+      P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+    }
+  else
+    {
+      L(FL("storing key-pair '%s' in %s/") % ident % get_key_dir());
+    }
   put_key_pair(ident, kp);
 
   if (db.database_specified())
     {
       guard.acquire();
-      P(F("storing public key '%s' in %s") % ident % db.get_filename());
+      if (create_mode == create_verbose)
+        {
+          P(F("storing public key '%s' in %s") % ident % db.get_filename());
+        }
+      else
+        {
+          L(FL("storing public key '%s' in %s") % ident % db.get_filename());
+        }
       db.put_key(ident, kp.pub);
       guard.commit();
     }
 
+  key_id hash;
+  key_hash_code(ident, kp.pub, hash);
   if (maybe_hash)
-    key_hash_code(ident, kp.pub, *maybe_hash);
+    *maybe_hash = hash;
+  if (create_mode == create_verbose)
+    {
+      P(F("key '%s' has hash '%s'") % ident % hash);
+    }
 }
 
 void

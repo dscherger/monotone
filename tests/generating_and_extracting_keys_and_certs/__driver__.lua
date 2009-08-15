@@ -10,7 +10,9 @@ check(mtn("genkey", tkey .. ".empty"), 0, false, false)
 check(mtn("genkey", tkey), 1, false, false, tkey .. "\n" .. "\n" .. "\n" .. tkey .. "\n" .. tkey .. "\n")
 
 -- generate a new key
-check(mtn("genkey", tkey), 0, false, false, tkey .. "\n" .. tkey .. "\n")
+check(mtn("genkey", tkey), 0, false, true, tkey .. "\n" .. tkey .. "\n")
+-- genkey prints key hash
+check(qgrep("key '" .. tkey .. "' has hash '[[:xdigit:]]{40}'", "stderr"))
 
 -- check key exists
 check(mtn("ls", "keys"), 0, true)

@@ -1784,7 +1784,7 @@ namespace
 CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
              N_("Generates a key"),
              "",
-             options::opts::none)
+             options::opts::force_duplicate_key)
 {
   E(args.size() == 2, origin::user,
     F("wrong argument count"));
@@ -1795,18 +1795,21 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   key_name name;
   internalize_key_name(idx(args, 0), name);
 
-  E(!keys.key_pair_exists(name), origin::user,
-    F("you already have a key named '%s'") % name);
-  if (db.database_specified())
+  if (!app.opts.force_duplicate_key)
     {
-      E(!db.public_key_exists(name), origin::user,
-        F("there is another key named '%s'") % name);
+      E(!keys.key_pair_exists(name), origin::user,
+        F("you already have a key named '%s'") % name);
+      if (db.database_specified())
+        {
+          E(!db.public_key_exists(name), origin::user,
+            F("there is another key named '%s'") % name);
+        }
     }
 
   utf8 passphrase = idx(args, 1);
 
   key_id hash;
-  keys.create_key_pair(db, name, &passphrase, &hash);
+  keys.create_key_pair(db, name, key_store::create_quiet, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;

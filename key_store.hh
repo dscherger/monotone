@@ -86,7 +86,9 @@ public:
 
   void cache_decrypted_key(key_id const & id);
 
+  enum create_key_pair_mode { create_quiet, create_verbose };
   void create_key_pair(database & db, key_name const & ident,
+                       create_key_pair_mode create_mode = create_verbose,
                        utf8 const * maybe_passphrase = NULL,
                        key_id * const maybe_hash = NULL);
 

@@ -32,7 +32,7 @@ using std::string;
 CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
     N_("Generates an RSA key-pair"),
     "",
-    options::opts::none)
+    options::opts::force_duplicate_key)
 {
   database db(app);
   key_store keys(app);
@@ -43,12 +43,15 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   key_name name;
   internalize_key_name(idx(args, 0), name);
 
-  E(!keys.key_pair_exists(name), origin::user,
-    F("you already have a key named '%s'") % name);
-  if (db.database_specified())
+  if (!app.opts.force_duplicate_key)
     {
-      E(!db.public_key_exists(name), origin::user,
-        F("there is another key named '%s'") % name);
+      E(!keys.key_pair_exists(name), origin::user,
+        F("you already have a key named '%s'") % name);
+      if (db.database_specified())
+        {
+          E(!db.public_key_exists(name), origin::user,
+            F("there is another key named '%s'") % name);
+        }
     }
 
   keys.create_key_pair(db, name);

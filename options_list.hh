@@ -371,6 +371,15 @@ GOPT(ssh_sign, "ssh-sign", std::string, "yes",
 }
 #endif
 
+OPT(force_duplicate_key, "force-duplicate-key", bool, false,
+    gettext_noop("force genkey to not error out when the named key "
+                 "already exists"))
+#ifdef option_bodies
+{
+  force_duplicate_key = true;
+}
+#endif
+
 OPT(full, "full", bool, false,
      gettext_noop("print detailed information"))
 #ifdef option_bodies

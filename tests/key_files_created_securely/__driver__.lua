@@ -24,5 +24,5 @@ check(grep(" foobar$", "stdout"), 0, true)
 line = readfile("stdout")
 keyid = string.sub(line, 0, 40)
 
-check({ "ls", "-l", "keys/" .. keyid }, 0, true, nil)
-check(qgrep("^-rw------- .*keys/" .. keyid, "stdout"))
+check({ "ls", "-l", "keys/foobar." .. keyid }, 0, true, nil)
+check(qgrep("^-rw------- .*keys/foobar." .. keyid, "stdout"))
