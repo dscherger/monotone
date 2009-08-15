@@ -93,8 +93,10 @@ namespace {
   Lua & push_key_identity_info(Lua & ll,
                                key_identity_info const & info)
   {
+    hexenc<id> hexid;
+    encode_hexenc(info.id.inner(), hexid);
     ll.push_table()
-      .push_str(info.id.inner()())
+      .push_str(hexid())
       .set_field("id")
       .push_str(info.given_name())
       .set_field("given_name")
