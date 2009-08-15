@@ -514,7 +514,7 @@ project_t::lookup_key_by_name(key_store * const keys,
     }
 
   E(ks_match_by_local_name.size() < 2, origin::user,
-    F("you have %n keys named '%s'") %
+    F("you have %d keys named '%s'") %
     ks_match_by_local_name.size() % name);
   if (ks_match_by_local_name.size() == 1)
     {
@@ -522,7 +522,7 @@ project_t::lookup_key_by_name(key_store * const keys,
       return;
     }
   E(db_match_by_local_name.size() < 2, origin::user,
-    F("there are %n keys named '%s'") %
+    F("there are %d keys named '%s'") %
     db_match_by_local_name.size() % name);
   if (db_match_by_local_name.size() == 1)
     {
@@ -530,7 +530,7 @@ project_t::lookup_key_by_name(key_store * const keys,
       return;
     }
   E(ks_match_by_given_name.size() < 2, origin::user,
-    F("you have %n keys named '%s'") %
+    F("you have %d keys named '%s'") %
     ks_match_by_local_name.size() % name);
   if (ks_match_by_given_name.size() == 1)
     {
