@@ -9912,7 +9912,7 @@ prompted for.
 @ftable @code
 @item get_branch_key (@var{branchname})
 
-Returns a string which is the name of an @sc{rsa} private key used to sign
+Returns a string which is the name or hash of an @sc{rsa} private key used to sign
 certificates in a particular branch @var{branchname}. There is no
 default definition for this hook. The command-line option
 @option{--key=@var{keyname}} overrides any value returned from this
@@ -9923,7 +9923,7 @@ to use the unique private key.
 
 @item get_netsync_key(@var{server}, @var{include}, @var{exclude})
 
-Returns a string which is the name of the key to use to authenticate
+Returns a string which is the name or hash of the key to use to authenticate
 the given netsync connection. When called by the @command{serve} command,
 @var{server} is the address monotone is listening on, @var{include} is
 @option{"*"}, and @var{exclude} is @option{""}.
@@ -10111,7 +10111,7 @@ the configuration directory. This file looks like
 @group
 pattern "net.example.project.@{private,security@}*"
 allow "joe@@example.net"
-allow "jim@@example.net"
+allow "f3f62f86eba204a3ce15174083a53349201993d6"
 
 comment "everyone can read these branches"
 pattern "net.example.@{public,project@}*"
@@ -10127,7 +10127,8 @@ The file is divided into stanzas of one @code{pattern} line followed by any
 number of @code{allow} and @code{deny} lines, and possibly a @code{continue}
 line. Anything from the unquoted word @code{comment} until the next unquoted
 word is ignored. A stanza is processed if the argument to
-@code{pattern} is a glob that matches @var{branch}. Any keys which match an
+@code{pattern} is a glob that matches @var{branch}. Any keys with a hash or
+local_name that matches an
 @code{allow} line are given access, and any keys which match a @code{deny} line
 are denied access. If there is a @code{continue "true"} line, then if the key
 is not granted or denied access in this stanza the next matching stanza will be
@@ -10146,7 +10147,8 @@ Returns @code{true} if a peer authenticated as key @var{key_identity} should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise @code{false}. The default definition of this hook reads a file
 @file{write-permissions} in the configuration directory which contains a list
-of keys, one per line, which are allowed write access. The special value
+of key hashes or local key names, one per line, which are allowed write access.
+The special value
 @code{*} means to allow access to anyone whose public key we already have.
 
 If a client connects anonymously, it will be unconditionally denied
