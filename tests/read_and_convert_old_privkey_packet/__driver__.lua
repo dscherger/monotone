@@ -14,22 +14,22 @@ check(grep(" foo@bar.com ", "stdout"), 0, true)
 line = readfile("stdout")
 keyid = string.sub(line, 0, 40)
 
-check(qgrep("keypair", "keys/" .. keyid))
-check(not qgrep("privkey", "keys/" .. keyid))
+check(qgrep("keypair", "keys/foo@bar.com." .. keyid))
+check(not qgrep("privkey", "keys/foo@bar.com." .. keyid))
 
 addfile("foo", "foo")
 
 -- if we put the old privkey in the keydir, it should get
 -- auto-converted the first time anything tries to read it
 
-check(remove("keys/" .. keyid))
+check(remove("keys/foo@bar.com." .. keyid))
 check(get("old_privkey", "keys/foo@bar.com"))
 check(mtn("ls", "keys"), 0, true, true, "foo@bar.com\n")
 check(qgrep("foo@bar.com", "stdout"))
 check(qgrep("converting old-format", "stderr"))
 check(not exists("keys/foo@bar.com"))
-check(qgrep("keypair", "keys/" .. keyid))
-check(not qgrep("privkey", "keys/" .. keyid))
+check(qgrep("keypair", "keys/foo@bar.com." .. keyid))
+check(not qgrep("privkey", "keys/foo@bar.com." .. keyid))
 
 
 -- check that we can use the converted key to commit with
