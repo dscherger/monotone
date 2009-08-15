@@ -1084,15 +1084,15 @@ function get_netsync_read_permitted(branch, ident)
          for j, val in pairs(item.values) do
             if val == "*" then return true end
             if val == "" and ident == nil then return true end
-            if val == ident.id then return true end
-            if globish_match(val, ident.name) then return true end
+            if ident ~= nil and val == ident.id then return true end
+            if ident ~= nil and globish_match(val, ident.name) then return true end
          end
       end elseif item.name == "deny" then if matches then
          for j, val in pairs(item.values) do
             if val == "*" then return false end
             if val == "" and ident == nil then return false end
-            if val == ident.id then return false end
-            if globish_match(val, ident.name) then return false end
+            if ident ~= nil and val == ident.id then return false end
+            if ident ~= nil and globish_match(val, ident.name) then return false end
          end
       end elseif item.name == "continue" then if matches then
          cont = true
