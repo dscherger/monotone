@@ -371,6 +371,15 @@ GOPT(ssh_sign, "ssh-sign", std::string, "yes",
 }
 #endif
 
+OPT(force_duplicate_key, "force-duplicate-key", bool, false,
+    gettext_noop("force genkey to not error out when the named key "
+                 "already exists"))
+#ifdef option_bodies
+{
+  force_duplicate_key = true;
+}
+#endif
+
 OPT(full, "full", bool, false,
      gettext_noop("print detailed information"))
 #ifdef option_bodies
@@ -412,11 +421,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 #endif
 
 
-OPTVAR(key, rsa_keypair_id, signing_key, )
-OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
+OPTVAR(key, external_key_name, signing_key, )
+OPTION(globals, key, true, "key,k",
+       gettext_noop("sets the key for signatures, using eith the key "
+                    "name or th key hash"))
 #ifdef option_bodies
 {
-  internalize_rsa_keypair_id(utf8(arg, origin::user), signing_key);
+  signing_key = external_key_name(arg, origin::user);
 }
 #endif
 
@@ -431,14 +442,12 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
-OPTVAR(key_to_push, std::vector<rsa_keypair_id>, keys_to_push, )
+OPTVAR(key_to_push, std::vector<external_key_name>, keys_to_push, )
 OPTION(key_to_push, key_to_push, true, "key-to-push",
         gettext_noop("push the specified key even if it hasn't signed anything"))
 #ifdef option_bodies
 {
-  rsa_keypair_id keyid;
-  internalize_rsa_keypair_id(utf8(arg, origin::user), keyid);
-  keys_to_push.push_back(keyid);
+  keys_to_push.push_back(external_key_name(arg, origin::user));
 }
 #endif
 

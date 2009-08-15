@@ -84,7 +84,7 @@ verify(cert_name const & val)
 }
 
 inline void
-verify(rsa_keypair_id const & val)
+verify(key_name const & val)
 {
   string::size_type pos = val().find_first_not_of(constants::legal_key_name_bytes);
   E(pos == string::npos, val.made_from,
@@ -189,6 +189,7 @@ template void dump(revision_id const & r, string &);
 template void dump(manifest_id const & r, string &);
 template void dump(file_id const & r, string &);
 template void dump(hexenc<id> const & r, string &);
+template void dump(key_id const & r, string &);
 template void dump(rsa_pub_key const&, string &);
 template void dump(roster_data const & d, string &);
 template void dump(roster_delta const & d, string &);

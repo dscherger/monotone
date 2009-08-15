@@ -363,6 +363,11 @@ function edit_comment(basetext, user_log_message)
 end
 
 
+function get_local_key_name(key_identity)
+   return key_identity.given_name
+end
+
+
 function persist_phrase_ok()
    return true
 end
@@ -1079,13 +1084,15 @@ function get_netsync_read_permitted(branch, ident)
          for j, val in pairs(item.values) do
             if val == "*" then return true end
             if val == "" and ident == nil then return true end
-            if globish_match(val, ident) then return true end
+            if ident ~= nil and val == ident.id then return true end
+            if ident ~= nil and globish_match(val, ident.name) then return true end
          end
       end elseif item.name == "deny" then if matches then
          for j, val in pairs(item.values) do
             if val == "*" then return false end
             if val == "" and ident == nil then return false end
-            if globish_match(val, ident) then return false end
+            if ident ~= nil and val == ident.id then return false end
+            if ident ~= nil and globish_match(val, ident.name) then return false end
          end
       end elseif item.name == "continue" then if matches then
          cont = true
@@ -1110,7 +1117,8 @@ function get_netsync_write_permitted(ident)
    while (not matches and line ~= nil) do
       local _, _, ln = string.find(line, "%s*([^%s]*)%s*")
       if ln == "*" then matches = true end
-      if globish_match(ln, ident) then matches = true end
+      if ln == ident.id then matches = true end
+      if globish_match(ln, ident.name) then matches = true end
       line = permfile:read()
    end
    io.close(permfile)
