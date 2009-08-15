@@ -29,7 +29,7 @@ using std::ostringstream;
 using std::set;
 using std::string;
 
-CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
+CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
     N_("Generates an RSA key-pair"),
     "",
     options::opts::force_duplicate_key)
@@ -57,7 +57,7 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   keys.create_key_pair(db, name);
 }
 
-CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
+CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     N_("Drops a public and/or private key"),
     "",
     options::opts::none)
@@ -104,20 +104,22 @@ CMD(dropkey, "dropkey", "", CMD_REF(key_and_cert), N_("KEYID"),
   E(key_deleted, origin::user, fmt % idx(args, 0)());
 }
 
-CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEYID"),
+CMD(passphrase, "passphrase", "", CMD_REF(key_and_cert), N_("KEY_NAME_OR_HASH"),
     N_("Changes the passphrase of a private RSA key"),
     "",
     options::opts::none)
 {
-  key_store keys(app);
-
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name name;
-  internalize_key_name(idx(args, 0), name);
+  key_store keys(app);
+  database db(app);
+  project_t project(db);
+  key_identity_info identity;
 
-  keys.change_key_passphrase(name);
+  project.get_key_identity(keys, app.lua, idx(args, 0), identity);
+
+  keys.change_key_passphrase(identity.id);
   P(F("passphrase changed"));
 }
 

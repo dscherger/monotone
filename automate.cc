@@ -1781,7 +1781,7 @@ namespace
 //
 // Error conditions: If the passphrase is empty or the key already exists,
 // prints an error message to stderr and exits with status 1.
-CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
+CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
              N_("Generates a key"),
              "",
              options::opts::force_duplicate_key)

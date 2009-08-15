@@ -94,7 +94,7 @@ public:
 
   // This is always your own key, so you probably want to
   // always use the given name.
-  void change_key_passphrase(key_name const & id);
+  void change_key_passphrase(key_id const & id);
 
   void decrypt_rsa(key_id const & id,
                    rsa_oaep_sha_data const & ciphertext,

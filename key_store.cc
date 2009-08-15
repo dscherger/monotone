@@ -715,27 +715,18 @@ key_store::create_key_pair(database & db,
 }
 
 void
-key_store::change_key_passphrase(key_name const & name)
+key_store::change_key_passphrase(key_id const & id)
 {
-  key_id id;
+  key_name name;
   keypair kp;
   {
     bool found = false;
     s->maybe_read_key_dir();
-    for (key_map::const_iterator i = s->keys.begin();
-         i != s->keys.end(); ++i)
-      {
-        if (i->second.first == name)
-          {
-            E(!found, origin::user,
-              F("you have multiple private keys name '%s'") % name);
-            found = true;
-            id = i->first;
-            kp = i->second.second;
-          }
-      }
-    E(found, origin::user, F("no key pair '%s' found in key store '%s'")
-      % name % s->key_dir);
+    key_map::const_iterator i = s->keys.find(id);
+    E(i != s->keys.end(), origin::user,
+      F("no key pair '%s' found in key store '%s'") % id % s->key_dir);
+    name = i->second.first;
+    kp = i->second.second;
   }
   shared_ptr<RSA_PrivateKey> priv = s->decrypt_private_key(id, true);
 
