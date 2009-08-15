@@ -466,7 +466,7 @@ CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
       for (set<string>::iterator i = duplicate_aliases.begin();
            i != duplicate_aliases.end(); i++)
         {
-          W(F("Mismatched Key: %s") % *i);
+          P(F("Duplicate Key: %s") % *i);
         }
     }
 

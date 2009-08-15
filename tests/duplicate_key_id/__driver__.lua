@@ -10,4 +10,4 @@ addfile("testfile", "version 0 of test file")
 check(mtn("commit", "-m", "try to commit with bad key in DB"), 0, false, true)
 
 check(mtn("ls", "keys"), 0, false, true)
-check(qgrep("Mismatched Key: tester@test.net", "stderr"))
+check(qgrep("Duplicate Key: tester@test.net", "stderr"))
