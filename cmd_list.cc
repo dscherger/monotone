@@ -54,6 +54,48 @@ CMD_GROUP(list, "list", "ls", CMD_REF(informative),
              "or known, unknown, intentionally ignored, missing, or "
              "changed-state files."));
 
+namespace {
+  // for 'ls certs' and 'ls tags'
+  string format_key(key_identity_info const & info)
+  {
+    string out;
+
+    hexenc<id> hexid;
+    encode_hexenc(info.id.inner(), hexid);
+
+    out += info.official_name();
+    out += " (";
+    out += hexid().substr(0, 10) + "...";
+    if (info.given_name != info.official_name)
+      {
+        out += "; ";
+        out += info.given_name();
+      }
+    out += ")";
+
+    return out;
+  }
+  string format_key_for_ls_keys(key_identity_info const & info)
+  {
+    string out;
+
+    hexenc<id> hexid;
+    encode_hexenc(info.id.inner(), hexid);
+
+    out += hexid();
+    out += " ";
+    out += info.official_name();
+    if (info.given_name != info.official_name)
+      {
+        out += " (";
+        out += info.given_name();
+        out += ")";
+      }
+
+    return out;
+  }
+}
+
 CMD(certs, "certs", "", CMD_REF(list), "ID",
     N_("Lists certificates attached to an identifier"),
     "",
@@ -64,6 +106,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
 
   database db(app);
   project_t project(db);
+  key_store keys(app);
   vector<cert> certs;
 
   transaction_guard guard(db, false);
@@ -77,7 +120,7 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
     certs.push_back(idx(ts, i));
 
   {
-    set<rsa_keypair_id> checked;
+    set<key_id> checked;
     for (size_t i = 0; i < certs.size(); ++i)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
@@ -139,11 +182,15 @@ CMD(certs, "certs", "", CMD_REF(list), "ID",
       split_into_lines(washed, lines);
       std::string value_first_line = lines.empty() ? "" : idx(lines, 0);
 
+      key_identity_info identity;
+      identity.id = idx(certs, i).key;
+      project.complete_key_identity(keys, app.lua, identity);
+
       cout << string(guess_terminal_width(), '-') << '\n'
            << (i18n_format(str)
-               % idx(certs, i).key()
+               % format_key(identity)
                % stat
-               % idx(certs, i).name()
+               % idx(certs, i).name
                % value_first_line);
 
       for (size_t i = 1; i < lines.size(); ++i)
@@ -253,119 +300,176 @@ CMD(duplicates, "duplicates", "", CMD_REF(list), "",
     }
 }
 
+struct key_location_info
+{
+  key_identity_info identity;
+  vector<string> public_locations;
+  vector<string> private_locations;
+};
+typedef map<key_id, key_location_info> key_map;
+
+namespace {
+  void get_key_list(database & db,
+                    key_store & keys,
+                    lua_hooks & lua,
+                    project_t & project,
+                    key_map & items)
+  {
+    items.clear();
+
+    {
+      vector<key_id> dbkeys;
+      if (db.database_specified())
+        {
+          db.get_key_ids(dbkeys);
+          for (vector<key_id>::iterator i = dbkeys.begin();
+               i != dbkeys.end(); i++)
+            {
+              key_identity_info identity;
+              identity.id = *i;
+              project.complete_key_identity(lua, identity);
+              items[*i].identity = identity;
+              items[*i].public_locations.push_back("database");
+            }
+        }
+    }
+    {
+      vector<key_id> kskeys;
+      keys.get_key_ids(kskeys);
+      for (vector<key_id>::iterator i = kskeys.begin();
+           i != kskeys.end(); i++)
+        {
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, lua, identity);
+          items[*i].identity = identity;
+          items[*i].public_locations.push_back("keystore");
+          items[*i].private_locations.push_back("keystore");
+        }
+    }
+  }
+}
+
 CMD(keys, "keys", "", CMD_REF(list), "[PATTERN]",
     N_("Lists keys that match a pattern"),
     "",
     options::opts::none)
 {
-  database db(app);
-  key_store keys(app);
-
-  vector<rsa_keypair_id> pubs;
-  vector<rsa_keypair_id> privkeys;
-  globish pattern("*", origin::internal);
-  if (args.size() == 1)
-    pattern = globish(idx(args, 0)(), origin::user);
-  else if (args.size() > 1)
+  if (args.size() > 1)
     throw usage(execid);
 
-  if (db.database_specified())
-    db.get_key_ids(pattern, pubs);
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
 
-  keys.get_key_ids(pattern, privkeys);
+  key_map items;
+  get_key_list(db, keys, app.lua, project, items);
 
-  // true if it is in the database, false otherwise
-  map<rsa_keypair_id, bool> pubkeys;
-  for (vector<rsa_keypair_id>::const_iterator i = pubs.begin();
-       i != pubs.end(); i++)
-    pubkeys[*i] = true;
-
-  set<rsa_keypair_id> bad_keys;
-
-  bool all_in_db = true;
-  for (vector<rsa_keypair_id>::const_iterator i = privkeys.begin();
-       i != privkeys.end(); i++)
+  if (items.empty())
     {
-      if (pubkeys.find(*i) == pubkeys.end())
+      P(F("no keys found"));
+    }
+
+  key_map matched_items;
+  if (args.size() == 1)
+    {
+      globish pattern(idx(args, 0)(), origin::user);
+      for (key_map::iterator i = items.begin(); i != items.end(); ++i)
         {
-          pubkeys[*i] = false;
-          all_in_db = false;
+          string const & alias = i->second.identity.official_name();
+          if (pattern.matches(alias))
+            {
+              matched_items.insert(*i);
+            }
         }
-      else if (db.database_specified())
+      if (matched_items.empty())
         {
-          // we've found a key that should have both a public and a private version
-          rsa_pub_key pub_key;
-          keypair priv_key;
-          db.get_key(*i, pub_key);
-          keys.get_key_pair(*i, priv_key);
-          if (!keys_match(*i, pub_key, *i, priv_key.pub))
-            bad_keys.insert(*i);
+          W(F("no keys found matching '%s'") % idx(args, 0)());
+        }
+    }
+  else
+    {
+      matched_items = items;
+    }
+
+  bool have_keystore_only_key = false;
+  // sort key => rendered line
+  map<string, string> public_rendered;
+  map<string, string> private_rendered;
+
+  set<string> seen_aliases;
+  set<string> duplicate_aliases;
+
+  for (key_map::iterator i = matched_items.begin();
+       i != matched_items.end(); ++i)
+    {
+      key_identity_info const & identity = i->second.identity;
+      string const & alias = i->second.identity.official_name();
+      vector<string> const & public_locations = i->second.public_locations;
+      vector<string> const & private_locations = i->second.private_locations;
+
+      if (seen_aliases.find(alias) != seen_aliases.end())
+        {
+          duplicate_aliases.insert(alias);
+        }
+      seen_aliases.insert(alias);
+
+      string rendered_basic = format_key_for_ls_keys(identity);
+      string sort_key = alias + identity.id.inner()();
+
+      if (!public_locations.empty())
+        {
+          string rendered = rendered_basic;
+          if (public_locations.size() == 1 &&
+              idx(public_locations, 0) == "keystore")
+            {
+              have_keystore_only_key = true;
+              rendered += "   (*)";
+            }
+          public_rendered.insert(make_pair(sort_key, rendered));
+        }
+      if (!private_locations.empty())
+        {
+          private_rendered.insert(make_pair(sort_key, rendered_basic));
         }
     }
 
-  if (!pubkeys.empty())
+  if (!public_rendered.empty())
     {
       cout << "\n[public keys]\n";
-      for (map<rsa_keypair_id, bool>::iterator i = pubkeys.begin();
-           i != pubkeys.end(); i++)
+      for (map<string, string>::iterator i = public_rendered.begin();
+           i != public_rendered.end(); ++i)
         {
-          rsa_pub_key pub_encoded;
-          id hash_code;
-          rsa_keypair_id keyid = i->first;
-          bool indb = i->second;
-
-          if (indb)
-            db.get_key(keyid, pub_encoded);
-          else
-            {
-              keypair kp;
-              keys.get_key_pair(keyid, kp);
-              pub_encoded = kp.pub;
-            }
-          key_hash_code(keyid, pub_encoded, hash_code);
-          if (indb)
-            cout << hash_code << ' ' << keyid << '\n';
-          else
-            cout << hash_code << ' ' << keyid << "   (*)\n";
+          cout << i->second << "\n";
         }
-      if (!all_in_db)
-        cout << (F("(*) - only in %s/")
-                 % keys.get_key_dir()) << '\n';
-      cout << '\n';
+      if (have_keystore_only_key)
+        {
+          cout << (F("(*) - only in %s/")
+                   % keys.get_key_dir()) << '\n';
+        }
+      cout << "\n";
     }
-
-  if (!privkeys.empty())
+  if (!private_rendered.empty())
     {
       cout << "\n[private keys]\n";
-      for (vector<rsa_keypair_id>::iterator i = privkeys.begin();
-           i != privkeys.end(); i++)
+      for (map<string, string>::iterator i = private_rendered.begin();
+           i != private_rendered.end(); ++i)
         {
-          keypair kp;
-          id hash_code;
-          keys.get_key_pair(*i, kp);
-          key_hash_code(*i, kp.pub, hash_code);
-          cout << hash_code << ' ' << *i << '\n';
+          cout << i->second << "\n";
         }
-      cout << '\n';
+      cout << "\n";
     }
 
-  if (!bad_keys.empty())
+  if (!duplicate_aliases.empty())
     {
-      W(F("Some keys in the database have the same ID as, "
-          "but different hashes to, keys in your local key store!"));
-      for (set<rsa_keypair_id>::const_iterator i = bad_keys.begin(); i != bad_keys.end(); i++)
+      W(F("Some key names refer to multiple keys"));
+      for (set<string>::iterator i = duplicate_aliases.begin();
+           i != duplicate_aliases.end(); i++)
         {
-          W(F("Mismatched Key: %s") % *i);
+          P(F("Duplicate Key: %s") % *i);
         }
     }
 
-  if (pubkeys.empty() && privkeys.empty())
-    {
-      if (args.empty())
-        P(F("no keys found"));
-      else
-        W(F("no keys found matching '%s'") % idx(args, 0)());
-    }
 }
 
 CMD(branches, "branches", "", CMD_REF(list), "[PATTERN]",
@@ -439,9 +543,12 @@ CMD(tags, "tags", "", CMD_REF(list), "",
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
+      key_identity_info identity;
+      identity.id = i->key;
+      project.complete_key_identity(app.lua, identity);
       cout << i->name << ' '
            << i->ident << ' '
-           << i->key  << '\n';
+           << format_key(identity)  << '\n';
     }
 }
 
@@ -630,13 +737,17 @@ namespace
 {
   namespace syms
   {
+    // certs
     symbol const key("key");
     symbol const signature("signature");
     symbol const name("name");
     symbol const value("value");
     symbol const trust("trust");
 
+    // keys
     symbol const hash("hash");
+    symbol const given_name("given_name");
+    symbol const local_name("local_name");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
   }
@@ -645,13 +756,13 @@ namespace
 // Name: keys
 // Arguments: none
 // Added in: 1.1
+// Changed in: 10.0
 // Purpose: Prints all keys in the keystore, and if a database is given
 //   also all keys in the database, in basic_io format.
 // Output format: For each key, a basic_io stanza is printed. The items in
 //   the stanza are:
 //     name - the key identifier
-//     public_hash - the hash of the public half of the key
-//     private_hash - the hash of the private half of the key
+//     hash - the hash of the key
 //     public_location - where the public half of the key is stored
 //     private_location - where the private half of the key is stored
 //   The *_location items may have multiple values, as shown below
@@ -661,18 +772,16 @@ namespace
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
 //              name "njs@pobox.com"
-//       public_hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
+//              hash [de84b575d5e47254393eba49dce9dc4db98ed42d]
 //   public_location "database"
 //
 //               name "foo@bar.com"
-//        public_hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
-//       private_hash [bfc3263e3257087f531168850801ccefc668312d]
+//               hash [7b6ce0bd83240438e7a8c7c207d8654881b763f6]
 //    public_location "keystore"
 //   private_location "keystore"
 //
@@ -687,52 +796,21 @@ CMD_AUTOMATE(keys, "",
 
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
-  vector<rsa_keypair_id> dbkeys;
-  vector<rsa_keypair_id> kskeys;
-  // hash, public_location, private_location
-  map<string, boost::tuple<id,
-                           vector<string>,
-                           vector<string> > > items;
-  if (db.database_specified())
-    db.get_key_ids(dbkeys);
+  key_map items;
+  get_key_list(db, keys, app.lua, project, items);
 
-  keys.get_key_ids(kskeys);
-
-  for (vector<rsa_keypair_id>::iterator i = dbkeys.begin();
-       i != dbkeys.end(); i++)
-    {
-      rsa_pub_key pub_encoded;
-      id hash_code;
-      db.get_key(*i, pub_encoded);
-      key_hash_code(*i, pub_encoded, hash_code);
-      items[(*i)()].get<0>() = hash_code;
-      items[(*i)()].get<1>().push_back("database");
-    }
-
-  for (vector<rsa_keypair_id>::iterator i = kskeys.begin();
-       i != kskeys.end(); i++)
-    {
-      keypair kp;
-      id privhash, pubhash;
-      keys.get_key_pair(*i, kp);
-      key_hash_code(*i, kp.pub, pubhash);
-      items[(*i)()].get<0>() = pubhash;
-      items[(*i)()].get<1>().push_back("keystore");
-      items[(*i)()].get<2>().push_back("keystore");
-    }
   basic_io::printer prt;
-  for (map<string, boost::tuple<id,
-                                vector<string>,
-                                vector<string> > >::iterator
-         i = items.begin(); i != items.end(); ++i)
+  for (key_map::iterator i = items.begin(); i != items.end(); ++i)
     {
       basic_io::stanza stz;
-      stz.push_str_pair(syms::name, i->first);
-      stz.push_binary_pair(syms::hash, i->second.get<0>());
-      stz.push_str_multi(syms::public_location, i->second.get<1>());
-      if (!i->second.get<2>().empty())
-        stz.push_str_multi(syms::private_location, i->second.get<2>());
+      stz.push_binary_pair(syms::hash, i->first.inner());
+      stz.push_str_pair(syms::given_name, i->second.identity.given_name());
+      stz.push_str_pair(syms::local_name, i->second.identity.official_name());
+      stz.push_str_multi(syms::public_location, i->second.public_locations);
+      if (!i->second.private_locations.empty())
+        stz.push_str_multi(syms::private_location, i->second.private_locations);
       prt.print_stanza(stz);
     }
   output.write(prt.buf.data(), prt.buf.size());
@@ -797,7 +875,7 @@ CMD_AUTOMATE(certs, N_("REV"),
     certs.push_back(idx(ts, i));
 
   {
-    set<rsa_keypair_id> checked;
+    set<key_id> checked;
     for (size_t i = 0; i < certs.size(); ++i)
       {
         if (checked.find(idx(certs, i).key) == checked.end() &&
@@ -820,16 +898,20 @@ CMD_AUTOMATE(certs, N_("REV"),
       cert_status status = db.check_cert(idx(certs, i));
       cert_value tv = idx(certs, i).value;
       cert_name name = idx(certs, i).name;
-      set<rsa_keypair_id> signers;
+      set<key_identity_info> signers;
 
-      rsa_keypair_id keyid = idx(certs, i).key;
-      signers.insert(keyid);
+      key_identity_info identity;
+      identity.id = idx(certs, i).key;
+      project.complete_key_identity(app.lua, identity);
+      signers.insert(identity);
 
       bool trusted =
         app.lua.hook_get_revision_cert_trust(signers, rid.inner(),
                                              name, tv);
 
-      st.push_str_pair(syms::key, keyid());
+      hexenc<id> keyid_enc;
+      encode_hexenc(identity.id.inner(), keyid_enc);
+      st.push_hex_pair(syms::key, keyid_enc);
 
       string stat;
       switch (status)

@@ -8,7 +8,7 @@
 -- PURPOSE.
 
 function get_passphrase(keyid)
-	return keyid
+	return keyid.given_name
 end
 function persist_phrase_ok()
 	return true

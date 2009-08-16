@@ -1,3 +1,4 @@
+// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -258,7 +259,7 @@ workspace::get_update_id(revision_id & update_id)
 void
 workspace::put_update_id(revision_id const & update_id)
 {
-  data update_data(encode_hexenc(update_id.inner()(), origin::internal), 
+  data update_data(encode_hexenc(update_id.inner()(), origin::internal),
                    origin::internal);
   bookkeeping_path update_path;
   get_update_path(update_path);
@@ -400,7 +401,7 @@ static void
 read_options_file(any_path const & optspath,
                   system_path & workspace_database,
                   branch_name & workspace_branch,
-                  rsa_keypair_id & workspace_key,
+                  external_key_name & workspace_key,
                   system_path & workspace_keydir)
 {
   data dat;
@@ -429,7 +430,7 @@ read_options_file(any_path const & optspath,
       else if (opt == "branch")
         workspace_branch = branch_name(val, origin::workspace);
       else if (opt == "key")
-        internalize_rsa_keypair_id(utf8(val, origin::workspace), workspace_key);
+        workspace_key = external_key_name(val, origin::workspace);
       else if (opt == "keydir")
         workspace_keydir = system_path(val, origin::workspace);
       else
@@ -444,7 +445,7 @@ static void
 write_options_file(bookkeeping_path const & optspath,
                    system_path const & workspace_database,
                    branch_name const & workspace_branch,
-                   rsa_keypair_id const & workspace_key,
+                   external_key_name const & workspace_key,
                    system_path const & workspace_keydir)
 {
   basic_io::stanza st;
@@ -454,9 +455,7 @@ write_options_file(bookkeeping_path const & optspath,
     st.push_str_pair(symbol("branch"), workspace_branch());
   if (!workspace_key().empty())
     {
-      utf8 key;
-      externalize_rsa_keypair_id(workspace_key, key);
-      st.push_str_pair(symbol("key"), key());
+      st.push_str_pair(symbol("key"), workspace_key());
     }
   if (!workspace_keydir.as_internal().empty())
     st.push_str_pair(symbol("keydir"), workspace_keydir.as_internal());
@@ -481,13 +480,13 @@ workspace::get_options(options & opts)
 
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   bookkeeping_path o_path;
   get_options_path(o_path);
   read_options_file(o_path,
-                    workspace_database, workspace_branch, 
+                    workspace_database, workspace_branch,
                     workspace_key, workspace_keydir);
 
   // Workspace options are not to override the command line.
@@ -519,7 +518,7 @@ workspace::get_database_option(system_path const & workspace,
                                system_path & workspace_database)
 {
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   system_path o_path = (workspace
@@ -542,7 +541,7 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
   // as is in _MTN/options, not write out an empty option.
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
 
   if (file_exists(o_path))
@@ -581,10 +580,10 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
 
   system_path workspace_database;
   branch_name workspace_branch;
-  rsa_keypair_id workspace_key;
+  external_key_name workspace_key;
   system_path workspace_keydir;
   read_options_file(o_path,
-                    workspace_database, workspace_branch, 
+                    workspace_database, workspace_branch,
                     workspace_key, workspace_keydir);
 
   if (opt() == "database")
@@ -939,10 +938,10 @@ addition_builder::visit_file(file_path const & path)
 
 struct editable_working_tree : public editable_tree
 {
-  editable_working_tree(workspace & work, lua_hooks & lua, 
+  editable_working_tree(workspace & work, lua_hooks & lua,
                         content_merge_adaptor const & source,
                         bool const messages)
-    : work(work), lua(lua), source(source), next_nid(1), 
+    : work(work), lua(lua), source(source), next_nid(1),
       root_dir_attached(true), messages(messages)
   {};
 
@@ -982,8 +981,9 @@ struct simulated_working_tree : public editable_tree
   node_id_source & nis;
 
   set<file_path> blocked_paths;
-  map<node_id, file_path> nid_map;
+  set<file_path> conflicting_paths;
   int conflicts;
+  map<node_id, file_path> nid_map;
 
   simulated_working_tree(roster_t & r, temp_node_id_source & n)
     : workspace(r), nis(n), conflicts(0) {}
@@ -1005,6 +1005,9 @@ struct simulated_working_tree : public editable_tree
                         attr_value const & val);
 
   virtual void commit();
+
+  virtual bool has_conflicting_paths() const { return conflicting_paths.size() > 0; }
+  virtual set<file_path> get_conflicting_paths() const { return conflicting_paths; }
 
   virtual ~simulated_working_tree();
 };
@@ -1165,7 +1168,7 @@ editable_working_tree::apply_delta(file_path const & pth,
   calculate_ident(pth, curr_id);
   E(curr_id == old_id, origin::system,
     F("content of file '%s' has changed, not overwriting") % pth);
-  P(F("modifying %s") % pth);
+  P(F("updating %s") % pth);
 
   file_data dat;
   source.get_version(new_id, dat);
@@ -1222,6 +1225,9 @@ simulated_working_tree::drop_detached_node(node_id nid)
           I(i != nid_map.end());
           W(F("cannot drop non-empty directory '%s'") % i->second);
           conflicts++;
+          for (dir_map::const_iterator j = dir->children.begin();
+               j != dir->children.end(); ++j)
+            conflicting_paths.insert(i->second / j->first);
         }
     }
 }
@@ -1252,6 +1258,7 @@ simulated_working_tree::attach_node(node_id nid, file_path const & dst)
     {
       W(F("attach node %d blocked by unversioned path '%s'") % nid % dst);
       blocked_paths.insert(dst);
+      conflicting_paths.insert(dst);
       conflicts++;
     }
   else if (dst.empty())
@@ -1300,8 +1307,11 @@ simulated_working_tree::set_attr(file_path const & path,
 void
 simulated_working_tree::commit()
 {
-  E(conflicts == 0, origin::user,
-    F("%d workspace conflicts") % conflicts);
+  // This used to error out on any conflicts, but now some can be resolved
+  // (by --move-conflicting-paths), so we just warn. The non-resolved
+  // conflicts generate other errors downstream.
+  if (conflicts > 0)
+    F("%d workspace conflicts") % conflicts;
 }
 
 simulated_working_tree::~simulated_working_tree()
@@ -1310,6 +1320,53 @@ simulated_working_tree::~simulated_working_tree()
 
 
 }; // anonymous namespace
+
+static void
+move_conflicting_paths_into_bookkeeping(set<file_path> const & leftover_paths)
+{
+  I(leftover_paths.size() > 0);
+
+  // There is some concern that this fixed bookkeeping path will cause
+  // problems, if a user forgets to clean up, and then does something that
+  // involves the same name again. However, I can't think of a reasonable
+  // use case that does that, so I can't think of a reasonable solution. One
+  // solution is to generate a random directory name, another is to use the
+  // current time in some format to generate a directory name.
+  //
+  // now().as_iso_8601_extended doesn't work on Windows, because it has
+  // colons in it.
+  //
+  // Random or time based directory names significantly complicate testing,
+  // since you can't predict the directory name.
+  //
+  // If this turns out to be a problem, a modification of
+  // now().as_iso_8601_extended to eliminate the colons, or some appropriate
+  // format for now().as_formatted_localtime would be simple and
+  // probably adequate.
+  bookkeeping_path leftover_path = bookkeeping_root / "resolutions";
+
+  mkdir_p(leftover_path);
+
+  for (set<file_path>::const_iterator i = leftover_paths.begin();
+        i != leftover_paths.end(); ++i)
+    {
+      L(FL("processing %s") % *i);
+
+      file_path basedir = (*i).dirname();
+      if (!basedir.empty())
+        mkdir_p(leftover_path / basedir);
+
+      bookkeeping_path new_path = leftover_path / *i;
+      if (directory_exists(*i))
+        move_dir(*i, new_path);
+      else if (file_exists(*i))
+        move_file(*i, new_path);
+      else
+        I(false);
+
+      P(F("moved conflicting path %s to %s") % *i % new_path);
+    }
+}
 
 static void
 add_parent_dirs(database & db, node_id_source & nis, workspace & work,
@@ -1746,21 +1803,23 @@ void
 workspace::perform_pivot_root(database & db,
                               file_path const & new_root,
                               file_path const & put_old,
-                              bool bookkeep_only)
+                              bool bookkeep_only,
+                              bool move_conflicting_paths)
 {
   temp_node_id_source nis;
-  roster_t new_roster;
+  roster_t old_roster, new_roster;
+  MM(old_roster);
   MM(new_roster);
-  get_current_roster_shape(db, nis, new_roster);
+  get_current_roster_shape(db, nis, old_roster);
 
-  I(new_roster.has_root());
-  E(new_roster.has_node(new_root), origin::user,
+  I(old_roster.has_root());
+  E(old_roster.has_node(new_root), origin::user,
     F("proposed new root directory '%s' is not versioned or does not exist")
     % new_root);
-  E(is_dir_t(new_roster.get_node(new_root)), origin::user,
+  E(is_dir_t(old_roster.get_node(new_root)), origin::user,
     F("proposed new root directory '%s' is not a directory") % new_root);
   {
-    E(!new_roster.has_node(new_root / bookkeeping_root_component), origin::user,
+    E(!old_roster.has_node(new_root / bookkeeping_root_component), origin::user,
       F("proposed new root directory '%s' contains illegal path %s")
       % new_root % bookkeeping_root);
   }
@@ -1770,14 +1829,14 @@ workspace::perform_pivot_root(database & db,
     file_path current_path_to_put_old_parent
       = current_path_to_put_old.dirname();
 
-    E(new_roster.has_node(current_path_to_put_old_parent), origin::user,
+    E(old_roster.has_node(current_path_to_put_old_parent), origin::user,
       F("directory '%s' is not versioned or does not exist")
       % current_path_to_put_old_parent);
-    E(is_dir_t(new_roster.get_node(current_path_to_put_old_parent)),
+    E(is_dir_t(old_roster.get_node(current_path_to_put_old_parent)),
       origin::user,
       F("'%s' is not a directory")
       % current_path_to_put_old_parent);
-    E(!new_roster.has_node(current_path_to_put_old),
+    E(!old_roster.has_node(current_path_to_put_old),
       origin::user,
       F("'%s' is in the way") % current_path_to_put_old);
   }
@@ -1787,6 +1846,7 @@ workspace::perform_pivot_root(database & db,
   safe_insert(cs.nodes_renamed, make_pair(new_root, file_path_internal("")));
 
   {
+    new_roster = old_roster;
     editable_roster_base e(new_roster, nis);
     cs.apply_to(e);
   }
@@ -1802,20 +1862,21 @@ workspace::perform_pivot_root(database & db,
   if (!bookkeep_only)
     {
       content_merge_empty_adaptor cmea;
-      perform_content_update(db, cs, cmea);
+      perform_content_update(old_roster, new_roster, cs, cmea, true, move_conflicting_paths);
     }
 }
 
 void
-workspace::perform_content_update(database & db,
+workspace::perform_content_update(roster_t const & old_roster,
+                                  roster_t const & new_roster,
                                   cset const & update,
                                   content_merge_adaptor const & ca,
-                                  bool const messages)
+                                  bool const messages,
+                                  bool const move_conflicting_paths)
 {
-  roster_t roster;
+  roster_t test_roster;
   temp_node_id_source nis;
   set<file_path> known;
-  roster_t new_roster;
   bookkeeping_path detached = path_for_detached_nids();
 
   E(!directory_exists(detached), origin::user,
@@ -1823,19 +1884,48 @@ workspace::perform_content_update(database & db,
       "you must clean up and remove the %s directory")
     % detached);
 
-  get_current_roster_shape(db, nis, new_roster);
-  new_roster.extract_path_set(known);
+  old_roster.extract_path_set(known);
 
-  workspace_itemizer itemizer(roster, known, nis);
+  workspace_itemizer itemizer(test_roster, known, nis);
   walk_tree(file_path(), itemizer);
 
-  simulated_working_tree swt(roster, nis);
+  simulated_working_tree swt(test_roster, nis);
   update.apply_to(swt);
+
+  // if we have found paths during the test-run which will conflict with
+  // newly attached or to-be-dropped nodes, move these paths out of the way
+  // into _MTN while keeping the path to these paths intact in case the user
+  // wants them back
+  if (swt.has_conflicting_paths())
+    {
+      E(move_conflicting_paths, origin::user,
+        F("re-run this command with --move-conflicting-paths to move "
+          "conflicting paths out of the way."));
+      move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
+    }
 
   mkdir_p(detached);
 
   editable_working_tree ewt(*this, this->lua, ca, messages);
   update.apply_to(ewt);
+
+  // attributes on updated files must be reset because apply_delta writes
+  // new versions of files to _MTN/tmp and then renames them over top of the
+  // old versions and doesn't reset attributes (mtn:execute).
+
+  for (map<file_path, pair<file_id, file_id> >::const_iterator
+         i = update.deltas_applied.begin(); i != update.deltas_applied.end();
+       ++i)
+    {
+      node_t node = new_roster.get_node(i->first);
+      for (attr_map_t::const_iterator a = node->attrs.begin();
+           a != node->attrs.end(); ++a)
+        {
+          if (a->second.first)
+            this->lua.hook_set_attribute(a->first(), i->first,
+                                         a->second.second());
+        }
+    }
 
   delete_dir_shallow(detached);
 }

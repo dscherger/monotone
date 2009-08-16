@@ -40,6 +40,11 @@ struct date_t
   // Retrieve the date as a string.
   std::string as_iso_8601_extended() const;
 
+  // Retrieve the date as a string, formatted using the strftime(3)
+  // specification in 'fmt', and converted to local time.  For user
+  // display only.
+  std::string as_formatted_localtime(std::string const & fmt) const;
+
   // Retrieve the internal milliseconds count since the Unix epoch.
   s64 as_millisecs_since_unix_epoch() const;
 

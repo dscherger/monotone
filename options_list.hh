@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -188,6 +188,22 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
+OPT(date_fmt, "date-format", std::string, ,
+    gettext_noop("strftime(3) format specification for printing dates"))
+#ifdef option_bodies
+{
+  date_fmt = arg;
+}
+#endif
+
+OPT(format_dates, "no-format-dates", bool, true,
+    gettext_noop("print date certs exactly as stored in the database"))
+#ifdef option_bodies
+{
+  format_dates = false;
+}
+#endif
+
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
@@ -225,6 +241,14 @@ OPTION(diff_options, external_diff_args, true, "diff-args",
 }
 #endif
 
+OPTVAR(diff_options, bool, reverse, false)
+OPTION(diff_options, reverse, false, "reverse",
+        gettext_noop("reverse order of diff"))
+#ifdef option_bodies
+{
+  reverse = true;
+}
+#endif
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
@@ -324,6 +348,15 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 }
 #endif
 
+OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
+        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+                     "before proceeding with any workspace change"))
+#ifdef option_bodies
+{
+  move_conflicting_paths = true;
+}
+#endif
+
 GOPT(ssh_sign, "ssh-sign", std::string, "yes",
      gettext_noop("controls use of ssh-agent.  valid arguments are: "
                   "'yes' to use ssh-agent to make signatures if possible, "
@@ -343,6 +376,15 @@ GOPT(ssh_sign, "ssh-sign", std::string, "yes",
                              "'only', or 'check'").str());
 
   ssh_sign = arg;
+}
+#endif
+
+OPT(force_duplicate_key, "force-duplicate-key", bool, false,
+    gettext_noop("force genkey to not error out when the named key "
+                 "already exists"))
+#ifdef option_bodies
+{
+  force_duplicate_key = true;
 }
 #endif
 
@@ -387,11 +429,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 #endif
 
 
-OPTVAR(key, rsa_keypair_id, signing_key, )
-OPTION(globals, key, true, "key,k", gettext_noop("set key for signatures"))
+OPTVAR(key, external_key_name, signing_key, )
+OPTION(globals, key, true, "key,k",
+       gettext_noop("sets the key for signatures, using eith the key "
+                    "name or th key hash"))
 #ifdef option_bodies
 {
-  internalize_rsa_keypair_id(utf8(arg, origin::user), signing_key);
+  signing_key = external_key_name(arg, origin::user);
 }
 #endif
 
@@ -406,14 +450,12 @@ OPTION(globals, key_dir, true, "keydir", gettext_noop("set location of key store
 }
 #endif
 
-OPTVAR(key_to_push, std::vector<rsa_keypair_id>, keys_to_push, )
+OPTVAR(key_to_push, std::vector<external_key_name>, keys_to_push, )
 OPTION(key_to_push, key_to_push, true, "key-to-push",
         gettext_noop("push the specified key even if it hasn't signed anything"))
 #ifdef option_bodies
 {
-  rsa_keypair_id keyid;
-  internalize_rsa_keypair_id(utf8(arg, origin::user), keyid);
-  keys_to_push.push_back(keyid);
+  keys_to_push.push_back(external_key_name(arg, origin::user));
 }
 #endif
 

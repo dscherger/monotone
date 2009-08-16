@@ -105,7 +105,11 @@ namespace luaext { \
   extern "C" { \
     static int TABLE ## _ ## NAME ## _for_lua(lua_State * LS) \
     { \
-      return TABLE ## _ ## NAME ## _extfn . call(LS); \
+      try { \
+        return TABLE ## _ ## NAME ## _extfn . call(LS); \
+      } catch (std::exception & e) { \
+        return luaL_error(LS, e.what()); \
+      } \
     } \
   } \
   extfn_ ## NAME ## _ ## TABLE :: extfn_ ## NAME ## _ ## TABLE () \

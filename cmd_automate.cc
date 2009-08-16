@@ -72,7 +72,7 @@ namespace commands {
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
 // point (2) in notes/release-checklist.txt
-static string const interface_version = "9.0";
+static string const interface_version = "10.0";
 
 // Name: interface_version
 // Arguments: none

@@ -255,7 +255,7 @@ if WIN32_PLATFORM
   tester_SOURCES += win32/tester-plaf.cc
   check_net_SOURCES = win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
-  LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
+  LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc

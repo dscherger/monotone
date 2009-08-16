@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # Create a file "notify" next to "read-permissions" and ensure
 # its contents are in the same format as "read-permissions",

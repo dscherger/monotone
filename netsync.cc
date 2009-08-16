@@ -294,19 +294,19 @@ require(bool check, string const & context)
 
 static void
 read_pubkey(string const & in,
-            rsa_keypair_id & id,
+            key_name & id,
             rsa_pub_key & pub)
 {
   string tmp_id, tmp_key;
   size_t pos = 0;
   extract_variable_length_string(in, tmp_id, pos, "pubkey id");
   extract_variable_length_string(in, tmp_key, pos, "pubkey value");
-  id = rsa_keypair_id(tmp_id, origin::network);
+  id = key_name(tmp_id, origin::network);
   pub = rsa_pub_key(tmp_key, origin::network);
 }
 
 static void
-write_pubkey(rsa_keypair_id const & id,
+write_pubkey(key_name const & id,
              rsa_pub_key const & pub,
              string & out)
 {
@@ -641,8 +641,8 @@ session:
   key_store & keys;
   lua_hooks & lua;
   bool use_transport_auth;
-  rsa_keypair_id const & signing_key;
-  vector<rsa_keypair_id> const & keys_to_push;
+  key_id const & signing_key;
+  vector<key_id> keys_to_push;
 
   netcmd cmd;
   bool armed;
@@ -651,7 +651,7 @@ public:
 private:
 
   bool received_remote_key;
-  rsa_keypair_id remote_peer_key_name;
+  key_id remote_peer_key_id;
   netsync_session_key session_key;
   chained_hmac read_hmac;
   chained_hmac write_hmac;
@@ -675,12 +675,12 @@ private:
 
   // These are read from the server, written to the local database
   vector<revision_id> written_revisions;
-  vector<rsa_keypair_id> written_keys;
+  vector<key_id> written_keys;
   vector<cert> written_certs;
 
   // These are sent to the server
   vector<revision_id> sent_revisions;
-  vector<rsa_keypair_id> sent_keys;
+  vector<key_id> sent_keys;
   vector<cert> sent_certs;
 
   id saved_nonce;
@@ -769,7 +769,7 @@ private:
   void queue_bye_cmd(u8 phase);
   void queue_error_cmd(string const & errmsg);
   void queue_done_cmd(netcmd_item_type type, size_t n_items);
-  void queue_hello_cmd(rsa_keypair_id const & key_name,
+  void queue_hello_cmd(key_name const & key_name,
                        rsa_pub_key const & pub_encoded,
                        id const & nonce);
   void queue_anonymous_cmd(protocol_role role,
@@ -779,7 +779,7 @@ private:
   void queue_auth_cmd(protocol_role role,
                       globish const & include_pattern,
                       globish const & exclude_pattern,
-                      id const & client,
+                      key_id const & client,
                       id const & nonce1,
                       id const & nonce2,
                       rsa_sha1_signature const & signature);
@@ -795,7 +795,7 @@ private:
 
   // Incoming dispatch-called methods.
   bool process_error_cmd(string const & errmsg);
-  bool process_hello_cmd(rsa_keypair_id const & server_keyname,
+  bool process_hello_cmd(key_name const & server_keyname,
                          rsa_pub_key const & server_key,
                          id const & nonce);
   bool process_bye_cmd(u8 phase, transaction_guard & guard);
@@ -805,7 +805,7 @@ private:
   bool process_auth_cmd(protocol_role role,
                         globish const & their_include_pattern,
                         globish const & their_exclude_pattern,
-                        id const & client,
+                        key_id const & client,
                         id const & nonce1,
                         rsa_sha1_signature const & signature);
   bool process_refine_cmd(refinement_type ty, merkle_node const & node);
@@ -865,11 +865,9 @@ session::session(options & opts,
   keys(keys),
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
-  signing_key(opts.signing_key),
-  keys_to_push(opts.keys_to_push),
+  signing_key(keys.signing_key),
   armed(false),
   received_remote_key(false),
-  remote_peer_key_name(""),
   session_key(constants::netsync_key_initializer),
   read_hmac(netsync_session_key(constants::netsync_key_initializer),
             use_transport_auth),
@@ -896,7 +894,15 @@ session::session(options & opts,
   rev_refiner(revision_item, voice, *this),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
-{}
+{
+  for (vector<external_key_name>::const_iterator i = opts.keys_to_push.begin();
+       i != opts.keys_to_push.end(); ++i)
+    {
+      key_identity_info ident;
+      project.get_key_identity(keys, lua, *i, ident);
+      keys_to_push.push_back(ident.id);
+    }
+}
 
 session::~session()
 {
@@ -930,10 +936,13 @@ session::~session()
     {
 
       //Keys
-      for (vector<rsa_keypair_id>::iterator i = written_keys.begin();
+      for (vector<key_id>::iterator i = written_keys.begin();
            i != written_keys.end(); ++i)
         {
-          lua.hook_note_netsync_pubkey_received(*i, session_id);
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, lua, identity);
+          lua.hook_note_netsync_pubkey_received(identity, session_id);
         }
 
       //Revisions
@@ -941,10 +950,15 @@ session::~session()
            i != written_revisions.end(); ++i)
         {
           vector<cert> & ctmp(rev_written_certs[*i]);
-          set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > certs;
+          set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
           for (vector<cert>::const_iterator j = ctmp.begin();
                j != ctmp.end(); ++j)
-            certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
+            {
+              key_identity_info identity;
+              identity.id = j->key;
+              project.complete_key_identity(keys, lua, identity);
+              certs.insert(make_pair(identity, make_pair(j->name, j->value)));
+            }
 
           revision_data rdat;
           project.db.get_revision(*i, rdat);
@@ -955,8 +969,13 @@ session::~session()
       //Certs (not attached to a new revision)
       for (vector<cert>::iterator i = unattached_written_certs.begin();
            i != unattached_written_certs.end(); ++i)
-        lua.hook_note_netsync_cert_received(revision_id(i->ident), i->key,
-                                            i->name, i->value, session_id);
+        {
+          key_identity_info identity;
+          identity.id = i->key;
+          project.complete_key_identity(keys, lua, identity);
+          lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
+                                              i->name, i->value, session_id);
+        }
     }
 
   if (!sent_keys.empty()
@@ -981,10 +1000,13 @@ session::~session()
         }
 
       //Keys
-      for (vector<rsa_keypair_id>::iterator i = sent_keys.begin();
+      for (vector<key_id>::iterator i = sent_keys.begin();
            i != sent_keys.end(); ++i)
         {
-          lua.hook_note_netsync_pubkey_sent(*i, session_id);
+          key_identity_info identity;
+          identity.id = *i;
+          project.complete_key_identity(keys, lua, identity);
+          lua.hook_note_netsync_pubkey_sent(identity, session_id);
         }
 
       //Revisions
@@ -992,10 +1014,15 @@ session::~session()
            i != sent_revisions.end(); ++i)
         {
           vector<cert> & ctmp(rev_sent_certs[*i]);
-          set<pair<rsa_keypair_id, pair<cert_name, cert_value> > > certs;
+          set<pair<key_identity_info, pair<cert_name, cert_value> > > certs;
           for (vector<cert>::const_iterator j = ctmp.begin();
                j != ctmp.end(); ++j)
-            certs.insert(make_pair(j->key, make_pair(j->name, j->value)));
+            {
+              key_identity_info identity;
+              identity.id = j->key;
+              project.complete_key_identity(keys, lua, identity);
+              certs.insert(make_pair(identity, make_pair(j->name, j->value)));
+            }
 
           revision_data rdat;
           project.db.get_revision(*i, rdat);
@@ -1006,8 +1033,13 @@ session::~session()
       //Certs (not attached to a new revision)
       for (vector<cert>::iterator i = unattached_sent_certs.begin();
            i != unattached_sent_certs.end(); ++i)
-        lua.hook_note_netsync_cert_sent(revision_id(i->ident), i->key,
-                                            i->name, i->value, session_id);
+        {
+          key_identity_info identity;
+          identity.id = i->key;
+          project.complete_key_identity(keys, lua, identity);
+          lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
+                                          i->name, i->value, session_id);
+        }
     }
 
   lua.hook_note_netsync_end(session_id, error_code,
@@ -1421,7 +1453,7 @@ session::queue_done_cmd(netcmd_item_type type,
 }
 
 void
-session::queue_hello_cmd(rsa_keypair_id const & key_name,
+session::queue_hello_cmd(key_name const & key_name,
                          rsa_pub_key const & pub,
                          id const & nonce)
 {
@@ -1441,7 +1473,7 @@ session::queue_anonymous_cmd(protocol_role role,
   netcmd cmd;
   rsa_oaep_sha_data hmac_key_encrypted;
   if (use_transport_auth)
-    project.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
+    project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
   cmd.write_anonymous_cmd(role, include_pattern, exclude_pattern,
                           hmac_key_encrypted);
   write_netcmd_and_try_flush(cmd);
@@ -1452,7 +1484,7 @@ void
 session::queue_auth_cmd(protocol_role role,
                         globish const & include_pattern,
                         globish const & exclude_pattern,
-                        id const & client,
+                        key_id const & client,
                         id const & nonce1,
                         id const & nonce2,
                         rsa_sha1_signature const & signature)
@@ -1460,7 +1492,7 @@ session::queue_auth_cmd(protocol_role role,
   netcmd cmd;
   rsa_oaep_sha_data hmac_key_encrypted;
   I(use_transport_auth);
-  project.db.encrypt_rsa(remote_peer_key_name, nonce2(), hmac_key_encrypted);
+  project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
   cmd.write_auth_cmd(role, include_pattern, exclude_pattern, client,
                      nonce1, hmac_key_encrypted, signature);
   write_netcmd_and_try_flush(cmd);
@@ -1588,21 +1620,21 @@ session::process_error_cmd(string const & errmsg)
 static const var_domain known_servers_domain = var_domain("known-servers");
 
 bool
-session::process_hello_cmd(rsa_keypair_id const & their_keyname,
+session::process_hello_cmd(key_name const & their_keyname,
                            rsa_pub_key const & their_key,
                            id const & nonce)
 {
   I(!this->received_remote_key);
   I(this->saved_nonce().empty());
 
+  key_identity_info their_identity;
   if (use_transport_auth)
     {
-      id their_key_hash;
-      key_hash_code(their_keyname, their_key, their_key_hash);
+      key_hash_code(their_keyname, their_key, their_identity.id);
       var_value printable_key_hash;
       {
         hexenc<id> encoded_key_hash;
-        encode_hexenc(their_key_hash, encoded_key_hash);
+        encode_hexenc(their_identity.id.inner(), encoded_key_hash);
         printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
       }
       L(FL("server key has name %s, hash %s")
@@ -1639,22 +1671,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
           project.db.set_var(their_key_key, printable_key_hash);
         }
 
-      if (project.db.public_key_exists(their_keyname))
-        {
-          rsa_pub_key tmp;
-          project.db.get_key(their_keyname, tmp);
-
-          E(keys_match(their_keyname, tmp, their_keyname, their_key),
-            origin::network,
-            F("the server sent a key with the key id '%s'\n"
-              "which is already in use in your database. you may want to execute\n"
-              "  %s dropkey %s\n"
-              "on your local database before you run this command again,\n"
-              "assuming that key currently present in your database does NOT have\n"
-              "a private counterpart (or in other words, is one of YOUR keys)")
-            % their_keyname % prog_name % their_keyname);
-        }
-      else
+      if (!project.db.public_key_exists(their_identity.id))
         {
           // this should now always return true since we just checked
           // for the existence of this particular key
@@ -1669,11 +1686,12 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
           % printable_key_hash % hnonce);
       }
 
-      I(project.db.public_key_exists(their_key_hash));
+      I(project.db.public_key_exists(their_identity.id));
+      project.complete_key_identity(keys, lua, their_identity);
 
       // save their identity
       this->received_remote_key = true;
-      this->remote_peer_key_name = their_keyname;
+      this->remote_peer_key_id = their_identity.id;
     }
 
   // clients always include in the synchronization set, every branch that the
@@ -1691,7 +1709,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
   if (!initiated_by_server)
     setup_client_tickers();
 
-  if (use_transport_auth && signing_key() != "")
+  if (use_transport_auth && signing_key.inner()() != "")
     {
       // get our key pair
       load_key_pair(keys, signing_key);
@@ -1701,15 +1719,9 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
       rsa_sha1_signature sig;
       keys.make_signature(project.db, signing_key, nonce(), sig);
 
-      // get the hash identifier for our pubkey
-      rsa_pub_key our_pub;
-      project.db.get_key(signing_key, our_pub);
-      id our_key_hash_raw;
-      key_hash_code(signing_key, our_pub, our_key_hash_raw);
-
       // make a new nonce of our own and send off the 'auth'
       queue_auth_cmd(this->role, our_include_pattern, our_exclude_pattern,
-                     our_key_hash_raw, nonce, mk_nonce(), sig);
+                     signing_key, nonce, mk_nonce(), sig);
     }
   else
     {
@@ -1718,7 +1730,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
     }
 
   lua.hook_note_netsync_start(session_id, "client", this->role,
-                              peer_id, their_keyname,
+                              peer_id, their_identity,
                               our_include_pattern, our_exclude_pattern);
   return true;
 }
@@ -1741,7 +1753,7 @@ session::process_anonymous_cmd(protocol_role their_role,
   //
 
   lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, rsa_keypair_id(),
+                              peer_id, key_identity_info(),
                               their_include_pattern, their_exclude_pattern);
 
   // Client must be a sink and server must be a source (anonymous
@@ -1802,7 +1814,7 @@ session::process_anonymous_cmd(protocol_role their_role,
 
   rebuild_merkle_trees(ok_branches);
 
-  this->remote_peer_key_name = rsa_keypair_id("");
+  this->remote_peer_key_id = key_id();
   this->authenticated = true;
   return true;
 }
@@ -1833,7 +1845,7 @@ bool
 session::process_auth_cmd(protocol_role their_role,
                           globish const & their_include_pattern,
                           globish const & their_exclude_pattern,
-                          id const & client,
+                          key_id const & client,
                           id const & nonce1,
                           rsa_sha1_signature const & signature)
 {
@@ -1846,7 +1858,7 @@ session::process_auth_cmd(protocol_role their_role,
     {
       // If it's not in the db, it still could be in the keystore if we
       // have the private key that goes with it.
-      rsa_keypair_id their_key_id;
+      key_name their_key_id;
       keypair their_keypair;
       if (keys.maybe_get_key_pair(client, their_key_id, their_keypair))
         project.db.put_key(their_key_id, their_keypair.pub);
@@ -1859,7 +1871,7 @@ session::process_auth_cmd(protocol_role their_role,
           this->saved_nonce = id("");
 
           lua.hook_note_netsync_start(session_id, "server", their_role,
-                                      peer_id, rsa_keypair_id("-unknown-"),
+                                      peer_id, key_name("-unknown-"),
                                       their_include_pattern,
                                       their_exclude_pattern);
           error(unknown_key,
@@ -1870,12 +1882,15 @@ session::process_auth_cmd(protocol_role their_role,
     }
 
   // Get their public key.
-  rsa_keypair_id their_id;
+  key_name their_id;
   rsa_pub_key their_key;
   project.db.get_pubkey(client, their_id, their_key);
+  key_identity_info client_identity;
+  client_identity.id = client;
+  project.complete_key_identity(keys, lua, client_identity);
 
   lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, their_id,
+                              peer_id, client_identity,
                               their_include_pattern, their_exclude_pattern);
 
   // Check that they replied with the nonce we asked for.
@@ -1917,7 +1932,7 @@ session::process_auth_cmd(protocol_role their_role,
     {
       if (their_matcher((*i)()))
         {
-          if (!lua.hook_get_netsync_read_permitted((*i)(), their_id))
+          if (!lua.hook_get_netsync_read_permitted((*i)(), client_identity))
             {
               error(not_permitted,
                     (F("denied '%s' read permission for '%s' excluding '%s' because of branch '%s'")
@@ -1945,7 +1960,7 @@ session::process_auth_cmd(protocol_role their_role,
                  % their_id % their_include_pattern % their_exclude_pattern).str());
         }
 
-      if (!lua.hook_get_netsync_write_permitted(their_id))
+      if (!lua.hook_get_netsync_write_permitted(client_identity))
         {
           this->saved_nonce = id("");
           error(not_permitted,
@@ -1962,12 +1977,12 @@ session::process_auth_cmd(protocol_role their_role,
   this->received_remote_key = true;
 
   // Check the signature.
-  if (project.db.check_signature(their_id, nonce1(), signature) == cert_ok)
+  if (project.db.check_signature(client, nonce1(), signature) == cert_ok)
     {
       // Get our private key and sign back.
       L(FL("client signature OK, accepting authentication"));
       this->authenticated = true;
-      this->remote_peer_key_name = their_id;
+      this->remote_peer_key_id = client;
 
       assume_corresponding_role(their_role);
       return true;
@@ -2145,7 +2160,7 @@ session::data_exists(netcmd_item_type type,
     {
     case key_item:
       return key_refiner.local_item_exists(item)
-        || project.db.public_key_exists(item);
+        || project.db.public_key_exists(key_id(item));
     case file_item:
       return project.db.file_version_exists(file_id(item));
     case revision_item:
@@ -2168,12 +2183,10 @@ session::load_data(netcmd_item_type type,
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
-  hexenc<id> hitem;
-  encode_hexenc(item, hitem);
 
   if (!data_exists(type, item))
     throw bad_decode(F("%s with hash '%s' does not exist in our database")
-                     % typestr % hitem());
+                     % typestr % item);
 
   switch (type)
     {
@@ -2187,12 +2200,12 @@ session::load_data(netcmd_item_type type,
       break;
     case key_item:
       {
-        rsa_keypair_id keyid;
+        key_name keyid;
         rsa_pub_key pub;
-        project.db.get_pubkey(item, keyid, pub);
-        L(FL("public key '%s' is also called '%s'") % hitem() % keyid);
+        project.db.get_pubkey(key_id(item), keyid, pub);
+        L(FL("public key '%s' is also called '%s'") % item % keyid);
         write_pubkey(keyid, pub, out);
-        sent_keys.push_back(keyid);
+        sent_keys.push_back(key_id(item));
       }
       break;
 
@@ -2278,12 +2291,16 @@ session::process_data_cmd(netcmd_item_type type,
             // It is safe to call 'error' here, because if we get here,
             // then the current netcmd packet cannot possibly have
             // written anything to the database.
+            hexenc<data> my_epoch;
+            hexenc<data> their_epoch;
+            encode_hexenc(i->second.inner(), my_epoch);
+            encode_hexenc(epoch.inner(), their_epoch);
             error(mixing_versions,
                   (F("Mismatched epoch on branch %s."
                      " Server has '%s', client has '%s'.")
                    % branch
-                   % (voice == server_voice ? i->second : epoch)
-                   % (voice == server_voice ? epoch : i->second)).str());
+                   % (voice == server_voice ? my_epoch : their_epoch)()
+                   % (voice == server_voice ? their_epoch : my_epoch)()).str());
           }
       }
       maybe_note_epochs_finished();
@@ -2291,12 +2308,12 @@ session::process_data_cmd(netcmd_item_type type,
 
     case key_item:
       {
-        rsa_keypair_id keyid;
+        key_name keyid;
         rsa_pub_key pub;
         read_pubkey(dat, keyid, pub);
-        id tmp;
+        key_id tmp;
         key_hash_code(keyid, pub, tmp);
-        if (! (tmp == item))
+        if (! (tmp.inner() == item))
           {
             throw bad_decode(F("hash check failed for public key '%s' (%s);"
                                " wanted '%s' got '%s'")
@@ -2304,7 +2321,7 @@ session::process_data_cmd(netcmd_item_type type,
                                % tmp);
           }
         if (project.db.put_key(keyid, pub))
-          written_keys.push_back(keyid);
+          written_keys.push_back(key_id(item));
         else
           error(partial_transfer,
                 (F("Received duplicate key %s") % keyid).str());
@@ -2443,7 +2460,7 @@ session::dispatch_payload(netcmd const & cmd,
       require(! authenticated, "hello netcmd received when not authenticated");
       require(voice == client_voice, "hello netcmd received in client voice");
       {
-        rsa_keypair_id server_keyname;
+        key_name server_keyname;
         rsa_pub_key server_key;
         id nonce;
         cmd.read_hello_cmd(server_keyname, server_key, nonce);
@@ -2492,22 +2509,18 @@ session::dispatch_payload(netcmd const & cmd,
         protocol_role role;
         rsa_sha1_signature signature;
         globish their_include_pattern, their_exclude_pattern;
-        id client, nonce1, nonce2;
+        key_id client;
+        id nonce1, nonce2;
         rsa_oaep_sha_data hmac_key_encrypted;
         cmd.read_auth_cmd(role, their_include_pattern, their_exclude_pattern,
                           client, nonce1, hmac_key_encrypted, signature);
 
-        hexenc<id> their_key_hash;
-        encode_hexenc(client, their_key_hash);
-        hexenc<id> hnonce1;
-        encode_hexenc(nonce1, hnonce1);
-
         L(FL("received 'auth(hmac)' netcmd from client '%s' for pattern '%s' "
             "exclude '%s' in %s mode with nonce1 '%s'\n")
-          % their_key_hash % their_include_pattern % their_exclude_pattern
+          % client % their_include_pattern % their_exclude_pattern
           % (role == source_and_sink_role ? _("source and sink") :
              (role == source_role ? _("source") : _("sink")))
-          % hnonce1);
+          % nonce1);
 
         set_session_key(hmac_key_encrypted);
 
@@ -2598,10 +2611,11 @@ session::dispatch_payload(netcmd const & cmd,
 void
 session::begin_service()
 {
+  key_name name;
   keypair kp;
   if (use_transport_auth)
-    keys.get_key_pair(signing_key, kp);
-  queue_hello_cmd(signing_key, kp.pub, mk_nonce());
+    keys.get_key_pair(signing_key, name, kp);
+  queue_hello_cmd(name, kp.pub, mk_nonce());
 }
 
 void
@@ -3662,7 +3676,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   ticker keys_ticker(N_("keys"), "k", 1);
 
   set<revision_id> revision_ids;
-  set<rsa_keypair_id> inserted_keys;
+  set<key_id> inserted_keys;
 
   {
     for (set<branch_name>::const_iterator i = branchnames.begin();
@@ -3720,7 +3734,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
 
   {
     typedef vector< pair<revision_id,
-      pair<revision_id, rsa_keypair_id> > > cert_idx;
+      pair<revision_id, key_id> > > cert_idx;
 
     cert_idx idx;
     project.db.get_revision_cert_nobranch_index(idx);
@@ -3732,7 +3746,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
       {
         revision_id const & hash = i->first;
         revision_id const & ident = i->second.first;
-        rsa_keypair_id const & key = i->second.second;
+        key_id const & key = i->second.second;
 
         rev_enumerator.note_cert(ident, hash.inner());
 
@@ -3747,7 +3761,7 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
   }
 
   // Add any keys specified on the command line.
-  for (vector<rsa_keypair_id>::const_iterator key
+  for (vector<key_id>::const_iterator key
          = keys_to_push.begin();
        key != keys_to_push.end(); ++key)
     {
@@ -3755,9 +3769,10 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
         {
           if (!project.db.public_key_exists(*key))
             {
+              key_name name;
               keypair kp;
-              if (keys.maybe_get_key_pair(*key, kp))
-                project.db.put_key(*key, kp.pub);
+              if (keys.maybe_get_key_pair(*key, name, kp))
+                project.db.put_key(name, kp.pub);
               else
                 W(F("Cannot find key '%s'") % *key);
             }
@@ -3766,22 +3781,16 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
     }
 
   // Insert all the keys.
-  for (set<rsa_keypair_id>::const_iterator key = inserted_keys.begin();
+  for (set<key_id>::const_iterator key = inserted_keys.begin();
        key != inserted_keys.end(); key++)
     {
       if (project.db.public_key_exists(*key))
         {
-          rsa_pub_key pub;
-          project.db.get_key(*key, pub);
-          id keyhash;
-          key_hash_code(*key, pub, keyhash);
-
           if (global_sanity.debug_p())
-            L(FL("noting key '%s' = '%s' to send")
-              % *key
-              % keyhash);
+            L(FL("noting key '%s' to send")
+              % *key);
 
-          key_refiner.note_local_item(keyhash);
+          key_refiner.note_local_item(key->inner());
           ++keys_ticker;
         }
     }

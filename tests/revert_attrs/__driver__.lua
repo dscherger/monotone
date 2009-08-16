@@ -14,7 +14,7 @@ check({"test", "!", "-x","bar"}, 0, false, false)
 
 commit()
 
--- now flip the attributes so that for has a dormant mtn:execute
+-- now flip the attributes so that foo has a dormant mtn:execute
 
 check(mtn("attr", "drop", "foo", "mtn:execute"), 0, false, false)
 check(mtn("attr", "set", "bar", "mtn:execute", "true"), 0, false, false)

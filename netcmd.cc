@@ -206,7 +206,7 @@ netcmd::write_error_cmd(string const & errmsg)
 
 
 void
-netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
+netcmd::read_hello_cmd(key_name & server_keyname,
                        rsa_pub_key & server_key,
                        id & nonce) const
 {
@@ -215,7 +215,7 @@ netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
   string skn_str, sk_str;
   extract_variable_length_string(payload, skn_str, pos,
                                  "hello netcmd, server key name");
-  server_keyname = rsa_keypair_id(skn_str, origin::network);
+  server_keyname = key_name(skn_str, origin::network);
   extract_variable_length_string(payload, sk_str, pos,
                                  "hello netcmd, server key");
   server_key = rsa_pub_key(sk_str, origin::network);
@@ -226,7 +226,7 @@ netcmd::read_hello_cmd(rsa_keypair_id & server_keyname,
 }
 
 void
-netcmd::write_hello_cmd(rsa_keypair_id const & server_keyname,
+netcmd::write_hello_cmd(key_name const & server_keyname,
                         rsa_pub_key const & server_key,
                         id const & nonce)
 {
@@ -303,7 +303,7 @@ void
 netcmd::read_auth_cmd(protocol_role & role,
                       globish & include_pattern,
                       globish & exclude_pattern,
-                      id & client,
+                      key_id & client,
                       id & nonce1,
                       rsa_oaep_sha_data & hmac_key_encrypted,
                       rsa_sha1_signature & signature) const
@@ -325,10 +325,10 @@ netcmd::read_auth_cmd(protocol_role & role,
   extract_variable_length_string(payload, pattern_string, pos,
                                  "auth(hmac) netcmd, exclude_pattern");
   exclude_pattern = globish(pattern_string, origin::network);
-  client = id(extract_substring(payload, pos,
-                                constants::merkle_hash_length_in_bytes,
-                                "auth(hmac) netcmd, client identifier"),
-              origin::network);
+  client = key_id(extract_substring(payload, pos,
+                                    constants::merkle_hash_length_in_bytes,
+                                    "auth(hmac) netcmd, client identifier"),
+                  origin::network);
   nonce1 = id(extract_substring(payload, pos,
                                 constants::merkle_hash_length_in_bytes,
                                 "auth(hmac) netcmd, nonce1"),
@@ -348,18 +348,18 @@ void
 netcmd::write_auth_cmd(protocol_role role,
                        globish const & include_pattern,
                        globish const & exclude_pattern,
-                       id const & client,
+                       key_id const & client,
                        id const & nonce1,
                        rsa_oaep_sha_data const & hmac_key_encrypted,
                        rsa_sha1_signature const & signature)
 {
   cmd_code = auth_cmd;
-  I(client().size() == constants::merkle_hash_length_in_bytes);
+  I(client.inner()().size() == constants::merkle_hash_length_in_bytes);
   I(nonce1().size() == constants::merkle_hash_length_in_bytes);
   payload += static_cast<char>(role);
   insert_variable_length_string(include_pattern(), payload);
   insert_variable_length_string(exclude_pattern(), payload);
-  payload += client();
+  payload += client.inner()();
   payload += nonce1();
   insert_variable_length_string(hmac_key_encrypted(), payload);
   insert_variable_length_string(signature(), payload);
