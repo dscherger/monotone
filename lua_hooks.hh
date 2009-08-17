@@ -22,7 +22,7 @@
 #include "paths.hh"
 #include "commands.hh"
 
-struct uri;
+struct uri_t;
 class app_state;
 struct lua_State;
 struct globish;
@@ -73,12 +73,12 @@ public:
                             globish const & include,
                             globish const & exclude,
                             rsa_keypair_id & k);
-  bool hook_get_netsync_connect_command(uri const & u,
+  bool hook_get_netsync_connect_command(uri_t const & uri,
                                         globish const & include_pattern,
                                         globish const & exclude_pattern,
                                         bool debug,
                                         std::vector<std::string> & argv);
-  bool hook_use_transport_auth(uri const & u);
+  bool hook_use_transport_auth(uri_t const & uri);
 
   bool hook_get_netsync_read_permitted(std::string const & branch,
                                        rsa_keypair_id const & identity);

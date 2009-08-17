@@ -77,18 +77,18 @@ test_one_uri(string scheme,
     }
 
   L(FL("testing parse of URI '%s'") % built);
-  uri u;
-  UNIT_TEST_CHECK_NOT_THROW(parse_uri(built, u, origin::user), recoverable_failure);
-  UNIT_TEST_CHECK(u.scheme == scheme);
-  UNIT_TEST_CHECK(u.user == user);
+  uri_t uri;
+  UNIT_TEST_CHECK_NOT_THROW(parse_uri(built, uri, origin::user), recoverable_failure);
+  UNIT_TEST_CHECK(uri.scheme == scheme);
+  UNIT_TEST_CHECK(uri.user == user);
   if (!normal_host.empty())
-    UNIT_TEST_CHECK(u.host == normal_host);
+    UNIT_TEST_CHECK(uri.host == normal_host);
   else
-    UNIT_TEST_CHECK(u.host == ipv6_host);
-  UNIT_TEST_CHECK(u.port == port);
-  UNIT_TEST_CHECK(u.path == path);
-  UNIT_TEST_CHECK(u.query == query);
-  UNIT_TEST_CHECK(u.fragment == fragment);
+    UNIT_TEST_CHECK(uri.host == ipv6_host);
+  UNIT_TEST_CHECK(uri.port == port);
+  UNIT_TEST_CHECK(uri.path == path);
+  UNIT_TEST_CHECK(uri.query == query);
+  UNIT_TEST_CHECK(uri.fragment == fragment);
 }
 
 UNIT_TEST(basic)
@@ -115,11 +115,11 @@ UNIT_TEST(bizarre)
 
 UNIT_TEST(invalid)
 {
-  uri u;
+  uri_t uri;
 
-  UNIT_TEST_CHECK_THROW(parse_uri("http://[f3:03:21/foo/bar", u, origin::internal), unrecoverable_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:/foo/bar", u, origin::user), recoverable_failure);
-  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", u, origin::user), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://[f3:03:21/foo/bar", uri, origin::internal), unrecoverable_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:/foo/bar", uri, origin::user), recoverable_failure);
+  UNIT_TEST_CHECK_THROW(parse_uri("http://example.com:1a4/foo/bar", uri, origin::user), recoverable_failure);
 }
 
 UNIT_TEST(urldecode)

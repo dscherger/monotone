@@ -615,62 +615,62 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
 }
 
 static void
-push_uri(uri const & u, Lua & ll)
+push_uri(uri_t const & uri, Lua & ll)
 {
   ll.push_table();
 
-  if (!u.scheme.empty())
+  if (!uri.scheme.empty())
     {
       ll.push_str("scheme");
-      ll.push_str(u.scheme);
+      ll.push_str(uri.scheme);
       ll.set_table();
     }
 
-  if (!u.user.empty())
+  if (!uri.user.empty())
     {
       ll.push_str("user");
-      ll.push_str(u.user);
+      ll.push_str(uri.user);
       ll.set_table();
     }
 
-  if (!u.host.empty())
+  if (!uri.host.empty())
     {
       ll.push_str("host");
-      ll.push_str(u.host);
+      ll.push_str(uri.host);
       ll.set_table();
     }
 
-  if (!u.port.empty())
+  if (!uri.port.empty())
     {
       ll.push_str("port");
-      ll.push_str(u.port);
+      ll.push_str(uri.port);
       ll.set_table();
     }
 
-  if (!u.path.empty())
+  if (!uri.path.empty())
     {
       ll.push_str("path");
-      ll.push_str(u.path);
+      ll.push_str(uri.path);
       ll.set_table();
     }
 
-  if (!u.query.empty())
+  if (!uri.query.empty())
     {
       ll.push_str("query");
-      ll.push_str(u.query);
+      ll.push_str(uri.query);
       ll.set_table();
     }
 
-  if (!u.fragment.empty())
+  if (!uri.fragment.empty())
     {
       ll.push_str("fragment");
-      ll.push_str(u.fragment);
+      ll.push_str(uri.fragment);
       ll.set_table();
     }
 }
 
 bool
-lua_hooks::hook_get_netsync_connect_command(uri const & u,
+lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
                                             globish const & include_pattern,
                                             globish const & exclude_pattern,
                                             bool debug,
@@ -680,7 +680,7 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
   Lua ll(st);
   ll.func("get_netsync_connect_command");
 
-  push_uri(u, ll);
+  push_uri(uri, ll);
 
   ll.push_table();
 
@@ -721,12 +721,12 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
 
 
 bool
-lua_hooks::hook_use_transport_auth(uri const & u)
+lua_hooks::hook_use_transport_auth(uri_t const & uri)
 {
   bool use_auth = true;
   Lua ll(st);
   ll.func("use_transport_auth");
-  push_uri(u, ll);
+  push_uri(uri, ll);
   ll.call(1,1);
   ll.extract_bool(use_auth);
 
