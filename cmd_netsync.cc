@@ -58,8 +58,8 @@ find_key(options & opts,
          bool need_key = true)
 {
   utf8 host(info.client.unparsed);
-  if (!info.client.u.host.empty())
-    host = utf8(info.client.u.host, origin::user);
+  if (!info.client.uri.host.empty())
+    host = utf8(info.client.uri.host, origin::user);
 
   cache_netsync_key(opts, lua, db, keys, host,
                     info.client.include_pattern,
@@ -87,8 +87,8 @@ build_client_connection_info(options & opts,
       info.client.unparsed = typecast_vocab<utf8>(addr_value);
       L(FL("using default server address: %s") % info.client.unparsed);
     }
-  parse_uri(info.client.unparsed(), info.client.u, origin::user);
-  if (info.client.u.query.empty() && !include_or_exclude_given)
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+  if (info.client.uri.query.empty() && !include_or_exclude_given)
     {
       // No include/exclude given anywhere, use the defaults.
       E(db.var_exists(default_include_pattern_key), origin::user,
@@ -107,7 +107,7 @@ build_client_connection_info(options & opts,
         info.client.exclude_pattern = globish();
       L(FL("excluding: %s") % info.client.exclude_pattern);
     }
-  else if(!info.client.u.query.empty())
+  else if(!info.client.uri.query.empty())
     {
       E(!include_or_exclude_given, origin::user,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
@@ -115,7 +115,7 @@ build_client_connection_info(options & opts,
       // Pull include/exclude from the query string
       char const separator = '/';
       char const negate = '-';
-      string const & query(info.client.u.query);
+      string const & query(info.client.uri.query);
       std::vector<arg_type> includes, excludes;
       string::size_type begin = 0;
       string::size_type end = query.find(separator);
@@ -183,12 +183,12 @@ build_client_connection_info(options & opts,
       }
 
   info.client.use_argv =
-    lua.hook_get_netsync_connect_command(info.client.u,
+    lua.hook_get_netsync_connect_command(info.client.uri,
                                          info.client.include_pattern,
                                          info.client.exclude_pattern,
                                          global_sanity.debug_p(),
                                          info.client.argv);
-  opts.use_transport_auth = lua.hook_use_transport_auth(info.client.u);
+  opts.use_transport_auth = lua.hook_use_transport_auth(info.client.uri);
   if (opts.use_transport_auth)
     {
       find_key(opts, lua, db, keys, info, need_key);

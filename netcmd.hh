@@ -188,7 +188,7 @@ struct netsync_connection_info
   {
     globish include_pattern;
     globish exclude_pattern;
-    uri u;
+    uri_t uri;
     utf8 unparsed;
     std::vector<std::string> argv;
     bool use_argv;

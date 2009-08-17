@@ -3086,11 +3086,11 @@ build_stream_to_server(options & opts, lua_hooks & lua,
 #else
       bool use_ipv6=false;
 #endif
-      string host(info.client.u.host);
+      string host(info.client.uri.host);
       if (host.empty())
         host = info.client.unparsed();
-      if (!info.client.u.port.empty())
-        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
+      if (!info.client.uri.port.empty())
+        default_port = lexical_cast<Netxx::port_type>(info.client.uri.port);
       Netxx::Address addr(info.client.unparsed().c_str(),
                           default_port, use_ipv6);
       return shared_ptr<Netxx::StreamBase>
@@ -3200,7 +3200,7 @@ session_from_server_sync_item(options & opts,
   info.client.include_pattern = globish(request.include, origin::user);
   info.client.exclude_pattern = globish(request.exclude, origin::user);
   info.client.use_argv = false;
-  parse_uri(info.client.unparsed(), info.client.u,
+  parse_uri(info.client.unparsed(), info.client.uri,
             origin::user /* from lua hook */);
 
   try
