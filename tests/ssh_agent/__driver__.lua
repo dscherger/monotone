@@ -26,6 +26,9 @@ check(mtn("--key", "tester@test.net", "ssh_agent_export"), 0, false, false)
 -- * (ok) export monotone key with passphrase
 check(mtn("ssh_agent_export"), 0, false, false, tkey .. "\n" .. tkey .. "\n")
 
+-- * (ok) export monotone key without passphrase
+check(mtn("ssh_agent_export"), 0, false, false)
+
 -- * (ok) export in workspace exports to subdir
 mkdir("subdir")
 mkdir("subdir/anotherdir")
@@ -36,25 +39,36 @@ check(mtn("add", "foo"), 0, false, false)
 check(mtn("add", "-R", "anotherdir"), 0, false, false)
 
 check(mtn("ssh_agent_export", "id_monotone"), 0, false, false)
-skip_if(not existsonpath("chmod"))
-check({"chmod", "600", "id_monotone"}, 0, false, false)
+check(exists("id_monotone"))
 chdir("..")
+check(not exists("id_monotone"))
 
---commit()
---rev = base_revision()
---
---check(mtn("checkout", "--revision", rev, "codir"), 0, false, false)
---check(samefile("subdir/foo", "codir/subdir/foo"))
---check(samefile("subdir/anotherdir/bar", "codir/subdir/anotherdir/bar"))
+-- * (ok) export to subdirectory named on command line
+check(mtn("ssh_agent_export", "subdir/id_monotone2"), 0, false, false)
+check(exists("subdir/id_monotone2"))
+check(not exists("id_monotone2"))
 
+-- * (ok) export to path containing a nonexistent directory - creates it
+check(not exists("nonexistent"))
+check(mtn("ssh_agent_export", "nonexistent/id_monotone3"), 0, false, false)
+check(exists("nonexistent/id_monotone3"))
+check(not exists("id_monotone3"))
 
--- * (ok) export monotone key without passphrase
-check(mtn("ssh_agent_export", "id_monotone"), 0, false, false)
+-- * (E) export to path that's not writable
 skip_if(not existsonpath("chmod"))
-check({"chmod", "600", "id_monotone"}, 0, false, false)
 
-skip_if(not existsonpath("ssh-agent"))
+mkdir("unwritable")
+check({"chmod", "555", "unwritable"}, 0, false, false)
+check(mtn("ssh_agent_export", "unwritable/id_monotone4"), 1, false, false)
+check(not exists("unwritable/id_monotone3"))
+check(not exists("id_monotone3"))
+
+-- set up for tests of the agent itself
+-- we don't know how to do this on windows
+
 skip_if(ostype == "Windows")
+skip_if(not existsonpath("ssh-agent"))
+skip_if(not existsonpath("ssh-add"))
 
 function cleanup()
    check({"kill", os.getenv("SSH_AGENT_PID")}, 0, false, false)
@@ -149,8 +163,6 @@ for line in io.lines("stdout") do
     end
 end
 
-skip_if(not existsonpath("ssh-add"))
-
 -- * (ok) mtn ci with ssh-agent running with non-monotone rsa key
 check(get("id_rsa"))
 check({"chmod", "600", "id_rsa"}, 0, false, false)
@@ -176,11 +188,51 @@ addfile("some_file9", "test")
 check(mtn("ci", "--message", "commit msg"), 0, false, false)
 
 -- * (ok) export key with password
-check(mtn("ssh_agent_export", "id_monotone_pass"), 0, false, false, "\npass\npass\n")
-skip_if(not existsonpath("chmod"))
-check({"chmod", "600", "id_monotone_pass"}, 0, false, false)
+check(mtn("ssh_agent_export", "id_monotone_pass"), 0, false, false,
+      "pass\npass\n")
+
+-- without any password, or the wrong password, ssh-add should not add
+-- this key; the DISPLAY/SSH_ASKPASS subterfuge is necessary to get
+-- ssh-add to read the password from somewhere other than /dev/tty.
+save_env()
+set_env("DISPLAY", "not-a-real-display")
+set_env("SSH_ASKPASS", "report_pass")
+
+check({"ssh-add", "-D"}, 0, false, false)
+
+-- * (E) no password at all
+writefile("report_pass", "#!/bin/sh\nexit 0")
+check({"chmod", "700", "report_pass"}, 0, false, false)
+check({"ssh-add", "id_monotone_pass"}, 1, false, false)
+
+-- * (E) wrong password (note that ssh-add will retry indefinitely as long
+-- as ssh-askpass keeps giving it (success, wrong password))
+writefile("report_pass", 
+	  "#!/bin/sh\n"..
+          "if [ -f report_pass_retried ]; then\n"..
+	  "  exit 1\n"..
+	  "else\n"..
+	  "  echo notpass\n"..
+	  "  touch report_pass_retried\n"..
+	  "  exit 0\n"..
+	  "fi\n")
+check({"chmod", "700", "report_pass"}, 0, false, false)
+check({"ssh-add", "id_monotone_pass"}, 1, false, false)
+
+-- * (ok) correct password
+writefile("report_pass", "#!/bin/sh\necho pass\nexit 0")
+check({"chmod", "700", "report_pass"}, 0, false, false)
+check({"ssh-add", "id_monotone_pass"}, 0, false, false)
+
+restore_env()
+
+--  * (E) export key with mismatched passwords
+check(mtn("ssh_agent_export", "id_mismatched_pass"), 1, false, false,
+      "this\nthat\nthis\nthat\nthis\nthat")
+check(not exists("id_mismatched_pass"))
 
 --  * (ok) add password-less exported key with ssh-add
+check(mtn("ssh_agent_export", "id_monotone"), 0, false, false)
 check({"ssh-add", "-D"}, 0, false, false)
 check({"ssh-add", "id_monotone"}, 0, false, false)
 
@@ -224,8 +276,6 @@ check(raw_mtn("--rcfile", test.root .. "/test_hooks.lua", -- "--nostd",
 
 -- * (ok) export monotone key with -k
 check(mtn("ssh_agent_export", "--key", "test2@tester.net", "id_monotone2"), 0, false, false)
-skip_if(not existsonpath("chmod"))
-check({"chmod", "600", "id_monotone2"}, 0, false, false)
 
 -- * (ok) mtn ssh_agent_add with -k adds key to agent
 check({"ssh-add", "-D"}, 0, false, false)

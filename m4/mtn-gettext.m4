@@ -1,3 +1,12 @@
+# Copyright (C) 2009 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # This is a custom set of probe macros for xgettext and the gettext
 # library (either in libc or as -lintl [-liconv]).  The differences
 # from the standard version are as follows:
@@ -11,6 +20,7 @@
 #  - Does not support bundled libintl/libiconv.
 #  - Always checks for ngettext().
 #  - Always checks for the --flag option to xgettext.
+#  - Always checks for --package-version/--package-name support.
 #  - Never checks for support for <inttypes.h> format string macros.
 #  - If you give an explicit --enable-nls on the command line and the
 #    library functions are not available, configure will error out.
@@ -99,10 +109,28 @@ AC_DEFUN([MTN_PROG_GNU_GETTEXT], [
     else
       XGETTEXT_OPTS='$(XGETTEXT_OPTIONS_NO_FLAG)'
     fi
+
+    AC_CACHE_CHECK(
+      [whether $XGETTEXT supports --package-name and --package-version],
+      [ac_cv_prog_xgettext_package_options],
+      [echo 'int main(void) { return 0; }' >> conftest.c
+      if "$XGETTEXT" --package-name=test --package-version=1.0 \
+         -o conftest.po conftest.c >/dev/null 2>&1
+      then ac_cv_prog_xgettext_package_options=yes
+      else ac_cv_prog_xgettext_package_options=no
+      fi])
+
+    if test $ac_cv_prog_xgettext_package_options = yes; then
+      XGETTEXT_PKG_OPTS='--package-name=$(PACKAGE) --package-version=$(VERSION)'
+    else
+      XGETTEXT_PKG_OPTS=
+    fi
   else
     XGETTEXT_OPTS=
+    XGETTEXT_PKG_OPTS=
   fi
   AC_SUBST([XGETTEXT_OPTS])
+  AC_SUBST([XGETTEXT_PKG_OPTS])
 
   if test x"$MSGFMT" = x"not found" ||
      test x"$MSGMERGE" = x"not found" ||

@@ -1,8 +1,5 @@
-#ifndef __ROSTER_HH__
-#define __ROSTER_HH__
-
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __ROSTER_HH__
+#define __ROSTER_HH__
 
 #include "hybrid_map.hh"
 #include "paths.hh"
@@ -33,7 +33,7 @@ null_node(node_id n)
 }
 
 template <> void dump(node_id const & val, std::string & out);
-template <> void dump(full_attr_map_t const & val, std::string & out);
+template <> void dump(attr_map_t const & val, std::string & out);
 
 struct node
 {
@@ -42,7 +42,7 @@ struct node
   node_id self;
   node_id parent; // the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
-  full_attr_map_t attrs;
+  attr_map_t attrs;
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -178,13 +178,13 @@ public:
   void apply_delta(file_path const & pth,
                    file_id const & old_id,
                    file_id const & new_id);
-  void clear_attr(file_path const & pth,
-                  attr_key const & name);
-  void set_attr(file_path const & pth,
-                attr_key const & name,
+  void clear_attr(file_path const & path,
+                  attr_key const & key);
+  void set_attr(file_path const & path,
+                attr_key const & key,
                 attr_value const & val);
-  void set_attr(file_path const & pth,
-                attr_key const & name,
+  void set_attr(file_path const & path,
+                attr_key const & key,
                 std::pair<bool, attr_value> const & val);
 
   // more direct, lower-level operations, for the use of roster_delta's
@@ -298,10 +298,10 @@ public:
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id);
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name);
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key);
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val);
   virtual void commit();
 protected:
@@ -363,6 +363,35 @@ mark_merge_roster(roster_t const & left_roster,
                   roster_t const & merge,
                   marking_map & new_markings);
 
+// These functions are an internal interface between ancestry.cc and
+// roster.cc; unless you know exactly what you're doing you probably want
+// something else.
+
+void
+make_roster_for_merge(revision_id const & left_rid,
+                      roster_t const & left_roster,
+                      marking_map const & left_markings,
+                      cset const & left_cs,
+                      std::set<revision_id> const & left_uncommon_ancestors,
+
+                      revision_id const & right_rid,
+                      roster_t const & right_roster,
+                      marking_map const & right_markings,
+                      cset const & right_cs,
+                      std::set<revision_id> const & right_uncommon_ancestors,
+
+                      revision_id const & new_rid,
+                      roster_t & new_roster,
+                      marking_map & new_markings,
+                      node_id_source & nis);
+
+void
+make_roster_for_nonmerge(cset const & cs,
+                         revision_id const & new_rid,
+                         roster_t & new_roster, marking_map & new_markings,
+                         node_id_source & nis);
+
+
 // This is for revisions that are being written to the db, only.  It assigns
 // permanent node ids.
 void
@@ -404,17 +433,52 @@ void calculate_ident(roster_t const & ros,
 void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 
-#ifdef BUILD_UNIT_TESTS
+// Parent maps are used in a number of places to keep track of all the
+// parent rosters of a given revision.
 
-struct testing_node_id_source
-  : public node_id_source
+inline revision_id const & parent_id(parent_entry const & p)
 {
-  testing_node_id_source();
-  virtual node_id next();
-  node_id curr;
-};
+  return p.first;
+}
 
-#endif // BUILD_UNIT_TESTS
+inline revision_id const & parent_id(parent_map::const_iterator i)
+{
+  return i->first;
+}
+
+inline cached_roster const &
+parent_cached_roster(parent_entry const & p)
+{
+  return p.second;
+}
+
+inline cached_roster const &
+parent_cached_roster(parent_map::const_iterator i)
+{
+  return i->second;
+}
+
+inline roster_t const & parent_roster(parent_entry const & p)
+{
+  return *(p.second.first);
+}
+
+inline roster_t const & parent_roster(parent_map::const_iterator i)
+{
+  return *(i->second.first);
+}
+
+inline marking_map const & parent_marking(parent_entry const & p)
+{
+  return *(p.second.second);
+}
+
+inline marking_map const & parent_marking(parent_map::const_iterator i)
+{
+  return *(i->second.second);
+}
+
+#endif
 
 // Local Variables:
 // mode: C++
@@ -423,5 +487,3 @@ struct testing_node_id_source
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

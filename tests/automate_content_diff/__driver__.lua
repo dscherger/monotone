@@ -30,12 +30,22 @@ R3=base_revision()
 -- one and two revisions should work
 check(mtn("automate", "content_diff", "-r", R1), 0, true, true)
 check(fsize("stdout") ~= 0)
+-- compare output order to --reverse below
+check(qgrep("\\+\\+\\+ existing.*27f121005fcb075744d0c869183263c5b4814cb8", "stdout"))
+check(qgrep("--- existing.*3773dea65156909838fa6c22825cafe090ff8030", "stdout"))
+
 check(mtn("automate", "content_diff", "-r", R1, "-r", R2), 0, true, true)
 check(fsize("stdout") ~= 0)
 check(not qgrep("# patch", "stdout"))
+
 check(mtn("automate", "content_diff", "-r", R1, "-r", R2, "--with-header"), 0, true, true)
 check(fsize("stdout") ~= 0)
 check(qgrep("# patch", "stdout"))
+
+--  --reverse with one revision
+check(mtn("automate", "content_diff", "-r", R1), 0, true, true)
+check(qgrep("--- existing.*3773dea65156909838fa6c22825cafe090ff8030", "stdout"))
+check(qgrep("\\+\\+\\+ existing.*27f121005fcb075744d0c869183263c5b4814cb8", "stdout"))
 
 -- three and more should not
 check(mtn("automate", "content_diff", "-r", R1, "-r", R2, "-r", R3), 1, true, true)

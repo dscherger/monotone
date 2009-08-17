@@ -10,10 +10,9 @@
 #include "base.hh"
 #include <algorithm>
 #include <iterator>
-#include <iostream>
 #include <fstream>
-#include "vector.hh"
 #include <sstream>
+#include "vector.hh"
 
 #include <boost/format.hpp>
 #include <boost/circular_buffer.hpp>
@@ -36,6 +35,9 @@ using std::string;
 using std::vector;
 
 using boost::format;
+
+// set by sanity::initialize
+std::string const * prog_name_ptr;
 
 string
 origin::type_to_string(origin::type t)
@@ -67,6 +69,7 @@ struct sanity::impl
   bool quiet;
   bool reallyquiet;
   boost::circular_buffer<char> logbuf;
+  std::string real_prog_name;
   std::string filename;
   std::string gasp_dump;
   bool already_dumping;
@@ -118,6 +121,19 @@ sanity::initialize(int argc, char ** argv, char const * lc_all)
     lc_all = "n/a";
   PERM_MM(string(lc_all));
   L(FL("set locale: LC_ALL=%s") % lc_all);
+
+  // find base name of executable and save in the prog_name global. note that
+  // this does not bother with conversion to utf8.
+  {
+    string av0 = argv[0];
+    if (av0.size() > 4 && av0.rfind(".exe") == av0.size() - 4)
+      av0.erase(av0.size() - 4);
+    string::size_type last_slash = av0.find_last_of("/\\");
+    if (last_slash != string::npos)
+      av0.erase(0, last_slash+1);
+    imp->real_prog_name = av0;
+    prog_name_ptr = &imp->real_prog_name;
+  }
 }
 
 void
@@ -305,13 +321,13 @@ sanity::generic_failure(char const * expr,
   if (!imp)
     throw std::logic_error("sanity::generic_failure occured "
                            "before sanity::initialize");
-  if (imp->debug)
-    {
-      log(FL("%s:%d: detected %s error, '%s' violated")
-          % file % line % origin::type_to_string(caused_by) % expr,
-          file, line);
-    }
+
+  log(FL("Encountered an error while musing upon the following:"),
+      file, line);
   gasp();
+  log(FL("%s:%d: detected %s error, '%s' violated")
+      % file % line % origin::type_to_string(caused_by) % expr,
+      file, line);
 
   string prefix;
   if (caused_by == origin::user)
@@ -322,10 +338,8 @@ sanity::generic_failure(char const * expr,
     {
       prefix = _("error: ");
     }
-  string detection_msg((F("detected at %s:%d") % file % line).str());
   string message;
-  prefix_lines_with(prefix, detection_msg + string("\n") +
-                    do_format(explain, file, line), message);
+  prefix_lines_with(prefix, do_format(explain, file, line), message);
   switch (caused_by)
     {
     case origin::database:
@@ -432,14 +446,14 @@ dump(string const & obj, string & out)
 }
 
 void
-print_var(std::string const & value, char const * var,
-          char const * file, int const line, char const * func)
+sanity::print_var(std::string const & value, char const * var,
+                  char const * file, int const line, char const * func)
 {
-  std::cout << (FL("----- begin '%s' (in %s, at %s:%d)\n") 
-                % var % func % file % line)
-            << value
-            << (FL("\n-----   end '%s' (in %s, at %s:%d)\n\n") 
-                % var % func % file % line);
+  inform_message((FL("----- begin '%s' (in %s, at %s:%d)")
+                  % var % func % file % line).str());
+  inform_message(value);
+  inform_message((FL("-----   end '%s' (in %s, at %s:%d)\n\n")
+                  % var % func % file % line).str());
 }
 
 void MusingBase::gasp_head(string & out) const

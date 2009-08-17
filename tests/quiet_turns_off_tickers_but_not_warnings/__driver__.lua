@@ -9,7 +9,7 @@ commit()
 -- check that tickers are quiet
 srv = netsync.start()
 
-check(mtn2("--rcfile=netsync.lua", "pull", srv.address, "testbranch", "--quiet"), 0, nil, true)
+check(mtn2("--rcfile=netsync.lua", "pull", srv.address, "testbranch", "--quiet", "--key="), 0, nil, true)
 check(qgrep(': warning: ', "stderr"))
 
 srv:stop()

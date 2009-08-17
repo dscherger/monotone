@@ -1,5 +1,5 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -353,7 +353,7 @@ lua_hooks::hook_ignore_branch(branch_name const & branch)
 static inline bool
 shared_trust_function_body(Lua & ll,
                            set<rsa_keypair_id> const & signers,
-                           hexenc<id> const & hash,
+                           id const & hash,
                            cert_name const & name,
                            cert_value const & val)
 {
@@ -369,9 +369,10 @@ shared_trust_function_body(Lua & ll,
       ++k;
     }
 
+  hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
   bool ok;
   bool exec_ok = ll
-    .push_str(hash())
+    .push_str(hid())
     .push_str(name())
     .push_str(val())
     .call(4, 1)
@@ -381,59 +382,26 @@ shared_trust_function_body(Lua & ll,
   return exec_ok && ok;
 }
 
-static inline bool
-shared_trust_function_body(Lua & ll,
-                           set<rsa_keypair_id> const & signers,
-                           id const & hash,
-                           cert_name const & name,
-                           cert_value const & val)
-{
-  hexenc<id> hid(encode_hexenc(hash(), hash.made_from), hash.made_from);
-  return shared_trust_function_body(ll, signers, hid, name, val);
-};
-
 bool
 lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-                                       hexenc<id> const & id,
+                                       id const & hash,
                                        cert_name const & name,
                                        cert_value const & val)
 {
   Lua ll(st);
   ll.func("get_revision_cert_trust");
-  return shared_trust_function_body(ll, signers, id, name, val);
-}
-
-bool
-lua_hooks::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-                                       revision_id const & id,
-                                       cert_name const & name,
-                                       cert_value const & val)
-{
-  Lua ll(st);
-  ll.func("get_revision_cert_trust");
-  return shared_trust_function_body(ll, signers, id.inner(), name, val);
+  return shared_trust_function_body(ll, signers, hash, name, val);
 }
 
 bool
 lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-                                        hexenc<id> const & id,
+                                        id const & hash,
                                         cert_name const & name,
                                         cert_value const & val)
 {
   Lua ll(st);
   ll.func("get_manifest_cert_trust");
-  return shared_trust_function_body(ll, signers, id, name, val);
-}
-
-bool
-lua_hooks::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-                                        manifest_id const & id,
-                                        cert_name const & name,
-                                        cert_value const & val)
-{
-  Lua ll(st);
-  ll.func("get_manifest_cert_trust");
-  return shared_trust_function_body(ll, signers, id.inner(), name, val);
+  return shared_trust_function_body(ll, signers, hash, name, val);
 }
 
 bool
@@ -591,6 +559,23 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
   return ll.ok() && !args.empty();
 }
 
+bool
+lua_hooks::hook_get_date_format_spec(std::string & spec)
+{
+  bool exec_ok
+    = Lua(st)
+    .func("get_date_format_spec")
+    .call(0, 1)
+    .extract_str(spec)
+    .ok();
+
+  // If the hook fails, disable date formatting.
+  if (!exec_ok)
+    spec = "";
+  return exec_ok;
+}
+
+
 bool lua_hooks::hook_hook_wrapper(std::string const & func_name,
                                   std::vector<std::string> const & args,
                                   std::string & out)
@@ -647,62 +632,62 @@ lua_hooks::hook_get_netsync_key(utf8 const & server_address,
 }
 
 static void
-push_uri(uri const & u, Lua & ll)
+push_uri(uri_t const & uri, Lua & ll)
 {
   ll.push_table();
 
-  if (!u.scheme.empty())
+  if (!uri.scheme.empty())
     {
       ll.push_str("scheme");
-      ll.push_str(u.scheme);
+      ll.push_str(uri.scheme);
       ll.set_table();
     }
 
-  if (!u.user.empty())
+  if (!uri.user.empty())
     {
       ll.push_str("user");
-      ll.push_str(u.user);
+      ll.push_str(uri.user);
       ll.set_table();
     }
 
-  if (!u.host.empty())
+  if (!uri.host.empty())
     {
       ll.push_str("host");
-      ll.push_str(u.host);
+      ll.push_str(uri.host);
       ll.set_table();
     }
 
-  if (!u.port.empty())
+  if (!uri.port.empty())
     {
       ll.push_str("port");
-      ll.push_str(u.port);
+      ll.push_str(uri.port);
       ll.set_table();
     }
 
-  if (!u.path.empty())
+  if (!uri.path.empty())
     {
       ll.push_str("path");
-      ll.push_str(u.path);
+      ll.push_str(uri.path);
       ll.set_table();
     }
 
-  if (!u.query.empty())
+  if (!uri.query.empty())
     {
       ll.push_str("query");
-      ll.push_str(u.query);
+      ll.push_str(uri.query);
       ll.set_table();
     }
 
-  if (!u.fragment.empty())
+  if (!uri.fragment.empty())
     {
       ll.push_str("fragment");
-      ll.push_str(u.fragment);
+      ll.push_str(uri.fragment);
       ll.set_table();
     }
 }
 
 bool
-lua_hooks::hook_get_netsync_connect_command(uri const & u,
+lua_hooks::hook_get_netsync_connect_command(uri_t const & uri,
                                             globish const & include_pattern,
                                             globish const & exclude_pattern,
                                             bool debug,
@@ -712,7 +697,7 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
   Lua ll(st);
   ll.func("get_netsync_connect_command");
 
-  push_uri(u, ll);
+  push_uri(uri, ll);
 
   ll.push_table();
 
@@ -753,12 +738,12 @@ lua_hooks::hook_get_netsync_connect_command(uri const & u,
 
 
 bool
-lua_hooks::hook_use_transport_auth(uri const & u)
+lua_hooks::hook_use_transport_auth(uri_t const & uri)
 {
   bool use_auth = true;
   Lua ll(st);
   ll.func("use_transport_auth");
-  push_uri(u, ll);
+  push_uri(uri, ll);
   ll.call(1,1);
   ll.extract_bool(use_auth);
 
@@ -856,9 +841,9 @@ lua_hooks::hook_init_attributes(file_path const & filename,
 }
 
 bool
-lua_hooks::hook_apply_attribute(string const & attr,
-                                file_path const & filename,
-                                string const & value)
+lua_hooks::hook_set_attribute(string const & attr,
+                              file_path const & filename,
+                              string const & value)
 {
   return Lua(st)
     .push_str("attr_functions")
@@ -871,6 +856,20 @@ lua_hooks::hook_apply_attribute(string const & attr,
     .ok();
 }
 
+bool
+lua_hooks::hook_clear_attribute(string const & attr,
+                                file_path const & filename)
+{
+  return Lua(st)
+    .push_str("attr_functions")
+    .get_tab()
+    .push_str(attr)
+    .get_fn(-2)
+    .push_str(filename.as_external())
+    .push_nil()
+    .call(2,0)
+    .ok();
+}
 
 bool
 lua_hooks::hook_validate_commit_message(utf8 const & message,
@@ -1133,93 +1132,6 @@ lua_hooks::hook_note_mtn_startup(args_vector const & args)
 
   ll.call(args.size(), 0);
   return ll.ok();
-}
-
-namespace commands {
-  class cmd_lua : public command
-  {
-    lua_State *st;
-    std::string const f_name;
-  public:
-    cmd_lua(std::string const & primary_name,
-                   std::string const & params,
-                   std::string const & abstract,
-                   std::string const & desc,
-                   lua_State *L_st,
-                   std::string const & func_name) :
-         command(primary_name, "", CMD_REF(user), false, false, params,
-                 abstract, desc, true, options::options_type() | options::opts::none, true),
-                 st(L_st), f_name(func_name)
-    {
-      // because user commands are inserted after the normal initialisation process
-      CMD_REF(user)->children().insert(this);
-    }
-
-    void exec(app_state & app, command_id const & execid, args_vector const & args) const;
-  };
-}
-
-void commands::cmd_lua::exec(app_state & app,
-                               command_id const & execid,
-                               args_vector const & args) const
-{
-  I(st);
-  I(app.lua.check_lua_state(st));
-
-  app_state* app_p = get_app_state(st);
-  I(app_p == & app);
-
-  Lua ll(st);
-  ll.func(f_name);
-
-  for (args_vector::const_iterator it = args.begin(); it != args.end(); ++it)
-    ll.push_str((*it)());
-
-  app.mtn_automate_allowed = true;
-
-  ll.call(args.size(),0);
-
-  app.mtn_automate_allowed = false;
-
-  E(ll.ok(), origin::user,
-    F("Call to user command %s (lua command: %s) failed.") % primary_name() % f_name);
-}
-
-LUAEXT(alias_command, )
-{
-  const char *old_cmd = luaL_checkstring(LS, -2);
-  const char *new_cmd = luaL_checkstring(LS, -1);
-  E(old_cmd && new_cmd, origin::user,
-    F("%s called with an invalid parameter") % "alias_command");
-
-  args_vector args;
-  args.push_back(arg_type(old_cmd, origin::user));
-  commands::command_id id = commands::complete_command(args);
-  commands::command *old_cmd_p = CMD_REF(__root__)->find_command(id);
-
-  old_cmd_p->add_alias(utf8(new_cmd));
-
-  lua_pushboolean(LS, true);
-  return 1;
-}
-
-
-LUAEXT(register_command, )
-{
-  const char *cmd_name = luaL_checkstring(LS, -5);
-  const char *cmd_params = luaL_checkstring(LS, -4);
-  const char *cmd_abstract = luaL_checkstring(LS, -3);
-  const char *cmd_desc = luaL_checkstring(LS, -2);
-  const char *cmd_func = luaL_checkstring(LS, -1);
-
-  E(cmd_name && cmd_params && cmd_abstract && cmd_desc && cmd_func,
-    origin::user,
-    F("%s called with an invalid parameter") % "register_command");
-
-  new commands::cmd_lua(cmd_name, cmd_params, cmd_abstract, cmd_desc, LS, cmd_func);  // leak this - commands can't be removed anyway
-
-  lua_pushboolean(LS, true);
-  return 1;
 }
 
 // Local Variables:

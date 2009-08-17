@@ -1,4 +1,5 @@
 dnl Copyright (C) 2007 Zack Weinberg <zackw@panix.com>
+dnl
 dnl This program is made available under the GNU GPL version 2.0 or
 dnl greater. See the accompanying file COPYING for details.
 dnl

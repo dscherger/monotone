@@ -13,11 +13,10 @@
 
 
 #include "base.hh"
-#include <iostream>
-#include <sstream>
 
 #include <boost/version.hpp>
 #include <boost/config.hpp>
+#include <iostream>
 
 /* Include third party headers needed for version info */
 #include <botan/version.h>
@@ -26,33 +25,13 @@
 #include <pcre.h>
 
 #include "app_state.hh"
-#include "cmd.hh"
 #include "lua.hh"
 #include "platform.hh"
 #include "mt_version.hh"
-#include "package_revision.h"
-#include "package_full_revision.h"
 #include "sanity.hh"
 
 using std::cout;
-using std::ostringstream;
 using std::string;
-
-CMD_NO_WORKSPACE(version, "version", "", CMD_REF(informative), "",
-    N_("Shows the program version"),
-    "",
-    options::opts::full)
-{
-  E(args.empty(), origin::user,
-    F("no arguments allowed"));
-
-  string version;
-  if (app.opts.full)
-    get_full_version(version);
-  else
-    get_version(version);
-  cout << version << '\n';
-}
 
 void
 get_version(string & out)
@@ -72,12 +51,12 @@ print_version()
 void
 get_full_version(string & out)
 {
-  ostringstream oss;
-  string s;
-  get_version(s);
-  oss << s << '\n';
-  get_system_flavour(s);
-  oss << F("Running on          : %s\n"
+  string base_version;
+  get_version(base_version);
+  string flavour;
+  get_system_flavour(flavour);
+  out = (F("%s\n"
+           "Running on          : %s\n"
            "C++ compiler        : %s\n"
            "C++ standard library: %s\n"
            "Boost version       : %s\n"
@@ -87,17 +66,17 @@ get_full_version(string & out)
            "Botan version       : %d.%d.%d (compiled against %d.%d.%d)\n"
            "Changes since base revision:\n"
            "%s")
-    % s
-    % BOOST_COMPILER
-    % BOOST_STDLIB
-    % BOOST_LIB_VERSION
-    % sqlite3_libversion() % SQLITE_VERSION
-    % LUA_VERSION
-    % pcre_version() % PCRE_MAJOR % PCRE_MINOR
-    % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
-        % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
-    % string(package_full_revision_constant);
-  out = oss.str();
+         % base_version % flavour
+         % BOOST_COMPILER
+         % BOOST_STDLIB
+         % BOOST_LIB_VERSION
+         % sqlite3_libversion() % SQLITE_VERSION
+         % LUA_VERSION
+         % pcre_version() % PCRE_MAJOR % PCRE_MINOR
+         % Botan::version_major() % Botan::version_minor() % Botan::version_patch()
+         % BOTAN_VERSION_MAJOR % BOTAN_VERSION_MINOR % BOTAN_VERSION_PATCH
+         % string(package_full_revision_constant))
+    .str();
 }
 
 void

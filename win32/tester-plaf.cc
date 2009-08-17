@@ -1,3 +1,13 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2007 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 // Tester-specific platform interface glue, Windows version.
 
 #define WIN32_LEAN_AND_MEAN // we don't need the GUI interfaces
@@ -184,13 +194,14 @@ void run_tests_in_children(test_enumerator const & next_test,
         }
       catch (...)
         {
-          cleanup(t, 121);
+          cleanup(t, 121, 0, 0);
           continue;
         }
 
       change_current_working_dir(testdir);
       argv[4] = t.name.c_str();
       pid_t child = process_spawn(argv);
+      DWORD start_millis = GetTickCount();
       change_current_working_dir(run_dir);
 
       int status;
@@ -199,7 +210,8 @@ void run_tests_in_children(test_enumerator const & next_test,
       else
         process_wait(child, &status);
 
-      if (cleanup(t, status))
+      DWORD end_millis = GetTickCount();
+      if (cleanup(t, status, (end_millis - start_millis) / 1000, -1))
         do_remove_recursive(testdir);
     }
 }

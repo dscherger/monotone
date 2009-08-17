@@ -23,7 +23,7 @@ using std::cout;
 using std::istringstream;
 using std::vector;
 
-CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"), 
+CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
     N_("Prints a public key packet"),
     "",
     options::opts::none)
@@ -56,7 +56,7 @@ CMD(pubkey, "pubkey", "", CMD_REF(packet_io), N_("ID"),
   pw.consume_public_key(ident, key);
 }
 
-CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"), 
+CMD(privkey, "privkey", "", CMD_REF(packet_io), N_("ID"),
     N_("Prints a private key packet"),
     "",
     options::opts::none)
@@ -116,8 +116,8 @@ namespace
       db.put_revision(ident, dat);
       guard.commit();
     }
-    
-    virtual void consume_revision_cert(revision<cert> const & t)
+
+    virtual void consume_revision_cert(cert const & t)
     {
       transaction_guard guard(db);
       db.put_revision_cert(t);
@@ -131,7 +131,7 @@ namespace
       db.put_key(ident, k);
       guard.commit();
     }
-    
+
     virtual void consume_key_pair(rsa_keypair_id const & ident,
                                   keypair const & kp)
     {
@@ -193,7 +193,7 @@ CMD(read, "read", "", CMD_REF(packet_io), "[FILE1 [FILE2 [...]]]",
     }
   else
     {
-      for (args_vector::const_iterator i = args.begin(); 
+      for (args_vector::const_iterator i = args.begin();
            i != args.end(); ++i)
         {
           data dat;

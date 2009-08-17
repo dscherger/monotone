@@ -1,9 +1,15 @@
-// this file is partially cribbed from gfileutils.c in glib, which is
-// copyright (c) 2000 Red Hat. It was released as LGPL version 2.0 or
-// greater, so I have copied some of its text into this file and am
-// relicensing my derivative work (this file):
-//    copyright (C) 2004 graydon hoare, as LGPL version 2.0 or greater also.
-//    revised, copyright (C) 2009 zack weinberg <zackw@panix.com>
+// Copyright (C) 2000 Red Hat, Inc.
+//               2004 Graydon Hoare <graydon@pobox.com>
+//               2009 Zack Weinberg <zackw@panix.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
+// this code was originally based on part of gfileutils.cc in glib.
 //
 // this is a portable implementation of mkstemp, which is not available on
 // all systems and not always correctly implemented even when available.
@@ -44,6 +50,7 @@
 // and it can be extremely poor quality (RANDU, anyone?)
 
 #include "base.hh"
+#include "file_io.hh"
 #include "numeric_vocab.hh"
 
 #include <errno.h>
@@ -104,10 +111,10 @@ static void
 seed_lfsr113()
 {
   u32 b = time(0);
-  z1 += b ^ 2421089565;
-  z2 += b ^ 3453830001;
-  z3 += b ^ 1437919543;
-  z4 += b ^ 1406684125;
+  z1 += b ^ 2421089565u;
+  z2 += b ^ 3453830001u;
+  z3 += b ^ 1437919543u;
+  z4 += b ^ 1406684125u;
 
   if (z1 <   1) z1 += 1;
   if (z2 <   7) z2 += 7;
@@ -131,8 +138,8 @@ monotone_mkstemp(string & tmpl)
   if (xes == string::npos)
     return false;
 
-  char buf[len+1];
-  memcpy(buf, tmpl.data(), len);
+  std::vector<char> buf(len + 1);
+  memcpy(&buf[0], tmpl.data(), len);
   buf[len] = 0;
 
   seed_lfsr113();
@@ -148,11 +155,11 @@ monotone_mkstemp(string & tmpl)
           x /= NLETTERS;
         }
 
-      int fd = open(buf, O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
+      int fd = open(&buf[0], O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
       if (fd >= 0)
         {
           close(fd);
-          tmpl.replace(xes, 6, buf+xes, 6);
+          tmpl.replace(xes, 6, &buf[xes], 6);
           return true;
         }
       else if (errno != EEXIST)
@@ -160,55 +167,6 @@ monotone_mkstemp(string & tmpl)
     }
   return false;
 }
-
-#ifdef BUILD_UNIT_TESTS
-#include "sanity.hh"
-#include "unit_tests.hh"
-
-UNIT_TEST(mkstemp, basic)
-{
-  // This test verifies that we can create 100x3 temporary files in the
-  // same directory (using 3 different templates) and that the correct
-  // part of the template pathname is modified in each case.
-
-  char const * const cases[4] = {
-    "a-XXXXXX", "XXXXXX-b", "c-XXXXXX.dat", 0
-  };
-
-  for (int i = 0; cases[i]; i++)
-    for (int j = 0; j < 100; j++)
-      {
-        string r(cases[i]);
-        string s(cases[i]);
-        if (monotone_mkstemp(s))
-          {
-            UNIT_TEST_CHECK_MSG(r.length() == s.length(),
-                                FL("same length: from %s got %s")
-                                % r % s);
-            bool no_scribble = true;
-            for (string::size_type n = 0; n < r.length(); n++)
-              {
-                bool ok = r[n] == s[n];
-                if (r[n] == 'X')
-                  ok = !ok;
-                if (!ok)
-                  no_scribble = false;
-              }
-            UNIT_TEST_CHECK_MSG(no_scribble,
-                                FL("modify correct segment: from %s got %s")
-                                % r % s);
-          }
-        else
-          {
-            UNIT_TEST_CHECK_MSG(false,
-                                FL("mkstemp failed with template %s "
-                                   "(iteration %d, os error %s)")
-                                % r % (j+1) % strerror(errno));
-            break;
-          }
-      }
-}
-#endif
 
 // Local Variables:
 // mode: C++

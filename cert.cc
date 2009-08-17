@@ -8,250 +8,13 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <limits>
-#include <sstream>
-#include "vector.hh"
-
-#include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-
-#include "lexical_cast.hh"
 #include "cert.hh"
 #include "constants.hh"
-#include "database.hh"
-#include "interner.hh"
-#include "keys.hh"
-#include "key_store.hh"
 #include "netio.hh"
-#include "options.hh"
-#include "project.hh"
-#include "revision.hh"
-#include "sanity.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
-#include "ui.hh"
-#include "vocab_cast.hh"
 
-using std::make_pair;
-using std::map;
-using std::pair;
-using std::set;
 using std::string;
-using std::vector;
-using std::remove_if;
-
-using boost::shared_ptr;
-using boost::get;
-using boost::tuple;
-using boost::lexical_cast;
-
-// The alternaive is to #include "cert.hh" in vocab.*, which is even
-// uglier.
-
-#include "vocab_macros.hh"
-cc_DECORATE(revision)
-cc_DECORATE(manifest)
-template <typename T>
-static inline void
-verify(T & val)
-{}
-template class revision<cert>;
-template class manifest<cert>;
-
-// FIXME: the bogus-cert family of functions is ridiculous
-// and needs to be replaced, or at least factored.
-
-struct
-bogus_cert_p
-{
-  database & db;
-  bogus_cert_p(database & db) : db(db) {};
-
-  bool cert_is_bogus(cert const & c) const
-  {
-    cert_status status = check_cert(db, c);
-    if (status == cert_ok)
-      {
-        L(FL("cert ok"));
-        return false;
-      }
-    else if (status == cert_bad)
-      {
-        string txt;
-        cert_signable_text(c, txt);
-        W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
-        return true;
-      }
-    else
-      {
-        I(status == cert_unknown);
-        string txt;
-        cert_signable_text(c, txt);
-        W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
-        return true;
-      }
-  }
-
-  bool operator()(revision<cert> const & c) const
-  {
-    return cert_is_bogus(c.inner());
-  }
-
-  bool operator()(manifest<cert> const & c) const
-  {
-    return cert_is_bogus(c.inner());
-  }
-};
-
-void
-erase_bogus_certs(database & db,
-                  vector< manifest<cert> > & certs)
-{
-  typedef vector< manifest<cert> >::iterator it;
-  it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-  certs.erase(e, certs.end());
-
-  vector< manifest<cert> > tmp_certs;
-
-  // Sorry, this is a crazy data structure
-  typedef tuple< manifest_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
-    pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
-  trust_map trust;
-
-  for (it i = certs.begin(); i != certs.end(); ++i)
-    {
-      trust_key key = trust_key(manifest_id(i->inner().ident.inner()),
-                                i->inner().name,
-                                i->inner().value);
-      trust_map::iterator j = trust.find(key);
-      shared_ptr< set<rsa_keypair_id> > s;
-      if (j == trust.end())
-        {
-          s.reset(new set<rsa_keypair_id>());
-          trust.insert(make_pair(key, make_pair(s, i)));
-        }
-      else
-        s = j->second.first;
-      s->insert(i->inner().key);
-    }
-
-  for (trust_map::const_iterator i = trust.begin();
-       i != trust.end(); ++i)
-    {
-      if (db.hook_get_manifest_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          get<2>(i->first)))
-        {
-          if (global_sanity.debug_p())
-            L(FL("trust function liked %d signers of %s cert on manifest %s")
-              % i->second.first->size()
-              % get<1>(i->first)
-              % get<0>(i->first));
-          tmp_certs.push_back(*(i->second.second));
-        }
-      else
-        {
-          W(F("trust function disliked %d signers of %s cert on manifest %s")
-            % i->second.first->size()
-            % get<1>(i->first)
-            % get<0>(i->first));
-        }
-    }
-  certs = tmp_certs;
-}
-
-void
-erase_bogus_certs(database & db,
-                  vector< revision<cert> > & certs)
-{
-  typedef vector< revision<cert> >::iterator it;
-  it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-  certs.erase(e, certs.end());
-
-  vector< revision<cert> > tmp_certs;
-
-  // sorry, this is a crazy data structure
-  typedef tuple< revision_id, cert_name, cert_value > trust_key;
-  typedef map< trust_key, 
-    pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
-  trust_map trust;
-
-  for (it i = certs.begin(); i != certs.end(); ++i)
-    {
-      trust_key key = trust_key(i->inner().ident, 
-                                i->inner().name, 
-                                i->inner().value);
-      trust_map::iterator j = trust.find(key);
-      shared_ptr< set<rsa_keypair_id> > s;
-      if (j == trust.end())
-        {
-          s.reset(new set<rsa_keypair_id>());
-          trust.insert(make_pair(key, make_pair(s, i)));
-        }
-      else
-        s = j->second.first;
-      s->insert(i->inner().key);
-    }
-
-  for (trust_map::const_iterator i = trust.begin();
-       i != trust.end(); ++i)
-    {
-      if (db.hook_get_revision_cert_trust(*(i->second.first),
-                                          get<0>(i->first),
-                                          get<1>(i->first),
-                                          get<2>(i->first)))
-        {
-          if (global_sanity.debug_p())
-            L(FL("trust function liked %d signers of %s cert on revision %s")
-              % i->second.first->size()
-              % get<1>(i->first)
-              % get<0>(i->first));
-          tmp_certs.push_back(*(i->second.second));
-        }
-      else
-        {
-          W(F("trust function disliked %d signers of %s cert on revision %s")
-            % i->second.first->size()
-            % get<1>(i->first)
-            % get<0>(i->first));
-        }
-    }
-  certs = tmp_certs;
-}
-
-
-// cert-managing routines
-
-cert::cert()
-{}
-
-cert::cert(std::string const & s)
-{
-  read_cert(s, *this);
-}
-cert::cert(std::string const & s, origin::type m)
-  : origin_aware(m)
-{
-  read_cert(s, *this);
-}
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key)
-  : ident(ident), name(name), value(value), key(key)
-{}
-
-cert::cert(revision_id const & ident,
-           cert_name const & name,
-           cert_value const & value,
-           rsa_keypair_id const & key,
-           rsa_sha1_signature const & sig)
-  : ident(ident), name(name), value(value), key(key), sig(sig)
-{}
 
 bool
 cert::operator<(cert const & other) const
@@ -279,7 +42,7 @@ cert::operator==(cert const & other) const
 
 // netio support
 
-void
+static void
 read_cert(string const & in, cert & t)
 {
   size_t pos = 0;
@@ -304,42 +67,53 @@ read_cert(string const & in, cert & t)
            rsa_sha1_signature(sig, origin::network));
 
   id check;
-  cert_hash_code(tmp, check);
+  tmp.hash_code(check);
   if (!(check == hash))
     throw bad_decode(F("calculated cert hash '%s' does not match '%s'")
                      % check % hash);
   t = tmp;
 }
 
+cert::cert(std::string const & s)
+{
+  read_cert(s, *this);
+}
+
+cert::cert(std::string const & s, origin::type m)
+  : origin_aware(m)
+{
+  read_cert(s, *this);
+}
+
 void
-write_cert(cert const & t, string & out)
+cert::marshal_for_netio(string & out) const
 {
   string name, key;
   id hash;
 
-  cert_hash_code(t, hash);
+  hash_code(hash);
 
   out.append(hash());
-  out.append(t.ident.inner()());
-  insert_variable_length_string(t.name(), out);
-  insert_variable_length_string(t.value(), out);
-  insert_variable_length_string(t.key(), out);
-  insert_variable_length_string(t.sig(), out);
+  out.append(this->ident.inner()());
+  insert_variable_length_string(this->name(), out);
+  insert_variable_length_string(this->value(), out);
+  insert_variable_length_string(this->key(), out);
+  insert_variable_length_string(this->sig(), out);
 }
 
 void
-cert_signable_text(cert const & t, string & out)
+cert::signable_text(string & out) const
 {
-  base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()(),
-                                     t.ident.inner().made_from));
+  base64<cert_value> val_encoded(encode_base64(this->value));
+  string ident_encoded(encode_hexenc(this->ident.inner()(),
+                                     this->ident.inner().made_from));
 
   out.clear();
-  out.reserve(4 + t.name().size() + ident_encoded.size()
+  out.reserve(4 + this->name().size() + ident_encoded.size()
               + val_encoded().size());
 
   out += '[';
-  out.append(t.name());
+  out.append(this->name());
   out += '@';
   out.append(ident_encoded);
   out += ':';
@@ -350,200 +124,28 @@ cert_signable_text(cert const & t, string & out)
 }
 
 void
-cert_hash_code(cert const & t, id & out)
+cert::hash_code(id & out) const
 {
-  base64<rsa_sha1_signature> sig_encoded(encode_base64(t.sig));
-  base64<cert_value> val_encoded(encode_base64(t.value));
-  string ident_encoded(encode_hexenc(t.ident.inner()(),
-                                     t.ident.inner().made_from));
+  base64<rsa_sha1_signature> sig_encoded(encode_base64(this->sig));
+  base64<cert_value> val_encoded(encode_base64(this->value));
+  string ident_encoded(encode_hexenc(this->ident.inner()(),
+                                     this->ident.inner().made_from));
   string tmp;
   tmp.reserve(4 + ident_encoded.size()
-              + t.name().size() + val_encoded().size()
-              + t.key().size() + sig_encoded().size());
+              + this->name().size() + val_encoded().size()
+              + this->key().size() + sig_encoded().size());
   tmp.append(ident_encoded);
   tmp += ':';
-  tmp.append(t.name());
+  tmp.append(this->name());
   tmp += ':';
   append_without_ws(tmp, val_encoded());
   tmp += ':';
-  tmp.append(t.key());
+  tmp.append(this->key());
   tmp += ':';
   append_without_ws(tmp, sig_encoded());
 
   data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);
-}
-
-cert_status
-check_cert(database & db, cert const & t)
-{
-  string signed_text;
-  cert_signable_text(t, signed_text);
-  return db.check_signature(t.key, signed_text, t.sig);
-}
-
-bool
-put_simple_revision_cert(database & db,
-                         key_store & keys,
-                         revision_id const & id,
-                         cert_name const & nm,
-                         cert_value const & val)
-{
-  I(!keys.signing_key().empty());
-
-  cert t(id, nm, val, keys.signing_key);
-  string signed_text;
-  cert_signable_text(t, signed_text);
-  load_key_pair(keys, t.key);
-  keys.make_signature(db, t.key, signed_text, t.sig);
-
-  revision<cert> cc(t);
-  return db.put_revision_cert(cc);
-}
-
-// "special certs"
-
-// Guess which branch is appropriate for a commit below IDENT.
-// OPTS may override.  Branch name is returned in BRANCHNAME.
-// Does not modify branch state in OPTS.
-void
-guess_branch(options & opts, project_t & project,
-             revision_id const & ident, branch_name & branchname)
-{
-  if (opts.branch_given && !opts.branchname().empty())
-    branchname = opts.branchname;
-  else
-    {
-      E(!ident.inner()().empty(), origin::user,
-        F("no branch found for empty revision, "
-          "please provide a branch name"));
-
-      set<branch_name> branches;
-      project.get_revision_branches(ident, branches);
-
-      E(!branches.empty(), origin::user,
-        F("no branch certs found for revision %s, "
-          "please provide a branch name") % ident);
-
-      E(branches.size() == 1, origin::user,
-        F("multiple branch certs found for revision %s, "
-          "please provide a branch name") % ident);
-
-      set<branch_name>::iterator i = branches.begin();
-      I(i != branches.end());
-      branchname = *i;
-    }
-}
-
-// As above, but set the branch name in the options
-// if it wasn't already set.
-void
-guess_branch(options & opts, project_t & project, revision_id const & ident)
-{
-  branch_name branchname;
-  guess_branch(opts, project, ident, branchname);
-  opts.branchname = branchname;
-}
-
-void
-cert_revision_in_branch(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        branch_name const & branch)
-{
-  put_simple_revision_cert(db, keys, rev, branch_cert_name,
-                           typecast_vocab<cert_value>(branch));
-}
-
-void
-cert_revision_suspended_in_branch(database & db,
-                                  key_store & keys,
-                                  revision_id const & rev,
-                                  branch_name const & branch)
-{
-  put_simple_revision_cert(db, keys, rev, suspend_cert_name,
-                           typecast_vocab<cert_value>(branch));
-}
-
-
-// "standard certs"
-
-void
-cert_revision_date_time(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        date_t const & t)
-{
-  cert_value val = cert_value(t.as_iso_8601_extended(), origin::internal);
-  put_simple_revision_cert(db, keys, rev, date_cert_name, val);
-}
-
-void
-cert_revision_author(database & db,
-                     key_store & keys,
-                     revision_id const & rev,
-                     string const & author)
-{
-  put_simple_revision_cert(db, keys, rev, author_cert_name,
-                           cert_value(author, origin::user));
-}
-
-void
-cert_revision_tag(database & db,
-                  key_store & keys,
-                  revision_id const & rev,
-                  string const & tagname)
-{
-  put_simple_revision_cert(db, keys, rev, tag_cert_name,
-                           cert_value(tagname, origin::user));
-}
-
-void
-cert_revision_changelog(database & db,
-                        key_store & keys,
-                        revision_id const & rev,
-                        utf8 const & log)
-{
-  put_simple_revision_cert(db, keys, rev, changelog_cert_name,
-                           typecast_vocab<cert_value>(log));
-}
-
-void
-cert_revision_comment(database & db,
-                      key_store & keys,
-                      revision_id const & rev,
-                      utf8 const & comment)
-{
-  put_simple_revision_cert(db, keys, rev, comment_cert_name,
-                           typecast_vocab<cert_value>(comment));
-}
-
-void
-cert_revision_testresult(database & db,
-                         key_store & keys,
-                         revision_id const & rev,
-                         string const & results)
-{
-  bool passed = false;
-  if (lowercase(results) == "true" ||
-      lowercase(results) == "yes" ||
-      lowercase(results) == "pass" ||
-      results == "1")
-    passed = true;
-  else if (lowercase(results) == "false" ||
-           lowercase(results) == "no" ||
-           lowercase(results) == "fail" ||
-           results == "0")
-    passed = false;
-  else
-    throw recoverable_failure(origin::user,
-                              "could not interpret test results, "
-                              "tried '0/1' 'yes/no', 'true/false', "
-                              "'pass/fail'");
-
-  put_simple_revision_cert(db, keys, rev, testresult_cert_name,
-                           cert_value(lexical_cast<string>(passed),
-                                      origin::internal));
 }
 
 // Local Variables:

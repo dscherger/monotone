@@ -71,7 +71,7 @@ namespace commands {
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
 // point (2) in notes/release-checklist.txt
-static string const interface_version = "9.0";
+static string const interface_version = "10.0";
 
 // Name: interface_version
 // Arguments: none
@@ -361,6 +361,8 @@ CMD_AUTOMATE(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
+  options original_opts = app.opts;
+
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
@@ -408,23 +410,18 @@ CMD_AUTOMATE(stdio, "",
           cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
 
-          // reset the application's global options
-          options::options_type opts;
-          opts = options::opts::all_options() - options::opts::globals();
-          opts.instantiate(&app.opts).reset();
-
           if (cmd->use_workspace_options())
             {
               // Re-read the ws options file, rather than just copying
               // the options from the previous apts.opts object, because
               // the file may have changed due to user activity.
-              workspace::check_ws_format();
-              workspace::get_ws_options(app.opts);
+              workspace::check_format();
+              workspace::get_options(app.opts);
             }
 
+          options::options_type opts;
           opts = options::opts::globals() | cmd->opts();
           opts.instantiate(&app.opts).from_key_value_pairs(params);
-
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure
@@ -447,8 +444,12 @@ CMD_AUTOMATE(stdio, "",
 
       try
         {
-          automate const * acmd = reinterpret_cast< automate const * >(cmd);
+          automate const * acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd);
           acmd->exec_from_automate(app, id, args, os);
+          // set app.opts to the originally given options
+          // so the next command has an identical setup
+          app.opts = original_opts;
         }
       catch(recoverable_failure & f)
         {
@@ -538,14 +539,16 @@ LUAEXT(mtn_automate, )
           // Re-read the ws options file, rather than just copying
           // the options from the previous apts.opts object, because
           // the file may have changed due to user activity.
-          workspace::check_ws_format();
-          workspace::get_ws_options(app_p->opts);
+          workspace::check_format();
+          workspace::get_options(app_p->opts);
         }
 
       opts.instantiate(&app_p->opts).from_command_line(args, false);
       args_vector & parsed_args = app_p->opts.args;
 
-      commands::automate const * acmd = reinterpret_cast< commands::automate const * >(cmd);
+      commands::automate const * acmd
+        = dynamic_cast< commands::automate const * >(cmd);
+      I(acmd);
       acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // allow further calls

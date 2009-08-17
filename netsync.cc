@@ -1,5 +1,5 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2004 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -367,16 +367,16 @@ protected:
   string_queue inbuf;
 private:
   deque< pair<string, size_t> > outbuf;
-  size_t outbuf_size; // so we can avoid queueing up too much stuff
+  size_t outbuf_bytes; // so we can avoid queueing up too much stuff
 protected:
   void queue_output(string const & s)
   {
     outbuf.push_back(make_pair(s, 0));
-    outbuf_size += s.size();
+    outbuf_bytes += s.size();
   }
   bool output_overfull() const
   {
-    return outbuf.size() > constants::bufsz * 10;
+    return outbuf_bytes > constants::bufsz * 10;
   }
 public:
   string peer_id;
@@ -386,7 +386,7 @@ private:
   time_t last_io_time;
 public:
 
-  enum 
+  enum
     {
       working_state,
       shutdown_state,
@@ -398,7 +398,7 @@ public:
 
   session_base(string const & peer_id,
                shared_ptr<Netxx::StreamBase> str) :
-    outbuf_size(0),
+    outbuf_bytes(0),
     peer_id(peer_id), str(str),
     last_io_time(::time(NULL)),
     protocol_state(working_state),
@@ -529,7 +529,7 @@ session_base::write_some()
     {
       if ((size_t)count == writelen)
         {
-          outbuf_size -= outbuf.front().first.size();
+          outbuf_bytes -= outbuf.front().first.size();
           outbuf.pop_front();
         }
       else
@@ -855,7 +855,7 @@ session::session(options & opts,
   keys(keys),
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
-  signing_key(opts.signing_key),
+  signing_key(keys.signing_key),
   keys_to_push(opts.keys_to_push),
   armed(false),
   received_remote_key(false),
@@ -1063,16 +1063,16 @@ session::note_rev(revision_id const & rev)
 }
 
 void
-session::note_cert(id const & c)
+session::note_cert(id const & i)
 {
   if (role == sink_role)
     return;
-  revision<cert> cert;
+  cert c;
   string str;
-  project.db.get_revision_cert(c, cert);
-  write_cert(cert.inner(), str);
-  queue_data_cmd(cert_item, c, str);
-  sent_certs.push_back(cert.inner());
+  project.db.get_revision_cert(i, c);
+  c.marshal_for_netio(str);
+  queue_data_cmd(cert_item, i, str);
+  sent_certs.push_back(c);
 }
 
 
@@ -1615,7 +1615,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
                   "'%s unset %s %s' overrides this check")
                 % printable_key_hash
                 % expected_key_hash
-                % ui.prog_name % their_key_key.first % their_key_key.second);
+                % prog_name % their_key_key.first % their_key_key.second);
               E(false, origin::network, F("server key changed"));
             }
         }
@@ -1642,7 +1642,7 @@ session::process_hello_cmd(rsa_keypair_id const & their_keyname,
               "on your local database before you run this command again,\n"
               "assuming that key currently present in your database does NOT have\n"
               "a private counterpart (or in other words, is one of YOUR keys)")
-            % their_keyname % ui.prog_name % their_keyname);
+            % their_keyname % prog_name % their_keyname);
         }
       else
         {
@@ -2206,10 +2206,10 @@ session::load_data(netcmd_item_type type,
 
     case cert_item:
       {
-        revision<cert> c;
+        cert c;
         project.db.get_revision_cert(item, c);
         string tmp;
-        write_cert(c.inner(), out);
+        c.marshal_for_netio(out);
       }
       break;
     }
@@ -2268,12 +2268,16 @@ session::process_data_cmd(netcmd_item_type type,
             // It is safe to call 'error' here, because if we get here,
             // then the current netcmd packet cannot possibly have
             // written anything to the database.
+            hexenc<data> my_epoch;
+            hexenc<data> their_epoch;
+            encode_hexenc(i->second.inner(), my_epoch);
+            encode_hexenc(epoch.inner(), their_epoch);
             error(mixing_versions,
                   (F("Mismatched epoch on branch %s."
                      " Server has '%s', client has '%s'.")
                    % branch
-                   % (voice == server_voice ? i->second : epoch)
-                   % (voice == server_voice ? epoch : i->second)).str());
+                   % (voice == server_voice ? my_epoch : their_epoch)()
+                   % (voice == server_voice ? their_epoch : my_epoch)()).str());
           }
       }
       maybe_note_epochs_finished();
@@ -2303,13 +2307,12 @@ session::process_data_cmd(netcmd_item_type type,
 
     case cert_item:
       {
-        cert c;
-        read_cert(dat, c);
+        cert c(dat);
         id tmp;
-        cert_hash_code(c, tmp);
+        c.hash_code(tmp);
         if (! (tmp == item))
           throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
-        if (project.db.put_revision_cert(revision<cert>(c)))
+        if (project.db.put_revision_cert(c))
           written_certs.push_back(c);
       }
       break;
@@ -2317,8 +2320,13 @@ session::process_data_cmd(netcmd_item_type type,
     case revision_item:
       {
         L(FL("received revision '%s'") % hitem());
+        data d(dat, origin::network);
+        id tmp;
+        calculate_ident(d, tmp);
+        if (!(tmp == item))
+          throw bad_decode(F("hash check failed for revision %s") % item);
         revision_t rev;
-        read_revision(data(dat, origin::network), rev);
+        read_revision(d, rev);
         if (project.db.put_revision(revision_id(item), rev))
           written_revisions.push_back(revision_id(item));
       }
@@ -2327,8 +2335,13 @@ session::process_data_cmd(netcmd_item_type type,
     case file_item:
       {
         L(FL("received file '%s'") % hitem());
+        data d(dat, origin::network);
+        id tmp;
+        calculate_ident(d, tmp);
+        if (!(tmp == item))
+          throw bad_decode(F("hash check failed for file %s") % item);
         project.db.put_file(file_id(item),
-                            file_data(dat, origin::network));
+                            file_data(d));
       }
       break;
     }
@@ -2588,11 +2601,19 @@ session::begin_service()
 void
 session::maybe_step()
 {
+  date_t start_time = date_t::now();
+
   while (done_all_refinements()
          && !rev_enumerator.done()
          && !output_overfull())
     {
       rev_enumerator.step();
+
+      // Safety check, don't spin too long without
+      // returning to the event loop.
+      s64 elapsed_millisec = date_t::now() - start_time;
+      if (elapsed_millisec > 1000 * 10)
+        break;
     }
 }
 
@@ -2657,6 +2678,13 @@ bool session::process(transaction_guard & guard)
     {
       W(F("protocol error while processing peer %s: '%s'")
         % peer_id % bd.what);
+      return false;
+    }
+  catch (recoverable_failure & rf)
+    {
+      W(F("recoverable '%s' error while processing peer %s: '%s'")
+        % origin::type_to_string(rf.caused_by())
+        % peer_id % rf.what());
       return false;
     }
   catch (netsync_error & err)
@@ -2860,6 +2888,13 @@ class reactor
               % item->name() % bd.what);
             remove(item);
           }
+        catch (recoverable_failure & rf)
+          {
+            W(F("recoverable '%s' error while processing peer %s: '%s'")
+              % origin::type_to_string(rf.caused_by())
+              % item->name() % rf.what());
+            remove(item);
+          }
       }
     else
       {
@@ -3051,11 +3086,11 @@ build_stream_to_server(options & opts, lua_hooks & lua,
 #else
       bool use_ipv6=false;
 #endif
-      string host(info.client.u.host);
+      string host(info.client.uri.host);
       if (host.empty())
         host = info.client.unparsed();
-      if (!info.client.u.port.empty())
-        default_port = lexical_cast<Netxx::port_type>(info.client.u.port);
+      if (!info.client.uri.port.empty())
+        default_port = lexical_cast<Netxx::port_type>(info.client.uri.port);
       Netxx::Address addr(info.client.unparsed().c_str(),
                           default_port, use_ipv6);
       return shared_ptr<Netxx::StreamBase>
@@ -3165,7 +3200,7 @@ session_from_server_sync_item(options & opts,
   info.client.include_pattern = globish(request.include, origin::user);
   info.client.exclude_pattern = globish(request.exclude, origin::user);
   info.client.use_argv = false;
-  parse_uri(info.client.unparsed(), info.client.u,
+  parse_uri(info.client.unparsed(), info.client.uri,
             origin::user /* from lua hook */);
 
   try
@@ -3342,21 +3377,21 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
          i != branchnames.end(); ++i)
       {
         // Get branch certs.
-        vector< revision<cert> > certs;
+        vector<cert> certs;
         project.get_branch_certs(*i, certs);
-        for (vector< revision<cert> >::const_iterator j = certs.begin();
+        for (vector<cert>::const_iterator j = certs.begin();
              j != certs.end(); j++)
           {
-            revision_id rid(j->inner().ident);
+            revision_id rid(j->ident);
             insert_with_parents(rid, rev_refiner, rev_enumerator,
                                 revision_ids, revisions_ticker);
             // Branch certs go in here, others later on.
             id item;
-            cert_hash_code(j->inner(), item);
+            j->hash_code(item);
             cert_refiner.note_local_item(item);
             rev_enumerator.note_cert(rid, item);
-            if (inserted_keys.find(j->inner().key) == inserted_keys.end())
-              inserted_keys.insert(j->inner().key);
+            if (inserted_keys.find(j->key) == inserted_keys.end())
+              inserted_keys.insert(j->key);
           }
       }
   }

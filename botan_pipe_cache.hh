@@ -1,6 +1,3 @@
-#ifndef __BOTAN_PIPE_CACHE_HH__
-#define __BOTAN_PIPE_CACHE_HH__
-
 // Copyright (C) 2008 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __BOTAN_PIPE_CACHE_HH__
+#define __BOTAN_PIPE_CACHE_HH__
 
 #include <botan/botan.h>
 #include <boost/scoped_ptr.hpp>
@@ -45,6 +45,10 @@ public:
   Botan::Pipe * operator->()
   { I(pipe); return pipe.get(); }
 
+  // To avoid re-using a pipe that's thrown.
+  void reset(Botan::Pipe * p)
+  { pipe.reset(p); }
+
   // ??? operator bool, operator! a la boost::scoped_ptr
   // (what's with the bizarro unspecified_bool_type thing?)
 };
@@ -80,6 +84,8 @@ inline cached_botan_pipe::cached_botan_pipe(Botan::Pipe * p)
   global_pipe_cleanup_object->to_be_destroyed = this;
 }
 
+#endif // __BOTAN_PIPE_CACHE_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -87,5 +93,3 @@ inline cached_botan_pipe::cached_botan_pipe(Botan::Pipe * p)
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __BOTAN_PIPE_CACHE_HH__

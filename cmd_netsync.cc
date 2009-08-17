@@ -1,14 +1,23 @@
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include "base.hh"
 #include "cmd.hh"
 
-#include "diff_patch.hh"
+#include "merge_content.hh"
 #include "netcmd.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
 #include "cert.hh"
 #include "revision.hh"
-#include "ui.hh"
 #include "uri.hh"
 #include "vocab_cast.hh"
 #include "platform-wrapped.hh"
@@ -18,6 +27,7 @@
 #include "database.hh"
 #include "roster.hh"
 #include "vocab_cast.hh"
+#include "ui.hh"
 
 #include <fstream>
 
@@ -47,22 +57,14 @@ find_key(options & opts,
          netsync_connection_info const & info,
          bool need_key = true)
 {
-  if (!opts.signing_key().empty())
-    return;
-
-  rsa_keypair_id key;
-
   utf8 host(info.client.unparsed);
-  if (!info.client.u.host.empty())
-    host = utf8(info.client.u.host, origin::user);
+  if (!info.client.uri.host.empty())
+    host = utf8(info.client.uri.host, origin::user);
 
-  if (!lua.hook_get_netsync_key(host,
-                                info.client.include_pattern,
-                                info.client.exclude_pattern, key)
-      && need_key)
-    get_user_key(opts, lua, db, keys, key);
-
-  opts.signing_key = key;
+  cache_netsync_key(opts, lua, db, keys, host,
+                    info.client.include_pattern,
+                    info.client.exclude_pattern,
+                    need_key ? KEY_REQUIRED : KEY_OPTIONAL);
 }
 
 static void
@@ -85,8 +87,8 @@ build_client_connection_info(options & opts,
       info.client.unparsed = typecast_vocab<utf8>(addr_value);
       L(FL("using default server address: %s") % info.client.unparsed);
     }
-  parse_uri(info.client.unparsed(), info.client.u, origin::user);
-  if (info.client.u.query.empty() && !include_or_exclude_given)
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+  if (info.client.uri.query.empty() && !include_or_exclude_given)
     {
       // No include/exclude given anywhere, use the defaults.
       E(db.var_exists(default_include_pattern_key), origin::user,
@@ -105,7 +107,7 @@ build_client_connection_info(options & opts,
         info.client.exclude_pattern = globish();
       L(FL("excluding: %s") % info.client.exclude_pattern);
     }
-  else if(!info.client.u.query.empty())
+  else if(!info.client.uri.query.empty())
     {
       E(!include_or_exclude_given, origin::user,
         F("Include/exclude pattern was given both as part of the URL and as a separate argument."));
@@ -113,7 +115,7 @@ build_client_connection_info(options & opts,
       // Pull include/exclude from the query string
       char const separator = '/';
       char const negate = '-';
-      string const & query(info.client.u.query);
+      string const & query(info.client.uri.query);
       std::vector<arg_type> includes, excludes;
       string::size_type begin = 0;
       string::size_type end = query.find(separator);
@@ -181,12 +183,12 @@ build_client_connection_info(options & opts,
       }
 
   info.client.use_argv =
-    lua.hook_get_netsync_connect_command(info.client.u,
+    lua.hook_get_netsync_connect_command(info.client.uri,
                                          info.client.include_pattern,
                                          info.client.exclude_pattern,
                                          global_sanity.debug_p(),
                                          info.client.argv);
-  opts.use_transport_auth = lua.hook_use_transport_auth(info.client.u);
+  opts.use_transport_auth = lua.hook_use_transport_auth(info.client.uri);
   if (opts.use_transport_auth)
     {
       find_key(opts, lua, db, keys, info, need_key);
@@ -256,7 +258,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  args, info, false);
 
-  if (app.opts.signing_key() == "")
+  if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
   run_netsync_protocol(app.opts, app.lua, project, keys,
@@ -292,26 +294,44 @@ CMD(sync, "sync", "", CMD_REF(network),
 class dir_cleanup_helper
 {
 public:
-  dir_cleanup_helper(system_path const & new_dir, bool i_db) :
-                  commited(false), internal_db(i_db), dir(new_dir) {}
+  dir_cleanup_helper(system_path const & new_dir, bool i_db)
+    : committed(false), internal_db(i_db), dir(new_dir)
+  {}
   ~dir_cleanup_helper()
   {
-    if (!commited && directory_exists(dir))
+    if (!committed && directory_exists(dir))
       {
-#ifdef WIN32
+        // Don't need to worry about where the db is on Unix.
+#ifndef WIN32
+        internal_db = false;
+#endif
+
+        // This is probably happening in the middle of another exception.
+        // Do not let anything that delete_dir_recursive throws escape, or
+        // the runtime will call std::terminate...
         if (!internal_db)
-          delete_dir_recursive(dir);
-#else
-        delete_dir_recursive(dir);
-#endif /* WIN32 */
+          {
+            try
+              {
+                delete_dir_recursive(dir);
+              }
+            catch (std::exception const & ex)
+              {
+                ui.fatal_exception(ex);
+              }
+            catch (...)
+              {
+                ui.fatal_exception();
+              }
+          }
       }
   }
   void commit(void)
   {
-    commited = true;
+    committed = true;
   }
 private:
-  bool commited;
+  bool committed;
   bool internal_db;
   system_path dir;
 };
@@ -365,12 +385,12 @@ CMD(clone, "clone", "", CMD_REF(network),
                                   / bookkeeping_root_component
                                   / ws_internal_db_file_name);
 
-  // this is actually stupid, but app.opts.branchname must be set here
+  // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
   // a revision is chosen which has multiple branch certs
-  app.opts.branchname = branchname;
+  app.opts.branch = branchname;
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
-  app.opts.branchname = branch_name();
+  app.opts.branch = branch_name();
 
   database db(app);
   if (get_path_status(db.get_filename()) == path::nonexistent)
@@ -387,7 +407,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   build_client_connection_info(app.opts, app.lua, db, keys,
                                info, true, true, false);
 
-  if (app.opts.signing_key() == "")
+  if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
   // make sure we're back in the original dir so that file: URIs work
@@ -413,7 +433,7 @@ CMD(clone, "clone", "", CMD_REF(network),
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % ui.prog_name);
+          P(F("choose one with '%s clone -r<id> SERVER BRANCH'") % prog_name);
           E(false, origin::user, F("branch %s has multiple heads") % branchname);
         }
       ident = *(heads.begin());
@@ -444,10 +464,8 @@ CMD(clone, "clone", "", CMD_REF(network),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
+  work.perform_content_update(empty_roster, current_roster, checkout, wca, false);
 
-  work.perform_content_update(db, checkout, wca, false);
-
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
   guard.commit();
   remove_on_fail.commit();

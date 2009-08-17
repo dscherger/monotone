@@ -1,3 +1,11 @@
+-- Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
 
 -- this is the "testing" set of lua hooks for monotone
 -- it's intended to support self-tests, not for use in
@@ -47,6 +55,10 @@ end
 
 function get_author(branchname)
 	return "tester@test.net"
+end
+
+function get_date_format_spec()
+        return ""
 end
 
 function ignore_file(name)

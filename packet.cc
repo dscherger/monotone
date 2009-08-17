@@ -71,14 +71,14 @@ packet_writer::consume_revision_data(revision_id const & ident,
 }
 
 void
-packet_writer::consume_revision_cert(revision<cert> const & t)
+packet_writer::consume_revision_cert(cert const & t)
 {
-  ost << "[rcert " << encode_hexenc(t.inner().ident.inner()(),
-                                    t.inner().ident.inner().made_from) << '\n'
-      << "       " << t.inner().name() << '\n'
-      << "       " << t.inner().key() << '\n'
-      << "       " << trim(encode_base64(t.inner().value)()) << "]\n"
-      << trim(encode_base64(t.inner().sig)()) << '\n'
+  ost << "[rcert " << encode_hexenc(t.ident.inner()(),
+                                    t.ident.inner().made_from) << '\n'
+      << "       " << t.name() << '\n'
+      << "       " << t.key() << '\n'
+      << "       " << trim(encode_base64(t.value)()) << "]\n"
+      << trim(encode_base64(t.sig)()) << '\n'
       << "[end]\n";
 }
 
@@ -202,7 +202,7 @@ namespace
     }
     static void read_rest(istream& in, string& dest)
     {
-    
+
       while (true)
         {
           string t;
@@ -218,8 +218,8 @@ namespace
       string certid; iss >> certid; validate_id(certid);
       string name;   iss >> name;   validate_certname(name);
       string keyid;  iss >> keyid;  validate_key(keyid);
-      string val;    
-      read_rest(iss,val);           validate_arg_base64(val);    
+      string val;
+      read_rest(iss,val);           validate_arg_base64(val);
 
       revision_id hash(decode_hexenc_as<revision_id>(certid, made_from));
       validate_base64(body);
@@ -230,7 +230,7 @@ namespace
                     decode_base64_as<cert_value>(val, made_from),
                     rsa_keypair_id(keyid, made_from),
                     decode_base64_as<rsa_sha1_signature>(body, made_from));
-      cons.consume_revision_cert(revision<cert>(t));
+      cons.consume_revision_cert(t);
     }
 
     void pubkey_packet(string const & args, string const & body) const
@@ -266,7 +266,7 @@ namespace
       cons.consume_old_private_key(rsa_keypair_id(args, made_from),
                                    decode_base64_as<old_arc4_rsa_priv_key>(body, made_from));
     }
-  
+
     void operator()(string const & type,
                     string const & args,
                     string const & body) const
@@ -308,7 +308,7 @@ extract_packets(string const & s, packet_consumer & cons)
     scanning_args, found_args, scanning_body,
     end_1, end_2, end_3, end_4, end_5
   } state = skipping;
-  
+
   for (p = s.begin(); p != s.end(); p++)
     switch (state)
       {
@@ -398,156 +398,6 @@ read_packets(istream & in, packet_consumer & cons)
 }
 
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-#include "xdelta.hh"
-#include "vocab_cast.hh"
-
-using std::ostringstream;
-
-UNIT_TEST(packet, validators)
-{
-  ostringstream oss;
-  packet_writer pw(oss);
-  size_t count;
-  feed_packet_consumer f(count, pw, origin::user);
-
-#define N_THROW(expr) UNIT_TEST_CHECK_NOT_THROW(expr, recoverable_failure)
-#define Y_THROW(expr) UNIT_TEST_CHECK_THROW(expr, recoverable_failure)
-
-  // validate_id
-  N_THROW(f.validate_id("5d7005fadff386039a8d066684d22d369c1e6c94"));
-  Y_THROW(f.validate_id(""));
-  Y_THROW(f.validate_id("5d7005fadff386039a8d066684d22d369c1e6c9"));
-  for (int i = 1; i < std::numeric_limits<unsigned char>::max(); i++)
-    if (!((i >= '0' && i <= '9')
-          || (i >= 'a' && i <= 'f')))
-      Y_THROW(f.validate_id(string("5d7005fadff386039a8d066684d22d369c1e6c9")
-                            + char(i)));
-
-  // validate_base64
-  N_THROW(f.validate_base64("YmwK"));
-  N_THROW(f.validate_base64(" Y m x h a A o = "));
-  N_THROW(f.validate_base64("ABCD EFGH IJKL MNOP QRST UVWX YZ"
-                            "abcd efgh ijkl mnop qrst uvwx yz"
-                            "0123 4567 89/+ z\t=\r=\n="));
-
-  Y_THROW(f.validate_base64(""));
-  Y_THROW(f.validate_base64("!@#$"));
-
-  // validate_key
-  N_THROW(f.validate_key("graydon@venge.net"));
-  N_THROW(f.validate_key("dscherger+mtn"));
-  N_THROW(f.validate_key("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                         "abcdefghijklmnopqrstuvwxyz"
-                         "0123456789-.@+_"));
-  Y_THROW(f.validate_key(""));
-  Y_THROW(f.validate_key("graydon at venge dot net"));
-
-  // validate_certname
-  N_THROW(f.validate_certname("graydon-at-venge-dot-net"));
-  N_THROW(f.validate_certname("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                              "abcdefghijklmnopqrstuvwxyz"
-                              "0123456789-"));
-    
-  Y_THROW(f.validate_certname(""));
-  Y_THROW(f.validate_certname("graydon@venge.net"));
-  Y_THROW(f.validate_certname("graydon at venge dot net"));
-
-  // validate_no_more_args
-  {
-    istringstream iss("a b");
-    string a; iss >> a; UNIT_TEST_CHECK(a == "a");
-    string b; iss >> b; UNIT_TEST_CHECK(b == "b");
-    N_THROW(f.validate_no_more_args(iss));
-  }
-  {
-    istringstream iss("a ");
-    string a; iss >> a; UNIT_TEST_CHECK(a == "a");
-    N_THROW(f.validate_no_more_args(iss));
-  }
-  {
-    istringstream iss("a b");
-    string a; iss >> a; UNIT_TEST_CHECK(a == "a");
-    Y_THROW(f.validate_no_more_args(iss));
-  }
-}
-
-UNIT_TEST(packet, roundabout)
-{
-  string tmp;
-
-  {
-    ostringstream oss;
-    packet_writer pw(oss);
-
-    // an fdata packet
-    file_data fdata(data("this is some file data"));
-    file_id fid;
-    calculate_ident(fdata, fid);
-    pw.consume_file_data(fid, fdata);
-
-    // an fdelta packet
-    file_data fdata2(data("this is some file data which is not the same as the first one"));
-    file_id fid2;
-    calculate_ident(fdata2, fid2);
-    delta del;
-    diff(fdata.inner(), fdata2.inner(), del);
-    pw.consume_file_delta(fid, fid2, file_delta(del));
-
-    // a rdata packet
-    revision_t rev;
-    rev.new_manifest = decode_hexenc_as<manifest_id>(
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", origin::internal);
-    shared_ptr<cset> cs(new cset);
-    cs->dirs_added.insert(file_path_internal(""));
-    rev.edges.insert(make_pair(decode_hexenc_as<revision_id>(
-      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", origin::internal), cs));
-    revision_data rdat;
-    write_revision(rev, rdat);
-    revision_id rid;
-    calculate_ident(rdat, rid);
-    pw.consume_revision_data(rid, rdat);
-
-    // a cert packet
-    cert_value val("peaches");
-    rsa_sha1_signature sig("blah blah there is no way this is a valid signature");
-
-    // cert now accepts revision_id exclusively, so we need to cast the
-    // file_id to create a cert to test the packet writer with.
-    cert c(typecast_vocab<revision_id>(fid.inner()), cert_name("smell"), val,
-           rsa_keypair_id("fun@moonman.com"), sig);
-    pw.consume_revision_cert(revision<cert>(c));
-
-    keypair kp;
-    // a public key packet
-    kp.pub = rsa_pub_key("this is not a real rsa key");
-    pw.consume_public_key(rsa_keypair_id("test@lala.com"), kp.pub);
-
-    // a keypair packet
-    kp.priv = rsa_priv_key("this is not a real rsa key either!");
-    pw.consume_key_pair(rsa_keypair_id("test@lala.com"), kp);
-
-    // an old privkey packet
-    old_arc4_rsa_priv_key oldpriv("and neither is this!");
-    pw.consume_old_private_key(rsa_keypair_id("test@lala.com"), oldpriv);
-
-    tmp = oss.str();
-  }
-
-  for (int i = 0; i < 10; ++i)
-    {
-      // now spin around sending and receiving this a few times
-      ostringstream oss;
-      packet_writer pw(oss);
-      istringstream iss(tmp);
-      read_packets(iss, pw);
-      UNIT_TEST_CHECK(oss.str() == tmp);
-      tmp = oss.str();
-    }
-}
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

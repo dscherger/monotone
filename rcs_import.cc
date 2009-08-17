@@ -28,6 +28,7 @@
 #include "constants.hh"
 #include "cycle_detector.hh"
 #include "database.hh"
+#include "dates.hh"
 #include "file_io.hh"
 #include "interner.hh"
 #include "paths.hh"
@@ -1370,7 +1371,7 @@ cluster_consumer::store_auxiliary_certs(prepared_revision const & p)
                              branch_name(branchname, origin::user),
                              utf8(cvs.changelog_interner.lookup(p.changelog),
                                   origin::internal),
-                             date_t(p.time),
+                             date_t(p.time * 1000),
                              cvs.author_interner.lookup(p.author));
 }
 

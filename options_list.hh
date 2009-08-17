@@ -1,6 +1,12 @@
-// Copyright 2008 Stephen Leake <stephen_leake@stephe-leake.org>
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 /*
  * This is a list of all options that monotone can take, what variables
@@ -44,14 +50,14 @@
 // This is a shortcut for an option which has its own variable and optset.
 // It will take an argument unless 'type' is 'bool'.
 #define OPT(name, string, type, default_, description)               \
-  OPTVAR(name, type, name, default_)					\
+  OPTVAR(name, type, name, default_)                                    \
   OPTION(name, name, has_arg<type >(), string, description)
 
 // This is the same, except that the option and variable belong to the
 // 'globals' optset. These are global options, not specific to a particular
 // command.
-#define GOPT(name, string, type, default_, description)			\
-  OPTVAR(globals, type, name, default_)					\
+#define GOPT(name, string, type, default_, description)                 \
+  OPTVAR(globals, type, name, default_)                                 \
   OPTION(globals, name, has_arg<type >(), string, description)
 
 // because 'default_' is constructor arguments, and may need to be a list
@@ -113,12 +119,11 @@ OPTION(bind_opts, bind_stdio, false, "stdio",
 }
 #endif
 
-OPTVAR(branch, branch_name, branchname, )
-OPTION(branch, branch, true, "branch,b",
+OPT(branch, "branch,b", branch_name, ,
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
 {
-  branchname = branch_name(arg, origin::user);
+  branch = branch_name(arg, origin::user);
 }
 #endif
 
@@ -175,6 +180,22 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
+OPT(date_fmt, "date-format", std::string, ,
+    gettext_noop("strftime(3) format specification for printing dates"))
+#ifdef option_bodies
+{
+  date_fmt = arg;
+}
+#endif
+
+OPT(format_dates, "no-format-dates", bool, true,
+    gettext_noop("print date certs exactly as stored in the database"))
+#ifdef option_bodies
+{
+  format_dates = false;
+}
+#endif
+
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
@@ -212,6 +233,14 @@ OPTION(diff_options, external_diff_args, true, "diff-args",
 }
 #endif
 
+OPTVAR(diff_options, bool, reverse, false)
+OPTION(diff_options, reverse, false, "reverse",
+        gettext_noop("reverse order of diff"))
+#ifdef option_bodies
+{
+  reverse = true;
+}
+#endif
 OPTVAR(diff_options, diff_type, diff_format, unified_diff)
 OPTION(diff_options, diff_context, false, "context",
         gettext_noop("use context diff format"))
@@ -311,6 +340,15 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 }
 #endif
 
+OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
+        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+                     "before proceeding with any workspace change"))
+#ifdef option_bodies
+{
+  move_conflicting_paths = true;
+}
+#endif
+
 GOPT(ssh_sign, "ssh-sign", std::string, "yes",
      gettext_noop("controls use of ssh-agent.  valid arguments are: "
                   "'yes' to use ssh-agent to make signatures if possible, "
@@ -345,6 +383,14 @@ GOPT(help, "help,h", bool, false, gettext_noop("display help message"))
 #ifdef option_bodies
 {
   help = true;
+}
+#endif
+
+OPT(show_hidden_commands, "hidden", bool, false,
+     gettext_noop("show hidden commands"))
+#ifdef option_bodies
+{
+  show_hidden_commands = true;
 }
 #endif
 
@@ -722,6 +768,74 @@ OPTION(conflicts_opts, conflicts_file, true, "conflicts-file",
     origin::user,
     F("conflicts file must be under _MTN"));
   conflicts_file = bookkeeping_path(arg, origin::user);
+}
+#endif
+
+OPT(use_one_changelog, "use-one-changelog", bool, false,
+    gettext_noop("use only one changelog cert for the git commit message"))
+#ifdef option_bodies
+{
+  use_one_changelog = true;
+}
+#endif
+
+OPT(authors_file, "authors-file", system_path, ,
+    gettext_noop("file mapping author names from original to new values"))
+#ifdef option_bodies
+{
+  authors_file = system_path(arg, origin::user);
+}
+#endif
+
+OPT(branches_file, "branches-file", system_path, ,
+    gettext_noop("file mapping branch names from original to new values "))
+#ifdef option_bodies
+{
+  branches_file = system_path(arg, origin::user);
+}
+#endif
+
+OPT(refs, "refs", std::set<std::string>, ,
+    gettext_noop("include git refs for 'revs', 'roots' or 'leaves'"))
+#ifdef option_bodies
+{
+  if (arg == "revs" || arg == "roots" || arg == "leaves")
+    refs.insert(arg);
+  else
+    throw bad_arg_internal
+      (F("git ref type must be 'revs', 'roots', or 'leaves'").str());
+}
+#endif
+
+OPT(log_revids, "log-revids", bool, false,
+    gettext_noop("include revision ids in commit logs"))
+#ifdef option_bodies
+{
+  log_revids = true;
+}
+#endif
+
+OPT(log_certs, "log-certs", bool, false,
+    gettext_noop("include standard cert values in commit logs"))
+#ifdef option_bodies
+{
+  log_certs = true;
+}
+#endif
+
+OPT(import_marks, "import-marks", system_path, ,
+    gettext_noop("load the internal marks table before exporting revisions"))
+#ifdef option_bodies
+{
+  import_marks = system_path(arg, origin::user);
+}
+#endif
+
+OPT(export_marks, "export-marks", system_path, ,
+    gettext_noop("save the internal marks table after exporting revisions"))
+#ifdef option_bodies
+{
+  export_marks = system_path(arg, origin::user);
 }
 #endif
 

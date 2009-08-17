@@ -1,3 +1,12 @@
+// Copyright (C) 2005 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include "base.hh"
 #include <sstream>
 
@@ -18,6 +27,8 @@
 #include "constants.hh"
 #include "ssh_agent.hh"
 #include "safe_map.hh"
+#include "charset.hh"
+#include "ui.hh"
 #include "lazy_rng.hh"
 #include "botan_pipe_cache.hh"
 
@@ -41,6 +52,8 @@ using Botan::PKCS8_PrivateKey;
 using Botan::PK_Decryptor;
 using Botan::PK_Signer;
 using Botan::Pipe;
+using Botan::get_pk_decryptor;
+using Botan::get_cipher;
 
 struct key_store_state
 {
@@ -126,7 +139,7 @@ namespace
     virtual void consume_revision_data(revision_id const & ident,
                                        revision_data const & dat)
     {E(false, origin::system, F("Extraneous data in key store."));}
-    virtual void consume_revision_cert(revision<cert> const & t)
+    virtual void consume_revision_cert(cert const & t)
     {E(false, origin::system, F("Extraneous data in key store."));}
 
 
@@ -165,6 +178,12 @@ key_store::key_store(app_state & a)
 
 key_store::~key_store()
 {}
+
+bool
+key_store::have_signing_key() const
+{
+  return !signing_key().empty();
+}
 
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
 Botan::RandomNumberGenerator &
@@ -384,6 +403,65 @@ key_store::delete_key(rsa_keypair_id const & ident)
 // Crypto operations
 //
 
+// "raw" passphrase prompter; unaware of passphrase caching or the laziness
+// hook.  KEYID is used only in prompts.  CONFIRM_PHRASE causes the user to
+// be prompted to type the same thing twice, and will loop if they don't
+// match.  Prompts are worded slightly differently if GENERATING_KEY is true.
+static void
+get_passphrase(utf8 & phrase,
+               rsa_keypair_id const & keyid,
+               bool confirm_phrase,
+               bool generating_key)
+{
+  string prompt1, prompt2;
+  char pass1[constants::maxpasswd];
+  char pass2[constants::maxpasswd];
+  int i = 0;
+
+  if (confirm_phrase && !generating_key)
+    prompt1 = (F("enter new passphrase for key ID [%s]: ") % keyid).str();
+  else
+    prompt1 = (F("enter passphrase for key ID [%s]: ") % keyid).str();
+
+  if (confirm_phrase)
+    prompt2 = (F("confirm passphrase for key ID [%s]: ") % keyid).str();
+
+  try
+    {
+      for (;;)
+        {
+          memset(pass1, 0, constants::maxpasswd);
+          memset(pass2, 0, constants::maxpasswd);
+          ui.ensure_clean_line();
+
+          read_password(prompt1, pass1, constants::maxpasswd);
+          if (!confirm_phrase)
+            break;
+
+          ui.ensure_clean_line();
+          read_password(prompt2, pass2, constants::maxpasswd);
+          if (strcmp(pass1, pass2) == 0)
+            break;
+
+          E(i++ < 2, origin::user, F("too many failed passphrases"));
+          P(F("passphrases do not match, try again"));
+        }
+
+      external ext_phrase(pass1);
+      system_to_utf8(ext_phrase, phrase);
+    }
+  catch (...)
+    {
+      memset(pass1, 0, constants::maxpasswd);
+      memset(pass2, 0, constants::maxpasswd);
+      throw;
+    }
+  memset(pass1, 0, constants::maxpasswd);
+  memset(pass2, 0, constants::maxpasswd);
+}
+
+
+
 shared_ptr<RSA_PrivateKey>
 key_store_state::decrypt_private_key(rsa_keypair_id const & id,
                                      bool force_from_user)
@@ -480,30 +558,29 @@ key_store::cache_decrypted_key(const rsa_keypair_id & id)
 
 void
 key_store::create_key_pair(database & db,
-                           rsa_keypair_id const & id,
+                           rsa_keypair_id const & ident,
                            utf8 const * maybe_passphrase,
-                           id * maybe_pubhash,
-                           id * maybe_privhash)
+                           id * maybe_hash)
 {
   conditional_transaction_guard guard(db);
 
-  bool exists = key_pair_exists(id);
+  bool exists = key_pair_exists(ident);
   if (db.database_specified())
     {
       guard.acquire();
-      exists = exists || db.public_key_exists(id);
+      exists = exists || db.public_key_exists(ident);
     }
-  E(!exists, origin::user, F("key '%s' already exists") % id);
+  E(!exists, origin::user, F("key '%s' already exists") % ident);
 
   utf8 prompted_passphrase;
   if (!maybe_passphrase)
     {
-      get_passphrase(prompted_passphrase, id, true, true);
+      get_passphrase(prompted_passphrase, ident, true, true);
       maybe_passphrase = &prompted_passphrase;
     }
 
   // okay, now we can create the key
-  P(F("generating key-pair '%s'") % id);
+  P(F("generating key-pair '%s'") % ident);
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   RSA_PrivateKey priv(s->rng->get(),
                       static_cast<Botan::u32bit>(constants::keylen));
@@ -544,20 +621,18 @@ key_store::create_key_pair(database & db,
     % kp.priv().size());
 
   // and save it.
-  P(F("storing key-pair '%s' in %s/") % id % get_key_dir());
-  put_key_pair(id, kp);
+  P(F("storing key-pair '%s' in %s/") % ident % get_key_dir());
+  put_key_pair(ident, kp);
 
   if (db.database_specified())
     {
-      P(F("storing public key '%s' in %s") % id % db.get_filename());
-      db.put_key(id, kp.pub);
+      P(F("storing public key '%s' in %s") % ident % db.get_filename());
+      db.put_key(ident, kp.pub);
       guard.commit();
     }
 
-  if (maybe_pubhash)
-    key_hash_code(id, kp.pub, *maybe_pubhash);
-  if (maybe_privhash)
-    key_hash_code(id, kp.priv, *maybe_privhash);
+  if (maybe_hash)
+    key_hash_code(ident, kp.pub, *maybe_hash);
 }
 
 void
@@ -591,18 +666,26 @@ key_store::decrypt_rsa(rsa_keypair_id const & id,
                        rsa_oaep_sha_data const & ciphertext,
                        string & plaintext)
 {
-  keypair kp;
-  load_key_pair(*this, id, kp);
-  shared_ptr<RSA_PrivateKey> priv_key = s->decrypt_private_key(id);
+  try
+    {
+      keypair kp;
+      load_key_pair(*this, id, kp);
+      shared_ptr<RSA_PrivateKey> priv_key = s->decrypt_private_key(id);
 
-  shared_ptr<PK_Decryptor>
-    decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
+      shared_ptr<PK_Decryptor>
+        decryptor(get_pk_decryptor(*priv_key, "EME1(SHA-1)"));
 
-  SecureVector<Botan::byte> plain = decryptor->decrypt(
-          reinterpret_cast<Botan::byte const *>(ciphertext().data()),
-          ciphertext().size());
-  plaintext = string(reinterpret_cast<char const*>(plain.begin()),
-                     plain.size());
+      SecureVector<Botan::byte> plain =
+        decryptor->decrypt(reinterpret_cast<Botan::byte const *>(ciphertext().data()),
+                           ciphertext().size());
+      plaintext = string(reinterpret_cast<char const*>(plain.begin()),
+                         plain.size());
+    }
+  catch (Botan::Exception & ex)
+    {
+      E(false, ciphertext.made_from,
+        F("Botan error decrypting data: '%s'") % ex.what());
+    }
 }
 
 void

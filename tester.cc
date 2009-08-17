@@ -1,3 +1,12 @@
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #include "base.hh"
 #include <botan/botan.h>
 #include "botan_pipe_cache.hh"
@@ -30,7 +39,7 @@ extern char const testlib_constant[];
 struct tester_sanity : public sanity
 {
   void inform_log(std::string const &msg)
-  {fprintf(stdout, "%s", msg.c_str());}
+  {/*fprintf(stdout, "%s", msg.c_str());*/}
   void inform_message(std::string const &msg)
   {fprintf(stdout, "%s", msg.c_str());};
   void inform_warning(std::string const &msg)
@@ -489,6 +498,16 @@ LUAEXT(get_source_dir, )
   return 1;
 }
 
+LUAEXT(normalize_path, )
+{
+  const char *pathstr = luaL_checkstring(LS, -1);
+  E(pathstr, origin::user,
+    F("%s called with an invalid parameter") % "normalize_path");
+
+  lua_pushstring(LS, system_path(pathstr).as_external().c_str());
+  return 1;
+}
+
 LUAEXT(save_env, )
 {
   orig_env_vars.clear();
@@ -629,7 +648,9 @@ int test_invoker::operator()(std::string const & testname) const
 // Clean up after one child process.
 
 bool test_cleaner::operator()(test_to_run const & test,
-                              int status) const
+                              int status,
+                              int wall_seconds,
+                              int cpu_seconds) const
 {
   // call reporter(testno, testname, status)
   luaL_checkstack(st, 4, "preparing call to reporter");
@@ -638,7 +659,9 @@ bool test_cleaner::operator()(test_to_run const & test,
   lua_pushinteger(st, test.number);
   lua_pushstring(st, test.name.c_str());
   lua_pushinteger(st, status);
-  lua_call(st, 3, 1);
+  lua_pushinteger(st, wall_seconds);
+  lua_pushinteger(st, cpu_seconds);
+  lua_call(st, 5, 1);
 
   // return is a boolean.  There is, for no apparent reason, no
   // luaL_checkboolean().

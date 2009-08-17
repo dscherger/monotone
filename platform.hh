@@ -1,6 +1,3 @@
-#ifndef __PLATFORM_HH__
-#define __PLATFORM_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __PLATFORM_HH__
+#define __PLATFORM_HH__
 
 // this describes functions to be found, alternatively, in win32/* or unix/*
 // directories.
@@ -22,7 +22,8 @@ bool is_executable(const char *path);
 
 // For LUA
 int existsonpath(const char *exe);
-int make_executable(const char *path);
+int set_executable(const char *path);
+int clear_executable(const char *path);
 pid_t process_spawn(const char * const argv[]);
 pid_t process_spawn_redirected(char const * in,
                                char const * out,
@@ -152,6 +153,8 @@ double cpu_now();
 // determine directory to load locale data from
 std::string get_locale_dir();
 
+#endif // __PLATFORM_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -159,5 +162,3 @@ std::string get_locale_dir();
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __PLATFORM_HH__

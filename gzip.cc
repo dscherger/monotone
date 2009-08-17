@@ -368,7 +368,7 @@ void Gzip_Decompression::check_footer()
       throw Exception("Gzip_Decompression: Error finalizing decompression");
 
    pipe.end_msg();
-   
+
    // 4 byte CRC32, and 4 byte length field
    SecureVector<byte> buf(4);
    SecureVector<byte> tmpbuf(4);
@@ -419,3 +419,11 @@ void Gzip_Decompression::clear()
    }
 
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

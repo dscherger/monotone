@@ -7,49 +7,191 @@ Changes from nvm.asio, please move down when landing on mainline:
 	  copies of externally maintained source.
 
 Changes from nvm.stripped, please move down when landing on mainline:
+??? ?? ?? ??:??:?? UTC ????
+
+	0.45 release.
+
+	Changes
+
+	New features
+
+	- The 'log' command now, by default, converts all dates it
+	  prints to your timezone instead of leaving them in UTC, and
+	  uses a somewhat more friendly format for the dates.
+
+	  You can customize the date format with the new
+	  "get_date_format_spec" Lua hook, which returns a strftime(3)
+	  format string.  You can also override the format for one
+	  command with the new --date-format option, disable date
+	  conversion for one command with --no-format-dates, or
+	  disable it by default by having the above Lua hook return an
+	  empty string.
+
+        - The 'diff' and 'automate content_diff' commands take a
+          '--reverse' option when one revision is specified, to
+          control the order of the diff with the workspace.
+
+        - The 'update', 'checkout', 'pluck', and 'pivot_root' commands
+	  take an option '--move-conflicting-paths', to handle
+	  unversioned files that are blocking the action. The
+	  unversioned files are moved to
+	  _MTN/resolutions/<workspace_path>, so the action can
+	  succeed, and the user can recover the files if necessary.
+
+	Bugs fixed
+
+        - Monotone now sanely skips paths with invalid characters
+          it encounters during 'add' or 'automate inventory'.
+
+	Internal
+
+Tue May 12 20:44:00 UTC 2009
+
+        0.44 release.
 
         Changes
 
-	- Monotone is now compiled against external libraries and does no
-          longer ship included variants. This means monotone now requires
-          these libraries:
+        - Private keys no longer have a separate hash from the associated
+          public key. This changes the hashes output by 'ls keys', and also
+          changes the format of 'automate keys' and 'automate genkey'.
 
-             * botan (1.7.8 or newer)
-             * lua5.1
-             * sqlite (3.3.8 or newer)
-             * pcre (7.6 or newer)
+        New features
 
-          This reduces maintenance of third-party libraries for monotone
-          developers and allows us to concentrate on monotone itself. For
-          the user this means faster adoption of improvements in those
-          libraries. For example, monotone can now be build against an up
-          to date sqlite 3.6.3, botan 1.7.17 and pcre 7.8, whereas we
-          shipped with sqlite 3.4.1, botan 1.7.12 and pcre 7.6 before.
+        - New 'w:' selector type for selecting the revision the workspace
+          is based on.
+
+        Bugs fixed
+
+        - C++ exceptions in Lua extension functions are now converted into
+          Lua errors catchable with pcall, instead of causing a crash.
+
+        - In 0.43 revert became excessively noisy and would report changes to
+          all attributes on included files and directories regardless of whether
+          the attributes had been changed or not. This has been silenced.
+          Monotone will now specifically report changes to execute permissions
+          only when they occur.
+
+        - In 0.43 monotone would lose execute permissions on all files modified
+          during an update operation. Execute permissions are now reset on
+          updated files that have the mtn:execute attribute set to true.
+
+        - Invalid revision selectors now cause an immediate error instead of
+          being dropped from the selection.  The old behavior could produce
+          undesired effects from typoed commands, such as spewing a list of
+          all revisions in the database.
+
+        - If "automate stdio" is in use, invalid selectors are reported via
+          the automate protocol rather than on stderr.
+
+        - "Best-effort" character set conversions now work again; 'mtn log'
+          will not crash just because there is a change log entry with a
+          character not representable in your locale.  However, if your system
+          iconv(3) implementation does not support the //TRANSLIT extension,
+          you may see garbage characters in the above scenario.
+
+        Internal
+
+        - Various small code changes to make monotone compile under (Open)
+          Solaris using Sun Studio, and under Windows with Visual C++.
+
+        - monotone.spec has been removed from the distribution.
 
 
-
-
-??? ??? ?? ??:??:?? UTC 2009
+Sun Mar 22 22:26:00 UTC 2009
 
         0.43 release.
 
         Changes
+
+        - The Monotone source distribution no longer includes copies of
+          several third-party libraries.  This means they must be downloaded
+          and built separately, before building monotone.  See INSTALL for a
+          complete list of necessary libraries.
+
+          This allows monotone's developers to concentrate on monotone
+          itself, rather than tracking external library updates, which in
+          practice did not happen.  By way of illustration, we were still
+          shipping sqlite 3.4.1, which is years out of date.  This has also
+          been a long-standing request of various redistributors of binary
+          packages, who prefer the use of globally shared libraries.
+
+        - There is a new db var "database delta-direction", which can have
+          values "reverse" (default), "forward", and "both". This controls
+          what kind of deltas are stored for new file versions. Forward
+          deltas are very fast for netsync, but slow for most other uses.
+          Set this to "both" (or perhaps "forward" if you're very short on
+          disk space) on an empty db and pull everything into it, to get a
+          database which will be much faster for server usage (especially
+          initial pulls).
 
         - 'mtn help <command_or_group>' or 'mtn <command_or_group> --help' no
           longer print global options, thus making the output of specific help
           requests more compact. You still see all available global options
           by executing 'mtn help' without any arguments.
 
+        - 'mtn automate get_current_revision' now returns an empty changeset
+          instead of an error if a workspace contains no changes.
+
+        New features
+
+        - A monotone database may be exported in the git fast-import format
+          using the git_export command. The output from this command may be
+          piped into git fast-import or other tools supporting this format.
+
+        - Additional 'u:' and 'm:' selector types for selecting the revision the
+          workspace was last updated from and revisions matching specified
+          message globs in changelog and comment certs.
+
+        - Additional '--revision' option for 'mtn log' allows logging of
+          selected sets of revisions.
+
+        - Additional '--full' option for 'mtn db info' to display some
+          statistic analysis of the date certs in the database.
+
+        - Command line options in the EDITOR and/or VISUAL environment
+          variables are honored; for instance, EDITOR="emacs -nw"
+          works now.  (Debian bug #320565.)
+
+        - The `mtn_automate' lua function now correctly parses and sets
+          options for executed automate commands.
+
+        - The 'commit' command accepts a non-empty _MTN/log as the log
+          message when '--message-file=_MTN/log' is given.
+
         Bugs fixed
 
-        - Several bugfixes to `mtn automate stdio':
-          * it now correctly distinguishs between syntax and command errors by
-            returning error code 1 for the former and error code 2 for the
-            latter - just as advertised in the documentation.
-          * the stdio event loop no longer quits if a syntax error occurs, but
-            rather discards the wrong state and accepts new (valid) commands.
-          * option errors haven't been catched properly and thus weren't encoded
-            in stdio either; this has been fixed as well.
+        - Performance of the log command has been improved significantly.
+          Previous versions of monotone loaded individual certs by name for each
+          printed revision and this caused sqlite to not use the correct
+          index. Now, all certs are loaded for each printed revision once and
+          individual certs are selected from the full list which allows sqlite
+          to use the preferred index.
+
+        - In 0.42, a netsync writer would attempt to queue up all outgoing
+          data as soon as it knew what data to send, in a single operation,
+          without servicing the event loop. If there was a large amount of
+          data to send, this would cause very long pauses and sometimes
+          timeouts and dropped connections (for pauses over 10 minutes).
+          The bug that caused this is fixed, and that operation now has a
+          safety timer that should prevent it from coming back.
+
+        - When the netsync server receives garbage over the network, it
+          should be much better about only terminating the offending connection
+          instead of the entire server.
+
+        - The log command was missing '--depth' and '--exclude' options used to
+          restrict revisions printed to those touching specific paths. Log now
+          allows these options and uses them properly.
+
+        - The update command previously did not clear execute permissions from
+          files that had their associated 'mtn:execute' attribute cleared.
+
+        - Several minor problems with workspace attributes have been fixed.
+          Earlier versions of monotone would reset attributes such as
+          mtn:execute on all files when any workspace modifying command was
+          executed. Applying attribute changes to workspace files is now done
+          much more selectively in the same manner that content and name changes
+          are applied.
 
         - In certain cases, especially also on FreeBSD and Mac OS X, netsync
           called select() even after read() returned 0 bytes to indicate the
@@ -58,18 +200,62 @@ Changes from nvm.stripped, please move down when landing on mainline:
           to select() on the file handle, as recommended by the
           select_tut man page.
 
-        New features
+        - If given a filename, `mtn ssh_agent_export' now creates that
+          file with the correct permissions (i.e. mode 600), creates
+          directories as necessary, and does not throw an internal
+          error if creation or writing fails.  (You're still on your
+          own for directory creation and permissions if you take the
+          key on standard output and redirect it to a file.)
 
-        - The `mtn_automate' lua function now correctly parses and sets
-          options for executed automate commands.
+        - The `p:' selector now accepts single character revision ids.
 
-        - Additional '--full' option for 'mtn db info' to display some
-          statistic analysis of the date certs in the database.
+        - `mtn merge_into_workspace' no longer crashes if one tries to merge
+          in an ancestor or descendant of a workspace, but gives a helpful
+          error message.
+
+        - Several bugfixes to `mtn automate stdio':
+
+          * It now correctly distinguishs between syntax and command errors by
+            returning error code 1 for the former and error code 2 for the
+            latter - just as advertised in the documentation.
+
+          * The stdio event loop no longer quits if a syntax error occurs, but
+            rather discards the wrong state and accepts new (valid) commands.
+
+          * Option errors haven't been catched properly and thus weren't encoded
+            in stdio either; this has been fixed as well.
+
+          * Global options, which were set or changed by a previously executed
+            command, weren't properly reset before the next command was issued.
+            It was f.e. not possible to "unignore" suspended branches for
+            the `branches' command when `--ignore-suspend-certs' was given in
+            a previous run. Now only those global options persist between
+            executed commands which were given to stdio directly.
 
         Internal
 
         - Using 64 bit integer values to represent dates internally. This
           has no user visible effect.
+
+        - The unit test code has been separated from the main source, thus
+          building the tests no longer requires a full recompilation. Also,
+          the number of modules which are linked into unit tester has
+          decreased tremendously.
+
+        - A couple of debug commands have been added to the `database'
+          command group to aid performance timing. See `mtn help --hidden db'
+          for a list of available commands.
+
+        - Our internal error handling has been overhauled. N() is gone, and E()
+          takes three arguments instead of 2: E(bool, origin::type, i18n_format).
+          origin::type is an enum describing the source of the error, eg network,
+          user, internal. Data types can publically inherit origin_aware (as the
+          vocab types do) to obtain a public origin::type member named
+          'made_from'; this can then be supplied to E() when sanity-checking
+          that data. origin_aware and origin::type are in origin_type.hh.
+          I() will throw a unrecoverable_failure, and E() will throw either a
+          unrecoverable_failure or a recoverable_failure depending on the
+          origin::type provided. informative_failure is gone.
 
 
 Fri Dec 26 22:08:00 UTC 2008

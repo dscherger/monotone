@@ -1,6 +1,3 @@
-#ifndef __CSET_HH__
-#define __CSET_HH__
-
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __CSET_HH__
+#define __CSET_HH__
 
 #include <set>
 #include "paths.hh"
@@ -33,10 +33,10 @@ struct editable_tree
   virtual void apply_delta(file_path const & pth,
                            file_id const & old_id,
                            file_id const & new_id) = 0;
-  virtual void clear_attr(file_path const & pth,
-                          attr_key const & name) = 0;
-  virtual void set_attr(file_path const & pth,
-                        attr_key const & name,
+  virtual void clear_attr(file_path const & path,
+                          attr_key const & key) = 0;
+  virtual void set_attr(file_path const & path,
+                        attr_key const & key,
                         attr_value const & val) = 0;
 
   virtual void commit() = 0;
@@ -118,6 +118,8 @@ read_cset(data const & dat, cset & cs);
 template <> void
 dump(cset const & cs, std::string & out);
 
+#endif // __CSET_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -125,5 +127,3 @@ dump(cset const & cs, std::string & out);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __CSET_HH__

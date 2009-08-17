@@ -15,8 +15,8 @@ commit()
 check(mtn("log", "--last=0"), 1, 0, false)
 
 for i = 1,3 do
-  check(mtn("log", "--last="..i), 0, true)
-  check(grep("^[\\|\\\\\/ ]+Revision:", "stdout"), 0, true)
+  check(mtn("log", "--no-graph", "--last="..i), 0, true)
+  check(grep("^Revision:", "stdout"), 0, true)
   check(numlines("stdout") == i)
 end
 
@@ -26,7 +26,7 @@ revert_to(foo)
 check(mtn("log", "--next=0"), 1, 0, false)
 
 for i = 1,3 do
-  check(mtn("log", "--next="..i), 0, true)
-  check(grep("^[\\|\\\\\/ ]+Revision:", "stdout"), 0, true)
+  check(mtn("log", "--no-graph", "--next="..i), 0, true)
+  check(grep("^Revision:", "stdout"), 0, true)
   check(numlines("stdout") == i)
 end

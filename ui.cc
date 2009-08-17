@@ -20,6 +20,7 @@
 #include "charset.hh"
 #include "simplestring_xform.hh"
 #include "constants.hh"
+#include "commands.hh"
 
 #include <iostream>
 #include <fstream>
@@ -432,12 +433,10 @@ void tick_write_dot::clear_line()
 // global, and we don't want global constructors/destructors doing
 // any real work.  see monotone.cc for how this is handled.
 
-user_interface::user_interface() : prog_name("?"), imp(0) {}
-
 void user_interface::initialize()
 {
   imp = new user_interface::impl;
-  
+
   cout.exceptions(ios_base::badbit);
 #ifdef SYNC_WITH_STDIO_WORKS
   clog.sync_with_stdio(false);
@@ -448,9 +447,6 @@ void user_interface::initialize()
   else
     set_tick_write_dot();
 }
-
-user_interface::~user_interface()
-{}
 
 void user_interface::deinitialize()
 {
@@ -559,51 +555,83 @@ user_interface::fatal_db(string const & fatal)
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is from the std::exception hierarchy.  In this case we
-// can access the exception object.
-void
+// can access the exception object, and we can try to figure out what it
+// really is by typeinfo operations.
+int
 user_interface::fatal_exception(std::exception const & ex)
 {
-  using std::strcmp;
-  using std::strncmp;
-  char const * ex_name = typeid(ex).name();
-  char const * ex_dem  = demangle_typename(ex_name);
-  char const * ex_what = ex.what();
+  char const * what = ex.what();
+  unrecoverable_failure const * inf;
 
-  if (ex_dem == 0)
-    ex_dem = ex_name;
+  if (dynamic_cast<option::option_error const *>(&ex)
+      || dynamic_cast<recoverable_failure const *>(&ex))
+    {
+      this->inform(what);
+      return 1;
+    }
+  else if ((inf = dynamic_cast<unrecoverable_failure const *>(&ex)))
+    {
+      if (inf->caused_by() == origin::database)
+        this->fatal_db(what);
+      else
+        this->fatal(what);
+      return 3;
+    }
+  else if (dynamic_cast<ios_base::failure const *>(&ex))
+    {
+      // an error has already been printed
+      return 1;
+    }
+  else if (dynamic_cast<std::bad_alloc const *>(&ex))
+    {
+      this->inform(_("error: memory exhausted"));
+      return 1;
+    }
+  else // we can at least produce the class name and the what()...
+    {
+      using std::strcmp;
+      using std::strncmp;
+      char const * name = typeid(ex).name();
+      char const * dem  = demangle_typename(name);
 
-  // some demanglers stick "class" at the beginning of their output,
-  // which looks dumb in this context
-  if (!strncmp(ex_dem, "class ", 6))
-    ex_dem += 6;
+      if (dem == 0)
+        dem = name;
 
-  // only print what() if it's interesting, i.e. nonempty and different
-  // from the name (mangled or otherwise) of the exception type.
-  if (ex_what == 0 || ex_what[0] == 0
-      || !strcmp(ex_what, ex_name)
-      || !strcmp(ex_what, ex_dem))
-    this->fatal(ex_dem);
-  else
-    this->fatal(i18n_format("%s: %s") % ex_dem % ex_what);
+      // some demanglers stick "class" at the beginning of their output,
+      // which looks dumb in this context
+      if (!strncmp(dem, "class ", 6))
+        dem += 6;
+
+      // only print what() if it's interesting, i.e. nonempty and different
+      // from the name (mangled or otherwise) of the exception type.
+      if (what == 0 || what[0] == 0
+          || !strcmp(what, name)
+          || !strcmp(what, dem))
+        this->fatal(dem);
+      else
+        this->fatal(i18n_format("%s: %s") % dem % what);
+      return 3;
+    }
 }
 
 // Report what we can about a fatal exception (caught in the outermost catch
 // handlers) which is of unknown type.  If we have the <cxxabi.h> interfaces,
 // we can at least get the type_info object.
-void
+int
 user_interface::fatal_exception()
 {
-  std::type_info *ex_type = get_current_exception_type();
-  if (ex_type)
+  std::type_info *type = get_current_exception_type();
+  if (type)
     {
-      char const * ex_name = ex_type->name();
-      char const * ex_dem  = demangle_typename(ex_name);
-      if (ex_dem == 0)
-        ex_dem = ex_name;
-      this->fatal(ex_dem);
+      char const * name = type->name();
+      char const * dem  = demangle_typename(name);
+      if (dem == 0)
+        dem = name;
+      this->fatal(dem);
     }
   else
-    this->fatal("exception of unknown type");
+    this->fatal(_("C++ exception of unknown type"));
+  return 3;
 }
 
 string
@@ -762,11 +790,102 @@ format_text(string const & text, size_t const col, size_t curcol)
   return formatted;
 }
 
-// See description for the other format_text below for more details.
+// See description for the other format_text above for more details.
 string
 format_text(i18n_format const & text, size_t const col, size_t curcol)
 {
   return format_text(text.str(), col, curcol);
+}
+
+// Format a block of options and their descriptions.
+static string
+format_usage_strings(vector<string> const & names,
+                     vector<string> const & descriptions,
+                     unsigned int namelen)
+{
+  // "    --long [ -s ] <arg>    description goes here"
+  //  ^  ^^                 ^^  ^^                          ^
+  //  |  | \    namelen    / |  | \        descwidth       /| <- edge of screen
+  //  ^^^^                   ^^^^
+  // pre_indent              space
+  string result;
+  int pre_indent = 2; // empty space on the left
+  int space = 2; // space after the longest option, before the description
+  int termwidth = guess_terminal_width();
+  int descindent = pre_indent + namelen + space;
+  int descwidth = termwidth - descindent;
+
+  I(names.size() == descriptions.size());
+
+  vector<string>::const_iterator name;
+  vector<string>::const_iterator desc;
+  for (name = names.begin(), desc = descriptions.begin(); name != names.end();
+       ++name, ++desc)
+    {
+      if (name->empty())
+        continue;
+
+      result += string(pre_indent, ' ')
+                + *name + string(namelen - name->size(), ' ');
+
+      if (!desc->empty())
+        {
+          result += string(space, ' ');
+          result += format_text(*desc, descindent, descindent);
+        }
+
+      result += '\n';
+    }
+  result += '\n';
+  return result;
+}
+
+static string
+get_usage_str(options::options_type const & optset, options & opts)
+{
+  vector<string> names;
+  vector<string> descriptions;
+  unsigned int maxnamelen;
+
+  optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
+  return format_usage_strings(names, descriptions, maxnamelen);
+}
+
+void
+user_interface::inform_usage(usage const & u, options & opts)
+{
+  // we send --help output to stdout, so that "mtn --help | less" works
+  // but we send error-triggered usage information to stderr, so that if
+  // you screw up in a script, you don't just get usage information sent
+  // merrily down your pipes.
+  std::ostream & usage_stream = (opts.help ? cout : clog);
+
+  string visibleid;
+  if (!u.which.empty())
+    visibleid = join_words(vector< utf8 >(u.which.begin() + 1,
+                                          u.which.end()))();
+
+  usage_stream << F("Usage: %s [OPTION...] command [ARG...]") %
+    prog_name << "\n\n";
+
+  if (u.which.empty())
+    usage_stream << get_usage_str(options::opts::globals(), opts);
+
+  // Make sure to hide documentation that's not part of
+  // the current command.
+  options::options_type cmd_options =
+    commands::command_options(u.which);
+  if (!cmd_options.empty())
+    {
+      usage_stream
+        << F("Options specific to '%s %s' "
+             "(run '%s help' to see global options):")
+        % prog_name % visibleid % prog_name
+        << "\n\n";
+      usage_stream << get_usage_str(cmd_options, opts);
+    }
+
+  commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
 }
 
 // Local Variables:

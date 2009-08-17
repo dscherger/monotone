@@ -28,7 +28,6 @@
 using std::cin;
 using std::ifstream;
 using std::ios_base;
-using std::ofstream;
 using std::logic_error;
 using std::string;
 using std::vector;
@@ -235,11 +234,19 @@ namespace
   {
     fill_pc_vec(vector<path_component> & v) : v(v) { v.clear(); }
 
-    // FIXME BUG: this treats 's' as being already utf8, but it is actually
-    // in the external character set.  Also, will I() out on invalid
-    // pathnames, when it should N() or perhaps W() and skip.
+    // FIXME BUG: this treats 's' as being already utf8,
+    // but it is actually in the external character set.
     virtual void consume(char const * s)
-    { v.push_back(path_component(s)); }
+    {
+      try
+      {
+        v.push_back(path_component(s));
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % s);
+      }
+    }
 
   private:
     vector<path_component> & v;
@@ -250,8 +257,14 @@ namespace
     file_deleter(any_path const & p) : parent(p) {}
     virtual void consume(char const * f)
     {
-      // FIXME: same bug as above.
-      do_remove((parent / path_component(f)).as_external());
+      try
+      {
+        do_remove((parent / path_component(f)).as_external());
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % f);
+      }
     }
   private:
     any_path const & parent;
@@ -491,7 +504,7 @@ walk_tree_recursive(file_path const & path,
   // describing _this_ directory pinned on the heap.  Then our recursive
   // call itself made another recursive call, etc., causing a huge spike in
   // peak memory.  By splitting the loop in half, we avoid this problem.
-  // 
+  //
   // [1] http://lkml.org/lkml/2006/2/24/215
   vector<path_component> files, dirs;
   read_directory(path, files, dirs);

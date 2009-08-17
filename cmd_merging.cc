@@ -1,5 +1,5 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -15,16 +15,15 @@
 
 #include "basic_io.hh"
 #include "cmd.hh"
-#include "diff_patch.hh"
-#include "merge.hh"
+#include "diff_output.hh"
+#include "merge_content.hh"
 #include "restrictions.hh"
 #include "revision.hh"
-#include "roster_merge.hh"
+#include "merge_roster.hh"
 #include "transforms.hh"
 #include "update.hh"
 #include "work.hh"
 #include "safe_map.hh"
-#include "ui.hh"
 #include "app_state.hh"
 #include "project.hh"
 #include "simplestring_xform.hh"
@@ -44,6 +43,19 @@ using std::strlen;
 using boost::shared_ptr;
 
 static void
+add_dormant_attrs(node_t const parent, node_t child)
+{
+  for (attr_map_t::const_iterator i = parent->attrs.begin();
+       i != parent->attrs.end(); ++i)
+    {
+      // if the child does not have the associated attr add a dormant one
+      if (child->attrs.find(i->first) == child->attrs.end())
+        safe_insert(child->attrs,
+                    make_pair(i->first, make_pair(false, attr_value())));
+    }
+}
+
+static void
 three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_roster,
                 revision_id const & left_rid, roster_t const & left_roster,
                 revision_id const & right_rid, roster_t const & right_roster,
@@ -59,6 +71,29 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   MM(left_rid);
   MM(right_rid);
 
+  // for this to work correctly attrs that exist in the ancestor *must*
+  // exist in both children, since attrs are never deleted they are only
+  // marked as dormant. however, since this may be any arbitrary arrangement
+  // of three revisions it is possible that attrs do exist in the parent and
+  // not in the children. in this case the attrs must be added to the
+  // children as dormant so that roster_merge works correctly.
+
+  roster_t left_with_attrs(left_roster);
+  roster_t right_with_attrs(right_roster);
+
+  MM(left_with_attrs);
+  MM(right_with_attrs);
+
+  node_map const & nodes = ancestor_roster.all_nodes();
+
+  for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+    {
+      if (left_with_attrs.has_node(i->first))
+        add_dormant_attrs(i->second, left_with_attrs.get_node(i->first));
+      if (right_with_attrs.has_node(i->first))
+        add_dormant_attrs(i->second, right_with_attrs.get_node(i->first));
+    }
+
   // Mark up the ANCESTOR
   marking_map ancestor_markings; MM(ancestor_markings);
   mark_roster_with_no_parents(ancestor_rid, ancestor_roster, ancestor_markings);
@@ -67,13 +102,13 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   left_markings.clear();
   MM(left_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
-                              left_rid, left_roster, left_markings);
+                              left_rid, left_with_attrs, left_markings);
 
   // Mark up the RIGHT roster
   right_markings.clear();
   MM(right_markings);
   mark_roster_with_one_parent(ancestor_roster, ancestor_markings,
-                              right_rid, right_roster, right_markings);
+                              right_rid, right_with_attrs, right_markings);
 
   // Make the synthetic graph, by creating uncommon ancestor sets
   std::set<revision_id> left_uncommon_ancestors, right_uncommon_ancestors;
@@ -84,8 +119,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   P(F("[right] %s") % right_rid);
 
   // And do the merge
-  roster_merge(left_roster, left_markings, left_uncommon_ancestors,
-               right_roster, right_markings, right_uncommon_ancestors,
+  roster_merge(left_with_attrs, left_markings, left_uncommon_ancestors,
+               right_with_attrs, right_markings, right_uncommon_ancestors,
                result);
 }
 
@@ -95,18 +130,18 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
   bool switched_branch = false;
 
   // figure out which branches the target is in
-  vector< revision<cert> > certs;
+  vector<cert> certs;
   db.get_revision_certs(chosen_rid, branch_cert_name, certs);
-  erase_bogus_certs(db, certs);
+  db.erase_bogus_certs(certs);
 
   set< branch_name > branches;
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
-    branches.insert(typecast_vocab<branch_name>(i->inner().value));
+    branches.insert(typecast_vocab<branch_name>(i->value));
 
-  if (branches.find(opts.branchname) != branches.end())
+  if (branches.find(opts.branch) != branches.end())
     {
-      L(FL("using existing branch %s") % opts.branchname());
+      L(FL("using existing branch %s") % opts.branch());
     }
   else
     {
@@ -125,7 +160,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
       else if (branches.size() == 1)
         {
           // one non-matching, inform and update
-          opts.branchname = *(branches.begin());
+          opts.branch = *(branches.begin());
           switched_branch = true;
         }
       else
@@ -133,7 +168,7 @@ pick_branch_for_update(options & opts, database & db, revision_id chosen_rid)
           I(branches.empty());
           W(F("target revision not in any branch\n"
               "next commit will use branch %s")
-            % opts.branchname);
+            % opts.branch);
         }
     }
   return switched_branch;
@@ -145,7 +180,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
        "different revision, preserving uncommitted changes as it does so.  "
        "If a revision is given, update the workspace to that revision.  "
        "If not, update the workspace to the head of the branch."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
 {
   if (!args.empty())
     throw usage(execid);
@@ -169,22 +205,22 @@ CMD(update, "update", "", CMD_REF(workspace), "",
     F("this workspace is a new project; cannot update"));
 
   // Figure out where we're going
-  E(!app.opts.branchname().empty(), origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("cannot determine branch for update"));
 
   revision_id chosen_rid;
   if (app.opts.revision_selectors.empty())
     {
-      P(F("updating along branch '%s'") % app.opts.branchname);
+      P(F("updating along branch '%s'") % app.opts.branch);
       set<revision_id> candidates;
       pick_update_candidates(app.lua, project, candidates, old_rid,
-                             app.opts.branchname,
+                             app.opts.branch,
                              app.opts.ignore_suspend_certs);
       E(!candidates.empty(), origin::user,
         F("your request matches no descendents of the current revision\n"
           "in fact, it doesn't even match the current revision\n"
           "maybe you want something like --revision=h:%s")
-        % app.opts.branchname);
+        % app.opts.branch);
       if (candidates.size() != 1)
         {
           P(F("multiple update candidates:"));
@@ -192,7 +228,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
                i != candidates.end(); ++i)
             P(i18n_format("  %s")
               % describe_revision(project, *i));
-          P(F("choose one with '%s update -r<id>'") % ui.prog_name);
+          P(F("choose one with '%s update -r<id>'") % prog_name);
           E(false, origin::user,
             F("multiple update candidates remain after selection"));
         }
@@ -208,14 +244,14 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // because when you are at one of several heads, and you hit update, you
   // want to know that merging would let you update further.
   notify_if_multiple_heads(project,
-                           app.opts.branchname, app.opts.ignore_suspend_certs);
+                           app.opts.branch, app.opts.ignore_suspend_certs);
 
   if (old_rid == chosen_rid)
     {
       P(F("already up to date at %s") % old_rid);
       // do still switch the workspace branch, in case they have used
       // update to switch branches.
-      work.set_ws_options(app.opts, true);
+      work.set_options(app.opts, true);
       return;
     }
 
@@ -225,7 +261,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // wants.
   bool switched_branch = pick_branch_for_update(app.opts, db, chosen_rid);
   if (switched_branch)
-    P(F("switching to branch %s") % app.opts.branchname());
+    P(F("switching to branch %s") % app.opts.branch());
 
   // Okay, we have a target, we have a branch, let's do this merge!
 
@@ -294,20 +330,21 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // Now finally modify the workspace
   cset update;
   make_cset(*working_roster, merged_roster, update);
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   revision_t remaining;
   make_revision_for_workspace(chosen_rid, chosen_roster,
                               merged_roster, remaining);
 
   // small race condition here... FIXME: what is it?
+  work.put_update_id(old_rid);
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
-  work.set_ws_options(app.opts, true);
+  work.set_options(app.opts, true);
 
   if (switched_branch)
-    P(F("switched branch; next commit will use branch %s") % app.opts.branchname());
+    P(F("switched branch; next commit will use branch %s") % app.opts.branch());
   P(F("updated to base revision %s") % chosen_rid);
 }
 
@@ -337,14 +374,14 @@ merge_two(options & opts, lua_hooks & lua, project_t & project,
   bool log_message_given;
   size_t fieldwidth = max(caller.size() + strlen(" of '"), strlen("and '"));
 
-  if (branch != opts.branchname)
+  if (branch != opts.branch)
     fieldwidth = max(fieldwidth, strlen("to branch '"));
 
   log << setw(fieldwidth - strlen(" of '")) << caller << " of '" << left
       << "'\n" << setw(fieldwidth) << "and '" << right
       << "'\n";
 
-  if (branch != opts.branchname)
+  if (branch != opts.branch)
     log << setw(fieldwidth) << "to branch '" << branch << "'\n";
 
   process_commit_message_args(opts, log_message_given, log_message,
@@ -443,23 +480,23 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   set<revision_id> heads;
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
 
   E(!heads.empty(), origin::user,
-    F("branch '%s' is empty") % app.opts.branchname);
+    F("branch '%s' is empty") % app.opts.branch);
   if (heads.size() == 1)
     {
-      P(F("branch '%s' is already merged") % app.opts.branchname);
+      P(F("branch '%s' is already merged") % app.opts.branch);
       return;
     }
 
   P(FP("%d head on branch '%s'", "%d heads on branch '%s'", heads.size())
-      % heads.size() % app.opts.branchname);
+      % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
   cache_user_key(app.opts, app.lua, db, keys);
@@ -492,16 +529,16 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       revpair p = find_heads_to_merge(db, heads);
 
       merge_two(app.opts, app.lua, project, keys,
-                p.first, p.second, app.opts.branchname, string("merge"),
+                p.first, p.second, app.opts.branch, string("merge"),
                 std::cout, false);
 
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
       pass++;
     }
 
   if (heads.size() > 1)
-    P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branchname % heads.size());
+    P(F("note: branch '%s' still has %d heads; run merge again") % app.opts.branch % heads.size());
 
   P(F("note: your workspaces have not been updated"));
 }
@@ -707,7 +744,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
        "pending changes in the current workspace.  Both OTHER-REVISION and "
        "the workspace's base revision will be recorded as parents on commit.  "
        "The workspace's selected branch is not changed."),
-    options::opts::none)
+    options::opts::move_conflicting_paths)
 {
   revision_id left_id, right_id;
   cached_roster left, right;
@@ -804,9 +841,9 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   make_cset(*left.first, merge_result.roster, update);
 
   // small race condition here...
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*left.first, merge_result.roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
   work.put_work_rev(merged_rev);
-  work.update_any_attrs(db);
   work.maybe_update_inodeprints(db);
 
   P(F("updated to result of merge\n"
@@ -1011,15 +1048,15 @@ static void get_conflicts_rids(args_vector const & args,
   if (args.empty())
     {
       // get ids from heads
-      E(app.opts.branchname() != "", origin::user,
+      E(!app.opts.branch().empty(), origin::user,
         F("please specify a branch, with --branch=BRANCH"));
 
       set<revision_id> heads;
-      project.get_branch_heads(app.opts.branchname, heads,
+      project.get_branch_heads(app.opts.branch, heads,
                                app.opts.ignore_suspend_certs);
 
       E(heads.size() >= 2, origin::user,
-        F("branch '%s' has only 1 head; must be at least 2 for conflicts") % app.opts.branchname);
+        F("branch '%s' has only 1 head; must be at least 2 for conflicts") % app.opts.branch);
 
       revpair p = find_heads_to_merge (db, heads);
       left_rid = p.first;
@@ -1156,7 +1193,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
        "compared to its parent.\n"
        "If two revisions are given, applies the changes made to get from the "
        "first revision to the second."),
-    options::opts::revision | options::opts::depth | options::opts::exclude)
+    options::opts::revision | options::opts::depth | options::opts::exclude |
+    options::opts::move_conflicting_paths)
 {
   database db(app);
   workspace work(app);
@@ -1174,7 +1212,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
           "to apply the changes relative to one of its parents, use:\n"
           "  %s pluck -r PARENT -r %s")
         % to_rid
-        % ui.prog_name
+        % prog_name
         % to_rid);
       from_rid = *parents.begin();
     }
@@ -1235,10 +1273,11 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   {
     roster_t to_true_roster;
     db.get_roster(to_rid, to_true_roster);
-    node_restriction mask(work, args_to_paths(args),
+    node_restriction mask(args_to_paths(args),
                           args_to_paths(app.opts.exclude_patterns),
                           app.opts.depth,
-                          *from_roster, to_true_roster);
+                          *from_roster, to_true_roster,
+                          ignored_file(work));
 
     roster_t restricted_roster;
     make_restricted_roster(*from_roster, to_true_roster,
@@ -1298,7 +1337,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   MM(update);
   make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), origin::no_fault, F("no changes were applied"));
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   P(F("applied changes to workspace"));
 
@@ -1309,7 +1349,6 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
 
   // small race condition here...
   work.put_work_rev(remaining);
-  work.update_any_attrs(db);
 
   // add a note to the user log file about what we did
   {
@@ -1341,21 +1380,21 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
   if (!args.empty())
     throw usage(execid);
 
-  E(app.opts.branchname() != "", origin::user,
+  E(!app.opts.branch().empty(), origin::user,
     F("please specify a branch, with --branch=BRANCH"));
 
   database db(app);
   project_t project(db);
 
-  project.get_branch_heads(app.opts.branchname, heads,
+  project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
 
   if (heads.empty())
-    P(F("branch '%s' is empty") % app.opts.branchname);
+    P(F("branch '%s' is empty") % app.opts.branch);
   else if (heads.size() == 1)
-    P(F("branch '%s' is currently merged:") % app.opts.branchname);
+    P(F("branch '%s' is currently merged:") % app.opts.branch);
   else
-    P(F("branch '%s' is currently unmerged:") % app.opts.branchname);
+    P(F("branch '%s' is currently unmerged:") % app.opts.branch);
 
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)

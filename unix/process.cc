@@ -1,7 +1,11 @@
-// copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Jon Bright <jon@siliconcircus.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <sys/types.h>
@@ -71,9 +75,9 @@ read_umask()
   return mask;
 }
 
-int make_executable(const char *path)
+int change_xbits(const char *path, const bool set)
 {
-  mode_t mode;
+  mode_t old_mode, new_mode;
   struct stat s;
   int fd = open(path, O_RDONLY);
   if (fd == -1)
@@ -84,16 +88,48 @@ int make_executable(const char *path)
     }
   if (fstat(fd, &s))
     return -1;
-  mode = s.st_mode;
-  mode |= ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
-  int ret = fchmod(fd, mode);
+  old_mode = s.st_mode;
+  if (set) {
+    new_mode = old_mode | ((S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+  } else {
+    new_mode = old_mode & (~(S_IXUSR|S_IXGRP|S_IXOTH) & ~read_umask());
+  }
+
+  int status = 0;
+  if (new_mode != old_mode)
+    {
+      if (set)
+        {
+          P(F("setting execute permission on %s") % path);
+          L(FL("setting execute permission on %s with mode %s") % path % new_mode);
+        }
+      else
+        {
+          P(F("clearing execute permission on %s") % path);
+          L(FL("clearing execute permission on %s with mode %s") % path % new_mode);
+        }
+
+      status = fchmod(fd, new_mode);
+    }
+
   if (close(fd) != 0)
     {
       const int err = errno;
       E(false, origin::system,
         F("error closing file %s: %s") % path % os_strerror(err));
     }
-  return ret;
+
+  return status;
+}
+
+int set_executable(const char *path)
+{
+  return change_xbits(path, true);
+}
+
+int clear_executable(const char *path)
+{
+  return change_xbits(path, false);
 }
 
 pid_t process_spawn(const char * const argv[])
@@ -185,7 +221,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   int infds[2];
   int outfds[2];
   pid_t pid;
-  
+
   if (pipe(infds) < 0)
     return -1;
   if (pipe(outfds) < 0)
@@ -194,7 +230,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
       close(infds[1]);
       return -1;
     }
-  
+
   switch(pid = vfork())
     {
       case -1:
@@ -217,7 +253,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
               close(outfds[1]);
             }
           close(outfds[0]);
-          
+
           execvp(argv[0], (char * const *)argv);
           raise(SIGKILL);
         }
@@ -226,7 +262,7 @@ pid_t process_spawn_pipe(char const * const argv[], FILE** in, FILE** out)
   close(outfds[1]);
   *in = fdopen(infds[1], "w");
   *out = fdopen(outfds[0], "r");
-  
+
   return pid;
 }
 
@@ -262,7 +298,7 @@ int process_wait(pid_t pid, int *res, int timeout)
       *res = 0;
       return -1;
     }
-  if (WIFEXITED(status))    
+  if (WIFEXITED(status))
     *res = WEXITSTATUS(status);
   else
     *res = -WTERMSIG(status);

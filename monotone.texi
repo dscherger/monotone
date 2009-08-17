@@ -29,13 +29,13 @@ This edition documents version @value{VERSION}.
 
 Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
-Copyright @copyright{} 2005, 2008 Derek Scherger @*
+Copyright @copyright{} 2005, 2008, 2009 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006, 2007, 2008 Thomas Keller @*
-Copyright @copyright{} 2007, 2008 Stephen Leake @*
+Copyright @copyright{} 2007 - 2009 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -2624,6 +2624,7 @@ familiarize yourself with its operation.
 * Merging::                     Merging with external tools, handling binary files.
 * Migrating and Dumping::       Changing the underlying storage system.
 * Importing from CVS::          Building a monotone database from a CVS repository.
+* Exporting to GIT::            Building a git repository from a monotone database.
 * Using packets::               Transferring data ``by hand''.
 @end menu
 
@@ -2764,6 +2765,10 @@ recorded in your _MTN/options file.
 Uses selector type @code{d}. For example, @code{d:2004-04} matches
 @code{date} certs where the cert value begins with
 @code{2004-04}. This selector also accepts expanded date syntax (see below).
+@item Message selection
+Uses selector type @code{m}. For example @code{m:*foobar*} matches
+@code{changelog} and @code{comment} certs where the cert value
+contains the glob @code{*foobar*}.
 @item "Earlier or equal than" selection
 Uses selector type @code{e}. For example, @code{e:2004-04-25} matches
 @code{date} certs where the cert value is less or equal than
@@ -2784,10 +2789,32 @@ Uses selector type @code{p}. For example, @code{p:0f3a} matches the
 revision IDs which are the parent of the revision ID which begins with
 @code{0f3a}. If you give a bare @code{p:}, monotone will require you to be in
 a workspace, and query the parent of the base workspace revision.
+@item Update selection
+Uses selector type @code{u}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID of the workspace before the last @command{update} command
+was executed. This can be useful for reviewing incoming
+revisions. After each update operation, or at least before the next
+update operation, run a command similar to the following:
+@smallexample
+$ mtn log --to u: --diffs
+@end smallexample
+to log all revisions back to the last update. It can also be
+used for quickly jumping between two different revisions. For example,
+the following command:
+@smallexample
+$ mtn update -r u:
+@end smallexample
+will update back to the previous update revision. Repeating this
+command will swap the current and previous update revision.
 @item Tag selection
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
 Values to match for can have shell wildcards.
+@item Workspace base revision
+Uses selector type @code{w}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID(s) this workspace is based on.
 @end table
 
 Further selector types may be added in the future.
@@ -2881,6 +2908,7 @@ The following commands all support restrictions using optional
 @item @command{list ignored}
 @item @command{list missing}
 @item @command{list changed}
+@item @command{log}
 @end itemize
 
 Including either the old or new name of a renamed file or directory will
@@ -3356,14 +3384,19 @@ same name.
 
 These examples describe collisions on @command{update}; the same kinds
 of things can happen with other commands that can bring changes into
-your workspace, such as @command{checkout} or @command{pluck} too.
+your workspace, such as @command{checkout}, @command{pivot_root} or
+@command{pluck} too.
 
 Monotone is careful to avoid hitting such collisions. Before changing
 the workspace, it will try and detect the possibility of collisions, and
 the command will fail, warning you about the names that collide.  The
 file content in the database is safe and can be recovered at any time,
 so monotone is conservative and will refuse to destroy the information
-in your workspace contents.
+in your workspace contents. Furthermore, all workspace-changing commands have
+an option @option{--move-conflicting-paths}, which moves unversioned, but
+conflicting files and directories from the workspace into a new subdirectory
+under _MTN/conflicts. This is useful if you want to ensure that an update
+always succeeds and you just want to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:
@@ -3521,6 +3554,19 @@ uses the @option{--set-default} option.
 The default server for netsync operations to use.  Automatically set
 by first use of netsync, and by any netsync that uses the
 @option{--set-default} option.
+@item delta-direction
+This tells monotone whether to store @samp{reverse} deltas (the default),
+@samp{forward} deltas, or @samp{both} kinds of deltas for reconstructing
+versions of files. Reverse deltas are faster when inspecting recent files,
+while forward deltas are much faster for sending over the network. This
+should probably be set to @samp{both} for a server database, unless disk
+space is severely limited. Note that as @emph{receiving} deltas involves
+reconstructing the file version that the delta was made against, a server
+using a database with only forward deltas will be somewhat slower at
+receiving new revisions unless your particular history graph is highly
+linear.
+
+Changing this value does not affect deltas that have already been stored.
 @end table
 
 @item known-servers
@@ -3867,7 +3913,7 @@ database is @emph{included} in the dump, so you should not try to
 @command{init} your database before a @command{load}.
 
 @page
-@node    Importing from CVS, Using packets, Migrating and Dumping, Advanced Uses
+@node    Importing from CVS, Exporting to GIT, Migrating and Dumping, Advanced Uses
 @section Importing from CVS
 
 Monotone is capable of reading CVS files directly and importing them
@@ -3911,7 +3957,92 @@ $ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
 @end smallexample
 
 @page
-@node    Using packets,  , Importing from CVS, Advanced Uses
+@node    Exporting to GIT, Using packets, Importing from CVS, Advanced Uses
+@section Exporting to GIT
+
+Monotone is capable of exporting the contents of a database to
+@code{stdout} in a form suitable to be piped to git-fast-import(1):
+
+@smallexample
+@group
+$ mkdir test.git
+$ cd test.git
+$ git init
+$ mtn --db test.mtn git_export | git fast import
+@end group
+@end smallexample
+
+While this feature has been tested and verified to some extent with
+various ``real-world'' monotone databases it is important to realize
+that translating from one version control system to another can be a
+lossy process. Git represents things somewhat differently than
+monotone does and cannot fully represent some things that monotone
+can. In particular git does not treat directories as first class
+objects as monotone does and does not use certificates to represent
+@code{author}, @code{date}, @code{branch} and @code{tag} values so
+some differences are to be expected.
+
+Git separates the concept of @code{committer} from the concept of
+@code{author} while monotone allows multiple @code{author} certs. In
+an attempt to represent these different concepts the git exporter uses
+the @emph{value} of the author cert as the git author and the
+@emph{key} used to sign the author cert as the git committer. When
+there are multiple author certs the git exporter arbitrarily choses
+one of them. The full list of monotone certs may be exported in the
+git commit message using the @option{--log-certs} option described in
+@ref{GIT}.
+
+Monotone author names often look like raw email addresses such as
+@code{"user@@example.com"}. These are not considered valid by git
+which requires leading `<' and trailing `>' characters around email
+addresses and by convention often includes the display name with the
+email address such as @code{"User Name <user@@example.com>"}. The git
+exporter deals with this difference in several ways:
+@itemize
+@item
+revisions that don't have any author certs will default to using
+@code{<unknown>} for both the author and committer.
+@item
+revisions that have one or more author certs will use the value of one
+author cert as the author and the key used to sign this cert as
+the committer.
+@item
+both author and committer will be looked up in the file specified by
+the @option{--authors-file} option described in @ref{GIT} and
+translated to the specified value if found.
+@item
+any author or committer that does not contain both `<' and `>'
+characters will have an initial ``<' character and a final `>'
+character added so that they may form valid values.
+@end itemize
+
+Branch names used by monotone are allowed to contain characters that
+are not considered valid by git. These may be mapped to other names
+using the @option{--branches-file} option described in @ref{GIT}
+
+A monotone revision may have multiple @code{changelog} certs and
+multiple @code{comment} certs. The git exporter deals with these by
+first concatenating all of the changelog certs followed by all of the
+comment certs into one message to use as the git commit
+message. Duplicate changelog or comment cert messages that may exist
+due to automated merges are removed.
+
+Exporting a database may be a time consuming and involved process,
+depending on the size and nature of the database. A 200MB database
+should export in less than an hour but may take several hours or
+longer depending on factors such as hardware, revision sizes, roster
+sizes and many others. The monotone process exporting such a database
+should require less than 200MB of RAM but may require
+@emph{considerably} more in some cases. If the exported file is
+written to disk it will likely be @emph{substantially} larger than the
+associated database, perhaps between 400MB to 4GB in size.
+
+Anyone using the git exporter must take full responsibility for
+verifying that the exported repository matches their expectations and
+requirements.
+
+@page
+@node    Using packets,  , Exporting to GIT, Advanced Uses
 @section Using packets
 
 Suppose you made changes to your database, and want to send those
@@ -4467,6 +4598,7 @@ all, commands are grouped into logical categories.
 * Database::                    Manipulation of your database as a whole
 * Automation::                  Running monotone from other programs
 * RCS::                         Importing legacy version control files
+* GIT::                         Exporting a monotone repository to git
 @end menu
 
 
@@ -4487,10 +4619,10 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
-@item mtn checkout --revision=@var{id} @var{directory}
-@itemx mtn co --revision=@var{id} @var{directory}
-@itemx mtn --branch=@var{branchname} checkout @var{directory}
-@itemx mtn --branch=@var{branchname} co @var{directory}
+@item mtn checkout [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn co [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} co @var{directory}
 
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
@@ -4930,6 +5062,9 @@ commit, without emptying the entire log message.  If the commit is
 successful, the @file{_MTN/log} file is cleared of all content making it
 ready for another edit/commit cycle.
 
+If @option{--message-file=_MTN/log} is specified, the contents of
+@file{_MTN/log} will be used without confirmation.
+
 If a @option{--branch} option is specified, the @command{commit} command
 commits to this branch (creating it if necessary).  The branch becomes
 the new default branch of the workspace.
@@ -4976,8 +5111,8 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-@item mtn update
-@itemx mtn update --revision=@var{revision}
+@item mtn update [--move-conflicting-paths]
+@itemx mtn update [--move-conflicting-paths] --revision=@var{revision}
 Without a @option{--revision} argument, this command incorporates
 ``recent'' changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
@@ -5019,8 +5154,8 @@ specify an explicit @option{--revision} argument).
 When running @command{update}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck --revision=@var{to}
-@itemx mtn pluck --revision=@var{from} --revision=@var{to}
+@item mtn pluck [--move-conflicting-paths] --revision=@var{to}
+@itemx mtn pluck [--move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -5063,7 +5198,7 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn pivot_root [--bookkeep-only] pivot_root @var{new_root} @var{put_old}
+@item mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also @command{merge_into_dir}.
@@ -5243,32 +5378,60 @@ Specifying only the pathname "." will restrict @command{status} to files
 changed within the current subdirectory of the workspace.
 
 @item mtn log
-@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--to=@var{id} [...]] [--brief] [--no-merges] [--no-files] [--diffs] [@var{file} [...]]
+@itemx mtn log [--last=@var{n}] [--next=@var{n}] [--from=@var{id} [...]] [--to=@var{id} [...]] [--revision=@var{id} [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [@var{pathname...}]
 
-This command prints out a log, in reverse-ancestry order, of small
-history summaries.  Each summary contains author, date, changelog and
-comment information associated with a revision.
+This command prints out a log, in forward ancestry order by default
+but optionally in reverse ancestry order, of small history summaries.
+Each summary contains author, date, branch, changelog and comment
+information associated with a revision.
 
-If @option{--brief} is given, the output consists of one line per revision
-with the revision ID, the author, the date and the branches (separated
-with commas).
+If @option{--brief} is given, the output consists of two lines per
+revision with the revision ID, the author, the date and the branches
+(separated with commas). If the @option{--no-graph} option is also
+given the output contains only one line per revision.
 
-If @option{--last=}@var{n} is given, at most @var{n} log entries will be
-given.
+If @option{--last=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in reverse-ancestry order,
+from newer revisions to older revisions.
 
-If @option{--next=}@var{n} is given, at most @var{n} log entries towards
-the current head revision will be given from the workspace's base
-revision in forward-ancestry order.  This is useful to review changes
-that will be applied to the workspace when @command{update} is run.
+If @option{--next=}@var{n} is given, at most @var{n} log entries will
+be given and log will trace through history in forward-ancestry order,
+from older revisions to newer revisions. This is useful to review
+changes that will be applied to the workspace when @command{update} is
+run.
 
-If @option{--from=}@var{id} is given, the command starts tracing back through
-history from these revisions, otherwise it starts from the base revision of
-your workspace.
+If @option{--from=}@var{id} is given, log starts tracing through
+history from the specified revisions, otherwise it starts from the
+base revision of your workspace. Log will stop when it reaches the end
+of the revision history or revisions specified by the @option{--to}
+option.
 
-If @option{--to=}@var{id} is given, log will only print entries for revisions
-that would not also be printed when logging from the revisions specified in
-@option{--to}. This is useful for reviewing changes between two points
-in history.
+When tracing through history in reverse-ancestry order and
+@option{--to=}@var{id} is given, log will stop when it reaches the
+specified revisions or any of their ancestors or the end of the
+revision history. When tracing through history in forward-ancestry
+order log will stop when it reaches the specified revisions or any of
+their descendants or the end of the revision history.
+
+If @option{--revision=}@var{id} is given, log will print only the
+specified revisions.
+
+If both @option{--from} and @option{--revision} are given only
+revisions included by both options will be logged. Revisions specified
+by @option{--revision} that are beyond the starting points specified
+by @option{--from} will be excluded.
+
+Additionally, each of the @option{--from}, @option{--to} and
+@option{--revision} options accept selectors, see
+@ref{Selectors}. These can be used in various ways to log interesting
+revisions.  For example:
+@verbatim
+$ mtn log --revision b:
+$ mtn log --revision today
+$ mtn log --revision bob
+@end verbatim
+will log all revisions from the current branch, all revisions dated
+today and all revisions with bob as the author, respectively.
 
 By default, the log entries for merge nodes are shown.  If
 @option{--no-merges} is given, the log entries for these nodes will be
@@ -5276,6 +5439,9 @@ excluded.
 
 If @option{--no-files} is given, the log output excludes the list of
 files changed in each revision.
+
+If @option{--no-graph} is given, the log output excludes the ASCII revision graph
+prefix on log output lines.
 
 Specifying @option{--diffs} causes the log output to include a unified
 diff of the changes in each revision.
@@ -5337,21 +5503,25 @@ $ mtn complete revision 01f
 @itemx mtn diff --context [--no-show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
-@itemx mtn diff --revision=@var{id}
+@itemx mtn diff [--reverse] --revision=@var{id}
 @itemx mtn diff --revision=@var{id} @var{pathname...}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
 
 These commands print out GNU ``unified diff format'' textual difference
 listings between various manifest versions. With no @option{--revision}
-options, @command{diff} will print the differences between the
-base revision and the current revision in the workspace.
+options, @command{diff} will print the difference from the
+base revision to the current revision in the workspace.
 
 With one @option{--revision} option, @command{diff} will print the
-differences between the revision @var{id} and the current revision in
-the workspace.  With two @option{--revision} options @command{diff}
-will print the differences between revisions @var{id1} and @var{id2},
-ignoring any workspace.
+difference from the revision @var{id} to the current revision in the
+workspace. If @option{--reverse} is given, the order of the diff is
+reversed.
+
+With two @option{--revision} options @command{diff} will print the
+difference from revision @var{id1} to @var{id2}, ignoring any
+workspace.
+
 
 In all cases, monotone will print a textual summary -- identical to
 the summary presented by @command{mtn status} -- of the logical
@@ -7517,6 +7687,51 @@ whatever error message would have been given.
 
 @end table
 
+@item mtn automate genkey @var{name} @var{passphrase}
+
+@table @strong
+@item Aguments
+
+@var{name} is the name to associate with the new key, and @var{passphrase} is
+the passphrase that will be used to encrypt the private half.
+
+@item Changes:
+@itemize
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+3.1 -- initial
+@end itemize
+
+@item Purpose:
+
+Generate a key with the given name and passphrase.
+
+@item Sample output:
+
+@verbatim
+            name "tbrownaw@gmail.com"
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+ public_location "database" "keystore"
+private_location "keystore"
+
+@end verbatim
+
+@item Output format:
+
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+@item Error conditions:
+
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
+
+@end table
+
 @item mtn automate get_revision @var{id}
 
 @table @strong
@@ -7653,9 +7868,8 @@ See @var{automate get_revision}
 
 @item Error conditions:
 
-If the command is executed outside of a workspace, there are no changes in the
-current workspace or the restriction is invalid or has no recorded changes,
-prints an error message to stderr and exits with status 1.
+If the command is executed outside of a workspace, or the restriction is
+invalid, prints an error message to stderr and exits with status 1.
 
 @end table
 
@@ -8022,7 +8236,7 @@ status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{files} ...]
 
 @table @strong
 @item Arguments:
@@ -8035,13 +8249,14 @@ If zero or more revisions are given, the command behaves as follows:
 
 @itemize
 @item
-no revision: the diff is done between the workspace revision and the
-parent (base) revision of this workspace
+no revision: the diff is done from the parent (base) revision of this
+workspace to the workspace revision.
 @item
-one revision: the diff is done between the workspace revision and the
-given revision @option{id1},
+one revision: the diff is done from the given revision @option{id1} to
+the workspace revision. If @option{--reverse} is given, the order is
+reversed.
 @item
-two revisions: the diff is done between @option{id1} and @option{id2}; no
+two revisions: the diff is done from @option{id1} to @option{id2}; no
 workspace is needed in this case.
 @end itemize
 
@@ -8249,9 +8464,17 @@ with status 1.
 
 None.
 
-@item Added in:
+@item Changes:
 
-1.1
+@itemize
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+1.1 -- initial
+
+@end itemize
 
 @item Purpose:
 
@@ -8261,18 +8484,16 @@ Print all keys in basic_io format.
 
 @verbatim
             name "tbrownaw@gmail.com"
-     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
  public_location "database" "keystore"
 private_location "keystore"
 
            name "tomfa@debian.org"
-    public_hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
 public_location "database"
 
             name "underwater@fishtank.net"
-     public_hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-    private_hash [b520d2cfe7d30e4ea1725fc4f34646fc5469b13d]
+            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
  public_location "keystore"
 private_location "keystore"
 
@@ -9237,7 +9458,7 @@ function could not be called for another reason.
 @end ftable
 
 @page
-@node    RCS,  , Automation, Command Reference
+@node    RCS, GIT, Automation, Command Reference
 @section RCS
 
 @ftable @command
@@ -9263,6 +9484,122 @@ In normal use, @var{pathname} will be a CVS module, though it is
 possible to point it at a directory within a module as well.  Whatever
 directory you point it at will become the root of monotone's version of
 the tree.
+
+@end ftable
+
+
+@page
+@node    GIT, ,RCS, Command Reference
+
+@section GIT
+
+@ftable @command
+@item mtn git_export [--authors-file=@var{authors-file}] [--branches-file=@var{branches-file}]
+@itemx mtn git_export [--import-marks=@var{marks-file}] [--export-marks=@var{marks-file}]
+@itemx mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]
+@itemx mtn git_export [--refs=@var{type}]
+
+This command exports all revisions from the current monotone database
+to @code{stdout} in a format that can be piped directly to git
+fast-import.
+
+The @option{--authors-file} option may be used to map monotone author
+and committer names to different values in a manner similar to that
+documented in git-svn(1). Mappings are specified in the
+@var{authors-file} as:
+@verbatim
+loginname = Joe User <user@example.com>
+@end verbatim
+
+The list of authors that might need to be mapped can be extracted from
+a monotone database with the following sql query:
+@verbatim
+$ mtn db execute 'select distinct value from revision_certs where name = "author"'
+@end verbatim
+
+The list of committers that might need to be mapped can be extracted
+from a monotone database with the following sql query:
+@verbatim
+$ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+@end verbatim
+
+The @option{--branches-file} option may be used to map monotone branch
+names to different values. This may be required as monotone allows
+branch names that are not valid according to git. Branch mappings are
+specified in the @var{branches-file} as:
+@verbatim
+monotone-branch-name = git-branch-name
+@end verbatim
+Revisions with no author cert will use <unknown> for both the author
+and the committer. These can be mapped to other values using the
+@var{authors-file} option.
+
+The list of branches that might need to be mapped can be extracted
+from a monotone database with using the @command{ls branches} command:
+@verbatim
+$ mtn ls branches --ignore-suspend-certs
+@end verbatim
+
+The @option{--import-marks} and @option{--export-marks} options are
+similar to those documented in git-fast-export(1) and
+git-fast-import(1). These may be used for incremental exports and may
+also be useful for repository verification. The @var{marks-file} is
+read on startup if @option{--import-marks} is specified and all marked
+revs are excluded from the export. The @var{marks-file} is written on
+completion if @option{--export-marks} is specified and will contain
+marks for all revs that were exported in addition to any marks that
+were read on startup. It is safe to use the same file for both
+@option{--import-marks} and @option{--export-marks} but different
+files may also be used.
+
+The original monotone revision ids may be included in the exported git
+commit messages using the @option{--log-revids} option. These will
+appear as:
+@verbatim
+Monotone-Parent: ...
+Monotone-Revision: ...
+@end verbatim
+in the git commit messages and may be useful for repository
+verification. Merge revisions with two parents will include two
+@code{Monotone-Parent} lines.
+
+The original monotone values for @code{author}, @code{date},
+@code{branch} and @code{tag} certificates may be included in the
+exported git commit messages using the @option{--log-certs}
+option. These will appear as:
+@verbatim
+Monotone-Author: ...
+Monotone-Date: ...
+Monotone-Branch: ...
+Monotone-Tag: ...
+@end verbatim
+in the git commit messages and may be useful for repository
+verification or maintaining information that is otherwise not
+maintained by git. In particular monotone may have several values for
+each of these certs and git only represents a single @code{author} and
+@code{date} value.
+
+By default, the values of all changelog and comment certs on a
+revision are concatenated to form the git commit message for that
+revision. The @option{--use-one-changelog} option will prevent this
+behaviour and use the value from the first changelog cert
+encountered. @emph{WARNING:} this will explicitly lose information in
+the exported data. Changelog certs have no implicit ordering, one will
+be selected arbitrarily to be used as the git commit message and all
+others will be excluded from the exported data. Additionally, all
+comment certs will be excluded from the exported data.
+
+References to the original monotone branches and tags are exported as
+@code{refs/tags/<tag-name>} and @code{refs/heads/<branch-name>}. In
+addition, references to the original monotone revision ids, the root
+revisions and the leaf revisions may be exported using
+@option{--refs=revs}, @option{--refs=roots} and @option{--refs=leaves}
+respectively. These references are exported as
+@code{refs/mtn/revs/<id>}, @code{refs/mtn/roots/<id>} and
+@code{refs/mtn/leaves/<id>} and may be useful for repository
+verification. These additional references should probably not be
+maintained after the exported repository has been verified as they
+cause considerable clutter in tools like gitk.
 
 @end ftable
 
@@ -9696,6 +10033,14 @@ default definition of this hook, see @ref{Default hooks}.
 Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
+
+@item get_date_format_spec ()
+
+Returns a @code{strftime} format specification, which @command{mtn
+log} and similar commands will use to format dates, unless instructed
+otherwise.  The default definition returns @samp{@w{"%d %b %Y,
+%I:%M:%S %p"}}, which produces output like this: @samp{@w{22 May 2009,
+09:06:14 AM}}.
 
 @end ftable
 
@@ -10169,7 +10514,7 @@ merged -- see @ref{Merging}), or they may represent executable scripts
 or programs.
 
 Monotone allows each file (or directory) in a repository to carry
-arbitrary @ref{File Attributes}.  Persistent attributes are stored
+arbitrary @ref{File Attributes}.  Persistent attributes are stored in
 each revision's manifest. The hooks in this section allow files to be
 automatically recognised as having certain attributes at the time
 they're added, and for custom triggers to be invoked on each file
@@ -10181,11 +10526,20 @@ according to its attributes when the workspace is changed.
 This is not a hook function, but a @emph{table} of hook
 functions. Each entry in the table @code{attr_functions}, at table
 entry @var{attribute}, is a function taking a file name @var{filename}
-and a attribute value @var{value}. The function should ``apply'' the
-attribute to the file, possibly in a platform-specific way.
+and an attribute value @var{value}. The function should ``apply'' the
+attribute to the file, possibly in a platform-specific way.  When
+called to set an attribute the value this hook receives will be a
+string representing the value of the attribute. When called to clear
+an attribute the value this hook receives will be @code{nil}.
 
-Hook functions from this table are called for each existing attr,
-after any command which modifies the workspace. This facility can
+Hook functions from this table are called for each existing attribute,
+after any command which modifies the workspace. These functions are
+also called during creation and modification of a workspace by the
+@command{update}, @command{merge_into_workspace}, @command{pluck},
+@command{clone} and @command{checkout} commands to set or clear
+attributes as they change.
+
+This facility can
 be used to extend monotone's understanding of files with
 platform-specific attributes, such as permission bits, access control
 lists, or special file types.
@@ -10197,8 +10551,10 @@ attribute. Its definition is:
 @group
 attr_functions["mtn:execute"] =
   function(filename, value)
-        if (value == "true") then
-         make_executable(filename)
+      if (value == "true") then
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 @end group

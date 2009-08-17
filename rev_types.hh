@@ -30,10 +30,16 @@ namespace basic_io
   struct stanza;
 }
 
-// full definitions in cset.hh 
+// full definitions in cset.hh
 typedef u32 node_id;
 struct cset;
 struct editable_tree;
+
+const node_id first_temp_node = 1U << (sizeof(node_id) * 8 - 1);
+inline bool temp_node(node_id n)
+{
+  return n & first_temp_node;
+}
 
 // full definitions in graph.hh
 struct rev_graph;
@@ -76,7 +82,7 @@ typedef hybrid_map<node_id, node_t> node_map;
 // (true, "val") or (false, "") are both valid attr values (for proper
 // merging, we have to widen the attr_value type to include a first-class
 // "undefined" value).
-typedef std::map<attr_key, std::pair<bool, attr_value> > full_attr_map_t;
+typedef std::map<attr_key, std::pair<bool, attr_value> > attr_map_t;
 
 // full definitions in database.hh
 class database;

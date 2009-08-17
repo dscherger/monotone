@@ -12,7 +12,8 @@
 #include "sanity.hh"
 #include "platform.hh"
 #include <netxx/streamserver.h>
-#include <ostream> // for operator<<
+#include <cstring> // strerror
+#include <cstdlib> // exit
 
 #ifdef WIN32
 #include <windows.h>
@@ -23,7 +24,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <errno.h>
-#include <cstring> // strerror
 #endif
 
 using std::vector;
@@ -414,10 +414,10 @@ Netxx::PipeCompatibleProbe::ready(const Timeout &timeout, ready_type rt)
 
           // Attempt to wait for the completion of the read-in-progress.
 
-	  int milliseconds = ((timeout.get_sec() * 1000)
+          int milliseconds = ((timeout.get_sec() * 1000)
                               + (timeout.get_usec() / 1000));
 
-	  L(FL("WaitForSingleObject(,%d)") % milliseconds);
+          L(FL("WaitForSingleObject(,%d)") % milliseconds);
 
           DWORD wstatus = WAIT_FAILED;
 
@@ -549,79 +549,6 @@ Netxx::PipeCompatibleProbe::add(const StreamServer &ss, ready_type rt)
 }
 #endif
 
-#ifdef BUILD_UNIT_TESTS
-#include "unit_tests.hh"
-
-#ifndef WIN32
-
-UNIT_TEST(pipe, simple_pipe)
-{ try
-  {
-  Netxx::PipeStream pipe("cat",vector<string>());
-
-  string result;
-  Netxx::PipeCompatibleProbe probe;
-  Netxx::Timeout timeout(2L), short_time(0,1000);
-
-  // time out because no data is available
-  probe.clear();
-  probe.add(pipe, Netxx::Probe::ready_read);
-  Netxx::Probe::result_type res = probe.ready(short_time);
-  I(res.second==Netxx::Probe::ready_none);
-
-  // write should be possible
-  probe.clear();
-  probe.add(pipe, Netxx::Probe::ready_write);
-  res = probe.ready(short_time);
-  I(res.second & Netxx::Probe::ready_write);
-#ifdef WIN32
-  I(res.first==pipe.get_socketfd());
-#else
-  I(res.first==pipe.get_writefd());
-#endif
-
-  // try binary transparency
-  for (int c = 0; c < 256; ++c)
-    {
-      char buf[1024];
-      buf[0] = c;
-      buf[1] = 255 - c;
-      pipe.write(buf, 2);
-
-      string result;
-      while (result.size() < 2)
-        { // wait for data to arrive
-          probe.clear();
-          probe.add(pipe, Netxx::Probe::ready_read);
-          res = probe.ready(timeout);
-          E(res.second & Netxx::Probe::ready_read, origin::system,
-            F("timeout reading data %d") % c);
-#ifdef WIN32
-          I(res.first == pipe.get_socketfd());
-#else
-          I(res.first == pipe.get_readfd());
-#endif
-          int bytes = pipe.read(buf, sizeof(buf));
-          result += string(buf, bytes);
-        }
-      I(result.size() == 2);
-      I(static_cast<unsigned char>(result[0]) == c);
-      I(static_cast<unsigned char>(result[1]) == 255 - c);
-    }
-
-  pipe.close();
-
-  }
-catch (recoverable_failure &e)
-  // for some reason boost does not provide
-  // enough information
-  {
-    W(F("Failure %s") % e.what());
-    throw;
-  }
-}
-#endif
-#endif
 
 // Local Variables:
 // mode: C++

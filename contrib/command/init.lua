@@ -19,6 +19,8 @@ register_command(
 )   
 
 function command_init(branch)
+    local db_fn = "mtn.db"
+
     --  sanity check command line
     if branch == nil then
         io.stderr:write("mtn: init: ERROR: no branch specified\n")
@@ -26,21 +28,16 @@ function command_init(branch)
     end
 
     --  create new database 
-    execute("mtn", "--db=mtn.db", "db", "init")
+    execute("mtn", "--db=".. db_fn , "db", "init")
 
     --  place current directory under version control
-    execute("mtn", "--db=mtn.db", "setup", "-b", branch)
+    execute("mtn", "--db=" .. db_fn, "setup", "-b", branch)
 
     --  place database into book-keeping directory
-    execute("mv", "mtn.db", "_MTN/mtn.db")
-    local txt = read_contents_of_file("_MTN/options")
-    txt = string.gsub(txt, "database \"[^\"]*\"", "database \".mtn/mtn.db\"")
-    options = io.open("_MTN/options", "w")
-    options:write(txt)
-    io.close(options)
+    execute("mv", db_fn, "_MTN/")
 
     --  perform a simple operation so that Monotone
-    --  updates the book-keeping directory
-    execute("sh", "-c", "mtn stat >/dev/null 2>&1")
+    --  updates the book-keeping directory and the options file
+    execute("sh", "-c", "mtn --db=_MTN/".. db_fn .. " stat >/dev/null 2>&1")
 end
 

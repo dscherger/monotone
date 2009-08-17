@@ -1,16 +1,28 @@
-AUTOMAKE_OPTIONS=subdir-objects -Wno-portability
-ACLOCAL_AMFLAGS = -I m4
+# Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
+# Makefile for monotone
+
+AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
+ACLOCAL_AMFLAGS  = -I m4
 
 CMD_SOURCES =								\
-	cmd.hh cmd_netsync.cc cmd_list.cc cmd_packet.cc	cmd_key_cert.cc \
-	cmd_merging.cc cmd_db.cc cmd_diff_log.cc cmd_ws_commit.cc 	\
-	cmd_othervcs.cc cmd_automate.cc cmd_files.cc cmd_conflicts.cc
+	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
+	cmd_key_cert.cc cmd_merging.cc cmd_db.cc cmd_diff_log.cc	\
+	cmd_ws_commit.cc cmd_othervcs.cc cmd_automate.cc cmd_files.cc	\
+	cmd_conflicts.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
 	simplestring_xform.cc simplestring_xform.hh 			\
 	constants.cc constants.hh numeric_vocab.hh 			\
-	platform.hh numeric_vocab.cc origin_type.hh
+	platform.hh origin_type.hh
 
 LUAEXT_SOURCES = 							\
 	vocab.hh vocab.cc vocab_terms.hh vocab_macros.hh vocab_cast.hh  \
@@ -18,7 +30,7 @@ LUAEXT_SOURCES = 							\
 	interner.hh hash_map.hh	vocab_hash.hh				\
 	luaext_mkstemp.cc luaext_parse_basic_io.cc			\
 	luaext_guess_binary.cc luaext_platform.cc luaext_globish.cc	\
-	lua.cc lua.hh mkstemp.cc mkstemp.hh file_io.cc file_io.hh	\
+	lua.cc lua.hh mkstemp.cc file_io.cc file_io.hh			\
 	globish.cc globish.hh basic_io.cc basic_io.hh			\
 	char_classifiers.hh
 
@@ -28,11 +40,11 @@ MOST_SOURCES = 								\
 	app_state.cc app_state.hh					\
 	botan_pipe_cache.hh						\
 	commands.cc commands.hh $(CMD_SOURCES)				\
-	diff_patch.cc diff_patch.hh					\
+	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\
 	transforms.cc transforms.hh					\
 	update.cc update.hh						\
-	work.cc work_migration.cc work.hh				\
+	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
@@ -43,7 +55,7 @@ MOST_SOURCES = 								\
 	packet.cc packet.hh						\
 	rcs_file.cc rcs_file.hh						\
 	xdelta.cc xdelta.hh						\
-	schema_migration.cc schema_migration.hh				\
+	migration.hh migrate_schema.cc migrate_ancestry.cc		\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
@@ -51,7 +63,8 @@ MOST_SOURCES = 								\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\
-	revision.cc revision.hh						\
+	git_change.cc git_change.hh git_export.cc git_export.hh		\
+	revision.cc ancestry.cc revision.hh				\
 	cset.cc cset.hh							\
 	roster.cc roster.hh 						\
 	mt_version.cc mt_version.hh					\
@@ -64,9 +77,9 @@ MOST_SOURCES = 								\
 	annotate.cc annotate.hh						\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
-	string_queue.cc string_queue.hh					\
-	roster_merge.cc roster_merge.hh					\
-	merge.cc merge.hh						\
+	string_queue.hh							\
+	merge_roster.cc merge_conflict.cc merge_roster.hh		\
+	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\
 	graph.cc graph.hh						\
 	roster_delta.cc roster_delta.hh					\
@@ -80,10 +93,8 @@ MOST_SOURCES = 								\
 									\
 	cleanup.hh unit_tests.hh					\
 	cycle_detector.hh randomfile.hh adler32.hh			\
-	randomizer.cc randomizer.hh					\
 	netio.hh gettext.h						\
-	package_revision.cc package_revision.h				\
-	package_full_revision.cc package_full_revision.h		\
+	package_revision.cc package_full_revision.cc			\
 	option.cc option.hh options.cc options.hh options_list.hh	\
 	specialized_lexical_cast.cc lexical_cast.hh			\
 	i18n.h parallel_iter.hh safe_map.hh pch.hh current_exception.hh
@@ -102,41 +113,47 @@ WIN32_PLATFORM_SOURCES =						\
 	win32/cputime.cc win32/ssh_agent_platform.cc			\
 	win32/ssh_agent_platform.hh
 
-# these files contain unit tests
-UNIT_TEST_SOURCES =							\
-	basic_io.cc charset.cc commands.cc crypto_tests.cc cset.cc	\
-	dates.cc diff_patch.cc globish.cc graph.cc mkstemp.cc netcmd.cc	\
-	numeric_vocab.cc option.cc outdated_indicator.cc		\
-	packet.cc paths.cc refiner.cc restrictions.cc rev_height.cc	\
-	revision.cc roster.cc roster_merge.cc simplestring_xform.cc	\
-	string_queue.cc transforms.cc unit_tests.cc uri.cc vocab.cc	\
-	xdelta.cc
+# these files (part of the main program) contain code subject to unit testing
+
+UNIT_TESTEES =								\
+	basic_io.cc charset.cc commands.cc cset.cc git_change.cc	\
+	globish.cc graph.cc merge_3way.cc merge_roster.cc mkstemp.cc	\
+	netcmd.cc netxx_pipe.cc option.cc outdated_indicator.cc		\
+	refiner.cc restrictions.cc revision.cc simplestring_xform.cc	\
+	transforms.cc uri.cc vocab.cc xdelta.cc
+
+# these files contain the actual unit tests
+# yes, we have to list them all explicitly, with directory prefix, or
+# automake gets very confused
+UNIT_TESTERS =								\
+	unit-tests/basic_io.cc unit-tests/charset.cc			\
+	unit-tests/commands.cc unit-tests/cset.cc			\
+	unit-tests/git_change.cc unit-tests/globish.cc			\
+	unit-tests/graph.cc unit-tests/merge_3way.cc			\
+	unit-tests/merge_roster.cc unit-tests/mkstemp.cc		\
+	unit-tests/netcmd.cc unit-tests/netxx_pipe.cc			\
+	unit-tests/option.cc unit-tests/outdated_indicator.cc		\
+	unit-tests/refiner.cc unit-tests/restrictions.cc		\
+	unit-tests/revision.cc unit-tests/simplestring_xform.cc		\
+	unit-tests/transforms.cc unit-tests/uri.cc unit-tests/vocab.cc	\
+	unit-tests/xdelta.cc unit-tests/numeric_vocab.cc		\
+	unit-tests/sha1.cc unit-tests/string_queue.cc unit_tester.cc
+
+# these files contain unit tests that need access to private interfaces
+# of the code under test, so they #include the code under test.  thus,
+# to avoid multiple-definition errors, for these files the code under
+# test is not part of UNIT_TESTEES.
+
+UNIT_TESTERS_PRIV =							\
+	unit-tests/dates.cc unit-tests/packet.cc unit-tests/paths.cc	\
+	unit-tests/rev_height.cc unit-tests/roster.cc
 
 # these files do not contain unit tests, but are required for unit testing
-# and must be recompiled for that purpose
-UNIT_TEST_SRC_SUPPORT =							\
-	roster_delta.cc
-
-# these files do not contain unit tests; they are required for unit
-# testing, but can be used "as is" from the main build.  (many of
-# these _should_ have unit tests, but they haven't been written yet.)
-UNIT_TEST_OBJ_SUPPORT =							\
-	mtn-app_state.$(OBJEXT) mtn-cert.$(OBJEXT)			\
-	mtn-constants.$(OBJEXT) mtn-database.$(OBJEXT)			\
-	mtn-epoch.$(OBJEXT) mtn-file_io.$(OBJEXT) mtn-gzip.$(OBJEXT)	\
-	mtn-hmac.$(OBJEXT) mtn-inodeprint.$(OBJEXT)			\
-	mtn-key_store.$(OBJEXT) mtn-keys.$(OBJEXT) mtn-lcs.$(OBJEXT)	\
-	mtn-legacy.$(OBJEXT) mtn-lua.$(OBJEXT) mtn-lua_hooks.$(OBJEXT)	\
-	mtn-merkle_tree.$(OBJEXT) mtn-mt_version.$(OBJEXT)		\
-	mtn-mtn-sanity.$(OBJEXT) mtn-options.$(OBJEXT)			\
-	mtn-package_full_revision.$(OBJEXT)				\
-	mtn-package_revision.$(OBJEXT) mtn-pcrewrap.$(OBJEXT)		\
-	mtn-project.$(OBJEXT) mtn-randomizer.$(OBJEXT)			\
-	mtn-sanity.$(OBJEXT) mtn-schema.$(OBJEXT)			\
-	mtn-schema_migration.$(OBJEXT)					\
-	mtn-specialized_lexical_cast.$(OBJEXT) mtn-ssh_agent.$(OBJEXT)	\
-	mtn-std_hooks.$(OBJEXT) mtn-ui.$(OBJEXT) mtn-work.$(OBJEXT)	\
-	mtn-work_migration.$(OBJEXT)
+# note that some are and some aren't part of the main program
+UNIT_TEST_SUPPORT =							\
+	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
+	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
+	sanity.cc specialized_lexical_cast.cc
 
 # primaries
 
@@ -144,19 +161,17 @@ bin_PROGRAMS = mtn
 noinst_PROGRAMS = txt2c
 EXTRA_PROGRAMS =
 
-dist_bin_SCRIPTS = mtnopt
+bin_SCRIPTS = mtnopt
 
 mtn_SOURCES = $(MOST_SOURCES) monotone.cc
 nodist_mtn_SOURCES = std_hooks.cc schema.cc
 
-unit_tester_SOURCES = $(UNIT_TEST_SOURCES) $(UNIT_TEST_SRC_SUPPORT)
-unit_tester_LDADD = $(UNIT_TEST_OBJ_SUPPORT)
+unit_tester_SOURCES = $(UNIT_TESTERS) $(UNIT_TESTERS_PRIV) \
+	$(UNIT_TESTEES) $(UNIT_TEST_SUPPORT)
 
-tester_SOURCES = tester.cc transforms.cc gzip.cc
+tester_SOURCES = tester.cc transforms.cc gzip.cc \
+	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) pcrewrap.cc
 nodist_tester_SOURCES = testlib.cc
-tester_LDADD = $(addprefix mtn-, $(patsubst %.cc, %.$(OBJEXT), \
-		 $(filter %.cc, $(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) \
-		 	  	pcrewrap.cc)))
 
 txt2c_SOURCES = txt2c.cc
 
@@ -168,8 +183,9 @@ html_DATA = monotone.html
 
 # flags
 
-# sets DEFS for just this object
+# sets DEFS for just this object (autoconf's -DHAVE_CONFIG_H is useless)
 # the variable prevents this from overriding automake's unix/fs.o rule
+DEFS =
 UNIX=unix/
 $(UNIX)fs.$(OBJEXT) : DEFS += -DLOCALEDIR="\"$(localedir)\""
 
@@ -197,31 +213,23 @@ pch-file:
 	&& mv "./$(PCH_FILE).Tdep" "./$(PCH_FILE).dep" \
 	|| rm "./$(PCH_FILE).Tdep"
 endif
+AM_CXXFLAGS = $(PCH_FLAGS)
 
 SUFFIXES = .gch .merged.po .gmo
 
-EXTERNAL_CPPFLAGS = $(pcre_CFLAGS) $(botan_CFLAGS) \
-		    $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
-EXTERNAL_LIBS = $(botan_LIBS) $(lua_LIBS) $(pcre_LIBS) $(sqlite_LIBS) \
-	        $(idn_LIBS) $(LIBINTL) $(LIBICONV)
+AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
+	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
 
-mtn_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
-mtn_CXXFLAGS = $(PCH_FLAGS)
-mtn_LDADD = libplatform.a $(EXTERNAL_LIBS)
-
-unit_tester_CPPFLAGS = -DBUILD_UNIT_TESTS $(EXTERNAL_CPPFLAGS)
-unit_tester_CXXFLAGS = $(PCH_FLAGS)
-unit_tester_LDADD += libplatform.a $(EXTERNAL_LIBS)
-
-tester_CPPFLAGS = $(EXTERNAL_CPPFLAGS)
-tester_LDADD += libplatform.a $(EXTERNAL_LIBS)
+LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
+	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
   mtn_SOURCES += win32/main.cc
-  mtn_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
-  unit_tester_LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
   tester_SOURCES += win32/tester-plaf.cc
+  check_net_SOURCES = win32/tester-check-net.cc
+  AM_CPPFLAGS += -DWIN32
+  LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
@@ -247,26 +255,23 @@ EPS_FIGURES=$(addprefix $(top_builddir)/figures/,$(notdir $(PDF_FIGURES:.pdf=.ep
 TEXI_FRAGMENTS = pcrepattern.texi pcresyntax.texi
 
 info_TEXINFOS = monotone.texi
-EXTRA_DIST = $(PDF_FIGURES) $(PNG_FIGURES) INSTALL README.changesets	\
-	UPGRADE monotone.spec monotone.html texinfo.css schema.sql	\
-	std_hooks.lua testlib.lua lua-testsuite.lua $(srcdir)/tests	\
-	tester-testsuite.lua $(srcdir)/tester-tests			\
-	unit-testsuite.lua package.m4 package_revision.txt		\
-	package_full_revision_dist.txt $(wildcard $(srcdir)/m4/*.m4)	\
-	contrib/README contrib/monoprof.sh				\
-	contrib/monotone-notify.pl contrib/ciabot_monotone.py		\
-	contrib/monotone.el contrib/monotone-nav.el			\
-	contrib/monotone.bash_completion				\
-	contrib/monotone.zsh_completion contrib/mtbrowse.sh		\
-	contrib/colorize contrib/color-logs.sh contrib/color-logs.conf	\
-	contrib/get_stdio.pl contrib/ciabot_monotone_hookversion.py	\
-	contrib/Monotone.pm $(wildcard $(srcdir)/contrib/*.lua)		\
-	$(wildcard $(srcdir)/contrib/command/*.lua)			\
-	contrib/command/README $(wildcard $(srcdir)/examples/*)		\
-	win32/monotone.iss win32/modpath.iss $(wildcard			\
-	$(srcdir)/debian/*) mac/monotone-pkg-logo.gif			\
-	mac/monotone.pmproj mac/package-intro.rtf audit-includes	\
-	$(TEXI_FRAGMENTS)
+EXTRA_DIST =								\
+	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
+	audit-includes do-editor-vars.sh doxygen.cfg			\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
+	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
+	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
+									\
+	$(PDF_FIGURES) $(PNG_FIGURES) $(TEXI_FRAGMENTS)			\
+	figures/monotone-logo.svg figures/oo-figures.sxd		\
+	figures/pdfcrop.pl figures/README				\
+									\
+	std_hooks.lua testlib.lua lua-testsuite.lua tests		\
+	tester-testsuite.lua tester-tests unit-testsuite.lua		\
+									\
+	package_revision.txt package_full_revision_dist.txt		\
+									\
+	contrib cygwin examples mac notes visualc
 
 MAKEINFOFLAGS=-I $(top_builddir)
 
@@ -298,7 +303,7 @@ $(top_builddir)/figures/%.ps: $(srcdir)/figures/%.pdf
 # the user's LINGUAS env. variable.  Additional settings are in
 # po/Makevars.
 #
-# Only the foo.po-update target will overwrite a file in the source 
+# Only the foo.po-update target will overwrite a file in the source
 # po/ directory.
 
 include $(srcdir)/po/Makevars
@@ -335,7 +340,7 @@ if REBUILD_NLS
 %.gmo: %.merged.po
 	$(MSGFMT) -c --statistics -o $@ $<
 
-%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot 
+%.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
 	$(MSGMERGE) $^ -o $@
 
 # for translators' use
@@ -353,14 +358,18 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 
 $(PACKAGE).pot: $(POTFILES)
 	$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
-	  --package-name=$(PACKAGE) --package-version=$(VERSION) \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
-	  $(XGETTEXT_OPTS) \
+	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
 	  $(POTFILES)
 
 dist-hook: $(ALL_GMOFILES)
 	cp $^ $(distdir)/po
+# also, kill off any backup files that got pulled in by one of the
+# recursive subdirectory includes in EXTRA_DIST
+# note use of slightly non-portable "-delete" action
+	find $(distdir) \( -name '*.bak' -o -name '*.orig' -o -name '*.rej' \
+	    -o -name '*~' -o -name '#*#' -o -name '*.swp' \) -delete
 
 else
 
@@ -480,26 +489,15 @@ FORCE:
 .PRECIOUS: run_tester_tests run_unit_tests run_lua_tests
 
 mostlyclean-local:
-	rm -rf tester_dir unit-tests html
+	rm -rf tester_dir html
+	set -ex; for d in unit-tests/*/__driver__.lua; do \
+	  rm -f $$d; \
+	  rmdir $${d%/*} || :; \
+	done
 
 DISTCLEANFILES = mt-stdint.h xgettext.opts pch-build.hh.gch.dep	\
 	run_tester_tests run_unit_tests run_lua_tests		\
-	tester_tests.status unit_tests.status lua_tests.status  \
-	mtnopt
-
-# note: these targets are all in srcdir; they are *not* built during
-# the VPATH build part of distcheck (with non-writable source
-# directory) but only during the initial dist stage.
-
-$(srcdir)/package.m4: $(top_srcdir)/configure.ac
-	{                                      \
-	  echo '# Signature of the current package.'; \
-	  echo 'm4_define([AT_PACKAGE_NAME],      [@PACKAGE_NAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_TARNAME],   [@PACKAGE_TARNAME@])'; \
-	  echo 'm4_define([AT_PACKAGE_VERSION],   [@PACKAGE_VERSION@])'; \
-	  echo 'm4_define([AT_PACKAGE_STRING],    [@PACKAGE_STRING@])'; \
-	  echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])'; \
-	} >$(srcdir)/package.m4
+	tester_tests.status unit_tests.status lua_tests.status
 
 # we generate some source files to copy data into the executable
 # note that the only things that should go in BUILT_SOURCES are things
@@ -515,36 +513,38 @@ CLEAN_SOURCES = std_hooks.cc testlib.cc schema.cc \
 
 BUILT_SOURCES = $(PCH_FILE) $(PCH_BUILD)
 
-CLEANFILES = $(BUILT_SOURCES) $(CLEAN_SOURCES) $(EPS_FIGURES) $(CLEAN_POFILES)
+CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
+	     $(EPS_FIGURES) $(CLEAN_POFILES)
 
-# override compiler for txt2c
+# automake provides no nice way to build a helper program to execute
+# on the build machine, so we need our own rule.  almost all the
+# standard flags variables are inappropriate.
 txt2c$(EXEEXT): txt2c.cc
-	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $<
+	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
 
-# FIXME: should use stamp files.
-%.cc: %.sql txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+# files generated using txt2c
+std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
+	./txt2c std_hooks $< $@
 
-%.cc: %.lua txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+testlib.cc: testlib.lua txt2c$(EXEEXT)
+	./txt2c testlib $< $@
 
-%.cc: %.txt txt2c
-	./txt2c $(TXT2CFLAGS) --no-static $< $(*F) >$@.tmp
-	cmp -s $@.tmp $@ || mv -f $@.tmp $@
-	rm -f $@.tmp
+schema.cc: schema.sql txt2c$(EXEEXT)
+	./txt2c schema $< $@
+
+package_revision.cc: package_revision.txt txt2c$(EXEEXT)
+	./txt2c --strip-trailing package_revision $< $@
+
+package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
+	./txt2c package_full_revision $< $@
+
 
 # Support for scripts
-%: util/%
-	cp $< $@
+do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 
-# This construct causes --strip-trailing to be applied only when
-# generating package_revision.cc.
-TXT2CFLAGS =
-package_revision.cc : TXT2CFLAGS = --strip-trailing
+%: util/%.in
+	$(do_subst) < $< > $@
+	chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
@@ -580,8 +580,8 @@ package_revision.txt: package_revision_raw.txt
 .PHONY: package_full_revision_raw.txt
 package_full_revision_raw.txt:
 	REAL_BLDDIR=$$PWD/$(top_builddir); \
-	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_revision) 2>/dev/null >$@ \
-	|| (cd $(srcdir) && mtn --root=. automate get_revision) 2>/dev/null >$@ \
+	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
+	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
 # See above comment -- the file this depends on may or may not exist.
 # This file, however, must always exist, so that 'make dist' can

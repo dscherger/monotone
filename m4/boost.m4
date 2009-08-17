@@ -1,4 +1,11 @@
-dnl Grab-bag of checks related to boost.
+# Copyright (C) 2006 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
 
 # Check for suitably new version of boost.
 AC_DEFUN([BOOST_VERSION_CHECK],

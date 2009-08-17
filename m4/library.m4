@@ -1,3 +1,12 @@
+# Copyright (C) 2008 Zack Weinberg <zackw@panix.com>
+#
+# This program is made available under the GNU GPL version 2.0 or
+# greater. See the accompanying file COPYING for details.
+#
+# This program is distributed WITHOUT ANY WARRANTY; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.
+
 # Encapsulation of all the logic required to probe for monotone's
 # dependent libraries.
 
@@ -208,10 +217,10 @@ AC_DEFUN([MTN_FIND_LUA],
 ])
 
 AC_DEFUN([MTN_FIND_PCRE],
-[MTN_CHECK_MODULE([pcre], [7.6],
+[MTN_CHECK_MODULE([pcre], [7.4],
   [AC_LANG_PROGRAM(
     [#include <pcre.h>
-     #if PCRE_MAJOR < 7 || (PCRE_MAJOR == 7 && PCRE_MINOR < 6)
+     #if PCRE_MAJOR < 7 || (PCRE_MAJOR == 7 && PCRE_MINOR < 4)
      #error out of date
      #endif],
     [const char *e;

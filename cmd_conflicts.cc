@@ -1,4 +1,4 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -13,7 +13,7 @@
 #include "app_state.hh"
 #include "cmd.hh"
 #include "database.hh"
-#include "roster_merge.hh"
+#include "merge_roster.hh"
 
 CMD_GROUP(conflicts, "conflicts", "", CMD_REF(tree),
           N_("Commands for conflict resolutions"),
@@ -431,4 +431,10 @@ CMD(clean, "clean", "", CMD_REF(conflicts),
     delete_dir_recursive(resolutions_dir);
 }
 
-// end of file
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

@@ -226,7 +226,7 @@ compute_delta_insns(string const & a,
 
   for (string::size_type
        sz = b.size(),
-       lo = 0; 
+       lo = 0;
        lo < sz; )
     {
       string::size_type apos = 0, alen = 1, badvance = 1;
@@ -243,7 +243,7 @@ compute_delta_insns(string const & a,
         {
           copy_insn(delta, apos, alen);
           u32 save_lo = lo;
-          if (badvance <= blocksz) 
+          if (badvance <= blocksz)
             {
               string::size_type next = lo;
               I(next < b.size() && (lo + badvance - 1) < b.size());
@@ -265,11 +265,11 @@ compute_delta_insns(string const & a,
           // it does a multiply, but for now, ignore this; it turns out that
           // advancements in the range of [2..blocksz-1] are actually really
           // rare.
-          if (badvance >= blocksz/2) 
+          if (badvance >= blocksz/2)
             {
               u32 new_lo = save_lo + badvance;
               u32 new_hi = new_lo + blocksz;
-              if (new_hi > b.size()) 
+              if (new_hi > b.size())
                 {
                   new_hi = b.size();
                 }
@@ -286,7 +286,7 @@ compute_delta_insns(string const & a,
           I(lo < b.size());
           insert_insn(delta, b[lo]);
           rolling.out(static_cast<u8>(b[lo]));
-          if (lo + blocksz < b.size()) 
+          if (lo + blocksz < b.size())
             {
               rolling.in(static_cast<u8>(b[lo+blocksz]));
             }
@@ -761,7 +761,7 @@ inverse_delta_writing_applicator :
 
     for (set<copied_extent>::iterator i = copied_extents.begin();
          i != copied_extents.end(); ++i)
-      { 
+      {
         // It is possible that this extent left a gap after the
         // previously copied extent; in this case we wish to pad
         // the intermediate space with an insert.
@@ -819,221 +819,6 @@ invert_xdelta(string const & old_str,
 }
 
 
-#ifdef BUILD_UNIT_TESTS
-
-#include "unit_tests.hh"
-
-string
-apply_via_normal(string const & base, string const & delta)
-{
-  string tmp;
-  apply_delta(base, delta, tmp);
-  return tmp;
-}
-
-string
-apply_via_piecewise(string const & base, string const & delta)
-{
-  shared_ptr<delta_applicator> appl = new_piecewise_applicator();
-  appl->begin(base);
-  apply_delta(appl, delta);
-  appl->next();
-  string tmp;
-  appl->finish(tmp);
-  return tmp;
-}
-
-void
-spin(string a, string b)
-{
-  string ab, ba;
-  compute_delta(a, b, ab);
-  compute_delta(b, a, ba);
-  UNIT_TEST_CHECK(a == apply_via_normal(b, ba));
-  UNIT_TEST_CHECK(a == apply_via_piecewise(b, ba));
-  UNIT_TEST_CHECK(b == apply_via_normal(a, ab));
-  UNIT_TEST_CHECK(b == apply_via_piecewise(a, ab));
-  string ab_inverted, ba_inverted;
-  invert_xdelta(a, ab, ab_inverted);
-  invert_xdelta(b, ba, ba_inverted);
-  UNIT_TEST_CHECK(a == apply_via_normal(b, ab_inverted));
-  UNIT_TEST_CHECK(a == apply_via_piecewise(b, ab_inverted));
-  UNIT_TEST_CHECK(b == apply_via_normal(a, ba_inverted));
-  UNIT_TEST_CHECK(b == apply_via_piecewise(a, ba_inverted));
-}
-
-UNIT_TEST(xdelta, simple_cases)
-{
-  L(FL("empty/empty"));
-  spin("", "");
-  L(FL("empty/short"));
-  spin("", "a");
-  L(FL("empty/longer"));
-  spin("", "asdfasdf");
-  L(FL("two identical strings"));
-  spin("same string", "same string");
-}
-
-#ifdef WIN32
-#define BOOST_NO_STDC_NAMESPACE
-#endif
-#include <boost/random.hpp>
-
-boost::mt19937 xdelta_prng;
-
-#if BOOST_VERSION >= 103100
-boost::uniform_smallint<char> xdelta_chargen('a', 'z');
-boost::uniform_smallint<size_t> xdelta_sizegen(1024, 65536);
-boost::uniform_smallint<size_t> xdelta_editgen(3, 10);
-boost::uniform_smallint<size_t> xdelta_lengen(1, 256);
-#define PRNG xdelta_prng
-#else
-boost::uniform_smallint<boost::mt19937, char> xdelta_chargen(xdelta_prng, 'a', 'z');
-boost::uniform_smallint<boost::mt19937, size_t> xdelta_sizegen(xdelta_prng, 1024, 65536);
-boost::uniform_smallint<boost::mt19937, size_t> xdelta_editgen(xdelta_prng, 3, 10);
-boost::uniform_smallint<boost::mt19937, size_t> xdelta_lengen(xdelta_prng, 1, 256);
-#define PRNG
-#endif
-
-void
-xdelta_random_string(string & str)
-{
-  size_t sz = xdelta_sizegen(PRNG);
-  str.clear();
-  str.reserve(sz);
-  while (sz-- > 0)
-    {
-      str += xdelta_chargen(PRNG);
-    }
-}
-
-void
-xdelta_randomly_insert(string & str)
-{
-  size_t nedits = xdelta_editgen(PRNG);
-  while (nedits > 0)
-    {
-      size_t pos = xdelta_sizegen(PRNG) % str.size();
-      size_t len = xdelta_lengen(PRNG);
-      if (pos+len >= str.size())
-        continue;
-      string tmp;
-      tmp.reserve(len);
-      for (size_t i = 0; i < len; ++i)
-        tmp += xdelta_chargen(PRNG);
-        str.insert(pos, tmp);
-      nedits--;
-    }
-}
-
-void
-xdelta_randomly_change(string & str)
-{
-  size_t nedits = xdelta_editgen(PRNG);
-  while (nedits > 0)
-    {
-      size_t pos = xdelta_sizegen(PRNG) % str.size();
-      size_t len = xdelta_lengen(PRNG);
-      if (pos+len >= str.size())
-        continue;
-      for (size_t i = 0; i < len; ++i)
-        str[pos+i] = xdelta_chargen(PRNG);
-      nedits--;
-    }
-}
-
-void
-xdelta_randomly_delete(string & str)
-{
-  size_t nedits = xdelta_editgen(PRNG);
-  while (nedits > 0)
-    {
-      size_t pos = xdelta_sizegen(PRNG) % str.size();
-      size_t len = xdelta_lengen(PRNG);
-      if (pos+len >= str.size())
-        continue;
-      str.erase(pos, len);
-      --nedits;
-    }
-}
-
-UNIT_TEST(xdelta, random_simple_delta)
-{
-  for (int i = 0; i < 100; ++i)
-    {
-      string a, b;
-      xdelta_random_string(a);
-      b = a;
-      xdelta_randomly_change(b);
-      xdelta_randomly_insert(b);
-      xdelta_randomly_delete(b);
-      spin(a, b);
-    }
-}
-
-UNIT_TEST(xdelta, random_piecewise_delta)
-{
-  for (int i = 0; i < 50; ++i)
-    {
-      string prev, next, got;
-      xdelta_random_string(prev);
-      shared_ptr<delta_applicator> appl = new_piecewise_applicator();
-      appl->begin(prev);
-      for (int j = 0; j < 5; ++j)
-        {
-          appl->finish(got);
-          UNIT_TEST_CHECK(got == prev);
-          next = prev;
-          xdelta_randomly_change(next);
-          xdelta_randomly_insert(next);
-          xdelta_randomly_delete(next);
-          string delta;
-          compute_delta(prev, next, delta);
-          apply_delta(appl, delta);
-          appl->next();
-          prev = next;
-        }
-      appl->finish(got);
-      UNIT_TEST_CHECK(got == prev);
-  }
-}
-
-UNIT_TEST(xdelta, rolling_sanity_check)
-{
-  const unsigned testbufsize = 512;
-  static const string::size_type blocksz = 64;
-  char testbuf[testbufsize];
-
-  for(unsigned i = 0; i < testbufsize; ++i) 
-    {
-      testbuf[i] = xdelta_chargen(PRNG);
-    }
-  for(unsigned advanceby = 0; advanceby < testbufsize; ++advanceby) 
-    {
-      adler32 incremental(reinterpret_cast<u8 const *>(testbuf), blocksz);
-      for(unsigned i = 0; i < advanceby; ++i) 
-        {
-          incremental.out(static_cast<u8>(testbuf[i]));
-          if ((i + blocksz) < testbufsize) 
-            {
-              incremental.in(static_cast<u8>(testbuf[i+blocksz]));
-            }
-        }
-      adler32 skip(reinterpret_cast<u8 const *>(testbuf), blocksz);
-      u32 new_lo = advanceby;
-      u32 new_hi = new_lo + blocksz;
-      if (new_hi > testbufsize) 
-        {
-          new_hi = testbufsize;
-        }
-      skip.replace_with(reinterpret_cast<u8 const *>(testbuf + new_lo), new_hi - new_lo);
-
-      UNIT_TEST_CHECK(skip.sum() == incremental.sum());
-    }
-  L(FL("rolling sanity check passed"));
-}                   
-
-#endif // BUILD_UNIT_TESTS
 
 // Local Variables:
 // mode: C++

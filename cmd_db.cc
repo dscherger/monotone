@@ -26,6 +26,7 @@
 #include "transforms.hh"
 #include "ui.hh"
 #include "vocab_cast.hh"
+#include "migration.hh"
 
 using std::cin;
 using std::cout;
@@ -115,8 +116,26 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
-  database db(app);
-  db.migrate(keys);
+  migration_status mstat;
+  {
+    database db(app);
+    db.migrate(keys, mstat);
+    app.dbcache.reset();
+  }
+
+  if (mstat.need_regen())
+    {
+      database db(app);
+      regenerate_caches(db);
+    }
+
+  if (mstat.need_flag_day())
+    {
+      P(F("NOTE: because this database was last used by a rather old version\n"
+          "of monotone, you're not done yet.  If you're a project leader, then\n"
+          "see the file UPGRADE for instructions on running '%s db %s'")
+        % prog_name % mstat.flag_day_name());
+    }
 }
 
 CMD(db_execute, "execute", "", CMD_REF(db), "",
@@ -542,7 +561,7 @@ CMD_HIDDEN(load_certs, "load_certs", "", CMD_REF(db), "",
     options::opts::none)
 {
   database db(app);
-  vector< revision<cert> > certs;
+  vector<cert> certs;
 
   P(F("loading certs"));
   db.get_revision_certs(certs);

@@ -1,3 +1,12 @@
+-- Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
+
 -- misc global values
 -- where the main testsuite file is
 srcdir = get_source_dir()
@@ -446,7 +455,7 @@ end
 function samelines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false
@@ -469,7 +478,7 @@ end
 function greplines(f, t)
   local fl = {}
   for l in io.lines(f) do table.insert(fl, l) end
-  if not table.getn(fl) == table.getn(t) then
+  if not (table.getn(fl) == table.getn(t)) then
     L(locheader(), string.format("file has %s lines; table has %s\n",
                                  table.getn(fl), table.getn(t)))
     return false
@@ -859,8 +868,16 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      set_env(name,"C")
   end
 
-  -- no test suite should touch the user's ssh agent
+  -- no test suite should touch the user's ssh agent or display
   unset_env("SSH_AUTH_SOCK")
+  unset_env("DISPLAY")
+
+  -- tests do not use (interactive) editors for commits
+  unset_env("EDITOR")
+  unset_env("VISUAL")
+
+  -- tests should not be timezone sensitive
+  set_env("TZ", "UTC")
 
   logfile = io.open(logname, "w")
   chdir(run_dir);
@@ -960,9 +977,9 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   }
 
   -- callback closure passed to run_tests_in_children
-  local function report_one_test(tno, tname, status)
+  local function report_one_test(tno, tname, status, wall_seconds, cpu_seconds)
      local tdir = run_dir .. "/" .. tname
-     local test_header = string.format("%3d %-45s ", tno, tname)
+     local test_header = string.format("%3d %-45s", tno, tname)
      local what
      local can_delete
      -- the child should always exit successfully, just to avoid
@@ -1012,7 +1029,19 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
      end
 
      counts.total = counts.total + 1
-     P(string.format("%s%s\n", test_header, what))
+     local format_seconds = function (seconds)
+                               return string.format("%d:%02d",
+                                                    seconds / 60,
+                                                    seconds % 60)
+                            end
+     local times = ""
+     if wall_seconds > -1 then
+        times = format_seconds(wall_seconds)
+        if cpu_seconds > -1 then
+           times = times .. ", " .. format_seconds(cpu_seconds) .. " on CPU"
+        end
+     end
+     P(string.format("%s %s %s\n", test_header, what, times))
      return (can_delete and not debugging)
   end
 

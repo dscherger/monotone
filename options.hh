@@ -1,5 +1,11 @@
-// Copyright 2006 Timothy Brownawell <tbrownaw@gmail.com>
-// This is made available under the GNU GPL v2 or later.
+// Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #ifndef __OPTIONS_HH__
 #define __OPTIONS_HH__
@@ -20,6 +26,7 @@
 struct options
 {
   options();
+  const options & operator = (options const & other);
 
   typedef boost::function<void()> reset_function;
   typedef option::option<options> option_type;
@@ -35,12 +42,12 @@ struct options
   {
     static options_type const & none ();
     static options_type const & all_options ();
-# define OPTSET(name)	     \
+# define OPTSET(name)        \
     static options_type const & name ();
 
 # define OPTVAR(optset, type, name, default_)
 
-#define OPTION(optset, name, hasarg, optstring, description)	 \
+#define OPTION(optset, name, hasarg, optstring, description)     \
     static options_type const & name ();
 
 # define OPTSET_REL(parent, child)
@@ -53,21 +60,21 @@ struct options
 # undef OPTSET_REL
   };
 
-# define OPTSET(name)				\
-  private:					\
+# define OPTSET(name)                           \
+  private:                                      \
   void reset_optset_ ## name ();
 
-# define OPTVAR(optset, type, name, default_)	\
-  public:					\
-  type name;					\
+# define OPTVAR(optset, type, name, default_)   \
+  public:                                       \
+  type name;                                    \
   void reset_ ## name ();
 
-#define OPTION(optset, name, hasarg, optstring, description)	 \
-  public:							 \
-  bool name ## _given;						 \
-private:							 \
-  void set_ ## name (std::string arg);				 \
-  void real_set_ ## name (std::string arg);			 \
+#define OPTION(optset, name, hasarg, optstring, description)     \
+  public:                                                        \
+  bool name ## _given;                                           \
+private:                                                         \
+  void set_ ## name (std::string arg);                           \
+  void real_set_ ## name (std::string arg);                      \
   void reset_opt_ ## name ();
 
 # define OPTSET_REL(parent, child)
@@ -82,7 +89,7 @@ private:							 \
 
 option::option_set<options>
 operator | (option::option_set<options> const & opts,
-	    option::option_set<options> const & (*fun)());
+            option::option_set<options> const & (*fun)());
 
 #endif
 

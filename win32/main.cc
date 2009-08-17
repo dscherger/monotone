@@ -1,6 +1,4 @@
-// Copyright (C) 2006  Zack Weinberg  <zackw@panix.com>
-// Based on code by Graydon Hoare and contributors
-// Originally derived from execution_monitor.cpp, a part of boost.
+// Copyright (C) 2006 Zack Weinberg <zackw@panix.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -88,7 +86,7 @@ seh_reporting_function(LPEXCEPTION_POINTERS ep)
     case EXCEPTION_ACCESS_VIOLATION:
       report_error("memory access violation");
       break;
-      
+
     case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
       report_error("array bounds exceeded");
       break;
@@ -190,7 +188,7 @@ main(int argc, char ** argv)
   } else {
     argv0 = argv[0];
   }
-  
+
   SetUnhandledExceptionFilter(&seh_reporting_function);
 
 #ifdef MS_CRT_DEBUG_HOOK

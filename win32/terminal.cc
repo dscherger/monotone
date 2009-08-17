@@ -1,13 +1,16 @@
-// copyright (C) 2005 derek scherger <derek@echologic.com>
-// copyright (C) 2005 nathaniel smith <njs@pobox.com>
-// all rights reserved.
-// licensed to the public under the terms of the GNU GPL (>= 2)
-// see the file COPYING for details
+// Copyright (C) 2005 Derek Scherger <derek@echologic.com>
+//                    Nathaniel Smith <njs@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <windows.h>
 #include <io.h>
-
 
 #include "platform.hh"
 
@@ -19,13 +22,19 @@ bool have_smart_terminal()
   else
     term = "";
 
-  // Win32 consoles are weird; cmd.exe does not set TERM, but isatty returns
-  // true, Cygwin and MinGW MSYS shells set a TERM but isatty returns false.
-  // Let's just check for some obvious dumb terminals, and default to smart.
-  if (term == "" || term == "dumb")
-    return false;
+  // cmd.exe does not set TERM, but isatty returns true. Cygwin and MinGW
+  // MSYS shells set a TERM but isatty returns false.
+  if (isatty(2))
+    {
+      return true;
+    }
   else
-    return true;
+    {
+      if (term == "" || term == "dumb")
+        return false;
+      else
+        return true;
+    }
 }
 
 unsigned int terminal_width()

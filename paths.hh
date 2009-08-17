@@ -1,8 +1,5 @@
-#ifndef __PATHS_HH__
-#define __PATHS_HH__
-
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __PATHS_HH__
+#define __PATHS_HH__
 
 // safe, portable, fast, simple path handling -- in that order.
 // but they all count.
@@ -102,7 +102,9 @@
 //       it were a string
 
 #include <boost/shared_ptr.hpp>
+#include <boost/concept_check.hpp>
 #include "origin_type.hh"
+#include <map>
 
 class any_path;
 class file_path;
@@ -318,6 +320,7 @@ public:
   bookkeeping_path(std::string const &, origin::type made_from);
   bookkeeping_path operator /(char const *) const;
   bookkeeping_path operator /(path_component const &) const;
+  bookkeeping_path operator /(file_path const & to_append) const;
 
   // exposed for the use of walk_tree and friends
   static bool internal_string_is_bookkeeping_path(utf8 const & path);
@@ -396,6 +399,30 @@ template <> void dump(file_path const & sp, std::string & out);
 template <> void dump(bookkeeping_path const & sp, std::string & out);
 template <> void dump(system_path const & sp, std::string & out);
 
+// Base class for predicate functors on paths.  T must be one of the path
+// classes.
+template <class T>
+struct path_predicate
+{
+  BOOST_CLASS_REQUIRE2(T, any_path, boost, ConvertibleConcept);
+  virtual bool operator()(T const &) const = 0;
+protected:
+  path_predicate() {}
+  virtual ~path_predicate() {}
+};
+
+// paths.cc provides always-true and always-false predicates.
+template <class T>
+struct path_always_true : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+template <class T>
+struct path_always_false : public path_predicate<T>
+{
+  virtual bool operator()(T const &) const;
+};
+
 // Return a file_path, bookkeeping_path, or system_path, as appropriate.
 // 'path' is an external path. If to_workspace_root, path is relative to
 // workspace root, or absolute. Otherwise, it is relative to the current
@@ -418,6 +445,12 @@ go_to_workspace(system_path const & new_workspace);
 
 void mark_std_paths_used(void);
 
+file_path
+find_new_path_for(std::map<file_path, file_path> const & renames,
+                  file_path const & old_path);
+
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -425,5 +458,3 @@ void mark_std_paths_used(void);
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

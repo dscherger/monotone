@@ -19,7 +19,10 @@
 #include "vector.hh"
 
 #include <string.h>
+#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
@@ -34,6 +37,7 @@
 
 #include "app_state.hh"
 #include "cert.hh"
+#include "project.hh"
 #include "cleanup.hh"
 #include "constants.hh"
 #include "dates.hh"
@@ -44,9 +48,8 @@
 #include "revision.hh"
 #include "safe_map.hh"
 #include "sanity.hh"
-#include "schema_migration.hh"
+#include "migration.hh"
 #include "transforms.hh"
-#include "ui.hh"
 #include "vocab.hh"
 #include "vocab_cast.hh"
 #include "xdelta.hh"
@@ -73,13 +76,14 @@ extern char const schema_constant[];
 
 using std::deque;
 using std::istream;
-using std::ifstream;
 using std::make_pair;
 using std::map;
 using std::multimap;
 using std::ostream;
 using std::pair;
+using std::remove_if;
 using std::set;
+using std::sort;
 using std::string;
 using std::vector;
 using std::accumulate;
@@ -87,12 +91,16 @@ using std::accumulate;
 using boost::shared_ptr;
 using boost::shared_dynamic_cast;
 using boost::lexical_cast;
+using boost::get;
+using boost::tuple;
+using boost::lexical_cast;
 
 using Botan::PK_Encryptor;
 using Botan::PK_Verifier;
 using Botan::SecureVector;
 using Botan::X509_PublicKey;
 using Botan::RSA_PublicKey;
+using Botan::get_pk_encryptor;
 
 int const one_row = 1;
 int const one_col = 1;
@@ -175,7 +183,8 @@ namespace
 
   enum open_mode { normal_mode = 0,
                    schema_bypass_mode,
-                   format_bypass_mode };
+                   format_bypass_mode,
+                   cache_bypass_mode };
 
   typedef hashmap::hash_map<revision_id, set<revision_id> > parent_id_map;
   typedef hashmap::hash_map<revision_id, rev_height> height_map;
@@ -213,6 +222,9 @@ private:
   void open();
   void close();
   void check_format();
+  void check_caches();
+
+  bool table_has_data(string const & name);
 
   //
   // --== Basic SQL interface and statement caching ==--
@@ -451,6 +463,11 @@ database_impl::~database_impl()
     close();
 }
 
+struct database_cache
+{
+  map<system_path, boost::shared_ptr<database_impl> > dbs;
+};
+
 database::database(app_state & app)
   : lua(app.lua)
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
@@ -458,11 +475,13 @@ database::database(app_state & app)
 #endif
 {
 
-  boost::shared_ptr<database_impl> & i = app.lookup_db(app.opts.dbname);
+  if (!app.dbcache)
+    app.dbcache.reset(new database_cache);
+
+  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
-    {
-      i.reset(new database_impl(app.opts.dbname));
-    }
+    i.reset(new database_impl(app.opts.dbname));
+
   imp = i;
 }
 
@@ -494,47 +513,28 @@ database::database_specified()
 void
 database::check_is_not_rosterified()
 {
-  results res;
-  imp->fetch(res, one_col, any_rows,
-             query("SELECT 1 FROM rosters LIMIT 1"));
-  E(res.empty(), origin::user,
+  E(!imp->table_has_data("rosters"), origin::user,
     F("this database already contains rosters"));
+}
+
+bool
+database_impl::table_has_data(string const & name)
+{
+  results res;
+  fetch(res, one_col, any_rows, query("SELECT 1 FROM " + name + " LIMIT 1"));
+  return !res.empty();
 }
 
 void
 database_impl::check_format()
 {
-  results res;
-
-  // Check for manifests, revisions, rosters, and heights.
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM manifests LIMIT 1"));
-  bool have_manifests = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM revisions LIMIT 1"));
-  bool have_revisions = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM rosters LIMIT 1"));
-  bool have_rosters = !res.empty();
-  fetch(res, one_col, any_rows, query("SELECT 1 FROM heights LIMIT 1"));
-  bool have_heights = !res.empty();
-
-
-  if (!have_manifests)
-    {
-      // Must have been changesetified and rosterified already.
-      // Or else the database was just created.
-      // Do we need to regenerate cached data?
-      E(!have_revisions || (have_rosters && have_heights),
-        origin::no_fault,
-        F("database %s lacks some cached data\n"
-          "run '%s db regenerate_caches' to restore use of this database")
-        % filename % ui.prog_name);
-    }
-  else
+  if (table_has_data("manifests"))
     {
       // The rosters and heights tables should be empty.
-      I(!have_rosters && !have_heights);
+      I(!table_has_data("rosters") && !table_has_data("heights"));
 
       // they need to either changesetify or rosterify.  which?
-      if (have_revisions)
+      if (table_has_data("revisions"))
         E(false, origin::no_fault,
           F("database %s contains old-style revisions\n"
             "if you are a project leader or doing local testing:\n"
@@ -550,6 +550,19 @@ database_impl::check_format()
             "this is a very old database; it needs to be upgraded\n"
             "please see README.changesets for details")
           % filename);
+    }
+}
+
+void
+database_impl::check_caches()
+{
+  if (table_has_data("revisions"))
+    {
+      E(table_has_data("rosters") && table_has_data("heights"),
+        origin::no_fault,
+        F("database %s lacks some cached data\n"
+          "run '%s db regenerate_caches' to restore use of this database")
+        % filename % prog_name);
     }
 }
 
@@ -582,7 +595,12 @@ database_impl::sql(enum open_mode mode)
           check_sql_schema(__sql, filename);
 
           if (mode != format_bypass_mode)
-            check_format();
+            {
+              check_format();
+
+              if (mode != cache_bypass_mode)
+                check_caches();
+            }
         }
 
       install_functions();
@@ -961,12 +979,12 @@ database::info(ostream & out, bool analyze)
       = max_element(counts.begin(), counts.end(), longest_number)->length();
     for(vector<string>::iterator i = counts.begin(); i != counts.end(); i++)
       if (width > i->length() && (*i)[0] != '[')
-        i->insert(0, width - i->length(), ' ');
+        i->insert(0U, width - i->length(), ' ');
 
     width = max_element(bytes.begin(), bytes.end(), longest_number)->length();
     for(vector<string>::iterator i = bytes.begin(); i != bytes.end(); i++)
       if (width > i->length() && (*i)[0] != '[')
-        i->insert(0, width - i->length(), ' ');
+        i->insert(0U, width - i->length(), ' ');
   }
 
   i18n_format form =
@@ -1169,10 +1187,10 @@ database::version(ostream & out)
 }
 
 void
-database::migrate(key_store & keys)
+database::migrate(key_store & keys, migration_status & mstat)
 {
   ensure_open_for_maintenance();
-  migrate_sql_schema(imp->__sql, keys, get_filename());
+  mstat = migrate_sql_schema(imp->__sql, keys, get_filename());
 }
 
 void
@@ -1192,6 +1210,12 @@ void
 database::ensure_open_for_format_changes()
 {
   imp->sql(format_bypass_mode);
+}
+
+void
+database::ensure_open_for_cache_reset()
+{
+  imp->sql(cache_bypass_mode);
 }
 
 void
@@ -1732,14 +1756,13 @@ database::put_file_delta(file_id const & ident,
                          file_id const & base,
                          file_delta const & del)
 {
-  // nb: delta schema is (id, base, delta)
   I(!null_id(ident));
   I(!null_id(base));
 
   gzip<delta> del_packed;
   encode_gzip(del.inner(), del_packed);
 
-  imp->execute(query("INSERT INTO file_deltas VALUES (?, ?, ?)")
+  imp->execute(query("INSERT INTO file_deltas (id, base, delta) VALUES (?, ?, ?)")
                % blob(ident.inner()())
                % blob(base.inner()())
                % blob(del_packed()));
@@ -2176,8 +2199,6 @@ database::put_file_version(file_id const & old_id,
                            file_delta const & del)
 {
   I(!(old_id == new_id));
-  file_data old_data, new_data;
-  file_delta reverse_delta;
 
   if (!file_version_exists(old_id))
     {
@@ -2186,6 +2207,24 @@ database::put_file_version(file_id const & old_id,
       return;
     }
 
+  var_value delta_direction("reverse");
+  var_key key(var_domain("database"), var_name("delta-direction"));
+  if (var_exists(key))
+    {
+      get_var(key, delta_direction);
+    }
+  bool make_reverse_deltas(delta_direction() == "reverse" ||
+                           delta_direction() == "both");
+  bool make_forward_deltas(delta_direction() == "forward" ||
+                           delta_direction() == "both");
+  if (!make_reverse_deltas && !make_forward_deltas)
+    {
+      W(F("Unknown delta direction '%s'; assuming 'reverse'. Valid "
+          "values are 'reverse', 'forward', 'both'.") % delta_direction);
+      make_reverse_deltas = true;
+    }
+
+  file_data old_data, new_data;
   get_file_version(old_id, old_data);
   {
     data tmp;
@@ -2193,6 +2232,7 @@ database::put_file_version(file_id const & old_id,
     new_data = file_data(tmp);
   }
 
+  file_delta reverse_delta;
   {
     string tmp;
     invert_xdelta(old_data.inner()(), del.inner()(), tmp);
@@ -2206,23 +2246,36 @@ database::put_file_version(file_id const & old_id,
   }
 
   transaction_guard guard(*this);
+  if (make_reverse_deltas)
+    {
+      if (!file_or_manifest_base_exists(new_id, "files"))
+        {
+          imp->schedule_delayed_file(new_id, new_data);
+        }
+      if (!imp->delta_exists(old_id, new_id, "file_deltas"))
+        {
+          put_file_delta(old_id, new_id, reverse_delta);
+        }
+    }
+  if (make_forward_deltas)
+    {
+      if (!imp->delta_exists(new_id, old_id, "file_deltas"))
+        {
+          put_file_delta(new_id, old_id, del);
+        }
+    }
+  else
+    {
+      imp->drop(new_id.inner(), "file_deltas");
+    }
   if (file_or_manifest_base_exists(old_id, "files"))
     {
       // descendent of a head version replaces the head, therefore old head
       // must be disposed of
-      imp->drop_or_cancel_file(old_id);
+      if (delta_exists(old_id.inner(), "file_deltas"))
+        imp->drop_or_cancel_file(old_id);
     }
-  if (!file_or_manifest_base_exists(new_id, "files"))
-    {
-      imp->schedule_delayed_file(new_id, new_data);
-      imp->drop(new_id.inner(), "file_deltas");
-    }
-
-  if (!imp->delta_exists(old_id, new_id, "file_deltas"))
-    {
-      put_file_delta(old_id, new_id, reverse_delta);
-      guard.commit();
-    }
+  guard.commit();
 }
 
 void
@@ -2512,19 +2565,22 @@ database::deltify_revision(revision_id const & rid)
                j = edge_changes(i).deltas_applied.begin();
              j != edge_changes(i).deltas_applied.end(); ++j)
           {
-            if (file_or_manifest_base_exists(delta_entry_src(j), "files") &&
-                file_version_exists(delta_entry_dst(j)))
+            file_id old_id(delta_entry_src(j));
+            file_id new_id(delta_entry_dst(j));
+            // if not yet deltified
+            if (file_or_manifest_base_exists(old_id, "files") &&
+                file_version_exists(new_id))
               {
                 file_data old_data;
                 file_data new_data;
-                get_file_version(delta_entry_src(j), old_data);
-                get_file_version(delta_entry_dst(j), new_data);
+                get_file_version(old_id, old_data);
+                get_file_version(new_id, new_data);
                 delta delt;
                 diff(old_data.inner(), new_data.inner(), delt);
                 file_delta del(delt);
-                imp->drop_or_cancel_file(delta_entry_dst(j));
-                imp->drop(delta_entry_dst(j).inner(), "file_deltas");
-                put_file_version(delta_entry_src(j), delta_entry_dst(j), del);
+                imp->drop_or_cancel_file(new_id);
+                imp->drop(new_id.inner(), "file_deltas");
+                put_file_version(old_id, new_id, del);
               }
           }
       }
@@ -3024,6 +3080,14 @@ database::check_signature(rsa_keypair_id const & id,
     return cert_bad;
 }
 
+cert_status
+database::check_cert(cert const & t)
+{
+  string signed_text;
+  t.signable_text(signed_text);
+  return check_signature(t.key, signed_text, t.sig);
+}
+
 // cert management
 
 bool
@@ -3053,7 +3117,7 @@ database_impl::put_cert(cert const & t,
                         string const & table)
 {
   id thash;
-  cert_hash_code(t, thash);
+  t.hash_code(thash);
   rsa_sha1_signature sig;
 
   string insert = "INSERT INTO " + table + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -3194,30 +3258,30 @@ database_impl::get_certs(id const & ident,
 
 
 bool
-database::revision_cert_exists(revision<cert> const & cert)
+database::revision_cert_exists(cert const & cert)
 {
-  return imp->cert_exists(cert.inner(), "revision_certs");
+  return imp->cert_exists(cert, "revision_certs");
 }
 
 bool
-database::put_revision_cert(revision<cert> const & cert)
+database::put_revision_cert(cert const & cert)
 {
   if (revision_cert_exists(cert))
     {
       L(FL("revision cert on '%s' already exists in db")
-        % cert.inner().ident);
+        % cert.ident);
       return false;
     }
 
-  if (!revision_exists(revision_id(cert.inner().ident)))
+  if (!revision_exists(revision_id(cert.ident)))
     {
       W(F("cert revision '%s' does not exist in db")
-        % cert.inner().ident);
+        % cert.ident);
       W(F("dropping cert"));
       return false;
     }
 
-  imp->put_cert(cert.inner(), "revision_certs");
+  imp->put_cert(cert, "revision_certs");
   imp->cert_stamper.note_change();
   return true;
 }
@@ -3246,35 +3310,26 @@ database::get_revision_cert_nobranch_index(vector< pair<revision_id,
 }
 
 outdated_indicator
-database::get_revision_certs(vector< revision<cert> > & ts)
+database::get_revision_certs(vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
-                            vector< revision<cert> > & ts)
+                            vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), name, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3282,12 +3337,9 @@ outdated_indicator
 database::get_revision_certs(revision_id const & id,
                              cert_name const & name,
                              cert_value const & val,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), name, val, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
@@ -3308,46 +3360,39 @@ database::get_revisions_with_cert(cert_name const & name,
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, val, certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & id,
-                             vector< revision<cert> > & ts)
+                             vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(id.inner(), certs, "revision_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
   return imp->cert_stamper.get_indicator();
 }
 
 outdated_indicator
 database::get_revision_certs(revision_id const & ident,
-                             vector<id> & ts)
+                             vector<id> & ids)
 {
   results res;
-  vector<cert> certs;
   imp->fetch(res, one_col, any_rows,
              query("SELECT hash "
                    "FROM revision_certs "
                    "WHERE id = ?")
              % blob(ident.inner()()));
-  ts.clear();
+  ids.clear();
   for (size_t i = 0; i < res.size(); ++i)
-    ts.push_back(id(res[i][0], origin::database));
+    ids.push_back(id(res[i][0], origin::database));
   return imp->cert_stamper.get_indicator();
 }
 
 void
 database::get_revision_cert(id const & hash,
-                            revision<cert> & c)
+                            cert & c)
 {
   results res;
   vector<cert> certs;
@@ -3358,7 +3403,7 @@ database::get_revision_cert(id const & hash,
              % blob(hash()));
   imp->results_to_certs(res, certs);
   I(certs.size() == 1);
-  c = revision<cert>(certs[0]);
+  c = certs[0];
 }
 
 bool
@@ -3375,27 +3420,137 @@ database::revision_cert_exists(revision_id const & hash)
   return (res.size() == 1);
 }
 
+// FIXME: the bogus-cert family of functions is ridiculous
+// and needs to be replaced, or at least factored.
+namespace {
+  struct
+  bogus_cert_p
+  {
+    database & db;
+    bogus_cert_p(database & db) : db(db) {};
+
+    bool operator()(cert const & c) const
+    {
+      cert_status status = db.check_cert(c);
+      if (status == cert_ok)
+        {
+          L(FL("cert ok"));
+          return false;
+        }
+      else if (status == cert_bad)
+        {
+          string txt;
+          c.signable_text(txt);
+          W(F("ignoring bad signature by '%s' on '%s'") % c.key() % txt);
+          return true;
+        }
+      else
+        {
+          I(status == cert_unknown);
+          string txt;
+          c.signable_text(txt);
+          W(F("ignoring unknown signature by '%s' on '%s'") % c.key() % txt);
+          return true;
+        }
+    }
+  };
+
+  void
+  erase_bogus_certs_internal(vector<cert> & certs,
+                             database & db,
+                             database::cert_trust_checker const & checker)
+  {
+    typedef vector<cert>::iterator it;
+    it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
+    certs.erase(e, certs.end());
+
+    vector<cert> tmp_certs;
+
+    // sorry, this is a crazy data structure
+    typedef tuple<id, cert_name, cert_value> trust_key;
+    typedef map< trust_key,
+      pair< shared_ptr< set<rsa_keypair_id> >, it > > trust_map;
+    trust_map trust;
+
+    for (it i = certs.begin(); i != certs.end(); ++i)
+      {
+        trust_key key = trust_key(i->ident.inner(),
+                                  i->name,
+                                  i->value);
+        trust_map::iterator j = trust.find(key);
+        shared_ptr< set<rsa_keypair_id> > s;
+        if (j == trust.end())
+          {
+            s.reset(new set<rsa_keypair_id>());
+            trust.insert(make_pair(key, make_pair(s, i)));
+          }
+        else
+          s = j->second.first;
+        s->insert(i->key);
+      }
+
+    for (trust_map::const_iterator i = trust.begin();
+         i != trust.end(); ++i)
+      {
+        if (checker(*(i->second.first),
+                    get<0>(i->first),
+                    get<1>(i->first),
+                    get<2>(i->first)))
+          {
+            if (global_sanity.debug_p())
+              L(FL("trust function liked %d signers of %s cert on revision %s")
+                % i->second.first->size()
+                % get<1>(i->first)
+                % get<0>(i->first));
+            tmp_certs.push_back(*(i->second.second));
+          }
+        else
+          {
+            W(F("trust function disliked %d signers of %s cert on revision %s")
+              % i->second.first->size()
+              % get<1>(i->first)
+              % get<0>(i->first));
+          }
+      }
+    certs = tmp_certs;
+  }
+} // anonymous namespace
+
 void
-database::get_manifest_certs(manifest_id const & id,
-                             vector< manifest<cert> > & ts)
+database::erase_bogus_certs(vector<cert> & certs)
 {
-  vector<cert> certs;
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_revision_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
+}
+void
+database::erase_bogus_certs(vector<cert> & certs,
+                            database::cert_trust_checker const & checker)
+{
+  erase_bogus_certs_internal(certs, *this, checker);
+}
+
+// These are only used by migration from old manifest-style ancestry, so we
+// don't much worry that they are not perfectly typesafe.  Also, we know
+// that the callers want bogus certs erased.
+
+void
+database::get_manifest_certs(manifest_id const & id, std::vector<cert> & certs)
+{
   imp->get_certs(id.inner(), certs, "manifest_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
 }
-
 
 void
-database::get_manifest_certs(cert_name const & name,
-                            vector< manifest<cert> > & ts)
+database::get_manifest_certs(cert_name const & name, std::vector<cert> & certs)
 {
-  vector<cert> certs;
   imp->get_certs(name, certs, "manifest_certs");
-  ts.clear();
-  add_decoration_to_container(certs, ts);
+  erase_bogus_certs_internal(certs, *this,
+                             boost::bind(&lua_hooks::hook_get_manifest_cert_trust,
+                                         &this->lua, _1, _2, _3, _4));
 }
-
 
 // completions
 void
@@ -3407,54 +3562,28 @@ database_impl::add_prefix_matching_constraint(string const & colname,
 
   if (prefix.empty())
     q.sql_cmd += "1";  // always true
+  else if (prefix.size() > constants::idlen)
+    q.sql_cmd += "0"; // always false
   else
     {
-      string binary_prefix = decode_hexenc(prefix, origin::internal);
-      string lower_bound(binary_prefix);
-      string upper_bound(binary_prefix);
+      string lower_hex = prefix;
+      if (lower_hex.size() < constants::idlen)
+        lower_hex.append(constants::idlen - lower_hex.size(), '0');
+      string lower_bound = decode_hexenc(lower_hex, origin::internal);
 
-      string::reverse_iterator ity(upper_bound.rbegin());
-      if (ity != upper_bound.rend())
-        ++(*ity);
-      while ((*ity == 0) && ity != upper_bound.rend())
-        {
-          ++ity;
-          ++(*ity);
-        }
+      string upper_hex = prefix;
+      if (upper_hex.size() < constants::idlen)
+        upper_hex.append(constants::idlen - upper_hex.size(), 'f');
+      string upper_bound = decode_hexenc(upper_hex, origin::internal);
 
-      if (ity == upper_bound.rend())
-        {
-          // no upper bound needed, as the lower bound is
-          // 0xffffff...
-          if (global_sanity.debug_p())
-            L(FL("prefix_matcher: only lower bound ('%s')")
-              % lower_bound);
+      if (global_sanity.debug_p())
+        L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
+          % encode_hexenc(lower_bound, origin::internal)
+          % encode_hexenc(upper_bound, origin::internal));
 
-          q.sql_cmd += colname + " > ?";
-          q.args.push_back(blob(lower_bound));
-        }
-      else
-        {
-          if (global_sanity.debug_p())
-            L(FL("prefix_matcher: lower bound ('%s') and upper bound ('%s')")
-              % lower_bound
-              % upper_bound);
-
-          q.sql_cmd += colname + " BETWEEN ? AND ?";
-          q.args.push_back(blob(lower_bound));
-          q.args.push_back(blob(upper_bound));
-        }
-
-      // encode_hexenc might have lost a nibble a the end, thus we possibly
-      // need to add a second check, with a LIKE operator on the hex
-      // encoded string.
-
-      if (prefix.size() % 2 == 1)
-        {
-          string pattern = prefix + '%';
-          q.sql_cmd += " AND (hex(" + colname + ") LIKE ?)";
-          q.args.push_back(text(pattern));
-        }
+      q.sql_cmd += colname + " BETWEEN ? AND ?";
+      q.args.push_back(blob(lower_bound));
+      q.args.push_back(blob(upper_bound));
     }
 }
 
@@ -3524,8 +3653,7 @@ database::select_parent(string const & partial,
   completions.clear();
 
   query q("SELECT DISTINCT parent FROM revision_ancestry WHERE ");
-  imp->add_prefix_matching_constraint("child", encode_hexenc(partial,
-                                                             origin::internal), q);
+  imp->add_prefix_matching_constraint("child", partial, q);
   imp->fetch(res, 1, any_rows, q);
 
   for (size_t i = 0; i < res.size(); ++i)
@@ -3968,31 +4096,6 @@ database_impl::close()
 
   I(!__sql);
 }
-
-// the database holds onto the lua_hooks object and uses it to re-expose
-// these two hooks.  it is impractical to pass the lua_hooks object down to
-// all the places where this is used, and they're all going to get
-// reexamined when we do policy branches anyway.  also, arguably this is
-// cleaner, because those places don't have access to *all* the lua hooks,
-// just these two.  (manifest cert trust is only relevant to pre-roster
-// migration, but revision cert trust comes up everywhere erase_bogus_certs
-// is called.)  (A near-term refactor that might make sense: make
-// erase_bogus_certs a project_t member and have the project_t hold the
-// lua_hooks reference.)
-
-bool
-database::hook_get_manifest_cert_trust(set<rsa_keypair_id> const & signers,
-    manifest_id const & id, cert_name const & name, cert_value const & val)
-{
-  return lua.hook_get_manifest_cert_trust(signers, id, name, val);
-};
-
-bool
-database::hook_get_revision_cert_trust(set<rsa_keypair_id> const & signers,
-    revision_id const & id, cert_name const & name, cert_value const & val)
-{
-  return lua.hook_get_revision_cert_trust(signers, id, name, val);
-};
 
 // transaction guards
 

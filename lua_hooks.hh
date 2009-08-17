@@ -1,8 +1,5 @@
-#ifndef __LUA_HOOKS_HH__
-#define __LUA_HOOKS_HH__
-
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -10,6 +7,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __LUA_HOOKS_HH__
+#define __LUA_HOOKS_HH__
 
 // this file defines a typed C++ interface to the various hooks
 // we expose to the user as lua functions or variables
@@ -22,7 +22,7 @@
 #include "paths.hh"
 #include "commands.hh"
 
-struct uri;
+struct uri_t;
 class app_state;
 struct lua_State;
 struct globish;
@@ -58,19 +58,11 @@ public:
                          external & result);
   bool hook_persist_phrase_ok();
   bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
-                                   hexenc<id> const & id,
-                                   cert_name const & name,
-                                   cert_value const & val);
-  bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
-                                   revision_id const & id,
+                                   id const & hash,
                                    cert_name const & name,
                                    cert_value const & val);
   bool hook_get_manifest_cert_trust(std::set<rsa_keypair_id> const & signers,
-                                    hexenc<id> const & id,
-                                    cert_name const & name,
-                                    cert_value const & val);
-  bool hook_get_manifest_cert_trust(std::set<rsa_keypair_id> const & signers,
-                                    manifest_id const & id,
+                                    id const & hash,
                                     cert_name const & name,
                                     cert_value const & val);
   bool hook_accept_testresult_change(std::map<rsa_keypair_id, bool> const & old_results,
@@ -81,12 +73,12 @@ public:
                             globish const & include,
                             globish const & exclude,
                             rsa_keypair_id & k);
-  bool hook_get_netsync_connect_command(uri const & u,
+  bool hook_get_netsync_connect_command(uri_t const & uri,
                                         globish const & include_pattern,
                                         globish const & exclude_pattern,
                                         bool debug,
                                         std::vector<std::string> & argv);
-  bool hook_use_transport_auth(uri const & u);
+  bool hook_use_transport_auth(uri_t const & uri);
 
   bool hook_get_netsync_read_permitted(std::string const & branch,
                                        rsa_keypair_id const & identity);
@@ -121,15 +113,19 @@ public:
   bool hook_get_default_command_options(commands::command_id const & cmd,
                                         args_vector & args);
 
+  bool hook_get_date_format_spec(std::string & spec);
+
   // workspace hooks
   bool hook_use_inodeprints();
 
   // attribute hooks
   bool hook_init_attributes(file_path const & filename,
                             std::map<std::string, std::string> & attrs);
-  bool hook_apply_attribute(std::string const & attr,
-                            file_path const & filename,
-                            std::string const & value);
+  bool hook_set_attribute(std::string const & attr,
+                          file_path const & filename,
+                          std::string const & value);
+  bool hook_clear_attribute(std::string const & attr,
+                            file_path const & filename);
 
   // validation hooks
   bool hook_validate_commit_message(utf8 const & message,
@@ -189,6 +185,8 @@ public:
   bool hook_note_mtn_startup(args_vector const & args);
 };
 
+#endif // __LUA_HOOKS_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -196,5 +194,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __LUA_HOOKS_HH__

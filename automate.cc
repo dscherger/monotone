@@ -1,5 +1,5 @@
-// Copyright (C) 2004, 2007 Nathaniel Smith <njs@pobox.com>
-// Copyright (C) 2007 - 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2004 Nathaniel Smith <njs@pobox.com>
+//               2007 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -50,6 +50,7 @@ using std::allocator;
 using std::basic_ios;
 using std::basic_stringbuf;
 using std::char_traits;
+using std::find;
 using std::inserter;
 using std::make_pair;
 using std::map;
@@ -91,7 +92,7 @@ CMD_AUTOMATE(heads, N_("[BRANCH]"),
   else
     {
       workspace::require_workspace(F("with no argument, this command prints the heads of the workspace's branch"));
-      branch = app.opts.branchname;
+      branch = app.opts.branch;
     }
 
   set<revision_id> heads;
@@ -535,7 +536,7 @@ struct node_info
   node_id id;
   path::status type;
   file_id ident;
-  full_attr_map_t attrs;
+  attr_map_t attrs;
 
   node_info() : exists(false), id(the_null_node), type(path::nonexistent) {}
 };
@@ -1055,11 +1056,13 @@ CMD_AUTOMATE(inventory,  N_("[PATH]..."),
            inserter(excludes, excludes.end()));
     }
 
-  node_restriction nmask(work, includes, excludes, app.opts.depth, old_roster, new_roster);
+  node_restriction nmask(includes, excludes, app.opts.depth,
+                         old_roster, new_roster, ignored_file(work));
   // skip the check of the workspace paths because some of them might
   // be missing and the user might want to query the recorded structure
   // of them anyways
-  path_restriction pmask(work, includes, excludes, app.opts.depth, path_restriction::skip_check);
+  path_restriction pmask(includes, excludes, app.opts.depth,
+                         path_restriction::skip_check);
 
   inventory_rosters(old_roster, new_roster, nmask, pmask, inventory);
   inventory_filesystem(work, pmask, inventory);
@@ -1258,8 +1261,7 @@ CMD_AUTOMATE(get_revision, N_("REVID"),
 // Added in: 7.0
 // Purpose: Outputs (an optionally restricted) revision based on
 //          changes in the current workspace
-// Error conditions: If there are no changes in the current workspace or the
-// restriction is invalid or has no recorded changes, prints an error message
+// Error conditions: If the restriction is invalid, prints an error message
 // to stderr and exits with status 1. A workspace is required.
 CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
              N_("Shows change information for a workspace"),
@@ -1291,7 +1293,6 @@ CMD_AUTOMATE(get_current_revision, N_("[PATHS ...]"),
   make_restricted_revision(old_rosters, new_roster, mask, rev,
                            excluded, join_words(execid));
   rev.check_sane();
-  E(rev.is_nontrivial(), origin::user, F("no changes to commit"));
 
   calculate_ident(rev, ident);
   write_revision(rev, dat);
@@ -1499,13 +1500,13 @@ CMD_AUTOMATE(packets_for_certs, N_("REVID"),
   packet_writer pw(output);
 
   revision_id r_id(decode_hexenc_as<revision_id>(idx(args, 0)(), origin::user));
-  vector< revision<cert> > certs;
+  vector<cert> certs;
 
   E(db.revision_exists(r_id), origin::user,
     F("no such revision '%s'") % r_id);
   project.get_revision_certs(r_id, certs);
 
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); i++)
     pw.consume_revision_cert(*i);
 }
@@ -1753,8 +1754,7 @@ namespace
     symbol const value("value");
     symbol const trust("trust");
 
-    symbol const public_hash("public_hash");
-    symbol const private_hash("private_hash");
+    symbol const hash("hash");
     symbol const public_location("public_location");
     symbol const private_location("private_location");
 
@@ -1768,14 +1768,14 @@ namespace
 //   1: the key ID
 //   2: the key passphrase
 // Added in: 3.1
+// Changed in: 10.0
 // Purpose: Generates a key with the given ID and passphrase
 //
 // Output format: a basic_io stanza for the new key, as for ls keys
 //
 // Sample output:
 //               name "tbrownaw@gmail.com"
-//        public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-//       private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+//               hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
 //    public_location "database" "keystore"
 //   private_location "keystore"
 //
@@ -1797,8 +1797,8 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
 
   utf8 passphrase = idx(args, 1);
 
-  id pubhash, privhash;
-  keys.create_key_pair(db, ident, &passphrase, &pubhash, &privhash);
+  id hash;
+  keys.create_key_pair(db, ident, &passphrase, &hash);
 
   basic_io::printer prt;
   basic_io::stanza stz;
@@ -1809,8 +1809,7 @@ CMD_AUTOMATE(genkey, N_("KEYID PASSPHRASE"),
   privlocs.push_back("keystore");
 
   stz.push_str_pair(syms::name, ident());
-  stz.push_binary_pair(syms::public_hash, pubhash);
-  stz.push_binary_pair(syms::private_hash, privhash);
+  stz.push_binary_pair(syms::hash, hash);
   stz.push_str_multi(syms::public_location, publocs);
   stz.push_str_multi(syms::private_location, privlocs);
   prt.print_stanza(stz);
@@ -1839,7 +1838,7 @@ CMD_AUTOMATE(get_option, N_("OPTION"),
     F("wrong argument count"));
 
   workspace work(app);
-  work.print_ws_option(args[0], output);
+  work.print_option(args[0], output);
 }
 
 // Name: get_content_changed
@@ -2112,9 +2111,11 @@ CMD_AUTOMATE(cert, N_("REVISION-ID NAME VALUE"),
     F("no such revision '%s'") % hrid);
 
   cache_user_key(app.opts, app.lua, db, keys);
-  put_simple_revision_cert(db, keys, rid,
-                           typecast_vocab<cert_name>(idx(args, 1)),
-                           typecast_vocab<cert_value>(idx(args, 2)));
+
+  project_t project(db);
+  project.put_cert(keys, rid,
+                   typecast_vocab<cert_name>(idx(args, 1)),
+                   typecast_vocab<cert_value>(idx(args, 2)));
 }
 
 // Name: get_db_variables

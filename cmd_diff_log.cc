@@ -1,3 +1,4 @@
+// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -17,7 +18,7 @@
 #include "asciik.hh"
 #include "charset.hh"
 #include "cmd.hh"
-#include "diff_patch.hh"
+#include "diff_output.hh"
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"
@@ -237,8 +238,9 @@ dump_diffs(lua_hooks & lua,
            std::ostream & output,
            diff_type diff_format,
            bool new_is_archived,
+           bool old_is_archived,
            bool show_encloser,
-           bool limit_paths = false)
+           bool limit_paths)
 {
   // 60 is somewhat arbitrary, but less than 80
   string patch_sep = string(60, '=');
@@ -298,8 +300,16 @@ dump_diffs(lua_hooks & lua,
 
       output << patch_sep << '\n';
 
-      db.get_file_version(delta_entry_src(i), f_old);
-      data_old = f_old.inner();
+      if (old_is_archived)
+        {
+          db.get_file_version(delta_entry_src(i), f_old);
+          data_old = f_old.inner();
+        }
+      else
+        {
+          I(new_is_archived);
+          read_data(delta_entry_path(i), data_old);
+        }
 
       if (new_is_archived)
         {
@@ -309,6 +319,7 @@ dump_diffs(lua_hooks & lua,
         }
       else
         {
+          I(old_is_archived);
           read_data(delta_entry_path(i), data_new);
         }
 
@@ -339,11 +350,12 @@ dump_diffs(lua_hooks & lua,
            std::ostream & output,
            diff_type diff_format,
            bool new_is_archived,
+           bool old_is_archived,
            bool show_encloser)
 {
   set<file_path> dummy;
   dump_diffs(lua, db, cs, dummy, output,
-             diff_format, new_is_archived, show_encloser);
+             diff_format, new_is_archived, old_is_archived, show_encloser, false);
 }
 
 // common functionality for diff and automate content_diff to determine
@@ -355,17 +367,22 @@ prepare_diff(app_state & app,
              cset & included,
              args_vector args,
              bool & new_is_archived,
+             bool & old_is_archived,
              std::string & revheader)
 {
   temp_node_id_source nis;
   ostringstream header;
-  cset excluded;
+
+  // The resulting diff is output in 'included'.
 
   // initialize before transaction so we have a database to work with.
   project_t project(db);
 
   E(app.opts.revision_selectors.size() <= 2, origin::user,
     F("more than two revisions given"));
+
+  E(!app.opts.reverse || app.opts.revision_selectors.size() == 1, origin::user,
+    F("--reverse only allowed with exactly one revision"));
 
   if (app.opts.revision_selectors.empty())
     {
@@ -385,20 +402,20 @@ prepare_diff(app_state & app,
       old_roster = parent_roster(parents.begin());
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = false;
+      old_is_archived = true;
       header << "# old_revision [" << old_rid << "]\n";
     }
   else if (app.opts.revision_selectors.size() == 1)
@@ -412,20 +429,29 @@ prepare_diff(app_state & app,
       db.get_roster(r_old_id, old_roster);
       work.get_current_roster_shape(db, nis, new_roster);
 
-      node_restriction mask(work, args_to_paths(args),
+      node_restriction mask(args_to_paths(args),
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
-                            old_roster, new_roster);
+                            old_roster, new_roster, ignored_file(work));
 
       work.update_current_roster_from_filesystem(new_roster, mask);
 
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
-      make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
 
-      new_is_archived = false;
+      if (app.opts.reverse)
+        {
+          make_cset(restricted_roster, old_roster, included);
+          new_is_archived = true;
+          old_is_archived = false;
+        }
+      else
+        {
+          make_cset(old_roster, restricted_roster, included);
+          new_is_archived = false;
+          old_is_archived = true;
+        }
+
       header << "# old_revision [" << r_old_id << "]\n";
     }
   else if (app.opts.revision_selectors.size() == 2)
@@ -465,14 +491,15 @@ prepare_diff(app_state & app,
                             args_to_paths(app.opts.exclude_patterns),
                             app.opts.depth,
                             old_roster, new_roster);
-      
-      make_restricted_roster(old_roster, new_roster, restricted_roster, 
+
+      make_restricted_roster(old_roster, new_roster, restricted_roster,
                              mask);
- 
+
       make_cset(old_roster, restricted_roster, included);
-      make_cset(restricted_roster, new_roster, excluded);
 
       new_is_archived = true;
+      old_is_archived = true;
+
     }
   else
     {
@@ -528,9 +555,10 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   cset included;
   std::string revs;
   bool new_is_archived;
+  bool old_is_archived;
   database db(app);
 
-  prepare_diff(app, db, included, args, new_is_archived, revs);
+  prepare_diff(app, db, included, args, new_is_archived, old_is_archived, revs);
 
   if (!app.opts.without_header)
     {
@@ -544,7 +572,7 @@ CMD(diff, "diff", "di", CMD_REF(informative), N_("[PATH]..."),
   else
     {
       dump_diffs(app.lua, db, included, cout,
-                 app.opts.diff_format, new_is_archived,
+                 app.opts.diff_format, new_is_archived, old_is_archived,
                  !app.opts.no_show_encloser);
     }
 }
@@ -564,14 +592,15 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
              "",
              options::opts::with_header | options::opts::without_header |
              options::opts::revision | options::opts::depth |
-             options::opts::exclude)
+             options::opts::exclude | options::opts::reverse)
 {
   cset included;
   std::string dummy_header;
   bool new_is_archived;
+  bool old_is_archived;
   database db(app);
 
-  prepare_diff(app, db, included, args, new_is_archived, dummy_header);
+  prepare_diff(app, db, included, args, new_is_archived, old_is_archived, dummy_header);
 
 
   if (app.opts.with_header)
@@ -580,61 +609,171 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
     }
 
   dump_diffs(app.lua, db, included, output,
-             app.opts.diff_format, new_is_archived, !app.opts.no_show_encloser);
+             app.opts.diff_format, new_is_archived, old_is_archived, !app.opts.no_show_encloser);
 }
 
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
-          string label, string separator, bool multiline, bool newline)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
+          char const * label, char const * separator,
+          bool multiline, bool newline)
 {
-  vector< revision<cert> > certs;
   bool first = true;
 
   if (multiline)
     newline = true;
 
-  project.get_revision_certs_by_name(id, name, certs);
-  for (vector< revision<cert> >::const_iterator i = certs.begin();
+  for (vector<cert>::const_iterator i = certs.begin();
        i != certs.end(); ++i)
     {
-      if (first)
-        os << label;
-      else
-        os << separator;
+      if (i->name == name)
+        {
+          if (first)
+            os << label;
+          else
+            os << separator;
 
-      if (multiline)
-        os << "\n\n";
-      os << i->inner().value;
-      if (newline)
-        os << '\n';
+          if (multiline)
+            os << "\n\n";
+          os << i->value;
+          if (newline)
+            os << '\n';
 
-      first = false;
+          first = false;
+        }
     }
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name,
-          string label, bool multiline)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
+          char const * label, bool multiline)
 {
-  log_certs(project, os, id, name, label, label, multiline, true);
+  log_certs(certs, os, name, label, label, multiline, true);
 }
 
 static void
-log_certs(project_t & project, ostream & os, revision_id id, cert_name name)
+log_certs(vector<cert> const & certs, ostream & os, cert_name const & name)
 {
-  log_certs(project, os, id, name, " ", ",", false, false);
+  log_certs(certs, os, name, " ", ",", false, false);
 }
 
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
+               char const * label, char const * separator,
+               bool multiline, bool newline)
+{
+  cert_name const date_name(date_cert_name);
+
+  bool first = true;
+  if (multiline)
+    newline = true;
+
+  for (vector<cert>::const_iterator i = certs.begin();
+       i != certs.end(); ++i)
+    {
+      if (i->name == date_name)
+        {
+          if (first)
+            os << label;
+          else
+            os << separator;
+
+          if (multiline)
+            os << "\n\n";
+          if (fmt.empty())
+            os << i->value;
+          else
+            os << date_t(i->value()).as_formatted_localtime(fmt);
+          if (newline)
+            os << '\n';
+
+          first = false;
+        }
+    }
+}
+
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
+               char const * label, bool multiline)
+{
+  log_date_certs(certs, os, fmt, label, label, multiline, true);
+}
+
+static void
+log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt)
+{
+  log_date_certs(certs, os, fmt, " ", ",", false, false);
+}
+
+enum log_direction { log_forward, log_reverse };
 
 struct rev_cmp
 {
-  bool dir;
-  rev_cmp(bool _dir) : dir(_dir) {}
+  log_direction direction;
+  rev_cmp(log_direction const & direction) : direction(direction) {}
   bool operator() (pair<rev_height, revision_id> const & x,
                    pair<rev_height, revision_id> const & y) const
   {
-    return dir ? (x.first < y.first) : (x.first > y.first);
+    switch (direction)
+      {
+      case log_forward:
+        return x.first > y.first; // optional with --next N
+      case log_reverse:
+        return x.first < y.first; // default and with --last N
+      default:
+        I(false);
+      }
+  }
+};
+
+struct revision_loader
+{
+  database & db;
+  log_direction direction;
+
+  revision_loader(database & db, log_direction const direction) :
+    db(db), direction(direction) {}
+
+  void
+  load_related_revs(revision_id const & rid, set<revision_id> & relatives)
+  {
+    switch (direction)
+      {
+      case log_forward: // optional with --next N
+        db.get_revision_children(rid, relatives);
+        break;
+      case log_reverse: // default and with --last N
+        db.get_revision_parents(rid, relatives);
+        break;
+      }
+  }
+
+  void
+  load_implied_revs(set<revision_id> & revs)
+  {
+    std::deque<revision_id> next(revs.begin(), revs.end());
+
+    while (!next.empty())
+      {
+        revision_id const & rid(next.front());
+        MM(rid);
+
+        set<revision_id> relatives;
+        MM(relatives);
+        load_related_revs(rid, relatives);
+
+        for (set<revision_id>::const_iterator i = relatives.begin();
+             i != relatives.end(); ++i)
+          {
+            if (null_id(*i))
+              continue;
+            pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
+            if (res.second)
+              next.push_back(*i);
+          }
+
+        next.pop_front();
+      }
   }
 };
 
@@ -642,66 +781,129 @@ typedef priority_queue<pair<rev_height, revision_id>,
                        vector<pair<rev_height, revision_id> >,
                        rev_cmp> frontier_t;
 
-CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
-    N_("Prints history in reverse order"),
-    N_("This command prints history in reverse order, filtering it by "
-       "FILE if given.  If one or more revisions are given, uses them as "
-       "a starting point."),
-    options::opts::last | options::opts::next
-    | options::opts::from | options::opts::to
-    | options::opts::brief | options::opts::diffs
-    | options::opts::no_merges | options::opts::no_files
-    | options::opts::no_graph)
+CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
+    N_("Prints selected history in forward or reverse order"),
+    N_("This command prints selected history in forward or reverse order, "
+       "filtering it by PATH if given."),
+    options::opts::last | options::opts::next |
+    options::opts::from | options::opts::to | options::opts::revision |
+    options::opts::brief | options::opts::diffs |
+    options::opts::format_dates | options::opts::date_fmt |
+    options::opts::depth | options::opts::exclude |
+    options::opts::no_merges | options::opts::no_files |
+    options::opts::no_graph)
 {
   database db(app);
   project_t project(db);
 
+  string date_fmt;
+  if (app.opts.format_dates)
+    {
+      if (!app.opts.date_fmt.empty())
+        date_fmt = app.opts.date_fmt;
+      else
+        app.lua.hook_get_date_format_spec(date_fmt);
+    }
+
   long last = app.opts.last;
   long next = app.opts.next;
+
+  log_direction direction = log_reverse;
 
   E(last == -1 || next == -1, origin::user,
     F("only one of --last/--next allowed"));
 
-  frontier_t frontier(rev_cmp(!(next>0)));
+  if (next >= 0)
+    direction = log_forward;
+
+  revision_loader loader(db, direction);
+
+  rev_cmp cmp(direction);
+  frontier_t frontier(cmp);
   revision_id first_rid; // for mapping paths to node ids when restricted
 
-  if (app.opts.from.empty())
+  // start at revisions specified and implied by --from selectors
+
+  set<revision_id> starting_revs;
+  if (app.opts.from.empty() && app.opts.revision_selectors.empty())
     {
-      workspace work(app,
-                     F("try passing a --from revision to start at"));
+      // only set default --from revs if no --revision selectors were specified
+      workspace work(app, F("try passing a --from revision to start at"));
 
       revision_t rev;
       work.get_work_rev(rev);
       for (edge_map::const_iterator i = rev.edges.begin();
            i != rev.edges.end(); i++)
         {
-          rev_height height;
-          db.get_rev_height(edge_old_revision(i), height);
-          frontier.push(make_pair(height, edge_old_revision(i)));
+          starting_revs.insert(edge_old_revision(i));
+          if (i == rev.edges.begin())
+            first_rid = edge_old_revision(i);
         }
     }
-  else
+  else if (!app.opts.from.empty())
     {
       for (args_vector::const_iterator i = app.opts.from.begin();
            i != app.opts.from.end(); i++)
         {
           set<revision_id> rids;
+          MM(rids);
+          MM(*i);
           complete(app.opts, app.lua, project, (*i)(), rids);
-          for (set<revision_id>::const_iterator j = rids.begin();
-               j != rids.end(); ++j)
-            {
-              rev_height height;
-              db.get_rev_height(*j, height);
-              frontier.push(make_pair(height, *j));
-            }
+          starting_revs.insert(rids.begin(), rids.end());
           if (i == app.opts.from.begin())
             first_rid = *rids.begin();
         }
     }
 
+  L(FL("%d starting revisions") % starting_revs.size());
+
+  // stop at revisions specified and implied by --to selectors
+
+  set<revision_id> ending_revs;
+  if (!app.opts.to.empty())
+    {
+      for (args_vector::const_iterator i = app.opts.to.begin();
+           i != app.opts.to.end(); i++)
+        {
+          set<revision_id> rids;
+          MM(rids);
+          MM(*i);
+          complete(app.opts, app.lua, project, (*i)(), rids);
+          ending_revs.insert(rids.begin(), rids.end());
+        }
+
+      loader.load_implied_revs(ending_revs);
+    }
+
+  L(FL("%d ending revisions") % ending_revs.size());
+
+  // select revisions specified by --revision selectors
+
+  set<revision_id> selected_revs;
+  if (!app.opts.revision_selectors.empty())
+    {
+      for (args_vector::const_iterator i = app.opts.revision_selectors.begin();
+           i != app.opts.revision_selectors.end(); i++)
+        {
+          set<revision_id> rids;
+          MM(rids);
+          MM(*i);
+          complete(app.opts, app.lua, project, (*i)(), rids);
+
+          // only select revs outside of the ending set
+          set_difference(rids.begin(), rids.end(),
+                         ending_revs.begin(), ending_revs.end(),
+                         inserter(selected_revs, selected_revs.end()));
+          if (null_id(first_rid) && i == app.opts.revision_selectors.begin())
+            first_rid = *rids.begin();
+        }
+    }
+
+  L(FL("%d selected revisions") % selected_revs.size());
+
   node_restriction mask;
 
-  if (!args.empty())
+  if (!args.empty() || !app.opts.exclude_patterns.empty())
     {
       // User wants to trace only specific files
       if (app.opts.from.empty())
@@ -714,95 +916,66 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           work.get_parent_rosters(db, parents);
           work.get_current_roster_shape(db, nis, new_roster);
 
-          mask = node_restriction(work, args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
-                                  app.opts.depth, parents, new_roster);
+          mask = node_restriction(args_to_paths(args),
+                                  args_to_paths(app.opts.exclude_patterns),
+                                  app.opts.depth, parents, new_roster,
+                                  ignored_file(work));
         }
       else
         {
           // FIXME_RESTRICTIONS: should this add paths from the rosters of
           // all selected revs?
+          I(!null_id(first_rid));
           roster_t roster;
           db.get_roster(first_rid, roster);
 
           mask = node_restriction(args_to_paths(args),
-                                  args_to_paths(app.opts.exclude_patterns), 
+                                  args_to_paths(app.opts.exclude_patterns),
                                   app.opts.depth, roster);
         }
     }
 
-  // If --to was given, don't log past those revisions.
-  set<revision_id> disallowed;
-  bool use_disallowed(!app.opts.to.empty());
-  if (use_disallowed)
+  // if --revision was specified without --from log only the selected revs
+  bool log_selected(!app.opts.revision_selectors.empty() &&
+                    app.opts.from.empty());
+
+  if (log_selected)
     {
-      std::deque<revision_id> to;
-      for (args_vector::const_iterator i = app.opts.to.begin();
-           i != app.opts.to.end(); i++)
+      for (set<revision_id>::const_iterator i = selected_revs.begin();
+           i != selected_revs.end(); ++i)
         {
-          MM(*i);
-          set<revision_id> rids;
-          complete(app.opts, app.lua, project, (*i)(), rids);
-          for (set<revision_id>::const_iterator j = rids.begin();
-               j != rids.end(); ++j)
-            {
-              I(!null_id(*j));
-              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*j);
-              if (res.second)
-                {
-                  to.push_back(*j);
-                }
-            }
+          rev_height height;
+          db.get_rev_height(*i, height);
+          frontier.push(make_pair(height, *i));
         }
-
-      while (!to.empty())
+      L(FL("log %d selected revisions") % selected_revs.size());
+    }
+  else
+    {
+      for (set<revision_id>::const_iterator i = starting_revs.begin();
+           i != starting_revs.end(); ++i)
         {
-          revision_id const & rid(to.front());
-          MM(rid);
-
-          set<revision_id> relatives;
-          MM(relatives);
-          if (next > 0)
-            {
-              db.get_revision_children(rid, relatives);
-            }
-          else
-            {
-              db.get_revision_parents(rid, relatives);
-            }
-
-          for (set<revision_id>::const_iterator i = relatives.begin();
-               i != relatives.end(); ++i)
-            {
-              if (null_id(*i))
-                continue;
-              pair<set<revision_id>::iterator, bool> res = disallowed.insert(*i);
-              if (res.second)
-                {
-                  to.push_back(*i);
-                }
-            }
-
-          to.pop_front();
+          rev_height height;
+          db.get_rev_height(*i, height);
+          frontier.push(make_pair(height, *i));
         }
+      L(FL("log %d starting revisions") % starting_revs.size());
     }
 
-  cert_name author_name(author_cert_name);
-  cert_name date_name(date_cert_name);
-  cert_name branch_name(branch_cert_name);
-  cert_name tag_name(tag_cert_name);
-  cert_name changelog_name(changelog_cert_name);
-  cert_name comment_name(comment_cert_name);
+  cert_name const author_name(author_cert_name);
+  cert_name const branch_name(branch_cert_name);
+  cert_name const tag_name(tag_cert_name);
+  cert_name const changelog_name(changelog_cert_name);
+  cert_name const comment_name(comment_cert_name);
 
   // we can use the markings if we walk backwards for a restricted log
-  bool use_markings(!(next>0) && !mask.empty());
+  bool use_markings(direction == log_reverse && !mask.empty());
 
   set<revision_id> seen;
   revision_t rev;
   // this is instantiated even when not used, but it's lightweight
   asciik graph(cout);
-  while(! frontier.empty() && (last == -1 || last > 0)
-        && (next == -1 || next > 0))
+  while(!frontier.empty() && last != 0 && next != 0)
     {
       revision_id const & rid = frontier.top().second;
 
@@ -830,15 +1003,17 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
           for (marking_map::const_iterator m = markings.begin();
                m != markings.end(); ++m)
             {
-              node_id node = m->first;
-              marking_t marking = m->second;
+              node_id const & node = m->first;
+              marking_t const & marks = m->second;
 
               if (mask.includes(roster, node))
                 {
-                  marked_revs.insert(marking.file_content.begin(), marking.file_content.end());
-                  marked_revs.insert(marking.parent_name.begin(), marking.parent_name.end());
-                  for (map<attr_key, set<revision_id> >::const_iterator a = marking.attrs.begin();
-                       a != marking.attrs.end(); ++a)
+                  marked_revs.insert(marks.file_content.begin(),
+                                     marks.file_content.end());
+                  marked_revs.insert(marks.parent_name.begin(),
+                                     marks.parent_name.end());
+                  for (map<attr_key, set<revision_id> >::const_iterator
+                         a = marks.attrs.begin(); a != marks.attrs.end(); ++a)
                     marked_revs.insert(a->second.begin(), a->second.end());
                 }
             }
@@ -873,6 +1048,9 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
 
       if (app.opts.no_merges && rev.is_merge_node())
         print_this = false;
+      else if (!app.opts.revision_selectors.empty() &&
+          selected_revs.find(rid) == selected_revs.end())
+        print_this = false;
 
       set<revision_id> interesting;
       // if rid is not marked we can jump directly to the marked ancestors,
@@ -883,28 +1061,27 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         }
       else
         {
-          if (next > 0)
-            db.get_revision_children(rid, interesting);
-          else // walk backwards by default
-            db.get_revision_parents(rid, interesting);
+          loader.load_related_revs(rid, interesting);
         }
 
       if (print_this)
         {
+          vector<cert> certs;
+          project.get_revision_certs(rid, certs);
+
           ostringstream out;
           if (app.opts.brief)
             {
               out << rid;
-              log_certs(project, out, rid, author_name);
+              log_certs(certs, out, author_name);
               if (app.opts.no_graph)
-                log_certs(project, out, rid, date_name);
+                log_date_certs(certs, out, date_fmt);
               else
                 {
                   out << '\n';
-                  log_certs(project, out, rid, date_name,
-                            string(), string(), false, false);
+                  log_date_certs(certs, out, date_fmt, "", "", false, false);
                 }
-              log_certs(project, out, rid, branch_name);
+              log_certs(certs, out, branch_name);
               out << '\n';
             }
           else
@@ -927,10 +1104,10 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                    anc != ancestors.end(); ++anc)
                 out << "Ancestor: " << *anc << '\n';
 
-              log_certs(project, out, rid, author_name, "Author: ", false);
-              log_certs(project, out, rid, date_name,   "Date: ",   false);
-              log_certs(project, out, rid, branch_name, "Branch: ", false);
-              log_certs(project, out, rid, tag_name,    "Tag: ",    false);
+              log_certs(certs, out, author_name, "Author: ", false);
+              log_date_certs(certs, out, date_fmt, "Date: ", false);
+              log_certs(certs, out, branch_name, "Branch: ", false);
+              log_certs(certs, out, tag_name,    "Tag: ",    false);
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
@@ -939,8 +1116,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
                   out << '\n';
                 }
 
-              log_certs(project, out, rid, changelog_name, "ChangeLog: ", true);
-              log_certs(project, out, rid, comment_name,   "Comments: ",  true);
+              log_certs(certs, out, changelog_name, "ChangeLog: ", true);
+              log_certs(certs, out, comment_name,   "Comments: ",  true);
             }
 
           if (app.opts.diffs)
@@ -948,7 +1125,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
               for (edge_map::const_iterator e = rev.edges.begin();
                    e != rev.edges.end(); ++e)
                 dump_diffs(app.lua, db, edge_changes(e), diff_paths, out,
-                           app.opts.diff_format, true,
+                           app.opts.diff_format, true, true,
                            !app.opts.no_show_encloser, !mask.empty());
             }
 
@@ -968,18 +1145,22 @@ CMD(log, "log", "", CMD_REF(informative), N_("[FILE] ..."),
         graph.print(rid, interesting,
                     (F("(Revision: %s)") % rid).str());
 
+      cout.flush();
+
       frontier.pop(); // beware: rid is invalid from now on
 
-      for (set<revision_id>::const_iterator i = interesting.begin();
-           i != interesting.end(); ++i)
+      if (!log_selected)
         {
-          if (use_disallowed && (disallowed.find(*i) != disallowed.end()))
+          // only add revs to the frontier when not logging specific selected revs
+          for (set<revision_id>::const_iterator i = interesting.begin();
+               i != interesting.end(); ++i)
             {
-              continue;
+              if (!app.opts.to.empty() && (ending_revs.find(*i) != ending_revs.end()))
+                continue;
+              rev_height height;
+              db.get_rev_height(*i, height);
+              frontier.push(make_pair(height, *i));
             }
-          rev_height height;
-          db.get_rev_height(*i, height);
-          frontier.push(make_pair(height, *i));
         }
     }
 }

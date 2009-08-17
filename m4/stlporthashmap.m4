@@ -1,6 +1,6 @@
 dnl @synopsis AC_CXX_STLPORT_HASHMAP
 dnl
-dnl tests for the presence of the gcc hashmap stl extension
+dnl tests for the presence of the stlport hash_map extension
 dnl
 dnl @author Patrick Mauritz <oxygene@studentenbude.ath.cx>
 dnl @version 2005-07-18

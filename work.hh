@@ -1,6 +1,3 @@
-#ifndef __WORK_HH__
-#define __WORK_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __WORK_HH__
+#define __WORK_HH__
 
 #include <set>
 #include "paths.hh"
@@ -89,7 +89,14 @@ struct workspace
   static bool found;
 
 private:
-  // This is used by get_ws_options and set_ws_options.
+  // This is used by get_options and set_options. The branch option is set
+  // to sticky (meaning it will be persisted in the workspace options) in
+  // several cases:
+  // - when update switches to a different branch
+  // - when commit switches to a different branch
+  // - when creating a new workspace
+  // - when the given branch option is empty and the workspace branch option
+  //   is not, to retain the previous workspace branch option
   static bool branch_is_sticky;
 
   // This is used by a lot of instance methods.
@@ -131,7 +138,7 @@ public:
 
   void perform_deletions(database & db,
                          std::set<file_path> const & targets,
-			 bool recursive, 
+                         bool recursive,
                          bool bookkeep_only);
 
   void perform_rename(database & db,
@@ -142,14 +149,16 @@ public:
   void perform_pivot_root(database & db,
                           file_path const & new_root,
                           file_path const & put_old,
-                          bool bookkeep_only);
+                          bool bookkeep_only,
+                          bool move_conflicting_paths);
 
-  void perform_content_update(database & db,
+  void perform_content_update(roster_t const & old_roster,
+                              roster_t const & new_roster,
                               cset const & cs,
                               content_merge_adaptor const & ca,
-                              bool messages = true);
+                              bool const messages = true,
+                              bool const move_conflicting_paths = false);
 
-  void update_any_attrs(database & db);
   void init_attributes(file_path const & path, editable_roster_base & er);
 
   bool has_changes(database & db);
@@ -161,6 +170,14 @@ public:
 
   // read the (partial) revision describing the current workspace.
   void get_work_rev(revision_t & rev);
+
+  // read the revision id that was the parent of this workspace before
+  // the last update occured. this is used for the u: (update) selector
+  void get_update_id(revision_id & update_id);
+
+  // write the revision id that was the parent of this workspace before
+  // update completes. this is used for the u: (update) selector
+  void put_update_id(revision_id const & update_id);
 
   // convenience wrappers around the above functions.
 
@@ -203,27 +220,27 @@ public:
   // _MTN/options. it keeps a list of name/value pairs which are considered
   // "persistent options", associated with a particular workspace and
   // implied unless overridden on the command line.
-  static void get_ws_options(options & opts);
+  static void get_options(options & opts);
   static void get_database_option(system_path const & workspace_root,
                                   system_path & database_option);
-  static void set_ws_options(options const & opts, bool branch_is_sticky);
-  static void print_ws_option(utf8 const & opt, std::ostream & output);
+  static void set_options(options const & opts, bool branch_is_sticky);
+  static void print_option(utf8 const & opt, std::ostream & output);
 
   // the "workspace format version" is a nonnegative integer value, stored
   // in _MTN/format as an unadorned decimal number.  at any given time
   // monotone supports actual use of only one workspace format.
-  // check_ws_format throws an error if the workspace exists but its format
+  // check_format throws an error if the workspace exists but its format
   // number is not equal to the currently supported format number.  it is
   // automatically called for all commands defined with CMD() (not
-  // CMD_NO_WORKSPACE()).  migrate_ws_format is called only on explicit user
+  // CMD_NO_WORKSPACE()).  migrate_format is called only on explicit user
   // request (mtn ws migrate) and will convert a workspace from any older
-  // format to the new one.  finally, write_ws_format is called only when a
+  // format to the new one.  finally, write_format is called only when a
   // workspace is created, and simply writes the current workspace format
   // number to _MTN/format.  unlike most routines in this class, these
   // functions are defined in their own file, work_migration.cc.
-  static void check_ws_format();
-  static void write_ws_format();
-  void migrate_ws_format();
+  static void check_format();
+  static void write_format();
+  void migrate_format();
 
   // the "local dump file' is a debugging file, stored in _MTN/debug.  if we
   // crash, we save some debugging information here.
@@ -246,6 +263,19 @@ public:
   bool ignore_file(file_path const & path);
 };
 
+// This object turns the workspace ignore_file method into a path predicate,
+// suitable for passing to restriction constructors (for instance).
+struct ignored_file : public path_predicate<file_path>
+{
+  ignored_file(workspace & work) : work(work) {}
+  bool operator()(file_path const &) const;
+
+private:
+  workspace & work;
+};
+
+#endif // __WORK_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -253,6 +283,3 @@ public:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __WORK_HH__
- 

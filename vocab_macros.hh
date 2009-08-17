@@ -1,3 +1,11 @@
+// Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 //HH
 
@@ -139,7 +147,11 @@ ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
                                              \
 ty const & ty::operator=(ty const & other)   \
-{ s = other.s; return *this; }               \
+{                                            \
+  s = other.s;                               \
+  made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
                                              \
 std::ostream & operator<<(std::ostream & o,  \
                           ty const & a)      \
@@ -190,7 +202,11 @@ ty::ty(ty const & other) :                   \
   origin_aware(other), s(other.s) {}         \
                                              \
 ty const & ty::operator=(ty const & other)   \
-{ s = other.s; return *this; }               \
+{                                            \
+  s = other.s;                               \
+  made_from = other.made_from;               \
+  return *this;                              \
+}                                            \
                                              \
 std::ostream & operator<<(std::ostream & o,  \
                           ty const & a)      \
@@ -228,7 +244,11 @@ enc<INNER>::enc(enc<INNER> const & other)                \
 template<typename INNER>                                 \
 enc<INNER> const &                                       \
 enc<INNER>::operator=(enc<INNER> const & other)          \
-  { s = other.s; return *this; }                         \
+{                                                        \
+  s = other.s;                                           \
+  made_from = other.made_from;                           \
+  return *this;                                          \
+}                                                        \
                                                          \
 template <typename INNER>                                \
 std::ostream & operator<<(std::ostream & o,              \
@@ -279,7 +299,6 @@ template <typename INNER>                                \
 void dump(dec<INNER> const & obj, std::string & out)     \
 { dump(obj.inner(), out); }
 
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -287,4 +306,3 @@ void dump(dec<INNER> const & obj, std::string & out)     \
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

@@ -35,7 +35,7 @@ static int
 connect_to_agent()
 {
   const char *authsocket = getenv("SSH_AUTH_SOCK");
-  
+
   if (!authsocket || !*authsocket)
     {
       L(FL("ssh_agent: no agent"));
@@ -46,14 +46,14 @@ connect_to_agent()
   if (sock < 0)
     {
       W(F("ssh_agent: failed to create a socket: %s")
-	% strerror(errno));
+        % strerror(errno));
       return -1;
     }
   if (fcntl(sock, F_SETFD, FD_CLOEXEC))
     {
       close(sock);
       W(F("ssh_agent: failed to set socket as close-on-exec: %s")
-	% strerror(errno));
+        % strerror(errno));
       return -1;
     }
 
@@ -65,7 +65,7 @@ connect_to_agent()
     {
       close(sock);
       W(F("ssh_agent: failed to connect to agent: %s")
-	% strerror(errno));
+        % strerror(errno));
       return -1;
     }
 
@@ -96,11 +96,11 @@ ssh_agent_platform::write_data(string const & data)
       ssize_t sent = ::send(sock, buf, put, MSG_NOSIGNAL);
 
       E(sent >= 0, origin::system,
-	F("ssh_agent: error during send: %s") % strerror(errno));
+        F("ssh_agent: error during send: %s") % strerror(errno));
       if (sent == 0)
-	E(++deadcycles < 8, origin::system,
-	  F("ssh_agent: giving up after %d ineffective sends to agent")
-	  % deadcycles);
+        E(++deadcycles < 8, origin::system,
+          F("ssh_agent: giving up after %d ineffective sends to agent")
+          % deadcycles);
 
       buf += sent;
       put -= sent;
@@ -109,7 +109,7 @@ ssh_agent_platform::write_data(string const & data)
     F("ssh_agent: sent %u extra bytes to agent") % -put);
 }
 
-void 
+void
 ssh_agent_platform::read_data(string::size_type len, string & out)
 {
   I(connected());
@@ -126,10 +126,10 @@ ssh_agent_platform::read_data(string::size_type len, string & out)
       ssize_t recvd = ::recv(sock, buf, min(get, bufsize), MSG_WAITALL);
 
       E(recvd >= 0, origin::system,
-	F("ssh_agent: error during recieve: %s") % strerror(errno));
+        F("ssh_agent: error during receive: %s") % strerror(errno));
       if (recvd == 0)
-	E(++deadcycles < 8, origin::system,
-	  F("ssh_agent: giving up after %d ineffective receives from agent"));
+        E(++deadcycles < 8, origin::system,
+          F("ssh_agent: giving up after %d ineffective receives from agent"));
 
       out.append(buf, recvd);
       get -= recvd;
@@ -137,3 +137,11 @@ ssh_agent_platform::read_data(string::size_type len, string & out)
   E(get == 0, origin::system,
     F("ssh_agent: received %u extra bytes from agent") % -get);
 }
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

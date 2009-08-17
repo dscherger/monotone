@@ -1,6 +1,3 @@
-#ifndef __STRING_QUEUE_HH__
-#define __STRING_QUEUE_HH__
-
 // Copyright (C) 2005 Eric Anderson <anderse@hpl.hp.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __STRING_QUEUE_HH__
+#define __STRING_QUEUE_HH__
 
 #include <cstring>
 #include <cstdlib>
@@ -118,7 +118,7 @@ public:
         {
           // don't bother shrinking unless it will help a lot, and
           // we're using enough memory to care.
-          size_t a_new_size = (size_t) (used_size () * 1.1);	// leave some headroom
+          size_t a_new_size = (size_t) (used_size () * 1.1);    // leave some headroom
           resize_buffer (std::max ((size_t) 8192, a_new_size));
         }
       if (do_selfcheck)
@@ -251,6 +251,8 @@ private:
   std::string selfcheck_str;
 };
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -258,5 +260,3 @@ private:
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

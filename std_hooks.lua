@@ -1,3 +1,11 @@
+-- Copyright (C) 2003 Graydon Hoare <graydon@pobox.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
 
 -- this is the standard set of lua hooks for monotone;
 -- user-provided files can override it or add to it.
@@ -88,7 +96,9 @@ end
 attr_functions["mtn:execute"] =
    function(filename, value)
       if (value == "true") then
-         make_executable(filename)
+         set_executable(filename)
+      else
+         clear_executable(filename)
       end
    end
 
@@ -269,21 +279,21 @@ end
 
 function edit_comment(basetext, user_log_message)
    local exe = nil
-   if (program_exists_in_path("vi")) then exe = "vi" end
-   if (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and program_exists_in_path("notepad.exe")) then exe = "notepad.exe" end
-   local debian_editor = io.open("/usr/bin/editor")
-   if (debian_editor ~= nil) then
-      debian_editor:close()
-      exe = "/usr/bin/editor"
-   end
-   local visual = os.getenv("VISUAL")
-   if (visual ~= nil) then exe = visual end
-   local editor = os.getenv("EDITOR")
-   if (editor ~= nil) then exe = editor end
 
-   if (exe == nil) then
-      io.write("Could not find editor to enter commit message\n"
-               .. "Try setting the environment variable EDITOR\n")
+   -- top priority is VISUAL, then EDITOR, then a series of hardcoded
+   -- defaults, if available.
+
+   local visual = os.getenv("VISUAL")
+   local editor = os.getenv("EDITOR")
+   if (visual ~= nil) then exe = visual
+   elseif (editor ~= nil) then exe = editor
+   elseif (program_exists_in_path("editor")) then exe = "editor"
+   elseif (program_exists_in_path("vi")) then exe = "vi"
+   elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
+	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+   else
+      io.write(gettext("Could not find editor to enter commit message\n"
+		       .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
@@ -297,11 +307,44 @@ function edit_comment(basetext, user_log_message)
    tmp:write(basetext)
    io.close(tmp)
 
-   if (execute(exe, tname) ~= 0) then
-      io.write(string.format(gettext("Error running editor '%s' to enter log message\n"),
-                             exe))
-      os.remove(tname)
-      return nil
+   -- By historical convention, VISUAL and EDITOR can contain arguments
+   -- (and, in fact, arbitrarily complicated shell constructs).  Since Lua
+   -- has no word-splitting functionality, we invoke the shell to deal with
+   -- anything more complicated than a single word with no metacharacters.
+   -- This, unfortunately, means we have to quote the file argument.
+
+   if (not string.find(exe, "[^%w_.+-]")) then
+      -- safe to call spawn directly
+      if (execute(exe, tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
+   else
+      -- must use shell
+      local shell = os.getenv("SHELL")
+      if (shell == nil) then shell = "sh" end
+      if (not program_exists_in_path(shell)) then
+	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+					"but '%s' is not to be found"),
+			        exe, shell))
+	 os.remove(tname)
+	 return nil
+      end
+
+      -- Single-quoted strings in both Bourne shell and csh can contain
+      -- anything but a single quote.
+      local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
+
+      if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
+	 io.write(string.format(gettext("Error running editor '%s' "..
+					"to enter log message\n"),
+                                exe))
+	 os.remove(tname)
+	 return nil
+      end
    end
 
    tmp = io.open(tname, "r")
@@ -329,6 +372,21 @@ function use_inodeprints()
    return false
 end
 
+function get_date_format_spec()
+   -- Return the strftime(3) specification to be used to print dates
+   -- in human-readable format after conversion to the local timezone.
+   -- The default produces output like this: 22 May 2009, 09:06:14 AM
+   -- (the month names are localized).
+   return "%d %b %Y, %I:%M:%S %p"
+
+   -- A sampling of other possible formats you might want:
+   --   default for your locale: "%c" (may include a confusing timezone label)
+   --   like ctime(3):  "%a %b %d %H:%M:%S %Y"
+   --   email style:    "%a, %d %b %Y %H:%M:%S"
+   --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
+   --
+   --   ISO 8601, no timezone conversion: ""
+end
 
 -- trust evaluation hooks
 
@@ -398,9 +456,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *CENTER* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*CENTER* file."))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -446,9 +505,10 @@ mergers.vim = {
      return execute_redirected("", string.gsub(out, "\\", "/"), "", unpack(diff3_args))
       end
 
-      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *LEFT* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
@@ -1154,6 +1214,10 @@ function get_mtn_command(host)
         return "mtn"
 end
 
+function get_remote_unix_socket_command(host)
+    return "socat"
+end
+
 function get_default_command_options(command)
    local default_args = {}
    return default_args
@@ -1204,11 +1268,6 @@ function hook_wrapper(func_name, ...)
     end
     local res = { _G[func_name](unpack(args, 1, args.n)) }
     return hook_wrapper_dump._table(res)
-end
-
-
-function get_remote_unix_socket_command(host)
-    return "socat"
 end
 
 do

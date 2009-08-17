@@ -1,6 +1,3 @@
-#ifndef __COMMANDS_HH__
-#define __COMMANDS_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -9,6 +6,9 @@
 // This program is distributed WITHOUT ANY WARRANTY; without even the
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
+
+#ifndef __COMMANDS_HH__
+#define __COMMANDS_HH__
 
 #include "vector.hh"
 #include "options.hh"
@@ -23,7 +23,7 @@ namespace commands {
   typedef std::vector< utf8 > command_id;
 
   command_id make_command_id(std::string const & path);
-  void explain_usage(command_id const & cmd, std::ostream & out);
+  void explain_usage(command_id const & cmd, bool show_hidden, std::ostream & out);
   command_id complete_command(args_vector const & args);
   void process(app_state & app, command_id const & ident,
                args_vector const & args);
@@ -36,6 +36,8 @@ struct usage
   commands::command_id which;
 };
 
+#endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -43,5 +45,3 @@ struct usage
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif

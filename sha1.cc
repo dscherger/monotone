@@ -31,7 +31,7 @@
   #elif defined(BOTAN_HAS_TIMER_WIN32)
     #include <botan/tm_win32.h>
     typedef Botan::Win32_Timer benchmark_timer_class;
-  #elif
+  #else
     /* This uses ANSI clock and gives somewhat bogus results
        due to the poor resolution
     */
@@ -85,7 +85,6 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
 #endif
 }
 
-
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -93,4 +92,3 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-

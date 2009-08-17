@@ -6,8 +6,7 @@ check(mtn("commit", "--date=2005-05-21T12:30:51",
           "--branch=testbranch", "--message=blah-blah"), 0, false, false) 
           
 -- ensure clear workspace fails wih error
-check(mtn("automate", "get_current_revision"), 1, true, false)
-check(fsize("stdout") == 0)
+check(mtn("automate", "get_current_revision"), 0, true, false)
 
 addfile("foox", "blah\n")
 addfile("barx", "blah2\n")

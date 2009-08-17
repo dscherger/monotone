@@ -1,6 +1,3 @@
-#ifndef __UI_HH__
-#define __UI_HH__
-
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -10,12 +7,19 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
+#ifndef __UI_HH__
+#define __UI_HH__
+
 // this file contains a couple utilities to deal with the user
 // interface. the global user_interface object 'ui' owns cerr, so
 // no writing to it directly!
 
+#include "vector.hh"
+
 struct i18n_format;
 class system_path;
+struct usage;
+struct options;
 
 struct ticker
 {
@@ -45,8 +49,6 @@ struct tick_write_dot;
 struct user_interface
 {
 public:
-  user_interface();
-  ~user_interface();
   void initialize();
   void deinitialize();
   void warn(std::string const & warning);
@@ -57,8 +59,9 @@ public:
   void fatal_db(format_base const & fmt) { fatal_db(fmt.str()); }
   void inform(std::string const & line);
   void inform(format_base const & fmt) { inform(fmt.str()); }
-  void fatal_exception(std::exception const & ex);
-  void fatal_exception();
+  void inform_usage(usage const & u, options & opts);
+  int fatal_exception(std::exception const & ex);
+  int fatal_exception();
   void set_tick_trailer(std::string const & trailer);
   void set_tick_write_dot();
   void set_tick_write_count();
@@ -67,7 +70,6 @@ public:
   void redirect_log_to(system_path const & filename);
 
   std::string output_prefix();
-  std::string prog_name;
 
 private:
   void finish_ticking();
@@ -83,6 +85,15 @@ private:
 
 extern struct user_interface ui;
 
+// Wrapper class which ensures proper setup and teardown of the global ui
+// object.  (We do not want to use global con/destructors for this, as they
+// execute outside the protection of main.cc's signal handlers.)
+struct ui_library
+{
+  ui_library() { ui.initialize(); }
+  ~ui_library() { ui.deinitialize(); }
+};
+
 // like platform.hh's "terminal_width", but always returns a sensible value
 // (even if there is no terminal)
 unsigned int guess_terminal_width();
@@ -92,6 +103,8 @@ std::string format_text(std::string const & text,
 std::string format_text(i18n_format const & text,
                         size_t const col = 0, size_t curcol = 0);
 
+#endif // __UI_HH__
+
 // Local Variables:
 // mode: C++
 // fill-column: 76
@@ -99,5 +112,3 @@ std::string format_text(i18n_format const & text,
 // indent-tabs-mode: nil
 // End:
 // vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
-
-#endif // __UI_HH__

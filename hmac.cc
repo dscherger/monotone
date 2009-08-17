@@ -1,3 +1,11 @@
+// Copyright (C) 2005 Matt Johnston <matt@ucc.asn.au>
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
 
 #include "base.hh"
 #include <botan/botan.h>
@@ -26,7 +34,7 @@ chained_hmac::set_key(netsync_session_key const & session_key)
   if (active)
     {
       key = Botan::SymmetricKey(reinterpret_cast<Botan::byte const *>(session_key().data()),
-				session_key().size());
+                                session_key().size());
       engine.reset();
       engine.append(new Botan::MAC_Filter("HMAC(SHA-160)", key,
                                           constants::sha1_digest_length));
