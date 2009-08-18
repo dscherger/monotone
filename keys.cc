@@ -19,6 +19,7 @@
 #include "charset.hh"
 #include "lua_hooks.hh"
 #include "options.hh"
+#include "project.hh"
 #include "key_store.hh"
 #include "database.hh"
 
@@ -33,7 +34,7 @@ using std::memset;
 // if that key pair is not available.
 
 void
-load_key_pair(key_store & keys, rsa_keypair_id const & id)
+load_key_pair(key_store & keys, key_id const & id)
 {
   E(keys.key_pair_exists(id), origin::user,
     F("no key pair '%s' found in key store '%s'")
@@ -42,121 +43,191 @@ load_key_pair(key_store & keys, rsa_keypair_id const & id)
 
 void
 load_key_pair(key_store & keys,
-              rsa_keypair_id const & id,
+              key_id const & id,
               keypair & kp)
 {
   load_key_pair(keys, id);
   keys.get_key_pair(id, kp);
 }
 
-// Find the key to be used for signing certs.  If possible, ensure the
-// database and the key_store agree on that key, and cache it in decrypted
-// form, so as not to bother the user for their passphrase later.
+void
+load_key_pair(key_store & keys,
+              key_id const & id,
+              key_name & name,
+              keypair & kp)
+{
+  load_key_pair(keys, id);
+  keys.get_key_pair(id, name, kp);
+}
+
+namespace {
+  void check_and_save_chosen_key(database & db,
+                                 key_store & keys,
+                                 key_id const & chosen_key)
+  {
+    // Ensure that the specified key actually exists.
+    key_name name;
+    keypair priv_key;
+    load_key_pair(keys, chosen_key, name, priv_key);
+
+    if (db.database_specified())
+      {
+        // If the database doesn't have this public key, add it now; otherwise
+        // make sure the database and key-store agree on the public key.
+        if (!db.public_key_exists(chosen_key))
+          db.put_key(name, priv_key.pub);
+        else
+          {
+            rsa_pub_key pub_key;
+            db.get_key(chosen_key, pub_key);
+            E(keys_match(name, pub_key, name, priv_key.pub),
+              origin::no_fault,
+              F("The key '%s' stored in your database does\n"
+                "not match the version in your local key store!")
+              % chosen_key);
+          }
+      }
+
+    // Decrypt and cache the key now.
+    keys.cache_decrypted_key(chosen_key);
+  }
+  bool get_only_key(key_store & keys, bool required, key_id & key)
+  {
+    vector<key_id> all_privkeys;
+    keys.get_key_ids(all_privkeys);
+    E(!required || !all_privkeys.empty(), origin::user,
+      F("you have no private key to make signatures with\n"
+        "perhaps you need to 'genkey <your email>'"));
+    E(!required || all_privkeys.size() < 2, origin::user,
+      F("you have multiple private keys\n"
+        "pick one to use for signatures by adding "
+        "'-k<keyname>' to your command"));
+
+    if (all_privkeys.size() == 1)
+      {
+        key = all_privkeys[0];
+        return true;
+      }
+    else
+      {
+        return false;
+      }
+  }
+}
 
 void
 get_user_key(options const & opts, lua_hooks & lua,
-             database & db, key_store & keys, rsa_keypair_id & key)
+             database & db, key_store & keys,
+             project_t & project, key_id & key)
 {
-  if (!keys.signing_key().empty())
+  if (keys.have_signing_key())
     {
       key = keys.signing_key;
       return;
     }
 
-  if (!opts.signing_key().empty())
-    key = opts.signing_key;
-  else if (lua.hook_get_branch_key(opts.branch, key))
+  // key_given is not set if the key option was extracted from the workspace
+  if (opts.key_given || !opts.signing_key().empty())
+    {
+      if (!opts.signing_key().empty())
+        {
+          key_identity_info identity;
+          project.get_key_identity(keys, lua, opts.signing_key, identity);
+          key = identity.id;
+        }
+      else
+        {
+          E(false, origin::user,
+            F("a key is required for this operation, but the --key option "
+              "was given with an empty argument"));
+        }
+    }
+  else if (lua.hook_get_branch_key(opts.branch, keys, project, key))
     ; // the lua hook sets the key
   else
     {
-      vector<rsa_keypair_id> all_privkeys;
-      keys.get_key_ids(all_privkeys);
-      E(!all_privkeys.empty(), origin::user,
-        F("you have no private key to make signatures with\n"
-          "perhaps you need to 'genkey <your email>'"));
-      E(all_privkeys.size() < 2, origin::user,
-        F("you have multiple private keys\n"
-          "pick one to use for signatures by adding "
-          "'-k<keyname>' to your command"));
-
-      key = all_privkeys[0];
+      get_only_key(keys, true, key);
     }
 
-  // Ensure that the specified key actually exists.
-  keypair priv_key;
-  load_key_pair(keys, key, priv_key);
+  check_and_save_chosen_key(db, keys, key);
+}
 
-  if (db.database_specified())
+void
+cache_netsync_key(options const & opts,
+                  database & db,
+                  key_store & keys,
+                  lua_hooks & lua,
+                  project_t & project,
+                  utf8 const & host,
+                  globish const & include,
+                  globish const & exclude,
+                  netsync_key_requiredness key_requiredness)
+{
+  if (keys.have_signing_key())
     {
-      // If the database doesn't have this public key, add it now; otherwise
-      // make sure the database and key-store agree on the public key.
-      if (!db.public_key_exists(key))
-        db.put_key(key, priv_key.pub);
-      else
+      return;
+    }
+
+  bool found_key = false;
+  key_id key;
+
+  // key_given is not set if the key option was extracted from the workspace
+  if (opts.key_given || !opts.signing_key().empty())
+    {
+      key_identity_info identity;
+      // maybe they specifically requested no key ("--key ''")
+      if (!opts.signing_key().empty())
         {
-          rsa_pub_key pub_key;
-          db.get_key(key, pub_key);
-          E(keys_match(key, pub_key, key, priv_key.pub), origin::no_fault,
-            F("The key '%s' stored in your database does\n"
-              "not match the version in your local key store!") % key);
+          project.get_key_identity(keys, lua, opts.signing_key, identity);
+          key = identity.id;
+          found_key = true;
         }
     }
+  else if (lua.hook_get_netsync_key(host, include, exclude, keys, project, key))
+    {
+      found_key = true;
+    }
+  else
+    {
+      found_key = get_only_key(keys, key_requiredness == KEY_REQUIRED, key);
+    }
 
-  // Decrypt and cache the key now.
-  keys.cache_decrypted_key(key);
+  if (found_key)
+    {
+      check_and_save_chosen_key(db, keys, key);
+    }
 }
 
-// As above, but does not report which key has been selected; for use when
-// the important thing is to have selected one and cached the decrypted key.
 void
 cache_user_key(options const & opts, lua_hooks & lua,
-               database & db, key_store & keys)
+               database & db, key_store & keys,
+               project_t & project)
 {
-  rsa_keypair_id key;
-  get_user_key(opts, lua, db, keys, key);
+  key_id key;
+  get_user_key(opts, lua, db, keys, project, key);
 }
 
 void
-key_hash_code(rsa_keypair_id const & ident,
+key_hash_code(key_name const & ident,
               rsa_pub_key const & pub,
-              id & out)
+              key_id & out)
 {
   data tdat(ident() + ":" + remove_ws(encode_base64(pub)()),
             origin::internal);
-  calculate_ident(tdat, out);
-}
-
-void
-key_hash_code(rsa_keypair_id const & ident,
-              rsa_priv_key const & priv,
-              id & out)
-{
-  data tdat(ident() + ":" + remove_ws(encode_base64(priv)()),
-            origin::internal);
-  calculate_ident(tdat, out);
+  id tmp;
+  calculate_ident(tdat, tmp);
+  out = key_id(tmp);
 }
 
 // helper to compare if two keys have the same hash
 // (ie are the same key)
 bool
-keys_match(rsa_keypair_id const & id1,
+keys_match(key_name const & id1,
            rsa_pub_key const & key1,
-           rsa_keypair_id const & id2,
+           key_name const & id2,
            rsa_pub_key const & key2)
 {
-  id hash1, hash2;
-  key_hash_code(id1, key1, hash1);
-  key_hash_code(id2, key2, hash2);
-  return hash1 == hash2;
-}
-
-bool
-keys_match(rsa_keypair_id const & id1,
-           rsa_priv_key const & key1,
-           rsa_keypair_id const & id2,
-           rsa_priv_key const & key2)
-{
-  id hash1, hash2;
+  key_id hash1, hash2;
   key_hash_code(id1, key1, hash1);
   key_hash_code(id2, key2, hash2);
   return hash1 == hash2;

@@ -149,12 +149,15 @@ public:
   void perform_pivot_root(database & db,
                           file_path const & new_root,
                           file_path const & put_old,
-                          bool bookkeep_only);
+                          bool bookkeep_only,
+                          bool move_conflicting_paths);
 
-  void perform_content_update(database & db,
+  void perform_content_update(roster_t const & old_roster,
+                              roster_t const & new_roster,
                               cset const & cs,
                               content_merge_adaptor const & ca,
-                              bool messages = true);
+                              bool const messages = true,
+                              bool const move_conflicting_paths = false);
 
   void init_attributes(file_path const & path, editable_roster_base & er);
 

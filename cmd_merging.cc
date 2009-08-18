@@ -50,7 +50,7 @@ add_dormant_attrs(node_t const parent, node_t child)
     {
       // if the child does not have the associated attr add a dormant one
       if (child->attrs.find(i->first) == child->attrs.end())
-        safe_insert(child->attrs, 
+        safe_insert(child->attrs,
                     make_pair(i->first, make_pair(false, attr_value())));
     }
 }
@@ -93,7 +93,7 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
       if (right_with_attrs.has_node(i->first))
         add_dormant_attrs(i->second, right_with_attrs.get_node(i->first));
     }
-  
+
   // Mark up the ANCESTOR
   marking_map ancestor_markings; MM(ancestor_markings);
   mark_roster_with_no_parents(ancestor_rid, ancestor_roster, ancestor_markings);
@@ -125,7 +125,8 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
 }
 
 static bool
-pick_branch_for_update(options & opts, project_t & project, revision_id chosen_rid)
+pick_branch_for_update(options & opts,
+                       project_t & project, revision_id chosen_rid)
 {
   bool switched_branch = false;
 
@@ -174,7 +175,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
        "different revision, preserving uncommitted changes as it does so.  "
        "If a revision is given, update the workspace to that revision.  "
        "If not, update the workspace to the head of the branch."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
 {
   if (!args.empty())
     throw usage(execid);
@@ -324,7 +326,8 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   // Now finally modify the workspace
   cset update;
   make_cset(*working_roster, merged_roster, update);
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   revision_t remaining;
   make_revision_for_workspace(chosen_rid, chosen_roster,
@@ -492,7 +495,7 @@ CMD(merge, "merge", "", CMD_REF(tree), "",
       % heads.size() % app.opts.branch);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   size_t pass = 1, todo = heads.size() - 1;
 
@@ -617,7 +620,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
       return;
     }
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   P(F("propagating %s -> %s") % idx(args,0) % idx(args,1));
   P(F("[left]  %s") % *src_i);
@@ -737,7 +740,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
        "pending changes in the current workspace.  Both OTHER-REVISION and "
        "the workspace's base revision will be recorded as parents on commit.  "
        "The workspace's selected branch is not changed."),
-    options::opts::none)
+    options::opts::move_conflicting_paths)
 {
   revision_id left_id, right_id;
   cached_roster left, right;
@@ -834,7 +837,8 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   make_cset(*left.first, merge_result.roster, update);
 
   // small race condition here...
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*left.first, merge_result.roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
   work.put_work_rev(merged_rev);
   work.maybe_update_inodeprints(db);
 
@@ -877,7 +881,7 @@ CMD(explicit_merge, "explicit_merge", "", CMD_REF(tree),
     % right % left);
 
   // avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
   merge_two(app.opts, app.lua, project, keys,
             left, right, branch, string("explicit merge"),
             std::cout, false);
@@ -1185,7 +1189,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
        "compared to its parent.\n"
        "If two revisions are given, applies the changes made to get from the "
        "first revision to the second."),
-    options::opts::revision | options::opts::depth | options::opts::exclude)
+    options::opts::revision | options::opts::depth | options::opts::exclude |
+    options::opts::move_conflicting_paths)
 {
   database db(app);
   workspace work(app);
@@ -1328,7 +1333,8 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   MM(update);
   make_cset(*working_roster, merged_roster, update);
   E(!update.empty(), origin::no_fault, F("no changes were applied"));
-  work.perform_content_update(db, update, wca);
+  work.perform_content_update(*working_roster, merged_roster, update, wca, true,
+                              app.opts.move_conflicting_paths);
 
   P(F("applied changes to workspace"));
 

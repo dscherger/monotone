@@ -585,7 +585,9 @@ int test_invoker::operator()(std::string const & testname) const
 // Clean up after one child process.
 
 bool test_cleaner::operator()(test_to_run const & test,
-                              int status) const
+                              int status,
+                              int wall_seconds,
+                              int cpu_seconds) const
 {
   // call reporter(testno, testname, status)
   luaL_checkstack(st, 4, "preparing call to reporter");
@@ -594,7 +596,9 @@ bool test_cleaner::operator()(test_to_run const & test,
   lua_pushinteger(st, test.number);
   lua_pushstring(st, test.name.c_str());
   lua_pushinteger(st, status);
-  lua_call(st, 3, 1);
+  lua_pushinteger(st, wall_seconds);
+  lua_pushinteger(st, cpu_seconds);
+  lua_call(st, 5, 1);
 
   // return is a boolean.  There is, for no apparent reason, no
   // luaL_checkboolean().

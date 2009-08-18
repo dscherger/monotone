@@ -27,6 +27,9 @@ class key_store;
 class outdated_indicator;
 class rev_height;
 class lazy_rng;
+class project_t;
+
+class migration_status;
 
 typedef std::pair<var_domain, var_name> var_key;
 typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
@@ -71,6 +74,7 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 // the program. I don't know if there's any way to make it clearer.
 
 class database_impl;
+struct key_identity_info;
 
 class database
 {
@@ -88,6 +92,7 @@ public:
 
   void ensure_open();
   void ensure_open_for_format_changes();
+  void ensure_open_for_cache_reset();
 private:
   void ensure_open_for_maintenance();
 
@@ -229,31 +234,29 @@ private:
   // --== Keys ==--
   //
 public:
-  void get_key_ids(std::vector<rsa_keypair_id> & pubkeys);
-  void get_key_ids(globish const & pattern,
-                   std::vector<rsa_keypair_id> & pubkeys);
+  void get_key_ids(std::vector<key_id> & pubkeys);
 
-  void get_public_keys(std::vector<rsa_keypair_id> & pubkeys);
+  void get_public_keys(std::vector<key_name> & pubkeys);
 
-  bool public_key_exists(id const & hash);
-  bool public_key_exists(rsa_keypair_id const & ident);
+  bool public_key_exists(key_id const & hash);
+  bool public_key_exists(key_name const & ident);
 
-  void get_pubkey(id const & hash,
-                  rsa_keypair_id & ident,
+  void get_pubkey(key_id const & hash,
+                  key_name & ident,
                   rsa_pub_key & pub);
 
-  void get_key(rsa_keypair_id const & ident, rsa_pub_key & pub);
-  bool put_key(rsa_keypair_id const & ident, rsa_pub_key const & pub);
+  void get_key(key_id const & ident, rsa_pub_key & pub);
+  bool put_key(key_name const & ident, rsa_pub_key const & pub);
 
-  void delete_public_key(rsa_keypair_id const & pub_id);
+  void delete_public_key(key_id const & pub_id);
 
   // Crypto operations
 
-  void encrypt_rsa(rsa_keypair_id const & pub_id,
+  void encrypt_rsa(key_id const & pub_id,
                    std::string const & plaintext,
                    rsa_oaep_sha_data & ciphertext);
 
-  cert_status check_signature(rsa_keypair_id const & id,
+  cert_status check_signature(key_id const & id,
                               std::string const & alleged_text,
                               rsa_sha1_signature const & signature);
   cert_status check_cert(cert const & t);
@@ -270,7 +273,7 @@ public:
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
-                              std::pair<revision_id, rsa_keypair_id> > > & idx);
+                              std::pair<revision_id, key_id> > > & idx);
 
   // Only used by database_check.cc
   outdated_indicator get_revision_certs(std::vector<cert> & certs);
@@ -298,8 +301,7 @@ public:
                                cert_value const & value,
                                std::set<revision_id> & revisions);
 
-  // Used through project.cc, and by
-  // anc_graph::add_node_for_oldstyle_revision (revision.cc)
+  // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<cert> & certs);
 
@@ -309,11 +311,12 @@ public:
 
   void get_revision_cert(id const & hash, cert & c);
 
-  typedef boost::function<bool(std::set<rsa_keypair_id> const &,
+  typedef boost::function<bool(std::set<key_id> const &,
                                id const &,
                                cert_name const &,
                                cert_value const &)> cert_trust_checker;
-  void erase_bogus_certs(std::vector<cert> & certs);
+  // this takes a project_t so it can translate key names for the trust hook
+  void erase_bogus_certs(project_t & project, std::vector<cert> & certs);
   // permit alternative trust functions
   void erase_bogus_certs(std::vector<cert> & certs,
                          cert_trust_checker const & checker);
@@ -388,7 +391,7 @@ public:
   void load(std::istream &);
   void info(std::ostream &, bool analyze);
   void version(std::ostream &);
-  void migrate(key_store &);
+  void migrate(key_store &, migration_status &);
   void test_migration_step(key_store &, std::string const &);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
@@ -416,6 +419,8 @@ public:
 
   void get_manifest_certs(manifest_id const & id, std::vector<cert> & certs);
   void get_manifest_certs(cert_name const & name, std::vector<cert> & certs);
+  void get_revision_certs_with_keynames(revision_id const & id,
+                                        std::vector<cert> & certs);
 
   // heights
   void get_rev_height(revision_id const & id,

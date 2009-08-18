@@ -49,11 +49,11 @@ public:
   virtual void consume_revision_cert(cert const & t) = 0;
 
 
-  virtual void consume_public_key(rsa_keypair_id const & ident,
+  virtual void consume_public_key(key_name const & ident,
                                   rsa_pub_key const & k) = 0;
-  virtual void consume_key_pair(rsa_keypair_id const & ident,
+  virtual void consume_key_pair(key_name const & ident,
                                 keypair const & kp) = 0;
-  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+  virtual void consume_old_private_key(key_name const & ident,
                                        old_arc4_rsa_priv_key const & k) = 0;
 };
 
@@ -74,11 +74,11 @@ struct packet_writer : public packet_consumer
                                      revision_data const & dat);
   virtual void consume_revision_cert(cert const & t);
 
-  virtual void consume_public_key(rsa_keypair_id const & ident,
+  virtual void consume_public_key(key_name const & ident,
                                   rsa_pub_key const & k);
-  virtual void consume_key_pair(rsa_keypair_id const & ident,
+  virtual void consume_key_pair(key_name const & ident,
                                 keypair const & kp);
-  virtual void consume_old_private_key(rsa_keypair_id const & ident,
+  virtual void consume_old_private_key(key_name const & ident,
                                        old_arc4_rsa_priv_key const & k);
 };
 

@@ -254,7 +254,7 @@ export_changes(database & db,
       if (author != authors.end())
         {
           author_name = trim(author->value());
-          author_key  = trim(author->key());
+          author_key  = trim(author->key.inner()());
         }
 
       // all monotone keys and authors that don't follow the "Name <email>"

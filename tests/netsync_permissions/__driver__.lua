@@ -13,6 +13,14 @@ end
 keys.other = "other@test.net"
 genkey(keys.other)
 
+keys.byhash = "byhash@test.net"
+genkey(keys.byhash)
+check(mtn("ls", "keys"), 0, true)
+check(grep(" byhash@test.net$", "stdout"), 0, true)
+line = readfile("stdout")
+byhash_hash = string.sub(line, 0, 40)
+
+
 netsync.setup()
 
 -- test with open security settings
@@ -101,9 +109,22 @@ check(mtn("automate", "get_revision", revs.other), 0, true, true)
 check(mtn("automate", "get_revision", revs.unknown), 1, true, true)
 
 
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 -- test with closed security settings
 check(get("closed"))
 
+-- setup by-hash line in permissions files
+writeperm = readfile("closed/write-permissions")
+writeperm = writeperm .. byhash_hash .. "\n"
+writefile("closed/write-permissions", writeperm)
+
+readperm = readfile("closed/read-permissions")
+readperm = readperm .. 'allow "' .. byhash_hash .. '"\n'
+writefile("closed/read-permissions", readperm)
+
+-- general setup
 clean()
 writefile("_MTN/revision", 
 	  "format_version \"1\"\n\n"..
@@ -128,6 +149,13 @@ check(mtn2("automate", "get_revision", revs.base), 1, true, true)
 clean(2)
 
 srv:pull("testbranch")
+check(mtn2("automate", "get_revision", revs.base), 0, true, true)
+
+-- pull with by-hash key
+
+clean(2)
+
+srv:pull({"testbranch", "--key", keys.byhash})
 check(mtn2("automate", "get_revision", revs.base), 0, true, true)
 
 -- pull with bad branch fails
@@ -162,6 +190,14 @@ addfile("default", "default", mtn2)
 check(mtn2("commit", "--message", "default"), 0, false, false)
 revs.default = base_revision()
 srv:push("testbranch")
+
+-- push with by-hash key
+
+revert_to(revs.base, mtn2)
+addfile("by-hash", "by-hash", mtn2)
+check(mtn2("commit", "--message", "by-hash"), 0, false, false)
+revs.other = base_revision()
+srv:push({"testbranch", "--key", keys.byhash}, nil, 0)
 
 -- push with other key
 

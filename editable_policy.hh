@@ -41,7 +41,7 @@ public:
   {
   public:
     branch_uid uid;
-    std::set<rsa_keypair_id> committers;
+    std::set<external_key_name> committers;
     void write(data & dat);
     void read(data const & dat);
   };
@@ -52,7 +52,7 @@ public:
   public:
     revision_id rev;
     branch_uid uid;
-    std::set<rsa_keypair_id> committers;
+    std::set<external_key_name> committers;
     void write(data & dat);
     void read(data const & dat);
   };
@@ -61,7 +61,11 @@ public:
 
   // Create a new policy.
   editable_policy(database & db,
-                  std::set<rsa_keypair_id> const & admins);
+                  std::set<external_key_name> const & admins);
+  editable_policy(database & db,
+                  std::set<key_name> const & admins);
+  editable_policy(database & db,
+                  std::set<key_id> const & admins);
   // Edit an existing policy. If the existing policy is not in
   // exactly one branch, you will have to populate the uid field
   // before calling commit().

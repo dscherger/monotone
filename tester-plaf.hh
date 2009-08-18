@@ -75,7 +75,8 @@ struct test_cleaner
   lua_State * st;
   int reporter_ref;
   test_cleaner(lua_State *st, int r) : st(st), reporter_ref(r) {}
-  bool operator()(test_to_run const & test, int status) const;
+  bool operator()(test_to_run const & test, int status,
+                  int wall_seconds, int cpu_seconds) const;
 };
 
 void run_tests_in_children(test_enumerator const & next_test,

@@ -320,6 +320,7 @@ public:
   bookkeeping_path(std::string const &, origin::type made_from);
   bookkeeping_path operator /(char const *) const;
   bookkeeping_path operator /(path_component const &) const;
+  bookkeeping_path operator /(file_path const & to_append) const;
 
   // exposed for the use of walk_tree and friends
   static bool internal_string_is_bookkeeping_path(utf8 const & path);

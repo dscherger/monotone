@@ -24,6 +24,9 @@ bool have_smart_terminal()
   else
     term = "";
 
+  // Emacs 22.2.1 on Windows sets TERM to "emacs", but on Debian Emacs sets
+  // TERM to "dumb". The fix is to set TERM in your ~/.emacs, not to mess
+  // with this logic.
   if (term == "" || term == "dumb" || !isatty(2))
     return false;
   else

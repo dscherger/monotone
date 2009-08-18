@@ -314,7 +314,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {
-          P(F("reverting %s on %s") % a->first() % path);
+          L(FL("reverting %s on %s") % a->first() % path);
           if (a->second.first)
             app.lua.hook_set_attribute(a->first(), path,
                                        a->second.second());
@@ -370,7 +370,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
                                     % r).str(),
                                    origin::internal));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   edge_entry const & old_edge (*rev.edges.begin());
   db.get_revision_manifest(edge_old_revision(old_edge),
@@ -555,7 +555,7 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
        "that is currently the root "
        "directory will have name PUT_OLD.\n"
        "Use of --bookkeep-only is NOT recommended."),
-    options::opts::bookkeep_only)
+    options::opts::bookkeep_only | options::opts::move_conflicting_paths)
 {
   if (args.size() != 2)
     throw usage(execid);
@@ -565,7 +565,8 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
   file_path new_root = file_path_external(idx(args, 0));
   file_path put_old = file_path_external(idx(args, 1));
   work.perform_pivot_root(db, new_root, put_old,
-                              app.opts.bookkeep_only);
+                          app.opts.bookkeep_only,
+                          app.opts.move_conflicting_paths);
 }
 
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
@@ -603,7 +604,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch (given or implicit).  "
        "If no directory is given, the branch name will be used as directory."),
-    options::opts::branch | options::opts::revision)
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
 {
   revision_id revid;
   system_path dir;
@@ -699,7 +701,8 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   make_cset(empty_roster, current_roster, checkout);
 
   content_merge_checkout_adaptor wca(db);
-  work.perform_content_update(db, checkout, wca, false);
+  work.perform_content_update(empty_roster, current_roster, checkout, wca, false,
+                              app.opts.move_conflicting_paths);
 
   work.maybe_update_inodeprints(db);
   guard.commit();
@@ -752,7 +755,7 @@ drop_attr(app_state & app, args_vector const & args)
   make_cset(old_roster, new_roster, cs);
 
   content_merge_empty_adaptor empty;
-  work.perform_content_update(db, cs, empty);
+  work.perform_content_update(old_roster, new_roster, cs, empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -858,7 +861,7 @@ set_attr(app_state & app, args_vector const & args)
   make_cset(old_roster, new_roster, cs);
 
   content_merge_empty_adaptor empty;
-  work.perform_content_update(db, cs, empty);
+  work.perform_content_update(old_roster, new_roster, cs, empty);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -1165,7 +1168,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   // for the divergence check, below
   set<revision_id> heads;

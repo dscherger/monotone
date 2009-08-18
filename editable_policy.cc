@@ -159,7 +159,7 @@ public:
 };
 
 editable_policy::editable_policy(database & db,
-                                 set<rsa_keypair_id> const & admins)
+                                 set<external_key_name> const & admins)
   : impl(new editable_policy_impl(db)), uid(db.generate_uid())
 {
   branch_holder::info_type self;
@@ -167,6 +167,40 @@ editable_policy::editable_policy(database & db,
   self.new_value.reset(new branch());
   self.new_value->uid = uid;
   self.new_value->committers = admins;
+  impl->branches.insert(self);
+  impl->indicator = never_outdated.get_indicator();
+}
+
+editable_policy::editable_policy(database & db,
+                                 set<key_name> const & admins)
+  : impl(new editable_policy_impl(db)), uid(db.generate_uid())
+{
+  branch_holder::info_type self;
+  self.new_name = "__policy__";
+  self.new_value.reset(new branch());
+  self.new_value->uid = uid;
+  typecast_vocab_container(admins, self.new_value->committers);
+  impl->branches.insert(self);
+  impl->indicator = never_outdated.get_indicator();
+}
+
+editable_policy::editable_policy(database & db,
+                                 set<key_id> const & admins)
+  : impl(new editable_policy_impl(db)), uid(db.generate_uid())
+{
+  branch_holder::info_type self;
+  self.new_name = "__policy__";
+  self.new_value.reset(new branch());
+  self.new_value->uid = uid;
+  //typecast_vocab_container(admins, self.new_value->committers);
+  for(set<key_id>::const_iterator i = admins.begin();
+      i != admins.end(); ++i)
+    {
+      hexenc<id> hex;
+      encode_hexenc((*i)(), hex);
+      external_key_name ext = typecast_vocab<external_key_name>(hex);
+      self.new_value.committers.insert(ext);
+    }
   impl->branches.insert(self);
   impl->indicator = never_outdated.get_indicator();
 }
@@ -345,7 +379,7 @@ editable_policy::branch::write(data & dat)
   basic_io::printer printer;
   basic_io::stanza st;
   st.push_str_pair(basic_io::syms::branch_uid, uid());
-  for (std::set<rsa_keypair_id>::const_iterator i = committers.begin();
+  for (std::set<external_key_name>::const_iterator i = committers.begin();
        i != committers.end(); ++i)
     {
       st.push_str_pair(basic_io::syms::committer, (*i)());
@@ -375,7 +409,7 @@ editable_policy::branch::read(data const & dat)
           pa.sym();
           string key;
           pa.str(key);
-          committers.insert(rsa_keypair_id(key, dat.made_from));
+          committers.insert(external_key_name(key, dat.made_from));
         }
       else
         {
@@ -395,7 +429,7 @@ editable_policy::delegation::write(data & dat)
   if (null_id(rev))
     {
       st.push_str_pair(basic_io::syms::branch_uid, uid());
-      for (std::set<rsa_keypair_id>::const_iterator i = committers.begin();
+      for (std::set<external_key_name>::const_iterator i = committers.begin();
            i != committers.end(); ++i)
         {
           st.push_str_pair(basic_io::syms::committer, (*i)());
@@ -438,7 +472,7 @@ editable_policy::delegation::read(data const & dat)
           pa.sym();
           string key;
           pa.str(key);
-          committers.insert(rsa_keypair_id(key, dat.made_from));
+          committers.insert(external_key_name(key, dat.made_from));
         }
       else if (pa.symp(basic_io::syms::revision_id))
         {

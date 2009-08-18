@@ -186,16 +186,16 @@ namespace
   {
     database & db;
     cert_value branch;
-    set<rsa_keypair_id> const & trusted_signers;
-    bool is_trusted(set<rsa_keypair_id> const & signers,
+    set<key_id> const & trusted_signers;
+    bool is_trusted(set<key_id> const & signers,
 		    id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {
-      for (set<rsa_keypair_id>::const_iterator i = signers.begin();
+      for (set<key_id>::const_iterator i = signers.begin();
 	   i != signers.end(); ++i)
 	{
-	  set<rsa_keypair_id>::const_iterator t = trusted_signers.find(*i);
+	  set<key_id>::const_iterator t = trusted_signers.find(*i);
 	  if (t != trusted_signers.end())
 	    return true;
 	}
@@ -203,7 +203,7 @@ namespace
     }
     not_in_managed_branch(database & db,
 			  cert_value const & branch,
-			  set<rsa_keypair_id> const & trusted)
+			  set<key_id> const & trusted)
       : db(db), branch(branch), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
@@ -224,16 +224,16 @@ namespace
   {
     database & db;
     cert_value branch;
-    set<rsa_keypair_id> const & trusted_signers;
-    bool is_trusted(set<rsa_keypair_id> const & signers,
+    set<key_id> const & trusted_signers;
+    bool is_trusted(set<key_id> const & signers,
 		    id const & rid,
 		    cert_name const & name,
 		    cert_value const & value)
     {
-      for (set<rsa_keypair_id>::const_iterator i = signers.begin();
+      for (set<key_id>::const_iterator i = signers.begin();
 	   i != signers.end(); ++i)
 	{
-	  set<rsa_keypair_id>::const_iterator t = trusted_signers.find(*i);
+	  set<key_id>::const_iterator t = trusted_signers.find(*i);
 	  if (t != trusted_signers.end())
 	    return true;
 	}
@@ -241,7 +241,7 @@ namespace
     }
     suspended_in_managed_branch(database & db,
 				cert_value const & branch,
-				set<rsa_keypair_id> const & trusted)
+				set<key_id> const & trusted)
       : db(db), branch(branch), trusted_signers(trusted)
     {}
     virtual bool operator()(revision_id const & rid)
@@ -304,7 +304,7 @@ revision_is_in_branch(editable_policy::branch const & br,
 
 
 bool maybe_get_policy_branch_head(branch_uid const & name,
-				  set<rsa_keypair_id> const & trusted_signers,
+				  set<key_id> const & trusted_signers,
 				  database & db,
 				  revision_id & rid)
 {

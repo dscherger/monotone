@@ -116,8 +116,26 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
-  database db(app);
-  db.migrate(keys);
+  migration_status mstat;
+  {
+    database db(app);
+    db.migrate(keys, mstat);
+    app.dbcache.reset();
+  }
+
+  if (mstat.need_regen())
+    {
+      database db(app);
+      regenerate_caches(db);
+    }
+
+  if (mstat.need_flag_day())
+    {
+      P(F("NOTE: because this database was last used by a rather old version\n"
+          "of monotone, you're not done yet.  If you're a project leader, then\n"
+          "see the file UPGRADE for instructions on running '%s db %s'")
+        % prog_name % mstat.flag_day_name());
+    }
 }
 
 CMD(db_execute, "execute", "", CMD_REF(db), "",
@@ -249,6 +267,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -257,9 +276,9 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_changesets_from_manifest_ancestry(db, keys, set<string>());
+  build_changesets_from_manifest_ancestry(db, keys, project, set<string>());
 }
 
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
@@ -269,6 +288,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -277,9 +297,9 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_roster_style_revs_from_manifest_style_revs(db, keys,
+  build_roster_style_revs_from_manifest_style_revs(db, keys, project,
                                                    app.opts.attrs_to_drop);
 }
 

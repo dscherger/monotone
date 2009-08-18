@@ -13,6 +13,7 @@
 #include <boost/bind.hpp>
 
 #include "cert.hh"
+#include "charset.hh" // internalize_key_name
 #include "database.hh"
 #include "file_io.hh"
 #include "globish.hh"
@@ -53,6 +54,31 @@ public:
   }
 };
 
+bool
+operator<(key_identity_info const & left,
+          key_identity_info const & right)
+{
+  if (left.id < right.id)
+    return true;
+  else if (left.id != right.id)
+    return false;
+  else if (left.official_name < right.official_name)
+    return true;
+  else if (left.official_name != right.official_name)
+    return false;
+  else
+    return left.given_name < right.given_name;
+}
+std::ostream &
+operator<<(std::ostream & os,
+           key_identity_info const & identity)
+{
+  os<<"{id="<<identity.id<<"; given_name="<<identity.given_name
+    <<"; official_name="<<identity.official_name<<"}";
+  return os;
+}
+
+
 project_t::project_t(database & db)
   : db(db)
 {
@@ -62,7 +88,7 @@ project_t::project_t(database & db)
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
   : db(db)
 {
-  shared_ptr<editable_policy> ep(new editable_policy(db, set<rsa_keypair_id>()));
+  shared_ptr<editable_policy> ep(new editable_policy(db, set<key_id>()));
   // Empty editable_policy's start with (at least) a self-referencing
   // __policy__ branch. We don't want that.
   while (!ep->get_all_branches().empty())
@@ -281,40 +307,40 @@ namespace
 {
   struct not_in_branch : public is_failure
   {
-    database & db;
+    project_t & project;
     branch_name const & branch;
-    not_in_branch(database & db,
+    not_in_branch(project_t & project,
                   branch_name const & branch)
-      : db(db), branch(branch)
+      : project(project), branch(branch)
     {}
     virtual bool operator()(revision_id const & rid)
     {
       vector<cert> certs;
-      db.get_revision_certs(rid,
-                            cert_name(branch_cert_name),
-                            typecast_vocab<cert_value>(branch),
-                            certs);
-      db.erase_bogus_certs(certs);
+      project.db.get_revision_certs(rid,
+                                    cert_name(branch_cert_name),
+                                    typecast_vocab<cert_value>(branch),
+                                    certs);
+      project.db.erase_bogus_certs(project, certs);
       return certs.empty();
     }
   };
 
   struct suspended_in_branch : public is_failure
   {
-    database & db;
+    project_t & project;
     branch_name const & branch;
-    suspended_in_branch(database & db,
+    suspended_in_branch(project_t & project,
                         branch_name const & branch)
-      : db(db), branch(branch)
+      : project(project), branch(branch)
     {}
     virtual bool operator()(revision_id const & rid)
     {
       vector<cert> certs;
-      db.get_revision_certs(rid,
-                            cert_name(suspend_cert_name),
-                            typecast_vocab<cert_value>(branch),
-                            certs);
-      db.erase_bogus_certs(certs);
+      project.db.get_revision_certs(rid,
+                                    cert_name(suspend_cert_name),
+                                    typecast_vocab<cert_value>(branch),
+                                    certs);
+      project.db.erase_bogus_certs(project, certs);
       return !certs.empty();
     }
   };
@@ -342,13 +368,13 @@ project_t::get_branch_heads(branch_name const & name,
                                                 typecast_vocab<cert_value>(name),
                                                 branch.second);
 
-          not_in_branch p(db, name);
+      not_in_branch p(*this, name);
           erase_ancestors_and_failures(db, branch.second, p,
                                        inverse_graph_cache_ptr);
 
           if (!ignore_suspend_certs)
             {
-              suspended_in_branch s(db, name);
+          suspended_in_branch s(*this, name);
               set<revision_id>::iterator it = branch.second.begin();
               while (it != branch.second.end())
                 {
@@ -392,7 +418,7 @@ project_t::revision_is_in_branch(revision_id const & id,
 
       int num = certs.size();
 
-  db.erase_bogus_certs(certs);
+  db.erase_bogus_certs(*this, certs);
 
       L(FL("found %d (%d valid) %s branch certs on revision %s")
         % num
@@ -440,7 +466,7 @@ project_t::revision_is_suspended_in_branch(revision_id const & id,
 
   int num = certs.size();
 
-  db.erase_bogus_certs(certs);
+  db.erase_bogus_certs(*this, certs);
 
   L(FL("found %d (%d valid) %s suspend certs on revision %s")
     % num
@@ -485,7 +511,7 @@ project_t::get_revision_certs_by_name(revision_id const & id,
                                       vector<cert> & certs)
 {
   outdated_indicator i = db.get_revision_certs(id, name, certs);
-  db.erase_bogus_certs(certs);
+  db.erase_bogus_certs(*this, certs);
   return i;
 }
 
@@ -530,7 +556,7 @@ project_t::get_branch_certs(branch_name const & branch,
 
 tag_t::tag_t(revision_id const & ident,
              utf8 const & name,
-             rsa_keypair_id const & key)
+             key_id const & key)
   : ident(ident), name(name), key(key)
 {}
 
@@ -559,7 +585,7 @@ project_t::get_tags(set<tag_t> & tags)
     {
       std::vector<cert> certs;
       outdated_indicator i = db.get_revision_certs(tag_cert_name, certs);
-      db.erase_bogus_certs(certs);
+  db.erase_bogus_certs(*this, certs);
       tags.clear();
       for (std::vector<cert>::const_iterator i = certs.begin();
            i != certs.end(); ++i)
@@ -577,7 +603,7 @@ project_t::get_tags(set<tag_t> & tags)
         {
           tags.insert(tag_t(i->second.rev,
                             typecast_vocab<utf8>(i->first),
-                            rsa_keypair_id()));
+                            key_id()));
         }
       return outdated_indicator();
     }
@@ -665,11 +691,14 @@ project_t::put_standard_certs_from_options(options const & opts,
   string author = opts.author();
   if (author.empty())
     {
-      rsa_keypair_id key;
-      get_user_key(opts, lua, db, keys, key);
+      key_identity_info key;
+      get_user_key(opts, lua, db, keys, *this, key.id);
+      complete_key_identity(lua, key);
 
       if (!lua.hook_get_author(branch, key, author))
-        author = key();
+        {
+          author = key.official_name();
+        }
     }
 
   put_standard_certs(keys, id, branch, changelog, date, author);
@@ -681,7 +710,7 @@ project_t::put_cert(key_store & keys,
                     cert_name const & name,
                     cert_value const & value)
 {
-  I(!keys.signing_key().empty());
+  I(keys.have_signing_key());
 
   cert t(id, name, value, keys.signing_key);
   string signed_text;
@@ -726,6 +755,212 @@ project_t::put_revision_testresult(key_store & keys,
   put_cert(keys, id, testresult_cert_name,
            cert_value(boost::lexical_cast<string>(passed), origin::internal));
 }
+
+void
+project_t::lookup_key_by_name(key_store * const keys,
+                              lua_hooks & lua,
+                              key_name const & name,
+                              key_id & id)
+{
+  set<key_id> ks_match_by_local_name;
+  set<key_id> db_match_by_local_name;
+  set<key_id> ks_match_by_given_name;
+
+  if (keys)
+    {
+      vector<key_id> storekeys;
+      keys->get_key_ids(storekeys);
+      for (vector<key_id>::const_iterator i = storekeys.begin();
+           i != storekeys.end(); ++i)
+        {
+          key_name i_name;
+          keypair kp;
+          keys->get_key_pair(*i, i_name, kp);
+
+          if (i_name == name)
+            ks_match_by_given_name.insert(*i);
+
+          key_identity_info identity;
+          identity.id = *i;
+          identity.given_name = i_name;
+          if (lua.hook_get_local_key_name(identity))
+            {
+              if (identity.official_name == name)
+                ks_match_by_local_name.insert(*i);
+            }
+        }
+    }
+  if (db.database_specified())
+    {
+      vector<key_id> dbkeys;
+      db.get_key_ids(dbkeys);
+      for (vector<key_id>::const_iterator i = dbkeys.begin();
+           i != dbkeys.end(); ++i)
+        {
+          key_name i_name;
+          rsa_pub_key pub;
+          db.get_pubkey(*i, i_name, pub);
+
+          key_identity_info identity;
+          identity.id = *i;
+          identity.given_name = i_name;
+          if (lua.hook_get_local_key_name(identity))
+            {
+              if (identity.official_name == name)
+                db_match_by_local_name.insert(*i);
+            }
+        }
+    }
+
+  E(ks_match_by_local_name.size() < 2, origin::user,
+    F("you have %d keys named '%s'") %
+    ks_match_by_local_name.size() % name);
+  if (ks_match_by_local_name.size() == 1)
+    {
+      id = *ks_match_by_local_name.begin();
+      return;
+    }
+  E(db_match_by_local_name.size() < 2, origin::user,
+    F("there are %d keys named '%s'") %
+    db_match_by_local_name.size() % name);
+  if (db_match_by_local_name.size() == 1)
+    {
+      id = *db_match_by_local_name.begin();
+      return;
+    }
+  E(ks_match_by_given_name.size() < 2, origin::user,
+    F("you have %d keys named '%s'") %
+    ks_match_by_local_name.size() % name);
+  if (ks_match_by_given_name.size() == 1)
+    {
+      id = *ks_match_by_given_name.begin();
+      return;
+    }
+  E(false, origin::user,
+    F("there is no key named '%s'") % name);
+}
+
+void
+project_t::get_canonical_name_of_key(key_store * const keys,
+                                     key_id const & id,
+                                     key_name & name)
+{
+  if (keys && keys->key_pair_exists(id))
+    {
+      keypair kp;
+      keys->get_key_pair(id, name, kp);
+    }
+  else if (db.database_specified() && db.public_key_exists(id))
+    {
+      rsa_pub_key pub;
+      db.get_pubkey(id, name, pub);
+    }
+  else
+    {
+      E(false, origin::internal,
+        F("key %s does not exist") % id);
+    }
+}
+
+void
+project_t::complete_key_identity(key_store * const keys,
+                                 lua_hooks & lua,
+                                 key_identity_info & info)
+{
+  MM(info.id);
+  MM(info.official_name);
+  MM(info.given_name);
+  if (!info.id.inner()().empty())
+    {
+      get_canonical_name_of_key(keys, info.id, info.given_name);
+      lua.hook_get_local_key_name(info);
+    }
+  else if (!info.official_name().empty())
+    {
+      lookup_key_by_name(keys, lua, info.official_name, info.id);
+      get_canonical_name_of_key(keys, info.id, info.given_name);
+    }
+  //else if (!info.given_name().empty())
+  //  {
+  //    lookup_key_by_name(keys, info.given_name, info.id);
+  //    get_name_of_key(keys, info.id, info.official_name);
+  //  }
+  else
+    I(false);
+}
+
+void
+project_t::complete_key_identity(key_store & keys,
+                                 lua_hooks & lua,
+                                 key_identity_info & info)
+{
+  complete_key_identity(&keys, lua, info);
+}
+
+void
+project_t::complete_key_identity(lua_hooks & lua,
+                                 key_identity_info & info)
+{
+  complete_key_identity(0, lua, info);
+}
+
+void
+project_t::get_key_identity(key_store * const keys,
+                            lua_hooks & lua,
+                            external_key_name const & input,
+                            key_identity_info & output)
+{
+  try
+    {
+      string in2 = decode_hexenc(input(), origin::no_fault);
+      id ident(in2, origin::no_fault);
+      // set this separately so we can ensure that the key_id() calls
+      // above throw recoverable_failure instead of unrecoverable_failure
+      ident.made_from = input.made_from;
+      output.id = key_id(ident);
+    }
+  catch (recoverable_failure &)
+    {
+      internalize_key_name(typecast_vocab<utf8>(input),
+                           output.official_name);
+    }
+  complete_key_identity(keys, lua, output);
+}
+
+void
+project_t::get_key_identity(key_store & keys,
+                            lua_hooks & lua,
+                            external_key_name const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(&keys, lua, input, output);
+}
+
+void
+project_t::get_key_identity(lua_hooks & lua,
+                            external_key_name const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(0, lua, input, output);
+}
+
+void
+project_t::get_key_identity(key_store & keys,
+                            lua_hooks & lua,
+                            arg_type const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
+}
+
+void
+project_t::get_key_identity(lua_hooks & lua,
+                            arg_type const & input,
+                            key_identity_info & output)
+{
+  get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
+}
+
 
 // These should maybe be converted to member functions.
 

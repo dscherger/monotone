@@ -49,21 +49,31 @@ charset_convert(string const & src_charset,
     dst = src;
   else
     {
-      string tmp_charset(dst_charset);
+      // Always try converting without special treatment first.
+      char const * converted = stringprep_convert(src.c_str(),
+                                                  dst_charset.c_str(),
+                                                  src_charset.c_str());
 
-#ifdef ICONV_TRANSLIT
-      if (best_effort)
-        tmp_charset += "//TRANSLIT";
-#endif
+      if (best_effort && !converted)
+        {
+          // Not all iconv implementations support this.
+          string tmp_charset(dst_charset);
+          tmp_charset += "//TRANSLIT";
+          converted = stringprep_convert(src.c_str(),
+                                         tmp_charset.c_str(),
+                                         src_charset.c_str());
 
-      char * converted = stringprep_convert(src.c_str(),
-                                            tmp_charset.c_str(),
-                                            src_charset.c_str());
+          // If that didn't work just give up.
+          if (!converted)
+            converted = src.c_str();
+        }
+
       E(converted != NULL, whence,
         F("failed to convert string from %s to %s: '%s'")
-         % src_charset % tmp_charset % src);
+         % src_charset % dst_charset % src);
       dst = string(converted);
-      free(converted);
+      if (converted != src.c_str())
+        free(const_cast<char*>(converted));
     }
 }
 
@@ -362,7 +372,7 @@ internalize_cert_name(external const & ext, cert_name & c)
 }
 
 void
-internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
+internalize_key_name(utf8 const & utf, key_name & key)
 {
   string tmp;
   typedef boost::tokenizer<char_separator<char> >
@@ -383,19 +393,19 @@ internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
       if (*i == "@")
         in_domain = true;
     }
-  key = rsa_keypair_id(tmp, utf.made_from);
+  key = key_name(tmp, utf.made_from);
 }
 
 void
-internalize_rsa_keypair_id(external const & ext, rsa_keypair_id & key)
+internalize_key_name(external const & ext, key_name & key)
 {
   utf8 utf;
   system_to_utf8(ext, utf);
-  internalize_rsa_keypair_id(utf, key);
+  internalize_key_name(utf, key);
 }
 
 void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
+externalize_key_name(key_name const & key, utf8 & utf)
 {
   string tmp;
   typedef boost::tokenizer<char_separator<char> >
@@ -420,10 +430,10 @@ externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
 }
 
 void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, external & ext)
+externalize_key_name(key_name const & key, external & ext)
 {
   utf8 utf;
-  externalize_rsa_keypair_id(key, utf);
+  externalize_key_name(key, utf);
   utf8_to_system_strict(utf, ext);
 }
 

@@ -40,6 +40,7 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 
   database db(app);
   key_store keys(app);
+  project_t project(db, app.lua, app.opts);
 
   std::string project_name = idx(args, 0)();
   system_path project_dir = app.opts.conf_dir / "projects";
@@ -52,8 +53,8 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
                               F("You already have a project with that name."));
   mkdir_p(project_dir);
 
-  cache_user_key(app.opts, app.lua, db, keys);
-  std::set<rsa_keypair_id> admin_keys;
+  cache_user_key(app.opts, app.lua, db, keys, project);
+  std::set<key_id> admin_keys;
   admin_keys.insert(keys.signing_key);
 
   std::string policy_uid;
@@ -96,9 +97,14 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   I(prefix().find(parent_prefix() + ".") == 0);
   subprefix = prefix().substr(parent_prefix().size()+1);
 
-  cache_user_key(app.opts, app.lua, db, keys);
-  std::set<rsa_keypair_id> admin_keys;
-  admin_keys.insert(keys.signing_key);
+  cache_user_key(app.opts, app.lua, db, keys, project);
+  std::set<external_key_name> admin_keys;
+  {
+    key_identity_info ident;
+    ident.id = keys.signing_key;
+    project.complete_key_identity(keys, app.lua, ident);
+    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
+  }
 
 
   editable_policy child(db, admin_keys);
@@ -143,9 +149,14 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   if (relative_name.empty())
     relative_name = "__main__";
 
-  cache_user_key(app.opts, app.lua, db, keys);
-  std::set<rsa_keypair_id> admin_keys;
-  admin_keys.insert(keys.signing_key);
+  cache_user_key(app.opts, app.lua, db, keys, project);
+  std::set<external_key_name> admin_keys;
+  {
+    key_identity_info ident;
+    ident.id = keys.signing_key;
+    project.complete_key_identity(keys, app.lua, ident);
+    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
+  }
 
 
   shared_ptr<editable_policy::branch>

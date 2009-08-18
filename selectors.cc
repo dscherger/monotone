@@ -45,15 +45,15 @@ enum selector_type
     sel_message,
     sel_parent,
     sel_update,
+    sel_base,
     sel_unknown
   };
 
 typedef vector<pair<selector_type, string> > selector_list;
 
 static void
-decode_selector(project_t & project,
-                options const & opts,
-                lua_hooks & lua,
+decode_selector(options const & opts, lua_hooks & lua,
+                project_t & project,
                 string const & orig_sel,
                 selector_type & type,
                 string & sel)
@@ -116,9 +116,11 @@ decode_selector(project_t & project,
         case 'u':
           type = sel_update;
           break;
-        default:
-          W(F("unknown selector type: %c") % sel[0]);
+        case 'w':
+          type = sel_base;
           break;
+        default:
+          E(false, origin::user, F("unknown selector type: %c") % sel[0]);
         }
       sel.erase(0,2);
 
@@ -214,6 +216,10 @@ decode_selector(project_t & project,
             sel = encode_hexenc(update_id.inner()(), origin::internal);
           }
           break;
+        case sel_base:
+          E(sel.empty(), origin::user,
+            F("no value is allowed with the base revision selector w:"));
+          break;
 
         default: break;
         }
@@ -221,9 +227,8 @@ decode_selector(project_t & project,
 }
 
 static void
-parse_selector(project_t & project,
-               options const & opts,
-               lua_hooks & lua,
+parse_selector(options const & opts, lua_hooks & lua,
+               project_t & project,
                string const & str, selector_list & sels)
 {
   sels.clear();
@@ -250,14 +255,15 @@ parse_selector(project_t & project,
           string sel;
           selector_type type = sel_unknown;
 
-          decode_selector(project, opts, lua, *i, type, sel);
+          decode_selector(opts, lua, project,  *i, type, sel);
           sels.push_back(make_pair(type, sel));
         }
     }
 }
 
 static void
-complete_one_selector(project_t & project,
+complete_one_selector(options const & opts, lua_hooks & lua,
+                      project_t & project,
                       selector_type ty, string const & value,
                       set<revision_id> & completions)
 {
@@ -370,11 +376,27 @@ complete_one_selector(project_t & project,
           }
       }
       break;
+
+    case sel_base:
+      {
+        workspace work(opts, lua, F("the selector w: returns the "
+                                    "base revision(s) of the workspace"));
+        parent_map parents;
+        work.get_parent_rosters(project.db, parents);
+
+        for (parent_map::const_iterator i = parents.begin();
+             i != parents.end(); ++i)
+          {
+            completions.insert(i->first);
+          }
+      }
+      break;
     }
 }
 
 static void
-complete_selector(project_t & project,
+complete_selector(options const & opts, lua_hooks & lua,
+                  project_t & project,
                   selector_list const & limit,
                   set<revision_id> & completions)
 {
@@ -385,14 +407,14 @@ complete_selector(project_t & project,
     }
 
   selector_list::const_iterator i = limit.begin();
-  complete_one_selector(project, i->first, i->second, completions);
+  complete_one_selector(opts, lua, project, i->first, i->second, completions);
   i++;
 
   while (i != limit.end())
     {
       set<revision_id> candidates;
       set<revision_id> intersection;
-      complete_one_selector(project, i->first, i->second, candidates);
+      complete_one_selector(opts, lua, project, i->first, i->second, candidates);
 
       intersection.clear();
       set_intersection(completions.begin(), completions.end(),
@@ -411,7 +433,7 @@ complete(options const & opts, lua_hooks & lua,
          set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(opts, lua, project, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
@@ -425,7 +447,7 @@ complete(options const & opts, lua_hooks & lua,
     }
 
   P(F("expanding selection '%s'") % str);
-  complete_selector(project, sels, completions);
+  complete_selector(opts, lua, project, sels, completions);
 
   E(!completions.empty(), origin::user,
     F("no match for selection '%s'") % str);
@@ -466,7 +488,7 @@ expand_selector(options const & opts, lua_hooks & lua,
                 set<revision_id> & completions)
 {
   selector_list sels;
-  parse_selector(project, opts, lua, str, sels);
+  parse_selector(opts, lua, project, str, sels);
 
   // avoid logging if there's no expansion to be done
   if (sels.size() == 1
@@ -478,7 +500,7 @@ expand_selector(options const & opts, lua_hooks & lua,
       return;
     }
 
-  complete_selector(project, sels, completions);
+  complete_selector(opts, lua, project, sels, completions);
 }
 
 void

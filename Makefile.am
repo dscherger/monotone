@@ -257,7 +257,7 @@ if WIN32_PLATFORM
   tester_SOURCES += win32/tester-plaf.cc
   check_net_SOURCES = win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
-  LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
+  LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
@@ -307,7 +307,7 @@ info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
 									\

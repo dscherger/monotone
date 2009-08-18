@@ -673,7 +673,7 @@ void
 roster_merge_result::report_invalid_name_conflicts(roster_t const & left_roster,
                                                    roster_t const & right_roster,
                                                    content_merge_adaptor & adaptor,
-                                                   bool basic_io,
+                                                   const bool basic_io,
                                                    std::ostream & output) const
 {
   MM(left_roster);
@@ -775,7 +775,7 @@ void
 roster_merge_result::report_directory_loop_conflicts(roster_t const & left_roster,
                                                      roster_t const & right_roster,
                                                      content_merge_adaptor & adaptor,
-                                                     bool basic_io,
+                                                     const bool basic_io,
                                                      std::ostream & output) const
 {
   MM(left_roster);
@@ -855,7 +855,7 @@ void
 roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster,
                                                     roster_t const & right_roster,
                                                     content_merge_adaptor & adaptor,
-                                                    bool basic_io,
+                                                    const bool basic_io,
                                                     std::ostream & output) const
 {
   MM(left_roster);
@@ -993,7 +993,7 @@ void
 roster_merge_result::report_multiple_name_conflicts(roster_t const & left_roster,
                                                     roster_t const & right_roster,
                                                     content_merge_adaptor & adaptor,
-                                                    bool basic_io,
+                                                    const bool basic_io,
                                                     std::ostream & output) const
 {
   MM(left_roster);
@@ -1231,7 +1231,7 @@ void
 roster_merge_result::report_attribute_conflicts(roster_t const & left_roster,
                                                 roster_t const & right_roster,
                                                 content_merge_adaptor & adaptor,
-                                                bool basic_io,
+                                                const bool basic_io,
                                                 std::ostream & output) const
 {
   MM(left_roster);
@@ -1382,7 +1382,7 @@ roster_merge_result::report_file_content_conflicts(lua_hooks & lua,
                                                    roster_t const & left_roster,
                                                    roster_t const & right_roster,
                                                    content_merge_adaptor & adaptor,
-                                                   bool basic_io,
+                                                   const bool basic_io,
                                                    std::ostream & output)
 {
   MM(left_roster);

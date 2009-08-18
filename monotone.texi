@@ -2811,6 +2811,10 @@ command will swap the current and previous update revision.
 Uses selector type @code{t}. For example, @code{t:monotone-0.11} matches
 @code{tag} certs where the cert value begins with @code{monotone-0.11}.
 Values to match for can have shell wildcards.
+@item Workspace base revision
+Uses selector type @code{w}. This selector must be used from within a
+workspace and must not have any associated value. It matches the base
+revision ID(s) this workspace is based on.
 @end table
 
 Further selector types may be added in the future.
@@ -3380,14 +3384,19 @@ same name.
 
 These examples describe collisions on @command{update}; the same kinds
 of things can happen with other commands that can bring changes into
-your workspace, such as @command{checkout} or @command{pluck} too.
+your workspace, such as @command{checkout}, @command{pivot_root} or
+@command{pluck} too.
 
 Monotone is careful to avoid hitting such collisions. Before changing
 the workspace, it will try and detect the possibility of collisions, and
 the command will fail, warning you about the names that collide.  The
 file content in the database is safe and can be recovered at any time,
 so monotone is conservative and will refuse to destroy the information
-in your workspace contents.
+in your workspace contents. Furthermore, all workspace-changing commands have
+an option @option{--move-conflicting-paths}, which moves unversioned, but
+conflicting files and directories from the workspace into a new subdirectory
+under _MTN/conflicts. This is useful if you want to ensure that an update
+always succeeds and you just want to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:
@@ -4610,10 +4619,10 @@ the command be executed from within a workspace.
 With an explicit @option{--revision} argument, the command outputs
 contents of @var{path} at that revision.
 
-@item mtn checkout --revision=@var{id} @var{directory}
-@itemx mtn co --revision=@var{id} @var{directory}
-@itemx mtn --branch=@var{branchname} checkout @var{directory}
-@itemx mtn --branch=@var{branchname} co @var{directory}
+@item mtn checkout [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn co [--move-conflicting-paths] --revision=@var{id} @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} checkout @var{directory}
+@itemx mtn [--move-conflicting-paths] --branch=@var{branchname} co @var{directory}
 
 These commands copy a revision @var{id} out of your database,
 recording the chosen revision (the @dfn{base revision}) in the file
@@ -5102,8 +5111,8 @@ files which monotone has listed in its manifest, but which have been
 deleted from the workspace.  Only missing files matching the given
 file or directory arguments are reverted.
 
-@item mtn update
-@itemx mtn update --revision=@var{revision}
+@item mtn update [--move-conflicting-paths]
+@itemx mtn update [--move-conflicting-paths] --revision=@var{revision}
 Without a @option{--revision} argument, this command incorporates
 ``recent'' changes found in your database into your workspace. It
 does this by performing 3 separate stages. If any of these stages
@@ -5145,8 +5154,8 @@ specify an explicit @option{--revision} argument).
 When running @command{update}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn pluck --revision=@var{to}
-@itemx mtn pluck --revision=@var{from} --revision=@var{to}
+@item mtn pluck [--move-conflicting-paths] --revision=@var{to}
+@itemx mtn pluck [--move-conflicting-paths] --revision=@var{from} --revision=@var{to}
 
 This command takes changes made at any point in history, and attempts to
 edit your current workspace to include those changes.  The end result is
@@ -5189,7 +5198,7 @@ After running this command, you are guaranteed that your workspace is
 in inodeprints mode, and that the inodeprints cache is accurate and up
 to date.
 
-@item mtn pivot_root [--bookkeep-only] pivot_root @var{new_root} @var{put_old}
+@item mtn pivot_root [--bookkeep-only] [--move-conflicting-paths] pivot_root @var{new_root} @var{put_old}
 Most users will never need this command.  It is primarily useful in
 certain tricky cases where one wishes to combine several projects
 into one, or split one project into several. See also @command{merge_into_dir}.
@@ -5494,21 +5503,25 @@ $ mtn complete revision 01f
 @itemx mtn diff --context [--no-show-encloser]
 @itemx mtn diff --external [--diff-args=@var{argstring}]
 @itemx mtn diff @var{pathname...}
-@itemx mtn diff --revision=@var{id}
+@itemx mtn diff [--reverse] --revision=@var{id}
 @itemx mtn diff --revision=@var{id} @var{pathname...}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2}
 @itemx mtn diff --revision=@var{id1} --revision=@var{id2} @var{pathname...}
 
 These commands print out GNU ``unified diff format'' textual difference
 listings between various manifest versions. With no @option{--revision}
-options, @command{diff} will print the differences between the
-base revision and the current revision in the workspace.
+options, @command{diff} will print the difference from the
+base revision to the current revision in the workspace.
 
 With one @option{--revision} option, @command{diff} will print the
-differences between the revision @var{id} and the current revision in
-the workspace.  With two @option{--revision} options @command{diff}
-will print the differences between revisions @var{id1} and @var{id2},
-ignoring any workspace.
+difference from the revision @var{id} to the current revision in the
+workspace. If @option{--reverse} is given, the order of the diff is
+reversed.
+
+With two @option{--revision} options @command{diff} will print the
+difference from revision @var{id1} to @var{id2}, ignoring any
+workspace.
+
 
 In all cases, monotone will print a textual summary -- identical to
 the summary presented by @command{mtn status} -- of the logical
@@ -5573,7 +5586,7 @@ indicate:
 @item
 Whether the signature on the certificate is @code{ok} or @code{bad}
 @item
-The key ID of the signer of the certificate
+The key used to sign the certificate
 @item
 The name of the certificate
 @item
@@ -5590,22 +5603,22 @@ $ mtn list certs 4a96
 mtn: expanding partial id '4a96'
 mtn: expanded to '4a96a230293456baa9c6e7167cafb3c5b52a8e7f'
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : author
 Value : graydon@@dub.venge.net
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : branch
 Value : monotone
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : date
 Value : 2003-10-17T03:20:27
 -----------------------------------------------------------------
-Key   : graydon@@pobox.com
+Key   : graydon@@pobox.com (10b5b36b4a...)
 Sig   : ok
 Name  : changelog
 Value : 2003-10-16  graydon hoare  <graydon@@pobox.com>
@@ -5805,9 +5818,11 @@ key @var{id}.
 This command lets you test your revision trust hook
 @code{get_revision_cert_trust} (see @ref{Hook Reference}).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
-key IDs, and it will tell you whether, under your current settings,
+key IDs or key names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
 those keys.
+
+The specified keys mist exist either in your keystore or in the database.
 
 @item mtn ssh_agent_add
 
@@ -7514,6 +7529,12 @@ A revision ID @var{id}, for which any certificates will be printed.
 
 1.0
 
+@item Changes:
+@itemize
+@item
+FIXME -- Keys are now listed by hash instead of name.
+@end itemize
+
 @item Purpose:
 
 Prints all certificates associated with the given revision ID.
@@ -7521,7 +7542,7 @@ Each certificate is contained in a basic IO stanza. For each certificate,
 the following values are provided:
 @verbatim
 'key'
-      a string indicating the key used to sign this certificate.
+      the hex-encoded hash of the key used to sign this certificate.
 'signature'
       a string indicating the status of the signature. Possible
       values of this string are:
@@ -7542,19 +7563,19 @@ the following values are provided:
 @item Sample output:
 
 @verbatim
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "author"
     value "emile@alumni.reed.edu"
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "branch"
     value "net.venge.monotone"
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "changelog"
     value "propagate from branch 'net.venge.monotone.annotate' (head 76a886ef7c8ae12a4bba5fc2bd252557bf863aff)
@@ -7562,7 +7583,7 @@ signature "ok"
 "
     trust "trusted"
 
-      key "emile@alumni.reed.edu"
+      key [5cd3b3a7ad2e8645e8887af193ee522dc59112e4]
 signature "ok"
      name "date"
     value "2005-05-20T20:19:25"
@@ -7671,6 +7692,51 @@ standard error and exits with nonzero status. Errors in the commands run
 through this interface do not affect the exit status. Instead, the <err code>
 field in the output is set to 2, and the output of the command becomes
 whatever error message would have been given.
+
+@end table
+
+@item mtn automate genkey @var{name} @var{passphrase}
+
+@table @strong
+@item Aguments
+
+@var{name} is the name to associate with the new key, and @var{passphrase} is
+the passphrase that will be used to encrypt the private half.
+
+@item Changes:
+@itemize
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+3.1 -- initial
+@end itemize
+
+@item Purpose:
+
+Generate a key with the given name and passphrase.
+
+@item Sample output:
+
+@verbatim
+            name "tbrownaw@gmail.com"
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+ public_location "database" "keystore"
+private_location "keystore"
+
+@end verbatim
+
+@item Output format:
+
+A basic_io stanza. The public_location and private_location items may have
+multiple values as shown above for public_location, one value for each place
+that the key is stored.
+
+@item Error conditions:
+
+Error conditions: If the passphrase is empty or the key already exists,
+prints an error message to stderr and exits with status 1.
 
 @end table
 
@@ -8178,7 +8244,7 @@ status 1.
 @end table
 
 
-@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [@var{files} ...]
+@item mtn automate content_diff [--revision=@var{id1} [--revision=@var{id2}]] [--reverse] [@var{files} ...]
 
 @table @strong
 @item Arguments:
@@ -8191,13 +8257,14 @@ If zero or more revisions are given, the command behaves as follows:
 
 @itemize
 @item
-no revision: the diff is done between the workspace revision and the
-parent (base) revision of this workspace
+no revision: the diff is done from the parent (base) revision of this
+workspace to the workspace revision.
 @item
-one revision: the diff is done between the workspace revision and the
-given revision @option{id1},
+one revision: the diff is done from the given revision @option{id1} to
+the workspace revision. If @option{--reverse} is given, the order is
+reversed.
 @item
-two revisions: the diff is done between @option{id1} and @option{id2}; no
+two revisions: the diff is done from @option{id1} to @option{id2}; no
 workspace is needed in this case.
 @end itemize
 
@@ -8405,9 +8472,20 @@ with status 1.
 
 None.
 
-@item Added in:
+@item Changes:
 
-1.1
+@itemize
+@item
+FIXME -- Instead of having a "name" item, there are
+"given_name" and "local_name" items.
+@item
+10.0 -- The separate hashes for the private half of a key really didn't
+make much sense; have one @code{hash [...]} line instead of separate
+@code{public_hash [...]} and @code{private_hash [...]} lines.
+@item
+1.1 -- initial
+
+@end itemize
 
 @item Purpose:
 
@@ -8416,19 +8494,20 @@ Print all keys in basic_io format.
 @item Sample output:
 
 @verbatim
-            name "tbrownaw@gmail.com"
-     public_hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
-    private_hash [7f76dae3f91bb48f80f1871856d9d519770b7f8a]
+            hash [475055ec71ad48f5dfaf875b0fea597b5cbbee64]
+      given_name "tbrownaw@gmail.com"
+      local_name "tbrownaw@gmail.com"
  public_location "database" "keystore"
 private_location "keystore"
 
-           name "tomfa@debian.org"
-    public_hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+           hash [3ac4afcd86af28413b0a23b7d22b9401e15027fc]
+      given_name "tomfa@debian.org"
+      local_name "tomfa@debian.org"
 public_location "database"
 
-            name "underwater@fishtank.net"
-     public_hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
-    private_hash [b520d2cfe7d30e4ea1725fc4f34646fc5469b13d]
+            hash [115fdc73d87a5e9901d018462b21a1f53eca33a1]
+      given_name "underwater@fishtank.net"
+      local_name "underwater@fishtank.net"
  public_location "keystore"
 private_location "keystore"
 
@@ -8437,9 +8516,13 @@ private_location "keystore"
 @item Output format:
 
 For each key, a basic_io stanza is printed. The public_location and
-private_location items may have multiple values as shown above for public_location, one value for each place that the key is stored. If the
+private_location items may have multiple values as shown above for public_location,
+one value for each place that the key is stored. If the
 private key does not exist, then the private_hash and private_location
-items will be absent. The keys are ordered alphabetically by name.
+items will be absent. given_name is the name provided when the key was created,
+and local_name is the name returned by the @code{get_local_key_name} hook.
+
+The keys are ordered by hash value.
 
 @item Error conditions:
 
@@ -9599,6 +9682,33 @@ functions exposing functionality not available with standard Lua.
 This section documents the existing hook functions and their default
 definitions.
 
+@subsection Common Data Types
+
+Some hooks take arguments which are more complex than a simple string or number.
+Where multiple hooks take the same kind of argument, we generally try to make
+them take that kind of argument in the same format.
+
+@ftable @code
+@item key_identity
+
+When a key is created, it is given a meaningful name. Because this is chosen by
+the key creator and may be unreliable, trust hooks need to be able to look at
+the key hash as well. This may be inconvenient, so a local alias is also provided.
+This alias is obtained from an other hook, which can provide reliable easy-to-use
+names based on the key hash (or however else you want).
+
+@smallexample
+@group
+@{
+   id = "key hash/fingerprint, in hex",
+   given_name = "name given when creating the key",
+   name = "local alias of the key"
+@}
+@end group
+@end smallexample
+
+@end ftable
+
 @subsection Event Notifications and Triggers
 
 There are a number of hooks that are called when noteworthy events
@@ -9626,8 +9736,7 @@ hook is only intended as an aid for integrating monotone with informal
 commit-notification systems such as mailing lists or news services. It
 should not perform any security-critical operations.
 
-@item note_netsync_start (@var{session_id}, @var{my_role}, @var{sync_type},
-@var{remote_host}, @var{remote_keyname}, @var{includes}, @var{excludes})
+@item note_netsync_start (@var{session_id}, @var{my_role}, @var{sync_type}, @var{remote_host}, @var{remote_key}, @var{includes}, @var{excludes})
 
 Called by monotone before any other of the netsync notification hooks
 are called.  The @var{session_id} helps keep track of the current netsync
@@ -9652,11 +9761,10 @@ The network address of the remote host. At the client, this will be the name
 it was told to connect to; at the server, this will use the numerical IP address
 the connection was received from.
 
-@item @var{remote_keyname}
+@item @var{remote_key}
 
-The name of the key being used by the other end of the connection. This may be
-set to "-unknown-" at the server if the key used by the client is not present
-at the server.
+The identity of the key being used by the other end of the connection. The fields may
+be empty at the server if the key used by the client is not present at the server.
 
 @item @var{includes} and @var{excludes}
 
@@ -9671,7 +9779,7 @@ netsync. @var{revision} is the text of the revision, what would be given
 by @command{mtn automate get_revision @var{new_id}}. @var{certs} is a
 Lua table containing one subtable for each cert attached to the revision
 @var{new_id}. These subtables have fields named "key", "name", and
-"value", containing the signing key for the cert, the name of the cert,
+"value", containing the identity of the signing key for the cert, the name of the cert,
 and the value of the cert. There is no default definition for this hook.
 @var{session_id} is used together with @code{note_netsync_start} and
 @code{note_netsync_end}.  If you're not interested in that type of
@@ -9683,41 +9791,39 @@ Called by monotone after the revision @var{rev_id} is sent through
 netsync. The arguments are the same as for
 @var{note_netsync_revision_received}.
 
-@item note_netsync_cert_received (@var{rev_id}, @var{key}, @var{name}, @var{value}, @var{session_id})
+@item note_netsync_cert_received (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
 
 Called by monotone after a cert is received through netsync, if the revision
 that the cert is attached to was not also received in the same netsync
 operation. @var{rev_id} is the revision id that the cert is attached to,
-@var{key} is the key that the cert is signed with, @var{name} is the name
+@var{key_identity} is the key that the cert is signed with, @var{name} is the name
 of the cert, and @var{value} is the cert value. There is no default
 definition for this hook.
 @var{session_id} is used together with @code{note_netsync_start} and
 @code{note_netsync_end}.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-@item note_netsync_cert_sent (@var{rev_id}, @var{key}, @var{name}, @var{value}, @var{session_id})
+@item note_netsync_cert_sent (@var{rev_id}, @var{key_identity}, @var{name}, @var{value}, @var{session_id})
 
 Called by monotone after a cert is sent through netsync, if the revision
 that the cert is attached to was not also sent in the same netsync
 operation. The arguments are the same as for
 @var{note_netsync_cert_received}.
 
-@item note_netsync_pubkey_received (@var{keyname}, @var{session_id})
+@item note_netsync_pubkey_received (@var{key_identity}, @var{session_id})
 
-Called by monotone after a pubkey is received through netsync. @var{keyname}
-is the name of the key received. There is no default definition for this hook.
+Called by monotone after a pubkey is received through netsync. @var{key_identity}
+is the identity of the key received. There is no default definition for this hook.
 @var{session_id} is used together with @code{note_netsync_start} and
 @code{note_netsync_end}.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-@item note_netsync_pubkey_sent (@var{keyname}, @var{session_id})
+@item note_netsync_pubkey_sent (@var{key_identity}, @var{session_id})
 
 Called by monotone after a pubkey is sent through netsync. The arguments are the same as for
 @var{note_netsync_pubkey_received}.
 
-@item note_netsync_end (@var{session_id}, @var{status},
-@var{bytes_in}, @var{bytes_out}, @var{certs_in}, @var{certs_out},
-@var{revs_in}, @var{revs_out}, @var{keys_in}, @var{keys_out})
+@item note_netsync_end (@var{session_id}, @var{status}, @var{bytes_in}, @var{bytes_out}, @var{certs_in}, @var{certs_out}, @var{revs_in}, @var{revs_out}, @var{keys_in}, @var{keys_out})
 
 Called by monotone after all other the netsync notification hooks have
 been called.  This hook would usually be used for post-netsync purposes,
@@ -9806,7 +9912,7 @@ prompted for.
 @ftable @code
 @item get_branch_key (@var{branchname})
 
-Returns a string which is the name of an @sc{rsa} private key used to sign
+Returns a string which is the name or hash of an @sc{rsa} private key used to sign
 certificates in a particular branch @var{branchname}. There is no
 default definition for this hook. The command-line option
 @option{--key=@var{keyname}} overrides any value returned from this
@@ -9817,7 +9923,7 @@ to use the unique private key.
 
 @item get_netsync_key(@var{server}, @var{include}, @var{exclude})
 
-Returns a string which is the name of the key to use to authenticate
+Returns a string which is the name or hash of the key to use to authenticate
 the given netsync connection. When called by the @command{serve} command,
 @var{server} is the address monotone is listening on, @var{include} is
 @option{"*"}, and @var{exclude} is @option{""}.
@@ -9854,21 +9960,26 @@ end
 @end group
 @end smallexample
 
-@item get_passphrase (@var{keypair_id})
+@item get_passphrase (@var{key_identity})
 
 Returns a string which is the passphrase used to encrypt the private
-half of @var{keypair_id} in your database, using the @sc{arc4} symmetric
-cipher.  @var{keypair_id} is a Lua string containing the label that you
-used when you created your key --- something like
-@code{"nicole@@example.com"}.  This hook has no default definition. If
+half of @var{key_identity} in your key store, using the @sc{TripleDES} symmetric
+cipher.  This hook has no default definition. If
 this hook is not defined or returns false, monotone will prompt you for
 a passphrase each time it needs to use a private key.
 
-@item get_author (@var{branchname}, @var{keypair_id})
+@item get_local_key_name (@var{key_identity})
+
+Return the local alias for the given key. The @var{id} and @var{given_name}
+fields of @var{key_identity} will be populated, and the @var{name} field
+will not be. The return value indicates what the @var{name} field should
+contain. The default implementation make this the same as @var{given_name}.
+
+@item get_author (@var{branchname}, @var{key_identity})
 
 Returns a string which is used as a value for automatically generated
 @code{author} certificates when you commit changes to
-@var{branchname} with the keypair identity @var{keypair_id}.  Generally
+@var{branchname} with the keypair identity @var{key_identity}.  Generally
 this hook remains undefined, and monotone selects your signing key name
 for the author certificate. You can use this hook to override that
 choice, if you like.
@@ -9877,7 +9988,7 @@ This hook has no default definition, but a couple of possible
 definitions might be:
 @smallexample
 @group
-function get_author(branchname, keypair_id)
+function get_author(branchname, key_identity)
         -- Key pair identity ignored.
         local user = os.getenv("USER")
         local host = os.getenv("HOSTNAME")
@@ -9888,12 +9999,12 @@ end
 @end smallexample
 @smallexample
 @group
-function get_author(branchname, keypair_id)
+function get_author(branchname, key_identity)
         -- Branch name ignored.
-        if (keypair_id == "joe@@example.com") then
+        if (key_identity.given_name == "joe@@example.com") then
                 return "Joe Random <joe@@example.com>"
         end
-        return keypair_id
+        return key_identity
 end
 @end group
 @end smallexample
@@ -9969,6 +10080,14 @@ Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
+@item get_date_format_spec ()
+
+Returns a @code{strftime} format specification, which @command{mtn
+log} and similar commands will use to format dates, unless instructed
+otherwise.  The default definition returns @samp{@w{"%d %b %Y,
+%I:%M:%S %p"}}, which produces output like this: @samp{@w{22 May 2009,
+09:06:14 AM}}.
+
 @end ftable
 
 @subsection Netsync Permission Hooks
@@ -9981,9 +10100,9 @@ order to reload the hook definitions if the @file{montonerc} file is
 changed.
 
 @ftable @code
-@item get_netsync_read_permitted (@var{branch}, @var{identity})
+@item get_netsync_read_permitted (@var{branch}, @var{key_identity})
 
-Returns @code{true} if a peer authenticated as key @var{identity}
+Returns @code{true} if a peer authenticated as key @var{key_identity}
 should be allowed to read from your database certs, revisions,
 manifests, and files associated with @var{branch}; otherwise @code{false}.
 The default definition of this hook reads a file @file{read-permissions} in
@@ -9992,7 +10111,7 @@ the configuration directory. This file looks like
 @group
 pattern "net.example.project.@{private,security@}*"
 allow "joe@@example.net"
-allow "jim@@example.net"
+allow "f3f62f86eba204a3ce15174083a53349201993d6"
 
 comment "everyone can read these branches"
 pattern "net.example.@{public,project@}*"
@@ -10008,7 +10127,8 @@ The file is divided into stanzas of one @code{pattern} line followed by any
 number of @code{allow} and @code{deny} lines, and possibly a @code{continue}
 line. Anything from the unquoted word @code{comment} until the next unquoted
 word is ignored. A stanza is processed if the argument to
-@code{pattern} is a glob that matches @var{branch}. Any keys which match an
+@code{pattern} is a glob that matches @var{branch}. Any keys with a hash or
+local_name that matches an
 @code{allow} line are given access, and any keys which match a @code{deny} line
 are denied access. If there is a @code{continue "true"} line, then if the key
 is not granted or denied access in this stanza the next matching stanza will be
@@ -10019,34 +10139,21 @@ has not been given access will be denied access even if it doesn't match any
 
 
 If a client connects anonymously, this hook will be called with a
-@var{identity} of @code{nil}.
+@var{key_identity} of @code{nil}.
 
-Note that the @var{identity} value is a key ID (such as
-``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
-key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same ID. Make sure you confirm the
-key fingerprints of each key in your database, as key ID strings are
-``convenience names'', not security tokens.
+@item get_netsync_write_permitted (@var{key_identity})
 
-@item get_netsync_write_permitted (@var{identity})
-
-Returns @code{true} if a peer authenticated as key @var{identity} should
+Returns @code{true} if a peer authenticated as key @var{key_identity} should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise @code{false}. The default definition of this hook reads a file
 @file{write-permissions} in the configuration directory which contains a list
-of keys, one per line, which are allowed write access. The special value
+of key hashes or local key names, one per line, which are allowed write access.
+The special value
 @code{*} means to allow access to anyone whose public key we already have.
 
 If a client connects anonymously, it will be unconditionally denied
-write access; this hook will @emph{not} be called with a @var{identity}
+write access; this hook will @emph{not} be called with a @var{key_identity}
 of @code{nil}.
-
-Note that the @var{identity} value is a key ID (such as
-``@code{graydon@@pobox.com}'') but will correspond to a @emph{unique}
-key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same ID. Make sure you confirm the
-key fingerprints of each key in your database, as key ID strings are
-``convenience names'', not security tokens.
 
 Note also that, unlike the equivalent read permission hook, the write
 permission hook does not take a @var{branch} name as an argument.  There
@@ -10226,7 +10333,7 @@ valid revisions, according to their own preferences and purposes.
 Returns whether or not you @emph{trust} the assertion
 @var{name}=@var{value} on a given revision @var{id}, given a valid
 signature from all the keys in @var{signers}. The @var{signers}
-parameter is a table containing all the key names which signed this
+parameter is a table containing all the key identities which signed this
 cert, the other three parameters are strings.
 
 The default definition of this hook simply returns @code{true}, which
@@ -10241,7 +10348,7 @@ the intersection of tables) is the following:
 function intersection(a,b)
    local s=@{@}
    local t=@{@}
-   for k,v in pairs(a) do s[v] = 1 end
+   for k,v in pairs(a) do s[v.name] = 1 end
    for k,v in pairs(b) do if s[v] ~= nil then table.insert(t,v) end end
    return t
 end
