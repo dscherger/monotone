@@ -370,7 +370,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
                                     % r).str(),
                                    origin::internal));
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   edge_entry const & old_edge (*rev.edges.begin());
   db.get_revision_manifest(edge_old_revision(old_edge),
@@ -1166,7 +1166,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   E(message_validated, origin::user,
     F("log message rejected by hook: %s") % reason);
 
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
   // for the divergence check, below
   set<revision_id> heads;

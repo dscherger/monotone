@@ -22,7 +22,7 @@ function check_keys(dat)
   parsed = parse_basic_io(dat)
   locs = {}
   for _,line in pairs(parsed) do
-    if line.name == "name" then
+    if line.name == "given_name" then
       key = line.values[1]
       locs[key] = {db = false, ks = false, pub = false, priv = false}
     end

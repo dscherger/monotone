@@ -393,7 +393,7 @@ annotate_context::build_revisions_to_annotations
     {
       vector<cert> certs;
       project.get_revision_certs(*i, certs);
-      project.db.erase_bogus_certs(certs);
+      project.db.erase_bogus_certs(project, certs);
 
       string author(cert_string_value(certs, author_cert_name,
                                       true, false, "@< "));

@@ -14,7 +14,7 @@ function execute(path,...)
 end
 
 function get_passphrase(keyid)
-   return keyid
+   return keyid.given_name
 end
 
 function program_exists_in_path(program)

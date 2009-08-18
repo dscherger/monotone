@@ -24,9 +24,12 @@
 
 struct uri_t;
 class app_state;
+class key_store;
 struct lua_State;
 struct globish;
 struct options;
+class project_t;
+struct key_identity_info;
 
 extern app_state* get_app_state(lua_State *LS);
 
@@ -48,31 +51,37 @@ public:
   // cert hooks
   bool hook_expand_selector(std::string const & sel, std::string & exp);
   bool hook_expand_date(std::string const & sel, std::string & exp);
-  bool hook_get_branch_key(branch_name const & branchname, rsa_keypair_id & k);
-  bool hook_get_passphrase(rsa_keypair_id const & k, std::string & phrase);
+  bool hook_get_branch_key(branch_name const & branchname,
+                           key_store & keys,
+                           project_t & project, key_id & k);
+  bool hook_get_passphrase(key_identity_info const & info,
+                           std::string & phrase);
+  bool hook_get_local_key_name(key_identity_info & info);
   bool hook_get_author(branch_name const & branchname,
-                       rsa_keypair_id const & k,
+                       key_identity_info const & info,
                        std::string & author);
   bool hook_edit_comment(external const & commentary,
                          external const & user_log_message,
                          external & result);
   bool hook_persist_phrase_ok();
-  bool hook_get_revision_cert_trust(std::set<rsa_keypair_id> const & signers,
+  bool hook_get_revision_cert_trust(std::set<key_identity_info> const & signers,
                                    id const & hash,
                                    cert_name const & name,
                                    cert_value const & val);
-  bool hook_get_manifest_cert_trust(std::set<rsa_keypair_id> const & signers,
+  bool hook_get_manifest_cert_trust(std::set<key_name> const & signers,
                                     id const & hash,
                                     cert_name const & name,
                                     cert_value const & val);
-  bool hook_accept_testresult_change(std::map<rsa_keypair_id, bool> const & old_results,
-                                     std::map<rsa_keypair_id, bool> const & new_results);
+  bool hook_accept_testresult_change(std::map<key_id, bool> const & old_results,
+                                     std::map<key_id, bool> const & new_results);
 
   // network hooks
   bool hook_get_netsync_key(utf8 const & server_address,
                             globish const & include,
                             globish const & exclude,
-                            rsa_keypair_id & k);
+                            key_store & keys,
+                            project_t & project,
+                            key_id & k);
   bool hook_get_netsync_connect_command(uri_t const & uri,
                                         globish const & include_pattern,
                                         globish const & exclude_pattern,
@@ -81,10 +90,10 @@ public:
   bool hook_use_transport_auth(uri_t const & uri);
 
   bool hook_get_netsync_read_permitted(std::string const & branch,
-                                       rsa_keypair_id const & identity);
+                                       key_identity_info const & identity);
   // anonymous no-key version
   bool hook_get_netsync_read_permitted(std::string const & branch);
-  bool hook_get_netsync_write_permitted(rsa_keypair_id const & identity);
+  bool hook_get_netsync_write_permitted(key_identity_info const & identity);
 
   // local repo hooks
   bool hook_ignore_file(file_path const & p);
@@ -148,32 +157,32 @@ public:
                                std::string my_role,
                                int sync_type,
                                std::string remote_host,
-                               rsa_keypair_id remote_keyname,
+                               key_identity_info const & remote_key,
                                globish include_pattern,
                                globish exclude_pattern);
   bool hook_note_netsync_revision_received(revision_id const & new_id,
                                            revision_data const & rdat,
-                                           std::set<std::pair<rsa_keypair_id,
+                                           std::set<std::pair<key_identity_info,
                                            std::pair<cert_name,
                                            cert_value> > > const & certs,
                                            size_t session_id);
   bool hook_note_netsync_revision_sent(revision_id const & new_id,
                                        revision_data const & rdat,
-                                       std::set<std::pair<rsa_keypair_id,
+                                       std::set<std::pair<key_identity_info,
                                        std::pair<cert_name,
                                        cert_value> > > const & certs,
                                        size_t session_id);
-  bool hook_note_netsync_pubkey_received(rsa_keypair_id const & kid,
+  bool hook_note_netsync_pubkey_received(key_identity_info const & identity,
                                          size_t session_id);
-  bool hook_note_netsync_pubkey_sent(rsa_keypair_id const & kid,
+  bool hook_note_netsync_pubkey_sent(key_identity_info const & identity,
                                      size_t session_id);
   bool hook_note_netsync_cert_received(revision_id const & rid,
-                                       rsa_keypair_id const & kid,
+                                       key_identity_info const & identity,
                                        cert_name const & name,
                                        cert_value const & value,
                                        size_t session_id);
   bool hook_note_netsync_cert_sent(revision_id const & rid,
-                                   rsa_keypair_id const & kid,
+                                   key_identity_info const & identity,
                                    cert_name const & name,
                                    cert_value const & value,
                                    size_t session_id);

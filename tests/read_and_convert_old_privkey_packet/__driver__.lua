@@ -7,23 +7,29 @@ mtn_setup()
 check(get("old_privkey", "pkt"))
 check(mtn("read", "pkt"), 0, false, true)
 check(qgrep("read 1 packet", "stderr"))
-check(qgrep("keypair", "keys/foo@bar.com"))
-check(not qgrep("privkey", "keys/foo@bar.com"))
+
 
 check(mtn("ls", "keys"), 0, true)
-check(qgrep("foo@bar.com", "stdout"))
+check(grep(" foo@bar.com ", "stdout"), 0, true)
+line = readfile("stdout")
+keyid = string.sub(line, 0, 40)
+
+check(qgrep("keypair", "keys/foo@bar.com." .. keyid))
+check(not qgrep("privkey", "keys/foo@bar.com." .. keyid))
 
 addfile("foo", "foo")
 
 -- if we put the old privkey in the keydir, it should get
 -- auto-converted the first time anything tries to read it
 
+check(remove("keys/foo@bar.com." .. keyid))
 check(get("old_privkey", "keys/foo@bar.com"))
 check(mtn("ls", "keys"), 0, true, true, "foo@bar.com\n")
 check(qgrep("foo@bar.com", "stdout"))
 check(qgrep("converting old-format", "stderr"))
-check(qgrep("keypair", "keys/foo@bar.com"))
-check(not qgrep("privkey", "keys/foo@bar.com"))
+check(not exists("keys/foo@bar.com"))
+check(qgrep("keypair", "keys/foo@bar.com." .. keyid))
+check(not qgrep("privkey", "keys/foo@bar.com." .. keyid))
 
 
 -- check that we can use the converted key to commit with
@@ -42,5 +48,5 @@ check(qgrep("committed revision", "stderr"))
 
 -- 3) that should have actually signed the certs with that key
 check(mtn("ls", "certs", "h:foo"), 0, true, false)
-check(qgrep("Key *: *foo@bar\\.com", "stdout"))
-check(not qgrep("Key *: *tester@test\\.net", "stdout"))
+check(qgrep("Key *:.*foo@bar\\.com", "stdout"))
+check(not qgrep("Key *:.*tester@test\\.net", "stdout"))
