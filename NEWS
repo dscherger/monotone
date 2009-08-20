@@ -1,20 +1,26 @@
-certs-by-keyhash branch:
-        'trusted' requires the given keys to exist
-        'ls certs' and 'ls tags' give the first part of the key hash
-        monotone can now handle multiple keys with the same name
-        'automate keys' output has changed
-        'automate certs' output lists keys by hash instead of by name
-        netsync version has been bumped
-        'db migrate' is required. Everyone can do this themselved; there's no
-                need for a project leader to migrate and everyone else to pull
-                a fresh database
-        the automate major version needs to be bumped
-
 ??? ?? ?? ??:??:?? UTC ????
 
 	0.45 release.
 
+        FIXME - bump automate major version, fix commands documented as
+        being updated in version FIXME
+
 	Changes
+
+        - Certs now link to the key that signed them by the key's
+          hash, instead of its name. This should provide some security
+          and usability improvements.
+
+          This requires a flag day, because the netsync protocol version
+          has been bumped. The database schema has also been changed, so
+          you will need to run 'mtn db migrate' (preferably after making
+          a backup copy of your db).
+
+          A number of commands have slightly different output now, particularly
+          'ls certs', 'ls tags', 'automate keys', and 'automate certs'.
+           There is a new Lua hook associated with these changes,
+          "get_local_key_name(identity)", and all lua hooks that used to take
+          a key name as an argument now instead take a table with several fields.
 
 	New features
 
