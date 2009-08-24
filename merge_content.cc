@@ -1,5 +1,5 @@
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -670,14 +670,13 @@ resolve_merge_conflicts(lua_hooks & lua,
             F(msg) % "invalid_name_conflicts");
           E(result.directory_loop_conflicts.size() == 0, origin::user,
             F(msg) % "directory_loop_conflicts");
-          E(result.orphaned_node_conflicts.size() == 0, origin::user,
-            F(msg) % "orphaned_node_conflicts");
           E(result.multiple_name_conflicts.size() == 0, origin::user,
             F(msg) % "multiple_name_conflicts");
           E(result.attribute_conflicts.size() == 0, origin::user,
             F(msg) % "attribute_conflicts");
 
           // resolve the ones we can.
+          result.resolve_orphaned_node_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_duplicate_name_conflicts(lua, left_roster, right_roster, adaptor);
           result.resolve_file_content_conflicts(lua, left_roster, right_roster, adaptor);
         }

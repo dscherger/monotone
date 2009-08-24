@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -68,6 +68,9 @@ struct orphaned_node_conflict
   // parent_name is the name of the orphaned node, in the parent revision
   // where it exists. parent_name.first is the directory containing
   // parent_name.second
+
+  resolve_conflicts::file_resolution_t resolution;
+
 };
 
 // our general strategy is to return a (possibly insane) roster, and a list of
@@ -208,6 +211,11 @@ struct roster_merge_result
                                       content_merge_adaptor & adaptor,
                                       bool const basic_io,
                                       std::ostream & output) const;
+  void resolve_orphaned_node_conflicts(lua_hooks & lua,
+                                       roster_t const & left_roster,
+                                       roster_t const & right_roster,
+                                       content_merge_adaptor & adaptor);
+
   void report_multiple_name_conflicts(roster_t const & left,
                                       roster_t const & right,
                                       content_merge_adaptor & adaptor,
