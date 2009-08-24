@@ -32,15 +32,15 @@ resolved_drop_right
  resolved_rename_left "thermostat-westinghouse.c"
 resolved_rename_right "thermostat-honeywell.c"
 
-        conflict content
-       node_type "file"
-   ancestor_name "interactive_file"
-ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
-       left_name "interactive_file"
-    left_file_id [942f274ea0d3ef68b821d67f8b01f79d17cfbf8f]
-      right_name "interactive_file"
-   right_file_id [f5545d552609d36494a195deee7f9df617cb3443]
-   resolved_user "_MTN/resolutions/interactive_file"
+          conflict content
+         node_type "file"
+     ancestor_name "interactive_file"
+  ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
+         left_name "interactive_file"
+      left_file_id [942f274ea0d3ef68b821d67f8b01f79d17cfbf8f]
+        right_name "interactive_file"
+     right_file_id [f5545d552609d36494a195deee7f9df617cb3443]
+resolved_user_left "_MTN/resolutions/interactive_file"
 
          conflict content
         node_type "file"
@@ -52,12 +52,12 @@ ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
     right_file_id [b70b9605783c1c4195f490dd0feafc743731478c]
 resolved_internal 
 
-        conflict content
-       node_type "file"
-   ancestor_name "user_file"
-ancestor_file_id [25ed8e31b995bb927966616df2a42b979a2717f0]
-       left_name "user_file"
-    left_file_id [5ce20f4b9a1da51992d03488cd0be4874324db75]
-      right_name "user_file"
-   right_file_id [faa330de9182327a12ef9c7e5eaa0bea7f74ecad]
-   resolved_user "resolutions/user_file"
+          conflict content
+         node_type "file"
+     ancestor_name "user_file"
+  ancestor_file_id [25ed8e31b995bb927966616df2a42b979a2717f0]
+         left_name "user_file"
+      left_file_id [5ce20f4b9a1da51992d03488cd0be4874324db75]
+        right_name "user_file"
+     right_file_id [faa330de9182327a12ef9c7e5eaa0bea7f74ecad]
+resolved_user_left "resolutions/user_file"

@@ -3315,7 +3315,9 @@ directory that has been deleted and into another directory that exists
 in both merge parents, or that has been added in the revision
 containing the orphaned files or directories.
 
-@command{conflicts} does not yet support resolving this conflict.
+@command{conflicts} supports resolving this conflict. However, if the
+orphaned node is a directory that is not empty, the user must handle
+the directory contents first, before invoking the conflicts commands.
 
 @subheading Multiple Name Conflict
 
@@ -4858,7 +4860,7 @@ resolution files in @file{_MTN/resolutions}; this command provides a
 convenient way to clean up.
 @end ftable
 
-For single file conflicts, there are two possible resolutions:
+For single file conflicts, there are several possible resolutions:
 
 @ftable @command
 @item interactive @var{file}
@@ -4875,6 +4877,21 @@ The file contents are replaced by the contents of the specified file.
 
 This inserts a @var{resolved_user file} conflict resolution in the
 conflicts file.
+
+@item drop
+The file is dropped in the merge. This is useful for an orphaned file
+conflict.
+
+This inserts a @var{resolved_drop_left} conflict resolution in the
+conflicts file.
+
+@item rename @var{filename}
+The file is renamed. This is useful for an orphaned file
+conflict.
+
+This inserts a @var{resolved_rename_left filename} conflict resolution
+in the conflicts file.
+
 @end ftable
 
 For two file conflicts, the possible resolutions are:
@@ -9041,6 +9058,10 @@ option.
 
 @itemize
 @item
+11.0 -- Add resolution for orphaned node conflicts. Deleted
+@code{resolved_user} conflict resolution; use @code{resolved_*_left}
+for single file conflicts.
+@item
 9.0 -- Added default resolution for file content conflicts, user
 resolutions for others. @code{directory_loop_created} changed to @code{directory_loop}.
 @item
@@ -9288,10 +9309,10 @@ All possible conflict resolutions:
     resolved_internal
  resolved_rename_left file
 resolved_rename_right file
-        resolved_user file
    resolved_user_left file
   resolved_user_right file
 @end verbatim
+For single file conflicts, the @code{resolved_*_left} resolution name is used.
 
 @xref{Conflicts}, for more information on conflict resolutions.
 
@@ -9489,8 +9510,7 @@ the tree.
 
 
 @page
-@node    GIT, ,RCS, Command Reference
-
+@node    GIT,  , RCS, Command Reference
 @section GIT
 
 @ftable @command

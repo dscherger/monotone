@@ -29,6 +29,13 @@
 	  _MTN/resolutions/<workspace_path>, so the action can
 	  succeed, and the user can recover the files if necessary.
 
+        - Resolution of orphaned file conflicts is now supported by
+          'merge --resolve-conflicts' and the 'conflicts' commands.
+
+        - The 'resolved_user' conflict resolution is no longer
+          reported by 'automate show_conflicts' for file content
+          conflicts; 'resolved_user_left' is used instead.
+
 	Bugs fixed
 
         - Monotone now sanely skips paths with invalid characters
