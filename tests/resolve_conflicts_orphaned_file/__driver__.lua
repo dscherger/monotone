@@ -30,6 +30,7 @@ check(mtn("conflicts", "store"), 0, nil, nil)
 
 -- Check suggested resolutions for orphaned directory
 check(mtn("conflicts", "show_first"), 0, nil, true)
+canonicalize("stderr")
 check(
 "mtn: orphaned node stuff/dir1\n" ..
 "mtn: possible resolutions:\n" ..
@@ -51,6 +52,7 @@ check(mtn("conflicts", "resolve_first", "drop"), 0, nil, nil)
 
 -- Check suggested resolutions for orphaned file
 check(mtn("conflicts", "show_first"), 0, nil, true)
+canonicalize("stderr")
 check(
 "mtn: orphaned node stuff/file2\n" ..
 "mtn: possible resolutions:\n" ..
