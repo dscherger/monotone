@@ -423,8 +423,8 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
-       gettext_noop("sets the key for signatures, using eith the key "
-                    "name or th key hash"))
+       gettext_noop("sets the key for signatures, using either the key "
+                    "name or the key hash"))
 #ifdef option_bodies
 {
   signing_key = external_key_name(arg, origin::user);
