@@ -183,7 +183,6 @@ roster_merge_result::count_unsupported_resolution() const
   return (missing_root_conflict ? 1 : 0)
     + invalid_name_conflicts.size()
     + directory_loop_conflicts.size()
-    + orphaned_node_conflicts.size()
     + multiple_name_conflicts.size()
     + attribute_conflicts.size();
 }

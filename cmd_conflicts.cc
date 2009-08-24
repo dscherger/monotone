@@ -54,6 +54,36 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 {
   // Go thru the conflicts we know how to resolve in the same order
   // merge.cc resolve_merge_conflicts outputs them.
+  for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
+       i != conflicts.result.orphaned_node_conflicts.end();
+       ++i)
+    {
+      orphaned_node_conflict & conflict = *i;
+
+      if (conflict.resolution.first == resolve_conflicts::none)
+        {
+          file_path name;
+          if (conflicts.left_roster->has_node(conflict.nid))
+            conflicts.left_roster->get_name(conflict.nid, name);
+          else
+            conflicts.right_roster->get_name(conflict.nid, name);
+
+          P(F("orphaned node %s") % name);
+
+          switch (show_case)
+            {
+            case first:
+              P(F("possible resolutions:"));
+              P(F("resolve_first drop"));
+              P(F("resolve_first rename \"file_name\""));
+              return;
+
+            case remaining:
+              break;
+            }
+        }
+    }
+
   for (std::vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
        i != conflicts.result.duplicate_name_conflicts.end();
        ++i)
@@ -281,6 +311,36 @@ set_first_conflict(database & db,
 
   if (side == neither)
     {
+      for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
+           i != conflicts.result.orphaned_node_conflicts.end();
+           ++i)
+        {
+          orphaned_node_conflict & conflict = *i;
+
+          if (conflict.resolution.first == resolve_conflicts::none)
+            {
+              if ("drop" == idx(args,0)())
+                {
+                  E(args.size() == 1, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::drop;
+                }
+              else if ("rename" == idx(args,0)())
+                {
+                  E(args.size() == 2, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::rename;
+                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                }
+              else
+                {
+                  E(false, origin::user,
+                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "orphaned_node");
+                }
+              return;
+            }
+        }
+
       for (std::vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
            i != conflicts.result.file_content_conflicts.end();
            ++i)
