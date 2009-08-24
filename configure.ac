@@ -12,11 +12,19 @@
 AC_PREREQ(2.58)
 AC_INIT([monotone], [0.45dev], [monotone-devel@nongnu.org])
 AM_INIT_AUTOMAKE([1.9 tar-ustar std-options])
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_SRCDIR([app_state.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_LANG([C++])
+
+dnl We want to take advantage of automake 1.11's optional "quiet build"
+dnl mode if it's available, and we want to set up our own custom rules
+dnl to be quiet too, but this means we need $(AM_DEFAULT_VERBOSITY) to
+dnl be defined even when an older automake is in use.
+m4_ifdef([AM_SILENT_RULES], 
+  [AM_SILENT_RULES],
+  [AM_DEFAULT_VERBOSITY=1
+   AC_SUBST([AM_DEFAULT_VERBOSITY])])
 
 dnl AM_INIT_AUTOMAKE only provides $(MKDIR_P) in 1.10 and later.
 dnl No, AC_PROG_MKDIR_P does not AC_SUBST its result variable, at least
