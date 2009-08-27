@@ -126,23 +126,19 @@ cert::signable_text(string & out) const
 void
 cert::hash_code(id & out) const
 {
-  base64<rsa_sha1_signature> sig_encoded(encode_base64(this->sig));
-  base64<cert_value> val_encoded(encode_base64(this->value));
-  string ident_encoded(encode_hexenc(this->ident.inner()(),
-                                     this->ident.inner().made_from));
   string tmp;
-  tmp.reserve(4 + ident_encoded.size()
-              + this->name().size() + val_encoded().size()
-              + this->key.inner()().size() + sig_encoded().size());
-  tmp.append(ident_encoded);
+  tmp.reserve(4 + ident.inner()().size()
+              + this->name().size() + value().size()
+              + this->key.inner()().size() + sig().size());
+  tmp.append(ident.inner()());
   tmp += ':';
   tmp.append(this->name());
   tmp += ':';
-  append_without_ws(tmp, val_encoded());
+  tmp.append(value());
   tmp += ':';
   tmp.append(this->key.inner()());
   tmp += ':';
-  append_without_ws(tmp, sig_encoded());
+  tmp.append(sig());
 
   data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);
