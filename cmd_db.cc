@@ -353,10 +353,9 @@ CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
   if (args.size() != 3)
     throw usage(execid);
 
-  var_domain d;
+  var_domain d = typecast_vocab<var_domain>(idx(args, 0));
   var_name n;
   var_value v;
-  internalize_var_domain(idx(args, 0), d);
   n = typecast_vocab<var_name>(idx(args, 1));
   v = typecast_vocab<var_value>(idx(args, 2));
 
@@ -373,9 +372,8 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   if (args.size() != 2)
     throw usage(execid);
 
-  var_domain d;
+  var_domain d = typecast_vocab<var_domain>(idx(args, 0));
   var_name n;
-  internalize_var_domain(idx(args, 0), d);
   n = typecast_vocab<var_name>(idx(args, 1));
   var_key k(d, n);
 

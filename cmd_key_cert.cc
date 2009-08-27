@@ -40,8 +40,7 @@ CMD(genkey, "genkey", "", CMD_REF(key_and_cert), N_("KEY_NAME"),
   if (args.size() != 1)
     throw usage(execid);
 
-  key_name name;
-  internalize_key_name(idx(args, 0), name);
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
 
   if (!app.opts.force_duplicate_key)
     {
@@ -187,8 +186,7 @@ CMD(cert, "cert", "", CMD_REF(key_and_cert),
   revision_id rid;
   complete(app.opts, app.lua,  project, idx(args, 0)(), rid);
 
-  cert_name cname;
-  internalize_cert_name(idx(args, 1), cname);
+  cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
 
   cache_user_key(app.opts, app.lua, db, keys, project);
 
@@ -227,9 +225,7 @@ CMD(trusted, "trusted", "", CMD_REF(key_and_cert),
   if (!rids.empty())
     ident = *rids.begin();
 
-  cert_name cname;
-  internalize_cert_name(idx(args, 1), cname);
-
+  cert_name cname = typecast_vocab<cert_name>(idx(args, 1));
   cert_value value = typecast_vocab<cert_value>(idx(args, 2));
 
   set<key_identity_info> signers;

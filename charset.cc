@@ -355,57 +355,6 @@ utf8_to_ace(utf8 const & utf, string & a)
   free(out);
 }
 
-void
-internalize_cert_name(utf8 const & utf, cert_name & c)
-{
-  string a;
-  utf8_to_ace(utf, a);
-  c = cert_name(a, utf.made_from);
-}
-
-void
-internalize_key_name(utf8 const & utf, key_name & key)
-{
-  string tmp;
-  typedef boost::tokenizer<char_separator<char> >
-    tokenizer;
-  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
-  tokenizer tokens(utf(), sep);
-  bool in_domain = false;
-  for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
-    {
-      if (!in_domain || *i == "." || *i == "@")
-        tmp += *i;
-      else
-        {
-          string a;
-          utf8_to_ace(utf8(*i, utf.made_from), a);
-          tmp += a;
-        }
-      if (*i == "@")
-        in_domain = true;
-    }
-  key = key_name(tmp, utf.made_from);
-}
-
-void
-internalize_var_domain(utf8 const & utf, var_domain & d)
-{
-  string a;
-  utf8_to_ace(utf, a);
-  d = var_domain(a, utf.made_from);
-}
-
-void
-externalize_var_domain(var_domain const & d, external & ext)
-{
-  utf8 utf;
-  ace_to_utf8(d(), utf, d.made_from);
-  utf8_to_system_strict(utf, ext);
-}
-
-
-
 // Local Variables:
 // mode: C++
 // fill-column: 76

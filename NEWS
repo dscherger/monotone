@@ -59,6 +59,11 @@
         - Monotone now sanely skips paths with invalid characters
           it encounters during 'add' or 'automate inventory'.
 
+        - Key names, cert names, and var domains with non-ASCII characters
+          should work properly now. Previously, they would be (usually)
+          converted to punycode on input, and not decoded on output. They
+          will now not be converted to punycode at all.
+
 	Internal
 
 Tue May 12 20:44:00 UTC 2009

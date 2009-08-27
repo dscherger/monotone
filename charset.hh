@@ -36,12 +36,6 @@ void utf8_to_ace(utf8 const & utf, std::string & a);
 // Is not aware of combining and invisible characters.
 size_t display_width(utf8 const & utf);
 
-// Specific internal / external conversions for various vocab terms.
-void internalize_cert_name(utf8 const & utf, cert_name & c);
-void internalize_key_name(utf8 const & utf, key_name & key);
-void internalize_var_domain(utf8 const & utf, var_domain & d);
-void externalize_var_domain(var_domain const & d, external & ext);
-
 #endif
 
 // Local Variables:

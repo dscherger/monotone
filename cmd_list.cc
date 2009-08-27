@@ -566,7 +566,7 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
   else if (args.size() == 1)
     {
       filterp = true;
-      internalize_var_domain(idx(args, 0), filter);
+      filter = typecast_vocab<var_domain>(idx(args, 0));
     }
   else
     throw usage(execid);
@@ -579,9 +579,7 @@ CMD(vars, "vars", "", CMD_REF(list), "[DOMAIN]",
     {
       if (filterp && !(i->first.first == filter))
         continue;
-      external ext_domain, ext_name;
-      externalize_var_domain(i->first.first, ext_domain);
-      cout << ext_domain << ": "
+      cout << i->first.first << ": "
            << i->first.second << ' '
            << i->second << '\n';
     }

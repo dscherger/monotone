@@ -11,7 +11,6 @@
 #include "vector.hh"
 
 #include "cert.hh"
-#include "charset.hh" // internalize_key_name
 #include "database.hh"
 #include "project.hh"
 #include "revision.hh"
@@ -622,8 +621,7 @@ project_t::get_key_identity(key_store * const keys,
     }
   catch (recoverable_failure &)
     {
-      internalize_key_name(typecast_vocab<utf8>(input),
-                           output.official_name);
+      output.official_name = typecast_vocab<key_name>(input);
     }
   complete_key_identity(keys, lua, output);
 }

@@ -1792,8 +1792,7 @@ CMD_AUTOMATE(genkey, N_("KEY_NAME PASSPHRASE"),
   database db(app);
   key_store keys(app);
 
-  key_name name;
-  internalize_key_name(idx(args, 0), name);
+  key_name name = typecast_vocab<key_name>(idx(args, 0));
 
   if (!app.opts.force_duplicate_key)
     {
