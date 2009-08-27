@@ -156,6 +156,30 @@
 // drop the TCP stream at any point, if too much data is received or too
 // much idle time passes; no commitments or transactions are made.
 //
+// Version Negotiation
+// -------------------
+//
+// Before the exchange begin, the client may receive one or more
+// "usher <message>" packets, any number sent by "usher" proxies and
+// one sent by more recent servers. It ignores the protocol version
+// field on these packets, but replys with a "usher_reply <host> <include>"
+// packet containing its own maximum supported protocol version.
+//
+// Older server begin by sending a "hello" packet (see below) that contains
+// their only supported protocol version. New servers first send a "usher"
+// packet and use the response to determine the client's maximum protocol
+// version, and then use the lesser of that or their own maximum version
+// in the "hello" packet and all later packets.
+//
+// When the client receive the "hello" packet it uses that version as the
+// protocol version for all remaining packets.
+//
+// If the "usher_reply" packet indicates a version that's older than the
+// minimum version supported by the server, the server sends an error packet
+// and closes the connection.
+//
+// If the "hello" packet indicates a version not supported by the client,
+// it sends an error packet and closes the connection.
 //
 // Authentication and setup
 // ------------------------

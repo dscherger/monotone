@@ -46,7 +46,7 @@ read_netcmd_item_type(string const & in,
     }
 }
 
-netcmd::netcmd() : version(constants::netcmd_current_protocol_version),
+netcmd::netcmd() : version(0),
                    cmd_code(error_cmd)
 {}
 
@@ -112,12 +112,15 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
     default:
       // if the versions don't match, we will throw the more descriptive
       // error immediately after this switch.
-      if (extracted_ver == version)
+      if (extracted_ver <= constants::netcmd_current_protocol_version &&
+          extracted_ver >= constants::netcmd_minimum_protocol_version)
         throw bad_decode(F("unknown netcmd code 0x%x")
                           % widen<u32,u8>(cmd_byte));
     }
   // Ignore the version on usher_cmd packets.
-  if (extracted_ver != version && cmd_code != usher_cmd)
+  if (extracted_ver <= constants::netcmd_current_protocol_version &&
+      extracted_ver >= constants::netcmd_minimum_protocol_version &&
+      cmd_code != usher_cmd)
     throw bad_decode(F("protocol version mismatch: wanted '%d' got '%d'\n"
                        "%s")
                      % widen<u32,u8>(version)
