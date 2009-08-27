@@ -364,14 +364,6 @@ internalize_cert_name(utf8 const & utf, cert_name & c)
 }
 
 void
-internalize_cert_name(external const & ext, cert_name & c)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_cert_name(utf, c);
-}
-
-void
 internalize_key_name(utf8 const & utf, key_name & key)
 {
   string tmp;
@@ -397,47 +389,6 @@ internalize_key_name(utf8 const & utf, key_name & key)
 }
 
 void
-internalize_key_name(external const & ext, key_name & key)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_key_name(utf, key);
-}
-
-void
-externalize_key_name(key_name const & key, utf8 & utf)
-{
-  string tmp;
-  typedef boost::tokenizer<char_separator<char> >
-    tokenizer;
-  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
-  tokenizer tokens(key(), sep);
-  bool in_domain = false;
-  for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
-    {
-      if (!in_domain || *i == "." || *i == "@")
-        tmp += *i;
-      else
-        {
-          utf8 u;
-          ace_to_utf8(*i, u, key.made_from);
-          tmp += u();
-        }
-      if (*i == "@")
-        in_domain = true;
-    }
-  utf = utf8(tmp, key.made_from);
-}
-
-void
-externalize_key_name(key_name const & key, external & ext)
-{
-  utf8 utf;
-  externalize_key_name(key, utf);
-  utf8_to_system_strict(utf, ext);
-}
-
-void
 internalize_var_domain(utf8 const & utf, var_domain & d)
 {
   string a;
@@ -446,24 +397,10 @@ internalize_var_domain(utf8 const & utf, var_domain & d)
 }
 
 void
-internalize_var_domain(external const & ext, var_domain & d)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_var_domain(utf, d);
-}
-
-void
-externalize_var_domain(var_domain const & d, utf8 & utf)
-{
-  ace_to_utf8(d(), utf, d.made_from);
-}
-
-void
 externalize_var_domain(var_domain const & d, external & ext)
 {
   utf8 utf;
-  externalize_var_domain(d, utf);
+  ace_to_utf8(d(), utf, d.made_from);
   utf8_to_system_strict(utf, ext);
 }
 
