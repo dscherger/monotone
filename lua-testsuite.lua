@@ -272,7 +272,10 @@ function check_same_db_contents(db1, db2)
     file = trim(file)
     check_same_stdout(mtn("--db", db1, "automate", "get_file", file),
                       mtn("--db", db2, "automate", "get_file", file))
-  end
+ end
+
+ check_same_stdout(mtn("--db", db1, "db", "execute", "select hex(hash) from revision_certs order by 1"),
+                   mtn("--db", db2, "db", "execute", "select hex(hash) from revision_certs order by 1"))
 end
 
 -- maybe these should go in tester.lua?
