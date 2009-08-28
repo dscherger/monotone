@@ -645,6 +645,7 @@ session:
   public enumerator_callbacks,
   public session_base
 {
+  u8 version;
   protocol_role role;
   protocol_voice const voice;
   globish our_include_pattern;
@@ -780,6 +781,7 @@ private:
   void write_netcmd_and_try_flush(netcmd const & cmd);
 
   // Outgoing queue-writers.
+  void queue_usher_cmd(utf8 const & message);
   void queue_bye_cmd(u8 phase);
   void queue_error_cmd(string const & errmsg);
   void queue_done_cmd(netcmd_item_type type, size_t n_items);
@@ -809,7 +811,8 @@ private:
 
   // Incoming dispatch-called methods.
   bool process_error_cmd(string const & errmsg);
-  bool process_hello_cmd(key_name const & server_keyname,
+  bool process_hello_cmd(u8 server_version,
+                         key_name const & server_keyname,
                          rsa_pub_key const & server_key,
                          id const & nonce);
   bool process_bye_cmd(u8 phase, transaction_guard & guard);
@@ -832,6 +835,9 @@ private:
                          id const & ident,
                          delta const & del);
   bool process_usher_cmd(utf8 const & msg);
+  bool process_usher_reply_cmd(u8 client_version,
+                               utf8 const & server,
+                               globish const & pattern);
 
   // The incoming dispatcher.
   bool dispatch_payload(netcmd const & cmd,
@@ -870,6 +876,7 @@ session::session(options & opts,
                  shared_ptr<Netxx::StreamBase> sock,
                  bool initiated_by_server) :
   session_base(peer, sock),
+  version(constants::netcmd_current_protocol_version),
   role(role),
   voice(voice),
   our_include_pattern(our_include_pattern),
@@ -880,6 +887,7 @@ session::session(options & opts,
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
+  cmd(constants::netcmd_current_protocol_version),
   armed(false),
   received_remote_key(false),
   session_key(constants::netsync_key_initializer),
@@ -1438,7 +1446,7 @@ void
 session::queue_error_cmd(string const & errmsg)
 {
   L(FL("queueing 'error' command"));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_error_cmd(errmsg);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1448,7 +1456,7 @@ session::queue_bye_cmd(u8 phase)
 {
   L(FL("queueing 'bye' command, phase %d")
     % static_cast<size_t>(phase));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_bye_cmd(phase);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1461,7 +1469,7 @@ session::queue_done_cmd(netcmd_item_type type,
   netcmd_item_type_to_string(type, typestr);
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_done_cmd(type, n_items);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1484,7 +1492,7 @@ session::queue_anonymous_cmd(protocol_role role,
                              globish const & exclude_pattern,
                              id const & nonce2)
 {
-  netcmd cmd;
+  netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
   if (use_transport_auth)
     project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
@@ -1503,7 +1511,7 @@ session::queue_auth_cmd(protocol_role role,
                         id const & nonce2,
                         rsa_sha1_signature const & signature)
 {
-  netcmd cmd;
+  netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
   I(use_transport_auth);
   project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
@@ -1516,7 +1524,7 @@ session::queue_auth_cmd(protocol_role role,
 void
 session::queue_confirm_cmd()
 {
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_confirm_cmd();
   write_netcmd_and_try_flush(cmd);
 }
@@ -1531,7 +1539,7 @@ session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
   L(FL("queueing refinement %s of %s node '%s', level %d")
     % (ty == refinement_query ? "query" : "response")
     % typestr % hpref() % static_cast<int>(node.level));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_refine_cmd(ty, node);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1558,7 +1566,7 @@ session::queue_data_cmd(netcmd_item_type type,
   L(FL("queueing %d bytes of data for %s item '%s'")
     % dat.size() % typestr % hid());
 
-  netcmd cmd;
+  netcmd cmd(version);
   // TODO: This pair of functions will make two copies of a large
   // file, the first in cmd.write_data_cmd, and the second in
   // write_netcmd_and_try_flush when the data is copied from the
@@ -1599,7 +1607,7 @@ session::queue_delta_cmd(netcmd_item_type type,
 
   L(FL("queueing %s delta '%s' -> '%s'")
     % typestr % base_hid() % ident_hid());
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_delta_cmd(type, base, ident, del);
   write_netcmd_and_try_flush(cmd);
   note_item_sent(type, ident);
@@ -1634,12 +1642,19 @@ session::process_error_cmd(string const & errmsg)
 static const var_domain known_servers_domain = var_domain("known-servers");
 
 bool
-session::process_hello_cmd(key_name const & their_keyname,
+session::process_hello_cmd(u8 server_version,
+                           key_name const & their_keyname,
                            rsa_pub_key const & their_key,
                            id const & nonce)
 {
   I(!this->received_remote_key);
   I(this->saved_nonce().empty());
+
+  // version sanity has already been checked by netcmd::read()
+  L(FL("received hello command; setting version from %d to %d")
+    % widen<u32>(version)
+    % widen<u32>(server_version));
+  version = server_version;
 
   key_identity_info their_identity;
   if (use_transport_auth)
@@ -2424,7 +2439,7 @@ session::process_usher_cmd(utf8 const & msg)
       else
         L(FL("Received greeting from usher: %s") % msg().substr(1));
     }
-  netcmd cmdout;
+  netcmd cmdout(version);
   cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
                                our_include_pattern);
   write_netcmd_and_try_flush(cmdout);
@@ -2474,11 +2489,12 @@ session::dispatch_payload(netcmd const & cmd,
       require(! authenticated, "hello netcmd received when not authenticated");
       require(voice == client_voice, "hello netcmd received in client voice");
       {
+        u8 server_version(0);
         key_name server_keyname;
         rsa_pub_key server_key;
         id nonce;
-        cmd.read_hello_cmd(server_keyname, server_key, nonce);
-        return process_hello_cmd(server_keyname, server_key, nonce);
+        cmd.read_hello_cmd(server_version, server_keyname, server_key, nonce);
+        return process_hello_cmd(server_version, server_keyname, server_key, nonce);
       }
       break;
 
@@ -2615,7 +2631,13 @@ session::dispatch_payload(netcmd const & cmd,
       break;
 
     case usher_reply_cmd:
-      return false; // Should not happen.
+      {
+        u8 client_version;
+        utf8 server;
+        globish pattern;
+        cmd.read_usher_reply_cmd(client_version, server, pattern);
+        return process_usher_reply_cmd(client_version, server, pattern);
+      }
       break;
     }
   return false;
@@ -2625,11 +2647,37 @@ session::dispatch_payload(netcmd const & cmd,
 void
 session::begin_service()
 {
+  queue_usher_cmd(utf8("", origin::internal));
+}
+
+void
+session::queue_usher_cmd(utf8 const & message)
+{
+  L(FL("queueing 'usher' command"));
+  netcmd cmd(0);
+  cmd.write_usher_cmd(message);
+  write_netcmd_and_try_flush(cmd);
+}
+
+bool
+session::process_usher_reply_cmd(u8 client_version,
+                                 utf8 const & server,
+                                 globish const & pattern)
+{
+  // netcmd::read() has already checked that the client isn't too old
+  if (client_version < constants::netcmd_current_protocol_version)
+    {
+      version = client_version;
+    }
+  L(FL("client has maximum version %d, using %d")
+    % widen<u32>(client_version) % widen<u32>(version));
+
   key_name name;
   keypair kp;
   if (use_transport_auth)
     keys.get_key_pair(signing_key, name, kp);
   queue_hello_cmd(name, kp.pub, mk_nonce());
+  return true;
 }
 
 void

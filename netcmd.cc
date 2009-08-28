@@ -46,8 +46,9 @@ read_netcmd_item_type(string const & in,
     }
 }
 
-netcmd::netcmd() : version(0),
-                   cmd_code(error_cmd)
+netcmd::netcmd(u8 ver)
+  : version(ver),
+    cmd_code(error_cmd)
 {}
 
 size_t netcmd::encoded_size()
@@ -74,7 +75,7 @@ netcmd::write(string & out, chained_hmac & hmac) const
   out += static_cast<char>(cmd_code);
   insert_variable_length_string(payload, out);
 
-  if (hmac.is_active() && cmd_code != usher_reply_cmd)
+  if (hmac.is_active() && cmd_code != usher_reply_cmd && cmd_code != usher_cmd)
     {
       string digest = hmac.process(out, oldlen);
       I(hmac.hmac_length == constants::netsync_hmac_value_length_in_bytes);
@@ -92,6 +93,8 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
     return false;
 
   u8 extracted_ver = extract_datum_lsb<u8>(inbuf, pos, "netcmd protocol number");
+  bool too_old = extracted_ver < constants::netcmd_minimum_protocol_version;
+  bool too_new = extracted_ver > constants::netcmd_current_protocol_version;
 
   u8 cmd_byte = extract_datum_lsb<u8>(inbuf, pos, "netcmd code");
   switch (cmd_byte)
@@ -107,27 +110,33 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
     case static_cast<u8>(data_cmd):
     case static_cast<u8>(delta_cmd):
     case static_cast<u8>(usher_cmd):
+    case static_cast<u8>(usher_reply_cmd):
       cmd_code = static_cast<netcmd_code>(cmd_byte);
       break;
     default:
       // if the versions don't match, we will throw the more descriptive
       // error immediately after this switch.
-      if (extracted_ver <= constants::netcmd_current_protocol_version &&
-          extracted_ver >= constants::netcmd_minimum_protocol_version)
+      if (!too_old && !too_new)
         throw bad_decode(F("unknown netcmd code 0x%x")
                           % widen<u32,u8>(cmd_byte));
     }
-  // Ignore the version on usher_cmd packets.
-  if (extracted_ver <= constants::netcmd_current_protocol_version &&
-      extracted_ver >= constants::netcmd_minimum_protocol_version &&
-      cmd_code != usher_cmd)
-    throw bad_decode(F("protocol version mismatch: wanted '%d' got '%d'\n"
-                       "%s")
-                     % widen<u32,u8>(version)
-                     % widen<u32,u8>(extracted_ver)
-                     % ((version < extracted_ver)
-                        ? _("the remote side has a newer, incompatible version of monotone")
-                        : _("the remote side has an older, incompatible version of monotone")));
+  // check that the version is reasonable
+  if (cmd_code != usher_cmd)
+    {
+      if (too_old || (cmd_code != usher_reply_cmd && too_new))
+        {
+          throw bad_decode(F("protocol version mismatch: wanted between '%d' and '%d' got '%d' (netcmd code %d)\n"
+                             "%s")
+                           % widen<u32,u8>(constants::netcmd_minimum_protocol_version)
+                           % widen<u32,u8>(constants::netcmd_current_protocol_version)
+                           % widen<u32,u8>(extracted_ver)
+                           % widen<u32,u8>(cmd_code)
+                           % ((constants::netcmd_current_protocol_version < extracted_ver)
+                              ? _("the remote side has a newer, incompatible version of monotone")
+                              : _("the remote side has an older, incompatible version of monotone")));
+        }
+    }
+  version = extracted_ver;
 
   // check to see if we have even enough bytes for a complete uleb128
   size_t payload_len = 0;
@@ -141,7 +150,7 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
 
   // there might not be enough data yet in the input buffer
   unsigned int minsize;
-  if (hmac.is_active() && cmd_code != usher_cmd)
+  if (hmac.is_active() && cmd_code != usher_cmd && cmd_code != usher_reply_cmd)
     minsize = pos + payload_len + constants::netsync_hmac_value_length_in_bytes;
   else
     minsize = pos + payload_len;
@@ -154,7 +163,7 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
   string digest;
   string cmd_digest;
 
-  if (hmac.is_active() && cmd_code != usher_cmd)
+  if (hmac.is_active() && cmd_code != usher_cmd && cmd_code != usher_reply_cmd)
     {
       // grab it before the data gets munged
       I(hmac.hmac_length == constants::netsync_hmac_value_length_in_bytes);
@@ -163,7 +172,7 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
 
   payload = extract_substring(inbuf, pos, payload_len, "netcmd payload");
 
-  if (hmac.is_active() && cmd_code != usher_cmd)
+  if (hmac.is_active() && cmd_code != usher_cmd && cmd_code != usher_reply_cmd)
     {
       // they might have given us bogus data
       cmd_digest = extract_substring(inbuf, pos,
@@ -174,7 +183,7 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
   inbuf.pop_front(pos);
 
   if (hmac.is_active()
-      && cmd_code != usher_cmd
+      && cmd_code != usher_cmd && cmd_code != usher_reply_cmd
       && cmd_digest != digest)
     {
       throw bad_decode(F("bad HMAC checksum (got %s, wanted %s)\n"
@@ -182,6 +191,9 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
                        % cmd_digest
                        % digest);
     }
+
+  L(FL("read packet with code %d and version %d")
+    % widen<u32>(cmd_code) % widen<u32>(version));
 
   return true;
 }
@@ -209,10 +221,12 @@ netcmd::write_error_cmd(string const & errmsg)
 
 
 void
-netcmd::read_hello_cmd(key_name & server_keyname,
+netcmd::read_hello_cmd(u8 & server_version,
+                       key_name & server_keyname,
                        rsa_pub_key & server_key,
                        id & nonce) const
 {
+  server_version = version;
   size_t pos = 0;
   // syntax is: <server keyname:vstr> <server pubkey:vstr> <nonce:20 random bytes>
   string skn_str, sk_str;
@@ -546,9 +560,31 @@ netcmd::read_usher_cmd(utf8 & greeting) const
 {
   size_t pos = 0;
   string str;
-  extract_variable_length_string(payload, str, pos, "error netcmd, message");
+  extract_variable_length_string(payload, str, pos, "usher netcmd, message");
   greeting = utf8(str, origin::network);
-  assert_end_of_buffer(payload, pos, "error netcmd payload");
+  assert_end_of_buffer(payload, pos, "usher netcmd payload");
+}
+
+void
+netcmd::write_usher_cmd(utf8 const & greeting)
+{
+  version = constants::netcmd_current_protocol_version;
+  cmd_code = usher_cmd;
+  insert_variable_length_string(greeting(), payload);
+}
+
+void
+netcmd::read_usher_reply_cmd(u8 & version_out,
+                             utf8 & server, globish & pattern) const
+{
+  version_out = this->version;
+  string str;
+  size_t pos = 0;
+  extract_variable_length_string(payload, str, pos, "usher_reply netcmd, server");
+  server = utf8(str, origin::network);
+  extract_variable_length_string(payload, str, pos, "usher_reply netcmd, pattern");
+  pattern = globish(str, origin::network);
+  assert_end_of_buffer(payload, pos, "usher_reply netcmd payload");
 }
 
 void
