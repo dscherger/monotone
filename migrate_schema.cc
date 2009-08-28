@@ -748,8 +748,7 @@ char const migrate_certs_to_key_hash[] =
   "CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);\n"
 
   "INSERT INTO revision_certs(hash, revision_id, name, value, keypair_id, signature)\n"
-  "SELECT sha1(':', a.id, a.name, a.value, b.id, a.signature), "
-  "       a.id, a.name, a.value, b.id, a.signature\n"
+  "SELECT a.hash, a.id, a.name, a.value, b.id, a.signature\n"
   "FROM revision_certs_tmp a JOIN public_keys b\n"
   "ON a.keypair = b.name;\n"
 

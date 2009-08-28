@@ -287,8 +287,8 @@ public:
 
   // Only used by get_branch_certs (project.cc)
   outdated_indicator get_revision_certs(cert_name const & name,
-                          cert_value const & val,
-                          std::vector<cert> & certs);
+                                        cert_value const & val,
+                                        std::vector<std::pair<id, cert> > & certs);
 
   // Only used by revision_is_in_branch (project.cc)
   outdated_indicator get_revision_certs(revision_id const & ident,

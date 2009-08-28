@@ -375,6 +375,8 @@ private:
   void put_cert(cert const & t, string const & table);
   void results_to_certs(results const & res,
                         vector<cert> & certs);
+  void results_to_certs(results const & res,
+                        vector<pair<id, cert> > & certs);
   void oldstyle_results_to_certs(results const & res,
                                  vector<cert> & certs);
 
@@ -410,7 +412,7 @@ private:
 
   void get_certs(cert_name const & name,
                  cert_value const & val,
-                 vector<cert> & certs,
+                 vector<pair<id, cert> > & certs,
                  string const & table);
 
   outdated_indicator_factory cert_stamper;
@@ -3124,8 +3126,14 @@ void
 database_impl::put_cert(cert const & t,
                         string const & table)
 {
+  results res;
+  fetch(res, 1, one_row,
+        query("SELECT name FROM public_keys WHERE id = ?")
+        % blob(t.key.inner()()));
+  key_name keyname(res[0][0], origin::database);
+
   id thash;
-  t.hash_code(thash);
+  t.hash_code(keyname, thash);
   rsa_sha1_signature sig;
 
   string insert = "INSERT INTO " + table + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -3153,6 +3161,24 @@ database_impl::results_to_certs(results const & res,
                key_id(res[i][3], origin::database),
                rsa_sha1_signature(res[i][4], origin::database));
       certs.push_back(t);
+    }
+}
+
+void
+database_impl::results_to_certs(results const & res,
+                                vector<pair<id, cert> > & certs)
+{
+  certs.clear();
+  for (size_t i = 0; i < res.size(); ++i)
+    {
+      cert t;
+      t = cert(revision_id(res[i][0], origin::database),
+               cert_name(res[i][1], origin::database),
+               cert_value(res[i][2], origin::database),
+               key_id(res[i][3], origin::database),
+               rsa_sha1_signature(res[i][4], origin::database));
+      certs.push_back(make_pair(id(res[i][5], origin::database),
+                                t));
     }
 }
 
@@ -3288,14 +3314,14 @@ database_impl::get_certs(id const & ident,
 void
 database_impl::get_certs(cert_name const & name,
                          cert_value const & val,
-                         vector<cert> & certs,
+                         vector<pair<id, cert> > & certs,
                          string const & table)
 {
   results res;
-  query q("SELECT revision_id, name, value, keypair_id, signature FROM " + table +
+  query q("SELECT revision_id, name, value, keypair_id, signature, hash FROM " + table +
           " WHERE name = ? AND value = ?");
 
-  fetch(res, 5, any_rows,
+  fetch(res, 6, any_rows,
         q % text(name())
           % blob(val()));
   results_to_certs(res, certs);
@@ -3425,7 +3451,7 @@ database::get_revisions_with_cert(cert_name const & name,
 outdated_indicator
 database::get_revision_certs(cert_name const & name,
                              cert_value const & val,
-                             vector<cert> & certs)
+                             vector<pair<id, cert> > & certs)
 {
   imp->get_certs(name, val, certs, "revision_certs");
   return imp->cert_stamper.get_indicator();

@@ -10,6 +10,7 @@
 #include "base.hh"
 #include "cert.hh"
 #include "constants.hh"
+#include "database.hh" // lookup key name for hashing
 #include "netio.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
@@ -43,7 +44,7 @@ cert::operator==(cert const & other) const
 // netio support
 
 static void
-read_cert(string const & in, cert & t)
+read_cert(database & db, string const & in, cert & t)
 {
   size_t pos = 0;
   id hash = id(extract_substring(in, pos,
@@ -66,32 +67,35 @@ read_cert(string const & in, cert & t)
            key_id(key, origin::network),
            rsa_sha1_signature(sig, origin::network));
 
+
+  key_name keyname;
+  rsa_pub_key junk;
+  db.get_pubkey(tmp.key, keyname, junk);
+
   id check;
-  tmp.hash_code(check);
+  tmp.hash_code(keyname, check);
   if (!(check == hash))
     throw bad_decode(F("calculated cert hash '%s' does not match '%s'")
                      % check % hash);
   t = tmp;
 }
 
-cert::cert(std::string const & s)
+cert::cert(database & db, std::string const & s)
 {
-  read_cert(s, *this);
+  read_cert(db, s, *this);
 }
 
-cert::cert(std::string const & s, origin::type m)
+cert::cert(database & db, std::string const & s, origin::type m)
   : origin_aware(m)
 {
-  read_cert(s, *this);
+  read_cert(db, s, *this);
 }
 
 void
-cert::marshal_for_netio(string & out) const
+cert::marshal_for_netio(key_name const & keyname, string & out) const
 {
-  string name, key;
   id hash;
-
-  hash_code(hash);
+  hash_code(keyname, hash);
 
   out.append(hash());
   out.append(this->ident.inner()());
@@ -124,21 +128,26 @@ cert::signable_text(string & out) const
 }
 
 void
-cert::hash_code(id & out) const
+cert::hash_code(key_name const & keyname, id & out) const
 {
+  base64<rsa_sha1_signature> sig_encoded(encode_base64(this->sig));
+  base64<cert_value> val_encoded(encode_base64(this->value));
+  string ident_encoded(encode_hexenc(this->ident.inner()(),
+                                     this->ident.inner().made_from));
   string tmp;
-  tmp.reserve(4 + ident.inner()().size()
-              + this->name().size() + value().size()
-              + this->key.inner()().size() + sig().size());
-  tmp.append(ident.inner()());
+  tmp.reserve(4 + ident_encoded.size()
+              + this->name().size() + val_encoded().size()
+              + this->key.inner()().size() + sig_encoded().size());
+
+  tmp.append(ident_encoded);
   tmp += ':';
   tmp.append(this->name());
   tmp += ':';
-  tmp.append(value());
+  append_without_ws(tmp, val_encoded());
   tmp += ':';
-  tmp.append(this->key.inner()());
+  tmp.append(keyname());
   tmp += ':';
-  tmp.append(sig());
+  append_without_ws(tmp, sig_encoded());
 
   data tdat(tmp, origin::internal);
   calculate_ident(tdat, out);

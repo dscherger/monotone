@@ -1134,7 +1134,10 @@ session::note_cert(id const & i)
   cert c;
   string str;
   project.db.get_revision_cert(i, c);
-  c.marshal_for_netio(str);
+  key_name keyname;
+  rsa_pub_key junk;
+  project.db.get_pubkey(c.key, keyname, junk);
+  c.marshal_for_netio(keyname, str);
   queue_data_cmd(cert_item, i, str);
   sent_certs.push_back(c);
 }
@@ -2261,7 +2264,10 @@ session::load_data(netcmd_item_type type,
         cert c;
         project.db.get_revision_cert(item, c);
         string tmp;
-        c.marshal_for_netio(out);
+        key_name keyname;
+        rsa_pub_key junk;
+        project.db.get_pubkey(c.key, keyname, junk);
+        c.marshal_for_netio(keyname, out);
       }
       break;
     }
@@ -2359,9 +2365,12 @@ session::process_data_cmd(netcmd_item_type type,
 
     case cert_item:
       {
-        cert c(dat);
+        cert c(project.db, dat);
+        key_name keyname;
+        rsa_pub_key junk;
+        project.db.get_pubkey(c.key, keyname, junk);
         id tmp;
-        c.hash_code(tmp);
+        c.hash_code(keyname, tmp);
         if (! (tmp == item))
           throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
         if (project.db.put_revision_cert(c))
@@ -3459,21 +3468,19 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
          i != branchnames.end(); ++i)
       {
         // Get branch certs.
-        vector<cert> certs;
+        vector<pair<id, cert> > certs;
         project.get_branch_certs(*i, certs);
-        for (vector<cert>::const_iterator j = certs.begin();
+        for (vector<pair<id, cert> >::const_iterator j = certs.begin();
              j != certs.end(); j++)
           {
-            revision_id rid(j->ident);
+            revision_id rid(j->second.ident);
             insert_with_parents(rid, rev_refiner, rev_enumerator,
                                 revision_ids, revisions_ticker);
             // Branch certs go in here, others later on.
-            id item;
-            j->hash_code(item);
-            cert_refiner.note_local_item(item);
-            rev_enumerator.note_cert(rid, item);
-            if (inserted_keys.find(j->key) == inserted_keys.end())
-              inserted_keys.insert(j->key);
+            cert_refiner.note_local_item(j->first);
+            rev_enumerator.note_cert(rid, j->first);
+            if (inserted_keys.find(j->second.key) == inserted_keys.end())
+              inserted_keys.insert(j->second.key);
           }
       }
   }

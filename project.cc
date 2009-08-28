@@ -295,7 +295,7 @@ project_t::get_revision_branches(revision_id const & id,
 
 outdated_indicator
 project_t::get_branch_certs(branch_name const & branch,
-                            vector<cert> & certs)
+                            vector<pair<id, cert> > & certs)
 {
   return db.get_revision_certs(branch_cert_name,
                                typecast_vocab<cert_value>(branch), certs);
