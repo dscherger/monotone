@@ -40,7 +40,8 @@ struct cert : public origin_aware
   {}
 
   // These understand the netsync serialization.
-  cert(database & db, std::string const & s);
+  static bool read_cert(database & db, std::string const & s, cert & c);
+  static bool read_cert_v6(database & db, std::string const & s, cert & c);
   cert(database & db, std::string const & s, origin::type m);
 
   revision_id ident;
@@ -55,6 +56,7 @@ struct cert : public origin_aware
   void hash_code(key_name const & keyname, id & out) const;
   void signable_text(std::string & out) const;
   void marshal_for_netio(key_name const & keyname, std::string & out) const;
+  void marshal_for_netio_v6(key_name const & keyname, std::string & out) const;
 };
 
 #endif // __CERT_HH__

@@ -42,9 +42,11 @@ cert::operator==(cert const & other) const
 }
 
 // netio support
+enum read_cert_version {read_cert_v6, read_cert_current};
 
-static void
-read_cert(database & db, string const & in, cert & t)
+static bool
+read_cert(database & db, string const & in, cert & t,
+          read_cert_version ver)
 {
   size_t pos = 0;
   id hash = id(extract_substring(in, pos,
@@ -62,11 +64,52 @@ read_cert(database & db, string const & in, cert & t)
   extract_variable_length_string(in, sig, pos, "cert sig");
   assert_end_of_buffer(in, pos, "cert");
 
-  cert tmp(ident, cert_name(name, origin::network),
-           cert_value(val, origin::network),
-           key_id(key, origin::network),
-           rsa_sha1_signature(sig, origin::network));
+  cert tmp;
+  tmp.ident = ident;
+  tmp.name = cert_name(name, origin::network);
+  tmp.value = cert_value(val, origin::network);
+  tmp.sig = rsa_sha1_signature(sig, origin::network);
+  string signable;
+  tmp.signable_text(signable);
 
+  key_id keyid;
+  switch(ver)
+    {
+    case read_cert_v6:
+      {
+        bool found = false;
+        std::vector<key_id> all_keys;
+        db.get_key_ids(all_keys);
+        for (std::vector<key_id>::const_iterator i = all_keys.begin();
+             i != all_keys.end(); ++i)
+          {
+            key_name keyname;
+            rsa_pub_key pub;
+            db.get_pubkey(*i, keyname, pub);
+            if (keyname() == key)
+              {
+                if(db.check_signature(*i, signable, tmp.sig) == cert_ok)
+                  {
+                    tmp.key = *i;
+                    found = true;
+                    break;
+                  }
+              }
+          }
+        if (!found)
+          {
+            W(F("Cannot find appropriate key '%s' for old-style cert")
+              % name);
+            return false;
+          }
+      }
+      break;
+    case read_cert_current:
+      tmp.key = key_id(key, origin::network);
+      break;
+    default:
+      I(false);
+    }
 
   key_name keyname;
   rsa_pub_key junk;
@@ -78,17 +121,23 @@ read_cert(database & db, string const & in, cert & t)
     throw bad_decode(F("calculated cert hash '%s' does not match '%s'")
                      % check % hash);
   t = tmp;
+  return true;
 }
 
-cert::cert(database & db, std::string const & s)
+bool cert::read_cert_v6(database & db, std::string const & s, cert & c)
 {
-  read_cert(db, s, *this);
+  return ::read_cert(db, s, c, ::read_cert_v6);
+}
+
+bool cert::read_cert(database & db, std::string const & s, cert & c)
+{
+  return ::read_cert(db, s, c, read_cert_current);
 }
 
 cert::cert(database & db, std::string const & s, origin::type m)
   : origin_aware(m)
 {
-  read_cert(db, s, *this);
+  ::read_cert(db, s, *this, read_cert_current);
 }
 
 void
@@ -102,6 +151,20 @@ cert::marshal_for_netio(key_name const & keyname, string & out) const
   insert_variable_length_string(this->name(), out);
   insert_variable_length_string(this->value(), out);
   insert_variable_length_string(this->key.inner()(), out);
+  insert_variable_length_string(this->sig(), out);
+}
+
+void
+cert::marshal_for_netio_v6(key_name const & keyname, string & out) const
+{
+  id hash;
+  hash_code(keyname, hash);
+
+  out.append(hash());
+  out.append(this->ident.inner()());
+  insert_variable_length_string(this->name(), out);
+  insert_variable_length_string(this->value(), out);
+  insert_variable_length_string(keyname(), out);
   insert_variable_length_string(this->sig(), out);
 }
 

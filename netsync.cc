@@ -2267,7 +2267,14 @@ session::load_data(netcmd_item_type type,
         key_name keyname;
         rsa_pub_key junk;
         project.db.get_pubkey(c.key, keyname, junk);
-        c.marshal_for_netio(keyname, out);
+        if (version >= 7)
+          {
+            c.marshal_for_netio(keyname, out);
+          }
+        else
+          {
+            c.marshal_for_netio_v6(keyname, out);
+          }
       }
       break;
     }
@@ -2365,16 +2372,29 @@ session::process_data_cmd(netcmd_item_type type,
 
     case cert_item:
       {
-        cert c(project.db, dat);
-        key_name keyname;
-        rsa_pub_key junk;
-        project.db.get_pubkey(c.key, keyname, junk);
-        id tmp;
-        c.hash_code(keyname, tmp);
-        if (! (tmp == item))
-          throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
-        if (project.db.put_revision_cert(c))
-          written_certs.push_back(c);
+        cert c;
+        bool matched;
+        if (version >= 7)
+          {
+            matched = cert::read_cert(project.db, dat, c);
+          }
+        else
+          {
+            matched = cert::read_cert_v6(project.db, dat, c);
+          }
+
+        if (matched)
+          {
+            key_name keyname;
+            rsa_pub_key junk;
+            project.db.get_pubkey(c.key, keyname, junk);
+            id tmp;
+            c.hash_code(keyname, tmp);
+            if (! (tmp == item))
+              throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
+            if (project.db.put_revision_cert(c))
+              written_certs.push_back(c);
+          }
       }
       break;
 
