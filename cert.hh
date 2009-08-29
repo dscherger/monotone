@@ -12,6 +12,8 @@
 
 #include "vocab.hh"
 
+class database;
+
 // Certs associate an opaque name/value pair with a revision ID, and
 // are accompanied by an RSA public-key signature attesting to the
 // association. Users can write as much extra meta-data as they like
@@ -38,8 +40,10 @@ struct cert : public origin_aware
   {}
 
   // These understand the netsync serialization.
-  explicit cert(std::string const & s);
-  cert(std::string const & s, origin::type m);
+  static bool read_cert(database & db, std::string const & s, cert & c);
+  static bool read_cert_v6(database & db, std::string const & s, cert & c,
+                           key_name & keyname);
+  cert(database & db, std::string const & s, origin::type m);
 
   revision_id ident;
   cert_name name;
@@ -50,9 +54,10 @@ struct cert : public origin_aware
   bool operator<(cert const & other) const;
   bool operator==(cert const & other) const;
 
-  void hash_code(id & out) const;
+  void hash_code(key_name const & keyname, id & out) const;
   void signable_text(std::string & out) const;
-  void marshal_for_netio(std::string & out) const;
+  void marshal_for_netio(key_name const & keyname, std::string & out) const;
+  void marshal_for_netio_v6(key_name const & keyname, std::string & out) const;
 };
 
 #endif // __CERT_HH__

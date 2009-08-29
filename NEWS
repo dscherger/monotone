@@ -11,10 +11,14 @@
           hash, instead of its name. This should provide some security
           and usability improvements.
 
-          This requires a flag day, because the netsync protocol version
-          has been bumped. The database schema has also been changed, so
-          you will need to run 'mtn db migrate' (preferably after making
-          a backup copy of your db).
+           The database schema has been changed, so you will need to run
+          'mtn db migrate' (preferably after making a backup copy of your db).
+
+          The netsync protocol version has also changed. However, we found
+          space to implement full protocol version negotiation, so no flag day
+          is needed. If your particular project has a situation where there
+          are multiple keys with the same name, you will receive errors when
+          trying to sync certs signed by those keys to older netsync peers.
 
           A number of commands have slightly different output now, particularly
           'ls certs', 'ls tags', 'automate keys', and 'automate certs'.

@@ -232,6 +232,7 @@ CMD(push, "push", "", CMD_REF(network),
     N_("Pushes branches to a netsync server"),
     N_("This will push all branches that match the pattern given in PATTERN "
        "to the netsync server at the address ADDRESS."),
+    options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
     options::opts::key_to_push)
 {
@@ -252,6 +253,7 @@ CMD(pull, "pull", "", CMD_REF(network),
     N_("Pulls branches from a netsync server"),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
+    options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude)
 {
   database db(app);
@@ -274,6 +276,7 @@ CMD(sync, "sync", "", CMD_REF(network),
     N_("Synchronizes branches with a netsync server"),
     N_("This synchronizes branches that match the pattern given in PATTERN "
        "with the netsync server at the address ADDRESS."),
+    options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::set_default | options::opts::exclude |
     options::opts::key_to_push)
 {
@@ -347,6 +350,7 @@ CMD(clone, "clone", "", CMD_REF(network),
     N_("If a revision is given, that's the one that will be checked out.  "
        "Otherwise, it will be the head of the branch supplied.  "
        "If no directory is given, the branch name will be used as directory"),
+    options::opts::max_netsync_version | options::opts::min_netsync_version |
     options::opts::revision)
 {
   if (args.size() < 2 || args.size() > 3 || app.opts.revision_selectors.size() > 1)
@@ -510,6 +514,8 @@ private:
 CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  N_("Serves the database to connecting clients"),
                  "",
+                 options::opts::max_netsync_version |
+                 options::opts::min_netsync_version |
                  options::opts::bind | options::opts::pidfile |
                  options::opts::bind_stdio | options::opts::no_transport_auth )
 {

@@ -120,7 +120,7 @@ public:
   outdated_indicator get_revision_branches(revision_id const & id,
                                            std::set<branch_name> & branches);
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<cert> & certs);
+                                      std::vector<std::pair<id, cert> > & certs);
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,

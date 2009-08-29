@@ -156,6 +156,30 @@
 // drop the TCP stream at any point, if too much data is received or too
 // much idle time passes; no commitments or transactions are made.
 //
+// Version Negotiation
+// -------------------
+//
+// Before the exchange begin, the client may receive one or more
+// "usher <message>" packets, any number sent by "usher" proxies and
+// one sent by more recent servers. It ignores the protocol version
+// field on these packets, but replys with a "usher_reply <host> <include>"
+// packet containing its own maximum supported protocol version.
+//
+// Older server begin by sending a "hello" packet (see below) that contains
+// their only supported protocol version. New servers first send a "usher"
+// packet and use the response to determine the client's maximum protocol
+// version, and then use the lesser of that or their own maximum version
+// in the "hello" packet and all later packets.
+//
+// When the client receive the "hello" packet it uses that version as the
+// protocol version for all remaining packets.
+//
+// If the "usher_reply" packet indicates a version that's older than the
+// minimum version supported by the server, the server sends an error packet
+// and closes the connection.
+//
+// If the "hello" packet indicates a version not supported by the client,
+// it sends an error packet and closes the connection.
 //
 // Authentication and setup
 // ------------------------
@@ -621,6 +645,9 @@ session:
   public enumerator_callbacks,
   public session_base
 {
+  u8 version;
+  u8 max_version;
+  u8 min_version;
   protocol_role role;
   protocol_voice const voice;
   globish our_include_pattern;
@@ -634,7 +661,7 @@ session:
   key_id const & signing_key;
   vector<key_id> keys_to_push;
 
-  netcmd cmd;
+  netcmd cmd_in;
   bool armed;
 public:
   bool arm();
@@ -756,6 +783,7 @@ private:
   void write_netcmd_and_try_flush(netcmd const & cmd);
 
   // Outgoing queue-writers.
+  void queue_usher_cmd(utf8 const & message);
   void queue_bye_cmd(u8 phase);
   void queue_error_cmd(string const & errmsg);
   void queue_done_cmd(netcmd_item_type type, size_t n_items);
@@ -785,7 +813,8 @@ private:
 
   // Incoming dispatch-called methods.
   bool process_error_cmd(string const & errmsg);
-  bool process_hello_cmd(key_name const & server_keyname,
+  bool process_hello_cmd(u8 server_version,
+                         key_name const & server_keyname,
                          rsa_pub_key const & server_key,
                          id const & nonce);
   bool process_bye_cmd(u8 phase, transaction_guard & guard);
@@ -808,6 +837,9 @@ private:
                          id const & ident,
                          delta const & del);
   bool process_usher_cmd(utf8 const & msg);
+  bool process_usher_reply_cmd(u8 client_version,
+                               utf8 const & server,
+                               globish const & pattern);
 
   // The incoming dispatcher.
   bool dispatch_payload(netcmd const & cmd,
@@ -846,6 +878,9 @@ session::session(options & opts,
                  shared_ptr<Netxx::StreamBase> sock,
                  bool initiated_by_server) :
   session_base(peer, sock),
+  version(opts.max_netsync_version),
+  max_version(opts.max_netsync_version),
+  min_version(opts.min_netsync_version),
   role(role),
   voice(voice),
   our_include_pattern(our_include_pattern),
@@ -856,6 +891,7 @@ session::session(options & opts,
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
+  cmd_in(opts.max_netsync_version),
   armed(false),
   received_remote_key(false),
   session_key(constants::netsync_key_initializer),
@@ -1102,7 +1138,17 @@ session::note_cert(id const & i)
   cert c;
   string str;
   project.db.get_revision_cert(i, c);
-  c.marshal_for_netio(str);
+  key_name keyname;
+  rsa_pub_key junk;
+  project.db.get_pubkey(c.key, keyname, junk);
+  if (version >= 7)
+    {
+      c.marshal_for_netio(keyname, str);
+    }
+  else
+    {
+      c.marshal_for_netio_v6(keyname, str);
+    }
   queue_data_cmd(cert_item, i, str);
   sent_certs.push_back(c);
 }
@@ -1414,7 +1460,7 @@ void
 session::queue_error_cmd(string const & errmsg)
 {
   L(FL("queueing 'error' command"));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_error_cmd(errmsg);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1424,7 +1470,7 @@ session::queue_bye_cmd(u8 phase)
 {
   L(FL("queueing 'bye' command, phase %d")
     % static_cast<size_t>(phase));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_bye_cmd(phase);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1437,7 +1483,7 @@ session::queue_done_cmd(netcmd_item_type type,
   netcmd_item_type_to_string(type, typestr);
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_done_cmd(type, n_items);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1447,6 +1493,7 @@ session::queue_hello_cmd(key_name const & key_name,
                          rsa_pub_key const & pub,
                          id const & nonce)
 {
+  netcmd cmd(version);
   if (use_transport_auth)
     cmd.write_hello_cmd(key_name, pub, nonce);
   else
@@ -1460,7 +1507,7 @@ session::queue_anonymous_cmd(protocol_role role,
                              globish const & exclude_pattern,
                              id const & nonce2)
 {
-  netcmd cmd;
+  netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
   if (use_transport_auth)
     project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
@@ -1479,7 +1526,7 @@ session::queue_auth_cmd(protocol_role role,
                         id const & nonce2,
                         rsa_sha1_signature const & signature)
 {
-  netcmd cmd;
+  netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
   I(use_transport_auth);
   project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
@@ -1492,7 +1539,7 @@ session::queue_auth_cmd(protocol_role role,
 void
 session::queue_confirm_cmd()
 {
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_confirm_cmd();
   write_netcmd_and_try_flush(cmd);
 }
@@ -1507,7 +1554,7 @@ session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
   L(FL("queueing refinement %s of %s node '%s', level %d")
     % (ty == refinement_query ? "query" : "response")
     % typestr % hpref() % static_cast<int>(node.level));
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_refine_cmd(ty, node);
   write_netcmd_and_try_flush(cmd);
 }
@@ -1534,7 +1581,7 @@ session::queue_data_cmd(netcmd_item_type type,
   L(FL("queueing %d bytes of data for %s item '%s'")
     % dat.size() % typestr % hid());
 
-  netcmd cmd;
+  netcmd cmd(version);
   // TODO: This pair of functions will make two copies of a large
   // file, the first in cmd.write_data_cmd, and the second in
   // write_netcmd_and_try_flush when the data is copied from the
@@ -1575,7 +1622,7 @@ session::queue_delta_cmd(netcmd_item_type type,
 
   L(FL("queueing %s delta '%s' -> '%s'")
     % typestr % base_hid() % ident_hid());
-  netcmd cmd;
+  netcmd cmd(version);
   cmd.write_delta_cmd(type, base, ident, del);
   write_netcmd_and_try_flush(cmd);
   note_item_sent(type, ident);
@@ -1610,12 +1657,19 @@ session::process_error_cmd(string const & errmsg)
 static const var_domain known_servers_domain = var_domain("known-servers");
 
 bool
-session::process_hello_cmd(key_name const & their_keyname,
+session::process_hello_cmd(u8 server_version,
+                           key_name const & their_keyname,
                            rsa_pub_key const & their_key,
                            id const & nonce)
 {
   I(!this->received_remote_key);
   I(this->saved_nonce().empty());
+
+  // version sanity has already been checked by netcmd::read()
+  L(FL("received hello command; setting version from %d to %d")
+    % widen<u32>(version)
+    % widen<u32>(server_version));
+  version = server_version;
 
   key_identity_info their_identity;
   if (use_transport_auth)
@@ -2222,7 +2276,17 @@ session::load_data(netcmd_item_type type,
         cert c;
         project.db.get_revision_cert(item, c);
         string tmp;
-        c.marshal_for_netio(out);
+        key_name keyname;
+        rsa_pub_key junk;
+        project.db.get_pubkey(c.key, keyname, junk);
+        if (version >= 7)
+          {
+            c.marshal_for_netio(keyname, out);
+          }
+        else
+          {
+            c.marshal_for_netio_v6(keyname, out);
+          }
       }
       break;
     }
@@ -2320,13 +2384,37 @@ session::process_data_cmd(netcmd_item_type type,
 
     case cert_item:
       {
-        cert c(dat);
-        id tmp;
-        c.hash_code(tmp);
-        if (! (tmp == item))
-          throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
-        if (project.db.put_revision_cert(c))
-          written_certs.push_back(c);
+        cert c;
+        bool matched;
+        key_name keyname;
+        if (version >= 7)
+          {
+            matched = cert::read_cert(project.db, dat, c);
+          }
+        else
+          {
+            matched = cert::read_cert_v6(project.db, dat, c, keyname);
+          }
+
+        if (matched)
+          {
+            key_name keyname;
+            rsa_pub_key junk;
+            project.db.get_pubkey(c.key, keyname, junk);
+            id tmp;
+            c.hash_code(keyname, tmp);
+            if (! (tmp == item))
+              throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
+            if (project.db.put_revision_cert(c))
+              written_certs.push_back(c);
+          }
+        else
+          {
+            W(F("dropping incoming cert which was signed by a key we don't have\n"
+                "you probably need to obtain this key from a more recent netsync peer\n"
+                "the name of the key involved is '%s', but note that there are multiple\n"
+                "keys with this name and we don't know which one it is") % keyname);
+          }
       }
       break;
 
@@ -2400,7 +2488,7 @@ session::process_usher_cmd(utf8 const & msg)
       else
         L(FL("Received greeting from usher: %s") % msg().substr(1));
     }
-  netcmd cmdout;
+  netcmd cmdout(version);
   cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
                                our_include_pattern);
   write_netcmd_and_try_flush(cmdout);
@@ -2450,11 +2538,12 @@ session::dispatch_payload(netcmd const & cmd,
       require(! authenticated, "hello netcmd received when not authenticated");
       require(voice == client_voice, "hello netcmd received in client voice");
       {
+        u8 server_version(0);
         key_name server_keyname;
         rsa_pub_key server_key;
         id nonce;
-        cmd.read_hello_cmd(server_keyname, server_key, nonce);
-        return process_hello_cmd(server_keyname, server_key, nonce);
+        cmd.read_hello_cmd(server_version, server_keyname, server_key, nonce);
+        return process_hello_cmd(server_version, server_keyname, server_key, nonce);
       }
       break;
 
@@ -2591,7 +2680,13 @@ session::dispatch_payload(netcmd const & cmd,
       break;
 
     case usher_reply_cmd:
-      return false; // Should not happen.
+      {
+        u8 client_version;
+        utf8 server;
+        globish pattern;
+        cmd.read_usher_reply_cmd(client_version, server, pattern);
+        return process_usher_reply_cmd(client_version, server, pattern);
+      }
       break;
     }
   return false;
@@ -2601,11 +2696,37 @@ session::dispatch_payload(netcmd const & cmd,
 void
 session::begin_service()
 {
+  queue_usher_cmd(utf8("", origin::internal));
+}
+
+void
+session::queue_usher_cmd(utf8 const & message)
+{
+  L(FL("queueing 'usher' command"));
+  netcmd cmd(0);
+  cmd.write_usher_cmd(message);
+  write_netcmd_and_try_flush(cmd);
+}
+
+bool
+session::process_usher_reply_cmd(u8 client_version,
+                                 utf8 const & server,
+                                 globish const & pattern)
+{
+  // netcmd::read() has already checked that the client isn't too old
+  if (client_version < max_version)
+    {
+      version = client_version;
+    }
+  L(FL("client has maximum version %d, using %d")
+    % widen<u32>(client_version) % widen<u32>(version));
+
   key_name name;
   keypair kp;
   if (use_transport_auth)
     keys.get_key_pair(signing_key, name, kp);
   queue_hello_cmd(name, kp.pub, mk_nonce());
+  return true;
 }
 
 void
@@ -2649,7 +2770,7 @@ session::arm()
       if (output_overfull())
         return false;
 
-      if (cmd.read(inbuf, read_hmac))
+      if (cmd_in.read(min_version, max_version, inbuf, read_hmac))
         {
           armed = true;
         }
@@ -2670,8 +2791,8 @@ bool session::process(transaction_guard & guard)
       L(FL("processing %d byte input buffer from peer %s")
         % inbuf.size() % peer_id);
 
-      size_t sz = cmd.encoded_size();
-      bool ret = dispatch_payload(cmd, guard);
+      size_t sz = cmd_in.encoded_size();
+      bool ret = dispatch_payload(cmd_in, guard);
 
       if (inbuf.size() >= constants::netcmd_maxsz)
         W(F("input buffer for peer %s is overfull "
@@ -2681,7 +2802,7 @@ bool session::process(transaction_guard & guard)
 
       if (!ret)
         L(FL("peer %s finishing processing with '%d' packet")
-          % peer_id % cmd.get_cmd_code());
+          % peer_id % cmd_in.get_cmd_code());
       return ret;
     }
   catch (bad_decode & bd)
@@ -3387,21 +3508,19 @@ session::rebuild_merkle_trees(set<branch_name> const & branchnames)
          i != branchnames.end(); ++i)
       {
         // Get branch certs.
-        vector<cert> certs;
+        vector<pair<id, cert> > certs;
         project.get_branch_certs(*i, certs);
-        for (vector<cert>::const_iterator j = certs.begin();
+        for (vector<pair<id, cert> >::const_iterator j = certs.begin();
              j != certs.end(); j++)
           {
-            revision_id rid(j->ident);
+            revision_id rid(j->second.ident);
             insert_with_parents(rid, rev_refiner, rev_enumerator,
                                 revision_ids, revisions_ticker);
             // Branch certs go in here, others later on.
-            id item;
-            j->hash_code(item);
-            cert_refiner.note_local_item(item);
-            rev_enumerator.note_cert(rid, item);
-            if (inserted_keys.find(j->key) == inserted_keys.end())
-              inserted_keys.insert(j->key);
+            cert_refiner.note_local_item(j->first);
+            rev_enumerator.note_cert(rid, j->first);
+            if (inserted_keys.find(j->second.key) == inserted_keys.end())
+              inserted_keys.insert(j->second.key);
           }
       }
   }

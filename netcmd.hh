@@ -72,11 +72,10 @@ typedef enum
     delta_cmd = 9,
 
     // usher commands
-    // usher_cmd is sent by a server farm (or anyone else who wants to serve
-    // from multiple databases over the same port), and the reply (containing
-    // the client's include pattern) is used to choose a server to forward the
-    // connection to.
-    // usher_cmd is never sent by the monotone server itself.
+    // usher_cmd is sent either by a proxy that needs to know where
+    // to forward a connection (the reply gives the desired hostname and
+    // include pattern), or by a server performing protocol
+    // version negotiation.
     usher_cmd = 100,
     usher_reply_cmd = 101
   }
@@ -89,8 +88,9 @@ private:
   netcmd_code cmd_code;
   std::string payload;
 public:
-  netcmd();
+  netcmd(u8 ver);
   netcmd_code get_cmd_code() const {return cmd_code;}
+  u8 get_version() const { return version; }
   size_t encoded_size();
   bool operator==(netcmd const & other) const;
 
@@ -98,7 +98,8 @@ public:
   // basic cmd i/o (including checksums)
   void write(std::string & out,
              chained_hmac & hmac) const;
-  bool read(string_queue & inbuf,
+  bool read(u8 min_version, u8 max_version,
+            string_queue & inbuf,
             chained_hmac & hmac);
   bool read_string(std::string & inbuf,
                    chained_hmac & hmac) {
@@ -108,7 +109,8 @@ public:
     // can be processed efficiently
     string_queue tmp(inbuf.size());
     tmp.append(inbuf);
-    bool ret = read(tmp, hmac);
+    // allow any version
+    bool ret = read(0, 255, tmp, hmac);
     inbuf = tmp.substr(0,tmp.size());
     return ret;
   }
@@ -116,7 +118,8 @@ public:
   void read_error_cmd(std::string & errmsg) const;
   void write_error_cmd(std::string const & errmsg);
 
-  void read_hello_cmd(key_name & server_keyname,
+  void read_hello_cmd(u8 & server_version,
+                      key_name & server_keyname,
                       rsa_pub_key & server_key,
                       id & nonce) const;
   void write_hello_cmd(key_name const & server_keyname,
@@ -174,6 +177,8 @@ public:
                        delta const & del);
 
   void read_usher_cmd(utf8 & greeting) const;
+  void write_usher_cmd(utf8 const & greeting);
+  void read_usher_reply_cmd(u8 & version, utf8 & server, globish & pattern) const;
   void write_usher_reply_cmd(utf8 const & server, globish const & pattern);
 
 };

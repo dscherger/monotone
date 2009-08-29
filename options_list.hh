@@ -119,6 +119,27 @@ OPTION(bind_opts, bind_stdio, false, "stdio",
 }
 #endif
 
+OPT(max_netsync_version, "max-netsync-version",
+    u8, constants::netcmd_current_protocol_version,
+    gettext_noop("cause monotone to lie about the maximum netsync "
+                 "protocol version that it supports, mostly for debugging"))
+#ifdef option_bodies
+{
+  max_netsync_version = (u8)boost::lexical_cast<u32>(arg);
+}
+#endif
+
+OPT(min_netsync_version, "min-netsync-version",
+    u8, constants::netcmd_minimum_protocol_version,
+    gettext_noop("cause monotone to lie about the minimum netsync "
+                 "protocol version it supports, useful for debugging or "
+                 "if you want to prevent use of older protocol versions"))
+#ifdef option_bodies
+{
+  min_netsync_version = (u8)boost::lexical_cast<u32>(arg);
+}
+#endif
+
 OPT(branch, "branch,b", branch_name, ,
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies

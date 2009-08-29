@@ -130,6 +130,9 @@ namespace constants
   // the current netcmd/netsync protocol version
   u8 const netcmd_current_protocol_version = 7;
 
+  // the oldest netcmd/netsync protocol version that we're compatible with
+  u8 const netcmd_minimum_protocol_version = 6;
+
   // minimum size of any netcmd on the wire
   std::size_t const netcmd_minsz = (1     // version
                                     + 1   // cmd code
