@@ -89,6 +89,6 @@ check(mtn("conflicts", "resolve_first_left", "user", "checkout.sh"), 0, nil, nil
 check(mtn("conflicts", "resolve_first_right", "user", "checkout.sh"), 1, nil, true)
 check(grep("-v", "detected at", "stderr"), 0, true)
 canonicalize("stdout")
-check("mtn: misuse: left and right resolutions cannot both be 'user'\n" == readfile("stdout"))
+check("mtn: misuse: other resolution must be 'drop' or 'rename'\n" == readfile("stdout"))
 
 -- end of file

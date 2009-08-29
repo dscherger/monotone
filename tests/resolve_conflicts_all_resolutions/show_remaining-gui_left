@@ -1,5 +1,3 @@
-mtn: duplicate_name checkout_left.sh
-mtn: duplicate_name checkout_right.sh
 mtn: duplicate_name gui_left.sh
 mtn: duplicate_name gui_right.sh
 mtn: duplicate_name thermostat.c

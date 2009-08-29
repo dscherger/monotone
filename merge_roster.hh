@@ -29,7 +29,7 @@
 
 namespace resolve_conflicts
 {
-  enum resolution_t {none, content_user, content_internal, rename, drop};
+  enum resolution_t {none, content_user, content_internal, drop, keep, rename};
 
   typedef std::pair<resolve_conflicts::resolution_t, boost::shared_ptr<any_path> > file_resolution_t;
 

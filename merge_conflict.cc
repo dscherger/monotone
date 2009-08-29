@@ -65,6 +65,8 @@ namespace
     symbol const orphaned_file("orphaned_file");
     symbol const resolved_drop_left("resolved_drop_left");
     symbol const resolved_drop_right("resolved_drop_right");
+    symbol const resolved_keep_left("resolved_keep_left");
+    symbol const resolved_keep_right("resolved_keep_right");
     symbol const resolved_internal("resolved_internal");
     symbol const resolved_rename_left("resolved_rename_left");
     symbol const resolved_rename_right("resolved_rename_right");
@@ -447,6 +449,19 @@ put_resolution(basic_io::stanza & st,
 
         case right_side:
           st.push_symbol(syms::resolved_drop_right);
+          break;
+        }
+      break;
+
+    case resolve_conflicts::keep:
+      switch (side)
+        {
+        case left_side:
+          st.push_symbol(syms::resolved_keep_left);
+          break;
+
+        case right_side:
+          st.push_symbol(syms::resolved_keep_right);
           break;
         }
       break;
@@ -1755,6 +1770,16 @@ read_duplicate_name_conflict(basic_io::parser & pars,
           conflict.right_resolution.first = resolve_conflicts::drop;
           pars.sym();
         }
+      else if (pars.symp (syms::resolved_keep_left))
+        {
+          conflict.left_resolution.first = resolve_conflicts::keep;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_keep_right))
+        {
+          conflict.right_resolution.first = resolve_conflicts::keep;
+          pars.sym();
+        }
       else if (pars.symp (syms::resolved_rename_left))
         {
           conflict.left_resolution.first = resolve_conflicts::rename;
@@ -2377,6 +2402,16 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
     case resolve_conflicts::drop:
       P(F("dropping %s") % name);
       result_roster.drop_detached_node(nid);
+      break;
+
+    case resolve_conflicts::keep:
+      E(other_resolution.first == resolve_conflicts::drop ||
+        other_resolution.first == resolve_conflicts::rename,
+        origin::user,
+        F("inconsistent left/right resolutions for %s") % name);
+
+      P(F("keeping %s") % name);
+      attach_node (lua, result_roster, nid, name);
       break;
 
     case resolve_conflicts::rename:

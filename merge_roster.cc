@@ -36,10 +36,12 @@ image(resolve_conflicts::resolution_t resolution)
       return "content_user";
     case resolve_conflicts::content_internal:
       return "content_internal";
-    case resolve_conflicts::rename:
-      return "rename";
     case resolve_conflicts::drop:
       return "drop";
+    case resolve_conflicts::keep:
+      return "keep";
+    case resolve_conflicts::rename:
+      return "rename";
     }
   I(false); // keep compiler happy
 }

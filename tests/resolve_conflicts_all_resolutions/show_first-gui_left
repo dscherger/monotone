@@ -1,4 +1,4 @@
-mtn: duplicate_name checkout_right.sh
+mtn: duplicate_name gui_left.sh
 mtn: possible resolutions:
 mtn: resolve_first_left drop
 mtn: resolve_first_left keep

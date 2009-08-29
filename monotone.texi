@@ -1138,17 +1138,17 @@ version control tasks. Some tasks must be done by each member of our
 example team; other tasks involve only one member.
 
 @menu
-* Creating a Database::
-* Generating Keys::
-* Starting a New Project::
-* Adding Files::
-* Committing Work::
-* Basic Network Service::
-* Synchronising Databases::
-* Making Changes::
-* Dealing with a Fork::
-* Branching and Merging::
-* Network Service Revisited::
+* Creating a Database::         
+* Generating Keys::             
+* Starting a New Project::      
+* Adding Files::                
+* Committing Work::             
+* Basic Network Service::       
+* Synchronising Databases::     
+* Making Changes::              
+* Dealing with a Fork::         
+* Branching and Merging::       
+* Network Service Revisited::   
 @end menu
 
 
@@ -3316,8 +3316,9 @@ in both merge parents, or that has been added in the revision
 containing the orphaned files or directories.
 
 @command{conflicts} supports resolving this conflict. However, if the
-orphaned node is a directory that is not empty, the user must handle
-the directory contents first, before invoking the conflicts commands.
+orphaned node is a directory that is not empty, and the desired
+resolution is 'drop', the user must drop the directory contents and
+commit before invoking the conflicts commands.
 
 @subheading Multiple Name Conflict
 
@@ -4798,7 +4799,7 @@ null revision.
 
 @page
 @menu
-* Conflicts::
+* Conflicts::                   
 @end menu
 
 @node    Conflicts,  , Tree, Tree
@@ -4820,6 +4821,8 @@ bookkeeping directory.
 Files given in these commands are relative to the current working
 directory, or absolute. In the conflict file, they are relative to the
 workspace root, or absolute.
+
+@subheading Commands
 
 @ftable @command
 @item mtn conflicts --conflicts-file=@var{file} store @var{left_rev_id} @var{right_rev_id}
@@ -4860,6 +4863,8 @@ resolution files in @file{_MTN/resolutions}; this command provides a
 convenient way to clean up.
 @end ftable
 
+@subheading Single file conflict resolutions
+
 For single file conflicts, there are several possible resolutions:
 
 @ftable @command
@@ -4894,6 +4899,8 @@ in the conflicts file.
 
 @end ftable
 
+@subheading Two file conflict resolutions
+
 For two file conflicts, the possible resolutions are:
 
 @ftable @command
@@ -4901,6 +4908,12 @@ For two file conflicts, the possible resolutions are:
 The file is dropped in the merge.
 
 This inserts a @var{resolved_drop_left} or @var{resolved_drop_right}
+conflict resolution in the conflicts file.
+
+@item keep
+The file is kept in the merge.
+
+This inserts a @var{resolved_keep_left} or @var{resolved_keep_right}
 conflict resolution in the conflicts file.
 
 @item rename @var{filename}
@@ -9078,7 +9091,8 @@ option.
 @item
 11.0 -- Add resolution for orphaned node conflicts. Deleted
 @code{resolved_user} conflict resolution; use @code{resolved_*_left}
-for single file conflicts.
+for single file conflicts. Add @code{resolved_keep_left,
+resolved_keep_right} resolutions.
 @item
 9.0 -- Added default resolution for file content conflicts, user
 resolutions for others. @code{directory_loop_created} changed to @code{directory_loop}.
@@ -9324,6 +9338,8 @@ All possible conflict resolutions:
 @verbatim
    resolved_drop_left
   resolved_drop_right
+   resolved_keep_left
+  resolved_keep_right
     resolved_internal
  resolved_rename_left file
 resolved_rename_right file

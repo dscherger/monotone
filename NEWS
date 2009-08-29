@@ -54,6 +54,8 @@
         - Resolution of orphaned file conflicts is now supported by
           'merge --resolve-conflicts' and the 'conflicts' commands.
 
+        - Duplicate name conflicts now support the 'keep' resolution.
+        
 	Bugs fixed
 
         - Monotone now sanely skips paths with invalid characters
