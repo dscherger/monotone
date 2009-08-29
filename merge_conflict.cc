@@ -2376,6 +2376,12 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
 
     case resolve_conflicts::drop:
       P(F("dropping %s") % name);
+
+      if (is_dir_t(result_roster.get_node(nid)))
+        {
+          dir_t n = downcast_to_dir_t(result_roster.get_node(nid));
+          E(n->children.empty(), origin::user, F("can't drop %s; not empty") % name);
+        }
       result_roster.drop_detached_node(nid);
       break;
 
@@ -2427,8 +2433,23 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
       file_path left_name, right_name;
       file_id left_fid, right_fid;
 
-      left_roster.get_file_details(left_nid, left_fid, left_name);
-      right_roster.get_file_details(right_nid, right_fid, right_name);
+      if (is_file_t(left_roster.get_node(left_nid)))
+        {
+          left_roster.get_file_details(left_nid, left_fid, left_name);
+        }
+      else
+        {
+          left_roster.get_name(left_nid, left_name);
+        }
+
+      if (is_file_t(right_roster.get_node(right_nid)))
+        {
+          right_roster.get_file_details(right_nid, right_fid, right_name);
+        }
+      else
+        {
+          right_roster.get_name(right_nid, right_name);
+        }
 
       resolve_duplicate_name_one_side
         (lua, conflict.left_resolution, conflict.right_resolution, left_name, left_fid, left_nid, adaptor, roster);

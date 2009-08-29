@@ -36,16 +36,13 @@
           reported by 'automate show_conflicts' for file content
           conflicts; 'resolved_user_left' is used instead.
 
-        - The 'conflict' commands can now handle duplicate name
-          conflicts for directories.
-
-        - The 'conflict' resolution commands now take the 'keep'
-          resolution.
-
 	Bugs fixed
 
         - Monotone now sanely skips paths with invalid characters
           it encounters during 'add' or 'automate inventory'.
+
+        - The 'conflict' commands can now handle duplicate name
+          conflicts for directories.
 
 	Internal
 

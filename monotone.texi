@@ -4911,12 +4911,6 @@ in the conflicts file.
 For two file conflicts, the possible resolutions are:
 
 @ftable @command
-@item keep
-The file is kept in the merge.
-
-This inserts a @var{resolved_keep_left} or @var{resolved_keep_right}
-conflict resolution in the conflicts file.
-
 @item drop
 The file is dropped in the merge.
 
@@ -9324,8 +9318,6 @@ right_name ""
 
 All possible conflict resolutions:
 @verbatim
-   resolved_keep_left
-  resolved_keep_right
    resolved_drop_left
   resolved_drop_right
     resolved_internal
