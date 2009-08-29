@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include "charset.hh"
+#include "constants.hh"
 #include "options.hh"
 #include "platform.hh"
 #include "sanity.hh"

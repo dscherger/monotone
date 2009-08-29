@@ -98,7 +98,8 @@ public:
   // basic cmd i/o (including checksums)
   void write(std::string & out,
              chained_hmac & hmac) const;
-  bool read(string_queue & inbuf,
+  bool read(u8 min_version, u8 max_version,
+            string_queue & inbuf,
             chained_hmac & hmac);
   bool read_string(std::string & inbuf,
                    chained_hmac & hmac) {
@@ -108,7 +109,8 @@ public:
     // can be processed efficiently
     string_queue tmp(inbuf.size());
     tmp.append(inbuf);
-    bool ret = read(tmp, hmac);
+    // allow any version
+    bool ret = read(0, 255, tmp, hmac);
     inbuf = tmp.substr(0,tmp.size());
     return ret;
   }

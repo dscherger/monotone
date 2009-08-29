@@ -85,7 +85,8 @@ netcmd::write(string & out, chained_hmac & hmac) const
 
 // note: usher_cmd does not get included in the hmac.
 bool
-netcmd::read(string_queue & inbuf, chained_hmac & hmac)
+netcmd::read(u8 min_version, u8 max_version,
+             string_queue & inbuf, chained_hmac & hmac)
 {
   size_t pos = 0;
 
@@ -93,8 +94,8 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
     return false;
 
   u8 extracted_ver = extract_datum_lsb<u8>(inbuf, pos, "netcmd protocol number");
-  bool too_old = extracted_ver < constants::netcmd_minimum_protocol_version;
-  bool too_new = extracted_ver > constants::netcmd_current_protocol_version;
+  bool too_old = extracted_ver < min_version;
+  bool too_new = extracted_ver > max_version;
 
   u8 cmd_byte = extract_datum_lsb<u8>(inbuf, pos, "netcmd code");
   switch (cmd_byte)
@@ -127,11 +128,11 @@ netcmd::read(string_queue & inbuf, chained_hmac & hmac)
         {
           throw bad_decode(F("protocol version mismatch: wanted between '%d' and '%d' got '%d' (netcmd code %d)\n"
                              "%s")
-                           % widen<u32,u8>(constants::netcmd_minimum_protocol_version)
-                           % widen<u32,u8>(constants::netcmd_current_protocol_version)
+                           % widen<u32,u8>(min_version)
+                           % widen<u32,u8>(max_version)
                            % widen<u32,u8>(extracted_ver)
                            % widen<u32,u8>(cmd_code)
-                           % ((constants::netcmd_current_protocol_version < extracted_ver)
+                           % ((max_version < extracted_ver)
                               ? _("the remote side has a newer, incompatible version of monotone")
                               : _("the remote side has an older, incompatible version of monotone")));
         }
@@ -568,7 +569,7 @@ netcmd::read_usher_cmd(utf8 & greeting) const
 void
 netcmd::write_usher_cmd(utf8 const & greeting)
 {
-  version = constants::netcmd_current_protocol_version;
+  version = 0;
   cmd_code = usher_cmd;
   insert_variable_length_string(greeting(), payload);
 }

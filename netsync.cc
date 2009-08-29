@@ -646,6 +646,8 @@ session:
   public session_base
 {
   u8 version;
+  u8 max_version;
+  u8 min_version;
   protocol_role role;
   protocol_voice const voice;
   globish our_include_pattern;
@@ -876,7 +878,9 @@ session::session(options & opts,
                  shared_ptr<Netxx::StreamBase> sock,
                  bool initiated_by_server) :
   session_base(peer, sock),
-  version(constants::netcmd_current_protocol_version),
+  version(opts.max_netsync_version),
+  max_version(opts.max_netsync_version),
+  min_version(opts.min_netsync_version),
   role(role),
   voice(voice),
   our_include_pattern(our_include_pattern),
@@ -887,7 +891,7 @@ session::session(options & opts,
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
-  cmd(constants::netcmd_current_protocol_version),
+  cmd(opts.max_netsync_version),
   armed(false),
   received_remote_key(false),
   session_key(constants::netsync_key_initializer),
@@ -2701,7 +2705,7 @@ session::process_usher_reply_cmd(u8 client_version,
                                  globish const & pattern)
 {
   // netcmd::read() has already checked that the client isn't too old
-  if (client_version < constants::netcmd_current_protocol_version)
+  if (client_version < max_version)
     {
       version = client_version;
     }
@@ -2757,7 +2761,7 @@ session::arm()
       if (output_overfull())
         return false;
 
-      if (cmd.read(inbuf, read_hmac))
+      if (cmd.read(min_version, max_version, inbuf, read_hmac))
         {
           armed = true;
         }
