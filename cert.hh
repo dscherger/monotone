@@ -40,7 +40,8 @@ struct cert : public origin_aware
   {}
 
   // These understand the netsync serialization.
-  static bool read_cert(database & db, std::string const & s, cert & c);
+  static bool read_cert(database & db, std::string const & s, cert & c,
+                        key_name & keyname);
   static bool read_cert_v6(database & db, std::string const & s, cert & c,
                            key_name & keyname);
   cert(database & db, std::string const & s, origin::type m);
