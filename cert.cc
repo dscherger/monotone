@@ -99,14 +99,20 @@ read_cert(database & db, string const & in, cert & t,
           }
         if (!found)
           {
-            W(F("Cannot find appropriate key '%s' for old-style cert")
-              % name);
             return false;
           }
       }
       break;
     case read_cert_current:
-      tmp.key = key_id(key, origin::network);
+      {
+        rsa_pub_key pub;
+        tmp.key = key_id(key, origin::network);
+        db.get_pubkey(tmp.key, keyname, pub);
+        if (db.check_signature(tmp.key, signable, tmp.sig) != cert_ok)
+          {
+            return false;
+          }
+      }
       break;
     default:
       I(false);
@@ -130,9 +136,9 @@ bool cert::read_cert_v6(database & db, std::string const & s, cert & c,
   return ::read_cert(db, s, c, ::read_cert_v6, keyname);
 }
 
-bool cert::read_cert(database & db, std::string const & s, cert & c)
+bool cert::read_cert(database & db, std::string const & s, cert & c,
+                     key_name & keyname)
 {
-  key_name keyname;
   return ::read_cert(db, s, c, read_cert_current, keyname);
 }
 

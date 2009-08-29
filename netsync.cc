@@ -2389,11 +2389,24 @@ session::process_data_cmd(netcmd_item_type type,
         key_name keyname;
         if (version >= 7)
           {
-            matched = cert::read_cert(project.db, dat, c);
+            matched = cert::read_cert(project.db, dat, c, keyname);
+            if (!matched)
+              {
+                W(F("Dropping incoming cert which claims to be signed by key\n"
+                    "'%s' (name '%s'), but has a bad signature")
+                  % c.key % keyname);
+              }
           }
         else
           {
             matched = cert::read_cert_v6(project.db, dat, c, keyname);
+            if (!matched)
+              {
+                W(F("dropping incoming cert which was signed by a key we don't have\n"
+                    "you probably need to obtain this key from a more recent netsync peer\n"
+                    "the name of the key involved is '%s', but note that there are multiple\n"
+                    "keys with this name and we don't know which one it is") % keyname);
+              }
           }
 
         if (matched)
@@ -2407,13 +2420,6 @@ session::process_data_cmd(netcmd_item_type type,
               throw bad_decode(F("hash check failed for revision cert '%s'") % hitem());
             if (project.db.put_revision_cert(c))
               written_certs.push_back(c);
-          }
-        else
-          {
-            W(F("dropping incoming cert which was signed by a key we don't have\n"
-                "you probably need to obtain this key from a more recent netsync peer\n"
-                "the name of the key involved is '%s', but note that there are multiple\n"
-                "keys with this name and we don't know which one it is") % keyname);
           }
       }
       break;
