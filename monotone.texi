@@ -1138,6 +1138,17 @@ version control tasks. Some tasks must be done by each member of our
 example team; other tasks involve only one member.
 
 @menu
+* Creating a Database::
+* Generating Keys::
+* Starting a New Project::
+* Adding Files::
+* Committing Work::
+* Basic Network Service::
+* Synchronising Databases::
+* Making Changes::
+* Dealing with a Fork::
+* Branching and Merging::
+* Network Service Revisited::
 * Creating a Database::         
 * Generating Keys::             
 * Starting a New Project::      
@@ -3147,14 +3158,19 @@ accidently pick the same name.
 These conflicts are reported when someone tries to merge the two
 revisions containing the new files.
 
+There are similar conflicts for directories; the process for resolving
+them is different, because we need to worry about the files in the
+directories.
+
 @subsubheading Same file
 For the first case, the conflict is resolved by dropping one file,
 using @command{conflicts} commands. The contents should be manually
 merged, in case they are slightly different. Typically, a user will
 have one of the files in their current workspace; the other can be
 retrieved via @command{automate get_file_of}; the revision id is shown
-in the merge error message. The process can be confusing; here's a
-detailed example.
+in the merge error message.
+
+The process for files can be confusing; here's a detailed example.
 
 Suppose Beth and Abe each commit a new file @file{checkout.sh}. When
 Beth attempts to merge the two heads, she gets a message like:
@@ -3233,6 +3249,15 @@ mtn update
 
 Now she has her file in @file{thermostat-honeywell}, and Abe's in
 @file{thermostat-westinghouse}.
+
+@subsubheading Directories
+When two directories are given the same name, there are still the two
+basic approaches to resolving the conflict; drop or rename. However,
+if a directory is dropped, all the files in it must also be dropped.
+Therefore, it is almost always better to first rename one of the
+directories to a temporary name as the conflict resolution, and
+then deal with the files individually, renaming or merging and
+dropping each. Then finally drop the temporary directory.
 
 @subheading Missing Root Conflict
 

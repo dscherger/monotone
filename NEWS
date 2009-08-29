@@ -66,6 +66,9 @@
           converted to punycode on input, and not decoded on output. They
           will now not be converted to punycode at all.
 
+        - The 'conflict' commands can now handle duplicate name
+          conflicts for directories.
+
 	Internal
 
 Tue May 12 20:44:00 UTC 2009
