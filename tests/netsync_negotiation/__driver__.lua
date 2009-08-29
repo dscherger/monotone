@@ -4,9 +4,11 @@ mtn_setup()
 netsync.setup()
 
 
-function mk_old(ver)
+function make_old(ver)
    local exe = "mtn-netsync" .. ver
-   skip_if(not existsonpath(exe))
+   if not existsonpath(exe) then
+      return nil
+   end
    local rcfile
    if get("netsync"..ver..".lua") then
       rcfile = "netsync"..ver..".lua"
@@ -26,7 +28,7 @@ function mk_old(ver)
    check(getstd("test_keys"))
    check(fn("read", "test_keys"), 0, nil, false)
    remove("test_keys")
-   return {fn = fn,
+   return {fn = fn, net_fn = fn,
       reset = function ()
                  check(remove("test"..ver..".mtn"))
                  check(remove("test"..ver..".mtn-journal"))
@@ -35,14 +37,33 @@ function mk_old(ver)
    }
 end
 
-current = {fn = mtn, reset = function ()
-                                check(remove("test.db"))
-                                check(remove("test.db-journal"))
-                                check(mtn("db", "init"))
-                             end
+current = {fn = mtn, net_fn = mtn,
+   reset = function ()
+              check(remove("test.db"))
+              check(remove("test.db-journal"))
+              check(mtn("db", "init"))
+           end
 }
 
-version6 = mk_old(6)
+function make_fake(min_ver, max_ver)
+   local fn = function (...)
+                 return mtn("--db=test"..max_ver..".mtn",
+                            unpack(arg))
+              end
+   local net_fn = function (...)
+                     return mtn("--min-netsync-version="..min_ver,
+                                "--max-netsync-version="..max_ver,
+                                "--db=test"..max_ver..".mtn",
+                                unpack(arg))
+                  end
+   return {fn = fn, net_fn = net_fn,
+      reset = function ()
+                 check(remove("test"..max_ver..".mtn"))
+                 check(remove("test"..max_ver..".mtn-journal"))
+                 check(fn("db", "init"))
+              end
+   }
+end
 
 function do_commits(my_mtn, dat)
    check(remove("_MTN"))
@@ -66,9 +87,9 @@ function check_pair(client, server)
 
    -- exchange data
    local addr = "localhost:" .. math.random(1024, 65535)
-   local srv = bg(server.fn("serve", "--rcfile=netsync.lua", "--bind="..addr),
+   local srv = bg(server.net_fn("serve", "--rcfile=netsync.lua", "--bind="..addr),
                   false, false, false)
-   check(client.fn("sync", addr, "testbranch"), 0, false, false, false)
+   check(client.net_fn("sync", addr, "testbranch"), 0, false, false, false)
    sleep(1)
    srv:finish()
 
@@ -85,9 +106,22 @@ function check_pair(client, server)
    check(qgrep("^ *certs *: *13 *$", "stdout"))
 end
 
-function check_against(other)
-   check_pair(current, other)
-   check_pair(other, current)
+function check_against(ver)
+   local real_other = make_old(ver)
+   if real_other ~= nil then
+      check_pair(current, real_other)
+      check_pair(real_other, current)
+   end
+   local fake_other = make_fake(ver, ver)
+   check_pair(current, fake_other)
+   check_pair(fake_other, current)
 end
 
-check_against(version6)
+-- check against compatible versions, both with fake "old" peers,
+-- and with real old peers if they're available
+check_against(6)
+
+-- check against a fake far-future version
+fake_future = make_fake(1, 250)
+check_pair(current, fake_future)
+check_pair(fake_future, current)
