@@ -1,4 +1,5 @@
-mtn: warning: 2 conflicts with no supported resolutions.
+mtn: orphaned node 
+mtn: warning: 1 conflict with no supported resolutions.
 mtn: conflict: missing root directory
 mtn: directory 'foo' deleted on the left
 mtn: directory 'foo' pivoted to root on the right
