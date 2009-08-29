@@ -1236,13 +1236,15 @@ database::fix_bad_certs(bool drop_not_fixable)
 
   P(F("checking"));
 
-  ticker checked(_("checked"), "c", 25);
-  ticker bad(_("bad"), "b", 1);
-  ticker fixed(_("fixed"), "f", 1);
-  shared_ptr<ticker> dropped;
+  ticker tick_checked(_("checked"), "c", 25);
+  ticker tick_bad(_("bad"), "b", 1);
+  ticker tick_fixed(_("fixed"), "f", 1);
+  shared_ptr<ticker> tick_dropped;
   if (drop_not_fixable)
-    dropped.reset(new ticker(_("dropped"), "d", 1));
-  checked.set_total(all_certs.size());
+    tick_dropped.reset(new ticker(_("dropped"), "d", 1));
+  tick_checked.set_total(all_certs.size());
+
+  int num_bad(0), num_fixed(0), num_dropped(0);
 
   for (vector<pair<id, cert> >::const_iterator cert_iter = all_certs.begin();
        cert_iter != all_certs.end(); ++cert_iter)
@@ -1250,10 +1252,11 @@ database::fix_bad_certs(bool drop_not_fixable)
       cert const & c(cert_iter->second);
       id const & certid(cert_iter->first);
       cert_status status = check_cert(c);
-      ++checked;
+      ++tick_checked;
       if (status == cert_bad)
         {
-          ++bad;
+          ++tick_bad;
+          ++num_bad;
           bool fixed = false;
           string signable;
           c.signable_text(signable);
@@ -1263,11 +1266,20 @@ database::fix_bad_certs(bool drop_not_fixable)
               key_id const & keyid(*key_iter);
               if (check_signature(keyid, signable, c.sig) == cert_ok)
                 {
-                  imp->execute(query("UPDATE revision_certs SET keypair_id = ? WHERE hash = ?")
-                               % blob(keyid.inner()()) % blob(certid()));
-                  ++fixed;
-                  fixed = true;
-                  break;
+                  key_name candidate_name;
+                  rsa_pub_key junk;
+                  get_pubkey(keyid, candidate_name, junk);
+                  id chk_id;
+                  c.hash_code(candidate_name, chk_id);
+                  if (chk_id == certid)
+                    {
+                      imp->execute(query("UPDATE revision_certs SET keypair_id = ? WHERE hash = ?")
+                                   % blob(keyid.inner()()) % blob(certid()));
+                      ++tick_fixed;
+                      ++num_fixed;
+                      fixed = true;
+                      break;
+                    }
                 }
             }
           if (!fixed)
@@ -1276,7 +1288,8 @@ database::fix_bad_certs(bool drop_not_fixable)
                 {
                   imp->execute(query("DELETE FROM revision_certs WHERE hash = ?")
                                % blob(certid()));
-                  ++(*dropped);
+                  ++(*tick_dropped);
+                  ++num_dropped;
                 }
             }
         }
@@ -1284,12 +1297,12 @@ database::fix_bad_certs(bool drop_not_fixable)
   if (drop_not_fixable)
     {
       P(F("checked %d certs, found %d bad, fixed %d, dropped %d")
-        % checked.ticks % bad.ticks % fixed.ticks % dropped->ticks);
+        % all_certs.size() % num_bad % num_fixed % num_dropped);
     }
   else
     {
       P(F("checked %d certs, found %d bad, fixed %d")
-        % checked.ticks % bad.ticks % fixed.ticks);
+        % all_certs.size() % num_bad % num_fixed);
     }
 }
 
