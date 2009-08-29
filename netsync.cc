@@ -1137,7 +1137,14 @@ session::note_cert(id const & i)
   key_name keyname;
   rsa_pub_key junk;
   project.db.get_pubkey(c.key, keyname, junk);
-  c.marshal_for_netio(keyname, str);
+  if (version >= 7)
+    {
+      c.marshal_for_netio(keyname, str);
+    }
+  else
+    {
+      c.marshal_for_netio_v6(keyname, str);
+    }
   queue_data_cmd(cert_item, i, str);
   sent_certs.push_back(c);
 }
