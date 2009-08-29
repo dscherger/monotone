@@ -46,7 +46,7 @@ enum read_cert_version {read_cert_v6, read_cert_current};
 
 static bool
 read_cert(database & db, string const & in, cert & t,
-          read_cert_version ver)
+          read_cert_version ver, key_name & keyname)
 {
   size_t pos = 0;
   id hash = id(extract_substring(in, pos,
@@ -77,16 +77,17 @@ read_cert(database & db, string const & in, cert & t,
     {
     case read_cert_v6:
       {
+        keyname = key_name(key, origin::network);
         bool found = false;
         std::vector<key_id> all_keys;
         db.get_key_ids(all_keys);
         for (std::vector<key_id>::const_iterator i = all_keys.begin();
              i != all_keys.end(); ++i)
           {
-            key_name keyname;
+            key_name i_keyname;
             rsa_pub_key pub;
-            db.get_pubkey(*i, keyname, pub);
-            if (keyname() == key)
+            db.get_pubkey(*i, i_keyname, pub);
+            if (i_keyname() == key)
               {
                 if(db.check_signature(*i, signable, tmp.sig) == cert_ok)
                   {
@@ -111,7 +112,6 @@ read_cert(database & db, string const & in, cert & t,
       I(false);
     }
 
-  key_name keyname;
   rsa_pub_key junk;
   db.get_pubkey(tmp.key, keyname, junk);
 
@@ -124,20 +124,23 @@ read_cert(database & db, string const & in, cert & t,
   return true;
 }
 
-bool cert::read_cert_v6(database & db, std::string const & s, cert & c)
+bool cert::read_cert_v6(database & db, std::string const & s, cert & c,
+                        key_name & keyname)
 {
-  return ::read_cert(db, s, c, ::read_cert_v6);
+  return ::read_cert(db, s, c, ::read_cert_v6, keyname);
 }
 
 bool cert::read_cert(database & db, std::string const & s, cert & c)
 {
-  return ::read_cert(db, s, c, read_cert_current);
+  key_name keyname;
+  return ::read_cert(db, s, c, read_cert_current, keyname);
 }
 
 cert::cert(database & db, std::string const & s, origin::type m)
   : origin_aware(m)
 {
-  ::read_cert(db, s, *this, read_cert_current);
+  key_name keyname;
+  ::read_cert(db, s, *this, read_cert_current, keyname);
 }
 
 void
