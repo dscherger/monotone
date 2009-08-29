@@ -661,7 +661,7 @@ session:
   key_id const & signing_key;
   vector<key_id> keys_to_push;
 
-  netcmd cmd;
+  netcmd cmd_in;
   bool armed;
 public:
   bool arm();
@@ -891,7 +891,7 @@ session::session(options & opts,
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
-  cmd(opts.max_netsync_version),
+  cmd_in(opts.max_netsync_version),
   armed(false),
   received_remote_key(false),
   session_key(constants::netsync_key_initializer),
@@ -1493,6 +1493,7 @@ session::queue_hello_cmd(key_name const & key_name,
                          rsa_pub_key const & pub,
                          id const & nonce)
 {
+  netcmd cmd(version);
   if (use_transport_auth)
     cmd.write_hello_cmd(key_name, pub, nonce);
   else
@@ -2761,7 +2762,7 @@ session::arm()
       if (output_overfull())
         return false;
 
-      if (cmd.read(min_version, max_version, inbuf, read_hmac))
+      if (cmd_in.read(min_version, max_version, inbuf, read_hmac))
         {
           armed = true;
         }
@@ -2782,8 +2783,8 @@ bool session::process(transaction_guard & guard)
       L(FL("processing %d byte input buffer from peer %s")
         % inbuf.size() % peer_id);
 
-      size_t sz = cmd.encoded_size();
-      bool ret = dispatch_payload(cmd, guard);
+      size_t sz = cmd_in.encoded_size();
+      bool ret = dispatch_payload(cmd_in, guard);
 
       if (inbuf.size() >= constants::netcmd_maxsz)
         W(F("input buffer for peer %s is overfull "
@@ -2793,7 +2794,7 @@ bool session::process(transaction_guard & guard)
 
       if (!ret)
         L(FL("peer %s finishing processing with '%d' packet")
-          % peer_id % cmd.get_cmd_code());
+          % peer_id % cmd_in.get_cmd_code());
       return ret;
     }
   catch (bad_decode & bd)
