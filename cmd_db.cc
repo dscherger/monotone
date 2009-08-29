@@ -76,6 +76,23 @@ CMD(db_version, "version", "", CMD_REF(db), "",
   db.version(cout);
 }
 
+CMD(db_fix_certs, "fix_certs", "", CMD_REF(db), "",
+    N_("Attempt to fix bad certs"),
+    N_("Older monotone versions could sometimes associate certs with "
+       "the wrong key. This fixes such certs if you have the correct key, "
+       "and can can optionally drop any certs that you don't have the "
+       "correct key for. This should only be needed if you had such certs "
+       "in your db when upgrading from 0.44 or earlier, or if you loaded "
+       "such certs with 'mtn read'."),
+    options::opts::drop_bad_certs)
+{
+  E(args.size() == 0, origin::user,
+    F("no arguments needed"));
+
+  database db(app);
+  db.fix_bad_certs(app.opts.drop_bad_certs);
+}
+
 CMD(db_dump, "dump", "", CMD_REF(db), "",
     N_("Dumps the contents of the database"),
     N_("Generates a list of SQL instructions that represent the whole "

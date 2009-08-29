@@ -336,6 +336,14 @@ OPT(dryrun, "dry-run", bool, false,
 }
 #endif
 
+OPT(drop_bad_certs, "drop-bad-certs", bool, false,
+    gettext_noop("drop certs signed by keys we don't know about"))
+#ifdef option_bodies
+{
+  drop_bad_certs = true;
+}
+#endif
+
 OPTION(globals, dump, true, "dump",
         gettext_noop("file to dump debugging log to, on failure"))
 #ifdef option_bodies

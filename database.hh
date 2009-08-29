@@ -393,6 +393,7 @@ public:
   void version(std::ostream &);
   void migrate(key_store &, migration_status &);
   void test_migration_step(key_store &, std::string const &);
+  void fix_bad_certs(bool drop_not_fixable);
   // for kill_rev_locally:
   void delete_existing_rev_and_certs(revision_id const & rid);
   // for kill_branch_certs_locally:

@@ -50,6 +50,7 @@
 #include "sanity.hh"
 #include "migration.hh"
 #include "transforms.hh"
+#include "ui.hh" // tickers
 #include "vocab.hh"
 #include "vocab_cast.hh"
 #include "xdelta.hh"
@@ -1216,6 +1217,80 @@ database::test_migration_step(key_store & keys, string const & schema)
 {
   ensure_open_for_maintenance();
   ::test_migration_step(imp->__sql, keys, get_filename(), schema);
+}
+
+void
+database::fix_bad_certs(bool drop_not_fixable)
+{
+  vector<key_id> all_keys;
+  get_key_ids(all_keys);
+
+  P(F("loading certs"));
+  vector<pair<id, cert> > all_certs;
+  {
+    results res;
+    query q("SELECT revision_id, name, value, keypair_id, signature, hash FROM revision_certs");
+    imp->fetch(res, 6, any_rows, q);
+    imp->results_to_certs(res, all_certs);
+  }
+
+  P(F("checking"));
+
+  ticker checked(_("checked"), "c", 25);
+  ticker bad(_("bad"), "b", 1);
+  ticker fixed(_("fixed"), "f", 1);
+  shared_ptr<ticker> dropped;
+  if (drop_not_fixable)
+    dropped.reset(new ticker(_("dropped"), "d", 1));
+  checked.set_total(all_certs.size());
+
+  for (vector<pair<id, cert> >::const_iterator cert_iter = all_certs.begin();
+       cert_iter != all_certs.end(); ++cert_iter)
+    {
+      cert const & c(cert_iter->second);
+      id const & certid(cert_iter->first);
+      cert_status status = check_cert(c);
+      ++checked;
+      if (status == cert_bad)
+        {
+          ++bad;
+          bool fixed = false;
+          string signable;
+          c.signable_text(signable);
+          for (vector<key_id>::const_iterator key_iter = all_keys.begin();
+               key_iter != all_keys.end(); ++key_iter)
+            {
+              key_id const & keyid(*key_iter);
+              if (check_signature(keyid, signable, c.sig) == cert_ok)
+                {
+                  imp->execute(query("UPDATE revision_certs SET keypair_id = ? WHERE hash = ?")
+                               % blob(keyid.inner()()) % blob(certid()));
+                  ++fixed;
+                  fixed = true;
+                  break;
+                }
+            }
+          if (!fixed)
+            {
+              if (drop_not_fixable)
+                {
+                  imp->execute(query("DELETE FROM revision_certs WHERE hash = ?")
+                               % blob(certid()));
+                  ++(*dropped);
+                }
+            }
+        }
+    }
+  if (drop_not_fixable)
+    {
+      P(F("checked %d certs, found %d bad, fixed %d, dropped %d")
+        % checked.ticks % bad.ticks % fixed.ticks % dropped->ticks);
+    }
+  else
+    {
+      P(F("checked %d certs, found %d bad, fixed %d")
+        % checked.ticks % bad.ticks % fixed.ticks);
+    }
 }
 
 void
