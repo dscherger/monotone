@@ -366,6 +366,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   E(!branchname().empty(), origin::user,
     F("you must specify a branch to clone"));
 
+  bool target_is_current_dir = false;
   if (args.size() == 2)
     {
       // No checkout dir specified, use branch name for dir.
@@ -375,10 +376,17 @@ CMD(clone, "clone", "", CMD_REF(network),
     {
       // Checkout to specified dir.
       workspace_dir = system_path(idx(args, 2));
+      if (idx(args, 2) == utf8("."))
+        target_is_current_dir = true;
     }
 
-  require_path_is_nonexistent
-    (workspace_dir, F("clone destination directory '%s' already exists") % workspace_dir);
+  if (!target_is_current_dir)
+    {
+      require_path_is_nonexistent
+        (workspace_dir,
+         F("clone destination directory '%s' already exists")
+         % workspace_dir);
+    }
 
   // remember the initial working dir so that relative file://
   // db URIs will work
@@ -386,7 +394,9 @@ CMD(clone, "clone", "", CMD_REF(network),
 
   bool internal_db = !app.opts.dbname_given || app.opts.dbname.empty();
 
-  dir_cleanup_helper remove_on_fail(workspace_dir, internal_db);
+  system_path _MTN_dir = workspace_dir / path_component("_MTN");
+  dir_cleanup_helper remove_on_fail(target_is_current_dir ? _MTN_dir : workspace_dir,
+                                    internal_db);
 
   // paths.cc's idea of the current workspace root is wrong at this point
   if (internal_db)
