@@ -1,11 +1,11 @@
 ??? ?? ?? ??:??:?? UTC ????
 
-	0.45 release.
+        0.45 release.
 
         FIXME - bump automate major version, fix commands documented as
         being updated in version FIXME
 
-	Changes
+        Changes
 
         - Certs now link to the key that signed them by the key's
           hash, instead of its name. This should provide some security
@@ -30,37 +30,37 @@
           reported by 'automate show_conflicts' for file content
           conflicts; 'resolved_user_left' is used instead.
 
-	New features
+        New features
 
-	- The 'log' command now, by default, converts all dates it
-	  prints to your timezone instead of leaving them in UTC, and
-	  uses a somewhat more friendly format for the dates.
+        - The 'log' command now, by default, converts all dates it
+          prints to your timezone instead of leaving them in UTC, and
+          uses a somewhat more friendly format for the dates.
 
-	  You can customize the date format with the new
-	  "get_date_format_spec" Lua hook, which returns a strftime(3)
-	  format string.  You can also override the format for one
-	  command with the new --date-format option, disable date
-	  conversion for one command with --no-format-dates, or
-	  disable it by default by having the above Lua hook return an
-	  empty string.
+          You can customize the date format with the new
+          "get_date_format_spec" Lua hook, which returns a strftime(3)
+          format string.  You can also override the format for one
+          command with the new --date-format option, disable date
+          conversion for one command with --no-format-dates, or
+          disable it by default by having the above Lua hook return an
+          empty string.
 
         - The 'diff' and 'automate content_diff' commands take a
           '--reverse' option when one revision is specified, to
           control the order of the diff with the workspace.
 
         - The 'update', 'checkout', 'pluck', and 'pivot_root' commands
-	  take an option '--move-conflicting-paths', to handle
-	  unversioned files that are blocking the action. The
-	  unversioned files are moved to
-	  _MTN/resolutions/<workspace_path>, so the action can
-	  succeed, and the user can recover the files if necessary.
+          take an option '--move-conflicting-paths', to handle
+          unversioned files that are blocking the action. The
+          unversioned files are moved to
+          _MTN/resolutions/<workspace_path>, so the action can
+          succeed, and the user can recover the files if necessary.
 
         - Resolution of orphaned file conflicts is now supported by
           'merge --resolve-conflicts' and the 'conflicts' commands.
 
         - Duplicate name conflicts now support the 'keep' resolution.
-        
-	Bugs fixed
+
+        Bugs fixed
 
         - Monotone now sanely skips paths with invalid characters
           it encounters during 'add' or 'automate inventory'.
@@ -73,7 +73,7 @@
         - The 'conflict' commands can now handle duplicate name
           conflicts for directories.
 
-	Internal
+        Internal
 
 Tue May 12 20:44:00 UTC 2009
 
