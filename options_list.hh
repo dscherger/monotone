@@ -217,10 +217,12 @@ OPT(format_dates, "no-format-dates", bool, true,
 }
 #endif
 
+OPTVAR(globals, bool, dbname_is_memory, false);
 GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #ifdef option_bodies
 {
   dbname = system_path(arg, origin::user);
+  dbname_is_memory = (arg == ":memory:");
 }
 #endif
 
