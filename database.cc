@@ -209,7 +209,7 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const &);
+  explicit database_impl(system_path const & f, bool mem);
   ~database_impl();
 
 private:
@@ -218,6 +218,7 @@ private:
   // --== Opening the database and schema checking ==--
   //
   system_path const filename;
+  bool use_memory_db;
   struct sqlite3 * __sql;
 
   void install_functions();
@@ -457,8 +458,9 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f) :
+database_impl::database_impl(system_path const & f, bool mem) :
   filename(f),
+  use_memory_db(mem),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
@@ -499,7 +501,7 @@ database::database(app_state & app)
 
   boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
-    i.reset(new database_impl(app.opts.dbname));
+    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory));
 
   imp = i;
 }
@@ -516,6 +518,8 @@ database::get_filename()
 bool
 database::is_dbfile(any_path const & file)
 {
+  if (imp->use_memory_db)
+    return false;
   system_path fn(file); // canonicalize
   bool same = (imp->filename == fn);
   if (same)
@@ -526,7 +530,7 @@ database::is_dbfile(any_path const & file)
 bool
 database::database_specified()
 {
-  return !imp->filename.empty();
+  return imp->use_memory_db || !imp->filename.empty();
 }
 
 void
@@ -605,23 +609,36 @@ database_impl::sql(enum open_mode mode)
 {
   if (! __sql)
     {
-      check_filename();
-      check_db_exists();
-      open();
-
-      if (mode != schema_bypass_mode)
+      if (use_memory_db)
         {
-          check_sql_schema(__sql, filename);
+          open();
 
-          if (mode != format_bypass_mode)
+          sqlite3_exec(__sql, schema_constant, NULL, NULL, NULL);
+          assert_sqlite3_ok(__sql);
+
+          sqlite3_exec(__sql, (FL("PRAGMA user_version = %u;")
+                               % mtn_creator_code).str().c_str(), NULL, NULL, NULL);
+          assert_sqlite3_ok(__sql);
+        }
+      else
+        {
+          check_filename();
+          check_db_exists();
+          open();
+
+          if (mode != schema_bypass_mode)
             {
-              check_format();
+              check_sql_schema(__sql, filename);
 
-              if (mode != cache_bypass_mode)
-                check_caches();
+              if (mode != format_bypass_mode)
+                {
+                  check_format();
+
+                  if (mode != cache_bypass_mode)
+                    check_caches();
+                }
             }
         }
-
       install_functions();
     }
   else
@@ -4302,7 +4319,12 @@ database_impl::open()
 {
   I(!__sql);
 
-  if (sqlite3_open(filename.as_external().c_str(), &__sql) == SQLITE_NOMEM)
+  char const * to_open;
+  if (use_memory_db)
+    to_open = ":memory:";
+  else
+    to_open = filename.as_external().c_str();
+  if (sqlite3_open(to_open, &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 
   I(__sql);
