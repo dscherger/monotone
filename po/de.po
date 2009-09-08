@@ -34,7 +34,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2009-08-30 00:33+0200\n"
+"POT-Creation-Date: 2009-09-08 15:29+0200\n"
 "PO-Revision-Date: 2007-08-07 11:35+0200\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -53,7 +53,7 @@ msgstr "Fataler Fehler: Formatierung schlug fehl bei %s:%d: %s"
 msgid "misuse: "
 msgstr "falscher Gebrauch: "
 
-#: sanity.cc:339 database.cc:873 migrate_schema.cc:61
+#: sanity.cc:339 database.cc:891 migrate_schema.cc:61
 msgid "error: "
 msgstr "Fehler: "
 
@@ -736,7 +736,7 @@ msgstr ""
 "Dieses Kommando holt alle Zweige, die auf MUSTER passen, vom netsync-Server "
 "unter ADRESSE."
 
-#: cmd_netsync.cc:268 cmd_netsync.cc:420
+#: cmd_netsync.cc:268 cmd_netsync.cc:430
 #, c-format
 msgid "doing anonymous pull; use -kKEYNAME if you need authentication"
 msgstr ""
@@ -780,52 +780,52 @@ msgstr ""
 msgid "you must specify a branch to clone"
 msgstr "Es muss ein Zweig zum Kopieren angegeben werden."
 
-#: cmd_netsync.cc:381
+#: cmd_netsync.cc:387
 #, c-format
 msgid "clone destination directory '%s' already exists"
 msgstr "Das Zielverzeichnis für das Kopieren '%s' existiert bereits."
 
-#: cmd_netsync.cc:438 cmd_merging.cc:492 cmd_merging.cc:608 cmd_merging.cc:613
+#: cmd_netsync.cc:448 cmd_merging.cc:492 cmd_merging.cc:608 cmd_merging.cc:613
 #: cmd_merging.cc:1394 cmd_ws_commit.cc:628
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "Zweig '%s' ist leer"
 
-#: cmd_netsync.cc:441 cmd_ws_commit.cc:631 cmd_ws_commit.cc:1385
+#: cmd_netsync.cc:451 cmd_ws_commit.cc:631 cmd_ws_commit.cc:1385
 #, c-format
 msgid "branch %s has multiple heads:"
 msgstr "Zweig %s hat mehrere Köpfe:"
 
-#: cmd_netsync.cc:445
+#: cmd_netsync.cc:455
 #, c-format
 msgid "choose one with '%s clone -r<id> SERVER BRANCH'"
 msgstr "wählen Sie eine durch '%s clone -r<id> SERVER ZWEIG'"
 
-#: cmd_netsync.cc:446 cmd_ws_commit.cc:637 cmd_ws_commit.cc:1391
+#: cmd_netsync.cc:456 cmd_ws_commit.cc:637 cmd_ws_commit.cc:1391
 #, c-format
 msgid "branch %s has multiple heads"
 msgstr "Zweig %s hat mehrere Köpfe"
 
-#: cmd_netsync.cc:457 cmd_ws_commit.cc:652 cmd_ws_commit.cc:1371
+#: cmd_netsync.cc:467 cmd_ws_commit.cc:652 cmd_ws_commit.cc:1371
 #, c-format
 msgid "revision %s is not a member of branch %s"
 msgstr "Revision %s ist nicht Mitglied des Zweiges %s"
 
-#: cmd_netsync.cc:490
+#: cmd_netsync.cc:500
 #, c-format
 msgid "pid file '%s' already exists"
 msgstr "PID-Datei '%s' existiert bereits"
 
-#: cmd_netsync.cc:492
+#: cmd_netsync.cc:502
 #, c-format
 msgid "failed to create pid file '%s'"
 msgstr "Konnte PID-Datei '%s' nicht erstellen"
 
-#: cmd_netsync.cc:515
+#: cmd_netsync.cc:525
 msgid "Serves the database to connecting clients"
 msgstr "Bedient Client-Anfragen für die Datenbank"
 
-#: cmd_netsync.cc:538
+#: cmd_netsync.cc:548
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -833,7 +833,7 @@ msgstr ""
 "benötige Berechtigung, um Passwort persistent zu speichern (siehe Hook "
 "persist_phrase_ok())"
 
-#: cmd_netsync.cc:548
+#: cmd_netsync.cc:558
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
@@ -883,7 +883,7 @@ msgstr ""
 msgid "ok"
 msgstr "in Ordnung"
 
-#: cmd_list.cc:174
+#: cmd_list.cc:174 database.cc:1257
 msgid "bad"
 msgstr "schlecht"
 
@@ -987,16 +987,16 @@ msgstr ""
 msgid "Lists all keys in the keystore"
 msgstr "Listet alle Schlüssel aus dem Schlüsselbund auf"
 
-#: cmd_list.cc:793 cmd_db.cc:49 cmd_db.cc:61 cmd_db.cc:73 cmd_db.cc:87
-#: cmd_db.cc:101 cmd_db.cc:117 cmd_db.cc:257 cmd_db.cc:273 cmd_db.cc:294
-#: cmd_db.cc:312 cmd_automate.cc:92 cmd_automate.cc:356 automate.cc:342
-#: automate.cc:368 automate.cc:470 automate.cc:1318 automate.cc:1346
-#: automate.cc:1640
+#: cmd_list.cc:793 cmd_db.cc:49 cmd_db.cc:61 cmd_db.cc:73 cmd_db.cc:90
+#: cmd_db.cc:104 cmd_db.cc:118 cmd_db.cc:134 cmd_db.cc:274 cmd_db.cc:290
+#: cmd_db.cc:311 cmd_db.cc:329 cmd_automate.cc:92 cmd_automate.cc:356
+#: automate.cc:342 automate.cc:368 automate.cc:470 automate.cc:1318
+#: automate.cc:1346 automate.cc:1640
 #, c-format
 msgid "no arguments needed"
 msgstr "keine Parameter benötigt"
 
-#: cmd_list.cc:846 cmd_db.cc:455 automate.cc:392 automate.cc:423
+#: cmd_list.cc:846 cmd_db.cc:472 automate.cc:392 automate.cc:423
 msgid "REV"
 msgstr "REV"
 
@@ -1018,7 +1018,7 @@ msgstr "Gibt alle Zertifikate, die zu einer Revision gehören, aus"
 msgid "wrong argument count"
 msgstr "falsche Anzahl an Parametern"
 
-#: cmd_list.cc:865 cmd_db.cc:466 cmd_files.cc:267 automate.cc:130
+#: cmd_list.cc:865 cmd_db.cc:483 cmd_files.cc:267 automate.cc:130
 #: automate.cc:183 automate.cc:233 automate.cc:263 automate.cc:305
 #: automate.cc:310 automate.cc:404 automate.cc:435 automate.cc:1474
 #: automate.cc:1506 automate.cc:1573 automate.cc:1575 automate.cc:2122
@@ -1770,10 +1770,30 @@ msgid "Shows the database's version"
 msgstr "Zeigt die Version der Datenbank"
 
 #: cmd_db.cc:80
+msgid "Attempt to fix bad certs"
+msgstr "Versuche schlechte Zertifikate zu reparieren"
+
+#: cmd_db.cc:81
+msgid ""
+"Older monotone versions could sometimes associate certs with the wrong key. "
+"This fixes such certs if you have the correct key, and can optionally drop "
+"any certs that you don't have the correct key for. This should only be "
+"needed if you had such certs in your db when upgrading from 0.44 or earlier, "
+"or if you loaded such certs with 'mtn read'."
+msgstr ""
+"Ältere Versionen von monotone wiesen manchmal Zertifikaten den falschen "
+"Schlüssel zu. Dies repariert solche Zertifikate, wenn Sie den korrekten "
+"Schlüssel haben und kann wahlweise auch solche Zertifikate löschen, für "
+"die Sie kein solchen korrekten Schlüssel besitzen. Dies sollte nur notwendig "
+"sein, wenn Sie solche Zertifikate in Ihrer Datenbank hatten, als Sie von "
+"Version 0.44 oder früher aktualisierten oder wenn Sie die Zertifikate "
+"über 'mtn read' in monotone geladen haben."
+
+#: cmd_db.cc:97
 msgid "Dumps the contents of the database"
 msgstr "Gibt die Inhalte der Datenbank aus"
 
-#: cmd_db.cc:81
+#: cmd_db.cc:98
 msgid ""
 "Generates a list of SQL instructions that represent the whole contents of "
 "the database.  The resulting output is useful to later restore the database "
@@ -1784,11 +1804,11 @@ msgstr ""
 "spätere Wiederherstellung der Datenbank von einer Textdatei, die als Backup "
 "dient."
 
-#: cmd_db.cc:94
+#: cmd_db.cc:111
 msgid "Loads the contents of the database"
 msgstr "Lädt die Inhalte einer Datenbank"
 
-#: cmd_db.cc:95
+#: cmd_db.cc:112
 msgid ""
 "Reads a list of SQL instructions that regenerate the contents of the "
 "database.  This is supposed to be used in conjunction with the output "
@@ -1798,11 +1818,11 @@ msgstr ""
 "wiederherstellen.  Dies sollte in Verbindung mit der Ausgabe, die vom 'dump'-"
 "Kommando erzeugt wurde, verwendet werden."
 
-#: cmd_db.cc:108
+#: cmd_db.cc:125
 msgid "Migrates the database to a newer schema"
 msgstr "Migriert eine Datenbank zu einem neueren Schema"
 
-#: cmd_db.cc:109
+#: cmd_db.cc:126
 msgid ""
 "Updates the database's internal schema to the most recent one.  Needed to "
 "automatically resolve incompatibilities that may be introduced in newer "
@@ -1812,7 +1832,7 @@ msgstr ""
 "benötigt, um automatisch Inkompatibilitäten aufzulösen, die in neueren "
 "Versionen von monotone eingeführt werden könnten."
 
-#: cmd_db.cc:134
+#: cmd_db.cc:151
 #, c-format
 msgid ""
 "NOTE: because this database was last used by a rather old version\n"
@@ -1825,24 +1845,24 @@ msgstr ""
 "sind, dann lesen Sie bitte die Datei UPGRADE für Hinweise bei der\n"
 "Ausführung von '%s db %s'."
 
-#: cmd_db.cc:142
+#: cmd_db.cc:159
 msgid "Executes an SQL command on the database"
 msgstr "Führt ein SQL-Kommando auf der Datenbank aus"
 
-#: cmd_db.cc:143
+#: cmd_db.cc:160
 msgid "Directly executes the given SQL command on the database"
 msgstr "Führt direkt das übergebene SQL-Kommando auf der Datenbank aus"
 
-#: cmd_db.cc:154
+#: cmd_db.cc:171
 msgid "Kills a revision from the local database"
 msgstr "Löscht eine Revision von der lokalen Datenbank"
 
-#: cmd_db.cc:171
+#: cmd_db.cc:188
 #, c-format
 msgid "revision %s already has children. We cannot kill it."
 msgstr "Die Revision %s hat bereits Nachfahren"
 
-#: cmd_db.cc:199
+#: cmd_db.cc:216
 #, c-format
 msgid ""
 "Cannot kill revision %s,\n"
@@ -1860,63 +1880,63 @@ msgstr ""
 "andere Revision aktualisieren, bevor Sie erneut versuchen,\n"
 "diese Revision zu entfernen."
 
-#: cmd_db.cc:207
+#: cmd_db.cc:224
 #, c-format
 msgid "applying changes from %s on the current workspace"
 msgstr "wende Änderungen der Revision %s auf den derzeitigen Arbeitsbereich an"
 
-#: cmd_db.cc:227
+#: cmd_db.cc:244
 msgid "Kills branch certificates from the local database"
 msgstr "Löscht Zweigzertifikate von der lokalen Datenbank"
 
-#: cmd_db.cc:239
+#: cmd_db.cc:256
 msgid "Kills a tag from the local database"
 msgstr "Löscht eine Marke von der lokalen Datenbank"
 
-#: cmd_db.cc:251
+#: cmd_db.cc:268
 msgid "Does some sanity checks on the database"
 msgstr "Führt einige Überprüfungen auf der Datenbank aus"
 
-#: cmd_db.cc:252
+#: cmd_db.cc:269
 msgid "Ensures that the database is consistent by issuing multiple checks."
 msgstr ""
 "Stellt sicher, dass die Datenbank konsistent ist, in dem mehrere "
 "Überprüfungen angestoßen werden."
 
-#: cmd_db.cc:264
+#: cmd_db.cc:281
 msgid "Converts the database to the changeset format"
 msgstr "Konvertiert die Datenbank in das 'changeset'-Format"
 
-#: cmd_db.cc:285
+#: cmd_db.cc:302
 msgid "Converts the database to the rosters format"
 msgstr "Konvertiert die Datenbank in das 'rosters'-Format"
 
-#: cmd_db.cc:307
+#: cmd_db.cc:324
 msgid "Regenerates the caches stored in the database"
 msgstr "Erzeugt die gespeicherten Caches in der Datenbank neu"
 
-#: cmd_db.cc:319
+#: cmd_db.cc:336
 msgid "Clears the branch's epoch"
 msgstr "Löscht die Epoche des Zweigs"
 
-#: cmd_db.cc:331
+#: cmd_db.cc:348
 msgid "Sets the branch's epoch"
 msgstr "Setzt die Epoche des Zweigs"
 
-#: cmd_db.cc:339
+#: cmd_db.cc:356
 #, c-format
 msgid "The epoch must be %s characters"
 msgstr "Die Epoche muss %s Zeichen sein"
 
-#: cmd_db.cc:346 automate.cc:2213
+#: cmd_db.cc:363 automate.cc:2213
 msgid "DOMAIN NAME VALUE"
 msgstr "DOMÄNE NAME WERT"
 
-#: cmd_db.cc:347 automate.cc:2214
+#: cmd_db.cc:364 automate.cc:2214
 msgid "Sets a database variable"
 msgstr "Setzt eine Datenbankvariable"
 
-#: cmd_db.cc:348
+#: cmd_db.cc:365
 msgid ""
 "This command modifies (or adds if it did not exist before) the variable "
 "named NAME, stored in the database, and sets it to the given value in "
@@ -1926,15 +1946,15 @@ msgstr ""
 "vorher noch nicht existierte), die in der Datenbank gespeichert ist, und "
 "setzt ihren Wert auf WERT.  Die Variable wird in DOMÄNE platziert."
 
-#: cmd_db.cc:366
+#: cmd_db.cc:383
 msgid "DOMAIN NAME"
 msgstr "DOMÄNE NAME"
 
-#: cmd_db.cc:367
+#: cmd_db.cc:384
 msgid "Unsets a database variable"
 msgstr "Entfernt eine Datenbank-Variable"
 
-#: cmd_db.cc:368
+#: cmd_db.cc:385
 msgid ""
 "This command removes the variable NAME from domain DOMAIN, which was "
 "previously stored in the database."
@@ -1942,29 +1962,29 @@ msgstr ""
 "Dieses Kommando entfernt die Variable NAME von der Domäne DOMÄNE, die vorher "
 "in der Datenbank gespeichert war."
 
-#: cmd_db.cc:382 automate.cc:2260
+#: cmd_db.cc:399 automate.cc:2260
 #, c-format
 msgid "no var with name %s in domain %s"
 msgstr "keine Variable mit dem Namen %s in der Domäne %s"
 
-#: cmd_db.cc:387
+#: cmd_db.cc:404
 msgid "(revision|file|key) PARTIAL-ID"
 msgstr "(revision|file|key) TEIL_ID"
 
-#: cmd_db.cc:388
+#: cmd_db.cc:405
 msgid "Completes a partial identifier"
 msgstr "Vervollständigt eine Teil-ID"
 
-#: cmd_db.cc:402
+#: cmd_db.cc:419
 #, c-format
 msgid "non-hex digits in partial id"
 msgstr "nicht-hexadezimale Zeichen in Teil-ID"
 
-#: cmd_db.cc:442
+#: cmd_db.cc:459
 msgid "Runs one step of migration on the specified database"
 msgstr "Führt einen Migrationsschritt auf der spezifizierten Datenbank aus"
 
-#: cmd_db.cc:443
+#: cmd_db.cc:460
 msgid ""
 "This command migrates the given database from the specified schema in SCHEMA "
 "to its successor."
@@ -1972,20 +1992,20 @@ msgstr ""
 "Dieses Kommando migriert die gegebene Datenbank vom spezifizierten SCHEMA "
 "auf dessen Nachfolger."
 
-#: cmd_db.cc:456
+#: cmd_db.cc:473
 msgid "Shows a revision's height"
 msgstr "Zeigt die Höhenangabe einer Revision an"
 
-#: cmd_db.cc:469
+#: cmd_db.cc:486
 #, c-format
 msgid "cached height: %s"
 msgstr "zwischengespeicherte Höhenangabe: %s"
 
-#: cmd_db.cc:475
+#: cmd_db.cc:492
 msgid "load all revisions from the database"
 msgstr "läd alle Revision aus der Datenbank"
 
-#: cmd_db.cc:476
+#: cmd_db.cc:493
 msgid ""
 "This command loads all revisions from the database and is intended to be "
 "used for timing revision loading performance."
@@ -1993,20 +2013,20 @@ msgstr ""
 "Dieses Kommando läd alle Revisionen aus der Datenbank und kann somit für die "
 "Zeitmessung der Ladeperformance genutzt werden."
 
-#: cmd_db.cc:487
+#: cmd_db.cc:504
 #, c-format
 msgid "loading revisions"
 msgstr "lade Revisionen"
 
-#: cmd_db.cc:488 netsync.cc:3497 rcs_import.cc:1234 database_check.cc:314
+#: cmd_db.cc:505 netsync.cc:3503 rcs_import.cc:1234 database_check.cc:314
 msgid "revisions"
 msgstr "Revisionen"
 
-#: cmd_db.cc:504
+#: cmd_db.cc:521
 msgid "load all roster versions from the database"
 msgstr "läd alle Katalog-Versionen aus der Datenbank"
 
-#: cmd_db.cc:505
+#: cmd_db.cc:522
 msgid ""
 "This command loads all roster versions from the database and is intended to "
 "be used for timing roster reconstruction performance."
@@ -2014,20 +2034,20 @@ msgstr ""
 "Dieses Kommando läd alle Katalog-Versionen aus der Datenbank und kann somit "
 "für die Zeitmessung der Katalogwiederherstellungs-Performance genutzt werden."
 
-#: cmd_db.cc:516
+#: cmd_db.cc:533
 #, c-format
 msgid "loading rosters"
 msgstr "lade Kataloge"
 
-#: cmd_db.cc:517 database_check.cc:184
+#: cmd_db.cc:534 database_check.cc:184
 msgid "rosters"
 msgstr "Kataloge"
 
-#: cmd_db.cc:532
+#: cmd_db.cc:549
 msgid "load all file versions from the database"
 msgstr "läd alle Dateiversionen aus der Datenbank"
 
-#: cmd_db.cc:533
+#: cmd_db.cc:550
 msgid ""
 "This command loads all files versions from the database and is intended to "
 "be used for timing file reconstruction performance."
@@ -2035,20 +2055,20 @@ msgstr ""
 "Dieses Kommando läd alle Dateiversionen aus der Datenbank und kann somit für "
 "die Zeitmessung der Dateiwiederherstellungs-Performance genutzt werden."
 
-#: cmd_db.cc:541
+#: cmd_db.cc:558
 #, c-format
 msgid "loading files"
 msgstr "lade Dateien"
 
-#: cmd_db.cc:542 database_check.cc:155
+#: cmd_db.cc:559 database_check.cc:155
 msgid "files"
 msgstr "Dateien"
 
-#: cmd_db.cc:558
+#: cmd_db.cc:575
 msgid "load all certs from the database"
 msgstr "läd alle Zertifikate aus der Datenbank"
 
-#: cmd_db.cc:559
+#: cmd_db.cc:576
 msgid ""
 "This command loads all certs from the database and is intended to be used "
 "for timing cert loading performance."
@@ -2056,12 +2076,12 @@ msgstr ""
 "Dieses Kommando läd alle Zertifikate aus der Datenbank und kann somit für "
 "die Zeitmessung der Zertifikats-Ladeperformance genutzt werden."
 
-#: cmd_db.cc:566
+#: cmd_db.cc:583 database.cc:1245
 #, c-format
 msgid "loading certs"
 msgstr "lade Zertifikat"
 
-#: cmd_db.cc:568
+#: cmd_db.cc:585
 #, c-format
 msgid "loaded %d certs"
 msgstr "%d Zertifikate geladen"
@@ -3581,12 +3601,7 @@ msgid "this workspace is in the current format, no migration is necessary."
 msgstr ""
 "Der Arbeitsbereich hat bereits das neueste Format, keine Migration notwendig."
 
-#: cert.cc:102
-#, c-format
-msgid "Cannot find appropriate key '%s' for old-style cert"
-msgstr "Kann keinen passenden Schlüssel '%s' für alten Zertifikatstyp finden"
-
-#: cert.cc:121
+#: cert.cc:127
 #, c-format
 msgid "calculated cert hash '%s' does not match '%s'"
 msgstr "berechnete Zertifikatsprüfsumme '%s' stimmt nicht mit '%s' überein"
@@ -3654,12 +3669,12 @@ msgstr ""
 "mehrere Zweigzertifikate für Revision %s gefunden, bitte geben Sie einen "
 "Zweignamen an"
 
-#: database.cc:535
+#: database.cc:540
 #, c-format
 msgid "this database already contains rosters"
 msgstr "diese Datenbank enthält bereits Kataloge"
 
-#: database.cc:557
+#: database.cc:562
 #, c-format
 msgid ""
 "database %s contains old-style revisions\n"
@@ -3678,7 +3693,7 @@ msgstr ""
 "  und holen Sie sich dann eine aktualisierte Kopie.\n"
 "Wir bitten die Unannehmlichkeiten zu entschuldigen."
 
-#: database.cc:567
+#: database.cc:572
 #, c-format
 msgid ""
 "database %s contains manifests but no revisions\n"
@@ -3689,7 +3704,7 @@ msgstr ""
 "Dies ist eine sehr alte Datenbank, die erneuert werden muss.\n"
 "Bitte konsultieren Sie die Datei README.changesets für Details."
 
-#: database.cc:581
+#: database.cc:586
 #, c-format
 msgid ""
 "database %s lacks some cached data\n"
@@ -3699,24 +3714,24 @@ msgstr ""
 "Führen Sie '%s db regenerate_caches' aus, um diese Datenbank wieder "
 "benutzbar zu machen."
 
-#: database.cc:874
+#: database.cc:892
 msgid "sqlite error: "
 msgstr "SQLite-Fehler: "
 
-#: database.cc:898
+#: database.cc:916
 msgid "not set"
 msgstr "nicht gesetzt"
 
-#: database.cc:911
+#: database.cc:929
 msgid " (not a monotone database)"
 msgstr " (keine monotone-Datenbank)"
 
-#: database.cc:960 database.cc:990 database.cc:1576 database.cc:1596
+#: database.cc:978 database.cc:1008 database.cc:1681 database.cc:1701
 #, c-format
 msgid "%u"
 msgstr "%u"
 
-#: database.cc:1009
+#: database.cc:1027
 #, c-format
 msgid ""
 "creator code      : %s\n"
@@ -3769,12 +3784,12 @@ msgstr ""
 "  Seitengröße          : %s\n"
 "  Cache-Größe          : %s"
 
-#: database.cc:1073
+#: database.cc:1091
 #, c-format
 msgid "invalid date '%s' for revision %s; skipped"
 msgstr "ungültiges Datum '%s' für Revision %s; wird übergangen"
 
-#: database.cc:1151
+#: database.cc:1169
 #, c-format
 msgid ""
 "timestamp correctness between revisions:\n"
@@ -3821,42 +3836,69 @@ msgstr ""
 "  95. Prozentrang         : %s Sekunden\n"
 "  99. Prozentrang         : %s Sekunden\n"
 
-#: database.cc:1202
+#: database.cc:1220
 #, c-format
 msgid "database schema version: %s"
 msgstr "Datenbankschema-Version: %s"
 
-#: database.cc:1279
+#: database.cc:1254
+#, c-format
+msgid "checking"
+msgstr "überprüfe"
+
+#: database.cc:1256
+msgid "checked"
+msgstr "überprüft"
+
+#: database.cc:1258
+msgid "fixed"
+msgstr "repariert"
+
+#: database.cc:1261
+msgid "dropped"
+msgstr "entfernt"
+
+#: database.cc:1316
+#, c-format
+msgid "checked %d certs, found %d bad, fixed %d, dropped %d"
+msgstr "überprüfte %d Zertifikate, fand %d schlechte, reparierte %d, entfernte %d"
+
+#: database.cc:1321
+#, c-format
+msgid "checked %d certs, found %d bad, fixed %d"
+msgstr "überprüfte %d Zertifikate, fand %d schlechte, reparierte %d"
+
+#: database.cc:1384
 #, c-format
 msgid "multiple statements in query: %s"
 msgstr "mehrere Befehle in Anfrage: %s"
 
-#: database.cc:1285
+#: database.cc:1390
 #, c-format
 msgid "wanted %d columns got %d in query: %s"
 msgstr "erwarte %d, erhielt %d Spalten in Anfrage: %s"
 
-#: database.cc:1350
+#: database.cc:1455
 #, c-format
 msgid "null result in query: %s"
 msgstr "Null-Ergebnis in Anfrage: %s"
 
-#: database.cc:1369
+#: database.cc:1474
 #, c-format
 msgid "wanted %d rows got %d in query: %s"
 msgstr "erwarte %d, erhielt %d Zeilen in Anfrage: %s"
 
-#: database.cc:2223
+#: database.cc:2328
 #, c-format
 msgid "file preimage '%s' missing in db"
 msgstr "Datei-Urbild '%s' fehlt in der Datenbank"
 
-#: database.cc:2224
+#: database.cc:2329
 #, c-format
 msgid "dropping delta '%s' -> '%s'"
 msgstr "übergehe Delta '%s' -> '%s'"
 
-#: database.cc:2240
+#: database.cc:2345
 #, c-format
 msgid ""
 "Unknown delta direction '%s'; assuming 'reverse'. Valid values are "
@@ -3865,84 +3907,84 @@ msgstr ""
 "Unbekannte Delta-Richtung '%s'; habe 'reverse' vermutet. Gültige Werte sind "
 "'reverse', 'forward' und 'both'."
 
-#: database.cc:2637
+#: database.cc:2742
 #, c-format
 msgid "missing prerequisite revision '%s'"
 msgstr "fehlende vorausgesetzte Revision '%s'"
 
-#: database.cc:2639 database.cc:2650 database.cc:2666 database.cc:2674
+#: database.cc:2744 database.cc:2755 database.cc:2771 database.cc:2779
 #, c-format
 msgid "dropping revision '%s'"
 msgstr "entferne Revision '%s'"
 
-#: database.cc:2649
+#: database.cc:2754
 #, c-format
 msgid "missing prerequisite file '%s'"
 msgstr "fehlende, erforderliche Datei '%s'"
 
-#: database.cc:2664
+#: database.cc:2769
 #, c-format
 msgid "missing prerequisite file pre-delta '%s'"
 msgstr "fehlendes, erforderliches Datei-Pre-Delta '%s'"
 
-#: database.cc:2672
+#: database.cc:2777
 #, c-format
 msgid "missing prerequisite file post-delta '%s'"
 msgstr "fehlendes, erforderliches Datei-Post-Delta '%s'"
 
-#: database.cc:2780
+#: database.cc:2885
 #, c-format
 msgid "revision contains incorrect manifest_id"
 msgstr "Revision beinhaltet ungültige manifest_id"
 
-#: database.cc:3069
+#: database.cc:3174
 #, c-format
 msgid "Failed to get RSA verifying key for %s"
 msgstr "RSA konnte den Schlüssel für %s nicht überprüfen"
 
-#: database.cc:3208
+#: database.cc:3313
 #, c-format
 msgid "Your database contains multiple keys named %s"
 msgstr "Ihre Datenbank beinhaltet mehrere Schlüssel mit dem Namen %s"
 
-#: database.cc:3369
+#: database.cc:3474
 #, c-format
 msgid "cert revision '%s' does not exist in db"
 msgstr "Zertifikats-Revision '%s' existiert nicht in der Datenbank"
 
-#: database.cc:3371
+#: database.cc:3476
 #, c-format
 msgid "dropping cert"
 msgstr "entferne Zertifikat"
 
-#: database.cc:3535
+#: database.cc:3640
 #, c-format
 msgid "ignoring bad signature by '%s' on '%s'"
 msgstr "ignoriere ungültige Signatur von '%s' vom '%s'"
 
-#: database.cc:3543
+#: database.cc:3648
 #, c-format
 msgid "ignoring unknown signature by '%s' on '%s'"
 msgstr "ignoriere unbekannte Signatur von '%s' vom '%s'"
 
-#: database.cc:3600
+#: database.cc:3705
 #, c-format
 msgid "trust function disliked %d signers of %s cert on revision %s"
 msgstr ""
 "Vertrauensfunktion lehnt %d Unterzeichner des Zertifikats %s auf Revision %s "
 "ab"
 
-#: database.cc:4167
+#: database.cc:4272
 #, c-format
 msgid "no database specified"
 msgstr "keine Datenbank spezifiziert"
 
-#: database.cc:4180
+#: database.cc:4285
 #, c-format
 msgid "database %s does not exist"
 msgstr "Datenbank %s existiert nicht"
 
-#: database.cc:4188
+#: database.cc:4293
 #, c-format
 msgid ""
 "%s is a workspace, not a database\n"
@@ -3951,17 +3993,17 @@ msgstr ""
 "%s ist ein Verzeichnis, keine Datenbank\n"
 "(meinten Sie %s?)"
 
-#: database.cc:4192
+#: database.cc:4297
 #, c-format
 msgid "%s is a directory, not a database"
 msgstr "%s ist ein Verzeichnis, keine Datenbank"
 
-#: database.cc:4200
+#: database.cc:4305
 #, c-format
 msgid "database %s already exists"
 msgstr "Datenbank %s existiert bereits"
 
-#: database.cc:4205
+#: database.cc:4310
 #, c-format
 msgid ""
 "existing (possibly stale) journal file '%s' has same stem as new database '%"
@@ -4730,12 +4772,17 @@ msgstr ""
 msgid "Received duplicate key %s"
 msgstr "Erhielt doppelten Schlüssel %s"
 
-#: netsync.cc:2407
+#: netsync.cc:2395
 #, c-format
-msgid "hash check failed for revision cert '%s'"
-msgstr "Prüfsummen-Check für Revisionszertifikat '%s' fehlgeschlagen"
+msgid ""
+"Dropping incoming cert which claims to be signed by key\n"
+"'%s' (name '%s'), but has a bad signature"
+msgstr ""
+"Lösche eingehendes Zertifikat, welches glaubhaft macht,\n"
+"dass es vom Schlüssel '%s' (Name '%s') unterschrieben wurde,\n"
+"aber eine ungültige Unterschrift aufweist."
 
-#: netsync.cc:2413
+#: netsync.cc:2405
 #, c-format
 msgid ""
 "dropping incoming cert which was signed by a key we don't have\n"
@@ -4745,147 +4792,154 @@ msgid ""
 msgstr ""
 "Entferne eingehendes Zertifkat, welches von einem Schlüssel unterschrieben\n"
 "wurden, den wir nicht haben.\n"
-"Sie müssen wahrscheinlich diesen Schlüssel von einem neueren netsync-Peer holen.\n"
-"Der Name des Schlüssels ist '%s', aber beachten Sie, dass es mehrere Schlüssel\n"
+"Sie müssen wahrscheinlich diesen Schlüssel von einem neueren netsync-Peer "
+"holen.\n"
+"Der Name des Schlüssels ist '%s', aber beachten Sie, dass es mehrere "
+"Schlüssel\n"
 "mit diesem Namen gibt und wir nicht wissen, welcher das ist."
 
-#: netsync.cc:2428
+#: netsync.cc:2420
+#, c-format
+msgid "hash check failed for revision cert '%s'"
+msgstr "Prüfsummen-Check für Revisionszertifikat '%s' fehlgeschlagen"
+
+#: netsync.cc:2434
 #, c-format
 msgid "hash check failed for revision %s"
 msgstr "Prüfsummen-Check für Revisions %s fehlgeschlagen"
 
-#: netsync.cc:2443
+#: netsync.cc:2449
 #, c-format
 msgid "hash check failed for file %s"
 msgstr "Prüfsummen-Check für Datei %s fehlgeschlagen"
 
-#: netsync.cc:2487
+#: netsync.cc:2493
 #, c-format
 msgid "Received warning from usher: %s"
 msgstr "Erhielt Warnung von 'usher': %s"
 
-#: netsync.cc:2573 netsync.cc:2600
+#: netsync.cc:2579 netsync.cc:2606
 msgid "source and sink"
 msgstr "Datenquelle und -senke"
 
-#: netsync.cc:2574 netsync.cc:2601
+#: netsync.cc:2580 netsync.cc:2607
 msgid "source"
 msgstr "Datenquelle"
 
-#: netsync.cc:2574 netsync.cc:2601
+#: netsync.cc:2580 netsync.cc:2607
 msgid "sink"
 msgstr "Datensenke"
 
-#: netsync.cc:2798
+#: netsync.cc:2804
 #, c-format
 msgid "input buffer for peer %s is overfull after netcmd dispatch"
 msgstr "Eingabepuffer für Peer %s ist nach netcmd-Absendung übervoll."
 
-#: netsync.cc:2810 netsync.cc:3018
+#: netsync.cc:2816 netsync.cc:3024
 #, c-format
 msgid "protocol error while processing peer %s: '%s'"
 msgstr "Protokoll-Fehler während der Bearbeitung von Peer %s: '%s'"
 
-#: netsync.cc:2816 netsync.cc:3024
+#: netsync.cc:2822 netsync.cc:3030
 #, c-format
 msgid "recoverable '%s' error while processing peer %s: '%s'"
 msgstr ""
 "Behebbarer Fehler '%s' bei der Bearbeitung von Peer %s aufgetreten: '%s'"
 
-#: netsync.cc:2823
+#: netsync.cc:2829
 #, c-format
 msgid "error: %s"
 msgstr "Fehler: %s"
 
-#: netsync.cc:2870
+#: netsync.cc:2876
 #, c-format
 msgid "beginning service on %s : %s"
 msgstr "beginne Service auf %s : %s"
 
-#: netsync.cc:2871
+#: netsync.cc:2877
 msgid "<all interfaces>"
 msgstr "<alle Schnittstellen>"
 
-#: netsync.cc:2930
+#: netsync.cc:2936
 #, c-format
 msgid "session limit %d reached, some connections will be refused"
 msgstr ""
 "Maximale Anzahl an Sitzungen %d erreicht; einige Verbindungen werden "
 "abgelehnt werden."
 
-#: netsync.cc:3151
+#: netsync.cc:3157
 #, c-format
 msgid "peer %s has been idle too long, disconnecting"
 msgstr "Peer %s war zu lange untätig, trenne Verbindung"
 
-#: netsync.cc:3172
+#: netsync.cc:3178
 #, c-format
 msgid "accepted new client connection from %s : %s"
 msgstr "akzeptiere neue Client-Verbindung von %s: %s"
 
-#: netsync.cc:3246 netsync.cc:3339
+#: netsync.cc:3252 netsync.cc:3345
 #, c-format
 msgid "connecting to %s"
 msgstr "verbinde zu %s"
 
-#: netsync.cc:3282
+#: netsync.cc:3288
 #, c-format
 msgid "processing failure while talking to peer %s, disconnecting"
 msgstr ""
 "Bearbeitungsfehler während Kommunikation mit Peer %s, trenne Verbindung"
 
-#: netsync.cc:3290
+#: netsync.cc:3296
 #, c-format
 msgid "timed out waiting for I/O with peer %s, disconnecting"
 msgstr ""
 "Zeitüberschreitung während Warten auf E/A mit Peer %s, trenne Verbindung."
 
-#: netsync.cc:3304
+#: netsync.cc:3310
 #, c-format
 msgid "successful exchange with %s"
 msgstr "erfolgreicher Austausch mit %s"
 
-#: netsync.cc:3310
+#: netsync.cc:3316
 #, c-format
 msgid "peer %s disconnected after we informed them of error"
 msgstr ""
 "Peer %s hat Verbindung getrennt, nachdem wir ihn vom Fehler unterrichtet "
 "haben"
 
-#: netsync.cc:3316
+#: netsync.cc:3322
 #, c-format
 msgid "I/O failure while talking to peer %s, disconnecting"
 msgstr "E/A-Fehler während der Kommunikation mit Peer %s, trenne Verbindung"
 
-#: netsync.cc:3370
+#: netsync.cc:3376
 #, c-format
 msgid "Network error: %s"
 msgstr "Netzwerk-Fehler: %s"
 
-#: netsync.cc:3441
+#: netsync.cc:3447
 #, c-format
 msgid "beginning service on %s"
 msgstr "beginne Service auf %s"
 
-#: netsync.cc:3491
+#: netsync.cc:3497
 #, c-format
 msgid "finding items to synchronize:"
 msgstr "finde Elemente zum Synchronisieren:"
 
-#: netsync.cc:3499
+#: netsync.cc:3505
 msgid "certificates"
 msgstr "Zertifikate"
 
-#: netsync.cc:3501 database_check.cc:443
+#: netsync.cc:3507 database_check.cc:443
 msgid "keys"
 msgstr "Schlüssel"
 
-#: netsync.cc:3600
+#: netsync.cc:3606
 #, c-format
 msgid "Cannot find key '%s'"
 msgstr "Kann Schlüssel '%s' nicht finden"
 
-#: netsync.cc:3636
+#: netsync.cc:3642
 #, c-format
 msgid ""
 "include branch pattern contains a quote character:\n"
@@ -4894,7 +4948,7 @@ msgstr ""
 "Das 'include branch'-Muster beinhaltet ein Quotierungszeichen:\n"
 "%s"
 
-#: netsync.cc:3642
+#: netsync.cc:3648
 #, c-format
 msgid ""
 "exclude branch pattern contains a quote character:\n"
@@ -4903,7 +4957,7 @@ msgstr ""
 "Das 'exclude branch'-Muster beinhaltet ein Quotierungszeichen:\n"
 "%s"
 
-#: netsync.cc:3677 netsync.cc:3681
+#: netsync.cc:3683 netsync.cc:3687
 #, c-format
 msgid "network error: %s"
 msgstr "Netzwerk-Fehler: %s"
@@ -4982,8 +5036,8 @@ msgid ""
 "code %d)\n"
 "%s"
 msgstr ""
-"Protokoll-Version stimmt nicht überein: benötige Version zwischen '%d' und "
-"'%d', bekam '%d' (netcmd code %d)\n"
+"Protokoll-Version stimmt nicht überein: benötige Version zwischen '%d' und '%"
+"d', bekam '%d' (netcmd code %d)\n"
 "%s"
 
 #: netcmd.cc:136
@@ -6572,7 +6626,7 @@ msgstr "übergehe Autorenangabe für Einpflegen"
 msgid "block size in bytes for \"automate stdio\" output"
 msgstr "Blockgröße in Bytes der Ausgabe von \"automate stdio\""
 
-#: options_list.hh:90 options_list.hh:481 options_list.hh:532
+#: options_list.hh:90 options_list.hh:491 options_list.hh:542
 #, c-format
 msgid "cannot be zero or negative"
 msgstr "kann nicht Null oder negativ sein"
@@ -6604,8 +6658,8 @@ msgid ""
 "protocol versions"
 msgstr ""
 "lässt monotone über die netsync-Protokoll-Version lügen, die es mindestens "
-"untestützt, hauptsächlich für Debugzwecke oder wenn ältere Protokollversionen "
-"von der Nutzung ausgeschlossen werden sollen"
+"untestützt, hauptsächlich für Debugzwecke oder wenn ältere "
+"Protokollversionen von der Nutzung ausgeschlossen werden sollen"
 
 #: options_list.hh:144
 msgid "select branch cert for operation"
@@ -6639,84 +6693,88 @@ msgstr "strftime(3) Formatspezifikation für die Anzeige von Daten"
 msgid "print date certs exactly as stored in the database"
 msgstr "gibt Datumszertifikate genau so wie in der Datenbank gespeichert aus"
 
-#: options_list.hh:220
+#: options_list.hh:221
 msgid "set name of database"
 msgstr "setze Namen der Datenbank"
 
-#: options_list.hh:228
+#: options_list.hh:230
 msgid "print debug log to stderr while running"
 msgstr "schreibe während der Ausführung ein Protokoll zur Fehlerausgabe"
 
-#: options_list.hh:236
+#: options_list.hh:238
 msgid "limit the number of levels of directories to descend"
 msgstr "beschränke die Anzahl der einbezogenen Verzeichnisebenen"
 
-#: options_list.hh:241
+#: options_list.hh:243
 #, c-format
 msgid "cannot be negative"
 msgstr "kann nicht negativ sein"
 
-#: options_list.hh:250
+#: options_list.hh:252
 msgid "argument to pass external diff hook"
 msgstr "Parameter für externe 'diff'-Anwendung"
 
-#: options_list.hh:259
+#: options_list.hh:261
 msgid "reverse order of diff"
 msgstr "umgekehrte Diff-Richtung"
 
-#: options_list.hh:267
+#: options_list.hh:269
 msgid "use context diff format"
 msgstr "benutze das 'context diff'-Format"
 
-#: options_list.hh:274
+#: options_list.hh:276
 msgid "use external diff hook for generating diffs"
 msgstr "benutze externe 'diff'-Anwendung für die Erstellung von Differenzen"
 
-#: options_list.hh:281
+#: options_list.hh:283
 msgid "use unified diff format"
 msgstr "benutze das 'unified diff'-Format"
 
-#: options_list.hh:289
+#: options_list.hh:291
 msgid "do not show the function containing each block of changes"
 msgstr "zeige nicht die Funktion, die den jeweiligen Änderungsblock beinhaltet"
 
-#: options_list.hh:299
+#: options_list.hh:301
 msgid "show the matching cset in the diff header"
 msgstr "zeige die passende Änderungsmenge im Kopf des Diffs"
 
-#: options_list.hh:307
+#: options_list.hh:309
 msgid "do not show the matching cset in the diff header"
 msgstr "zeige nicht die passende Änderungsmenge im Kopf des Diffs"
 
-#: options_list.hh:315
+#: options_list.hh:317
 msgid "print diffs along with logs"
 msgstr "gebe Differenzen mit den entsprechenden Logeinträgen aus"
 
-#: options_list.hh:324
+#: options_list.hh:326
 msgid "when rosterifying, drop attrs entries with the given key"
 msgstr ""
 "entferne 'attrs'-Einträge mit dem gegebenen Schlüssel während der "
 "Katalogisierung"
 
-#: options_list.hh:332
+#: options_list.hh:334
 msgid "don't perform the operation, just show what would have happened"
 msgstr "Führe die Operation nicht aus, zeige lediglich die Auswirkungen auf."
 
-#: options_list.hh:340
+#: options_list.hh:342
+msgid "drop certs signed by keys we don't know about"
+msgstr "lösche Zertifikate von Schlüsseln die monotone unbekannt sind"
+
+#: options_list.hh:350
 msgid "file to dump debugging log to, on failure"
 msgstr "Datei, in die das Protokoll im Fehlerfall geschrieben werden soll"
 
-#: options_list.hh:349
+#: options_list.hh:359
 msgid "leave out anything described by its argument"
 msgstr "lasse etwas durch den Parameter beschriebene heraus"
 
-#: options_list.hh:357
+#: options_list.hh:367
 msgid "only update monotone's internal bookkeeping, not the filesystem"
 msgstr ""
 "aktualisiere lediglich monotones internes Systemverzeichnis, nicht das "
 "Dateisystem"
 
-#: options_list.hh:365
+#: options_list.hh:375
 msgid ""
 "move conflicting, unversioned paths into _MTN/conflicts before proceeding "
 "with any workspace change"
@@ -6724,7 +6782,7 @@ msgstr ""
 "bewegt in Konflikt stehende, nicht versionisierte Pfade nach _MTN/conflicts, "
 "bevor Änderungen am Arbeitsbereich vorgenommen werden"
 
-#: options_list.hh:374
+#: options_list.hh:384
 msgid ""
 "controls use of ssh-agent.  valid arguments are: 'yes' to use ssh-agent to "
 "make signatures if possible, 'no' to force use of monotone's internal code, "
@@ -6736,211 +6794,213 @@ msgstr ""
 "agent zu erzwingen; 'check', um mit beiden Methoden zu signieren und das "
 "Ergebnis zu vergleichen"
 
-#: options_list.hh:382
+#: options_list.hh:392
 #, c-format
 msgid "--ssh-sign requires a value ['yes', 'no', 'only', or 'check']"
 msgstr "--ssh-sign benötigt einen Wert ['yes', 'no', 'only' oder 'check']"
 
-#: options_list.hh:388
+#: options_list.hh:398
 #, c-format
 msgid "--ssh-sign must be set to 'yes', 'no', 'only', or 'check'"
 msgstr "--ssh-sign muss auf 'yes', 'no', 'only' oder 'check' gesetzt sein"
 
-#: options_list.hh:396
+#: options_list.hh:406
 msgid "force genkey to not error out when the named key already exists"
-msgstr "zwingt genkey dazu, keinen Fehler auszugeben, wenn der eingegebene "
+msgstr ""
+"zwingt genkey dazu, keinen Fehler auszugeben, wenn der eingegebene "
 "Schlüsselname bereits existiert"
 
-#: options_list.hh:405
+#: options_list.hh:415
 msgid "print detailed information"
 msgstr "zeigt detaillierte Informationen an"
 
-#: options_list.hh:412
+#: options_list.hh:422
 msgid "display help message"
 msgstr "zeige Hilfemeldung an"
 
-#: options_list.hh:420
+#: options_list.hh:430
 msgid "show hidden commands"
 msgstr "zeige versteckte Kommandos"
 
-#: options_list.hh:429
+#: options_list.hh:439
 msgid "include anything described by its argument"
 msgstr "beziehe etwas durch den Parameter beschriebene mit ein"
 
-#: options_list.hh:437
+#: options_list.hh:447
 msgid "do not ignore revisions marked as suspended"
 msgstr "ignoriere keine als gesperrt markierte Revisionen"
 
-#: options_list.hh:447
+#: options_list.hh:457
 msgid "sets the key for signatures, using either the key name or the key hash"
-msgstr "setzt den Schlüssel für Signaturen, entweder durch den Schlüsselnamen "
-"oder dessen Prüfsumme argumentiert"
+msgstr ""
+"setzt den Schlüssel für Signaturen, entweder durch den Schlüsselnamen oder "
+"dessen Prüfsumme argumentiert"
 
-#: options_list.hh:459
+#: options_list.hh:469
 msgid "set location of key store"
 msgstr "setze Ort des Schlüsselbundes"
 
-#: options_list.hh:468
+#: options_list.hh:478
 msgid "push the specified key even if it hasn't signed anything"
 msgstr "exportiere diesen Schlüssel, selbst wenn damit nichts signiert wurde"
 
-#: options_list.hh:476
+#: options_list.hh:486
 msgid "limit log output to the last number of entries"
 msgstr "beschränke Logausgabe auf die letzte Anzahl von Einträgen"
 
-#: options_list.hh:485
+#: options_list.hh:495
 msgid "file to write the log to"
 msgstr "Datei, in die das Log geschrieben wird"
 
-#: options_list.hh:497
+#: options_list.hh:507
 msgid "set commit changelog message"
 msgstr "setze Nachricht für Änderungshistorie"
 
-#: options_list.hh:504
+#: options_list.hh:514
 msgid "set filename containing commit changelog message"
 msgstr ""
 "setze Dateinamen der Datei, die die Nachricht für die Änderungshistorie "
 "beinhaltet"
 
-#: options_list.hh:511
+#: options_list.hh:521
 msgid "no prefix to message"
 msgstr "kein Vorspann in der Logmeldung"
 
-#: options_list.hh:519
+#: options_list.hh:529
 msgid "perform the operations for files missing from workspace"
 msgstr "führe diese Operationen für fehlende Dateien im Arbeitsbereich aus"
 
-#: options_list.hh:527
+#: options_list.hh:537
 msgid "limit log output to the next number of entries"
 msgstr "beschränke die Logausgabe auf die nächstfolgende Anzahl von Einträgen"
 
-#: options_list.hh:537
+#: options_list.hh:547
 msgid "exclude files when printing logs"
 msgstr "schließe Dateien bei der Ausgabe der Logeinträge aus"
 
-#: options_list.hh:545
+#: options_list.hh:555
 msgid "do not use ASCII graph to display ancestry"
 msgstr "benutze nicht den ASCII-Graphen, um die Vorfahren anzuzeigen"
 
-#: options_list.hh:553
+#: options_list.hh:563
 msgid "do not ignore any files"
 msgstr "ignoriere keinerlei Dateien"
 
-#: options_list.hh:561
+#: options_list.hh:571
 msgid "exclude merges when printing logs"
 msgstr "schließe Vereinigungen bei der Ausgabe der Logeinträge aus"
 
-#: options_list.hh:569
+#: options_list.hh:579
 msgid "do not load ~/.monotone/monotonerc or _MTN/monotonerc lua files"
 msgstr "lade nicht ~/.monotone/monotonerc oder _MTN/monotonerc lua-Dateien"
 
-#: options_list.hh:577
+#: options_list.hh:587
 msgid "do not load standard lua hooks"
 msgstr "lade nicht die Standard-lua-Hooks"
 
-#: options_list.hh:585
+#: options_list.hh:595
 msgid "record process id of server"
 msgstr "merke Prozess-ID des Serverprozesses"
 
-#: options_list.hh:593
+#: options_list.hh:603
 msgid "suppress verbose, informational and progress messages"
 msgstr "unterdrücke wortreiche, informelle und Fortschrittsmeldungen"
 
-#: options_list.hh:603
+#: options_list.hh:613
 msgid "load extra rc file"
 msgstr "lade zusätzliche rc-Datei"
 
-#: options_list.hh:611
+#: options_list.hh:621
 msgid "suppress warning, verbose, informational and progress messages"
 msgstr ""
 "unterdrücke Warnungen, wortreiche, informelle und Fortschrittsmeldungen"
 
-#: options_list.hh:621
+#: options_list.hh:631
 msgid "also operate on the contents of any listed directories"
 msgstr "arbeite auch auf den Inhalten beliebiger aufgeführter Verzeichnisse"
 
-#: options_list.hh:630
+#: options_list.hh:640
 msgid "select revision id for operation"
 msgstr "wähle die Revisions-ID für die Operation aus"
 
-#: options_list.hh:638
+#: options_list.hh:648
 msgid "limit search for workspace to specified root"
 msgstr ""
 "beschränke Suche nach der Arbeitsumgebung auf angegebene Verzeichniswurzel"
 
-#: options_list.hh:646
+#: options_list.hh:656
 msgid "don't look for a workspace"
 msgstr "suche nicht nach einem Arbeitsbereich"
 
-#: options_list.hh:654
+#: options_list.hh:664
 msgid "use the current arguments as the future default"
 msgstr "benutze die derzeitigen Parameter in Zukunft als Standard"
 
-#: options_list.hh:662
+#: options_list.hh:672
 msgid "set ticker style (count|dot|none)"
 msgstr "setze 'Ticker'-Stil (count|dot|none)"
 
-#: options_list.hh:673
+#: options_list.hh:683
 #, c-format
 msgid "argument must be 'none', 'dot', or 'count'"
 msgstr "Parameter muss 'none', 'dot' oder 'count' sein"
 
-#: options_list.hh:677
+#: options_list.hh:687
 msgid "revision(s) to start logging at"
 msgstr "Revision(en), bei denen die Logausgabe gestartet wird"
 
-#: options_list.hh:684
+#: options_list.hh:694
 msgid "revision(s) to stop logging at"
 msgstr "Revision(en), bei denen die Logausgabe gestoppt wird"
 
-#: options_list.hh:692
+#: options_list.hh:702
 msgid "perform the operations for unknown files from workspace"
 msgstr "führe diese Operation für unbekannte Dateien im Arbeitsbereich aus"
 
-#: options_list.hh:701
+#: options_list.hh:711
 msgid "verbose completion output"
 msgstr "ausführliche Komplettierungsausgabe"
 
-#: options_list.hh:709
+#: options_list.hh:719
 msgid "print version number, then exit"
 msgstr "zeige Versionsinformationen an und beende dann das Programm"
 
-#: options_list.hh:717
+#: options_list.hh:727
 msgid "insert command line arguments taken from the given file"
 msgstr "füge Kommandozeilenargumente aus der gegebenen Datei an"
 
-#: options_list.hh:730
+#: options_list.hh:740
 msgid "don't output ignored files"
 msgstr "gib keine ignorierten Dateien aus"
 
-#: options_list.hh:738
+#: options_list.hh:748
 msgid "don't output unknown files"
 msgstr "gib keine unbekannten Dateien aus"
 
-#: options_list.hh:746
+#: options_list.hh:756
 msgid "don't output unchanged files"
 msgstr "gib keine unveränderten Dateien aus"
 
-#: options_list.hh:754
+#: options_list.hh:764
 msgid "don't output corresponding renames if restricted on such nodes"
 msgstr ""
 "gib bei der Beschränkung auf umbenannte Einträge nicht die "
 "korrespondierenden Einträge aus"
 
-#: options_list.hh:766
+#: options_list.hh:776
 msgid "use file to resolve conflicts"
 msgstr "nutze Datei zum Auflösen von Konflikten"
 
-#: options_list.hh:773 options_list.hh:799
+#: options_list.hh:783 options_list.hh:809
 #, c-format
 msgid "conflicts file must be under _MTN"
 msgstr "Konfliktdatei muss sich unterhalb des _MTN-Verzeichnisses befinden"
 
-#: options_list.hh:779
+#: options_list.hh:789
 msgid "use _MTN/conflicts to resolve conflicts"
 msgstr "nutze _MTN/conflicts zum Auflösen von Konflikten"
 
-#: options_list.hh:783
+#: options_list.hh:793
 #, c-format
 msgid ""
 "only one of --resolve-conflicts or --resolve-conflicts-file may be given"
@@ -6948,44 +7008,44 @@ msgstr ""
 "nur eine Option, --resolve-conflicts oder --resolve-conflicts-file, darf "
 "angegeben werden"
 
-#: options_list.hh:792
+#: options_list.hh:802
 msgid "file in which to store conflicts"
 msgstr "Datei, in der Konflikte gespeichert werden"
 
-#: options_list.hh:805
+#: options_list.hh:815
 msgid "use only one changelog cert for the git commit message"
 msgstr "benutzte nur ein Logeintragszertifikat für den git-Logeintrag"
 
-#: options_list.hh:813
+#: options_list.hh:823
 msgid "file mapping author names from original to new values"
 msgstr "Datei, die ursprünglichen Autorennamen neue Werte zuweist"
 
-#: options_list.hh:821
+#: options_list.hh:831
 msgid "file mapping branch names from original to new values "
 msgstr "Datei, die ursprünglichen Zweignamen neue Werte zuweist"
 
-#: options_list.hh:829
+#: options_list.hh:839
 msgid "include git refs for 'revs', 'roots' or 'leaves'"
 msgstr "schließe git-Verweis für 'revs', 'roots' oder 'leaves' ein"
 
-#: options_list.hh:836
+#: options_list.hh:846
 #, c-format
 msgid "git ref type must be 'revs', 'roots', or 'leaves'"
 msgstr "git-Verweistyp muss 'revs', 'roots' oder 'leaves' sein"
 
-#: options_list.hh:841
+#: options_list.hh:851
 msgid "include revision ids in commit logs"
 msgstr "schließe Revisions-IDs in Logeinträgen ein"
 
-#: options_list.hh:849
+#: options_list.hh:859
 msgid "include standard cert values in commit logs"
 msgstr "schließe Standard-Zertifikatswerte in Logeinträgen ein"
 
-#: options_list.hh:857
+#: options_list.hh:867
 msgid "load the internal marks table before exporting revisions"
 msgstr "lade die interne Markierungstabelle vor dem Revisionsexport"
 
-#: options_list.hh:865
+#: options_list.hh:875
 msgid "save the internal marks table after exporting revisions"
 msgstr "speichere die interne Markierungstabelle nach dem Revisionsexport"
 
@@ -7273,6 +7333,10 @@ msgstr "Drücken Sie die Eingabetaste"
 #: std_hooks.lua:58
 msgid "Press enter when the subprocess has completed"
 msgstr "Drücken Sie die Eingabetaste, wenn der Unterprozess beendet ist"
+
+#~ msgid "Cannot find appropriate key '%s' for old-style cert"
+#~ msgstr ""
+#~ "Kann keinen passenden Schlüssel '%s' für alten Zertifikatstyp finden"
 
 #~ msgid ""
 #~ "Some keys in the database have the same ID as, but different hashes to, "
