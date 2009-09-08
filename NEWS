@@ -11,20 +11,23 @@
           hash, instead of its name. This should provide some security
           and usability improvements.
 
-           The database schema has been changed, so you will need to run
-          'mtn db migrate' (preferably after making a backup copy of your db).
+          The database schema has been changed, so you will need to
+          run 'mtn db migrate' (preferably after making a backup copy
+          of your db).
 
-          The netsync protocol version has also changed. However, we found
-          space to implement full protocol version negotiation, so no flag day
-          is needed. If your particular project has a situation where there
-          are multiple keys with the same name, you will receive errors when
-          trying to sync certs signed by those keys to older netsync peers.
+          The netsync protocol version has also changed. However, we
+          found space to implement full protocol version negotiation,
+          so no flag day is needed. If your particular project has a
+          situation where there are multiple keys with the same name,
+          you will receive errors when trying to sync certs signed by
+          those keys to older netsync peers.
 
-          A number of commands have slightly different output now, particularly
-          'ls certs', 'ls tags', 'automate keys', and 'automate certs'.
-           There is a new Lua hook associated with these changes,
-          "get_local_key_name(identity)", and all lua hooks that used to take
-          a key name as an argument now instead take a table with several fields.
+          A number of commands have slightly different output now,
+          particularly 'ls certs', 'ls tags', 'automate keys', and
+          'automate certs'.  There is a new Lua hook associated with
+          these changes, "get_local_key_name(identity)", and all lua
+          hooks that used to take a key name as an argument now
+          instead take a table with several fields.
 
         - The 'resolved_user' conflict resolution is no longer
           reported by 'automate show_conflicts' for file content
@@ -74,6 +77,7 @@
           conflicts for directories.
 
         Internal
+
 
 Tue May 12 20:44:00 UTC 2009
 
