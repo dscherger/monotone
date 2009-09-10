@@ -23,11 +23,11 @@
           those keys to older netsync peers.
 
           A number of commands have slightly different output now,
-          particularly 'ls certs', 'ls tags', 'automate keys', and
-          'automate certs'.  There is a new Lua hook associated with
-          these changes, "get_local_key_name(identity)", and all lua
-          hooks that used to take a key name as an argument now
-          instead take a table with several fields.
+          particularly 'ls certs', 'ls tags', 'automate keys',
+          'automate tags' and 'automate certs'.  There is a new Lua hook
+          associated with these changes, "get_local_key_name(identity)",
+          and all lua hooks that used to take a key name as an argument
+          now instead take a table with several fields.
 
         - The 'resolved_user' conflict resolution is no longer
           reported by 'automate show_conflicts' for file content

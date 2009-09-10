@@ -1149,17 +1149,17 @@ example team; other tasks involve only one member.
 * Dealing with a Fork::
 * Branching and Merging::
 * Network Service Revisited::
-* Creating a Database::         
-* Generating Keys::             
-* Starting a New Project::      
-* Adding Files::                
-* Committing Work::             
-* Basic Network Service::       
-* Synchronising Databases::     
-* Making Changes::              
-* Dealing with a Fork::         
-* Branching and Merging::       
-* Network Service Revisited::   
+* Creating a Database::
+* Generating Keys::
+* Starting a New Project::
+* Adding Files::
+* Committing Work::
+* Basic Network Service::
+* Synchronising Databases::
+* Making Changes::
+* Dealing with a Fork::
+* Branching and Merging::
+* Network Service Revisited::
 @end menu
 
 
@@ -1224,10 +1224,11 @@ Jim does the following:
 @smallexample
 @group
 $ mtn genkey jim@@juicebot.co.jp
+enter passphrase for key ID [jim@@juicebot.co.jp] (...): @i{<Jim enters his passphrase>}
+confirm passphrase for key ID [jim@@juicebot.co.jp] (...): @i{<Jim confirms his passphrase>}
 mtn: generating key-pair 'jim@@juicebot.co.jp'
-enter passphrase for key ID [jim@@juicebot.co.jp] : @i{<Jim enters his passphrase>}
-confirm passphrase for key ID [jim@@juicebot.co.jp]: @i{<Jim confirms his passphrase>}
 mtn: storing key-pair 'jim@@juicebot.co.jp' in /home/jim/.monotone/keys
+mtn: key 'jim@@juicebot.co.jp' has hash '398cb10dcd4fadf4f7849a3734b626a83e0bb2ae'
 @end group
 @end smallexample
 
@@ -1236,10 +1237,11 @@ Abe does something similar:
 @smallexample
 @group
 $ mtn genkey abe@@juicebot.co.jp
+enter passphrase for key ID [abe@@juicebot.co.jp] (...): @i{<Abe enters his passphrase>}
+confirm passphrase for key ID [abe@@juicebot.co.jp] (...): @i{<Abe confirms his passphrase>}
 mtn: generating key-pair 'abe@@juicebot.co.jp'
-enter passphrase for key ID [abe@@juicebot.co.jp] : @i{<Abe enters his passphrase>}
-confirm passphrase for key ID [abe@@juicebot.co.jp]: @i{<Abe confirms his passphrase>}
 mtn: storing key-pair 'abe@@juicebot.co.jp' in /home/abe/.monotone/keys
+mtn: key 'abe@@juicebot.co.jp' has hash '62d8d1798e716868acde75c0fc4c84760003863d'
 @end group
 @end smallexample
 
@@ -1248,10 +1250,11 @@ as does Beth:
 @smallexample
 @group
 $ mtn genkey beth@@juicebot.co.jp
+enter passphrase for key ID [beth@@juicebot.co.jp] (...): @i{<Beth enters her passphrase>}
+confirm passphrase for key ID [beth@@juicebot.co.jp] (...): @i{<Beth confirms her passphrase>}
 mtn: generating key-pair 'beth@@juicebot.co.jp'
-enter passphrase for key ID [beth@@juicebot.co.jp] : @i{<Beth enters her passphrase>}
-confirm passphrase for key ID [beth@@juicebot.co.jp]: @i{<Beth confirms her passphrase>}
 mtn: storing key-pair 'beth@@juicebot.co.jp' in /home/beth/.monotone/keys
+mtn: key 'beth@@juicebot.co.jp' has hash 'c1d47c065a21f1e1c4fbdefaa2f37bd2c15ee4b1'
 @end group
 @end smallexample
 
@@ -1264,12 +1267,12 @@ the correct key was generated. For example, Jim might see this:
 $ mtn list keys
 
 [public keys]
-9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c jim@@juicebot.co.jp   (*)
+398cb10dcd4fadf4f7849a3734b626a83e0bb2ae jim@@juicebot.co.jp   (*)
 (*) - only in /home/jim/.monotone/keys/
 
 
 [private keys]
-771ace046c27770a99e5fddfa99c9247260b5401 jim@@juicebot.co.jp
+398cb10dcd4fadf4f7849a3734b626a83e0bb2ae jim@@juicebot.co.jp
 
 @end group
 @end smallexample
@@ -1278,7 +1281,8 @@ The hexadecimal string printed out before each key name is a
 @emph{fingerprint} of the key, and can be used to verify that the key
 you have stored under a given name is the one you intended to
 store. Monotone will never permit one keystore to store two keys with
-the same name or the same fingerprint.
+the same fingerprint, however distincts keys with equal names
+are possible.
 
 This output shows one private and one public key stored under the name
 @code{jim@@juicebot.co.jp}, so it indicates that Jim's key-pair has been
@@ -1296,9 +1300,9 @@ ssh-agent can understand and adding it with @code{ssh-add}.
 @smallexample
 @group
 $ mtn ssh_agent_export ~/.ssh/id_monotone
-enter passphrase for key ID [user@@example.com]:
-enter new passphrase for key ID [user@@example.com]:
-confirm passphrase for key ID [user@@example.com]:
+enter passphrase for key ID [user@@example.com] (1234abcd...):
+enter new passphrase for key ID [user@@example.com] (1234abcd...):
+confirm passphrase for key ID [user@@example.com] (1234abcd...):
 $ chmod 600 ~/.ssh/id_monotone
 @end group
 @end smallexample
@@ -1328,7 +1332,7 @@ this by writing a @emph{hook function} which returns the passphrase:
 @group
 $ mkdir ~/.monotone
 $ cat >>~/.monotone/monotonerc
-function get_passphrase(keypair_id)
+function get_passphrase(key_identity)
   return "jimsekret"
 end
 ^D
@@ -1595,22 +1599,22 @@ ask monotone for a list of certs on this revision.
 @group
 $ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
 -----------------------------------------------------------------
-Key   : jim@@juicebot.co.jp
+Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
 Name  : branch
 Value : jp.co.juicebot.jb7
 -----------------------------------------------------------------
-Key   : jim@@juicebot.co.jp
+Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
 Name  : date
 Value : 2004-10-26T02:53:08
 -----------------------------------------------------------------
-Key   : jim@@juicebot.co.jp
+Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
 Name  : author
 Value : jim@@juicebot.co.jp
 -----------------------------------------------------------------
-Key   : jim@@juicebot.co.jp
+Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
 Name  : changelog
 Value : initial checkin of project
@@ -1880,20 +1884,13 @@ committed and the opportunity to enter a log message.
 @smallexample
 @group
 polling implementation of src/apple.c
-MTN:
 MTN: ----------------------------------------------------------------------
-MTN: Enter Log.  Lines beginning with `MTN:' are removed automatically
+MTN: Enter a description of this change.
+MTN: Lines beginning with `MTN:' are removed automatically.
 MTN:
-MTN: format_version "1"
-MTN:
-MTN: new_manifest [b33cb337dccf21d6673f462d677a6010b60699d1]
-MTN:
-MTN: old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
-MTN:
-MTN: patch "src/apple.c"
-MTN: from [2650ffc660dd00a08b659b883b65a060cac7e560]
-MTN:   to [e2c418703c863eabe70f9bde988765406f885fd0]
-MTN:
+MTN: Current branch: jp.co.juicebot.jb7
+MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+MTN:   patched  src/apple.c
 MTN: ----------------------------------------------------------------------
 MTN:
 @end group
@@ -2437,10 +2434,11 @@ in the team-members' keys:
 @group
 $ mtn --db=server.mtn db init
 $ mtn genkey monotone-server@@www.juicebot.co.jp
+enter passphrase for key ID [monotone-server@@www.juicebot.co.jp] (...): @i{<Jim enters a new passphrase>}
+confirm passphrase for key ID [monotone-server@@www.juicebot.co.jp] (...): @i{<Jim confirms the passphrase>}
 mtn: generating key-pair 'monotone-server@@www.juicebot.co.jp'
-enter passphrase for key ID [monotone-server@@www.juicebot.co.jp] : @i{<Jim enters a new passphrase>}
-confirm passphrase for key ID [monotone-server@@www.juicebot.co.jp]: @i{<Jim confirms the passphrase>}
 mtn: storing key-pair 'monotone-server@@www.juicebot.co.jp' in /home/jim/.monotone/keys
+mtn: key 'abe@@juicebot.co.jp' has hash '78be08f7a2a316a9f7c6b0db544ed20673ea2190'
 $ cat abe.pubkey beth.pubkey jim.pubkey | mtn --db=server.mtn read
 mtn: read 3 packets
 @end group
@@ -4824,7 +4822,7 @@ null revision.
 
 @page
 @menu
-* Conflicts::                   
+* Conflicts::
 @end menu
 
 @node    Conflicts,  , Tree, Tree
@@ -5833,7 +5831,8 @@ in that case one revision is the workspace.
 
 This command generates an @sc{rsa} public/private key pair, using a
 system random number generator, and stores it in your keystore under
-the key name @var{keyid}.
+the key name @var{keyid.keyhash}.  The key's hash is printed out after
+the key has been created.
 
 The private half of the key is stored in an encrypted form, so that anyone
 who can read your keystore cannot extract your private key and use it.
@@ -5842,7 +5841,7 @@ to determine the encryption key. In the future you will need to enter this
 passphrase again each time you sign a certificate, which happens every
 time you @command{commit} to your database. You can tell monotone to
 automatically use a certain passphrase for a given key using the
-@code{get_passphrase(@var{keypair_id})}, but this significantly
+@code{get_passphrase(@var{key_identity})}, but this significantly
 increases the risk of a key compromise on your local computer. Be
 careful using this hook.
 
@@ -5863,7 +5862,7 @@ are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped.
 
-@item mtn passphrase @var{id}
+@item mtn passphrase @var{keyid}
 
 This command lets you change the passphrase of the private half of the
 key @var{id}.
@@ -5924,9 +5923,9 @@ will cache the key for you.
 @smallexample
 @group
 $ mtn ssh_agent_export ~/.ssh/id_monotone
-enter passphrase for key ID [user@@example.com]:
-enter new passphrase for key ID [user@@example.com]:
-confirm passphrase for key ID [user@@example.com]:
+enter passphrase for key ID [user@@example.com] (1234abcd...):
+enter new passphrase for key ID [user@@example.com] (1234abcd...):
+confirm passphrase for key ID [user@@example.com] (1234abcd...):
 $ chmod 600 ~/.ssh/id_monotone
 $ ssh-agent /bin/bash
 $ ssh-add ~/.ssh/id_monotone
@@ -6906,9 +6905,14 @@ None.
 
 A branch pattern (optional).
 
-@item Added in:
+@item Changes:
 
-2.2
+@itemize
+@item
+11.0 -- @var{signer} now prints the hash of the signing key, no longer the name
+@item
+2.2 -- added
+@end itemize
 
 @item Purpose:
 
@@ -6925,24 +6929,24 @@ a pattern.
 @verbatim
 format_version "1"
 
-     tag "monotree-0.3"
-revision [35cff8e8ba14155f5f7ddf7965073f514fd60f61]
-  signer "njs@pobox.com"
-branches "net.venge.monotone.contrib.monotree"
+     tag "monotree-0.1"
+revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib" "net.venge.monotone.contrib.monotree"
 
      tag "monotree-0.2"
 revision [5d288b39b49613b0d9dca8ece6b9a42c3773f35b]
-  signer "njs@pobox.com"
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
 branches "net.venge.monotone.contrib.monotree"
 
-     tag "monotree-0.1"
-revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
-  signer "njs@pobox.com"
-branches "net.venge.monotone.contrib" "net.venge.monotone.contrib.monotree"
+     tag "monotree-0.3"
+revision [35cff8e8ba14155f5f7ddf7965073f514fd60f61]
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
+branches "net.venge.monotone.contrib.monotree"
 
      tag "monotree-0.4"
 revision [f1afc520474f83c58262896ede027ef77226046e]
-  signer "njs@pobox.com"
+  signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
 branches "net.venge.monotone.contrib.monotree"
 @end verbatim
 
@@ -7580,14 +7584,12 @@ message to stderr, and exits with status 1.
 
 A revision ID @var{id}, for which any certificates will be printed.
 
-@item Added in:
-
-1.0
-
 @item Changes:
 @itemize
 @item
-FIXME -- Keys are now listed by hash instead of name.
+11.0 -- Keys are now listed by hash instead of name.
+@item
+1.0 -- Added.
 @end itemize
 
 @item Purpose:
@@ -8531,7 +8533,7 @@ None.
 
 @itemize
 @item
-FIXME -- Instead of having a "name" item, there are
+11.0 -- Instead of having a "name" item, there are
 "given_name" and "local_name" items.
 @item
 10.0 -- The separate hashes for the private half of a key really didn't
