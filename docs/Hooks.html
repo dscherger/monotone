@@ -37,7 +37,29 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Hook-Reference.html#Hook-Reference">Hoo
 <p>This section documents the existing hook functions and their default
 definitions.
 
-<h4 class="subsection">6.1.1 Event Notifications and Triggers</h4>
+<h4 class="subsection">6.1.1 Common Data Types</h4>
+
+<p>Some hooks take arguments which are more complex than a simple string or number. 
+Where multiple hooks take the same kind of argument, we generally try to make
+them take that kind of argument in the same format.
+
+     <dl>
+<dt><code>key_identity</code><a name="index-key_005fidentity-214"></a><dd>
+When a key is created, it is given a meaningful name. Because this is chosen by
+the key creator and may be unreliable, trust hooks need to be able to look at
+the key hash as well. This may be inconvenient, so a local alias is also provided. 
+This alias is obtained from an other hook, which can provide reliable easy-to-use
+names based on the key hash (or however else you want).
+
+     <pre class="smallexample">          {
+             id = "key hash/fingerprint, in hex",
+             given_name = "name given when creating the key",
+             name = "local alias of the key"
+          }
+     </pre>
+     </dl>
+
+<h4 class="subsection">6.1.2 Event Notifications and Triggers</h4>
 
 <p>There are a number of hooks that are called when noteworthy events
 occur, such as commits or new revisions arriving over the network. These
@@ -48,7 +70,7 @@ such as generating email.
 are taken.
 
      <dl>
-<dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-211"></a><dd>
+<dt><code>note_commit (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>)</code><a name="index-note_005fcommit-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_0029-215"></a><dd>
 Called by monotone after the version <var>new_id</var> is committed. The
 second parameter, <var>revision</var> is the text of the revision, what would
 be given by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. The third
@@ -63,9 +85,8 @@ hook is only intended as an aid for integrating monotone with informal
 commit-notification systems such as mailing lists or news services. It
 should not perform any security-critical operations.
 
-     <br><dt><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>,</code><a name="index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-212"></a><dd><var>remote_host</var>, <var>remote_keyname</var>, <var>includes</var>, <var>excludes</var>)
-
-     <p>Called by monotone before any other of the netsync notification hooks
+     <br><dt><code>note_netsync_start (</code><var>session_id</var><code>, </code><var>my_role</var><code>, </code><var>sync_type</var><code>, </code><var>remote_host</var><code>, </code><var>remote_key</var><code>, </code><var>includes</var><code>, </code><var>excludes</var><code>)</code><a name="index-note_005fnetsync_005fstart-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bmy_005frole_007d_002c-_0040var_007bsync_005ftype_007d_002c-_0040var_007bremote_005fhost_007d_002c-_0040var_007bremote_005fkey_007d_002c-_0040var_007bincludes_007d_002c-_0040var_007bexcludes_007d_0029-216"></a><dd>
+Called by monotone before any other of the netsync notification hooks
 are called.  The <var>session_id</var> helps keep track of the current netsync
 session in case several are happening at the same time, and is used
 throughout all netsync notification hooks.
@@ -84,65 +105,62 @@ The network address of the remote host. At the client, this will be the name
 it was told to connect to; at the server, this will use the numerical IP address
 the connection was received from.
 
-          <br><dt><var>remote_keyname</var><dd>
-The name of the key being used by the other end of the connection. This may be
-set to "-unknown-" at the server if the key used by the client is not present
-at the server.
+          <br><dt><var>remote_key</var><dd>
+The identity of the key being used by the other end of the connection. The fields may
+be empty at the server if the key used by the client is not present at the server.
 
           <br><dt><var>includes</var><strong> and </strong><var>excludes</var><dd>
 The include and exclude patterns used by the client.
 
      </dl>
 
-     <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-213"></a><dd>
+     <br><dt><code>note_netsync_revision_received (</code><var>new_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005freceived-_0028_0040var_007bnew_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-217"></a><dd>
 Called by monotone after the revision <var>new_id</var> is received through
 netsync. <var>revision</var> is the text of the revision, what would be given
 by <samp><span class="command">mtn automate get_revision </span><var>new_id</var></samp>. <var>certs</var> is a
 Lua table containing one subtable for each cert attached to the revision
 <var>new_id</var>. These subtables have fields named "key", "name", and
-"value", containing the signing key for the cert, the name of the cert,
+"value", containing the identity of the signing key for the cert, the name of the cert,
 and the value of the cert. There is no default definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-214"></a><dd>
+     <br><dt><code>note_netsync_revision_sent (</code><var>rev_id</var><code>, </code><var>revision</var><code>, </code><var>certs</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005frevision_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007brevision_007d_002c-_0040var_007bcerts_007d_002c-_0040var_007bsession_005fid_007d_0029-218"></a><dd>
 Called by monotone after the revision <var>rev_id</var> is sent through
 netsync. The arguments are the same as for
 <var>note_netsync_revision_received</var>.
 
-     <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-215"></a><dd>
+     <br><dt><code>note_netsync_cert_received (</code><var>rev_id</var><code>, </code><var>key_identity</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005freceived-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_005fidentity_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-219"></a><dd>
 Called by monotone after a cert is received through netsync, if the revision
 that the cert is attached to was not also received in the same netsync
 operation. <var>rev_id</var> is the revision id that the cert is attached to,
-<var>key</var> is the key that the cert is signed with, <var>name</var> is the name
+<var>key_identity</var> is the key that the cert is signed with, <var>name</var> is the name
 of the cert, and <var>value</var> is the cert value. There is no default
 definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-216"></a><dd>
+     <br><dt><code>note_netsync_cert_sent (</code><var>rev_id</var><code>, </code><var>key_identity</var><code>, </code><var>name</var><code>, </code><var>value</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fcert_005fsent-_0028_0040var_007brev_005fid_007d_002c-_0040var_007bkey_005fidentity_007d_002c-_0040var_007bname_007d_002c-_0040var_007bvalue_007d_002c-_0040var_007bsession_005fid_007d_0029-220"></a><dd>
 Called by monotone after a cert is sent through netsync, if the revision
 that the cert is attached to was not also sent in the same netsync
 operation. The arguments are the same as for
 <var>note_netsync_cert_received</var>.
 
-     <br><dt><code>note_netsync_pubkey_received (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-217"></a><dd>
-Called by monotone after a pubkey is received through netsync. <var>keyname</var>
-is the name of the key received. There is no default definition for this hook. 
+     <br><dt><code>note_netsync_pubkey_received (</code><var>key_identity</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005freceived-_0028_0040var_007bkey_005fidentity_007d_002c-_0040var_007bsession_005fid_007d_0029-221"></a><dd>
+Called by monotone after a pubkey is received through netsync. <var>key_identity</var>
+is the identity of the key received. There is no default definition for this hook. 
 <var>session_id</var> is used together with <code>note_netsync_start</code> and
 <code>note_netsync_end</code>.  If you're not interested in that type of
 tracking, you can ignore that variable entirely.
 
-     <br><dt><code>note_netsync_pubkey_sent (</code><var>keyname</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkeyname_007d_002c-_0040var_007bsession_005fid_007d_0029-218"></a><dd>
+     <br><dt><code>note_netsync_pubkey_sent (</code><var>key_identity</var><code>, </code><var>session_id</var><code>)</code><a name="index-note_005fnetsync_005fpubkey_005fsent-_0028_0040var_007bkey_005fidentity_007d_002c-_0040var_007bsession_005fid_007d_0029-222"></a><dd>
 Called by monotone after a pubkey is sent through netsync. The arguments are the same as for
 <var>note_netsync_pubkey_received</var>.
 
-     <br><dt><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>,</code><a name="index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-219"></a><dd><var>bytes_in</var>, <var>bytes_out</var>, <var>certs_in</var>, <var>certs_out</var>,
-<var>revs_in</var>, <var>revs_out</var>, <var>keys_in</var>, <var>keys_out</var>)
-
-     <p>Called by monotone after all other the netsync notification hooks have
+     <br><dt><code>note_netsync_end (</code><var>session_id</var><code>, </code><var>status</var><code>, </code><var>bytes_in</var><code>, </code><var>bytes_out</var><code>, </code><var>certs_in</var><code>, </code><var>certs_out</var><code>, </code><var>revs_in</var><code>, </code><var>revs_out</var><code>, </code><var>keys_in</var><code>, </code><var>keys_out</var><code>)</code><a name="index-note_005fnetsync_005fend-_0028_0040var_007bsession_005fid_007d_002c-_0040var_007bstatus_007d_002c-_0040var_007bbytes_005fin_007d_002c-_0040var_007bbytes_005fout_007d_002c-_0040var_007bcerts_005fin_007d_002c-_0040var_007bcerts_005fout_007d_002c-_0040var_007brevs_005fin_007d_002c-_0040var_007brevs_005fout_007d_002c-_0040var_007bkeys_005fin_007d_002c-_0040var_007bkeys_005fout_007d_0029-223"></a><dd>
+Called by monotone after all other the netsync notification hooks have
 been called.  This hook would usually be used for post-netsync purposes,
 like collecting all the data from all other netsync notification hooks,
 make some nice output from them and finally send the result somewhere. 
@@ -187,7 +205,7 @@ error, and 5xx means there was a protocol error. xx1 means some data may
 have been transferred, xx2 means no data was transferred, and xx0 means all
 data was transferred.
 
-     <br><dt><code>note_mtn_startup (...)</code><a name="index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-220"></a><dd>
+     <br><dt><code>note_mtn_startup (...)</code><a name="index-note_005fmtn_005fstartup-_0028_002e_002e_002e_0029-224"></a><dd>
 Called by monotone when it is first started, this hook was added so that
 usage of monotone could be monitored for user interface testing.  Note
 that by default, no monitoring occurs.  The arguments to the hook
@@ -205,15 +223,15 @@ variable as in this example:
      </pre>
      </dl>
 
-<h4 class="subsection">6.1.2 User Defaults</h4>
+<h4 class="subsection">6.1.3 User Defaults</h4>
 
 <p>These are hooks that can be used to provide smart, context-sensitive
 default values for a number of parameters the user might otherwise be
 prompted for.
 
      <dl>
-<dt><code>get_branch_key (</code><var>branchname</var><code>)</code><a name="index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-221"></a><dd>
-Returns a string which is the name of an <span class="sc">rsa</span> private key used to sign
+<dt><code>get_branch_key (</code><var>branchname</var><code>)</code><a name="index-get_005fbranch_005fkey-_0028_0040var_007bbranchname_007d_0029-225"></a><dd>
+Returns a string which is the name or hash of an <span class="sc">rsa</span> private key used to sign
 certificates in a particular branch <var>branchname</var>. There is no
 default definition for this hook. The command-line option
 <samp><span class="option">--key=</span><var>keyname</var></samp> overrides any value returned from this
@@ -222,8 +240,8 @@ do not need to define this function or provide a
 <samp><span class="option">--key=</span><var>keyname</var></samp> option; monotone will guess that you want
 to use the unique private key.
 
-     <br><dt><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-222"></a><dd>
-Returns a string which is the name of the key to use to authenticate
+     <br><dt><code>get_netsync_key(</code><var>server</var><code>, </code><var>include</var><code>, </code><var>exclude</var><code>)</code><a name="index-get_005fnetsync_005fkey_0028_0040var_007bserver_007d_002c-_0040var_007binclude_007d_002c-_0040var_007bexclude_007d_0029-226"></a><dd>
+Returns a string which is the name or hash of the key to use to authenticate
 the given netsync connection. When called by the <samp><span class="command">serve</span></samp> command,
 <var>server</var> is the address monotone is listening on, <var>include</var> is
 <samp><span class="option">"*"</span></samp>, and <var>exclude</var> is <samp><span class="option">""</span></samp>.
@@ -232,7 +250,7 @@ the given netsync connection. When called by the <samp><span class="command">ser
 <samp><span class="option">--key=</span><var>keyname</var></samp> overrides any value returned from this
 hook function.
 
-     <br><dt><code>get_default_command_options(</code><var>command</var><code>)</code><a name="index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-223"></a><dd>
+     <br><dt><code>get_default_command_options(</code><var>command</var><code>)</code><a name="index-get_005fdefault_005fcommand_005foptions_0028_0040var_007bcommand_007d_0029-227"></a><dd>
 Returns a table of program options, either valid for the given command or
 valid global options. The <var>command</var> argument is given as a table of command
 parts, i.e. for commands with subcommands like <samp><span class="command">automate</span></samp> or <samp><span class="command">db</span></samp>
@@ -255,26 +273,30 @@ by default:
               return default_options
           end
      </pre>
-     <br><dt><code>get_passphrase (</code><var>keypair_id</var><code>)</code><a name="index-get_005fpassphrase-_0028_0040var_007bkeypair_005fid_007d_0029-224"></a><dd>
+     <br><dt><code>get_passphrase (</code><var>key_identity</var><code>)</code><a name="index-get_005fpassphrase-_0028_0040var_007bkey_005fidentity_007d_0029-228"></a><dd>
 Returns a string which is the passphrase used to encrypt the private
-half of <var>keypair_id</var> in your database, using the <span class="sc">arc4</span> symmetric
-cipher.  <var>keypair_id</var> is a Lua string containing the label that you
-used when you created your key &mdash; something like
-<code>"nicole@example.com"</code>.  This hook has no default definition. If
+half of <var>key_identity</var> in your key store, using the <span class="sc">TripleDES</span> symmetric
+cipher.  This hook has no default definition. If
 this hook is not defined or returns false, monotone will prompt you for
 a passphrase each time it needs to use a private key.
 
-     <br><dt><code>get_author (</code><var>branchname</var><code>, </code><var>keypair_id</var><code>)</code><a name="index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkeypair_005fid_007d_0029-225"></a><dd>
+     <br><dt><code>get_local_key_name (</code><var>key_identity</var><code>)</code><a name="index-get_005flocal_005fkey_005fname-_0028_0040var_007bkey_005fidentity_007d_0029-229"></a><dd>
+Return the local alias for the given key. The <var>id</var> and <var>given_name</var>
+fields of <var>key_identity</var> will be populated, and the <var>name</var> field
+will not be. The return value indicates what the <var>name</var> field should
+contain. The default implementation make this the same as <var>given_name</var>.
+
+     <br><dt><code>get_author (</code><var>branchname</var><code>, </code><var>key_identity</var><code>)</code><a name="index-get_005fauthor-_0028_0040var_007bbranchname_007d_002c-_0040var_007bkey_005fidentity_007d_0029-230"></a><dd>
 Returns a string which is used as a value for automatically generated
 <code>author</code> certificates when you commit changes to
-<var>branchname</var> with the keypair identity <var>keypair_id</var>.  Generally
+<var>branchname</var> with the keypair identity <var>key_identity</var>.  Generally
 this hook remains undefined, and monotone selects your signing key name
 for the author certificate. You can use this hook to override that
 choice, if you like.
 
      <p>This hook has no default definition, but a couple of possible
 definitions might be:
-     <pre class="smallexample">          function get_author(branchname, keypair_id)
+     <pre class="smallexample">          function get_author(branchname, key_identity)
                   -- Key pair identity ignored.
                   local user = os.getenv("USER")
                   local host = os.getenv("HOSTNAME")
@@ -282,15 +304,15 @@ definitions might be:
                   return string.format("%s@%s", user, host)
           end
      </pre>
-     <pre class="smallexample">          function get_author(branchname, keypair_id)
+     <pre class="smallexample">          function get_author(branchname, key_identity)
                   -- Branch name ignored.
-                  if (keypair_id == "joe@example.com") then
+                  if (key_identity.given_name == "joe@example.com") then
                           return "Joe Random &lt;joe@example.com&gt;"
                   end
-                  return keypair_id
+                  return key_identity
           end
      </pre>
-     <br><dt><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code><a name="index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-226"></a><dd>
+     <br><dt><code>edit_comment (</code><var>commentary</var><code>, </code><var>user_log_message</var><code>)</code><a name="index-edit_005fcomment-_0028_0040var_007bcommentary_007d_002c-_0040var_007buser_005flog_005fmessage_007d_0029-231"></a><dd>
 Returns a log entry for a given set of changes, described in
 <var>commentary</var>.  The commentary is identical to the output of
 <samp><span class="command">mtn status</span></samp>. This hook is intended to interface with
@@ -307,7 +329,7 @@ the system up for another edit/commit cycle.
 
      <p>For the default definition of this hook, see <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>persist_phrase_ok ()</code><a name="index-persist_005fphrase_005fok-_0028_0029-227"></a><dd>
+     <br><dt><code>persist_phrase_ok ()</code><a name="index-persist_005fphrase_005fok-_0028_0029-232"></a><dd>
 Returns <code>true</code> if you want monotone to remember the passphrase of
 a private key for the duration of a single command, or <code>false</code> if
 you want monotone to prompt you for a passphrase for each certificate
@@ -320,7 +342,7 @@ probably want this hook to return <code>true</code>.
                   return true
           end
      </pre>
-     <br><dt><code>use_inodeprints ()</code><a name="index-use_005finodeprints-_0028_0029-228"></a><dd>
+     <br><dt><code>use_inodeprints ()</code><a name="index-use_005finodeprints-_0028_0029-233"></a><dd>
 Returns <code>true</code> if you want monotone to automatically enable
 <a href="Inodeprints.html#Inodeprints">Inodeprints</a> support in all workspaces.  Only affects working
 copies created after you modify the hook.
@@ -330,7 +352,7 @@ copies created after you modify the hook.
                   return false
           end
      </pre>
-     <br><dt><code>ignore_file (</code><var>filename</var><code>)</code><a name="index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-229"></a><dd>
+     <br><dt><code>ignore_file (</code><var>filename</var><code>)</code><a name="index-ignore_005ffile-_0028_0040var_007bfilename_007d_0029-234"></a><dd>
 Returns <code>true</code> if <var>filename</var> should be ignored while adding,
 dropping, or moving files. Otherwise returns <code>false</code>. This is
 most important when performing recursive actions on directories, which
@@ -343,14 +365,19 @@ this hook will read a list of regular expressions from the file, one per
 line, and ignore all files matching one of these expressions. For the
 default definition of this hook, see <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>ignore_branch (</code><var>branchname</var><code>)</code><a name="index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-230"></a><dd>
+     <br><dt><code>ignore_branch (</code><var>branchname</var><code>)</code><a name="index-ignore_005fbranch-_0028_0040var_007bbranchname_007d_0029-235"></a><dd>
 Returns <code>true</code> if <var>branchname</var> should be ignored while listing
 branches. Otherwise returns <code>false</code>. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
+     <br><dt><code>get_date_format_spec ()</code><a name="index-get_005fdate_005fformat_005fspec-_0028_0029-236"></a><dd>
+Returns a <code>strftime</code> format specification, which <samp><span class="command">mtn
+log</span></samp> and similar commands will use to format dates, unless instructed
+otherwise.  The default definition returns `<samp><span class="samp">"%d&nbsp;%b&nbsp;%Y,&nbsp;%I:%M:%S&nbsp;%p"<!-- /@w --></span></samp>', which produces output like this: `<samp><span class="samp">22&nbsp;May&nbsp;2009,&nbsp;09:06:14&nbsp;AM<!-- /@w --></span></samp>'.
+
    </dl>
 
-<h4 class="subsection">6.1.3 Netsync Permission Hooks</h4>
+<h4 class="subsection">6.1.4 Netsync Permission Hooks</h4>
 
 <p>These hooks are used when running a netsync server, via
 <samp><span class="command">mtn serve</span></samp>. They are evaluated by the server for each new
@@ -360,15 +387,15 @@ order to reload the hook definitions if the <samp><span class="file">montonerc</
 changed.
 
      <dl>
-<dt><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bidentity_007d_0029-231"></a><dd>
-Returns <code>true</code> if a peer authenticated as key <var>identity</var>
+<dt><code>get_netsync_read_permitted (</code><var>branch</var><code>, </code><var>key_identity</var><code>)</code><a name="index-get_005fnetsync_005fread_005fpermitted-_0028_0040var_007bbranch_007d_002c-_0040var_007bkey_005fidentity_007d_0029-237"></a><dd>
+Returns <code>true</code> if a peer authenticated as key <var>key_identity</var>
 should be allowed to read from your database certs, revisions,
 manifests, and files associated with <var>branch</var>; otherwise <code>false</code>. 
 The default definition of this hook reads a file <samp><span class="file">read-permissions</span></samp> in
 the configuration directory. This file looks like
      <pre class="smallexample">          pattern "net.example.project.{private,security}*"
           allow "joe@example.net"
-          allow "jim@example.net"
+          allow "f3f62f86eba204a3ce15174083a53349201993d6"
           
           comment "everyone can read these branches"
           pattern "net.example.{public,project}*"
@@ -383,7 +410,8 @@ which are only readable by Joe and Jim.
 number of <code>allow</code> and <code>deny</code> lines, and possibly a <code>continue</code>
 line. Anything from the unquoted word <code>comment</code> until the next unquoted
 word is ignored. A stanza is processed if the argument to
-<code>pattern</code> is a glob that matches <var>branch</var>. Any keys which match an
+<code>pattern</code> is a glob that matches <var>branch</var>. Any keys with a hash or
+local_name that matches an
 <code>allow</code> line are given access, and any keys which match a <code>deny</code> line
 are denied access. If there is a <code>continue "true"</code> line, then if the key
 is not granted or denied access in this stanza the next matching stanza will be
@@ -393,33 +421,20 @@ has not been given access will be denied access even if it doesn't match any
 <code>continue "true"</code> line.
 
      <p>If a client connects anonymously, this hook will be called with a
-<var>identity</var> of <code>nil</code>.
+<var>key_identity</var> of <code>nil</code>.
 
-     <p>Note that the <var>identity</var> value is a key ID (such as
-&ldquo;<code>graydon@pobox.com</code>&rdquo;) but will correspond to a <em>unique</em>
-key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same ID. Make sure you confirm the
-key fingerprints of each key in your database, as key ID strings are
-&ldquo;convenience names&rdquo;, not security tokens.
-
-     <br><dt><code>get_netsync_write_permitted (</code><var>identity</var><code>)</code><a name="index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bidentity_007d_0029-232"></a><dd>
-Returns <code>true</code> if a peer authenticated as key <var>identity</var> should
+     <br><dt><code>get_netsync_write_permitted (</code><var>key_identity</var><code>)</code><a name="index-get_005fnetsync_005fwrite_005fpermitted-_0028_0040var_007bkey_005fidentity_007d_0029-238"></a><dd>
+Returns <code>true</code> if a peer authenticated as key <var>key_identity</var> should
 be allowed to write into your database certs, revisions, manifests, and
 files; otherwise <code>false</code>. The default definition of this hook reads a file
 <samp><span class="file">write-permissions</span></samp> in the configuration directory which contains a list
-of keys, one per line, which are allowed write access. The special value
+of key hashes or local key names, one per line, which are allowed write access. 
+The special value
 <code>*</code> means to allow access to anyone whose public key we already have.
 
      <p>If a client connects anonymously, it will be unconditionally denied
-write access; this hook will <em>not</em> be called with a <var>identity</var>
+write access; this hook will <em>not</em> be called with a <var>key_identity</var>
 of <code>nil</code>.
-
-     <p>Note that the <var>identity</var> value is a key ID (such as
-&ldquo;<code>graydon@pobox.com</code>&rdquo;) but will correspond to a <em>unique</em>
-key fingerprint (hash) in your database. Monotone will not permit two
-keys in your database to have the same ID. Make sure you confirm the
-key fingerprints of each key in your database, as key ID strings are
-&ldquo;convenience names&rdquo;, not security tokens.
 
      <p>Note also that, unlike the equivalent read permission hook, the write
 permission hook does not take a <var>branch</var> name as an argument.  There
@@ -432,7 +447,7 @@ database from different authors can be selectively trusted using the
 
    <p><a name="Netsync-Transport-Hooks"></a>
 
-<h4 class="subsection">6.1.4 Netsync Transport Hooks</h4>
+<h4 class="subsection">6.1.5 Netsync Transport Hooks</h4>
 
 <p>When a monotone client initiates a netsync connection, these hooks are
 called to attempt to parse the host argument provided on the command
@@ -441,7 +456,7 @@ host argument as a network name (possibly with a port number) and open
 a TCP socket.
 
      <dl>
-<dt><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code><a name="index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-233"></a><dd>
+<dt><code>get_netsync_connect_command (</code><var>uri</var><code>, </code><var>args</var><code>)</code><a name="index-get_005fnetsync_005fconnect_005fcommand-_0028_0040var_007buri_007d_002c-_0040var_007bargs_007d_0029-239"></a><dd>
 Returns a table describing a command to run to connect to the
 specified host. The <var>uri</var> argument is a table containing
 between 0 and 7 components:
@@ -520,7 +535,7 @@ components:
                   return argv
           end
      </pre>
-     <br><dt><code>use_transport_auth (</code><var>uri</var><code>)</code><a name="index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-234"></a><dd>
+     <br><dt><code>use_transport_auth (</code><var>uri</var><code>)</code><a name="index-use_005ftransport_005fauth-_0028_0040var_007buri_007d_0029-240"></a><dd>
 Returns a boolean indicating whether monotone should use transport
 authentication mechanisms when communicating with <var>uri</var>. If this
 hook fails, the return value is assumed to be <code>true</code>. The form of
@@ -546,7 +561,7 @@ authentication assumptions.
                   end
           end
      </pre>
-     <br><dt><code>get_mtn_command(</code><var>host</var><code>)</code><a name="index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-235"></a><dd>
+     <br><dt><code>get_mtn_command(</code><var>host</var><code>)</code><a name="index-get_005fmtn_005fcommand_0028_0040var_007bhost_007d_0029-241"></a><dd>
 Returns a string containing the monotone command to be executed on
 <var>host</var> when communicating over <samp><span class="command">ssh</span></samp>.  The <var>host</var>
 argument is a string containing the name of the host to which
@@ -562,7 +577,7 @@ monotone binary is not in the default path.
 
    <p><a name="Trust-Evaluation-Hooks"></a>
 
-<h4 class="subsection">6.1.5 Trust Evaluation Hooks</h4>
+<h4 class="subsection">6.1.6 Trust Evaluation Hooks</h4>
 
 <p>Monotone makes heavy use of certs to provide descriptive information
 about revisions. In many projects, not all developers should have the
@@ -578,11 +593,11 @@ implementation of these hooks, and thus a different filtered view of
 valid revisions, according to their own preferences and purposes.
 
      <dl>
-<dt><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code><a name="index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-236"></a><dd>
+<dt><code>get_revision_cert_trust (</code><var>signers</var><code>, </code><var>id</var><code>, </code><var>name</var><code>, </code><var>val</var><code>)</code><a name="index-get_005frevision_005fcert_005ftrust-_0028_0040var_007bsigners_007d_002c-_0040var_007bid_007d_002c-_0040var_007bname_007d_002c-_0040var_007bval_007d_0029-242"></a><dd>
 Returns whether or not you <em>trust</em> the assertion
 <var>name</var>=<var>value</var> on a given revision <var>id</var>, given a valid
 signature from all the keys in <var>signers</var>. The <var>signers</var>
-parameter is a table containing all the key names which signed this
+parameter is a table containing all the key identities which signed this
 cert, the other three parameters are strings.
 
      <p>The default definition of this hook simply returns <code>true</code>, which
@@ -595,7 +610,7 @@ the intersection of tables) is the following:
      <pre class="smallexample">          function intersection(a,b)
              local s={}
              local t={}
-             for k,v in pairs(a) do s[v] = 1 end
+             for k,v in pairs(a) do s[v.name] = 1 end
              for k,v in pairs(b) do if s[v] ~= nil then table.insert(t,v) end end
              return t
           end
@@ -624,7 +639,7 @@ by at least one of three &ldquo;trusted&rdquo; keys, unless it is an
 the revision has been approved by an extra &ldquo;reviewer&rdquo; who used the
 <samp><span class="command">approve</span></samp> command.
 
-     <br><dt><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code><a name="index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-237"></a><dd>
+     <br><dt><code>accept_testresult_change (</code><var>old_results</var><code>, </code><var>new_results</var><code>)</code><a name="index-accept_005ftestresult_005fchange-_0028_0040var_007bold_005fresults_007d_002c-_0040var_007bnew_005fresults_007d_0029-243"></a><dd>
 This hook is used by the update algorithm to determine whether a
 change in test results between update source and update target is
 acceptable. The hook is called with two tables, each of which maps a
@@ -655,14 +670,14 @@ lenient behavior you must redefine this hook.
 
    </dl>
 
-<h4 class="subsection">6.1.6 External Diff Tools</h4>
+<h4 class="subsection">6.1.7 External Diff Tools</h4>
 
 <p>Differences between files can be shown in a number of ways, varying
 according to user preference and file type. These hooks allow
 customisation of the way file differences are shown.
 
      <dl>
-<dt><code>get_encloser_pattern (</code><var>file_path</var><code>)</code><a name="index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-238"></a><dd>
+<dt><code>get_encloser_pattern (</code><var>file_path</var><code>)</code><a name="index-get_005fencloser_005fpattern-_0028_0040var_007bfile_005fpath_007d_0029-244"></a><dd>
 Called for each file unless <samp><span class="command">diff</span></samp> is given the
 <samp><span class="option">--no-show-encloser</span></samp> option (or the
 <samp><span class="option">--external</span></samp> option).  <var>file_path</var> is the pathname of the
@@ -678,7 +693,7 @@ hook; and if you send it to the monotone developers, we will likely
 make it the default for that language.  See <a href="Regexps.html#Regexps">Regexps</a>, for the
 regular expression syntax.
 
-     <br><dt><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code><a name="index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-239"></a><dd>
+     <br><dt><code>external_diff (</code><var>file_path</var><code>, </code><var>old_data</var><code>, </code><var>new_data</var><code>, </code><var>is_binary</var><code>, </code><var>diff_args</var><code>, </code><var>old_rev</var><code>, </code><var>new_rev</var><code>)</code><a name="index-external_005fdiff-_0028_0040var_007bfile_005fpath_007d_002c-_0040var_007bold_005fdata_007d_002c-_0040var_007bnew_005fdata_007d_002c-_0040var_007bis_005fbinary_007d_002c-_0040var_007bdiff_005fargs_007d_002c-_0040var_007bold_005frev_007d_002c-_0040var_007bnew_005frev_007d_0029-245"></a><dd>
 Called for each file when <samp><span class="command">diff</span></samp> is given the
 <samp><span class="option">--external</span></samp> option.  <var>file_path</var> is the pathname of the
 file that is being diffed.  <var>old_data</var> and <var>new_data</var> are the
@@ -698,7 +713,7 @@ the whole hook.
 
    </dl>
 
-<h4 class="subsection">6.1.7 External Merge Tools</h4>
+<h4 class="subsection">6.1.8 External Merge Tools</h4>
 
 <p>Monotone often needs to merge together the work of multiple distributed
 developers, and uses these hooks to help this process when the merge
@@ -712,7 +727,7 @@ you have a tool specific to certain file types.
 
      <dl>
 <a name="merge3"></a>
-<dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-240"></a><dd>
+<dt><code>merge3 (</code><var>ancestor_path</var><code>, </code><var>left_path</var><code>, </code><var>right_path</var><code>, </code><var>merged_path</var><code>, </code><var>ancestor_text</var><code>, </code><var>left_text</var><code>, </code><var>right_text</var><code>)</code><a name="index-merge3-_0028_0040var_007bancestor_005fpath_007d_002c-_0040var_007bleft_005fpath_007d_002c-_0040var_007bright_005fpath_007d_002c-_0040var_007bmerged_005fpath_007d_002c-_0040var_007bancestor_005ftext_007d_002c-_0040var_007bleft_005ftext_007d_002c-_0040var_007bright_005ftext_007d_0029-246"></a><dd>
 This hook is called to resolve merges that monotone could not resolve
 automatically.  The actual ancestor, left, and right contents of the
 file are passed in the <var>ancestor_text</var>, <var>left_text</var>, and
@@ -735,7 +750,7 @@ and if not, then simply searches for whatever is installed on the
 local system.  For details, see the code in <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
      <p><a name="get_005fpreferred_005fmerge3_005fcommand"></a>
-<br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-241"></a><dd>
+<br><dt><code>get_preferred_merge3_command(</code><var>tbl</var><code>)</code><a name="index-get_005fpreferred_005fmerge3_005fcommand_0028_0040var_007btbl_007d_0029-247"></a><dd>
 Returns the results of running an external merge on three strings. 
 <var>tbl</var> wraps up the various arguments for each merge command and
 is always provided by <a href="merge3.html#merge3">merge3</a>. If there is a particular editor
@@ -744,7 +759,7 @@ this hook to specify it.
 
    </dl>
 
-<h4 class="subsection">6.1.8 Selector Expansion</h4>
+<h4 class="subsection">6.1.9 Selector Expansion</h4>
 
 <p>Monotone's selectors are a powerful mechanism used to refer to revisions
 with symbolic names or groupings. Thanks to the hooks described in this
@@ -755,7 +770,7 @@ expand them to their full form.
    <p>For more detail on the use of selectors, see <a href="Selectors.html#Selectors">Selectors</a>.
 
      <dl>
-<dt><code>expand_selector (</code><var>str</var><code>)</code><a name="index-expand_005fselector-_0028_0040var_007bstr_007d_0029-242"></a><dd>
+<dt><code>expand_selector (</code><var>str</var><code>)</code><a name="index-expand_005fselector-_0028_0040var_007bstr_007d_0029-248"></a><dd>
 Attempts to expand <var>str</var> as a selector. Expansion generally means
 providing a type prefix for the selector, such as <code>a:</code> for authors
 or <code>d:</code> for dates. This hook is called once for each element of a
@@ -763,7 +778,7 @@ combined selector string (between <code>/</code> separators) prior to
 evaluation of the selector. For the default definition of this hook, see
 <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
 
-     <br><dt><code>expand_date (</code><var>str</var><code>)</code><a name="index-expand_005fdate-_0028_0040var_007bstr_007d_0029-243"></a><dd>
+     <br><dt><code>expand_date (</code><var>str</var><code>)</code><a name="index-expand_005fdate-_0028_0040var_007bstr_007d_0029-249"></a><dd>
 Attempts to expand <var>str</var> as a date expression. Expansion means
 recognizing and interpreting special words such as <code>yesterday</code> or
 <code>6 months ago</code> and converting them into well formed date
@@ -771,7 +786,7 @@ expressions. For the default definition of this hook, see <a href="Default-hooks
 
    </dl>
 
-<h4 class="subsection">6.1.9 Attribute Handling</h4>
+<h4 class="subsection">6.1.10 Attribute Handling</h4>
 
 <p>Some files in a project are special; they may require different handling
 (such as binary or structured files that should always be manually
@@ -786,7 +801,7 @@ they're added, and for custom triggers to be invoked on each file
 according to its attributes when the workspace is changed.
 
      <dl>
-<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-244"></a><dd>
+<dt><code>attr_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>, </code><var>value</var><code>)</code><a name="index-attr_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_002c-_0040var_007bvalue_007d_0029-250"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_functions</code>, at table
 entry <var>attribute</var>, is a function taking a file name <var>filename</var>
@@ -820,7 +835,7 @@ attribute. Its definition is:
                 end
              end
      </pre>
-     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-245"></a><dd>
+     <br><dt><code>attr_init_functions [</code><var>attribute</var><code>] (</code><var>filename</var><code>)</code><a name="index-attr_005finit_005ffunctions-_005b_0040var_007battribute_007d_005d-_0028_0040var_007bfilename_007d_0029-251"></a><dd>
 This is not a hook function, but a <em>table</em> of hook
 functions. Each entry in the table <code>attr_init_functions</code>, at
 table entry <var>attribute</var>, is a function taking a file (or
@@ -854,13 +869,13 @@ definition is:
 
    </dl>
 
-<h4 class="subsection">6.1.10 Validation Hooks</h4>
+<h4 class="subsection">6.1.11 Validation Hooks</h4>
 
 <p>If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
      <dl>
-<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-246"></a><dd>
+<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-252"></a><dd>
 This hook is called after the user has entered his/her commit message. 
 <var>message</var> is the commit message that the user has entered and
 <var>revision_text</var> is the full text of the changes for this revision,
@@ -874,13 +889,13 @@ rejects empty log messages.
 
    </dl>
 
-<h4 class="subsection">6.1.11 Meta Hooks</h4>
+<h4 class="subsection">6.1.12 Meta Hooks</h4>
 
 <p>Monotone allows the execution of arbitrary Lua hooks and functions through a
 special generalized "meta hook". See <samp><span class="command">automate lua</span></samp> for more information.
 
      <dl>
-<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-247"></a><dd>
+<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-253"></a><dd>
 This hook is explicitely called on every execution of <samp><span class="command">automate lua</span></samp>. 
 It takes a function name and zero or more string function arguments which are
 internally evaluated into Lua code. It returns a dump of the return value of

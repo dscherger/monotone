@@ -135,6 +135,10 @@ accidently pick the same name.
    <p>These conflicts are reported when someone tries to merge the two
 revisions containing the new files.
 
+   <p>There are similar conflicts for directories; the process for resolving
+them is different, because we need to worry about the files in the
+directories.
+
 <h5 class="subsubheading">Same file</h5>
 
 <p>For the first case, the conflict is resolved by dropping one file,
@@ -142,8 +146,9 @@ using <samp><span class="command">conflicts</span></samp> commands. The contents
 merged, in case they are slightly different. Typically, a user will
 have one of the files in their current workspace; the other can be
 retrieved via <samp><span class="command">automate get_file_of</span></samp>; the revision id is shown
-in the merge error message. The process can be confusing; here's a
-detailed example.
+in the merge error message.
+
+   <p>The process for files can be confusing; here's a detailed example.
 
    <p>Suppose Beth and Abe each commit a new file <samp><span class="file">checkout.sh</span></samp>. When
 Beth attempts to merge the two heads, she gets a message like:
@@ -205,6 +210,16 @@ merges, and updates:
 </pre>
    <p>Now she has her file in <samp><span class="file">thermostat-honeywell</span></samp>, and Abe's in
 <samp><span class="file">thermostat-westinghouse</span></samp>.
+
+<h5 class="subsubheading">Directories</h5>
+
+<p>When two directories are given the same name, there are still the two
+basic approaches to resolving the conflict; drop or rename. However,
+if a directory is dropped, all the files in it must also be dropped. 
+Therefore, it is almost always better to first rename one of the
+directories to a temporary name as the conflict resolution, and
+then deal with the files individually, renaming or merging and
+dropping each. Then finally drop the temporary directory.
 
 <h4 class="subheading">Missing Root Conflict</h4>
 
@@ -287,7 +302,10 @@ directory that has been deleted and into another directory that exists
 in both merge parents, or that has been added in the revision
 containing the orphaned files or directories.
 
-   <p><samp><span class="command">conflicts</span></samp> does not yet support resolving this conflict.
+   <p><samp><span class="command">conflicts</span></samp> supports resolving this conflict. However, if the
+orphaned node is a directory that is not empty, and the desired
+resolution is 'drop', the user must drop the directory contents and
+commit before invoking the conflicts commands.
 
 <h4 class="subheading">Multiple Name Conflict</h4>
 

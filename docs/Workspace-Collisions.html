@@ -63,14 +63,19 @@ same name.
 
    <p>These examples describe collisions on <samp><span class="command">update</span></samp>; the same kinds
 of things can happen with other commands that can bring changes into
-your workspace, such as <samp><span class="command">checkout</span></samp> or <samp><span class="command">pluck</span></samp> too.
+your workspace, such as <samp><span class="command">checkout</span></samp>, <samp><span class="command">pivot_root</span></samp> or
+<samp><span class="command">pluck</span></samp> too.
 
    <p>Monotone is careful to avoid hitting such collisions. Before changing
 the workspace, it will try and detect the possibility of collisions, and
 the command will fail, warning you about the names that collide.  The
 file content in the database is safe and can be recovered at any time,
 so monotone is conservative and will refuse to destroy the information
-in your workspace contents.
+in your workspace contents. Furthermore, all workspace-changing commands have
+an option <samp><span class="option">--move-conflicting-paths</span></samp>, which moves unversioned, but
+conflicting files and directories from the workspace into a new subdirectory
+under _MTN/conflicts. This is useful if you want to ensure that an update
+always succeeds and you just want to move blocking paths out of the way.
 
    <p>However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:

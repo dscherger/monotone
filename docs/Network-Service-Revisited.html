@@ -110,10 +110,11 @@ in the team-members' keys:
 
 <pre class="smallexample">     $ mtn --db=server.mtn db init
      $ mtn genkey monotone-server@www.juicebot.co.jp
+     enter passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim enters a new passphrase&gt;</i>
+     confirm passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim confirms the passphrase&gt;</i>
      mtn: generating key-pair 'monotone-server@www.juicebot.co.jp'
-     enter passphrase for key ID [monotone-server@www.juicebot.co.jp] : <i>&lt;Jim enters a new passphrase&gt;</i>
-     confirm passphrase for key ID [monotone-server@www.juicebot.co.jp]: <i>&lt;Jim confirms the passphrase&gt;</i>
      mtn: storing key-pair 'monotone-server@www.juicebot.co.jp' in /home/jim/.monotone/keys
+     mtn: key 'abe@juicebot.co.jp' has hash '78be08f7a2a316a9f7c6b0db544ed20673ea2190'
      $ cat abe.pubkey beth.pubkey jim.pubkey | mtn --db=server.mtn read
      mtn: read 3 packets
 </pre>

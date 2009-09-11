@@ -46,26 +46,29 @@ to encrypt the key when storing it on disk, as a security measure.
    <p>Jim does the following:
 
 <pre class="smallexample">     $ mtn genkey jim@juicebot.co.jp
+     enter passphrase for key ID [jim@juicebot.co.jp] (...): <i>&lt;Jim enters his passphrase&gt;</i>
+     confirm passphrase for key ID [jim@juicebot.co.jp] (...): <i>&lt;Jim confirms his passphrase&gt;</i>
      mtn: generating key-pair 'jim@juicebot.co.jp'
-     enter passphrase for key ID [jim@juicebot.co.jp] : <i>&lt;Jim enters his passphrase&gt;</i>
-     confirm passphrase for key ID [jim@juicebot.co.jp]: <i>&lt;Jim confirms his passphrase&gt;</i>
      mtn: storing key-pair 'jim@juicebot.co.jp' in /home/jim/.monotone/keys
+     mtn: key 'jim@juicebot.co.jp' has hash '398cb10dcd4fadf4f7849a3734b626a83e0bb2ae'
 </pre>
    <p>Abe does something similar:
 
 <pre class="smallexample">     $ mtn genkey abe@juicebot.co.jp
+     enter passphrase for key ID [abe@juicebot.co.jp] (...): <i>&lt;Abe enters his passphrase&gt;</i>
+     confirm passphrase for key ID [abe@juicebot.co.jp] (...): <i>&lt;Abe confirms his passphrase&gt;</i>
      mtn: generating key-pair 'abe@juicebot.co.jp'
-     enter passphrase for key ID [abe@juicebot.co.jp] : <i>&lt;Abe enters his passphrase&gt;</i>
-     confirm passphrase for key ID [abe@juicebot.co.jp]: <i>&lt;Abe confirms his passphrase&gt;</i>
      mtn: storing key-pair 'abe@juicebot.co.jp' in /home/abe/.monotone/keys
+     mtn: key 'abe@juicebot.co.jp' has hash '62d8d1798e716868acde75c0fc4c84760003863d'
 </pre>
    <p>as does Beth:
 
 <pre class="smallexample">     $ mtn genkey beth@juicebot.co.jp
+     enter passphrase for key ID [beth@juicebot.co.jp] (...): <i>&lt;Beth enters her passphrase&gt;</i>
+     confirm passphrase for key ID [beth@juicebot.co.jp] (...): <i>&lt;Beth confirms her passphrase&gt;</i>
      mtn: generating key-pair 'beth@juicebot.co.jp'
-     enter passphrase for key ID [beth@juicebot.co.jp] : <i>&lt;Beth enters her passphrase&gt;</i>
-     confirm passphrase for key ID [beth@juicebot.co.jp]: <i>&lt;Beth confirms her passphrase&gt;</i>
      mtn: storing key-pair 'beth@juicebot.co.jp' in /home/beth/.monotone/keys
+     mtn: key 'beth@juicebot.co.jp' has hash 'c1d47c065a21f1e1c4fbdefaa2f37bd2c15ee4b1'
 </pre>
    <p>Each programmer has now generated a key pair and placed it in their
 keystore. Each can list the keys in their keystore, to ensure
@@ -74,18 +77,19 @@ the correct key was generated. For example, Jim might see this:
 <pre class="smallexample">     $ mtn list keys
      
      [public keys]
-     9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c jim@juicebot.co.jp   (*)
+     398cb10dcd4fadf4f7849a3734b626a83e0bb2ae jim@juicebot.co.jp   (*)
      (*) - only in /home/jim/.monotone/keys/
      
      
      [private keys]
-     771ace046c27770a99e5fddfa99c9247260b5401 jim@juicebot.co.jp
+     398cb10dcd4fadf4f7849a3734b626a83e0bb2ae jim@juicebot.co.jp
 </pre>
    <p>The hexadecimal string printed out before each key name is a
 <em>fingerprint</em> of the key, and can be used to verify that the key
 you have stored under a given name is the one you intended to
 store. Monotone will never permit one keystore to store two keys with
-the same name or the same fingerprint.
+the same fingerprint, however distincts keys with equal names
+are possible.
 
    <p>This output shows one private and one public key stored under the name
 <code>jim@juicebot.co.jp</code>, so it indicates that Jim's key-pair has been
@@ -101,9 +105,9 @@ tutorial text to skip the passphrase prompts) so he decides to use
 ssh-agent can understand and adding it with <code>ssh-add</code>.
 
 <pre class="smallexample">     $ mtn ssh_agent_export ~/.ssh/id_monotone
-     enter passphrase for key ID [user@example.com]:
-     enter new passphrase for key ID [user@example.com]:
-     confirm passphrase for key ID [user@example.com]:
+     enter passphrase for key ID [user@example.com] (1234abcd...):
+     enter new passphrase for key ID [user@example.com] (1234abcd...):
+     confirm passphrase for key ID [user@example.com] (1234abcd...):
      $ chmod 600 ~/.ssh/id_monotone
 </pre>
    <p>From now on, Jim just needs to add his key to ssh-agent when he logs in
@@ -125,7 +129,7 @@ this by writing a <em>hook function</em> which returns the passphrase:
 
 <pre class="smallexample">     $ mkdir ~/.monotone
      $ cat &gt;&gt;~/.monotone/monotonerc
-     function get_passphrase(keypair_id)
+     function get_passphrase(key_identity)
        return "jimsekret"
      end
      ^D

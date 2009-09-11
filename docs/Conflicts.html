@@ -50,6 +50,8 @@ bookkeeping directory.
 directory, or absolute. In the conflict file, they are relative to the
 workspace root, or absolute.
 
+<h4 class="subheading">Commands</h4>
+
      <dl>
 <dt><samp><span class="command">mtn conflicts --conflicts-file=</span><var>file</var><span class="command"> store </span><var>left_rev_id</var> <var>right_rev_id</var></samp><a name="index-mtn-conflicts-_002d_002dconflicts_002dfile_003d_0040var_007bfile_007d-store-_0040var_007bleft_005frev_005fid_007d-_0040var_007bright_005frev_005fid_007d-16"></a><dd>Store the conflicts encountered by merging <var>left_rev_id</var> with
 <var>right_rev_id</var>, in the specified file.
@@ -82,7 +84,9 @@ resolution files in <samp><span class="file">_MTN/resolutions</span></samp>; thi
 convenient way to clean up. 
 </dl>
 
-   <p>For single file conflicts, there are two possible resolutions:
+<h4 class="subheading">Single file conflict resolutions</h4>
+
+<p>For single file conflicts, there are several possible resolutions:
 
      <dl>
 <dt><samp><span class="command">interactive </span><var>file</var></samp><a name="index-interactive-_0040var_007bfile_007d-23"></a><dd>The Lua <code>merge3</code> hook is called to allow the user to manually
@@ -96,24 +100,44 @@ conflicts file.
      <br><dt><samp><span class="command">user </span><var>file</var></samp><a name="index-user-_0040var_007bfile_007d-24"></a><dd>The file contents are replaced by the contents of the specified file.
 
      <p>This inserts a <var>resolved_user file</var> conflict resolution in the
-conflicts file. 
-</dl>
+conflicts file.
 
-   <p>For two file conflicts, the possible resolutions are:
+     <br><dt><samp><span class="command">drop</span></samp><a name="index-drop-25"></a><dd>The file is dropped in the merge. This is useful for an orphaned file
+conflict.
+
+     <p>This inserts a <var>resolved_drop_left</var> conflict resolution in the
+conflicts file.
+
+     <br><dt><samp><span class="command">rename </span><var>filename</var></samp><a name="index-rename-_0040var_007bfilename_007d-26"></a><dd>The file is renamed. This is useful for an orphaned file
+conflict.
+
+     <p>This inserts a <var>resolved_rename_left filename</var> conflict resolution
+in the conflicts file.
+
+   </dl>
+
+<h4 class="subheading">Two file conflict resolutions</h4>
+
+<p>For two file conflicts, the possible resolutions are:
 
      <dl>
-<dt><samp><span class="command">drop</span></samp><a name="index-drop-25"></a><dd>The file is dropped in the merge.
+<dt><samp><span class="command">drop</span></samp><a name="index-drop-27"></a><dd>The file is dropped in the merge.
 
      <p>This inserts a <var>resolved_drop_left</var> or <var>resolved_drop_right</var>
 conflict resolution in the conflicts file.
 
-     <br><dt><samp><span class="command">rename </span><var>filename</var></samp><a name="index-rename-_0040var_007bfilename_007d-26"></a><dd>The file is renamed.
+     <br><dt><samp><span class="command">keep</span></samp><a name="index-keep-28"></a><dd>The file is kept in the merge.
+
+     <p>This inserts a <var>resolved_keep_left</var> or <var>resolved_keep_right</var>
+conflict resolution in the conflicts file.
+
+     <br><dt><samp><span class="command">rename </span><var>filename</var></samp><a name="index-rename-_0040var_007bfilename_007d-29"></a><dd>The file is renamed.
 
      <p>This inserts a <var>resolved_rename_left filename</var> or
 <var>resolved_rename_right filename</var> conflict resolution in the
 conflicts file.
 
-     <br><dt><samp><span class="command">user </span><var>file</var></samp><a name="index-user-_0040var_007bfile_007d-27"></a><dd>The file contents are replaced by the contents of the specified file. 
+     <br><dt><samp><span class="command">user </span><var>file</var></samp><a name="index-user-_0040var_007bfile_007d-30"></a><dd>The file contents are replaced by the contents of the specified file. 
 The other file in the conflict must be dropped or renamed.
 
      <p>This inserts a <var>resolved_user_left file</var> or

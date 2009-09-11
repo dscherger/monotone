@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.4 Informative</h3>
 
      <dl>
-<dt><samp><span class="command">mtn status</span></samp><a name="index-mtn-status-63"></a><dt><samp><span class="command">mtn status </span><var>pathname...</var></samp><a name="index-mtn-status-_0040var_007bpathname_002e_002e_002e_007d-64"></a><dd>
+<dt><samp><span class="command">mtn status</span></samp><a name="index-mtn-status-66"></a><dt><samp><span class="command">mtn status </span><var>pathname...</var></samp><a name="index-mtn-status-_0040var_007bpathname_002e_002e_002e_007d-67"></a><dd>
 This command prints a description of the &ldquo;status&rdquo; of your workspace. 
 In particular, it prints:
           <ul>
@@ -57,7 +57,7 @@ will, by default, include <em>all changes</em> in the workspace.
 Specifying only the pathname "." will restrict <samp><span class="command">status</span></samp> to files
 changed within the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-65"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--revision=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [</span><var>pathname...</var><span class="command">]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002drevision_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002dno_002dgraph_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-66"></a><dd>
+     <br><dt><samp><span class="command">mtn log</span></samp><a name="index-mtn-log-68"></a><dt><samp><span class="command">mtn log [--last=</span><var>n</var><span class="command">] [--next=</span><var>n</var><span class="command">] [--from=</span><var>id</var><span class="command"> [...]] [--to=</span><var>id</var><span class="command"> [...]] [--revision=</span><var>id</var><span class="command"> [...]] [--brief] [--no-merges] [--no-files] [--no-graph] [--diffs] [</span><var>pathname...</var><span class="command">]</span></samp><a name="index-mtn-log-_005b_002d_002dlast_003d_0040var_007bn_007d_005d-_005b_002d_002dnext_003d_0040var_007bn_007d_005d-_005b_002d_002dfrom_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dto_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002drevision_003d_0040var_007bid_007d-_005b_002e_002e_002e_005d_005d-_005b_002d_002dbrief_005d-_005b_002d_002dno_002dmerges_005d-_005b_002d_002dno_002dfiles_005d-_005b_002d_002dno_002dgraph_005d-_005b_002d_002ddiffs_005d-_005b_0040var_007bpathname_002e_002e_002e_007d_005d-69"></a><dd>
 This command prints out a log, in forward ancestry order by default
 but optionally in reverse ancestry order, of small history summaries. 
 Each summary contains author, date, branch, changelog and comment
@@ -127,7 +127,7 @@ diff of the changes in each revision.
      <p>If one or more files are given, the command will only log the revisions
 where those files are changed.
 
-     <br><dt><samp><span class="command">mtn annotate </span><var>file</var></samp><a name="index-mtn-annotate-_0040var_007bfile_007d-67"></a><dt><samp><span class="command">mtn annotate [--revision=</span><var>id</var><span class="command">] [--revs-only] </span><var>file</var></samp><a name="index-mtn-annotate-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-_005b_002d_002drevs_002donly_005d-_0040var_007bfile_007d-68"></a><dd>
+     <br><dt><samp><span class="command">mtn annotate </span><var>file</var></samp><a name="index-mtn-annotate-_0040var_007bfile_007d-70"></a><dt><samp><span class="command">mtn annotate [--revision=</span><var>id</var><span class="command">] [--revs-only] </span><var>file</var></samp><a name="index-mtn-annotate-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-_005b_002d_002drevs_002donly_005d-_0040var_007bfile_007d-71"></a><dd>
 Dumps an annotated copy of the file to stdout. The output is in the form
 &lt;short revision id&gt;.. by &lt;author&gt; &lt;date&gt;: &lt;line&gt; Only the first 8
 characters of the revision id are displayed, the author cert value is
@@ -138,7 +138,7 @@ is truncated to remove the time of day.
 translated to &lt;revision id&gt;: &lt;line&gt; in the output, where &lt;revision id&gt;
 is the revision in which that line of the file was last edited.
 
-     <br><dt><samp><span class="command">mtn complete file </span><var>partial-id</var></samp><a name="index-mtn-complete-file-_0040var_007bpartial_002did_007d-69"></a><dt><samp><span class="command">mtn complete [--brief] key </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-key-_0040var_007bpartial_002did_007d-70"></a><dt><samp><span class="command">mtn complete [--brief] revision </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-revision-_0040var_007bpartial_002did_007d-71"></a><dd>
+     <br><dt><samp><span class="command">mtn complete file </span><var>partial-id</var></samp><a name="index-mtn-complete-file-_0040var_007bpartial_002did_007d-72"></a><dt><samp><span class="command">mtn complete [--brief] key </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-key-_0040var_007bpartial_002did_007d-73"></a><dt><samp><span class="command">mtn complete [--brief] revision </span><var>partial-id</var></samp><a name="index-mtn-complete-_005b_002d_002dbrief_005d-revision-_0040var_007bpartial_002did_007d-74"></a><dd>
 These commands print out all known completions of a partial <span class="sc">sha1</span>
 value, listing completions which are <code>file</code>, <code>manifest</code> or
 <code>revision</code> IDs depending on which variant is used. For
@@ -164,17 +164,20 @@ present users with additional information about each completion option.
           01f992577bd8bcdcade0f89e724fd5dc2d2bbe8a kinetik@orcon.nz 2005-05-11T05:19:29
           01faad191d8d0474777c70b4d606782942333a78 kinetik@orcon.nz 2005-04-11T04:24:01
      </pre>
-     <br><dt><samp><span class="command">mtn diff [--unified] [--no-show-encloser]</span></samp><a name="index-mtn-diff-_005b_002d_002dunified_005d-_005b_002d_002dno_002dshow_002dencloser_005d-72"></a><dt><samp><span class="command">mtn diff --context [--no-show-encloser]</span></samp><a name="index-mtn-diff-_002d_002dcontext-_005b_002d_002dno_002dshow_002dencloser_005d-73"></a><dt><samp><span class="command">mtn diff --external [--diff-args=</span><var>argstring</var><span class="command">]</span></samp><a name="index-mtn-diff-_002d_002dexternal-_005b_002d_002ddiff_002dargs_003d_0040var_007bargstring_007d_005d-74"></a><dt><samp><span class="command">mtn diff </span><var>pathname...</var></samp><a name="index-mtn-diff-_0040var_007bpathname_002e_002e_002e_007d-75"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid_007d-76"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id</var> <var>pathname...</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid_007d-_0040var_007bpathname_002e_002e_002e_007d-77"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id1</var><span class="command"> --revision=</span><var>id2</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid1_007d-_002d_002drevision_003d_0040var_007bid2_007d-78"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id1</var><span class="command"> --revision=</span><var>id2</var> <var>pathname...</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid1_007d-_002d_002drevision_003d_0040var_007bid2_007d-_0040var_007bpathname_002e_002e_002e_007d-79"></a><dd>
+     <br><dt><samp><span class="command">mtn diff [--unified] [--no-show-encloser]</span></samp><a name="index-mtn-diff-_005b_002d_002dunified_005d-_005b_002d_002dno_002dshow_002dencloser_005d-75"></a><dt><samp><span class="command">mtn diff --context [--no-show-encloser]</span></samp><a name="index-mtn-diff-_002d_002dcontext-_005b_002d_002dno_002dshow_002dencloser_005d-76"></a><dt><samp><span class="command">mtn diff --external [--diff-args=</span><var>argstring</var><span class="command">]</span></samp><a name="index-mtn-diff-_002d_002dexternal-_005b_002d_002ddiff_002dargs_003d_0040var_007bargstring_007d_005d-77"></a><dt><samp><span class="command">mtn diff </span><var>pathname...</var></samp><a name="index-mtn-diff-_0040var_007bpathname_002e_002e_002e_007d-78"></a><dt><samp><span class="command">mtn diff [--reverse] --revision=</span><var>id</var></samp><a name="index-mtn-diff-_005b_002d_002dreverse_005d-_002d_002drevision_003d_0040var_007bid_007d-79"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id</var> <var>pathname...</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid_007d-_0040var_007bpathname_002e_002e_002e_007d-80"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id1</var><span class="command"> --revision=</span><var>id2</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid1_007d-_002d_002drevision_003d_0040var_007bid2_007d-81"></a><dt><samp><span class="command">mtn diff --revision=</span><var>id1</var><span class="command"> --revision=</span><var>id2</var> <var>pathname...</var></samp><a name="index-mtn-diff-_002d_002drevision_003d_0040var_007bid1_007d-_002d_002drevision_003d_0040var_007bid2_007d-_0040var_007bpathname_002e_002e_002e_007d-82"></a><dd>
 These commands print out GNU &ldquo;unified diff format&rdquo; textual difference
 listings between various manifest versions. With no <samp><span class="option">--revision</span></samp>
-options, <samp><span class="command">diff</span></samp> will print the differences between the
-base revision and the current revision in the workspace.
+options, <samp><span class="command">diff</span></samp> will print the difference from the
+base revision to the current revision in the workspace.
 
      <p>With one <samp><span class="option">--revision</span></samp> option, <samp><span class="command">diff</span></samp> will print the
-differences between the revision <var>id</var> and the current revision in
-the workspace.  With two <samp><span class="option">--revision</span></samp> options <samp><span class="command">diff</span></samp>
-will print the differences between revisions <var>id1</var> and <var>id2</var>,
-ignoring any workspace.
+difference from the revision <var>id</var> to the current revision in the
+workspace. If <samp><span class="option">--reverse</span></samp> is given, the order of the diff is
+reversed.
+
+     <p>With two <samp><span class="option">--revision</span></samp> options <samp><span class="command">diff</span></samp> will print the
+difference from revision <var>id1</var> to <var>id2</var>, ignoring any
+workspace.
 
      <p>In all cases, monotone will print a textual summary &ndash; identical to
 the summary presented by <samp><span class="command">mtn status</span></samp> &ndash; of the logical
@@ -229,13 +232,13 @@ formatting.  The actual invocation of <samp><span class="command">diff</span></s
 passed to it, and so on, are controlled by the hook
 <code>external_diff</code>; see <a href="Hooks.html#Hooks">Hooks</a> for more details.
 
-     <br><dt><samp><span class="command">mtn list certs </span><var>id</var></samp><a name="index-mtn-list-certs-_0040var_007bid_007d-80"></a><br><dt><samp><span class="command">mtn ls certs </span><var>id</var></samp><a name="index-mtn-ls-certs-_0040var_007bid_007d-81"></a><dd>
+     <br><dt><samp><span class="command">mtn list certs </span><var>id</var></samp><a name="index-mtn-list-certs-_0040var_007bid_007d-83"></a><br><dt><samp><span class="command">mtn ls certs </span><var>id</var></samp><a name="index-mtn-ls-certs-_0040var_007bid_007d-84"></a><dd>
 These commands will print out a list of certificates associated with
 a particular revision <var>id</var>. Each line of the print out will
 indicate:
           <ul>
 <li>Whether the signature on the certificate is <code>ok</code> or <code>bad</code>
-<li>The key ID of the signer of the certificate
+<li>The key used to sign the certificate
 <li>The name of the certificate
 <li>The value of the certificate
 </ul>
@@ -248,22 +251,22 @@ branch:
           mtn: expanding partial id '4a96'
           mtn: expanded to '4a96a230293456baa9c6e7167cafb3c5b52a8e7f'
           -----------------------------------------------------------------
-          Key   : graydon@pobox.com
+          Key   : graydon@pobox.com (10b5b36b4a...)
           Sig   : ok
           Name  : author
           Value : graydon@dub.venge.net
           -----------------------------------------------------------------
-          Key   : graydon@pobox.com
+          Key   : graydon@pobox.com (10b5b36b4a...)
           Sig   : ok
           Name  : branch
           Value : monotone
           -----------------------------------------------------------------
-          Key   : graydon@pobox.com
+          Key   : graydon@pobox.com (10b5b36b4a...)
           Sig   : ok
           Name  : date
           Value : 2003-10-17T03:20:27
           -----------------------------------------------------------------
-          Key   : graydon@pobox.com
+          Key   : graydon@pobox.com (10b5b36b4a...)
           Sig   : ok
           Name  : changelog
           Value : 2003-10-16  graydon hoare  &lt;graydon@pobox.com&gt;
@@ -276,7 +279,7 @@ branch:
                 :         * testsuite.at: Call t_cross.at.
                 :
      </pre>
-     <br><dt><samp><span class="command">mtn list duplicates [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-list-duplicates-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-82"></a><br><dt><samp><span class="command">mtn ls duplicates [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-ls-duplicates-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-83"></a><dd>
+     <br><dt><samp><span class="command">mtn list duplicates [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-list-duplicates-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-85"></a><br><dt><samp><span class="command">mtn ls duplicates [--revision=</span><var>id</var><span class="command">]</span></samp><a name="index-mtn-ls-duplicates-_005b_002d_002drevision_003d_0040var_007bid_007d_005d-86"></a><dd>
 This command lists duplicate files in a given revision. If no revision is
 given, the workspace is used instead. Ignored and unknown files are
 excluded from the listing.
@@ -284,24 +287,24 @@ excluded from the listing.
      <p>Two or more files are considered duplicates if the <span class="sc">sha1</span> hashes of their
 contents are equal.
 
-     <br><dt><samp><span class="command">mtn list keys</span></samp><a name="index-mtn-list-keys-84"></a><br><dt><samp><span class="command">mtn ls keys</span></samp><a name="index-mtn-ls-keys-85"></a><dt><samp><span class="command">mtn list keys </span><var>pattern</var></samp><a name="index-mtn-list-keys-_0040var_007bpattern_007d-86"></a><dt><samp><span class="command">mtn ls keys </span><var>pattern</var></samp><a name="index-mtn-ls-keys-_0040var_007bpattern_007d-87"></a><dd>These commands list <span class="sc">rsa</span> keys held in your keystore and current database. 
+     <br><dt><samp><span class="command">mtn list keys</span></samp><a name="index-mtn-list-keys-87"></a><br><dt><samp><span class="command">mtn ls keys</span></samp><a name="index-mtn-ls-keys-88"></a><dt><samp><span class="command">mtn list keys </span><var>pattern</var></samp><a name="index-mtn-list-keys-_0040var_007bpattern_007d-89"></a><dt><samp><span class="command">mtn ls keys </span><var>pattern</var></samp><a name="index-mtn-ls-keys-_0040var_007bpattern_007d-90"></a><dd>These commands list <span class="sc">rsa</span> keys held in your keystore and current database. 
 They do not print out any cryptographic information; they simply list the
 names of public and private keys you have on hand.
 
      <p>If <var>pattern</var> is provided, it is used as a glob to limit the keys
 listed. Otherwise all keys in your database are listed.
 
-     <br><dt><samp><span class="command">mtn list branches</span></samp><a name="index-mtn-list-branches-88"></a><br><dt><samp><span class="command">mtn ls branches</span></samp><a name="index-mtn-ls-branches-89"></a><dd>
+     <br><dt><samp><span class="command">mtn list branches</span></samp><a name="index-mtn-list-branches-91"></a><br><dt><samp><span class="command">mtn ls branches</span></samp><a name="index-mtn-ls-branches-92"></a><dd>
 This command lists all known branches in your database.
 
-     <br><dt><samp><span class="command">mtn list tags</span></samp><a name="index-mtn-list-tags-90"></a><br><dt><samp><span class="command">mtn ls tags</span></samp><a name="index-mtn-ls-tags-91"></a><dd>
+     <br><dt><samp><span class="command">mtn list tags</span></samp><a name="index-mtn-list-tags-93"></a><br><dt><samp><span class="command">mtn ls tags</span></samp><a name="index-mtn-ls-tags-94"></a><dd>
 This command lists all known tags in your database.
 
-     <br><dt><samp><span class="command">mtn list vars</span></samp><a name="index-mtn-list-vars-92"></a><br><dt><samp><span class="command">mtn ls vars</span></samp><a name="index-mtn-ls-vars-93"></a><br><dt><samp><span class="command">mtn list vars </span><var>domain</var></samp><a name="index-mtn-list-vars-_0040var_007bdomain_007d-94"></a><br><dt><samp><span class="command">mtn ls vars </span><var>domain</var></samp><a name="index-mtn-ls-vars-_0040var_007bdomain_007d-95"></a><dd>
+     <br><dt><samp><span class="command">mtn list vars</span></samp><a name="index-mtn-list-vars-95"></a><br><dt><samp><span class="command">mtn ls vars</span></samp><a name="index-mtn-ls-vars-96"></a><br><dt><samp><span class="command">mtn list vars </span><var>domain</var></samp><a name="index-mtn-list-vars-_0040var_007bdomain_007d-97"></a><br><dt><samp><span class="command">mtn ls vars </span><var>domain</var></samp><a name="index-mtn-ls-vars-_0040var_007bdomain_007d-98"></a><dd>
 This command lists all vars in your database, or all vars within a given
 <var>domain</var>.  See <a href="Vars.html#Vars">Vars</a> for more information.
 
-     <br><dt><samp><span class="command">mtn list known</span></samp><a name="index-mtn-list-known-96"></a><br><dt><samp><span class="command">mtn ls known</span></samp><a name="index-mtn-ls-known-97"></a><dt><samp><span class="command">mtn list known </span><var>pathname...</var></samp><a name="index-mtn-list-known-_0040var_007bpathname_002e_002e_002e_007d-98"></a><dt><samp><span class="command">mtn ls known </span><var>pathname...</var></samp><a name="index-mtn-ls-known-_0040var_007bpathname_002e_002e_002e_007d-99"></a><dd>
+     <br><dt><samp><span class="command">mtn list known</span></samp><a name="index-mtn-list-known-99"></a><br><dt><samp><span class="command">mtn ls known</span></samp><a name="index-mtn-ls-known-100"></a><dt><samp><span class="command">mtn list known </span><var>pathname...</var></samp><a name="index-mtn-list-known-_0040var_007bpathname_002e_002e_002e_007d-101"></a><dt><samp><span class="command">mtn ls known </span><var>pathname...</var></samp><a name="index-mtn-ls-known-_0040var_007bpathname_002e_002e_002e_007d-102"></a><dd>
 This command lists all files which would become part of the manifest of
 the next revision if you committed your workspace at this point.
 
@@ -314,7 +317,7 @@ known</span></samp> command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for known
 files to the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn list unknown</span></samp><a name="index-mtn-list-unknown-100"></a><br><dt><samp><span class="command">mtn ls unknown</span></samp><a name="index-mtn-ls-unknown-101"></a><dt><samp><span class="command">mtn list unknown </span><var>pathname...</var></samp><a name="index-mtn-list-unknown-_0040var_007bpathname_002e_002e_002e_007d-102"></a><dt><samp><span class="command">mtn ls unknown </span><var>pathname...</var></samp><a name="index-mtn-ls-unknown-_0040var_007bpathname_002e_002e_002e_007d-103"></a><dd>
+     <br><dt><samp><span class="command">mtn list unknown</span></samp><a name="index-mtn-list-unknown-103"></a><br><dt><samp><span class="command">mtn ls unknown</span></samp><a name="index-mtn-ls-unknown-104"></a><dt><samp><span class="command">mtn list unknown </span><var>pathname...</var></samp><a name="index-mtn-list-unknown-_0040var_007bpathname_002e_002e_002e_007d-105"></a><dt><samp><span class="command">mtn ls unknown </span><var>pathname...</var></samp><a name="index-mtn-ls-unknown-_0040var_007bpathname_002e_002e_002e_007d-106"></a><dd>
 This command lists all files in your workspace that monotone is
 either ignoring or knows nothing about.
 
@@ -327,7 +330,7 @@ unknown</span></samp> command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for unknown
 files to the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn list ignored</span></samp><a name="index-mtn-list-ignored-104"></a><br><dt><samp><span class="command">mtn ls ignored</span></samp><a name="index-mtn-ls-ignored-105"></a><dt><samp><span class="command">mtn list ignored </span><var>pathname...</var></samp><a name="index-mtn-list-ignored-_0040var_007bpathname_002e_002e_002e_007d-106"></a><dt><samp><span class="command">mtn ls ignored </span><var>pathname...</var></samp><a name="index-mtn-ls-ignored-_0040var_007bpathname_002e_002e_002e_007d-107"></a><dd>
+     <br><dt><samp><span class="command">mtn list ignored</span></samp><a name="index-mtn-list-ignored-107"></a><br><dt><samp><span class="command">mtn ls ignored</span></samp><a name="index-mtn-ls-ignored-108"></a><dt><samp><span class="command">mtn list ignored </span><var>pathname...</var></samp><a name="index-mtn-list-ignored-_0040var_007bpathname_002e_002e_002e_007d-109"></a><dt><samp><span class="command">mtn ls ignored </span><var>pathname...</var></samp><a name="index-mtn-ls-ignored-_0040var_007bpathname_002e_002e_002e_007d-110"></a><dd>
 This command lists all files in your workspace that monotone is
 intentionally ignoring, due to the results of the <code>ignore_file
 (</code><var>filename</var><code>)</code> hook.
@@ -341,7 +344,7 @@ ignored</span></samp> command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for ignored
 files to the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn list missing</span></samp><a name="index-mtn-list-missing-108"></a><br><dt><samp><span class="command">mtn ls missing</span></samp><a name="index-mtn-ls-missing-109"></a><dt><samp><span class="command">mtn list missing </span><var>pathname...</var></samp><a name="index-mtn-list-missing-_0040var_007bpathname_002e_002e_002e_007d-110"></a><dt><samp><span class="command">mtn ls missing </span><var>pathname...</var></samp><a name="index-mtn-ls-missing-_0040var_007bpathname_002e_002e_002e_007d-111"></a><dd>
+     <br><dt><samp><span class="command">mtn list missing</span></samp><a name="index-mtn-list-missing-111"></a><br><dt><samp><span class="command">mtn ls missing</span></samp><a name="index-mtn-ls-missing-112"></a><dt><samp><span class="command">mtn list missing </span><var>pathname...</var></samp><a name="index-mtn-list-missing-_0040var_007bpathname_002e_002e_002e_007d-113"></a><dt><samp><span class="command">mtn ls missing </span><var>pathname...</var></samp><a name="index-mtn-ls-missing-_0040var_007bpathname_002e_002e_002e_007d-114"></a><dd>
 This command lists all files in your workspace's base manifest,
 which are not present in the workspace.
 
@@ -354,7 +357,7 @@ missing</span></samp> command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for missing
 files to the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn list changed</span></samp><a name="index-mtn-list-changed-112"></a><br><dt><samp><span class="command">mtn ls changed</span></samp><a name="index-mtn-ls-changed-113"></a><dt><samp><span class="command">mtn list changed </span><var>pathname...</var></samp><a name="index-mtn-list-changed-_0040var_007bpathname_002e_002e_002e_007d-114"></a><dt><samp><span class="command">mtn ls changed </span><var>pathname...</var></samp><a name="index-mtn-ls-changed-_0040var_007bpathname_002e_002e_002e_007d-115"></a><dd>
+     <br><dt><samp><span class="command">mtn list changed</span></samp><a name="index-mtn-list-changed-115"></a><br><dt><samp><span class="command">mtn ls changed</span></samp><a name="index-mtn-ls-changed-116"></a><dt><samp><span class="command">mtn list changed </span><var>pathname...</var></samp><a name="index-mtn-list-changed-_0040var_007bpathname_002e_002e_002e_007d-117"></a><dt><samp><span class="command">mtn ls changed </span><var>pathname...</var></samp><a name="index-mtn-ls-changed-_0040var_007bpathname_002e_002e_002e_007d-118"></a><dd>
 This command lists all files in your workspace that have changed
 compared to the base revision, including files that are dropped, added
 or renamed.
@@ -368,7 +371,7 @@ changed</span></samp> command will, by default, search the entire workspace.
 Specifying only the pathname "." will restrict the search for known
 files to the current subdirectory of the workspace.
 
-     <br><dt><samp><span class="command">mtn show_conflicts </span><var>rev</var> <var>rev</var></samp><a name="index-mtn-show_005fconflicts-_0040var_007brev_007d-_0040var_007brev_007d-116"></a><dd>
+     <br><dt><samp><span class="command">mtn show_conflicts </span><var>rev</var> <var>rev</var></samp><a name="index-mtn-show_005fconflicts-_0040var_007brev_007d-_0040var_007brev_007d-119"></a><dd>
 This command shows what conflicts would need to be resolved in order to merge
 the given revisions.
 
