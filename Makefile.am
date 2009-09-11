@@ -512,6 +512,7 @@ check-local: tester_tests.status unit_tests.status lua_tests.status
 
 run_%_tests: Makefile
 	$(AM_V_GEN){ echo '#!/bin/sh';					  \
+	  echo 'export LANG=C';						  \
 	  echo 'PATH=$(top_builddir):$$PATH';				  \
 	  echo '$(top_builddir)/tester $(srcdir)/$*-testsuite.lua "$$@"'; \
 	  echo 'echo $$? > $*_tests.status';				  \
