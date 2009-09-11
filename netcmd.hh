@@ -73,6 +73,11 @@ typedef enum
     data_cmd = 8,
     delta_cmd = 9,
 
+    // automation commands
+    automate_cmd = 10,
+    automate_command_cmd = 11,
+    automate_packet_cmd = 12,
+
     // usher commands
     // usher_cmd is sent either by a proxy that needs to know where
     // to forward a connection (the reply gives the desired hostname and
@@ -177,6 +182,27 @@ public:
   void write_delta_cmd(netcmd_item_type & type,
                        id const & base, id const & ident,
                        delta const & del);
+
+  void read_automate_cmd(key_id & client,
+                         id & nonce1,
+                         rsa_oaep_sha_data & hmac_key_encrypted,
+                         rsa_sha1_signature & signature);
+  void write_automate_cmd(key_id const & client,
+                          id const & nonce1,
+                          rsa_oaep_sha_data & hmac_key_encrypted,
+                          rsa_sha1_signature & signature);
+  void read_automate_command_cmd(std::vector<std::string> & args,
+                                 std::vector<std::pair<std::string, std::string> > & opts);
+  void write_automate_command_cmd(std::vector<std::string> const & args,
+                                  std::vector<std::pair<std::string, std::string> > const & opts);
+  void read_automate_packet_cmd(int & command_num,
+                                int & err_code,
+                                bool & last,
+                                std::string & packet_data);
+  void write_automate_packet_cmd(int command_num,
+                                 int err_code,
+                                 bool last,
+                                 std::string const & packet_data);
 
   void read_usher_cmd(utf8 & greeting) const;
   void write_usher_cmd(utf8 const & greeting);
