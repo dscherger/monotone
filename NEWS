@@ -2,9 +2,6 @@
 
         0.45 release.
 
-        FIXME - bump automate major version, fix commands documented as
-        being updated in version FIXME
-
         Changes
 
         - Certs now link to the key that signed them by the key's
@@ -25,9 +22,18 @@
           A number of commands have slightly different output now,
           particularly 'ls certs', 'ls tags', 'automate keys',
           'automate tags' and 'automate certs'.  There is a new Lua hook
-          associated with these changes, "get_local_key_name(identity)",
+          associated with these changes, 'get_local_key_name(identity)',
           and all lua hooks that used to take a key name as an argument
           now instead take a table with several fields.
+
+          Commands which previously accepted a key name now also
+          accept the key's hash or local name, which is a local alias
+          for equally named keys.  'read-permissions' and
+          'write-permissions' accept either the key name or the hash.
+
+          There is also a new 'db fix_certs' command which fixes wrong
+          key assigments in migrated databases if you have the correct
+          key available.
 
         - The 'resolved_user' conflict resolution is no longer
           reported by 'automate show_conflicts' for file content
@@ -63,6 +69,12 @@
 
         - Duplicate name conflicts now support the 'keep' resolution.
 
+        - monotone now accepts ':memory:' as argument to the --db option
+          and sets up a memory-only SQLite database.
+
+        - 'clone' allows cloning into the current directory when
+          '.' is given as argument.
+
         Bugs fixed
 
         - Monotone now sanely skips paths with invalid characters
@@ -75,6 +87,12 @@
 
         - The 'conflict' commands can now handle duplicate name
           conflicts for directories.
+
+        - 'cvs_import' now properly parses CVS timestamps (again).
+
+        - Windows' cmd.exe is recognized as smart terminal and thus
+          monotone should create more readable output in
+          netsync operations.
 
         Internal
 
