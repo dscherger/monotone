@@ -1702,9 +1702,6 @@ CMD_AUTOMATE(tags, N_("[BRANCH_PATTERN]"),
   }
 
   basic_io::printer prt;
-  basic_io::stanza stz;
-  stz.push_str_pair(symbol("format_version"), "1");
-  prt.print_stanza(stz);
 
   set<tag_t> tags;
   project.get_tags(tags);

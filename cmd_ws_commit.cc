@@ -931,11 +931,6 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   // create the printer
   basic_io::printer pr;
 
-  // print the format version
-  basic_io::stanza st;
-  st.push_str_pair(basic_io::syms::format_version, "1");
-  pr.print_stanza(st);
-
   // the current node holds all current attributes (unchanged and new ones)
   node_t n = current.get_node(path);
   for (attr_map_t::const_iterator i = n->attrs.begin();

@@ -4,12 +4,8 @@ mtn_setup()
 -- automate tags on empty db
 check(mtn("automate", "tags"), 0, true, true)
 check(fsize("stderr") == 0)
-parsed = parse_basic_io(readfile("stdout"))
-for _,l in pairs(parsed) do
-   if l.name == "format_version" then fversion = l.values[1] end
-end
-check(fversion ~= nil)
-   
+check(fsize("stdout") == 0)
+
 -- now add something
 addfile("testfile", "foo")
 commit("mainbranch")
@@ -33,7 +29,7 @@ function get_tag(tag, ...)
    for _,l in pairs(parsed) do
       if l.name == "tag" then ltag = l.values[1] end
       if ltag == tag and l.name == "revision" then
-	 return l.values[1]
+     return l.values[1]
       end
    end
    return nil

@@ -6909,7 +6909,9 @@ A branch pattern (optional).
 
 @itemize
 @item
-11.0 -- @var{signer} now prints the hash of the signing key, no longer the name
+11.0 -- @var{signer} now prints the hash of the signing key, no longer the name.
+        Also, the @var{format_version} stanza has been removed in favour of the
+        global @var{interface_version}.
 @item
 2.2 -- added
 @end itemize
@@ -6927,8 +6929,6 @@ a pattern.
 @item Sample output:
 
 @verbatim
-format_version "1"
-
      tag "monotree-0.1"
 revision [8a121346ce2920b6f85df68b3b620de96bd14a8d]
   signer [de84b575d5e47254393eba49dce9dc4db98ed42d]
@@ -8165,6 +8165,8 @@ The argument @var{path} determines which path's attributes should be printed.
 
 @itemize
 @item
+11.0 -- removed the @command{format_version} stanza
+@item
 5.0 -- renamed from @command{attributes} to @command{get_attributes}
 @item
 3.0 -- initial
@@ -8177,8 +8179,6 @@ Prints all attributes of the given file and the attribute states.
 @item Sample output:
 
 @verbatim
-format_version "1"
-
  attr "foo" "bar"
 state "added"
 
@@ -8225,10 +8225,6 @@ recorded in the current workspace).
 The complete format:
 
 @verbatim
-'format_version'
-      used in case this format ever needs to change.
-      format: ('format_version', the string "1")
-      occurs: exactly once
 'attr':
       represents an attribute.
       format: ('attr', key, value), ('state', [unchanged|changed|added|dropped])
