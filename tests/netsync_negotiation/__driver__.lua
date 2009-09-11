@@ -89,6 +89,7 @@ function check_pair(client, server)
    local addr = "localhost:" .. math.random(1024, 65535)
    local srv = bg(server.net_fn("serve", "--rcfile=netsync.lua", "--bind="..addr),
                   false, false, false)
+   sleep(1)
    check(client.net_fn("sync", addr, "testbranch"), 0, false, false, false)
    sleep(1)
    srv:finish()
