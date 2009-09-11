@@ -33,7 +33,7 @@ drop\_db\_variables         |     |     |     |     |     |     |     |     |   
 erase\_ancestors            |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
 file\_merge                 |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  A  |     |     |
 genkey                      |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |  C  |  C  |
-get\_attributes             |     |     |     |     |     |     |     |     |  A  |     |     |     |     |  C  |     |     |     |     |     |     |
+get\_attributes             |     |     |     |     |     |     |     |     |  A  |     |     |     |     |  C  |     |     |     |     |     |  C  |
 get\_base\_revision\_id     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
 get\_content\_changed       |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |
 get\_corresponding\_path    |     |     |     |     |     |     |     |     |     |     |  A  |     |     |     |     |     |     |     |     |     |
