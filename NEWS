@@ -1,3 +1,106 @@
+Fri Sep 11 20:50:00 UTC 2009
+
+        0.45 release.
+
+        Changes
+
+        - Certs now link to the key that signed them by the key's
+          hash, instead of its name.  This should provide some
+          security and usability improvements.
+
+          The database schema has been changed, so you will need to
+          run 'mtn db migrate' (preferably after making a backup copy
+          of your db).
+
+          The netsync protocol version has also changed. However, we
+          found space to implement full protocol version negotiation,
+          so no flag day is needed.  If your particular project has a
+          situation where there are multiple keys with the same name,
+          you will receive errors when trying to sync certs signed by
+          those keys to older netsync peers.
+
+          A number of commands have slightly different output now,
+          particularly 'ls certs', 'ls tags', 'automate keys',
+          'automate tags' and 'automate certs'.  There is a new Lua
+          hook associated with these changes,
+          'get_local_key_name(identity)', and all Lua hooks that used
+          to take a key name as an argument now instead take a table
+          with several fields.
+
+          Commands which previously accepted a key name now also
+          accept the key's hash or local name, which is a local alias
+          for equally named keys.  'read-permissions' and
+          'write-permissions' accept either the key name or the hash.
+
+          There is also a new 'db fix_certs' command which fixes wrong
+          key assignments in migrated databases if you have the correct
+          key available.
+
+        - The 'resolved_user' conflict resolution is no longer
+          reported by 'automate show_conflicts' for file content
+          conflicts; 'resolved_user_left' is used instead.
+
+        - 'format_version' was removed from 'automate tags' and
+          'automate get_attributes' which both do not need this
+          additional versioning information.
+
+        New features
+
+        - The 'log' command now, by default, converts all dates it
+          prints to your timezone instead of leaving them in UTC, and
+          uses a somewhat more friendly format for the dates.
+
+          You can customize the date format with the new
+          "get_date_format_spec" Lua hook, which returns a strftime(3)
+          format string.  You can also override the format for one
+          command with the new --date-format option, disable date
+          conversion for one command with --no-format-dates, or
+          disable it by default by having the above Lua hook return an
+          empty string.
+
+        - The 'diff' and 'automate content_diff' commands take a
+          '--reverse' option when one revision is specified, to
+          control the order of the diff with the workspace.
+
+        - The 'update', 'checkout', 'pluck', and 'pivot_root' commands
+          take an option '--move-conflicting-paths', to handle
+          unversioned files that are blocking the action. The
+          unversioned files are moved to
+          _MTN/resolutions/<workspace_path>, so the action can
+          succeed, and the user can recover the files if necessary.
+
+        - Resolution of orphaned file conflicts is now supported by
+          'merge --resolve-conflicts' and the 'conflicts' commands.
+
+        - Duplicate name conflicts now support the 'keep' resolution.
+
+        - Monotone now accepts ':memory:' as argument to the --db option
+          and sets up a memory-only SQLite database.
+
+        - 'clone' allows cloning into the current directory when
+          '.' is given as argument.
+
+        Bugs fixed
+
+        - Monotone now sanely skips paths with invalid characters
+          it encounters during 'add' or 'automate inventory'.
+
+        - Key names, cert names, and var domains with non-ASCII
+          characters should work properly now.  Previously, they would
+          be (usually) converted to punycode on input, and not decoded
+          on output. They will now not be converted to punycode at
+          all.
+
+        - The 'conflict' commands can now handle duplicate name
+          conflicts for directories.
+
+        - 'cvs_import' now properly parses CVS timestamps (again).
+
+        - Windows' cmd.exe is recognized as smart terminal and thus
+          monotone should create more readable output in
+          netsync operations.
+
+
 Tue May 12 20:44:00 UTC 2009
 
         0.44 release.
