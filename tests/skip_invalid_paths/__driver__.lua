@@ -1,6 +1,6 @@
 
 -- we can't create the test files which trigger the warnings on win anyways
-skip_if(ostype=="Windows")
+skip_if(ostype=="Windows" or string.sub(ostype, 1, 6) == "CYGWIN")
 
 mtn_setup()
 

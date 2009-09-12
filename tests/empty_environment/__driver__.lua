@@ -25,16 +25,21 @@ if ostype == "Windows" then
   copy(intl, "libintl-8.dll")
   copy(zlib, "zlib1.dll")
 elseif string.sub(ostype, 1, 6) == "CYGWIN" then
-  local cygwin = getpathof("cygwin1", ".dll")
-  local iconv = getpathof("cygiconv-2", ".dll")
-  local intl = getpathof("cygintl-3", ".dll")
-  local intl8 = getpathof("cygintl-8", ".dll")
-  local zlib = getpathof("cygz", ".dll")
-  copy(cygwin, "cygwin1.dll")
-  copy(iconv, "cygiconv-2.dll")
-  copy(intl, "cygintl-3.dll")
-  copy(intl8, "cygintl-8.dll")
-  copy(zlib, "cygz.dll")
+  for _,name in pairs({
+                        "cyggcc_s-1",
+                        "cygiconv-2",
+                        "cygidn-11",
+                        "cygintl-8",
+                        "cyglua-5.1",
+                        "cygpcre-0",
+                        "cygsqlite3-0",
+                        "cygstdc++-6",
+                        "cygwin1",
+                        "cygz",
+		      }) do
+    local file = getpathof(name, ".dll")
+    copy(file, name..".dll");
+  end
 end
 
 check(noenv_mtn("--help"), 0, false, false)
