@@ -19,6 +19,7 @@ cd monotone-<version>
 autoreconf -i
 ./configure  sqlite_LIBS=-lsqlite3
 make
+strip mtn.exe
 
 Install Inno Setup and Inno Setup preprocessor; see
 http://www.jrsoftware.org/isinfo.php, get the Quick Start Pack ispack-5.3.3.exe
@@ -51,15 +52,16 @@ Choose menu Build | Compile (or click the "compile" button, or run the
 Inno Setup compiler ISCC.exe from the command line). This generates
 monotone-<version>-setup.exe in the monotone/win32 directory.
 
-Publish the binary on the monotone website:
+Publish the binary on the monotone website with proper permissions:
 
-scp monotone-<version>/win32/monotone-0.44-setup.exe mtn-uploads@monotone.ca:downloads/<version>
+chmod a+r monotone-<version>/win32/monotone-<version>-setup.exe
+scp -p monotone-<version>/win32/monotone-<version>-setup.exe mtn-uploads@monotone.ca:downloads/<version>
 
 checkout the web files:
 
-mtn -d /path/to/monotone.db checkout -r net.venge.monotone.web monotone.web
+mtn -d /path/to/monotone.db checkout --branch net.venge.monotone.web monotone.web
 
-Edit monotone.web/index.html; search for <li>Windows, uncomment the native target (leave Cygwin commented)
+Edit monotone.web/index.html; search for <li>Windows, uncomment it
 
 Commit and sync.
 

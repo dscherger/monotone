@@ -229,7 +229,7 @@ building and installation process for monotone
                libstdc++6-4.3.2-2
                lua-5.1.4-11
                zlib0-1.2.3-10
-             
+
              Build requirements:
                gcc4-4.3.2
                binutils-2.19.51
@@ -241,18 +241,18 @@ building and installation process for monotone
                perl-5.10.0
                botan-1.8.2
 
-           currently every prerequisite is avaialble as packages except
+           currently every prerequisite is available as packages except
            lua and botan which are only available in Cygwin 1.7;
            an official Cygwin package for monotone and all its
            dependencies is usually available soon after release.
 
-           The following is needed to succesfulyl configure:
+           The following is needed to succesfully configure:
              CXXFLAGS+="-I/usr/include/boost-1_33_1/"
 
-           Easiest way to create a Cygwni package is using cygport
+           Easiest way to create a Cygwin package is using cygport
            (which must be installed separately as a Cygwin package)
            and upgrade the previous version cygport file; you can fetch
-           latest version from the maintainer's owd repository:
+           latest version from the maintainer's own repository:
 
            % mtn pull lapo.it it.lapo.cygwin.ports
            % mtn checkout -b it.lapo.cygwin.ports cygwin
