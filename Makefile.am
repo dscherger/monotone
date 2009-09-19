@@ -60,6 +60,15 @@ MOST_SOURCES = 								\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
+	network/automate_listener.hh network/automate_listener.cc	\
+	network/automate_session.hh network/automate_session.cc		\
+	network/listener_base.hh network/listener_base.cc		\
+	network/make_server.hh network/make_server.cc			\
+	network/netsync_listener.hh network/netsync_listener.cc		\
+	network/netsync_session.hh network/netsync_session.cc		\
+	network/reactable.hh network/reactable.cc			\
+	network/reactor.hh network/reactor.cc				\
+	network/session_base.hh network/session_base.cc			\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
