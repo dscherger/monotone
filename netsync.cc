@@ -117,11 +117,11 @@ call_server(options & opts,
   Netxx::SockOpt socket_options(server->get_socketfd(), false);
   socket_options.set_non_blocking();
 
-  shared_ptr<session> sess(new session(opts, lua, project, keys,
-                                       role, client_voice,
-                                       info.client.include_pattern,
-                                       info.client.exclude_pattern,
-                                       info.client.unparsed(), server));
+  shared_ptr<netsync_session> sess(new netsync_session(opts, lua, project, keys,
+                                                       role, client_voice,
+                                                       info.client.include_pattern,
+                                                       info.client.exclude_pattern,
+                                                       info.client.unparsed(), server));
 
   reactor react;
   react.add(sess, guard);
@@ -158,9 +158,9 @@ call_server(options & opts,
 
           // We had an I/O error. We must decide if this represents a
           // user-reported error or a clean disconnect. See protocol
-          // state diagram in session::process_bye_cmd.
+          // state diagram in netsync_session::process_bye_cmd.
 
-          if (sess->protocol_state == session::confirmed_state)
+          if (sess->protocol_state == netsync_session::confirmed_state)
             {
               P(F("successful exchange with %s")
                 % sess->peer_id);
@@ -180,7 +180,7 @@ call_server(options & opts,
     }
 }
 
-static shared_ptr<session>
+static shared_ptr<netsync_session>
 session_from_server_sync_item(options & opts,
                               lua_hooks & lua,
                               project_t & project,
@@ -216,20 +216,20 @@ session_from_server_sync_item(options & opts,
       else if (request.what == "pull")
         role = sink_role;
 
-      shared_ptr<session> sess(new session(opts, lua,
-                                           project, keys,
-                                           role, client_voice,
-                                           info.client.include_pattern,
-                                           info.client.exclude_pattern,
-                                           info.client.unparsed(),
-                                           server, true));
+      shared_ptr<netsync_session> sess(new netsync_session(opts, lua,
+                                                           project, keys,
+                                                           role, client_voice,
+                                                           info.client.include_pattern,
+                                                           info.client.exclude_pattern,
+                                                           info.client.unparsed(),
+                                                           server, true));
 
       return sess;
     }
   catch (Netxx::NetworkException & e)
     {
       P(F("Network error: %s") % e.what());
-      return shared_ptr<session>();
+      return shared_ptr<netsync_session>();
     }
 }
 
@@ -278,7 +278,7 @@ serve_connections(app_state & app,
           server_initiated_sync_request request
             = server_initiated_sync_requests.front();
           server_initiated_sync_requests.pop_front();
-          shared_ptr<session> sess
+          shared_ptr<netsync_session> sess
             = session_from_server_sync_item(opts, lua,  project, keys,
                                             request);
 
@@ -304,7 +304,7 @@ serve_connections(app_state & app,
 
 static void
 serve_single_connection(project_t & project,
-                        shared_ptr<session> sess)
+                        shared_ptr<netsync_session> sess)
 {
   sess->begin_service();
   P(F("beginning service on %s") % sess->peer_id);
@@ -356,11 +356,11 @@ run_netsync_protocol(app_state & app,
           if (opts.bind_stdio)
             {
               shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
-              shared_ptr<session> sess(new session(opts, lua, project, keys,
-                                                   role, server_voice,
-                                                   globish("*", origin::internal),
-                                                   globish("", origin::internal),
-                                                   "stdio", str));
+              shared_ptr<netsync_session> sess(new netsync_session(opts, lua, project, keys,
+                                                                   role, server_voice,
+                                                                   globish("*", origin::internal),
+                                                                   globish("", origin::internal),
+                                                                   "stdio", str));
               serve_single_connection(project, sess);
             }
           else

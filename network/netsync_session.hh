@@ -27,7 +27,7 @@
 class cert;
 
 class
-session:
+netsync_session:
   public refiner_callbacks,
   public enumerator_callbacks,
   public session_base
@@ -127,19 +127,19 @@ private:
   void note_cert(id const & c);
 
 public:
-  session(options & opts,
-          lua_hooks & lua,
-          project_t & project,
-          key_store & keys,
-          protocol_role role,
-          protocol_voice voice,
-          globish const & our_include_pattern,
-          globish const & our_exclude_pattern,
-          std::string const & peer,
-          boost::shared_ptr<Netxx::StreamBase> sock,
-          bool initiated_by_server = false);
+  netsync_session(options & opts,
+                  lua_hooks & lua,
+                  project_t & project,
+                  key_store & keys,
+                  protocol_role role,
+                  protocol_voice voice,
+                  globish const & our_include_pattern,
+                  globish const & our_exclude_pattern,
+                  std::string const & peer,
+                  boost::shared_ptr<Netxx::StreamBase> sock,
+                  bool initiated_by_server = false);
 
-  virtual ~session();
+  virtual ~netsync_session();
 private:
 
   id mk_nonce();

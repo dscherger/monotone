@@ -71,11 +71,11 @@ listener::do_io(Netxx::Probe::ready_type event)
         shared_ptr<Netxx::Stream>
         (new Netxx::Stream(client.get_socketfd(), timeout));
 
-      shared_ptr<session> sess(new session(opts, lua, project, keys,
-                                           role, server_voice,
-                                           globish("*", origin::internal),
-                                           globish("", origin::internal),
-                                           lexical_cast<string>(client), str));
+      shared_ptr<netsync_session> sess(new netsync_session(opts, lua, project, keys,
+                                                           role, server_voice,
+                                                           globish("*", origin::internal),
+                                                           globish("", origin::internal),
+                                                           lexical_cast<string>(client), str));
       sess->begin_service();
       I(guard);
       react.add(sess, *guard);

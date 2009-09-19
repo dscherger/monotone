@@ -74,19 +74,19 @@ write_pubkey(key_name const & id,
 }
 
 
-size_t session::session_count = 0;
+size_t netsync_session::session_count = 0;
 
-session::session(options & opts,
-                 lua_hooks & lua,
-                 project_t & project,
-                 key_store & keys,
-                 protocol_role role,
-                 protocol_voice voice,
-                 globish const & our_include_pattern,
-                 globish const & our_exclude_pattern,
-                 string const & peer,
-                 shared_ptr<Netxx::StreamBase> sock,
-                 bool initiated_by_server) :
+netsync_session::netsync_session(options & opts,
+                                 lua_hooks & lua,
+                                 project_t & project,
+                                 key_store & keys,
+                                 protocol_role role,
+                                 protocol_voice voice,
+                                 globish const & our_include_pattern,
+                                 globish const & our_exclude_pattern,
+                                 string const & peer,
+                                 shared_ptr<Netxx::StreamBase> sock,
+                                 bool initiated_by_server) :
   session_base(peer, sock),
   version(opts.max_netsync_version),
   max_version(opts.max_netsync_version),
@@ -140,7 +140,7 @@ session::session(options & opts,
     }
 }
 
-session::~session()
+netsync_session::~netsync_session()
 {
   if (protocol_state == confirmed_state)
     error_code = no_error;
@@ -286,27 +286,27 @@ session::~session()
 }
 
 bool
-session::process_this_rev(revision_id const & rev)
+netsync_session::process_this_rev(revision_id const & rev)
 {
   return (rev_refiner.items_to_send.find(rev.inner())
           != rev_refiner.items_to_send.end());
 }
 
 bool
-session::queue_this_cert(id const & c)
+netsync_session::queue_this_cert(id const & c)
 {
   return (cert_refiner.items_to_send.find(c)
           != cert_refiner.items_to_send.end());
 }
 
 bool
-session::queue_this_file(id const & f)
+netsync_session::queue_this_file(id const & f)
 {
   return file_items_sent.find(file_id(f)) == file_items_sent.end();
 }
 
 void
-session::note_file_data(file_id const & f)
+netsync_session::note_file_data(file_id const & f)
 {
   if (role == sink_role)
     return;
@@ -317,7 +317,7 @@ session::note_file_data(file_id const & f)
 }
 
 void
-session::note_file_delta(file_id const & src, file_id const & dst)
+netsync_session::note_file_delta(file_id const & src, file_id const & dst)
 {
   if (role == sink_role)
     return;
@@ -328,7 +328,7 @@ session::note_file_delta(file_id const & src, file_id const & dst)
 }
 
 void
-session::note_rev(revision_id const & rev)
+netsync_session::note_rev(revision_id const & rev)
 {
   if (role == sink_role)
     return;
@@ -341,7 +341,7 @@ session::note_rev(revision_id const & rev)
 }
 
 void
-session::note_cert(id const & i)
+netsync_session::note_cert(id const & i)
 {
   if (role == sink_role)
     return;
@@ -365,7 +365,7 @@ session::note_cert(id const & i)
 
 
 id
-session::mk_nonce()
+netsync_session::mk_nonce()
 {
   I(this->saved_nonce().empty());
   char buf[constants::merkle_hash_length_in_bytes];
@@ -384,7 +384,7 @@ session::mk_nonce()
 }
 
 void
-session::set_session_key(string const & key)
+netsync_session::set_session_key(string const & key)
 {
   session_key = netsync_session_key(key, origin::internal);
   read_hmac.set_key(session_key);
@@ -392,7 +392,7 @@ session::set_session_key(string const & key)
 }
 
 void
-session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
+netsync_session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
 {
   if (use_transport_auth)
     {
@@ -403,7 +403,7 @@ session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
 }
 
 void
-session::setup_client_tickers()
+netsync_session::setup_client_tickers()
 {
   // xgettext: please use short message and try to avoid multibytes chars
   byte_in_ticker.reset(new ticker(N_("bytes in"), ">", 1024, true));
@@ -434,7 +434,7 @@ session::setup_client_tickers()
 }
 
 bool
-session::done_all_refinements()
+netsync_session::done_all_refinements()
 {
   bool all = rev_refiner.done
     && cert_refiner.done
@@ -464,7 +464,7 @@ session::done_all_refinements()
 
 
 bool
-session::received_all_items()
+netsync_session::received_all_items()
 {
   if (role == source_role)
     return true;
@@ -476,7 +476,7 @@ session::received_all_items()
 }
 
 bool
-session::finished_working()
+netsync_session::finished_working()
 {
   bool all = done_all_refinements()
     && received_all_items()
@@ -486,7 +486,7 @@ session::finished_working()
 }
 
 bool
-session::queued_all_items()
+netsync_session::queued_all_items()
 {
   if (role == sink_role)
     return true;
@@ -499,7 +499,7 @@ session::queued_all_items()
 
 
 void
-session::maybe_note_epochs_finished()
+netsync_session::maybe_note_epochs_finished()
 {
   // Maybe there are outstanding epoch requests.
   // These only matter if we're in sink or source-and-sink mode.
@@ -549,7 +549,7 @@ decrement_if_nonzero(netcmd_item_type ty,
 }
 
 void
-session::note_item_arrived(netcmd_item_type ty, id const & ident)
+netsync_session::note_item_arrived(netcmd_item_type ty, id const & ident)
 {
   switch (ty)
     {
@@ -581,7 +581,7 @@ session::note_item_arrived(netcmd_item_type ty, id const & ident)
 
 
 void
-session::note_item_sent(netcmd_item_type ty, id const & ident)
+netsync_session::note_item_sent(netcmd_item_type ty, id const & ident)
 {
   switch (ty)
     {
@@ -611,7 +611,7 @@ session::note_item_sent(netcmd_item_type ty, id const & ident)
 }
 
 void
-session::write_netcmd_and_try_flush(netcmd const & cmd)
+netsync_session::write_netcmd_and_try_flush(netcmd const & cmd)
 {
   if (!encountered_error)
   {
@@ -629,14 +629,14 @@ session::write_netcmd_and_try_flush(netcmd const & cmd)
 // ensure that our peer receives the error message.
 // Affects read_some, write_some, and process .
 void
-session::error(int errcode, string const & errmsg)
+netsync_session::error(int errcode, string const & errmsg)
 {
   error_code = errcode;
   throw netsync_error(errmsg);
 }
 
 bool
-session::do_work(transaction_guard & guard)
+netsync_session::do_work(transaction_guard & guard)
 {
   if (process(guard))
     {
@@ -649,7 +649,7 @@ session::do_work(transaction_guard & guard)
 }
 
 void
-session::note_bytes_in(int count)
+netsync_session::note_bytes_in(int count)
 {
   if (byte_in_ticker.get() != NULL)
     (*byte_in_ticker) += count;
@@ -657,7 +657,7 @@ session::note_bytes_in(int count)
 }
 
 void
-session::note_bytes_out(int count)
+netsync_session::note_bytes_out(int count)
 {
   if (byte_out_ticker.get() != NULL)
     (*byte_out_ticker) += count;
@@ -667,7 +667,7 @@ session::note_bytes_out(int count)
 // senders
 
 void
-session::queue_error_cmd(string const & errmsg)
+netsync_session::queue_error_cmd(string const & errmsg)
 {
   L(FL("queueing 'error' command"));
   netcmd cmd(version);
@@ -676,7 +676,7 @@ session::queue_error_cmd(string const & errmsg)
 }
 
 void
-session::queue_bye_cmd(u8 phase)
+netsync_session::queue_bye_cmd(u8 phase)
 {
   L(FL("queueing 'bye' command, phase %d")
     % static_cast<size_t>(phase));
@@ -686,7 +686,7 @@ session::queue_bye_cmd(u8 phase)
 }
 
 void
-session::queue_done_cmd(netcmd_item_type type,
+netsync_session::queue_done_cmd(netcmd_item_type type,
                         size_t n_items)
 {
   string typestr;
@@ -699,9 +699,9 @@ session::queue_done_cmd(netcmd_item_type type,
 }
 
 void
-session::queue_hello_cmd(key_name const & key_name,
-                         rsa_pub_key const & pub,
-                         id const & nonce)
+netsync_session::queue_hello_cmd(key_name const & key_name,
+                                 rsa_pub_key const & pub,
+                                 id const & nonce)
 {
   netcmd cmd(version);
   if (use_transport_auth)
@@ -712,10 +712,10 @@ session::queue_hello_cmd(key_name const & key_name,
 }
 
 void
-session::queue_anonymous_cmd(protocol_role role,
-                             globish const & include_pattern,
-                             globish const & exclude_pattern,
-                             id const & nonce2)
+netsync_session::queue_anonymous_cmd(protocol_role role,
+                                     globish const & include_pattern,
+                                     globish const & exclude_pattern,
+                                     id const & nonce2)
 {
   netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
@@ -728,13 +728,13 @@ session::queue_anonymous_cmd(protocol_role role,
 }
 
 void
-session::queue_auth_cmd(protocol_role role,
-                        globish const & include_pattern,
-                        globish const & exclude_pattern,
-                        key_id const & client,
-                        id const & nonce1,
-                        id const & nonce2,
-                        rsa_sha1_signature const & signature)
+netsync_session::queue_auth_cmd(protocol_role role,
+                                globish const & include_pattern,
+                                globish const & exclude_pattern,
+                                key_id const & client,
+                                id const & nonce1,
+                                id const & nonce2,
+                                rsa_sha1_signature const & signature)
 {
   netcmd cmd(version);
   rsa_oaep_sha_data hmac_key_encrypted;
@@ -747,7 +747,7 @@ session::queue_auth_cmd(protocol_role role,
 }
 
 void
-session::queue_confirm_cmd()
+netsync_session::queue_confirm_cmd()
 {
   netcmd cmd(version);
   cmd.write_confirm_cmd();
@@ -755,7 +755,7 @@ session::queue_confirm_cmd()
 }
 
 void
-session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
+netsync_session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
 {
   string typestr;
   hexenc<prefix> hpref;
@@ -770,9 +770,9 @@ session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
 }
 
 void
-session::queue_data_cmd(netcmd_item_type type,
-                        id const & item,
-                        string const & dat)
+netsync_session::queue_data_cmd(netcmd_item_type type,
+                                id const & item,
+                                string const & dat)
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
@@ -806,10 +806,10 @@ session::queue_data_cmd(netcmd_item_type type,
 }
 
 void
-session::queue_delta_cmd(netcmd_item_type type,
-                         id const & base,
-                         id const & ident,
-                         delta const & del)
+netsync_session::queue_delta_cmd(netcmd_item_type type,
+                                 id const & base,
+                                 id const & ident,
+                                 delta const & del)
 {
   I(type == file_item);
   string typestr;
@@ -842,7 +842,7 @@ session::queue_delta_cmd(netcmd_item_type type,
 // processors
 
 bool
-session::process_error_cmd(string const & errmsg)
+netsync_session::process_error_cmd(string const & errmsg)
 {
   // "xxx string" with xxx being digits means there's an error code
   if (errmsg.size() > 4 && errmsg.substr(3,1) == " ")
@@ -867,10 +867,10 @@ session::process_error_cmd(string const & errmsg)
 static const var_domain known_servers_domain = var_domain("known-servers");
 
 bool
-session::process_hello_cmd(u8 server_version,
-                           key_name const & their_keyname,
-                           rsa_pub_key const & their_key,
-                           id const & nonce)
+netsync_session::process_hello_cmd(u8 server_version,
+                                   key_name const & their_keyname,
+                                   rsa_pub_key const & their_key,
+                                   id const & nonce)
 {
   I(!this->received_remote_key);
   I(this->saved_nonce().empty());
@@ -990,9 +990,9 @@ session::process_hello_cmd(u8 server_version,
 }
 
 bool
-session::process_anonymous_cmd(protocol_role their_role,
-                               globish const & their_include_pattern,
-                               globish const & their_exclude_pattern)
+netsync_session::process_anonymous_cmd(protocol_role their_role,
+                                       globish const & their_include_pattern,
+                                       globish const & their_exclude_pattern)
 {
   // Internally netsync thinks in terms of sources and sinks. Users like
   // thinking of repositories as "readonly", "readwrite", or "writeonly".
@@ -1074,7 +1074,7 @@ session::process_anonymous_cmd(protocol_role their_role,
 }
 
 void
-session::assume_corresponding_role(protocol_role their_role)
+netsync_session::assume_corresponding_role(protocol_role their_role)
 {
   // Assume the (possibly degraded) opposite role.
   switch (their_role)
@@ -1096,12 +1096,12 @@ session::assume_corresponding_role(protocol_role their_role)
 }
 
 bool
-session::process_auth_cmd(protocol_role their_role,
-                          globish const & their_include_pattern,
-                          globish const & their_exclude_pattern,
-                          key_id const & client,
-                          id const & nonce1,
-                          rsa_sha1_signature const & signature)
+netsync_session::process_auth_cmd(protocol_role their_role,
+                                  globish const & their_include_pattern,
+                                  globish const & their_exclude_pattern,
+                                  key_id const & client,
+                                  id const & nonce1,
+                                  rsa_sha1_signature const & signature)
 {
   I(!this->received_remote_key);
   I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
@@ -1249,7 +1249,7 @@ session::process_auth_cmd(protocol_role their_role,
 }
 
 bool
-session::process_refine_cmd(refinement_type ty, merkle_node const & node)
+netsync_session::process_refine_cmd(refinement_type ty, merkle_node const & node)
 {
   string typestr;
   netcmd_item_type_to_string(node.type, typestr);
@@ -1282,7 +1282,7 @@ session::process_refine_cmd(refinement_type ty, merkle_node const & node)
 }
 
 bool
-session::process_bye_cmd(u8 phase,
+netsync_session::process_bye_cmd(u8 phase,
                          transaction_guard & guard)
 {
 
@@ -1363,7 +1363,7 @@ session::process_bye_cmd(u8 phase,
 }
 
 bool
-session::process_done_cmd(netcmd_item_type type, size_t n_items)
+netsync_session::process_done_cmd(netcmd_item_type type, size_t n_items)
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
@@ -1401,14 +1401,14 @@ session::process_done_cmd(netcmd_item_type type, size_t n_items)
 }
 
 void
-session::respond_to_confirm_cmd()
+netsync_session::respond_to_confirm_cmd()
 {
   epoch_refiner.begin_refinement();
 }
 
 bool
-session::data_exists(netcmd_item_type type,
-                     id const & item)
+netsync_session::data_exists(netcmd_item_type type,
+                             id const & item)
 {
   switch (type)
     {
@@ -1431,9 +1431,9 @@ session::data_exists(netcmd_item_type type,
 }
 
 void
-session::load_data(netcmd_item_type type,
-                   id const & item,
-                   string & out)
+netsync_session::load_data(netcmd_item_type type,
+                           id const & item,
+                           string & out)
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
@@ -1503,9 +1503,9 @@ session::load_data(netcmd_item_type type,
 }
 
 bool
-session::process_data_cmd(netcmd_item_type type,
-                          id const & item,
-                          string const & dat)
+netsync_session::process_data_cmd(netcmd_item_type type,
+                                  id const & item,
+                                  string const & dat)
 {
   hexenc<id> hitem;
   encode_hexenc(item, hitem);
@@ -1666,10 +1666,10 @@ session::process_data_cmd(netcmd_item_type type,
 }
 
 bool
-session::process_delta_cmd(netcmd_item_type type,
-                           id const & base,
-                           id const & ident,
-                           delta const & del)
+netsync_session::process_delta_cmd(netcmd_item_type type,
+                                   id const & base,
+                                   id const & ident,
+                                   delta const & del)
 {
   string typestr;
   netcmd_item_type_to_string(type, typestr);
@@ -1695,7 +1695,7 @@ session::process_delta_cmd(netcmd_item_type type,
 }
 
 bool
-session::process_usher_cmd(utf8 const & msg)
+netsync_session::process_usher_cmd(utf8 const & msg)
 {
   if (msg().size())
     {
@@ -1714,7 +1714,7 @@ session::process_usher_cmd(utf8 const & msg)
 
 
 void
-session::send_all_data(netcmd_item_type ty, set<id> const & items)
+netsync_session::send_all_data(netcmd_item_type ty, set<id> const & items)
 {
   string typestr;
   netcmd_item_type_to_string(ty, typestr);
@@ -1735,8 +1735,8 @@ session::send_all_data(netcmd_item_type ty, set<id> const & items)
 }
 
 bool
-session::dispatch_payload(netcmd const & cmd,
-                          transaction_guard & guard)
+netsync_session::dispatch_payload(netcmd const & cmd,
+                                  transaction_guard & guard)
 {
 
   switch (cmd.get_cmd_code())
@@ -1910,13 +1910,13 @@ session::dispatch_payload(netcmd const & cmd,
 
 // This kicks off the whole cascade starting from "hello".
 void
-session::begin_service()
+netsync_session::begin_service()
 {
   queue_usher_cmd(utf8("", origin::internal));
 }
 
 void
-session::queue_usher_cmd(utf8 const & message)
+netsync_session::queue_usher_cmd(utf8 const & message)
 {
   L(FL("queueing 'usher' command"));
   netcmd cmd(0);
@@ -1925,9 +1925,9 @@ session::queue_usher_cmd(utf8 const & message)
 }
 
 bool
-session::process_usher_reply_cmd(u8 client_version,
-                                 utf8 const & server,
-                                 globish const & pattern)
+netsync_session::process_usher_reply_cmd(u8 client_version,
+                                         utf8 const & server,
+                                         globish const & pattern)
 {
   // netcmd::read() has already checked that the client isn't too old
   if (client_version < max_version)
@@ -1946,7 +1946,7 @@ session::process_usher_reply_cmd(u8 client_version,
 }
 
 void
-session::maybe_step()
+netsync_session::maybe_step()
 {
   date_t start_time = date_t::now();
 
@@ -1965,7 +1965,7 @@ session::maybe_step()
 }
 
 void
-session::maybe_say_goodbye(transaction_guard & guard)
+netsync_session::maybe_say_goodbye(transaction_guard & guard)
 {
   if (voice == client_voice
       && protocol_state == working_state
@@ -1978,7 +1978,7 @@ session::maybe_say_goodbye(transaction_guard & guard)
 }
 
 bool
-session::arm()
+netsync_session::arm()
 {
   if (!armed)
     {
@@ -1994,7 +1994,7 @@ session::arm()
   return armed;
 }
 
-bool session::process(transaction_guard & guard)
+bool netsync_session::process(transaction_guard & guard)
 {
   if (encountered_error)
     return true;
@@ -2074,7 +2074,7 @@ insert_with_parents(revision_id rev,
 }
 
 void
-session::rebuild_merkle_trees(set<branch_name> const & branchnames)
+netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
 {
   P(F("finding items to synchronize:"));
   for (set<branch_name>::const_iterator i = branchnames.begin();
