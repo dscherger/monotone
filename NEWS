@@ -4,6 +4,9 @@
 
         Changes
 
+        - Cert labels in the output of the 'log' command are now
+          localized.
+
         New features
 
         Bugs fixed

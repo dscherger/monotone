@@ -1087,7 +1087,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
           else
             {
               out << string(65, '-') << '\n';
-              out << "Revision: " << rid << '\n';
+              out << _("Revision: ") << rid << '\n';
 
               changes_summary csum;
 
@@ -1102,12 +1102,12 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
               for (set<revision_id>::const_iterator anc = ancestors.begin();
                    anc != ancestors.end(); ++anc)
-                out << "Ancestor: " << *anc << '\n';
+                out << _("Ancestor: ") << *anc << '\n';
 
-              log_certs(certs, out, author_name, "Author: ", false);
-              log_date_certs(certs, out, date_fmt, "Date: ", false);
-              log_certs(certs, out, branch_name, "Branch: ", false);
-              log_certs(certs, out, tag_name,    "Tag: ",    false);
+              log_certs(certs, out, author_name,   _("Author: "), false);
+              log_date_certs(certs, out, date_fmt, _("Date: "), false);
+              log_certs(certs, out, branch_name,   _("Branch: "), false);
+              log_certs(certs, out, tag_name,      _("Tag: "),    false);
 
               if (!app.opts.no_files && !csum.cs.empty())
                 {
@@ -1116,8 +1116,8 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
                   out << '\n';
                 }
 
-              log_certs(certs, out, changelog_name, "ChangeLog: ", true);
-              log_certs(certs, out, comment_name,   "Comments: ",  true);
+              log_certs(certs, out, changelog_name, _("ChangeLog: "), true);
+              log_certs(certs, out, comment_name,   _("Comments: "),  true);
             }
 
           if (app.opts.diffs)
