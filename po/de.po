@@ -34,8 +34,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2009-09-20 15:55+0200\n"
-"PO-Revision-Date: 2007-08-07 11:35+0200\n"
+"POT-Creation-Date: 2009-09-20 11:50+0200\n"
+"PO-Revision-Date: 2009-09-20 12:27+0200\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
 "MIME-Version: 1.0\n"
@@ -2205,39 +2205,36 @@ msgid "try passing a --from revision to start at"
 msgstr "Versuchen Sie, über die Option --from eine Startrevision anzugeben."
 
 #: cmd_diff_log.cc:1090
-#, fuzzy
 msgid "Revision: "
-msgstr "Revision: %s"
+msgstr "Revision: "
 
 #: cmd_diff_log.cc:1105
-#, fuzzy
 msgid "Ancestor: "
-msgstr "Vorfahren"
+msgstr "Vorfahr: "
 
 #: cmd_diff_log.cc:1107
 msgid "Author: "
-msgstr ""
+msgstr "Autor: "
 
 #: cmd_diff_log.cc:1108
-#, fuzzy
 msgid "Date: "
-msgstr "Hinweis: "
+msgstr "Datum: "
 
 #: cmd_diff_log.cc:1109
 msgid "Branch: "
-msgstr ""
+msgstr "Zweig: "
 
 #: cmd_diff_log.cc:1110
 msgid "Tag: "
-msgstr ""
+msgstr "Marke: "
 
 #: cmd_diff_log.cc:1119
 msgid "ChangeLog: "
-msgstr ""
+msgstr "Änderungen: "
 
 #: cmd_diff_log.cc:1120
 msgid "Comments: "
-msgstr ""
+msgstr "Kommentare: "
 
 #: cmd_diff_log.cc:1146
 #, c-format
