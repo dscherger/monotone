@@ -117,20 +117,6 @@ namespace
     vector<string> & v;
   };
 
-  struct file_deleter : public dirent_consumer
-  {
-    file_deleter(string const & p) : parent(p) {}
-    virtual void consume(char const * f)
-    {
-      string e(parent + "/" + f);
-      make_accessible(e);
-      do_remove(e);
-    }
-
-  private:
-    string const & parent;
-  };
-
   struct file_accessible_maker : public dirent_consumer
   {
     file_accessible_maker(string const & p) : parent(p) {}
@@ -153,35 +139,6 @@ namespace
     string const & from;
     string const & to;
   };
-}
-
-void do_remove_recursive(string const & p)
-{
-  switch (get_path_status(p))
-    {
-    case path::directory:
-      {
-        make_accessible(p);
-        vector<string> subdirs;
-        struct fill_vec get_subdirs(subdirs);
-        struct file_deleter del_files(p);
-
-        do_read_directory(p, del_files, get_subdirs, del_files);
-        for(vector<string>::const_iterator i = subdirs.begin();
-            i != subdirs.end(); i++)
-          do_remove_recursive(p + "/" + *i);
-        do_remove(p);
-      }
-      return;
-
-    case path::file:
-      make_accessible(p);
-      do_remove(p);
-      return;
-
-    case path::nonexistent:
-      return;
-    }
 }
 
 void do_make_tree_accessible(string const & p)

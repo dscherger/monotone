@@ -111,7 +111,8 @@ file_exists(any_path const & p)
   return get_path_status(p) == path::file;
 }
 
-namespace
+bool
+directory_empty(any_path const & path)
 {
   struct directory_not_empty_exception {};
   struct directory_empty_helper : public dirent_consumer
@@ -119,14 +120,10 @@ namespace
     virtual void consume(char const *)
     { throw directory_not_empty_exception(); }
   };
-}
 
-bool
-directory_empty(any_path const & path)
-{
   directory_empty_helper h;
   try {
-    do_read_directory(system_path(path).as_external(), h, h, h);
+    do_read_directory(path, h, h, h);
   } catch (directory_not_empty_exception) {
     return false;
   }
@@ -226,68 +223,6 @@ delete_file_or_dir_shallow(any_path const & p)
   do_remove(p.as_external());
 }
 
-namespace
-{
-  struct fill_pc_vec : public dirent_consumer
-  {
-    fill_pc_vec(vector<path_component> & v) : v(v) { v.clear(); }
-
-    // FIXME BUG: this treats 's' as being already utf8,
-    // but it is actually in the external character set.
-    virtual void consume(char const * s)
-    {
-      try
-      {
-        v.push_back(path_component(s));
-      }
-      catch (...)
-      {
-        W(F("skipping invalid path '%s'") % s);
-      }
-    }
-
-  private:
-    vector<path_component> & v;
-  };
-
-  struct file_deleter : public dirent_consumer
-  {
-    file_deleter(any_path const & p) : parent(p) {}
-    virtual void consume(char const * f)
-    {
-      try
-      {
-        do_remove((parent / path_component(f)).as_external());
-      }
-      catch (...)
-      {
-        W(F("skipping invalid path '%s'") % f);
-      }
-    }
-  private:
-    any_path const & parent;
-  };
-}
-
-static void
-do_remove_recursive(any_path const & p)
-{
-  // for the reasons described in walk_tree_recursive, we read the entire
-  // directory before recursing into any subdirs.  however, it is safe to
-  // delete files as we encounter them, and we do so.
-  vector<path_component> subdirs;
-  fill_pc_vec subdir_fill(subdirs);
-  file_deleter delete_files(p);
-
-  do_read_directory(p.as_external(), delete_files, subdir_fill, delete_files);
-  for (vector<path_component>::const_iterator i = subdirs.begin();
-       i != subdirs.end(); i++)
-    do_remove_recursive(p / *i);
-
-  do_remove(p.as_external());
-}
-
-
 void
 delete_dir_recursive(any_path const & p)
 {
@@ -295,7 +230,7 @@ delete_dir_recursive(any_path const & p)
                             F("directory to delete, '%s', does not exist") % p,
                             F("directory to delete, '%s', is a file") % p);
 
-  do_remove_recursive(p);
+  do_remove_recursive(p.as_external());
 }
 
 void
@@ -357,17 +292,6 @@ read_data(any_path const & p, data & dat)
     data_from = origin::system;
   dat = data(unfiltered_pipe->read_all_as_string(Botan::Pipe::LAST_MESSAGE),
              data_from);
-}
-
-void read_directory(any_path const & path,
-                    vector<path_component> & files,
-                    vector<path_component> & dirs)
-{
-  vector<path_component> special_files;
-  fill_pc_vec ff(files), df(dirs), sf(special_files);
-  do_read_directory(path.as_external(), ff, df, sf);
-  E(special_files.empty(), origin::system,
-    F("cannot handle special files in dir '%s'") % path);
 }
 
 // This function can only be called once per run.
@@ -456,40 +380,6 @@ tree_walker::visit_dir(file_path const & path)
   return true;
 }
 
-// subroutine of walk_tree_recursive: if the path composition of PATH and PC
-// is a valid file_path, write it to ENTRY and return true.  otherwise,
-// generate an appropriate diagnostic and return false.  in this context, an
-// invalid path is *not* an invariant failure, because it came from a
-// directory scan.  ??? arguably belongs as a file_path method.
-static bool
-safe_compose(file_path const & path, path_component const & pc, bool isdir,
-             file_path & entry)
-{
-  try
-    {
-      entry = path / pc;
-      return true;
-    }
-  catch (logic_error)
-    {
-      // do what the above operator/ did, by hand, and then figure out what
-      // sort of diagnostic to issue.
-      utf8 badpth;
-      if (path.empty())
-        badpth = typecast_vocab<utf8>(pc);
-      else
-        badpth = utf8(path.as_internal() + "/" + pc(), pc.made_from);
-
-      if (!isdir)
-        W(F("skipping file '%s' with unsupported name") % badpth);
-      else if (bookkeeping_path::internal_string_is_bookkeeping_path(badpth))
-        L(FL("ignoring bookkeeping directory '%s'") % badpth);
-      else
-        W(F("skipping directory '%s' with unsupported name") % badpth);
-      return false;
-    }
-}
-
 static void
 walk_tree_recursive(file_path const & path,
                     tree_walker & walker)
@@ -504,25 +394,20 @@ walk_tree_recursive(file_path const & path,
   // peak memory.  By splitting the loop in half, we avoid this problem.
   //
   // [1] http://lkml.org/lkml/2006/2/24/215
-  vector<path_component> files, dirs;
-  read_directory(path, files, dirs);
+  vector<file_path> files, dirs;
+  fill_path_vec<file_path> fill_files(path, files, false);
+  fill_path_vec<file_path> fill_dirs(path, dirs, true);
 
-  for (vector<path_component>::const_iterator i = files.begin();
+  do_read_directory(path, fill_files, fill_dirs);
+
+  for (vector<file_path>::const_iterator i = files.begin();
        i != files.end(); ++i)
-    {
-      file_path entry;
-      if (safe_compose(path, *i, false, entry))
-        walker.visit_file(entry);
-    }
+    walker.visit_file(*i);
 
-  for (vector<path_component>::const_iterator i = dirs.begin();
+  for (vector<file_path>::const_iterator i = dirs.begin();
        i != dirs.end(); ++i)
-    {
-      file_path entry;
-      if (safe_compose(path, *i, true, entry))
-        if (walker.visit_dir(entry))
-          walk_tree_recursive(entry, walker);
-    }
+    if (walker.visit_dir(*i))
+      walk_tree_recursive(*i, walker);
 }
 
 // from some (safe) sub-entry of cwd

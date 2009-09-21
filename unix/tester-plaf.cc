@@ -31,27 +31,6 @@ using std::string;
 using std::map;
 using std::make_pair;
 
-void make_accessible(string const & name)
-{
-  struct stat st;
-  if (stat(name.c_str(), &st) != 0)
-    {
-      const int err = errno;
-      E(false, origin::system, F("stat(%s) failed: %s") % name % os_strerror(err));
-    }
-
-  mode_t new_mode = st.st_mode;
-  if (S_ISDIR(st.st_mode))
-    new_mode |= S_IEXEC;
-  new_mode |= S_IREAD | S_IWRITE;
-
-  if (chmod(name.c_str(), new_mode) != 0)
-    {
-      const int err = errno;
-      E(false, origin::system, F("chmod(%s) failed: %s") % name % os_strerror(err));
-    }
-}
-
 time_t get_last_write_time(char const * name)
 {
   struct stat st;

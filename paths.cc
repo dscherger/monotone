@@ -871,6 +871,30 @@ new_optimal_path(std::string path, bool to_workspace_root)
     return boost::shared_ptr<any_path>(new file_path(file_path_internal(normalized)));
 };
 
+// Either conversion of S to a path_component, or composition of P / S, has
+// failed; figure out what went wrong and issue an appropriate diagnostic.
+
+void
+report_failed_path_composition(any_path const & p, char const * s,
+                               bool isdir)
+{
+  utf8 badpth;
+  if (p.empty())
+    badpth = utf8(s);
+  else
+    badpth = utf8(p.as_internal() + "/" + s, p.made_from);
+  if (bookkeeping_path::internal_string_is_bookkeeping_path(badpth))
+    L(FL("ignoring bookkeeping directory '%s'") % badpth);
+  else
+    {
+      // We rely on caller to tell us whether this is a directory.
+      if (isdir)
+        W(F("skipping directory '%s' with unsupported name") % badpth);
+      else
+        W(F("skipping file '%s' with unsupported name") % badpth);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // workspace (and path root) handling
 ///////////////////////////////////////////////////////////////////////////
@@ -1065,12 +1089,6 @@ find_new_path_for(map<file_path, file_path> const & renames,
   // this is a hackish kluge.  seems to work, though.
   return find_old_path_for(reversed, old_path);
 }
-
-
-///////////////////////////////////////////////////////////////////////////
-// tests
-///////////////////////////////////////////////////////////////////////////
-
 
 // Local Variables:
 // mode: C++

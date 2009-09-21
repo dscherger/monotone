@@ -133,8 +133,10 @@ void do_read_directory(std::string const & path,
                        dirent_consumer & dirs,
                        dirent_consumer & other_files);
 
+void make_accessible(std::string const & name);
 void rename_clobberingly(std::string const & from, std::string const & to);
 void do_remove(std::string const & path);
+void do_remove_recursive(std::string const & path);
 
 void do_mkdir(std::string const & path);
 void write_data_worker(std::string const & p,

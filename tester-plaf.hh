@@ -15,7 +15,6 @@
 
 #include <ctime>
 
-void make_accessible(std::string const & name);
 std::time_t get_last_write_time(char const * name);
 void do_copy_file(std::string const & from, std::string const & to);
 void set_env(char const * var, char const * val);

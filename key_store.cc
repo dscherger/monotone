@@ -216,25 +216,26 @@ key_store_state::maybe_read_key_dir()
     return;
   have_read = true;
 
-  vector<path_component> key_files, dirs;
-  if (directory_exists(key_dir))
-    {
-      L(FL("reading key dir '%s'") % key_dir);
-      read_directory(key_dir, key_files, dirs);
-    }
-  else
+  if (!directory_exists(key_dir))
     {
       L(FL("key dir '%s' does not exist") % key_dir);
       return;
     }
 
+  L(FL("reading key dir '%s'") % key_dir);
+
+  vector<system_path> key_files;
+  fill_path_vec<system_path> fill_key_files(key_dir, key_files, false);
+  dirent_ignore ignore;
+  do_read_directory(key_dir, fill_key_files, ignore, ignore);
+
   keyreader kr(*this);
-  for (vector<path_component>::const_iterator i = key_files.begin();
+  for (vector<system_path>::const_iterator i = key_files.begin();
        i != key_files.end(); ++i)
     {
       L(FL("reading keys from file '%s'") % (*i));
       data dat;
-      read_data(key_dir / *i, dat);
+      read_data(*i, dat);
       istringstream is(dat());
       read_packets(is, kr);
     }

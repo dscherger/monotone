@@ -105,6 +105,7 @@
 #include <boost/concept_check.hpp>
 #include "origin_type.hh"
 #include <map>
+#include <stdexcept>
 
 class any_path;
 class file_path;
@@ -175,6 +176,7 @@ public:
   any_path operator /(path_component const &) const;
   any_path dirname() const;
 
+  any_path() {}
   any_path(any_path const & other)
     : origin_aware(other.made_from), data(other.data) {}
   any_path & operator=(any_path const & other)
@@ -182,7 +184,6 @@ public:
 
 protected:
   std::string data;
-  any_path() {}
   any_path(origin::type whence) : origin_aware(whence) {}
 
 private:
@@ -398,6 +399,29 @@ private:
 template <> void dump(file_path const & sp, std::string & out);
 template <> void dump(bookkeeping_path const & sp, std::string & out);
 template <> void dump(system_path const & sp, std::string & out);
+
+// Attempt to form the composed path P / S, as operator/ would do, but if
+// this is unsuccessful, warn the user and return false, rather than
+// aborting.  For use when scanning directories.  Do try to tell
+// safe_compose whether S refers to a directory; it only improves
+// diagnostics, but giving good diagnostics is very important.
+extern void report_failed_path_composition(any_path const & p,
+                                           char const * s, bool isdir);
+
+template <class T>
+bool safe_compose(T const & p, char const * s, T & result, bool isdir=false)
+{
+  try
+    {
+      result = p / path_component(s);
+      return true;
+    }
+  catch (std::logic_error)
+    {
+      report_failed_path_composition(p, s, isdir);
+      return false;
+    }
+}
 
 // Base class for predicate functors on paths.  T must be one of the path
 // classes.

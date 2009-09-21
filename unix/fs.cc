@@ -26,8 +26,10 @@
 
 #include "sanity.hh"
 #include "platform.hh"
+#include "vector.hh"
 
 using std::string;
+using std::vector;
 
 /* On Linux, AT_SYMLNK_NOFOLLOW is spellt AT_SYMLINK_NOFOLLOW.
    Hoooray for compatibility! */
@@ -259,7 +261,29 @@ do_read_directory(string const & path,
   return;
 }
 
+void
+make_accessible(string const & name)
+{
+  struct stat st;
+  if (stat(name.c_str(), &st) != 0)
+    {
+      const int err = errno;
+      E(false, origin::system,
+        F("stat(%s) failed: %s") % name % os_strerror(err));
+    }
 
+  mode_t new_mode = st.st_mode;
+  new_mode |= S_IRUSR | S_IWUSR;
+  if (S_ISDIR(st.st_mode))
+    new_mode |= S_IXUSR;
+
+  if (chmod(name.c_str(), new_mode) != 0)
+    {
+      const int err = errno;
+      E(false, origin::system,
+        F("chmod(%s) failed: %s") % name % os_strerror(err));
+    }
+}
 
 void
 rename_clobberingly(string const & from, string const & to)
@@ -283,6 +307,74 @@ do_remove(string const & path)
       E(false, origin::system,
         F("could not remove '%s': %s") % path % os_strerror(err));
     }
+}
+
+// For the reasons described in file_io.cc::walk_tree_recursive, we read the
+// entire directory before recursing into any subdirs.  However, it is safe
+// to delete files as we encounter them, and we do so.
+// It is not an error to call this function on a path that doesn't exist,
+// or is a file rather than a directory.
+void
+do_remove_recursive(string const & path)
+{
+  struct delete_nondir : public dirent_consumer
+  {
+    delete_nondir(string const & parent) : parent(parent) {}
+    virtual void consume(char const * name)
+    {
+      string pn = parent;
+      pn += "/";
+      pn += name;
+      // On Unix it is not necessary to force a file writable
+      // in order to remove it, only its parent directory.
+      do_remove(pn);
+    }
+  private:
+    string const & parent;
+  };
+  struct record_subdirs : public dirent_consumer
+  {
+    record_subdirs(string const & parent, vector<string> & v)
+      : parent(parent), v(v)
+    { v.clear(); }
+    virtual void consume(char const * name)
+    {
+      string pn = parent;
+      pn += "/";
+      pn += name;
+      v.push_back(pn);
+    }
+  private:
+    string const & parent;
+    vector<string> & v;
+  };
+
+  // Try plain remove() first; it will tell us if we have anything else
+  // to do.
+  if (!remove(path.c_str()))
+    return; // successfully deleted a plain file
+
+  const int err = errno;
+  if (err == ENOENT)
+    return; // nothing to delete
+
+  E(err == ENOTEMPTY, origin::system,
+    F("could not remove '%s': %s") % path % os_strerror(err));
+
+  // If we get here, it's a non-empty directory to be recursed through.
+  // Make sure it is writable.
+  make_accessible(path);
+
+  vector<string> subdirs;
+  delete_nondir del(path);
+  record_subdirs rec(path, subdirs);
+
+  do_read_directory(path, del, rec, del);
+  for (vector<string>::const_iterator i = subdirs.begin();
+       i != subdirs.end(); i++)
+    do_remove_recursive(*i);
+
+  do_remove(path);
 }
 
 // Create the directory DIR.  It will be world-accessible modulo umask.

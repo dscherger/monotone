@@ -872,45 +872,57 @@ addition_builder::add_nodes_for(file_path const & path,
 bool
 addition_builder::visit_dir(file_path const & path)
 {
-  if (!recursive) {
-    bool warn = false;
+  struct directory_has_unignored_files_exception {};
+  struct directory_has_unignored_files : public dirent_consumer
+  {
+    directory_has_unignored_files(workspace & work, file_path const & p)
+      : work(work), p(p) {}
+    virtual void consume(char const * s)
+    {
+      try
+        {
+          file_path entry = p / path_component(s);
+          if (!work.ignore_file(entry))
+            throw directory_has_unignored_files_exception();
+        }
+      catch (std::logic_error)
+        {
+          // ignore this file for purposes of the warning; this file
+          // wouldn't have been added by a recursive add anyway.
+        }
+    }
+  private:
+    workspace & work;
+    file_path const & p;
+  };
 
-    // If the db can ever be stored in a dir
-    // then revisit this logic
-    I(!db.is_dbfile(path));
+  if (!recursive)
+    {
+      bool warn = false;
 
-    if (!respect_ignore)
-      warn = !directory_empty(path);
-    else if (respect_ignore && !work.ignore_file(path))
-      {
-        vector<path_component> children;
-        read_directory(path, children, children);
+      // If the db can ever be stored in a dir
+      // then revisit this logic
+      I(!db.is_dbfile(path));
 
-        for (vector<path_component>::const_iterator i = children.begin();
-             i != children.end(); ++i)
-          {
-            try
-              {
-                file_path entry = path / *i;
-                if (!work.ignore_file(entry) && !db.is_dbfile(entry))
-                  {
-                    warn = true;
-                    break;
-                  }
-              }
-            catch (std::logic_error)
-              {
-                // ignore this file for purposes of the warning
-                // this file wouldn't have been added by a
-                // recursive add anyway.
-              }
-          }
-      }
+      if (!respect_ignore)
+        warn = !directory_empty(path);
+      else if (!work.ignore_file(path))
+        {
+          directory_has_unignored_files dhuf(work, path);
+          try
+            {
+              do_read_directory(path, dhuf, dhuf, dhuf);
+            }
+          catch (directory_has_unignored_files_exception)
+            {
+              warn = true;
+            }
+        }
 
-    if (warn)
-      W(F("Non-recursive add: Files in the directory '%s' "
-          "will not be added automatically.") % path);
-  }
+      if (warn)
+        W(F("Non-recursive add: Files in the directory '%s' "
+            "will not be added automatically.") % path);
+    }
 
   this->visit_file(path);
   return true;
@@ -1057,18 +1069,19 @@ editable_working_tree::detach_node(file_path const & src_pth)
     {
       // root dir detach, so we move contents, rather than the dir itself
       mkdir_p(dst_pth);
-      vector<path_component> files, dirs;
-      read_directory(src_pth, files, dirs);
-      for (vector<path_component>::const_iterator i = files.begin();
+
+      vector<file_path> files, dirs;
+      fill_path_vec<file_path> fill_files(src_pth, files, false);
+      fill_path_vec<file_path> fill_dirs(src_pth, dirs, true);
+      do_read_directory(src_pth, fill_files, fill_dirs);
+
+      for (vector<file_path>::const_iterator i = files.begin();
            i != files.end(); ++i)
-        move_file(src_pth / *i, dst_pth / *i);
-      for (vector<path_component>::const_iterator i = dirs.begin();
+        move_file(*i, dst_pth / (*i).basename());
+      for (vector<file_path>::const_iterator i = dirs.begin();
            i != dirs.end(); ++i)
-        {
-          utf8 item = typecast_vocab<utf8>(*i);
-          if (!bookkeeping_path::internal_string_is_bookkeeping_path(item))
-            move_dir(src_pth / *i, dst_pth / *i);
-        }
+        move_dir(*i, dst_pth / (*i).basename());
+
       root_dir_attached = false;
     }
   else
@@ -1132,22 +1145,18 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
   if (dst_pth == file_path())
     {
       // root dir attach, so we move contents, rather than the dir itself
-      vector<path_component> files, dirs;
-      read_directory(src_pth, files, dirs);
-      for (vector<path_component>::const_iterator i = files.begin();
+      vector<bookkeeping_path> files, dirs;
+      fill_path_vec<bookkeeping_path> fill_files(src_pth, files, false);
+      fill_path_vec<bookkeeping_path> fill_dirs(src_pth, dirs, true);
+      do_read_directory(src_pth, fill_files, fill_dirs);
+
+      for (vector<bookkeeping_path>::const_iterator i = files.begin();
            i != files.end(); ++i)
-        {
-          utf8 item = typecast_vocab<utf8>(*i);
-          I(!bookkeeping_path::internal_string_is_bookkeeping_path(item));
-          move_file(src_pth / *i, dst_pth / *i);
-        }
-      for (vector<path_component>::const_iterator i = dirs.begin();
+        move_file(*i, dst_pth / (*i).basename());
+      for (vector<bookkeeping_path>::const_iterator i = dirs.begin();
            i != dirs.end(); ++i)
-        {
-          utf8 item = typecast_vocab<utf8>(*i);
-          I(!bookkeeping_path::internal_string_is_bookkeeping_path(item));
-          move_dir(src_pth / *i, dst_pth / *i);
-        }
+        move_dir(*i, dst_pth / (*i).basename());
+
       delete_dir_shallow(src_pth);
       root_dir_attached = true;
     }

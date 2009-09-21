@@ -249,6 +249,41 @@ do_remove(std::string const & path)
 }
 
 void
+do_remove_recursive(std::string const & path)
+{
+  // SHFileOperation makes the weird requirement that its pFrom (and pTo)
+  // arguments be terminated with *two* ASCII NULs.
+  size_t pfLen = path.size();
+  LPCTSTR pFrom = malloc(pfLen + 2);
+  memcpy(pFrom, path.data(), pfLen);
+  pFrom[pfLen] = '\0';
+  pFrom[pfLen+1] = '\0';
+
+  SHFILEOPSTRUCTA op;
+  op.hwnd   = INVALID_HANDLE_VALUE;
+  op.wFunc  = FO_DELETE;
+  op.pFrom  = pFrom;
+  op.pTo    = NULL;
+  op.fFlags = (FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOCONFIRMMKDIR
+               | FOF_NOERRORUI); // aka FOF_NO_UI, but that's vista only
+  op.fAnyOperationsAborted = FALSE;
+  op.hNameMappings = INVALID_HANDLE_VALUE;
+  op.lpszProgressTitle = NULL;
+
+  int rc = SHFileOperationA(&op);
+  // http://msdn.microsoft.com/en-us/library/bb762164(VS.85).aspx
+  // warns that the return codes from SHFileOperation are *not* normal
+  // Win32 error codes; so we don't try to do os_strerror on them.
+  E(rc == 0, origin::system,
+    F("could not remove '%s' and contents: SHFileOperation error code 0x%x")
+    % path % rc);
+  E(!op.fAnyOperationsAborted, origin::system,
+    F("could not remove '%s' and contents: SHFileOperation partially aborted")
+    % path);
+
+}
+
+void
 do_mkdir(std::string const & path)
 {
   E(CreateDirectoryA(path.c_str(), 0) != 0, origin::system,
@@ -302,6 +337,19 @@ rename_clobberingly_impl(const char * from, const char * to)
   // This is not even remotely atomic, but what can you do?
   DeleteFile(to);
   return MoveFile(from, to);
+}
+
+void make_accessible(std::string const & name)
+{
+  DWORD attrs = GetFileAttributes(name.c_str());
+  E(attrs != INVALID_FILE_ATTRIBUTES, origin::system,
+    F("GetFileAttributes(%s) failed: %s")
+    % name % os_strerror(GetLastError()));
+
+  E(SetFileAttributes(name.c_str(), attrs & ~FILE_ATTRIBUTE_READONLY),
+    origin::system,
+    F("SetFileAttributes(%s) failed: %s")
+    % name % os_strerror(GetLastError()));
 }
 
 void

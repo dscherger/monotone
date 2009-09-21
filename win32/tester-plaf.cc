@@ -19,16 +19,6 @@
 
 #include <windows.h>
 
-void make_accessible(std::string const & name)
-{
-  DWORD attrs = GetFileAttributes(name.c_str());
-  E(attrs != INVALID_FILE_ATTRIBUTES, origin::system,
-    F("GetFileAttributes(%s) failed: %s") % name % os_strerror(GetLastError()));
-
-  E(SetFileAttributes(name.c_str(), attrs & ~FILE_ATTRIBUTE_READONLY), origin::system,
-    F("SetFileAttributes(%s) failed: %s") % name % os_strerror(GetLastError()));
-}
-
 time_t get_last_write_time(char const * name)
 {
   HANDLE h = CreateFile(name, GENERIC_READ, FILE_SHARE_READ, NULL,
