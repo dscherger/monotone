@@ -123,7 +123,7 @@ directory_empty(any_path const & path)
 
   directory_empty_helper h;
   try {
-    do_read_directory(path, h, h, h);
+    read_directory(path, h, h, h);
   } catch (directory_not_empty_exception) {
     return false;
   }
@@ -398,7 +398,7 @@ walk_tree_recursive(file_path const & path,
   fill_path_vec<file_path> fill_files(path, files, false);
   fill_path_vec<file_path> fill_dirs(path, dirs, true);
 
-  do_read_directory(path, fill_files, fill_dirs);
+  read_directory(path, fill_files, fill_dirs);
 
   for (vector<file_path>::const_iterator i = files.begin();
        i != files.end(); ++i)

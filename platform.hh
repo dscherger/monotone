@@ -128,10 +128,10 @@ struct dirent_consumer
   virtual ~dirent_consumer() {}
   virtual void consume(const char *) = 0;
 };
-void do_read_directory(std::string const & path,
-                       dirent_consumer & files,
-                       dirent_consumer & dirs,
-                       dirent_consumer & other_files);
+void read_directory(std::string const & path,
+                    dirent_consumer & files,
+                    dirent_consumer & dirs,
+                    dirent_consumer & other_files);
 
 void make_accessible(std::string const & name);
 void rename_clobberingly(std::string const & from, std::string const & to);

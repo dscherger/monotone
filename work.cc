@@ -911,7 +911,7 @@ addition_builder::visit_dir(file_path const & path)
           directory_has_unignored_files dhuf(work, path);
           try
             {
-              do_read_directory(path, dhuf, dhuf, dhuf);
+              read_directory(path, dhuf, dhuf, dhuf);
             }
           catch (directory_has_unignored_files_exception)
             {
@@ -1073,7 +1073,7 @@ editable_working_tree::detach_node(file_path const & src_pth)
       vector<file_path> files, dirs;
       fill_path_vec<file_path> fill_files(src_pth, files, false);
       fill_path_vec<file_path> fill_dirs(src_pth, dirs, true);
-      do_read_directory(src_pth, fill_files, fill_dirs);
+      read_directory(src_pth, fill_files, fill_dirs);
 
       for (vector<file_path>::const_iterator i = files.begin();
            i != files.end(); ++i)
@@ -1148,7 +1148,7 @@ editable_working_tree::attach_node(node_id nid, file_path const & dst_pth)
       vector<bookkeeping_path> files, dirs;
       fill_path_vec<bookkeeping_path> fill_files(src_pth, files, false);
       fill_path_vec<bookkeeping_path> fill_dirs(src_pth, dirs, true);
-      do_read_directory(src_pth, fill_files, fill_dirs);
+      read_directory(src_pth, fill_files, fill_dirs);
 
       for (vector<bookkeeping_path>::const_iterator i = files.begin();
            i != files.end(); ++i)

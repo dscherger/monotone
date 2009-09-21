@@ -227,7 +227,7 @@ key_store_state::maybe_read_key_dir()
   vector<system_path> key_files;
   fill_path_vec<system_path> fill_key_files(key_dir, key_files, false);
   dirent_ignore ignore;
-  do_read_directory(key_dir, fill_key_files, ignore, ignore);
+  read_directory(key_dir, fill_key_files, ignore, ignore);
 
   keyreader kr(*this);
   for (vector<system_path>::const_iterator i = key_files.begin();

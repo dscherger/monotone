@@ -152,7 +152,7 @@ void do_make_tree_accessible(string const & p)
         struct fill_vec get_subdirs(subdirs);
         struct file_accessible_maker access_files(p);
 
-        do_read_directory(p, access_files, get_subdirs, access_files);
+        read_directory(p, access_files, get_subdirs, access_files);
         for(vector<string>::const_iterator i = subdirs.begin();
             i != subdirs.end(); i++)
           do_make_tree_accessible(p + "/" + *i);
@@ -199,7 +199,7 @@ void do_copy_recursive(string const & from, string to)
       struct fill_vec get_subdirs(subdirs), get_specials(specials);
       struct file_copier copy_files(from, to);
 
-      do_read_directory(from, copy_files, get_subdirs, get_specials);
+      read_directory(from, copy_files, get_subdirs, get_specials);
       E(specials.empty(), origin::user,
         F("cannot copy special files in '%s'") % from);
       for (vector<string>::const_iterator i = subdirs.begin();
@@ -433,7 +433,7 @@ LUAEXT(read_directory, )
       string path(luaL_checkstring(LS, -1));
       build_table tbl(LS);
 
-      do_read_directory(path, tbl, tbl, tbl);
+      read_directory(path, tbl, tbl, tbl);
     }
   catch(recoverable_failure &)
     {

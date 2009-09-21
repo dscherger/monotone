@@ -205,10 +205,10 @@ namespace
 }
 
 void
-do_read_directory(std::string const & path,
-                  dirent_consumer & files,
-                  dirent_consumer & dirs,
-                  dirent_consumer & /* specials */)
+read_directory(std::string const & path,
+               dirent_consumer & files,
+               dirent_consumer & dirs,
+               dirent_consumer & /* specials */)
 {
   dirhandle dir(path);
   WIN32_FIND_DATA d;

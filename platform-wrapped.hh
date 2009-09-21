@@ -72,21 +72,21 @@ private:
 };
 
 inline void
-do_read_directory(any_path const & path,
-                  dirent_consumer & files,
-                  dirent_consumer & dirs,
-                  dirent_consumer & specials)
+read_directory(any_path const & path,
+               dirent_consumer & files,
+               dirent_consumer & dirs,
+               dirent_consumer & specials)
 {
-  do_read_directory(path.as_external(), files, dirs, specials);
+  read_directory(path.as_external(), files, dirs, specials);
 }
 
 inline void
-do_read_directory(any_path const & path,
-                  dirent_consumer & files,
-                  dirent_consumer & dirs)
+read_directory(any_path const & path,
+               dirent_consumer & files,
+               dirent_consumer & dirs)
 {
   special_file_error sfe(path);
-  do_read_directory(path.as_external(), files, dirs, sfe);
+  read_directory(path.as_external(), files, dirs, sfe);
 }
 
 #endif

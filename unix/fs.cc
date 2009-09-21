@@ -173,10 +173,10 @@ namespace
 }
 
 void
-do_read_directory(string const & path,
-                  dirent_consumer & files,
-                  dirent_consumer & dirs,
-                  dirent_consumer & specials)
+read_directory(string const & path,
+               dirent_consumer & files,
+               dirent_consumer & dirs,
+               dirent_consumer & specials)
 {
   string p(path);
   if (p == "")
@@ -369,7 +369,7 @@ do_remove_recursive(string const & path)
   delete_nondir del(path);
   record_subdirs rec(path, subdirs);
 
-  do_read_directory(path, del, rec, del);
+  read_directory(path, del, rec, del);
   for (vector<string>::const_iterator i = subdirs.begin();
        i != subdirs.end(); i++)
     do_remove_recursive(*i);
