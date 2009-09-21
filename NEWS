@@ -1,3 +1,19 @@
+??? ??? ?? ??:??:?? UTC ????
+
+        0.46 release.
+
+        Changes
+
+        - Cert labels in the output of the 'log' command are now
+          localized.
+
+        New features
+
+        Bugs fixed
+
+        Internal
+
+
 Fri Sep 11 20:50:00 UTC 2009
 
         0.45 release.
