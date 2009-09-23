@@ -77,7 +77,7 @@ if $_notfound; then
 # also ensures that the ARG_VARs for the desired library are sane.
 PKG_CHECK_MODULES([$1], [$1$_verreq], 
  [_notfound=false],
- [:])
+ [AC_MSG_RESULT([$1.pc not found])])
 fi
 
 # Third, try looking for alternative names known to pkg-config for
