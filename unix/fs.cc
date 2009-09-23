@@ -312,8 +312,6 @@ do_remove(string const & path)
 // For the reasons described in file_io.cc::walk_tree_recursive, we read the
 // entire directory before recursing into any subdirs.  However, it is safe
 // to delete files as we encounter them, and we do so.
-// It is not an error to call this function on a path that doesn't exist,
-// or is a file rather than a directory.
 void
 do_remove_recursive(string const & path)
 {
