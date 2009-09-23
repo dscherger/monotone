@@ -234,7 +234,7 @@ AC_DEFUN([MTN_FIND_PCRE],
 ])
 
 AC_DEFUN([MTN_FIND_SQLITE],
-[MTN_CHECK_MODULE([sqlite], [3.3],
+[MTN_CHECK_MODULE([sqlite3], [3.3],
   [AC_LANG_PROGRAM(
     [#include <sqlite3.h>
      #if SQLITE_VERSION_NUMBER < 3003000
