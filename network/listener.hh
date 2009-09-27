@@ -8,8 +8,8 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#ifndef __NETSYNC_LISTENER_HH__
-#define __NETSYNC_LISTENER_HH__
+#ifndef __LISTENER_HH__
+#define __LISTENER_HH__
 
 #include <list>
 
@@ -17,10 +17,7 @@
 #include "network/listener_base.hh"
 #include "vocab.hh"
 
-//#include <boost/shared_ptr.hpp>
-
-class options;
-class lua_hooks;
+class app_state;
 class key_store;
 class project_t;
 class reactor;
@@ -28,8 +25,7 @@ class transaction_guard;
 
 class listener : public listener_base
 {
-  options & opts;
-  lua_hooks & lua;
+  app_state & app;
   project_t & project;
   key_store & keys;
 
@@ -42,8 +38,7 @@ class listener : public listener_base
   Netxx::Address addr;
 public:
 
-  listener(options & opts,
-           lua_hooks & lua,
+  listener(app_state & app,
            project_t & project,
            key_store & keys,
            reactor & react,

@@ -195,6 +195,8 @@ build_client_connection_info(options & opts,
     {
       find_key(opts, db, keys, lua, project, info, need_key);
     }
+
+  info.client.connection_type = netsync_connection_info::netsync_connection;
 }
 
 static void
@@ -225,6 +227,42 @@ extract_client_connection_info(options & opts,
   build_client_connection_info(opts, lua, db, keys, project,
                                info, have_address, have_include_exclude,
                                need_key);
+}
+
+CMD_AUTOMATE(remote_stdio,
+             N_("[ADDRESS[:PORTNUMBER]"),
+             N_("Opens an 'automate stdio' connection to a remote server"),
+             "",
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  info.client.unparsed = idx(args, 0);
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  info.client.use_argv =
+    app.lua.hook_get_netsync_connect_command(info.client.uri,
+                                             info.client.include_pattern,
+                                             info.client.exclude_pattern,
+                                             global_sanity.debug_p(),
+                                             info.client.argv);
+  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
+  if (app.opts.use_transport_auth)
+    {
+      find_key(app.opts, db, keys, app.lua, project, info, true);
+    }
+
+  info.client.connection_type = netsync_connection_info::automate_connection;
+
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
 }
 
 CMD(push, "push", "", CMD_REF(network),
@@ -527,8 +565,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  options::opts::max_netsync_version |
                  options::opts::min_netsync_version |
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth |
-                 options::opts::bind_automate_uris)
+                 options::opts::bind_stdio | options::opts::no_transport_auth)
 {
   if (!args.empty())
     throw usage(execid);

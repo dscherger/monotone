@@ -15,6 +15,7 @@
 #include "cmd.hh"
 #include "app_state.hh"
 #include "automate_ostream.hh"
+#include "automate_reader.hh"
 #include "ui.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
@@ -135,119 +136,6 @@ CMD_AUTOMATE(interface_version, "",
 // automate_streambuf and automate_ostream are so we can dump output at a
 // set length, rather than waiting until we have all of the output.
 
-
-class automate_reader
-{
-  istream & in;
-  enum location {opt, cmd, none, eof};
-  location loc;
-  bool get_string(std::string & out)
-  {
-    out.clear();
-    if (loc == none || loc == eof)
-      {
-        return false;
-      }
-    size_t size(0);
-    char c;
-    read(&c, 1);
-    if (c == 'e')
-      {
-        loc = none;
-        return false;
-      }
-    while(c <= '9' && c >= '0')
-      {
-        size = (size*10)+(c-'0');
-        read(&c, 1);
-      }
-    E(c == ':', origin::user,
-        F("Bad input to automate stdio: expected ':' after string size"));
-    char *str = new char[size];
-    size_t got = 0;
-    while(got < size)
-      {
-        int n = read(str+got, size-got);
-        got += n;
-      }
-    out = std::string(str, size);
-    delete[] str;
-    L(FL("Got string '%s'") % out);
-    return true;
-  }
-  std::streamsize read(char *buf, size_t nbytes, bool eof_ok = false)
-  {
-    std::streamsize rv;
-
-    rv = in.rdbuf()->sgetn(buf, nbytes);
-
-    E(eof_ok || rv > 0, origin::user,
-      F("Bad input to automate stdio: unexpected EOF"));
-    return rv;
-  }
-  void go_to_next_item()
-  {
-    if (loc == eof)
-      return;
-    string starters("ol");
-    string whitespace(" \r\n\t");
-    string foo;
-    while (loc != none)
-      get_string(foo);
-    char c('e');
-    do
-      {
-        if (read(&c, 1, true) == 0)
-          {
-            loc = eof;
-            return;
-          }
-      }
-    while (whitespace.find(c) != std::string::npos);
-    switch (c)
-      {
-      case 'o': loc = opt; break;
-      case 'l': loc = cmd; break;
-      default:
-        E(false, origin::user,
-            F("Bad input to automate stdio: unknown start token '%c'") % c);
-      }
-  }
-public:
-  automate_reader(istream & is) : in(is), loc(none)
-  {}
-  bool get_command(vector<pair<string, string> > & params,
-                   vector<string> & cmdline)
-  {
-    params.clear();
-    cmdline.clear();
-    if (loc == none)
-      go_to_next_item();
-    if (loc == eof)
-      return false;
-    else if (loc == opt)
-      {
-        string key, val;
-        while(get_string(key) && get_string(val))
-          params.push_back(make_pair(key, val));
-        go_to_next_item();
-      }
-    E(loc == cmd, origin::user,
-      F("Bad input to automate stdio: expected '%c' token") % cmd);
-    string item;
-    while (get_string(item))
-      {
-        cmdline.push_back(item);
-      }
-    E(cmdline.size() > 0, origin::user,
-        F("Bad input to automate stdio: command name is missing"));
-    return true;
-  }
-  void reset()
-  {
-    loc = none;
-  }
-};
 
 
 CMD_AUTOMATE(stdio, "",

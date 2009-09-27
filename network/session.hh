@@ -16,6 +16,7 @@
 #include "netcmd.hh"
 #include "vocab.hh"
 
+class app_state;
 class key_store;
 class lua_hooks;
 class options;
@@ -54,8 +55,7 @@ class session : public session_base
   size_t session_id;
   static size_t session_num;
 
-  options & opts;
-  lua_hooks & lua;
+  app_state & app;
   project_t & project;
   key_store & keys;
   std::string peer;
@@ -66,7 +66,7 @@ class session : public session_base
 
   bool handle_service_request();
 public:
-  session(options & opts, lua_hooks & lua, project_t & project,
+  session(app_state & app, project_t & project,
           key_store & keys,
           protocol_voice voice,
           std::string const & peer,

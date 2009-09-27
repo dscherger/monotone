@@ -11,10 +11,12 @@
 #include "network/automate_session.hh"
 
 #include "app_state.hh"
+#include "automate_reader.hh"
 #include "work.hh"
 #include "vocab_cast.hh"
 
 using std::make_pair;
+using std::ostringstream;
 using std::pair;
 using std::set;
 using std::string;
@@ -24,217 +26,195 @@ using boost::shared_ptr;
 
 CMD_FWD_DECL(automate);
 
-bool automate_session::skip_ws(size_t & pos, size_t len)
-{
-  static string whitespace(" \r\n\t");
-  while (pos < len && whitespace.find(inbuf[pos]) != string::npos)
-    {
-      ++pos;
-    }
-  if (pos == len)
-    return false;
-  return true;
-}
-
-bool automate_session::read_str(size_t & pos, size_t len, string & out)
-{
-  if (pos >= len)
-    return false;
-  if (!skip_ws(pos, len))
-    return false;
-  size_t size = 0;
-  char c = inbuf[pos++];
-  while (pos < len && c <= '9' && c >= '0')
-    {
-      size = (size * 10) + (c - '0');
-      c = inbuf[pos++];
-    }
-  if (pos == len && c <= '9' && c >= '0')
-    return false;
-
-  if (c != ':')
-    throw bad_decode(F("bad automate stdio input; cannot read string"));
-
-  if (pos + size > len)
-    return false;
-
-  out = inbuf.substr(pos, size);
-  pos += size;
-  return true;
-}
-
-bool automate_session::read_cmd(Command & cmd)
-{
-  cmd.opts.clear();
-  cmd.args.clear();
-
-  size_t len = inbuf.size();
-  if (len < 2)
-    return false;
-  size_t pos = 0;
-  if (!skip_ws(pos, len))
-    return false;
-  if (inbuf[pos] == 'o')
-    {
-      ++pos;
-      while (inbuf[pos] != 'e')
-        {
-          string opt, val;
-          if (!read_str(pos, len, opt))
-            return false;
-          if (!read_str(pos, len, val))
-            return false;
-          cmd.opts.push_back(make_pair(opt, val));
-          if (!skip_ws(pos, len))
-            return false;
-          if (pos == len)
-            return false;
-        };
-      ++pos;
-    }
-  if (inbuf[pos] == 'l')
-    {
-      ++pos;
-      while (inbuf[pos] != 'e')
-        {
-          string arg;
-          if (!read_str(pos, len, arg))
-            return false;
-          cmd.args.push_back(arg);
-          if (!skip_ws(pos, len))
-            return false;
-          if (pos == len)
-            return false;
-        }
-      ++pos;
-    }
-  else
-    throw bad_decode(F("bad automate stdio input; cannot find command"));
-
-  if (cmd.args.empty())
-    throw bad_decode(F("bad automate stdio input: empty command"));
-  inbuf.pop_front(pos);
-  return true;
-}
-
-void automate_session::note_bytes_in(int count)
-{
-  protocol_state = working_state;
-}
-
-void automate_session::note_bytes_out(int count)
-{
-  size_t len = inbuf.size();
-  size_t pos = 0;
-  if (output_empty() && !skip_ws(pos, len))
-    {
-      protocol_state = confirmed_state;
-    }
-}
-
 automate_session::automate_session(app_state & app,
-                                   protocol_voice voice,
-                                   string const & peer_id,
-                                   shared_ptr<Netxx::StreamBase> str) :
-  session_base(voice, peer_id, str),
-  app(app), armed(false),
-  os(oss, app.opts.automate_stdio_size)
+                                   session * owner) :
+  wrapped_session(owner),
+  app(app),
+  command_number(0),
+  is_done(false)
 { }
 
-bool automate_session::arm()
+void automate_session::send_command()
 {
-  if (!armed)
+  // read an automate command on stdin, then package it up and send it
+  automate_reader ar(std::cin);
+  vector<pair<string, string> > read_opts;
+  vector<string> read_args;
+
+  if (ar.get_command(read_opts, read_args))
     {
-      if (output_overfull())
-        {
-          return false;
-        }
-      armed = read_cmd(cmd);
+      netcmd cmd_out(get_version());
+      cmd_out.write_automate_command_cmd(read_args, read_opts);
+      write_netcmd(cmd_out);
     }
-  return armed;
+  else
+    {
+      is_done = true;
+    }
 }
 
-bool automate_session::do_work(transaction_guard & guard)
+bool automate_session::have_work() const
 {
-  try
+  return false;
+}
+
+void automate_session::request_service()
+{
+  request_automate();
+}
+
+void automate_session::accept_service()
+{
+  send_command();
+}
+
+string automate_session::usher_reply_data() const
+{
+  return string();
+}
+
+bool automate_session::finished_working() const
+{
+  return is_done;
+}
+
+void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
+                                          bool use_transport_auth)
+{
+  // nothing to do
+}
+
+bool automate_session::do_work(transaction_guard & guard,
+                               netcmd const * const cmd_in)
+{
+  if (!cmd_in)
+    return true;
+
+  switch(cmd_in->get_cmd_code())
     {
-      if (!arm())
+    case automate_command_cmd:
+      {
+        vector<string> in_args;
+        vector<pair<string, string> > in_opts;
+        cmd_in->read_automate_command_cmd(in_args, in_opts);
+        ++command_number;
+
+        args_vector args;
+        for (vector<string>::iterator i = in_args.begin();
+             i != in_args.end(); ++i)
+          {
+            args.push_back(arg_type(*i, origin::user));
+          }
+
+        ostringstream oss;
+        bool have_err = false;
+        string err;
+
+        try
+          {
+            options::options_type opts;
+            opts = options::opts::all_options() - options::opts::globals();
+            opts.instantiate(&app.opts).reset();
+
+            command_id id;
+            for (args_vector::const_iterator iter = args.begin();
+                 iter != args.end(); iter++)
+              id.push_back(typecast_vocab<utf8>(*iter));
+
+            set< command_id > matches =
+              CMD_REF(automate)->complete_command(id);
+
+            if (matches.empty())
+              {
+                E(false, origin::network,
+                  F("no completions for this command"));
+              }
+            else if (matches.size() > 1)
+              {
+                E(false, origin::network,
+                  F("multiple completions possible for this command"));
+              }
+
+            id = *matches.begin();
+
+            I(args.size() >= id.size());
+            string cmd_printable;
+            for (command_id::size_type i = 0; i < id.size(); i++)
+              {
+                if (!cmd_printable.empty())
+                  cmd_printable += " ";
+                cmd_printable += (*args.begin())();
+                args.erase(args.begin());
+              }
+
+            L(FL("Executing %s for remote peer %s")
+              % cmd_printable % get_peer());
+
+            command const * cmd = CMD_REF(automate)->find_command(id);
+            I(cmd != NULL);
+            automate const * acmd = reinterpret_cast< automate const * >(cmd);
+
+            opts = options::opts::globals() | acmd->opts();
+
+            if (cmd->use_workspace_options())
+              {
+                // Re-read the ws options file, rather than just copying
+                // the options from the previous apts.opts object, because
+                // the file may have changed due to user activity.
+                workspace::check_format();
+                workspace::get_options(app.opts);
+              }
+
+            opts.instantiate(&app.opts).from_key_value_pairs(in_opts);
+            acmd->exec_from_automate(app, id, args, oss);
+          }
+        catch (recoverable_failure & f)
+          {
+            have_err = true;
+            err = f.what();
+          }
+
+        netcmd out_cmd(get_version());
+        out_cmd.write_automate_packet_cmd(command_number, 0,
+                                          !have_err, oss.str());
+        write_netcmd(out_cmd);
+        if (have_err)
+          {
+            netcmd err_cmd(get_version());
+            err_cmd.write_automate_packet_cmd(command_number, 2,
+                                              true, err);
+            write_netcmd(err_cmd);
+          }
+
         return true;
+
+      }
+    case automate_packet_cmd:
+      {
+        int command_num;
+        int err_code;
+        bool last;
+        string packet_data;
+        cmd_in->read_automate_packet_cmd(command_num, err_code,
+                                         last, packet_data);
+
+        std::cout<<command_num<<":"
+                 <<err_code<<":"
+                 <<(last?'l':'m')<<":"
+                 <<packet_data.size()<<":"
+                 <<packet_data;
+        std::cout.flush();
+
+        if (last)
+          send_command();
+
+        return true;
+      }
+    default:
+      E(false, origin::network,
+        F("unexpected netcmd '%d' received on automate connection")
+        % cmd_in->get_cmd_code());
     }
-  catch (bad_decode & bd)
-    {
-      W(F("stdio protocol error processing %s : '%s'")
-        % peer_id % bd.what);
-      return false;
-    }
-  armed = false;
-
-  args_vector args;
-  for (vector<string>::iterator i = cmd.args.begin();
-       i != cmd.args.end(); ++i)
-    {
-      args.push_back(arg_type(*i, origin::user));
-    }
-
-  oss.str(string());
-
-  try
-    {
-      options::options_type opts;
-      opts = options::opts::all_options() - options::opts::globals();
-      opts.instantiate(&app.opts).reset();
-
-      command_id id;
-      for (args_vector::const_iterator iter = args.begin();
-           iter != args.end(); iter++)
-        id.push_back(typecast_vocab<utf8>(*iter));
-
-      set< command_id > matches =
-        CMD_REF(automate)->complete_command(id);
-
-      if (matches.empty())
-        {
-          E(false, origin::user,
-            F("no completions for this command"));
-        }
-      else if (matches.size() > 1)
-        {
-          E(false, origin::user,
-            F("multiple completions possible for this command"));
-        }
-
-      id = *matches.begin();
-
-      I(args.size() >= id.size());
-      for (command_id::size_type i = 0; i < id.size(); i++)
-        args.erase(args.begin());
-
-      command const * cmd = CMD_REF(automate)->find_command(id);
-      I(cmd != NULL);
-      automate const * acmd = reinterpret_cast< automate const * >(cmd);
-
-      opts = options::opts::globals() | acmd->opts();
-
-      if (cmd->use_workspace_options())
-        {
-          // Re-read the ws options file, rather than just copying
-          // the options from the previous apts.opts object, because
-          // the file may have changed due to user activity.
-          workspace::check_format();
-          workspace::get_options(app.opts);
-        }
-
-      opts.instantiate(&app.opts).from_key_value_pairs(this->cmd.opts);
-      acmd->exec_from_automate(app, id, args, os);
-    }
-  catch (recoverable_failure & f)
-    {
-      os.set_err(2);
-      os << f.what();
-    }
-  os.end_cmd();
-  queue_output(oss.str());
-  return true;
 }
 
 // Local Variables:

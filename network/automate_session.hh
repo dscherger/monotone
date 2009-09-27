@@ -12,36 +12,32 @@
 
 #include "automate_ostream.hh"
 #include "cmd.hh"
-#include "network/session_base.hh"
+#include "network/wrapped_session.hh"
 
-class automate_session : public session_base
+class automate_session : public wrapped_session
 {
   app_state & app;
   typedef commands::command_id command_id;
   typedef commands::command command;
   typedef commands::automate automate;
-  struct Command
-  {
-    std::vector<std::pair<std::string, std::string> > opts;
-    std::vector<std::string> args;
-  };
-  bool skip_ws(size_t & pos, size_t len);
-  bool read_str(size_t & pos, size_t len, std::string & out);
-  bool read_cmd(Command & cmd);
-  bool armed;
-  Command cmd;
+  size_t command_number;
 
-  void note_bytes_in(int count);
-  void note_bytes_out(int count);
-  std::ostringstream oss;
-  automate_ostream os;
+  bool is_done;
+
+  void send_command();
 public:
   automate_session(app_state & app,
-                   protocol_voice voice,
-                   std::string const & peer_id,
-                   boost::shared_ptr<Netxx::StreamBase> str);
-  bool arm();
-  bool do_work(transaction_guard & guard);
+                   session * owner);
+
+  bool do_work(transaction_guard & guard,
+               netcmd const * const in_cmd);
+  bool have_work() const;
+  void request_service();
+  void accept_service();
+  std::string usher_reply_data() const;
+  bool finished_working() const;
+  void prepare_to_confirm(key_identity_info const & remote_key,
+                          bool use_transport_auth);
 };
 
 #endif

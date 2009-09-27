@@ -10,10 +10,12 @@
 #include "base.hh"
 #include "network/session.hh"
 
+#include "app_state.hh"
 #include "key_store.hh"
 #include "database.hh"
 #include "keys.hh"
 #include "lua_hooks.hh"
+#include "network/automate_session.hh"
 #include "network/netsync_session.hh"
 #include "options.hh"
 #include "project.hh"
@@ -29,16 +31,16 @@ static const var_domain known_servers_domain = var_domain("known-servers");
 
 size_t session::session_num = 0;
 
-session::session(options & opts, lua_hooks & lua, project_t & project,
+session::session(app_state & app, project_t & project,
                  key_store & keys,
                  protocol_voice voice,
                  std::string const & peer,
                  shared_ptr<Netxx::StreamBase> sock) :
   session_base(voice, peer, sock),
-  version(opts.max_netsync_version),
-  max_version(opts.max_netsync_version),
-  min_version(opts.min_netsync_version),
-  use_transport_auth(opts.use_transport_auth),
+  version(app.opts.max_netsync_version),
+  max_version(app.opts.max_netsync_version),
+  min_version(app.opts.min_netsync_version),
+  use_transport_auth(app.opts.use_transport_auth),
   signing_key(keys.signing_key),
   cmd_in(0),
   armed(false),
@@ -52,8 +54,7 @@ session::session(options & opts, lua_hooks & lua, project_t & project,
   completed_hello(false),
   error_code(0),
   session_id(++session_num),
-  opts(opts),
-  lua(lua),
+  app(app),
   project(project),
   keys(keys),
   peer(peer)
@@ -412,7 +413,7 @@ session::request_netsync(protocol_role role,
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
   if (!remote_key.id.inner()().empty())
-    project.complete_key_identity(keys, lua, remote_key);
+    project.complete_key_identity(keys, app.lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
 }
@@ -420,7 +421,32 @@ session::request_netsync(protocol_role role,
 void
 session::request_automate()
 {
-  // TODO
+  MM(use_transport_auth);
+  id nonce2(mk_nonce());
+  rsa_oaep_sha_data hmac_key_encrypted;
+  rsa_sha1_signature sig;
+  if (use_transport_auth)
+    {
+      project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
+
+      if (signing_key.inner()() != "")
+        {
+          keys.make_signature(project.db, signing_key, hello_nonce(), sig);
+        }
+    }
+
+  netcmd request(version);
+  request.write_automate_cmd(signing_key, hello_nonce,
+                             hmac_key_encrypted, sig);
+  write_netcmd(request);
+  set_session_key(nonce2());
+
+  key_identity_info remote_key;
+  remote_key.id = remote_peer_key_id;
+  if (!remote_key.id.inner()().empty())
+    project.complete_key_identity(keys, app.lua, remote_key);
+
+  wrapped->on_begin(session_id, remote_key);
 }
 
 void
@@ -619,8 +645,7 @@ bool session::handle_service_request()
     {
     case is_netsync:
       wrapped.reset(new netsync_session(this,
-                                        opts,
-                                        lua,
+                                        app.opts, app.lua,
                                         project,
                                         keys,
                                         corresponding_role(role),
@@ -628,6 +653,7 @@ bool session::handle_service_request()
                                         their_exclude));
       break;
     case is_automate:
+      wrapped.reset(new automate_session(app, this));
       break;
     }
 
@@ -636,7 +662,7 @@ bool session::handle_service_request()
     {
       client_identity.id = client_id;
       if (!client_identity.id.inner()().empty())
-        project.complete_key_identity(keys, lua, client_identity);
+        project.complete_key_identity(keys, app.lua, client_identity);
     }
 
   wrapped->on_begin(session_id, client_identity);

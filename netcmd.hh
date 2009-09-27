@@ -202,19 +202,19 @@ public:
   void read_automate_cmd(key_id & client,
                          id & nonce1,
                          rsa_oaep_sha_data & hmac_key_encrypted,
-                         rsa_sha1_signature & signature);
+                         rsa_sha1_signature & signature) const;
   void write_automate_cmd(key_id const & client,
                           id const & nonce1,
                           rsa_oaep_sha_data & hmac_key_encrypted,
                           rsa_sha1_signature & signature);
   void read_automate_command_cmd(std::vector<std::string> & args,
-                                 std::vector<std::pair<std::string, std::string> > & opts);
+                                 std::vector<std::pair<std::string, std::string> > & opts) const;
   void write_automate_command_cmd(std::vector<std::string> const & args,
                                   std::vector<std::pair<std::string, std::string> > const & opts);
   void read_automate_packet_cmd(int & command_num,
                                 int & err_code,
                                 bool & last,
-                                std::string & packet_data);
+                                std::string & packet_data) const;
   void write_automate_packet_cmd(int command_num,
                                  int err_code,
                                  bool last,
@@ -233,6 +233,11 @@ struct netsync_connection_info
   {
     std::list<utf8> addrs;
   } server;
+  enum conn_type
+    {
+      netsync_connection,
+      automate_connection
+    };
   struct
   {
     globish include_pattern;
@@ -241,6 +246,7 @@ struct netsync_connection_info
     utf8 unparsed;
     std::vector<std::string> argv;
     bool use_argv;
+    conn_type connection_type;
   } client;
 };
 

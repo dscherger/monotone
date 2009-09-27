@@ -9,7 +9,7 @@
 // PURPOSE.
 
 #include "base.hh"
-#include "network/netsync_listener.hh"
+#include "network/listener.hh"
 
 #include "netxx/sockopt.h"
 #include "netxx/stream.h"
@@ -27,8 +27,7 @@ using std::string;
 using boost::lexical_cast;
 using boost::shared_ptr;
 
-listener::listener(options & opts,
-                   lua_hooks & lua,
+listener::listener(app_state & app,
                    project_t & project,
                    key_store & keys,
                    reactor & react,
@@ -37,7 +36,7 @@ listener::listener(options & opts,
                    shared_ptr<transaction_guard> &guard,
                    bool use_ipv6)
   : listener_base(shared_ptr<Netxx::StreamServer>()),
-    opts(opts), lua(lua), project(project), keys(keys),
+    app(app), project(project), keys(keys),
     react(react), role(role),
     timeout(static_cast<long>(constants::netsync_timeout_seconds)),
     guard(guard),
@@ -72,7 +71,7 @@ listener::do_io(Netxx::Probe::ready_type event)
         shared_ptr<Netxx::Stream>(new Netxx::Stream(client.get_socketfd(),
                                                     timeout));
 
-      shared_ptr<session> sess(new session(opts, lua, project, keys,
+      shared_ptr<session> sess(new session(app, project, keys,
                                            server_voice,
                                            lexical_cast<string>(client),
                                            str));

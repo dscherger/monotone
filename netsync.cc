@@ -18,8 +18,8 @@
 #include "app_state.hh"
 #include "database.hh"
 #include "lua.hh"
-#include "network/automate_listener.hh"
-#include "network/netsync_listener.hh"
+#include "network/automate_session.hh"
+#include "network/listener.hh"
 #include "network/netsync_session.hh"
 #include "network/reactor.hh"
 #include "network/session.hh"
@@ -93,8 +93,7 @@ build_stream_to_server(options & opts, lua_hooks & lua,
 }
 
 static void
-call_server(options & opts,
-            lua_hooks & lua,
+call_server(app_state & app,
             project_t & project,
             key_store & keys,
             protocol_role role,
@@ -109,7 +108,7 @@ call_server(options & opts,
   P(F("connecting to %s") % info.client.unparsed);
 
   shared_ptr<Netxx::StreamBase> server
-    = build_stream_to_server(opts, lua,
+    = build_stream_to_server(app.opts, app.lua,
                              info, constants::netsync_default_port,
                              timeout);
 
@@ -119,14 +118,23 @@ call_server(options & opts,
   Netxx::SockOpt socket_options(server->get_socketfd(), false);
   socket_options.set_non_blocking();
 
-  shared_ptr<session> sess(new session(opts, lua, project, keys,
+  shared_ptr<session> sess(new session(app, project, keys,
                                        client_voice,
                                        info.client.unparsed(), server));
-  shared_ptr<wrapped_session> wrapped(new netsync_session(sess.get(),
-                                                          opts, lua, project,
-                                                          keys, role,
-                                                          info.client.include_pattern,
-                                                          info.client.exclude_pattern));
+  shared_ptr<wrapped_session> wrapped;
+  switch (info.client.connection_type)
+    {
+    case netsync_connection_info::netsync_connection:
+      wrapped.reset(new netsync_session(sess.get(),
+                                        app.opts, app.lua, project,
+                                        keys, role,
+                                        info.client.include_pattern,
+                                        info.client.exclude_pattern));
+      break;
+    case netsync_connection_info::automate_connection:
+      wrapped.reset(new automate_session(app, sess.get()));
+      break;
+    }
   sess->set_inner(wrapped);
 
   reactor react;
@@ -187,8 +195,7 @@ call_server(options & opts,
 }
 
 static shared_ptr<session>
-session_from_server_sync_item(options & opts,
-                              lua_hooks & lua,
+session_from_server_sync_item(app_state & app,
                               project_t & project,
                               key_store & keys,
                               server_initiated_sync_request const & request)
@@ -205,7 +212,7 @@ session_from_server_sync_item(options & opts,
     {
       P(F("connecting to %s") % info.client.unparsed);
       shared_ptr<Netxx::StreamBase> server
-        = build_stream_to_server(opts, lua,
+        = build_stream_to_server(app.opts, app.lua,
                                  info, constants::netsync_default_port,
                                  Netxx::Timeout(constants::netsync_timeout_seconds));
 
@@ -223,12 +230,12 @@ session_from_server_sync_item(options & opts,
         role = sink_role;
 
       shared_ptr<session>
-        sess(new session(opts, lua, project, keys,
+        sess(new session(app, project, keys,
                          client_voice,
                          info.client.unparsed(), server));
       shared_ptr<wrapped_session>
         wrapped(new netsync_session(sess.get(),
-                                    opts, lua, project,
+                                    app.opts, app.lua, project,
                                     keys, role,
                                     info.client.include_pattern,
                                     info.client.exclude_pattern,
@@ -261,18 +268,10 @@ serve_connections(app_state & app,
   shared_ptr<transaction_guard> guard(new transaction_guard(project.db));
 
   reactor react;
-  shared_ptr<listener> listen(new listener(opts, lua, project, keys,
+  shared_ptr<listener> listen(new listener(app, project, keys,
                                            react, role, addresses,
                                            guard, use_ipv6));
   react.add(listen, *guard);
-
-  if (!app.opts.bind_automate_uris.empty())
-    {
-      shared_ptr<automate_listener> al(new automate_listener(app, guard,
-                                                             react, use_ipv6));
-      react.add(al, *guard);
-    }
-
 
   while (true)
     {
@@ -289,7 +288,7 @@ serve_connections(app_state & app,
             = server_initiated_sync_requests.front();
           server_initiated_sync_requests.pop_front();
           shared_ptr<session> sess
-            = session_from_server_sync_item(opts, lua,  project, keys,
+            = session_from_server_sync_item(app,  project, keys,
                                             request);
 
           if (sess)
@@ -368,7 +367,7 @@ run_netsync_protocol(app_state & app,
               shared_ptr<Netxx::PipeStream> str(new Netxx::PipeStream(0,1));
 
               shared_ptr<session>
-                sess(new session(opts, lua, project, keys,
+                sess(new session(app, project, keys,
                                  server_voice,
                                  "stdio", str));
               serve_single_connection(project, sess);
@@ -380,7 +379,7 @@ run_netsync_protocol(app_state & app,
       else
         {
           I(voice == client_voice);
-          call_server(opts, lua, project, keys,
+          call_server(app, project, keys,
                       role, info);
         }
     }

@@ -194,8 +194,8 @@ netcmd::read(u8 min_version, u8 max_version,
     {
       throw bad_decode(F("bad HMAC checksum (got %s, wanted %s)\n"
                          "this suggests data was corrupted in transit")
-                       % cmd_digest
-                       % digest);
+                       % encode_hexenc(cmd_digest, origin::network)
+                       % encode_hexenc(digest, origin::network));
     }
 
   L(FL("read packet with code %d and version %d")
@@ -565,7 +565,7 @@ void
 netcmd::read_automate_cmd(key_id & client,
                           id & nonce1,
                           rsa_oaep_sha_data & hmac_key_encrypted,
-                          rsa_sha1_signature & signature)
+                          rsa_sha1_signature & signature) const
 {
   size_t pos = 0;
   client = key_id(extract_substring(payload, pos,
@@ -611,7 +611,7 @@ netcmd::write_automate_cmd(key_id const & client,
 
 void
 netcmd::read_automate_command_cmd(vector<string> & args,
-                                  vector<std::pair<string, string> > & opts)
+                                  vector<std::pair<string, string> > & opts) const
 {
   size_t pos = 0;
   {
@@ -670,7 +670,7 @@ void
 netcmd::read_automate_packet_cmd(int & command_num,
                                  int & err_code,
                                  bool & last,
-                                 string & packet_data)
+                                 string & packet_data) const
 {
   size_t pos = 0;
 

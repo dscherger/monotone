@@ -119,14 +119,6 @@ OPTION(bind_opts, bind_stdio, false, "stdio",
 }
 #endif
 
-OPT(bind_automate_uris, "bind-automate", std::list<utf8>, ,
-    gettext_noop("serve 'automate stdio' connections on this address"))
-#ifdef option_bodies
-{
-  bind_automate_uris.push_back(utf8(arg, origin::user));
-}
-#endif
-
 OPT(max_netsync_version, "max-netsync-version",
     u8, constants::netcmd_current_protocol_version,
     gettext_noop("cause monotone to lie about the maximum netsync "
