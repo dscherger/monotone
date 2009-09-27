@@ -116,7 +116,9 @@ netsync_session::~netsync_session()
 
 void netsync_session::on_begin(size_t ident, key_identity_info const & remote_key)
 {
-  lua.hook_note_netsync_start(ident, "client", role,
+  lua.hook_note_netsync_start(ident,
+                              get_voice() == server_voice ? "server" : "client",
+                              role,
                               get_peer(), remote_key,
                               our_include_pattern, our_exclude_pattern);
 }

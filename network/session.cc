@@ -136,12 +136,12 @@ void session::begin_service()
 
 bool session::do_work(transaction_guard & guard)
 {
-  arm();
-  bool is_goodbye = armed && cmd_in.get_cmd_code() == bye_cmd;
-  bool is_error = armed && cmd_in.get_cmd_code() == error_cmd;
-  if (completed_hello && !is_goodbye && !is_error)
+  try
     {
-      try
+      arm();
+      bool is_goodbye = armed && cmd_in.get_cmd_code() == bye_cmd;
+      bool is_error = armed && cmd_in.get_cmd_code() == error_cmd;
+      if (completed_hello && !is_goodbye && !is_error)
         {
           if (encountered_error)
             return true;
@@ -169,209 +169,208 @@ bool session::do_work(transaction_guard & guard)
               return ok;
             }
         }
-      catch (netsync_error & err)
+      else
         {
-          W(F("error: %s") % err.msg);
-          string const errmsg(lexical_cast<string>(error_code) + " " + err.msg);
-          L(FL("queueing 'error' command"));
-          netcmd cmd(get_version());
-          cmd.write_error_cmd(errmsg);
-          write_netcmd(cmd);
-          encountered_error = true;
-          return true; // Don't terminate until we've send the error_cmd.
+          if (!armed)
+            return true;
+          armed = false;
+          switch (cmd_in.get_cmd_code())
+            {
+            case usher_cmd:
+              {
+                utf8 msg;
+                cmd_in.read_usher_cmd(msg);
+                if (msg().size())
+                  {
+                    if (msg()[0] == '!')
+                      P(F("Received warning from usher: %s") % msg().substr(1));
+                    else
+                      L(FL("Received greeting from usher: %s") % msg().substr(1));
+                  }
+                netcmd cmdout(version);
+                cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
+                                             wrapped->usher_reply_data());
+                write_netcmd(cmdout);
+                L(FL("Sent reply."));
+                return true;
+              }
+            case usher_reply_cmd:
+              {
+                u8 client_version;
+                utf8 server;
+                string pattern;
+                cmd_in.read_usher_reply_cmd(client_version, server, pattern);
+
+                // netcmd::read() has already checked that the client isn't too old
+                if (client_version < max_version)
+                  {
+                    version = client_version;
+                  }
+                L(FL("client has maximum version %d, using %d")
+                  % widen<u32>(client_version) % widen<u32>(version));
+                netcmd cmd(version);
+
+                key_name name;
+                keypair kp;
+                keys.get_key_pair(signing_key, name, kp);
+                if (use_transport_auth)
+                  {
+                    cmd.write_hello_cmd(name, kp.pub, mk_nonce());
+                  }
+                else
+                  {
+                    cmd.write_hello_cmd(name, rsa_pub_key(), mk_nonce());
+                  }
+                write_netcmd(cmd);
+                return true;
+              }
+            case hello_cmd:
+              { // need to ask wrapped what to reply with (we're a client)
+                u8 server_version;
+                key_name their_keyname;
+                rsa_pub_key their_key;
+                id nonce;
+                cmd_in.read_hello_cmd(server_version, their_keyname,
+                                      their_key, nonce);
+                hello_nonce = nonce;
+
+                I(!received_remote_key);
+                I(saved_nonce().empty());
+
+                // version sanity has already been checked by netcmd::read()
+                L(FL("received hello command; setting version from %d to %d")
+                  % widen<u32>(get_version())
+                  % widen<u32>(server_version));
+                version = server_version;
+
+                if (use_transport_auth)
+                  {
+                    key_hash_code(their_keyname, their_key, remote_peer_key_id);
+
+                    var_value printable_key_hash;
+                    {
+                      hexenc<id> encoded_key_hash;
+                      encode_hexenc(remote_peer_key_id.inner(), encoded_key_hash);
+                      printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
+                    }
+                    L(FL("server key has name %s, hash %s")
+                      % their_keyname % printable_key_hash);
+                    var_key their_key_key(known_servers_domain,
+                                          var_name(get_peer(), origin::internal));
+                    if (project.db.var_exists(their_key_key))
+                      {
+                        var_value expected_key_hash;
+                        project.db.get_var(their_key_key, expected_key_hash);
+                        if (expected_key_hash != printable_key_hash)
+                          {
+                            P(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
+                                "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
+                                "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
+                                "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
+                                "it is also possible that the server key has just been changed\n"
+                                "remote host sent key %s\n"
+                                "I expected %s\n"
+                                "'%s unset %s %s' overrides this check")
+                              % printable_key_hash
+                              % expected_key_hash
+                              % prog_name % their_key_key.first % their_key_key.second);
+                            E(false, origin::network, F("server key changed"));
+                          }
+                      }
+                    else
+                      {
+                        P(F("first time connecting to server %s\n"
+                            "I'll assume it's really them, but you might want to double-check\n"
+                            "their key's fingerprint: %s")
+                          % get_peer()
+                          % printable_key_hash);
+                        project.db.set_var(their_key_key, printable_key_hash);
+                      }
+
+                    if (!project.db.public_key_exists(remote_peer_key_id))
+                      {
+                        // this should now always return true since we just checked
+                        // for the existence of this particular key
+                        I(project.db.put_key(their_keyname, their_key));
+                        W(F("saving public key for %s to database") % their_keyname);
+                      }
+                    {
+                      hexenc<id> hnonce;
+                      encode_hexenc(nonce, hnonce);
+                      L(FL("received 'hello' netcmd from server '%s' with nonce '%s'")
+                        % printable_key_hash % hnonce);
+                    }
+
+                    I(project.db.public_key_exists(remote_peer_key_id));
+                
+                    // save their identity
+                    received_remote_key = true;
+                  }
+
+                wrapped->request_service();
+
+              }
+              return true;
+
+            case anonymous_cmd:
+            case auth_cmd:
+            case automate_cmd:
+              return handle_service_request();
+
+            case confirm_cmd:
+              {
+                authenticated = true; // maybe?
+                completed_hello = true;
+                wrapped->accept_service();
+              }
+              return true;
+
+            case bye_cmd:
+              {
+                u8 phase;
+                cmd_in.read_bye_cmd(phase);
+                return process_bye_cmd(phase, guard);
+              }
+            case error_cmd:
+              {
+                string errmsg;
+                cmd_in.read_error_cmd(errmsg);
+
+                // "xxx string" with xxx being digits means there's an error code
+                if (errmsg.size() > 4 && errmsg.substr(3,1) == " ")
+                  {
+                    try
+                      {
+                        int err = boost::lexical_cast<int>(errmsg.substr(0,3));
+                        if (err >= 100)
+                          {
+                            error_code = err;
+                            throw bad_decode(F("received network error: %s")
+                                             % errmsg.substr(4));
+                          }
+                      }
+                    catch (boost::bad_lexical_cast)
+                      { // ok, so it wasn't a number
+                      }
+                  }
+                throw bad_decode(F("received network error: %s") % errmsg);
+              }
+            default:
+              // ERROR
+              return false;
+            }
         }
     }
-  else
+  catch (netsync_error & err)
     {
-      if (!armed)
-        return true;
-      armed = false;
-      switch (cmd_in.get_cmd_code())
-        {
-        case usher_cmd:
-          {
-            utf8 msg;
-            cmd_in.read_usher_cmd(msg);
-            if (msg().size())
-              {
-                if (msg()[0] == '!')
-                  P(F("Received warning from usher: %s") % msg().substr(1));
-                else
-                  L(FL("Received greeting from usher: %s") % msg().substr(1));
-              }
-            netcmd cmdout(version);
-            cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
-                                         wrapped->usher_reply_data());
-            write_netcmd(cmdout);
-            L(FL("Sent reply."));
-            return true;
-          }
-        case usher_reply_cmd:
-          {
-            u8 client_version;
-            utf8 server;
-            string pattern;
-            cmd_in.read_usher_reply_cmd(client_version, server, pattern);
-
-            // netcmd::read() has already checked that the client isn't too old
-            if (client_version < max_version)
-              {
-                version = client_version;
-              }
-            L(FL("client has maximum version %d, using %d")
-              % widen<u32>(client_version) % widen<u32>(version));
-            netcmd cmd(version);
-
-            key_name name;
-            keypair kp;
-            keys.get_key_pair(signing_key, name, kp);
-            if (use_transport_auth)
-              {
-                cmd.write_hello_cmd(name, kp.pub, mk_nonce());
-              }
-            else
-              {
-                cmd.write_hello_cmd(name, rsa_pub_key(), mk_nonce());
-              }
-            write_netcmd(cmd);
-            return true;
-          }
-        case hello_cmd:
-          { // need to ask wrapped what to reply with (we're a client)
-            u8 server_version;
-            key_name their_keyname;
-            rsa_pub_key their_key;
-            id nonce;
-            cmd_in.read_hello_cmd(server_version, their_keyname,
-                                  their_key, nonce);
-            hello_nonce = nonce;
-
-            I(!received_remote_key);
-            I(saved_nonce().empty());
-
-            // version sanity has already been checked by netcmd::read()
-            L(FL("received hello command; setting version from %d to %d")
-              % widen<u32>(get_version())
-              % widen<u32>(server_version));
-            version = server_version;
-
-            if (use_transport_auth)
-              {
-                key_id remote_key;
-                key_hash_code(their_keyname, their_key, remote_peer_key_id);
-
-                var_value printable_key_hash;
-                {
-                  hexenc<id> encoded_key_hash;
-                  encode_hexenc(remote_key.inner(), encoded_key_hash);
-                  printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
-                }
-                L(FL("server key has name %s, hash %s")
-                  % their_keyname % printable_key_hash);
-                var_key their_key_key(known_servers_domain,
-                                      var_name(get_peer(), origin::internal));
-                if (project.db.var_exists(their_key_key))
-                  {
-                    var_value expected_key_hash;
-                    project.db.get_var(their_key_key, expected_key_hash);
-                    if (expected_key_hash != printable_key_hash)
-                      {
-                        P(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                            "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
-                            "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                            "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
-                            "it is also possible that the server key has just been changed\n"
-                            "remote host sent key %s\n"
-                            "I expected %s\n"
-                            "'%s unset %s %s' overrides this check")
-                          % printable_key_hash
-                          % expected_key_hash
-                          % prog_name % their_key_key.first % their_key_key.second);
-                        E(false, origin::network, F("server key changed"));
-                      }
-                  }
-                else
-                  {
-                    P(F("first time connecting to server %s\n"
-                        "I'll assume it's really them, but you might want to double-check\n"
-                        "their key's fingerprint: %s")
-                      % get_peer()
-                      % printable_key_hash);
-                    project.db.set_var(their_key_key, printable_key_hash);
-                  }
-
-                if (!project.db.public_key_exists(remote_peer_key_id))
-                  {
-                    // this should now always return true since we just checked
-                    // for the existence of this particular key
-                    I(project.db.put_key(their_keyname, their_key));
-                    W(F("saving public key for %s to database") % their_keyname);
-                  }
-                {
-                  hexenc<id> hnonce;
-                  encode_hexenc(nonce, hnonce);
-                  L(FL("received 'hello' netcmd from server '%s' with nonce '%s'")
-                    % printable_key_hash % hnonce);
-                }
-
-                I(project.db.public_key_exists(remote_peer_key_id));
-                
-                // save their identity
-                received_remote_key = true;
-              }
-
-            wrapped->request_service();
-
-          }
-          return true;
-
-        case anonymous_cmd:
-        case auth_cmd:
-        case automate_cmd:
-          return handle_service_request();
-
-        case confirm_cmd:
-          {
-            authenticated = true; // maybe?
-            completed_hello = true;
-            wrapped->accept_service();
-          }
-          return true;
-
-        case bye_cmd:
-          {
-            u8 phase;
-            cmd_in.read_bye_cmd(phase);
-            return process_bye_cmd(phase, guard);
-          }
-        case error_cmd:
-          {
-            string errmsg;
-            cmd_in.read_error_cmd(errmsg);
-
-            // "xxx string" with xxx being digits means there's an error code
-            if (errmsg.size() > 4 && errmsg.substr(3,1) == " ")
-              {
-                try
-                  {
-                    int err = boost::lexical_cast<int>(errmsg.substr(0,3));
-                    if (err >= 100)
-                      {
-                        error_code = err;
-                        throw bad_decode(F("received network error: %s")
-                                         % errmsg.substr(4));
-                      }
-                  }
-                catch (boost::bad_lexical_cast)
-                  { // ok, so it wasn't a number
-                  }
-              }
-            throw bad_decode(F("received network error: %s") % errmsg);
-          }
-        default:
-          // ERROR
-          return false;
-        }
+      W(F("error: %s") % err.msg);
+      string const errmsg(lexical_cast<string>(error_code) + " " + err.msg);
+      L(FL("queueing 'error' command"));
+      netcmd cmd(get_version());
+      cmd.write_error_cmd(errmsg);
+      write_netcmd(cmd);
+      encountered_error = true;
+      return true; // Don't terminate until we've send the error_cmd.
     }
 }
 
@@ -410,7 +409,7 @@ session::request_netsync(protocol_role role,
 
   key_identity_info remote_key;
   remote_key.id = remote_peer_key_id;
-  if (remote_key.id.inner()().empty())
+  if (!remote_key.id.inner()().empty())
     project.complete_key_identity(keys, lua, remote_key);
 
   wrapped->on_begin(session_id, remote_key);
@@ -632,9 +631,10 @@ bool session::handle_service_request()
 
   key_identity_info client_identity;
   client_identity.id = client_id;
-  if (client_identity.id.inner()().empty())
+  if (!client_identity.id.inner()().empty())
     project.complete_key_identity(keys, lua, client_identity);
 
+  wrapped->on_begin(session_id, client_identity);
   wrapped->prepare_to_confirm(client_identity, use_transport_auth);
 
   netcmd cmd(get_version());
