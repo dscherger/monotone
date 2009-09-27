@@ -13,6 +13,7 @@
 #include "automate_ostream.hh"
 #include "cmd.hh"
 #include "network/wrapped_session.hh"
+#include "project.hh" // key_identity_info
 
 class automate_session : public wrapped_session
 {
@@ -23,6 +24,8 @@ class automate_session : public wrapped_session
   size_t command_number;
 
   bool is_done;
+
+  key_identity_info remote_identity;
 
   void send_command();
 public:

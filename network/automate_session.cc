@@ -81,7 +81,7 @@ bool automate_session::finished_working() const
 void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
                                           bool use_transport_auth)
 {
-  // nothing to do
+  remote_identity = remote_key;
 }
 
 bool automate_session::do_work(transaction_guard & guard,
@@ -99,19 +99,25 @@ bool automate_session::do_work(transaction_guard & guard,
         cmd_in->read_automate_command_cmd(in_args, in_opts);
         ++command_number;
 
-        args_vector args;
-        for (vector<string>::iterator i = in_args.begin();
-             i != in_args.end(); ++i)
-          {
-            args.push_back(arg_type(*i, origin::user));
-          }
-
         ostringstream oss;
         bool have_err = false;
         string err;
 
         try
           {
+            E(app.lua.hook_get_remote_automate_permitted(remote_identity,
+                                                         in_args,
+                                                         in_opts),
+              origin::user,
+              F("Sorry, you aren't allowed to do that."));
+
+            args_vector args;
+            for (vector<string>::iterator i = in_args.begin();
+                 i != in_args.end(); ++i)
+              {
+                args.push_back(arg_type(*i, origin::user));
+              }
+
             options::options_type opts;
             opts = options::opts::all_options() - options::opts::globals();
             opts.instantiate(&app.opts).reset();
@@ -172,12 +178,16 @@ bool automate_session::do_work(transaction_guard & guard,
           {
             have_err = true;
             err = f.what();
+            err += "\n";
           }
 
-        netcmd out_cmd(get_version());
-        out_cmd.write_automate_packet_cmd(command_number, 0,
-                                          !have_err, oss.str());
-        write_netcmd(out_cmd);
+        if (!oss.str().empty() || !have_err)
+          {
+            netcmd out_cmd(get_version());
+            out_cmd.write_automate_packet_cmd(command_number, 0,
+                                              !have_err, oss.str());
+            write_netcmd(out_cmd);
+          }
         if (have_err)
           {
             netcmd err_cmd(get_version());
