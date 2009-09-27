@@ -37,6 +37,7 @@ class automate_session : public session_base
   automate_ostream os;
 public:
   automate_session(app_state & app,
+                   protocol_voice voice,
                    std::string const & peer_id,
                    boost::shared_ptr<Netxx::StreamBase> str);
   bool arm();

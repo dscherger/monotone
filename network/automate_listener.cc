@@ -61,6 +61,7 @@ bool automate_listener::do_io(Netxx::Probe::ready_type event)
         (new Netxx::Stream(client.get_socketfd(), timeout));
 
       shared_ptr<reactable> sess(new automate_session(app,
+                                                      server_voice,
                                                       lexical_cast<string>(client),
                                                       str));
       I(guard);

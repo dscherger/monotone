@@ -133,9 +133,10 @@ void automate_session::note_bytes_out(int count)
 }
 
 automate_session::automate_session(app_state & app,
+                                   protocol_voice voice,
                                    string const & peer_id,
                                    shared_ptr<Netxx::StreamBase> str) :
-  session_base(peer_id, str),
+  session_base(voice, peer_id, str),
   app(app), armed(false),
   os(oss, app.opts.automate_stdio_size)
 { }

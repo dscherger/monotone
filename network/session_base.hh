@@ -17,6 +17,7 @@
 
 #include "netxx/stream.h"
 
+#include "netcmd.hh" // for protocol_voice
 #include "network/reactable.hh"
 #include "string_queue.hh"
 
@@ -34,6 +35,7 @@ private:
   size_t outbuf_bytes; // so we can avoid queueing up too much stuff
 protected:
   void queue_output(std::string const & s);
+public:
   bool output_overfull() const;
   bool output_empty() const;
 public:
@@ -52,9 +54,12 @@ public:
     }
     protocol_state;
 
+  protocol_voice const voice;
+
   bool encountered_error;
 
-  session_base(std::string const & peer_id,
+  session_base(protocol_voice voice,
+               std::string const & peer_id,
                boost::shared_ptr<Netxx::StreamBase> str);
   virtual ~session_base();
   virtual bool arm() = 0;

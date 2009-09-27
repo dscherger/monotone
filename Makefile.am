@@ -68,7 +68,9 @@ MOST_SOURCES = 								\
 	network/netsync_session.hh network/netsync_session.cc		\
 	network/reactable.hh network/reactable.cc			\
 	network/reactor.hh network/reactor.cc				\
+	network/session.hh network/session.cc				\
 	network/session_base.hh network/session_base.cc			\
+	network/wrapped_session.hh network/wrapped_session.cc		\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\

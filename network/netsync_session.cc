@@ -38,12 +38,6 @@ using boost::shared_ptr;
 
 
 
-struct netsync_error
-{
-  string msg;
-  netsync_error(string const & s): msg(s) {}
-};
-
 static inline void
 require(bool check, string const & context)
 {
@@ -73,26 +67,15 @@ write_pubkey(key_name const & id,
   insert_variable_length_string(pub(), out);
 }
 
-
-size_t netsync_session::session_count = 0;
-
 netsync_session::netsync_session(options & opts,
                                  lua_hooks & lua,
                                  project_t & project,
                                  key_store & keys,
                                  protocol_role role,
-                                 protocol_voice voice,
                                  globish const & our_include_pattern,
                                  globish const & our_exclude_pattern,
-                                 string const & peer,
-                                 shared_ptr<Netxx::StreamBase> sock,
                                  bool initiated_by_server) :
-  session_base(peer, sock),
-  version(opts.max_netsync_version),
-  max_version(opts.max_netsync_version),
-  min_version(opts.min_netsync_version),
   role(role),
-  voice(voice),
   our_include_pattern(our_include_pattern),
   our_exclude_pattern(our_exclude_pattern),
   our_matcher(our_include_pattern, our_exclude_pattern),
@@ -101,8 +84,6 @@ netsync_session::netsync_session(options & opts,
   lua(lua),
   use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
-  cmd_in(opts.max_netsync_version),
-  armed(false),
   received_remote_key(false),
   session_key(constants::netsync_key_initializer),
   read_hmac(netsync_session_key(constants::netsync_key_initializer),
@@ -120,14 +101,12 @@ netsync_session::netsync_session(options & opts,
   certs_in(0), certs_out(0),
   revs_in(0), revs_out(0),
   keys_in(0), keys_out(0),
-  session_id(++session_count),
   saved_nonce(""),
-  error_code(no_transfer),
   set_totals(false),
-  epoch_refiner(epoch_item, voice, *this),
-  key_refiner(key_item, voice, *this),
-  cert_refiner(cert_item, voice, *this),
-  rev_refiner(revision_item, voice, *this),
+  epoch_refiner(epoch_item, get_voice(), *this),
+  key_refiner(key_item, get_voice(), *this),
+  cert_refiner(cert_item, get_voice(), *this),
+  rev_refiner(revision_item, get_voice(), *this),
   rev_enumerator(project, *this),
   initiated_by_server(initiated_by_server)
 {
@@ -141,14 +120,24 @@ netsync_session::netsync_session(options & opts,
 }
 
 netsync_session::~netsync_session()
+{ }
+
+void netsync_session::on_begin(size_t ident, key_identity_info const & remote_key)
 {
-  if (protocol_state == confirmed_state)
-    error_code = no_error;
-  else if (error_code == no_transfer &&
+  lua.hook_note_netsync_start(ident, "client", role,
+                              get_peer(), remote_key,
+                              our_include_pattern, our_exclude_pattern);
+}
+
+void netsync_session::on_end(size_t ident)
+{
+  if (shutdown_confirmed())
+    error_code = error_codes::no_error;
+  else if (error_code == error_codes::no_transfer &&
            (revs_in || revs_out ||
             certs_in || certs_out ||
             keys_in || keys_out))
-    error_code = partial_transfer;
+    error_code = error_codes::partial_transfer;
 
   vector<cert> unattached_written_certs;
   map<revision_id, vector<cert> > rev_written_certs;
@@ -178,7 +167,7 @@ netsync_session::~netsync_session()
           key_identity_info identity;
           identity.id = *i;
           project.complete_key_identity(keys, lua, identity);
-          lua.hook_note_netsync_pubkey_received(identity, session_id);
+          lua.hook_note_netsync_pubkey_received(identity, ident);
         }
 
       //Revisions
@@ -199,7 +188,7 @@ netsync_session::~netsync_session()
           revision_data rdat;
           project.db.get_revision(*i, rdat);
           lua.hook_note_netsync_revision_received(*i, rdat, certs,
-                                                  session_id);
+                                                  ident);
         }
 
       //Certs (not attached to a new revision)
@@ -210,7 +199,7 @@ netsync_session::~netsync_session()
           identity.id = i->key;
           project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_cert_received(revision_id(i->ident), identity,
-                                              i->name, i->value, session_id);
+                                              i->name, i->value, ident);
         }
     }
 
@@ -242,7 +231,7 @@ netsync_session::~netsync_session()
           key_identity_info identity;
           identity.id = *i;
           project.complete_key_identity(keys, lua, identity);
-          lua.hook_note_netsync_pubkey_sent(identity, session_id);
+          lua.hook_note_netsync_pubkey_sent(identity, ident);
         }
 
       //Revisions
@@ -263,7 +252,7 @@ netsync_session::~netsync_session()
           revision_data rdat;
           project.db.get_revision(*i, rdat);
           lua.hook_note_netsync_revision_sent(*i, rdat, certs,
-                                                  session_id);
+                                                  ident);
         }
 
       //Certs (not attached to a new revision)
@@ -274,15 +263,21 @@ netsync_session::~netsync_session()
           identity.id = i->key;
           project.complete_key_identity(keys, lua, identity);
           lua.hook_note_netsync_cert_sent(revision_id(i->ident), identity,
-                                          i->name, i->value, session_id);
+                                          i->name, i->value, ident);
         }
     }
 
-  lua.hook_note_netsync_end(session_id, error_code,
+  lua.hook_note_netsync_end(ident, error_code,
                             bytes_in, bytes_out,
                             certs_in, certs_out,
                             revs_in, revs_out,
                             keys_in, keys_out);
+}
+
+string
+netsync_session::usher_reply_data() const
+{
+  return our_include_pattern();
 }
 
 bool
@@ -351,7 +346,7 @@ netsync_session::note_cert(id const & i)
   key_name keyname;
   rsa_pub_key junk;
   project.db.get_pubkey(c.key, keyname, junk);
-  if (version >= 7)
+  if (get_version() >= 7)
     {
       c.marshal_for_netio(keyname, str);
     }
@@ -364,43 +359,6 @@ netsync_session::note_cert(id const & i)
 }
 
 
-id
-netsync_session::mk_nonce()
-{
-  I(this->saved_nonce().empty());
-  char buf[constants::merkle_hash_length_in_bytes];
-
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  keys.get_rng().randomize(reinterpret_cast<Botan::byte *>(buf),
-                           constants::merkle_hash_length_in_bytes);
-#else
-  Botan::Global_RNG::randomize(reinterpret_cast<Botan::byte *>(buf),
-                               constants::merkle_hash_length_in_bytes);
-#endif
-  this->saved_nonce = id(string(buf, buf + constants::merkle_hash_length_in_bytes),
-                         origin::internal);
-  I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
-  return this->saved_nonce;
-}
-
-void
-netsync_session::set_session_key(string const & key)
-{
-  session_key = netsync_session_key(key, origin::internal);
-  read_hmac.set_key(session_key);
-  write_hmac.set_key(session_key);
-}
-
-void
-netsync_session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
-{
-  if (use_transport_auth)
-    {
-      string hmac_key;
-      keys.decrypt_rsa(signing_key, hmac_key_encrypted, hmac_key);
-      set_session_key(hmac_key);
-    }
-}
 
 void
 netsync_session::setup_client_tickers()
@@ -434,7 +392,7 @@ netsync_session::setup_client_tickers()
 }
 
 bool
-netsync_session::done_all_refinements()
+netsync_session::done_all_refinements() const
 {
   bool all = rev_refiner.done
     && cert_refiner.done
@@ -443,7 +401,7 @@ netsync_session::done_all_refinements()
 
   if (all && !set_totals)
     {
-      L(FL("All refinements done for peer %s") % peer_id);
+      L(FL("All refinements done for peer %s") % get_peer());
       if (cert_out_ticker.get())
         cert_out_ticker->set_total(cert_refiner.items_to_send.size());
 
@@ -464,7 +422,7 @@ netsync_session::done_all_refinements()
 
 
 bool
-netsync_session::received_all_items()
+netsync_session::received_all_items() const
 {
   if (role == source_role)
     return true;
@@ -476,7 +434,7 @@ netsync_session::received_all_items()
 }
 
 bool
-netsync_session::finished_working()
+netsync_session::finished_working() const
 {
   bool all = done_all_refinements()
     && received_all_items()
@@ -486,7 +444,7 @@ netsync_session::finished_working()
 }
 
 bool
-netsync_session::queued_all_items()
+netsync_session::queued_all_items() const
 {
   if (role == sink_role)
     return true;
@@ -512,12 +470,12 @@ netsync_session::maybe_note_epochs_finished()
 
   // If we ran into an error -- say a mismatched epoch -- don't do any
   // further refinements.
-  if (encountered_error)
+  if (encountered_error())
     return;
 
   // But otherwise, we're ready to go. Start the next
   // set of refinements.
-  if (voice == client_voice)
+  if (get_voice() == client_voice)
     {
       L(FL("epoch refinement finished; beginning other refinements"));
       key_refiner.begin_refinement();
@@ -610,38 +568,14 @@ netsync_session::note_item_sent(netcmd_item_type ty, id const & ident)
     }
 }
 
-void
-netsync_session::write_netcmd_and_try_flush(netcmd const & cmd)
-{
-  if (!encountered_error)
-  {
-    string buf;
-    cmd.write(buf, write_hmac);
-    queue_output(buf);
-  }
-  else
-    L(FL("dropping outgoing netcmd (because we're in error unwind mode)"));
-}
-
-// This method triggers a special "error unwind" mode to netsync.  In this
-// mode, all received data is ignored, and no new data is queued.  We simply
-// stay connected long enough for the current write buffer to be flushed, to
-// ensure that our peer receives the error message.
-// Affects read_some, write_some, and process .
-void
-netsync_session::error(int errcode, string const & errmsg)
-{
-  error_code = errcode;
-  throw netsync_error(errmsg);
-}
 
 bool
-netsync_session::do_work(transaction_guard & guard)
+netsync_session::do_work(transaction_guard & guard,
+                         netcmd const * const cmd_in)
 {
-  if (process(guard))
+  if (!cmd_in || process(guard, *cmd_in))
     {
       maybe_step();
-      maybe_say_goodbye(guard);
       return true;
     }
   else
@@ -667,25 +601,6 @@ netsync_session::note_bytes_out(int count)
 // senders
 
 void
-netsync_session::queue_error_cmd(string const & errmsg)
-{
-  L(FL("queueing 'error' command"));
-  netcmd cmd(version);
-  cmd.write_error_cmd(errmsg);
-  write_netcmd_and_try_flush(cmd);
-}
-
-void
-netsync_session::queue_bye_cmd(u8 phase)
-{
-  L(FL("queueing 'bye' command, phase %d")
-    % static_cast<size_t>(phase));
-  netcmd cmd(version);
-  cmd.write_bye_cmd(phase);
-  write_netcmd_and_try_flush(cmd);
-}
-
-void
 netsync_session::queue_done_cmd(netcmd_item_type type,
                         size_t n_items)
 {
@@ -693,9 +608,9 @@ netsync_session::queue_done_cmd(netcmd_item_type type,
   netcmd_item_type_to_string(type, typestr);
   L(FL("queueing 'done' command for %s (%d items)")
     % typestr % n_items);
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   cmd.write_done_cmd(type, n_items);
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
 }
 
 void
@@ -703,55 +618,42 @@ netsync_session::queue_hello_cmd(key_name const & key_name,
                                  rsa_pub_key const & pub,
                                  id const & nonce)
 {
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   if (use_transport_auth)
     cmd.write_hello_cmd(key_name, pub, nonce);
   else
     cmd.write_hello_cmd(key_name, rsa_pub_key(), nonce);
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
 }
 
 void
-netsync_session::queue_anonymous_cmd(protocol_role role,
-                                     globish const & include_pattern,
-                                     globish const & exclude_pattern,
-                                     id const & nonce2)
+netsync_session::request_service()
 {
-  netcmd cmd(version);
-  rsa_oaep_sha_data hmac_key_encrypted;
-  if (use_transport_auth)
-    project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
-  cmd.write_anonymous_cmd(role, include_pattern, exclude_pattern,
-                          hmac_key_encrypted);
-  write_netcmd_and_try_flush(cmd);
-  set_session_key(nonce2());
-}
 
-void
-netsync_session::queue_auth_cmd(protocol_role role,
-                                globish const & include_pattern,
-                                globish const & exclude_pattern,
-                                key_id const & client,
-                                id const & nonce1,
-                                id const & nonce2,
-                                rsa_sha1_signature const & signature)
-{
-  netcmd cmd(version);
-  rsa_oaep_sha_data hmac_key_encrypted;
-  I(use_transport_auth);
-  project.db.encrypt_rsa(remote_peer_key_id, nonce2(), hmac_key_encrypted);
-  cmd.write_auth_cmd(role, include_pattern, exclude_pattern, client,
-                     nonce1, hmac_key_encrypted, signature);
-  write_netcmd_and_try_flush(cmd);
-  set_session_key(nonce2());
+  // clients always include in the synchronization set, every branch that the
+  // user requested
+  set<branch_name> all_branches, ok_branches;
+  project.get_branch_list(all_branches);
+  for (set<branch_name>::const_iterator i = all_branches.begin();
+      i != all_branches.end(); i++)
+    {
+      if (our_matcher((*i)()))
+        ok_branches.insert(*i);
+    }
+  rebuild_merkle_trees(ok_branches);
+
+  if (!initiated_by_server)
+    setup_client_tickers();
+  
+  request_netsync(role, our_include_pattern, our_exclude_pattern);
 }
 
 void
 netsync_session::queue_confirm_cmd()
 {
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   cmd.write_confirm_cmd();
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
 }
 
 void
@@ -764,9 +666,9 @@ netsync_session::queue_refine_cmd(refinement_type ty, merkle_node const & node)
   L(FL("queueing refinement %s of %s node '%s', level %d")
     % (ty == refinement_query ? "query" : "response")
     % typestr % hpref() % static_cast<int>(node.level));
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   cmd.write_refine_cmd(ty, node);
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
 }
 
 void
@@ -791,17 +693,17 @@ netsync_session::queue_data_cmd(netcmd_item_type type,
   L(FL("queueing %d bytes of data for %s item '%s'")
     % dat.size() % typestr % hid());
 
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   // TODO: This pair of functions will make two copies of a large
   // file, the first in cmd.write_data_cmd, and the second in
-  // write_netcmd_and_try_flush when the data is copied from the
+  // write_netcmd when the data is copied from the
   // cmd.payload variable to the string buffer for output.  This
   // double copy should be collapsed out, it may be better to use
   // a string_queue for output as well as input, as that will reduce
   // the amount of mallocs that happen when the string queue is large
   // enough to just store the data.
   cmd.write_data_cmd(type, item, dat);
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
   note_item_sent(type, item);
 }
 
@@ -832,421 +734,14 @@ netsync_session::queue_delta_cmd(netcmd_item_type type,
 
   L(FL("queueing %s delta '%s' -> '%s'")
     % typestr % base_hid() % ident_hid());
-  netcmd cmd(version);
+  netcmd cmd(get_version());
   cmd.write_delta_cmd(type, base, ident, del);
-  write_netcmd_and_try_flush(cmd);
+  write_netcmd(cmd);
   note_item_sent(type, ident);
 }
 
 
 // processors
-
-bool
-netsync_session::process_error_cmd(string const & errmsg)
-{
-  // "xxx string" with xxx being digits means there's an error code
-  if (errmsg.size() > 4 && errmsg.substr(3,1) == " ")
-    {
-      try
-        {
-          int err = boost::lexical_cast<int>(errmsg.substr(0,3));
-          if (err >= 100)
-            {
-              error_code = err;
-              throw bad_decode(F("received network error: %s")
-                               % errmsg.substr(4));
-            }
-        }
-      catch (boost::bad_lexical_cast)
-        { // ok, so it wasn't a number
-        }
-    }
-  throw bad_decode(F("received network error: %s") % errmsg);
-}
-
-static const var_domain known_servers_domain = var_domain("known-servers");
-
-bool
-netsync_session::process_hello_cmd(u8 server_version,
-                                   key_name const & their_keyname,
-                                   rsa_pub_key const & their_key,
-                                   id const & nonce)
-{
-  I(!this->received_remote_key);
-  I(this->saved_nonce().empty());
-
-  // version sanity has already been checked by netcmd::read()
-  L(FL("received hello command; setting version from %d to %d")
-    % widen<u32>(version)
-    % widen<u32>(server_version));
-  version = server_version;
-
-  key_identity_info their_identity;
-  if (use_transport_auth)
-    {
-      key_hash_code(their_keyname, their_key, their_identity.id);
-      var_value printable_key_hash;
-      {
-        hexenc<id> encoded_key_hash;
-        encode_hexenc(their_identity.id.inner(), encoded_key_hash);
-        printable_key_hash = typecast_vocab<var_value>(encoded_key_hash);
-      }
-      L(FL("server key has name %s, hash %s")
-        % their_keyname % printable_key_hash);
-      var_key their_key_key(known_servers_domain,
-                            var_name(peer_id, origin::internal));
-      if (project.db.var_exists(their_key_key))
-        {
-          var_value expected_key_hash;
-          project.db.get_var(their_key_key, expected_key_hash);
-          if (expected_key_hash != printable_key_hash)
-            {
-              P(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                  "@ WARNING: SERVER IDENTIFICATION HAS CHANGED              @\n"
-                  "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-                  "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY\n"
-                  "it is also possible that the server key has just been changed\n"
-                  "remote host sent key %s\n"
-                  "I expected %s\n"
-                  "'%s unset %s %s' overrides this check")
-                % printable_key_hash
-                % expected_key_hash
-                % prog_name % their_key_key.first % their_key_key.second);
-              E(false, origin::network, F("server key changed"));
-            }
-        }
-      else
-        {
-          P(F("first time connecting to server %s\n"
-              "I'll assume it's really them, but you might want to double-check\n"
-              "their key's fingerprint: %s")
-            % peer_id
-            % printable_key_hash);
-          project.db.set_var(their_key_key, printable_key_hash);
-        }
-
-      if (!project.db.public_key_exists(their_identity.id))
-        {
-          // this should now always return true since we just checked
-          // for the existence of this particular key
-          I(project.db.put_key(their_keyname, their_key));
-          W(F("saving public key for %s to database") % their_keyname);
-        }
-
-      {
-        hexenc<id> hnonce;
-        encode_hexenc(nonce, hnonce);
-        L(FL("received 'hello' netcmd from server '%s' with nonce '%s'")
-          % printable_key_hash % hnonce);
-      }
-
-      I(project.db.public_key_exists(their_identity.id));
-      project.complete_key_identity(keys, lua, their_identity);
-
-      // save their identity
-      this->received_remote_key = true;
-      this->remote_peer_key_id = their_identity.id;
-    }
-
-  // clients always include in the synchronization set, every branch that the
-  // user requested
-  set<branch_name> all_branches, ok_branches;
-  project.get_branch_list(all_branches);
-  for (set<branch_name>::const_iterator i = all_branches.begin();
-      i != all_branches.end(); i++)
-    {
-      if (our_matcher((*i)()))
-        ok_branches.insert(*i);
-    }
-  rebuild_merkle_trees(ok_branches);
-
-  if (!initiated_by_server)
-    setup_client_tickers();
-
-  if (use_transport_auth && signing_key.inner()() != "")
-    {
-      // get our key pair
-      load_key_pair(keys, signing_key);
-
-      // make a signature with it;
-      // this also ensures our public key is in the database
-      rsa_sha1_signature sig;
-      keys.make_signature(project.db, signing_key, nonce(), sig);
-
-      // make a new nonce of our own and send off the 'auth'
-      queue_auth_cmd(this->role, our_include_pattern, our_exclude_pattern,
-                     signing_key, nonce, mk_nonce(), sig);
-    }
-  else
-    {
-      queue_anonymous_cmd(this->role, our_include_pattern,
-                          our_exclude_pattern, mk_nonce());
-    }
-
-  lua.hook_note_netsync_start(session_id, "client", this->role,
-                              peer_id, their_identity,
-                              our_include_pattern, our_exclude_pattern);
-  return true;
-}
-
-bool
-netsync_session::process_anonymous_cmd(protocol_role their_role,
-                                       globish const & their_include_pattern,
-                                       globish const & their_exclude_pattern)
-{
-  // Internally netsync thinks in terms of sources and sinks. Users like
-  // thinking of repositories as "readonly", "readwrite", or "writeonly".
-  //
-  // We therefore use the read/write terminology when dealing with the UI:
-  // if the user asks to run a "read only" service, this means they are
-  // willing to be a source but not a sink.
-  //
-  // nb: The "role" here is the role the *client* wants to play
-  //     so we need to check that the opposite role is allowed for us,
-  //     in our this->role field.
-  //
-
-  lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, key_identity_info(),
-                              their_include_pattern, their_exclude_pattern);
-
-  // Client must be a sink and server must be a source (anonymous
-  // read-only), unless transport auth is disabled.
-  //
-  // If running in no-transport-auth mode, we operate anonymously and
-  // permit adoption of any role.
-
-  if (use_transport_auth)
-    {
-      if (their_role != sink_role)
-        {
-          this->saved_nonce = id("");
-          error(not_permitted,
-                F("rejected attempt at anonymous connection for write").str());
-        }
-
-      if (this->role == sink_role)
-        {
-          this->saved_nonce = id("");
-          error(role_mismatch,
-                F("rejected attempt at anonymous connection while running as sink").str());
-        }
-    }
-
-  set<branch_name> all_branches, ok_branches;
-  project.get_branch_list(all_branches);
-  globish_matcher their_matcher(their_include_pattern, their_exclude_pattern);
-  for (set<branch_name>::const_iterator i = all_branches.begin();
-      i != all_branches.end(); i++)
-    {
-      if (their_matcher((*i)()))
-        {
-          if (use_transport_auth &&
-              !lua.hook_get_netsync_read_permitted((*i)()))
-            {
-              error(not_permitted,
-                    (F("anonymous access to branch '%s' denied by server")
-                     % *i).str());
-            }
-          else
-            ok_branches.insert(*i);
-        }
-    }
-
-  if (use_transport_auth)
-    {
-      P(F("allowed anonymous read permission for '%s' excluding '%s'")
-        % their_include_pattern % their_exclude_pattern);
-      this->role = source_role;
-    }
-  else
-    {
-      P(F("allowed anonymous read/write permission for '%s' excluding '%s'")
-        % their_include_pattern % their_exclude_pattern);
-      assume_corresponding_role(their_role);
-    }
-
-  rebuild_merkle_trees(ok_branches);
-
-  this->remote_peer_key_id = key_id();
-  this->authenticated = true;
-  return true;
-}
-
-void
-netsync_session::assume_corresponding_role(protocol_role their_role)
-{
-  // Assume the (possibly degraded) opposite role.
-  switch (their_role)
-    {
-    case source_role:
-      I(this->role != source_role);
-      this->role = sink_role;
-      break;
-
-    case source_and_sink_role:
-      I(this->role == source_and_sink_role);
-      break;
-
-    case sink_role:
-      I(this->role != sink_role);
-      this->role = source_role;
-      break;
-    }
-}
-
-bool
-netsync_session::process_auth_cmd(protocol_role their_role,
-                                  globish const & their_include_pattern,
-                                  globish const & their_exclude_pattern,
-                                  key_id const & client,
-                                  id const & nonce1,
-                                  rsa_sha1_signature const & signature)
-{
-  I(!this->received_remote_key);
-  I(this->saved_nonce().size() == constants::merkle_hash_length_in_bytes);
-
-  globish_matcher their_matcher(their_include_pattern, their_exclude_pattern);
-
-  if (!project.db.public_key_exists(client))
-    {
-      // If it's not in the db, it still could be in the keystore if we
-      // have the private key that goes with it.
-      key_name their_key_id;
-      keypair their_keypair;
-      if (keys.maybe_get_key_pair(client, their_key_id, their_keypair))
-        project.db.put_key(their_key_id, their_keypair.pub);
-      else
-        {
-          return process_anonymous_cmd(their_role,
-                                       their_include_pattern,
-                                       their_exclude_pattern);
-          /*
-          this->saved_nonce = id("");
-
-          lua.hook_note_netsync_start(session_id, "server", their_role,
-                                      peer_id, key_name("-unknown-"),
-                                      their_include_pattern,
-                                      their_exclude_pattern);
-          error(unknown_key,
-                (F("remote public key hash '%s' is unknown")
-                 % client).str());
-          */
-        }
-    }
-
-  // Get their public key.
-  key_name their_id;
-  rsa_pub_key their_key;
-  project.db.get_pubkey(client, their_id, their_key);
-  key_identity_info client_identity;
-  client_identity.id = client;
-  project.complete_key_identity(keys, lua, client_identity);
-
-  lua.hook_note_netsync_start(session_id, "server", their_role,
-                              peer_id, client_identity,
-                              their_include_pattern, their_exclude_pattern);
-
-  // Check that they replied with the nonce we asked for.
-  if (!(nonce1 == this->saved_nonce))
-    {
-      this->saved_nonce = id("");
-      error(failed_identification,
-            F("detected replay attack in auth netcmd").str());
-    }
-
-  // Internally netsync thinks in terms of sources and sinks. users like
-  // thinking of repositories as "readonly", "readwrite", or "writeonly".
-  //
-  // We therefore use the read/write terminology when dealing with the UI:
-  // if the user asks to run a "read only" service, this means they are
-  // willing to be a source but not a sink.
-  //
-  // nb: The "their_role" here is the role the *client* wants to play
-  //     so we need to check that the opposite role is allowed for us,
-  //     in our this->role field.
-
-  // Client as sink, server as source (reading).
-
-  if (their_role == sink_role || their_role == source_and_sink_role)
-    {
-      if (this->role != source_role && this->role != source_and_sink_role)
-        {
-          this->saved_nonce = id("");
-          error(not_permitted,
-                (F("denied '%s' read permission for '%s' excluding '%s' while running as pure sink")
-                 % their_id % their_include_pattern % their_exclude_pattern).str());
-        }
-    }
-
-  set<branch_name> all_branches, ok_branches;
-  project.get_branch_list(all_branches);
-  for (set<branch_name>::const_iterator i = all_branches.begin();
-       i != all_branches.end(); i++)
-    {
-      if (their_matcher((*i)()))
-        {
-          if (!lua.hook_get_netsync_read_permitted((*i)(), client_identity))
-            {
-              error(not_permitted,
-                    (F("denied '%s' read permission for '%s' excluding '%s' because of branch '%s'")
-                     % their_id % their_include_pattern % their_exclude_pattern % *i).str());
-            }
-          else
-            ok_branches.insert(*i);
-        }
-    }
-
-  // If we're source_and_sink_role, continue even with no branches readable
-  // eg. serve --db=empty.db
-  P(F("allowed '%s' read permission for '%s' excluding '%s'")
-    % their_id % their_include_pattern % their_exclude_pattern);
-
-  // Client as source, server as sink (writing).
-
-  if (their_role == source_role || their_role == source_and_sink_role)
-    {
-      if (this->role != sink_role && this->role != source_and_sink_role)
-        {
-          this->saved_nonce = id("");
-          error(not_permitted,
-                (F("denied '%s' write permission for '%s' excluding '%s' while running as pure source")
-                 % their_id % their_include_pattern % their_exclude_pattern).str());
-        }
-
-      if (!lua.hook_get_netsync_write_permitted(client_identity))
-        {
-          this->saved_nonce = id("");
-          error(not_permitted,
-                (F("denied '%s' write permission for '%s' excluding '%s'")
-                 % their_id % their_include_pattern % their_exclude_pattern).str());
-        }
-
-      P(F("allowed '%s' write permission for '%s' excluding '%s'")
-        % their_id % their_include_pattern % their_exclude_pattern);
-    }
-
-  rebuild_merkle_trees(ok_branches);
-
-  this->received_remote_key = true;
-
-  // Check the signature.
-  if (project.db.check_signature(client, nonce1(), signature) == cert_ok)
-    {
-      // Get our private key and sign back.
-      L(FL("client signature OK, accepting authentication"));
-      this->authenticated = true;
-      this->remote_peer_key_id = client;
-
-      assume_corresponding_role(their_role);
-      return true;
-    }
-  else
-    {
-      error(failed_identification, (F("bad client signature")).str());
-    }
-  return false;
-}
 
 bool
 netsync_session::process_refine_cmd(refinement_type ty, merkle_node const & node)
@@ -1281,86 +776,6 @@ netsync_session::process_refine_cmd(refinement_type ty, merkle_node const & node
   return true;
 }
 
-bool
-netsync_session::process_bye_cmd(u8 phase,
-                         transaction_guard & guard)
-{
-
-// Ideal shutdown
-// ~~~~~~~~~~~~~~~
-//
-//             I/O events                 state transitions
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ~~~~~~~~~~~~~~~~~~~
-//                                        client: C_WORKING
-//                                        server: S_WORKING
-// 0. [refinement, data, deltas, etc.]
-//                                        client: C_SHUTDOWN
-//                                        (client checkpoints here)
-// 1. client -> "bye 0"
-// 2.           "bye 0"  -> server
-//                                        server: S_SHUTDOWN
-//                                        (server checkpoints here)
-// 3.           "bye 1"  <- server
-// 4. client <- "bye 1"
-//                                        client: C_CONFIRMED
-// 5. client -> "bye 2"
-// 6.           "bye 2"  -> server
-//                                        server: S_CONFIRMED
-// 7. [server drops connection]
-//
-//
-// Affects of I/O errors or disconnections
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//   C_WORKING: report error and fault
-//   S_WORKING: report error and recover
-//  C_SHUTDOWN: report error and fault
-//  S_SHUTDOWN: report success and recover
-//              (and warn that client might falsely see error)
-// C_CONFIRMED: report success
-// S_CONFIRMED: report success
-
-  switch (phase)
-    {
-    case 0:
-      if (voice == server_voice &&
-          protocol_state == working_state)
-        {
-          protocol_state = shutdown_state;
-          guard.do_checkpoint();
-          queue_bye_cmd(1);
-        }
-      else
-        error(bad_command, "unexpected bye phase 0 received");
-      break;
-
-    case 1:
-      if (voice == client_voice &&
-          protocol_state == shutdown_state)
-        {
-          protocol_state = confirmed_state;
-          queue_bye_cmd(2);
-        }
-      else
-        error(bad_command, "unexpected bye phase 1 received");
-      break;
-
-    case 2:
-      if (voice == server_voice &&
-          protocol_state == shutdown_state)
-        {
-          protocol_state = confirmed_state;
-          return false;
-        }
-      else
-        error(bad_command, "unexpected bye phase 2 received");
-      break;
-
-    default:
-      error(bad_command, (F("unknown bye phase %d received") % phase).str());
-    }
-
-  return true;
-}
 
 bool
 netsync_session::process_done_cmd(netcmd_item_type type, size_t n_items)
@@ -1401,7 +816,7 @@ netsync_session::process_done_cmd(netcmd_item_type type, size_t n_items)
 }
 
 void
-netsync_session::respond_to_confirm_cmd()
+netsync_session::accept_service()
 {
   epoch_refiner.begin_refinement();
 }
@@ -1489,7 +904,7 @@ netsync_session::load_data(netcmd_item_type type,
         key_name keyname;
         rsa_pub_key junk;
         project.db.get_pubkey(c.key, keyname, junk);
-        if (version >= 7)
+        if (get_version() >= 7)
           {
             c.marshal_for_netio(keyname, out);
           }
@@ -1559,12 +974,13 @@ netsync_session::process_data_cmd(netcmd_item_type type,
             hexenc<data> their_epoch;
             encode_hexenc(i->second.inner(), my_epoch);
             encode_hexenc(epoch.inner(), their_epoch);
-            error(mixing_versions,
+            bool am_server = (get_voice() == server_voice);
+            error(error_codes::mixing_versions,
                   (F("Mismatched epoch on branch %s."
                      " Server has '%s', client has '%s'.")
                    % branch
-                   % (voice == server_voice ? my_epoch : their_epoch)()
-                   % (voice == server_voice ? their_epoch : my_epoch)()).str());
+                   % (am_server ? my_epoch : their_epoch)()
+                   % (am_server ? their_epoch : my_epoch)()).str());
           }
       }
       maybe_note_epochs_finished();
@@ -1587,7 +1003,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         if (project.db.put_key(keyid, pub))
           written_keys.push_back(key_id(item));
         else
-          error(partial_transfer,
+          error(error_codes::partial_transfer,
                 (F("Received duplicate key %s") % keyid).str());
       }
       break;
@@ -1597,7 +1013,7 @@ netsync_session::process_data_cmd(netcmd_item_type type,
         cert c;
         bool matched;
         key_name keyname;
-        if (version >= 7)
+        if (get_version() >= 7)
           {
             matched = cert::read_cert(project.db, dat, c, keyname);
             if (!matched)
@@ -1694,24 +1110,6 @@ netsync_session::process_delta_cmd(netcmd_item_type type,
   return true;
 }
 
-bool
-netsync_session::process_usher_cmd(utf8 const & msg)
-{
-  if (msg().size())
-    {
-      if (msg()[0] == '!')
-        P(F("Received warning from usher: %s") % msg().substr(1));
-      else
-        L(FL("Received greeting from usher: %s") % msg().substr(1));
-    }
-  netcmd cmdout(version);
-  cmdout.write_usher_reply_cmd(utf8(peer_id, origin::internal),
-                               our_include_pattern);
-  write_netcmd_and_try_flush(cmdout);
-  L(FL("Sent reply."));
-  return true;
-}
-
 
 void
 netsync_session::send_all_data(netcmd_item_type ty, set<id> const & items)
@@ -1741,104 +1139,6 @@ netsync_session::dispatch_payload(netcmd const & cmd,
 
   switch (cmd.get_cmd_code())
     {
-
-    case error_cmd:
-      {
-        string errmsg;
-        cmd.read_error_cmd(errmsg);
-        return process_error_cmd(errmsg);
-      }
-      break;
-
-    case hello_cmd:
-      require(! authenticated, "hello netcmd received when not authenticated");
-      require(voice == client_voice, "hello netcmd received in client voice");
-      {
-        u8 server_version(0);
-        key_name server_keyname;
-        rsa_pub_key server_key;
-        id nonce;
-        cmd.read_hello_cmd(server_version, server_keyname, server_key, nonce);
-        return process_hello_cmd(server_version, server_keyname, server_key, nonce);
-      }
-      break;
-
-    case bye_cmd:
-      require(authenticated, "bye netcmd received when not authenticated");
-      {
-        u8 phase;
-        cmd.read_bye_cmd(phase);
-        return process_bye_cmd(phase, guard);
-      }
-      break;
-
-    case anonymous_cmd:
-      require(! authenticated, "anonymous netcmd received when not authenticated");
-      require(voice == server_voice, "anonymous netcmd received in server voice");
-      require(role == source_role ||
-              role == source_and_sink_role,
-              "anonymous netcmd received in source or source/sink role");
-      {
-        protocol_role role;
-        globish their_include_pattern, their_exclude_pattern;
-        rsa_oaep_sha_data hmac_key_encrypted;
-        cmd.read_anonymous_cmd(role, their_include_pattern, their_exclude_pattern, hmac_key_encrypted);
-        L(FL("received 'anonymous' netcmd from client for pattern '%s' excluding '%s' "
-            "in %s mode\n")
-          % their_include_pattern % their_exclude_pattern
-          % (role == source_and_sink_role ? _("source and sink") :
-             (role == source_role ? _("source") : _("sink"))));
-
-        set_session_key(hmac_key_encrypted);
-        if (!process_anonymous_cmd(role, their_include_pattern, their_exclude_pattern))
-            return false;
-        queue_confirm_cmd();
-        return true;
-      }
-      break;
-
-    case auth_cmd:
-      require(! authenticated, "auth netcmd received when not authenticated");
-      require(voice == server_voice, "auth netcmd received in server voice");
-      {
-        protocol_role role;
-        rsa_sha1_signature signature;
-        globish their_include_pattern, their_exclude_pattern;
-        key_id client;
-        id nonce1, nonce2;
-        rsa_oaep_sha_data hmac_key_encrypted;
-        cmd.read_auth_cmd(role, their_include_pattern, their_exclude_pattern,
-                          client, nonce1, hmac_key_encrypted, signature);
-
-        L(FL("received 'auth(hmac)' netcmd from client '%s' for pattern '%s' "
-            "exclude '%s' in %s mode with nonce1 '%s'\n")
-          % client % their_include_pattern % their_exclude_pattern
-          % (role == source_and_sink_role ? _("source and sink") :
-             (role == source_role ? _("source") : _("sink")))
-          % nonce1);
-
-        set_session_key(hmac_key_encrypted);
-
-        if (!process_auth_cmd(role, their_include_pattern, their_exclude_pattern,
-                              client, nonce1, signature))
-            return false;
-        queue_confirm_cmd();
-        return true;
-      }
-      break;
-
-    case confirm_cmd:
-      require(! authenticated, "confirm netcmd received when not authenticated");
-      require(voice == client_voice, "confirm netcmd received in client voice");
-      {
-        string signature;
-        cmd.read_confirm_cmd();
-        this->authenticated = true;
-        respond_to_confirm_cmd();
-        return true;
-      }
-      break;
-
     case refine_cmd:
       require(authenticated, "refine netcmd received when authenticated");
       {
@@ -1887,62 +1187,18 @@ netsync_session::dispatch_payload(netcmd const & cmd,
       }
       break;
 
-    case usher_cmd:
-      {
-        utf8 greeting;
-        cmd.read_usher_cmd(greeting);
-        return process_usher_cmd(greeting);
-      }
-      break;
-
-    case usher_reply_cmd:
-      {
-        u8 client_version;
-        utf8 server;
-        globish pattern;
-        cmd.read_usher_reply_cmd(client_version, server, pattern);
-        return process_usher_reply_cmd(client_version, server, pattern);
-      }
-      break;
+    default:
+      return false;
     }
   return false;
 }
 
-// This kicks off the whole cascade starting from "hello".
-void
-netsync_session::begin_service()
-{
-  queue_usher_cmd(utf8("", origin::internal));
-}
-
-void
-netsync_session::queue_usher_cmd(utf8 const & message)
-{
-  L(FL("queueing 'usher' command"));
-  netcmd cmd(0);
-  cmd.write_usher_cmd(message);
-  write_netcmd_and_try_flush(cmd);
-}
-
 bool
-netsync_session::process_usher_reply_cmd(u8 client_version,
-                                         utf8 const & server,
-                                         globish const & pattern)
+netsync_session::have_work() const
 {
-  // netcmd::read() has already checked that the client isn't too old
-  if (client_version < max_version)
-    {
-      version = client_version;
-    }
-  L(FL("client has maximum version %d, using %d")
-    % widen<u32>(client_version) % widen<u32>(version));
-
-  key_name name;
-  keypair kp;
-  if (use_transport_auth)
-    keys.get_key_pair(signing_key, name, kp);
-  queue_hello_cmd(name, kp.pub, mk_nonce());
-  return true;
+  return done_all_refinements()
+    && !rev_enumerator.done()
+    && !output_overfull();
 }
 
 void
@@ -1950,9 +1206,7 @@ netsync_session::maybe_step()
 {
   date_t start_time = date_t::now();
 
-  while (done_all_refinements()
-         && !rev_enumerator.done()
-         && !output_overfull())
+  while (have_work())
     {
       rev_enumerator.step();
 
@@ -1964,82 +1218,33 @@ netsync_session::maybe_step()
     }
 }
 
-void
-netsync_session::maybe_say_goodbye(transaction_guard & guard)
+bool netsync_session::process(transaction_guard & guard,
+                              netcmd const & cmd_in)
 {
-  if (voice == client_voice
-      && protocol_state == working_state
-      && finished_working())
-    {
-      protocol_state = shutdown_state;
-      guard.do_checkpoint();
-      queue_bye_cmd(0);
-    }
-}
-
-bool
-netsync_session::arm()
-{
-  if (!armed)
-    {
-      // Don't pack the buffer unnecessarily.
-      if (output_overfull())
-        return false;
-
-      if (cmd_in.read(min_version, max_version, inbuf, read_hmac))
-        {
-          armed = true;
-        }
-    }
-  return armed;
-}
-
-bool netsync_session::process(transaction_guard & guard)
-{
-  if (encountered_error)
-    return true;
   try
     {
-      if (!arm())
-        return true;
-
-      armed = false;
-      L(FL("processing %d byte input buffer from peer %s")
-        % inbuf.size() % peer_id);
-
       size_t sz = cmd_in.encoded_size();
       bool ret = dispatch_payload(cmd_in, guard);
-
-      if (inbuf.size() >= constants::netcmd_maxsz)
-        W(F("input buffer for peer %s is overfull "
-            "after netcmd dispatch") % peer_id);
 
       guard.maybe_checkpoint(sz);
 
       if (!ret)
         L(FL("peer %s finishing processing with '%d' packet")
-          % peer_id % cmd_in.get_cmd_code());
+          % get_peer() % cmd_in.get_cmd_code());
       return ret;
     }
   catch (bad_decode & bd)
     {
       W(F("protocol error while processing peer %s: '%s'")
-        % peer_id % bd.what);
+        % get_peer() % bd.what);
       return false;
     }
   catch (recoverable_failure & rf)
     {
       W(F("recoverable '%s' error while processing peer %s: '%s'")
         % origin::type_to_string(rf.caused_by())
-        % peer_id % rf.what());
+        % get_peer() % rf.what());
       return false;
-    }
-  catch (netsync_error & err)
-    {
-      W(F("error: %s") % err.msg);
-      queue_error_cmd(boost::lexical_cast<string>(error_code) + " " + err.msg);
-      encountered_error = true;
-      return true; // Don't terminate until we've send the error_cmd.
     }
 }
 

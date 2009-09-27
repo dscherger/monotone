@@ -31,6 +31,22 @@ class options;
 
 class app_state;
 
+namespace error_codes {
+  static const int no_error = 200;
+  static const int partial_transfer = 211;
+  static const int no_transfer = 212;
+
+  static const int not_permitted = 412;
+  static const int unknown_key = 422;
+  static const int mixing_versions = 432;
+
+  static const int role_mismatch = 512;
+  static const int bad_command = 521;
+
+  static const int failed_identification = 532;
+  //static const int bad_data = 541;
+}
+
 typedef enum
   {
     server_voice,
@@ -95,10 +111,10 @@ private:
   netcmd_code cmd_code;
   std::string payload;
 public:
-  netcmd(u8 ver);
+  explicit netcmd(u8 ver);
   netcmd_code get_cmd_code() const {return cmd_code;}
   u8 get_version() const { return version; }
-  size_t encoded_size();
+  size_t encoded_size() const;
   bool operator==(netcmd const & other) const;
 
 
@@ -206,8 +222,8 @@ public:
 
   void read_usher_cmd(utf8 & greeting) const;
   void write_usher_cmd(utf8 const & greeting);
-  void read_usher_reply_cmd(u8 & version, utf8 & server, globish & pattern) const;
-  void write_usher_reply_cmd(utf8 const & server, globish const & pattern);
+  void read_usher_reply_cmd(u8 & version, utf8 & server, std::string & pattern) const;
+  void write_usher_reply_cmd(utf8 const & server, std::string const & pattern);
 
 };
 

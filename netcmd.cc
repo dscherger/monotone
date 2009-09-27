@@ -53,7 +53,7 @@ netcmd::netcmd(u8 ver)
     cmd_code(error_cmd)
 {}
 
-size_t netcmd::encoded_size()
+size_t netcmd::encoded_size() const
 {
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
@@ -719,25 +719,24 @@ netcmd::write_usher_cmd(utf8 const & greeting)
 
 void
 netcmd::read_usher_reply_cmd(u8 & version_out,
-                             utf8 & server, globish & pattern) const
+                             utf8 & server, string & pattern) const
 {
   version_out = this->version;
   string str;
   size_t pos = 0;
   extract_variable_length_string(payload, str, pos, "usher_reply netcmd, server");
   server = utf8(str, origin::network);
-  extract_variable_length_string(payload, str, pos, "usher_reply netcmd, pattern");
-  pattern = globish(str, origin::network);
+  extract_variable_length_string(payload, pattern, pos, "usher_reply netcmd, pattern");
   assert_end_of_buffer(payload, pos, "usher_reply netcmd payload");
 }
 
 void
-netcmd::write_usher_reply_cmd(utf8 const & server, globish const & pattern)
+netcmd::write_usher_reply_cmd(utf8 const & server, string const & pattern)
 {
   cmd_code = usher_reply_cmd;
   payload.clear();
   insert_variable_length_string(server(), payload);
-  insert_variable_length_string(pattern(), payload);
+  insert_variable_length_string(pattern, payload);
 }
 
 

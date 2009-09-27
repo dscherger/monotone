@@ -19,12 +19,14 @@ using std::vector;
 
 using boost::shared_ptr;
 
-session_base::session_base(string const & peer_id,
+session_base::session_base(protocol_voice voice,
+                           string const & peer_id,
                            shared_ptr<Netxx::StreamBase> str) :
     outbuf_bytes(0),
     peer_id(peer_id), str(str),
     last_io_time(::time(NULL)),
     protocol_state(working_state),
+    voice(voice),
     encountered_error(false)
 { }
 

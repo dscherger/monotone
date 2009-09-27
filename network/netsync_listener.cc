@@ -19,6 +19,7 @@
 #include "network/make_server.hh"
 #include "network/netsync_session.hh"
 #include "network/reactor.hh"
+#include "network/session.hh"
 
 using std::list;
 using std::string;
@@ -68,14 +69,13 @@ listener::do_io(Netxx::Probe::ready_type event)
       socket_options.set_non_blocking();
 
       shared_ptr<Netxx::Stream> str =
-        shared_ptr<Netxx::Stream>
-        (new Netxx::Stream(client.get_socketfd(), timeout));
+        shared_ptr<Netxx::Stream>(new Netxx::Stream(client.get_socketfd(),
+                                                    timeout));
 
-      shared_ptr<netsync_session> sess(new netsync_session(opts, lua, project, keys,
-                                                           role, server_voice,
-                                                           globish("*", origin::internal),
-                                                           globish("", origin::internal),
-                                                           lexical_cast<string>(client), str));
+      shared_ptr<session> sess(new session(opts, lua, project, keys,
+                                           server_voice,
+                                           lexical_cast<string>(client),
+                                           str));
       sess->begin_service();
       I(guard);
       react.add(sess, *guard);
