@@ -33,13 +33,12 @@ session::session(options & opts, lua_hooks & lua, project_t & project,
                  key_store & keys,
                  protocol_voice voice,
                  std::string const & peer,
-                 shared_ptr<Netxx::StreamBase> sock,
-                 bool use_transport_auth) :
+                 shared_ptr<Netxx::StreamBase> sock) :
   session_base(voice, peer, sock),
   version(opts.max_netsync_version),
   max_version(opts.max_netsync_version),
   min_version(opts.min_netsync_version),
-  use_transport_auth(use_transport_auth),
+  use_transport_auth(opts.use_transport_auth),
   signing_key(keys.signing_key),
   cmd_in(0),
   armed(false),
@@ -102,8 +101,10 @@ session::set_session_key(string const & key)
 void
 session::set_session_key(rsa_oaep_sha_data const & hmac_key_encrypted)
 {
+  MM(use_transport_auth);
   if (use_transport_auth)
     {
+      MM(signing_key);
       string hmac_key;
       keys.decrypt_rsa(signing_key, hmac_key_encrypted, hmac_key);
       set_session_key(hmac_key);
@@ -212,14 +213,14 @@ bool session::do_work(transaction_guard & guard)
 
                 key_name name;
                 keypair kp;
-                keys.get_key_pair(signing_key, name, kp);
                 if (use_transport_auth)
                   {
+                    keys.get_key_pair(signing_key, name, kp);
                     cmd.write_hello_cmd(name, kp.pub, mk_nonce());
                   }
                 else
                   {
-                    cmd.write_hello_cmd(name, rsa_pub_key(), mk_nonce());
+                    cmd.write_hello_cmd(name, kp.pub, mk_nonce());
                   }
                 write_netcmd(cmd);
                 return true;
@@ -379,6 +380,7 @@ session::request_netsync(protocol_role role,
                          globish const & our_include_pattern,
                          globish const & our_exclude_pattern)
 {
+  MM(use_transport_auth);
   id nonce2(mk_nonce());
   netcmd request(version);
   rsa_oaep_sha_data hmac_key_encrypted;
@@ -630,9 +632,12 @@ bool session::handle_service_request()
     }
 
   key_identity_info client_identity;
-  client_identity.id = client_id;
-  if (!client_identity.id.inner()().empty())
-    project.complete_key_identity(keys, lua, client_identity);
+  if (authenticated)
+    {
+      client_identity.id = client_id;
+      if (!client_identity.id.inner()().empty())
+        project.complete_key_identity(keys, lua, client_identity);
+    }
 
   wrapped->on_begin(session_id, client_identity);
   wrapped->prepare_to_confirm(client_identity, use_transport_auth);
@@ -643,6 +648,7 @@ bool session::handle_service_request()
 
 
   completed_hello = true;
+  authenticated = true;
   return true;
 }
 

@@ -70,8 +70,7 @@ public:
           key_store & keys,
           protocol_voice voice,
           std::string const & peer,
-          boost::shared_ptr<Netxx::StreamBase> sock,
-          bool use_transport_auth = true);
+          boost::shared_ptr<Netxx::StreamBase> sock);
   ~session();
   void set_inner(boost::shared_ptr<wrapped_session> wrapped);
 

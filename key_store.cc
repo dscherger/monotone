@@ -295,6 +295,7 @@ void
 key_store::get_key_pair(key_id const & ident,
                         keypair & kp)
 {
+  MM(ident);
   bool found = maybe_get_key_pair(ident, kp);
   I(found);
 }
@@ -317,6 +318,7 @@ key_store::get_key_pair(key_id const & hash,
                         key_name & keyid,
                         keypair & kp)
 {
+  MM(hash);
   bool found = maybe_get_key_pair(hash, keyid, kp);
   I(found);
 }
