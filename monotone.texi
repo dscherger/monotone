@@ -7750,6 +7750,34 @@ whatever error message would have been given.
 
 @end table
 
+@item mtn automate remote_stdio @var{hostname}
+
+@table @strong
+@item Arguments
+
+@var{hostname} is the host (and optionally port) of the monotone server
+process to connect to.
+
+@item Added in
+
+FIXME
+
+@item Purpose
+
+Permit @code{automate} commands to be run against a database that is
+being used to serve netsync connections.
+
+@item Input/Output format
+
+This command takes input and produces output in exactly the
+same format as @code{automate stdio}. Note that the commands run with
+@code{automate remote_stdio} may conform to a different @var{interface_version},
+because they are handled by a remote instance of monotone.
+
+There will be some extra chatter on stderr unless @option{--quiet} is given.
+
+@end table
+
 @item mtn automate genkey @var{name} @var{passphrase}
 
 @table @strong
@@ -10222,6 +10250,12 @@ is presently no way to selectively grant write access to different
 branches via netsync, for a number of reasons. Contributions in the
 database from different authors can be selectively trusted using the
 @ref{Trust Evaluation Hooks} instead.
+
+@item get_remote_automate_permitted(@var{key_identity}, @var{command}, @var{options})
+
+Returns true if a peer authenticated as key @var{key_identity} should be
+allowed to execute the given @var{command} with the given @var{options}, as
+if through @code{automate stdio}.
 
 @end ftable
 
