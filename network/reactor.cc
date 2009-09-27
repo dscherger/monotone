@@ -25,9 +25,9 @@ using boost::shared_ptr;
 void reactor::ready_for_io(shared_ptr<reactable> item,
                            transaction_guard & guard)
 {
-  if (item->do_work(guard))
+  try
     {
-      try
+      if (item->do_work(guard))
         {
           if (item->arm())
             {
@@ -43,22 +43,22 @@ void reactor::ready_for_io(shared_ptr<reactable> item,
           if (item->can_timeout())
             can_have_timeout = true;
         }
-      catch (bad_decode & bd)
+      else
         {
-          W(F("protocol error while processing peer %s: '%s'")
-            % item->name() % bd.what);
-          remove(item);
-        }
-      catch (recoverable_failure & rf)
-        {
-          W(F("recoverable '%s' error while processing peer %s: '%s'")
-            % origin::type_to_string(rf.caused_by())
-            % item->name() % rf.what());
           remove(item);
         }
     }
-  else
+  catch (bad_decode & bd)
     {
+      W(F("protocol error while processing peer %s: '%s'")
+        % item->name() % bd.what);
+      remove(item);
+    }
+  catch (recoverable_failure & rf)
+    {
+      W(F("recoverable '%s' error while processing peer %s: '%s'")
+        % origin::type_to_string(rf.caused_by())
+        % item->name() % rf.what());
       remove(item);
     }
 }

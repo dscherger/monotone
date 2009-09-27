@@ -37,13 +37,14 @@ protected:
   bool output_overfull() const;
   bool encountered_error() const;
   bool shutdown_confirmed() const;
+  int get_error_code() const;
+  bool get_authenticated() const;
 
   void request_netsync(protocol_role role,
                        globish const & include,
                        globish const & exclude);
   void request_automate();
 public:
-  wrapped_session();
   explicit wrapped_session(session * owner);
   void set_owner(session * owner);
 
@@ -56,6 +57,8 @@ public:
   virtual void accept_service() = 0;
   virtual std::string usher_reply_data() const = 0;
   virtual bool finished_working() const = 0;
+  virtual void prepare_to_confirm(key_identity_info const & remote_key,
+                                  bool use_transport_auth) = 0;
 
   virtual void on_begin(size_t ident, key_identity_info const & remote_key);
   virtual void on_end(size_t ident);

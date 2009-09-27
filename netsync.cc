@@ -122,7 +122,8 @@ call_server(options & opts,
   shared_ptr<session> sess(new session(opts, lua, project, keys,
                                        client_voice,
                                        info.client.unparsed(), server));
-  shared_ptr<wrapped_session> wrapped(new netsync_session(opts, lua, project,
+  shared_ptr<wrapped_session> wrapped(new netsync_session(sess.get(),
+                                                          opts, lua, project,
                                                           keys, role,
                                                           info.client.include_pattern,
                                                           info.client.exclude_pattern));
@@ -226,7 +227,8 @@ session_from_server_sync_item(options & opts,
                          client_voice,
                          info.client.unparsed(), server));
       shared_ptr<wrapped_session>
-        wrapped(new netsync_session(opts, lua, project,
+        wrapped(new netsync_session(sess.get(),
+                                    opts, lua, project,
                                     keys, role,
                                     info.client.include_pattern,
                                     info.client.exclude_pattern,

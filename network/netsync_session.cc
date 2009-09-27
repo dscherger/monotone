@@ -67,7 +67,8 @@ write_pubkey(key_name const & id,
   insert_variable_length_string(pub(), out);
 }
 
-netsync_session::netsync_session(options & opts,
+netsync_session::netsync_session(session * owner,
+                                 options & opts,
                                  lua_hooks & lua,
                                  project_t & project,
                                  key_store & keys,
@@ -75,6 +76,7 @@ netsync_session::netsync_session(options & opts,
                                  globish const & our_include_pattern,
                                  globish const & our_exclude_pattern,
                                  bool initiated_by_server) :
+  wrapped_session(owner),
   role(role),
   our_include_pattern(our_include_pattern),
   our_exclude_pattern(our_exclude_pattern),
@@ -82,15 +84,6 @@ netsync_session::netsync_session(options & opts,
   project(project),
   keys(keys),
   lua(lua),
-  use_transport_auth(opts.use_transport_auth),
-  signing_key(keys.signing_key),
-  received_remote_key(false),
-  session_key(constants::netsync_key_initializer),
-  read_hmac(netsync_session_key(constants::netsync_key_initializer),
-            use_transport_auth),
-  write_hmac(netsync_session_key(constants::netsync_key_initializer),
-             use_transport_auth),
-  authenticated(false),
   byte_in_ticker(NULL),
   byte_out_ticker(NULL),
   cert_in_ticker(NULL),
@@ -101,7 +94,6 @@ netsync_session::netsync_session(options & opts,
   certs_in(0), certs_out(0),
   revs_in(0), revs_out(0),
   keys_in(0), keys_out(0),
-  saved_nonce(""),
   set_totals(false),
   epoch_refiner(epoch_item, get_voice(), *this),
   key_refiner(key_item, get_voice(), *this),
@@ -131,6 +123,7 @@ void netsync_session::on_begin(size_t ident, key_identity_info const & remote_ke
 
 void netsync_session::on_end(size_t ident)
 {
+  int error_code = get_error_code();
   if (shutdown_confirmed())
     error_code = error_codes::no_error;
   else if (error_code == error_codes::no_transfer &&
@@ -614,19 +607,6 @@ netsync_session::queue_done_cmd(netcmd_item_type type,
 }
 
 void
-netsync_session::queue_hello_cmd(key_name const & key_name,
-                                 rsa_pub_key const & pub,
-                                 id const & nonce)
-{
-  netcmd cmd(get_version());
-  if (use_transport_auth)
-    cmd.write_hello_cmd(key_name, pub, nonce);
-  else
-    cmd.write_hello_cmd(key_name, rsa_pub_key(), nonce);
-  write_netcmd(cmd);
-}
-
-void
 netsync_session::request_service()
 {
 
@@ -646,14 +626,6 @@ netsync_session::request_service()
     setup_client_tickers();
   
   request_netsync(role, our_include_pattern, our_exclude_pattern);
-}
-
-void
-netsync_session::queue_confirm_cmd()
-{
-  netcmd cmd(get_version());
-  cmd.write_confirm_cmd();
-  write_netcmd(cmd);
 }
 
 void
@@ -1140,7 +1112,7 @@ netsync_session::dispatch_payload(netcmd const & cmd,
   switch (cmd.get_cmd_code())
     {
     case refine_cmd:
-      require(authenticated, "refine netcmd received when authenticated");
+      require(get_authenticated(), "refine netcmd received when authenticated");
       {
         merkle_node node;
         refinement_type ty;
@@ -1150,7 +1122,7 @@ netsync_session::dispatch_payload(netcmd const & cmd,
       break;
 
     case done_cmd:
-      require(authenticated, "done netcmd received when not authenticated");
+      require(get_authenticated(), "done netcmd received when not authenticated");
       {
         size_t n_items;
         netcmd_item_type type;
@@ -1160,7 +1132,7 @@ netsync_session::dispatch_payload(netcmd const & cmd,
       break;
 
     case data_cmd:
-      require(authenticated, "data netcmd received when not authenticated");
+      require(get_authenticated(), "data netcmd received when not authenticated");
       require(role == sink_role ||
               role == source_and_sink_role,
               "data netcmd received in source or source/sink role");
@@ -1174,7 +1146,7 @@ netsync_session::dispatch_payload(netcmd const & cmd,
       break;
 
     case delta_cmd:
-      require(authenticated, "delta netcmd received when not authenticated");
+      require(get_authenticated(), "delta netcmd received when not authenticated");
       require(role == sink_role ||
               role == source_and_sink_role,
               "delta netcmd received in source or source/sink role");
@@ -1216,6 +1188,81 @@ netsync_session::maybe_step()
       if (elapsed_millisec > 1000 * 10)
         break;
     }
+}
+
+void
+netsync_session::prepare_to_confirm(key_identity_info const & client_identity,
+                                    bool use_transport_auth)
+{
+  if (!get_authenticated() && role != source_role && use_transport_auth)
+    {
+      error(error_codes::not_permitted,
+            F("rejected attempt at anonymous connection for write").str());
+    }
+
+  set<branch_name> ok_branches, all_branches;
+
+  project.get_branch_list(all_branches);
+  globish_matcher matcher(our_include_pattern, our_exclude_pattern);
+
+  for (set<branch_name>::const_iterator i = all_branches.begin();
+      i != all_branches.end(); i++)
+    {
+      if (matcher((*i)()))
+        {
+          if (use_transport_auth)
+            {
+              if (!get_authenticated())
+                {
+                  if (!lua.hook_get_netsync_read_permitted((*i)()))
+                    error(error_codes::not_permitted,
+                          (F("anonymous access to branch '%s' denied by server")
+                           % *i).str());
+                }
+              else
+                {
+                  if (!lua.hook_get_netsync_read_permitted((*i)(), client_identity))
+                    error(error_codes::not_permitted,
+                          (F("denied '%s' read permission for '%s' excluding '%s' because of branch '%s'")
+                           % client_identity.id
+                           % our_include_pattern % our_exclude_pattern % *i).str());
+                }
+            }
+          ok_branches.insert(*i);
+        }
+    }
+
+  if (get_authenticated())
+    {
+      P(F("allowed '%s' read permission for '%s' excluding '%s'")
+        % client_identity.id % our_include_pattern % our_exclude_pattern);
+    }
+  else if (use_transport_auth)
+    {
+      P(F("allowed anonymous read permission for '%s' excluding '%s'")
+        % our_include_pattern % our_exclude_pattern);
+    }
+  else
+    {
+      P(F("allowed anonymous read/write permission for '%s' excluding '%s'")
+        % our_include_pattern % our_exclude_pattern);
+    }
+
+  if (use_transport_auth && (role == sink_role || role == source_and_sink_role))
+    {
+      if (!lua.hook_get_netsync_write_permitted(client_identity))
+        {
+          error(error_codes::not_permitted,
+                (F("denied '%s' write permission for '%s' excluding '%s'")
+                 % client_identity.id
+                 % our_include_pattern % our_exclude_pattern).str());
+        }
+
+      P(F("allowed '%s' write permission for '%s' excluding '%s'")
+        % client_identity.id % our_include_pattern % our_exclude_pattern);
+    }
+
+  rebuild_merkle_trees(ok_branches);
 }
 
 bool netsync_session::process(transaction_guard & guard,
@@ -1393,6 +1440,7 @@ netsync_session::rebuild_merkle_trees(set<branch_name> const & branchnames)
                 W(F("Cannot find key '%s'") % *key);
             }
           inserted_keys.insert(*key);
+          L(FL("including key %s by special request") % *key);
         }
     }
 

@@ -83,6 +83,8 @@ public:
   u8 get_version() const;
   protocol_voice get_voice() const;
   std::string get_peer() const;
+  int get_error_code() const;
+  bool get_authenticated() const;
 
   void request_netsync(protocol_role role,
                        globish const & our_include_pattern,

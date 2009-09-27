@@ -40,16 +40,7 @@ netsync_session:
   project_t & project;
   key_store & keys;
   lua_hooks & lua;
-  bool use_transport_auth;
-  key_id const & signing_key;
   std::vector<key_id> keys_to_push;
-
-  bool received_remote_key;
-  key_id remote_peer_key_id;
-  netsync_session_key session_key;
-  chained_hmac read_hmac;
-  chained_hmac write_hmac;
-  bool authenticated;
 
   std::auto_ptr<ticker> byte_in_ticker;
   std::auto_ptr<ticker> byte_out_ticker;
@@ -71,10 +62,6 @@ netsync_session:
   std::vector<revision_id> sent_revisions;
   std::vector<key_id> sent_keys;
   std::vector<cert> sent_certs;
-
-  id saved_nonce;
-
-  int error_code;
 
   mutable bool set_totals;
 
@@ -98,7 +85,8 @@ netsync_session:
   void note_cert(id const & c);
 
 public:
-  netsync_session(options & opts,
+  netsync_session(session * owner,
+                  options & opts,
                   lua_hooks & lua,
                   project_t & project,
                   key_store & keys,
@@ -113,6 +101,8 @@ public:
   bool have_work() const;
   void accept_service();
   void request_service();
+  void prepare_to_confirm(key_identity_info const & remote_key,
+                          bool use_transport_auth);
 
   void on_begin(size_t ident, key_identity_info const & remote_key);
   void on_end(size_t ident);
@@ -138,10 +128,6 @@ private:
 
   // Outgoing queue-writers.
   void queue_done_cmd(netcmd_item_type type, size_t n_items);
-  void queue_hello_cmd(key_name const & key_name,
-                       rsa_pub_key const & pub_encoded,
-                       id const & nonce);
-  void queue_confirm_cmd();
   void queue_refine_cmd(refinement_type ty, merkle_node const & node);
   void queue_data_cmd(netcmd_item_type type,
                       id const & item,
@@ -156,15 +142,6 @@ private:
                          key_name const & server_keyname,
                          rsa_pub_key const & server_key,
                          id const & nonce);
-  bool process_anonymous_cmd(protocol_role role,
-                             globish const & their_include_pattern,
-                             globish const & their_exclude_pattern);
-  bool process_auth_cmd(protocol_role role,
-                        globish const & their_include_pattern,
-                        globish const & their_exclude_pattern,
-                        key_id const & client,
-                        id const & nonce1,
-                        rsa_sha1_signature const & signature);
   bool process_refine_cmd(refinement_type ty, merkle_node const & node);
   bool process_done_cmd(netcmd_item_type type, size_t n_items);
   bool process_data_cmd(netcmd_item_type type,

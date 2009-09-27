@@ -36,7 +36,7 @@ session::session(options & opts, lua_hooks & lua, project_t & project,
                  shared_ptr<Netxx::StreamBase> sock,
                  bool use_transport_auth) :
   session_base(voice, peer, sock),
-  version(0),
+  version(opts.max_netsync_version),
   max_version(opts.max_netsync_version),
   min_version(opts.min_netsync_version),
   use_transport_auth(use_transport_auth),
@@ -120,6 +120,7 @@ bool session::arm()
 
       if (cmd_in.read(min_version, max_version, inbuf, read_hmac))
         {
+          L(FL("armed with netcmd having code '%d'") % cmd_in.get_cmd_code());
           armed = true;
         }
     }
@@ -135,7 +136,7 @@ void session::begin_service()
 
 bool session::do_work(transaction_guard & guard)
 {
-  bool armed = arm();
+  arm();
   bool is_goodbye = armed && cmd_in.get_cmd_code() == bye_cmd;
   bool is_error = armed && cmd_in.get_cmd_code() == error_cmd;
   if (completed_hello && !is_goodbye && !is_error)
@@ -146,7 +147,14 @@ bool session::do_work(transaction_guard & guard)
             return true;
           else
             {
+              if (armed)
+                L(FL("doing work for peer '%s' with '%d' netcmd")
+                  % get_peer() % cmd_in.get_cmd_code());
+              else
+                L(FL("doing work for peer '%s' with no netcmd")
+                  % get_peer());
               bool ok = wrapped->do_work(guard, armed ? &cmd_in : 0);
+              armed = false;
               if (ok)
                 {
                   if (voice == client_voice
@@ -177,6 +185,7 @@ bool session::do_work(transaction_guard & guard)
     {
       if (!armed)
         return true;
+      armed = false;
       switch (cmd_in.get_cmd_code())
         {
         case usher_cmd:
@@ -608,20 +617,31 @@ bool session::handle_service_request()
   switch (is_what)
     {
     case is_netsync:
-      wrapped.reset(new netsync_session(opts,
+      wrapped.reset(new netsync_session(this,
+                                        opts,
                                         lua,
                                         project,
                                         keys,
                                         corresponding_role(role),
-                                        globish(),
-                                        globish()));
-      wrapped->set_owner(this);
+                                        their_include,
+                                        their_exclude));
       break;
     case is_automate:
       break;
     }
 
-  // queue_confirm_cmd();
+  key_identity_info client_identity;
+  client_identity.id = client_id;
+  if (client_identity.id.inner()().empty())
+    project.complete_key_identity(keys, lua, client_identity);
+
+  wrapped->prepare_to_confirm(client_identity, use_transport_auth);
+
+  netcmd cmd(get_version());
+  cmd.write_confirm_cmd();
+  write_netcmd(cmd);
+
+
   completed_hello = true;
   return true;
 }
@@ -633,9 +653,11 @@ void session::write_netcmd(netcmd const & cmd)
     string buf;
     cmd.write(buf, write_hmac);
     queue_output(buf);
+    L(FL("queued outgoing netcmd of type '%d'") % cmd.get_cmd_code());
   }
   else
-    L(FL("dropping outgoing netcmd (because we're in error unwind mode)"));
+    L(FL("dropping outgoing netcmd of type '%d' (because we're in error unwind mode)")
+      % cmd.get_cmd_code());
 }
 
 u8 session::get_version() const
@@ -651,6 +673,16 @@ protocol_voice session::get_voice() const
 string session::get_peer() const
 {
   return peer;
+}
+
+int session::get_error_code() const
+{
+  return error_code;
+}
+
+bool session::get_authenticated() const
+{
+  return authenticated;
 }
 
 void

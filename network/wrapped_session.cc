@@ -14,10 +14,6 @@
 
 using std::string;
 
-wrapped_session::wrapped_session() :
-  owner(0)
-{ }
-
 wrapped_session::wrapped_session(session * owner) :
   owner(owner)
 { }
@@ -51,6 +47,16 @@ protocol_voice wrapped_session::get_voice() const
 bool wrapped_session::encountered_error() const
 {
   return owner->encountered_error;
+}
+
+int wrapped_session::get_error_code() const
+{
+  return owner->get_error_code();
+}
+
+bool wrapped_session::get_authenticated() const
+{
+  return owner->get_authenticated();
 }
 
 string wrapped_session::get_peer() const
