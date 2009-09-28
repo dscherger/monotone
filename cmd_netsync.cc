@@ -195,6 +195,8 @@ build_client_connection_info(options & opts,
     {
       find_key(opts, db, keys, lua, project, info, need_key);
     }
+
+  info.client.connection_type = netsync_connection_info::netsync_connection;
 }
 
 static void
@@ -227,6 +229,42 @@ extract_client_connection_info(options & opts,
                                need_key);
 }
 
+CMD_AUTOMATE(remote_stdio,
+             N_("[ADDRESS[:PORTNUMBER]"),
+             N_("Opens an 'automate stdio' connection to a remote server"),
+             "",
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version)
+{
+  if (args.size() != 1)
+    throw usage(execid);
+
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  info.client.unparsed = idx(args, 0);
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  info.client.use_argv =
+    app.lua.hook_get_netsync_connect_command(info.client.uri,
+                                             info.client.include_pattern,
+                                             info.client.exclude_pattern,
+                                             global_sanity.debug_p(),
+                                             info.client.argv);
+  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
+  if (app.opts.use_transport_auth)
+    {
+      find_key(app.opts, db, keys, app.lua, project, info, true);
+    }
+
+  info.client.connection_type = netsync_connection_info::automate_connection;
+
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
+}
+
 CMD(push, "push", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
@@ -244,7 +282,7 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  project, args, info);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
@@ -267,7 +305,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 }
 
@@ -295,7 +333,7 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace work(app, true);
     }
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
 
@@ -432,7 +470,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 
   change_current_working_dir(workspace_dir);
@@ -527,7 +565,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  options::opts::max_netsync_version |
                  options::opts::min_netsync_version |
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth)
 {
   if (!args.empty())
     throw usage(execid);
@@ -558,7 +596,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        server_voice, source_and_sink_role, info);
 }
 

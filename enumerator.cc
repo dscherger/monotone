@@ -76,7 +76,7 @@ revision_enumerator::all_parents_enumerated(revision_id const & child)
 }
 
 bool
-revision_enumerator::done()
+revision_enumerator::done() const
 {
   return revs.empty() && items.empty();
 }
