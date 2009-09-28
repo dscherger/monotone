@@ -30,7 +30,7 @@ automate_session::automate_session(app_state & app,
                                    session * owner) :
   wrapped_session(owner),
   app(app),
-  command_number(0),
+  command_number(-1),
   is_done(false)
 { }
 
