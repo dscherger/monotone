@@ -2,12 +2,23 @@
 
         0.46 release.
 
+        *** Fix automate commands documented as added in version FIXME
+        *** bump automate minor version?
+
         Changes
 
         - Cert labels in the output of the 'log' command are now
           localized.
 
         New features
+
+        - There's a new command "automate remote_stdio" that makes it
+          possible to execute automate commands on a remote server (for
+          example, to permit a single database to be used both for serving
+          netsync connections and for running a viewmtn instance). This
+          requires that the server be running monotone 0.46 or later.
+          Access control on the server is uses a new lua hook
+          "get_remote_automate_permitted(identity, command_line, options)".
 
         Bugs fixed
 
