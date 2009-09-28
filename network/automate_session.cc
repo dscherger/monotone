@@ -60,6 +60,8 @@ bool automate_session::have_work() const
 
 void automate_session::request_service()
 {
+  if (get_version() < 8)
+    throw bad_decode(F("server is too old for remote automate connections"));
   request_automate();
 }
 
