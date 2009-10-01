@@ -23,6 +23,8 @@ class project_t;
 class reactor;
 class transaction_guard;
 
+// Accepts new network connections and creates 'session' instances
+// for them.
 class listener : public listener_base
 {
   app_state & app;

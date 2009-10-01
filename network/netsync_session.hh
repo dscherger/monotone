@@ -26,6 +26,7 @@
 
 class cert;
 
+// A set of session innards that knows how to talk 'netsync'.
 class
 netsync_session:
   public refiner_callbacks,

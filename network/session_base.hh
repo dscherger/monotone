@@ -21,6 +21,10 @@
 #include "network/reactable.hh"
 #include "string_queue.hh"
 
+// This is not currently needed because there's only one kind of session.
+// But it's already here and not hurting anything, and might be useful if
+// we want to add another kind of session later (something that talks
+// http or fastcgi?).
 class session_base : public reactable
 {
   void read_some(bool & failed, bool & eof);

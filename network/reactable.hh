@@ -15,6 +15,7 @@
 
 class transaction_guard;
 
+// This is something that you can run select() (or equivalent) on.
 class reactable
 {
   static unsigned int count;

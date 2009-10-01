@@ -15,6 +15,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+// This is not currently needed because there's only one kind of listener.
+// But it's already here and not hurting anything, and might be useful if
+// we want to add another kind of listener later (something that accepts
+// http or fastcgi connections?).
 class listener_base : public reactable
 {
 protected:

@@ -21,6 +21,7 @@
 class reactable;
 class transaction_guard;
 
+// This is the main select() (or equivalent) loop.
 class reactor
 {
   bool have_pipe;

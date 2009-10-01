@@ -22,6 +22,13 @@ class lua_hooks;
 class options;
 class project_t;
 
+// This reads and writes netcmds to the network.
+// It only understands a few netcmds for setting up and tearing
+// down the connection, other netcmds are handled by a wrapped_session
+// which is inserted into the session either at the very beginning
+// (for a client) or when the reply to the 'hello' netcmd is received
+// (for a server). On the client this insertion is handled by whoever
+// created the session, on the server it is handled by the session itself.
 class session : public session_base
 {
   u8 version;

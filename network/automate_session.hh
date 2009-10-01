@@ -15,6 +15,8 @@
 #include "network/wrapped_session.hh"
 #include "project.hh" // key_identity_info
 
+// A set of session innards that knows how to forward 'automate stdio'
+// over the network.
 class automate_session : public wrapped_session
 {
   app_state & app;

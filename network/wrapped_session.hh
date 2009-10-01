@@ -25,6 +25,14 @@ struct netsync_error
 };
 
 
+// It would be very nice if netsync_session and automate_session could
+// just inherit from session. But, on the server sessions are created
+// when accept() returns, and we don't know which kind of session it
+// is until the handshake has nearly completed and we've received one
+// of (anonymous_cmd, auth_cmd, automate_cmd). So session has a pointer
+// to an instance of this class, which will be set to a new
+// netsync_session or automate_session as soon as we know which one
+// this particular connection is.
 class wrapped_session
 {
   session * owner;
