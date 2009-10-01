@@ -349,6 +349,9 @@ do_remove_recursive(string const & path)
 
   // Try plain remove() first; it will tell us if we have anything else
   // to do.
+  //
+  // This assumes POSIX remove, which will remove an empty directory.
+  // http://www.opengroup.org/onlinepubs/009695399/nfindex.html
   if (!remove(path.c_str()))
     return; // successfully deleted a plain file
 

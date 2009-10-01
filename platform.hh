@@ -136,7 +136,7 @@ void read_directory(std::string const & path,
 void make_accessible(std::string const & name);
 void rename_clobberingly(std::string const & from, std::string const & to);
 
-// path must be a file, not a directory
+// path must be an existing file, or an existing empty directory.
 void do_remove(std::string const & path);
 
 // This is platform-specific because it uses raw pathname strings
