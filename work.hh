@@ -102,6 +102,9 @@ private:
   // This is used by a lot of instance methods.
   lua_hooks & lua;
 
+  // Give a nice error if the parent revisions aren't in the db
+  void require_parents_in_db(database & db, revision_t const & rev);
+
   // Interfaces.
 public:
   static void require_workspace();

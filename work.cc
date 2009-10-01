@@ -292,10 +292,25 @@ get_roster_for_rid(database & db,
 }
 
 void
+workspace::require_parents_in_db(database & db,
+                                 revision_t const & rev)
+{
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); i++)
+    {
+      revision_id const & parent(edge_old_revision(i));
+      E(db.revision_exists(parent), origin::user,
+        F("parent revision %s does not exist, did you specify the wrong database?")
+        % parent);
+    }
+}
+
+void
 workspace::get_parent_rosters(database & db, parent_map & parents)
 {
   revision_t rev;
   get_work_rev(rev);
+  require_parents_in_db(db, rev);
 
   parents.clear();
   for (edge_map::const_iterator i = rev.edges.begin();
@@ -314,6 +329,7 @@ workspace::get_current_roster_shape(database & db,
 {
   revision_t rev;
   get_work_rev(rev);
+  require_parents_in_db(db, rev);
   revision_id new_rid(fake_id());
 
   // If there is just one parent, it might be the null ID, which
