@@ -874,6 +874,54 @@ lua_hooks::hook_get_netsync_write_permitted(key_identity_info const & identity)
 }
 
 bool
+lua_hooks::hook_get_remote_automate_permitted(key_identity_info const & identity,
+                                              vector<string> const & command_line,
+                                              vector<pair<string, string> > const & command_opts)
+{
+  Lua ll(st);
+  ll.func("get_remote_automate_permitted");
+  push_key_identity_info(ll, identity);
+
+  int k = 1;
+
+  ll.push_table();
+  vector<string>::const_iterator l;
+  for (l = command_line.begin(), k = 1; l != command_line.end(); ++l, ++k)
+    {
+      ll.push_int(k);
+      ll.push_str(*l);
+      ll.set_table();
+    }
+  ll.push_table();
+  k = 1;
+  vector<pair<string, string> >::const_iterator o;
+  for (o = command_opts.begin(), k = 1; o != command_opts.end(); ++o, ++k)
+    {
+      ll.push_int(k);
+
+      {
+        ll.push_table();
+
+        ll.push_str("name");
+        ll.push_str(o->first);
+        ll.set_table();
+
+        ll.push_str("value");
+        ll.push_str(o->second);
+        ll.set_table();
+      }
+
+      ll.set_table();
+    }
+
+  ll.call(3, 1);
+
+  bool permitted(false);
+  ll.extract_bool(permitted);
+  return ll.ok() && permitted;
+}
+
+bool
 lua_hooks::hook_init_attributes(file_path const & filename,
                                 map<string, string> & attrs)
 {
