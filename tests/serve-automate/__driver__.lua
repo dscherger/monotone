@@ -31,4 +31,8 @@ check(mtn2("automate", "remote_stdio", server.address), 0, true, false,
 check(qgrep("^0:0:l:", "stdout"))
 check(qgrep("^1:0:l:41:", "stdout"))
 
+check(mtn2("automate", "remote_stdio", server.address), 0, true, false,
+      "l5:stdioe")
+check(qgrep("can't be run", "stdout"))
+
 server:stop()

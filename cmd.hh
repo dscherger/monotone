@@ -102,6 +102,7 @@ namespace commands
 
   class automate : public command
   {
+    bool stdio_ok;
     // This function is supposed to be called only after the requirements
     // for "automate" commands have been fulfilled.  This is done by the
     // "exec" function defined below, which implements code shared among
@@ -117,6 +118,7 @@ namespace commands
 
   public:
     automate(std::string const & name,
+             bool stdio_ok,
              std::string const & params,
              std::string const & abstract,
              std::string const & desc,
@@ -130,6 +132,8 @@ namespace commands
     void exec(app_state & app,
               command_id const & execid,
               args_vector const & args) const;
+
+    bool can_run_from_stdio() const;
   };
 }
 
@@ -248,7 +252,7 @@ void commands::cmd_ ## C::exec(app_state & app,                      \
 // command definition allows the description of input/output format,
 // error conditions, version when added, etc.  'desc' can later be
 // automatically built from these.
-#define CMD_AUTOMATE(C, params, abstract, desc, opts)                \
+#define _CMD_AUTOMATE2(C, stdio_ok, params, abstract, desc, opts)    \
 namespace commands {                                                 \
   class automate_ ## C : public automate                             \
   {                                                                  \
@@ -257,7 +261,8 @@ namespace commands {                                                 \
                             args_vector const & args,                \
                             std::ostream & output) const;            \
   public:                                                            \
-    automate_ ## C() : automate(#C, params, abstract, desc,          \
+    automate_ ## C() : automate(#C, stdio_ok, params,                \
+                                abstract, desc,                      \
                                 options::options_type() | opts)      \
     {}                                                               \
   };                                                                 \
@@ -268,6 +273,12 @@ void commands::automate_ ## C :: exec_from_automate                  \
    command_id const & execid,                                        \
    args_vector const & args,                                         \
    std::ostream & output) const
+
+#define CMD_AUTOMATE(C, params, abstract, desc, opts)   \
+  _CMD_AUTOMATE2(C, true, params, abstract, desc, opts)
+
+#define CMD_AUTOMATE_NO_STDIO(C, params, abstract, desc, opts)  \
+  _CMD_AUTOMATE2(C, false, params, abstract, desc, opts)
 
 CMD_FWD_DECL(__root__);
 CMD_FWD_DECL(automation);

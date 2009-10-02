@@ -160,7 +160,11 @@ bool automate_session::do_work(transaction_guard & guard,
 
             command const * cmd = CMD_REF(automate)->find_command(id);
             I(cmd != NULL);
-            automate const * acmd = reinterpret_cast< automate const * >(cmd);
+            automate const * acmd = dynamic_cast< automate const * >(cmd);
+            I(acmd);
+
+            E(acmd->can_run_from_stdio(), origin::network,
+              F("sorry, that can't be run remotely or over stdio"));
 
             opts = options::opts::globals() | acmd->opts();
 

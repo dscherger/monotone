@@ -229,12 +229,12 @@ extract_client_connection_info(options & opts,
                                need_key);
 }
 
-CMD_AUTOMATE(remote_stdio,
-             N_("[ADDRESS[:PORTNUMBER]"),
-             N_("Opens an 'automate stdio' connection to a remote server"),
-             "",
-             options::opts::max_netsync_version |
-             options::opts::min_netsync_version)
+CMD_AUTOMATE_NO_STDIO(remote_stdio,
+                      N_("[ADDRESS[:PORTNUMBER]"),
+                      N_("Opens an 'automate stdio' connection to a remote server"),
+                      "",
+                      options::opts::max_netsync_version |
+                      options::opts::min_netsync_version)
 {
   if (args.size() != 1)
     throw usage(execid);

@@ -38,6 +38,7 @@ CMD_GROUP(automate, "automate", "au", CMD_REF(automation),
 
 namespace commands {
   automate::automate(string const & name,
+                     bool stdio_ok,
                      string const & params,
                      string const & abstract,
                      string const & desc,
@@ -47,7 +48,8 @@ namespace commands {
             // commands need a database, and they expect to get the database
             // name from the workspace options, even if they don't need a
             // workspace for anything else.
-            desc, true, opts, false)
+            desc, true, opts, false),
+    stdio_ok(stdio_ok)
   {
   }
 
@@ -67,6 +69,12 @@ namespace commands {
                  args_vector const & args) const
   {
     exec(app, execid, args, std::cout);
+  }
+
+  bool
+  automate::can_run_from_stdio() const
+  {
+    return stdio_ok;
   }
 }
 
@@ -138,10 +146,10 @@ CMD_AUTOMATE(interface_version, "",
 
 
 
-CMD_AUTOMATE(stdio, "",
-             N_("Automates several commands in one run"),
-             "",
-             options::opts::automate_stdio_size)
+CMD_AUTOMATE_NO_STDIO(stdio, "",
+                      N_("Automates several commands in one run"),
+                      "",
+                      options::opts::automate_stdio_size)
 {
   E(args.empty(), origin::user,
     F("no arguments needed"));
@@ -237,6 +245,10 @@ CMD_AUTOMATE(stdio, "",
         {
           automate const * acmd = dynamic_cast< automate const * >(cmd);
           I(acmd);
+
+          E(acmd->can_run_from_stdio(), origin::network,
+            F("sorry, that can't be run remotely or over stdio"));
+
           acmd->exec_from_automate(app, id, args, os);
           // set app.opts to the originally given options
           // so the next command has an identical setup
