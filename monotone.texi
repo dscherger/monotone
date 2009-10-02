@@ -7748,7 +7748,9 @@ given with invalid arguments or options, prints an error message to
 standard error and exits with nonzero status. Errors in the commands run
 through this interface do not affect the exit status. Instead, the <err code>
 field in the output is set to 2, and the output of the command becomes
-whatever error message would have been given.
+whatever error message would have been given. Trying to run the
+@code{automate stdio} or @code{automate remote_stdio} commands will always
+act as if that command encountered an error.
 
 @end table
 
@@ -7777,6 +7779,14 @@ same format as @code{automate stdio}. Note that the commands run with
 because they are handled by a remote instance of monotone.
 
 There will be some extra chatter on stderr unless @option{--quiet} is given.
+
+@item Error Conditions
+
+If left idle for too long or there are network problems, the connection to the
+server may be dropped. This will not be detected while monotone is waiting for
+input. Instead, when a complete command has been entered and monotone tries to
+send it to the remote server it will print a message to stderr and exit with
+code 1.
 
 @end table
 
