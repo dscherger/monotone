@@ -299,7 +299,7 @@ workspace::require_parents_in_db(database & db,
        i != rev.edges.end(); i++)
     {
       revision_id const & parent(edge_old_revision(i));
-      E(db.revision_exists(parent), origin::user,
+      E(null_id(parent) || db.revision_exists(parent), origin::user,
         F("parent revision %s does not exist, did you specify the wrong database?")
         % parent);
     }
