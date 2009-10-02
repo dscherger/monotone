@@ -121,6 +121,7 @@ end
 -- check against compatible versions, both with fake "old" peers,
 -- and with real old peers if they're available
 check_against(6)
+check_against(7)
 
 -- check against a fake far-future version
 fake_future = make_fake(1, 250)

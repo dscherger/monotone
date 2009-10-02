@@ -77,7 +77,7 @@ public:
   void note_cert(revision_id const & rid,
                  id const & cert_hash);
   void step();
-  bool done();
+  bool done() const;
 };
 
 #endif // __ENUMERATOR_H__
