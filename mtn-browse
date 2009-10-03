@@ -667,6 +667,7 @@ sub open_toolbutton_clicked_cb($$)
     {
 	setup_mtn_object($mtn, $browser->{window});
 	$browser->{mtn} = $mtn;
+	$browser->{appbar}->clear_stack();
 	&{$browser->{update_handler}}($browser, DATABASE_CHANGED);
     }
 

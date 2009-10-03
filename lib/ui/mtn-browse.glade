@@ -682,9 +682,9 @@ in Monotone-Viz</property>
 			      <signal name="clicked" handler="revision_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:52:45 GMT"/>
 
 			      <child>
-				<widget class="GtkImage" id="image3">
+				<widget class="GtkImage" id="image87">
 				  <property name="visible">True</property>
-				  <property name="stock">gtk-dialog-info</property>
+				  <property name="stock">gnome-stock-multiple-file</property>
 				  <property name="icon_size">4</property>
 				  <property name="xalign">0.5</property>
 				  <property name="yalign">0.5</property>
@@ -1577,10 +1577,9 @@ into a viewer</property>
 				      <signal name="clicked" handler="view_button_clicked_cb" last_modification_time="Wed, 23 Apr 2008 17:33:42 GMT"/>
 
 				      <child>
-					<widget class="GtkImage" id="image32">
+					<widget class="GtkImage" id="image86">
 					  <property name="visible">True</property>
-					  <property name="stock">gnome-stock-book-open</property>
-					  <property name="icon_size">4</property>
+					  <property name="pixbuf">eye.png</property>
 					  <property name="xalign">0.5</property>
 					  <property name="yalign">0.5</property>
 					  <property name="xpad">0</property>
@@ -1632,9 +1631,9 @@ into a viewer</property>
 				      <signal name="clicked" handler="file_change_history_button_clicked_cb" last_modification_time="Sat, 01 Mar 2008 11:43:13 GMT"/>
 
 				      <child>
-					<widget class="GtkImage" id="image12">
+					<widget class="GtkImage" id="image88">
 					  <property name="visible">True</property>
-					  <property name="stock">gtk-dialog-info</property>
+					  <property name="stock">gnome-stock-multiple-file</property>
 					  <property name="icon_size">4</property>
 					  <property name="xalign">0.5</property>
 					  <property name="yalign">0.5</property>

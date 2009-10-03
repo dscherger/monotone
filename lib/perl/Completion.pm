@@ -124,7 +124,7 @@ sub new($;$)
 	# `net.venge.monotone.contrib.'. You could simply think of this node as
 	# an `end of string' token if you prefer.
 
-	$level->{""} = "";
+	$level->{""} = {};
 
     }
 
@@ -158,48 +158,79 @@ sub get_completion($$$$)
 
     my($this, $value, $result, $complete) = @_;
 
-    my($char,
-       $level);
+    my $match = 1;
 
-    # Lookup value, stopping when it becomes ambiguous or we get to the end of
-    # $value.
-
-    $level = $this->{tree};
     $$result = "";
-    foreach $char (split(//, $value))
+
+    # The completion list must be non-empty to match something.
+
+    if (scalar(%{$this->{tree}}))
     {
-	last unless (exists($level->{$char}));
-	$level = $level->{$char};
-	$$result .= $char;
-    }
 
-    # Detect truncations.
+	my($char,
+	   $level);
 
-    return if (length($value) > length($$result));
+	# Lookup value, stopping when it becomes ambiguous, we get no match or
+	# we get to the end of $value.
 
-    # Now try and expand it further.
+	$level = $this->{tree};
+	foreach $char (split(//, $value))
+	{
+	    last unless (exists($level->{$char}));
+	    $level = $level->{$char};
+	    $$result .= $char;
+	}
 
-    while (defined(%$level) && keys(%$level) == 1)
-    {
-	($char) = keys(%$level);
-	$$result .= $char;
-	$level = $level->{$char};
-    }
+	# Detect truncations.
 
-    # Detect complete completions (doesn't mean to say that it can't be
-    # extended, just that as it stands at the moment $$result does contain a
-    # valid unique value).
+	if (length($value) > length($$result))
+	{
 
-    if (! defined(%$level) || exists($level->{""}))
-    {
-	$$complete = 1;
+	    # The result is smaller and so the latter part of $value doesn't
+	    # match.
+
+	    $match = undef;
+
+	}
+	else
+	{
+
+	    # $value matches so far so now try and expand it further.
+
+	    while (scalar(keys(%$level)) == 1)
+	    {
+		($char) = keys(%$level);
+		$$result .= $char;
+		$level = $level->{$char};
+	    }
+
+	}
+
+	# Detect complete completions (doesn't mean to say that it can't be
+	# extended, just that as it stands at the moment $$result does contain
+	# a valid unique value).
+
+	if (! scalar(%$level) || exists($level->{""}))
+	{
+	    $$complete = 1;
+	}
+	else
+	{
+	    $$complete = 0;
+	}
+
     }
     else
     {
+
+	# The comepletion list is empty and so nothing can be matched.
+
 	$$complete = 0;
+	$match = undef;
+
     }
 
-    return 1;
+    return $match;
 
 }
 

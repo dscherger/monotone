@@ -285,7 +285,8 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	# right.
 
 	$len = length($value);
-	if ($value ne substr($old_value, 0, $len))
+	if ($len >= length($old_value)
+	    || $value ne substr($old_value, 0, $len))
 	{
 
 	    # Initialise a new auto-completion object with a new list of terms
@@ -341,8 +342,10 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 		$x += $root_x - 10;
 		$y += $height + $root_y + 5;
 		get_tooltip_window($instance->{window}, $message, $x, $y);
+		WindowManager->update_gui();
 
 	    }
+
 	    $value = $completion;
 	    $len = length($value);
 	    $entry->set_text($value);
@@ -359,19 +362,20 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 
 	# Update the pulldown choices if that is what the user wants.
 
-	if (! $user_preferences->{static_lists})
+	$widget->get_model()->clear()
+	    unless ($user_preferences->{static_lists});
+	foreach $item (@{$combo_details->{list}})
 	{
-	    $widget->get_model()->clear();
-	    foreach $item (@{$combo_details->{list}})
+	    my $item_len = length($item);
+	    if ($len <= $item_len && $value eq substr($item, 0, $len))
 	    {
 		$widget->append_text($item)
-		    if ($value eq substr($item, 0, $len));
+		    unless ($user_preferences->{static_lists});
 
 		# The following check is needed in the case when the user is
 		# simply deleting characters from the right.
 
-		$combo_details->{complete} = 1
-		    if (! $complete && $value eq $item);
+		$combo_details->{complete} = 1 if ($len == $item_len);
 	    }
 	}
 
@@ -379,7 +383,8 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 
 	&{$instance->{update_handler}}($instance, $change_state)
 	    if ($combo_details->{complete} != $old_complete
-		|| $combo_details->{value} ne $old_value);
+		|| ($combo_details->{complete}
+		    && $combo_details->{value} ne $old_value));
 
     }
 
@@ -417,7 +422,7 @@ sub get_tooltip_window($$$$)
     my $wm = WindowManager->instance();
 
     # Create a new tooltip window if an existing one wasn't found, otherwise
-    # reuse an existing unused one.
+    # reuse an existing one (used or unused).
 
     if (! defined($instance = $wm->cond_find($window_type, sub { return 1; })))
     {
@@ -463,8 +468,8 @@ sub get_tooltip_window($$$$)
 
     local $instance->{in_cb} = 1;
 
-    # Update the tooltip message text and setup a timout handler to dismiss the
-    # window after three seconds.
+    # Update the tooltip message text and setup a timeout handler to dismiss
+    # the window after three seconds.
 
     $instance->{message_label}->set_text($message);
     $instance->{timeout_source_id} =

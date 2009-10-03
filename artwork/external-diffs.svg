@@ -13,12 +13,12 @@
    id="svg4210"
    sodipodi:version="0.32"
    inkscape:version="0.45.1"
-   sodipodi:docbase="/home/aecoope/perl"
+   sodipodi:docbase="/home/aecoope/code/monotone.ca/mtn-browse/artwork"
    sodipodi:docname="external-diffs.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/aecoope/perl/diffs.png"
-   inkscape:export-xdpi="2.616276"
-   inkscape:export-ydpi="2.616276">
+   inkscape:export-filename="/home/aecoope/code/monotone.ca/mtn-browse/lib/ui/pixmaps/external-diffs.png"
+   inkscape:export-xdpi="2.2498391"
+   inkscape:export-ydpi="2.2498391">
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -186,18 +186,6 @@
          id="path4319"
          style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;marker-start:none" />
     </marker>
-    <filter
-       id="filter3438"
-       x="-0.12175438"
-       y="-0.11829546"
-       width="1.2435088"
-       height="1.2365909"
-       inkscape:collect="always">
-      <feGaussianBlur
-         id="feGaussianBlur3440"
-         stdDeviation="34.502881"
-         inkscape:collect="always" />
-    </filter>
     <marker
        id="Arrow1Mendj"
        orient="auto"
@@ -258,6 +246,18 @@
          stdDeviation="11.040055"
          id="feGaussianBlur4444" />
     </filter>
+    <filter
+       inkscape:collect="always"
+       x="-0.14610526"
+       width="1.2922105"
+       y="-0.14195455"
+       height="1.2839091"
+       id="filter7902">
+      <feGaussianBlur
+         inkscape:collect="always"
+         stdDeviation="41.403457"
+         id="feGaussianBlur7904" />
+    </filter>
   </defs>
   <metadata
      id="metadata4215">
@@ -293,7 +293,7 @@
        id="rect3396"
        height="680.00079"
        inkscape:export-filename="/home/aecoope/perl/external-diffs.png"
-       style="opacity:0.4;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter3438)" />
+       style="opacity:1;fill:#444444;fill-opacity:1;stroke:#000000;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter7902)" />
     <rect
        inkscape:export-xdpi="2.2498391"
        x="39.942787"
