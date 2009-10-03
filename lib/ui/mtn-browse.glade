@@ -5445,6 +5445,27 @@ that you are using</property>
 			  </child>
 
 			  <child>
+			    <widget class="GtkCheckButton" id="folders_come_first_checkbutton">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Select this if you want all folders
+to be listed before any files</property>
+			      <property name="can_focus">True</property>
+			      <property name="label" translatable="yes">Folders come first</property>
+			      <property name="use_underline">True</property>
+			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
+			      <property name="active">False</property>
+			      <property name="inconsistent">False</property>
+			      <property name="draw_indicator">True</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
 			    <widget class="GtkCheckButton" id="show_line_numbers_checkbutton">
 			      <property name="visible">True</property>
 			      <property name="tooltip" translatable="yes">Select this if you want line numbers
@@ -5474,7 +5495,30 @@ lists to update as you type in values
 (can help with speed when dealing
 with large lists)</property>
 			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Static branch and revision lists</property>
+			      <property name="label" translatable="yes">Static completion lists</property>
+			      <property name="use_underline">True</property>
+			      <property name="relief">GTK_RELIEF_NORMAL</property>
+			      <property name="focus_on_click">True</property>
+			      <property name="active">False</property>
+			      <property name="inconsistent">False</property>
+			      <property name="draw_indicator">True</property>
+			    </widget>
+			    <packing>
+			      <property name="padding">0</property>
+			      <property name="expand">False</property>
+			      <property name="fill">False</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkCheckButton" id="show_completion_tooltips_checkbutton">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Select this if you want feedback in the
+form of special tooltips when typing in
+values into either the branch or revision
+combobox entry fields</property>
+			      <property name="can_focus">True</property>
+			      <property name="label" translatable="yes">Show completion tooltips</property>
 			      <property name="use_underline">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
 			      <property name="focus_on_click">True</property>

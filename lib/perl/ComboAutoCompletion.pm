@@ -317,12 +317,7 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 	    else
 	    {
 
-		my($height,
-		   $message,
-		   $root_x,
-		   $root_y,
-		   $x,
-		   $y);
+		my $message;
 
 		# Tell the user what is wrong via the status bar.
 
@@ -331,18 +326,28 @@ sub auto_completion_comboboxentry_key_release_event_cb($$$)
 				  value => $value);
 		$instance->{appbar}->push($message);
 
-		# Also via a tooltip as well (need to position it to be just
-		# below the comboboxentry widget).
+		# Also via a tooltip as well if so desired (need to position it
+		# to be just below the comboboxentry widget).
 
-		($x, $y) =
-		    $widget->translate_coordinates($instance->{window}, 0, 0);
-		$height = ($widget->child()->window()->get_geometry())[3];
-		($root_x, $root_y) =
-		    $instance->{window}->window()->get_origin();
-		$x += $root_x - 10;
-		$y += $height + $root_y + 5;
-		get_tooltip_window($instance->{window}, $message, $x, $y);
-		WindowManager->update_gui();
+		if ($user_preferences->{completion_tooltips})
+		{
+		    my($height,
+		       $root_x,
+		       $root_y,
+		       $x,
+		       $y);
+		    ($x, $y) =
+			$widget->translate_coordinates($instance->{window},
+						       0,
+						       0);
+		    $height = ($widget->child()->window()->get_geometry())[3];
+		    ($root_x, $root_y) =
+			$instance->{window}->window()->get_origin();
+		    $x += $root_x - 10;
+		    $y += $height + $root_y + 5;
+		    get_tooltip_window($instance->{window}, $message, $x, $y);
+		    WindowManager->update_gui();
+		}
 
 	    }
 

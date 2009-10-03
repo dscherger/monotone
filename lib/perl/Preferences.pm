@@ -80,7 +80,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 9;
+use constant PREFERENCES_FORMAT_VERSION => 10;
 
 # Text viewable application mime types.
 
@@ -460,8 +460,10 @@ sub defaults_button_clicked_cb($$)
 		   "history_size",
 		   "show_suspended",
 		   "show_file_details",
+		   "folders_come_first",
 		   "show_line_numbers",
 		   "static_lists",
+		   "completion_tooltips",
 		   "list_search_as_re",
 		   "diffs_application");
     }
@@ -1039,8 +1041,10 @@ sub get_preferences_window($$)
 			    "history_size_spinbutton",
 			    "show_suspended_revisions_checkbutton",
 			    "detailed_file_listing_checkbutton",
+			    "folders_come_first_checkbutton",
 			    "show_line_numbers_checkbutton",
 			    "static_lists_checkbutton",
+			    "show_completion_tooltips_checkbutton",
 			    "search_as_regular_expression_checkbutton",
 			    "external_diffs_app_entry",
 
@@ -1283,11 +1287,17 @@ sub load_preferences_into_gui($)
     $instance->{detailed_file_listing_checkbutton}->
 	set_active($instance->{preferences}->{show_file_details} ?
 		   TRUE : FALSE);
+    $instance->{folders_come_first_checkbutton}->
+	set_active($instance->{preferences}->{folders_come_first} ?
+		   TRUE : FALSE);
     $instance->{show_line_numbers_checkbutton}->
 	set_active($instance->{preferences}->{show_line_numbers} ?
 		   TRUE : FALSE);
     $instance->{static_lists_checkbutton}->
 	set_active($instance->{preferences}->{static_lists} ? TRUE : FALSE);
+    $instance->{show_completion_tooltips_checkbutton}->
+	set_active($instance->{preferences}->{completion_tooltips} ?
+		   TRUE : FALSE);
     $instance->{search_as_regular_expression_checkbutton}->
 	set_active($instance->{preferences}->{list_search_as_re} ?
 		   TRUE : FALSE);
@@ -1472,10 +1482,15 @@ sub save_preferences_from_gui($)
 	1 : 0;
     $instance->{preferences}->{show_file_details} =
 	$instance->{detailed_file_listing_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{folders_come_first} =
+	$instance->{folders_come_first_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{show_line_numbers} =
 	$instance->{show_line_numbers_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{static_lists} =
 	$instance->{static_lists_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{completion_tooltips} =
+	$instance->{show_completion_tooltips_checkbutton}->get_active() ?
+	1 : 0;
     $instance->{preferences}->{list_search_as_re} =
 	$instance->{search_as_regular_expression_checkbutton}->get_active() ?
 	1 : 0;
@@ -1668,6 +1683,12 @@ sub upgrade_preferences($)
 					    fixed     => 0};
 	$preferences->{version} = 9;
     }
+    if ($preferences->{version} == 9)
+    {
+	$preferences->{folders_come_first} = 1;
+	$preferences->{completion_tooltips} = 1;
+	$preferences->{version} = 10;
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1696,46 +1717,48 @@ sub initialise_preferences()
     die(__("Cannot load system MIME types.\n"))
 	unless (defined($mime_table = initialise_mime_info_table()));
     %preferences =
-	(version           => PREFERENCES_FORMAT_VERSION,
-	 default_mtn_db    => "",
-	 workspace         => {takes_precedence => 1,
-			       auto_select      => 1},
-	 auto_select_head  => 0,
-	 query             => {tagged => {limit                => 200,
-					  sort_chronologically => 1},
-			       id     => {limit                => 200,
-					  sort_chronologically => 1}},
-	 history_size      => 20,
-	 show_suspended    => 0,
-	 show_file_details => 1,
-	 show_line_numbers => 0,
-	 static_lists      => 0,
-	 list_search_as_re => 0,
-	 diffs_application => FILE_COMPARE_CMD . " '{file1}' '{file2}'",
-	 fixed_font        => "monospace 10",
-	 toolbar_settings  => {hide_text => 0,
-			       fixed     => 0},
-	 coloured_diffs    => 1,
-	 colours           => {annotate_prefix_1 => {fg => "AliceBlue",
-						     bg => "CadetBlue"},
-			       annotate_text_1   => {fg => "MidnightBlue",
-						     bg => "PaleTurquoise"},
-			       annotate_prefix_2 => {fg => "AliceBlue",
-						     bg => "SteelBlue"},
-			       annotate_text_2   => {fg => "MidnightBlue",
-						     bg => "SkyBlue"},
-			       cmp_revision_1    => {fg => "DarkRed",
-						     bg => "MistyRose1",
-						     hl => "IndianRed1"},
-			       cmp_revision_2    => {fg => "DarkGreen",
-						     bg => "DarkSeaGreen1",
-						     hl => "SpringGreen1"}},
-	 mime_table        => $mime_table,
-	 histories         => {advanced_find          => [],
-			       find_files_named       => [],
-			       find_files_containing  => [],
-			       find_files_modified_by => [],
-			       find_text              => []});
+	(version             => PREFERENCES_FORMAT_VERSION,
+	 default_mtn_db      => "",
+	 workspace           => {takes_precedence => 1,
+				 auto_select      => 1},
+	 auto_select_head    => 0,
+	 query               => {tagged => {limit                => 200,
+					    sort_chronologically => 1},
+				 id     => {limit                => 200,
+					    sort_chronologically => 1}},
+	 history_size        => 20,
+	 show_suspended      => 0,
+	 show_file_details   => 1,
+	 folders_come_first  => 1,
+	 show_line_numbers   => 0,
+	 static_lists        => 0,
+	 completion_tooltips => 1,
+	 list_search_as_re   => 0,
+	 diffs_application   => FILE_COMPARE_CMD . " '{file1}' '{file2}'",
+	 fixed_font          => "monospace 10",
+	 toolbar_settings    => {hide_text => 0,
+				 fixed     => 0},
+	 coloured_diffs      => 1,
+	 colours             => {annotate_prefix_1 => {fg => "AliceBlue",
+						       bg => "CadetBlue"},
+				 annotate_text_1   => {fg => "MidnightBlue",
+						       bg => "PaleTurquoise"},
+				 annotate_prefix_2 => {fg => "AliceBlue",
+						       bg => "SteelBlue"},
+				 annotate_text_2   => {fg => "MidnightBlue",
+						       bg => "SkyBlue"},
+				 cmp_revision_1    => {fg => "DarkRed",
+						       bg => "MistyRose1",
+						       hl => "IndianRed1"},
+				 cmp_revision_2    => {fg => "DarkGreen",
+						       bg => "DarkSeaGreen1",
+						       hl => "SpringGreen1"}},
+	 mime_table          => $mime_table,
+	 histories           => {advanced_find          => [],
+				 find_files_named       => [],
+				 find_files_containing  => [],
+				 find_files_modified_by => [],
+				 find_text              => []});
 
     return \%preferences;
 

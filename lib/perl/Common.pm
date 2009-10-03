@@ -406,10 +406,16 @@ sub get_dir_contents($$$)
 
     my($path, $manifest, $result) = @_;
 
-    my($entry,
+    my(@dir_list,
+       $entry,
        $extract_re,
+       @file_list,
+       $list,
        $match_re,
        $name);
+
+    # Manifests are already sorted alphabetically. However, if the user wishes
+    # it, place folders before files.
 
     if ($path eq "")
     {
@@ -427,8 +433,27 @@ sub get_dir_contents($$$)
 	if ($entry->{name} =~ m/$match_re/)
 	{
 	    ($name) = ($entry->{name} =~ m/$extract_re/);
-	    push(@$result, {manifest_entry => $entry, name => $name});
+	    if ($user_preferences->{folders_come_first})
+	    {
+		if ($entry->{type} eq "directory")
+		{
+		    $list = \@dir_list;
+		}
+		else
+		{
+		    $list = \@file_list;
+		}
+	    }
+	    else
+	    {
+		$list = $result;
+	    }
+	    push(@$list, {manifest_entry => $entry, name => $name});
 	}
+    }
+    if ($user_preferences->{folders_come_first})
+    {
+	@$result = (@dir_list, @file_list);
     }
 
 }
