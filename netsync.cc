@@ -132,7 +132,8 @@ call_server(app_state & app,
                                         info.client.exclude_pattern));
       break;
     case netsync_connection_info::automate_connection:
-      wrapped.reset(new automate_session(app, sess.get()));
+      wrapped.reset(new automate_session(app, sess.get(),
+                                         info.client.stdio_input_stream));
       break;
     }
   sess->set_inner(wrapped);

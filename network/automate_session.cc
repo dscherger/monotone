@@ -27,17 +27,19 @@ using boost::shared_ptr;
 CMD_FWD_DECL(automate);
 
 automate_session::automate_session(app_state & app,
-                                   session * owner) :
+                                   session * owner,
+                                   std::istream & is) :
   wrapped_session(owner),
   app(app),
+  input_stream(is),
   command_number(-1),
   is_done(false)
 { }
 
 void automate_session::send_command()
 {
-  // read an automate command on stdin, then package it up and send it
-  automate_reader ar(std::cin);
+  // read an automate command from the stream, then package it up and send it
+  automate_reader ar(input_stream);
   vector<pair<string, string> > read_opts;
   vector<string> read_args;
 

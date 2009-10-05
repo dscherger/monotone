@@ -265,6 +265,131 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
                        client_voice, source_and_sink_role, info);
 }
 
+// shamelessly copied and adapted from option.cc
+static void
+parse_options_from_args(args_vector & args,
+                        std::vector<std::pair<std::string, arg_type> > & opts)
+{
+  bool seen_dashdash = false;
+  for (args_vector::size_type i = 0; i < args.size(); )
+    {
+      string name;
+      arg_type arg;
+
+      if (idx(args,i)() == "--" || seen_dashdash)
+        {
+          if (!seen_dashdash)
+            {
+              seen_dashdash = true;
+            }
+          ++i;
+          continue;
+        }
+      else if (idx(args,i)().substr(0,2) == "--")
+        {
+          string::size_type equals = idx(args,i)().find('=');
+          bool has_arg;
+          if (equals == string::npos)
+            {
+              name = idx(args,i)().substr(2);
+              has_arg = false;
+            }
+          else
+            {
+              name = idx(args,i)().substr(2, equals-2);
+              has_arg = true;
+            }
+
+          if (has_arg)
+            {
+              arg = arg_type(idx(args,i)().substr(equals+1), origin::user);
+            }
+        }
+      else if (idx(args,i)().substr(0,1) == "-")
+        {
+          name = idx(args,i)().substr(1,1);
+          bool has_arg = idx(args,i)().size() > 2;
+
+          if (has_arg)
+            {
+              arg = arg_type(idx(args,i)().substr(2), origin::user);
+            }
+        }
+      else
+        {
+          ++i;
+          continue;
+        }
+
+      opts.push_back(std::pair<std::string, arg_type>(name, arg));
+      args.erase(args.begin() + i);
+    }
+}
+
+CMD_AUTOMATE_NO_STDIO(remote,
+                      N_("COMMAND [ARGS]"),
+                      N_("Executes COMMAND on a remote server"),
+                      "",
+                      options::opts::remote_stdio_host |
+                      options::opts::max_netsync_version |
+                      options::opts::min_netsync_version)
+{
+  E(args.size() >= 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  info.client.unparsed = app.opts.remote_stdio_host;
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  info.client.use_argv =
+    app.lua.hook_get_netsync_connect_command(info.client.uri,
+                                             info.client.include_pattern,
+                                             info.client.exclude_pattern,
+                                             global_sanity.debug_p(),
+                                             info.client.argv);
+  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
+  if (app.opts.use_transport_auth)
+    {
+      find_key(app.opts, db, keys, app.lua, project, info, true);
+    }
+
+  args_vector cleaned_args(args);
+  std::vector<std::pair<std::string, arg_type> > opts;
+  parse_options_from_args(cleaned_args, opts);
+
+  std::stringstream ss;
+  if (opts.size() > 0)
+    {
+      ss << 'o';
+      for (unsigned int i=0; i < opts.size(); ++i)
+        {
+          ss << opts.at(i).first.size()  << ':' << opts.at(i).first;
+          ss << opts.at(i).second().size() << ':' << opts.at(i).second();
+        }
+      ss << 'e' << ' ';
+    }
+
+  ss << 'l';
+  for (args_vector::size_type i=0; i<cleaned_args.size(); ++i)
+  {
+      std::string arg = idx(cleaned_args, i)();
+      ss << arg.size() << ':' << arg;
+  }
+  ss << 'e';
+
+  L(FL("stdio input: %s") % ss.str());
+
+  info.client.stdio_input_stream.rdbuf(ss.rdbuf());
+  info.client.connection_type = netsync_connection_info::automate_connection;
+
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
+}
+
 CMD(push, "push", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),

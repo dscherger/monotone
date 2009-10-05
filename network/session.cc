@@ -304,7 +304,7 @@ bool session::do_work(transaction_guard & guard)
                     }
 
                     I(project.db.public_key_exists(remote_peer_key_id));
-                
+
                     // save their identity
                     received_remote_key = true;
                   }
@@ -653,7 +653,7 @@ bool session::handle_service_request()
                                         their_exclude));
       break;
     case is_automate:
-      wrapped.reset(new automate_session(app, this));
+      wrapped.reset(new automate_session(app, this, std::cin));
       break;
     }
 

@@ -13,6 +13,7 @@
 #include "vector.hh"
 #include <list>
 #include <utility>
+#include <iostream>
 
 #include "globish.hh"
 #include "merkle_tree.hh"
@@ -229,7 +230,7 @@ public:
 
 struct netsync_connection_info
 {
-  struct
+  struct Server
   {
     std::list<utf8> addrs;
   } server;
@@ -238,7 +239,7 @@ struct netsync_connection_info
       netsync_connection,
       automate_connection
     };
-  struct
+  struct Client
   {
     globish include_pattern;
     globish exclude_pattern;
@@ -247,6 +248,8 @@ struct netsync_connection_info
     std::vector<std::string> argv;
     bool use_argv;
     conn_type connection_type;
+    std::istream & stdio_input_stream;
+    Client() : stdio_input_stream(std::cin) {}
   } client;
 };
 
