@@ -19,6 +19,9 @@
           requires that the server be running monotone 0.46 or later.
           Access control on the server is uses a new lua hook
           "get_remote_automate_permitted(identity, command_line, options)".
+        - There's also a new command "automate remote" that's very much
+          the same, but executes only a single command and does not
+          stdio-encode the output.
 
         Bugs fixed
 

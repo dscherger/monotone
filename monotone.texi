@@ -7790,6 +7790,40 @@ code 1.
 
 @end table
 
+@item mtn automate remote @option{--remote=host} @var{command} @var{args-and-opts}
+
+@table @strong
+@item Arguments
+
+A command and its arguments, to execute on the remote server specified
+by the @option{--remote} option. If options are to be passed to the command,
+they must be preceded by @option{--} to prevent them from being interpreted
+as local options.
+
+@item Added in
+
+FIXME
+
+@item Purpose
+
+Permit a single @code{automate} command to be run against a database that is
+being used to serve netsync connections, without having its output encoded
+as by @code{automate stdio}.
+
+@item Input/Output Format
+
+This command does not accept input.
+
+The output will be whatever output the remote command generates.
+
+@item Error Conditions
+
+If the remote command returns an error code, will exit with code 1 and
+print "Received remote error code N" to standard error, with "N" being
+the remote error code.
+
+@end table
+
 @item mtn automate genkey @var{name} @var{passphrase}
 
 @table @strong
