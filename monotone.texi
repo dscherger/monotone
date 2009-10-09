@@ -7790,15 +7790,23 @@ code 1.
 
 @end table
 
-@item mtn automate remote @option{--remote=host} @var{command} @var{args-and-opts}
+@item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
 
 @table @strong
 @item Arguments
 
 A command and its arguments, to execute on the remote server specified
-by the @option{--remote} option. If options are to be passed to the command,
-they must be preceded by @option{--} to prevent them from being interpreted
-as local options.
+by the @option{--remote-stdio-host} option. If options are to be passed to
+the command, they must be preceded by @option{--} to prevent them from being
+interpreted as local options.
+
+Remote options @strong{must} be given as a single token, ie
+@option{--branch=foo} or @option{-bfoo}. This is because the local and remote
+monotones may not understand exactly the same options (so the local monotone
+cannot know if an option given as @option{--branch} or @option{-b} should be
+followed by an argument), and because the server sees this as an
+@code{automate remote_stdio} connection (so it expects the options to already
+be parsed).
 
 @item Added in
 
