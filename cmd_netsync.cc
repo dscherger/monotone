@@ -397,6 +397,9 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
+
+  E(os.get_error() == 0, origin::network,
+    F("Received remote error code %d") % os.get_error());
 }
 
 CMD(push, "push", "", CMD_REF(network),

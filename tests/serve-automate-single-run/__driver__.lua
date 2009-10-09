@@ -10,7 +10,7 @@ R1 = base_revision()
 server = netsync.start()
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
-    "interface_version"), 0, true, true)
+    "interface_version"), 1, true, true)
 check(qgrep("you aren't allowed to do that", "stderr"))
 
 server:stop()
@@ -32,7 +32,7 @@ check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
 check(qgrep("[[:xdigit:]]{40}", "stderr"))
 
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
-    "stdio"), 0, true, true)
+    "stdio"), 1, true, true)
 check(qgrep("can't be run", "stderr"))
 
 -- won't work, --revision is no option of automate remote
@@ -43,7 +43,7 @@ check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
 -- to distinguish valid from invalid options on the _server_, so we expect
 -- all options arguments to be directly written after the option
 check(mtn2("automate", "remote", "--remote-stdio-host", server.address,
-    "get_file_of", "--", "-r", R1, "foo"), 0, true, true)
+    "get_file_of", "--", "-r", R1, "foo"), 1, true, true)
 check(qgrep("wrong argument count", "stderr"))
 
 -- finally this should work

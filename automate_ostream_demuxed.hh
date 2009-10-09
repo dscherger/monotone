@@ -23,7 +23,7 @@ class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Tr
   size_t _bufsize;
   std::basic_ostream<_CharT, _Traits> *stdout;
   std::basic_ostream<_CharT, _Traits> *errout;
-  bool in_err;
+  int err_code;
 public:
   basic_automate_streambuf_demuxed(std::ostream & out, std::ostream & err,
                                    size_t bufsize) :
@@ -31,7 +31,7 @@ public:
     _bufsize(bufsize),
     stdout(&out),
     errout(&err),
-    in_err(false)
+    err_code(0)
   {
     _CharT * inbuf = new _CharT[_bufsize];
     setp(inbuf, inbuf + _bufsize);
@@ -41,7 +41,12 @@ public:
 
   void set_err(int e)
   {
-    in_err = (e != 0);
+    err_code = e;
+  }
+
+  int get_error() const
+  {
+    return err_code;
   }
 
   void end_cmd()
@@ -65,7 +70,7 @@ private:
   void _M_sync()
   {
     std::basic_ostream<_CharT, _Traits> *str;
-    str = (in_err ? errout : stdout);
+    str = ((err_code != 0) ? errout : stdout);
     if (!str)
       {
         setp(this->pbase(), this->pbase() + _bufsize);
@@ -102,6 +107,9 @@ struct basic_automate_ostream_demuxed : public basic_automate_ostream<_CharT, _T
 
   virtual void set_err(int e)
   { _M_autobuf.set_err(e); }
+
+  int get_error() const
+  { return _M_autobuf.get_error(); }
 
   virtual void end_cmd()
   { _M_autobuf.end_cmd(); }
