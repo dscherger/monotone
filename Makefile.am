@@ -39,6 +39,7 @@ MOST_SOURCES = 								\
 	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
 	app_state.cc app_state.hh					\
 	automate_ostream.hh						\
+	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
 	botan_pipe_cache.hh						\
 	commands.cc commands.hh $(CMD_SOURCES)				\
@@ -62,9 +63,10 @@ MOST_SOURCES = 								\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
 	network/automate_session.hh network/automate_session.cc		\
+	network/connection_info.hh network/connection_info.cc		\
 	network/listener_base.hh network/listener_base.cc		\
-	network/make_server.hh network/make_server.cc			\
 	network/listener.hh network/listener.cc				\
+	network/make_server.hh network/make_server.cc			\
 	network/netsync_session.hh network/netsync_session.cc		\
 	network/reactable.hh network/reactable.cc			\
 	network/reactor.hh network/reactor.cc				\

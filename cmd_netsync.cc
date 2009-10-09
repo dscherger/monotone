@@ -11,8 +11,10 @@
 #include "base.hh"
 #include "cmd.hh"
 
+#include "automate_ostream_demuxed.hh"
 #include "merge_content.hh"
 #include "netcmd.hh"
+#include "network/connection_info.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -261,6 +263,10 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   info.client.connection_type = netsync_connection_info::automate_connection;
 
+  info.client.set_input_stream(std::cin);
+  automate_ostream os(output, app.opts.automate_stdio_size);
+  info.client.set_output_stream(os);
+
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
@@ -383,7 +389,10 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   L(FL("stdio input: %s") % ss.str());
 
-  info.client.stdio_input_stream.rdbuf(ss.rdbuf());
+  info.client.set_input_stream(ss);
+  automate_ostream_demuxed os(output, std::cerr, app.opts.automate_stdio_size);
+  info.client.set_output_stream(os);
+
   info.client.connection_type = netsync_connection_info::automate_connection;
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,

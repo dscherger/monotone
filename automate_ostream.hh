@@ -1,3 +1,13 @@
+// Copyright (C) 2005 and later by various people
+// see monotone commit logs for details and authors
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __AUTOMATE_OSTREAM_HH__
 #define __AUTOMATE_OSTREAM_HH__
 
@@ -13,20 +23,14 @@ class basic_automate_streambuf : public std::basic_streambuf<_CharT, _Traits>
   int cmdnum;
   int err;
 public:
-  /*
-  automate_streambuf(size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(0), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  */
   basic_automate_streambuf(std::ostream & o, size_t bufsize)
     : std::streambuf(), _bufsize(bufsize), out(&o), cmdnum(0), err(0)
   {
     _CharT *inbuf = new _CharT[_bufsize];
     setp(inbuf, inbuf + _bufsize);
   }
+  basic_automate_streambuf()
+  { }
   ~basic_automate_streambuf()
   {}
 
@@ -85,21 +89,25 @@ struct basic_automate_ostream : public std::basic_ostream<_CharT, _Traits>
 
   basic_automate_ostream(std::basic_ostream<_CharT, _Traits> &out,
                    size_t blocksize)
-    : std::ostream(NULL),
+    : std::basic_ostream<_CharT, _Traits>(NULL),
       _M_autobuf(out, blocksize)
   { this->init(&_M_autobuf); }
 
-  ~basic_automate_ostream()
+protected:
+  basic_automate_ostream() { }
+public:
+
+  virtual ~basic_automate_ostream()
   {}
 
   streambuf_type *
   rdbuf() const
   { return const_cast<streambuf_type *>(&_M_autobuf); }
 
-  void set_err(int e)
+  virtual void set_err(int e)
   { _M_autobuf.set_err(e); }
 
-  void end_cmd()
+  virtual void end_cmd()
   { _M_autobuf.end_cmd(); }
 };
 
@@ -107,3 +115,11 @@ typedef basic_automate_streambuf<char> automate_streambuf;
 typedef basic_automate_ostream<char> automate_ostream;
 
 #endif
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:

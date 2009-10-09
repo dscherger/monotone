@@ -19,6 +19,7 @@
 #include "database.hh"
 #include "lua.hh"
 #include "network/automate_session.hh"
+#include "network/connection_info.hh"
 #include "network/listener.hh"
 #include "network/netsync_session.hh"
 #include "network/reactor.hh"
@@ -133,7 +134,8 @@ call_server(app_state & app,
       break;
     case netsync_connection_info::automate_connection:
       wrapped.reset(new automate_session(app, sess.get(),
-                                         info.client.stdio_input_stream));
+                                         &info.client.get_input_stream(),
+                                         &info.client.get_output_stream()));
       break;
     }
   sess->set_inner(wrapped);

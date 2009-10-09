@@ -28,10 +28,12 @@ CMD_FWD_DECL(automate);
 
 automate_session::automate_session(app_state & app,
                                    session * owner,
-                                   std::istream & is) :
+                                   std::istream * const is,
+                                   automate_ostream * const os) :
   wrapped_session(owner),
   app(app),
   input_stream(is),
+  output_stream(os),
   command_number(-1),
   is_done(false)
 { }
@@ -39,7 +41,8 @@ automate_session::automate_session(app_state & app,
 void automate_session::send_command()
 {
   // read an automate command from the stream, then package it up and send it
-  automate_reader ar(input_stream);
+  I(input_stream);
+  automate_reader ar(*input_stream);
   vector<pair<string, string> > read_opts;
   vector<string> read_args;
 
@@ -216,12 +219,11 @@ bool automate_session::do_work(transaction_guard & guard,
         cmd_in->read_automate_packet_cmd(command_num, err_code,
                                          last, packet_data);
 
-        std::cout<<command_num<<":"
-                 <<err_code<<":"
-                 <<(last?'l':'m')<<":"
-                 <<packet_data.size()<<":"
-                 <<packet_data;
-        std::cout.flush();
+        I(output_stream);
+        output_stream->set_err(err_code);
+        (*output_stream) << packet_data;
+        if (last)
+          output_stream->end_cmd();
 
         if (last)
           send_command();

@@ -20,7 +20,8 @@
 class automate_session : public wrapped_session
 {
   app_state & app;
-  std::istream & input_stream;
+  std::istream * const input_stream;
+  automate_ostream * const output_stream;
   typedef commands::command_id command_id;
   typedef commands::command command;
   typedef commands::automate automate;
@@ -33,10 +34,9 @@ class automate_session : public wrapped_session
   void send_command();
 public:
   automate_session(app_state & app,
-                   session * owner);
-  automate_session(app_state & app,
                    session * owner,
-                   std::istream & is);
+                   std::istream * const is,
+                   automate_ostream * const os);
 
   bool do_work(transaction_guard & guard,
                netcmd const * const in_cmd);

@@ -228,30 +228,7 @@ public:
 
 };
 
-struct netsync_connection_info
-{
-  struct Server
-  {
-    std::list<utf8> addrs;
-  } server;
-  enum conn_type
-    {
-      netsync_connection,
-      automate_connection
-    };
-  struct Client
-  {
-    globish include_pattern;
-    globish exclude_pattern;
-    uri_t uri;
-    utf8 unparsed;
-    std::vector<std::string> argv;
-    bool use_argv;
-    conn_type connection_type;
-    std::istream & stdio_input_stream;
-    Client() : stdio_input_stream(std::cin) {}
-  } client;
-};
+class netsync_connection_info;
 
 void run_netsync_protocol(app_state & app,
                           options & opts, lua_hooks & lua,

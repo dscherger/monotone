@@ -653,7 +653,7 @@ bool session::handle_service_request()
                                         their_exclude));
       break;
     case is_automate:
-      wrapped.reset(new automate_session(app, this, std::cin));
+      wrapped.reset(new automate_session(app, this, 0, 0));
       break;
     }
 
