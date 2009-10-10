@@ -48,10 +48,10 @@ use warnings;
 
 # ***** GLOBAL DATA DECLARATIONS *****
 
-# Constants for various parameters used in detecting binary data.
+# Constant for the size, in bytes, that data is chopped into when detecting
+# binary data.
 
 use constant CHUNK_SIZE => 10240;
-use constant THRESHOLD  => 20;
 
 # Constant used to represent the exception thrown when interrupting waitpid().
 
@@ -1729,8 +1729,11 @@ sub data_is_binary($)
 	$chunk = substr($$data, $offset, CHUNK_SIZE);
 	$offset += CHUNK_SIZE;
 	$length = length($chunk);
-	$non_printable = grep(/[^[:print:][:space:]]/, split(//, $chunk));
-	return 1 if (((100 * $non_printable) / $length) > THRESHOLD);
+	$non_printable =
+	    scalar(grep(/[^[:print:][:space:]]/, split(//, $chunk)));
+	return 1
+	    if (((100 * $non_printable) / $length)
+		> $user_preferences->{binary_threshold});
     }
     return;
 

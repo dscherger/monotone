@@ -458,12 +458,13 @@ sub defaults_button_clicked_cb($$)
 		   "auto_select_head",
 		   "query",
 		   "history_size",
+		   "static_lists",
+		   "completion_tooltips",
 		   "show_suspended",
 		   "show_file_details",
 		   "folders_come_first",
 		   "show_line_numbers",
-		   "static_lists",
-		   "completion_tooltips",
+		   "binary_threshold",
 		   "list_search_as_re",
 		   "diffs_application");
     }
@@ -1039,12 +1040,13 @@ sub get_preferences_window($$)
 			    "id_lists_sort_chronologically_radiobutton",
 			    "id_lists_sort_by_id_radiobutton",
 			    "history_size_spinbutton",
+			    "static_lists_checkbutton",
+			    "show_tooltips_checkbutton",
 			    "show_suspended_revisions_checkbutton",
 			    "detailed_file_listing_checkbutton",
 			    "folders_come_first_checkbutton",
 			    "show_line_numbers_checkbutton",
-			    "static_lists_checkbutton",
-			    "show_completion_tooltips_checkbutton",
+			    "binary_threshold_spinbutton",
 			    "search_as_regular_expression_checkbutton",
 			    "external_diffs_app_entry",
 
@@ -1282,6 +1284,11 @@ sub load_preferences_into_gui($)
     }
     $instance->{history_size_spinbutton}->
 	set_value($instance->{preferences}->{history_size});
+    $instance->{static_lists_checkbutton}->
+	set_active($instance->{preferences}->{static_lists} ? TRUE : FALSE);
+    $instance->{show_tooltips_checkbutton}->
+	set_active($instance->{preferences}->{completion_tooltips} ?
+		   TRUE : FALSE);
     $instance->{show_suspended_revisions_checkbutton}->
 	set_active($instance->{preferences}->{show_suspended} ? TRUE : FALSE);
     $instance->{detailed_file_listing_checkbutton}->
@@ -1293,11 +1300,8 @@ sub load_preferences_into_gui($)
     $instance->{show_line_numbers_checkbutton}->
 	set_active($instance->{preferences}->{show_line_numbers} ?
 		   TRUE : FALSE);
-    $instance->{static_lists_checkbutton}->
-	set_active($instance->{preferences}->{static_lists} ? TRUE : FALSE);
-    $instance->{show_completion_tooltips_checkbutton}->
-	set_active($instance->{preferences}->{completion_tooltips} ?
-		   TRUE : FALSE);
+    $instance->{binary_threshold_spinbutton}->
+	set_value($instance->{preferences}->{binary_threshold});
     $instance->{search_as_regular_expression_checkbutton}->
 	set_active($instance->{preferences}->{list_search_as_re} ?
 		   TRUE : FALSE);
@@ -1477,6 +1481,10 @@ sub save_preferences_from_gui($)
     $instance->{history_size_spinbutton}->update();
     $instance->{preferences}->{history_size} =
 	$instance->{history_size_spinbutton}->get_value_as_int();
+    $instance->{preferences}->{static_lists} =
+	$instance->{static_lists_checkbutton}->get_active() ? 1 : 0;
+    $instance->{preferences}->{completion_tooltips} =
+	$instance->{show_tooltips_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{show_suspended} =
 	$instance->{show_suspended_revisions_checkbutton}->get_active() ?
 	1 : 0;
@@ -1486,11 +1494,9 @@ sub save_preferences_from_gui($)
 	$instance->{folders_come_first_checkbutton}->get_active() ? 1 : 0;
     $instance->{preferences}->{show_line_numbers} =
 	$instance->{show_line_numbers_checkbutton}->get_active() ? 1 : 0;
-    $instance->{preferences}->{static_lists} =
-	$instance->{static_lists_checkbutton}->get_active() ? 1 : 0;
-    $instance->{preferences}->{completion_tooltips} =
-	$instance->{show_completion_tooltips_checkbutton}->get_active() ?
-	1 : 0;
+    $instance->{binary_threshold_spinbutton}->update();
+    $instance->{preferences}->{binary_threshold} =
+	$instance->{binary_threshold_spinbutton}->get_value_as_int();
     $instance->{preferences}->{list_search_as_re} =
 	$instance->{search_as_regular_expression_checkbutton}->get_active() ?
 	1 : 0;
@@ -1687,6 +1693,7 @@ sub upgrade_preferences($)
     {
 	$preferences->{folders_come_first} = 1;
 	$preferences->{completion_tooltips} = 1;
+	$preferences->{binary_threshold} = 20;
 	$preferences->{version} = 10;
     }
 
@@ -1727,12 +1734,13 @@ sub initialise_preferences()
 				 id     => {limit                => 200,
 					    sort_chronologically => 1}},
 	 history_size        => 20,
+	 static_lists        => 0,
+	 completion_tooltips => 1,
 	 show_suspended      => 0,
 	 show_file_details   => 1,
 	 folders_come_first  => 1,
 	 show_line_numbers   => 0,
-	 static_lists        => 0,
-	 completion_tooltips => 1,
+	 binary_threshold    => 20,
 	 list_search_as_re   => 0,
 	 diffs_application   => FILE_COMPARE_CMD . " '{file1}' '{file2}'",
 	 fixed_font          => "monospace 10",

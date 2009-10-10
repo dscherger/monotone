@@ -4529,7 +4529,7 @@ search patterns</property>
   <property name="window_position">GTK_WIN_POS_CENTER_ON_PARENT</property>
   <property name="modal">False</property>
   <property name="default_width">970</property>
-  <property name="default_height">495</property>
+  <property name="default_height">550</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="icon">mtn-browse.png</property>
@@ -4939,7 +4939,7 @@ by their tags)</property>
 			<widget class="GtkTable" id="combobox_options_table">
 			  <property name="border_width">5</property>
 			  <property name="visible">True</property>
-			  <property name="n_rows">3</property>
+			  <property name="n_rows">4</property>
 			  <property name="n_columns">4</property>
 			  <property name="homogeneous">False</property>
 			  <property name="row_spacing">5</property>
@@ -4997,7 +4997,7 @@ the most recent, 0 = unlimited)</property>
 				  <property name="justify">GTK_JUSTIFY_LEFT</property>
 				  <property name="wrap">False</property>
 				  <property name="selectable">False</property>
-				  <property name="xalign">0.5</property>
+				  <property name="xalign">0</property>
 				  <property name="yalign">0.5</property>
 				  <property name="xpad">0</property>
 				  <property name="ypad">0</property>
@@ -5321,7 +5321,7 @@ history stored in ComboBox menus</property>
 			      <property name="can_focus">True</property>
 			      <property name="climb_rate">1</property>
 			      <property name="digits">0</property>
-			      <property name="numeric">False</property>
+			      <property name="numeric">True</property>
 			      <property name="update_policy">GTK_UPDATE_ALWAYS</property>
 			      <property name="snap_to_ticks">False</property>
 			      <property name="wrap">False</property>
@@ -5334,6 +5334,101 @@ history stored in ComboBox menus</property>
 			      <property name="bottom_attach">3</property>
 			      <property name="x_options">fill</property>
 			      <property name="y_options"></property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkHBox" id="auto_completion_hbox">
+			      <property name="visible">True</property>
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">5</property>
+
+			      <child>
+				<widget class="GtkCheckButton" id="static_lists_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you do not want the
+branch and revision ComboBox entry
+lists to update as you type in values
+(can help with speed when dealing
+with large lists)</property>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Static lists</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkCheckButton" id="show_tooltips_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you want feedback in the
+form of special tooltips when typing in
+values into ComboBox entry fields</property>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Show tooltips</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">1</property>
+			      <property name="right_attach">4</property>
+			      <property name="top_attach">3</property>
+			      <property name="bottom_attach">4</property>
+			      <property name="x_options">fill</property>
+			    </packing>
+			  </child>
+
+			  <child>
+			    <widget class="GtkEventBox" id="auto_completion_label_eventbox">
+			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Settings for controlling the behaviour of
+auto-completion in ComboBox entry fields</property>
+			      <property name="visible_window">True</property>
+			      <property name="above_child">False</property>
+
+			      <child>
+				<widget class="GtkLabel" id="auto_completion_label">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">Auto-completion:</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+			      </child>
+			    </widget>
+			    <packing>
+			      <property name="left_attach">0</property>
+			      <property name="right_attach">1</property>
+			      <property name="top_attach">3</property>
+			      <property name="bottom_attach">4</property>
+			      <property name="x_options">fill</property>
+			      <property name="y_options">fill</property>
 			    </packing>
 			  </child>
 			</widget>
@@ -5387,38 +5482,44 @@ history stored in ComboBox menus</property>
 		      <property name="right_padding">0</property>
 
 		      <child>
-			<widget class="GtkHBox" id="browser_display_hbox">
+			<widget class="GtkVBox" id="browser_display_vbox">
 			  <property name="border_width">5</property>
 			  <property name="visible">True</property>
 			  <property name="homogeneous">False</property>
 			  <property name="spacing">5</property>
 
 			  <child>
-			    <widget class="GtkCheckButton" id="show_suspended_revisions_checkbutton">
+			    <widget class="GtkHBox" id="browser_display_options_hbox">
 			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you want suspended
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">5</property>
+
+			      <child>
+				<widget class="GtkCheckButton" id="show_suspended_revisions_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you want suspended
 revisions and their related branches
 to be displayed</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Show suspended revisions</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
-			    </widget>
-			    <packing>
-			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
-			    </packing>
-			  </child>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Show suspended revisions</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
 
-			  <child>
-			    <widget class="GtkCheckButton" id="detailed_file_listing_checkbutton">
-			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you want a file's
+			      <child>
+				<widget class="GtkCheckButton" id="detailed_file_listing_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you want a file's
 latest modification time and
 author to be displayed
 alongside the file name
@@ -5428,108 +5529,153 @@ option may have a severe
 performance penalty depending
 upon the version of Monotone
 that you are using</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Detailed file listings</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
-			    </widget>
-			    <packing>
-			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
-			    </packing>
-			  </child>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Detailed file listings</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
 
-			  <child>
-			    <widget class="GtkCheckButton" id="folders_come_first_checkbutton">
-			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you want all folders
+			      <child>
+				<widget class="GtkCheckButton" id="folders_come_first_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you want all folders
 to be listed before any files</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Folders come first</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
-			    </widget>
-			    <packing>
-			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
-			    </packing>
-			  </child>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Folders come first</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
 
-			  <child>
-			    <widget class="GtkCheckButton" id="show_line_numbers_checkbutton">
-			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you want line numbers
+			      <child>
+				<widget class="GtkCheckButton" id="show_line_numbers_checkbutton">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">Select this if you want line numbers
 to be shown in file listings by default</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Show line numbers</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="label" translatable="yes">Show line numbers</property>
+				  <property name="use_underline">True</property>
+				  <property name="relief">GTK_RELIEF_NORMAL</property>
+				  <property name="focus_on_click">True</property>
+				  <property name="active">False</property>
+				  <property name="inconsistent">False</property>
+				  <property name="draw_indicator">True</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
+			      <property name="expand">True</property>
+			      <property name="fill">True</property>
 			    </packing>
 			  </child>
 
 			  <child>
-			    <widget class="GtkCheckButton" id="static_lists_checkbutton">
+			    <widget class="GtkHBox" id="browser_display_threshold_hbox">
 			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you do not want the
-branch and revision combobox entry
-lists to update as you type in values
-(can help with speed when dealing
-with large lists)</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Static completion lists</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
-			    </widget>
-			    <packing>
-			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
-			    </packing>
-			  </child>
+			      <property name="homogeneous">False</property>
+			      <property name="spacing">5</property>
 
-			  <child>
-			    <widget class="GtkCheckButton" id="show_completion_tooltips_checkbutton">
-			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Select this if you want feedback in the
-form of special tooltips when typing in
-values into either the branch or revision
-combobox entry fields</property>
-			      <property name="can_focus">True</property>
-			      <property name="label" translatable="yes">Show completion tooltips</property>
-			      <property name="use_underline">True</property>
-			      <property name="relief">GTK_RELIEF_NORMAL</property>
-			      <property name="focus_on_click">True</property>
-			      <property name="active">False</property>
-			      <property name="inconsistent">False</property>
-			      <property name="draw_indicator">True</property>
+			      <child>
+				<widget class="GtkEventBox" id="binary_threshold_label_eventbox">
+				  <property name="visible">True</property>
+				  <property name="tooltip" translatable="yes">The binary threshold, above which
+a file's contents are considered to be
+binary in nature</property>
+				  <property name="visible_window">True</property>
+				  <property name="above_child">False</property>
+
+				  <child>
+				    <widget class="GtkLabel" id="binary_threshold_label">
+				      <property name="visible">True</property>
+				      <property name="label" translatable="yes">Binary threshold:</property>
+				      <property name="use_underline">False</property>
+				      <property name="use_markup">False</property>
+				      <property name="justify">GTK_JUSTIFY_LEFT</property>
+				      <property name="wrap">False</property>
+				      <property name="selectable">False</property>
+				      <property name="xalign">0.5</property>
+				      <property name="yalign">0.5</property>
+				      <property name="xpad">0</property>
+				      <property name="ypad">0</property>
+				    </widget>
+				  </child>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">True</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkSpinButton" id="binary_threshold_spinbutton">
+				  <property name="visible">True</property>
+				  <property name="can_focus">True</property>
+				  <property name="climb_rate">1</property>
+				  <property name="digits">0</property>
+				  <property name="numeric">True</property>
+				  <property name="update_policy">GTK_UPDATE_ALWAYS</property>
+				  <property name="snap_to_ticks">False</property>
+				  <property name="wrap">False</property>
+				  <property name="adjustment">1 0 100 1 10 0</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">True</property>
+				</packing>
+			      </child>
+
+			      <child>
+				<widget class="GtkLabel" id="percent_label">
+				  <property name="visible">True</property>
+				  <property name="label" translatable="yes">%</property>
+				  <property name="use_underline">False</property>
+				  <property name="use_markup">False</property>
+				  <property name="justify">GTK_JUSTIFY_LEFT</property>
+				  <property name="wrap">False</property>
+				  <property name="selectable">False</property>
+				  <property name="xalign">0.5</property>
+				  <property name="yalign">0.5</property>
+				  <property name="xpad">0</property>
+				  <property name="ypad">0</property>
+				</widget>
+				<packing>
+				  <property name="padding">0</property>
+				  <property name="expand">False</property>
+				  <property name="fill">False</property>
+				</packing>
+			      </child>
 			    </widget>
 			    <packing>
 			      <property name="padding">0</property>
-			      <property name="expand">False</property>
-			      <property name="fill">False</property>
+			      <property name="expand">True</property>
+			      <property name="fill">True</property>
 			    </packing>
 			  </child>
 			</widget>
