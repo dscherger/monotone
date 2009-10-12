@@ -2321,27 +2321,27 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
 
-    std::string func = idx(args, 0)();
+  std::string func = idx(args, 0)();
 
-    E(app.lua.hook_exists(func), origin::user,
-      F("lua function '%s' does not exist") % func);
+  E(app.lua.hook_exists(func), origin::user,
+    F("lua function '%s' does not exist") % func);
 
-    std::vector<std::string> func_args;
-    if (args.size() > 1)
-      {
-        for (unsigned int i=1; i<args.size(); i++)
+  std::vector<std::string> func_args;
+  if (args.size() > 1)
+    {
+      for (unsigned int i=1; i<args.size(); i++)
         {
           func_args.push_back(idx(args, i)());
         }
-      }
+    }
 
-    std::string out;
-    E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
-      F("lua call '%s' failed") % func);
+  std::string out;
+  E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
+    F("lua call '%s' failed") % func);
 
-    // the output already contains a trailing newline, so we don't add
-    // another one here
-    output << out;
+  // the output already contains a trailing newline, so we don't add
+  // another one here
+  output << out;
 }
 
 // Local Variables:
