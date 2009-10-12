@@ -7754,13 +7754,13 @@ act as if that command encountered an error.
 
 @end table
 
-@item mtn automate remote_stdio @var{hostname}
+@item mtn automate remote_stdio [@var{hostname}]
 
 @table @strong
 @item Arguments
 
 @var{hostname} is the host (and optionally port) of the monotone server
-process to connect to.
+process to connect to. If not given, the default server is used.
 
 @item Added in
 
@@ -7796,9 +7796,9 @@ code 1.
 @item Arguments
 
 A command and its arguments, to execute on the remote server specified
-by the @option{--remote-stdio-host} option. If options are to be passed to
-the command, they must be preceded by @option{--} to prevent them from being
-interpreted as local options.
+by the @option{--remote-stdio-host} option. If no host is given, the default
+server is used. If options are to be passed to the command, they must be
+preceded by @option{--} to prevent them from being interpreted as local options.
 
 Remote options @strong{must} be given as a single token, ie
 @option{--branch=foo} or @option{-bfoo}. This is because the local and remote

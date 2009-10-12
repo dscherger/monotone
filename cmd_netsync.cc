@@ -232,13 +232,14 @@ extract_client_connection_info(options & opts,
 }
 
 CMD_AUTOMATE_NO_STDIO(remote_stdio,
-                      N_("[ADDRESS[:PORTNUMBER]"),
+                      N_("[ADDRESS[:PORTNUMBER]]"),
                       N_("Opens an 'automate stdio' connection to a remote server"),
                       "",
                       options::opts::max_netsync_version |
-                      options::opts::min_netsync_version)
+                      options::opts::min_netsync_version |
+                      options::opts::set_default)
 {
-  if (args.size() != 1)
+  if (args.size() > 1)
     throw usage(execid);
 
   database db(app);
@@ -246,8 +247,29 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   project_t project(db);
 
   netsync_connection_info info;
-  info.client.unparsed = idx(args, 0);
+
+  if (args.size() == 1)
+    {
+      info.client.unparsed = idx(args, 0);
+    }
+  else
+    {
+      E(db.var_exists(default_server_key), origin::user,
+        F("no server given and no default server set"));
+      var_value addr_value;
+      db.get_var(default_server_key, addr_value);
+      info.client.unparsed = typecast_vocab<utf8>(addr_value);
+      L(FL("using default server address: %s") % info.client.unparsed);
+    }
+
   parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  if (!db.var_exists(default_server_key) || app.opts.set_default)
+    {
+      P(F("setting default server to %s") % info.client.unparsed());
+      db.set_var(default_server_key,
+                 typecast_vocab<var_value>(info.client.unparsed));
+    }
 
   info.client.use_argv =
     app.lua.hook_get_netsync_connect_command(info.client.uri,
@@ -338,7 +360,8 @@ CMD_AUTOMATE_NO_STDIO(remote,
                       "",
                       options::opts::remote_stdio_host |
                       options::opts::max_netsync_version |
-                      options::opts::min_netsync_version)
+                      options::opts::min_netsync_version |
+                      options::opts::set_default)
 {
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
@@ -348,8 +371,29 @@ CMD_AUTOMATE_NO_STDIO(remote,
   project_t project(db);
 
   netsync_connection_info info;
-  info.client.unparsed = app.opts.remote_stdio_host;
+
+  if (app.opts.remote_stdio_host_given)
+    {
+      info.client.unparsed = app.opts.remote_stdio_host;
+    }
+  else
+    {
+      E(db.var_exists(default_server_key), origin::user,
+        F("no server given and no default server set"));
+      var_value addr_value;
+      db.get_var(default_server_key, addr_value);
+      info.client.unparsed = typecast_vocab<utf8>(addr_value);
+      L(FL("using default server address: %s") % info.client.unparsed);
+    }
+
   parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  if (!db.var_exists(default_server_key) || app.opts.set_default)
+    {
+      P(F("setting default server to %s") % info.client.unparsed());
+      db.set_var(default_server_key,
+                 typecast_vocab<var_value>(info.client.unparsed));
+    }
 
   info.client.use_argv =
     app.lua.hook_get_netsync_connect_command(info.client.uri,

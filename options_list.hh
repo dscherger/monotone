@@ -671,7 +671,8 @@ GOPT(no_workspace, "no-workspace", bool, false,
 #endif
 
 OPT(set_default, "set-default", bool, false,
-     gettext_noop("use the current arguments as the future default"))
+     gettext_noop("use the current netsync arguments and options "
+                  "as the future default"))
 #ifdef option_bodies
 {
   set_default = true;
