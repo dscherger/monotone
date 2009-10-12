@@ -25,6 +25,9 @@
 
         Bugs fixed
 
+        - A regression from 0.45's key migration prevented the proper
+          output of the `committer` field in 'git_export'.
+
         Internal
 
 

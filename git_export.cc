@@ -254,7 +254,13 @@ export_changes(database & db,
       if (author != authors.end())
         {
           author_name = trim(author->value());
-          author_key  = trim(author->key.inner()());
+          if (db.public_key_exists(author->key))
+            {
+              rsa_pub_key pub;
+              key_name name;
+              db.get_pubkey(author->key, name, pub);
+              author_key = trim(name());
+            }
         }
 
       // all monotone keys and authors that don't follow the "Name <email>"

@@ -204,7 +204,7 @@ key_store::get_rng()
 #endif
 
 system_path const &
-key_store::get_key_dir()
+key_store::get_key_dir() const
 {
   return s->key_dir;
 }
