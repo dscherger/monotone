@@ -75,6 +75,9 @@ struct sanity::impl
   bool already_dumping;
   std::vector<MusingI const *> musings;
 
+  void (*out_of_band_function)(char channel, std::string const& text, void *opaque);
+  void *out_of_band_opaque;
+
   impl() :
     debug(false), quiet(false), reallyquiet(false), logbuf(0xffff),
     already_dumping(false)
@@ -279,6 +282,9 @@ sanity::progress(i18n_format const & i18nfmt,
 {
   string str = do_format(i18nfmt, file, line);
 
+  if (maybe_write_to_out_of_band_handler('p', str))
+    return;
+
   if (str.size() > constants::log_line_sz)
     {
       str.resize(constants::log_line_sz);
@@ -297,6 +303,9 @@ sanity::warning(i18n_format const & i18nfmt,
                 char const * file, int line)
 {
   string str = do_format(i18nfmt, file, line);
+
+  if (maybe_write_to_out_of_band_handler('w', str))
+    return;
 
   if (str.size() > constants::log_line_sz)
     {
@@ -437,6 +446,22 @@ sanity::gasp()
       inform_log(imp->gasp_dump);
     }
   imp->already_dumping = false;
+}
+
+void sanity::set_out_of_band_handler(void (*out_of_band_function)(char, std::string const&, void *), void *opaque_data)
+{
+  imp->out_of_band_function= out_of_band_function;
+  imp->out_of_band_opaque= opaque_data;
+}
+
+bool sanity::maybe_write_to_out_of_band_handler(char channel, std::string const& str)
+{
+  if (imp->out_of_band_function)
+    {
+      (*imp->out_of_band_function)(channel, str, imp->out_of_band_opaque);
+      return true;
+    }
+  return false;
 }
 
 template <> void

@@ -15,6 +15,7 @@
 #include "cmd.hh"
 #include "app_state.hh"
 #include "ui.hh"
+#include "key_store.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
 #include "database.hh"
@@ -315,6 +316,20 @@ public:
         out->flush();
       }
   }
+  void write_out_of_band(char type, std::string const& data)
+  {
+    unsigned chunksize = _bufsize;
+    size_t length = data.size(), offset = 0;
+    do
+    {
+      if (offset+chunksize>length)
+        chunksize = length-offset;
+      (*out) << cmdnum << ':' << err << ':' << type << ':'
+        << chunksize << ':' << data.substr(offset, chunksize);
+      offset+= chunksize;
+    } while (offset<length);
+    out->flush();
+  }
   int_type
   overflow(int_type c = traits_type::eof())
   {
@@ -347,6 +362,11 @@ struct automate_ostream : public std::ostream
   { _M_autobuf.end_cmd(); }
 };
 
+static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
+{
+  reinterpret_cast<automate_streambuf*>(opaque)->write_out_of_band(channel, text);
+}
+
 CMD_AUTOMATE(stdio, "",
              N_("Automates several commands in one run"),
              "",
@@ -367,6 +387,8 @@ CMD_AUTOMATE(stdio, "",
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
   vector<string> cmdline;
+  global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf,
+                                        &os._M_autobuf);
   while (true)
     {
       command const * cmd = 0;
@@ -422,6 +444,10 @@ CMD_AUTOMATE(stdio, "",
           options::options_type opts;
           opts = options::opts::globals() | cmd->opts();
           opts.instantiate(&app.opts).from_key_value_pairs(params);
+
+          // set a fixed ticker type regardless what the user wants to
+          // see, because anything else would screw the stdio-encoded output
+          ui.set_tick_write_stdio();
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure
@@ -458,6 +484,7 @@ CMD_AUTOMATE(stdio, "",
         }
       os.end_cmd();
     }
+    global_sanity.set_out_of_band_handler();
 }
 
 LUAEXT(mtn_automate, )
