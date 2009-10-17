@@ -11,8 +11,10 @@
 #include "base.hh"
 #include "cmd.hh"
 
+#include "automate_ostream_demuxed.hh"
 #include "merge_content.hh"
 #include "netcmd.hh"
+#include "network/connection_info.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -195,6 +197,8 @@ build_client_connection_info(options & opts,
     {
       find_key(opts, db, keys, lua, project, info, need_key);
     }
+
+  info.client.connection_type = netsync_connection_info::netsync_connection;
 }
 
 static void
@@ -227,6 +231,221 @@ extract_client_connection_info(options & opts,
                                need_key);
 }
 
+CMD_AUTOMATE_NO_STDIO(remote_stdio,
+                      N_("[ADDRESS[:PORTNUMBER]]"),
+                      N_("Opens an 'automate stdio' connection to a remote server"),
+                      "",
+                      options::opts::max_netsync_version |
+                      options::opts::min_netsync_version |
+                      options::opts::set_default)
+{
+  if (args.size() > 1)
+    throw usage(execid);
+
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+
+  if (args.size() == 1)
+    {
+      info.client.unparsed = idx(args, 0);
+    }
+  else
+    {
+      E(db.var_exists(default_server_key), origin::user,
+        F("no server given and no default server set"));
+      var_value addr_value;
+      db.get_var(default_server_key, addr_value);
+      info.client.unparsed = typecast_vocab<utf8>(addr_value);
+      L(FL("using default server address: %s") % info.client.unparsed);
+    }
+
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  if (!db.var_exists(default_server_key) || app.opts.set_default)
+    {
+      P(F("setting default server to %s") % info.client.unparsed());
+      db.set_var(default_server_key,
+                 typecast_vocab<var_value>(info.client.unparsed));
+    }
+
+  info.client.use_argv =
+    app.lua.hook_get_netsync_connect_command(info.client.uri,
+                                             info.client.include_pattern,
+                                             info.client.exclude_pattern,
+                                             global_sanity.debug_p(),
+                                             info.client.argv);
+  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
+  if (app.opts.use_transport_auth)
+    {
+      find_key(app.opts, db, keys, app.lua, project, info, true);
+    }
+
+  info.client.connection_type = netsync_connection_info::automate_connection;
+
+  info.client.set_input_stream(std::cin);
+  automate_ostream os(output, app.opts.automate_stdio_size);
+  info.client.set_output_stream(os);
+
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
+}
+
+// shamelessly copied and adapted from option.cc
+static void
+parse_options_from_args(args_vector & args,
+                        std::vector<std::pair<std::string, arg_type> > & opts)
+{
+  bool seen_dashdash = false;
+  for (args_vector::size_type i = 0; i < args.size(); )
+    {
+      string name;
+      arg_type arg;
+
+      if (idx(args,i)() == "--" || seen_dashdash)
+        {
+          if (!seen_dashdash)
+            {
+              seen_dashdash = true;
+            }
+          ++i;
+          continue;
+        }
+      else if (idx(args,i)().substr(0,2) == "--")
+        {
+          string::size_type equals = idx(args,i)().find('=');
+          bool has_arg;
+          if (equals == string::npos)
+            {
+              name = idx(args,i)().substr(2);
+              has_arg = false;
+            }
+          else
+            {
+              name = idx(args,i)().substr(2, equals-2);
+              has_arg = true;
+            }
+
+          if (has_arg)
+            {
+              arg = arg_type(idx(args,i)().substr(equals+1), origin::user);
+            }
+        }
+      else if (idx(args,i)().substr(0,1) == "-")
+        {
+          name = idx(args,i)().substr(1,1);
+          bool has_arg = idx(args,i)().size() > 2;
+
+          if (has_arg)
+            {
+              arg = arg_type(idx(args,i)().substr(2), origin::user);
+            }
+        }
+      else
+        {
+          ++i;
+          continue;
+        }
+
+      opts.push_back(std::pair<std::string, arg_type>(name, arg));
+      args.erase(args.begin() + i);
+    }
+}
+
+CMD_AUTOMATE_NO_STDIO(remote,
+                      N_("COMMAND [ARGS]"),
+                      N_("Executes COMMAND on a remote server"),
+                      "",
+                      options::opts::remote_stdio_host |
+                      options::opts::max_netsync_version |
+                      options::opts::min_netsync_version |
+                      options::opts::set_default)
+{
+  E(args.size() >= 1, origin::user,
+    F("wrong argument count"));
+
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+
+  if (app.opts.remote_stdio_host_given)
+    {
+      info.client.unparsed = app.opts.remote_stdio_host;
+    }
+  else
+    {
+      E(db.var_exists(default_server_key), origin::user,
+        F("no server given and no default server set"));
+      var_value addr_value;
+      db.get_var(default_server_key, addr_value);
+      info.client.unparsed = typecast_vocab<utf8>(addr_value);
+      L(FL("using default server address: %s") % info.client.unparsed);
+    }
+
+  parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  if (!db.var_exists(default_server_key) || app.opts.set_default)
+    {
+      P(F("setting default server to %s") % info.client.unparsed());
+      db.set_var(default_server_key,
+                 typecast_vocab<var_value>(info.client.unparsed));
+    }
+
+  info.client.use_argv =
+    app.lua.hook_get_netsync_connect_command(info.client.uri,
+                                             info.client.include_pattern,
+                                             info.client.exclude_pattern,
+                                             global_sanity.debug_p(),
+                                             info.client.argv);
+  app.opts.use_transport_auth = app.lua.hook_use_transport_auth(info.client.uri);
+  if (app.opts.use_transport_auth)
+    {
+      find_key(app.opts, db, keys, app.lua, project, info, true);
+    }
+
+  args_vector cleaned_args(args);
+  std::vector<std::pair<std::string, arg_type> > opts;
+  parse_options_from_args(cleaned_args, opts);
+
+  std::stringstream ss;
+  if (opts.size() > 0)
+    {
+      ss << 'o';
+      for (unsigned int i=0; i < opts.size(); ++i)
+        {
+          ss << opts.at(i).first.size()  << ':' << opts.at(i).first;
+          ss << opts.at(i).second().size() << ':' << opts.at(i).second();
+        }
+      ss << 'e' << ' ';
+    }
+
+  ss << 'l';
+  for (args_vector::size_type i=0; i<cleaned_args.size(); ++i)
+  {
+      std::string arg = idx(cleaned_args, i)();
+      ss << arg.size() << ':' << arg;
+  }
+  ss << 'e';
+
+  L(FL("stdio input: %s") % ss.str());
+
+  info.client.set_input_stream(ss);
+  automate_ostream_demuxed os(output, std::cerr, app.opts.automate_stdio_size);
+  info.client.set_output_stream(os);
+
+  info.client.connection_type = netsync_connection_info::automate_connection;
+
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
+
+  E(os.get_error() == 0, origin::network,
+    F("Received remote error code %d") % os.get_error());
+}
+
 CMD(push, "push", "", CMD_REF(network),
     N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
     N_("Pushes branches to a netsync server"),
@@ -244,7 +463,7 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  project, args, info);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
@@ -267,7 +486,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 }
 
@@ -295,7 +514,7 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace work(app, true);
     }
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
 
@@ -432,7 +651,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   // make sure we're back in the original dir so that file: URIs work
   change_current_working_dir(start_dir);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 
   change_current_working_dir(workspace_dir);
@@ -527,7 +746,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
                  options::opts::max_netsync_version |
                  options::opts::min_netsync_version |
                  options::opts::bind | options::opts::pidfile |
-                 options::opts::bind_stdio | options::opts::no_transport_auth )
+                 options::opts::bind_stdio | options::opts::no_transport_auth)
 {
   if (!args.empty())
     throw usage(execid);
@@ -558,7 +777,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
     W(F("The --no-transport-auth option is usually only used "
         "in combination with --stdio"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        server_voice, source_and_sink_role, info);
 }
 
