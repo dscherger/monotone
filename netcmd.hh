@@ -13,6 +13,7 @@
 #include "vector.hh"
 #include <list>
 #include <utility>
+#include <iostream>
 
 #include "globish.hh"
 #include "merkle_tree.hh"
@@ -28,6 +29,24 @@ class project_t;
 class key_store;
 class lua_hooks;
 class options;
+
+class app_state;
+
+namespace error_codes {
+  static const int no_error = 200;
+  static const int partial_transfer = 211;
+  static const int no_transfer = 212;
+
+  static const int not_permitted = 412;
+  static const int unknown_key = 422;
+  static const int mixing_versions = 432;
+
+  static const int role_mismatch = 512;
+  static const int bad_command = 521;
+
+  static const int failed_identification = 532;
+  //static const int bad_data = 541;
+}
 
 typedef enum
   {
@@ -71,6 +90,11 @@ typedef enum
     data_cmd = 8,
     delta_cmd = 9,
 
+    // automation commands
+    automate_cmd = 10,
+    automate_command_cmd = 11,
+    automate_packet_cmd = 12,
+
     // usher commands
     // usher_cmd is sent either by a proxy that needs to know where
     // to forward a connection (the reply gives the desired hostname and
@@ -88,10 +112,10 @@ private:
   netcmd_code cmd_code;
   std::string payload;
 public:
-  netcmd(u8 ver);
+  explicit netcmd(u8 ver);
   netcmd_code get_cmd_code() const {return cmd_code;}
   u8 get_version() const { return version; }
-  size_t encoded_size();
+  size_t encoded_size() const;
   bool operator==(netcmd const & other) const;
 
 
@@ -176,31 +200,38 @@ public:
                        id const & base, id const & ident,
                        delta const & del);
 
+  void read_automate_cmd(key_id & client,
+                         id & nonce1,
+                         rsa_oaep_sha_data & hmac_key_encrypted,
+                         rsa_sha1_signature & signature) const;
+  void write_automate_cmd(key_id const & client,
+                          id const & nonce1,
+                          rsa_oaep_sha_data & hmac_key_encrypted,
+                          rsa_sha1_signature & signature);
+  void read_automate_command_cmd(std::vector<std::string> & args,
+                                 std::vector<std::pair<std::string, std::string> > & opts) const;
+  void write_automate_command_cmd(std::vector<std::string> const & args,
+                                  std::vector<std::pair<std::string, std::string> > const & opts);
+  void read_automate_packet_cmd(int & command_num,
+                                int & err_code,
+                                bool & last,
+                                std::string & packet_data) const;
+  void write_automate_packet_cmd(int command_num,
+                                 int err_code,
+                                 bool last,
+                                 std::string const & packet_data);
+
   void read_usher_cmd(utf8 & greeting) const;
   void write_usher_cmd(utf8 const & greeting);
-  void read_usher_reply_cmd(u8 & version, utf8 & server, globish & pattern) const;
-  void write_usher_reply_cmd(utf8 const & server, globish const & pattern);
+  void read_usher_reply_cmd(u8 & version, utf8 & server, std::string & pattern) const;
+  void write_usher_reply_cmd(utf8 const & server, std::string const & pattern);
 
 };
 
-struct netsync_connection_info
-{
-  struct
-  {
-    std::list<utf8> addrs;
-  } server;
-  struct
-  {
-    globish include_pattern;
-    globish exclude_pattern;
-    uri_t uri;
-    utf8 unparsed;
-    std::vector<std::string> argv;
-    bool use_argv;
-  } client;
-};
+class netsync_connection_info;
 
-void run_netsync_protocol(options & opts, lua_hooks & lua,
+void run_netsync_protocol(app_state & app,
+                          options & opts, lua_hooks & lua,
                           project_t & project, key_store & keys,
                           protocol_voice voice,
                           protocol_role role,

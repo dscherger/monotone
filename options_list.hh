@@ -140,6 +140,16 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
+OPT(remote_stdio_host, "remote-stdio-host",
+    utf8, ,
+    gettext_noop("sets the host (and optionally the port) for a "
+                 "remote netsync action"))
+#ifdef option_bodies
+{
+  remote_stdio_host = utf8(arg, origin::user);
+}
+#endif
+
 OPT(branch, "branch,b", branch_name, ,
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
@@ -661,7 +671,8 @@ GOPT(no_workspace, "no-workspace", bool, false,
 #endif
 
 OPT(set_default, "set-default", bool, false,
-     gettext_noop("use the current arguments as the future default"))
+     gettext_noop("use the current netsync arguments and options "
+                  "as the future default"))
 #ifdef option_bodies
 {
   set_default = true;

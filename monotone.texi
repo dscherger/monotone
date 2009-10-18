@@ -7768,7 +7768,87 @@ given with invalid arguments or options, prints an error message to
 standard error and exits with nonzero status. Errors in the commands run
 through this interface do not affect the exit status. Instead, the <err code>
 field in the output is set to 2, and the output of the command becomes
-whatever error message would have been given.
+whatever error message would have been given. Trying to run the
+@code{automate stdio} or @code{automate remote_stdio} commands will always
+act as if that command encountered an error.
+
+@end table
+
+@item mtn automate remote_stdio [@var{hostname}]
+
+@table @strong
+@item Arguments
+
+@var{hostname} is the host (and optionally port) of the monotone server
+process to connect to. If not given, the default server is used.
+
+@item Added in
+
+FIXME
+
+@item Purpose
+
+Permit @code{automate} commands to be run against a database that is
+being used to serve netsync connections.
+
+@item Input/Output format
+
+This command takes input and produces output in exactly the
+same format as @code{automate stdio}. Note that the commands run with
+@code{automate remote_stdio} may conform to a different @var{interface_version},
+because they are handled by a remote instance of monotone.
+
+There will be some extra chatter on stderr unless @option{--quiet} is given.
+
+@item Error Conditions
+
+If left idle for too long or there are network problems, the connection to the
+server may be dropped. This will not be detected while monotone is waiting for
+input. Instead, when a complete command has been entered and monotone tries to
+send it to the remote server it will print a message to stderr and exit with
+code 1.
+
+@end table
+
+@item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
+
+@table @strong
+@item Arguments
+
+A command and its arguments, to execute on the remote server specified
+by the @option{--remote-stdio-host} option. If no host is given, the default
+server is used. If options are to be passed to the command, they must be
+preceded by @option{--} to prevent them from being interpreted as local options.
+
+Remote options @strong{must} be given as a single token, ie
+@option{--branch=foo} or @option{-bfoo}. This is because the local and remote
+monotones may not understand exactly the same options (so the local monotone
+cannot know if an option given as @option{--branch} or @option{-b} should be
+followed by an argument), and because the server sees this as an
+@code{automate remote_stdio} connection (so it expects the options to already
+be parsed).
+
+@item Added in
+
+FIXME
+
+@item Purpose
+
+Permit a single @code{automate} command to be run against a database that is
+being used to serve netsync connections, without having its output encoded
+as by @code{automate stdio}.
+
+@item Input/Output Format
+
+This command does not accept input.
+
+The output will be whatever output the remote command generates.
+
+@item Error Conditions
+
+If the remote command returns an error code, will exit with code 1 and
+print "Received remote error code N" to standard error, with "N" being
+the remote error code.
 
 @end table
 
@@ -10240,6 +10320,12 @@ is presently no way to selectively grant write access to different
 branches via netsync, for a number of reasons. Contributions in the
 database from different authors can be selectively trusted using the
 @ref{Trust Evaluation Hooks} instead.
+
+@item get_remote_automate_permitted(@var{key_identity}, @var{command}, @var{options})
+
+Returns true if a peer authenticated as key @var{key_identity} should be
+allowed to execute the given @var{command} with the given @var{options}, as
+if through @code{automate stdio}.
 
 @end ftable
 

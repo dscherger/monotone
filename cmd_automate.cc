@@ -14,6 +14,8 @@
 
 #include "cmd.hh"
 #include "app_state.hh"
+#include "automate_ostream.hh"
+#include "automate_reader.hh"
 #include "ui.hh"
 #include "key_store.hh"
 #include "lua.hh"
@@ -37,6 +39,7 @@ CMD_GROUP(automate, "automate", "au", CMD_REF(automation),
 
 namespace commands {
   automate::automate(string const & name,
+                     bool stdio_ok,
                      string const & params,
                      string const & abstract,
                      string const & desc,
@@ -46,7 +49,8 @@ namespace commands {
             // commands need a database, and they expect to get the database
             // name from the workspace options, even if they don't need a
             // workspace for anything else.
-            desc, true, opts, false)
+            desc, true, opts, false),
+    stdio_ok(stdio_ok)
   {
   }
 
@@ -66,6 +70,12 @@ namespace commands {
                  args_vector const & args) const
   {
     exec(app, execid, args, std::cout);
+  }
+
+  bool
+  automate::can_run_from_stdio() const
+  {
+    return stdio_ok;
   }
 }
 
@@ -93,6 +103,11 @@ CMD_AUTOMATE(interface_version, "",
     F("no arguments needed"));
 
   output << interface_version << '\n';
+}
+
+static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
+{
+  reinterpret_cast<automate_streambuf*>(opaque)->write_out_of_band(channel, text);
 }
 
 // Name: stdio
@@ -136,241 +151,11 @@ CMD_AUTOMATE(interface_version, "",
 // set length, rather than waiting until we have all of the output.
 
 
-class automate_reader
-{
-  istream & in;
-  enum location {opt, cmd, none, eof};
-  location loc;
-  bool get_string(std::string & out)
-  {
-    out.clear();
-    if (loc == none || loc == eof)
-      {
-        return false;
-      }
-    size_t size(0);
-    char c;
-    read(&c, 1);
-    if (c == 'e')
-      {
-        loc = none;
-        return false;
-      }
-    while(c <= '9' && c >= '0')
-      {
-        size = (size*10)+(c-'0');
-        read(&c, 1);
-      }
-    E(c == ':', origin::user,
-        F("Bad input to automate stdio: expected ':' after string size"));
-    char *str = new char[size];
-    size_t got = 0;
-    while(got < size)
-      {
-        int n = read(str+got, size-got);
-        got += n;
-      }
-    out = std::string(str, size);
-    delete[] str;
-    L(FL("Got string '%s'") % out);
-    return true;
-  }
-  std::streamsize read(char *buf, size_t nbytes, bool eof_ok = false)
-  {
-    std::streamsize rv;
 
-    rv = in.rdbuf()->sgetn(buf, nbytes);
-
-    E(eof_ok || rv > 0, origin::user,
-      F("Bad input to automate stdio: unexpected EOF"));
-    return rv;
-  }
-  void go_to_next_item()
-  {
-    if (loc == eof)
-      return;
-    string starters("ol");
-    string whitespace(" \r\n\t");
-    string foo;
-    while (loc != none)
-      get_string(foo);
-    char c('e');
-    do
-      {
-        if (read(&c, 1, true) == 0)
-          {
-            loc = eof;
-            return;
-          }
-      }
-    while (whitespace.find(c) != std::string::npos);
-    switch (c)
-      {
-      case 'o': loc = opt; break;
-      case 'l': loc = cmd; break;
-      default:
-        E(false, origin::user,
-            F("Bad input to automate stdio: unknown start token '%c'") % c);
-      }
-  }
-public:
-  automate_reader(istream & is) : in(is), loc(none)
-  {}
-  bool get_command(vector<pair<string, string> > & params,
-                   vector<string> & cmdline)
-  {
-    params.clear();
-    cmdline.clear();
-    if (loc == none)
-      go_to_next_item();
-    if (loc == eof)
-      return false;
-    else if (loc == opt)
-      {
-        string key, val;
-        while(get_string(key) && get_string(val))
-          params.push_back(make_pair(key, val));
-        go_to_next_item();
-      }
-    E(loc == cmd, origin::user,
-      F("Bad input to automate stdio: expected '%c' token") % cmd);
-    string item;
-    while (get_string(item))
-      {
-        cmdline.push_back(item);
-      }
-    E(cmdline.size() > 0, origin::user,
-        F("Bad input to automate stdio: command name is missing"));
-    return true;
-  }
-  void reset()
-  {
-    loc = none;
-  }
-};
-
-struct automate_streambuf : public std::streambuf
-{
-private:
-  size_t _bufsize;
-  std::ostream *out;
-  automate_reader *in;
-  int cmdnum;
-  int err;
-public:
-  automate_streambuf(size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(0), in(0), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  automate_streambuf(std::ostream & o, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(&o), in(0), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  automate_streambuf(automate_reader & i, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(0), in(&i), cmdnum(0), err(0)
-  {
-    char *inbuf = new char[_bufsize];
-    setp(inbuf, inbuf + _bufsize);
-  }
-  ~automate_streambuf()
-  {}
-
-  void set_err(int e)
-  {
-    sync();
-    err = e;
-  }
-
-  void end_cmd()
-  {
-    _M_sync(true);
-    ++cmdnum;
-    err = 0;
-  }
-
-  virtual int sync()
-  {
-    _M_sync();
-    return 0;
-  }
-
-  void _M_sync(bool end = false)
-  {
-    if (!out)
-      {
-        setp(pbase(), pbase() + _bufsize);
-        return;
-      }
-    int num = pptr() - pbase();
-    if (num || end)
-      {
-        (*out) << cmdnum << ':'
-            << err << ':'
-            << (end?'l':'m') << ':'
-            << num << ':' << std::string(pbase(), num);
-        setp(pbase(), pbase() + _bufsize);
-        out->flush();
-      }
-  }
-  void write_out_of_band(char type, std::string const& data)
-  {
-    unsigned chunksize = _bufsize;
-    size_t length = data.size(), offset = 0;
-    do
-    {
-      if (offset+chunksize>length)
-        chunksize = length-offset;
-      (*out) << cmdnum << ':' << err << ':' << type << ':'
-        << chunksize << ':' << data.substr(offset, chunksize);
-      offset+= chunksize;
-    } while (offset<length);
-    out->flush();
-  }
-  int_type
-  overflow(int_type c = traits_type::eof())
-  {
-    sync();
-    sputc(c);
-    return 0;
-  }
-};
-
-struct automate_ostream : public std::ostream
-{
-  automate_streambuf _M_autobuf;
-
-  automate_ostream(std::ostream &out, size_t blocksize)
-    : std::ostream(NULL),
-      _M_autobuf(out, blocksize)
-  { this->init(&_M_autobuf); }
-
-  ~automate_ostream()
-  {}
-
-  automate_streambuf *
-  rdbuf() const
-  { return const_cast<automate_streambuf *>(&_M_autobuf); }
-
-  void set_err(int e)
-  { _M_autobuf.set_err(e); }
-
-  void end_cmd()
-  { _M_autobuf.end_cmd(); }
-};
-
-static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
-{
-  reinterpret_cast<automate_streambuf*>(opaque)->write_out_of_band(channel, text);
-}
-
-CMD_AUTOMATE(stdio, "",
-             N_("Automates several commands in one run"),
-             "",
-             options::opts::automate_stdio_size)
+CMD_AUTOMATE_NO_STDIO(stdio, "",
+                      N_("Automates several commands in one run"),
+                      "",
+                      options::opts::automate_stdio_size)
 {
   E(args.empty(), origin::user,
     F("no arguments needed"));
@@ -472,6 +257,10 @@ CMD_AUTOMATE(stdio, "",
         {
           automate const * acmd = dynamic_cast< automate const * >(cmd);
           I(acmd);
+
+          E(acmd->can_run_from_stdio(), origin::network,
+            F("sorry, that can't be run remotely or over stdio"));
+
           acmd->exec_from_automate(app, id, args, os);
           // set app.opts to the originally given options
           // so the next command has an identical setup

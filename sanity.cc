@@ -474,6 +474,11 @@ dump(char const * const & obj, string & out)
 {
   out = obj;
 }
+template<> void
+dump(bool const & obj, string & out)
+{
+  out = (obj ? "true" : "false");
+}
 
 void
 sanity::print_var(std::string const & value, char const * var,
