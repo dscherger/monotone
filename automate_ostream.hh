@@ -72,6 +72,20 @@ public:
         out->flush();
       }
   }
+  void write_out_of_band(char type, std::string const& data)
+  {
+    unsigned chunksize = _bufsize;
+    size_t length = data.size(), offset = 0;
+    do
+    {
+      if (offset+chunksize>length)
+        chunksize = length-offset;
+      (*out) << cmdnum << ':' << err << ':' << type << ':'
+        << chunksize << ':' << data.substr(offset, chunksize);
+      offset+= chunksize;
+    } while (offset<length);
+    out->flush();
+  }
   int_type
   overflow(int_type c = traits_type::eof())
   {

@@ -17,7 +17,6 @@
 #include "automate_ostream.hh"
 #include "automate_reader.hh"
 #include "ui.hh"
-#include "key_store.hh"
 #include "lua.hh"
 #include "lua_hooks.hh"
 #include "database.hh"
