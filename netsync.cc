@@ -1217,6 +1217,10 @@ session::setup_client_tickers()
     {
       I(role == source_and_sink_role);
       // xgettext: please use short message and try to avoid multibytes chars
+      cert_in_ticker.reset(new ticker(N_("certs in"), "c", 3, false, true));
+      // xgettext: please use short message and try to avoid multibytes chars
+      cert_out_ticker.reset(new ticker(N_("certs out"), "C", 3, false, true));
+      // xgettext: please use short message and try to avoid multibytes chars
       revision_in_ticker.reset(new ticker(N_("revs in"), "r", 1));
       // xgettext: please use short message and try to avoid multibytes chars
       revision_out_ticker.reset(new ticker(N_("revs out"), "R", 1));
@@ -3300,6 +3304,9 @@ call_server(options & opts,
         {
           // Commit whatever work we managed to accomplish anyways.
           guard.commit();
+
+          // ensure that the tickers have finished and write any last ticks
+          ui.ensure_clean_line();
 
           // We had an I/O error. We must decide if this represents a
           // user-reported error or a clean disconnect. See protocol
