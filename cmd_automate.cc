@@ -124,14 +124,16 @@ static void out_of_band_to_automate_streambuf(char channel, std::string const& t
 //     l6:leavese
 //     l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
 //
-// Output format: <command number>:<err code>:<last?>:<size>:<output>
+// Output format: <command number>:<err code>:<stream>:<size>:<output>
 //   <command number> is a decimal number specifying which command
 //   this output is from. It is 0 for the first command, and increases
 //   by one each time.
 //   <err code> is 0 for success, 1 for a syntax error, and 2 for any
 //   other error.
-//   <last?> is 'l' if this is the last piece of output for this command,
-//   and 'm' if there is more output to come.
+//   <stream> is 'l' if this is the last piece of output for this command,
+//   and 'm' if there is more output to come. Otherwise, 'e', 'p' and 'w'
+//   notify the caller about errors, informational messages and warnings.
+//   A special type 't' outputs progress information for long-term actions.
 //   <size> is the number of bytes in the output.
 //   <output> is the output of the command.
 //   Example:
@@ -145,12 +147,6 @@ static void out_of_band_to_automate_streambuf(char channel, std::string const& t
 // Error conditions: Errors encountered by the commands run only set
 //   the error code in the output for that command. Malformed input
 //   results in exit with a non-zero return value and an error message.
-
-// automate_streambuf and automate_ostream are so we can dump output at a
-// set length, rather than waiting until we have all of the output.
-
-
-
 CMD_AUTOMATE_NO_STDIO(stdio, "",
                       N_("Automates several commands in one run"),
                       "",
@@ -238,7 +234,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (option::option_error & e)
         {
           os.set_err(1);
-          os<<e.what();
+          os._M_autobuf.write_out_of_band('e', e.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -246,7 +242,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (recoverable_failure & f)
         {
           os.set_err(1);
-          os<<f.what();
+          os._M_autobuf.write_out_of_band('e', f.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -268,7 +264,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch(recoverable_failure & f)
         {
           os.set_err(2);
-          os<<f.what();
+          os._M_autobuf.write_out_of_band('e', f.what());
         }
       os.end_cmd();
     }
