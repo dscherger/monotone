@@ -4319,12 +4319,12 @@ database_impl::open()
 {
   I(!__sql);
 
-  char const * to_open;
+  std::string to_open;
   if (use_memory_db)
     to_open = ":memory:";
   else
-    to_open = filename.as_external().c_str();
-  if (sqlite3_open(to_open, &__sql) == SQLITE_NOMEM)
+    to_open = filename.as_external();
+  if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 
   I(__sql);
