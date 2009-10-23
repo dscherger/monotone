@@ -28,6 +28,9 @@
         - A regression from 0.45's key migration prevented the proper
           output of the `committer` field in 'git_export'.
 
+        - 'db info --full' no longer crashes when executed on a database
+          with only one revision.
+
         Internal
 
 
