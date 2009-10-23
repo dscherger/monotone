@@ -1165,6 +1165,10 @@ database::info(ostream & out, bool analyze)
         missing++;
     }
 
+  // no information to provide in this case
+  if (diffs.size() == 0)
+    return;
+
   form =
     F("timestamp correctness between revisions:\n"
       "  correct dates   : %s edges\n"
