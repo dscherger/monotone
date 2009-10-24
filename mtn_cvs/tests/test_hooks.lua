@@ -1,10 +1,18 @@
+-- Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
+--
+-- This program is made available under the GNU GPL version 2.0 or
+-- greater. See the accompanying file COPYING for details.
+--
+-- This program is distributed WITHOUT ANY WARRANTY; without even the
+-- implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+-- PURPOSE.
 
 -- this is the "testing" set of lua hooks for monotone
 -- it's intended to support self-tests, not for use in
 -- production. just defines some of the std hooks.
 
 function get_passphrase(keyid)
-	return keyid
+	return keyid.given_name
 end
 
 -- Everything alice signs is trusted, nothing mallory signs is
@@ -13,8 +21,8 @@ end
 -- For use of t_trusted.at.
 function get_revision_cert_trust(signers, id, name, val)
    for k, v in pairs(signers) do
-      if v == "alice@trusted.com" then return true end
-      if v == "mallory@evil.com" then return false end
+      if v.given_name == "alice@trusted.com" then return true end
+      if v.given_name == "mallory@evil.com" then return false end
    end
    if (id == "0000000000000000000000000000000000000000"
        and name == "bad-cert" and val == "bad-val")
@@ -47,6 +55,10 @@ end
 
 function get_author(branchname)
 	return "tester@test.net"
+end
+
+function get_date_format_spec()
+        return ""
 end
 
 function ignore_file(name)

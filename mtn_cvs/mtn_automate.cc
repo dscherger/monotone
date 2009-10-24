@@ -20,7 +20,8 @@ using std::pair;
 
 void mtn_automate::check_interface_revision(std::string const& minimum)
 { std::string present=automate("interface_version");
-  E(present>=minimum, origin::user,
+  // 11.0 is not greater than 4.1 when only comparing strings ;-)
+  E(atoi(present.c_str())>atoi(minimum.c_str()) || present>=minimum, origin::user,
       F("your monotone automate interface revision %s does not match the "
           "requirements %s") % present % minimum);
 }

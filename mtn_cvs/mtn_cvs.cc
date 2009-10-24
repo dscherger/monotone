@@ -63,11 +63,11 @@
 // Wrapper class which ensures proper setup and teardown of the global ui
 // object.  (We do not want to use global con/destructors for this, as they
 // execute outside the protection of main.cc's signal handlers.)
-struct ui_library
+/*struct ui_library
 {
   ui_library() { ui.initialize(); }
   ~ui_library() { ui.deinitialize(); }
-};
+};*/
 
 // fake app_state ctor/dtor, we do not use this class at all
 app_state::app_state() : lua(this), mtn_automate_allowed(false) {}
@@ -251,7 +251,7 @@ commands::command_id  read_options(options & opts, option::concrete_option_set &
 	  return cmd;
 }
 
-string
+/*string
 get_usage_str(options::options_type const & optset, options & opts)
 {
   vector<string> names;
@@ -260,7 +260,7 @@ get_usage_str(options::options_type const & optset, options & opts)
 
   optset.instantiate(&opts).get_usage_strings(names, descriptions, maxnamelen);
   return format_usage_strings(names, descriptions, maxnamelen);
-}
+}*/
 
 void
 mtn_terminate_handler()
@@ -415,6 +415,9 @@ cpp_main(int argc, char ** argv)
     }
   catch (usage & u)
     {
+          ui.inform_usage(u, app.opts);
+          return app.opts.help ? 0 : 2;
+#if 0
       // we send --help output to stdout, so that "mtn --help | less" works
       // but we send error-triggered usage information to stderr, so that if
       // you screw up in a script, you don't just get usage information sent
@@ -443,7 +446,7 @@ cpp_main(int argc, char ** argv)
         return 0;
       else
         return 2;
-
+#endif
     }
   }
   catch (option::option_error const & e)
