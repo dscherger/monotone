@@ -103,6 +103,18 @@ ticker::operator++()
     ui.write_ticks();
 }
 
+void 
+ticker::operator--()
+{
+  I(ui.imp);
+  I(ui.imp->tickers.find(keyname) != ui.imp->tickers.end());
+  I(ticks);
+  ticks--;
+  ui.imp->some_tick_is_dirty = true;
+  if (ticks % mod == 0)
+    ui.write_ticks();
+}
+
 void
 ticker::operator+=(size_t t)
 {

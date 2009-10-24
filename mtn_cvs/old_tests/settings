@@ -1,0 +1,7 @@
+#!/bin/sh
+
+TOPDIR=`pwd`
+MTN="../../mtn --rcfile=$TOPDIR/test_hooks.lua --nostd --keydir=$TOPDIR/keys \
+	--key=tester@test.net"
+MTN_CVS=../mtn_cvs
+TESTDIR=../../tests
