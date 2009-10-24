@@ -300,7 +300,7 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
   args.push_back(encode_hexenc(rid.inner()(),origin::internal));
   std::string aresult=automate("certs",args);
 
-  basic_io::input_source source(aresult,"automate get_revision_certs result");
+  basic_io::input_source source(aresult,"automate certs result");
   basic_io::tokenizer tokenizer(source);
   basic_io::parser pa(tokenizer);
   
@@ -311,7 +311,7 @@ std::vector<mtn_automate::certificate> mtn_automate::get_revision_certs(revision
   
     I(pa.symp(syms::key));
     pa.sym();
-    pa.str(cert.key);
+    pa.hex(cert.key);
   
     I(pa.symp(syms::signature));
     pa.sym();
