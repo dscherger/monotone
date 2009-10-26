@@ -50,9 +50,6 @@ building and installation process for monotone
              autoconf automake boost botan gettext libpcre libidn lua sqlite
              zlib
 
-           (you might need to add the "~x86" flag to dev-libs/botan, so you
-            get at least version 1.6.3, we recommend using at 1.8.0 or newer)
-
         on Fedora:
 
            install the following packages:
