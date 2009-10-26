@@ -214,11 +214,11 @@ public:
                                   std::vector<std::pair<std::string, std::string> > const & opts);
   void read_automate_packet_cmd(int & command_num,
                                 int & err_code,
-                                bool & last,
+                                char & stream,
                                 std::string & packet_data) const;
   void write_automate_packet_cmd(int command_num,
                                  int err_code,
-                                 bool last,
+                                 char stream,
                                  std::string const & packet_data);
 
   void read_usher_cmd(utf8 & greeting) const;

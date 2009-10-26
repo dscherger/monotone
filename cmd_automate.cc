@@ -171,12 +171,15 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
                                         &os._M_autobuf);
   while (true)
     {
-      command const * cmd = 0;
+      automate const * acmd = 0;
       command_id id;
       args_vector args;
 
+      // FIXME: what follows is largely duplicated
+      // in network/automate_session.cc::do_work()
+      //
       // stdio decoding errors should be noted with errno 1,
-      // errno 2 is reserved for errors coming from the commands itself
+      // errno 2 is reserved for errors from the commands itself
       try
         {
           if (!ar.get_command(params, cmdline))
@@ -209,8 +212,14 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           for (command_id::size_type i = 0; i < id.size(); i++)
             args.erase(args.begin());
 
-          cmd = CMD_REF(automate)->find_command(id);
+          command const * cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
+
+          acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd != NULL);
+
+          E(acmd->can_run_from_stdio(), origin::network,
+            F("sorry, that can't be run remotely or over stdio"));
 
           if (cmd->use_workspace_options())
             {
@@ -250,18 +259,11 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
       try
         {
-          automate const * acmd = dynamic_cast< automate const * >(cmd);
-          I(acmd);
-
-          E(acmd->can_run_from_stdio(), origin::network,
-            F("sorry, that can't be run remotely or over stdio"));
-
           acmd->exec_from_automate(app, id, args, os);
-          // set app.opts to the originally given options
-          // so the next command has an identical setup
+          // restore app.opts
           app.opts = original_opts;
         }
-      catch(recoverable_failure & f)
+      catch (recoverable_failure & f)
         {
           os.set_err(2);
           os._M_autobuf.write_out_of_band('e', f.what());

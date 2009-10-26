@@ -12,8 +12,9 @@
 
 #include "app_state.hh"
 #include "automate_reader.hh"
-#include "work.hh"
+#include "ui.hh"
 #include "vocab_cast.hh"
+#include "work.hh"
 
 using std::make_pair;
 using std::ostringstream;
@@ -91,6 +92,22 @@ void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
   remote_identity = remote_key;
 }
 
+static void out_of_band_to_netcmd(char stream, std::string const & text, void * opaque)
+{
+  automate_session * sess = reinterpret_cast<automate_session*>(opaque);
+  // FIXME: is it really correct to set the error always to 0?
+  sess->write_out_of_band_cmd(stream, text, 0);
+}
+
+void automate_session::write_out_of_band_cmd(char stream,
+                                             std::string const & text,
+                                             unsigned int errcode)
+{
+  netcmd net_cmd(get_version());
+  net_cmd.write_automate_packet_cmd(command_number, errcode, stream, text);
+  write_netcmd(net_cmd);
+}
+
 bool automate_session::do_work(transaction_guard & guard,
                                netcmd const * const cmd_in)
 {
@@ -101,15 +118,27 @@ bool automate_session::do_work(transaction_guard & guard,
     {
     case automate_command_cmd:
       {
+        options original_opts = app.opts;
+
         vector<string> in_args;
         vector<pair<string, string> > in_opts;
         cmd_in->read_automate_command_cmd(in_args, in_opts);
         ++command_number;
 
+        global_sanity.set_out_of_band_handler(&out_of_band_to_netcmd, this);
+
+        automate const * acmd = 0;
+        command_id id;
+        args_vector args;
+
         ostringstream oss;
         bool have_err = false;
-        string err;
 
+        // FIXME: what follows is largely duplicated
+        // in cmd_automate.cc::CMD(stdio)
+        //
+        // stdio decoding errors should be noted with errno 1,
+        // errno 2 is reserved for errors from the commands itself
         try
           {
             E(app.lua.hook_get_remote_automate_permitted(remote_identity,
@@ -118,7 +147,6 @@ bool automate_session::do_work(transaction_guard & guard,
               origin::user,
               F("Sorry, you aren't allowed to do that."));
 
-            args_vector args;
             for (vector<string>::iterator i = in_args.begin();
                  i != in_args.end(); ++i)
               {
@@ -129,7 +157,6 @@ bool automate_session::do_work(transaction_guard & guard,
             opts = options::opts::all_options() - options::opts::globals();
             opts.instantiate(&app.opts).reset();
 
-            command_id id;
             for (args_vector::const_iterator iter = args.begin();
                  iter != args.end(); iter++)
               id.push_back(typecast_vocab<utf8>(*iter));
@@ -165,8 +192,8 @@ bool automate_session::do_work(transaction_guard & guard,
 
             command const * cmd = CMD_REF(automate)->find_command(id);
             I(cmd != NULL);
-            automate const * acmd = dynamic_cast< automate const * >(cmd);
-            I(acmd);
+            acmd = dynamic_cast< automate const * >(cmd);
+            I(acmd != NULL);
 
             E(acmd->can_run_from_stdio(), origin::network,
               F("sorry, that can't be run remotely or over stdio"));
@@ -183,29 +210,44 @@ bool automate_session::do_work(transaction_guard & guard,
               }
 
             opts.instantiate(&app.opts).from_key_value_pairs(in_opts);
-            acmd->exec_from_automate(app, id, args, oss);
+
+            ui.set_tick_write_stdio();
+          }
+        // FIXME: we need to re-package and rethrow this special exception
+        // since it is not based on informative_failure
+        catch (option::option_error & e)
+          {
+            write_out_of_band_cmd('e', e.what(), 1);
+            have_err = true;
           }
         catch (recoverable_failure & f)
           {
-            have_err = true;
-            err = f.what();
-            err += "\n";
+             write_out_of_band_cmd('e', f.what(), 1);
+             have_err = true;
           }
 
-        if (!oss.str().empty() || !have_err)
+        if (!have_err)
           {
-            netcmd out_cmd(get_version());
-            out_cmd.write_automate_packet_cmd(command_number, 0,
-                                              !have_err, oss.str());
-            write_netcmd(out_cmd);
+            try
+              {
+                acmd->exec_from_automate(app, id, args, oss);
+                // restore app.opts
+                app.opts = original_opts;
+              }
+            catch (recoverable_failure & f)
+              {
+                write_out_of_band_cmd('e', f.what(), 2);
+                have_err = true;
+              }
           }
-        if (have_err)
-          {
-            netcmd err_cmd(get_version());
-            err_cmd.write_automate_packet_cmd(command_number, 2,
-                                              true, err);
-            write_netcmd(err_cmd);
-          }
+
+        netcmd out_cmd(get_version());
+        out_cmd.write_automate_packet_cmd(
+          command_number, have_err ? 2 : 0, 'l', oss.str()
+        );
+        write_netcmd(out_cmd);
+
+        global_sanity.set_out_of_band_handler();
 
         return true;
 
@@ -214,19 +256,24 @@ bool automate_session::do_work(transaction_guard & guard,
       {
         int command_num;
         int err_code;
-        bool last;
+        char stream;
         string packet_data;
         cmd_in->read_automate_packet_cmd(command_num, err_code,
-                                         last, packet_data);
+                                         stream, packet_data);
 
         I(output_stream);
         output_stream->set_err(err_code);
-        (*output_stream) << packet_data;
-        if (last)
-          output_stream->end_cmd();
 
-        if (last)
-          send_command();
+        if (stream == 'm' || stream == 'l')
+            (*output_stream) << packet_data;
+        else
+            output_stream->_M_autobuf.write_out_of_band(stream, packet_data);
+
+        if (stream == 'l')
+          {
+            output_stream->end_cmd();
+            send_command();
+          }
 
         return true;
       }
