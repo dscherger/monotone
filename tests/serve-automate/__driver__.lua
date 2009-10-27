@@ -10,7 +10,7 @@ server = netsync.start()
 
 check(mtn2("automate", "remote_stdio", server.address), 0, true, false,
       "l17:interface_versione")
-check(qgrep("^0:2:l:", "stdout"))
+check(qgrep("^0:1:e:45:misuse: Sorry, you aren't allowed to do that.0:1:l:0:", "stdout"))
 
 server:stop()
 
