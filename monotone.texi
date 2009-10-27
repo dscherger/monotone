@@ -7894,6 +7894,12 @@ input. Instead, when a complete command has been entered and monotone tries to
 send it to the remote server it will print a message to stderr and exit with
 code 1.
 
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
 @end table
 
 @item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
@@ -7921,8 +7927,8 @@ FIXME
 @item Purpose
 
 Permit a single @code{automate} command to be run against a database that is
-being used to serve netsync connections, without having its output encoded
-as by @code{automate stdio}.
+being used to serve netsync connections, without having its input and output
+encoded as by @code{automate stdio}.
 
 @item Input/Output Format
 
@@ -7930,11 +7936,23 @@ This command does not accept input.
 
 The output will be whatever output the remote command generates.
 
+Remote diagnostic messages are written to standard error, prefixed either
+with @code{mtn: remote error:}, @code{mtn: remote warning:} or
+@code{mtn: remote message:} to make them distinguishable from local
+diagnostics. Tickers are not supported over this interface. If you need
+remote ticker support, please use @command{automate remote_stdio}.
+
 @item Error Conditions
 
-If the remote command returns an error code, will exit with code 1 and
-print "Received remote error code N" to standard error, with "N" being
+If the remote command returns a nonzero error code, will exit with code 1 and
+print "received remote error code N" to standard error, with "N" being
 the remote error code.
+
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
 
 @end table
 
