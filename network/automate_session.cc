@@ -132,7 +132,7 @@ bool automate_session::do_work(transaction_guard & guard,
         args_vector args;
 
         ostringstream oss;
-        bool have_err = false;
+        int  errcode = 0;
 
         // FIXME: what follows is largely duplicated
         // in cmd_automate.cc::CMD(stdio)
@@ -217,16 +217,16 @@ bool automate_session::do_work(transaction_guard & guard,
         // since it is not based on informative_failure
         catch (option::option_error & e)
           {
-            write_out_of_band_cmd('e', e.what(), 1);
-            have_err = true;
+            errcode = 1;
+            write_out_of_band_cmd('e', e.what(), errcode);
           }
         catch (recoverable_failure & f)
           {
-             write_out_of_band_cmd('e', f.what(), 1);
-             have_err = true;
+             errcode = 1;
+             write_out_of_band_cmd('e', f.what(), errcode);
           }
 
-        if (!have_err)
+        if (errcode == 0)
           {
             try
               {
@@ -236,15 +236,15 @@ bool automate_session::do_work(transaction_guard & guard,
               }
             catch (recoverable_failure & f)
               {
-                write_out_of_band_cmd('e', f.what(), 2);
-                have_err = true;
+                errcode = 2;
+                write_out_of_band_cmd('e', f.what(), errcode);
               }
           }
 
         netcmd out_cmd(get_version());
-        out_cmd.write_automate_packet_cmd(
-          command_number, have_err ? 2 : 0, 'l', oss.str()
-        );
+        out_cmd.write_automate_packet_cmd(command_number,
+                                          errcode, 'l',
+                                          oss.str());
         write_netcmd(out_cmd);
 
         global_sanity.set_out_of_band_handler();
