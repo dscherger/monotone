@@ -267,7 +267,7 @@ bool automate_session::do_work(transaction_guard & guard,
         if (stream == 'm' || stream == 'l')
             (*output_stream) << packet_data;
         else
-            output_stream->_M_autobuf.write_out_of_band(stream, packet_data);
+            output_stream->write_out_of_band(stream, packet_data);
 
         if (stream == 'l')
           {

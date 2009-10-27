@@ -72,7 +72,7 @@ public:
         out->flush();
       }
   }
-  void write_out_of_band(char type, std::string const& data)
+  void write_out_of_band(char type, std::string const & data)
   {
     unsigned chunksize = _bufsize;
     size_t length = data.size(), offset = 0;
@@ -123,6 +123,9 @@ public:
 
   virtual void end_cmd()
   { _M_autobuf.end_cmd(); }
+
+  virtual void write_out_of_band(char type, std::string const & data)
+  { _M_autobuf.write_out_of_band(type, data); }
 };
 
 typedef basic_automate_streambuf<char> automate_streambuf;

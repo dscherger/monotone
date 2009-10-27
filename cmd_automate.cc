@@ -106,7 +106,7 @@ CMD_AUTOMATE(interface_version, "",
 
 static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
 {
-  reinterpret_cast<automate_streambuf*>(opaque)->write_out_of_band(channel, text);
+  reinterpret_cast<automate_ostream*>(opaque)->write_out_of_band(channel, text);
 }
 
 // Name: stdio
@@ -167,8 +167,8 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
   vector<string> cmdline;
-  global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf,
-                                        &os._M_autobuf);
+  global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf, &os);
+
   while (true)
     {
       automate const * acmd = 0;
@@ -243,7 +243,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (option::option_error & e)
         {
           os.set_err(1);
-          os._M_autobuf.write_out_of_band('e', e.what());
+          os.write_out_of_band('e', e.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -251,7 +251,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (recoverable_failure & f)
         {
           os.set_err(1);
-          os._M_autobuf.write_out_of_band('e', f.what());
+          os.write_out_of_band('e', f.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -266,7 +266,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (recoverable_failure & f)
         {
           os.set_err(2);
-          os._M_autobuf.write_out_of_band('e', f.what());
+          os.write_out_of_band('e', f.what());
         }
       os.end_cmd();
     }
