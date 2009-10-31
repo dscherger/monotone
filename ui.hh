@@ -18,6 +18,8 @@
 
 struct i18n_format;
 class system_path;
+struct usage;
+struct options;
 
 struct ticker
 {
@@ -47,8 +49,6 @@ struct tick_write_dot;
 struct user_interface
 {
 public:
-  user_interface();
-  ~user_interface();
   void initialize();
   void deinitialize();
   void warn(std::string const & warning);
@@ -59,8 +59,9 @@ public:
   void fatal_db(format_base const & fmt) { fatal_db(fmt.str()); }
   void inform(std::string const & line);
   void inform(format_base const & fmt) { inform(fmt.str()); }
-  void fatal_exception(std::exception const & ex);
-  void fatal_exception();
+  void inform_usage(usage const & u, options & opts);
+  int fatal_exception(std::exception const & ex);
+  int fatal_exception();
   void set_tick_trailer(std::string const & trailer);
   void set_tick_write_dot();
   void set_tick_write_count();
@@ -84,6 +85,15 @@ private:
 
 extern struct user_interface ui;
 
+// Wrapper class which ensures proper setup and teardown of the global ui
+// object.  (We do not want to use global con/destructors for this, as they
+// execute outside the protection of main.cc's signal handlers.)
+struct ui_library
+{
+  ui_library() { ui.initialize(); }
+  ~ui_library() { ui.deinitialize(); }
+};
+
 // like platform.hh's "terminal_width", but always returns a sensible value
 // (even if there is no terminal)
 unsigned int guess_terminal_width();
@@ -92,11 +102,6 @@ std::string format_text(std::string const & text,
                         size_t const col = 0, size_t curcol = 0);
 std::string format_text(i18n_format const & text,
                         size_t const col = 0, size_t curcol = 0);
-
-std::string
-format_usage_strings(std::vector<std::string> const & names,
-                     std::vector<std::string> const & descriptions,
-                     unsigned int namelen);
 
 #endif // __UI_HH__
 

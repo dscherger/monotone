@@ -133,39 +133,37 @@ directory_empty(any_path const & path)
   return true;
 }
 
-static bool did_char_is_binary_init;
-static bool char_is_binary[256];
-
-static void
-set_char_is_binary(char c, bool is_binary)
-{
-    char_is_binary[static_cast<u8>(c)] = is_binary;
-}
-
-static void
-init_char_is_binary()
-{
-  // these do not occur in ASCII text files
-  // FIXME: this heuristic is (a) crap and (b) hardcoded. fix both these.
-  // Should be calling a lua hook here that can use set_char_is_binary()
-  // That will at least fix (b)
-  string nontext_chars("\x01\x02\x03\x04\x05\x06\x0e\x0f"
-                       "\x10\x11\x12\x13\x14\x15\x16\x17\x18"
-                       "\x19\x1a\x1c\x1d\x1e\x1f");
-  set_char_is_binary('\0', true);
-  for(size_t i = 0; i < nontext_chars.size(); ++i)
-    {
-      set_char_is_binary(nontext_chars[i], true);
-    }
-}
+// This is not the greatest heuristic ever; it just looks for characters in
+// the original ASCII control code range (00 - 1f, 7f) that are not white
+// space (07 - 0D).  But then, GNU diff just looks for NULs.  We could do
+// better if this was detecting character encoding (because then we could
+// report wide encodings as such instead of treating them as binary) but the
+// application proper isn't set up for that.
+//
+// Everything > 128 *can* be a valid text character, depending on encoding,
+// even in the 80 - 9F region that Unicode reserves for yet more useless
+// control characters.
+//
+// N.B. the obvious algorithmic version of the inner loop here
+//     u8 c = s[i];
+//     if (c <= 0x06 || (c >= 0x0E && c < 0x20) || c == 0x7F)
+//       return true;
+// is about twice as slow on current hardware (Intel Core2 quad).
 
 bool guess_binary(string const & s)
 {
-  if (did_char_is_binary_init == false)
-    {
-      init_char_is_binary();
-      did_char_is_binary_init = true;
-    }
+  static const bool char_is_binary[256] = {
+  //_0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _A _B _C _D _E _F
+    1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, // 0_
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 1_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 3_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 4_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 5_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 6_
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // 7_
+    0                                               // 8+
+  };
 
   for (size_t i = 0; i < s.size(); ++i)
     {
@@ -234,11 +232,19 @@ namespace
   {
     fill_pc_vec(vector<path_component> & v) : v(v) { v.clear(); }
 
-    // FIXME BUG: this treats 's' as being already utf8, but it is actually
-    // in the external character set.  Also, will I() out on invalid
-    // pathnames, when it should N() or perhaps W() and skip.
+    // FIXME BUG: this treats 's' as being already utf8,
+    // but it is actually in the external character set.
     virtual void consume(char const * s)
-    { v.push_back(path_component(s)); }
+    {
+      try
+      {
+        v.push_back(path_component(s));
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % s);
+      }
+    }
 
   private:
     vector<path_component> & v;
@@ -249,8 +255,14 @@ namespace
     file_deleter(any_path const & p) : parent(p) {}
     virtual void consume(char const * f)
     {
-      // FIXME: same bug as above.
-      do_remove((parent / path_component(f)).as_external());
+      try
+      {
+        do_remove((parent / path_component(f)).as_external());
+      }
+      catch (...)
+      {
+        W(F("skipping invalid path '%s'") % f);
+      }
     }
   private:
     any_path const & parent;

@@ -737,6 +737,15 @@ bookkeeping_path::operator /(path_component const & to_append) const
                           + to_append(), 0, string::npos);
 }
 
+bookkeeping_path
+bookkeeping_path::operator /(file_path const & to_append) const
+{
+  I(!to_append.empty());
+  I(!empty());
+  return bookkeeping_path(((*(data.end() - 1) == '/') ? data : data + "/")
+                          + to_append.as_internal(), 0, string::npos);
+}
+
 system_path
 system_path::operator /(path_component const & to_append) const
 {

@@ -1,5 +1,5 @@
-    left [6fcbac878d4e20dc024bf16e63bd88906ac21afd]
-   right [138053fd821daa41aa98e55641d087da1d70ca2b]
+    left [30fb5dd7fe7e8ba58f6fc604518f25fef793e365]
+   right [ceb209a91e2b1d381c0b9321d63f2d3c6558166f]
 ancestor [ecceebea23b1c81b980671b4cac91ed3421396c3]
 
            conflict duplicate_name
@@ -22,6 +22,26 @@ resolved_user_right "resolutions/checkout_left.sh"
  resolved_user_left "resolutions/checkout_right.sh"
 resolved_drop_right 
 
+           conflict duplicate_name
+          left_type "added file"
+          left_name "gui_left.sh"
+       left_file_id [ad354b0fe6c51ab0bc23ff9296f94432cb574caa]
+         right_type "added file"
+         right_name "gui_left.sh"
+      right_file_id [5a7628342f1eaf94333a8027d847bf44f717d886]
+ resolved_drop_left 
+resolved_keep_right 
+
+           conflict duplicate_name
+          left_type "added file"
+          left_name "gui_right.sh"
+       left_file_id [47add69b9a1b5b009b2355e9ac3fd65f005a235a]
+         right_type "added file"
+         right_name "gui_right.sh"
+      right_file_id [17a92f515839728d81893c43edc41544a0996f8d]
+ resolved_keep_left 
+resolved_drop_right 
+
              conflict duplicate_name
             left_type "added file"
             left_name "thermostat.c"
@@ -32,15 +52,15 @@ resolved_drop_right
  resolved_rename_left "thermostat-westinghouse.c"
 resolved_rename_right "thermostat-honeywell.c"
 
-        conflict content
-       node_type "file"
-   ancestor_name "interactive_file"
-ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
-       left_name "interactive_file"
-    left_file_id [942f274ea0d3ef68b821d67f8b01f79d17cfbf8f]
-      right_name "interactive_file"
-   right_file_id [f5545d552609d36494a195deee7f9df617cb3443]
-   resolved_user "_MTN/resolutions/interactive_file"
+          conflict content
+         node_type "file"
+     ancestor_name "interactive_file"
+  ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
+         left_name "interactive_file"
+      left_file_id [942f274ea0d3ef68b821d67f8b01f79d17cfbf8f]
+        right_name "interactive_file"
+     right_file_id [f5545d552609d36494a195deee7f9df617cb3443]
+resolved_user_left "_MTN/resolutions/interactive_file"
 
          conflict content
         node_type "file"
@@ -52,12 +72,12 @@ ancestor_file_id [c0377dbf53083e56aec683b6f54790321963ac62]
     right_file_id [b70b9605783c1c4195f490dd0feafc743731478c]
 resolved_internal 
 
-        conflict content
-       node_type "file"
-   ancestor_name "user_file"
-ancestor_file_id [25ed8e31b995bb927966616df2a42b979a2717f0]
-       left_name "user_file"
-    left_file_id [5ce20f4b9a1da51992d03488cd0be4874324db75]
-      right_name "user_file"
-   right_file_id [faa330de9182327a12ef9c7e5eaa0bea7f74ecad]
-   resolved_user "resolutions/user_file"
+          conflict content
+         node_type "file"
+     ancestor_name "user_file"
+  ancestor_file_id [25ed8e31b995bb927966616df2a42b979a2717f0]
+         left_name "user_file"
+      left_file_id [5ce20f4b9a1da51992d03488cd0be4874324db75]
+        right_name "user_file"
+     right_file_id [faa330de9182327a12ef9c7e5eaa0bea7f74ecad]
+resolved_user_left "resolutions/user_file"

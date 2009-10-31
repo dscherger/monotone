@@ -5,7 +5,7 @@ mtn_setup()
 
 addfile("foo", "blah blah")
 addfile("bar", "blah blah")
-check(mtn("attr", "set", "foo", "mtn:execute", "true"))
+check(mtn("attr", "set", "foo", "mtn:execute", "true"), 0, false, false)
 commit()
 R=base_revision()
 

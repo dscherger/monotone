@@ -11,8 +11,8 @@ check(mtn("dropkey", "john@doe.com"), 0, false, false)
 
 check(mtn("privkey", "john@doe.com"), 1, false, true)
 
-check(qgrep('do not exist', "stderr"))
+check(qgrep('no key named', "stderr"))
 
 check(mtn("pubkey", "john@doe.com"), 1, false, true)
 
-check(qgrep('does not exist', "stderr"))
+check(qgrep('no key named', "stderr"))

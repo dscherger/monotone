@@ -50,8 +50,6 @@ How to release a new version of monotone
 
 5) Update version numbers.  The following files need to be touched:
      configure.ac: change the call to AC_INIT
-     monotone.spec: change the "Version:" field, and add an entry to
-       the %changelog section.
      win32/monotone.iss: look out for "#define APPVERS"
      visualc/config.h: the version number is mentioned several times,
        don't miss any.

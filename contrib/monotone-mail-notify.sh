@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # Create a file "notify" next to "read-permissions" and ensure
 # its contents are in the same format as "read-permissions",
@@ -43,7 +43,7 @@ function processFile() {
     let fIdx=0
     let pIdx=0
     local parents=$($MTN --reallyquiet -d $DB automate parents $revision)
-    if [ "x" == "x$parents" ]
+    if [ "x" = "x$parents" ]
     then
 	local plainDiff="$revision.noparent.diff"
 	local htmlDiff="$revision.noparent.html"
@@ -102,7 +102,7 @@ function processFile() {
     rm $rev
 }
 
-if [ "x" == "x$(ls $BASE)" ]
+if [ "x" = "x$(ls $BASE)" ]
 then
     exit 0
 fi

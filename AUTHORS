@@ -283,14 +283,6 @@ here:
 external libraries:
 -------------------
 
-Monotone distributes unmodified or nearly unmodified copies of several
-third-party libraries on which it relies.  The binary 'mtn' executable
-is a derivative work of these libraries as well as the monotone source
-proper, but the monotone developers do not claim copyright in these
-libraries (except to the extent that we have personally
-contributed code to them).  They are 'separate and independent works
-in themselves'.
-
 The files in netxx/ comprise the NetXX library, written by Peter
 Jones.  It is no longer available from its author.  It is distributed
 under a BSD-like license, reproduced here:
@@ -394,21 +386,21 @@ These contributors made a few small, mechanical changes to the manual,
 which are probably not copyrightable, and were not polled.
 
 jmmv@menta.net
-	three patches; typo fixes and use of IANA-reserved
-	example domain names
-	d64ee74bbafc09497d70c169667ae960171a5fcc
-	8975520d4b2c73065004cb9d21990885b391d36c
-	eb8b5710e3720d4fb4ee3ae573aacc3b629ae1a3
+    three patches; typo fixes and use of IANA-reserved
+    example domain names
+    d64ee74bbafc09497d70c169667ae960171a5fcc
+    8975520d4b2c73065004cb9d21990885b391d36c
+    eb8b5710e3720d4fb4ee3ae573aacc3b629ae1a3
 
 jon@siliconcircus.com
-	one patch; change of quoting conventions
-	fcd914bd694bbcc6d0fca080ac4c8132f78f2c2f
+    one patch; change of quoting conventions
+    fcd914bd694bbcc6d0fca080ac4c8132f78f2c2f
 
 martine@danga.com
-	one patch; corrected "cat revision" to "automate get_revision"
-	e92a79a9a56076a4ead5013c29fb705a3c4de719
+    one patch; corrected "cat revision" to "automate get_revision"
+    e92a79a9a56076a4ead5013c29fb705a3c4de719
 
 tomfa@debian.org
-	signed a merge rev involving the manual, but did not
-	change the manual personally
-	8abd5712749648b2232cc4dfa549ce11b627f679
+    signed a merge rev involving the manual, but did not
+    change the manual personally
+    8abd5712749648b2232cc4dfa549ce11b627f679

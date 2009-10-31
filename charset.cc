@@ -49,21 +49,31 @@ charset_convert(string const & src_charset,
     dst = src;
   else
     {
-      string tmp_charset(dst_charset);
+      // Always try converting without special treatment first.
+      char const * converted = stringprep_convert(src.c_str(),
+                                                  dst_charset.c_str(),
+                                                  src_charset.c_str());
 
-#ifdef ICONV_TRANSLIT
-      if (best_effort)
-        tmp_charset += "//TRANSLIT";
-#endif
+      if (best_effort && !converted)
+        {
+          // Not all iconv implementations support this.
+          string tmp_charset(dst_charset);
+          tmp_charset += "//TRANSLIT";
+          converted = stringprep_convert(src.c_str(),
+                                         tmp_charset.c_str(),
+                                         src_charset.c_str());
 
-      char * converted = stringprep_convert(src.c_str(),
-                                            tmp_charset.c_str(),
-                                            src_charset.c_str());
+          // If that didn't work just give up.
+          if (!converted)
+            converted = src.c_str();
+        }
+
       E(converted != NULL, whence,
         F("failed to convert string from %s to %s: '%s'")
-         % src_charset % tmp_charset % src);
+         % src_charset % dst_charset % src);
       dst = string(converted);
-      free(converted);
+      if (converted != src.c_str())
+        free(const_cast<char*>(converted));
     }
 }
 
@@ -344,120 +354,6 @@ utf8_to_ace(utf8 const & utf, string & a)
   a = string(out);
   free(out);
 }
-
-void
-internalize_cert_name(utf8 const & utf, cert_name & c)
-{
-  string a;
-  utf8_to_ace(utf, a);
-  c = cert_name(a, utf.made_from);
-}
-
-void
-internalize_cert_name(external const & ext, cert_name & c)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_cert_name(utf, c);
-}
-
-void
-internalize_rsa_keypair_id(utf8 const & utf, rsa_keypair_id & key)
-{
-  string tmp;
-  typedef boost::tokenizer<char_separator<char> >
-    tokenizer;
-  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
-  tokenizer tokens(utf(), sep);
-  bool in_domain = false;
-  for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
-    {
-      if (!in_domain || *i == "." || *i == "@")
-        tmp += *i;
-      else
-        {
-          string a;
-          utf8_to_ace(utf8(*i, utf.made_from), a);
-          tmp += a;
-        }
-      if (*i == "@")
-        in_domain = true;
-    }
-  key = rsa_keypair_id(tmp, utf.made_from);
-}
-
-void
-internalize_rsa_keypair_id(external const & ext, rsa_keypair_id & key)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_rsa_keypair_id(utf, key);
-}
-
-void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, utf8 & utf)
-{
-  string tmp;
-  typedef boost::tokenizer<char_separator<char> >
-    tokenizer;
-  char_separator<char> sep("", ".@", boost::keep_empty_tokens);
-  tokenizer tokens(key(), sep);
-  bool in_domain = false;
-  for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); ++i)
-    {
-      if (!in_domain || *i == "." || *i == "@")
-        tmp += *i;
-      else
-        {
-          utf8 u;
-          ace_to_utf8(*i, u, key.made_from);
-          tmp += u();
-        }
-      if (*i == "@")
-        in_domain = true;
-    }
-  utf = utf8(tmp, key.made_from);
-}
-
-void
-externalize_rsa_keypair_id(rsa_keypair_id const & key, external & ext)
-{
-  utf8 utf;
-  externalize_rsa_keypair_id(key, utf);
-  utf8_to_system_strict(utf, ext);
-}
-
-void
-internalize_var_domain(utf8 const & utf, var_domain & d)
-{
-  string a;
-  utf8_to_ace(utf, a);
-  d = var_domain(a, utf.made_from);
-}
-
-void
-internalize_var_domain(external const & ext, var_domain & d)
-{
-  utf8 utf;
-  system_to_utf8(ext, utf);
-  internalize_var_domain(utf, d);
-}
-
-void
-externalize_var_domain(var_domain const & d, utf8 & utf)
-{
-  ace_to_utf8(d(), utf, d.made_from);
-}
-
-void
-externalize_var_domain(var_domain const & d, external & ext)
-{
-  utf8 utf;
-  externalize_var_domain(d, utf);
-  utf8_to_system_strict(utf, ext);
-}
-
-
 
 // Local Variables:
 // mode: C++

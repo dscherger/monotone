@@ -55,6 +55,9 @@ check(exists("nonexistent/id_monotone3"))
 check(not exists("id_monotone3"))
 
 -- * (E) export to path that's not writable
+-- we don't know how to do this on windows
+
+skip_if(ostype == "Windows")
 skip_if(not existsonpath("chmod"))
 
 mkdir("unwritable")
@@ -196,7 +199,7 @@ check(mtn("ssh_agent_export", "id_monotone_pass"), 0, false, false,
 -- ssh-add to read the password from somewhere other than /dev/tty.
 save_env()
 set_env("DISPLAY", "not-a-real-display")
-set_env("SSH_ASKPASS", "report_pass")
+set_env("SSH_ASKPASS", test.root .. "/report_pass")
 
 check({"ssh-add", "-D"}, 0, false, false)
 

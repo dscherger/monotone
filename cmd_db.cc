@@ -76,6 +76,23 @@ CMD(db_version, "version", "", CMD_REF(db), "",
   db.version(cout);
 }
 
+CMD(db_fix_certs, "fix_certs", "", CMD_REF(db), "",
+    N_("Attempt to fix bad certs"),
+    N_("Older monotone versions could sometimes associate certs with "
+       "the wrong key. This fixes such certs if you have the correct key, "
+       "and can optionally drop any certs that you don't have the "
+       "correct key for. This should only be needed if you had such certs "
+       "in your db when upgrading from 0.44 or earlier, or if you loaded "
+       "such certs with 'mtn read'."),
+    options::opts::drop_bad_certs)
+{
+  E(args.size() == 0, origin::user,
+    F("no arguments needed"));
+
+  database db(app);
+  db.fix_bad_certs(app.opts.drop_bad_certs);
+}
+
 CMD(db_dump, "dump", "", CMD_REF(db), "",
     N_("Dumps the contents of the database"),
     N_("Generates a list of SQL instructions that represent the whole "
@@ -116,8 +133,26 @@ CMD(db_migrate, "migrate", "", CMD_REF(db), "",
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
 
-  database db(app);
-  db.migrate(keys);
+  migration_status mstat;
+  {
+    database db(app);
+    db.migrate(keys, mstat);
+    app.dbcache.reset();
+  }
+
+  if (mstat.need_regen())
+    {
+      database db(app);
+      regenerate_caches(db);
+    }
+
+  if (mstat.need_flag_day())
+    {
+      P(F("NOTE: because this database was last used by a rather old version\n"
+          "of monotone, you're not done yet.  If you're a project leader, then\n"
+          "see the file UPGRADE for instructions on running '%s db %s'")
+        % prog_name % mstat.flag_day_name());
+    }
 }
 
 CMD(db_execute, "execute", "", CMD_REF(db), "",
@@ -249,6 +284,7 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -257,9 +293,9 @@ CMD(db_changesetify, "changesetify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_changesets_from_manifest_ancestry(db, keys, set<string>());
+  build_changesets_from_manifest_ancestry(db, keys, project, set<string>());
 }
 
 CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
@@ -269,6 +305,7 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
 {
   database db(app);
   key_store keys(app);
+  project_t project(db);
 
   E(args.size() == 0, origin::user,
     F("no arguments needed"));
@@ -277,9 +314,9 @@ CMD(db_rosterify, "rosterify", "", CMD_REF(db), "",
   db.check_is_not_rosterified();
 
   // early short-circuit to avoid failure after lots of work
-  cache_user_key(app.opts, app.lua, db, keys);
+  cache_user_key(app.opts, app.lua, db, keys, project);
 
-  build_roster_style_revs_from_manifest_style_revs(db, keys,
+  build_roster_style_revs_from_manifest_style_revs(db, keys, project,
                                                    app.opts.attrs_to_drop);
 }
 
@@ -333,10 +370,9 @@ CMD(set, "set", "", CMD_REF(variables), N_("DOMAIN NAME VALUE"),
   if (args.size() != 3)
     throw usage(execid);
 
-  var_domain d;
+  var_domain d = typecast_vocab<var_domain>(idx(args, 0));
   var_name n;
   var_value v;
-  internalize_var_domain(idx(args, 0), d);
   n = typecast_vocab<var_name>(idx(args, 1));
   v = typecast_vocab<var_value>(idx(args, 2));
 
@@ -353,9 +389,8 @@ CMD(unset, "unset", "", CMD_REF(variables), N_("DOMAIN NAME"),
   if (args.size() != 2)
     throw usage(execid);
 
-  var_domain d;
+  var_domain d = typecast_vocab<var_domain>(idx(args, 0));
   var_name n;
-  internalize_var_domain(idx(args, 0), d);
   n = typecast_vocab<var_name>(idx(args, 1));
   var_key k(d, n);
 

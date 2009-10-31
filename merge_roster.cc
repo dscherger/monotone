@@ -36,10 +36,12 @@ image(resolve_conflicts::resolution_t resolution)
       return "content_user";
     case resolve_conflicts::content_internal:
       return "content_internal";
-    case resolve_conflicts::rename:
-      return "rename";
     case resolve_conflicts::drop:
       return "drop";
+    case resolve_conflicts::keep:
+      return "keep";
+    case resolve_conflicts::rename:
+      return "rename";
     }
   I(false); // keep compiler happy
 }
@@ -183,7 +185,6 @@ roster_merge_result::count_unsupported_resolution() const
   return (missing_root_conflict ? 1 : 0)
     + invalid_name_conflicts.size()
     + directory_loop_conflicts.size()
-    + orphaned_node_conflicts.size()
     + multiple_name_conflicts.size()
     + attribute_conflicts.size();
 }

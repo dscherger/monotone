@@ -12,7 +12,7 @@
 
 #include "sanity.hh"
 
-struct uri
+struct uri_t
 {
   std::string scheme;
   std::string user;
@@ -21,10 +21,21 @@ struct uri
   std::string path;
   std::string query;
   std::string fragment;
+
+  void clear()
+  {
+    scheme.clear();
+    user.clear();
+    host.clear();
+    port.clear();
+    path.clear();
+    query.clear();
+    fragment.clear();
+  }
 };
 
 void
-parse_uri(std::string const & in, uri & out, origin::type made_from);
+parse_uri(std::string const & in, uri_t & uri, origin::type made_from);
 
 std::string
 urldecode(std::string const & in, origin::type made_from);

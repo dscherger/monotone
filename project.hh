@@ -17,6 +17,7 @@
 #include "outdated_indicator.hh"
 #include "vocab.hh"
 
+class arg_type;
 class database;
 class key_store;
 class options;
@@ -42,13 +43,26 @@ struct date_t;
 #define comment_cert_name cert_name("comment")
 #define testresult_cert_name cert_name("testresult")
 
+struct key_identity_info
+{
+  key_id id;
+  key_name given_name; // name given when creating the key
+  key_name official_name; // name returned by hooks or (once implented) policy
+};
+bool
+operator<(key_identity_info const & left,
+          key_identity_info const & right);
+std::ostream &
+operator<<(std::ostream & os,
+           key_identity_info const & identity);
+
 class tag_t
 {
 public:
   revision_id ident;
   utf8 name;
-  rsa_keypair_id key;
-  tag_t(revision_id const & ident, utf8 const & name, rsa_keypair_id const & key);
+  key_id key;
+  tag_t(revision_id const & ident, utf8 const & name, key_id const & key);
 };
 bool operator < (tag_t const & a, tag_t const & b);
 
@@ -106,7 +120,7 @@ public:
   outdated_indicator get_revision_branches(revision_id const & id,
                                            std::set<branch_name> & branches);
   outdated_indicator get_branch_certs(branch_name const & branch,
-                                      std::vector<cert> & certs);
+                                      std::vector<std::pair<id, cert> > & certs);
 
   void put_standard_certs(key_store & keys,
                           revision_id const & id,
@@ -133,6 +147,44 @@ public:
   void put_revision_comment(key_store & keys,
                             revision_id const & id,
                             utf8 const & comment);
+
+private:
+  // lookup the key ID associated with a particular key name
+  void lookup_key_by_name(key_store * const keys,
+                          lua_hooks & lua,
+                          key_name const & name,
+                          key_id & id);
+  // get the name given when creating the key
+  void get_canonical_name_of_key(key_store * const keys,
+                                 key_id const & id,
+                                 key_name & name);
+  void complete_key_identity(key_store * const keys,
+                             lua_hooks & lua,
+                             key_identity_info & info);
+  void get_key_identity(key_store * const keys,
+                        lua_hooks & lua,
+                        external_key_name const & input,
+                        key_identity_info & output);
+public:
+  void complete_key_identity(key_store & keys,
+                             lua_hooks & lua,
+                             key_identity_info & info);
+  void complete_key_identity(lua_hooks & lua,
+                             key_identity_info & info);
+  void get_key_identity(key_store & keys,
+                        lua_hooks & lua,
+                        external_key_name const & input,
+                        key_identity_info & output);
+  void get_key_identity(lua_hooks & lua,
+                        external_key_name const & input,
+                        key_identity_info & output);
+  void get_key_identity(key_store & keys,
+                        lua_hooks & lua,
+                        arg_type const & input,
+                        key_identity_info & output);
+  void get_key_identity(lua_hooks & lua,
+                        arg_type const & input,
+                        key_identity_info & output);
 };
 
 std::string

@@ -183,14 +183,14 @@ namespace commands
   }
 
   command::names_set
-  command::subcommands(void) const
+  command::subcommands(bool hidden) const
   {
     names_set set;
     init_children();
     for (children_set::const_iterator i = m_children.begin();
       i != m_children.end(); i++)
       {
-        if ((*i)->hidden())
+        if ((*i)->hidden() && !hidden)
           continue;
         names_set const & other = (*i)->names();
         set.insert(other.begin(), other.end());
@@ -330,6 +330,8 @@ namespace commands
                 return matches;
               }
 
+            // while we list hidden commands with a special option,
+            // we never want to give them as possible completions
             if (!child->hidden() &&
                      prefix().length() < (*iter2)().length() &&
                      allow_completion() && completion_ok)

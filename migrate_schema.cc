@@ -115,6 +115,8 @@ namespace
       L(FL("executing SQL '%s'") % cmd);
 
       sqlite3_prepare_v2(db, cmd, strlen(cmd), &s, &after);
+      MM(cmd);
+      MM(after);
       assert_sqlite3_ok(db);
 
       I(s);
@@ -244,7 +246,8 @@ inline bool is_ws(char c)
 }
 
 static void
-sqlite_sha1_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+sqlite3_sha1_fn_body(sqlite3_context *f, int nargs, sqlite3_value ** args,
+                    bool strip_whitespace)
 {
   if (nargs <= 1)
     {
@@ -269,13 +272,32 @@ sqlite_sha1_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
             tmp += sep;
           char const * s = sqlite3_value_cstr(args[i]);
           char const * end = s + sqlite3_value_bytes(args[i]) - 1;
-          remove_copy_if(s, end, back_inserter(tmp), is_ws);
+          if (strip_whitespace)
+            {
+              remove_copy_if(s, end, back_inserter(tmp), is_ws);
+            }
+          else
+            {
+              tmp.append(s, end+1);
+            }
         }
     }
 
   id hash;
   calculate_ident(data(tmp, origin::database), hash);
   sqlite3_result_blob(f, hash().c_str(), hash().size(), SQLITE_TRANSIENT);
+}
+
+static void
+sqlite3_sha1_nows_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+{
+  sqlite3_sha1_fn_body(f, nargs, args, true);
+}
+
+static void
+sqlite3_sha1_fn(sqlite3_context *f, int nargs, sqlite3_value ** args)
+{
+  sqlite3_sha1_fn_body(f, nargs, args, false);
 }
 
 static void
@@ -401,7 +423,7 @@ char const migrate_add_hashes_and_merkle_trees[] =
   "    unique(name, id, value, keypair, signature)"
   "  );"
   "INSERT INTO manifest_certs"
-  "  SELECT sha1(':', id, name, value, keypair, signature),"
+  "  SELECT sha1_nows(':', id, name, value, keypair, signature),"
   "         id, name, value, keypair, signature"
   "         FROM tmp;"
   "DROP TABLE tmp;"
@@ -418,7 +440,7 @@ char const migrate_add_hashes_and_merkle_trees[] =
   "    unique(name, id, value, keypair, signature)"
   "  );"
   "INSERT INTO file_certs"
-  "  SELECT sha1(':', id, name, value, keypair, signature),"
+  "  SELECT sha1_nows(':', id, name, value, keypair, signature),"
   "         id, name, value, keypair, signature"
   "         FROM tmp;"
   "DROP TABLE tmp;"
@@ -430,7 +452,7 @@ char const migrate_add_hashes_and_merkle_trees[] =
   "    id primary key,         -- key identifier chosen by user\n"
   "    keydata not null        -- RSA public params\n"
   "  );"
-  "INSERT INTO public_keys SELECT sha1(':',id,keydata), id, keydata FROM tmp;"
+  "INSERT INTO public_keys SELECT sha1_nows(':',id,keydata), id, keydata FROM tmp;"
   "DROP TABLE tmp;"
 
   // add the column to private_keys
@@ -440,7 +462,7 @@ char const migrate_add_hashes_and_merkle_trees[] =
   "    id primary key,       -- as in public_keys (same identifiers, in fact)\n"
   "    keydata not null      -- encrypted RSA private params\n"
   "  );"
-  "INSERT INTO private_keys SELECT sha1(':',id,keydata), id, keydata FROM tmp;"
+  "INSERT INTO private_keys SELECT sha1_nows(':',id,keydata), id, keydata FROM tmp;"
   "DROP TABLE tmp;"
 
   // add the merkle tree stuff
@@ -533,7 +555,7 @@ migrate_to_external_privkeys(sqlite3 * db, key_store & keys)
 
     while (stmt.step())
       {
-        rsa_keypair_id ident(stmt.column_string(0), origin::database);
+        key_name ident(stmt.column_string(0), origin::database);
         base64<old_arc4_rsa_priv_key> old_priv(stmt.column_string(1),
                                                origin::database);
         base64<rsa_pub_key> pub;
@@ -702,6 +724,37 @@ char const migrate_to_binary_hashes[] =
   ;
 
 
+char const migrate_certs_to_key_hash[] =
+  "ALTER TABLE public_keys rename to public_keys_tmp;\n"
+  "CREATE TABLE public_keys\n"
+  "  ( id primary key,         -- hash of remaining fields separated by \":\"\n"
+  "    name not null,          -- key identifier chosen by user\n"
+  "    keydata not null        -- RSA public params\n"
+  "  );\n"
+  "INSERT INTO public_keys (id, name, keydata)"
+  "   SELECT hash, id, keydata FROM public_keys_tmp;\n"
+  "DROP TABLE public_keys_tmp;\n"
+
+  "ALTER TABLE revision_certs rename to revision_certs_tmp;\n"
+  "CREATE TABLE revision_certs\n"
+  "  ( hash not null unique,   -- hash of remaining fields separated by \":\"\n"
+  "    revision_id not null,   -- joins with revisions.id\n"
+  "    name not null,          -- opaque string chosen by user\n"
+  "    value not null,         -- opaque blob\n"
+  "    keypair_id not null,    -- joins with public_keys.id\n"
+  "    signature not null,     -- RSA/SHA1 signature of \"[name@id:val]\"\n"
+  "    unique(name, value, revision_id, keypair_id, signature)\n"
+  "  );\n"
+  "CREATE INDEX revision_certs__revision_id ON revision_certs (revision_id);\n"
+
+  "INSERT INTO revision_certs(hash, revision_id, name, value, keypair_id, signature)\n"
+  "SELECT a.hash, a.id, a.name, a.value, b.id, a.signature\n"
+  "FROM revision_certs_tmp a JOIN public_keys b\n"
+  "ON a.keypair = b.name;\n"
+
+  "DROP TABLE revision_certs_tmp;"
+  ;
+
 // these must be listed in order so that ones listed earlier override ones
 // listed later
 enum upgrade_regime
@@ -783,9 +836,12 @@ const migration_event migration_events[] = {
   { "7ca81b45279403419581d7fde31ed888a80bd34e",
     migrate_to_binary_hashes, 0, upgrade_none },
 
+  { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
+    migrate_certs_to_key_hash, 0, upgrade_none },
+
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955", 0, 0, upgrade_none }
+  { "9c8d5a9ea8e29c69be6459300982a68321b0ec12", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);
@@ -1008,7 +1064,8 @@ check_sql_schema(sqlite3 * db, system_path const & filename)
 void sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args);
 #endif
 
-void
+
+migration_status
 migrate_sql_schema(sqlite3 * db, key_store & keys,
                    system_path const & filename)
 {
@@ -1041,7 +1098,7 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
     if (cat == SCHEMA_MATCHES)
       {
         P(F("no migration performed; database schema already up-to-date"));
-        return;
+        return migration_status(false);
       }
 
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
@@ -1050,7 +1107,8 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
       sql::create_function(db, "hex", sqlite3_hex_fn);
 #endif
 
-    sql::create_function(db, "sha1", sqlite_sha1_fn);
+    sql::create_function(db, "sha1", sqlite3_sha1_fn);
+    sql::create_function(db, "sha1_nows", sqlite3_sha1_nows_fn);
     sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
     sql::create_function(db, "unhex", sqlite3_unhex_fn);
 
@@ -1093,20 +1151,16 @@ migrate_sql_schema(sqlite3 * db, key_store & keys,
       {
         string command_str = (regime == upgrade_changesetify
                               ? "changesetify" : "rosterify");
-        P(F("NOTE: because this database was last used by a rather old version\n"
-            "of monotone, you're not done yet.  If you're a project leader, then\n"
-            "see the file UPGRADE for instructions on running '%s db %s'")
-          % prog_name % command_str);
+        return migration_status(false, command_str);
       }
       break;
     case upgrade_regen_caches:
-      P(F("NOTE: this upgrade cleared monotone's caches\n"
-          "you should now run '%s db regenerate_caches'")
-        % prog_name);
+      return migration_status(true);
       break;
     case upgrade_none:
       break;
     }
+  return migration_status(false);
 }
 
 // test_migration_step runs the migration step from SCHEMA to its successor,
@@ -1128,7 +1182,8 @@ test_migration_step(sqlite3 * db, key_store & keys,
     sql::create_function(db, "hex", sqlite3_hex_fn);
 #endif
 
-  sql::create_function(db, "sha1", sqlite_sha1_fn);
+  sql::create_function(db, "sha1_nows", sqlite3_sha1_nows_fn);
+  sql::create_function(db, "sha1", sqlite3_sha1_fn);
   sql::create_function(db, "unbase64", sqlite3_unbase64_fn);
   sql::create_function(db, "unhex", sqlite3_unhex_fn);
 

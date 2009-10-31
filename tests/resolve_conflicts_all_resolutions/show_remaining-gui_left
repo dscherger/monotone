@@ -1,0 +1,5 @@
+mtn: duplicate_name gui_left.sh
+mtn: duplicate_name gui_right.sh
+mtn: duplicate_name thermostat.c
+mtn: content interactive_file
+mtn: content user_file

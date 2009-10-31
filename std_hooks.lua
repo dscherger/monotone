@@ -363,6 +363,11 @@ function edit_comment(basetext, user_log_message)
 end
 
 
+function get_local_key_name(key_identity)
+   return key_identity.given_name
+end
+
+
 function persist_phrase_ok()
    return true
 end
@@ -372,6 +377,23 @@ function use_inodeprints()
    return false
 end
 
+function get_date_format_spec()
+   -- Return the strftime(3) specification to be used to print dates
+   -- in human-readable format after conversion to the local timezone.
+   -- The default uses the preferred date and time representation for
+   -- the current locale, e.g. the output looks like this: "09/08/2009
+   -- 06:49:26 PM" for en_US, or "08.09.2009 18:49:26" for de_DE.
+   return "%x %X"
+
+   -- A sampling of other possible formats you might want:
+   --   default for your locale: "%c" (may include a confusing timezone label)
+   --   12 hour format: "%d %b %Y, %I:%M:%S %p"
+   --   like ctime(3):  "%a %b %d %H:%M:%S %Y"
+   --   email style:    "%a, %d %b %Y %H:%M:%S"
+   --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
+   --
+   --   ISO 8601, no timezone conversion: ""
+end
 
 -- trust evaluation hooks
 
@@ -441,9 +463,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *CENTER* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*CENTER* file."))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -489,9 +512,10 @@ mergers.vim = {
      return execute_redirected("", string.gsub(out, "\\", "/"), "", unpack(diff3_args))
       end
 
-      io.write (string.format("\nWARNING: 'vim' was choosen to perform external 3-way merge.\n"..
-          "You should merge all changes to *LEFT* file due to limitation of program\n"..
-          "arguments.\n\n"))
+      io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
+			      "an external 3-way merge.\n"..
+			      "You must merge all changes to the "..
+			      "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then
@@ -1062,13 +1086,15 @@ function get_netsync_read_permitted(branch, ident)
          for j, val in pairs(item.values) do
             if val == "*" then return true end
             if val == "" and ident == nil then return true end
-            if globish_match(val, ident) then return true end
+            if ident ~= nil and val == ident.id then return true end
+            if ident ~= nil and globish_match(val, ident.name) then return true end
          end
       end elseif item.name == "deny" then if matches then
          for j, val in pairs(item.values) do
             if val == "*" then return false end
             if val == "" and ident == nil then return false end
-            if globish_match(val, ident) then return false end
+            if ident ~= nil and val == ident.id then return false end
+            if ident ~= nil and globish_match(val, ident.name) then return false end
          end
       end elseif item.name == "continue" then if matches then
          cont = true
@@ -1093,7 +1119,8 @@ function get_netsync_write_permitted(ident)
    while (not matches and line ~= nil) do
       local _, _, ln = string.find(line, "%s*([^%s]*)%s*")
       if ln == "*" then matches = true end
-      if globish_match(ln, ident) then matches = true end
+      if ln == ident.id then matches = true end
+      if globish_match(ln, ident.name) then matches = true end
       line = permfile:read()
    end
    io.close(permfile)
@@ -1197,6 +1224,10 @@ function get_mtn_command(host)
         return "mtn"
 end
 
+function get_remote_unix_socket_command(host)
+    return "socat"
+end
+
 function get_default_command_options(command)
    local default_args = {}
    return default_args
@@ -1247,11 +1278,6 @@ function hook_wrapper(func_name, ...)
     end
     local res = { _G[func_name](unpack(args, 1, args.n)) }
     return hook_wrapper_dump._table(res)
-end
-
-
-function get_remote_unix_socket_command(host)
-    return "socat"
 end
 
 do

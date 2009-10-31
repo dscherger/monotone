@@ -254,7 +254,7 @@ if WIN32_PLATFORM
   tester_SOURCES += win32/tester-plaf.cc
   check_net_SOURCES = win32/tester-check-net.cc
   AM_CPPFLAGS += -DWIN32
-  LDADD += -lshfolder -lws2_32 -lintl -liconv -liphlpapi
+  LDADD += -lshfolder -lws2_32 -liconv -liphlpapi
 else
   libplatform_a_SOURCES += $(UNIX_PLATFORM_SOURCES)
   mtn_SOURCES += unix/main.cc
@@ -304,7 +304,7 @@ info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.spec monotone.html	\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
 									\
@@ -384,10 +384,10 @@ endif
 
 if REBUILD_NLS
 %.gmo: %.merged.po
-	$(MSGFMT) -c --statistics -o $@ $<
+	$(V_msgfmt)$(MSGFMT) -c --statistics -o $@ $<
 
 %.merged.po: $(srcdir)/po/%.po $(PACKAGE).pot
-	$(MSGMERGE) $^ -o $@
+	$(V_msgmerge)$(MSGMERGE) $^ -q -o $@
 
 # for translators' use
 UPDATEPOFILES = $(addsuffix .po-update, $(ALL_LINGUAS))
@@ -403,7 +403,7 @@ POTFILES = $(filter-out package_%, $(MOST_SOURCES)) \
 	monotone.cc std_hooks.lua
 
 $(PACKAGE).pot: $(POTFILES)
-	$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
+	$(V_xgettext)$(XGETTEXT) -o$@ -D$(top_srcdir) -cTRANSLATORS: \
 	  --copyright-holder='$(COPYRIGHT_HOLDER)' \
 	  --msgid-bugs-address='$(MSGID_BUGS_ADDRESS)' \
 	  $(XGETTEXT_PKG_OPTS) $(XGETTEXT_OPTS) \
@@ -511,17 +511,18 @@ check-local: tester_tests.status unit_tests.status lua_tests.status
 	exit $$exit
 
 run_%_tests: Makefile
-	{ echo '#!/bin/sh';						  \
+	$(AM_V_GEN){ echo '#!/bin/sh';					  \
+	  echo 'export LANG=C';						  \
 	  echo 'PATH=$(top_builddir):$$PATH';				  \
 	  echo '$(top_builddir)/tester $(srcdir)/$*-testsuite.lua "$$@"'; \
 	  echo 'echo $$? > $*_tests.status';				  \
-	  echo 'exit 0'; } > $@
+	  echo 'exit 0'; } > $@ && \
 	chmod 755 $@
 
 # The leading + causes Make to treat this as a recursive invocation,
 # allowing it to participate in the jobserver protocol.
 %_tests.status: run_%_tests %-testsuite.lua tester$(EXEEXT) FORCE
-	+./run_$*_tests
+	+$(AM_V_at)./run_$*_tests
 
 unit_tests.status : unit_tester$(EXEEXT)
 lua_tests.status : mtn$(EXEEXT) check_net$(EXEEXT)
@@ -565,32 +566,32 @@ CLEANFILES = $(bin_SCRIPTS) $(BUILT_SOURCES) $(CLEAN_SOURCES) \
 # automake provides no nice way to build a helper program to execute
 # on the build machine, so we need our own rule.  almost all the
 # standard flags variables are inappropriate.
+
 txt2c$(EXEEXT): txt2c.cc
-	$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
+	$(V_bcxx)$(CXX_FOR_BUILD) $(CXXFLAGS) -o $@ $^
 
 # files generated using txt2c
 std_hooks.cc: std_hooks.lua txt2c$(EXEEXT)
-	./txt2c std_hooks $< $@
+	$(V_txt2c)./txt2c std_hooks $< $@
 
 testlib.cc: testlib.lua txt2c$(EXEEXT)
-	./txt2c testlib $< $@
+	$(V_txt2c)./txt2c testlib $< $@
 
 schema.cc: schema.sql txt2c$(EXEEXT)
-	./txt2c schema $< $@
+	$(V_txt2c)./txt2c schema $< $@
 
 package_revision.cc: package_revision.txt txt2c$(EXEEXT)
-	./txt2c --strip-trailing package_revision $< $@
+	$(V_txt2c)./txt2c --strip-trailing package_revision $< $@
 
 package_full_revision.cc: package_full_revision.txt txt2c$(EXEEXT)
-	./txt2c package_full_revision $< $@
+	$(V_txt2c)./txt2c package_full_revision $< $@
 
 
 # Support for scripts
 do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 
 %: util/%.in
-	$(do_subst) < $< > $@
-	chmod +x $@
+	$(V_subst)$(do_subst) < $< > $@ && chmod +x $@
 
 # This is phony, so that we always try to rebuild it.  If it succeeds
 # in calculating changes, it produces its target; otherwise, its
@@ -600,17 +601,17 @@ do_subst = sed -e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),'
 # creates, and also make sure that the shell command exits
 # successfully; the rm -f ensures both
 package_revision_raw.txt:
-	REAL_BLDDIR=$$PWD/$(top_builddir); \
+	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_base_revision_id) 2>/dev/null >$@ \
 	|| rm -f $@
 package_revision.txt: package_revision_raw.txt
-	if [ -f $< ]; then \
+	$(AM_V_GEN)set -e; if [ -f $< ]; then \
 	  cp $< $@; \
-	fi
+	fi; \
 	if [ ! -f $@ -a -f $(srcdir)/$@ ]; then \
 	  cp $(srcdir)/$@ $@; \
-	fi
+	fi; \
 	[ -f $@ ] || echo "unknown" > $@
 
 # To avoid a dependency loop here, what we do is:
@@ -625,7 +626,7 @@ package_revision.txt: package_revision_raw.txt
 # See above comment.
 .PHONY: package_full_revision_raw.txt
 package_full_revision_raw.txt:
-	REAL_BLDDIR=$$PWD/$(top_builddir); \
+	$(AM_V_GEN)REAL_BLDDIR=$$PWD/$(top_builddir); \
 	(cd $(srcdir) && $$REAL_BLDDIR/mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| (cd $(srcdir) && mtn --root=. automate get_current_revision) 2>/dev/null >$@ \
 	|| rm -f $@
@@ -637,21 +638,23 @@ package_full_revision_raw.txt:
 #      -- if the dist file does not exist, then we say "unknown"
 #   -- if the raw file does exist, then we regenerate the dist file
 package_full_revision_dist.txt: package_full_revision_raw.txt
-	if [ -f $< ]; then \
+	$(AM_V_GEN)set -e; if [ -f $< ]; then \
 	  cp -f $< $@ \
 	  && (echo ''; \
 	      echo '  Generated from data cached in the distribution;'; \
 	      echo '  further changes may have been made.') >> $@; \
-	fi
+	fi; \
 	if [ ! -f $@ -a -f $(srcdir)/$@ ]; then \
 	  cp $(srcdir)/$@ $@; \
-	fi
+	fi; \
 	[ -f $@ ] || echo "unknown" > $@
 # The raw file may not exist, but the dist file definitely does; we
 # just take the first dependency that exists.
 package_full_revision.txt: package_full_revision_raw.txt package_full_revision_dist.txt
-	rm -f $@
-	for SRC in $^; do ([ -f $$SRC -a ! -f $@ ] && cp -f $$SRC $@) || true; done
+	$(AM_V_GEN)rm -f $@; \
+	for SRC in $^; do \
+	    ([ -f $$SRC -a ! -f $@ ] && cp -f $$SRC $@) || true; \
+	done
 
 # This is a magic directive copy-and-pasted, then modified, from the
 # automake 1.9 manual, section 13.4, "Checking the distribution".
@@ -685,25 +688,54 @@ apidocs:
 
 monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
 	       std_hooks.lua texinfo.css
-	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
+	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
 		cp $(srcdir)/texinfo.css .; \
-	fi
-	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<
-	cp $@ $@.bak
-	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@
+	fi; \
+	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<; \
+	cp $@ $@.bak; \
+	sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $@.bak >$@; \
 	rm -f $@.bak
 
 html: monotone.texi version.texi std_hooks.lua texinfo.css
-	if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
+	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
-	fi
-	mkdir -p $@
-	cp -r $(srcdir)/figures $@
-	cp $(srcdir)/texinfo.css $@
-	makeinfo -I $(srcdir) --number-sections --html --output $@ $<
+	fi; \
+	mkdir -p $@; \
+	cp -r $(srcdir)/figures $@; \
+	cp $(srcdir)/texinfo.css $@; \
+	makeinfo -I $(srcdir) --number-sections --html --output $@ $<; \
 	for f in $@/*.html; do \
 		cp $$f $$f.bak; \
 		sed -e 's,<head>,<head><link type="text/css" rel="stylesheet" href="texinfo.css" />,' $$f.bak >$$f; \
 		rm -f $$f.bak; \
 	done
+
+# Verbosity goo.
+V_bcxx       = $(V_bcxx_$(V))
+V_bcxx_      = $(V_bcxx_$(AM_DEFAULT_VERBOSITY))
+V_bcxx_0     = @echo "  BCXX  " $@;
+
+V_txt2c      = $(V_txt2c_$(V))
+V_txt2c_     = $(V_txt2c_$(AM_DEFAULT_VERBOSITY))
+V_txt2c_0    = @echo "  TXT2C " $@;
+
+V_subst      = $(V_subst_$(V))
+V_subst_     = $(V_subst_$(AM_DEFAULT_VERBOSITY))
+V_subst_0    = @echo "  SUBST " $@;
+
+V_xgettext   = $(V_xgettext_$(V))
+V_xgettext_  = $(V_xgettext_$(AM_DEFAULT_VERBOSITY))
+V_xgettext_0 = @echo "XGETTEXT" $@;
+
+V_msgfmt     = $(V_msgfmt_$(V))
+V_msgfmt_    = $(V_msgfmt_$(AM_DEFAULT_VERBOSITY))
+V_msgfmt_0   = @echo "  MSGFMT" $@;
+
+V_msgmerge   = $(V_msgmerge_$(V))
+V_msgmerge_  = $(V_msgmerge_$(AM_DEFAULT_VERBOSITY))
+V_msgmerge_0 = @echo "MSGMERGE" $@;
+
+V_makeinfo   = $(V_makeinfo_$(V))
+V_makeinfo_  = $(V_makeinfo_$(AM_DEFAULT_VERBOSITY))
+V_makeinfo_0 = @echo "MAKEINFO" $@;

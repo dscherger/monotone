@@ -17,7 +17,8 @@ using std::string;
 
 UNIT_TEST(mac)
 {
-  netcmd out_cmd, in_cmd;
+  netcmd out_cmd(constants::netcmd_current_protocol_version);
+  netcmd in_cmd(constants::netcmd_current_protocol_version);
   string buf;
   netsync_session_key key(constants::netsync_key_initializer);
   {
@@ -82,7 +83,8 @@ UNIT_TEST(functions)
       // error_cmd
       {
         L(FL("checking i/o round trip on error_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         string out_errmsg("your shoelaces are untied"), in_errmsg;
         string buf;
         out_cmd.write_error_cmd(out_errmsg);
@@ -95,14 +97,17 @@ UNIT_TEST(functions)
       // hello_cmd
       {
         L(FL("checking i/o round trip on hello_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(0);
         string buf;
-        rsa_keypair_id out_server_keyname("server@there"), in_server_keyname;
+        key_name out_server_keyname("server@there"), in_server_keyname;
         rsa_pub_key out_server_key("9387938749238792874"), in_server_key;
         id out_nonce(raw_sha1("nonce it up"), origin::internal), in_nonce;
         out_cmd.write_hello_cmd(out_server_keyname, out_server_key, out_nonce);
         do_netcmd_roundtrip(out_cmd, in_cmd, buf);
-        in_cmd.read_hello_cmd(in_server_keyname, in_server_key, in_nonce);
+        u8 ver(0);
+        in_cmd.read_hello_cmd(ver, in_server_keyname, in_server_key, in_nonce);
+        UNIT_TEST_CHECK(ver == constants::netcmd_current_protocol_version);
         UNIT_TEST_CHECK(in_server_keyname == out_server_keyname);
         UNIT_TEST_CHECK(in_server_key == out_server_key);
         UNIT_TEST_CHECK(in_nonce == out_nonce);
@@ -112,7 +117,8 @@ UNIT_TEST(functions)
       // bye_cmd
       {
         L(FL("checking i/o round trip on bye_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         u8 out_phase(1), in_phase;
         string buf;
 
@@ -126,7 +132,8 @@ UNIT_TEST(functions)
       // anonymous_cmd
       {
         L(FL("checking i/o round trip on anonymous_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         protocol_role out_role = source_and_sink_role, in_role;
         string buf;
         // total cheat, since we don't actually verify that rsa_oaep_sha_data
@@ -150,12 +157,14 @@ UNIT_TEST(functions)
       // auth_cmd
       {
         L(FL("checking i/o round trip on auth_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         protocol_role out_role = source_and_sink_role, in_role;
         string buf;
-        id out_client(raw_sha1("happy client day"), origin::internal);
+        key_id out_client(raw_sha1("happy client day"), origin::internal);
         id out_nonce1(raw_sha1("nonce me amadeus"), origin::internal);
-        id in_client, in_nonce1;
+        key_id in_client;
+        id in_nonce1;
         // total cheat, since we don't actually verify that rsa_oaep_sha_data
         // is sensible anywhere here...
         rsa_oaep_sha_data out_key("nonce start my heart"), in_key;
@@ -184,7 +193,8 @@ UNIT_TEST(functions)
       // confirm_cmd
       {
         L(FL("checking i/o round trip on confirm_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         string buf;
         out_cmd.write_confirm_cmd();
         do_netcmd_roundtrip(out_cmd, in_cmd, buf);
@@ -195,7 +205,8 @@ UNIT_TEST(functions)
       // refine_cmd
       {
         L(FL("checking i/o round trip on refine_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         string buf;
         refinement_type out_ty (refinement_query), in_ty(refinement_response);
         merkle_node out_node, in_node;
@@ -220,7 +231,8 @@ UNIT_TEST(functions)
       // done_cmd
       {
         L(FL("checking i/o round trip on done_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         size_t out_n_items(12), in_n_items(0);
         netcmd_item_type out_type(key_item), in_type(revision_item);
         string buf;
@@ -236,7 +248,8 @@ UNIT_TEST(functions)
       // data_cmd
       {
         L(FL("checking i/o round trip on data_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         netcmd_item_type out_type(file_item), in_type(key_item);
         id out_id(raw_sha1("tuna is not yummy"), origin::internal), in_id;
         string out_dat("thank you for flying northwest"), in_dat;
@@ -252,7 +265,8 @@ UNIT_TEST(functions)
       // delta_cmd
       {
         L(FL("checking i/o round trip on delta_cmd"));
-        netcmd out_cmd, in_cmd;
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
         netcmd_item_type out_type(file_item), in_type(key_item);
         id out_head(raw_sha1("your seat cusion can be reused"), origin::internal), in_head;
         id out_base(raw_sha1("as a floatation device"), origin::internal), in_base;

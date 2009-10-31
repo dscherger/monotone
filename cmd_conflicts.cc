@@ -1,4 +1,4 @@
-// Copyright (C) 2008 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -54,6 +54,36 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 {
   // Go thru the conflicts we know how to resolve in the same order
   // merge.cc resolve_merge_conflicts outputs them.
+  for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
+       i != conflicts.result.orphaned_node_conflicts.end();
+       ++i)
+    {
+      orphaned_node_conflict & conflict = *i;
+
+      if (conflict.resolution.first == resolve_conflicts::none)
+        {
+          file_path name;
+          if (conflicts.left_roster->has_node(conflict.nid))
+            conflicts.left_roster->get_name(conflict.nid, name);
+          else
+            conflicts.right_roster->get_name(conflict.nid, name);
+
+          P(F("orphaned node %s") % name);
+
+          switch (show_case)
+            {
+            case first:
+              P(F("possible resolutions:"));
+              P(F("resolve_first drop"));
+              P(F("resolve_first rename \"file_name\""));
+              return;
+
+            case remaining:
+              break;
+            }
+        }
+    }
+
   for (std::vector<duplicate_name_conflict>::iterator i = conflicts.result.duplicate_name_conflicts.begin();
        i != conflicts.result.duplicate_name_conflicts.end();
        ++i)
@@ -75,6 +105,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
               if (conflict.left_resolution.first == resolve_conflicts::none)
                 {
                   P(F("resolve_first_left drop"));
+                  P(F("resolve_first_left keep"));
                   P(F("resolve_first_left rename \"name\""));
                   P(F("resolve_first_left user \"name\""));
                 }
@@ -82,6 +113,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
               if (conflict.right_resolution.first == resolve_conflicts::none)
                 {
                   P(F("resolve_first_right drop"));
+                  P(F("resolve_first_right keep"));
                   P(F("resolve_first_right rename \"name\""));
                   P(F("resolve_first_right user \"name\""));
                 }
@@ -165,7 +197,7 @@ show_conflicts(database & db, conflicts_t conflicts, show_conflicts_case_t show_
 } // show_conflicts
 
 enum side_t {left, right, neither};
-static char const * const conflict_resolution_not_supported_msg = "%s is not a supported conflict resolution for %s";
+static char const * const conflict_resolution_not_supported_msg = N_("%s is not a supported conflict resolution for %s");
 
 // Call Lua merge3 hook to merge left_fid, right_fid, store result in result_path
 static bool
@@ -218,6 +250,16 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
       E(args.size() == 1, origin::user, F("too many arguments"));
       resolution.first = resolve_conflicts::drop;
     }
+  else if ("keep" == idx(args, 0)())
+    {
+      E(args.size() == 1, origin::user, F("too many arguments"));
+      E(other_resolution.first == resolve_conflicts::none ||
+        other_resolution.first == resolve_conflicts::drop ||
+        other_resolution.first == resolve_conflicts::rename,
+        origin::user,
+        F("other resolution must be 'drop' or 'rename'"));
+      resolution.first = resolve_conflicts::keep;
+    }
   else if ("rename" == idx(args, 0)())
     {
       E(args.size() == 2, origin::user, F("wrong number of arguments"));
@@ -227,16 +269,18 @@ set_duplicate_name_conflict(resolve_conflicts::file_resolution_t & resolution,
   else if ("user" == idx(args, 0)())
     {
       E(args.size() == 2, origin::user, F("wrong number of arguments"));
-      E(other_resolution.first != resolve_conflicts::content_user,
+      E(other_resolution.first == resolve_conflicts::none ||
+        other_resolution.first == resolve_conflicts::drop ||
+        other_resolution.first == resolve_conflicts::rename,
         origin::user,
-        F("left and right resolutions cannot both be 'user'"));
+        F("other resolution must be 'drop' or 'rename'"));
 
       resolution.first  = resolve_conflicts::content_user;
       resolution.second = new_optimal_path(idx(args,1)(), false);
     }
   else
     E(false, origin::user,
-      F(conflict_resolution_not_supported_msg) % idx(args,0) % "duplicate_name");
+      F(conflict_resolution_not_supported_msg) % idx(args,1) % "duplicate_name");
 
 } //set_duplicate_name_conflict
 
@@ -281,6 +325,36 @@ set_first_conflict(database & db,
 
   if (side == neither)
     {
+      for (std::vector<orphaned_node_conflict>::iterator i = conflicts.result.orphaned_node_conflicts.begin();
+           i != conflicts.result.orphaned_node_conflicts.end();
+           ++i)
+        {
+          orphaned_node_conflict & conflict = *i;
+
+          if (conflict.resolution.first == resolve_conflicts::none)
+            {
+              if ("drop" == idx(args,0)())
+                {
+                  E(args.size() == 1, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::drop;
+                }
+              else if ("rename" == idx(args,0)())
+                {
+                  E(args.size() == 2, origin::user, F("wrong number of arguments"));
+
+                  conflict.resolution.first  = resolve_conflicts::rename;
+                  conflict.resolution.second = new_optimal_path(idx(args,1)(), false);
+                }
+              else
+                {
+                  E(false, origin::user,
+                    F(conflict_resolution_not_supported_msg) % idx(args,1) % "orphaned_node");
+                }
+              return;
+            }
+        }
+
       for (std::vector<file_content_conflict>::iterator i = conflicts.result.file_content_conflicts.begin();
            i != conflicts.result.file_content_conflicts.end();
            ++i)
@@ -317,7 +391,7 @@ set_first_conflict(database & db,
                   // We don't allow the user to specify 'resolved_internal'; that
                   // is only done by automate show_conflicts.
                   E(false, origin::user,
-                    F(conflict_resolution_not_supported_msg) % idx(args,0) % "file_content");
+                    F(conflict_resolution_not_supported_msg) % idx(args,1) % "file_content");
                 }
               return;
             }

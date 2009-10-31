@@ -62,7 +62,7 @@ extract_group(char const *filename, bool fis)
   if (first_dot != string::npos)
     result.erase(first_dot, string::npos);
   if (fis)
-    result.insert(0, 1, '_');
+    result.insert(0U, 1, '_');
   return result;
 }
 

@@ -11,6 +11,12 @@ japanese_utf8 = "\227\129\166\227\129\153\227\129\168"
 japanese_euc_jp = "\164\198\164\185\164\200"
                -- "\xA4\xC6\xA4\xB9\xA4\xC8"
 
+if ostype ~= "Darwin" and string.sub(ostype, 1, 6) ~= "CYGWIN" then
+	notOnlyUnicode = true
+else
+	notOnlyUnicode = false
+end
+
 if ostype == "Windows" or string.sub(ostype, 1, 6) == "CYGWIN" then
   funny_filename = "file+name-with_funny@symbols%etc"
 else
@@ -25,7 +31,7 @@ check(writefile("weird/" .. funny_filename, ""))
 check(writefile("utf8/" .. european_utf8, ""))
 check(writefile("utf8/" .. japanese_utf8, ""))
 
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
 	check(writefile("8859-1/" .. european_8859_1, ""))
 	check(writefile("euc/" .. japanese_euc_jp, ""))
 end
@@ -65,7 +71,7 @@ commit()
 
 -- OS X expects data passed to the OS to be utf8, so these tests don't make
 -- sense.
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
 	-- now try iso-8859-1
 
 	set_env("LANG", "de_DE.iso-8859-1")
@@ -81,20 +87,20 @@ check(mtn("automate", "get_manifest_of"), 0, true)
 rename("stdout", "manifest")
 check(qgrep("funny", "manifest"))
 check(qgrep("spaces", "manifest"))
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
   check(qgrep("8859-1/" .. european_utf8, "manifest"))
 end
 
 -- okay, clean up again
 
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
 	check(mtn("drop", "--bookkeep-only", "8859-1/" .. european_8859_1), 0, false, false)
 	commit()
 end
 
 -- now try euc
 
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
 	set_env("LANG", "ja_JP.euc-jp")
 	set_env("CHARSET", "euc-jp")
 	check(mtn("add", "euc/" .. japanese_euc_jp), 0, false, false)
@@ -108,6 +114,6 @@ check(mtn("automate", "get_manifest_of"), 0, true)
 rename("stdout", "manifest")
 check(qgrep("funny", "manifest"))
 check(qgrep("spaces", "manifest"))
-if ostype ~= "Darwin" then
+if notOnlyUnicode then
 	check(qgrep("euc/" .. japanese_utf8, "manifest"))
 end

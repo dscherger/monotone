@@ -26,6 +26,7 @@
 struct options
 {
   options();
+  const options & operator = (options const & other);
 
   typedef boost::function<void()> reset_function;
   typedef option::option<options> option_type;

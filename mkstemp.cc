@@ -138,8 +138,8 @@ monotone_mkstemp(string & tmpl)
   if (xes == string::npos)
     return false;
 
-  char buf[len+1];
-  memcpy(buf, tmpl.data(), len);
+  std::vector<char> buf(len + 1);
+  memcpy(&buf[0], tmpl.data(), len);
   buf[len] = 0;
 
   seed_lfsr113();
@@ -155,11 +155,11 @@ monotone_mkstemp(string & tmpl)
           x /= NLETTERS;
         }
 
-      int fd = open(buf, O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
+      int fd = open(&buf[0], O_RDWR|O_CREAT|O_EXCL|O_BINARY, 0600);
       if (fd >= 0)
         {
           close(fd);
-          tmpl.replace(xes, 6, buf+xes, 6);
+          tmpl.replace(xes, 6, &buf[xes], 6);
           return true;
         }
       else if (errno != EEXIST)

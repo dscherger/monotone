@@ -217,10 +217,10 @@ AC_DEFUN([MTN_FIND_LUA],
 ])
 
 AC_DEFUN([MTN_FIND_PCRE],
-[MTN_CHECK_MODULE([pcre], [7.6],
+[MTN_CHECK_MODULE([pcre], [7.4],
   [AC_LANG_PROGRAM(
     [#include <pcre.h>
-     #if PCRE_MAJOR < 7 || (PCRE_MAJOR == 7 && PCRE_MINOR < 6)
+     #if PCRE_MAJOR < 7 || (PCRE_MAJOR == 7 && PCRE_MINOR < 4)
      #error out of date
      #endif],
     [const char *e;

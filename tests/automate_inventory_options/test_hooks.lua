@@ -6,5 +6,5 @@ function ignore_file(name)
    return false
 end
 function get_passphrase(keyid)
-    return keyid
+    return keyid.given_name
 end

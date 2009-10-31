@@ -1,5 +1,5 @@
 // Copyright (C) 2005 Nathaniel Smith <njs@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -65,10 +65,11 @@ namespace
     symbol const orphaned_file("orphaned_file");
     symbol const resolved_drop_left("resolved_drop_left");
     symbol const resolved_drop_right("resolved_drop_right");
+    symbol const resolved_keep_left("resolved_keep_left");
+    symbol const resolved_keep_right("resolved_keep_right");
     symbol const resolved_internal("resolved_internal");
     symbol const resolved_rename_left("resolved_rename_left");
     symbol const resolved_rename_right("resolved_rename_right");
-    symbol const resolved_user("resolved_user");
     symbol const resolved_user_left("resolved_user_left");
     symbol const resolved_user_right("resolved_user_right");
     symbol const right("right");
@@ -395,10 +396,15 @@ put_attr_conflict (basic_io::stanza & st,
 enum side_t {left_side, right_side};
 
 static void
-put_duplicate_name_resolution(basic_io::stanza & st,
-                              side_t side,
-                              resolve_conflicts::file_resolution_t const & resolution)
+put_resolution(basic_io::stanza & st,
+               side_t side,
+               resolve_conflicts::file_resolution_t const & resolution)
 {
+  // We output any resolution for any conflict; only valid resolutions
+  // should get into the data structures. To enforce that, when reading
+  // resolutions from files we check that the resolution is valid for the
+  // conflict. Hence there is no read_resolution.
+
   switch (resolution.first)
     {
     case resolve_conflicts::none:
@@ -415,6 +421,10 @@ put_duplicate_name_resolution(basic_io::stanza & st,
           st.push_str_pair(syms::resolved_user_right, resolution.second->as_external());
           break;
         }
+      break;
+
+    case resolve_conflicts::content_internal:
+      st.push_symbol(syms::resolved_internal);
       break;
 
     case resolve_conflicts::rename:
@@ -439,6 +449,19 @@ put_duplicate_name_resolution(basic_io::stanza & st,
 
         case right_side:
           st.push_symbol(syms::resolved_drop_right);
+          break;
+        }
+      break;
+
+    case resolve_conflicts::keep:
+      switch (side)
+        {
+        case left_side:
+          st.push_symbol(syms::resolved_keep_left);
+          break;
+
+        case right_side:
+          st.push_symbol(syms::resolved_keep_right);
           break;
         }
       break;
@@ -487,22 +510,6 @@ put_content_conflict (basic_io::stanza & st,
       file_id right_fid;
       db_adaptor.db.get_file_content (db_adaptor.right_rid, conflict.nid, right_fid);
       st.push_binary_pair(syms::right_file_id, right_fid.inner());
-      switch (conflict.resolution.first)
-        {
-        case resolve_conflicts::none:
-          break;
-
-        case resolve_conflicts::content_internal:
-          st.push_symbol(syms::resolved_internal);
-          break;
-
-        case resolve_conflicts::content_user:
-          st.push_str_pair(syms::resolved_user, conflict.resolution.second->as_external());
-          break;
-
-        default:
-          I(false);
-        }
     }
   else
     {
@@ -510,17 +517,8 @@ put_content_conflict (basic_io::stanza & st,
       st.push_str_pair(syms::ancestor_name, ancestor_name.as_external());
       st.push_file_pair(syms::left_name, left_name);
       st.push_file_pair(syms::right_name, right_name);
-
-      switch (conflict.resolution.first)
-        {
-        case resolve_conflicts::none:
-          break;
-
-        default:
-          // not implemented yet
-          I(false);
-        }
     }
+  put_resolution (st, left_side, conflict.resolution);
 }
 
 static void
@@ -673,7 +671,7 @@ void
 roster_merge_result::report_invalid_name_conflicts(roster_t const & left_roster,
                                                    roster_t const & right_roster,
                                                    content_merge_adaptor & adaptor,
-                                                   bool basic_io,
+                                                   const bool basic_io,
                                                    std::ostream & output) const
 {
   MM(left_roster);
@@ -775,7 +773,7 @@ void
 roster_merge_result::report_directory_loop_conflicts(roster_t const & left_roster,
                                                      roster_t const & right_roster,
                                                      content_merge_adaptor & adaptor,
-                                                     bool basic_io,
+                                                     const bool basic_io,
                                                      std::ostream & output) const
 {
   MM(left_roster);
@@ -855,7 +853,7 @@ void
 roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster,
                                                     roster_t const & right_roster,
                                                     content_merge_adaptor & adaptor,
-                                                    bool basic_io,
+                                                    const bool basic_io,
                                                     std::ostream & output) const
 {
   MM(left_roster);
@@ -985,7 +983,10 @@ roster_merge_result::report_orphaned_node_conflicts(roster_t const & left_roster
         I(false);
 
       if (basic_io)
-        put_stanza (st, output);
+        {
+          put_resolution (st, left_side, conflict.resolution);
+          put_stanza (st, output);
+        }
     }
 }
 
@@ -993,7 +994,7 @@ void
 roster_merge_result::report_multiple_name_conflicts(roster_t const & left_roster,
                                                     roster_t const & right_roster,
                                                     content_merge_adaptor & adaptor,
-                                                    bool basic_io,
+                                                    const bool basic_io,
                                                     std::ostream & output) const
 {
   MM(left_roster);
@@ -1220,8 +1221,8 @@ roster_merge_result::report_duplicate_name_conflicts(roster_t const & left_roste
 
       if (basic_io)
         {
-          put_duplicate_name_resolution (st, left_side, conflict.left_resolution);
-          put_duplicate_name_resolution (st, right_side, conflict.right_resolution);
+          put_resolution (st, left_side, conflict.left_resolution);
+          put_resolution (st, right_side, conflict.right_resolution);
           put_stanza(st, output);
         }
     }
@@ -1231,7 +1232,7 @@ void
 roster_merge_result::report_attribute_conflicts(roster_t const & left_roster,
                                                 roster_t const & right_roster,
                                                 content_merge_adaptor & adaptor,
-                                                bool basic_io,
+                                                const bool basic_io,
                                                 std::ostream & output) const
 {
   MM(left_roster);
@@ -1382,7 +1383,7 @@ roster_merge_result::report_file_content_conflicts(lua_hooks & lua,
                                                    roster_t const & left_roster,
                                                    roster_t const & right_roster,
                                                    content_merge_adaptor & adaptor,
-                                                   bool basic_io,
+                                                   const bool basic_io,
                                                    std::ostream & output)
 {
   MM(left_roster);
@@ -1479,9 +1480,9 @@ namespace resolve_conflicts
   }
 }
 
-static char const * const conflicts_mismatch_msg = "conflicts file does not match current conflicts";
-static char const * const conflict_resolution_not_supported_msg = "%s is not a supported conflict resolution for %s";
-static char const * const conflict_extra = "extra chars at end of conflict";
+static char const * const conflicts_mismatch_msg = N_("conflicts file does not match current conflicts");
+static char const * const conflict_resolution_not_supported_msg = N_("%s is not a supported conflict resolution for %s");
+static char const * const conflict_extra = N_("extra chars at end of conflict");
 
 static void
 read_missing_root_conflicts(basic_io::parser & pars,
@@ -1634,6 +1635,27 @@ read_orphaned_node_conflict(basic_io::parser & pars,
       pars.esym(syms::ancestor_name); pars.str();
       read_added_rename_conflict_left(pars, left_roster, conflict.nid, conflict.parent_name);
     }
+
+  // check for a resolution
+  if ((!pars.symp (syms::conflict)) && pars.tok.in.lookahead != EOF)
+    {
+      if (pars.symp (syms::resolved_drop_left))
+        {
+          conflict.resolution.first = resolve_conflicts::drop;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_rename_left))
+        {
+          conflict.resolution.first = resolve_conflicts::rename;
+          pars.sym();
+          conflict.resolution.second = new_optimal_path(pars.token, true);
+          pars.str();
+        }
+      else
+        E(false, origin::user,
+          F(conflict_resolution_not_supported_msg) % pars.token % "orphaned_node");
+    }
+
 } // read_orphaned_node_conflict
 
 static void
@@ -1656,6 +1678,43 @@ read_orphaned_node_conflicts(basic_io::parser & pars,
         pars.esym (syms::conflict);
     }
 } // read_orphaned_node_conflicts
+
+static void
+validate_orphaned_node_conflicts(basic_io::parser & pars,
+                                 std::vector<orphaned_node_conflict> & conflicts,
+                                 roster_t const & left_roster,
+                                 roster_t const & right_roster)
+{
+  for (std::vector<orphaned_node_conflict>::iterator i = conflicts.begin();
+       i != conflicts.end();
+       ++i)
+    {
+      orphaned_node_conflict & merge_conflict = *i;
+      orphaned_node_conflict file_conflict;
+
+      if (pars.symp (syms::orphaned_directory) || pars.symp (syms::orphaned_file))
+        {
+          pars.sym();
+          read_orphaned_node_conflict(pars, file_conflict, left_roster, right_roster);
+        }
+      else
+        E(false, origin::user, F("expected orphaned_directory or orphaned_file, found %s") % pars.token);
+
+      E(merge_conflict.nid == file_conflict.nid, origin::user,
+        F(conflicts_mismatch_msg));
+
+      merge_conflict.resolution = file_conflict.resolution;
+
+      if (pars.tok.in.lookahead != EOF)
+        pars.esym (syms::conflict);
+      else
+        {
+          std::vector<orphaned_node_conflict>::iterator tmp = i;
+          E(++tmp == conflicts.end(), origin::user,
+            F("conflicts file does not match current conflicts"));
+        }
+    }
+} // validate_orphaned_node_conflicts
 
 
 static void
@@ -1709,6 +1768,16 @@ read_duplicate_name_conflict(basic_io::parser & pars,
       else if (pars.symp (syms::resolved_drop_right))
         {
           conflict.right_resolution.first = resolve_conflicts::drop;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_keep_left))
+        {
+          conflict.left_resolution.first = resolve_conflicts::keep;
+          pars.sym();
+        }
+      else if (pars.symp (syms::resolved_keep_right))
+        {
+          conflict.right_resolution.first = resolve_conflicts::keep;
           pars.sym();
         }
       else if (pars.symp (syms::resolved_rename_left))
@@ -1944,7 +2013,7 @@ read_file_content_conflict(basic_io::parser & pars,
           conflict.resolution.first = resolve_conflicts::content_internal;
           pars.sym();
         }
-      else if (pars.symp (syms::resolved_user))
+      else if (pars.symp (syms::resolved_user_left))
         {
           conflict.resolution.first = resolve_conflicts::content_user;
           pars.sym();
@@ -2024,7 +2093,7 @@ read_conflict_file_core(basic_io::parser pars,
   // If we are validating, there must be one stanza in the file for each
   // conflict; otherwise something has changed since the file was
   // regenerated. So we go thru the conflicts in the same order they are
-  // generated; see merge.cc resolve_merge_conflicts.
+  // generated; see merge_content.cc resolve_merge_conflicts.
 
   if (validate)
     {
@@ -2034,12 +2103,13 @@ read_conflict_file_core(basic_io::parser pars,
       I(!result.missing_root_conflict);
       I(result.invalid_name_conflicts.size() == 0);
       I(result.directory_loop_conflicts.size() == 0);
-      I(result.orphaned_node_conflicts.size() == 0);
       I(result.multiple_name_conflicts.size() == 0);
       I(result.attribute_conflicts.size() == 0);
 
-      // These are the ones we know how to resolve.
+      // These are the ones we know how to resolve. They must be in the same
+      // order as non-validate, below.
 
+      validate_orphaned_node_conflicts(pars, result.orphaned_node_conflicts, left_roster, right_roster);
       validate_duplicate_name_conflicts(pars, result.duplicate_name_conflicts, left_roster, right_roster);
       validate_file_content_conflicts(pars, result.file_content_conflicts, left_roster, right_roster);
     }
@@ -2224,6 +2294,71 @@ attach_node (lua_hooks & lua,
 
 } // attach_node
 
+void
+roster_merge_result::resolve_orphaned_node_conflicts(lua_hooks & lua,
+                                                      roster_t const & left_roster,
+                                                      roster_t const & right_roster,
+                                                      content_merge_adaptor & adaptor)
+{
+  MM(left_roster);
+  MM(right_roster);
+  MM(this->roster); // New roster
+
+  // Conflict nodes are present but detached (without filenames) in the new
+  // roster. The resolution is either to suture the two files together, or to
+  // rename one or both.
+
+  for (std::vector<orphaned_node_conflict>::const_iterator i = orphaned_node_conflicts.begin();
+       i != orphaned_node_conflicts.end();
+       ++i)
+    {
+      orphaned_node_conflict const & conflict = *i;
+      MM(conflict);
+
+      file_path name;
+
+      if (left_roster.has_node(conflict.nid))
+        {
+          left_roster.get_name(conflict.nid, name);
+        }
+      else
+        {
+          right_roster.get_name(conflict.nid, name);
+        }
+
+      switch (conflict.resolution.first)
+        {
+        case resolve_conflicts::drop:
+          if (is_dir_t(roster.get_node(conflict.nid)))
+            {
+              E(downcast_to_dir_t(roster.get_node(conflict.nid))->children.empty(), origin::user,
+                F("can't drop directory %s; it is not empty") % name);
+            }
+
+          P(F("dropping %s") % name);
+          roster.drop_detached_node(conflict.nid);
+          break;
+
+        case resolve_conflicts::rename:
+          P(F("renaming %s to %s") % name % *conflict.resolution.second);
+          attach_node
+            (lua, roster, conflict.nid, file_path_internal (conflict.resolution.second->as_internal()));
+          break;
+
+        case resolve_conflicts::none:
+          E(false, origin::user,
+            F("no resolution provided for orphaned_node %s") % name);
+          break;
+
+        default:
+          E(false, origin::user,
+            F("invalid resolution for orphaned_node %s") % name);
+        }
+    } // end for
+
+  orphaned_node_conflicts.clear();
+}
+
 static void
 resolve_duplicate_name_one_side(lua_hooks & lua,
                                 resolve_conflicts::file_resolution_t const & resolution,
@@ -2266,7 +2401,23 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
 
     case resolve_conflicts::drop:
       P(F("dropping %s") % name);
+
+      if (is_dir_t(result_roster.get_node(nid)))
+        {
+          dir_t n = downcast_to_dir_t(result_roster.get_node(nid));
+          E(n->children.empty(), origin::user, F("can't drop %s; not empty") % name);
+        }
       result_roster.drop_detached_node(nid);
+      break;
+
+    case resolve_conflicts::keep:
+      E(other_resolution.first == resolve_conflicts::drop ||
+        other_resolution.first == resolve_conflicts::rename,
+        origin::user,
+        F("inconsistent left/right resolutions for %s") % name);
+
+      P(F("keeping %s") % name);
+      attach_node (lua, result_roster, nid, name);
       break;
 
     case resolve_conflicts::rename:
@@ -2317,8 +2468,23 @@ roster_merge_result::resolve_duplicate_name_conflicts(lua_hooks & lua,
       file_path left_name, right_name;
       file_id left_fid, right_fid;
 
-      left_roster.get_file_details(left_nid, left_fid, left_name);
-      right_roster.get_file_details(right_nid, right_fid, right_name);
+      if (is_file_t(left_roster.get_node(left_nid)))
+        {
+          left_roster.get_file_details(left_nid, left_fid, left_name);
+        }
+      else
+        {
+          left_roster.get_name(left_nid, left_name);
+        }
+
+      if (is_file_t(right_roster.get_node(right_nid)))
+        {
+          right_roster.get_file_details(right_nid, right_fid, right_name);
+        }
+      else
+        {
+          right_roster.get_name(right_nid, right_name);
+        }
 
       resolve_duplicate_name_one_side
         (lua, conflict.left_resolution, conflict.right_resolution, left_name, left_fid, left_nid, adaptor, roster);

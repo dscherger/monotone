@@ -25,6 +25,8 @@ using std::istreambuf_iterator;
 using std::ostream;
 using std::ostringstream;
 using std::ofstream;
+using std::rename;
+using std::remove;
 using std::strerror;
 using std::string;
 
@@ -150,7 +152,11 @@ atomic_update_if_changed(char const *ofname, string const & text)
   }
 
   if (rename(tfname.c_str(), ofname))
-    throw ioerror(ofname, "rename");
+    {
+      remove(ofname);
+      if (rename(tfname.c_str(), ofname))
+        throw ioerror(ofname, "rename");
+    }
 }
 
 int
