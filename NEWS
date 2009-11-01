@@ -1,3 +1,14 @@
+??? ??? ?? ??:??:?? UTC 2009
+
+        0.46 release.
+
+        New features
+
+        - A new 'bisect' command has been added to allow searching for a
+          specific revision within a range of revisions. This can be useful for
+          locating the exact revision that broke something or removed a
+          particular feature.
+
 Fri Sep 11 20:50:00 UTC 2009
 
         0.45 release.

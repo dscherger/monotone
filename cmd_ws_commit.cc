@@ -1593,8 +1593,6 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
   E(app.opts.revision_selectors.size() < 2, origin::user,
     F("bisect allows only one revision selector"));
 
-  // FIXME: ensure workspace is clean for bisecting
-
   parent_map parents;
   work.get_parent_rosters(db, parents);
   E(parents.size() == 1, origin::user,
@@ -1756,7 +1754,7 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
   make_cset(source_roster, target_roster, update);
 
   content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(db, update, adaptor);
+  work.perform_content_update(source_roster, target_roster, update, adaptor);
 
   revision_t workrev;
   cset empty;
