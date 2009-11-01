@@ -16,7 +16,7 @@ CMD_SOURCES =								\
 	cmd.hh cmd.cc cmd_netsync.cc cmd_list.cc cmd_packet.cc		\
 	cmd_key_cert.cc cmd_merging.cc cmd_db.cc cmd_diff_log.cc	\
 	cmd_ws_commit.cc cmd_othervcs.cc cmd_automate.cc cmd_files.cc	\
-	cmd_conflicts.cc
+	cmd_conflicts.cc cmd_policy.cc
 
 SANITY_CORE_SOURCES =							\
 	sanity.cc sanity.hh quick_alloc.hh vector.hh base.hh		\
@@ -39,6 +39,7 @@ MOST_SOURCES = 								\
 	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
 	app_state.cc app_state.hh					\
 	automate_ostream.hh						\
+	branch_name.cc branch_name.hh					\
 	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
 	botan_pipe_cache.hh						\
@@ -49,6 +50,8 @@ MOST_SOURCES = 								\
 	update.cc update.hh						\
 	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
+	policy.cc policy.hh						\
+	editable_policy.cc editable_policy.hh				\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\

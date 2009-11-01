@@ -244,7 +244,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   netsync_connection_info info;
 
@@ -368,7 +368,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   netsync_connection_info info;
 
@@ -457,7 +457,7 @@ CMD(push, "push", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys,
@@ -477,7 +477,7 @@ CMD(pull, "pull", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys, project,
@@ -501,7 +501,7 @@ CMD(sync, "sync", "", CMD_REF(network),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   netsync_connection_info info;
   extract_client_connection_info(app.opts, app.lua, db, keys,
@@ -637,7 +637,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   db.ensure_open();
 
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   info.client.include_pattern = globish(branchname(), origin::user);
   info.client.exclude_pattern = globish(app.opts.exclude_patterns);
@@ -753,7 +753,7 @@ CMD_NO_WORKSPACE(serve, "serve", "", CMD_REF(network), "",
 
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   pid_file pid(app.opts.pidfile);
 
   db.ensure_open();
