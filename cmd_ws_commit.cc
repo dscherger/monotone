@@ -1482,10 +1482,57 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
     N_("All current search information is discarded"),
     options::opts::none)
 {
+  database db(app);
   workspace work(app);
+  project_t project(db);
+
+  vector<bisect::entry> bisect;
+  work.get_bisect_info(bisect);
+
+  E(!bisect.empty(), origin::user, F("no bisection in progress"));
+
+  parent_map parents;
+  work.get_parent_rosters(db, parents);
+  E(parents.size() == 1, origin::user,
+    F("this command can only be used in a single-parent workspace"));
+  
+  revision_id current_id = parent_id(*parents.begin());
+
+  temp_node_id_source nis;
+  roster_t current_roster;
+  work.get_current_roster_shape(db, nis, current_roster);
+  work.update_current_roster_from_filesystem(current_roster);
+
+  E(parent_roster(parents.begin()) == current_roster, origin::user,
+    F("'%s' can only be used in a workspace with no pending changes") %
+    join_words(execid)());
+
+  bisect::entry start = *bisect.begin();
+  I(start.first == bisect::start);
+
+  revision_id starting_id = start.second;
+  P(F("reset back to %s") % describe_revision(project, starting_id));
+
+  roster_t starting_roster;
+  db.get_roster(starting_id, starting_roster);
+
+  cset update;
+  make_cset(current_roster, starting_roster, update);
+
+  content_merge_checkout_adaptor adaptor(db);
+  work.perform_content_update(current_roster, starting_roster, update, adaptor);
+
+  revision_t starting_rev;
+  cset empty;
+  make_revision_for_workspace(starting_id, empty, starting_rev);
+
+  work.put_work_rev(starting_rev);
+  work.maybe_update_inodeprints(db);
+
+  // note that the various bisect commands didn't change the workspace
+  // branch so this should not need to reset it.
+
   work.remove_bisect_info();
-  P(F("bisect reset"));
-  // FIXME: update back to the initial starting rev
 }
 
 CMD(bisect_status, "status", "", CMD_REF(bisect), "",
@@ -1502,6 +1549,9 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
     {
       switch (i->first)
         {
+        case bisect::start:
+          std::cerr << "  start " << i->second << std::endl;
+          break;
         case bisect::good:
           std::cerr << "   good " << i->second << std::endl;
           break;
@@ -1588,69 +1638,68 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
   project_t project(db);
   revision_loader loader(db);
 
-  revision_id source_id;
-
-  E(app.opts.revision_selectors.size() < 2, origin::user,
-    F("bisect allows only one revision selector"));
-
   parent_map parents;
   work.get_parent_rosters(db, parents);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
 
-  temp_node_id_source nis;
-  roster_t source_roster;
-  work.get_current_roster_shape(db, nis, source_roster);
-  work.update_current_roster_from_filesystem(source_roster);
+  revision_id current_id = parent_id(*parents.begin());
 
-  E(parent_roster(parents.begin()) == source_roster, origin::user,
+  temp_node_id_source nis;
+  roster_t current_roster;
+  work.get_current_roster_shape(db, nis, current_roster);
+  work.update_current_roster_from_filesystem(current_roster);
+
+  E(parent_roster(parents.begin()) == current_roster, origin::user,
     F("'%s' can only be used in a workspace with no pending changes") %
     join_words(execid)());
 
-  if (app.opts.revision_selectors.size() == 0)
-    {
-      source_id = parent_id(*parents.begin());
-    }
-  else if (app.opts.revision_selectors.size() == 1)
-    {
-      set<revision_id> rids;
-      MM(rids);
-      complete(app.opts, app.lua, project, 
-               (*app.opts.revision_selectors.begin())(), rids);
+  set<revision_id> marked_ids;
 
-      diagnose_ambiguous_expansion(project, 
-                                   (*app.opts.revision_selectors.begin())(),
-                                   rids);
-
-      I(rids.size() == 1);
-      source_id = *rids.begin();
-    }
+  // mark the current or specified revisions as good, bad or skipped
+  if (app.opts.revision_selectors.empty())
+    marked_ids.insert(current_id);
   else
-    I(false);
-
-  // FIXME: this should possibly be delayed until it's known whether the new
-  // addition is sensible or not. i.e. ignore nonsense revs and don't change
-  // the bisect info
+    for (args_vector::const_iterator i = app.opts.revision_selectors.begin();
+         i != app.opts.revision_selectors.end(); i++)
+      {
+        set<revision_id> rids;
+        MM(rids);
+        MM(*i);
+        complete(app.opts, app.lua, project, (*i)(), rids);
+        marked_ids.insert(rids.begin(), rids.end());
+      }
 
   vector<bisect::entry> bisect;
   work.get_bisect_info(bisect);
-  bisect.push_back(make_pair(type, source_id));
+
+  if (bisect.empty())
+    {
+      bisect.push_back(make_pair(bisect::start, current_id));
+      P(F("bisection started at revision %s") % describe_revision(project, current_id));
+    }
+
+  // push back all marked revs with the appropriate type
+  for (set<revision_id>::const_iterator i = marked_ids.begin();
+       i != marked_ids.end(); ++i)
+    bisect.push_back(make_pair(type, *i));
+  
   work.put_bisect_info(bisect);
 
-  set<revision_id> first_good, good, first_bad, bad, skipped;
+  set<revision_id> good, bad, skipped;
   for (vector<bisect::entry>::const_iterator i = bisect.begin();
        i != bisect.end(); ++i)
     {
       switch (i->first)
         {
+        case bisect::start:
+          // ignored the for the purposes of bisection
+          // used only by reset after bisection is complete
+          break;
         case bisect::good:
-          if (first_good.empty())
-            first_good.insert(i->second);
           good.insert(i->second);
           break;
         case bisect::bad:
-          if (first_bad.empty())
-            first_bad.insert(i->second);
           bad.insert(i->second);
           break;
         case bisect::skipped:
@@ -1661,56 +1710,77 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
 
   if (good.empty() && !bad.empty())
     {
-      P(F("%d bad revisions selected; specify good revisions to start search")
-        % bad.size());
+      P(F("bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to start search")
+        % good.size() % bad.size() % skipped.size());
       return;
     }
   else if (!good.empty() && bad.empty())
     {
-      P(F("%d good revisions selected; specify bad revisions to start search")
-        % good.size());
+      P(F("bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to start search")
+        % good.size() % bad.size() % skipped.size());
       return;
     }
 
   I(!good.empty());
   I(!bad.empty());
 
-  // the initial set of revisions to be searched are those from the first
-  // good revision to the first bad revision. this clamps the search set
-  // between these two revisions.
+  // the initial set of revisions to be searched is the intersection between
+  // the good revisions and their descendants and the bad revisions and
+  // their ancestors. this clamps the search set between these two sets of
+  // revisions.
 
-  // NOTE: it also presupposes that the search is looking for a good->bad
+  // NOTE: this also presupposes that the search is looking for a good->bad
   // transition rather than a bad->good transition.
 
-  loader.load_descendants(first_good);
-  loader.load_ancestors(first_bad);
+  set<revision_id> good_descendants(good), bad_ancestors(bad);
+  loader.load_descendants(good_descendants);
+  loader.load_ancestors(bad_ancestors);
   
   set<revision_id> search;
-  set_intersection(first_bad.begin(), first_bad.end(),
-                   first_good.begin(), first_good.end(),
+  set_intersection(good_descendants.begin(), good_descendants.end(),
+                   bad_ancestors.begin(), bad_ancestors.end(),
                    inserter(search, search.end()));
 
-  // good revisions and their ancestors are removed from the search set. 
-  // bad revisions and their descendants are removed from the search set.
-  // skipped revisions are removed from the search set.
+  // the searchable set of revisions excludes those explicitly skipped
 
-  loader.load_ancestors(good);
-  loader.load_descendants(bad);
+  set<revision_id> searchable;
+  set_difference(search.begin(), search.end(),
+                 skipped.begin(), skipped.end(),
+                 inserter(searchable, searchable.begin()));
+
+  // partition the searchable set into three subsets
+  // - known good revisions
+  // - remaining revisions
+  // - known bad revisions
+
+  set<revision_id> good_ancestors(good), bad_descendants(bad);
+  loader.load_ancestors(good_ancestors);
+  loader.load_descendants(bad_descendants);
+
+  set<revision_id> known_good;
+  set_intersection(searchable.begin(), searchable.end(),
+                   good_ancestors.begin(), good_ancestors.end(),
+                   inserter(known_good, known_good.end()));
+
+  set<revision_id> known_bad;
+  set_intersection(searchable.begin(), searchable.end(),
+                   bad_descendants.begin(), bad_descendants.end(),
+                   inserter(known_bad, known_bad.end()));
+
+  // remove known good and known bad revisions from the searchable set
 
   set<revision_id> removed;
-  removed.insert(good.begin(), good.end());
-  removed.insert(bad.begin(), bad.end());
-  removed.insert(skipped.begin(), skipped.end());
+  set_union(known_good.begin(), known_good.end(),
+            known_bad.begin(), known_bad.end(),
+            inserter(removed, removed.begin()));
 
   set<revision_id> remaining;
-  set_difference(search.begin(), search.end(),
+  set_difference(searchable.begin(), searchable.end(),
                  removed.begin(), removed.end(),
                  inserter(remaining, remaining.end()));
 
-  P(FP("bisecting %d revision; %d good; %d bad; %d skipped; %d remaining",
-       "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining",
-      search.size())
-    % search.size() % good.size() % bad.size() % skipped.size()
+  P(F("bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining")
+    % search.size() % known_good.size() % known_bad.size() % skipped.size()
     % remaining.size());
 
   // the bad revision that is the ancestor of all other bad revisions must
@@ -1726,12 +1796,13 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
   remaining.insert(bad0);
 
   // remove the current revision from the remaining set so it cannot be
-  // chosen as the next update target
-  remaining.erase(source_id);
+  // chosen as the next update target. this may remove the top bad revision
+  // and end the search.
+  remaining.erase(current_id);
 
   if (remaining.empty() && type == bisect::bad)
     {
-      P(F("ended at revision %s") % describe_revision(project, source_id));
+      P(F("bisection finished at revision %s") % describe_revision(project, current_id));
       return;
     }
 
@@ -1744,25 +1815,25 @@ bisect_update(app_state & app, commands::command_id const & execid, bisect::type
   vector<revision_id> candidates;
   toposort(db, remaining, candidates);
 
-  revision_id target_id = candidates[candidates.size()/2]; 
-  P(F("updating to %s") % describe_revision(project, target_id));
+  revision_id selected_id = candidates[candidates.size()/2]; 
+  P(F("updating to %s") % describe_revision(project, selected_id));
 
-  roster_t target_roster;
-  db.get_roster(target_id, target_roster);
+  roster_t selected_roster;
+  db.get_roster(selected_id, selected_roster);
 
   cset update;
-  make_cset(source_roster, target_roster, update);
+  make_cset(current_roster, selected_roster, update);
 
   content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(source_roster, target_roster, update, adaptor);
+  work.perform_content_update(current_roster, selected_roster, update, adaptor);
 
-  revision_t workrev;
+  revision_t selected_rev;
   cset empty;
-  make_revision_for_workspace(target_id, empty, workrev);
+  make_revision_for_workspace(selected_id, empty, selected_rev);
 
-  // FIXME: work.put_update_id(source_id); // probably not wanted
+  // FIXME: work.put_update_id(current_id); // probably not wanted
 
-  work.put_work_rev(workrev);
+  work.put_work_rev(selected_rev);
   work.maybe_update_inodeprints(db);
 
   // FIXME: what about the workspace branch option?

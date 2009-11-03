@@ -610,6 +610,7 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
 
 namespace syms
 {
+    symbol const start("start");
     symbol const good("good");
     symbol const bad("bad");
     symbol const skipped("skipped");
@@ -636,7 +637,13 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
     {
       string rev;
       bisect::type type;
-      if (parser.symp(syms::good))
+      if (parser.symp(syms::start))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::start;
+        }
+      else if (parser.symp(syms::good))
         {
           parser.sym();
           parser.hex(rev);
@@ -675,6 +682,10 @@ workspace::put_bisect_info(vector<bisect::entry> const & bisect)
     {
       switch (i->first)
         {
+        case bisect::start:
+          st.push_binary_pair(syms::start, i->second.inner());
+          break;
+
         case bisect::good:
           st.push_binary_pair(syms::good, i->second.inner());
           break;

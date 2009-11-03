@@ -83,8 +83,8 @@ bool directory_is_workspace(system_path const & dir);
 
 namespace bisect
 {
-    enum type { good, bad, skipped };
-    typedef std::pair<type, revision_id> entry;
+  enum type { start, good, bad, skipped };
+  typedef std::pair<type, revision_id> entry;
 };
 
 struct workspace
