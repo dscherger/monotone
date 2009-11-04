@@ -1540,70 +1540,12 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   work.remove_bisect_info();
 }
 
-// FIXME: this is copied from cmd_diff_log.cc
-class revision_loader
-{
- private:
-  database & db;
-  enum load_direction { ancestors, descendants };
-
-  void
-  load_revs(load_direction const direction, set<revision_id> & revs)
-  {
-    std::deque<revision_id> next(revs.begin(), revs.end());
-
-    while (!next.empty())
-      {
-        revision_id const & rid(next.front());
-        MM(rid);
-
-        set<revision_id> relatives;
-        MM(relatives);
-
-        if (direction == ancestors)
-          db.get_revision_parents(rid, relatives);
-        else if (direction == descendants)
-          db.get_revision_children(rid, relatives);
-        else
-          I(false);
-
-        for (set<revision_id>::const_iterator i = relatives.begin();
-             i != relatives.end(); ++i)
-          {
-            if (null_id(*i))
-              continue;
-            pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
-            if (res.second)
-              next.push_back(*i);
-          }
-
-        next.pop_front();
-      }
-  }
-
- public:
-  revision_loader(database & db) : db(db) {}
-
-  void
-  load_ancestors(set<revision_id> & revs)
-  {
-    load_revs(ancestors, revs);
-  }
-
-  void
-  load_descendants(set<revision_id> & revs)
-  {
-    load_revs(descendants, revs);
-  }
-
-};
-
 static bool
 bisect_setup(database & db,
              vector<bisect::entry> const & info,
              set<revision_id> & remaining)
 {
-  revision_loader loader(db);
+  graph_loader loader(db);
   set<revision_id> good, bad, skipped;
 
   E(!info.empty(), origin::user, 
