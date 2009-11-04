@@ -81,9 +81,9 @@ check(mtn("log", "--no-files", "--from", head1, "--next", 20), 0, false, false)
 -- test 1: addition of head3 is considered to be the error
 
 check(exists("head3"))
-check(not exists("_MTN/bisect"))                    
+check(not exists("_MTN/bisect"))
 check(mtn("bisect", "bad"), 0, false, false)
-check(exists("_MTN/bisect"))                    
+check(exists("_MTN/bisect"))
 check(mtn("bisect", "good", "--revision", head1), 0, false, false)
 
 while rev ~= base_revision() do
@@ -119,14 +119,14 @@ check(base_revision() == head3)
 -- test 2: addition of left2 is considered to be the error
 
 check(mtn("bisect", "reset"), 0, false, false)
-check(not exists("_MTN/bisect"))                    
+check(not exists("_MTN/bisect"))
 check(base_revision() == tail4)
 
 rev = base_revision()
 
 check(exists("left2"))
 check(mtn("bisect", "good", "--revision", head1), 0, false, false)
-check(exists("_MTN/bisect"))                    
+check(exists("_MTN/bisect"))
 check(mtn("bisect", "bad"), 0, false, false)
 
 while rev ~= base_revision() do
@@ -144,14 +144,14 @@ check(base_revision() == left2)
 -- test 3: addition of right3 is considered to be the error
 
 check(mtn("bisect", "reset"), 0, false, false)
-check(not exists("_MTN/bisect"))                    
+check(not exists("_MTN/bisect"))
 check(base_revision() == tail4)
 
 rev = base_revision()
 
 check(exists("right3"))
 check(mtn("bisect", "good", "--revision", head1), 0, false, false)
-check(exists("_MTN/bisect"))                    
+check(exists("_MTN/bisect"))
 check(mtn("bisect", "bad"), 0, false, false)
 
 while rev ~= base_revision() do
@@ -169,14 +169,14 @@ check(base_revision() == right3)
 -- test 4: addition of tail1 is considered to be the error
 
 check(mtn("bisect", "reset"), 0, false, false)
-check(not exists("_MTN/bisect"))                    
+check(not exists("_MTN/bisect"))
 check(base_revision() == tail4)
 
 rev = base_revision()
 
 check(exists("tail1"))
 check(mtn("bisect", "good", "--revision", head1), 0, false, false)
-check(exists("_MTN/bisect"))                    
+check(exists("_MTN/bisect"))
 check(mtn("bisect", "bad"), 0, false, false)
 
 while rev ~= base_revision() do
@@ -196,15 +196,18 @@ check(base_revision() == tail1)
 
 check(mtn("bisect", "reset"), 0, false, false)
 check(base_revision() == tail4)
-check(not exists("_MTN/bisect"))                    
-                    
+check(not exists("_MTN/bisect"))
+check(mtn("bisect", "status"), 1, false, false)
+
 rev = base_revision()
 
 check(exists("tail1"))
 check(mtn("bisect", "good", "--revision", head4, "--revision", right4), 0, false, false)
-check(exists("_MTN/bisect"))                    
+check(exists("_MTN/bisect"))
 check(mtn("bisect", "skip", "--revision", tail1, "--revision", head4), 0, false, false)
 check(mtn("bisect", "bad", "--revision", tail4, "--revision", left4), 0, false, false)
+
+check(mtn("bisect", "status"), 0, false, false)
 
 while rev ~= base_revision() do
    rev = base_revision()
