@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious :-). Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.44). If you happen to be using a newer version of Monotone
+version (currently 0.45). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
@@ -275,7 +275,10 @@ the output from the command is simply placed into the variable. However if
 \@list is passed then the output is returned as a list of anonymous hashes,
 each one containing the following fields:
 
-    key       - The signer of the cert.
+    key       - The signer of the cert. Prior to version 0.45 of
+                Monotone this was in the form of typically an email
+                address. From version 0.45 onwards this is now a
+                hash. (feature: MTN_HASHED_SIGNATURES)
     signature - Signer status. Values can be one of "ok", "bad" or
                 "unknown".
     name      - The cert name.
@@ -309,11 +312,13 @@ used. If no file names are listed then differences in all files are reported.
 
 The $options argument is a list of valid options, with some having
 arguments. For example, one could call this method specifying all of the
-options like this:
+options like this (feature: MTN_CONTENT_DIFF_EXTRA_OPTIONS):
 
     $mtn->content_diff(\@result,
                        ["depth"   => 1,
-                        "exclude" => "work.cc"],
+                        "exclude" => "work.cc",
+                        "reverse",
+                        "with-header"],
                        "unix");
 
 =item B<$mtn-E<gt>db_get(\$buffer, $domain, $name)>
@@ -642,9 +647,9 @@ each one containing one or more of the following fields:
         changes  - A list of change flags. Values can be one of
                    "attrs" or "content".
 
-            Please note that some fields are not used by all entries,
-            in which case they are not present (use Perl's exists()
-            function to determine their presence and not defined()).
+Please note that some fields are not used by all entries, in which case they
+are not present (use Perl's exists() function to determine their presence and
+not defined()).
 
 The $options argument is a list of valid options, with some having
 arguments. For example, one could call this method specifying all of the
@@ -678,8 +683,7 @@ containing the following fields:
                             "keystore". This field is only present if
                             there is a private key.
 
-    From version 0.44 of Monotone onwards
-    (feature: MTN_COMMON_KEY_HASH):
+    Version 0.44 of Monotone (feature: MTN_COMMON_KEY_HASH):
         name              - The name of the key.
         hash              - The hash code (both public and private).
         public_locations  - A list of locations for the public hash
@@ -690,9 +694,24 @@ containing the following fields:
                             "keystore". This field is only present if
                             there is a private key.
 
-            Please note that some fields are not used by all entries,
-            in which case they are not present (use Perl's exists()
-            function to determine their presence and not defined()).
+    From version 0.45 of Monotone onwards
+    (feature: MTN_HASHED_SIGNATURES):
+        given_name        - The name of the key as given when it was
+                            created.
+        hash              - The hash code (both public and private).
+        local_name        - The local name of the key as returned by
+                            the get_local_key_name() hook.
+        public_locations  - A list of locations for the public hash
+                            code. Values can be one of "database" or
+                            "keystore".
+        private_locations - A list of locations for the private hash
+                            code. Values can be one of "database" or
+                            "keystore". This field is only present if
+                            there is a private key.
+
+Please note that some fields are not used by all entries, in which case they
+are not present (use Perl's exists() function to determine their presence and
+not defined()).
 
 =item B<$mtn-E<gt>leaves(\@list)>
 
@@ -834,9 +853,9 @@ or more of the following fields:
                         directory in the left revision. Values are as
                         documented for left_type.
 
-        Please note that some fields are not used by all entries, in
-        which case they are not present (use Perl's exists() function
-        to determine their presence and not defined()).
+Please note that some fields are not used by all entries, in which case they
+are not present (use Perl's exists() function to determine their presence and
+not defined()).
 
 (feature: MTN_SHOW_CONFLICTS)
 
@@ -846,6 +865,7 @@ Determine whether a certain feature is available with the version of Monotone
 that is currently being used by this object. The list of valid features are:
 
     MTN_COMMON_KEY_HASH
+    MTN_CONTENT_DIFF_EXTRA_OPTIONS
     MTN_DB_GET
     MTN_DROP_ATTRIBUTE
     MTN_DROP_DB_VARIABLES
@@ -854,6 +874,7 @@ that is currently being used by this object. The list of valid features are:
     MTN_GET_CURRENT_REVISION
     MTN_GET_DB_VARIABLES
     MTN_GET_WORKSPACE_ROOT
+    MTN_HASHED_SIGNATURES
     MTN_IGNORING_OF_SUSPEND_CERTS
     MTN_INVENTORY_IN_IO_STANZA_FORMAT
     MTN_INVENTORY_TAKING_OPTIONS
@@ -887,7 +908,10 @@ anonymous hashes, each one containing the following fields:
 
     tag         - The name of the tag.
     revision_id - The id of a revision that the tag is attached to.
-    signer      - The name of the key used to sign the tag cert.
+    signer      - The signer of the tag. Prior to version 0.45 of
+                  Monotone this was in the form of typically an email
+                  address. From version 0.45 onwards this is now a
+                  hash. (feature: MTN_HASHED_SIGNATURES)
     branches    - A list of all branches that contain this revision.
 
 =item B<$mtn-E<gt>toposort(\@list[, $revision_id ...])>

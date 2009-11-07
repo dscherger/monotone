@@ -73,27 +73,29 @@ use Symbol qw(gensym);
 # may not provide depending upon its version.
 
 use constant MTN_COMMON_KEY_HASH               => 0;
-use constant MTN_DB_GET                        => 1;
-use constant MTN_DROP_ATTRIBUTE                => 2;
-use constant MTN_DROP_DB_VARIABLES             => 3;
-use constant MTN_FILE_MERGE                    => 4;
-use constant MTN_GET_ATTRIBUTES                => 5;
-use constant MTN_GET_CURRENT_REVISION          => 6;
-use constant MTN_GET_DB_VARIABLES              => 7;
-use constant MTN_GET_WORKSPACE_ROOT            => 8;
-use constant MTN_IGNORING_OF_SUSPEND_CERTS     => 9;
-use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 10;
-use constant MTN_INVENTORY_TAKING_OPTIONS      => 11;
-use constant MTN_INVENTORY_WITH_BIRTH_ID       => 12;
-use constant MTN_LUA                           => 13;
-use constant MTN_M_SELECTOR                    => 14;
-use constant MTN_P_SELECTOR                    => 15;
-use constant MTN_READ_PACKETS                  => 16;
-use constant MTN_SET_ATTRIBUTE                 => 17;
-use constant MTN_SET_DB_VARIABLE               => 18;
-use constant MTN_SHOW_CONFLICTS                => 19;
-use constant MTN_U_SELECTOR                    => 20;
-use constant MTN_W_SELECTOR                    => 21;
+use constant MTN_CONTENT_DIFF_EXTRA_OPTIONS    => 1;
+use constant MTN_DB_GET                        => 2;
+use constant MTN_DROP_ATTRIBUTE                => 3;
+use constant MTN_DROP_DB_VARIABLES             => 4;
+use constant MTN_FILE_MERGE                    => 5;
+use constant MTN_GET_ATTRIBUTES                => 6;
+use constant MTN_GET_CURRENT_REVISION          => 7;
+use constant MTN_GET_DB_VARIABLES              => 8;
+use constant MTN_GET_WORKSPACE_ROOT            => 9;
+use constant MTN_HASHED_SIGNATURES             => 10;
+use constant MTN_IGNORING_OF_SUSPEND_CERTS     => 11;
+use constant MTN_INVENTORY_IN_IO_STANZA_FORMAT => 12;
+use constant MTN_INVENTORY_TAKING_OPTIONS      => 13;
+use constant MTN_INVENTORY_WITH_BIRTH_ID       => 14;
+use constant MTN_LUA                           => 15;
+use constant MTN_M_SELECTOR                    => 16;
+use constant MTN_P_SELECTOR                    => 17;
+use constant MTN_READ_PACKETS                  => 18;
+use constant MTN_SET_ATTRIBUTE                 => 19;
+use constant MTN_SET_DB_VARIABLE               => 20;
+use constant MTN_SHOW_CONFLICTS                => 21;
+use constant MTN_U_SELECTOR                    => 22;
+use constant MTN_W_SELECTOR                    => 23;
 
 # Constants used to represent the different error levels.
 
@@ -139,13 +141,15 @@ my %valid_mtn_options = ("--confdir"            => 1,
 
 # Maps for quickly detecting valid keys and determining their value types.
 
-my %certs_keys = ("key"       => STRING,
+my %certs_keys = ("key"       => HEX_ID | STRING,
 		  "name"      => STRING,
 		  "signature" => STRING,
 		  "trust"     => STRING_ENUM,
 		  "value"     => STRING);
-my %genkey_keys = ("name"             => STRING,
+my %genkey_keys = ("given_name"       => STRING,
 		   "hash"             => HEX_ID,
+		   "local_name"       => STRING,
+		   "name"             => STRING,
 		   "public_hash"      => HEX_ID,
 		   "private_hash"     => HEX_ID,
 		   "public_location"  => STRING_LIST,
@@ -189,6 +193,7 @@ my %show_conflicts_keys = ("ancestor"          => OPTIONAL_HEX_ID,
 			   "attr_name"         => STRING,
 			   "conflict"          => BARE_PHRASE,
 			   "left"              => HEX_ID,
+			   "left_attr_state"   => STRING,
 			   "left_attr_value"   => STRING,
 			   "left_file_id"      => HEX_ID,
 			   "left_name"         => STRING,
@@ -204,7 +209,7 @@ my %show_conflicts_keys = ("ancestor"          => OPTIONAL_HEX_ID,
 my %tags_keys = ("branches"       => NULL | STRING_LIST,
 		 "format_version" => STRING_ENUM,
 		 "revision"       => HEX_ID,
-		 "signer"         => STRING,
+		 "signer"         => HEX_ID | STRING,
 		 "tag"            => STRING);
 
 # Flag for determining whether the mtn subprocess should be started in a
@@ -337,6 +342,7 @@ sub warning_handler_wrapper($);
 use base qw(Exporter);
 
 our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
+					MTN_CONTENT_DIFF_EXTRA_OPTIONS
 					MTN_DB_GET
 					MTN_DROP_ATTRIBUTE
 					MTN_DROP_DB_VARIABLES
@@ -345,6 +351,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_GET_CURRENT_REVISION
 					MTN_GET_DB_VARIABLES
 					MTN_GET_WORKSPACE_ROOT
+					MTN_HASHED_SIGNATURES
 					MTN_IGNORING_OF_SUSPEND_CERTS
 					MTN_INVENTORY_IN_IO_STANZA_FORMAT
 					MTN_INVENTORY_TAKING_OPTIONS
@@ -394,7 +401,7 @@ sub new_from_db($;$$)
     shift();
     my $db_name = (ref($_[0]) eq "ARRAY") ? undef : shift();
     my $options = shift();
-    $options = [] if (! defined($options));
+    $options = [] unless (defined($options));
 
     my($db,
        $this,
@@ -457,7 +464,7 @@ sub new_from_ws($;$$)
     shift();
     my $ws_path = (ref($_[0]) eq "ARRAY") ? undef : shift();
     my $options = shift();
-    $options = [] if (! defined($options));
+    $options = [] unless (defined($options));
 
     my($db_name,
        $this);
@@ -814,13 +821,22 @@ sub content_diff($$;$$$@)
     {
 	for (my $i = 0; $i < scalar(@$options); ++ $i)
 	{
-	    push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    if ($$options[$i] eq "reverse"
+		|| $$options[$i] eq "with-header"
+		|| $$options[$i] eq "without-header")
+	    {
+		push(@opts, {key => $$options[$i], value => ""});
+	    }
+	    else
+	    {
+		push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    }
 	}
     }
     push(@opts, {key => "r", value => $revision_id1})
-	unless (! defined($revision_id1));
+	if (defined($revision_id1));
     push(@opts, {key => "r", value => $revision_id2})
-	unless (! defined($revision_id2));
+	if (defined($revision_id2));
 
     return $this->mtn_command_with_options("content_diff",
 					   1,
@@ -1568,7 +1584,7 @@ sub get_file_of($$$;$)
     my @opts;
 
     push(@opts, {key => "r", value => $revision_id})
-	unless (! defined($revision_id));
+	if (defined($revision_id));
 
     return $this->mtn_command_with_options("get_file_of",
 					   1,
@@ -2108,12 +2124,28 @@ sub keys($$)
     {
 
 	my($i,
-	   @lines);
+	   @lines,
+	   @valid_fields);
 
 	if (! $this->mtn_command("keys", 0, 1, \@lines))
 	{
 	    return;
 	}
+
+	# Build up a list of valid fields depending upon the version of
+	# Monotone in use.
+
+	push(@valid_fields, "given_name", "local_name")
+	    if ($this->supports(MTN_HASHED_SIGNATURES));
+	if ($this->supports(MTN_COMMON_KEY_HASH))
+	{
+	    push(@valid_fields, "hash");
+	}
+	else
+	{
+	    push(@valid_fields, "public_hash");
+	}
+	push(@valid_fields, "public_location");
 
 	# Reformat the data into a structured array.
 
@@ -2130,10 +2162,7 @@ sub keys($$)
 
 		# Validate it in terms of expected fields and store.
 
-		foreach my $key ("name",
-				 ($this->supports(MTN_COMMON_KEY_HASH)
-				      ? "hash" : "public_hash"),
-				 "public_location")
+		foreach my $key (@valid_fields)
 		{
 		    &$croaker("Corrupt keys list, expected " . $key
 			      . " field but didn't find it")
@@ -3425,7 +3454,8 @@ sub supports($$)
 	return 1 if ($this->{mtn_aif_major} >= 8);
 
     }
-    elsif ($feature == MTN_FILE_MERGE
+    elsif ($feature == MTN_CONTENT_DIFF_EXTRA_OPTIONS
+	   || $feature == MTN_FILE_MERGE
 	   || $feature == MTN_LUA
 	   || $feature == MTN_READ_PACKETS)
     {
@@ -3451,6 +3481,14 @@ sub supports($$)
 	# These are only available from version 0.44 (i/f version 10.x).
 
 	return 1 if ($this->{mtn_aif_major} >= 10);
+
+    }
+    elsif ($feature == MTN_HASHED_SIGNATURES)
+    {
+
+	# These are only available from version 0.45 (i/f version 11.x).
+
+	return 1 if ($this->{mtn_aif_major} >= 11);
 
     }
     else
@@ -3932,8 +3970,8 @@ sub mtn_command_with_options($$$$$$;@)
     }
 
     # If the output is to be returned as an array of lines as against one lump
-    # then we need to use read the output into a temporary buffer before
-    # breaking it up into lines.
+    # then we need to read the output into a temporary buffer before breaking
+    # it up into lines.
 
     if (ref($ref) eq "SCALAR")
     {

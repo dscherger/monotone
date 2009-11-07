@@ -102,6 +102,15 @@ my @test_list =
 	       "9b264ec9247ce99cd1fdc5293e869c1a60b01c4c",
 	       "f06e40cb1d2b4f5c0db387e7a6c37681f1f89294"]},
 
+     {fn   => \&Monotone::AutomateStdio::content_diff,
+      desc => "content_diff (file - options excluding options.cc)",
+      feat => MTN_CONTENT_DIFF_EXTRA_OPTIONS,
+      type => RAW,
+      args => [[exclude => "options.cc",
+		"with-header"],
+	       "9b264ec9247ce99cd1fdc5293e869c1a60b01c4c",
+	       "f06e40cb1d2b4f5c0db387e7a6c37681f1f89294"]},
+
      {fn   => \&Monotone::AutomateStdio::db_get,
       desc => "db_get",
       feat => MTN_DB_GET,
