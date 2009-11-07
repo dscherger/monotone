@@ -1155,6 +1155,11 @@ sub get_file_details($$$$$$)
        @revision_list);
 
     $mtn->get_content_changed(\@revision_list, $revision_id, $file_name);
+    if (scalar(@revision_list) > 1)
+    {
+	$mtn->toposort(\@revision_list, @revision_list);
+	@revision_list = reverse(@revision_list);
+    }
     $$last_changed_revision = $revision_list[0];
     $mtn->certs(\@certs_list, $revision_list[0]);
     $$author = $$last_update = "";

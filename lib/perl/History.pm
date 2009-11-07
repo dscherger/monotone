@@ -570,11 +570,22 @@ sub display_revision_comparison($$$;$)
 
     $instance->{appbar}->set_status(__("Calculating differences"));
     $wm->update_gui();
-    mtn_diff($instance->{diff_output},
-	     $mtn->get_db_name(),
-	     $revision_id_1,
-	     $revision_id_2,
-	     $file_name);
+    if ($mtn->supports(MTN_CONTENT_DIFF_EXTRA_OPTIONS))
+    {
+	$mtn->content_diff($instance->{diff_output},
+			   ["with-header"],
+			   $revision_id_1,
+			   $revision_id_2,
+			   $file_name);
+    }
+    else
+    {
+	mtn_diff($instance->{diff_output},
+		 $mtn->get_db_name(),
+		 $revision_id_1,
+		 $revision_id_2,
+		 $file_name);
+    }
 
     $instance->{stop_button}->set_sensitive(TRUE);
 
@@ -937,7 +948,7 @@ sub display_revision_comparison($$$;$)
 
     # Move to the file if a file comparison is being done.
 
-    if (defined($file_name))
+    if (defined($file_name) && scalar(@files) > 0)
     {
 
 	# Simply let the combobox's change callback fire after setting its
