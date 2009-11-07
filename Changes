@@ -1,5 +1,27 @@
 Revision history for Perl extension Monotone::AutomateStdio.
 
+0.06  Sat Nov 7 15:27:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Updated library to take into account the changes made in Monotone
+	  0.45. This also includes the documentation. Changes include:
+	  - tags() and certs() now return a has as a key or signer rather than
+	    their name.
+	  - content_diff() now supports the --reverse and --with-headers
+	    options.
+	  - keys() now returns given_name and local_name instead of just name.
+	- Tested against a 0.45 database and also updated the test harness to
+	  reflect the above changes.
+	- Made the exception handling code more consistent and cleaner.
+	- Corrected the use of IO::Poll's mask method and added POLLHUP to the
+	  mask.
+	- Now much more explicit in handling the reaping of subprocesses and
+	  much more robust in the face of a subprocess that won't die.
+	- Now test for the presence of exceptions by using a simple boolean
+	  test.
+	- Now cope with open3() throwing exceptions whilst inside the child
+	  process.
+	- Now allow the --rcfile switch.
+	- Made other small consistency tidy ups.
+
 0.05  Fri Jun 5 17:49:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Updated for Monotone version 0.44:
 	  - Added support for the w: selector (feature MTN_W_SELECTOR).
@@ -17,7 +39,7 @@ Revision history for Perl extension Monotone::AutomateStdio.
 	- Now supports the conversion of UTF-8 data into and out of Perl's
 	  internal UTF-8 string format for data read in from and sent out to
 	  the mtn subprocess.
-	- Added a suppress_utf8_conversion() meoth for disabling the above
+	- Added a suppress_utf8_conversion() method for disabling the above
 	  conversion if so desired.
 
 0.04  Sun May 3 19:19:00 2009 Anthony Cooper <support@coosoft.plus.com>
