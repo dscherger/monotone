@@ -136,6 +136,7 @@ my %valid_mtn_options = ("--confdir"            => 1,
 			 "--no-workspace"       => 0,
 			 "--norc"               => 0,
 			 "--nostd"              => 0,
+			 "--rcfile"             => 1,
 			 "--root"               => 1,
 			 "--ssh-sign"           => 1);
 
@@ -370,7 +371,7 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_SEVERITY_WARNING)]);
 our @EXPORT = qw();
 Exporter::export_ok_tags(qw(capabilities severities));
-our $VERSION = 0.05;
+our $VERSION = 0.06;
 #
 ##############################################################################
 #
