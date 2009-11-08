@@ -6,7 +6,7 @@
 
     <!ENTITY APP "Monotone Browser">
     <!ENTITY APP-CMD "mtn-browse">
-    <!ENTITY VERSION "0.01">
+    <!ENTITY VERSION "0.02">
 
   ]
 >
@@ -102,8 +102,16 @@ GNOME or DocBook.
       than the current revision
       -->
       <revision>
-        <revnumber>&APP; Manual V&VERSION;</revnumber>
+        <revnumber>&APP; Manual V0.01</revnumber>
         <date>02 May 2009</date>
+        <revdescription>
+          <para role="author">Anthony Cooper</para>
+          <para role="publisher">CooSoft</para>
+        </revdescription>
+      </revision>
+      <revision>
+        <revnumber>&APP; Manual V&VERSION;</revnumber>
+        <date>08 November 2009</date>
         <revdescription>
           <para role="author">Anthony Cooper</para>
           <para role="publisher">CooSoft</para>
@@ -114,7 +122,7 @@ GNOME or DocBook.
     <legalnotice>
       <title>Feedback</title>
       <para>To report a fault or make a suggestion regarding the <application>&APP;</application> application or this manual, please email <email>support@coosoft.plus.com</email>.</para>
-      <!-- Translators may also add here feedback address for translations -->
+      <!-- Translators may also add feedback address for translations here -->
     </legalnotice>
 
   </bookinfo>
@@ -235,7 +243,7 @@ GNOME or DocBook.
         <para>So if you typed in <literal>net.venge.monotone.contrib.lib.automate-stdio</literal> as the branch and then left clicked on the <inlinegraphic fileref="figures/combobox-entry-down-button.png" format="png" valign="middle"/>&nbsp; button then you would have something looking like that shown in the figure below.</para>
 
         <figure>
-          <title>A Branch ComboBox Entry Field Showing Its Completion List</title>
+          <title>A Branch Combobox Entry Field Showing Its Completion List</title>
           <screenshot>
             <screeninfo>Branch combobox entry field showing a reduced set of completion options via its pull down list.</screeninfo>
             <graphic fileref="figures/branch-combobox-entry-with-completion.png" format="png"/>
@@ -406,7 +414,7 @@ GNOME or DocBook.
                   <entry><para>Runs <application>Monotone Viz</application>. Any selected branch and revision details will be passed to <application>Monotone Viz</application> so that it can graph the specific branch and select the revision on that branch.</para></entry>
                 </row>
                 <row valign="top">
-                  <entry><para><inlinegraphic fileref="figures/information-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para><inlinegraphic fileref="figures/revision-history-button.png" format="png" valign="middle"/></para></entry>
                   <entry><para>Displays a <guilabel>Revision History</guilabel> window for the selected revision, showing its change history right back to the earliest revision on that path (see <xref linkend="mtnb-lachc-the-revision-and-file-history-windows"/>).</para></entry>
                 </row>
                 <row valign="top">
@@ -482,7 +490,7 @@ GNOME or DocBook.
                   <entry><para>Displays a <guilabel>Annotated Listing</guilabel> window for the currently selected file. This window shows who changed what, when they did it and the revision under which the change was made.</para></entry>
                 </row>
                 <row valign="top">
-                  <entry><para><inlinegraphic fileref="figures/information-button.png" format="png" valign="middle"/></para></entry>
+                  <entry><para><inlinegraphic fileref="figures/revision-history-button.png" format="png" valign="middle"/></para></entry>
                   <entry><para>Displays a <guilabel>File History</guilabel> window for the currently selected file, showing its change history right back to the earliest revision of that file (see <xref linkend="mtnb-lachc-the-revision-and-file-history-windows"/>).</para></entry>
                 </row>
               </tbody>
@@ -570,19 +578,19 @@ GNOME or DocBook.
 
       </sect2>
 
-      <sect2 id="mtnb-gsc-tool-tips-and-selection">
-        <title>Tool-Tips And Selection</title>
+      <sect2 id="mtnb-gsc-tooltips-and-selection">
+        <title>Tooltips And Selection</title>
 
-        <para>Tool-tips in this application work as expected. For most widgets, hovering over them will display an explanatory tool-tip after a few seconds. However, in the case of entry fields, in order not to interfere with typing, tool-tips only come up when you hover over an entry field's label rather than the entry box itself. Tool-tips are also used on the values displayed in information fields so that if they get truncated by the size of the window then one can always view their full value via a tool-tip.</para>
+        <para>Tooltips in this application work as expected. For most widgets, hovering over them will display an explanatory tooltip after a few seconds. However, in the case of entry fields, in order not to interfere with typing, tooltips only come up when you hover over an entry field's label rather than the entry box itself. Tooltips are also used on the values displayed in information fields so that if they get truncated by the size of the window then one can always view their full value via a tooltip.</para>
 
         <para>Most text items can be selected in the normal way with the mouse. However, the values in all information fields can also be selected. In the case where the value gets truncated then one can still select the entire value by treble left clicking with the mouse.</para>
 
         <para>The following figure illustrates the two points made above in a rather artificial way. It shows a <guilabel>Monotone Browser</guilabel> window where the user has treble left clicked on the value inside the <guilabel>File</guilabel> field and then moved the mouse over to the <guilabel>Change Log</guilabel> field.</para>
 
         <figure>
-          <title>A Monotone Browser Window Showing Tool-Tips And Text Selection</title>
+          <title>A Monotone Browser Window Showing Tooltips And Text Selection</title>
           <screenshot>
-            <screeninfo>A <guilabel>Monotone Browser</guilabel> window showing a tool-tip and the selection of text inside an information label.</screeninfo>
+            <screeninfo>A <guilabel>Monotone Browser</guilabel> window showing a tooltip and the selection of text inside an information label.</screeninfo>
             <graphic fileref="figures/main-window-showing-tooltip-and-selection.png" format="png"/>
           </screenshot>
         </figure>
@@ -601,7 +609,7 @@ GNOME or DocBook.
     <para>This chapter covers the <guilabel>Advanced Find</guilabel> dialog window and how it can be used to perform more complex queries on a database.</para>
 
     <note>
-      <para>This dialog window concerns itself with finding a particular revision in the database. If you want to find a particular file based upon some search criteria within a revision then, once the revision has been displayed, use the <guilabel>Monotone Browser</guilabel> window's  <guilabel>Find Files</guilabel> button to actually search for the file(s).</para>
+      <para>This dialog window concerns itself with finding a particular revision in the database. If you want to find a particular file based upon some search criteria within a revision then, once the revision has been displayed, use the <guilabel>Monotone Browser</guilabel> window's  <guilabel>Find Files</guilabel> button to actually search for the file(s) (see <xref linkend="mtnb-ffwarc-the-find-files-window"/>).</para>
     </note>
 
     <sect1 id="mtnb-mcqc-the-advanced-find-dialog-window">
@@ -642,23 +650,17 @@ GNOME or DocBook.
     <sect1 id="mtnb-mcqc-simple-queries">
       <title>Simple Queries</title>
 
-      <para>This is the default query mode. Having read the previous section, one would be forgiven for thinking <quote>what is the point?</quote>. Well there are two reasons why you may want to use this mode:</para>
+      <para>This is the default query mode. Having read the previous section, one would be forgiven for thinking <quote>what is the point?</quote>. Well the main reason for using it is if you want to look at a revision's change log before selecting it. This can be particularly useful when the tagged revision that you attempted to select in the parent <guilabel>Monotone Browser</guilabel> window is not unique on the currently selected branch and something like the following dialog window pops up.</para>
 
-      <orderedlist numeration="arabic">
-        <listitem>
-          <para>You may simply want to look at a revision's change log before selecting it.</para>
-        </listitem>
-        <listitem>
-          <para>The tagged revision that you attempted to select in the parent <guilabel>Monotone Browser</guilabel> window is not unique on the currently selected branch and something like the following dialog window popped up.</para>
-          <figure>
-            <title>A `Multiple Revisions' Dialog Window</title>
-            <screenshot>
-              <screeninfo>A multiple revisions dialog window.</screeninfo>
-              <graphic fileref="figures/multiple-revisions-dialog.png" format="png"/>
-            </screenshot>
-          </figure>
-        </listitem>
-      </orderedlist>
+      <figure>
+	<title>A `Multiple Revisions' Dialog Window</title>
+	<screenshot>
+	  <screeninfo>A multiple revisions dialog window.</screeninfo>
+	  <graphic fileref="figures/multiple-revisions-dialog.png" format="png"/>
+	</screenshot>
+      </figure>
+
+      <para>Of course one could simply use the <guilabel>Revisions</guilabel> combobox in the above dialog window, but in most cases people would not know the id of the revision that they are after.</para>
 
       <para>Once you have completed your simple query, a list of matching revisions will be displayed in the <guilabel>Revisions</guilabel> panel. When one of these revisions is selected, its full change log is displayed in the <guilabel>Details</guilabel> panel on the right. Left clicking on the <guilabel>OK</guilabel> button will dismiss the <guilabel>Advanced Find</guilabel> dialog window and load the selected revision into the parent <guilabel>Monotone Browser</guilabel> window.</para>
 
@@ -907,7 +909,7 @@ GNOME or DocBook.
                 </row>
                 <row valign="top">
                   <entry><para><guilabel>Files named</guilabel></para></entry>
-                  <entry><para>Combobox entry field where one can enter a file name pattern that is to be searched for. File name patterns can be those used with commands like <literal>ls(1)</literal>.</para></entry>
+                  <entry><para>A combobox entry field where one can enter a file name pattern that is to be searched for. File name patterns can be those used with commands like <literal>ls(1)</literal>.</para></entry>
                 </row>
                 <row valign="top">
                   <entry><para><guilabel>Case sensitive</guilabel></para></entry>
@@ -934,7 +936,7 @@ GNOME or DocBook.
               <tbody>
                 <row valign="top">
                   <entry><para><guilabel>Files containing</guilabel></para></entry>
-                  <entry><para>Combobox entry field where one can enter a text pattern that is to be searched for inside each file.</para></entry>
+                  <entry><para>A combobox entry field where one can enter a text pattern that is to be searched for inside each file.</para></entry>
                 </row>
                 <row valign="top">
                   <entry><para><guilabel>Case sensitive</guilabel></para></entry>
@@ -981,7 +983,7 @@ GNOME or DocBook.
                 </row>
                 <row valign="top">
                   <entry><para><guilabel>Files last modified by</guilabel></para></entry>
-                  <entry><para>Combobox entry field where one can enter the id of the author that is to be searched for on each file.</para></entry>
+                  <entry><para>A combobox entry field where one can enter the id of the author that is to be searched for on each file.</para></entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1411,6 +1413,14 @@ GNOME or DocBook.
                       <entry><para><guilabel>History size</guilabel></para></entry>
                       <entry><para>Determines how much history is retained for ordinary combobox entry's fields via their pull down lists. This history is saved to disk so that it is available the next time you run <application>&APP;</application>. This does not apply to <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields as they are used to select items out of specific lists retrieved from the database.</para></entry>
                     </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Static lists</guilabel></para></entry>
+                      <entry><para>If this is ticked then the pull down lists on <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields are not updated each time the user enters something into the corresponding entry field. Otherwise the pull down lists are updated on each key press.</para></entry>
+                    </row>
+                    <row valign="top">
+                      <entry><para><guilabel>Show tooltips</guilabel></para></entry>
+                      <entry><para>If this is ticked then each time an invalid character is entered into a <guilabel>Branch</guilabel> or <guilabel>Revision</guilabel> combobox entry field a completion tooltip is displayed just below it that shows the same explanatory text that is displayed in the status bar at the bottom of the window. Otherwise no completion style tooltips are displayed.</para></entry>
+                    </row>
                   </tbody>
                 </tgroup>
               </informaltable>
@@ -1438,19 +1448,23 @@ GNOME or DocBook.
                   <tbody>
                     <row valign="top">
                       <entry><para><guilabel>Show suspended revisions</guilabel></para></entry>
-                      <entry><para>If this is ticked then suspended revisions are included in <guilabel>Branch</guilabel> combobox entry pull down lists. Otherwise only active branches are listed.</para><note><para>Apart from the obvious use for this setting, it can be useful when there are a large number of branches in the database, as not bothering to weed out suspended branches speeds things up considerably.</para></note></entry>
+                      <entry><para>If this is ticked then the branches of suspended revisions are included in <guilabel>Branch</guilabel> combobox entry pull down lists. Otherwise only active branches are listed.</para><note><para>Apart from the obvious use for this setting, it can be useful when there are a large number of branches in the database, as not bothering to weed out suspended branches speeds things up considerably.</para></note></entry>
                     </row>
                     <row valign="top">
                       <entry><para><guilabel>Detailed file listings</guilabel></para></entry>
                       <entry><para>If this is ticked then the <guilabel>Last Update</guilabel> and <guilabel>Author</guilabel> columns are shown in Revision Browser panels. Otherwise only the file's icon and name are shown. Not displaying these two columns speeds up the displaying of a directory's contents at the expense of less information.</para></entry>
                     </row>
                     <row valign="top">
+                      <entry><para><guilabel>Folders come first</guilabel></para></entry>
+                      <entry><para>If this is ticked then folders are displayed before any files in directory listings. Otherwise both folders and files are displayed in strict alphabetical order.</para></entry>
+                    </row>
+                    <row valign="top">
                       <entry><para><guilabel>Show line numbers</guilabel></para></entry>
                       <entry><para>If this is ticked then line numbers are shown by default when viewing the contents of files. Otherwise no line numbers are shown by default.</para></entry>
                     </row>
                     <row valign="top">
-                      <entry><para><guilabel>Static branch and revision lists</guilabel></para></entry>
-                      <entry><para>If this is ticked then the pull down lists on <guilabel>Branch</guilabel> and <guilabel>Revision</guilabel> combobox entry fields are not updated each time the user enters something into the corresponding entry field. Otherwise the pull down lists are updated on each key press.</para></entry>
+                      <entry><para><guilabel>Binary threshold</guilabel></para></entry>
+                      <entry><para>This threshold is used to decide whether a file's contents are textual or binary in nature. When <application>&APP;</application> is determining the amount of non-printable characters in a file it breaks the data down into 10KB chunks and calculates the percentage of non-printable characters in that chunk. As soon as a chunk's percentage of non-printable characters is greater than this threshold the file is considered to be binary and not textual. This process is designed for efficiency as sometimes many hundreds of files need to be scanned per second.</para></entry>
                     </row>
                   </tbody>
                 </tgroup>
