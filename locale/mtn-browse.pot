@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: mtn-browse 0.1\n"
 "Report-Msgid-Bugs-To: support@coosoft.plus.com\n"
-"POT-Creation-Date: 2009-06-07 16:10+0100\n"
+"POT-Creation-Date: 2009-11-08 14:24+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,26 +17,26 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: mtn-browse:232
+#: mtn-browse:238
 #, perl-brace-format
 msgid ""
 "Your preferences cannot be loaded:\n"
 "{error_message}"
 msgstr ""
 
-#: mtn-browse:256
+#: mtn-browse:262
 #, perl-brace-format
 msgid ""
 "{error_message}\n"
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:316
+#: mtn-browse:322
 #, perl-brace-format
 msgid "Cannot open database {database_name}."
 msgstr ""
 
-#: mtn-browse:508
+#: mtn-browse:514
 #, perl-brace-format
 msgid ""
 "Gnome cannot display Monotone Browser's\n"
@@ -44,39 +44,39 @@ msgid ""
 "<b><i>{gnome_error_message}</i></b>"
 msgstr ""
 
-#: mtn-browse:547
+#: mtn-browse:553
 msgid "Copyright © 2007-2009 Anthony Cooper"
 msgstr ""
 
-#: mtn-browse:548
+#: mtn-browse:554
 msgid "A graphical front-end browser for Monotone VCS databases"
 msgstr ""
 
-#: mtn-browse:550
+#: mtn-browse:556
 msgid "Anthony Cooper <support@coosoft.plus.com>"
 msgstr ""
 
-#: mtn-browse:551
+#: mtn-browse:557
 msgid "Thomas Keller <me@thomaskeller.biz> (German translation)"
 msgstr ""
 
-#: mtn-browse:1215 lib/perl/History.pm:1966
+#: mtn-browse:1182 lib/perl/History.pm:1985
 #, perl-brace-format
 msgid ""
 "Cannot generate temporary file name:\n"
 "{error_message}."
 msgstr ""
 
-#: mtn-browse:1231 lib/perl/Common.pm:546 lib/perl/History.pm:1983
+#: mtn-browse:1198 lib/perl/Common.pm:664 lib/perl/History.pm:2002
 #, perl-brace-format
 msgid "{error_message}."
 msgstr ""
 
-#: mtn-browse:1291
+#: mtn-browse:1260
 msgid "Unknown file type, not viewing."
 msgstr ""
 
-#: mtn-browse:1308
+#: mtn-browse:1277
 #, perl-brace-format
 msgid ""
 "Gnome cannot launch the helper application\n"
@@ -85,7 +85,7 @@ msgid ""
 "<b><i>{gnome_error_message}</i></b>"
 msgstr ""
 
-#: mtn-browse:1324
+#: mtn-browse:1293
 #, perl-brace-format
 msgid ""
 "No application is associated with\n"
@@ -93,133 +93,132 @@ msgid ""
 "using Vi instead."
 msgstr ""
 
-#: mtn-browse:1716
+#: mtn-browse:1685
 msgid "File Name"
 msgstr ""
 
-#: mtn-browse:1731
+#: mtn-browse:1700
 msgid "Last Update"
 msgstr ""
 
-#: mtn-browse:1741 lib/perl/AdvancedFind.pm:306 lib/perl/AdvancedFind.pm:688
+#: mtn-browse:1710 lib/perl/AdvancedFind.pm:307 lib/perl/AdvancedFind.pm:689
 msgid "Author"
 msgstr ""
 
-#: mtn-browse:1805
+#: mtn-browse:1774
 msgid "mtnb-gsc-menus"
 msgstr ""
 
-#: mtn-browse:1807
+#: mtn-browse:1776
 msgid "mtnb-gsc-tool-bar"
 msgstr ""
 
-#: mtn-browse:1809
+#: mtn-browse:1778
 msgid "mtnb-gsc-selecting-a-branch-and-revision"
 msgstr ""
 
-#: mtn-browse:1811 mtn-browse:1815 mtn-browse:1821 lib/perl/FindText.pm:784
+#: mtn-browse:1780 mtn-browse:1784 mtn-browse:1790 lib/perl/FindText.pm:786
 msgid "mtnb-gsc-browser-buttons"
 msgstr ""
 
-#: mtn-browse:1813 mtn-browse:1817
+#: mtn-browse:1782 mtn-browse:1786
 msgid "mtnb-gsc-selecting-a-file-to-display"
 msgstr ""
 
-#: mtn-browse:1819 mtn-browse:1823
+#: mtn-browse:1788 mtn-browse:1792
 msgid "mtnb-gsc-information-fields"
 msgstr ""
 
-#: mtn-browse:1825
+#: mtn-browse:1794
 msgid "mtnb-gsc-monotone-browser-window-at-a-glance"
 msgstr ""
 
-#: mtn-browse:1954 lib/perl/Preferences.pm:316 lib/perl/Preferences.pm:367
+#: mtn-browse:1932 lib/perl/Preferences.pm:317 lib/perl/Preferences.pm:368
 #, perl-brace-format
 msgid "open failed: {error_message}\n"
 msgstr ""
 
-#: mtn-browse:2078
+#: mtn-browse:2057
 #, perl-brace-format
 msgid "<WorkSpace> ({database_name})"
 msgstr ""
 
-#: mtn-browse:2120 lib/perl/AdvancedFind.pm:835
+#: mtn-browse:2099 lib/perl/AdvancedFind.pm:843
 msgid "Fetching branch list"
 msgstr ""
 
-#: mtn-browse:2127 lib/perl/AdvancedFind.pm:843
+#: mtn-browse:2106 lib/perl/AdvancedFind.pm:851
 msgid "Populating branch list"
 msgstr ""
 
-#: mtn-browse:2169
+#: mtn-browse:2152
 msgid "Auto selecting head revision"
 msgstr ""
 
-#: mtn-browse:2184
+#: mtn-browse:2179
 #, perl-brace-format
 msgid ""
-"The `{branch}' branch has multiple heads\n"
-"and <i>Auto select head revision</i> is switched on.\n"
-"Please manually select the revision.\n"
-"The head revision ids are:"
+"The `{branch}' branch\n"
+"has multiple heads and <i>Auto select head revision</i> is switched\n"
+"on. Please either select the revision by its id using the combobox\n"
+"below or use the <i>Advanced Find</i> feature."
 msgstr ""
 
-#: mtn-browse:2220 lib/perl/AdvancedFind.pm:892 lib/perl/History.pm:156
-#: lib/perl/History.pm:358
+#: mtn-browse:2261 lib/perl/AdvancedFind.pm:900 lib/perl/History.pm:157
+#: lib/perl/History.pm:359
 msgid "Fetching revision list"
 msgstr ""
 
-#: mtn-browse:2233 lib/perl/AdvancedFind.pm:907
+#: mtn-browse:2274 lib/perl/AdvancedFind.pm:915
 msgid "Populating revision list"
 msgstr ""
 
-#: mtn-browse:2289
+#: mtn-browse:2330
 msgid "Fetching manifest"
 msgstr ""
 
-#: mtn-browse:2299
+#: mtn-browse:2356
 #, perl-brace-format
 msgid ""
-"The `{tag_name}' tag is not unique on this branch.\n"
-"Please either select the revision by its id\n"
-"or use the <i>Advanced Find</i> feature.\n"
-"The matching revision ids are:"
+"The `{tag_name}' tag is not unique on this\n"
+"branch. Please either select the revision by its id using the\n"
+"combobox below or use the <i>Advanced Find</i> feature."
 msgstr ""
 
-#: mtn-browse:2368
+#: mtn-browse:2472
 msgid "Populating directory list"
 msgstr ""
 
-#: mtn-browse:2440
+#: mtn-browse:2544
 msgid "Populating file details"
 msgstr ""
 
-#: mtn-browse:2680
+#: mtn-browse:2858
 msgid "Unknown Contents"
 msgstr ""
 
-#: mtn-browse:2737
+#: mtn-browse:2915
 msgid "Hex dump:\n"
 msgstr ""
 
-#: mtn-browse:2894
+#: mtn-browse:3072
 msgid ""
 "Your version of Monotone does not support\n"
 "suspend certificates. I will adjusted your\n"
 "preferences accordingly."
 msgstr ""
 
-#: mtn-browse:2912 lib/perl/Common.pm:1194 lib/perl/Preferences.pm:269
+#: mtn-browse:3090 lib/perl/Common.pm:1382 lib/perl/Preferences.pm:270
 msgid "Your preferences could not be saved:\n"
 msgstr ""
 
-#: mtn-browse:2953
+#: mtn-browse:3131
 msgid ""
 "The Monotone database is currently locked, please\n"
 "dismiss this dialog when this is no longer the case."
 msgstr ""
 
-#: mtn-browse:2993
+#: mtn-browse:3171
 #, perl-brace-format
 msgid ""
 "Problem with monotone request, got:\n"
@@ -227,7 +226,7 @@ msgid ""
 "This should not be happening!"
 msgstr ""
 
-#: mtn-browse:3010
+#: mtn-browse:3188
 #, perl-brace-format
 msgid ""
 "Monotone process unexpectedly exiting with:\n"
@@ -235,17 +234,17 @@ msgid ""
 "This is fatal, I am going to exit."
 msgstr ""
 
-#: mtn-browse:3062
+#: mtn-browse:3239
 #, perl-brace-format
 msgid "terminated by signal {number}"
 msgstr ""
 
-#: mtn-browse:3067
+#: mtn-browse:3245
 #, perl-brace-format
 msgid "exited with status {number}"
 msgstr ""
 
-#: mtn-browse:3075
+#: mtn-browse:3253
 #, perl-brace-format
 msgid ""
 "The mtn subprocess just unexpectedly\n"
@@ -254,203 +253,203 @@ msgid ""
 "It will be restarted when needed."
 msgstr ""
 
-#: mtn-browse:3090
+#: mtn-browse:3268
 #, perl-brace-format
 msgid "waitpid failed: {error_message}"
 msgstr ""
 
-#: mtn-browse:3120
+#: mtn-browse:3298
 #, perl-brace-format
 msgid "pipe failed: {error_message}"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:308
+#: lib/perl/AdvancedFind.pm:309
 msgid "<Author>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:310 lib/perl/AdvancedFind.pm:668
+#: lib/perl/AdvancedFind.pm:311 lib/perl/AdvancedFind.pm:669
 msgid "Branch"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:312 lib/perl/AdvancedFind.pm:332
+#: lib/perl/AdvancedFind.pm:313 lib/perl/AdvancedFind.pm:333
 msgid "<Branch>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:314
+#: lib/perl/AdvancedFind.pm:315
 msgid "Cert"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:316
+#: lib/perl/AdvancedFind.pm:317
 msgid "<Cert Expression>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:318
+#: lib/perl/AdvancedFind.pm:319
 msgid "Date (=)"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:322
+#: lib/perl/AdvancedFind.pm:323
 msgid "Date (<=)"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:326
+#: lib/perl/AdvancedFind.pm:327
 msgid "Date (>)"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:330
+#: lib/perl/AdvancedFind.pm:331
 msgid "Head Revision"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:334
+#: lib/perl/AdvancedFind.pm:335
 msgid "Identifier"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:336 lib/perl/AdvancedFind.pm:348
+#: lib/perl/AdvancedFind.pm:337 lib/perl/AdvancedFind.pm:349
 msgid "<Revision Id>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:338 lib/perl/AdvancedFind.pm:406
+#: lib/perl/AdvancedFind.pm:339 lib/perl/AdvancedFind.pm:407
 msgid "Logical And"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:342 lib/perl/AdvancedFind.pm:632
+#: lib/perl/AdvancedFind.pm:343 lib/perl/AdvancedFind.pm:633
 msgid "Message"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:344
+#: lib/perl/AdvancedFind.pm:345
 msgid "<Message Text>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:346 lib/perl/AdvancedFind.pm:634
+#: lib/perl/AdvancedFind.pm:347 lib/perl/AdvancedFind.pm:635
 msgid "Parent"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:350
+#: lib/perl/AdvancedFind.pm:351
 msgid "Tag"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:352
+#: lib/perl/AdvancedFind.pm:353
 msgid "<Tag Name>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:400 lib/perl/AdvancedFind.pm:678
+#: lib/perl/AdvancedFind.pm:401 lib/perl/AdvancedFind.pm:679
 msgid "Date"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:656
+#: lib/perl/AdvancedFind.pm:657
 msgid "Revision Id"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:729
+#: lib/perl/AdvancedFind.pm:730
 msgid "mtnb-mcqc-simple-queries"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:731
+#: lib/perl/AdvancedFind.pm:732
 msgid "mtnb-mcqc-helper-tools"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:733
+#: lib/perl/AdvancedFind.pm:734
 msgid "mtnb-mcqc-the-advanced-find-dialog-window"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:947
+#: lib/perl/AdvancedFind.pm:955
 msgid "Finding revisions"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:979
+#: lib/perl/AdvancedFind.pm:987
 #, perl-brace-format
 msgid ""
 "There is a problem with your query, Monotone gave:\n"
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:1007
+#: lib/perl/AdvancedFind.pm:1015
 msgid "No revisions matched your query."
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:1025
+#: lib/perl/AdvancedFind.pm:1033
 msgid "Populating revision details"
 msgstr ""
 
-#: lib/perl/AdvancedFind.pm:1199
+#: lib/perl/AdvancedFind.pm:1207
 #, perl-brace-format
 msgid "Found 1 revision"
 msgid_plural "Found {revisions_found} revisions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/perl/AdvancedFind.pm:1206 lib/perl/FindFiles.pm:659
+#: lib/perl/AdvancedFind.pm:1214 lib/perl/FindFiles.pm:660
 msgid "Nothing found"
 msgstr ""
 
-#: lib/perl/Annotate.pm:104
+#: lib/perl/Annotate.pm:105
 #, perl-brace-format
 msgid "Annotated Listing Of {file}"
 msgstr ""
 
-#: lib/perl/Annotate.pm:115
+#: lib/perl/Annotate.pm:116
 msgid "Annotating file"
 msgstr ""
 
-#: lib/perl/Annotate.pm:146
+#: lib/perl/Annotate.pm:150
 msgid "Formatting and displaying annotated file"
 msgstr ""
 
-#: lib/perl/Annotate.pm:292
+#: lib/perl/Annotate.pm:296
 msgid "Display Change _Log"
 msgstr ""
 
-#: lib/perl/Annotate.pm:310
+#: lib/perl/Annotate.pm:314
 msgid "Displaying change log"
 msgstr ""
 
-#: lib/perl/Annotate.pm:316
+#: lib/perl/Annotate.pm:320
 msgid "Display File _History"
 msgstr ""
 
-#: lib/perl/Annotate.pm:340 lib/perl/History.pm:385
+#: lib/perl/Annotate.pm:344 lib/perl/History.pm:386
 msgid "Displaying file history"
 msgstr ""
 
-#: lib/perl/Annotate.pm:346
+#: lib/perl/Annotate.pm:350
 msgid "Display _Revision History"
 msgstr ""
 
-#: lib/perl/Annotate.pm:364 lib/perl/History.pm:177
+#: lib/perl/Annotate.pm:368 lib/perl/History.pm:178
 msgid "Displaying revision history"
 msgstr ""
 
-#: lib/perl/Annotate.pm:375
+#: lib/perl/Annotate.pm:379
 msgid "Compare File With Previous _Version"
 msgstr ""
 
-#: lib/perl/Annotate.pm:391
+#: lib/perl/Annotate.pm:395
 msgid "Doing file comparison"
 msgstr ""
 
-#: lib/perl/Annotate.pm:398
+#: lib/perl/Annotate.pm:402
 msgid "Compare Revision _With Parent"
 msgstr ""
 
-#: lib/perl/Annotate.pm:414
+#: lib/perl/Annotate.pm:418
 msgid "Doing revision comparison"
 msgstr ""
 
-#: lib/perl/Annotate.pm:470
+#: lib/perl/Annotate.pm:474
 msgid "Cannot access unique revision id."
 msgstr ""
 
-#: lib/perl/Annotate.pm:532
+#: lib/perl/Annotate.pm:536
 msgid ""
 "The selected revision has more than one parent.\n"
 "I will display the file's history so you can select\n"
 "the specific parent revision."
 msgstr ""
 
-#: lib/perl/Annotate.pm:549 lib/perl/Annotate.pm:666
+#: lib/perl/Annotate.pm:553 lib/perl/Annotate.pm:670
 msgid "The selected revision has no parents."
 msgstr ""
 
-#: lib/perl/Annotate.pm:564
+#: lib/perl/Annotate.pm:568
 msgid ""
 "The current version of the file probably\n"
 "resulted from a merge as it is directly\n"
@@ -459,22 +458,22 @@ msgid ""
 "can select the specific parent revision."
 msgstr ""
 
-#: lib/perl/Annotate.pm:583
+#: lib/perl/Annotate.pm:587
 msgid "The selected file version has no ancestors."
 msgstr ""
 
-#: lib/perl/Annotate.pm:651
+#: lib/perl/Annotate.pm:655
 msgid ""
 "The selected revision has more than one parent.\n"
 "I will display the revision's history so you can select\n"
 "the specific parent revision."
 msgstr ""
 
-#: lib/perl/Annotate.pm:756
+#: lib/perl/Annotate.pm:760
 msgid "mtnb-lachc-the-annotated-listing-window"
 msgstr ""
 
-#: lib/perl/Annotate.pm:834
+#: lib/perl/Annotate.pm:838
 #, perl-brace-format
 msgid ""
 "Problem running mtn annotate, got:\n"
@@ -482,86 +481,91 @@ msgid ""
 "This should not be happening!"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:52
+#: lib/perl/ChangeLog.pm:53
 msgid "Added"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:53
+#: lib/perl/ChangeLog.pm:54
 msgid "Removed"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:54
+#: lib/perl/ChangeLog.pm:55
 msgid "Changed"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:55
+#: lib/perl/ChangeLog.pm:56
 msgid "Renamed"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:56
+#: lib/perl/ChangeLog.pm:57
 msgid "Attributes"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:110
+#: lib/perl/ChangeLog.pm:111
 #, perl-brace-format
 msgid "Change Log For {rev}"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:192
+#: lib/perl/ChangeLog.pm:193
 msgid "Revision id: "
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:275
+#: lib/perl/ChangeLog.pm:276
 #, perl-brace-format
 msgid ""
 "\n"
 "Change Log{optional_count}:\n"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:293
+#: lib/perl/ChangeLog.pm:294
 msgid ""
 "\n"
 "\n"
 "Changes Made:\n"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:325
+#: lib/perl/ChangeLog.pm:326
 #, perl-brace-format
 msgid "{name}: {attribute} was cleared"
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:370
+#: lib/perl/ChangeLog.pm:371
 msgid ""
 "\n"
 "Parent revision id(s): "
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:377
+#: lib/perl/ChangeLog.pm:378
 msgid "Manifest id:           "
 msgstr ""
 
-#: lib/perl/ChangeLog.pm:465
+#: lib/perl/ChangeLog.pm:466
 msgid "mtnb-lachc-the-change-log-window"
 msgstr ""
 
-#: lib/perl/ComboAutoCompletion.pm:177
+#: lib/perl/ComboAutoCompletion.pm:105
 msgid "branch"
 msgstr ""
 
-#: lib/perl/ComboAutoCompletion.pm:184
+#: lib/perl/ComboAutoCompletion.pm:111
 msgid "revision"
 msgstr ""
 
-#: lib/perl/ComboAutoCompletion.pm:191
+#: lib/perl/ComboAutoCompletion.pm:117
 msgid "directory"
 msgstr ""
 
-#: lib/perl/ComboAutoCompletion.pm:242
+#: lib/perl/ComboAutoCompletion.pm:324
 #, perl-brace-format
 msgid "Invalid {name} name `{value}'"
 msgstr ""
 
-#: lib/perl/Common.pm:190
+#: lib/perl/Common.pm:201
+#, perl-brace-format
+msgid "open3 failed: {error_message}"
+msgstr ""
+
+#: lib/perl/Common.pm:215
 #, perl-brace-format
 msgid ""
 "The {name} subprocess could not start,\n"
@@ -569,14 +573,7 @@ msgid ""
 "<b><i>{error_message}</b></i>"
 msgstr ""
 
-#: lib/perl/Common.pm:247
-#, perl-brace-format
-msgid ""
-"waitpid failed with:\n"
-"<b><i>{error_message}</i></b>"
-msgstr ""
-
-#: lib/perl/Common.pm:262
+#: lib/perl/Common.pm:300
 #, perl-brace-format
 msgid ""
 "The {name} subprocess failed with an exit status\n"
@@ -584,233 +581,247 @@ msgid ""
 "<b><i>{error_message}</i></b>"
 msgstr ""
 
-#: lib/perl/Common.pm:279
+#: lib/perl/Common.pm:320
 #, perl-brace-format
 msgid "The {name} subprocess was terminated by signal {number}."
 msgstr ""
 
-#: lib/perl/Common.pm:377
+#: lib/perl/Common.pm:371
+#, perl-brace-format
+msgid ""
+"waitpid failed with:\n"
+"<b><i>{error_message}</i></b>"
+msgstr ""
+
+#: lib/perl/Common.pm:495
 msgid "Open Database"
 msgstr ""
 
-#: lib/perl/Common.pm:437
+#: lib/perl/Common.pm:555
 msgid "Not a valid Monotone database."
 msgstr ""
 
-#: lib/perl/Common.pm:497
+#: lib/perl/Common.pm:615
 msgid "Save As"
 msgstr ""
 
-#: lib/perl/Common.pm:528
+#: lib/perl/Common.pm:646
 msgid ""
 "File already exists.\n"
 "Do you want to replace it?"
 msgstr ""
 
-#: lib/perl/Common.pm:529
+#: lib/perl/Common.pm:647
 msgid "Confirm"
 msgstr ""
 
-#: lib/perl/Common.pm:640
+#: lib/perl/Common.pm:758
 msgid "Select As Search Column"
 msgstr ""
 
-#: lib/perl/Common.pm:1276
+#: lib/perl/Common.pm:1306
+#, perl-brace-format
+msgid ""
+"The program `{program_name}' cannot be found.\n"
+"Is it installed?"
+msgstr ""
+
+#: lib/perl/Common.pm:1464
 msgid ""
 "The requested help section\n"
 "cannot be found or is not known."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:128
+#: lib/perl/FindFiles.pm:129
 #, perl-brace-format
 msgid "Find Files Within Revision {rev}"
 msgstr ""
 
-#: lib/perl/FindFiles.pm:501
+#: lib/perl/FindFiles.pm:502
 msgid "Finding matching files"
 msgstr ""
 
-#: lib/perl/FindFiles.pm:643
+#: lib/perl/FindFiles.pm:644
 #, perl-brace-format
 msgid "Found 1 file"
 msgid_plural "Found {files_found} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/perl/FindFiles.pm:656
+#: lib/perl/FindFiles.pm:657
 msgid "No files matched your query."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:998 lib/perl/FindFiles.pm:1000
-#: lib/perl/FindFiles.pm:1002
+#: lib/perl/FindFiles.pm:999 lib/perl/FindFiles.pm:1001
+#: lib/perl/FindFiles.pm:1003
 msgid "mtnb-ffwarc-query-fields"
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1004
+#: lib/perl/FindFiles.pm:1005
 msgid "mtnb-ffwarc-query-buttons"
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1006
+#: lib/perl/FindFiles.pm:1007
 msgid "mtnb-ffwarc-the-find-files-window"
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1081 lib/perl/Preferences.pm:870
+#: lib/perl/FindFiles.pm:1084 lib/perl/Preferences.pm:874
 #, perl-brace-format
 msgid ""
 "`{pattern}' is an invalid\n"
 "file name pattern."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1104 lib/perl/FindText.pm:398
+#: lib/perl/FindFiles.pm:1107 lib/perl/FindText.pm:399
 #, perl-brace-format
 msgid ""
 "`{pattern}' is an invalid\n"
 "content search pattern."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1122
+#: lib/perl/FindFiles.pm:1125
 msgid ""
 "The `between' dates are either\n"
 "the same or the wrong way round."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1142
+#: lib/perl/FindFiles.pm:1145
 #, perl-brace-format
 msgid "A duration of {months} months is too long."
 msgstr ""
 
-#: lib/perl/FindFiles.pm:1156
+#: lib/perl/FindFiles.pm:1159
 #, perl-brace-format
 msgid "A duration of {years} years is too long."
 msgstr ""
 
-#: lib/perl/FindText.pm:245
+#: lib/perl/FindText.pm:246
 msgid "_Find"
 msgstr ""
 
-#: lib/perl/FindText.pm:569
+#: lib/perl/FindText.pm:570
 #, perl-brace-format
 msgid ""
 "Could not find\n"
 "`{search_term}'."
 msgstr ""
 
-#: lib/perl/History.pm:60
+#: lib/perl/History.pm:61
 msgid "Browse File"
 msgstr ""
 
-#: lib/perl/History.pm:61
+#: lib/perl/History.pm:62
 msgid ""
 "Browse the file in\n"
 "a new browser window"
 msgstr ""
 
-#: lib/perl/History.pm:62
+#: lib/perl/History.pm:63
 msgid "Browse Revision"
 msgstr ""
 
-#: lib/perl/History.pm:63
+#: lib/perl/History.pm:64
 msgid ""
 "Browse the revision in\n"
 "a new browser window"
 msgstr ""
 
-#: lib/perl/History.pm:65
+#: lib/perl/History.pm:66
 msgid "Full Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:66
+#: lib/perl/History.pm:67
 msgid "View the revision's full change log"
 msgstr ""
 
-#: lib/perl/History.pm:67
+#: lib/perl/History.pm:68
 msgid "Select As Id 1"
 msgstr ""
 
-#: lib/perl/History.pm:68
+#: lib/perl/History.pm:69
 msgid "Select As Id 2"
 msgstr ""
 
-#: lib/perl/History.pm:69
+#: lib/perl/History.pm:70
 msgid ""
 "Select this file revision for\n"
 "comparison as the first file"
 msgstr ""
 
-#: lib/perl/History.pm:71
+#: lib/perl/History.pm:72
 msgid ""
 "Select this file revision for\n"
 "comparison as the second file"
 msgstr ""
 
-#: lib/perl/History.pm:73
+#: lib/perl/History.pm:74
 msgid ""
 "Select this revision for comparison\n"
 "as the second revision"
 msgstr ""
 
-#: lib/perl/History.pm:75
+#: lib/perl/History.pm:76
 msgid ""
 "Select this revision for comparison\n"
 "as the first revision"
 msgstr ""
 
-#: lib/perl/History.pm:140
+#: lib/perl/History.pm:141
 #, perl-brace-format
 msgid "Revision History For {rev}"
 msgstr ""
 
-#: lib/perl/History.pm:143
+#: lib/perl/History.pm:144
 msgid "<b>Revision History</b>"
 msgstr ""
 
-#: lib/perl/History.pm:164 lib/perl/History.pm:373
+#: lib/perl/History.pm:165 lib/perl/History.pm:374
 msgid "Sorting revision list"
 msgstr ""
 
-#: lib/perl/History.pm:344
+#: lib/perl/History.pm:345
 #, perl-brace-format
 msgid "File History For {file}"
 msgstr ""
 
-#: lib/perl/History.pm:346
+#: lib/perl/History.pm:347
 msgid "<b>File History</b>"
 msgstr ""
 
-#: lib/perl/History.pm:544
+#: lib/perl/History.pm:545
 #, perl-brace-format
 msgid "Differences Between Revisions {rev_1} and {rev_2}"
 msgstr ""
 
-#: lib/perl/History.pm:550
+#: lib/perl/History.pm:551
 msgid "<b>File Comparison</b>"
 msgstr ""
 
-#: lib/perl/History.pm:555
+#: lib/perl/History.pm:556
 msgid "<b>Revision Comparison</b>"
 msgstr ""
 
-#: lib/perl/History.pm:570
+#: lib/perl/History.pm:571
 msgid "Calculating differences"
 msgstr ""
 
-#: lib/perl/History.pm:633
+#: lib/perl/History.pm:648
 msgid "Formatting and displaying differences"
 msgstr ""
 
-#: lib/perl/History.pm:797
+#: lib/perl/History.pm:812
 msgid "Displaying differences"
 msgstr ""
 
-#: lib/perl/History.pm:896
+#: lib/perl/History.pm:911
 msgid "Populating file list"
 msgstr ""
 
-#: lib/perl/History.pm:903
+#: lib/perl/History.pm:918
 msgid "Summary"
 msgstr ""
 
-#: lib/perl/History.pm:1002
+#: lib/perl/History.pm:1017
 msgid ""
 "The name of the selected file has changed\n"
 "between the two selected revisions and cannot\n"
@@ -818,65 +829,65 @@ msgid ""
 "the comparison using the external helper application?"
 msgstr ""
 
-#: lib/perl/History.pm:1006
+#: lib/perl/History.pm:1021
 msgid "External Comparison"
 msgstr ""
 
-#: lib/perl/History.pm:1047
+#: lib/perl/History.pm:1062
 msgid ""
 "The file contents cannot be\n"
 "found in the selected revisions.\n"
 "This should not be happening."
 msgstr ""
 
-#: lib/perl/History.pm:1410
+#: lib/perl/History.pm:1425
 msgid "unified_diff.patch"
 msgstr ""
 
-#: lib/perl/History.pm:1570 lib/perl/History.pm:1572
+#: lib/perl/History.pm:1585 lib/perl/History.pm:1587
 msgid "mtnb-lachc-history-buttons"
 msgstr ""
 
-#: lib/perl/History.pm:1574
+#: lib/perl/History.pm:1589
 msgid "mtnb-lachc-the-revision-and-file-history-windows"
 msgstr ""
 
-#: lib/perl/History.pm:1837 lib/perl/History.pm:1844
+#: lib/perl/History.pm:1852 lib/perl/History.pm:1859
 msgid "Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1850
+#: lib/perl/History.pm:1865
 msgid "- Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1852
+#: lib/perl/History.pm:1867
 msgid "+ Revision Change Log"
 msgstr ""
 
-#: lib/perl/History.pm:1864 lib/perl/History.pm:1866
+#: lib/perl/History.pm:1879 lib/perl/History.pm:1881
 msgid "mtnb-lachc-differences-buttons"
 msgstr ""
 
-#: lib/perl/History.pm:1868
+#: lib/perl/History.pm:1883
 msgid "mtnb-lachc-the-differences-window"
 msgstr ""
 
-#: lib/perl/History.pm:1946
+#: lib/perl/History.pm:1961
 msgid ""
 "Cannot call the external helper application\n"
 "to do the comparison as one has not been\n"
 "specified in the user's preferences."
 msgstr ""
 
-#: lib/perl/History.pm:1956
+#: lib/perl/History.pm:1975
 msgid "OLDER_"
 msgstr ""
 
-#: lib/perl/History.pm:1959
+#: lib/perl/History.pm:1978
 msgid "NEWER_"
 msgstr ""
 
-#: lib/perl/History.pm:2075
+#: lib/perl/History.pm:2094
 #, perl-brace-format
 msgid ""
 "Problem running mtn diff, got:\n"
@@ -884,78 +895,78 @@ msgid ""
 "This should not be happening!"
 msgstr ""
 
-#: lib/perl/Preferences.pm:210
+#: lib/perl/Preferences.pm:211
 msgid "The preferences dialog cannot be displayed:\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:319
+#: lib/perl/Preferences.pm:320
 #, perl-brace-format
 msgid "Invalid user preferences file: {error_message}\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:323
+#: lib/perl/Preferences.pm:324
 #, perl-brace-format
 msgid "Preferences file, `{file_name}',\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:324
+#: lib/perl/Preferences.pm:325
 msgid "is corrupt, please remove it.\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:371
+#: lib/perl/Preferences.pm:372
 msgid "# DO NOT EDIT! This is an automatically generated file.\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:372
+#: lib/perl/Preferences.pm:373
 msgid "# Changes to this file may be lost or cause "
 msgstr ""
 
-#: lib/perl/Preferences.pm:373
+#: lib/perl/Preferences.pm:374
 msgid "mtn-browse to malfunction.\n"
 msgstr ""
 
-#: lib/perl/Preferences.pm:667
+#: lib/perl/Preferences.pm:671
 #, perl-brace-format
 msgid ""
 "`{mime_type}' does not\n"
 "look like a valid MIME type."
 msgstr ""
 
-#: lib/perl/Preferences.pm:691
+#: lib/perl/Preferences.pm:695
 #, perl-brace-format
 msgid "`{mime_type}' is already listed."
 msgstr ""
 
-#: lib/perl/Preferences.pm:894
+#: lib/perl/Preferences.pm:898
 #, perl-brace-format
 msgid ""
 "`{pattern}' is already used in MIME type\n"
 "`{mime_type}'."
 msgstr ""
 
-#: lib/perl/Preferences.pm:1116
+#: lib/perl/Preferences.pm:1123
 msgid "MIME Type"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1126
+#: lib/perl/Preferences.pm:1133
 msgid "File Name Patterns"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1136
+#: lib/perl/Preferences.pm:1143
 msgid "Helper Application"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1189
+#: lib/perl/Preferences.pm:1196
 msgid "mtnb-upc-the-preferences-dialog-window"
 msgstr ""
 
-#: lib/perl/Preferences.pm:1584
+#: lib/perl/Preferences.pm:1606
 msgid ""
 "The external file comparison application field is\n"
 "invalid, please correct before attempting to resave."
 msgstr ""
 
-#: lib/perl/Preferences.pm:1695
+#: lib/perl/Preferences.pm:1724
 msgid "Cannot load system MIME types.\n"
 msgstr ""
 
@@ -1019,240 +1030,240 @@ msgstr ""
 msgid "Display help contents page"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:474 lib/ui/mtn-browse.glade:2354
+#: lib/ui/mtn-browse.glade:474 lib/ui/mtn-browse.glade:2347
 msgid "Project branch to access"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:481 lib/ui/mtn-browse.glade:2361
+#: lib/ui/mtn-browse.glade:481 lib/ui/mtn-browse.glade:2354
 msgid "Branch:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:535 lib/ui/mtn-browse.glade:2415
+#: lib/ui/mtn-browse.glade:533 lib/ui/mtn-browse.glade:2406
 msgid "Revision within project to access"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:542 lib/ui/mtn-browse.glade:2422
+#: lib/ui/mtn-browse.glade:540 lib/ui/mtn-browse.glade:2413
 msgid " Revision:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:596 lib/ui/mtn-browse.glade:2476
+#: lib/ui/mtn-browse.glade:592 lib/ui/mtn-browse.glade:2465
 msgid ""
 "Select this if only those revisions\n"
 "that have been tagged on the\n"
 "current branch are to be listed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:600 lib/ui/mtn-browse.glade:2480
+#: lib/ui/mtn-browse.glade:596 lib/ui/mtn-browse.glade:2469
 msgid "Tagged"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:625
+#: lib/ui/mtn-browse.glade:621
 msgid ""
 "Use more advanced selection\n"
 "criteria for selecting a revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:654
+#: lib/ui/mtn-browse.glade:650
 msgid ""
 "View revision history\n"
 "in Monotone-Viz"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:682
+#: lib/ui/mtn-browse.glade:678
 msgid "View revision's change history"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:710
+#: lib/ui/mtn-browse.glade:706
 msgid "View revision's change log"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:749
+#: lib/ui/mtn-browse.glade:745
 msgid "<b>View</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:813
+#: lib/ui/mtn-browse.glade:809
 msgid "Directory to be viewed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:820
+#: lib/ui/mtn-browse.glade:816
 msgid "Directory:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:881
+#: lib/ui/mtn-browse.glade:875
 msgid "Go up one directory level"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:909
+#: lib/ui/mtn-browse.glade:903
 msgid ""
 "Find files based on one\n"
 "or more search criteria"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:985
+#: lib/ui/mtn-browse.glade:979
 msgid "<b>Revision Browser</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1173
+#: lib/ui/mtn-browse.glade:1167
 msgid "Name of file being displayed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1180
+#: lib/ui/mtn-browse.glade:1174
 msgid "File:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1206
+#: lib/ui/mtn-browse.glade:1200
 msgid ""
 "Time when the displayed file was last\n"
 "updated with respect to this revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1214 lib/ui/mtn-browse.glade:8878
+#: lib/ui/mtn-browse.glade:1208 lib/ui/mtn-browse.glade:9057
 msgid "Last update:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1378
+#: lib/ui/mtn-browse.glade:1372
 msgid "Author of the file revision being displayed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1385 lib/ui/mtn-browse.glade:1909
-#: lib/ui/mtn-browse.glade:8844
+#: lib/ui/mtn-browse.glade:1379 lib/ui/mtn-browse.glade:1902
+#: lib/ui/mtn-browse.glade:9023
 msgid "Author:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1411
+#: lib/ui/mtn-browse.glade:1405
 msgid ""
 "Revision id in which the displayed file was\n"
 "last updated with respect to this revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1419 lib/ui/mtn-browse.glade:9086
+#: lib/ui/mtn-browse.glade:1413 lib/ui/mtn-browse.glade:9265
 msgid "Revision id:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1491
+#: lib/ui/mtn-browse.glade:1485
 msgid ""
 "Toggle the showing\n"
 "of line numbers"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1522
+#: lib/ui/mtn-browse.glade:1516
 msgid "Search text"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1550
+#: lib/ui/mtn-browse.glade:1544
 msgid "Save file contents to disk"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1578
+#: lib/ui/mtn-browse.glade:1572
 msgid ""
 "Load file contents\n"
 "into a viewer"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1607
+#: lib/ui/mtn-browse.glade:1600
 msgid "Annotate file contents"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1634
+#: lib/ui/mtn-browse.glade:1627
 msgid "View file's change history"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1680
+#: lib/ui/mtn-browse.glade:1673
 msgid "<b>File Viewer</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1869
+#: lib/ui/mtn-browse.glade:1862
 msgid "Name of the database being accessed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1876
+#: lib/ui/mtn-browse.glade:1869
 msgid "Database:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:1902
+#: lib/ui/mtn-browse.glade:1895
 msgid "Author of the currently selected revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2073
+#: lib/ui/mtn-browse.glade:2066
 msgid "Date of the currently selected revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2080
+#: lib/ui/mtn-browse.glade:2073
 msgid "Date:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2106
+#: lib/ui/mtn-browse.glade:2099
 msgid "Change log for the currently selected revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2113
+#: lib/ui/mtn-browse.glade:2106
 msgid "Change log:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2150 lib/ui/mtn-browse.glade:2995
+#: lib/ui/mtn-browse.glade:2143 lib/ui/mtn-browse.glade:2984
 msgid "<b>Details</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2197
+#: lib/ui/mtn-browse.glade:2190 lib/ui/mtn-browse.glade:9428
 msgid "Advanced Find"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2254
+#: lib/ui/mtn-browse.glade:2247
 msgid ""
 "Select Simple Query you you just want to manually\n"
 "select the branch and revision from drop down lists"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2257
+#: lib/ui/mtn-browse.glade:2250
 msgid "Simple query"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2276
+#: lib/ui/mtn-browse.glade:2269
 msgid ""
 "Select Advanced Query if you want to\n"
 "specify very specific selection critia"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2279
+#: lib/ui/mtn-browse.glade:2272
 msgid "Advanced query"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2302
+#: lib/ui/mtn-browse.glade:2295
 msgid "<b>Mode</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2503
+#: lib/ui/mtn-browse.glade:2492
 msgid "<b>Simply Query</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2561
+#: lib/ui/mtn-browse.glade:2550
 msgid ""
 "Enter an advanced Monotone selection query - \n"
 "you can use the helper tools directly below this\n"
 "entry field if you cannot remember the syntax"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2570
+#: lib/ui/mtn-browse.glade:2559
 msgid "Search term:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2628
+#: lib/ui/mtn-browse.glade:2617
 msgid "Execute the query"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2657
+#: lib/ui/mtn-browse.glade:2646
 msgid "Stop the query"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2704
+#: lib/ui/mtn-browse.glade:2693
 msgid "Enter the current selector into the query above"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2732
+#: lib/ui/mtn-browse.glade:2721
 msgid "The type of selector that is to be inserted above"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2739
+#: lib/ui/mtn-browse.glade:2728
 msgid ""
 "Author\n"
 "Branch\n"
@@ -1268,215 +1279,215 @@ msgid ""
 "Tag"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2765
+#: lib/ui/mtn-browse.glade:2754
 msgid "Enter any arguments here"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2794
+#: lib/ui/mtn-browse.glade:2783
 msgid "Use this to specify the date for date based selectors"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2837
+#: lib/ui/mtn-browse.glade:2826
 msgid "<b>Advanced Query</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:2915
+#: lib/ui/mtn-browse.glade:2904
 msgid "<b>Revisions</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3210
+#: lib/ui/mtn-browse.glade:3199
 msgid "<b>Change Log</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3402
+#: lib/ui/mtn-browse.glade:3391
 msgid "Number of revisions listed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3409
+#: lib/ui/mtn-browse.glade:3398
 msgid "Number of revisions:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3443
+#: lib/ui/mtn-browse.glade:3432
 msgid "Stop gathering history details"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3561
+#: lib/ui/mtn-browse.glade:3550
 msgid "File id of the first file that is to be compared"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3623
+#: lib/ui/mtn-browse.glade:3612
 msgid "File id of the second file that is to be compared"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3666
+#: lib/ui/mtn-browse.glade:3655
 msgid ""
 "Revision id of the first selected\n"
 "file version that is to be compared"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3674
+#: lib/ui/mtn-browse.glade:3663
 msgid "First revision id:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3700
+#: lib/ui/mtn-browse.glade:3689
 msgid ""
 "Revision id of the second selected\n"
 "file version that is to be compared"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3708
+#: lib/ui/mtn-browse.glade:3697
 msgid "Second revision id:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3751
+#: lib/ui/mtn-browse.glade:3740
 msgid "Compare the two selected files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3792
+#: lib/ui/mtn-browse.glade:3781
 msgid "<b>Compare</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3897
+#: lib/ui/mtn-browse.glade:3886
 msgid "Jump to the selected file"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3904
+#: lib/ui/mtn-browse.glade:3893
 msgid "Jump to file:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3957
+#: lib/ui/mtn-browse.glade:3946
 msgid ""
 "Display the differences for the currently\n"
 "selected file in an external viewer"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:3985
+#: lib/ui/mtn-browse.glade:3974
 msgid "Save the differences to disk"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4014
+#: lib/ui/mtn-browse.glade:4003
 msgid "Stop formatting the comparison results"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4099
+#: lib/ui/mtn-browse.glade:4088
 msgid "View the change log of the older revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4127
+#: lib/ui/mtn-browse.glade:4116
 msgid "View the change log of the younger revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4288
+#: lib/ui/mtn-browse.glade:4277
 msgid "<b>Annotation</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4328
+#: lib/ui/mtn-browse.glade:4317
 msgid "Find Text"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4404
+#: lib/ui/mtn-browse.glade:4393
 msgid ""
 "Enter the text that is\n"
 "to be searched for"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4412
+#: lib/ui/mtn-browse.glade:4401
 msgid "Search for:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4460 lib/ui/mtn-browse.glade:7878
-#: lib/ui/mtn-browse.glade:8020
+#: lib/ui/mtn-browse.glade:4449 lib/ui/mtn-browse.glade:8057
+#: lib/ui/mtn-browse.glade:8199
 msgid ""
 "Choose whether searches are\n"
 "to be case sensitive or not"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4463 lib/ui/mtn-browse.glade:7881
-#: lib/ui/mtn-browse.glade:8023
+#: lib/ui/mtn-browse.glade:4452 lib/ui/mtn-browse.glade:8060
+#: lib/ui/mtn-browse.glade:8202
 msgid "Case sensitive"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4481
+#: lib/ui/mtn-browse.glade:4470
 msgid ""
 "Select the direction\n"
 "of the search"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4484
+#: lib/ui/mtn-browse.glade:4473
 msgid "Search backwards"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4502 lib/ui/mtn-browse.glade:8041
+#: lib/ui/mtn-browse.glade:4491 lib/ui/mtn-browse.glade:8220
 msgid ""
 "Use regular expression\n"
 "search patterns"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4505 lib/ui/mtn-browse.glade:8044
+#: lib/ui/mtn-browse.glade:4494 lib/ui/mtn-browse.glade:8223
 msgid "Regular expression"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4538
+#: lib/ui/mtn-browse.glade:4527
 msgid "Preferences"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4663
+#: lib/ui/mtn-browse.glade:4652
 msgid ""
 "Look for a Monotone\n"
 "database to open"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4666
+#: lib/ui/mtn-browse.glade:4655
 msgid "Browse ..."
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4685
+#: lib/ui/mtn-browse.glade:4674
 msgid ""
 "Name of the Monotone database to\n"
 "open automatically on startup"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4693
+#: lib/ui/mtn-browse.glade:4682
 msgid "Database to open:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4719
+#: lib/ui/mtn-browse.glade:4708
 msgid ""
 "Actions to take when starting up\n"
 "inside a Monotone workspace"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4727
+#: lib/ui/mtn-browse.glade:4716
 msgid "Workspace:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4759
+#: lib/ui/mtn-browse.glade:4748
 msgid ""
 "Select this if the workspace's database\n"
 "is to be opened instead of the named\n"
 "database above upon startup"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4763
+#: lib/ui/mtn-browse.glade:4752
 msgid "Takes precedence"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4781
+#: lib/ui/mtn-browse.glade:4770
 msgid ""
 "Select this if the workspace's branch\n"
 "and revision are to be automatically\n"
 "loaded into the browser upon startup"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4785
+#: lib/ui/mtn-browse.glade:4774
 msgid "Auto select branch and revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4839
+#: lib/ui/mtn-browse.glade:4828
 msgid "<b>Startup Defaults</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4885
+#: lib/ui/mtn-browse.glade:4874
 msgid ""
 "Select if the head revision on a branch\n"
 "should automatically be loaded into a\n"
@@ -1486,123 +1497,157 @@ msgid ""
 "by their tags)"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4892
+#: lib/ui/mtn-browse.glade:4881
 msgid "Auto select head revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4907
+#: lib/ui/mtn-browse.glade:4896
 msgid "<b>Revision Selection</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4962
+#: lib/ui/mtn-browse.glade:4951
 msgid ""
 "Settings for controlling the listing of\n"
 "tagged revisions in ComboBox menus"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4970
+#: lib/ui/mtn-browse.glade:4959
 msgid "Tagged lists:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:4996
+#: lib/ui/mtn-browse.glade:4985
 msgid ""
 "The maximum number of tags\n"
 "to be displayed (starting from\n"
 "the most recent, 0 = unlimited)"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5005 lib/ui/mtn-browse.glade:5040
-#: lib/ui/mtn-browse.glade:5272
+#: lib/ui/mtn-browse.glade:4994 lib/ui/mtn-browse.glade:5029
+#: lib/ui/mtn-browse.glade:5261
 msgid "Limit to:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5031
+#: lib/ui/mtn-browse.glade:5020
 msgid ""
 "The maximum number of ids\n"
 "to be displayed (starting from\n"
 "the most recent, 0 = unlimited)"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5066
+#: lib/ui/mtn-browse.glade:5055
 msgid ""
 "Settings for controlling the listing of\n"
 "revision ids in ComboBox menus"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5074
+#: lib/ui/mtn-browse.glade:5063
 msgid "Id lists:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5106
+#: lib/ui/mtn-browse.glade:5095
 msgid ""
 "Select Sort chronologically if you\n"
 "want the ids to be order on date,\n"
 "starting with the newest"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5110 lib/ui/mtn-browse.glade:5170
+#: lib/ui/mtn-browse.glade:5099 lib/ui/mtn-browse.glade:5159
 msgid "Sort chronologically"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5128
+#: lib/ui/mtn-browse.glade:5117
 msgid ""
 "Select Sort by id if you want the\n"
 "tags to be order aphabetically"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5131
+#: lib/ui/mtn-browse.glade:5120
 msgid "Sort by id"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5166
+#: lib/ui/mtn-browse.glade:5155
 msgid ""
 "Select Sort chronologically if you\n"
 "want the tags to be order on date,\n"
 "starting with the newest"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5188
+#: lib/ui/mtn-browse.glade:5177
 msgid ""
 "Select Sort by name if you want\n"
 "the tags to be order aphabetically"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5191
+#: lib/ui/mtn-browse.glade:5180
 msgid "Sort by name"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5264
+#: lib/ui/mtn-browse.glade:5253
 msgid ""
 "The maximum number of\n"
 "items to store in histories"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5298
+#: lib/ui/mtn-browse.glade:5287
 msgid ""
 "Setting for controlling the amount of\n"
 "history stored in ComboBox menus"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5306
+#: lib/ui/mtn-browse.glade:5295
 msgid "History size:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5358
+#: lib/ui/mtn-browse.glade:5349
+msgid ""
+"Select this if you do not want the\n"
+"branch and revision ComboBox entry\n"
+"lists to update as you type in values\n"
+"(can help with speed when dealing\n"
+"with large lists)"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5355
+msgid "Static lists"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5373
+msgid ""
+"Select this if you want feedback in the\n"
+"form of special tooltips when typing in\n"
+"values into ComboBox entry fields"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5377
+msgid "Show tooltips"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5404
+msgid ""
+"Settings for controlling the behaviour of\n"
+"auto-completion in ComboBox entry fields"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5412
+msgid "Auto-completion:"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5442
 msgid "<b>ComboBox Settings</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5410
+#: lib/ui/mtn-browse.glade:5500
 msgid ""
 "Select this if you want suspended\n"
 "revisions and their related branches\n"
 "to be displayed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5414
+#: lib/ui/mtn-browse.glade:5504
 msgid "Show suspended revisions"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5432
+#: lib/ui/mtn-browse.glade:5522
 msgid ""
 "Select this if you want a file's\n"
 "latest modification time and\n"
@@ -1616,38 +1661,50 @@ msgid ""
 "that you are using"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5443
+#: lib/ui/mtn-browse.glade:5533
 msgid "Detailed file listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5461
+#: lib/ui/mtn-browse.glade:5551
+msgid ""
+"Select this if you want all folders\n"
+"to be listed before any files"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5554
+msgid "Folders come first"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5572
 msgid ""
 "Select this if you want line numbers\n"
 "to be shown in file listings by default"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5464
+#: lib/ui/mtn-browse.glade:5575
 msgid "Show line numbers"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5482
+#: lib/ui/mtn-browse.glade:5606
 msgid ""
-"Select this if you do not want the\n"
-"branch and revision combobox entry\n"
-"lists to update as you type in values\n"
-"(can help with speed when dealing\n"
-"with large lists)"
+"The binary threshold, above which\n"
+"a file's contents are considered to be\n"
+"binary in nature"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5488
-msgid "Static branch and revision lists"
+#: lib/ui/mtn-browse.glade:5615
+msgid "Binary threshold:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5510
+#: lib/ui/mtn-browse.glade:5657
+msgid "%"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:5689
 msgid "<b>Browser Display Options</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5556
+#: lib/ui/mtn-browse.glade:5735
 msgid ""
 "Select this if the search terms used when\n"
 "searching lists (invoked by typing Ctrl-F)\n"
@@ -1655,15 +1712,15 @@ msgid ""
 "instead of plain text"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5561
+#: lib/ui/mtn-browse.glade:5740
 msgid "Search as regular expression"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5576
+#: lib/ui/mtn-browse.glade:5755
 msgid "<b>List Options</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5628
+#: lib/ui/mtn-browse.glade:5807
 msgid ""
 "Enter a command for displaying\n"
 "the differences between two text\n"
@@ -1685,241 +1742,241 @@ msgid ""
 "that referred to by {file2}"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5652
+#: lib/ui/mtn-browse.glade:5831
 msgid "Application:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5699
+#: lib/ui/mtn-browse.glade:5878
 msgid "<b>External File Comparison Application</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5731
+#: lib/ui/mtn-browse.glade:5910
 msgid "<b>General</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5783
+#: lib/ui/mtn-browse.glade:5962
 msgid ""
 "Select the font used for displaying file\n"
 "contents and reports (for best results\n"
 "make sure it is mono-spaced)"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5792
+#: lib/ui/mtn-browse.glade:5971
 msgid "File content/report font:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5816
+#: lib/ui/mtn-browse.glade:5995
 msgid "Pick A Font"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5837
+#: lib/ui/mtn-browse.glade:6016
 msgid "<b>Fonts</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5889
+#: lib/ui/mtn-browse.glade:6068
 msgid ""
 "Select if the toolbar buttons are to\n"
 "hide their text labels"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5892
+#: lib/ui/mtn-browse.glade:6071
 msgid "Hide text"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5910
+#: lib/ui/mtn-browse.glade:6089
 msgid ""
 "Select if the toolbars are to be fixed\n"
 "rather than movable"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5913
+#: lib/ui/mtn-browse.glade:6092
 msgid "Fixed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5935
+#: lib/ui/mtn-browse.glade:6114
 msgid "<b>Toolbar Settings</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5981
+#: lib/ui/mtn-browse.glade:6160
 msgid ""
 "Select if comparisons between files\n"
 "and revisions are to be highlighted in\n"
 "colour instead of plain black text"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:5985
+#: lib/ui/mtn-browse.glade:6164
 msgid "Coloured comparison listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6000
+#: lib/ui/mtn-browse.glade:6179
 msgid "<b>File/Revision Comparison</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6055
+#: lib/ui/mtn-browse.glade:6234
 msgid ""
 "The first set of line prefix colours\n"
 "used in annotated listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6063
+#: lib/ui/mtn-browse.glade:6242
 msgid "Annotation prefix 1:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6089
+#: lib/ui/mtn-browse.glade:6268
 msgid ""
 "Colour of the first revision\n"
 "in comparison listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6097
+#: lib/ui/mtn-browse.glade:6276
 msgid "Revision 1:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6123
+#: lib/ui/mtn-browse.glade:6302
 msgid ""
 "Colour of the second revision\n"
 "in comparison listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6131
+#: lib/ui/mtn-browse.glade:6310
 msgid "Revision 2:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6157 lib/ui/mtn-browse.glade:6190
-#: lib/ui/mtn-browse.glade:6397 lib/ui/mtn-browse.glade:6600
-#: lib/ui/mtn-browse.glade:6768 lib/ui/mtn-browse.glade:6801
+#: lib/ui/mtn-browse.glade:6336 lib/ui/mtn-browse.glade:6369
+#: lib/ui/mtn-browse.glade:6576 lib/ui/mtn-browse.glade:6779
+#: lib/ui/mtn-browse.glade:6947 lib/ui/mtn-browse.glade:6980
 msgid "Text foreground colour"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6164 lib/ui/mtn-browse.glade:6197
-#: lib/ui/mtn-browse.glade:6404 lib/ui/mtn-browse.glade:6607
-#: lib/ui/mtn-browse.glade:6775 lib/ui/mtn-browse.glade:6808
+#: lib/ui/mtn-browse.glade:6343 lib/ui/mtn-browse.glade:6376
+#: lib/ui/mtn-browse.glade:6583 lib/ui/mtn-browse.glade:6786
+#: lib/ui/mtn-browse.glade:6954 lib/ui/mtn-browse.glade:6987
 msgid "Foreground:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6223 lib/ui/mtn-browse.glade:6256
-#: lib/ui/mtn-browse.glade:6430 lib/ui/mtn-browse.glade:6651
-#: lib/ui/mtn-browse.glade:6834 lib/ui/mtn-browse.glade:6867
+#: lib/ui/mtn-browse.glade:6402 lib/ui/mtn-browse.glade:6435
+#: lib/ui/mtn-browse.glade:6609 lib/ui/mtn-browse.glade:6830
+#: lib/ui/mtn-browse.glade:7013 lib/ui/mtn-browse.glade:7046
 msgid "Text background colour"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6230 lib/ui/mtn-browse.glade:6263
-#: lib/ui/mtn-browse.glade:6437 lib/ui/mtn-browse.glade:6658
-#: lib/ui/mtn-browse.glade:6841 lib/ui/mtn-browse.glade:6874
+#: lib/ui/mtn-browse.glade:6409 lib/ui/mtn-browse.glade:6442
+#: lib/ui/mtn-browse.glade:6616 lib/ui/mtn-browse.glade:6837
+#: lib/ui/mtn-browse.glade:7020 lib/ui/mtn-browse.glade:7053
 msgid "Background:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6291 lib/ui/mtn-browse.glade:6309
-#: lib/ui/mtn-browse.glade:6327 lib/ui/mtn-browse.glade:6345
-#: lib/ui/mtn-browse.glade:6363 lib/ui/mtn-browse.glade:6381
-#: lib/ui/mtn-browse.glade:6499 lib/ui/mtn-browse.glade:6551
-#: lib/ui/mtn-browse.glade:6635 lib/ui/mtn-browse.glade:6686
-#: lib/ui/mtn-browse.glade:6902 lib/ui/mtn-browse.glade:6920
-#: lib/ui/mtn-browse.glade:6938 lib/ui/mtn-browse.glade:6956
+#: lib/ui/mtn-browse.glade:6470 lib/ui/mtn-browse.glade:6488
+#: lib/ui/mtn-browse.glade:6506 lib/ui/mtn-browse.glade:6524
+#: lib/ui/mtn-browse.glade:6542 lib/ui/mtn-browse.glade:6560
+#: lib/ui/mtn-browse.glade:6678 lib/ui/mtn-browse.glade:6730
+#: lib/ui/mtn-browse.glade:6814 lib/ui/mtn-browse.glade:6865
+#: lib/ui/mtn-browse.glade:7081 lib/ui/mtn-browse.glade:7099
+#: lib/ui/mtn-browse.glade:7117 lib/ui/mtn-browse.glade:7135
 msgid "Pick A Colour"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6463 lib/ui/mtn-browse.glade:6515
+#: lib/ui/mtn-browse.glade:6642 lib/ui/mtn-browse.glade:6694
 msgid ""
 "Text foreground colour\n"
 "used in context lines"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6471 lib/ui/mtn-browse.glade:6523
+#: lib/ui/mtn-browse.glade:6650 lib/ui/mtn-browse.glade:6702
 msgid "Highlight:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6567
+#: lib/ui/mtn-browse.glade:6746
 msgid ""
 "The first set of line text colours\n"
 "used in annotated listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6575
+#: lib/ui/mtn-browse.glade:6754
 msgid "Annotation text 1:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6702
+#: lib/ui/mtn-browse.glade:6881
 msgid ""
 "The second set of line prefix colours\n"
 "used in annotated listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6710
+#: lib/ui/mtn-browse.glade:6889
 msgid "Annotation prefix 2:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6735
+#: lib/ui/mtn-browse.glade:6914
 msgid ""
 "The second set of line text colours\n"
 "used in annotated listings"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6743
+#: lib/ui/mtn-browse.glade:6922
 msgid "Annotation text 2:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:6976
+#: lib/ui/mtn-browse.glade:7155
 msgid "<b>Colours</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7008
+#: lib/ui/mtn-browse.glade:7187
 msgid "<b>Appearance</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7120
+#: lib/ui/mtn-browse.glade:7299
 msgid ""
 "Add a new MIME\n"
 "type to the list"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7149
+#: lib/ui/mtn-browse.glade:7328
 msgid ""
 "Remove the currently selected\n"
 "MIME type from the list"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7196 lib/ui/mtn-browse.glade:7612
+#: lib/ui/mtn-browse.glade:7375 lib/ui/mtn-browse.glade:7791
 msgid "<b>MIME Types</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7290
+#: lib/ui/mtn-browse.glade:7469
 msgid ""
 "Add a new file name\n"
 "pattern to the list"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7322
+#: lib/ui/mtn-browse.glade:7501
 msgid ""
 "Remove the currently selected\n"
 "file name pattern from the list"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7388
+#: lib/ui/mtn-browse.glade:7567
 msgid "<b>File Name Patterns</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7446
+#: lib/ui/mtn-browse.glade:7625
 msgid ""
 "Select this if files of the selected type are\n"
 "to be displayed in the browser's internal viewer"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7449
+#: lib/ui/mtn-browse.glade:7628
 msgid "Display internally"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7467
+#: lib/ui/mtn-browse.glade:7646
 msgid ""
 "Select this if syntax highlighting is to be\n"
 "attempted for files of the selected type"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7470
+#: lib/ui/mtn-browse.glade:7649
 msgid "Syntax highlight"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7501
+#: lib/ui/mtn-browse.glade:7680
 msgid ""
 "Enter a command for loading\n"
 "files of the selected type into\n"
@@ -1937,73 +1994,73 @@ msgid ""
 "of the command"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7521
+#: lib/ui/mtn-browse.glade:7700
 msgid "Helper application:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7574
+#: lib/ui/mtn-browse.glade:7753
 msgid "<b>File Actions</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7736
+#: lib/ui/mtn-browse.glade:7915
 msgid ""
 "Enter the file name pattern\n"
 "that is to be searched for"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7744
+#: lib/ui/mtn-browse.glade:7923
 msgid "Files named:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7770
+#: lib/ui/mtn-browse.glade:7949
 msgid ""
 "The place in the directory hierarchy\n"
 "where the search will start from"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7778
+#: lib/ui/mtn-browse.glade:7957
 msgid "Searching from:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7899
+#: lib/ui/mtn-browse.glade:8078
 msgid ""
 "Choose whether to search\n"
 "subdirectories or not"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7902
+#: lib/ui/mtn-browse.glade:8081
 msgid "Search subdirectories"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7933
+#: lib/ui/mtn-browse.glade:8112
 msgid "<b>Name</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7965
+#: lib/ui/mtn-browse.glade:8144
 msgid ""
 "Enter the text that is to be\n"
 "searched for inside files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:7973
+#: lib/ui/mtn-browse.glade:8152
 msgid "Files containing:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8062
+#: lib/ui/mtn-browse.glade:8241
 msgid ""
 "Search binary files\n"
 "as well as text files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8065
+#: lib/ui/mtn-browse.glade:8244
 msgid "Search binary files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8096
+#: lib/ui/mtn-browse.glade:8275
 msgid "<b>Contents</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8125
+#: lib/ui/mtn-browse.glade:8304
 msgid ""
 "Select this mode if you want\n"
 "to search for files that were\n"
@@ -2011,78 +2068,78 @@ msgid ""
 "two specified dates"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8130
+#: lib/ui/mtn-browse.glade:8309
 msgid "between"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8152
+#: lib/ui/mtn-browse.glade:8331
 msgid ""
 "Select files based upon their\n"
 "last modification date and time"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8155
+#: lib/ui/mtn-browse.glade:8334
 msgid "Find all files created or modified:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8177
+#: lib/ui/mtn-browse.glade:8356
 msgid ""
 "Select this mode if you want to\n"
 "select files last modified within\n"
 "the last n hours/days/months..."
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8181
+#: lib/ui/mtn-browse.glade:8360
 msgid "during the previous"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8203
+#: lib/ui/mtn-browse.glade:8382
 msgid "and"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8227
+#: lib/ui/mtn-browse.glade:8406
 msgid "Select files based upon their size"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8234
+#: lib/ui/mtn-browse.glade:8413
 msgid "File size is:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8260
+#: lib/ui/mtn-browse.glade:8439
 msgid ""
 "Select files last modified\n"
 "by the specified user"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8268
+#: lib/ui/mtn-browse.glade:8447
 msgid "Files last modified by:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8307
+#: lib/ui/mtn-browse.glade:8486
 msgid "Enter the duration here"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8329
+#: lib/ui/mtn-browse.glade:8508
 msgid "Enter the file size here"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8351
+#: lib/ui/mtn-browse.glade:8530
 msgid ""
 "Use this to specify the oldest\n"
 "modification date for your search"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8377
+#: lib/ui/mtn-browse.glade:8556
 msgid ""
 "Use this to specify the youngest\n"
 "modification date for your search"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8403
+#: lib/ui/mtn-browse.glade:8582
 msgid "The unit of time to be used"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8410
+#: lib/ui/mtn-browse.glade:8589
 msgid ""
 "Minute(s)\n"
 "Hour(s)\n"
@@ -2091,13 +2148,13 @@ msgid ""
 "Year(s)"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8431
+#: lib/ui/mtn-browse.glade:8610
 msgid ""
 "The type of comparison\n"
 "to be performed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8439
+#: lib/ui/mtn-browse.glade:8618
 msgid ""
 "Any Size\n"
 "At Least\n"
@@ -2105,79 +2162,93 @@ msgid ""
 "Equal To"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8460
+#: lib/ui/mtn-browse.glade:8639
 msgid "The unit of file size to be used"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8467
+#: lib/ui/mtn-browse.glade:8646
 msgid ""
 "Bytes\n"
 "KB\n"
 "MB"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8486
+#: lib/ui/mtn-browse.glade:8665
 msgid "     "
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8516
+#: lib/ui/mtn-browse.glade:8695
 msgid "<b>Properties</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8549
+#: lib/ui/mtn-browse.glade:8728
 msgid "Stop finding files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8577
+#: lib/ui/mtn-browse.glade:8756
 msgid "Find the files"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8617
+#: lib/ui/mtn-browse.glade:8796
 msgid "<b>Query</b>"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8722
+#: lib/ui/mtn-browse.glade:8901
 msgid "Name of the file being displayed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8784
+#: lib/ui/mtn-browse.glade:8963
 msgid "Date of when file was last changed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8837
+#: lib/ui/mtn-browse.glade:9016
 msgid "Author of the selected file"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8870
+#: lib/ui/mtn-browse.glade:9049
 msgid ""
 "Time when the selected file was last\n"
 "updated with respect to this revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8929
+#: lib/ui/mtn-browse.glade:9108
 msgid "File's unique id in database"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:8991
+#: lib/ui/mtn-browse.glade:9170
 msgid ""
 "Id of revision when\n"
 "file was last changed"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:9045
+#: lib/ui/mtn-browse.glade:9224
 msgid "Id of the selected file"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:9052
+#: lib/ui/mtn-browse.glade:9231
 msgid "File id:"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:9078
+#: lib/ui/mtn-browse.glade:9257
 msgid ""
 "Revision id in which the selected file was\n"
 "last updated with respect to this revision"
 msgstr ""
 
-#: lib/ui/mtn-browse.glade:9130
+#: lib/ui/mtn-browse.glade:9309
 msgid "<b>Results</b>"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:9356
+msgid "Multiple Revisions"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:9559
+msgid ""
+"Select the revision\n"
+"that you want"
+msgstr ""
+
+#: lib/ui/mtn-browse.glade:9567
+msgid "Revisions:"
 msgstr ""

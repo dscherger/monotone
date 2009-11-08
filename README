@@ -1,4 +1,4 @@
-mtn-browse Version 0.62
+mtn-browse Version 0.63
 =======================
 
 mtn-browse is an application for browsing Monotone VCS databases without the
@@ -95,14 +95,14 @@ also be specified via Makefile.PL, meaning that the full list of arguments are:
 
     perl Makefile.PL PREFIX=<PATH> DESTDIR=<PATH> LIBDIR=<PATH> \
                      GLOBS_FILE=<PATH> FILE_COMPARISON=<PATH> \
-                     HELP_VIEWER=<PATH> NO_USE_DISTS_MAS=1
+                     HTML_VIEWER=<PATH> NO_USE_DISTS_MAS=1
 
 For further information on what these options mean please run:
 
     ./linux-installer -m
 
 PREFIX equates to --prefix, DESTDIR equates to --destdir, LIBDIR equates to
---libdir, GLOBS_FILE equates to --globs-file, HELP_VIEWER equates to
+--libdir, GLOBS_FILE equates to --globs-file, HTML_VIEWER equates to
 --help-viewer and NO_USE_DISTS_MAS equates to --no-use-dists-mas.
 
 Alternatively one can run the installer directly. See the next subsection.

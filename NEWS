@@ -1,3 +1,54 @@
+Overview Of Changes In mtn-browse 0.63 (2009-11-08 13:53:00)
+============================================================
+
+New:
+- Contents differences are now done via the stdio i/f for Monotone version 0.45
+  and upwards.
+- Added the binary threshold preference option.
+- Added a tooltip feedback feature for auto-completing comboboxentry widgets
+  and associated preference options.
+- Added a preference option for listing folders before files instead of
+  alphabetically in directory listings.
+- Made some of the button icons more meaningful and improved the look of some
+  of the rest.
+- Added the `Multiple Revisions' dialog window and use it when either a tag has
+  been selected which is not unique on that branch or when auto select head
+  revision is switched on and the user switches to a multi-headed branch.
+- Implemented a mode where help is displayed using the desktop's web browser.
+  Just in case yelp is not installed on the system (as is the case with Apple
+  Mac OSX).
+- The installers now cope with HTML stype help files. Also added the
+  HTML_VIEWER/--help-viewer installation option and updated the dependencies.
+- Added the FILE_COMPARISON installation option.
+
+Changes:
+- Moved the location of the Glade files to be more inline with standard Linux
+  installation locations.
+- Updated the help documentation in light of the changes made to the GUI.
+- Re-ordered some preference settings into more logical groups.
+- Updated the POT file.
+- Locale update from Thomas Keller.
+
+Bugs Fixed:
+- History ordering is now consistent.
+- Now guard against files comparing the same between different revisions.
+- Autocompletion now does not allow "" as a valid complete entry against an
+  empty list of possible completions.
+- The autocompletion logic has been cleaned up some more so as not to make
+  unnecesary updates to the screen and to correctly detect completions when
+  deleting text from the end of a term and the static lists setting is turned
+  on.
+- Truncated completions are still marked as complete if the truncated value is
+  so.
+- The status bar is cleared out when opening another database.
+- Now check that a program is known before attempting to run it. If it isn't
+  known then tell the user via a dialog window.
+- UTF-8 handling now works correctly.
+- More robust process and interprocess handling.
+- Set the page size attribute on all spin buttons to zero. This stops warning
+  messages on Ubuntu.
+- Corrected typos in the locale README file.
+
 Overview Of Changes In mtn-browse 0.62 (2009-05-03 18:00:00)
 ============================================================
 

@@ -1,7 +1,7 @@
 How to prepare a mtn-browse-m.nn.tar.gz distribution:
 
-1) Update software. Update the version number in lib/perl/Globals and update
-   the "About" dialog details in mtn-browse if necessary to include additional
+1) Update software. Update the version number in mtn-browse and update the
+   "About" dialog details in mtn-browse if necessary to include additional
    contributors etc.
 
 2) Update the ChangeLog with the update history taken from Monotone. Only

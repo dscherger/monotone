@@ -1,5 +1,108 @@
 Revision history for mtn-browse.
 
+0.63  Sun Nov 08 13:27:00 2009 Anthony Cooper <support@coosoft.plus.com>
+	- Updated the help documentation in light of the changes made to the
+	  GUI, i.e.:
+	  - Changes in some of the icons.
+	  - New preferences to do with binary thresholds and completion
+	    tooltips.
+	- get_file_details() now makes sure that it goes with the latest
+	  revision to hand, just like other parts of mtn-browse.
+	- The MAS content_diff() method is used instead of fork-execing off
+	  another instance of Monotone if it supports the --with-headers
+	  option. Who ever was responsible for actioning my ticket - a big
+	  thank you :-).
+	- Now guard against files comparing the same between different
+	  revisions.
+	- Added the binary threshold preference option and its implementation.
+	- Re-ordered some preference settings into more logical groups.
+	- Implemented preference options for controlling the display of
+	  completion tooltips and listing folders before files instead of
+	  alphabetically in directory listings.
+	- Made some of the button icons more meaningful and improved the look
+	  of some of the rest.
+	- Autocompletion now does not allow "" as a valid complete entry
+	  against an empty list of possible completions.
+	- scalar(%hash) is used instead of defined(%hash) to see if a hash is
+	  empty (the defined approach is depreciated apparently).
+	- The autocompletion logic has been cleaned up some more so as not to
+	  make unnecesary updates to the screen and to correctly detect
+	  completions when deleting text from the end of a term and the static
+	  lists setting is turned on.
+	- Entries within completion tables now always point to other tables.
+	- Truncated completions are still marked as complete if the truncated
+	  value is so.
+	- The status bar is cleared out when opening another database.
+	- Implemented the tooltip feedback feature for auto-completing
+	  comboboxentry widgets (suggestion from Thomas Keller).
+	- The callbacks for these auto-completing comboboxentry widgets are now
+	  registered via a setup routine rather than via Glade as some
+	  callbacks need to be registered with the comboboxentry's entry child
+	  widget.
+	- Moved some of the setup code into the multiple_revisions_selection
+	  routine so as to be consistent with other window setup modules.
+	- Reordered the comboboxentry initialisation code to reflect the order
+	  of the widgets on the main browser window.
+	- Implemented the `Multiple Revisions' dialog window and use it when
+	  either a tag has been selected which is not unique on that branch or
+	  when auto select head revision is switched on and the user switches
+	  to a multi-headed branch.
+	- Now pack at the start of a collection when using the pack_start()
+	  method (more standard and consistent).
+	- Added extra protection in some of the get_... window creation
+	  routines to stop recursion.
+	- Updated the help documentation and screenshots accordingly.
+	- Made the exception handling cleaner and more consistent.
+	- Now check that a program is known before attempting to run it. If it
+	  isn't known then tell the user via a dialog window.
+	- The run_command routine now returns its data as UTF-8.
+	- In the places where unpack() is used to break apart strings, the
+	  returned parts are re UTF-8 decoded as unpack() undoes this encoding.
+	- Now much more explicit in handling the reaping of subprocesses and
+	  much more robust in the face of a subprocess that won't die.
+	- Now cope with open3() throwing exceptions whilst inside the child
+	  process.
+	- Now use the `use locale' pragma correctly across all source files.
+	- Implemented a Locale::Messages::bind_textdomain_filter callback
+	  routine that guarantees that all strings returned from the Locale
+	  library are in UTF-8.
+	- Moved the APPLICATION_NAME/_VERSION constants into mtn-browse so that
+	  the library initialisation code can make use of them.
+	- The HELP_VIEWER installation option is now called HTML_VIEWER.
+	- Added the FILE_COMPARISON installation option.
+	- Now use the HTML viewer for displaying URLs like the home page.
+	- When using the HTML viewer and HTML help files do not rely on Gnome
+	  to help find the help directory.
+	- Now make use of APPLICATION_NAME more often.
+	- Likewise UI_DIR.
+	- Updated the `prepare tar file' section with the additional removal of
+	  the devl-install file.
+	- Moved the location of the Glade files to be more inline with standard
+	  Linux installation locations.
+	- The installers now cope with HTML stype help files. Also added the
+	  HELP_VIEWER/--help-viewer installation option and updated the
+	  dependencies.
+	- Updated the README with details about the new installation option
+	  mentioned above, removed the manual installation section (there is no
+	  real need for it), updated the dependencies in light of Nuno Lucus'
+	  feedback and reordered a few things to make it clearer.
+	- Sorted out UTF-8/binary data handling so that it is sane and correct.
+	- Added a file describing what to do in order to create a tar.gz
+	  distribution file. Hopefully this process will be less hit and miss
+	  in the future.
+	- Implemented a mode where help is displayed using the desktop's web
+	  browser. Just in case yelp is not installed on the system (as is the
+	  case with Apple Mac OSX).
+	- Set the page size attribute on all spin buttons to zero. This stops
+	  warning messages on Ubuntu. I can see its point, where is the page
+	  size attribute documented?
+	- Now much more pedantic about using the callback recursion guard
+	  variable in all window creation code. Again stops error messages on
+	  Ubuntu.
+	- Corrected typos in the locale README file.
+	- Updated the POT file.
+	- Locale update from Thomas Keller.
+
 0.62  Sun May 03 18:00:00 2009 Anthony Cooper <support@coosoft.plus.com>
 	- Added the new relevant selectors introduced in Monotone 0.43.
 	- Added the help files.
