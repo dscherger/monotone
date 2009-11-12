@@ -4692,14 +4692,15 @@ If no @var{id} is provided, as in the latter two commands, you
 @emph{must} provide a @var{branchname}; monotone will attempt to infer
 @var{id} as the unique head of @var{branchname} if it exists.
 
-@item mtn clone --branch=@var{branchname} @var{address} @var{directory}
+@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
 
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
 database.  It then populates this database by @command{pull}ing any data
 in the branch @var{branchname} from the remote database, @var{address}.
 Finally, it copies the files out of the newly created database into a
-local directory, just as @command{checkout} would.  The created
+local directory, just as @command{checkout} would.  If no @var{directory}
+is given, the @var{branchname} is used as directory.  The created
 database is placed in the new workspace as @file{@var{directory}/_MTN/mtn.db}.
 
 @item mtn disapprove @var{id}
