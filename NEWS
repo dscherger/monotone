@@ -34,7 +34,12 @@
         - The mtn_automate Lua function which can be used for custom
           commands now properly handles binary data.
 
-        Internal
+        Other
+
+        - Added the script of the Lua-based contributed Monotone 
+	  extension command "mtn remote_export" to contrib/command/
+          with which a remote revision can be exported locally without
+	  having to fetch all of the history before.
 
 
 Fri Sep 11 20:50:00 UTC 2009
