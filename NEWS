@@ -31,6 +31,9 @@
         - 'db info --full' no longer crashes when executed on a database
           with only one revision.
 
+        - The mtn_automate Lua function which can be used for custom
+          commands now properly handles binary data.
+
         Internal
 
 

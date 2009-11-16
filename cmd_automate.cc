@@ -379,7 +379,7 @@ LUAEXT(mtn_automate, )
   os.flush();
 
   lua_pushboolean(LS, result);
-  lua_pushstring(LS, output.str().c_str());
+  lua_pushlstring(LS, output.str().data(), output.str().size());
   return 2;
 }
 
