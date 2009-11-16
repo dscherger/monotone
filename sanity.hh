@@ -69,6 +69,12 @@ struct sanity {
   // or paths.hh here.
   void set_dump_path(std::string const & path);
 
+  // set out of band handler (e.g. for automate stdio)
+  void set_out_of_band_handler(void (*out_of_band_function)(char channel, std::string const& text, void *opaque)=NULL, void *opaque_data=NULL);
+
+  // if such an out of band handler is set, this directly writes to it
+  bool maybe_write_to_out_of_band_handler(char channel, std::string const& str);
+
   // A couple of places need to look at the debug flag to avoid doing
   // expensive logging if it's off.
   bool debug_p();

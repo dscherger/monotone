@@ -104,6 +104,11 @@ CMD_AUTOMATE(interface_version, "",
   output << interface_version << '\n';
 }
 
+static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
+{
+  reinterpret_cast<automate_ostream*>(opaque)->write_out_of_band(channel, text);
+}
+
 // Name: stdio
 // Arguments: none
 // Added in: 1.0
@@ -119,14 +124,16 @@ CMD_AUTOMATE(interface_version, "",
 //     l6:leavese
 //     l7:parents40:0e3171212f34839c2e3263e7282cdeea22fc5378e
 //
-// Output format: <command number>:<err code>:<last?>:<size>:<output>
+// Output format: <command number>:<err code>:<stream>:<size>:<output>
 //   <command number> is a decimal number specifying which command
 //   this output is from. It is 0 for the first command, and increases
 //   by one each time.
 //   <err code> is 0 for success, 1 for a syntax error, and 2 for any
 //   other error.
-//   <last?> is 'l' if this is the last piece of output for this command,
-//   and 'm' if there is more output to come.
+//   <stream> is 'l' if this is the last piece of output for this command,
+//   and 'm' if there is more output to come. Otherwise, 'e', 'p' and 'w'
+//   notify the caller about errors, informational messages and warnings.
+//   A special type 't' outputs progress information for long-term actions.
 //   <size> is the number of bytes in the output.
 //   <output> is the output of the command.
 //   Example:
@@ -140,12 +147,6 @@ CMD_AUTOMATE(interface_version, "",
 // Error conditions: Errors encountered by the commands run only set
 //   the error code in the output for that command. Malformed input
 //   results in exit with a non-zero return value and an error message.
-
-// automate_streambuf and automate_ostream are so we can dump output at a
-// set length, rather than waiting until we have all of the output.
-
-
-
 CMD_AUTOMATE_NO_STDIO(stdio, "",
                       N_("Automates several commands in one run"),
                       "",
@@ -166,14 +167,19 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   automate_reader ar(std::cin);
   vector<pair<string, string> > params;
   vector<string> cmdline;
+  global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf, &os);
+
   while (true)
     {
-      command const * cmd = 0;
+      automate const * acmd = 0;
       command_id id;
       args_vector args;
 
+      // FIXME: what follows is largely duplicated
+      // in network/automate_session.cc::do_work()
+      //
       // stdio decoding errors should be noted with errno 1,
-      // errno 2 is reserved for errors coming from the commands itself
+      // errno 2 is reserved for errors from the commands itself
       try
         {
           if (!ar.get_command(params, cmdline))
@@ -206,8 +212,14 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           for (command_id::size_type i = 0; i < id.size(); i++)
             args.erase(args.begin());
 
-          cmd = CMD_REF(automate)->find_command(id);
+          command const * cmd = CMD_REF(automate)->find_command(id);
           I(cmd != NULL);
+
+          acmd = dynamic_cast< automate const * >(cmd);
+          I(acmd != NULL);
+
+          E(acmd->can_run_from_stdio(), origin::network,
+            F("sorry, that can't be run remotely or over stdio"));
 
           if (cmd->use_workspace_options())
             {
@@ -221,13 +233,17 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
           options::options_type opts;
           opts = options::opts::globals() | cmd->opts();
           opts.instantiate(&app.opts).from_key_value_pairs(params);
+
+          // set a fixed ticker type regardless what the user wants to
+          // see, because anything else would screw the stdio-encoded output
+          ui.set_tick_write_stdio();
         }
       // FIXME: we need to re-package and rethrow this special exception
       // since it is not based on informative_failure
       catch (option::option_error & e)
         {
           os.set_err(1);
-          os<<e.what();
+          os.write_out_of_band('e', e.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -235,7 +251,7 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       catch (recoverable_failure & f)
         {
           os.set_err(1);
-          os<<f.what();
+          os.write_out_of_band('e', f.what());
           os.end_cmd();
           ar.reset();
           continue;
@@ -243,24 +259,18 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
       try
         {
-          automate const * acmd = dynamic_cast< automate const * >(cmd);
-          I(acmd);
-
-          E(acmd->can_run_from_stdio(), origin::network,
-            F("sorry, that can't be run remotely or over stdio"));
-
           acmd->exec_from_automate(app, id, args, os);
-          // set app.opts to the originally given options
-          // so the next command has an identical setup
+          // restore app.opts
           app.opts = original_opts;
         }
-      catch(recoverable_failure & f)
+      catch (recoverable_failure & f)
         {
           os.set_err(2);
-          os<<f.what();
+          os.write_out_of_band('e', f.what());
         }
       os.end_cmd();
     }
+    global_sanity.set_out_of_band_handler();
 }
 
 LUAEXT(mtn_automate, )
