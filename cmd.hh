@@ -119,6 +119,7 @@ namespace commands
   public:
     automate(std::string const & name,
              bool stdio_ok,
+             bool hidden,
              std::string const & params,
              std::string const & abstract,
              std::string const & desc,
@@ -252,33 +253,36 @@ void commands::cmd_ ## C::exec(app_state & app,                      \
 // command definition allows the description of input/output format,
 // error conditions, version when added, etc.  'desc' can later be
 // automatically built from these.
-#define _CMD_AUTOMATE2(C, stdio_ok, params, abstract, desc, opts)    \
-namespace commands {                                                 \
-  class automate_ ## C : public automate                             \
-  {                                                                  \
-    void exec_from_automate(app_state & app,                         \
-                            command_id const & execid,               \
-                            args_vector const & args,                \
-                            std::ostream & output) const;            \
-  public:                                                            \
-    automate_ ## C() : automate(#C, stdio_ok, params,                \
-                                abstract, desc,                      \
-                                options::options_type() | opts)      \
-    {}                                                               \
-  };                                                                 \
-  automate_ ## C C ## _automate;                                     \
-}                                                                    \
-void commands::automate_ ## C :: exec_from_automate                  \
-  (app_state & app,                                                  \
-   command_id const & execid,                                        \
-   args_vector const & args,                                         \
+#define _CMD_AUTOMATE2(C, stdio_ok, hidden, params, abstract, desc, opts)    \
+namespace commands {                                                         \
+  class automate_ ## C : public automate                                     \
+  {                                                                          \
+    void exec_from_automate(app_state & app,                                 \
+                            command_id const & execid,                       \
+                            args_vector const & args,                        \
+                            std::ostream & output) const;                    \
+  public:                                                                    \
+    automate_ ## C() : automate(#C, stdio_ok, hidden, params,                \
+                                abstract, desc,                              \
+                                options::options_type() | opts)              \
+    {}                                                                       \
+  };                                                                         \
+  automate_ ## C C ## _automate;                                             \
+}                                                                            \
+void commands::automate_ ## C :: exec_from_automate                          \
+  (app_state & app,                                                          \
+   command_id const & execid,                                                \
+   args_vector const & args,                                                 \
    std::ostream & output) const
 
 #define CMD_AUTOMATE(C, params, abstract, desc, opts)   \
-  _CMD_AUTOMATE2(C, true, params, abstract, desc, opts)
+  _CMD_AUTOMATE2(C, true, false, params, abstract, desc, opts)
 
 #define CMD_AUTOMATE_NO_STDIO(C, params, abstract, desc, opts)  \
-  _CMD_AUTOMATE2(C, false, params, abstract, desc, opts)
+  _CMD_AUTOMATE2(C, false, false, params, abstract, desc, opts)
+
+#define CMD_AUTOMATE_HIDDEN(C, params, abstract, desc, opts)  \
+  _CMD_AUTOMATE2(C, true, true, params, abstract, desc, opts)
 
 CMD_FWD_DECL(__root__);
 CMD_FWD_DECL(automation);

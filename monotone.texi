@@ -7673,6 +7673,8 @@ none
 
 @itemize
 @item
+FIXME -- Introduced out of band streams ('e', 'p', 't', 'w') and changed error reporting
+@item
 3.1 -- Added the 'o' item to the recognized input. This change should not
 break anything.
 @item
@@ -7712,12 +7714,23 @@ will cause an error.
 @item Sample output:
 
 @verbatim
-0:0:l:205:0e3171212f34839c2e3263e7282cdeea22fc5378
-1f4ef73c3e056883c6a5ff66728dd764557db5e6
-2133c52680aa2492b18ed902bdef7e083464c0b8
-23501f8afd1f9ee037019765309b0f8428567f8a
-2c295fcf5fe20301557b9b3a5b4d437b5ab8ec8c
 1:0:l:41:7706a422ccad41621c958affa999b1a1dd644e79
+2:2:e:38:misuse: key 'test@test' already exists
+...
+3:0:w:39:skipping file '\' with unsupported name
+3:0:m:144:    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+  status "known"
+...
+4:0:t:34:c:certificates;k:keys;r:revisions;
+4:0:t:12:c=0;k=0;r=0;
+4:0:t:13:c#0;k#0;r#64;
+4:0:t:14:c#0;k#0;r#128;
+4:0:t:6:c;k;r;
+...
 @end verbatim
 
 @item Output format:
@@ -7725,22 +7738,108 @@ will cause an error.
 The output consists of one or more packets for each command.
 A packet looks like:
 
-<command number>:<err code>:<last?>:<size>:<output>
+<command number>:<err code>:<stream>:<size>:<output>
 
 <command number> is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
 <err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
 
-<last?> is 'l' if this is the last piece of output for this command, and 'm'
-if there is more output to come.
+<stream> is an identifier for which output stream this packet represents,
+allowing multiple streams to be multiplexed over the channel.  The following
+streams are presently defined; more streams may be added later.
+
+@itemize
+@item
+ 'm' and 'l': the 'm' stream represents the normal stdout automate output of
+ the command, formatted as described in the description for that command.
+
+ The special 'l' value is described below.
+@item
+ 'e': the 'e' stream represents any (unstructured) error message data.
+
+ Internally, this maps to calls to the E() and N() print macros that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ 'w': the 'w' stream represents any (unstructured) warning message data.
+
+ Internally, this maps to calls to the W() print macro that would normally
+ be written by the command to the program's stderr stream, if the automate
+ sub-command had been called directly rather than via '''stdio'''.
+@item
+ 'p': the 'p' stream represents any (unstructured) progress message data.
+
+ Internally, this maps to calls to the P() print macro that would normally
+ be written by the command to the program's stderr stream, if the automate
+ sub-command had been called directly rather than via '''stdio'''.
+@item
+ 't': the 't' stream represents ticker updates, which may be used
+ by a user interface to display the progress of a command.
+
+ The output for this channel can be described as follows:
+
+ @itemize
+ @item
+ @code{<output>       ::= <definition><payload><end>}
+ @item
+ @code{<definition>   ::= <shortname> ':' <longname> <eol>}
+ @item
+ @code{<payload>      ::= <total_count><advance>+}
+ @item
+ @code{<end>          ::= <shortname> <eol>}
+ @item
+ @code{<total_count>  ::= <shortname> '=' <count> <eol>}
+ @item
+ @code{<advance>      ::= <shortname> '#' <count> <eol>}
+ @item
+ @code{<shortname>    ::= "\w+"}
+ @item
+ @code{<longname>     ::= "[^;]+"}
+ @item
+ @code{<count>        ::= ['0'-'9']+}
+ @item
+ @code{<eol>          ::= ';'}
+ @end itemize
+
+ The definition tells the implementor the short name and long name of any
+ upcoming ticker event. The names and meanings are command-specific and
+ therefor explained for the particular commands which support ticker output.
+
+
+ The @code{total_count} might be 0 right at the start and can later be changed
+ to a different number if the command later on knows a more exact value. If
+ this is the case, this stanza is outputted again with this new value. A
+ constant @code{total_count} of 0 means that the command may continue to run
+ for a undefined amount of time until the end stanza appears.
+
+ The advance tells the implementor how much work has been done so far.
+
+ Finally, the end stanza is printed just before the ticker ends
+ (i.e. the work has been done).
+
+ All counts output absolute, raw values; no modulation takes place. Its
+ usually the case that definition, @code{total_count}, advance and end are
+ printed into separate stanzas. Its also possible that two or more parallel
+ tickers put out their stanzas at the same time, in this case its ensured that
+ the output does not get intermixed i.e. at first all definitions are outputted,
+ afterwards all total_counts, aso.
+
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
+ explicitely via the global @option{--ticker} option. However, if you run an
+ automate command outside of stdio you can set a different ticker type, f.e.
+ 'count', 'dot' or 'none'.
+@end itemize
 
 <size> is the number of bytes in the output.
 
 <output> is a piece of the output of the command.
 
-All but the last packet for a given command will have the
-<last?> field set to 'm'.
+The last packet for a given command will have the <stream> field set to 'l'.
+This packet indicates termination of all streams for the command. Any
+content in this packet is considered to be part of the 'm' stream. The
+<size> in this packet is likely to be zero if there has been an error
+message that has prevented or interrupted normal output.
 
 @item Error conditions:
 
@@ -7748,10 +7847,17 @@ If a badly formatted or invalid command is received, or a command is
 given with invalid arguments or options, prints an error message to
 standard error and exits with nonzero status. Errors in the commands run
 through this interface do not affect the exit status. Instead, the <err code>
-field in the output is set to 2, and the output of the command becomes
-whatever error message would have been given. Trying to run the
-@code{automate stdio} or @code{automate remote_stdio} commands will always
-act as if that command encountered an error.
+field in the output is set to 2, the error message is reported on the 'e'
+stream and terminated by an (empty) 'l' message.
+Trying to run the @code{automate stdio} or @code{automate remote_stdio}
+commands will always act as if that command encountered an error.
+
+@item Multiple streams
+
+The multiple stream encoding allows the output of errors and warnings to be
+associated with the command that generated them, allows the communication
+path to always stay in sync, and offers the opportunity to add other stream
+types for other useful purposes in the future as needs arise.
 
 @end table
 
@@ -7789,6 +7895,12 @@ input. Instead, when a complete command has been entered and monotone tries to
 send it to the remote server it will print a message to stderr and exit with
 code 1.
 
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
 @end table
 
 @item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
@@ -7816,8 +7928,8 @@ FIXME
 @item Purpose
 
 Permit a single @code{automate} command to be run against a database that is
-being used to serve netsync connections, without having its output encoded
-as by @code{automate stdio}.
+being used to serve netsync connections, without having its input and output
+encoded as by @code{automate stdio}.
 
 @item Input/Output Format
 
@@ -7825,11 +7937,23 @@ This command does not accept input.
 
 The output will be whatever output the remote command generates.
 
+Remote diagnostic messages are written to standard error, prefixed either
+with @code{mtn: remote error:}, @code{mtn: remote warning:} or
+@code{mtn: remote message:} to make them distinguishable from local
+diagnostics. Tickers are not supported over this interface. If you need
+remote ticker support, please use @command{automate remote_stdio}.
+
 @item Error Conditions
 
-If the remote command returns an error code, will exit with code 1 and
-print "Received remote error code N" to standard error, with "N" being
+If the remote command returns a nonzero error code, will exit with code 1 and
+print "received remote error code N" to standard error, with "N" being
 the remote error code.
+
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
 
 @end table
 

@@ -1,28 +1,6 @@
+include("/common/automate_stdio.lua")
+
 mtn_setup()
-
-function run_stdio(cmd, err)
-  check(mtn("automate", "stdio"), 0, true, false, cmd)
-
-  local parse_stdio = function(dat, which)
-    local got = {}
-    local err = 0
-    while true do
-      local b,e,n,r,s = string.find(dat, "(%d+):(%d+):[lm]:(%d+):")
-      if b == nil then break end
-      n = n + 0
-      if got[n] == nil then got[n] = "" end
-      got[n] = got[n] .. string.sub(dat, e+1, e+s)
-      dat = string.sub(dat, e+1+s)
-      err = tonumber(r)
-    end
-    if got[which] == nil then got[which] = "" end
-    return got[which], err
-  end
-
-  local o,e = parse_stdio(readfile("stdout"), 0)
-  check(err == e)
-  return o
-end
 
 -- a number of broken input strings
 run_stdio("le", 1)
