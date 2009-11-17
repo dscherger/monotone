@@ -130,8 +130,8 @@ CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
     E(false, origin::user, F("this is an error message"));
   else if (type.compare("ticker") == 0)
     {
-      ticker first("fake ticker (not fixed)", "f", 3);
-      ticker second("fake ticker (fixed)", "nf", 5);
+      ticker first("fake ticker (not fixed)", "f1", 3);
+      ticker second("fake ticker (fixed)", "f2", 5);
 
       int max = 20;
       second.set_total(max);
