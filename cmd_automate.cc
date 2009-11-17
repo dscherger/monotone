@@ -39,11 +39,12 @@ CMD_GROUP(automate, "automate", "au", CMD_REF(automation),
 namespace commands {
   automate::automate(string const & name,
                      bool stdio_ok,
+                     bool hidden,
                      string const & params,
                      string const & abstract,
                      string const & desc,
                      options::options_type const & opts) :
-    command(name, "", CMD_REF(automate), false, false, params, abstract,
+    command(name, "", CMD_REF(automate), false, hidden, params, abstract,
             // We set use_workspace_options true, because all automate
             // commands need a database, and they expect to get the database
             // name from the workspace options, even if they don't need a
@@ -103,6 +104,49 @@ CMD_AUTOMATE(interface_version, "",
 
   output << interface_version << '\n';
 }
+
+// Name: interface_version
+// Arguments: { info | warning | error | fatal | ticker }
+// Added in: FIXME
+// Purpose: Emulates certain kinds of diagnostic / UI messages for debugging
+//          and testing purposes
+// Output format: None
+// Error conditions: None.
+CMD_AUTOMATE_HIDDEN(bandtest, "{ info | warning | error | ticker }",
+             N_("Emulates certain kinds of diagnostic / UI messages "
+                "for debugging and testing purposes, such as stdio"),
+             "",
+             options::opts::none)
+{
+  E(args.size() == 1, origin::user,
+    F("wrong argument count"));
+
+  std::string type = args.at(0)();
+  if (type.compare("info") == 0)
+    P(F("this is an informational message"));
+  else if (type.compare("warning") == 0)
+    W(F("this is a warning"));
+  else if (type.compare("error") == 0)
+    E(false, origin::user, F("this is an error message"));
+  else if (type.compare("ticker") == 0)
+    {
+      ticker first("first ticker (not fixed)", "f", 3);
+      ticker second("second ticker (fixed)", "s", 5);
+
+      int max = 20;
+      second.set_total(max);
+
+      for (int i=0; i<max; i++)
+        {
+          first+=3;
+          ++second;
+          usleep(100000); // 100ms
+        }
+    }
+  else
+    I(false);
+}
+
 
 static void out_of_band_to_automate_streambuf(char channel, std::string const& text, void *opaque)
 {
