@@ -3,12 +3,23 @@
         0.46 release.
 
         *** Fix automate commands documented as added in version FIXME
-        *** bump automate minor version?
+        *** bump automate major version
 
         Changes
 
         - Cert labels in the output of the 'log' command are now
           localized.
+
+        - "automate stdio" (and "automate remote_stdio", see below) use
+          separate streams to encode out-of-band information like 
+          informational messages, warnings or tickers. Please consult 
+          the manual of "mtn automate stdio" for a detailed description
+          of the new format.
+	  The error codes used in the output of both commands also 
+          slightly changed: errors which are the result of a wrong 
+	  call (unknown command, invalid options, parsing errors, ...)
+          are returned with code 1, while errors which happened while
+	  the actual command executed are returned with code 2.
 
         New features
 
@@ -19,6 +30,7 @@
           requires that the server be running monotone 0.46 or later.
           Access control on the server is uses a new lua hook
           "get_remote_automate_permitted(identity, command_line, options)".
+
         - There's also a new command "automate remote" that's very much
           the same, but executes only a single command and does not
           stdio-encode the output.
