@@ -8,7 +8,6 @@ h1.settitle,
 div.node {
     position: fixed;
     width: 100%;
-    margin: -20px -20px 0;
     background: url(images/bg.png);
     padding: 20px;
     font-size: 2.5em;
@@ -17,6 +16,14 @@ div.node {
     font-weight: bold;
     color: white;
     border-bottom: 1px solid #474747;
+}
+
+h1.settitle {
+    margin: -20px -20px 0;
+}
+
+div.node {
+    margin: -100px -20px 0;
 }
 
 div.node:before {
@@ -41,7 +48,7 @@ div.node p {
 
 div.node p a {
     color: white;
-    margin: 10px;
+    margin-left: 20px;
     font-weight: normal;
     text-decoration: none;
     border-bottom: 1px white dotted;
