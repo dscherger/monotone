@@ -9671,12 +9671,14 @@ loginname = Joe User <user@example.com>
 
 The list of authors that might need to be mapped can be extracted from
 a monotone database with the following sql query:
+
 @verbatim
 $ mtn db execute 'select distinct value from revision_certs where name = "author"'
 @end verbatim
 
 The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
+
 @verbatim
 $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
 @end verbatim
@@ -9685,15 +9687,18 @@ The @option{--branches-file} option may be used to map monotone branch
 names to different values. This may be required as monotone allows
 branch names that are not valid according to git. Branch mappings are
 specified in the @var{branches-file} as:
+
 @verbatim
 monotone-branch-name = git-branch-name
 @end verbatim
+
 Revisions with no author cert will use <unknown> for both the author
 and the committer. These can be mapped to other values using the
 @var{authors-file} option.
 
 The list of branches that might need to be mapped can be extracted
 from a monotone database with using the @command{ls branches} command:
+
 @verbatim
 $ mtn ls branches --ignore-suspend-certs
 @end verbatim
@@ -9713,10 +9718,12 @@ files may also be used.
 The original monotone revision ids may be included in the exported git
 commit messages using the @option{--log-revids} option. These will
 appear as:
+
 @verbatim
 Monotone-Parent: ...
 Monotone-Revision: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification. Merge revisions with two parents will include two
 @code{Monotone-Parent} lines.
@@ -9725,12 +9732,14 @@ The original monotone values for @code{author}, @code{date},
 @code{branch} and @code{tag} certificates may be included in the
 exported git commit messages using the @option{--log-certs}
 option. These will appear as:
+
 @verbatim
 Monotone-Author: ...
 Monotone-Date: ...
 Monotone-Branch: ...
 Monotone-Tag: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification or maintaining information that is otherwise not
 maintained by git. In particular monotone may have several values for
