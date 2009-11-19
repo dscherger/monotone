@@ -44,7 +44,7 @@ greater.  See the accompanying file COPYING for details.
 
 @ifnottex
 @node Top, Concepts, (dir), (dir)
-@top Top
+@top Overview
 
 Monotone is a distributed version control tool. It can help automate
 many tedious and error-prone tasks in group software development.
@@ -2858,21 +2858,21 @@ numeric format by a Lua hook: @code{expand_date}.
 The allowed date formats are:
 @table @asis
 
-@item now
+@item @code{now}
 Expands to the current date and time.
-@item today
+@item @code{today}
 Expands to today's date. @code{e} and @code{l} selectors assume time 00:00:00
-@item yesterday
+@item @code{yesterday}
 Expands to yesterday's date. @code{e} and @code{l} selectors assume
 time 00:00:00
-@item <number> @{minute|hour@} <ago>
+@item @code{<number> @{minute|hour@} <ago>}
 Expands to today date and time, minus the specified @code{number} of
 minutes|hours.
-@item <number> @{day|week|month|year@} <ago>
+@item @code{<number> @{day|week|month|year@} <ago>}
 Expands to today date, minus the specified @code{number} of
 days|weeks|months|years. @code{e} and @code{l} selectors assume time
 00:00:00
-@item <year>-<month>[-day[Thour:minute:second]]
+@item @code{<year>-<month>[-day[Thour:minute:second]]}
 Expands to the supplied year/month. The day and time component are
 optional. If missing, @code{e} and @code{l} selectors assume the first
 day of month and time 00:00:00.
@@ -11461,6 +11461,7 @@ detected until further work had been based off of them.
 advances in crypto: if or when @sc{sha1} is broken, we will need to
 migrate to a different secure hash.
 @end itemize
+
 Obviously, we hope neither of these things will happen, and we've taken
 lots of precautions against the first recurring; but it is better to be
 prepared.
