@@ -1509,8 +1509,7 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   work.update_current_roster_from_filesystem(current_roster);
 
   E(parent_roster(parents.begin()) == current_roster, origin::user,
-    F("'%s' can only be used in a workspace with no pending changes") %
-    join_words(execid)());
+    F("this command can only be used in a workspace with no pending changes"));
 
   bisect::entry start = *bisect.begin();
   I(start.first == bisect::start);
@@ -1663,7 +1662,6 @@ bisect_setup(database & db,
 
 static void
 bisect_update(app_state & app,
-              commands::command_id const & execid,
               bisect::type type)
 {
   database db(app);
@@ -1683,8 +1681,7 @@ bisect_update(app_state & app,
   work.update_current_roster_from_filesystem(current_roster);
 
   E(parent_roster(parents.begin()) == current_roster, origin::user,
-    F("'%s' can only be used in a workspace with no pending changes") %
-    join_words(execid)());
+    F("this command can only be used in a workspace with no pending changes"));
 
   set<revision_id> marked_ids;
 
@@ -1794,7 +1791,7 @@ CMD(skip, "skip", "", CMD_REF(bisect), "",
 {
   if (args.size() != 0)
     throw usage(execid);
-  bisect_update(app, execid, bisect::skipped);
+  bisect_update(app, bisect::skipped);
 }
 
 CMD(bad, "bad", "", CMD_REF(bisect), "",
@@ -1804,7 +1801,7 @@ CMD(bad, "bad", "", CMD_REF(bisect), "",
 {
   if (args.size() != 0)
     throw usage(execid);
-  bisect_update(app, execid, bisect::bad);
+  bisect_update(app, bisect::bad);
 }
 
 CMD(good, "good", "", CMD_REF(bisect), "",
@@ -1814,7 +1811,7 @@ CMD(good, "good", "", CMD_REF(bisect), "",
 {
   if (args.size() != 0)
     throw usage(execid);
-  bisect_update(app, execid, bisect::good);
+  bisect_update(app, bisect::good);
 }
 
 // Local Variables:
