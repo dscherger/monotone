@@ -218,7 +218,13 @@ lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
-html_DATA = monotone.html
+html_DATA = monotone.html texinfo.css
+
+htmlfiguredir = $(htmldir)/figures
+htmlfigure_DATA = figures/*.png
+
+htmlimagedir = $(htmldir)/images
+htmlimage_DATA = images/*
 
 # flags
 
@@ -318,7 +324,7 @@ info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
 									\
@@ -704,6 +710,7 @@ monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
 	       std_hooks.lua texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
+		cp -r $(srcdir)/images .; \
 		cp $(srcdir)/texinfo.css .; \
 	fi; \
 	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<; \
@@ -717,6 +724,7 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 	fi; \
 	mkdir -p $@; \
 	cp -r $(srcdir)/figures $@; \
+	cp -r $(srcdir)/images $@; \
 	cp $(srcdir)/texinfo.css $@; \
 	makeinfo -I $(srcdir) --number-sections --html --output $@ $<; \
 	for f in $@/*.html; do \
