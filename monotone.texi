@@ -2635,6 +2635,7 @@ familiarize yourself with its operation.
 * Importing from CVS::          Building a monotone database from a CVS repository.
 * Exporting to GIT::            Building a git repository from a monotone database.
 * Using packets::               Transferring data ``by hand''.
+* Bisecting::                   Finding bad revisions.
 @end menu
 
 @page
@@ -4068,7 +4069,7 @@ verifying that the exported repository matches their expectations and
 requirements.
 
 @page
-@node    Using packets,  , Exporting to GIT, Advanced Uses
+@node    Using packets, Bisecting, Exporting to GIT, Advanced Uses
 @section Using packets
 
 Suppose you made changes to your database, and want to send those
@@ -4257,6 +4258,64 @@ file 2 getting in
 
 And that's it! The revisions were successfully transferred.
 
+
+@page
+@node    Bisecting, , Using packets, Advanced Uses
+@section Bisecting
+
+Bisecting is an efficient means of finding the earliest revision that
+introduced a bug known to exist in some later revision. Given a set of
+``good'' earlier revisions that do not contain the bug and a set of
+``bad'' later revisions that do contain the bug @command{bisect}
+performs a binary search over the set of revisions between these two
+sets to identify the specific revision that introduced the bug.
+
+Bisection is started by marking revisions with the @command{bisect
+good} and @command{bisect bad} commands. Once both good and bad
+revisions have been specified the set of candidate revisions between
+the good and bad revisions is determined. The midpoint of this set is
+selected as the next revision to be tested and the workspace is
+updated to this selected revision. After the selected revision has
+been tested bisection continues when the revision is marked with
+@command{bisect good} or @command{bisect bad}. If the selected
+revision is marked as good, it and all of its ancestors are considered
+to be good and excluded from the remaining search set. If the selected
+revision is marked as bad, all of its descendants are considered to be
+bad and excluded from the remaining search set. After each selected
+revision is marked as good or bad the size of the remaining search set
+is halved.
+
+Revisions that are untestable for some reason (e.g. they don't
+compile) may be ignored with the @command{bisect skip} command. This
+excludes the specified revisions from the candidate set and allows the
+bisection operation to continue. Skipping revisions may cause the
+search to fail or end on the wrong revision if the revision being
+searched for is skipped.
+
+The current status of the bisection operation and the next revision to
+be tested is reported by the @command{bisect status} command. This
+command can be run at any stage of the bisection operation to see how
+many revisions remain to be tested and how many revisions have been
+ruled out.
+
+Currently @command{bisect} updates the workspace but does @emph{not}
+update the workspace @option{branch} option. This may leave the
+workspace at a revision that is @emph{not} in the branch specified by
+the workspace @option{branch} option and cause subsequent commits to
+be made to the wrong branch. Take care when committing new revisions
+during a bisection operation and be sure to use the @command{bisect
+reset} command once the bisection is complete to update the workspace
+back to the revision from which the bisection started.
+
+The bisection operation completes successfully when the last remaining
+revision is marked as ``bad''.  If the last remaining revision is
+marked as ``good'' the bisection fails without finding the initial bad
+revision.
+
+Once bisection is complete the workspace can be updated back to the
+starting revision with the @command{bisect reset} command. This
+command also removes all stored bisection information in preparation
+for future bisect operations.
 
 @page
 @node    CVS Phrasebook, Command Reference, Advanced Uses, Top
@@ -5284,6 +5343,38 @@ records, but not in the filesystem itself.
 
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
+
+@item mtn bisect good [--revision=@var{id} ...]
+Mark the specified revisions as ``good'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+@item mtn bisect bad [--revision=@var{id} ...]
+Mark the specified revisions as ``bad'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+@item mtn bisect skip [--revision=@var{id} ...]
+Mark the specified revisions as ``skipped'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+@item mtn bisect status
+Report the status of the current bisection operation including the
+number of revisions that remain to be tested, the number of revisions
+that have been tested and the next revision that will selected for
+testing.
+
+@item mtn bisect reset
+Reset the current bisection operation by updating the workspace back
+to the revision from which the bisection was started and clearing the
+current bisection information.
 
 @end ftable
 

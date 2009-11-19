@@ -55,6 +55,7 @@ static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
 static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
+static char const bisect_file_name[] = "bisect";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -96,6 +97,13 @@ get_update_path(bookkeeping_path & update_path)
 {
   update_path = bookkeeping_root / update_file_name;
   L(FL("update path is %s") % update_path);
+}
+
+static void
+get_bisect_path(bookkeeping_path & bisect_path)
+{
+  bisect_path = bookkeeping_root / bisect_file_name;
+  L(FL("bisect path is %s") % bisect_path);
 }
 
 //
@@ -612,6 +620,115 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
     output << workspace_keydir << '\n';
   else
     E(false, origin::user, F("'%s' is not a recognized workspace option") % opt);
+}
+
+// _MTN/bisect handling.
+
+namespace syms
+{
+    symbol const start("start");
+    symbol const good("good");
+    symbol const bad("bad");
+    symbol const skipped("skipped");
+};
+
+void
+workspace::get_bisect_info(vector<bisect::entry> & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+  
+  if (!file_exists(bisect_path))
+    return;
+
+  data dat;
+  read_data(bisect_path, dat);
+
+  string name("bisect");
+  basic_io::input_source src(dat(), name, origin::workspace);
+  basic_io::tokenizer tok(src);
+  basic_io::parser parser(tok);
+
+  while (parser.symp())
+    {
+      string rev;
+      bisect::type type;
+      if (parser.symp(syms::start))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::start;
+        }
+      else if (parser.symp(syms::good))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::good;
+        }
+      else if (parser.symp(syms::bad))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::bad;
+        }
+      else if (parser.symp(syms::skipped))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::skipped;
+        }
+      else
+        I(false);
+
+      revision_id rid = 
+        decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
+      bisect.push_back(make_pair(type, rid));
+    }
+}
+
+void
+workspace::put_bisect_info(vector<bisect::entry> const & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+
+  basic_io::stanza st;
+  for (vector<bisect::entry>::const_iterator i = bisect.begin(); 
+       i != bisect.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::start:
+          st.push_binary_pair(syms::start, i->second.inner());
+          break;
+
+        case bisect::good:
+          st.push_binary_pair(syms::good, i->second.inner());
+          break;
+
+        case bisect::bad:
+          st.push_binary_pair(syms::bad, i->second.inner());
+          break;
+
+        case bisect::skipped:
+          st.push_binary_pair(syms::skipped, i->second.inner());
+          break;
+        }
+    }
+
+  basic_io::printer pr;
+  pr.print_stanza(st);
+  data dat(pr.buf, origin::internal);
+
+  write_data(bisect_path, dat);
+}
+
+void
+workspace::remove_bisect_info()
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+  delete_file(bisect_path);
 }
 
 // local dump file
