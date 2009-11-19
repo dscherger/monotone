@@ -22,6 +22,10 @@
         - There's also a new command "automate remote" that's very much
           the same, but executes only a single command and does not
           stdio-encode the output.
+        - A new 'bisect' command has been added to allow searching for a
+          specific revision within a range of revisions. This can be useful for
+          locating the exact revision that broke something or removed a
+          particular feature.
 
         Bugs fixed
 
@@ -41,13 +45,6 @@
           with which a remote revision can be exported locally without
 	  having to fetch all of the history before.
 
-
-        New features
-
-        - A new 'bisect' command has been added to allow searching for a
-          specific revision within a range of revisions. This can be useful for
-          locating the exact revision that broke something or removed a
-          particular feature.
 
 Fri Sep 11 20:50:00 UTC 2009
 
