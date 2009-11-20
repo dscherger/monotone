@@ -4,6 +4,10 @@
 @settitle monotone documentation
 @setchapternewpage odd
 @finalout
+@ifhtml
+@paragraphindent 0
+@exampleindent 0
+@end ifhtml
 @c %**end of header
 
 @syncodeindex fn cp
@@ -34,7 +38,7 @@ Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
-Copyright @copyright{} 2006, 2007, 2008 Thomas Keller @*
+Copyright @copyright{} 2006 - 2009 Thomas Keller @*
 Copyright @copyright{} 2007 - 2009 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
@@ -44,7 +48,7 @@ greater.  See the accompanying file COPYING for details.
 
 @ifnottex
 @node Top, Concepts, (dir), (dir)
-@top Top
+@top Overview
 
 Monotone is a distributed version control tool. It can help automate
 many tedious and error-prone tasks in group software development.
@@ -2859,21 +2863,21 @@ numeric format by a Lua hook: @code{expand_date}.
 The allowed date formats are:
 @table @asis
 
-@item now
+@item @code{now}
 Expands to the current date and time.
-@item today
+@item @code{today}
 Expands to today's date. @code{e} and @code{l} selectors assume time 00:00:00
-@item yesterday
+@item @code{yesterday}
 Expands to yesterday's date. @code{e} and @code{l} selectors assume
 time 00:00:00
-@item <number> @{minute|hour@} <ago>
+@item @code{<number> @{minute|hour@} <ago>}
 Expands to today date and time, minus the specified @code{number} of
 minutes|hours.
-@item <number> @{day|week|month|year@} <ago>
+@item @code{<number> @{day|week|month|year@} <ago>}
 Expands to today date, minus the specified @code{number} of
 days|weeks|months|years. @code{e} and @code{l} selectors assume time
 00:00:00
-@item <year>-<month>[-day[Thour:minute:second]]
+@item @code{<year>-<month>[-day[Thour:minute:second]]}
 Expands to the supplied year/month. The day and time component are
 optional. If missing, @code{e} and @code{l} selectors assume the first
 day of month and time 00:00:00.
@@ -9762,12 +9766,14 @@ loginname = Joe User <user@example.com>
 
 The list of authors that might need to be mapped can be extracted from
 a monotone database with the following sql query:
+
 @verbatim
 $ mtn db execute 'select distinct value from revision_certs where name = "author"'
 @end verbatim
 
 The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
+
 @verbatim
 $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
 @end verbatim
@@ -9776,15 +9782,18 @@ The @option{--branches-file} option may be used to map monotone branch
 names to different values. This may be required as monotone allows
 branch names that are not valid according to git. Branch mappings are
 specified in the @var{branches-file} as:
+
 @verbatim
 monotone-branch-name = git-branch-name
 @end verbatim
+
 Revisions with no author cert will use <unknown> for both the author
 and the committer. These can be mapped to other values using the
 @var{authors-file} option.
 
 The list of branches that might need to be mapped can be extracted
 from a monotone database with using the @command{ls branches} command:
+
 @verbatim
 $ mtn ls branches --ignore-suspend-certs
 @end verbatim
@@ -9804,10 +9813,12 @@ files may also be used.
 The original monotone revision ids may be included in the exported git
 commit messages using the @option{--log-revids} option. These will
 appear as:
+
 @verbatim
 Monotone-Parent: ...
 Monotone-Revision: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification. Merge revisions with two parents will include two
 @code{Monotone-Parent} lines.
@@ -9816,12 +9827,14 @@ The original monotone values for @code{author}, @code{date},
 @code{branch} and @code{tag} certificates may be included in the
 exported git commit messages using the @option{--log-certs}
 option. These will appear as:
+
 @verbatim
 Monotone-Author: ...
 Monotone-Date: ...
 Monotone-Branch: ...
 Monotone-Tag: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification or maintaining information that is otherwise not
 maintained by git. In particular monotone may have several values for
@@ -11543,6 +11556,7 @@ detected until further work had been based off of them.
 advances in crypto: if or when @sc{sha1} is broken, we will need to
 migrate to a different secure hash.
 @end itemize
+
 Obviously, we hope neither of these things will happen, and we've taken
 lots of precautions against the first recurring; but it is better to be
 prepared.

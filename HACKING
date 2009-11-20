@@ -172,7 +172,7 @@ interfaces with Lua must obey the following rules:
     functions.
 
 Test suites, and writing test cases
-----------------------------------
+-----------------------------------
 
 monotone includes a number of unit and integration tests.  These can be run
 easily by initiating a 'make check'.  The test suite (or, at least, any
@@ -186,9 +186,9 @@ development team of a problem.
 
 All changes to monotone that alter monotone's behaviour should include a new
 test.  This includes most changes, but use your judgment about adding tests
-for very small changes..  The tests are located in the source tree in the
+for very small changes.  The tests are located in the source tree in the
 tests/ directory, documentation on writing tests is available in
-tests/README.
+notes/README.testing.
 
 When fixing a bug, check for an existing test case for that bug and
 carefully observe the test case's behaviour before and after your fix. If no
@@ -219,37 +219,42 @@ first look at the code, it can be a bit of a shock to see all these
 bare capital letters scattered around.  Here's a quick guide.
 
    Formatting macros:
-      F("foo %s"): create a formatting object, for display to the user.
+      F("foo %s"):
+         create a formatting object, for display to the user.
          Translators will translate this string, and F() runs
          gettext() on its argument.  NB: this string should usually
          _not_ end in a newline.
-      FP("%d foo", "%d foos", n) % n: create a formatting object, with
-         plural handling.  Same comments apply as to F().
-      FL("foo %s"): create a raw ("literal") formatting object, mostly for
+      FP("%d foo", "%d foos", n) % n:
+         create a formatting object, with plural handling.
+         Same comments apply as to F().
+      FL("foo %s"):
+         create a raw ("literal") formatting object, mostly for
          use in logging.  This string will _not_ be translated, and
          gettext() is _not_ called.  This is almost always an argument
-         to the L() macro:
+         to the L() macro.
 
    Informational macros:
-      L(FL("foo")): log "foo".  Log messages are generally not seen by the
+      L(FL("foo")):
+         log "foo".  Log messages are generally not seen by the
          user, and are used to debug problems with monotone.
-      P(F("foo")): print "foo".  For generic informative messages to the
-         user.
-      W(F("foo")): warn "foo".  For warnings to the user.
+      P(F("foo")):
+         print "foo".  For generic informative messages to the user.
+      W(F("foo")):
+         warn "foo".  For warnings to the user.
 
    Assertion macros (see also the next section).  These all cause
    monotone to exit if their condition is false:
-      I(x != y): "invariant" -- if the condition is not true, then there
+      I(x != y):
+         "invariant" -- if the condition is not true, then there
          is a bug in monotone.
-      N(x != y, F("make x and y equal")): "naughty" -- the user
-         requested something that doesn't make sense, they should fix
-         that.
-      E(x != y, F("x and y are not equal")): "error" -- not a bug in
-         monotone, not necessarily the users fault... dunno boss, it
-         just isn't working!
+      E(x != y, F("x and y are not equal"), origin::user):
+         "error" -- a general error. The third argument is used to
+         give the system a hint what kind of error that is. One of the
+         origin types in origin_type.hh is possible.
 
    Tracing macros:
-      MM(x): Mark the given variable as one of the things we are looking
+      MM(x):
+         Mark the given variable as one of the things we are looking
          at right now.  On its own, this statement has no visible
          effect; but if monotone crashes (that is, an I() check fails)
          while MM(x) is in scope, then the value of x will be printed
@@ -343,27 +348,21 @@ Reporting errors to the user
 ----------------------------
 
 monotone has a number of assertion macros available for different
-situations.  These assertion macros are divided into three categories:
-invariants, user naughtiness, and general errors.
+situations.  These assertion macros are divided into two categories:
+invariants and general errors.
 
 Invariants assert that monotone's internal state is in the expected state.
 An invariant failure indicates that there is a bug in monotone.  e.g.
 
     I(r_working.edges.size() == 1);
 
-User naughtiness handles error conditions where the user has asked monotone
-to do something it is unable to.  e.g.
-
-    N(!completions.empty(),
-        F("no match for selection '%s'") % str);
-
 Error conditions handle most other error cases, where monotone is unable to
 complete an operation due to an error, but that error is not caused by a bug
-in monotone or explicit user error.  e.g.
+in monotone,  e.g.
 
     E(converted != NULL,
         F("failed to convert string from %s to %s: '%s'")
-            % src_charset % dst_charset % src);
+            % src_charset % dst_charset % src, origin::system);
 
 Each of these assertion macros are fatal and will cause an exception to be
 thrown that will ultimately cause the monotone process to exit.  Exceptions

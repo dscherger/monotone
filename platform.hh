@@ -108,7 +108,7 @@ void ignore_sigpipe(); // in unix/process.cc
 // filesystem stuff
 // FIXME: BUG: this returns a string in the filesystem charset/encoding
 std::string get_current_working_dir();
-// calls N() if fails
+// calls E() if fails
 void change_current_working_dir(std::string const & to);
 std::string tilde_expand(std::string const & path);
 std::string get_default_confdir();

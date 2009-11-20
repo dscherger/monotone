@@ -35,7 +35,7 @@ class app_state;
 // as well as many instance methods.  class methods can be used when you're
 // not sure yet whether or not there is a workspace.  instance methods can
 // only be used if there definitely is a workspace; the workspace object
-// constructor will throw an N() if there isn't one.  (this can also be
+// constructor will throw an E() if there isn't one.  (this can also be
 // triggered by the class method require_workspace, for the sake of a few
 // places that need to do that but not create the workspace object yet.)
 //
