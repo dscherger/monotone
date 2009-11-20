@@ -19,6 +19,7 @@
           requires that the server be running monotone 0.46 or later.
           Access control on the server is uses a new lua hook
           "get_remote_automate_permitted(identity, command_line, options)".
+
         - There's also a new command "automate remote" that's very much
           the same, but executes only a single command and does not
           stdio-encode the output.
@@ -37,9 +38,9 @@
         Other
 
         - Added the script of the Lua-based contributed Monotone 
-	  extension command "mtn remote_export" to contrib/command/
+          extension command "mtn remote_export" to contrib/command/
           with which a remote revision can be exported locally without
-	  having to fetch all of the history before.
+          having to fetch all of the history before.
 
 
 Fri Sep 11 20:50:00 UTC 2009
