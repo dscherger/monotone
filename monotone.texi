@@ -4,6 +4,10 @@
 @settitle monotone documentation
 @setchapternewpage odd
 @finalout
+@ifhtml
+@paragraphindent 0
+@exampleindent 0
+@end ifhtml
 @c %**end of header
 
 @syncodeindex fn cp
@@ -34,7 +38,7 @@ Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
-Copyright @copyright{} 2006, 2007, 2008 Thomas Keller @*
+Copyright @copyright{} 2006 - 2009 Thomas Keller @*
 Copyright @copyright{} 2007 - 2009 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
