@@ -146,16 +146,18 @@ join_lines(vector<string> const & in,
            string & out,
            string const & linesep)
 {
-  ostringstream oss;
-  copy(in.begin(), in.end(), ostream_iterator<string>(oss, linesep.c_str()));
-  out = oss.str();
+  join_lines(in.begin(), in.end(), out, linesep);
 }
 
 void
-join_lines(vector<string> const & in,
-           string & out)
+join_lines(vector<string>::const_iterator begin,
+           vector<string>::const_iterator end,
+           string & out,
+           string const & linesep)
 {
-  join_lines(in, out, "\n");
+  ostringstream oss;
+  copy(begin, end, ostream_iterator<string>(oss, linesep.c_str()));
+  out = oss.str();
 }
 
 void

@@ -35,7 +35,12 @@ check(qgrep("EDIT: MSG GOOD", "stdout"))
 check(qgrep("VALIDATE: MSG GOOD", "stdout"))
 check(qgrep("VALIDATE: REV GOOD", "stdout"))
 
+check(mtn("log"), 0, true, false)
+eucjp = string.gsub(readfile("euc-jp.txt"), "\n", "")
+check(qgrep(eucjp, "stdout"))
+
 -- and if we look at the cert, it should be in unicode
 rev = base_revision()
 check(mtn("automate", "certs", rev), 0, true, false)
-check(qgrep(readfile("utf8.txt"), "stdout"))
+utf8 = string.gsub(readfile("utf8.txt"), "\n", "")
+check(qgrep(utf8, "stdout"))
