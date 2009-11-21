@@ -50,8 +50,6 @@ MOST_SOURCES = 								\
 	update.cc update.hh						\
 	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
-	policy.cc policy.hh						\
-	editable_policy.cc editable_policy.hh				\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\
@@ -78,6 +76,10 @@ MOST_SOURCES = 								\
 	network/wrapped_session.hh network/wrapped_session.cc		\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
+	policies/base_policy.hh policies/base_policy.cc			\
+	policies/branch.hh policies/branch.cc				\
+	policies/delegation.hh policies/delegation.cc			\
+	policies/policy.hh policies/policy.cc				\
 	merkle_tree.cc merkle_tree.hh 					\
 	lcs.cc lcs.hh							\
 	rcs_import.cc rcs_import.hh 					\

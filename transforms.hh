@@ -102,6 +102,21 @@ template<typename T> T decode_hexenc_as(std::string const & in,
                                                origin::type made_from)
 { return T(decode_hexenc(in, made_from), made_from); }
 
+template<typename T>
+bool try_decode_hexenc(std::string in, T & out)
+{
+  try
+    {
+      out = decode_hexenc_as<T>(in, origin::try_xform);
+      out.made_from = origin::internal;
+      return true;
+    }
+  catch (try_xform_failed)
+    {
+      return false;
+    }
+}
+
 
 // gzip
 

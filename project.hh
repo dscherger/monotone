@@ -15,7 +15,7 @@
 
 #include "branch_name.hh"
 #include "cert.hh"
-#include "editable_policy.hh"
+//#include "editable_policy.hh"
 #include "outdated_indicator.hh"
 #include "vocab.hh"
 
@@ -99,12 +99,12 @@ public:
   // Used by migration code.
   static project_t empty_project(database & db);
 
-  bool get_policy_branch_policy_of(branch_name const & name,
-                                   editable_policy & policy_branch_policy,
-                                   branch_name & policy_prefix);
-  bool policy_exists(branch_name const & name) const;
-  void get_subpolicies(branch_name const & name,
-                       std::set<branch_name> & names) const;
+  //bool get_policy_branch_policy_of(branch_name const & name,
+  //                                 editable_policy & policy_branch_policy,
+  //                                 branch_name & policy_prefix);
+  //bool policy_exists(branch_name const & name) const;
+  //void get_subpolicies(branch_name const & name,
+  //                     std::set<branch_name> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);

@@ -52,6 +52,11 @@ public:
   virtual ~unrecoverable_failure() throw() {}
 };
 
+class try_xform_failed : public std::exception {
+public:
+  char const * what() const throw() { return "could not xform data"; }
+};
+
 class MusingI;
 
 class format_base;
