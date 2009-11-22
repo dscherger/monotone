@@ -105,7 +105,7 @@ CMD_AUTOMATE(interface_version, "",
   output << interface_version << '\n';
 }
 
-// Name: interface_version
+// Name: bandtest
 // Arguments: { info | warning | error | fatal | ticker }
 // Added in: FIXME
 // Purpose: Emulates certain kinds of diagnostic / UI messages for debugging
