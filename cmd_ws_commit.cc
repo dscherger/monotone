@@ -44,13 +44,32 @@ using std::vector;
 using boost::shared_ptr;
 
 static void
-revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summary)
+revision_summary(revision_t const & rev, branch_name const & branch, 
+                 set<branch_name> const & old_branch_names,
+                 utf8 & summary)
 {
   string out;
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
   // other format strings.
-  out += (F("Current branch: %s") % branch).str() += '\n';
+
+  revision_id rid;
+  calculate_ident(rev, rid);
+
+  out += (F("Current revision: %s") % rid).str() += '\n';
+  if (old_branch_names.find(branch) == old_branch_names.end())
+    {
+      for (set<branch_name>::const_iterator i = old_branch_names.begin();
+           i != old_branch_names.end(); ++i)
+        {
+          out += (F("Old branch: %s") % *i).str() += '\n';
+        }
+      out += (F("New branch: %s") % branch).str() += '\n';
+    }
+  else
+    out += (F("Current branch: %s") % branch).str() += '\n';
+
+
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
@@ -103,13 +122,31 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
 }
 
 static void
+get_old_branch_names(database & db, parent_map const & parents,
+                     set<branch_name> & old_branch_names)
+{
+  for (parent_map::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      vector<cert> branches;
+      db.get_revision_certs(parent_id(i), branch_cert_name, branches);
+      for (vector<cert>::const_iterator b = branches.begin();
+           b != branches.end(); ++b)
+        {
+          old_branch_names.insert(typecast_vocab<branch_name>(b->value));
+        }
+    }
+}
+
+static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_t const & cs,
                               branch_name const & branchname,
+                              set<branch_name> const & old_branch_names,
                               utf8 & log_message)
 {
   utf8 summary;
-  revision_summary(cs, branchname, summary);
+  revision_summary(cs, branchname, old_branch_names, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
 
@@ -592,8 +629,27 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, rev);
 
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
+
+  if (!info.empty())
+    {
+      bisect::entry start = *info.begin();
+      I(start.first == bisect::start);
+
+      if (old_rosters.size() == 1)
+        {
+          revision_id current_id = parent_id(*old_rosters.begin());
+          if (start.second != current_id)
+            P(F("bisection from revision %s in progress") % start.second);
+        }
+    }
+
+  set<branch_name> old_branch_names;
+  get_old_branch_names(db, old_rosters, old_branch_names);
+
   utf8 summary;
-  revision_summary(rev, app.opts.branch, summary);
+  revision_summary(rev, app.opts.branch, old_branch_names, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
   cout << summary_external;
@@ -1129,9 +1185,13 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   if (!log_message_given)
     {
+      set<branch_name> old_branch_names;
+      get_old_branch_names(db, old_rosters, old_branch_names);
+
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, restricted_rev,
-                                    app.opts.branch, log_message);
+                                    app.opts.branch, old_branch_names,
+                                    log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
@@ -1491,10 +1551,10 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   workspace work(app);
   project_t project(db);
 
-  vector<bisect::entry> bisect;
-  work.get_bisect_info(bisect);
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
 
-  E(!bisect.empty(), origin::user, F("no bisection in progress"));
+  E(!info.empty(), origin::user, F("no bisection in progress"));
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -1511,7 +1571,7 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   E(parent_roster(parents.begin()) == current_roster, origin::user,
     F("this command can only be used in a workspace with no pending changes"));
 
-  bisect::entry start = *bisect.begin();
+  bisect::entry start = *info.begin();
   I(start.first == bisect::start);
 
   revision_id starting_id = start.second;
