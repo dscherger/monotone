@@ -38,6 +38,8 @@ public:
                    std::istream * const is,
                    automate_ostream * const os);
 
+  void write_automate_packet_cmd(char stream,
+                                 std::string const & text);
   bool do_work(transaction_guard & guard,
                netcmd const * const in_cmd);
   bool have_work() const;

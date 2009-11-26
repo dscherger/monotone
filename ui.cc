@@ -66,13 +66,14 @@ struct user_interface::impl
 };
 
 ticker::ticker(string const & tickname, string const & s, size_t mod,
-    bool kilocount) :
+    bool kilocount, bool skip_display) :
   ticks(0),
   mod(mod),
   total(0),
   previous_total(0),
   kilocount(kilocount),
   use_total(false),
+  may_skip_display(skip_display),
   keyname(tickname),
   name(_(tickname.c_str())),
   shortname(s),
@@ -152,6 +153,17 @@ public:
 private:
   std::map<std::string,size_t> last_ticks;
   unsigned int chars_on_line;
+};
+
+struct tick_write_stdio : virtual public tick_writer
+{
+public:
+  tick_write_stdio();
+  ~tick_write_stdio();
+  void write_ticks();
+  void clear_line();
+private:
+  std::map<std::string,size_t> last_ticks;
 };
 
 struct tick_write_nothing : virtual public tick_writer
@@ -235,6 +247,12 @@ void tick_write_count::write_ticks()
        i != ui.imp->tickers.end(); ++i)
     {
       ticker * tick = i->second;
+
+      // if the display of this ticker has no great importance, i.e. multiple
+      // other tickers should be displayed at the same time, skip its display
+      // to save space on terminals
+      if (tick->may_skip_display)
+        continue;
 
       if ((tick->count_size == 0 && tick->kilocount)
           ||
@@ -428,6 +446,69 @@ void tick_write_dot::clear_line()
   clog << endl;
 }
 
+
+tick_write_stdio::tick_write_stdio()
+{}
+
+tick_write_stdio::~tick_write_stdio()
+{}
+
+void tick_write_stdio::write_ticks()
+{
+  I(ui.imp);
+  string headers, sizes, tickline;
+
+  for (map<string,ticker *>::const_iterator i = ui.imp->tickers.begin();
+       i != ui.imp->tickers.end(); ++i)
+    {
+      std::map<std::string, size_t>::iterator it =
+            last_ticks.find(i->second->shortname);
+
+      // we output each explanation stanza just once and every time the
+      // total count has been changed
+      if (it == last_ticks.end())
+        {
+          headers += i->second->shortname + ":" + i->second->name + ";";
+          sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
+          last_ticks[i->second->shortname] = i->second->total;
+        }
+      else
+      if (it->second != i->second->total)
+        {
+          sizes   += i->second->shortname + "=" +  lexical_cast<string>(i->second->total) + ";";
+          last_ticks[i->second->shortname] = i->second->total;
+        }
+
+      tickline += i->second->shortname + "#" + lexical_cast<string>(i->second->ticks) + ";";
+    }
+
+  if (!headers.empty())
+    {
+      global_sanity.maybe_write_to_out_of_band_handler('t', headers);
+    }
+  if (!sizes.empty())
+    {
+      global_sanity.maybe_write_to_out_of_band_handler('t', sizes);
+    }
+
+  I(!tickline.empty());
+  global_sanity.maybe_write_to_out_of_band_handler('t', tickline);
+}
+
+void tick_write_stdio::clear_line()
+{
+  std::map<std::string, size_t>::iterator it;
+  std::string out;
+
+  for (it = last_ticks.begin(); it != last_ticks.end(); it++)
+  {
+    out += it->first + ";";
+  }
+
+  global_sanity.maybe_write_to_out_of_band_handler('t', out);
+  last_ticks.clear();
+}
+
 // user_interface has both constructor/destructor and initialize/
 // deinitialize because there's only one of these objects, it's
 // global, and we don't want global constructors/destructors doing
@@ -478,27 +559,48 @@ void
 user_interface::set_tick_write_dot()
 {
   I(imp);
+  if (tick_type == dot)
+    return;
   if (imp->t_writer != 0)
     delete imp->t_writer;
   imp->t_writer = new tick_write_dot;
+  tick_type = dot;
 }
 
 void
 user_interface::set_tick_write_count()
 {
   I(imp);
+  if (tick_type == count)
+    return;
   if (imp->t_writer != 0)
     delete imp->t_writer;
   imp->t_writer = new tick_write_count;
+  tick_type = count;
+}
+
+void
+user_interface::set_tick_write_stdio()
+{
+  I(imp);
+  if (tick_type == stdio)
+    return;
+  if (imp->t_writer != 0)
+    delete imp->t_writer;
+  imp->t_writer = new tick_write_stdio;
+  tick_type = stdio;
 }
 
 void
 user_interface::set_tick_write_nothing()
 {
   I(imp);
+  if (tick_type == none)
+    return;
   if (imp->t_writer != 0)
     delete imp->t_writer;
   imp->t_writer = new tick_write_nothing;
+  tick_type = none;
 }
 
 
