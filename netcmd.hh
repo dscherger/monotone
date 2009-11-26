@@ -213,11 +213,9 @@ public:
   void write_automate_command_cmd(std::vector<std::string> const & args,
                                   std::vector<std::pair<std::string, std::string> > const & opts);
   void read_automate_packet_cmd(int & command_num,
-                                int & err_code,
                                 char & stream,
                                 std::string & packet_data) const;
   void write_automate_packet_cmd(int command_num,
-                                 int err_code,
                                  char stream,
                                  std::string const & packet_data);
 

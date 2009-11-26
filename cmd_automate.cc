@@ -286,17 +286,15 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       // since it is not based on informative_failure
       catch (option::option_error & e)
         {
-          os.set_err(1);
           os.write_out_of_band('e', e.what());
-          os.end_cmd();
+          os.end_cmd(1);
           ar.reset();
           continue;
         }
       catch (recoverable_failure & f)
         {
-          os.set_err(1);
           os.write_out_of_band('e', f.what());
-          os.end_cmd();
+          os.end_cmd(1);
           ar.reset();
           continue;
         }
@@ -304,15 +302,16 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
       try
         {
           acmd->exec_from_automate(app, id, args, os);
+          os.end_cmd(0);
+
           // restore app.opts
           app.opts = original_opts;
         }
       catch (recoverable_failure & f)
         {
-          os.set_err(2);
           os.write_out_of_band('e', f.what());
+          os.end_cmd(2);
         }
-      os.end_cmd();
     }
     global_sanity.set_out_of_band_handler();
 }

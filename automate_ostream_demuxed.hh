@@ -24,31 +24,19 @@ class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Tr
   size_t _bufsize;
   std::basic_ostream<_CharT, _Traits> *stdout;
   std::basic_ostream<_CharT, _Traits> *errout;
-  int err_code;
 public:
   basic_automate_streambuf_demuxed(std::ostream & out, std::ostream & err,
                                    size_t bufsize) :
     std::streambuf(),
     _bufsize(bufsize),
     stdout(&out),
-    errout(&err),
-    err_code(0)
+    errout(&err)
   {
     _CharT * inbuf = new _CharT[_bufsize];
     setp(inbuf, inbuf + _bufsize);
   }
 
   ~basic_automate_streambuf_demuxed() { }
-
-  void set_err(int e)
-  {
-    err_code = e;
-  }
-
-  int get_error() const
-  {
-    return err_code;
-  }
 
   void end_cmd()
   {
@@ -92,9 +80,7 @@ public:
 private:
   void _M_sync()
   {
-    std::basic_ostream<_CharT, _Traits> *str;
-    str = ((err_code != 0) ? errout : stdout);
-    if (!str)
+    if (!stdout)
       {
         setp(this->pbase(), this->pbase() + _bufsize);
         return;
@@ -102,9 +88,9 @@ private:
     int num = this->pptr() - this->pbase();
     if (num)
       {
-        (*str) << std::basic_string<_CharT, _Traits>(this->pbase(), num);
+        (*stdout) << std::basic_string<_CharT, _Traits>(this->pbase(), num);
         setp(this->pbase(), this->pbase() + _bufsize);
-        str->flush();
+        stdout->flush();
       }
   }
 };
@@ -114,6 +100,7 @@ struct basic_automate_ostream_demuxed : public basic_automate_ostream<_CharT, _T
 {
   typedef basic_automate_streambuf_demuxed<_CharT, _Traits> streambuf_type;
   streambuf_type _M_autobuf;
+  int errcode;
 
 public:
   basic_automate_ostream_demuxed(std::basic_ostream<_CharT, _Traits> &out,
@@ -129,14 +116,14 @@ public:
   rdbuf() const
   { return const_cast<streambuf_type *>(&_M_autobuf); }
 
-  virtual void set_err(int e)
-  { _M_autobuf.set_err(e); }
+  virtual void end_cmd(int error)
+  {
+    errcode = error;
+    _M_autobuf.end_cmd();
+  }
 
   int get_error() const
-  { return _M_autobuf.get_error(); }
-
-  virtual void end_cmd()
-  { _M_autobuf.end_cmd(); }
+  { return errcode; }
 
   virtual void write_out_of_band(char type, std::string const & data)
   { _M_autobuf.write_out_of_band(type, data); }

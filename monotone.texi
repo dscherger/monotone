@@ -7673,7 +7673,10 @@ none
 
 @itemize
 @item
-FIXME -- Introduced out of band streams ('e', 'p', 't', 'w') and changed error reporting
+FIXME -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
+    of a command now only happens in the 'm' stream; the 'l' stream now marks
+    the end of all streams of a command; specific error codes to distinguish
+    command from interface errors have been introduced.
 @item
 3.1 -- Added the 'o' item to the recognized input. This change should not
 break anything.
@@ -7714,22 +7717,25 @@ will cause an error.
 @item Sample output:
 
 @verbatim
-1:0:l:41:7706a422ccad41621c958affa999b1a1dd644e79
-2:2:e:38:misuse: key 'test@test' already exists
+0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
+0:l:1:0
 ...
-3:0:w:39:skipping file '\' with unsupported name
-3:0:m:144:    path ""
+1:e:38:misuse: key 'test@test' already exists
+1:l:1:2
+...
+2:w:39:skipping file '\' with unsupported name
+2:m:144:    path ""
 old_type "directory"
 new_type "directory"
  fs_type "directory"
    birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
   status "known"
 ...
-4:0:t:34:c:certificates;k:keys;r:revisions;
-4:0:t:12:c=0;k=0;r=0;
-4:0:t:13:c#0;k#0;r#64;
-4:0:t:14:c#0;k#0;r#128;
-4:0:t:6:c;k;r;
+3:t:34:c:certificates;k:keys;r:revisions;
+3:t:12:c=0;k=0;r=0;
+3:t:13:c#0;k#0;r#64;
+3:t:14:c#0;k#0;r#128;
+3:t:6:c;k;r;
 ...
 @end verbatim
 
@@ -7738,43 +7744,41 @@ new_type "directory"
 The output consists of one or more packets for each command.
 A packet looks like:
 
-<command number>:<err code>:<stream>:<size>:<output>
+@verbatim
+<command number>:<stream>:<size>:<output>
+@end verbatim
 
-<command number> is a decimal number specifying which command this output
+@code{<command number>} is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-<err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
-
-<stream> is an identifier for which output stream this packet represents,
+@code{<stream>} is an identifier for which output stream this packet represents,
 allowing multiple streams to be multiplexed over the channel.  The following
 streams are presently defined; more streams may be added later.
 
 @itemize
 @item
- 'm' and 'l': the 'm' stream represents the normal stdout automate output of
+ @code{m}: this stream represents the normal ("main") stdout automate output of
  the command, formatted as described in the description for that command.
-
- The special 'l' value is described below.
 @item
- 'e': the 'e' stream represents any (unstructured) error message data.
+ @code{e}: this stream represents any (unstructured) error message data.
 
- Internally, this maps to calls to the E() and N() print macros that would
+ Internally, this maps to calls to the @code{E()} print macros that would
  normally be written by the command to the program's stderr stream, if the
  automate sub-command had been called directly rather than via '''stdio'''.
 @item
- 'w': the 'w' stream represents any (unstructured) warning message data.
+ @code{w}: this stream represents any (unstructured) warning message data.
 
- Internally, this maps to calls to the W() print macro that would normally
- be written by the command to the program's stderr stream, if the automate
- sub-command had been called directly rather than via '''stdio'''.
+ Internally, this maps to calls to the @code{W()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
 @item
- 'p': the 'p' stream represents any (unstructured) progress message data.
+ @code{p}: this stream represents any (unstructured) progress message data.
 
- Internally, this maps to calls to the P() print macro that would normally
- be written by the command to the program's stderr stream, if the automate
- sub-command had been called directly rather than via '''stdio'''.
+ Internally, this maps to calls to the @code{P()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
 @item
- 't': the 't' stream represents ticker updates, which may be used
+ @code{t}: this stream represents ticker updates, which may be used
  by a user interface to display the progress of a command.
 
  The output for this channel can be described as follows:
@@ -7828,29 +7832,31 @@ streams are presently defined; more streams may be added later.
  @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
  explicitely via the global @option{--ticker} option. However, if you run an
  automate command outside of stdio you can set a different ticker type, f.e.
- 'count', 'dot' or 'none'.
+ @var{count}, @var{dot} or @var{none}.
+@item
+ @code{l}: this stream marks the termination of a command and all of
+ its streams and carries the return code of the command in the payload.
+
+ A return code "0" stands for success, "1" for an error which occurred within
+ the stdio interface (f.e. syntax errors or missing privileges) before the
+ command is run and finally "2" for any other command-specific error.
 @end itemize
 
-<size> is the number of bytes in the output.
+@code{<size>} is the number of bytes in the output.
 
-<output> is a piece of the output of the command.
-
-The last packet for a given command will have the <stream> field set to 'l'.
-This packet indicates termination of all streams for the command. Any
-content in this packet is considered to be part of the 'm' stream. The
-<size> in this packet is likely to be zero if there has been an error
-message that has prevented or interrupted normal output.
+@code{<output>} is a piece of the output of the command.
 
 @item Error conditions:
 
-If a badly formatted or invalid command is received, or a command is
-given with invalid arguments or options, prints an error message to
-standard error and exits with nonzero status. Errors in the commands run
-through this interface do not affect the exit status. Instead, the <err code>
-field in the output is set to 2, the error message is reported on the 'e'
-stream and terminated by an (empty) 'l' message.
+Errors in the commands run through this interface do not affect the exit
+status of this command. Instead, if a badly formatted or invalid command
+is received, or a command is given with invalid arguments or options,
+an error message to the error stream is printed and and the particular
+sub-command exits with return code "1". Other command-specific errors are
+returned as code "2".
+
 Trying to run the @code{automate stdio} or @code{automate remote_stdio}
-commands will always act as if that command encountered an error.
+sub-commands will exit the particular command with return code "1".
 
 @item Multiple streams
 

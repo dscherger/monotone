@@ -24,6 +24,7 @@ using std::string;
 using std::vector;
 
 using boost::shared_ptr;
+using boost::lexical_cast;
 
 CMD_FWD_DECL(automate);
 
@@ -95,16 +96,14 @@ void automate_session::prepare_to_confirm(key_identity_info const & remote_key,
 static void out_of_band_to_netcmd(char stream, std::string const & text, void * opaque)
 {
   automate_session * sess = reinterpret_cast<automate_session*>(opaque);
-  // FIXME: is it really correct to set the error always to 0?
-  sess->write_out_of_band_cmd(stream, text, 0);
+  sess->write_automate_packet_cmd(stream, text);
 }
 
-void automate_session::write_out_of_band_cmd(char stream,
-                                             std::string const & text,
-                                             unsigned int errcode)
+void automate_session::write_automate_packet_cmd(char stream,
+                                                 std::string const & text)
 {
   netcmd net_cmd(get_version());
-  net_cmd.write_automate_packet_cmd(command_number, errcode, stream, text);
+  net_cmd.write_automate_packet_cmd(command_number, stream, text);
   write_netcmd(net_cmd);
 }
 
@@ -218,12 +217,12 @@ bool automate_session::do_work(transaction_guard & guard,
         catch (option::option_error & e)
           {
             errcode = 1;
-            write_out_of_band_cmd('e', e.what(), errcode);
+            write_automate_packet_cmd('e', e.what());
           }
         catch (recoverable_failure & f)
           {
              errcode = 1;
-             write_out_of_band_cmd('e', f.what(), errcode);
+             write_automate_packet_cmd('e', f.what());
           }
 
         if (errcode == 0)
@@ -237,15 +236,14 @@ bool automate_session::do_work(transaction_guard & guard,
             catch (recoverable_failure & f)
               {
                 errcode = 2;
-                write_out_of_band_cmd('e', f.what(), errcode);
+                write_automate_packet_cmd('e', f.what());
               }
           }
 
-        netcmd out_cmd(get_version());
-        out_cmd.write_automate_packet_cmd(command_number,
-                                          errcode, 'l',
-                                          oss.str());
-        write_netcmd(out_cmd);
+        if (!oss.str().empty())
+          write_automate_packet_cmd('m', oss.str());
+
+        write_automate_packet_cmd('l', lexical_cast<string>(errcode));
 
         global_sanity.set_out_of_band_handler();
 
@@ -255,23 +253,20 @@ bool automate_session::do_work(transaction_guard & guard,
     case automate_packet_cmd:
       {
         int command_num;
-        int err_code;
         char stream;
         string packet_data;
-        cmd_in->read_automate_packet_cmd(command_num, err_code,
-                                         stream, packet_data);
+        cmd_in->read_automate_packet_cmd(command_num, stream, packet_data);
 
         I(output_stream);
-        output_stream->set_err(err_code);
 
-        if (stream == 'm' || stream == 'l')
+        if (stream == 'm')
             (*output_stream) << packet_data;
-        else
+        else if (stream != 'l')
             output_stream->write_out_of_band(stream, packet_data);
 
         if (stream == 'l')
           {
-            output_stream->end_cmd();
+            output_stream->end_cmd(lexical_cast<int>(packet_data));
             send_command();
           }
 

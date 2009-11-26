@@ -38,12 +38,11 @@ public:
                    std::istream * const is,
                    automate_ostream * const os);
 
-  void write_out_of_band_cmd(char stream,
-                             std::string const & text,
-                             unsigned int errcode);
+  void write_automate_packet_cmd(char stream,
+                                 std::string const & text);
   bool do_work(transaction_guard & guard,
                netcmd const * const in_cmd);
-    bool have_work() const;
+  bool have_work() const;
   void request_service();
   void accept_service();
   std::string usher_reply_data() const;
