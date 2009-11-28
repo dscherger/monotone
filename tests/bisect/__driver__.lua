@@ -204,7 +204,7 @@ rev = base_revision()
 check(exists("tail1"))
 check(mtn("bisect", "good", "--revision", head4, "--revision", right4), 0, false, false)
 check(exists("_MTN/bisect"))
-check(mtn("bisect", "skip", "--revision", tail1, "--revision", head4), 0, false, false)
+check(mtn("bisect", "skip", "--revision", tail1, "--revision", tail3), 0, false, false)
 check(mtn("bisect", "bad", "--revision", tail4, "--revision", left4), 0, false, false)
 
 check(mtn("bisect", "status"), 0, false, false)

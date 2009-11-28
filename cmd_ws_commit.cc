@@ -1599,12 +1599,13 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   work.remove_bisect_info();
 }
 
-static bool
-bisect_setup(database & db,
-             vector<bisect::entry> const & info,
-             set<revision_id> & remaining)
+static void
+bisect_select(project_t & project,
+              vector<bisect::entry> const & info,
+              revision_id const & current_id,
+              revision_id & selected_id)
 {
-  graph_loader loader(db);
+  graph_loader loader(project.db);
   set<revision_id> good, bad, skipped;
 
   E(!info.empty(), origin::user, 
@@ -1635,13 +1636,13 @@ bisect_setup(database & db,
     {
       P(F("bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to start search")
         % good.size() % bad.size() % skipped.size());
-      return false;
+      return;
     }
   else if (!good.empty() && bad.empty())
     {
       P(F("bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to start search")
         % good.size() % bad.size() % skipped.size());
-      return false;
+      return;
     }
 
   I(!good.empty());
@@ -1697,6 +1698,7 @@ bisect_setup(database & db,
             known_bad.begin(), known_bad.end(),
             inserter(removed, removed.begin()));
 
+  set<revision_id> remaining;
   set_difference(searchable.begin(), searchable.end(),
                  removed.begin(), removed.end(),
                  inserter(remaining, remaining.end()));
@@ -1705,24 +1707,65 @@ bisect_setup(database & db,
     % search.size() % known_good.size() % known_bad.size() % skipped.size()
     % remaining.size());
 
-  // the bad revision that is the ancestor of all other bad revisions must
-  // be added back to the search set as it may be the revision being
-  // sought. this is probably not the right way to do find this revision
-  // though.  what is really needed is an erase_descendants function in
-  // graph.cc that will leave all ancestral bad revs as there might be more
-  // than one.
+  // remove the current revision from the remaining set so it cannot be
+  // chosen as the next update target. this may remove the top bad revision
+  // and end the search.
+  remaining.erase(current_id);
 
-  vector<revision_id> bad_sorted;
-  toposort(db, bad, bad_sorted);
-  revision_id bad0 = bad_sorted[0];
-  remaining.insert(bad0);
+  if (remaining.empty())
+    {
+      // when no revisions remain to be tested the bisection ends on the bad
+      // revision that is the ancestor of all other bad revisions.
 
-  return true;
+      vector<revision_id> bad_sorted;
+      toposort(project.db, bad, bad_sorted);
+      revision_id first_bad = *bad_sorted.begin();
+
+      P(F("bisection finished at revision %s")
+        % describe_revision(project, first_bad));
+
+      // if the workspace is not already at the ending revision return it as
+      // the selected revision so that an update back to this revision
+      // happens
+
+      if (current_id != first_bad)
+        selected_id = first_bad;
+      return;
+    }
+
+  // bisection is done by toposorting the remaining revs and using the
+  // midpoint of the result as the next revision to test
+
+  vector<revision_id> candidates;
+  toposort(project.db, remaining, candidates);
+
+  selected_id = candidates[candidates.size()/2]; 
+}
+
+std::ostream &
+operator<<(std::ostream & os,
+           bisect::type const type)
+{
+  switch (type)
+    {
+    case bisect::start:
+      os << "start";
+      break;
+    case bisect::good:
+      os << "good";
+      break;
+    case bisect::bad:
+      os << "bad";
+      break;
+    case bisect::skipped:
+      os << "skip";
+      break;
+    }
+  return os;
 }
 
 static void
-bisect_update(app_state & app,
-              bisect::type type)
+bisect_update(app_state & app, bisect::type type)
 {
   database db(app);
   workspace work(app);
@@ -1768,6 +1811,26 @@ bisect_update(app_state & app,
       P(F("bisection started at revision %s") % describe_revision(project, current_id));
     }
 
+  // don't allow conflicting or redundant settings
+  for (vector<bisect::entry>::const_iterator i = info.begin();
+       i != info.end(); ++i)
+    {
+      if (i->first == bisect::start)
+        continue;
+      if (marked_ids.find(i->second) != marked_ids.end())
+        {
+          if (type == i->first)
+            {
+              W(F("ignored redundant bisect %s on revision %s")
+                % type % i->second);
+              marked_ids.erase(i->second);
+            }
+          else
+            E(false, origin::user, F("conflicting bisect %s/%s on revision %s") 
+              % type % i->first % i->second);
+        }
+    }
+
   // push back all marked revs with the appropriate type
   for (set<revision_id>::const_iterator i = marked_ids.begin();
        i != marked_ids.end(); ++i)
@@ -1775,31 +1838,11 @@ bisect_update(app_state & app,
   
   work.put_bisect_info(info);
 
-  set<revision_id> remaining;
-  if (!bisect_setup(db, info, remaining))
+  revision_id selected_id;
+  bisect_select(project, info, current_id, selected_id);
+  if (null_id(selected_id))
     return;
 
-  // remove the current revision from the remaining set so it cannot be
-  // chosen as the next update target. this may remove the top bad revision
-  // and end the search.
-  remaining.erase(current_id);
-
-  if (remaining.empty() && type == bisect::bad)
-    {
-      P(F("bisection finished at revision %s") % describe_revision(project, current_id));
-      return;
-    }
-
-  E(!remaining.empty(), origin::user,
-    F("no candidate revisions remaining"));
-
-  // bisection is done by toposorting the remaining revs and using the
-  // midpoint of the result as the next revision to test
-
-  vector<revision_id> candidates;
-  toposort(db, remaining, candidates);
-
-  revision_id selected_id = candidates[candidates.size()/2]; 
   P(F("updating to %s") % describe_revision(project, selected_id));
 
   roster_t selected_roster;
@@ -1818,8 +1861,9 @@ bisect_update(app_state & app,
   work.put_work_rev(selected_rev);
   work.maybe_update_inodeprints(db);
 
-  // FIXME: what about the workspace branch option?
-  // what if the selected rev is in more than one branch?!?
+  // this may have updated to a revision not in the branch specified by
+  // the workspace branch option. however it cannot update the workspace
+  // branch option because the new revision may be in multiple branches.
 }
 
 CMD(bisect_status, "status", "", CMD_REF(bisect), "",
@@ -1835,12 +1879,20 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
 
   database db(app);
   workspace work(app);
+  project_t project(db);
+
+  parent_map parents;
+  work.get_parent_rosters(db, parents);
+  E(parents.size() == 1, origin::user,
+    F("this command can only be used in a single-parent workspace"));
+
+  revision_id current_id = parent_id(*parents.begin());
 
   vector<bisect::entry> info;
   work.get_bisect_info(info);
 
-  set<revision_id> remaining;
-  bisect_setup(db, info, remaining);
+  revision_id selected_id;
+  bisect_select(project, info, current_id, selected_id);
 }
 
 CMD(skip, "skip", "", CMD_REF(bisect), "",
