@@ -11,16 +11,19 @@
 #include "base.hh"
 #include "policies/base_policy.hh"
 
+#include "branch_name.hh"
+#include "lua_hooks.hh"
+#include "options.hh"
 #include "transforms.hh"
 
 #include <map>
 
 using std::make_pair;
 using std::map;
+using std::pair;
+using std::string;
 
 class database;
-class lua_hooks;
-class options;
 
 namespace policies {
   base_policy::base_policy(database & db, options const & opts, lua_hooks & lua):
@@ -38,7 +41,8 @@ namespace policies {
     for (override_map::const_iterator i = opts.policy_revisions.begin();
          i != opts.policy_revisions.end(); ++i)
       {
-        id r = decode_hexenc(i->second);
+        id r;
+        decode_hexenc(i->second, r);
         delegations.insert(make_pair(i->first(), delegation(revision_id(r))));
         _empty = false;
       }
@@ -46,19 +50,19 @@ namespace policies {
     typedef map<string, data> hook_map;
     hook_map hm;
     lua.hook_get_projects(hm);
-    for (hm::const_iterator i = hm.begin(); i != hm.end(); ++i)
+    for (hook_map::const_iterator i = hm.begin(); i != hm.end(); ++i)
       {
         if (delegations.find(i->first) == delegations.end())
           {
-            del_map::iterator d = delegations.insert(make_pair(i->first, delegation()));
-            d->second.deserialize(i->second());
+            pair<del_map::iterator, bool> r;
+            r = delegations.insert(make_pair(i->first, delegation()));
+            r.first->second.deserialize(i->second());
             _empty = false;
           }
       }
   }
 }
 
-#endif
 // Local Variables:
 // mode: C++
 // fill-column: 76

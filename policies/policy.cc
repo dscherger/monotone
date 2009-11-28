@@ -13,6 +13,11 @@
 
 #include "keys.hh"
 
+using boost::shared_ptr;
+
+using std::map;
+using std::string;
+
 namespace policies {
   policy::policy()
   {
@@ -23,6 +28,19 @@ namespace policies {
 
   key_name policy::get_key_name(key_id const & ident) const
   {
+    for (key_map::const_iterator k = keys.begin();
+         k != keys.end(); ++k)
+      {
+        key_id test;
+        key_hash_code(k->second.first, k->second.second, test);
+        if (ident == test)
+          return key_name(k->first, origin::internal);
+      }
+    shared_ptr<policy> p = parent.lock();
+    if (p)
+      return p->get_key_name(ident);
+    else
+      return key_name();
   }
 
   key_id policy::get_key_id(key_name const & ident) const
@@ -34,7 +52,7 @@ namespace policies {
         key_hash_code(k->second.first, k->second.second, out);
         return out;
       }
-    boost::shared_ptr<policy> p = parent.lock();
+    shared_ptr<policy> p = parent.lock();
     if (p)
       return p->get_key_id(ident);
     else
