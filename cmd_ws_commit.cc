@@ -1629,6 +1629,12 @@ bisect_select(project_t & project,
         case bisect::skipped:
           skipped.insert(i->second);
           break;
+        case bisect::update:
+          // this value is not persisted, it is only used by the bisect
+          // update command to rerun a selection and update based on current
+          // bisect information
+          I(false);
+          break;
         }
     }
 
@@ -1760,7 +1766,13 @@ operator<<(std::ostream & os,
     case bisect::skipped:
       os << "skip";
       break;
-    }
+    case bisect::update:
+      // this value is not persisted, it is only used by the bisect
+      // update command to rerun a selection and update based on current
+      // bisect information
+      I(false);
+    break;
+  }
   return os;
 }
 
@@ -1808,35 +1820,39 @@ bisect_update(app_state & app, bisect::type type)
   if (info.empty())
     {
       info.push_back(make_pair(bisect::start, current_id));
-      P(F("bisection started at revision %s") % describe_revision(project, current_id));
+      P(F("bisection started at revision %s")
+        % describe_revision(project, current_id));
     }
 
-  // don't allow conflicting or redundant settings
-  for (vector<bisect::entry>::const_iterator i = info.begin();
-       i != info.end(); ++i)
+  if (type != bisect::update)
     {
-      if (i->first == bisect::start)
-        continue;
-      if (marked_ids.find(i->second) != marked_ids.end())
+      // don't allow conflicting or redundant settings
+      for (vector<bisect::entry>::const_iterator i = info.begin();
+           i != info.end(); ++i)
         {
-          if (type == i->first)
+          if (i->first == bisect::start)
+            continue;
+          if (marked_ids.find(i->second) != marked_ids.end())
             {
-              W(F("ignored redundant bisect %s on revision %s")
-                % type % i->second);
-              marked_ids.erase(i->second);
+              if (type == i->first)
+                {
+                  W(F("ignored redundant bisect %s on revision %s")
+                    % type % i->second);
+                  marked_ids.erase(i->second);
+                }
+              else
+                E(false, origin::user, F("conflicting bisect %s/%s on revision %s") 
+                  % type % i->first % i->second);
             }
-          else
-            E(false, origin::user, F("conflicting bisect %s/%s on revision %s") 
-              % type % i->first % i->second);
         }
-    }
 
-  // push back all marked revs with the appropriate type
-  for (set<revision_id>::const_iterator i = marked_ids.begin();
-       i != marked_ids.end(); ++i)
-    info.push_back(make_pair(type, *i));
+      // push back all marked revs with the appropriate type
+      for (set<revision_id>::const_iterator i = marked_ids.begin();
+           i != marked_ids.end(); ++i)
+        info.push_back(make_pair(type, *i));
   
-  work.put_bisect_info(info);
+      work.put_bisect_info(info);
+    }
 
   revision_id selected_id;
   bisect_select(project, info, current_id, selected_id);
@@ -1852,7 +1868,8 @@ bisect_update(app_state & app, bisect::type type)
   make_cset(current_roster, selected_roster, update);
 
   content_merge_checkout_adaptor adaptor(db);
-  work.perform_content_update(current_roster, selected_roster, update, adaptor);
+  work.perform_content_update(current_roster, selected_roster, update, adaptor,
+                              true, app.opts.move_conflicting_paths);
 
   revision_t selected_rev;
   cset empty;
@@ -1893,33 +1910,51 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
 
   revision_id selected_id;
   bisect_select(project, info, current_id, selected_id);
+
+  if (current_id != selected_id)
+    {
+      W(F("next revision for bisection testing is %s\n") % selected_id);
+      W(F("however this workspace is currently at %s\n") % current_id);
+      W(F("run 'bisect update' to update to this revision before testing"));
+    }
 }
 
-CMD(skip, "skip", "", CMD_REF(bisect), "",
+CMD(bisect_update, "update", "", CMD_REF(bisect), "",
+    N_("Updates the workspace to the next revision to be tested by bisection"),
+    N_("This command can be used if updates by good, bad or skip commands "
+       "fail due to blocked paths or other problems."),
+    options::opts::move_conflicting_paths)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::update);
+}
+
+CMD(bisect_skip, "skip", "", CMD_REF(bisect), "",
     N_("Excludes the current revision or specified revisions from the search"),
     N_("Skipped revisions are removed from the set being searched. Revisions "
        "that cannot be tested for some reason should be skipped."),
-    options::opts::revision)
+    options::opts::revision | options::opts::move_conflicting_paths)
 {
   if (args.size() != 0)
     throw usage(execid);
   bisect_update(app, bisect::skipped);
 }
 
-CMD(bad, "bad", "", CMD_REF(bisect), "",
+CMD(bisect_bad, "bad", "", CMD_REF(bisect), "",
     N_("Marks the current revision or specified revisions as bad"),
     N_("Known bad revisions are removed from the set being searched."),
-    options::opts::revision)
+    options::opts::revision | options::opts::move_conflicting_paths)
 {
   if (args.size() != 0)
     throw usage(execid);
   bisect_update(app, bisect::bad);
 }
 
-CMD(good, "good", "", CMD_REF(bisect), "",
+CMD(bisect_good, "good", "", CMD_REF(bisect), "",
     N_("Marks the current revision or specified revisions as good"),
     N_("Known good revisions are removed from the set being searched."),
-    options::opts::revision)
+    options::opts::revision | options::opts::move_conflicting_paths)
 {
   if (args.size() != 0)
     throw usage(execid);

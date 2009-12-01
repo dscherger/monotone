@@ -713,6 +713,13 @@ workspace::put_bisect_info(vector<bisect::entry> const & bisect)
         case bisect::skipped:
           st.push_binary_pair(syms::skipped, i->second.inner());
           break;
+
+        case bisect::update:
+          // this value is not persisted, it is only used by the bisect
+          // update command to rerun a selection and update based on current
+          // bisect information
+          I(false);
+          break;
         }
     }
 
