@@ -2949,6 +2949,7 @@ database::delete_existing_revs_and_certs()
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
   imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM branch_leaves"));
 }
 
 void
@@ -3539,6 +3540,10 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
   get_revision_parents(rev, parents);
   set<revision_id> current_leaves;
   get_branch_leaves(branch, current_leaves);
+
+  set<revision_id>::const_iterator self = current_leaves.find(rev);
+  if (self != current_leaves.end())
+    return; // already recorded (must be adding a second branch cert)
 
   bool all_parents_were_leaves = true;
   for (set<revision_id>::const_iterator p = parents.begin();
