@@ -110,6 +110,15 @@ CREATE TABLE branch_epochs
 	epoch not null                -- random binary id
 	);
 
+-- The *leaves* of a branch. May be different from the *heads* of the
+-- branch, if there are suspended revisions or untrusted certs.
+CREATE TABLE branch_leaves
+        (
+        branch not null,        -- joins with revision_certs.value
+        revision_id not null,   -- joins with revisions.id
+        unique(branch, revision_id)
+        );
+
 -- database-local variables used to manage various things
 
 CREATE TABLE db_vars

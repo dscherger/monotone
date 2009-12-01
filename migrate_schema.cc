@@ -13,6 +13,10 @@
 #include <sqlite3.h>
 #include <cstring>
 
+// ...ow.
+#include <set>
+#include <map>
+
 #include "sanity.hh"
 #include "migration.hh"
 #include "key_store.hh"
@@ -162,6 +166,14 @@ namespace
       I(col >= 0 && col < ncols);
       return string(reinterpret_cast<char const *>
                     (sqlite3_column_text(stmt, col)));
+    }
+    string column_blob(int col)
+    {
+      I(col >= 0 && col < ncols);
+      char const * base =
+        reinterpret_cast<char const *>(sqlite3_column_blob(stmt, col));
+      int len = sqlite3_column_bytes(stmt, col);
+      return string(base, base + len);
     }
     bool column_nonnull(int col)
     {
@@ -755,6 +767,102 @@ char const migrate_certs_to_key_hash[] =
   "DROP TABLE revision_certs_tmp;"
   ;
 
+namespace {
+  struct branch_leaf_finder_info
+  {
+    std::set<string> parents;
+    std::set<string> branches;
+    std::set<string> known_descendant_branches;
+    int num_children;
+  };
+}
+static void
+migrate_add_branch_leaf_cache(sqlite3 * db, key_store & keys)
+{
+  sql::exec(db,
+            "CREATE TABLE branch_leaves\n"
+            "        (\n"
+            "        branch not null,        -- joins with revision_certs.value\n"
+            "        revision_id not null,   -- joins with revisions.id\n"
+            "        unique(branch, revision_id)\n"
+            "        )");
+
+  typedef std::map<string, branch_leaf_finder_info> anc_etc_map;
+  anc_etc_map ancestry_etc;
+
+  {
+    sql ancestry(db, 2, "select child, parent from revision_ancestry "
+                 "where parent is not null");
+    while (ancestry.step())
+      {
+        string child = ancestry.column_blob(0);
+        string parent = ancestry.column_blob(1);
+        branch_leaf_finder_info & info = ancestry_etc[child];
+        info.parents.insert(parent);
+        ancestry_etc[parent].num_children++;
+      }
+  }
+  {
+    sql certs(db, 2,
+              "select revision_id, value "
+              "from revision_certs where name = 'branch'");
+    while (certs.step())
+      {
+        ancestry_etc[certs.column_blob(0)].branches.insert(certs.column_blob(1));
+      }
+  }
+
+  std::set<string> frontier;
+  {
+    for (anc_etc_map::iterator i = ancestry_etc.begin();
+         i != ancestry_etc.end(); ++i)
+      {
+        if (i->second.num_children == 0)
+          {
+            frontier.insert(i->first);
+          }
+      }
+  }
+
+  while (!frontier.empty())
+    {
+      string rev = *frontier.begin();
+      frontier.erase(frontier.begin());
+      branch_leaf_finder_info & my_info = ancestry_etc[rev];
+      for (std::set<string>::iterator b = my_info.branches.begin();
+           b != my_info.branches.end(); ++b)
+        {
+          std::set<string>::iterator desc = my_info.known_descendant_branches.find(*b);
+          if (desc != my_info.known_descendant_branches.end())
+            continue;
+          string q = string("insert into branch_leaves(branch, revision_id) "
+                            "values(X'")
+            + encode_hexenc(*b, origin::internal) + "', X'"
+            + encode_hexenc(rev, origin::internal) + "')";
+            sql::exec(db, q.c_str());
+        }
+      for (std::set<string>::iterator p = my_info.parents.begin();
+           p != my_info.parents.end(); ++p)
+        {
+          branch_leaf_finder_info & parent_info = ancestry_etc[*p];
+          for (std::set<string>::iterator b = my_info.branches.begin();
+               b != my_info.branches.end(); ++b)
+            {
+              parent_info.known_descendant_branches.insert(*b);
+            }
+          for (std::set<string>::iterator b = my_info.known_descendant_branches.begin();
+               b != my_info.known_descendant_branches.end(); ++b)
+            {
+              parent_info.known_descendant_branches.insert(*b);
+            }
+          parent_info.num_children--;
+          if (parent_info.num_children == 0)
+            frontier.insert(*p);
+        }
+    }
+}
+
+
 // these must be listed in order so that ones listed earlier override ones
 // listed later
 enum upgrade_regime
@@ -839,9 +947,11 @@ const migration_event migration_events[] = {
   { "212dd25a23bfd7bfe030ab910e9d62aa66aa2955",
     migrate_certs_to_key_hash, 0, upgrade_none },
 
+  { "9c8d5a9ea8e29c69be6459300982a68321b0ec12",
+    0, migrate_add_branch_leaf_cache, upgrade_none },
   // The last entry in this table should always be the current
   // schema ID, with 0 for the migrators.
-  { "9c8d5a9ea8e29c69be6459300982a68321b0ec12", 0, 0, upgrade_none }
+  { "0c956abae3e52522e4e0b7c5cbe7868f5047153e", 0, 0, upgrade_none }
 };
 const size_t n_migration_events = (sizeof migration_events
                                    / sizeof migration_events[0]);

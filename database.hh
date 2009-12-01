@@ -170,6 +170,9 @@ public:
   void get_common_ancestors(std::set<revision_id> const & revs,
                             std::set<revision_id> & common_ancestors);
 
+  bool is_a_ancestor_of_b(revision_id const & ancestor,
+                          revision_id const & child);
+
   void get_revision_ids(std::set<revision_id> & ids);
   // this is exposed for 'db check':
   void get_file_ids(std::set<file_id> & ids);
@@ -270,6 +273,7 @@ public:
   bool revision_cert_exists(revision_id const & hash);
 
   bool put_revision_cert(cert const & cert);
+  void record_as_branch_leaf(cert_value const & branch, revision_id const & rev);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
@@ -300,6 +304,11 @@ public:
   outdated_indicator get_revisions_with_cert(cert_name const & name,
                                cert_value const & value,
                                std::set<revision_id> & revisions);
+
+  // Used by get_branch_heads (project.cc)
+  // Will also be needed by daggy-refinement, if/when implemented
+  outdated_indicator get_branch_leaves(cert_value const & value,
+                                       std::set<revision_id> & revisions);
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
