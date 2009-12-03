@@ -2992,6 +2992,16 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   // Kill the certs, ancestry, and revision.
   imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
+  {
+    results res;
+    imp->fetch(res, one_col, any_rows,
+               query("SELECT branch FROM branch_leaves where revision_id = ?")
+               % blob(rid.inner()()));
+    for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+      {
+        recalc_branch_leaves(cert_value((*i)[0], origin::database));
+      }
+  }
   imp->cert_stamper.note_change();
 
   imp->execute(query("DELETE from revision_ancestry WHERE child = ?")
@@ -3006,12 +3016,28 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   guard.commit();
 }
 
+void
+database::recalc_branch_leaves(cert_value const & name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
+  set<revision_id> revs;
+  get_revisions_with_cert(cert_name("branch"), name, revs);
+  erase_ancestors(*this, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    {
+      imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
+                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+    }
+}
+
 /// Deletes all certs referring to a particular branch.
 void
 database::delete_branch_named(cert_value const & branch)
 {
   L(FL("Deleting all references to branch %s") % branch);
   imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
+               % blob(branch()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
                % blob(branch()));
   imp->cert_stamper.note_change();
   imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
