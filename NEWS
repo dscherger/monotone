@@ -34,6 +34,12 @@
           the same, but executes only a single command and does not
           stdio-encode the output.
 
+        - The global option '--timestamps' has been added which prefixes
+          the current local timestamp before diagnostic messages such as
+          warnings, progress messages, errors and tickers.  For example,
+          this option can be used to log the date and time when clients
+          connect to a monotone server.
+
         Bugs fixed
 
         - A regression from 0.45's key migration prevented the proper

@@ -637,6 +637,15 @@ gettext_noop("suppress warning, verbose, informational and progress messages"))
 }
 #endif
 
+GOPT(timestamps, "timestamps", bool, false,
+gettext_noop("show timestamps in front of errors, warnings and progress messages"))
+#ifdef option_bodies
+{
+  timestamps = true;
+  ui.enable_timestamps();
+}
+#endif
+
 OPT(recursive, "recursive,R", bool, false,
      gettext_noop("also operate on the contents of any listed directories"))
 #ifdef option_bodies
