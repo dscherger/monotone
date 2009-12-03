@@ -4217,9 +4217,9 @@ outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT branch FROM branch_leaves");
     string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
+    imp->fetch(res, one_col, any_rows, q);
     for (size_t i = 0; i < res.size(); ++i)
       {
         names.push_back(res[i][0]);
