@@ -2,7 +2,6 @@ body {
     margin: 0;
     font-family: Helvetica, Arial, sans-serif;
     font-size: 0.625em;
-    background: url(res/bg.png);
 }
 
 a {
@@ -22,14 +21,23 @@ code {
     clear: both;
 }
 
-.header {
-    background: url(res/logo_small.png) no-repeat 10px 10px;
-    padding-top: 35px;
-    padding-left: 95px;
-    height: 55px;
+.pageheader {
+    position: fixed;
+    width: 100%;
+    top: 0;
     font-size: 2.5em;
+    line-height: 1.2em;
+    font-weight: bold;
     color: white;
+}
+
+.header {
+    font-size: inherit;
+    line-height: inherit;
+    height: 30px;
+    padding: 20px;
     border-bottom: 1px solid #474747;
+    background: url(res/bg.png);
 }
 
 .header span a {
@@ -40,19 +48,20 @@ code {
 }
 
 .actions {
-    background: white;
     text-align: right;
+    font-size: 0;
 }
 
 .actions ul,
 .pageheader .actions ul {
     border: 0;
     padding: 0;
-    padding-right: 2em;
-    padding-top: 0.4em;
+    margin-right: 20px;
 }
 
 .actions ul li {
+    display: inline-block;
+    vertical-align: top;
     border-left: 1px solid #474747;
     border-right: 1px solid #474747;
     border-bottom: 1px solid #474747;
@@ -61,6 +70,8 @@ code {
     padding-left: 0.8em;
     padding-right: 0.8em;
     padding-bottom: 0.4em;
+    font-size: 10px;
+    line-height: 15px;
     background: #727272;
     -moz-border-radius-bottomleft: 0.8em;
     -moz-border-radius-bottomright: 0.8em;
@@ -123,6 +134,7 @@ code {
 }
 
 #content {
+    margin-top: 100px;
     padding: 2em;
     background: white;
     min-height: 500px;
@@ -258,13 +270,6 @@ code {
 
 #pageinfo {
     border: 0;
-    color: white;
-}
-
-#pageinfo a {
-    color: white;
-    border-bottom: 1px dotted white;
-    text-decoration: none;
 }
 
 #footer {
@@ -312,9 +317,18 @@ code {
     margin-right: 0.5em;
 }
 
-#searchform {
-    margin-right: 0.8em;
-    margin-top: -1.2em;
+#searchform {}
+
+#searchform div {
+    font-size: 12px;
+}
+
+#searchform div:before {
+    content: "Wiki Search";
+}
+
+#searchform div input#searchbox {
+    margin-left: 5px;
 }
 
 #searchform #searchbox,
