@@ -71,6 +71,7 @@ public:
   void set_tick_write_nothing();
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
+  void enable_timestamps();
 
   std::string output_prefix();
 
@@ -80,6 +81,7 @@ private:
 
   struct impl;
   impl * imp;
+  bool timestamps_enabled;
   enum ticker_type { count=1, dot, stdio, none } tick_type;
 
   friend struct ticker;

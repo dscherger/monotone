@@ -2584,6 +2584,46 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
     }
 }
 
+bool
+database::is_a_ancestor_of_b(revision_id const & ancestor,
+                             revision_id const & child)
+{
+  if (ancestor == child)
+    return false;
+
+  rev_height anc_height;
+  rev_height child_height;
+  get_rev_height(ancestor, anc_height);
+  get_rev_height(child, child_height);
+
+  if (anc_height > child_height)
+    return false;
+
+
+  vector<revision_id> todo;
+  todo.push_back(ancestor);
+  while (!todo.empty())
+    {
+      revision_id anc = todo.back();
+      todo.pop_back();
+      set<revision_id> anc_children;
+      get_revision_children(anc, anc_children);
+      for (set<revision_id>::const_iterator i = anc_children.begin();
+           i != anc_children.end(); ++i)
+        {
+          if (*i == child)
+            return true;
+          else
+            {
+              get_rev_height(*i, anc_height);
+              if (child_height > anc_height)
+                todo.push_back(*i);
+            }
+        }
+    }
+  return false;
+}
+
 void
 database::get_revision(revision_id const & id,
                        revision_t & rev)
@@ -2909,6 +2949,7 @@ database::delete_existing_revs_and_certs()
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
   imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM branch_leaves"));
 }
 
 void
@@ -2951,6 +2992,16 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   // Kill the certs, ancestry, and revision.
   imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
+  {
+    results res;
+    imp->fetch(res, one_col, any_rows,
+               query("SELECT branch FROM branch_leaves where revision_id = ?")
+               % blob(rid.inner()()));
+    for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+      {
+        recalc_branch_leaves(cert_value((*i)[0], origin::database));
+      }
+  }
   imp->cert_stamper.note_change();
 
   imp->execute(query("DELETE from revision_ancestry WHERE child = ?")
@@ -2965,12 +3016,28 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   guard.commit();
 }
 
+void
+database::recalc_branch_leaves(cert_value const & name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
+  set<revision_id> revs;
+  get_revisions_with_cert(cert_name("branch"), name, revs);
+  erase_ancestors(*this, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    {
+      imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
+                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+    }
+}
+
 /// Deletes all certs referring to a particular branch.
 void
 database::delete_branch_named(cert_value const & branch)
 {
   L(FL("Deleting all references to branch %s") % branch);
   imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
+               % blob(branch()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
                % blob(branch()));
   imp->cert_stamper.note_change();
   imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
@@ -3482,8 +3549,61 @@ database::put_revision_cert(cert const & cert)
     }
 
   imp->put_cert(cert, "revision_certs");
+
+  if (cert.name() == "branch")
+    {
+      record_as_branch_leaf(cert.value, cert.ident);
+    }
+
   imp->cert_stamper.note_change();
   return true;
+}
+
+void
+database::record_as_branch_leaf(cert_value const & branch, revision_id const & rev)
+{
+  set<revision_id> parents;
+  get_revision_parents(rev, parents);
+  set<revision_id> current_leaves;
+  get_branch_leaves(branch, current_leaves);
+
+  set<revision_id>::const_iterator self = current_leaves.find(rev);
+  if (self != current_leaves.end())
+    return; // already recorded (must be adding a second branch cert)
+
+  bool all_parents_were_leaves = true;
+  for (set<revision_id>::const_iterator p = parents.begin();
+       p != parents.end(); ++p)
+    {
+      set<revision_id>::iterator l = current_leaves.find(*p);
+      if (l == current_leaves.end())
+        all_parents_were_leaves = false;
+      else
+        {
+          imp->execute(query("DELETE FROM branch_leaves "
+                             "WHERE branch = ? AND revision_id = ?")
+                       % blob(branch()) % blob(l->inner()()));
+          current_leaves.erase(l);
+        }
+    }
+
+  if (!all_parents_were_leaves)
+    {
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(*r, rev))
+            {
+              imp->execute(query("DELETE FROM branch_leaves "
+                                 "WHERE branch = ? AND revision_id = ?")
+                           % blob(branch()) % blob(r->inner()()));
+            }
+        }
+    }
+
+  imp->execute(query("INSERT INTO branch_leaves(branch, revision_id) "
+                     "VALUES (?, ?)")
+               % blob(branch()) % blob(rev.inner()()));
 }
 
 outdated_indicator
@@ -3552,6 +3672,19 @@ database::get_revisions_with_cert(cert_name const & name,
   results res;
   query q("SELECT revision_id FROM revision_certs WHERE name = ? AND value = ?");
   imp->fetch(res, one_col, any_rows, q % text(name()) % blob(val()));
+  for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+    revisions.insert(revision_id((*i)[0], origin::database));
+  return imp->cert_stamper.get_indicator();
+}
+
+outdated_indicator
+database::get_branch_leaves(cert_value const & value,
+                            set<revision_id> & revisions)
+{
+  revisions.clear();
+  results res;
+  query q("SELECT revision_id FROM branch_leaves WHERE branch = ?");
+  imp->fetch(res, one_col, any_rows, q % blob(value()));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     revisions.insert(revision_id((*i)[0], origin::database));
   return imp->cert_stamper.get_indicator();
@@ -4110,9 +4243,9 @@ outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT branch FROM branch_leaves");
     string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
+    imp->fetch(res, one_col, any_rows, q);
     for (size_t i = 0; i < res.size(); ++i)
       {
         names.push_back(res[i][0]);

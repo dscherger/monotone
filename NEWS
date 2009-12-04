@@ -3,6 +3,7 @@
         0.46 release.
 
         *** Fix automate commands documented as added in version FIXME
+        *** bump automate minor version?
         *** bump automate major version
 
         Changes
@@ -15,11 +16,11 @@
           informational messages, warnings or tickers. Please consult 
           the manual of "mtn automate stdio" for a detailed description
           of the new format.
-	  The error codes used in the output of both commands also 
+          The error codes used in the output of both commands also 
           slightly changed: errors which are the result of a wrong 
-	  call (unknown command, invalid options, parsing errors, ...)
+          call (unknown command, invalid options, parsing errors, ...)
           are returned with code 1, while errors which happened while
-	  the actual command executed are returned with code 2.
+          the actual command executed are returned with code 2.
 
         New features
 
@@ -34,6 +35,12 @@
         - There's also a new command "automate remote" that's very much
           the same, but executes only a single command and does not
           stdio-encode the output.
+
+        - The global option '--timestamps' has been added which prefixes
+          the current local timestamp before diagnostic messages such as
+          warnings, progress messages, errors and tickers.  For example,
+          this option can be used to log the date and time when clients
+          connect to a monotone server.
 
         Bugs fixed
 

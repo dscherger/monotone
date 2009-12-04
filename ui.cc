@@ -527,6 +527,8 @@ void user_interface::initialize()
     set_tick_write_count();
   else
     set_tick_write_dot();
+
+  timestamps_enabled = false;
 }
 
 void user_interface::deinitialize()
@@ -739,10 +741,21 @@ user_interface::fatal_exception()
 string
 user_interface::output_prefix()
 {
-  if (prog_name.empty()) {
-    return "?: ";
+  std::string prefix;
+  if (timestamps_enabled) {
+    // FIXME: with no app pointer around we have no access to
+    // app.lua.get_date_format_spec() here, so we use the same format
+    // which f.e. also Apache uses for its log output
+    prefix = "[" + date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") + "] ";
   }
-  return prog_name + ": ";
+  if (prog_name.empty()) {
+    prefix += "?: ";
+  }
+  else
+  {
+    prefix += prog_name + ": ";
+  }
+  return prefix;
 }
 
 static inline string
@@ -988,6 +1001,12 @@ user_interface::inform_usage(usage const & u, options & opts)
     }
 
   commands::explain_usage(u.which, opts.show_hidden_commands, usage_stream);
+}
+
+void
+user_interface::enable_timestamps()
+{
+  timestamps_enabled = true;
 }
 
 // Local Variables:
