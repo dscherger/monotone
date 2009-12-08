@@ -21,7 +21,7 @@ class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Tr
   typedef _Traits traits_type;
   typedef typename _Traits::int_type int_type;
   size_t _bufsize;
-  std::basic_ostream<_CharT, _Traits> *stdout;
+  std::basic_ostream<_CharT, _Traits> *mystdout;
   std::basic_ostream<_CharT, _Traits> *errout;
   int err_code;
 public:
@@ -29,7 +29,7 @@ public:
                                    size_t bufsize) :
     std::streambuf(),
     _bufsize(bufsize),
-    stdout(&out),
+    mystdout(&out),
     errout(&err),
     err_code(0)
   {
@@ -70,7 +70,7 @@ private:
   void _M_sync()
   {
     std::basic_ostream<_CharT, _Traits> *str;
-    str = ((err_code != 0) ? errout : stdout);
+    str = ((err_code != 0) ? errout : mystdout);
     if (!str)
       {
         setp(this->pbase(), this->pbase() + _bufsize);

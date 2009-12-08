@@ -206,9 +206,9 @@ building and installation process for monotone
 
            15. build monotone
                $ cd /c/.../monotone
-               $ export PATH=/bin:$PATH
+               $ export PATH=/bin:/mingw/bin
                $ autoreconf -i
-               $ ./configure sqlite_LIBS=-lsqlite3
+               $ ./configure sqlite3_LIBS=-lsqlite3
                $ make
 
         on Windows (using Cygwin):

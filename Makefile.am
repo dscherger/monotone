@@ -221,10 +221,10 @@ htmldir = $(datadir)/doc/monotone
 html_DATA = monotone.html texinfo.css
 
 htmlfiguredir = $(htmldir)/figures
-htmlfigure_DATA = figures/*.png
+htmlfigure_DATA = $(wildcard figures/*.png)
 
 htmlimagedir = $(htmldir)/images
-htmlimage_DATA = images/*
+htmlimage_DATA = $(wildcard images/*.png)
 
 # flags
 

@@ -68,6 +68,7 @@ public:
   void set_tick_write_nothing();
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
+  void enable_timestamps();
 
   std::string output_prefix();
 
@@ -77,6 +78,7 @@ private:
 
   struct impl;
   impl * imp;
+  bool timestamps_enabled;
 
   friend struct ticker;
   friend struct tick_write_count;

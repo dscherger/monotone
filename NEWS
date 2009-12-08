@@ -10,6 +10,16 @@
         - Cert labels in the output of the 'log' command are now
           localized.
 
+        - The 'heads' command should be significantly faster now (not
+          that it was particularly slow before). This probably isn't
+          terribly noticable unless you're in the habit of using "h:*"
+          (heads of all branches) as a selector, it's primarily meant
+          to enable future changes that will depend on fast 'heads'.
+
+          The database schema has been changed, so you will need to
+          run 'mtn db migrate' (preferably after making a backup copy
+          of your db).
+
         New features
 
         - There's a new command "automate remote_stdio" that makes it
@@ -23,6 +33,12 @@
         - There's also a new command "automate remote" that's very much
           the same, but executes only a single command and does not
           stdio-encode the output.
+
+        - The global option '--timestamps' has been added which prefixes
+          the current local timestamp before diagnostic messages such as
+          warnings, progress messages, errors and tickers.  For example,
+          this option can be used to log the date and time when clients
+          connect to a monotone server.
 
         Bugs fixed
 
