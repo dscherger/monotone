@@ -66,6 +66,24 @@ revision_t : public origin_aware
   enum made_for made_for;
 };
 
+class graph_loader
+{
+ public:
+  graph_loader(database & db) : db(db) {}
+
+  void load_parents(revision_id const rid, std::set<revision_id> & parents);
+  void load_children(revision_id const rid, std::set<revision_id> & children);
+  void load_ancestors(std::set<revision_id> & revs);
+  void load_descendants(std::set<revision_id> & revs);
+
+ private:
+  database & db;
+  enum load_direction { ancestors, descendants };
+
+  void load_revs(load_direction const direction,
+                 std::set<revision_id> & revs);
+};
+
 inline revision_id const &
 edge_old_revision(edge_entry const & e)
 {

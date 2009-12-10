@@ -81,6 +81,12 @@ class app_state;
 
 bool directory_is_workspace(system_path const & dir);
 
+namespace bisect
+{
+  enum type { start, good, bad, skipped, update };
+  typedef std::pair<type, revision_id> entry;
+};
+
 struct workspace
 {
   // This is a public flag because it's set from monotone.cc using a
@@ -228,6 +234,13 @@ public:
                                   system_path & database_option);
   static void set_options(options const & opts, bool branch_is_sticky);
   static void print_option(utf8 const & opt, std::ostream & output);
+
+  // the "bisect" infromation file is a file that records current status
+  // information for the bisect search.
+
+  void get_bisect_info(std::vector<bisect::entry> & bisect);
+  void put_bisect_info(std::vector<bisect::entry> const & bisect);
+  void remove_bisect_info();
 
   // the "workspace format version" is a nonnegative integer value, stored
   // in _MTN/format as an unadorned decimal number.  at any given time

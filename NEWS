@@ -39,6 +39,10 @@
           warnings, progress messages, errors and tickers.  For example,
           this option can be used to log the date and time when clients
           connect to a monotone server.
+        - A new 'bisect' command has been added to allow searching for a
+          specific revision within a range of revisions. This can be useful for
+          locating the exact revision that broke something or removed a
+          particular feature.
 
         Bugs fixed
 
