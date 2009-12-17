@@ -640,12 +640,21 @@ string
 user_interface::output_prefix()
 {
   std::string prefix;
+
   if (timestamps_enabled) {
-    // FIXME: with no app pointer around we have no access to
-    // app.lua.get_date_format_spec() here, so we use the same format
-    // which f.e. also Apache uses for its log output
-    prefix = "[" + date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") + "] ";
+    try {
+      // FIXME: with no app pointer around we have no access to
+      // app.lua.get_date_format_spec() here, so we use the same format
+      // which f.e. also Apache uses for its log output
+      prefix = "[" +
+        date_t::now().as_formatted_localtime("%a %b %d %H:%M:%S %Y") +
+        "] ";
+    }
+    // ensure that we do not throw an exception because we could not
+    // create the timestamp prefix above
+    catch (...) {}
   }
+
   if (prog_name.empty()) {
     prefix += "?: ";
   }
@@ -653,6 +662,7 @@ user_interface::output_prefix()
   {
     prefix += prog_name + ": ";
   }
+
   return prefix;
 }
 
