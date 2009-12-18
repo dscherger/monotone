@@ -2578,7 +2578,8 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
   for (set<revision_id>::const_iterator i = all_common_ancestors.begin();
        i != all_common_ancestors.end(); ++i)
     {
-      // FIXME: where do these null'ed IDs come from?
+      // null id's here come from the empty parents of root revisions.
+      // these should not be considered as common ancestors and are skipped.
       if (null_id(*i)) continue;
       common_ancestors.insert(*i);
     }

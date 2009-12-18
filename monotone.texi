@@ -4296,6 +4296,13 @@ bisection operation to continue. Skipping revisions may cause the
 search to fail or end on the wrong revision if the revision being
 searched for is skipped.
 
+If the workspace is updated to some unrelated revision during a
+bisection operation the @command{bisect update} command can be used to
+update back to the next revision selected for bisection. This command
+can also be used if a previous @command{bisect good}, @command{bisect
+bad} or @command{bisect skip} command fails to update the workspace
+due to the existence of conflicting unversioned paths.
+
 The current status of the bisection operation and the next revision to
 be tested is reported by the @command{bisect status} command. This
 command can be run at any stage of the bisection operation to see how
@@ -4306,10 +4313,13 @@ Currently @command{bisect} updates the workspace but does @emph{not}
 update the workspace @option{branch} option. This may leave the
 workspace at a revision that is @emph{not} in the branch specified by
 the workspace @option{branch} option and cause subsequent commits to
-be made to the wrong branch. Take care when committing new revisions
-during a bisection operation and be sure to use the @command{bisect
-reset} command once the bisection is complete to update the workspace
-back to the revision from which the bisection started.
+be made to the wrong branch. To help avoid this error the
+@command{status} command will indicate when the workspace branch does
+not match any of the parent revision branches. Take care when
+committing new revisions during a bisection operation and be sure to
+use the @command{bisect reset} command once the bisection is complete
+to update the workspace back to the revision from which the bisection
+started.
 
 The bisection operation completes successfully when the last remaining
 revision is marked as ``bad''.  If the last remaining revision is
@@ -5348,26 +5358,50 @@ records, but not in the filesystem itself.
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
-@item mtn bisect good [--revision=@var{id} ...]
+@item mtn bisect good [--revision=@var{id} ...] [--move-conflicting-paths]
 Mark the specified revisions as ``good'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
 revision.
 
-@item mtn bisect bad [--revision=@var{id} ...]
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect bad [--revision=@var{id} ...] [--move-conflicting-paths]
 Mark the specified revisions as ``bad'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
 revision.
 
-@item mtn bisect skip [--revision=@var{id} ...]
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect skip [--revision=@var{id} ...] [--move-conflicting-paths]
 Mark the specified revisions as ``skipped'' for the current bisection
 operation. If no bisection operation is in progress a new bisection is
 initialized. If a bisection operation is in progress the next update
 target is selected and the workspace is updated to the selected
 revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect update [--move-conflicting-paths]
+Update the workspace to the next revision selected by the previous
+bisect operation. This command can be useful when the previous bisect
+operation fails to update the workspace because of conflicting
+unversioned paths existing in the workspace.
 
 @item mtn bisect status
 Report the status of the current bisection operation including the
