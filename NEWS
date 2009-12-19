@@ -20,6 +20,11 @@
           run 'mtn db migrate' (preferably after making a backup copy
           of your db).
 
+        - the 'status' command now includes the current (to be committed)
+          revision number and will indicate when the branch option in
+          _MTN/options has been changed and does not match one of the
+          revision's parent branches.
+
         New features
 
         - There's a new command "automate remote_stdio" that makes it
@@ -39,6 +44,7 @@
           warnings, progress messages, errors and tickers.  For example,
           this option can be used to log the date and time when clients
           connect to a monotone server.
+
         - A new 'bisect' command has been added to allow searching for a
           specific revision within a range of revisions. This can be useful for
           locating the exact revision that broke something or removed a
