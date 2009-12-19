@@ -1,3 +1,3 @@
-function edit_comment(basetext, user_log_message)
-  return "foobar\n"
+function edit_comment(user_log_file)
+  return string.gsub(user_log_file, "Changelog:\n\n\n", "Changelog:\n\nfoobar\n")
 end
