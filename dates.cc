@@ -276,8 +276,6 @@ get_epoch_offset()
 
   epoch_offset = our_timegm(our_t);
 
-  L(FL("time epoch offset is %d\n") % epoch_offset);
-
   know_epoch_offset = true;
   return epoch_offset;
 }
@@ -323,6 +321,8 @@ date_t::date_t(int year, int month, int day,
   I(valid());
 }
 
+// WARNING: do not log anything within this function; since this is used in
+// user_interface::output_prefix() this might lead to an indefinite loop!
 date_t
 date_t::now()
 {
@@ -358,6 +358,8 @@ dump(date_t const & d, string & s)
   s = d.as_iso_8601_extended();
 }
 
+// WARNING: do not log anything within this function; since this is used in
+// user_interface::output_prefix() this might lead to an indefinite loop!
 string
 date_t::as_formatted_localtime(string const & fmt) const
 {
