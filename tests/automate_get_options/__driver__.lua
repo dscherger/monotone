@@ -1,4 +1,6 @@
 
+include("common/automate_stdio.lua")
+
 mtn_setup()
 
 -- We don't check options with paths in them; on Windows, sometimes
@@ -14,7 +16,6 @@ check("tester@test.net\n" == readfile("stdout"))
 
 -- Ensure that 'get_options' gets the workspace options even when run via stdio
 check(mtn_ws_opts("automate", "stdio"), 0, true, false, "l10:get_option6:branche")
-canonicalize("stdout")
-check("0:0:l:11:testbranch\n" == readfile("stdout"))
+check("testbranch\n" == parse_stdio(readfile("stdout"), 0))
 
 -- end of file

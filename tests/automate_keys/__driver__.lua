@@ -1,3 +1,4 @@
+include("common/automate_stdio.lua")
 
 mtn_setup()
 
@@ -51,6 +52,7 @@ check_keys(readfile("stdout"))
 -- Ensure that 'keys' gets the keydir from workspace options even when
 -- run via stdio
 check(mtn_ws_opts("automate", "stdio"), 0, true, false, "l4:keyse")
-check_keys(string.sub (readfile("stdout"), 12))
+local keys = parse_stdio(readfile("stdout"), 0)
+check_keys(keys)
 
 -- end of file

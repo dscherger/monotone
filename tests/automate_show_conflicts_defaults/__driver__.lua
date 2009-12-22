@@ -2,8 +2,10 @@
 --
 -- See automate_show_conflicts for all conflict cases
 
+include("common/test_utils_inventory.lua")
+include("common/automate_stdio.lua")
+
 mtn_setup()
-include ("common/test_utils_inventory.lua")
 
 --  Get a non-empty base revision, then create three heads
 addfile("randomfile", "blah blah blah")
@@ -53,8 +55,8 @@ check_basic_io_line (3, parsed[3], "ancestor", base_2)
 -- In mtn 0.40 and earlier, this was broken, because automate stdio
 -- did not re-read the workspace options for each command, so the
 -- branch was null.
-check(mtn("automate", "stdio"), 0, true, false, "l14:show_conflictse")
-parsed = parse_basic_io(string.sub (readfile("stdout"), 11))
+local showconfout = run_stdio("l14:show_conflictse", 0)
+parsed = parse_basic_io(showconfout)
 check_basic_io_line (1, parsed[1], "left", beth_1)
 check_basic_io_line (2, parsed[2], "right", chuck_1)
 check_basic_io_line (3, parsed[3], "ancestor", base_2)
