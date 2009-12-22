@@ -7679,8 +7679,9 @@ none
 @item
 FIXME -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
     of a command now only happens in the 'm' stream; the 'l' stream now marks
-    the end of all streams of a command; specific error codes to distinguish
-    command from interface errors have been introduced.
+    the end of all streams of a command; introduced the concept of "headers"
+    which are outputted before the first command is issued; specific error codes
+    to distinguish command from interface errors have also been introduced.
 @item
 3.1 -- Added the 'o' item to the recognized input. This change should not
 break anything.
@@ -7721,6 +7722,8 @@ will cause an error.
 @item Sample output:
 
 @verbatim
+interface-version: 12.0
+
 0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
 0:l:1:0
 ...
@@ -7745,7 +7748,15 @@ new_type "directory"
 
 @item Output format:
 
-The output consists of one or more packets for each command.
+Right after a stdio session has been set up, header information are issued;
+to date the only header which is issued there is the @code{interface-version}
+header though, which denotes the interface version of the running monotone
+instance.
+
+Headers are separated from each other by single newline characters @code{'\n'}
+and from the following output by another newline character.
+
+After a command has been issued, one or more packets are returned for it.
 A packet looks like:
 
 @verbatim
