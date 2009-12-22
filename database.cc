@@ -26,7 +26,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 #include "lazy_rng.hh"
