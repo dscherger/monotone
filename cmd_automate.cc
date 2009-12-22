@@ -105,6 +105,12 @@ CMD_AUTOMATE(interface_version, "",
   output << interface_version << '\n';
 }
 
+// these headers are outputted before any other output for stdio and remote_stdio
+void commands::get_stdio_headers(std::vector<std::pair<std::string,std::string> > & headers)
+{
+    headers.push_back(make_pair("interface-version", interface_version));
+}
+
 // Name: bandtest
 // Arguments: { info | warning | error | fatal | ticker }
 // Added in: FIXME
@@ -209,6 +215,11 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
   automate_ostream os(output, app.opts.automate_stdio_size);
   automate_reader ar(std::cin);
+
+  std::vector<std::pair<std::string, std::string> > headers;
+  commands::get_stdio_headers(headers);
+  os.write_headers(headers);
+
   vector<pair<string, string> > params;
   vector<string> cmdline;
   global_sanity.set_out_of_band_handler(&out_of_band_to_automate_streambuf, &os);

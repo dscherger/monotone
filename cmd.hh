@@ -136,6 +136,8 @@ namespace commands
 
     bool can_run_from_stdio() const;
   };
+
+  void get_stdio_headers(std::vector<std::pair<std::string, std::string> > & headers);
 }
 
 inline std::vector<file_path>

@@ -74,7 +74,9 @@ void automate_session::request_service()
 
 void automate_session::accept_service()
 {
-  send_command();
+  netcmd cmd_out(get_version());
+  cmd_out.write_automate_headers_request_cmd();
+  write_netcmd(cmd_out);
 }
 
 string automate_session::usher_reply_data() const
@@ -115,6 +117,26 @@ bool automate_session::do_work(transaction_guard & guard,
 
   switch(cmd_in->get_cmd_code())
     {
+    case automate_headers_request_cmd:
+      {
+        netcmd net_cmd(get_version());
+        vector<pair<string, string> > headers;
+        commands::get_stdio_headers(headers);
+        net_cmd.write_automate_headers_reply_cmd(headers);
+        write_netcmd(net_cmd);
+        return true;
+      }
+    case automate_headers_reply_cmd:
+      {
+        vector<pair<string, string> > headers;
+        cmd_in->read_automate_headers_reply_cmd(headers);
+
+        I(output_stream);
+        output_stream->write_headers(headers);
+
+        send_command();
+        return true;
+      }
     case automate_command_cmd:
       {
         options original_opts = app.opts;

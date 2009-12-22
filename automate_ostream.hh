@@ -12,6 +12,7 @@
 #define __AUTOMATE_OSTREAM_HH__
 
 #include <iostream>
+#include <vector>
 #include "lexical_cast.hh"
 
 using boost::lexical_cast;
@@ -86,6 +87,17 @@ public:
     out->flush();
   }
 
+  void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  {
+    for (std::vector<std::pair<std::string, std::string> >::const_iterator h = headers.begin();
+         h != headers.end(); ++h)
+      {
+        (*out) << h->first << ": " << h->second << '\n';
+      }
+    (*out) << '\n';
+    out->flush();
+  }
+
   int_type
   overflow(int_type c = traits_type::eof())
   {
@@ -123,6 +135,9 @@ public:
 
   virtual void write_out_of_band(char type, std::string const & data)
   { _M_autobuf.write_out_of_band(type, data); }
+
+  virtual void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  { _M_autobuf.write_headers(headers); }
 };
 
 typedef basic_automate_streambuf<char> automate_streambuf;
