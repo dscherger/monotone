@@ -7880,7 +7880,8 @@ session. The original format had no such version output, so our
 numbering starts with "2" here.
 
 Headers are separated from each other by single newline character @code{'\n'}
-and from the following output by another newline character.
+and the last is separated from the following output by a pair of newline
+characters.
 
 After a command has been issued, one or more packets are returned for it.
 A packet looks like:
