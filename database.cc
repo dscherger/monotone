@@ -999,7 +999,7 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
-                          "length(hash) + length(id) + length(name)"
+                          "length(hash) + length(revision_id) + length(name)"
                           "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
