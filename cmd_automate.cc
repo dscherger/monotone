@@ -84,6 +84,10 @@ namespace commands {
 // point (2) in notes/release-checklist.txt
 static string const interface_version = "11.0";
 
+// This number determines the format version of the stdio packet format.
+// The original format which came without a version notification was "1".
+static string const stdio_format_version = "2";
+
 // Name: interface_version
 // Arguments: none
 // Added in: 0.0
@@ -108,7 +112,7 @@ CMD_AUTOMATE(interface_version, "",
 // these headers are outputted before any other output for stdio and remote_stdio
 void commands::get_stdio_headers(std::vector<std::pair<std::string,std::string> > & headers)
 {
-    headers.push_back(make_pair("interface-version", interface_version));
+    headers.push_back(make_pair("format-version", stdio_format_version));
 }
 
 // Name: bandtest

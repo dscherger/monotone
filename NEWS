@@ -12,19 +12,21 @@
           localized.
 
         - "automate stdio" (and "automate remote_stdio", see below) use
-          separate streams to encode out-of-band information like 
-          informational messages, warnings or tickers. 
-          A special "header" section has been added to the standard 
-          output to be able to tell stdio version changes between 
+          separate streams to encode out-of-band information like
+          informational messages, warnings or tickers.
+          A special "header" section has been added to the standard
+          output to be able to tell stdio version changes between
           future versions easier apart.
           The error codes used in the output of both, stdio and
-          remote_stdio, has also slightly changed: errors which are 
+          remote_stdio, has also slightly changed: errors which are
           the result of a wrong call (unknown command, invalid options,
           parsing errors, ...) are returned with code 1, while errors
-          which happened while the actual command executed are returned 
-          with code 2.
+          which happened while the actual command executed are returned
+          with code 2. Error codes are no longer echoed with every
+          packet, but only as the payload of the final 'l' ("last")
+          packet.
 
-          Please consult the manual of "mtn automate stdio" for a 
+          Please consult the manual of "mtn automate stdio" for a
           detailed description of the new format.
 
         New features
@@ -60,7 +62,7 @@
 
         Other
 
-        - Added the script of the Lua-based contributed Monotone 
+        - Added the script of the Lua-based contributed Monotone
           extension command "mtn remote_export" to contrib/command/
           with which a remote revision can be exported locally without
           having to fetch all of the history before.

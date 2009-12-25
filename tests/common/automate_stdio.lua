@@ -13,7 +13,7 @@ function parse_stdio(data, err, which, band)
   local begin,End,headers = string.find(data, "(.-)\n\n");
   -- FIXME: expand this to a proper header parser if
   -- more headers are added in the future
-  check(string.find(headers, "^interface%-version: %d-%.%d$") ~= nil)
+  check(string.find(headers, "^format%-version: %d$") ~= nil)
   data = string.sub(data, End + 1)
 
   while true do

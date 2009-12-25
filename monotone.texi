@@ -7722,7 +7722,7 @@ will cause an error.
 @item Sample output:
 
 @verbatim
-interface-version: 12.0
+format-version: 2
 
 0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
 0:l:1:0
@@ -7749,9 +7749,10 @@ new_type "directory"
 @item Output format:
 
 Right after a stdio session has been set up, header information are issued;
-to date the only header which is issued there is the @code{interface-version}
-header though, which denotes the interface version of the running monotone
-instance.
+to date the only header which is issued there is the @code{format-version}
+header though, which denotes the version of the stdio format used throughout
+the session. The original format had no such version output, so our numbering
+starts with a "2" here.
 
 Headers are separated from each other by single newline characters @code{'\n'}
 and from the following output by another newline character.
