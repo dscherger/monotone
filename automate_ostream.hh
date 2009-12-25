@@ -12,6 +12,10 @@
 #define __AUTOMATE_OSTREAM_HH__
 
 #include <iostream>
+#include <vector>
+#include "lexical_cast.hh"
+
+using boost::lexical_cast;
 
 template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
 class basic_automate_streambuf : public std::basic_streambuf<_CharT, _Traits>
@@ -21,30 +25,26 @@ class basic_automate_streambuf : public std::basic_streambuf<_CharT, _Traits>
   size_t _bufsize;
   std::basic_ostream<_CharT, _Traits> *out;
   int cmdnum;
-  int err;
+
 public:
   basic_automate_streambuf(std::ostream & o, size_t bufsize)
-    : std::streambuf(), _bufsize(bufsize), out(&o), cmdnum(0), err(0)
+    : std::streambuf(), _bufsize(bufsize), out(&o), cmdnum(0)
   {
     _CharT *inbuf = new _CharT[_bufsize];
     setp(inbuf, inbuf + _bufsize);
   }
+
   basic_automate_streambuf()
-  { }
+  {}
+
   ~basic_automate_streambuf()
   {}
 
-  void set_err(int e)
+  void end_cmd(int errcode)
   {
-    sync();
-    err = e;
-  }
-
-  void end_cmd()
-  {
-    _M_sync(true);
+    _M_sync();
+    write_out_of_band('l', lexical_cast<std::string>(errcode));
     ++cmdnum;
-    err = 0;
   }
 
   virtual int sync()
@@ -53,7 +53,7 @@ public:
     return 0;
   }
 
-  void _M_sync(bool end = false)
+  void _M_sync()
   {
     if (!out)
       {
@@ -61,17 +61,43 @@ public:
         return;
       }
     int num = this->pptr() - this->pbase();
-    if (num || end)
+    if (num)
       {
         (*out) << cmdnum << ':'
-               << err << ':'
-               << (end?'l':'m') << ':'
+               << 'm' << ':'
                << num << ':'
                << std::basic_string<_CharT,_Traits>(this->pbase(), num);
         setp(this->pbase(), this->pbase() + _bufsize);
         out->flush();
       }
   }
+
+  void write_out_of_band(char type, std::string const & data)
+  {
+    unsigned chunksize = _bufsize;
+    size_t length = data.size(), offset = 0;
+    do
+    {
+      if (offset+chunksize>length)
+        chunksize = length-offset;
+      (*out) << cmdnum << ':' << type << ':' << chunksize
+             << ':' << data.substr(offset, chunksize);
+      offset+= chunksize;
+    } while (offset<length);
+    out->flush();
+  }
+
+  void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  {
+    for (std::vector<std::pair<std::string, std::string> >::const_iterator h = headers.begin();
+         h != headers.end(); ++h)
+      {
+        (*out) << h->first << ": " << h->second << '\n';
+      }
+    (*out) << '\n';
+    out->flush();
+  }
+
   int_type
   overflow(int_type c = traits_type::eof())
   {
@@ -104,11 +130,14 @@ public:
   rdbuf() const
   { return const_cast<streambuf_type *>(&_M_autobuf); }
 
-  virtual void set_err(int e)
-  { _M_autobuf.set_err(e); }
+  virtual void end_cmd(int errcode)
+  { _M_autobuf.end_cmd(errcode); }
 
-  virtual void end_cmd()
-  { _M_autobuf.end_cmd(); }
+  virtual void write_out_of_band(char type, std::string const & data)
+  { _M_autobuf.write_out_of_band(type, data); }
+
+  virtual void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  { _M_autobuf.write_headers(headers); }
 };
 
 typedef basic_automate_streambuf<char> automate_streambuf;
