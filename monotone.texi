@@ -7680,7 +7680,7 @@ none
 FIXME -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
     of a command now only happens in the 'm' stream; the 'l' stream now marks
     the end of all streams of a command; introduced the concept of "headers"
-    which are outputted before the first command is issued; specific error codes
+    which are output before the first command is issued; specific error codes
     to distinguish command from interface errors have also been introduced.
 @item
 3.1 -- Added the 'o' item to the recognized input. This change should not
@@ -7748,13 +7748,13 @@ new_type "directory"
 
 @item Output format:
 
-Right after a stdio session has been set up, header information are issued;
-to date the only header which is issued there is the @code{format-version}
-header though, which denotes the version of the stdio format used throughout
-the session. The original format had no such version output, so our numbering
-starts with a "2" here.
+Right after a stdio session has been set up, header information is
+issued; to date the only header defined is @code{format-version},
+which denotes the version of the stdio format used throughout the
+session. The original format had no such version output, so our
+numbering starts with "2" here.
 
-Headers are separated from each other by single newline characters @code{'\n'}
+Headers are separated from each other by single newline character @code{'\n'}
 and from the following output by another newline character.
 
 After a command has been issued, one or more packets are returned for it.
@@ -7822,14 +7822,14 @@ streams are presently defined; more streams may be added later.
  @code{<eol>          ::= ';'}
  @end itemize
 
- The definition tells the implementor the short name and long name of any
- upcoming ticker event. The names and meanings are command-specific and
- therefor explained for the particular commands which support ticker output.
-
+ The definition tells the implementor the short name and long name of
+any upcoming ticker event. The names and meanings are command-specific
+and are therefore explained in the sections for the particular
+commands which support ticker output.
 
  The @code{total_count} might be 0 right at the start and can later be changed
  to a different number if the command later on knows a more exact value. If
- this is the case, this stanza is outputted again with this new value. A
+ this is the case, this stanza is output again with this new value. A
  constant @code{total_count} of 0 means that the command may continue to run
  for a undefined amount of time until the end stanza appears.
 
@@ -7838,12 +7838,12 @@ streams are presently defined; more streams may be added later.
  Finally, the end stanza is printed just before the ticker ends
  (i.e. the work has been done).
 
- All counts output absolute, raw values; no modulation takes place. Its
- usually the case that definition, @code{total_count}, advance and end are
- printed into separate stanzas. Its also possible that two or more parallel
- tickers put out their stanzas at the same time, in this case its ensured that
- the output does not get intermixed i.e. at first all definitions are outputted,
- afterwards all total_counts, aso.
+ All counts output absolute, raw values; no modulation takes place. It
+is usually the case that definition, @code{total_count}, advance and
+end are output in separate stanzas. It is also possible that two or
+more parallel tickers output their stanzas at the same time, in this
+case it's ensured that the output does not get intermixed; first
+all definitions are output, afterwards all total_counts, and so on.
 
  @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
  explicitely via the global @option{--ticker} option. However, if you run an
