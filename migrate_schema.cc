@@ -774,6 +774,7 @@ namespace {
     std::set<string> branches;
     std::set<string> known_descendant_branches;
     int num_children;
+    branch_leaf_finder_info() : num_children(0) {};
   };
 }
 static void
