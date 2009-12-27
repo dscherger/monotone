@@ -29,12 +29,13 @@ struct ticker
   size_t previous_total;
   bool kilocount;
   bool use_total;
+  bool may_skip_display;
   std::string keyname;
   std::string name; // translated name
   std::string shortname;
   size_t count_size;
   ticker(std::string const & n, std::string const & s, size_t mod = 64,
-      bool kilocount=false);
+      bool kilocount=false, bool skip_display=false);
   void set_total(size_t tot) { use_total = true; total = tot; }
   void set_count_size(size_t csiz) { count_size = csiz; }
   void operator++();
@@ -45,6 +46,7 @@ struct ticker
 struct tick_writer;
 struct tick_write_count;
 struct tick_write_dot;
+struct tick_write_stdio;
 
 struct user_interface
 {
@@ -65,9 +67,11 @@ public:
   void set_tick_trailer(std::string const & trailer);
   void set_tick_write_dot();
   void set_tick_write_count();
+  void set_tick_write_stdio();
   void set_tick_write_nothing();
   void ensure_clean_line();
   void redirect_log_to(system_path const & filename);
+  void enable_timestamps();
 
   std::string output_prefix();
 
@@ -77,10 +81,13 @@ private:
 
   struct impl;
   impl * imp;
+  bool timestamps_enabled;
+  enum ticker_type { count=1, dot, stdio, none } tick_type;
 
   friend struct ticker;
   friend struct tick_write_count;
   friend struct tick_write_dot;
+  friend struct tick_write_stdio;
 };
 
 extern struct user_interface ui;

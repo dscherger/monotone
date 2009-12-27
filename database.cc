@@ -26,7 +26,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 #include "lazy_rng.hh"
@@ -1000,7 +999,7 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
-                          "length(hash) + length(id) + length(name)"
+                          "length(hash) + length(revision_id) + length(name)"
                           "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
@@ -2578,7 +2577,8 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
   for (set<revision_id>::const_iterator i = all_common_ancestors.begin();
        i != all_common_ancestors.end(); ++i)
     {
-      // FIXME: where do these null'ed IDs come from?
+      // null id's here come from the empty parents of root revisions.
+      // these should not be considered as common ancestors and are skipped.
       if (null_id(*i)) continue;
       common_ancestors.insert(*i);
     }
@@ -2949,6 +2949,7 @@ database::delete_existing_revs_and_certs()
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
   imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM branch_leaves"));
 }
 
 void
@@ -2991,6 +2992,16 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   // Kill the certs, ancestry, and revision.
   imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
+  {
+    results res;
+    imp->fetch(res, one_col, any_rows,
+               query("SELECT branch FROM branch_leaves where revision_id = ?")
+               % blob(rid.inner()()));
+    for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+      {
+        recalc_branch_leaves(cert_value((*i)[0], origin::database));
+      }
+  }
   imp->cert_stamper.note_change();
 
   imp->execute(query("DELETE from revision_ancestry WHERE child = ?")
@@ -3005,12 +3016,28 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   guard.commit();
 }
 
+void
+database::recalc_branch_leaves(cert_value const & name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
+  set<revision_id> revs;
+  get_revisions_with_cert(cert_name("branch"), name, revs);
+  erase_ancestors(*this, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    {
+      imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
+                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+    }
+}
+
 /// Deletes all certs referring to a particular branch.
 void
 database::delete_branch_named(cert_value const & branch)
 {
   L(FL("Deleting all references to branch %s") % branch);
   imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
+               % blob(branch()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
                % blob(branch()));
   imp->cert_stamper.note_change();
   imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
@@ -3539,6 +3566,10 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
   get_revision_parents(rev, parents);
   set<revision_id> current_leaves;
   get_branch_leaves(branch, current_leaves);
+
+  set<revision_id>::const_iterator self = current_leaves.find(rev);
+  if (self != current_leaves.end())
+    return; // already recorded (must be adding a second branch cert)
 
   bool all_parents_were_leaves = true;
   for (set<revision_id>::const_iterator p = parents.begin();
@@ -4212,9 +4243,9 @@ outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT branch FROM branch_leaves");
     string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
+    imp->fetch(res, one_col, any_rows, q);
     for (size_t i = 0; i < res.size(); ++i)
       {
         names.push_back(res[i][0]);

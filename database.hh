@@ -310,6 +310,10 @@ public:
   outdated_indicator get_branch_leaves(cert_value const & value,
                                        std::set<revision_id> & revisions);
 
+private:
+  void recalc_branch_leaves(cert_value const & value);
+public:
+
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,
                           std::vector<cert> & certs);

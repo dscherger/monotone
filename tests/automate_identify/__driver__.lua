@@ -1,3 +1,4 @@
+include("common/automate_stdio.lua")
 
 mtn_setup()
 
@@ -19,7 +20,5 @@ canonicalize("stdout")
 check(samelines("stdout", { testfile_id }));
 
 -- ensure that it also gets properly encoded via stdio
-check(mtn("automate", "stdio"), 0, true, false, "l8:identify8:testfilee")
-canonicalize("stdout")
-check(samelines("stdout", { "0:0:l:41:" .. testfile_id }))
+check(run_stdio("l8:identify8:testfilee", 0) == testfile_id .. "\n")
 

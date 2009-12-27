@@ -2639,6 +2639,7 @@ familiarize yourself with its operation.
 * Importing from CVS::          Building a monotone database from a CVS repository.
 * Exporting to GIT::            Building a git repository from a monotone database.
 * Using packets::               Transferring data ``by hand''.
+* Bisecting::                   Finding bad revisions.
 @end menu
 
 @page
@@ -4072,7 +4073,7 @@ verifying that the exported repository matches their expectations and
 requirements.
 
 @page
-@node    Using packets,  , Exporting to GIT, Advanced Uses
+@node    Using packets, Bisecting, Exporting to GIT, Advanced Uses
 @section Using packets
 
 Suppose you made changes to your database, and want to send those
@@ -4261,6 +4262,74 @@ file 2 getting in
 
 And that's it! The revisions were successfully transferred.
 
+
+@page
+@node    Bisecting, , Using packets, Advanced Uses
+@section Bisecting
+
+Bisecting is an efficient means of finding the earliest revision that
+introduced a bug known to exist in some later revision. Given a set of
+``good'' earlier revisions that do not contain the bug and a set of
+``bad'' later revisions that do contain the bug @command{bisect}
+performs a binary search over the set of revisions between these two
+sets to identify the specific revision that introduced the bug.
+
+Bisection is started by marking revisions with the @command{bisect
+good} and @command{bisect bad} commands. Once both good and bad
+revisions have been specified the set of candidate revisions between
+the good and bad revisions is determined. The midpoint of this set is
+selected as the next revision to be tested and the workspace is
+updated to this selected revision. After the selected revision has
+been tested bisection continues when the revision is marked with
+@command{bisect good} or @command{bisect bad}. If the selected
+revision is marked as good, it and all of its ancestors are considered
+to be good and excluded from the remaining search set. If the selected
+revision is marked as bad, all of its descendants are considered to be
+bad and excluded from the remaining search set. After each selected
+revision is marked as good or bad the size of the remaining search set
+is halved.
+
+Revisions that are untestable for some reason (e.g. they don't
+compile) may be ignored with the @command{bisect skip} command. This
+excludes the specified revisions from the candidate set and allows the
+bisection operation to continue. Skipping revisions may cause the
+search to fail or end on the wrong revision if the revision being
+searched for is skipped.
+
+If the workspace is updated to some unrelated revision during a
+bisection operation the @command{bisect update} command can be used to
+update back to the next revision selected for bisection. This command
+can also be used if a previous @command{bisect good}, @command{bisect
+bad} or @command{bisect skip} command fails to update the workspace
+due to the existence of conflicting unversioned paths.
+
+The current status of the bisection operation and the next revision to
+be tested is reported by the @command{bisect status} command. This
+command can be run at any stage of the bisection operation to see how
+many revisions remain to be tested and how many revisions have been
+ruled out.
+
+Currently @command{bisect} updates the workspace but does @emph{not}
+update the workspace @option{branch} option. This may leave the
+workspace at a revision that is @emph{not} in the branch specified by
+the workspace @option{branch} option and cause subsequent commits to
+be made to the wrong branch. To help avoid this error the
+@command{status} command will indicate when the workspace branch does
+not match any of the parent revision branches. Take care when
+committing new revisions during a bisection operation and be sure to
+use the @command{bisect reset} command once the bisection is complete
+to update the workspace back to the revision from which the bisection
+started.
+
+The bisection operation completes successfully when the last remaining
+revision is marked as ``bad''.  If the last remaining revision is
+marked as ``good'' the bisection fails without finding the initial bad
+revision.
+
+Once bisection is complete the workspace can be updated back to the
+starting revision with the @command{bisect reset} command. This
+command also removes all stored bisection information in preparation
+for future bisect operations.
 
 @page
 @node    CVS Phrasebook, Command Reference, Advanced Uses, Top
@@ -5288,6 +5357,62 @@ records, but not in the filesystem itself.
 
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
+
+@item mtn bisect good [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``good'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect bad [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``bad'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect skip [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``skipped'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect update [--move-conflicting-paths]
+Update the workspace to the next revision selected by the previous
+bisect operation. This command can be useful when the previous bisect
+operation fails to update the workspace because of conflicting
+unversioned paths existing in the workspace.
+
+@item mtn bisect status
+Report the status of the current bisection operation including the
+number of revisions that remain to be tested, the number of revisions
+that have been tested and the next revision that will selected for
+testing.
+
+@item mtn bisect reset
+Reset the current bisection operation by updating the workspace back
+to the revision from which the bisection was started and clearing the
+current bisection information.
 
 @end ftable
 
@@ -7677,6 +7802,12 @@ none
 
 @itemize
 @item
+FIXME -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
+    of a command now only happens in the 'm' stream; the 'l' stream now marks
+    the end of all streams of a command; introduced the concept of "headers"
+    which are output before the first command is issued; specific error codes
+    to distinguish command from interface errors have also been introduced.
+@item
 3.1 -- Added the 'o' item to the recognized input. This change should not
 break anything.
 @item
@@ -7716,46 +7847,165 @@ will cause an error.
 @item Sample output:
 
 @verbatim
-0:0:l:205:0e3171212f34839c2e3263e7282cdeea22fc5378
-1f4ef73c3e056883c6a5ff66728dd764557db5e6
-2133c52680aa2492b18ed902bdef7e083464c0b8
-23501f8afd1f9ee037019765309b0f8428567f8a
-2c295fcf5fe20301557b9b3a5b4d437b5ab8ec8c
-1:0:l:41:7706a422ccad41621c958affa999b1a1dd644e79
+format-version: 2
+
+0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
+0:l:1:0
+...
+1:e:38:misuse: key 'test@test' already exists
+1:l:1:2
+...
+2:w:39:skipping file '\' with unsupported name
+2:m:144:    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+  status "known"
+...
+3:t:34:c:certificates;k:keys;r:revisions;
+3:t:12:c=0;k=0;r=0;
+3:t:13:c#0;k#0;r#64;
+3:t:14:c#0;k#0;r#128;
+3:t:6:c;k;r;
+...
 @end verbatim
 
 @item Output format:
 
-The output consists of one or more packets for each command.
+Right after a stdio session has been set up, header information is
+issued; to date the only header defined is @code{format-version},
+which denotes the version of the stdio format used throughout the
+session. The original format had no such version output, so our
+numbering starts with "2" here.
+
+Headers are separated from each other by single newline character @code{'\n'}
+and the last is separated from the following output by a pair of newline
+characters.
+
+After a command has been issued, one or more packets are returned for it.
 A packet looks like:
 
-<command number>:<err code>:<last?>:<size>:<output>
+@verbatim
+<command number>:<stream>:<size>:<output>
+@end verbatim
 
-<command number> is a decimal number specifying which command this output
+@code{<command number>} is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-<err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
+@code{<stream>} is an identifier for which output stream this packet represents,
+allowing multiple streams to be multiplexed over the channel.  The following
+streams are presently defined; more streams may be added later.
 
-<last?> is 'l' if this is the last piece of output for this command, and 'm'
-if there is more output to come.
+@itemize
+@item
+ @code{m}: this stream represents the normal ("main") stdout automate output of
+ the command, formatted as described in the description for that command.
+@item
+ @code{e}: this stream represents any (unstructured) error message data.
 
-<size> is the number of bytes in the output.
+ Internally, this maps to calls to the @code{E()} print macros that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{w}: this stream represents any (unstructured) warning message data.
 
-<output> is a piece of the output of the command.
+ Internally, this maps to calls to the @code{W()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{p}: this stream represents any (unstructured) progress message data.
 
-All but the last packet for a given command will have the
-<last?> field set to 'm'.
+ Internally, this maps to calls to the @code{P()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{t}: this stream represents ticker updates, which may be used
+ by a user interface to display the progress of a command.
+
+ The output for this channel can be described as follows:
+
+ @itemize
+ @item
+ @code{<output>       ::= <definition><payload><end>}
+ @item
+ @code{<definition>   ::= <shortname> ':' <longname> <eol>}
+ @item
+ @code{<payload>      ::= <total_count><advance>+}
+ @item
+ @code{<end>          ::= <shortname> <eol>}
+ @item
+ @code{<total_count>  ::= <shortname> '=' <count> <eol>}
+ @item
+ @code{<advance>      ::= <shortname> '#' <count> <eol>}
+ @item
+ @code{<shortname>    ::= "\w+"}
+ @item
+ @code{<longname>     ::= "[^;]+"}
+ @item
+ @code{<count>        ::= ['0'-'9']+}
+ @item
+ @code{<eol>          ::= ';'}
+ @end itemize
+
+ The definition tells the implementor the short name and long name of
+any upcoming ticker event. The names and meanings are command-specific
+and are therefore explained in the sections for the particular
+commands which support ticker output.
+
+ The @code{total_count} might be 0 right at the start and can later be changed
+ to a different number if the command later on knows a more exact value. If
+ this is the case, this stanza is output again with this new value. A
+ constant @code{total_count} of 0 means that the command may continue to run
+ for a undefined amount of time until the end stanza appears.
+
+ The advance tells the implementor how much work has been done so far.
+
+ Finally, the end stanza is printed just before the ticker ends
+ (i.e. the work has been done).
+
+ All counts output absolute, raw values; no modulation takes place. It
+is usually the case that definition, @code{total_count}, advance and
+end are output in separate stanzas. It is also possible that two or
+more parallel tickers output their stanzas at the same time, in this
+case it's ensured that the output does not get intermixed; first
+all definitions are output, afterwards all total_counts, and so on.
+
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
+ explicitely via the global @option{--ticker} option. However, if you run an
+ automate command outside of stdio you can set a different ticker type, f.e.
+ @var{count}, @var{dot} or @var{none}.
+@item
+ @code{l}: this stream marks the termination of a command and all of
+ its streams and carries the return code of the command in the payload.
+
+ A return code "0" stands for success, "1" for an error which occurred within
+ the stdio interface (f.e. syntax errors or missing privileges) before the
+ command is run and finally "2" for any other command-specific error.
+@end itemize
+
+@code{<size>} is the number of bytes in the output.
+
+@code{<output>} is a piece of the output of the command.
 
 @item Error conditions:
 
-If a badly formatted or invalid command is received, or a command is
-given with invalid arguments or options, prints an error message to
-standard error and exits with nonzero status. Errors in the commands run
-through this interface do not affect the exit status. Instead, the <err code>
-field in the output is set to 2, and the output of the command becomes
-whatever error message would have been given. Trying to run the
-@code{automate stdio} or @code{automate remote_stdio} commands will always
-act as if that command encountered an error.
+Errors in the commands run through this interface do not affect the exit
+status of this command. Instead, if a badly formatted or invalid command
+is received, or a command is given with invalid arguments or options,
+an error message to the error stream is printed and and the particular
+sub-command exits with return code "1". Other command-specific errors are
+returned as code "2".
+
+Trying to run the @code{automate stdio} or @code{automate remote_stdio}
+sub-commands will exit the particular command with return code "1".
+
+@item Multiple streams
+
+The multiple stream encoding allows the output of errors and warnings to be
+associated with the command that generated them, allows the communication
+path to always stay in sync, and offers the opportunity to add other stream
+types for other useful purposes in the future as needs arise.
 
 @end table
 
@@ -7793,6 +8043,12 @@ input. Instead, when a complete command has been entered and monotone tries to
 send it to the remote server it will print a message to stderr and exit with
 code 1.
 
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
 @end table
 
 @item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
@@ -7820,8 +8076,8 @@ FIXME
 @item Purpose
 
 Permit a single @code{automate} command to be run against a database that is
-being used to serve netsync connections, without having its output encoded
-as by @code{automate stdio}.
+being used to serve netsync connections, without having its input and output
+encoded as by @code{automate stdio}.
 
 @item Input/Output Format
 
@@ -7829,11 +8085,23 @@ This command does not accept input.
 
 The output will be whatever output the remote command generates.
 
+Remote diagnostic messages are written to standard error, prefixed either
+with @code{mtn: remote error:}, @code{mtn: remote warning:} or
+@code{mtn: remote message:} to make them distinguishable from local
+diagnostics. Tickers are not supported over this interface. If you need
+remote ticker support, please use @command{automate remote_stdio}.
+
 @item Error Conditions
 
-If the remote command returns an error code, will exit with code 1 and
-print "Received remote error code N" to standard error, with "N" being
+If the remote command returns a nonzero error code, will exit with code 1 and
+print "received remote error code N" to standard error, with "N" being
 the remote error code.
+
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
 
 @end table
 

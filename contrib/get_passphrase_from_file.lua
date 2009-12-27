@@ -13,7 +13,7 @@ function get_passphrase (keypair_id)
    local line = permfile:read()
    while (line ~= nil) do
       local _, _, key, passphrase = string.find(line, "%s*([^%s]*)%s*\"(.*)\"%s*")
-      if keypair_id == key then return passphrase end
+      if keypair_id.given_name == key then return passphrase end
       line = permfile:read()
    end
    io.close(permfile)
