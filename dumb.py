@@ -121,14 +121,14 @@ class Dumbtone:
             exported_keys = Set()
             key_packets = {}
             for stanza in keys:
-                keyid = find_stanza_entry(stanza, "name")[0]
-                hash = find_stanza_entry(stanza, "hash")[0]
+                hash = find_stanza_entry(stanza, "hash")
                 publicLocations = find_stanza_entry(stanza, "public_location")                
                 if "database" in publicLocations:
-                    kp = DelegateFunctor(self.monotone.get_pubkey_packet,keyid)
-                    ids = "\n".join((keyid,hash))
-                    id = sha.new(ids).hexdigest()
-                    key_packets[keyid] = (id, kp) # keys are queued for export
+                    kp = DelegateFunctor(self.monotone.get_pubkey_packet,hash)
+                    id = hash
+                    if self.verbosity > 0:
+                        print "key_packet: %s" % id
+                    key_packets[id] = (id, kp) # keys are queued for export
                                                   # and are exported only if used 
                                                   # to sign some exported cert
 
@@ -145,16 +145,16 @@ class Dumbtone:
                     print "rev ", rid, " certs:",certs
                 for cert in certs:
                     cert_parts = decode_cert_packet_info(cert)
-                    key_name = cert_parts[2]
-                    if key_name not in exported_keys:
+                    key_hash = cert_parts[2]
+                    if key_hash not in exported_keys:
                         if self.verbosity > 0:
-                            print "key: %s" % key_name
+                            print "key: %s" % key_hash
                         # add key only if needed by any cert
-                        id, kp = key_packets[key_name]
+                        id, kp = key_packets[key_hash]
                         if id not in curr_ids:
                             md.add(id, kp)
                             if callback: callback(id, "", None)
-                        exported_keys.add(key_name)
+                        exported_keys.add(key_hash)
                     id = sha.new(cert).hexdigest()
                     if id not in curr_ids:
                         md.add(id, ConstantValueFunctor(cert) )
