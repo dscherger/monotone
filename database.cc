@@ -1807,7 +1807,8 @@ database_impl::get_roster_base(revision_id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster does not match hash"));
 
   gzip<data> dat_packed(res[0][1], origin::database);
   data dat;
@@ -1827,7 +1828,8 @@ database_impl::get_roster_delta(id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster_delta does not match hash"));
 
   gzip<delta> del_packed(res[0][1], origin::database);
   delta tmp;
@@ -1997,7 +1999,9 @@ database_impl::get_version(id const & ident,
 
   id final;
   calculate_ident(dat, final);
-  I(final == ident);
+  E(final == ident, origin::database,
+    F("delta-reconstructed '%s' item does not match hash")
+    % data_table);
 
   if (!vcache.exists(ident))
     vcache.insert_clean(ident, dat);
@@ -2651,7 +2655,8 @@ database::get_revision(revision_id const & id,
   {
     revision_id tmp;
     calculate_ident(revision_data(rdat), tmp);
-    I(id == tmp);
+    E(id == tmp, origin::database,
+      F("revision does not match hash"));
   }
 
   dat = revision_data(rdat);
