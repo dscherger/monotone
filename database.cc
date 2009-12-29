@@ -3146,7 +3146,6 @@ database::put_key(key_name const & pub_id,
   MM(pub);
   key_id thash;
   key_hash_code(pub_id, pub, thash);
-  I(!public_key_exists(thash));
 
   if (public_key_exists(thash))
     {
