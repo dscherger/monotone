@@ -79,6 +79,12 @@
         - The mtn_automate Lua function which can be used for custom
           commands now properly handles binary data.
 
+        - `db info` now returns a correct byte count for certs again.
+
+        - If a public key was read in via the `read` or 
+          `automate read_packets`, an invariant was triggered if the
+          key was already existing in the database. This has been fixed.
+
         Other
 
         - Added the script of the Lua-based contributed Monotone
