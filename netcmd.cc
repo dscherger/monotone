@@ -57,7 +57,10 @@ size_t netcmd::encoded_size() const
 {
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
-  return 1 + 1 + tmp.size() + payload.size() + 4;
+  return 1 // netsync version
+       + 1 // command code
+       + tmp.size() + payload.size() // payload as vstring
+       + constants::netsync_hmac_value_length_in_bytes; // hmac
 }
 
 bool
