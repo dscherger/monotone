@@ -70,6 +70,9 @@ public:
 
   virtual void on_begin(size_t ident, key_identity_info const & remote_key);
   virtual void on_end(size_t ident);
+
+  virtual void note_bytes_in(int count) { return; }
+  virtual void note_bytes_out(int count) { return; }
 };
 
 #endif
