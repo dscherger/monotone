@@ -202,6 +202,21 @@ OPT(date, "date", date_t, ,
 {
   try
     {
+      date = date_t::from_string(arg);
+    }
+  catch (std::exception &e)
+    {
+      throw bad_arg_internal(e.what());
+    }
+}
+#endif
+
+OPT(until, "until", date_t, ,
+     gettext_noop("maximum date for commits to import"))
+#ifdef option_bodies
+{
+  try
+    {
       date = date_t(arg);
     }
   catch (std::exception &e)
