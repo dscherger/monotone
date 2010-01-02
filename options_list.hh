@@ -202,7 +202,7 @@ OPT(date, "date", date_t, ,
 {
   try
     {
-      date = date_t::from_string(arg);
+      date = date_t(arg);
     }
   catch (std::exception &e)
     {

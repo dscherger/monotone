@@ -39,7 +39,7 @@ CMD(rcs_import, "rcs_import", "", CMD_REF(debug), N_("RCSFILE..."),
 
   for (args_vector::const_iterator i = args.begin();
        i != args.end(); ++i)
-    test_parse_rcs_file(project, system_path((*i)()), origin::user);
+    test_parse_rcs_file(project, system_path((*i)(), origin::user));
 }
 
 

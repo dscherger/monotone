@@ -56,6 +56,8 @@ origin::type_to_string(origin::type t)
       return string("user");
     case workspace:
       return string("workspace");
+    case external_repo:
+      return string("external repository");
     case no_fault:
       return string("general");
     default:

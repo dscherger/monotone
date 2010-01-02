@@ -35,14 +35,12 @@
 #include "file_io.hh"
 #include "interner.hh"
 #include "lua_hooks.hh"
-#include "merge.hh"
 #include "options.hh"
 #include "paths.hh"
 #include "platform-wrapped.hh"
 #include "project.hh"
 #include "rcs_file.hh"
 #include "revision.hh"
-#include "roster_merge.hh"
 #include "safe_map.hh"
 #include "sanity.hh"
 #include "transforms.hh"
@@ -1117,6 +1115,7 @@ construct_version(vector< piece > const & source_lines,
   shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
 
   E(r.deltatexts.find(dest_version) != r.deltatexts.end(),
+    origin::external_repo,
     F("delta for revision %s is missing") % dest_version);
 
   shared_ptr<rcs_deltatext> deltatext =
@@ -1622,11 +1621,12 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
 
       // We ignore suspend certs, because otherwise we could possibly fail
       // to insert the same revision again.
-      cvs.project.get_branch_heads(branch_name(branchname), heads, true);
+      cvs.project.get_branch_heads(branch_name(branchname, origin::user),
+                                   heads, true);
       if (!heads.empty())
         {
-          if (heads.size() > 1)
-            E(false, F("branch %s has multiple heads") % branchname);
+          E(heads.size() <= 1, origin::user,
+            F("branch %s has multiple heads") % branchname);
           head_rev = *(heads.begin());
           cvs.branch_head_rev.insert(make_pair(current_branchname, head_rev));
         }
@@ -2169,7 +2169,7 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
             r.deltas.find(branchpoint_version);
 
           // the delta must exist
-          E(di != r.deltas.end(),
+          E(di != r.deltas.end(), origin::user,
             F("delta for a branchpoint is missing (%s)")
               % branchpoint_version);
 
@@ -4686,13 +4686,14 @@ import_cvs_repo(options & opts,
     % cvsroot % cvsroot);
 
   cvs_history cvs(project);
-  N(opts.branchname() != "", F("need base --branch argument for importing"));
+  E(opts.branch() != "", origin::user,
+    F("need base --branch argument for importing"));
 
   if (opts.until_given)
     cvs.upper_time_limit = opts.until;
 
   // add the trunk branch name
-  string bn = opts.branchname();
+  string bn = opts.branch();
   cvs.base_branch = cvs.symbol_interner.intern(bn);
 
 
@@ -4893,7 +4894,8 @@ cvs_blob::build_cset(cvs_history & cvs,
       cvs_commit *ce = (cvs_commit*) *i;
 
       file_path pth = file_path_internal(cvs.path_interner.lookup(ce->path));
-      file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version));
+      file_id new_file_id(cvs.mtn_version_interner.lookup(ce->mtn_version),
+                          origin::external_repo);
 
       if (ce->alive)
         {
@@ -4945,7 +4947,7 @@ cvs_blob::build_cset(cvs_history & cvs,
     }
 
   attr_key k("mtn:origin_info");
-  attr_value v(fval);
+  attr_value v(fval, origin::external_repo);
 
   safe_insert(cs.attrs_set, make_pair(make_pair(file_path(), k), v));
 
@@ -5390,8 +5392,8 @@ blob_consumer::create_artificial_revisions(cvs_blob_index bi,
         I(!bn.empty());
         project.put_standard_certs(keys,
               new_rid,
-              branch_name(bn),
-              utf8(changelog),
+              branch_name(bn, origin::external_repo),
+              utf8(changelog, origin::external_repo),
               date_t(commit_time),
               author);
 
@@ -5457,7 +5459,7 @@ blob_consumer::operator()(cvs_blob_index bi)
           ++n_blobs;
           ++n_revisions;
           blob.assigned_rid = revision_id(
-            string(constants::idlen_bytes, '\x33'));
+            string(constants::idlen_bytes, '\x33'), origin::internal);
           return;
         }
 
@@ -5509,13 +5511,13 @@ blob_consumer::operator()(cvs_blob_index bi)
         I(!bn.empty());
         project.put_standard_certs(keys,
                 new_rid,
-                branch_name(bn),
-                utf8(changelog),
+                branch_name(bn, origin::external_repo),
+                utf8(changelog, origin::external_repo),
                 date_t(commit_time),
                 author);
 
         // add the RCS information
-        put_simple_revision_cert(project.db, keys, new_rid,
+        project.put_cert(keys, new_rid,
           cert_name("origin"), cert_value("cvs_import"));
 
         ++n_revisions;

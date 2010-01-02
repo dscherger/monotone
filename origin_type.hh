@@ -19,6 +19,7 @@ namespace origin {
     workspace,
     system,
     user,
+    external_repo,
     no_fault
   };
 }
