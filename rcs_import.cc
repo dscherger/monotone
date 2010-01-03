@@ -2190,7 +2190,7 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
           if (di == r.deltas.end())
             W(F("delta for RCS version %s referenced from branch %s "
                 "is missing from file %s.")
-                % branchpoint_version % r.filename % sym);
+                % branchpoint_version % sym % r.filename);
           else
             {
               shared_ptr<rcs_delta> curr_delta = di->second;
