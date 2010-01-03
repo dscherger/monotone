@@ -2837,11 +2837,6 @@ public:
         }
       else
         {
-          // Short circuit if one of the above cross path resolution
-          // steps already require a DFS restart.
-          if (dfs_restart_needed)
-            return;
-
           if (switch_needed)
             {
               // If we still need a switch, do the reversed cross path
