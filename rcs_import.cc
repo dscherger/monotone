@@ -2193,18 +2193,18 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
                 % branchpoint_version % r.filename % sym);
           else
             {
-          shared_ptr<rcs_delta> curr_delta = di->second;
+              shared_ptr<rcs_delta> curr_delta = di->second;
 
-          if (curr_delta->branches.find(first_entry_version) ==
-              curr_delta->branches.end())
-            curr_delta->branches.insert(first_entry_version);
+              if (curr_delta->branches.find(first_entry_version) ==
+                  curr_delta->branches.end())
+                curr_delta->branches.insert(first_entry_version);
 
-          if (is_vendor_branch)
-            {
-              if (r.vendor_branches.find(first_entry_version) ==
-                  r.vendor_branches.end())
-                r.vendor_branches.insert(first_entry_version);
-            }
+              if (is_vendor_branch)
+                {
+                  if (r.vendor_branches.find(first_entry_version) ==
+                      r.vendor_branches.end())
+                    r.vendor_branches.insert(first_entry_version);
+                }
             }
         }
     }
