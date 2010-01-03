@@ -2,7 +2,7 @@
 -- through correctly.
 
 expected_file_hash = "774be3106edbb6d80be36dbb548d62401dcfa0fe"
-expected_rev_hash = "f31b5f6dfeddd51ebf19cd44c4176c68bff51709"
+expected_rev_hash = "91deafa3d9c8295ebaab4733bdc0c54a2df65ee5"
 
 mtn_setup()
 check(get("cvs-repository"))

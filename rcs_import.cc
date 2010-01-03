@@ -1114,10 +1114,7 @@ construct_version(vector< piece > const & source_lines,
   I(r.deltas.find(dest_version) != r.deltas.end());
   shared_ptr<rcs_delta> delta = r.deltas.find(dest_version)->second;
 
-  E(r.deltatexts.find(dest_version) != r.deltatexts.end(),
-    origin::external_repo,
-    F("delta for revision %s is missing") % dest_version);
-
+  I(r.deltatexts.find(dest_version) != r.deltatexts.end());
   shared_ptr<rcs_deltatext> deltatext =
     r.deltatexts.find(dest_version)->second;
 
@@ -1593,7 +1590,7 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
                    vector< piece > const & begin_lines,
                    file_data const & begin_data,
                    file_id const & begin_id,
-                   rcs_file const & r,
+                   rcs_file & r,
                    bool reverse_import,
                    ticker & n_rev, ticker & n_sym,
                    bool dryrun)
@@ -1800,10 +1797,15 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
               L(FL("following private branch RCS %s") % (*i));
             }
 
-          // Only construct the version if the delta exists. We
-          // have possbily added invalid deltas in
-          // index_branchpoint_symbols().
-          if (r.deltas.find(*i) != r.deltas.end())
+          if (r.deltas.find(*i) == r.deltas.end())
+            W(F("delta for RCS version %s is missing from file %s, "
+                "skipping it.")
+                % *i % r.filename);
+          else if (r.deltatexts.find(*i) == r.deltatexts.end())
+            W(F("delta text for RCS version %s is missing from file %s, "
+                "skipping it.")
+                % *i % r.filename);
+          else
             {
               construct_version(*curr_lines, *i, branch_lines, r);
               insert_into_db(db, curr_data, curr_id, 
@@ -1895,12 +1897,31 @@ process_rcs_branch(lua_hooks & lua, database & db, cvs_history & cvs,
         {
           L(FL("following RCS edge %s -> %s") % curr_version % next_version);
 
-          construct_version(*curr_lines, next_version, *next_lines, r);
-          L(FL("constructed RCS version %s, inserting into database") %
-            next_version);
+          if (r.deltas.find(next_version) == r.deltas.end())
+            W(F("delta for RCS version %s is missing from file %s, "
+                "skipping it.")
+                % next_version % r.filename);
+          else if (r.deltatexts.find(next_version) == r.deltatexts.end())
+            {
+              W(F("delta text for RCS version %s is missing from file %s, "
+                  "skipping it.")
+                  % next_version % r.filename);
 
-          insert_into_db(db, curr_data, curr_id,
-                         *next_lines, next_data, next_id, dryrun);
+              // also remove the delta, so our we have a deltatext for every
+              // delta in the map.
+              r.deltas.find(curr_version)->second->next =
+                r.deltas.find(next_version)->second->next;
+              r.deltas.erase(r.deltas.find(next_version));
+            }
+          else
+            {
+              construct_version(*curr_lines, next_version, *next_lines, r);
+              L(FL("constructed RCS version %s, inserting into database") %
+                next_version);
+
+              insert_into_db(db, curr_data, curr_id,
+                             *next_lines, next_data, next_id, dryrun);
+            }
         }
 
       if (!r.deltas.find(curr_version)->second->next.empty())
@@ -1976,9 +1997,7 @@ import_rcs_file_with_cvs(lua_hooks & lua, database & db,
                          ticker & n_rev, ticker & n_sym, bool dryrun)
 {
   rcs_file r;
-  L(FL("parsing RCS file %s") % filename);
   parse_rcs_file(filename, r);
-  L(FL("parsed RCS file %s OK") % filename);
 
   {
     vector< piece > head_lines;
@@ -2027,10 +2046,8 @@ test_parse_rcs_file(project_t & project, system_path const & filename)
   I(! filename.empty());
   assert_path_is_file(filename);
 
-  P(F("parsing RCS file %s") % filename);
   rcs_file r;
   parse_rcs_file(filename.as_external(), r);
-  P(F("parsed RCS file %s OK") % filename);
 }
 
 
@@ -2168,11 +2185,14 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
           map< string, shared_ptr<rcs_delta> >::const_iterator di =
             r.deltas.find(branchpoint_version);
 
-          // the delta must exist
-          E(di != r.deltas.end(), origin::user,
-            F("delta for a branchpoint is missing (%s)")
-              % branchpoint_version);
-
+          // if the delta doesn't exist, we emit a warning and skip the
+          // branch for this file.
+          if (di == r.deltas.end())
+            W(F("delta for RCS version %s referenced from branch %s "
+                "is missing from file %s.")
+                % branchpoint_version % r.filename % sym);
+          else
+            {
           shared_ptr<rcs_delta> curr_delta = di->second;
 
           if (curr_delta->branches.find(first_entry_version) ==
@@ -2184,6 +2204,7 @@ void cvs_history::index_branchpoint_symbols(rcs_file & r)
               if (r.vendor_branches.find(first_entry_version) ==
                   r.vendor_branches.end())
                 r.vendor_branches.insert(first_entry_version);
+            }
             }
         }
     }
@@ -5513,7 +5534,7 @@ blob_consumer::operator()(cvs_blob_index bi)
                 new_rid,
                 branch_name(bn, origin::external_repo),
                 utf8(changelog, origin::external_repo),
-                date_t(commit_time),
+                date_t(commit_time * 1000),
                 author);
 
         // add the RCS information

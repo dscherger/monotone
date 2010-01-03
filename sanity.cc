@@ -355,6 +355,7 @@ sanity::generic_failure(char const * expr,
     {
     case origin::database:
     case origin::internal:
+    case origin::external_repo:
       throw unrecoverable_failure(caused_by, message);
     default:
       throw recoverable_failure(caused_by, message);

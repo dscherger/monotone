@@ -1,5 +1,5 @@
 -----------------------------------------------------------------
-Revision: f31b5f6dfeddd51ebf19cd44c4176c68bff51709
+Revision: 91deafa3d9c8295ebaab4733bdc0c54a2df65ee5
 Ancestor: 
 Author: luigi
 Date: 2009-09-11T16:37:48
@@ -8,6 +8,8 @@ Branch: testbranch
 Added files:
         test.txt
 Added directories:
+        .
+Modified attrs:
         .
 
 ChangeLog: 

@@ -41,6 +41,7 @@ struct rcs_deltatext
 
 struct rcs_file
 {
+  std::string filename;
   rcs_admin admin;
   std::map<std::string, boost::shared_ptr<rcs_delta> > deltas;
   std::map<std::string, boost::shared_ptr<rcs_deltatext> > deltatexts;

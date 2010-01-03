@@ -495,8 +495,12 @@ parse_rcs_file(string const & filename, rcs_file & r)
       ifstream ifs(filename.c_str());
       ifs.unsetf(ios_base::skipws);
 #endif
+
+      P(F("parsing RCS file %s") % filename);
+      r.filename = filename;
       parser p(ifs, r);
       p.parse_file();
+      P(F("parsed RCS file %s") % filename);
 }
 
 

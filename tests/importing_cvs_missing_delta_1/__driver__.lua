@@ -6,8 +6,6 @@ mtn_setup()
 
 check(get("cvs-repository"))
 
-check(mtn("--branch=test", "cvs_import", "cvs-repository"), 1, false, true)
-check(samelines("stderr", {
-    "mtn: parsing rcs files",
-    "mtn: error: delta for a branchpoint is missing (1.1.2.1)"
-}))
+check(mtn("--branch=test", "cvs_import", "cvs-repository"), 0, false, true)
+check(qgrep("delta for RCS version 1.1.2.1 is missing from file fileA,v", "stderr"))
+
