@@ -2738,19 +2738,20 @@ public:
       vector<cvs_blob_index> cross_path;
       if (needs_cross_path_check)
         {
-          // FIXME: indentation
-      insert_iterator< vector< cvs_blob_index > >
-        ity_c(cross_path, cross_path.end());
+          insert_iterator< vector< cvs_blob_index > >
+            ity_c(cross_path, cross_path.end());
 
-      int height_limit(0);
-      calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
-                             cvs, height_limit);
-      dijkstra_shortest_path(cvs, *(++path_a.rbegin()), *(++path_b.begin()),
-                             ity_c,
-                             true, true, true,    // follow all colors
-                             false,
-                             make_pair(invalid_blob, invalid_blob),
-                             height_limit);
+          int height_limit(0);
+          calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
+                                 cvs, height_limit);
+          dijkstra_shortest_path(cvs,
+                                 *(++path_a.rbegin()),
+                                 *(++path_b.begin()),
+                                 ity_c,
+                                 true, true, true,    // follow all colors
+                                 false,
+                                 make_pair(invalid_blob, invalid_blob),
+                                 height_limit);
         }
       else
         switch_needed = false;
@@ -2836,47 +2837,46 @@ public:
         }
       else
         {
-          // FIXME: indentation
+          // Short circuit if one of the above cross path resolution
+          // steps already require a DFS restart.
+          if (dfs_restart_needed)
+            return;
 
-      // Short circuit if one of the above cross path resolution
-      // steps already require a DFS restart.
-      if (dfs_restart_needed)
-        return;
-
-      if (switch_needed)
-        {
-          // If we still need a switch, do the reversed cross path
-          // check.
-          vector<cvs_blob_index> new_path_a(path_b);
-          vector<cvs_blob_index> new_path_b(path_a);
-          check_for_cross_path(new_path_a, new_path_b, false);
-        }
-      else
-        {
-          if (needs_cross_path_check)
+          if (switch_needed)
             {
-              // FIXME: indentation
-          // Extra check the other way around. Since either a DFS or
-          // our cross checks already guarantee that there are no more
-          // reverse cross paths, this should always succeed.
-          vector<cvs_blob_index> cross_path;
-          insert_iterator< vector< cvs_blob_index > >
-            ity_c(cross_path, cross_path.end());
-
-          int height_limit(0);
-          calculate_height_limit(*(++path_a.begin()), *(++path_b.begin()),
-                                 cvs, height_limit);
-          dijkstra_shortest_path(cvs, *(++path_b.rbegin()),
-                                 *(++path_a.begin()), ity_c,
-                                 true, true, true,    // follow all colors
-                                 false,
-                                 make_pair(invalid_blob, invalid_blob),
-                                 height_limit);
-          I(cross_path.empty());
+              // If we still need a switch, do the reversed cross path
+              // check.
+              vector<cvs_blob_index> new_path_a(path_b);
+              vector<cvs_blob_index> new_path_b(path_a);
+              check_for_cross_path(new_path_a, new_path_b, false);
             }
+          else
+            {
+              if (needs_cross_path_check)
+                {
+                  // Extra check the other way around. Since either a DFS or
+                  // our cross checks already guarantee that there are no
+                  // more reverse cross paths, this should always succeed.
+                  vector<cvs_blob_index> cross_path;
+                  insert_iterator< vector< cvs_blob_index > >
+                    ity_c(cross_path, cross_path.end());
 
-          handle_paths_of_cross_edge(path_a, path_b);
-        }
+                  int height_limit(0);
+                  calculate_height_limit(*(++path_a.begin()),
+                                         *(++path_b.begin()),
+                                         cvs, height_limit);
+                  dijkstra_shortest_path(cvs, *(++path_b.rbegin()),
+                                         *(++path_a.begin()), ity_c,
+                                         true, true, true,
+                                         false,
+                                         make_pair(invalid_blob,
+                                                   invalid_blob),
+                                         height_limit);
+                  I(cross_path.empty());
+                }
+
+              handle_paths_of_cross_edge(path_a, path_b);
+            }
         }
     };
 
