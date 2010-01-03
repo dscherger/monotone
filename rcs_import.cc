@@ -2731,7 +2731,14 @@ public:
                                            : "no switch needed"));
 #endif
 
+      // If either path_a or path_b is only exactly two blobs long, there
+      // cannot be any kind of cross path. Skip the check is that case.
+      bool needs_cross_path_check = (path_a.size() > 2 && path_b.size() > 2);
+
       vector<cvs_blob_index> cross_path;
+      if (needs_cross_path_check)
+        {
+          // FIXME: indentation
       insert_iterator< vector< cvs_blob_index > >
         ity_c(cross_path, cross_path.end());
 
@@ -2744,6 +2751,9 @@ public:
                              false,
                              make_pair(invalid_blob, invalid_blob),
                              height_limit);
+        }
+      else
+        switch_needed = false;
 
       if (!cross_path.empty())
         {
@@ -2823,7 +2833,10 @@ public:
             // path from new_path_a to new_path_b.
             check_for_cross_path(new_path_a, new_path_b, true);
           }
-      }
+        }
+      else
+        {
+          // FIXME: indentation
 
       // Short circuit if one of the above cross path resolution
       // steps already require a DFS restart.
@@ -2840,6 +2853,9 @@ public:
         }
       else
         {
+          if (needs_cross_path_check)
+            {
+              // FIXME: indentation
           // Extra check the other way around. Since either a DFS or
           // our cross checks already guarantee that there are no more
           // reverse cross paths, this should always succeed.
@@ -2857,8 +2873,10 @@ public:
                                  make_pair(invalid_blob, invalid_blob),
                                  height_limit);
           I(cross_path.empty());
+            }
 
           handle_paths_of_cross_edge(path_a, path_b);
+        }
         }
     };
 
@@ -2912,7 +2930,7 @@ public:
              i != path_b.end(); ++i)
           blobs_to_show.push_back(*i);
 
-        write_graphviz_partial(cvs, "splitter", blobs_to_show, 5);
+        write_graphviz_partial(cvs, "branch_sanitizer", blobs_to_show, 5);
       }
 #endif
 
