@@ -463,6 +463,25 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  project, args, info);
 
+  run_netsync_protocol(app.opts, app.lua, project, keys,
+                       client_voice, source_role, info);
+}
+
+CMD_AUTOMATE(push, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+             N_("Pushes branches to a netsync server"),
+             "",
+              options::opts::max_netsync_version |
+              options::opts::min_netsync_version |
+              options::opts::set_default | options::opts::exclude |
+              options::opts::key_to_push)
+{
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  extract_client_connection_info(app.opts, app.lua, db, keys, project, args, info);
+
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
@@ -485,6 +504,25 @@ CMD(pull, "pull", "", CMD_REF(network),
 
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
+
+  run_netsync_protocol(app.opts, app.lua, project, keys,
+                       client_voice, sink_role, info);
+}
+
+CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+             N_("Pulls branches from a netsync server"),
+             "",
+             options::opts::max_netsync_version |
+             options::opts::min_netsync_version |
+             options::opts::set_default | options::opts::exclude)
+{
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  extract_client_connection_info(app.opts, app.lua, db, keys, project,
+                                 args, info, false);
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
@@ -513,6 +551,31 @@ CMD(sync, "sync", "", CMD_REF(network),
       // fix a "found multiple keys" error reported by sync.
       workspace work(app, true);
     }
+
+  run_netsync_protocol(app.opts, app.lua, project, keys,
+                       client_voice, source_and_sink_role, info);
+}
+
+CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
+             N_("Synchronizes branches with a netsync server"),
+             "",
+             options::opts::max_netsync_version | options::opts::min_netsync_version |
+             options::opts::set_default | options::opts::exclude |
+             options::opts::key_to_push)
+{
+  database db(app);
+  key_store keys(app);
+  project_t project(db);
+
+  netsync_connection_info info;
+  extract_client_connection_info(app.opts, app.lua, db, keys, project, args, info);
+
+  if (app.opts.set_default && workspace::found)
+  {
+    // Write workspace options, including key; this is the simplest way to
+    // fix a "found multiple keys" error reported by sync.
+    workspace work(app, true);
+  }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
