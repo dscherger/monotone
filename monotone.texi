@@ -8000,6 +8000,12 @@ returned as code "2".
 Trying to run the @code{automate stdio} or @code{automate remote_stdio}
 sub-commands will exit the particular command with return code "1".
 
+@item Notes:
+
+Keyboard interaction is disabled, just as if @option{--non-interactive} is
+specified. Actions which require operations on password-encrypted private keys
+will therefor fail unless the @code{get_passphrase} hook is set up locally.
+
 @item Multiple streams
 
 The multiple stream encoding allows the output of errors and warnings to be
@@ -8048,6 +8054,11 @@ code 1.
 On the server side the @code{get_remote_automate_permitted} hook has to be
 configured to include every command which should be executable over this
 interface.
+
+For both, the client and the server, keyboard interaction is disabled,
+just as if @option{--non-interactive} is specified. Actions which require
+operations on password-encrypted private keys will therefor fail unless the
+@code{get_passphrase} hook is set up locally and / or remotely.
 
 @end table
 
@@ -8102,6 +8113,11 @@ the remote error code.
 On the server side the @code{get_remote_automate_permitted} hook has to be
 configured to include every command which should be executable over this
 interface.
+
+Keyboard interaction is disabled on the server, just as if
+@option{--non-interactive} would have been specified on server startup.
+Actions which require operations on password-encrypted private keys will
+therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
 

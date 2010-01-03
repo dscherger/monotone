@@ -65,6 +65,7 @@ struct key_store_state
 {
   system_path const key_dir;
   string const ssh_sign_mode;
+  bool non_interactive;
   bool have_read;
   lua_hooks & lua;
   key_map keys;
@@ -82,6 +83,7 @@ struct key_store_state
 
   key_store_state(app_state & app)
     : key_dir(app.opts.key_dir), ssh_sign_mode(app.opts.ssh_sign),
+      non_interactive(app.opts.non_interactive),
       have_read(false), lua(app.lua)
   {
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
@@ -543,16 +545,23 @@ key_store_state::decrypt_private_key(key_id const & id,
 
       utf8 phrase;
       string lua_phrase;
-          // See whether a lua hook will tell us the passphrase.
       key_identity_info identity;
       identity.id = id;
       identity.given_name = name;
-      if (!force_from_user && lua.hook_get_passphrase(identity, lua_phrase))
-        phrase = utf8(lua_phrase, origin::user);
-      else
-        get_passphrase(phrase, name, id, false, false);
+
+      // See whether a lua hook will tell us the passphrase.
+      if ((!force_from_user || non_interactive) &&
+          lua.hook_get_passphrase(identity, lua_phrase))
+        {
+          phrase = utf8(lua_phrase, origin::user);
+        }
+      else if (!non_interactive)
+        {
+          get_passphrase(phrase, name, id, false, false);
+        }
 
       int cycles = 1;
+
       for (;;)
         try
           {
@@ -568,9 +577,9 @@ key_store_state::decrypt_private_key(key_id const & id,
           {
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
               % cycles % e.what());
-            E(cycles <= 3, origin::no_fault,
-              F("failed to decrypt old private RSA key, "
-                "probably incorrect passphrase"));
+            E(cycles <= 3 && !non_interactive, origin::no_fault,
+              F("failed to decrypt old private RSA key, probably incorrect "
+                "passphrase or missing 'get_passphrase' lua hook"));
 
             get_passphrase(phrase, name, id, false, false);
             cycles++;

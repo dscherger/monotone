@@ -242,6 +242,8 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
   if (args.size() > 1)
     throw usage(execid);
 
+  app.opts.non_interactive = true;
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -463,7 +465,7 @@ CMD(push, "push", "", CMD_REF(network),
   extract_client_connection_info(app.opts, app.lua, db, keys,
                                  project, args, info);
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_role, info);
 }
 
@@ -505,7 +507,7 @@ CMD(pull, "pull", "", CMD_REF(network),
   if (!keys.have_signing_key())
     P(F("doing anonymous pull; use -kKEYNAME if you need authentication"));
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, sink_role, info);
 }
 
@@ -552,7 +554,7 @@ CMD(sync, "sync", "", CMD_REF(network),
       workspace work(app, true);
     }
 
-  run_netsync_protocol(app.opts, app.lua, project, keys,
+  run_netsync_protocol(app, app.opts, app.lua, project, keys,
                        client_voice, source_and_sink_role, info);
 }
 

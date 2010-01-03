@@ -91,17 +91,6 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
 }
 #endif
 
-OPT(do_not_enforce_ssh_agent, "do-not-enforce-ssh-agent", bool, false,
-     gettext_noop("do not enforce the usage of ssh-agent. enabling this is "
-                  "highly discouraged if you run this command over stdio "
-                  "as it may prompt for a key password which cannot be "
-                  "handled."))
-#ifdef option_bodies
-{
-  do_not_enforce_ssh_agent = true;
-}
-#endif
-
 OPTSET(bind_opts)
 OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
 OPTVAR(bind_opts, bool, bind_stdio, false)
@@ -472,6 +461,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 }
 #endif
 
+GOPT(non_interactive, "non-interactive", bool, false,
+     gettext_noop("do not prompt the user for input"))
+#ifdef option_bodies
+{
+  non_interactive = true;
+}
+#endif
 
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
