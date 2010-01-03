@@ -11233,6 +11233,10 @@ output from the @command{automate} command. This function is not for use
 in ordinary Lua hooks, but rather for Lua based commands as defined by
 the Lua function @code{register_command}.
 
+Note that keyboard interaction is disabled, just as if @option{--non-interactive}
+is specified. Actions which require operations on password-encrypted private
+keys will therefor fail unless the @code{get_passphrase} hook is set up locally.
+
 @item parse_basic_io(@var{data})
 
 Parse the string @var{data}, which should be in basic_io format. It returns nil
