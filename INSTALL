@@ -33,10 +33,10 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
-             libidn11-dev texinfo
+             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.8 from lenny.)
+           (On etch, you may need to use libbotan1.7 from lenny.)
 
         on FreeBSD:
 
