@@ -85,6 +85,8 @@
           `automate read_packets`, an invariant was triggered if the
           key was already existing in the database. This has been fixed.
 
+        - `annotate` no longer crashes if the annotated file is empty.
+
         Other
 
         - Added the script of the Lua-based contributed Monotone
