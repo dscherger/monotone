@@ -431,6 +431,9 @@ annotate_context::dump(bool just_revs) const
   revision_id nullid;
   I(annotations.size() == file_lines.size());
 
+  if (file_lines.empty())
+    return;
+
   map<revision_id, string> revs_to_notations;
   string empty_note;
   if (!just_revs)

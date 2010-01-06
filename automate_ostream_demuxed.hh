@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include "automate_ostream.hh"
+#include "simplestring_xform.hh"
 
 template<typename _CharT, typename _Traits = std::char_traits<_CharT> >
 class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Traits>
@@ -23,31 +24,19 @@ class basic_automate_streambuf_demuxed : public std::basic_streambuf<_CharT, _Tr
   size_t _bufsize;
   std::basic_ostream<_CharT, _Traits> *mystdout;
   std::basic_ostream<_CharT, _Traits> *errout;
-  int err_code;
 public:
   basic_automate_streambuf_demuxed(std::ostream & out, std::ostream & err,
                                    size_t bufsize) :
     std::streambuf(),
     _bufsize(bufsize),
     mystdout(&out),
-    errout(&err),
-    err_code(0)
+    errout(&err)
   {
     _CharT * inbuf = new _CharT[_bufsize];
     setp(inbuf, inbuf + _bufsize);
   }
 
   ~basic_automate_streambuf_demuxed() { }
-
-  void set_err(int e)
-  {
-    err_code = e;
-  }
-
-  int get_error() const
-  {
-    return err_code;
-  }
 
   void end_cmd()
   {
@@ -60,6 +49,38 @@ public:
     return 0;
   }
 
+  void write_out_of_band(char type, std::string const & data)
+  {
+    // FIXME: ignore tickers, because we'd have to track their state
+    // here and they would pollute the output too much anyways
+    if (type == 't')
+      return;
+
+    std::string out;
+    i18n_format prefix;
+    if (type == 'w')
+      prefix = F("%s: remote warning: ") % prog_name;
+    else if (type == 'e')
+      prefix = F("%s: remote error: ") % prog_name;
+    else if (type == 'p')
+      prefix = F("%s: remote message: ") % prog_name;
+    else
+      I(false);
+
+    prefix_lines_with(prefix.str(), data, out);
+    (*errout) << out << std::endl;
+  }
+
+  void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  {
+    i18n_format prefix = F("%s: remote header: ") % prog_name;
+    for (std::vector<std::pair<std::string, std::string> >::const_iterator h = headers.begin();
+       h != headers.end(); ++h)
+      {
+        (*errout) << prefix.str() << h->first << ": " << h->second << std::endl;
+      }
+  }
+
   int_type overflow(int_type c = traits_type::eof())
   {
     sync();
@@ -69,9 +90,7 @@ public:
 private:
   void _M_sync()
   {
-    std::basic_ostream<_CharT, _Traits> *str;
-    str = ((err_code != 0) ? errout : mystdout);
-    if (!str)
+    if (!mystdout)
       {
         setp(this->pbase(), this->pbase() + _bufsize);
         return;
@@ -79,9 +98,9 @@ private:
     int num = this->pptr() - this->pbase();
     if (num)
       {
-        (*str) << std::basic_string<_CharT, _Traits>(this->pbase(), num);
+        (*mystdout) << std::basic_string<_CharT, _Traits>(this->pbase(), num);
         setp(this->pbase(), this->pbase() + _bufsize);
-        str->flush();
+        mystdout->flush();
       }
   }
 };
@@ -91,7 +110,9 @@ struct basic_automate_ostream_demuxed : public basic_automate_ostream<_CharT, _T
 {
   typedef basic_automate_streambuf_demuxed<_CharT, _Traits> streambuf_type;
   streambuf_type _M_autobuf;
+  int errcode;
 
+public:
   basic_automate_ostream_demuxed(std::basic_ostream<_CharT, _Traits> &out,
                                  std::basic_ostream<_CharT, _Traits> &err,
                                  size_t blocksize)
@@ -105,14 +126,20 @@ struct basic_automate_ostream_demuxed : public basic_automate_ostream<_CharT, _T
   rdbuf() const
   { return const_cast<streambuf_type *>(&_M_autobuf); }
 
-  virtual void set_err(int e)
-  { _M_autobuf.set_err(e); }
+  virtual void end_cmd(int error)
+  {
+    errcode = error;
+    _M_autobuf.end_cmd();
+  }
 
   int get_error() const
-  { return _M_autobuf.get_error(); }
+  { return errcode; }
 
-  virtual void end_cmd()
-  { _M_autobuf.end_cmd(); }
+  virtual void write_out_of_band(char type, std::string const & data)
+  { _M_autobuf.write_out_of_band(type, data); }
+
+  virtual void write_headers(std::vector<std::pair<std::string,std::string> > const & headers)
+  { _M_autobuf.write_headers(headers); }
 };
 
 typedef basic_automate_streambuf_demuxed<char> automate_streambuf_demuxed;

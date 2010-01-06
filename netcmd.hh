@@ -92,8 +92,10 @@ typedef enum
 
     // automation commands
     automate_cmd = 10,
-    automate_command_cmd = 11,
-    automate_packet_cmd = 12,
+    automate_headers_request_cmd = 11,
+    automate_headers_reply_cmd = 12,
+    automate_command_cmd = 13,
+    automate_packet_cmd = 14,
 
     // usher commands
     // usher_cmd is sent either by a proxy that needs to know where
@@ -208,17 +210,19 @@ public:
                           id const & nonce1,
                           rsa_oaep_sha_data & hmac_key_encrypted,
                           rsa_sha1_signature & signature);
+  void read_automate_headers_request_cmd() const;
+  void write_automate_headers_request_cmd();
+  void read_automate_headers_reply_cmd(std::vector<std::pair<std::string, std::string> > & headers) const;
+  void write_automate_headers_reply_cmd(std::vector<std::pair<std::string, std::string> > const & headers);
   void read_automate_command_cmd(std::vector<std::string> & args,
                                  std::vector<std::pair<std::string, std::string> > & opts) const;
   void write_automate_command_cmd(std::vector<std::string> const & args,
                                   std::vector<std::pair<std::string, std::string> > const & opts);
   void read_automate_packet_cmd(int & command_num,
-                                int & err_code,
-                                bool & last,
+                                char & stream,
                                 std::string & packet_data) const;
   void write_automate_packet_cmd(int command_num,
-                                 int err_code,
-                                 bool last,
+                                 char stream,
                                  std::string const & packet_data);
 
   void read_usher_cmd(utf8 & greeting) const;

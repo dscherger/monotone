@@ -3,6 +3,8 @@
 --
 -- We don't test with --bookkeep-only, because we haven't gotten to it yet.
 
+include("common/automate_stdio.lua")
+
 mtn_setup()
 
 --  override standard test_hooks.lua, because 'automate stdio' uses it.
@@ -60,9 +62,8 @@ canonicalize("stdout")
 check(readfile("expected-no-ignored.stdout") == readfile("stdout"))
 
 -- make sure 'automate stdio' handles at least one of the inventory options as well
-check(mtn("automate", "stdio"), 0, true, false, "o10:no-ignored0:e l9:inventory6:sourcee")
-canonicalize("stdout")
-check(("0:0:l:1149:" .. readfile("expected-no-ignored.stdout")) == readfile("stdout"))
+local invout = run_stdio("o10:no-ignored0:e l9:inventory6:sourcee", 0)
+check(readfile("expected-no-ignored.stdout") == invout)
 
 --
 -- now check --no-corresponding-renames

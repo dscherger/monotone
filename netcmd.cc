@@ -57,7 +57,10 @@ size_t netcmd::encoded_size() const
 {
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
-  return 1 + 1 + tmp.size() + payload.size() + 4;
+  return 1 // netsync version
+       + 1 // command code
+       + tmp.size() + payload.size() // payload as vstring
+       + constants::netsync_hmac_value_length_in_bytes; // hmac
 }
 
 bool
@@ -113,6 +116,8 @@ netcmd::read(u8 min_version, u8 max_version,
     case static_cast<u8>(data_cmd):
     case static_cast<u8>(delta_cmd):
     case static_cast<u8>(automate_cmd):
+    case static_cast<u8>(automate_headers_request_cmd):
+    case static_cast<u8>(automate_headers_reply_cmd):
     case static_cast<u8>(automate_command_cmd):
     case static_cast<u8>(automate_packet_cmd):
     case static_cast<u8>(usher_cmd):
@@ -610,8 +615,55 @@ netcmd::write_automate_cmd(key_id const & client,
 }
 
 void
+netcmd::read_automate_headers_request_cmd() const
+{
+  size_t pos = 0;
+  assert_end_of_buffer(payload, pos, "read automate headers request netcmd payload");
+}
+
+void
+netcmd::write_automate_headers_request_cmd()
+{
+  cmd_code = automate_headers_request_cmd;
+}
+
+void
+netcmd::read_automate_headers_reply_cmd(vector<pair<string, string> > & headers) const
+{
+  size_t pos = 0;
+  size_t nheaders = extract_datum_uleb128<size_t>(payload, pos,
+                                               "automate headers reply netcmd, count");
+  headers.clear();
+  for (size_t i = 0; i < nheaders; ++i)
+    {
+      string name;
+      extract_variable_length_string(payload, name, pos,
+                                     "automate headers reply netcmd, name");
+      string value;
+      extract_variable_length_string(payload, value, pos,
+                                     "automate headers reply netcmd, value");
+      headers.push_back(make_pair(name, value));
+    }
+  assert_end_of_buffer(payload, pos, "automate headers reply netcmd payload");
+}
+
+void
+netcmd::write_automate_headers_reply_cmd(vector<pair<string, string> > const & headers)
+{
+  cmd_code = automate_headers_reply_cmd;
+
+  insert_datum_uleb128<size_t>(headers.size(), payload);
+  for (vector<pair<string, string> >::const_iterator h = headers.begin();
+       h != headers.end(); ++h)
+    {
+      insert_variable_length_string(h->first, payload);
+      insert_variable_length_string(h->second, payload);
+    }
+}
+
+void
 netcmd::read_automate_command_cmd(vector<string> & args,
-                                  vector<std::pair<string, string> > & opts) const
+                                  vector<pair<string, string> > & opts) const
 {
   size_t pos = 0;
   {
@@ -637,7 +689,7 @@ netcmd::read_automate_command_cmd(vector<string> & args,
                                        "automate_command netcmd, option name");
         string value;
         extract_variable_length_string(payload, value, pos,
-                                       "automate_command netcmd, option name");
+                                       "automate_command netcmd, option value");
         opts.push_back(make_pair(name, value));
       }
   }
@@ -668,18 +720,15 @@ netcmd::write_automate_command_cmd(vector<string> const & args,
 
 void
 netcmd::read_automate_packet_cmd(int & command_num,
-                                 int & err_code,
-                                 bool & last,
+                                 char & stream,
                                  string & packet_data) const
 {
   size_t pos = 0;
 
   command_num = int(extract_datum_uleb128<size_t>(payload, pos,
                                                   "automate_packet netcmd, command_num"));
-  err_code = int(extract_datum_uleb128<size_t>(payload, pos,
-                                               "automate_packet netcmd, err_code"));
-  last = (extract_datum_uleb128<size_t>(payload, pos,
-                                        "automate_packet netcmd, last") == 1);
+  stream = char(extract_datum_uleb128<size_t>(payload, pos,
+                                        "automate_packet netcmd, stream"));
   extract_variable_length_string(payload, packet_data, pos,
                                  "automate_packet netcmd, packet_data");
   assert_end_of_buffer(payload, pos, "automate_packet netcmd payload");
@@ -687,15 +736,13 @@ netcmd::read_automate_packet_cmd(int & command_num,
 
 void
 netcmd::write_automate_packet_cmd(int command_num,
-                                  int err_code,
-                                  bool last,
+                                  char stream,
                                   string const & packet_data)
 {
   cmd_code = automate_packet_cmd;
 
   insert_datum_uleb128<size_t>(size_t(command_num), payload);
-  insert_datum_uleb128<size_t>(size_t(err_code), payload);
-  insert_datum_uleb128<size_t>(last?1:0, payload);
+  insert_datum_uleb128<size_t>(size_t(stream), payload);
   insert_variable_length_string(packet_data, payload);
 }
 

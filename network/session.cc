@@ -57,7 +57,9 @@ session::session(app_state & app, project_t & project,
   app(app),
   project(project),
   keys(keys),
-  peer(peer)
+  peer(peer),
+  unnoted_bytes_in(0),
+  unnoted_bytes_out(0)
 {
 }
 
@@ -722,6 +724,30 @@ session::error(int errcode, string const & errmsg)
 {
   error_code = errcode;
   throw netsync_error(errmsg);
+}
+
+void
+session::note_bytes_in(int count)
+{
+  if (wrapped)
+    {
+      wrapped->note_bytes_in(count + unnoted_bytes_in);
+      unnoted_bytes_in = 0;
+    }
+  else
+    unnoted_bytes_in += count;
+}
+
+void
+session::note_bytes_out(int count)
+{
+  if (wrapped)
+    {
+      wrapped->note_bytes_out(count + unnoted_bytes_out);
+      unnoted_bytes_out = 0;
+    }
+  else
+    unnoted_bytes_out += count;
 }
 
 // Local Variables:

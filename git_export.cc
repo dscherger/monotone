@@ -89,6 +89,7 @@ import_marks(system_path const & marks_file,
   data mark_data;
   read_data(marks_file, mark_data);
   istringstream marks(mark_data());
+  marks.peek();
   while (!marks.eof())
     {
       char c;
