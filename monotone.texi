@@ -5424,8 +5424,8 @@ current bisection information.
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
 @item mtn serve --stdio [--no-transport-auth]
 @itemx mtn pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn push [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn sync [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -8120,6 +8120,94 @@ Actions which require operations on password-encrypted private keys will
 therefor fail unless a @code{get_passphrase} hook is set up remotely.
 
 @end table
+
+
+@item mtn automate pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+
+@table @strong
+@item Arguments:
+
+The automate versions of pull, push and sync have the same set of arguments and
+options compared to the non-automate versions. Please check this manual in the
+appropriate section for a full explanation.
+
+@item Added in:
+
+FIXME
+
+@item Purpose:
+
+Pushes, pulls or syncs (push & pull) revisions, certificates and keys of
+the given database to, from or with the given netsync server.
+
+@item Sample output (stdio):
+
+The following output shows an example of a pull which transferred two revisions
+and eight certs.
+
+@emph{Note:} The linebreaks are not part of the actual format, but have been
+added for better readability.
+
+@verbatim
+0:p:62:doing anonymous pull; use -kKEYNAME if you need authentication
+0:p:25:connecting to monotone.ca0:0:p:29:finding items to synchronize:
+0:t:34:c:certificates;k:keys;r:revisions;
+0:t:12:c=0;k=0;r=0;
+0:t:13:c#0;k#0;r#64;
+0:t:14:c#0;k#0;r#128;
+[...]
+0:t:6:c;k;r;
+0:t:44:>:bytes in;<:bytes out;c:certs in;r:revs in;
+0:t:16:>=0;<=0;c=0;r=0;
+0:t:21:>#420;<#1344;c#0;r#0;
+0:t:22:>#1165;<#1741;c#0;r#0;
+[...]
+0:t:24:>#20839;<#14882;c#0;r#1;
+0:t:24:>#20839;<#14882;c#3;r#1;
+0:t:24:>#20839;<#14882;c#4;r#2;
+0:t:24:>#20839;<#14882;c#6;r#2;
+0:t:24:>#20863;<#14930;c#8;r#2;
+0:t:8:<;>;c;r;
+0:p:36:successful exchange with monotone.ca
+0:l:1:0
+@end verbatim
+
+@item Output format:
+
+If ran outside of @command{automate stdio}, the output of these commands is
+equal to the normal netsync command output.
+
+If these commands are run over stdio, the stdio ticker format is used
+(for a description of this format, check @command{automate stdio}).
+
+The following ticker types are printed out during the refinement phase:
+
+@itemize
+@item @code{c}: The number of certs found for an upcoming synchronization
+@item @code{k}: The number of keys found for an upcoming synchronization
+@item @code{r}: The number of revisions found for an upcoming synchronization
+@end itemize
+
+After refinement the actual synchronization between the two nodes start. The
+ticker stanzas in this phase are the following:
+
+@itemize
+@item @code{>}: The number of incoming bytes
+@item @code{<}: The number of outgoing bytes
+@item @code{c}: The number of incoming certs  (only pull and sync)
+@item @code{C}: The number of outgoing certs  (only push and sync)
+@item @code{r}: The number of incoming revisions  (only pull and sync)
+@item @code{R}: The number of outgoing revisions  (only push and sync)
+@end itemize
+
+@item Error conditions:
+
+If a netsync error occurs, the command outputs an error and exits with status 1.
+
+@end table
+
 
 @item mtn automate genkey @var{name} @var{passphrase}
 
