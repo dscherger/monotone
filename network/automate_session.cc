@@ -139,6 +139,8 @@ bool automate_session::do_work(transaction_guard & guard,
       }
     case automate_command_cmd:
       {
+        // disable user prompts, f.e. for password decryption
+        app.opts.non_interactive = true;
         options original_opts = app.opts;
 
         vector<string> in_args;

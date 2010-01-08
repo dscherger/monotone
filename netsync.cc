@@ -173,6 +173,9 @@ call_server(app_state & app,
           // Commit whatever work we managed to accomplish anyways.
           guard.commit();
 
+          // ensure that the tickers have finished and write any last ticks
+          ui.ensure_clean_line();
+
           // We had an I/O error. We must decide if this represents a
           // user-reported error or a clean disconnect. See protocol
           // state diagram in netsync_session::process_bye_cmd.

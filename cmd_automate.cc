@@ -215,6 +215,8 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
   // immediately if a version discrepancy exists
   db.ensure_open();
 
+  // disable user prompts, f.e. for password decryption
+  app.opts.non_interactive = true;
   options original_opts = app.opts;
 
   automate_ostream os(output, app.opts.automate_stdio_size);
@@ -363,6 +365,9 @@ LUAEXT(mtn_automate, )
           L(FL("arg: %s")%next_arg());
           args.push_back(next_arg);
         }
+
+      // disable user prompts, f.e. for password decryption
+      app_p->opts.non_interactive = true;
 
       options::options_type opts;
       opts = options::opts::all_options() - options::opts::globals();
