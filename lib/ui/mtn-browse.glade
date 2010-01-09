@@ -64,7 +64,7 @@
 			  <signal name="activate" handler="new_blank_menu_item_clicked_cb" last_modification_time="Thu, 05 Jun 2008 10:14:27 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image79">
+			    <widget class="GtkImage" id="image119">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-new</property>
 			      <property name="icon_size">1</property>
@@ -107,7 +107,7 @@
 			  <signal name="activate" handler="quit_activate_cb" last_modification_time="Fri, 20 Jun 2008 12:07:24 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image80">
+			    <widget class="GtkImage" id="image120">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-quit</property>
 			      <property name="icon_size">1</property>
@@ -145,6 +145,26 @@
 	      </child>
 
 	      <child>
+		<widget class="GtkMenuItem" id="view1">
+		  <property name="visible">True</property>
+		  <property name="stock_item">GNOMEUIINFO_MENU_VIEW_TREE</property>
+
+		  <child>
+		    <widget class="GtkMenu" id="view1_menu">
+
+		      <child>
+			<widget class="GtkMenuItem" id="file_encoding_menuitem">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">File Encoding</property>
+			  <property name="use_underline">True</property>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+		</widget>
+	      </child>
+
+	      <child>
 		<widget class="GtkMenuItem" id="help1">
 		  <property name="visible">True</property>
 		  <property name="stock_item">GNOMEUIINFO_MENU_HELP_TREE</property>
@@ -161,7 +181,7 @@
 			  <accelerator key="F1" modifiers="0" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image81">
+			    <widget class="GtkImage" id="image121">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -183,7 +203,7 @@
 			  <accelerator key="F1" modifiers="GDK_SHIFT_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image82">
+			    <widget class="GtkImage" id="image122">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -205,7 +225,7 @@
 			  <accelerator key="F1" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image83">
+			    <widget class="GtkImage" id="image123">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-help</property>
 			      <property name="icon_size">1</property>
@@ -232,7 +252,7 @@
 			  <signal name="activate" handler="home_page_activate_cb" last_modification_time="Sun, 15 Feb 2009 17:15:45 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image84">
+			    <widget class="GtkImage" id="image124">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-home</property>
 			      <property name="icon_size">1</property>

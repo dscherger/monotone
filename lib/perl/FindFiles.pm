@@ -399,7 +399,7 @@ sub search_files_button_clicked_cb($$)
 	# We need to convert the contents pattern from possibly UTF-8 to binary
 	# as we may have to search binary data.
 
-	$pattern = encode_utf8($query->{contents_pattern});
+	$pattern = encode($file_encoding, $query->{contents_pattern});
 
 	if ($query->{contents_pattern_is_regexp})
 	{

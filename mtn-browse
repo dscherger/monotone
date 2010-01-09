@@ -1577,8 +1577,13 @@ sub get_browser_window(;$$$$$)
     if (! defined($browser = $wm->find_unused($window_type)))
     {
 
-	my($image,
+	my($cb,
+	   @encodings,
+	   $image,
+	   $menu_item,
 	   $renderer,
+	   $submenu,
+	   $subsubmenu,
 	   $tv_column);
 
 	$browser = {};
@@ -1602,6 +1607,7 @@ sub get_browser_window(;$$$$$)
 
 	$browser->{window} = $browser->{glade}->get_widget($window_type);
 	foreach my $widget ("appbar",
+			    "file_encoding_menuitem",
 			    "main_vbox",
 			    "browser_hpaned",
 			    "close_toolbutton",
@@ -1627,6 +1633,50 @@ sub get_browser_window(;$$$$$)
 	{
 	    $browser->{$widget} = $browser->{glade}->get_widget($widget);
 	}
+
+	# Setup the character encodings submenu.
+
+	@encodings = sort(Encode->encodings(":all"));
+	$submenu = Gtk2::Menu->new();
+	$cb = sub
+	{
+	    my($widget, $details) = @_;
+	    return if ($details->{instance}->{in_cb});
+	    local $details->{instance}->{in_cb} = 1;
+	    $details->{instance}->{appbar}->set_status
+		(__x("Changed file encoding from `{old_encoding}' to "
+		         . "`{new_encoding}'",
+		     old_encoding => __($file_encoding),
+		     new_encoding => __($details->{encoding})));
+	    $file_encoding = $details->{encoding};
+	};
+	for my $encoding ("ascii", "utf8", "UTF-16")
+	{
+	    $menu_item = Gtk2::MenuItem->new(__($encoding));
+	    $menu_item->signal_connect("activate",
+				       $cb,
+				       {instance => $browser,
+					encoding => $encoding});
+	    $menu_item->show();
+	    $submenu->append($menu_item);
+	}
+	$subsubmenu = Gtk2::Menu->new();
+	for my $encoding (@encodings)
+	{
+	    $menu_item = Gtk2::MenuItem->new(__($encoding));
+	    $menu_item->signal_connect("activate",
+				       $cb,
+				       {instance => $browser,
+					encoding => $encoding});
+	    $menu_item->show();
+	    $subsubmenu->append($menu_item);
+	}
+	$subsubmenu->show();
+	$menu_item = Gtk2::MenuItem->new(__("All Encodings"));
+	$menu_item->set_submenu($subsubmenu);
+	$menu_item->show();
+	$submenu->append($menu_item);
+	$browser->{file_encoding_menuitem}->set_submenu($submenu);
 
 	# Setup button sensitivity groups.
 
@@ -2941,7 +2991,11 @@ sub display_file($$)
 
 		# Load in the contents (ensuring UTF-8 encoding).
 
-		$contents = decode_utf8($contents);
+		eval
+		{
+		    $contents =
+			decode($file_encoding, $contents, Encode::FB_CROAK);
+		};
 		$browser->{file_view_svbuffer}->set_text($contents);
 
 	    }

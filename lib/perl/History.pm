@@ -572,11 +572,13 @@ sub display_revision_comparison($$$;$)
     $wm->update_gui();
     if ($mtn->supports(MTN_CONTENT_DIFF_EXTRA_OPTIONS))
     {
+	$mtn->suppress_utf8_conversion(1);
 	$mtn->content_diff($instance->{diff_output},
 			   ["with-header"],
 			   $revision_id_1,
 			   $revision_id_2,
 			   $file_name);
+	$mtn->suppress_utf8_conversion(0);
     }
     else
     {
@@ -632,8 +634,10 @@ sub display_revision_comparison($$$;$)
 	    else
 	    {
 		($char, $rest) = unpack("a1a*", $line);
-		$char = decode_utf8($char);
-		$rest = decode_utf8($rest);
+		eval
+		{
+		    $rest = decode($file_encoding, $rest, Encode::FB_CROAK);
+		};
 		$rest =~ s/\s+$//;
 		$rest = expand($rest);
 		$max_len = $len if (($len = length($rest)) > $max_len);
@@ -877,9 +881,14 @@ sub display_revision_comparison($$$;$)
 
 	    else
 	    {
+		my $line = $instance->{diff_output}->[$i];
+		eval
+		{
+		    $line = decode($file_encoding, $line, Encode::FB_CROAK);
+		};
 		$instance->{comparison_buffer}->insert
 		    ($instance->{comparison_buffer}->get_end_iter(),
-		     $instance->{diff_output}->[$i] . "\n");
+		     $line . "\n");
 	    }
 
 	    if (($i % 100) == 0)

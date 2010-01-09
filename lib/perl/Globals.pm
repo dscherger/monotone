@@ -90,6 +90,10 @@ our $tooltips;
 
 our $mono_font;
 
+# The encoding used for file contents.
+
+our $file_encoding = "utf8";
+
 # Assorted pixmaps.
 
 our $line_image;
@@ -129,7 +133,8 @@ our %EXPORT_TAGS = (constants => [qw(ALL_CHANGED
 				     REVISION_DETAILS
 				     REVISION_LIST
 				     SELECTED_REVISION_CHANGED)],
-		    variables => [qw($glade_file
+		    variables => [qw($file_encoding
+				     $glade_file
 				     $line_image
 				     $mime_match_table
 				     $mono_font
