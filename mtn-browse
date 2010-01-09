@@ -1634,7 +1634,7 @@ sub get_browser_window(;$$$$$)
 	    $browser->{$widget} = $browser->{glade}->get_widget($widget);
 	}
 
-	# Setup the character encodings submenu.
+	# Setup the file encodings submenu.
 
 	@encodings = sort(Encode->encodings(":all"));
 	$submenu = Gtk2::Menu->new();
