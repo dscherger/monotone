@@ -3547,11 +3547,11 @@ sub suppress_utf8_conversion($$)
 
     if (defined($this))
     {
-	$this->{convert_to_utf8} = $suppress ? 0 : 1;
+	$this->{convert_to_utf8} = $suppress ? undef : 1;
     }
     else
     {
-	$convert_to_utf8 = $suppress ? 0 : 1;
+	$convert_to_utf8 = $suppress ? undef : 1;
     }
 
 }
@@ -3948,14 +3948,7 @@ sub mtn_command_with_options($$$$$$;@)
 
     # Work out whether UTF-8 conversion is to be done at all.
 
-    if (defined($this->{convert_to_utf8}))
-    {
-	$out_as_utf8 = $in_as_utf8 = 0 unless ($this->{convert_to_utf8});
-    }
-    else
-    {
-	$out_as_utf8 = $in_as_utf8 = 0 unless ($convert_to_utf8);
-    }
+    $out_as_utf8 = $in_as_utf8 = undef unless ($this->{convert_to_utf8});
 
     # Work out what database locked handler is to be used.
 
@@ -4080,7 +4073,21 @@ sub mtn_command_with_options($$$$$$;@)
 	eval
 	{
 	    $read_ok = $this->mtn_read_output($buffer_ref);
-	    $$buffer_ref = decode_utf8($$buffer_ref) if ($in_as_utf8);
+	    if ($read_ok && $in_as_utf8)
+	    {
+		local $@;
+		eval
+		{
+		    $$buffer_ref = decode_utf8($$buffer_ref, Encode::FB_CROAK);
+		};
+		if ($@)
+		{
+		    $this->{error_msg} = "The output from Monotone was not "
+			. "UTF-8 encoded as expected";
+		    &$carper($this->{error_msg});
+		    return;
+		}
+	    }
 	};
 	if ($@)
 	{
@@ -4142,7 +4149,7 @@ sub mtn_command_with_options($$$$$$;@)
 
     # Split the output up into lines if that is what is required.
 
-    @$ref = split(/\n/, $buffer) if (ref($ref) eq "ARRAY");
+    @$ref = split(/\n/, $$buffer_ref) if (ref($ref) eq "ARRAY");
 
     return 1;
 
@@ -4613,7 +4620,7 @@ sub create_object_data()
 	    ws_path                 => undef,
 	    ws_constructed          => undef,
 	    cd_to_ws_root           => $cd_to_ws_root,
-	    convert_to_utf8         => undef,
+	    convert_to_utf8         => $convert_to_utf8,
 	    mtn_options             => undef,
 	    mtn_pid                 => 0,
 	    mtn_in                  => undef,
