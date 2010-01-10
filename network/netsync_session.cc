@@ -383,6 +383,12 @@ netsync_session::setup_client_tickers()
       revision_in_ticker.reset(new ticker(N_("revs in"), "r", 1));
       // xgettext: please use short message and try to avoid multibytes chars
       revision_out_ticker.reset(new ticker(N_("revs out"), "R", 1));
+
+      // the following two tickers may be skipped if we have size restrictions
+      // xgettext: please use short message and try to avoid multibytes chars
+      cert_in_ticker.reset(new ticker(N_("certs in"), "c", 3, false, true));
+      // xgettext: please use short message and try to avoid multibytes chars
+      cert_out_ticker.reset(new ticker(N_("certs out"), "C", 3, false, true));
     }
 }
 
@@ -626,7 +632,7 @@ netsync_session::request_service()
 
   if (!initiated_by_server)
     setup_client_tickers();
-  
+
   request_netsync(role, our_include_pattern, our_exclude_pattern);
 }
 
