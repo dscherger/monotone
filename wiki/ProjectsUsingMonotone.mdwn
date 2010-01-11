@@ -14,7 +14,6 @@ Actually, it is better to show *database* rather than *project* statistics, beca
 Project |notes |revisions |files |commits/month |First commit |Last update |Other projects in database |
 [Xaraya](http://www.xaraya.com/)                                                                                     |1  |±33900|±58300| 552|2002-09-28|2007-10-14|
 [Ada-France](http://www.ada-france.org/article130.html)                                                              |   |~23400|~15100| 615|2006-07-14|2009-08-27|[Lovelace OS](http://www.lovelace.fr/), [OpenToken](http://www.stephe-leake.org/ada/opentoken.html), mirrors of libre.adacore.com
-[OpenEmbedded](http://openembedded.org/)                                                                             |   |±23000|±14600| 754|2005-06-30|2008-01-30|[NSLU2-Linux](http://www.nslu2-linux.org/)
 [Pidgin (formerly Gaim)](http://pidgin.im/)                                                                          |   |~23900| ±6500| 250|2000-03-23|2008-01-30| 
 [monotone](http://monotone.ca/)                                                                                      |2  |~15500| ~7140| 231|2003-09-04|2009-03-06|[Botan](http://botan.randombit.net/)
 [Remobo](http://www.remobo.com/)                                                                                     |   | ±1415|±39445| ~30|2005-11-23|2008-03-16| 
