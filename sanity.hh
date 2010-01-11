@@ -59,6 +59,7 @@ struct plain_format;
 struct i18n_format;
 
 struct sanity {
+  sanity();
   virtual ~sanity();
   virtual void initialize(int, char **, char const *);
   void dump_buffer();

@@ -80,11 +80,16 @@ struct sanity::impl
 
   impl() :
     debug(false), quiet(false), reallyquiet(false), logbuf(0xffff),
-    already_dumping(false)
+    already_dumping(false), out_of_band_function(0), out_of_band_opaque(0)
   {}
 };
 
 // debugging / logging system
+
+sanity::sanity()
+{
+  imp = 0;
+}
 
 sanity::~sanity()
 {
