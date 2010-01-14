@@ -461,6 +461,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 }
 #endif
 
+GOPT(non_interactive, "non-interactive", bool, false,
+     gettext_noop("do not prompt the user for input"))
+#ifdef option_bodies
+{
+  non_interactive = true;
+}
+#endif
 
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
