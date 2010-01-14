@@ -61,6 +61,10 @@
           locating the exact revision that broke something or removed a
           particular feature.
 
+        - Three new commands - 'push', 'pull' and 'sync' - have been added
+          to the automation interface. They work just as their non-automate
+          counterparts.
+
         - The global option '--timestamps' has been added which prefixes
           the current local timestamp before diagnostic messages such as
           warnings, progress messages, errors and tickers.  For example,
