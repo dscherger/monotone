@@ -2,13 +2,7 @@
 
         0.46 release.
 
-        *** Fix automate commands documented as added in version FIXME
-        *** bump automate major version
-
         Changes
-
-        - Cert labels in the output of the 'log' command are now
-          localized.
 
         - "automate stdio" (and "automate remote_stdio", see below)
           use separate streams to encode out-of-band information like
@@ -41,6 +35,9 @@
           _MTN/options has been changed and does not match one of the
           revision's parent branches.
 
+        - Cert labels in the output of the 'log' command are now
+          localized.
+
         New features
 
         - There's a new command "automate remote_stdio" that makes it
@@ -71,7 +68,6 @@
           this option can be used to log the date and time when clients
           connect to a monotone server.
 
-
         Bugs fixed
 
         - A regression from 0.45's key migration prevented the proper
@@ -85,7 +81,7 @@
 
         - `db info` now returns a correct byte count for certs again.
 
-        - If a public key was read in via the `read` or 
+        - If a public key was read in via the `read` or
           `automate read_packets`, an invariant was triggered if the
           key was already existing in the database. This has been fixed.
 
