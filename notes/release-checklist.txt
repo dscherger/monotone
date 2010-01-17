@@ -102,6 +102,10 @@ How to release a new version of monotone
          WEBDIR/
    $ rm -rf WEBDIR/docs
    $ cp -r monotone-<NEW VERSION>/html WEBDIR/docs
+
+   Open WEBDIR/monotone.html, change the CSS include from "texinfo.css" to
+   "docs/texinfo.css" and hit save.
+
    $ rm WEBDIR/figures/*
    $ cp monotone-<NEW VERSION>/figures/*.png WEBDIR/figures/
    $ cd WEBDIR
