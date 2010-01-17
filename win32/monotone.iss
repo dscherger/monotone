@@ -1,5 +1,5 @@
 #define APPNAME="monotone"
-#define APPVERS="0.46"
+#define APPVERS="0.47dev"
 #define BUILDDIR=".."
 #define MINGWDIR="\MinGW"
 
