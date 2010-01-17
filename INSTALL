@@ -33,10 +33,10 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
-             libidn11-dev texinfo
+             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.8 from lenny.)
+           (On etch, you may need to use libbotan1.7 from lenny.)
 
         on FreeBSD:
 
@@ -49,9 +49,6 @@ building and installation process for monotone
            emerge the following packages:
              autoconf automake boost botan gettext libpcre libidn lua sqlite
              zlib
-
-           (you might need to add the "~x86" flag to dev-libs/botan, so you
-            get at least version 1.6.3, we recommend using at 1.8.0 or newer)
 
         on Fedora:
 
@@ -209,39 +206,57 @@ building and installation process for monotone
 
            15. build monotone
                $ cd /c/.../monotone
-               $ export PATH=/bin:$PATH
+               $ export PATH=/bin:/mingw/bin
                $ autoreconf -i
-               $ ./configure sqlite_LIBS=-lsqlite3
+               $ ./configure sqlite3_LIBS=-lsqlite3
                $ make
 
         on Windows (using Cygwin):
 
            Monotone needs the following packages to compile:
+           (newer releases are usually ok)
 
              Runtime requirements:
-               cygwin-1.5.24 or newer
-               libiconv2-1.11 or newer
-               libintl8-0.15 or newer
-               zlib-1.2.3-2 or newer
+               cygwin-1.7.0-60
+               libgcc1-4.3.2-2
+               libidn11-1.9-1
+               libintl8-0.17-11
+               libpcre0-7.9-1
+               libsqlite3_0-3.6.2-1
+               libstdc++6-4.3.2-2
+               lua-5.1.4-11
+               zlib0-1.2.3-10
 
              Build requirements:
-               gcc-3.4.4 or newer
-               binutils-20050610 or newer
-               boost-devel-1.33.1 or newer
-               gettext-0.14.5 or newer
-               zlib-1.2.3-2 or newer
-               perl-5.8.7 or newer
-               sqlite3-3.6.2-1 or newer
-               libidn-devel-1.9-1 or newer
-               lua-5.1.4-1 or newer (*)
-               botan-1.8.0-1 or newer (*)
+               gcc4-4.3.2
+               binutils-2.19.51
+               boost-devel-1.33.1
+               libsqlite3-devel-3.6.2
+               libidn-devel-1.9
+               gettext-0.17
+               zlib-1.2.3
+               perl-5.10.0
+               botan-1.8.2
 
-           currently every prerequisite is avaialble as packages except
-           lua and botan; an official Cygwin package for monotone and
-           all its dependencies will be available soon after release
+           currently every prerequisite is available as packages except
+           lua and botan which are only available in Cygwin 1.7;
+           an official Cygwin package for monotone and all its
+           dependencies is usually available soon after release.
 
-           the following is needed to succesfulyl configure
+           The following is needed to succesfully configure:
              CXXFLAGS+="-I/usr/include/boost-1_33_1/"
+
+           Easiest way to create a Cygwin package is using cygport
+           (which must be installed separately as a Cygwin package)
+           and upgrade the previous version cygport file; you can fetch
+           latest version from the maintainer's own repository:
+
+           % mtn pull lapo.it it.lapo.cygwin.ports
+           % mtn checkout -b it.lapo.cygwin.ports cygwin
+           % cd cygwin
+           % mtn mv monotone-$OLD-1.cygport monotone-$NEW-1.cygport
+           proceed to change or fix the port and/or the patch as needed
+           % cygport monotone-$NEW-1 all
 
         on other systems:
 

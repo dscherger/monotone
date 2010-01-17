@@ -1,3 +1,100 @@
+Sun Jan 17 21:40:35 UTC 2010
+
+        0.46 release.
+
+        Changes
+
+        - "automate stdio" (and "automate remote_stdio", see below)
+          use separate streams to encode out-of-band information like
+          informational messages, warnings or tickers. A special
+          "header" section has been added to the standard output to
+          identify future stdio version changes. The error codes used
+          in the output of both stdio and remote_stdio, have also
+          slightly changed: errors which are the result of a wrong
+          call (unknown command, invalid options, parsing errors, ...)
+          are returned with code 1, while errors which happened while
+          the actual command executed are returned with code 2. Error
+          codes are no longer echoed with every packet, but only as
+          the payload of the final 'l' ("last") packet.
+
+          Please consult the manual section "mtn automate stdio" for a
+          detailed description of the new format.
+
+        - The 'heads' command should be significantly faster now (not
+          that it was particularly slow before). This probably isn't
+          terribly noticable unless you're in the habit of using "h:*"
+          (heads of all branches) as a selector, it's primarily meant
+          to enable future changes that will depend on fast 'heads'.
+
+          The database schema has been changed, so you will need to
+          run 'mtn db migrate' (preferably after making a backup copy
+          of your db).
+
+        - the 'status' command now includes the current (to be committed)
+          revision number and will indicate when the branch option in
+          _MTN/options has been changed and does not match one of the
+          revision's parent branches.
+
+        - Cert labels in the output of the 'log' command are now
+          localized.
+
+        New features
+
+        - There's a new command "automate remote_stdio" that makes it
+          possible to execute automate commands on a remote server
+          (for example, to permit a single database to be used both
+          for serving netsync connections and for running a viewmtn
+          instance). This requires that the server be running monotone
+          0.46 or later. Access control on the server uses a new lua
+          hook "get_remote_automate_permitted(identity, command_line,
+          options)".
+
+        - There's also a new command "automate remote" that's very much
+          the same, but executes only a single command and does not
+          stdio-encode the output.
+
+        - A new 'bisect' command has been added to allow searching for a
+          specific revision within a range of revisions. This can be useful for
+          locating the exact revision that broke something or removed a
+          particular feature.
+
+        - Three new commands - 'push', 'pull' and 'sync' - have been added
+          to the automation interface. They work just as their non-automate
+          counterparts.
+
+        - The global option '--timestamps' has been added which prefixes
+          the current local timestamp before diagnostic messages such as
+          warnings, progress messages, errors and tickers.  For example,
+          this option can be used to log the date and time when clients
+          connect to a monotone server.
+
+        Bugs fixed
+
+        - A regression from 0.45's key migration prevented the proper
+          output of the `committer` field in 'git_export'.
+
+        - 'db info --full' no longer crashes when executed on a database
+          with only one revision.
+
+        - The mtn_automate Lua function which can be used for custom
+          commands now properly handles binary data.
+
+        - `db info` now returns a correct byte count for certs again.
+
+        - If a public key was read in via the `read` or
+          `automate read_packets`, an invariant was triggered if the
+          key was already existing in the database. This has been fixed.
+
+        - `annotate` no longer crashes if the annotated file is empty.
+
+        Other
+
+        - Added the script of the Lua-based contributed Monotone
+          extension command "mtn remote_export" to contrib/command/
+          with which a remote revision can be exported locally without
+          having to fetch all of the history before.
+
+
 Fri Sep 11 20:50:00 UTC 2009
 
         0.45 release.
