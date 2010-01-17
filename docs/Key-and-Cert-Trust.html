@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.5 Key and Cert Trust</h3>
 
      <dl>
-<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-120"></a><dd>
+<dt><samp><span class="command">mtn genkey </span><var>keyid</var></samp><a name="index-mtn-genkey-_0040var_007bkeyid_007d-126"></a><dd>
 This command generates an <span class="sc">rsa</span> public/private key pair, using a
 system random number generator, and stores it in your keystore under
 the key name <var>keyid.keyhash</var>.  The key's hash is printed out after
@@ -62,17 +62,17 @@ commands executed in a workspace, or to
 the system default (<samp><span class="file">~/.monotone/keys</span></samp> on Unix and Cygwin,
 <samp><span class="file">%APPDATA%/monotone/keys</span></samp> on native Win32).
 
-     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-121"></a><dd>
+     <br><dt><samp><span class="command">mtn dropkey </span><var>keyid</var></samp><a name="index-mtn-dropkey-_0040var_007bkeyid_007d-127"></a><dd>
 This command drops the public and/or private key. If both exist, both
 are dropped, if only one exists, it is dropped. This command should
 be used with caution as changes are irreversible without a backup of
 the key(s) that were dropped.
 
-     <br><dt><samp><span class="command">mtn passphrase </span><var>keyid</var></samp><a name="index-mtn-passphrase-_0040var_007bkeyid_007d-122"></a><dd>
+     <br><dt><samp><span class="command">mtn passphrase </span><var>keyid</var></samp><a name="index-mtn-passphrase-_0040var_007bkeyid_007d-128"></a><dd>
 This command lets you change the passphrase of the private half of the
 key <var>id</var>.
 
-     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-123"></a><dd>
+     <br><dt><samp><span class="command">mtn trusted </span><var>id</var> <var>certname</var> <var>certval</var> <var>signers</var></samp><a name="index-mtn-trusted-_0040var_007bid_007d-_0040var_007bcertname_007d-_0040var_007bcertval_007d-_0040var_007bsigners_007d-129"></a><dd>
 This command lets you test your revision trust hook
 <code>get_revision_cert_trust</code> (see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
@@ -82,7 +82,7 @@ those keys.
 
      <p>The specified keys mist exist either in your keystore or in the database.
 
-     <br><dt><samp><span class="command">mtn ssh_agent_add</span></samp><a name="index-mtn-ssh_005fagent_005fadd-124"></a><dd>
+     <br><dt><samp><span class="command">mtn ssh_agent_add</span></samp><a name="index-mtn-ssh_005fagent_005fadd-130"></a><dd>
 This command will add your monotone keys to your current ssh-agent session. 
 You will be asked for the passphrase for each of your monotone private keys
 and they will be added to the ssh-agent. Once this is done you should be able
@@ -94,19 +94,19 @@ without asking your for your passphrase.
 add your keys to ssh-agent on first use if it is available. For example the
 following two examples are equivalent:
 
-     <pre class="smallexample">          $ mtn ssh_agent_add
-          enter passphrase for key ID [user@example.com]:
-          $ mtn ci -m"Changed foo to bar"
-          $ mtn push -k user@example.com
-     </pre>
-     <pre class="smallexample">          $ mtn ci -m"Changed foo to bar"
-          enter passphrase for key ID [user@example.com]:
-          $ mtn push -k user@example.com
-     </pre>
+     <pre class="smallexample">     $ mtn ssh_agent_add
+     enter passphrase for key ID [user@example.com]:
+     $ mtn ci -m"Changed foo to bar"
+     $ mtn push -k user@example.com
+</pre>
+     <pre class="smallexample">     $ mtn ci -m"Changed foo to bar"
+     enter passphrase for key ID [user@example.com]:
+     $ mtn push -k user@example.com
+</pre>
      <p>In the second example, monotone automatically added the key to ssh-agent, making
 entering the passphrase not needed during the push.
 
-     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-125"></a><dd>
+     <br><dt><samp><span class="command">mtn ssh_agent_export </span><var>filename</var></samp><a name="index-mtn-ssh_005fagent_005fexport-_0040var_007bfilename_007d-131"></a><dd>
 This command will export your private key in a format that ssh-agent
 can read (PKCS8, PEM). You will be asked for your current key's password
 and a new password to encrypt the key with. The key will be printed to
@@ -114,18 +114,18 @@ stdout. Once you have put this key in a file simply add it to ssh-agent
 and you will only have to enter your key password once as ssh-agent
 will cache the key for you.
 
-     <pre class="smallexample">          $ mtn ssh_agent_export ~/.ssh/id_monotone
-          enter passphrase for key ID [user@example.com] (1234abcd...):
-          enter new passphrase for key ID [user@example.com] (1234abcd...):
-          confirm passphrase for key ID [user@example.com] (1234abcd...):
-          $ chmod 600 ~/.ssh/id_monotone
-          $ ssh-agent /bin/bash
-          $ ssh-add ~/.ssh/id_monotone
-          Enter passphrase for /home/user/.ssh/id_monotone:
-          Identity added: /home/user/.ssh/id_monotone (/home/user/.ssh/id_monotone)
-          $ mtn ci -m"Changed foo to bar"
-          $ mtn push -k user@example.com
-     </pre>
+     <pre class="smallexample">     $ mtn ssh_agent_export ~/.ssh/id_monotone
+     enter passphrase for key ID [user@example.com] (1234abcd...):
+     enter new passphrase for key ID [user@example.com] (1234abcd...):
+     confirm passphrase for key ID [user@example.com] (1234abcd...):
+     $ chmod 600 ~/.ssh/id_monotone
+     $ ssh-agent /bin/bash
+     $ ssh-add ~/.ssh/id_monotone
+     Enter passphrase for /home/user/.ssh/id_monotone:
+     Identity added: /home/user/.ssh/id_monotone (/home/user/.ssh/id_monotone)
+     $ mtn ci -m"Changed foo to bar"
+     $ mtn push -k user@example.com
+</pre>
      <p>You can also use the <samp><span class="option">--ssh-sign</span></samp> option to control whether ssh-agent will
 be used for signing. If set to <em>yes</em>, ssh-agent will be used to sign. If your
 key has not been added to ssh-agent monotone will fall back to its internal signing
@@ -139,5 +139,5 @@ work with all signing algorithms.
 
 </dl>
 
-   </body></html>
+</body></html>
 

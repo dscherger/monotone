@@ -42,7 +42,7 @@ learn about later.  Jim is starting a new project, though, so he does
 something a little bit different.  He uses the <samp><span class="command">mtn setup</span></samp>
 command to create a new workspace.
 
-   <p>This command creates the named directory (if it doesn't already exist),
+<p>This command creates the named directory (if it doesn't already exist),
 and creates the <samp><span class="file">_MTN</span></samp> directory within it.  The <samp><span class="file">_MTN</span></samp> directory
 is how monotone recognizes that a directory is a workspace, and
 monotone stores some bookkeeping files within it.  For instance, command
@@ -51,18 +51,18 @@ options to the <samp><span class="command">setup</span></samp> command will be c
 <samp><span class="file">_MTN/options</span></samp>, so you don't have to keep passing them to monotone
 all the time.
 
-   <p>He chooses <code>jp.co.juicebot.jb7</code> as a branch name. (See
+<p>He chooses <code>jp.co.juicebot.jb7</code> as a branch name. (See
 <a href="Naming-Conventions.html#Naming-Conventions">Naming Conventions</a> for more information about appropriate branch
 names.)  Jim then creates his workspace:
 
-<pre class="smallexample">     /home/jim$ mtn --db=jim.mtn --branch=jp.co.juicebot.jb7 setup juice
-     /home/jim$ cd juice
-     /home/jim/juice$
+<pre class="smallexample">/home/jim$ mtn --db=jim.mtn --branch=jp.co.juicebot.jb7 setup juice
+/home/jim$ cd juice
+/home/jim/juice$
 </pre>
-   <p>Notice that Jim has changed his current directory to his newly created
+<p>Notice that Jim has changed his current directory to his newly created
 workspace. For the rest of this example we will assume that everyone
 issues all further monotone commands from their workspace
 directories.
 
-   </body></html>
+</body></html>
 

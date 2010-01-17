@@ -42,7 +42,7 @@ backup copies of your database in plain text. These issues are not
 properly addressed by generating packet streams: instead, you must use
 <dfn>migration</dfn> or <dfn>dumping</dfn> commands.
 
-   <p>The <samp><span class="command">mtn db migrate</span></samp> command is used to alter the SQL
+<p>The <samp><span class="command">mtn db migrate</span></samp> command is used to alter the SQL
 schema of a database. The schema of a monotone database is identified
 by a special hash of its generating SQL, which is stored in the
 database's auxiliary tables. Each version of monotone knows which
@@ -57,16 +57,16 @@ schema hashes to the intended value. The migration is attempted inside
 a transaction, so if it fails &mdash; for example if the result of
 migration hashes to an unexpected value &mdash; the migration is aborted.
 
-   <p>If more drastic changes to the underlying database are made, such as
+<p>If more drastic changes to the underlying database are made, such as
 changing the page size of SQLite, or if you simply want to keep a
 plain text version of your database on hand, the <samp><span class="command">mtn db
 dump</span></samp> command can produce a plain ASCII SQL statement which generates
 the state of your database. This dump can later be reloaded using the
 <samp><span class="command">mtn db load</span></samp> command.
 
-   <p>Note that when reloading a dumped database, the schema of the dumped
+<p>Note that when reloading a dumped database, the schema of the dumped
 database is <em>included</em> in the dump, so you should not try to
 <samp><span class="command">init</span></samp> your database before a <samp><span class="command">load</span></samp>.
 
-   </body></html>
+</body></html>
 

@@ -40,141 +40,141 @@ begins his editing by checking out the head of the
 <code>jp.co.juicebot.jb7</code> branch into a workspace, so he can edit
 it:
 
-<pre class="smallexample">     $ mtn --db=abe.mtn --branch=jp.co.juicebot.jb7 checkout .
+<pre class="smallexample">$ mtn --db=abe.mtn --branch=jp.co.juicebot.jb7 checkout .
 </pre>
-   <p>Monotone unpacks the set of files in the head revision's manifest
+<p>Monotone unpacks the set of files in the head revision's manifest
 directly into Abe's current directory.  (If he had specified something
 other than <samp><span class="file">.</span></samp> at the end, monotone would have created that
 directory and unpacked the files into it.)  Abe then opens up one of the
 files, <samp><span class="file">src/apple.c</span></samp>, and edits it:
 
-<pre class="smallexample">     $ vi src/apple.c
-     <i>&lt;Abe writes some apple-juice dispensing code&gt;</i>
+<pre class="smallexample">$ vi src/apple.c
+<i>&lt;Abe writes some apple-juice dispensing code&gt;</i>
 </pre>
-   <p>The file <samp><span class="file">src/apple.c</span></samp> has now been <em>changed</em>. Abe gets
+<p>The file <samp><span class="file">src/apple.c</span></samp> has now been <em>changed</em>. Abe gets
 up to answer a phone call, and when he returns to his work he has
 forgotten what he changed. He can ask monotone for details:
 
-<pre class="smallexample">     $ mtn diff
-     #
-     # old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
-     #
-     # patch "src/apple.c"
-     #  from [2650ffc660dd00a08b659b883b65a060cac7e560]
-     #    to [e2c418703c863eabe70f9bde988765406f885fd0]
-     #
-     ============================================================================
-     --- src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
-     +++ src/apple.c e2c418703c863eabe70f9bde988765406f885fd0
-     @ -1,7 +1,10 @
-      #include "jb.h"
-     
-      void
-      dispense_apple_juice()
-      {
-     -  /* Fill this in please, Abe. */
-     +  spoutctl(APPLE_SPOUT, FLOW_JUICE, 1);
-     +  while (spoutctl(APPLE_SPOUT, POLL_JUICE, 1) == 0)
-     +    usleep (1000);
-     +  spoutctl(APPLE_SPOUT, FLOW_JUICE, 0);
-      }
-</pre>
-   <p>Satisfied with his day's work, Abe decides to commit.
+<pre class="smallexample">$ mtn diff
+#
+# old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
+#
+# patch "src/apple.c"
+#  from [2650ffc660dd00a08b659b883b65a060cac7e560]
+#    to [e2c418703c863eabe70f9bde988765406f885fd0]
+#
+============================================================================
+--- src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
++++ src/apple.c e2c418703c863eabe70f9bde988765406f885fd0
+@ -1,7 +1,10 @
+ #include "jb.h"
 
-<pre class="smallexample">     $ mtn commit
-     mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+ void
+ dispense_apple_juice()
+ {
+-  /* Fill this in please, Abe. */
++  spoutctl(APPLE_SPOUT, FLOW_JUICE, 1);
++  while (spoutctl(APPLE_SPOUT, POLL_JUICE, 1) == 0)
++    usleep (1000);
++  spoutctl(APPLE_SPOUT, FLOW_JUICE, 0);
+ }
 </pre>
-   <p>Abe neglected to provide a <samp><span class="option">--message</span></samp> option specifying the
+<p>Satisfied with his day's work, Abe decides to commit.
+
+<pre class="smallexample">$ mtn commit
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+</pre>
+<p>Abe neglected to provide a <samp><span class="option">--message</span></samp> option specifying the
 change log on the command line and the file <samp><span class="file">_MTN/log</span></samp> is empty
 because he did not document his changes there.  Monotone therefore
 invokes an external &ldquo;log message editor&rdquo; &mdash; typically an editor
 like <samp><span class="command">vi</span></samp> &mdash; with an explanation of the changes being
 committed and the opportunity to enter a log message.
 
-<pre class="smallexample">     polling implementation of src/apple.c
-     MTN: ----------------------------------------------------------------------
-     MTN: Enter a description of this change.
-     MTN: Lines beginning with `MTN:' are removed automatically.
-     MTN:
-     MTN: Current branch: jp.co.juicebot.jb7
-     MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
-     MTN:   patched  src/apple.c
-     MTN: ----------------------------------------------------------------------
-     MTN:
+<pre class="smallexample">polling implementation of src/apple.c
+MTN: ----------------------------------------------------------------------
+MTN: Enter a description of this change.
+MTN: Lines beginning with `MTN:' are removed automatically.
+MTN:
+MTN: Current branch: jp.co.juicebot.jb7
+MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+MTN:   patched  src/apple.c
+MTN: ----------------------------------------------------------------------
+MTN:
 </pre>
-   <p>Abe enters a single line above the explanatory message, saying
+<p>Abe enters a single line above the explanatory message, saying
 &ldquo;polling implementation of src/apple.c&rdquo;. He then saves the file and
 quits the editor. Monotone deletes all the lines beginning with
 &ldquo;MTN:&rdquo; and leaves only Abe's short message. Returning to the shell,
 Abe's commit completes:
 
-<pre class="smallexample">     mtn: committed revision 70decb4b31a8227a629c0e364495286c5c75f979
+<pre class="smallexample">mtn: committed revision 70decb4b31a8227a629c0e364495286c5c75f979
 </pre>
-   <p>Abe then sends his new revision back to Jim:
+<p>Abe then sends his new revision back to Jim:
 
-<pre class="smallexample">     $ mtn sync
-     mtn: connecting to jim-laptop.juicebot.co.jp
-     mtn: finding items to synchronize:
-     mtn:   certs |    keys | revisions
-     mtn:       8 |       2 |         2
-     mtn: bytes in | bytes out | revs in | revs out | revs written
-     mtn:      615 |      2822 |       0 |        1 |            0
-     mtn: successful exchange with jim-laptop.juicebot.co.jp
+<pre class="smallexample">$ mtn sync
+mtn: connecting to jim-laptop.juicebot.co.jp
+mtn: finding items to synchronize:
+mtn:   certs |    keys | revisions
+mtn:       8 |       2 |         2
+mtn: bytes in | bytes out | revs in | revs out | revs written
+mtn:      615 |      2822 |       0 |        1 |            0
+mtn: successful exchange with jim-laptop.juicebot.co.jp
 </pre>
-   <p>Beth does a similar sequence. First she syncs her database with
+<p>Beth does a similar sequence. First she syncs her database with
 Jim's:
 
-<pre class="smallexample">     $ mtn --db=beth.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
-     mtn: setting default server to jim-laptop.juicebot.co.jp
-     mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
-     mtn: setting default branch exclude pattern to ''
-     mtn: connecting to jim-laptop.juicebot.co.jp
-     mtn: first time connecting to server jim-laptop.juicebot.co.jp:4691
-     mtn: I'll assume it's really them, but you might want to double-check
-     mtn: their key's fingerprint: 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
-     mtn: warning: saving public key for jim@juicebot.co.jp to database
-     mtn: finding items to synchronize:
-     mtn: bytes in | bytes out | revs in | revs out | revs written
-     mtn:     4601 |      1239 |       2 |        0 |            1
-     mtn: verifying new revisions (this may take a while)
-     mtn: bytes in | bytes out | revs in | revs out | revs written
-     mtn:     4601 |      1285 |       2 |        0 |            2
-     mtn: successful exchange with jim-laptop.juicebot.co.jp
+<pre class="smallexample">$ mtn --db=beth.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
+mtn: setting default server to jim-laptop.juicebot.co.jp
+mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
+mtn: setting default branch exclude pattern to ''
+mtn: connecting to jim-laptop.juicebot.co.jp
+mtn: first time connecting to server jim-laptop.juicebot.co.jp:4691
+mtn: I'll assume it's really them, but you might want to double-check
+mtn: their key's fingerprint: 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
+mtn: warning: saving public key for jim@juicebot.co.jp to database
+mtn: finding items to synchronize:
+mtn: bytes in | bytes out | revs in | revs out | revs written
+mtn:     4601 |      1239 |       2 |        0 |            1
+mtn: verifying new revisions (this may take a while)
+mtn: bytes in | bytes out | revs in | revs out | revs written
+mtn:     4601 |      1285 |       2 |        0 |            2
+mtn: successful exchange with jim-laptop.juicebot.co.jp
 </pre>
-   <p>She checks out a copy of the tree from her database:
+<p>She checks out a copy of the tree from her database:
 
-<pre class="smallexample">     $ mtn --db=beth.mtn --branch=jp.co.juicebot.jb7 checkout .
+<pre class="smallexample">$ mtn --db=beth.mtn --branch=jp.co.juicebot.jb7 checkout .
 </pre>
-   <p>She edits the file <samp><span class="file">src/banana.c</span></samp>:
+<p>She edits the file <samp><span class="file">src/banana.c</span></samp>:
 
-<pre class="smallexample">     $ vi src/banana.c
-     <i>&lt;Beth writes some banana-juice dispensing code&gt;</i>
+<pre class="smallexample">$ vi src/banana.c
+<i>&lt;Beth writes some banana-juice dispensing code&gt;</i>
 </pre>
-   <p>and logs her changes in <samp><span class="file">_MTN/log</span></samp> right away so she does not
+<p>and logs her changes in <samp><span class="file">_MTN/log</span></samp> right away so she does not
 forget what she has done like Abe.
 
-<pre class="smallexample">     $ vi _MTN/log
-     * src/banana.c: Added polling implementation
+<pre class="smallexample">$ vi _MTN/log
+* src/banana.c: Added polling implementation
 </pre>
-   <p>Later, she commits her work.  Monotone again invokes an external editor
+<p>Later, she commits her work.  Monotone again invokes an external editor
 for her to edit her log message, but this time it fills in the messages
 she's written so far, and she simply checks them over one last time
 before finishing her commit:
 
-<pre class="smallexample">     $ mtn commit
-     mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-     mtn: committed revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
+<pre class="smallexample">$ mtn commit
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
 </pre>
-   <p>And she syncs with Jim again:
+<p>And she syncs with Jim again:
 
-<pre class="smallexample">     $ mtn sync
-     mtn: connecting to jim-laptop.juicebot.co.jp
-     mtn: finding items to synchronize:
-     mtn:   certs |    keys | revisions
-     mtn:      12 |       3 |         3
-     mtn: bytes in | bytes out | revs in | revs out | revs written
-     mtn:      709 |      2879 |       0 |        1 |            0
-     mtn: successful exchange with jim-laptop.juicebot.co.jp
+<pre class="smallexample">$ mtn sync
+mtn: connecting to jim-laptop.juicebot.co.jp
+mtn: finding items to synchronize:
+mtn:   certs |    keys | revisions
+mtn:      12 |       3 |         3
+mtn: bytes in | bytes out | revs in | revs out | revs written
+mtn:      709 |      2879 |       0 |        1 |            0
+mtn: successful exchange with jim-laptop.juicebot.co.jp
 </pre>
-   </body></html>
+</body></html>
 

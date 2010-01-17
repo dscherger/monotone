@@ -54,12 +54,12 @@ trivial example, the pattern
 itself. When caseless matching is specified, letters are matched
 independently of case.
 
-   <p>The power of regular expressions comes from the ability to include
+<p>The power of regular expressions comes from the ability to include
 alternatives and repetitions in the pattern. These are encoded in the
 pattern by the use of <dfn>metacharacters</dfn>, which do not stand for
 themselves but instead are interpreted in some special way.
 
-   <p>There are two different sets of metacharacters: those that are
+<p>There are two different sets of metacharacters: those that are
 recognized anywhere in the pattern except within square brackets, and
 those that are recognized within square brackets. Outside square
 brackets, the metacharacters are as follows:
@@ -103,20 +103,20 @@ by a non-alphanumeric character, it takes away any special meaning
 that character may have. This use of backslash as an escape character
 applies both inside and outside character classes.
 
-   <p>For example, if you want to match a `<samp><span class="samp">*</span></samp>' character, you write
+<p>For example, if you want to match a `<samp><span class="samp">*</span></samp>' character, you write
 `<samp><span class="samp">\*</span></samp>' in the pattern.  This escaping action applies whether or not
 the following character would otherwise be interpreted as a
 metacharacter, so it is always safe to precede a non-alphanumeric with
 backslash to specify that it stands for itself. In particular, if you
 want to match a backslash, you write `<samp><span class="samp">\\</span></samp>'.
 
-   <p>If a pattern is compiled with the `<samp><span class="samp">(?x)</span></samp>' option, whitespace in
+<p>If a pattern is compiled with the `<samp><span class="samp">(?x)</span></samp>' option, whitespace in
 the pattern (other than in a character class) and characters between a
 `<samp><span class="samp">#</span></samp>' outside a character class and the next newline are
 ignored. An escaping backslash can be used to include a whitespace or
 `<samp><span class="samp">#</span></samp>' character as part of the pattern.
 
-   <p>If you want to remove the special meaning from a sequence of
+<p>If you want to remove the special meaning from a sequence of
 characters, you can do so by putting them between `<samp><span class="samp">\Q</span></samp>' and
 `<samp><span class="samp">\E</span></samp>'.  The `<samp><span class="samp">\Q...\E</span></samp>' sequence is recognized both inside and
 outside character classes.
@@ -143,7 +143,7 @@ represents:
 <dt><code>\x{</code><var>hhh...</var><code>}</code><dd>character with hex code <var>hhh...</var>
 </dl>
 
-   <p>The precise effect of `<samp><span class="samp">\c</span><var>x</var></samp>' is as follows: if <var>x</var> is a lower
+<p>The precise effect of `<samp><span class="samp">\c</span><var>x</var></samp>' is as follows: if <var>x</var> is a lower
 case letter, it is converted to upper case. Then bit 6 of the
 character (hex 40) is inverted.  Thus `<samp><span class="samp">\cz</span></samp>' becomes hex 1A (the
 &lt;SUB&gt; control character, in ASCII), but `<samp><span class="samp">\c{</span></samp>' becomes hex 3B
@@ -159,25 +159,25 @@ character code must be less than 256 in non-UTF-8 mode, and less than
 7FFFFFFF. Note that this is bigger than the largest Unicode code
 point, which is 10FFFF.
 
-   <p>If characters other than hexadecimal digits appear between `<samp><span class="samp">\x{</span></samp>'
+<p>If characters other than hexadecimal digits appear between `<samp><span class="samp">\x{</span></samp>'
 and `<samp><span class="samp">}</span></samp>', or if there is no terminating `<samp><span class="samp">}</span></samp>', this form of
 escape is not recognized. Instead, the initial `<samp><span class="samp">\x</span></samp>' will be
 interpreted as a basic hexadecimal escape, with no following digits,
 giving a character whose value is zero.
 
-   <p>Characters whose value is less than 256 can be defined by either of
+<p>Characters whose value is less than 256 can be defined by either of
 the two syntaxes for `<samp><span class="samp">\x</span></samp>'. There is no difference in the way they
 are handled. For example, `<samp><span class="samp">\xdc</span></samp>' is exactly the same as
 `<samp><span class="samp">\x{dc}</span></samp>'.
 
-   <p>After `<samp><span class="samp">\0</span></samp>' up to two further octal digits are read. If there are
+<p>After `<samp><span class="samp">\0</span></samp>' up to two further octal digits are read. If there are
 fewer than two digits, just those that are present are used. Thus the
 sequence `<samp><span class="samp">\0\x\07</span></samp>' specifies two binary zeros followed by a
 &lt;BEL&gt; character (octal 007). Make sure you supply two digits after
 the initial zero if the pattern character that follows is itself an
 octal digit.
 
-   <p>The handling of a backslash followed by a digit other than 0 is
+<p>The handling of a backslash followed by a digit other than 0 is
 complicated.  Outside a character class, PCRE reads it and any
 following digits as a decimal number. If the number is less than 10,
 or if there have been at least that many previous capturing left
@@ -185,7 +185,7 @@ parentheses in the expression, the entire sequence is taken as a
 <dfn>back reference</dfn>. A description of how this works is given later,
 following the discussion of parenthesized subpatterns.
 
-   <p>Inside a character class, or if the decimal number is greater than 9
+<p>Inside a character class, or if the decimal number is greater than 9
 and there have not been that many capturing subpatterns, PCRE re-reads
 up to three octal digits following the backslash, and uses them to
 generate a data character. Any subsequent digits stand for
@@ -210,10 +210,10 @@ octal must be less than `<samp><span class="samp">\400</span></samp>'. In UTF-8 
             followed by the two characters `<samp><span class="samp">8</span></samp>' and `<samp><span class="samp">1</span></samp>'
 </dl>
 
-   <p>Note that octal values of 100 or greater must not be introduced by a
+<p>Note that octal values of 100 or greater must not be introduced by a
 leading zero, because no more than three octal digits are ever read.
 
-   <p>All the sequences that define a single character value can be used
+<p>All the sequences that define a single character value can be used
 both inside and outside character classes. In addition, inside a
 character class, the sequence `<samp><span class="samp">\b</span></samp>' is interpreted as the &lt;BS&gt;
 character (hex 08), and the sequences `<samp><span class="samp">\R</span></samp>' and `<samp><span class="samp">\X</span></samp>' are
@@ -247,27 +247,27 @@ following are always recognized:
 <dt><code>\W</code><dd>any &ldquo;non-word&rdquo; character
 </dl>
 
-   <p>Each pair of escape sequences partitions the complete set of
+<p>Each pair of escape sequences partitions the complete set of
 characters into two disjoint sets. Any given character matches one,
 and only one, of each pair.
 
-   <p>These character type sequences can appear both inside and outside
+<p>These character type sequences can appear both inside and outside
 character classes. They each match one character of the appropriate
 type. If the current matching point is at the end of the subject
 string, all of them fail, since there is no character to match.
 
-   <p>For compatibility with Perl, `<samp><span class="samp">\s</span></samp>' does not match the &lt;VT&gt;
+<p>For compatibility with Perl, `<samp><span class="samp">\s</span></samp>' does not match the &lt;VT&gt;
 character (code 11).  This makes it different from the the POSIX
 &ldquo;space&rdquo; class. The `<samp><span class="samp">\s</span></samp>' characters are &lt;TAB&gt; (9), &lt;LF&gt;
 (10), &lt;FF&gt; (12), &lt;CR&gt; (13), and &lt;SPACE&gt; (32).
 
-   <p>In UTF-8 mode, characters with values greater than 128 never match
+<p>In UTF-8 mode, characters with values greater than 128 never match
 `<samp><span class="samp">\d</span></samp>', `<samp><span class="samp">\s</span></samp>', or `<samp><span class="samp">\w</span></samp>', and always match `<samp><span class="samp">\D</span></samp>',
 `<samp><span class="samp">\S</span></samp>', and `<samp><span class="samp">\W</span></samp>'.  These sequences retain their original
 meanings from before UTF-8 support was available, mainly for
 efficiency reasons.
 
-   <p>The sequences `<samp><span class="samp">\h</span></samp>', `<samp><span class="samp">\H</span></samp>', `<samp><span class="samp">\v</span></samp>', and `<samp><span class="samp">\V</span></samp>' are Perl
+<p>The sequences `<samp><span class="samp">\h</span></samp>', `<samp><span class="samp">\H</span></samp>', `<samp><span class="samp">\v</span></samp>', and `<samp><span class="samp">\V</span></samp>' are Perl
 5.10 features. In contrast to the other sequences, these do match
 certain high-valued codepoints in UTF-8 mode.  The horizontal space
 characters are:
@@ -328,7 +328,7 @@ the following five sequences:
 <dt><code>(*ANY)</code><dd>  all Unicode newline sequences
 </dl>
 
-   <p>For example, the pattern
+<p>For example, the pattern
 
 <pre class="verbatim">
          (*CR)a.b
@@ -340,7 +340,7 @@ not Perl-compatible, are recognized only at the very start of a
 pattern, and that they must be in upper case. If more than one of them
 is present, the last one is used.
 
-   <p>The newline convention does not affect what the `<samp><span class="samp">\R</span></samp>' escape
+<p>The newline convention does not affect what the `<samp><span class="samp">\R</span></samp>' escape
 sequence matches. By default, this is any Unicode newline sequence,
 for Perl compatibility. However, this can be changed; see the
 description of `<samp><span class="samp">\R</span></samp>' below.  A change of `<samp><span class="samp">\R</span></samp>' setting can be
@@ -356,7 +356,7 @@ non-UTF-8 mode `<samp><span class="samp">\R</span></samp>' is equivalent to the 
          (?>\r\n|\n|\x0b|\f|\r|\x85)
 </pre>
 
-   <p>This is an example of an "atomic group", details of which are given
+<p>This is an example of an "atomic group", details of which are given
 below.  This particular group matches either the two-character
 sequence &lt;CR&gt; followed by &lt;LF&gt;, or one of the single
 characters &lt;LF&gt; (linefeed, <code>U+000A</code>), &lt;VT&gt; (vertical tab,
@@ -367,7 +367,7 @@ split.  In UTF-8 mode, two additional characters whose codepoints are
 greater than 255 are added: &lt;LS&gt; (line separator, <code>U+2028</code>)
 and &lt;PS&gt; (paragraph separator, <code>U+2029</code>).
 
-   <p>It is possible to change the meaning of `<samp><span class="samp">\R</span></samp>' by starting a
+<p>It is possible to change the meaning of `<samp><span class="samp">\R</span></samp>' by starting a
 pattern string with one of the following sequences:
 
      <dl>
@@ -375,7 +375,7 @@ pattern string with one of the following sequences:
 <dt><code>(*BSR_UNICODE)</code><dd>any Unicode newline sequence (the default)
 </dl>
 
-   <p>Note that these special settings, which are not Perl-compatible, are
+<p>Note that these special settings, which are not Perl-compatible, are
 recognized only at the very start of a pattern, and that they must be
 in upper case. If more than one of them is present, the last one is
 used. They can be combined with a change of newline convention, for
@@ -400,14 +400,14 @@ course limited to testing characters whose codepoints are less than
 <dt><code>\X</code><dd>an extended Unicode sequence
 </dl>
 
-   <p>The property names represented by <var>xx</var> above are limited to the
+<p>The property names represented by <var>xx</var> above are limited to the
 Unicode script names, the general category properties, and `<samp><span class="samp">Any</span></samp>',
 which matches any character (including newline). Other properties such
 as `<samp><span class="samp">InMusicalSymbols</span></samp>' are not currently supported by PCRE. Note
 that `<samp><span class="samp">\P{Any}</span></samp>' does not match any characters, so always causes
 a match failure.
 
-   <p>Sets of Unicode characters are defined as belonging to certain
+<p>Sets of Unicode characters are defined as belonging to certain
 scripts. A character from one of these sets can be matched using a
 script name. For example:
 
@@ -419,7 +419,7 @@ script name. For example:
 <p class="noindent">Those that are not part of an identified script are lumped together as
 &ldquo;Common.&rdquo; The current list of scripts is:
 
-   <p>Arabic,
+<p>Arabic,
 Armenian,
 Balinese,
 Bengali,
@@ -486,12 +486,12 @@ Tifinagh,
 Ugaritic,
 Yi.
 
-   <p>Each character has exactly one general category property, specified by a
+<p>Each character has exactly one general category property, specified by a
 two-letter abbreviation. For compatibility with Perl, negation can be specified
 by including a circumflex between the opening brace and the property name. For
 example, `<samp><span class="samp">\p{^Lu}</span></samp>' is the same as `<samp><span class="samp">\P{Lu}</span></samp>'.
 
-   <p>If only one letter is specified with `<samp><span class="samp">\p</span></samp>' or `<samp><span class="samp">\P</span></samp>', it
+<p>If only one letter is specified with `<samp><span class="samp">\p</span></samp>' or `<samp><span class="samp">\P</span></samp>', it
 includes all the general category properties that start with that
 letter. In this case, in the absence of negation, the curly brackets
 in the escape sequence are optional; these two examples have the same
@@ -550,41 +550,41 @@ effect:
 <dt><code>Zs</code><dd>Space separator
 </dl>
 
-   <p>The special property `<samp><span class="samp">L&amp;</span></samp>' is also supported: it matches a
+<p>The special property `<samp><span class="samp">L&amp;</span></samp>' is also supported: it matches a
 character that has the `<samp><span class="samp">Lu</span></samp>', `<samp><span class="samp">Ll</span></samp>', or `<samp><span class="samp">Lt</span></samp>' property, in
 other words, a letter that is not classified as a modifier or
 &ldquo;other.&rdquo;
 
-   <p>The `<samp><span class="samp">Cs</span></samp>' (Surrogate) property applies only to characters in the
+<p>The `<samp><span class="samp">Cs</span></samp>' (Surrogate) property applies only to characters in the
 range <code>U+D800</code> to <code>U+DFFF</code>. Such characters are not valid in
 UTF-8 strings (see RFC 3629) and so cannot be tested by PCRE.
 
-   <p>The long synonyms for these properties that Perl supports (such as
+<p>The long synonyms for these properties that Perl supports (such as
 `<samp><span class="samp">\p{Letter}</span></samp>') are not supported by PCRE, nor is it permitted to
 prefix any of these properties with `<samp><span class="samp">Is</span></samp>'.
 
-   <p>No character that is in the Unicode table has the `<samp><span class="samp">Cn</span></samp>'
+<p>No character that is in the Unicode table has the `<samp><span class="samp">Cn</span></samp>'
 (unassigned) property.  Instead, this property is assumed for any code
 point that is not in the Unicode table.
 
-   <p>Specifying caseless matching does not affect these escape sequences. For
+<p>Specifying caseless matching does not affect these escape sequences. For
 example, `<samp><span class="samp">\p{Lu}</span></samp>' always matches only upper case letters.
 
-   <p>The `<samp><span class="samp">\X</span></samp>' escape matches any number of Unicode characters that
+<p>The `<samp><span class="samp">\X</span></samp>' escape matches any number of Unicode characters that
 form an extended Unicode sequence. `<samp><span class="samp">\X</span></samp>' is equivalent to
 
 <pre class="verbatim">
          (?>\PM\pM*)
 </pre>
 
-   <p>That is, it matches a character without the &ldquo;mark&rdquo; property,
+<p>That is, it matches a character without the &ldquo;mark&rdquo; property,
 followed by zero or more characters with the &ldquo;mark&rdquo; property, and
 treats the sequence as an atomic group (see below).  Characters with
 the &ldquo;mark&rdquo; property are typically accents that affect the preceding
 character. None of them have codepoints less than 256, so in non-UTF-8
 mode `<samp><span class="samp">\X</span></samp>' matches any one character.
 
-   <p>Matching characters by Unicode property is not fast, because PCRE has
+<p>Matching characters by Unicode property is not fast, because PCRE has
 to search a structure that contains data for over fifteen thousand
 characters. That is why the traditional escape sequences such as
 `<samp><span class="samp">\d</span></samp>' and `<samp><span class="samp">\w</span></samp>' do not use Unicode properties in PCRE.
@@ -634,13 +634,13 @@ described below.  The backslashed assertions are:
 `<samp><span class="samp">\b</span></samp>' has a different meaning, namely the backspace character,
 inside a character class).
 
-   <p>A word boundary is a position in the subject string where the current
+<p>A word boundary is a position in the subject string where the current
 character and the previous character do not both match `<samp><span class="samp">\w</span></samp>' or
 `<samp><span class="samp">\W</span></samp>' (i.e. one matches `<samp><span class="samp">\w</span></samp>' and the other matches
 `<samp><span class="samp">\W</span></samp>'), or the start or end of the string if the first or last
 character matches `<samp><span class="samp">\w</span></samp>', respectively.
 
-   <p>The `<samp><span class="samp">\A</span></samp>', `<samp><span class="samp">\Z</span></samp>', and `<samp><span class="samp">\z</span></samp>' assertions differ from the
+<p>The `<samp><span class="samp">\A</span></samp>', `<samp><span class="samp">\Z</span></samp>', and `<samp><span class="samp">\z</span></samp>' assertions differ from the
 traditional circumflex and dollar (described in the next section) in
 that they only ever match at the very start and end of the subject
 string, whatever options are set. Thus, they are independent of
@@ -648,7 +648,7 @@ multiline mode. The difference between `<samp><span class="samp">\Z</span></samp
 `<samp><span class="samp">\Z</span></samp>' matches before a newline at the end of the string as well as
 at the very end, whereas `<samp><span class="samp">\z</span></samp>' matches only at the end.
 
-   <p>The `<samp><span class="samp">\G</span></samp>' assertion is true only when the current matching
+<p>The `<samp><span class="samp">\G</span></samp>' assertion is true only when the current matching
 position is at the start point of the match.  As used in Monotone,
 `<samp><span class="samp">\G</span></samp>' is always equal to `<samp><span class="samp">\A</span></samp>'.
 
@@ -660,7 +660,7 @@ the current matching point is at the start of the subject string.
 Inside a character class, circumflex has an entirely different meaning
 (see below).
 
-   <p>Circumflex need not be the first character of the pattern if a number
+<p>Circumflex need not be the first character of the pattern if a number
 of alternatives are involved, but it should be the first thing in each
 alternative in which it appears if the pattern is ever to match that
 branch. If all possible alternatives start with a circumflex, that is,
@@ -668,7 +668,7 @@ if the pattern is constrained to match only at the start of the
 subject, it is said to be an &ldquo;anchored&rdquo; pattern. (There are also
 other constructs that can cause a pattern to be anchored.)
 
-   <p>A dollar character, `<samp><span class="samp">$</span></samp>', is an assertion that is true only if the
+<p>A dollar character, `<samp><span class="samp">$</span></samp>', is an assertion that is true only if the
 current matching point is at the end of the subject string, or
 immediately before a newline at the end of the string (by
 default). Dollar need not be the last character of the pattern if a
@@ -676,7 +676,7 @@ number of alternatives are involved, but it should be the last item in
 any branch in which it appears. Dollar has no special meaning in a
 character class.
 
-   <p>The meanings of the circumflex and dollar characters are changed if
+<p>The meanings of the circumflex and dollar characters are changed if
 the `<samp><span class="samp">(?m)</span></samp>' option is set. When this is the case, a circumflex
 matches immediately after internal newlines as well as at the start of
 the subject string. It does not match after a newline that ends the
@@ -685,13 +685,13 @@ at the very end, when `<samp><span class="samp">(?m)</span></samp>' is set. When
 the two-character sequence &lt;CR&gt;&lt;LF&gt;, isolated &lt;CR&gt; and
 &lt;LF&gt; characters do not indicate newlines.
 
-   <p>For example, the pattern `<samp><span class="samp">^abc$</span></samp>' matches the subject string
+<p>For example, the pattern `<samp><span class="samp">^abc$</span></samp>' matches the subject string
 `<samp><span class="samp">def\nabc</span></samp>' (where `<samp><span class="samp">\n</span></samp>' represents a newline) in multiline
 mode, but not otherwise. Consequently, patterns that are anchored in
 single line mode because all branches start with ^ are not anchored in
 multiline mode.
 
-   <p>Note that the sequences `<samp><span class="samp">\A</span></samp>', `<samp><span class="samp">\Z</span></samp>', and `<samp><span class="samp">\z</span></samp>' can be
+<p>Note that the sequences `<samp><span class="samp">\A</span></samp>', `<samp><span class="samp">\Z</span></samp>', and `<samp><span class="samp">\z</span></samp>' can be
 used to match the start and end of the subject in both modes, and if
 all branches of a pattern start with `<samp><span class="samp">\A</span></samp>' it is always anchored.
 
@@ -702,7 +702,7 @@ character in the subject string except (by default) a character that
 signifies the end of a line. In UTF-8 mode, the matched character may
 be more than one byte long.
 
-   <p>When a line ending is defined as a single character, dot never matches
+<p>When a line ending is defined as a single character, dot never matches
 that character; when the two-character sequence &lt;CR&gt;&lt;LF&gt; is
 used, dot does not match &lt;CR&gt; if it is immediately followed by
 &lt;LF&gt;, but otherwise it matches all characters (including isolated
@@ -710,12 +710,12 @@ used, dot does not match &lt;CR&gt; if it is immediately followed by
 recognized, dot does not match &lt;CR&gt; or &lt;LF&gt; or any of the
 other line ending characters.
 
-   <p>The behaviour of dot with regard to newlines can be changed. If the
+<p>The behaviour of dot with regard to newlines can be changed. If the
 `<samp><span class="samp">(?s)</span></samp>' option is set, a dot matches any one character, without
 exception. If the two-character sequence &lt;CR&gt;&lt;LF&gt; is present
 in the subject string, it takes two dots to match it.
 
-   <p>The handling of dot is entirely independent of the handling of circumflex and
+<p>The handling of dot is entirely independent of the handling of circumflex and
 dollar, the only relationship being that they both involve newlines. Dot has no
 special meaning in a character class.
 
@@ -729,7 +729,7 @@ UTF-8 characters into individual bytes, what remains in the string may
 be a malformed UTF-8 string. For this reason, the `<samp><span class="samp">\C</span></samp>' escape
 sequence is best avoided.
 
-   <p>PCRE does not allow `<samp><span class="samp">\C</span></samp>' to appear in lookbehind assertions
+<p>PCRE does not allow `<samp><span class="samp">\C</span></samp>' to appear in lookbehind assertions
 (described below), because in UTF-8 mode this would make it impossible
 to calculate the length of the lookbehind.
 
@@ -741,7 +741,7 @@ special. If a closing square bracket is required as a member of the
 class, it should be the first data character in the class (after an
 initial circumflex, if present) or escaped with a backslash.
 
-   <p>A character class matches a single character in the subject. In UTF-8
+<p>A character class matches a single character in the subject. In UTF-8
 mode, the character may occupy more than one byte. A matched character
 must be in the set of characters defined by the class, unless the
 first character in the class definition is a circumflex, in which case
@@ -749,7 +749,7 @@ the subject character must not be in the set defined by the class. If
 a circumflex is actually required as a member of the class, ensure it
 is not the first character, or escape it with a backslash.
 
-   <p>For example, the character class `<samp><span class="samp">[aeiou]</span></samp>' matches any lower case
+<p>For example, the character class `<samp><span class="samp">[aeiou]</span></samp>' matches any lower case
 vowel, while `<samp><span class="samp">[^aeiou]</span></samp>' matches any character that is not a lower
 case vowel. Note that a circumflex is just a convenient notation for
 specifying the characters that are in the class by enumerating those
@@ -757,11 +757,11 @@ that are not. A class that starts with a circumflex is not an
 assertion: it still consumes a character from the subject string, and
 therefore it fails if the current pointer is at the end of the string.
 
-   <p>In UTF-8 mode, characters with values greater than 255 can be included
+<p>In UTF-8 mode, characters with values greater than 255 can be included
 in a class as a literal string of bytes, or by using the `<samp><span class="samp">\x{</span></samp>'
 escaping mechanism.
 
-   <p>When caseless matching is set, any letters in a class represent both
+<p>When caseless matching is set, any letters in a class represent both
 their upper case and lower case versions, so for example, a caseless
 `<samp><span class="samp">[aeiou]</span></samp>' matches `<samp><span class="samp">A</span></samp>' as well as `<samp><span class="samp">a</span></samp>', and a caseless [^aeiou]
 does not match `<samp><span class="samp">A</span></samp>', whereas a caseful version would. In UTF-8 mode,
@@ -773,20 +773,20 @@ you want to use caseless matching for characters 128 and above, you
 must ensure that PCRE is compiled with Unicode property support as
 well as with UTF-8 support.
 
-   <p>Characters that might indicate line breaks are never treated in any
+<p>Characters that might indicate line breaks are never treated in any
 special way when matching character classes, whatever line-ending
 sequence is in use, and whatever setting of the `<samp><span class="samp">(?s)</span></samp>' and
 `<samp><span class="samp">(?m)</span></samp>' options is used. A class such as `<samp><span class="samp">[^a]</span></samp>' always
 matches one of these characters.
 
-   <p>The minus (hyphen) character can be used to specify a range of
+<p>The minus (hyphen) character can be used to specify a range of
 characters in a character class. For example, `<samp><span class="samp">[d-m]</span></samp>' matches any
 letter between `<samp><span class="samp">d</span></samp>' and `<samp><span class="samp">m</span></samp>', inclusive. If a minus character
 is required in a class, it must be escaped with a backslash or appear
 in a position where it cannot be interpreted as indicating a range,
 typically as the first or last character in the class.
 
-   <p>It is not possible to have the literal character `<samp><span class="samp">]</span></samp>' as the end
+<p>It is not possible to have the literal character `<samp><span class="samp">]</span></samp>' as the end
 character of a range. A pattern such as `<samp><span class="samp">[W-]46]</span></samp>' is interpreted
 as a class of two characters (`<samp><span class="samp">W</span></samp>' and `<samp><span class="samp">-</span></samp>') followed by a
 literal string `<samp><span class="samp">46]</span></samp>', so it would match `<samp><span class="samp">W46]</span></samp>' or
@@ -796,16 +796,16 @@ as a class containing a range followed by two other characters. The
 octal or hexadecimal representation of `<samp><span class="samp">]</span></samp>' can also be used to
 end a range.
 
-   <p>Ranges operate in the collating sequence of character values. They can
+<p>Ranges operate in the collating sequence of character values. They can
 also be used for characters specified numerically, for example
 `<samp><span class="samp">[\000-\037]</span></samp>'. In UTF-8 mode, ranges can include characters whose
 values are greater than 255, for example `<samp><span class="samp">[\x{100}-\x{2ff}]</span></samp>'.
 
-   <p>If a range that includes letters is used when caseless matching is
+<p>If a range that includes letters is used when caseless matching is
 set, it matches the letters in either case. For example, `<samp><span class="samp">[W-c]</span></samp>'
 is equivalent to `<samp><span class="samp">[][\\^_`wxyzabc]</span></samp>', matched caselessly.
 
-   <p>The character types `<samp><span class="samp">\d</span></samp>', `<samp><span class="samp">\D</span></samp>', `<samp><span class="samp">\p</span></samp>', `<samp><span class="samp">\P</span></samp>',
+<p>The character types `<samp><span class="samp">\d</span></samp>', `<samp><span class="samp">\D</span></samp>', `<samp><span class="samp">\p</span></samp>', `<samp><span class="samp">\P</span></samp>',
 `<samp><span class="samp">\s</span></samp>', `<samp><span class="samp">\S</span></samp>', `<samp><span class="samp">\w</span></samp>', and `<samp><span class="samp">\W</span></samp>' may also appear in a
 character class, and add the characters that they match to the
 class. For example, `<samp><span class="samp">[\dABCDEF]</span></samp>' matches any hexadecimal digit. A
@@ -814,7 +814,7 @@ types to specify a more restricted set of characters than the matching
 lower case type. For example, the class `<samp><span class="samp">[^\W_]</span></samp>' matches any
 letter or digit, but not underscore.
 
-   <p>The only metacharacters that are recognized in character classes are
+<p>The only metacharacters that are recognized in character classes are
 backslash, hyphen (only where it can be interpreted as specifying a
 range), circumflex (only at the start), opening square bracket (only
 when it can be interpreted as introducing a POSIX class name&mdash;see the
@@ -851,13 +851,13 @@ supported class names are
 <dt><code>xdigit</code><dd>hexadecimal digits
 </dl>
 
-   <p>The &ldquo;space&rdquo; characters are &lt;HT&gt; (9), &lt;LF&gt; (10), &lt;VT&gt;
+<p>The &ldquo;space&rdquo; characters are &lt;HT&gt; (9), &lt;LF&gt; (10), &lt;VT&gt;
 (11), &lt;FF&gt; (12), &lt;CR&gt; (13), and space (32). Notice that this
 list includes the &lt;VT&gt; character (code 11). This makes "space"
 different to `<samp><span class="samp">\s</span></samp>', which does not include &lt;VT&gt; (for Perl
 compatibility).
 
-   <p>The name &ldquo;word&rdquo; is a Perl extension, and &ldquo;blank&rdquo; is a GNU
+<p>The name &ldquo;word&rdquo; is a Perl extension, and &ldquo;blank&rdquo; is a GNU
 extension from Perl 5.8. Another Perl extension is negation, which is
 indicated by a `<samp><span class="samp">^</span></samp>' character after the colon. For example,
 
@@ -870,7 +870,7 @@ recognize the POSIX syntax `<samp><span class="samp">[.</span><var>ch</var><span
 where <var>ch</var> is a &ldquo;collating element,&rdquo; but these are not
 supported, and an error is given if they are encountered.
 
-   <p>In UTF-8 mode, characters with values greater than 128 do not match
+<p>In UTF-8 mode, characters with values greater than 128 do not match
 any of the POSIX character classes.
 
 <h5 class="subsubheading">Vertical Bar</h5>
@@ -910,7 +910,7 @@ pattern by a sequence of option letters enclosed between `<samp><span class="sam
 with no defined meaning appears. 
 </dl>
 
-   <p>For example, `<samp><span class="samp">(?im)</span></samp>' sets caseless, multiline matching. It is
+<p>For example, `<samp><span class="samp">(?im)</span></samp>' sets caseless, multiline matching. It is
 also possible to unset these options by preceding the letters with a
 hyphen, and a combined setting and unsetting such as `<samp><span class="samp">(?im-sx)</span></samp>'
 is also permitted.  (This would set the caseless and multiline options
@@ -919,7 +919,7 @@ appears both before and after the hyphen, the option is unset.  The
 lowercase option letters are Perl-compatible; the uppercase ones are
 PCRE only.
 
-   <p>When an option change occurs at top level (that is, not inside
+<p>When an option change occurs at top level (that is, not inside
 subpattern parentheses), the change applies to the remainder of the
 pattern that follows.  An option change within a subpattern (see below
 for a description of subpatterns) affects only that part of the
@@ -944,7 +944,7 @@ setting. This is because the effects of option settings happen when
 the pattern is parsed. There would be some very weird behaviour
 otherwise.
 
-   <p><em>Note:</em> Unlike these options, the similar, PCRE-specific option
+<p><em>Note:</em> Unlike these options, the similar, PCRE-specific option
 sequences that start with `<samp><span class="samp">(*</span></samp>' may appear only at the very
 beginning of the pattern.  Details of these sequences are given in the
 section entitled &ldquo;Newline sequences,&rdquo; above.
@@ -982,9 +982,9 @@ subpatterns.
 
      <p>the captured substrings are `<samp><span class="samp">red king</span></samp>', `<samp><span class="samp">red</span></samp>', and
 `<samp><span class="samp">king</span></samp>', and are numbered 1, 2, and 3, respectively.
-        </ol>
+     </ol>
 
-   <p>The fact that plain parentheses fulfil two functions is not always
+<p>The fact that plain parentheses fulfil two functions is not always
 helpful.  There are often times when a grouping subpattern is required
 without a capturing requirement. If an opening parenthesis is followed
 by a question mark and a colon, the subpattern does not do any
@@ -1000,7 +1000,7 @@ white queen</span></samp>' is matched against the pattern
 are numbered 1 and 2. The maximum number of capturing subpatterns is
 65535.
 
-   <p>As a convenient shorthand, if any option settings are required at the
+<p>As a convenient shorthand, if any option settings are required at the
 start of a non-capturing subpattern, the option letters may appear
 between the `<samp><span class="samp">?</span></samp>' and the `<samp><span class="samp">:</span></samp>'. Thus the two patterns
 
@@ -1047,7 +1047,7 @@ captured content will be stored.
 <p class="noindent">A backreference or a recursive call to a numbered subpattern always
 refers to the first one in the pattern with the given number.
 
-   <p>An alternative approach to using this &ldquo;branch reset&rdquo; feature is to
+<p>An alternative approach to using this &ldquo;branch reset&rdquo; feature is to
 use duplicate named subpatterns, as described in the next section.
 
 <h5 class="subsubheading">Named Subpatterns</h5>
@@ -1061,17 +1061,17 @@ subpatterns. This feature was not added to Perl until release
 release 4.0, using the Python syntax. PCRE now supports both the Perl
 and the Python syntax.
 
-   <p>In PCRE, a subpattern can be named in one of three ways:
+<p>In PCRE, a subpattern can be named in one of three ways:
 `<samp><span class="samp">(?&lt;</span><var>name</var><span class="samp">&gt;...)</span></samp>' or `<samp><span class="samp">(?'</span><var>name</var><span class="samp">'...)</span></samp>' as in Perl, or
 `<samp><span class="samp">(?P&lt;</span><var>name</var><span class="samp">&gt;...)</span></samp>' as in Python. References to capturing
 parentheses from other parts of the pattern, such as backreferences,
 recursion, and conditions, can be made by name as well as by number.
 
-   <p>Names consist of up to 32 alphanumeric characters and
+<p>Names consist of up to 32 alphanumeric characters and
 underscores. Named capturing parentheses are still allocated numbers
 as well as names, exactly as if the names were not present.
 
-   <p>By default, a name must be unique within a pattern, but it is possible
+<p>By default, a name must be unique within a pattern, but it is possible
 to relax this constraint by setting the `<samp><span class="samp">(?J)</span></samp>' option. This can
 be useful for patterns where only one instance of the named
 parentheses can match. Suppose you want to match the name of a
@@ -1109,7 +1109,7 @@ the following items:
 <li>  a parenthesized subpattern (unless it is an assertion)
 </ul>
 
-   <p>The general repetition quantifier specifies a minimum and maximum
+<p>The general repetition quantifier specifies a minimum and maximum
 number of permitted matches, by giving the two numbers in curly
 brackets (braces), separated by a comma. The numbers must be less than
 65536, and the first must be less than or equal to the second. For
@@ -1141,17 +1141,17 @@ the syntax of a quantifier, is taken as a literal character. For
 example, `<samp><span class="samp">{,6}</span></samp>' is not a quantifier, but a literal string of four
 characters.
 
-   <p>In UTF-8 mode, quantifiers apply to UTF-8 characters rather than to
+<p>In UTF-8 mode, quantifiers apply to UTF-8 characters rather than to
 individual bytes. Thus, for example, `<samp><span class="samp">\x{100}{2}</span></samp>' matches two
 UTF-8 characters, each of which is represented by a two-byte
 sequence. Similarly, `<samp><span class="samp">\X{3}</span></samp>' matches three Unicode extended
 sequences, each of which may be several bytes long (and they may be of
 different lengths).
 
-   <p>The quantifier `<samp><span class="samp">{0}</span></samp>' is permitted, causing the expression to
+<p>The quantifier `<samp><span class="samp">{0}</span></samp>' is permitted, causing the expression to
 behave as if the previous item and the quantifier were not present.
 
-   <p>For convenience, the three most common quantifiers have
+<p>For convenience, the three most common quantifiers have
 single-character abbreviations:
 
      <dl>
@@ -1160,7 +1160,7 @@ single-character abbreviations:
 <dt><code>?</code><dd>is equivalent to {0,1}
 </dl>
 
-   <p>It is possible to construct infinite loops by following a subpattern that can
+<p>It is possible to construct infinite loops by following a subpattern that can
 match no characters with a quantifier that has no upper limit, for example:
 
 <pre class="verbatim">
@@ -1173,7 +1173,7 @@ can be useful, such patterns are now accepted, but if any repetition
 of the subpattern does in fact match no characters, the loop is
 forcibly broken.
 
-   <p>By default, the quantifiers are <dfn>greedy</dfn>, that is, they match as
+<p>By default, the quantifiers are <dfn>greedy</dfn>, that is, they match as
 much as possible (up to the maximum number of permitted times),
 without causing the rest of the pattern to fail. The classic example
 of where this gives problems is in trying to match comments in C
@@ -1194,7 +1194,7 @@ attempt to match C comments by applying the pattern
 <p class="noindent">fails, because it matches the entire string owing to the greediness of
 the `<samp><span class="samp">.*</span></samp>' item.
 
-   <p>However, if a quantifier is followed by a question mark, it ceases to
+<p>However, if a quantifier is followed by a question mark, it ceases to
 be greedy, and instead matches the minimum number of times possible,
 so the pattern
 
@@ -1215,16 +1215,16 @@ appear doubled, as in
 <p class="noindent">which matches one digit by preference, but can match two if that is the only
 way the rest of the pattern matches.
 
-   <p>If the `<samp><span class="samp">(?U)</span></samp>' option is set (an option that is not available in
+<p>If the `<samp><span class="samp">(?U)</span></samp>' option is set (an option that is not available in
 Perl), the quantifiers are not greedy by default, but individual ones
 can be made greedy by following them with a question mark. In other
 words, it inverts the default behaviour.
 
-   <p>When a parenthesized subpattern is quantified with a minimum repeat count that
+<p>When a parenthesized subpattern is quantified with a minimum repeat count that
 is greater than 1 or with a limited maximum, more memory is required for the
 compiled pattern, in proportion to the size of the minimum or maximum.
 
-   <p>If a pattern starts with `<samp><span class="samp">.*</span></samp>' or `<samp><span class="samp">.{0,}</span></samp>' and the
+<p>If a pattern starts with `<samp><span class="samp">.*</span></samp>' or `<samp><span class="samp">.{0,}</span></samp>' and the
 `<samp><span class="samp">(?s)</span></samp>' option is set, thus allowing the dot to match newlines,
 the pattern is implicitly anchored, because whatever follows will be
 tried against every character position in the subject string, so there
@@ -1232,12 +1232,12 @@ is no point in retrying the overall match at any position after the
 first. PCRE normally treats such a pattern as though it were preceded
 by `<samp><span class="samp">\A</span></samp>'.
 
-   <p>In cases where it is known that the subject string contains no
+<p>In cases where it is known that the subject string contains no
 newlines, it is worth setting `<samp><span class="samp">(?s)</span></samp>' in order to obtain this
 optimization, or alternatively using `<samp><span class="samp">^</span></samp>' or `<samp><span class="samp">\A</span></samp>' to indicate
 anchoring explicitly.
 
-   <p>However, there is one situation where the optimization cannot be
+<p>However, there is one situation where the optimization cannot be
 used. When .* is inside capturing parentheses that are the subject of
 a backreference elsewhere in the pattern, a match at the start may
 fail where a later one succeeds. Consider, for example:
@@ -1249,7 +1249,7 @@ fail where a later one succeeds. Consider, for example:
 <p class="noindent">If the subject is `<samp><span class="samp">xyz123abc123</span></samp>' the match point is the fourth
 character. For this reason, such a pattern is not implicitly anchored.
 
-   <p>When a capturing subpattern is repeated, the value captured is the
+<p>When a capturing subpattern is repeated, the value captured is the
 substring that matched the final iteration. For example, after
 
 <pre class="verbatim">
@@ -1277,21 +1277,21 @@ useful to prevent this, either to change the nature of the match, or
 to cause it fail earlier than it otherwise might, when the author of
 the pattern knows there is no point in carrying on.
 
-   <p>Consider, for example, the pattern `<samp><span class="samp">\d+foo</span></samp>' when applied to the
+<p>Consider, for example, the pattern `<samp><span class="samp">\d+foo</span></samp>' when applied to the
 subject line
 
 <pre class="verbatim">
          123456bar
 </pre>
 
-   <p>After matching all 6 digits and then failing to match `<samp><span class="samp">foo</span></samp>', the
+<p>After matching all 6 digits and then failing to match `<samp><span class="samp">foo</span></samp>', the
 normal action of the matcher is to try again with only 5 digits
 matching the `<samp><span class="samp">\d+</span></samp>' item, and then with 4, and so on, before
 ultimately failing. <dfn>Atomic grouping</dfn> (a term taken from Jeffrey
 Friedl's book) provides the means for specifying that once a
 subpattern has matched, it is not to be re-evaluated in this way.
 
-   <p>If we use atomic grouping for the previous example, the matcher gives
+<p>If we use atomic grouping for the previous example, the matcher gives
 up immediately on failing to match `<samp><span class="samp">foo</span></samp>' the first time. The
 notation is a kind of special parenthesis, starting with `<samp><span class="samp">(?&gt;</span></samp>' as in
 this example:
@@ -1306,17 +1306,17 @@ is prevented from backtracking into it. Backtracking past it to
 previous items, however, works as normal.  Atomic grouping subpatterns
 are not capturing subpatterns.
 
-   <p>An alternative description is that a subpattern of this type matches
+<p>An alternative description is that a subpattern of this type matches
 the string of characters that an identical standalone pattern would
 match, if anchored at the current point in the subject string.
 
-   <p>Simple cases such as the above example can be thought of as a
+<p>Simple cases such as the above example can be thought of as a
 maximizing repeat that must swallow everything it can. So, while both
 `<samp><span class="samp">\d+</span></samp>' and `<samp><span class="samp">\d+?</span></samp>' are prepared to adjust the number of digits
 they match in order to make the rest of the pattern match,
 `<samp><span class="samp">(?&gt;\d+)</span></samp>' can only match an entire sequence of digits.
 
-   <p>Atomic groups in general can of course contain arbitrarily complicated
+<p>Atomic groups in general can of course contain arbitrarily complicated
 subpatterns, and can be nested. However, when the subpattern for an
 atomic group is just a single repeated item, as in the example above,
 a simpler notation, called a <dfn>possessive quantifier</dfn>, can be
@@ -1342,18 +1342,18 @@ meaning of a possessive quantifier and the equivalent atomic group,
 though there may be a performance difference; possessive quantifiers
 should be slightly faster.
 
-   <p>The possessive quantifier syntax is an extension to the Perl 5.8
+<p>The possessive quantifier syntax is an extension to the Perl 5.8
 syntax.  Jeffrey Friedl originated the idea (and the name) in the
 first edition of his book. Mike McCloskey liked it, so implemented it
 when he built Sun's Java package, and PCRE copied it from there. It
 ultimately found its way into Perl at release 5.10.
 
-   <p>PCRE has an optimization that automatically &ldquo;possessifies&rdquo; certain
+<p>PCRE has an optimization that automatically &ldquo;possessifies&rdquo; certain
 simple pattern constructs. For example, the sequence `<samp><span class="samp">A+B</span></samp>' is
 treated as `<samp><span class="samp">A++B</span></samp>' because there is no point in backtracking into
 a sequence of `<samp><span class="samp">A</span></samp>'s when `<samp><span class="samp">B</span></samp>' must follow.
 
-   <p>When a pattern contains an unlimited repeat inside a subpattern that
+<p>When a pattern contains an unlimited repeat inside a subpattern that
 can itself be repeated an unlimited number of times, the use of an
 atomic group is the only way to avoid some failing matches taking a
 very long time indeed. The pattern
@@ -1395,7 +1395,7 @@ capturing subpattern earlier (that is, to its left) in the pattern,
 provided there have been that many previous capturing left
 parentheses.
 
-   <p>However, if the decimal number following the backslash is less than
+<p>However, if the decimal number following the backslash is less than
 10, it is always taken as a back reference, and causes an error only
 if there are not that many capturing left parentheses in the entire
 pattern. In other words, the parentheses that are referenced need not
@@ -1404,7 +1404,7 @@ back reference&rdquo; of this type can make sense when a repetition is
 involved and the subpattern to the right has participated in an
 earlier iteration.
 
-   <p>It is not possible to have a numerical &ldquo;forward back reference&rdquo; to a
+<p>It is not possible to have a numerical &ldquo;forward back reference&rdquo; to a
 subpattern whose number is 10 or more using this syntax because a
 sequence such as `<samp><span class="samp">\50</span></samp>' is interpreted as a character defined in
 octal. See the subsection entitled &ldquo;Non-printing characters&rdquo; above
@@ -1413,7 +1413,7 @@ backslash. There is no such problem when named parentheses are used. A
 back reference to any subpattern is possible using named parentheses
 (see below).
 
-   <p>Another way of avoiding the ambiguity inherent in the use of digits
+<p>Another way of avoiding the ambiguity inherent in the use of digits
 following a backslash is to use the `<samp><span class="samp">\g</span></samp>' escape sequence, which
 is a feature introduced in Perl 5.10. This escape must be followed by
 an unsigned number or a negative number, optionally enclosed in
@@ -1425,7 +1425,7 @@ braces. These examples are all identical:
          (ring), \g{1}
 </pre>
 
-   <p>An unsigned number specifies an absolute reference without the
+<p>An unsigned number specifies an absolute reference without the
 ambiguity that is present in the older syntax. It is also useful when
 literal digits follow the reference. A negative number is a relative
 reference. Consider this example:
@@ -1441,7 +1441,7 @@ equivalent to `<samp><span class="samp">\1</span></samp>'. The use of relative r
 in long patterns, and also in patterns that are created by joining
 together fragments that contain references within themselves.
 
-   <p>A back reference matches whatever actually matched the capturing
+<p>A back reference matches whatever actually matched the capturing
 subpattern in the current subject string, rather than anything
 matching the subpattern itself (see &ldquo;Subpatterns as subroutines&rdquo; below
 for a way of doing that). So the pattern
@@ -1462,7 +1462,7 @@ letters is relevant. For example,
 <p class="noindent">matches `<samp><span class="samp">rah rah</span></samp>' and `<samp><span class="samp">RAH RAH</span></samp>', but not `<samp><span class="samp">RAH rah</span></samp>',
 even though the original capturing subpattern is matched caselessly.
 
-   <p>There are several different ways of writing back references to named
+<p>There are several different ways of writing back references to named
 subpatterns. The .NET syntax `<samp><span class="samp">\k{name}</span></samp>' and the Perl syntax
 `<samp><span class="samp">\k&lt;name&gt;</span></samp>' or `<samp><span class="samp">\k'name'</span></samp>' are supported, as is the Python
 syntax (?P=name). Perl 5.10's unified back reference syntax, in which
@@ -1480,7 +1480,7 @@ ways:
 <p class="noindent">A subpattern that is referenced by name may appear in the pattern
 before or after the reference.
 
-   <p>There may be more than one back reference to the same subpattern. If a
+<p>There may be more than one back reference to the same subpattern. If a
 subpattern has not actually been used in a particular match, any back
 references to it always fail. For example, the pattern
 
@@ -1496,7 +1496,7 @@ character, some delimiter must be used to terminate the back
 reference. If the `<samp><span class="samp">(?x)</span></samp>' option is set, this can be whitespace. 
 Otherwise an empty comment (see &ldquo;Comments&rdquo; below) can be used.
 
-   <p>A back reference that occurs inside the parentheses to which it refers
+<p>A back reference that occurs inside the parentheses to which it refers
 fails when the subpattern is first used, so, for example, `<samp><span class="samp">(a\1)</span></samp>'
 never matches.  However, such references can be useful inside repeated
 subpatterns. For example, the pattern
@@ -1521,13 +1521,13 @@ characters. The simple assertions coded as `<samp><span class="samp">\b</span></
 `<samp><span class="samp">\A</span></samp>', `<samp><span class="samp">\G</span></samp>', `<samp><span class="samp">\Z</span></samp>', `<samp><span class="samp">\z</span></samp>', `<samp><span class="samp">^</span></samp>' and `<samp><span class="samp">$</span></samp>' are
 described above.
 
-   <p>More complicated assertions are coded as subpatterns. There are two
+<p>More complicated assertions are coded as subpatterns. There are two
 kinds: those that look ahead of the current position in the subject
 string, and those that look behind it. An assertion subpattern is
 matched in the normal way, except that it does not cause the current
 matching position to be changed.
 
-   <p>Assertion subpatterns are not capturing subpatterns, and may not be
+<p>Assertion subpatterns are not capturing subpatterns, and may not be
 repeated, because it makes no sense to assert the same thing several
 times. If any kind of assertion contains capturing subpatterns within
 it, these are counted for the purposes of numbering the capturing
@@ -1564,7 +1564,7 @@ whatsoever, because the assertion `<samp><span class="samp">(?!foo)</span></samp
 the next three characters are `<samp><span class="samp">bar</span></samp>'. A lookbehind assertion is
 needed to achieve the other effect.
 
-   <p>If you want to force a matching failure at some point in a pattern,
+<p>If you want to force a matching failure at some point in a pattern,
 the most convenient way to do it is with `<samp><span class="samp">(?!)</span></samp>' because an empty
 string always matches, so an assertion that requires there not to be
 an empty string must always fail.
@@ -1611,22 +1611,22 @@ lengths, but it is acceptable if rewritten to use two top-level branches:
          (?&lt;=abc|abde)
 </pre>
 
-   <p>In some cases, the Perl 5.10 escape sequence `<samp><span class="samp">\K</span></samp>' (see above) can
+<p>In some cases, the Perl 5.10 escape sequence `<samp><span class="samp">\K</span></samp>' (see above) can
 be used instead of a lookbehind assertion; this is not restricted to a
 fixed-length.
 
-   <p>The implementation of lookbehind assertions is, for each alternative,
+<p>The implementation of lookbehind assertions is, for each alternative,
 to temporarily move the current position back by the fixed length and
 then try to match. If there are insufficient characters before the
 current position, the assertion fails.
 
-   <p>PCRE does not allow the `<samp><span class="samp">\C</span></samp>' escape (which matches a single byte
+<p>PCRE does not allow the `<samp><span class="samp">\C</span></samp>' escape (which matches a single byte
 in UTF-8 mode) to appear in lookbehind assertions, because it makes it
 impossible to calculate the length of the lookbehind. The `<samp><span class="samp">\X</span></samp>'
 and `<samp><span class="samp">\R</span></samp>' escapes, which can match different numbers of bytes, are
 also not permitted.
 
-   <p>Possessive quantifiers can be used in conjunction with lookbehind
+<p>Possessive quantifiers can be used in conjunction with lookbehind
 assertions to specify efficient matching at the end of the subject
 string. Consider a simple pattern such as
 
@@ -1687,7 +1687,7 @@ checking that the first three are digits, and then the second
 assertion checks that the preceding three characters are not
 `<samp><span class="samp">999</span></samp>'.
 
-   <p>Assertions can be nested in any combination. For example,
+<p>Assertions can be nested in any combination. For example,
 
 <pre class="verbatim">
          (?&lt;=(?&lt;!foo)bar)baz
@@ -1716,11 +1716,11 @@ conditional subpattern are
 <li>         (?(<var>condition</var>)<var>yes-pattern</var>|<var>no-pattern</var>)
 </ul>
 
-   <p>If the <var>condition</var> is satisfied, the <var>yes-pattern</var> is used;
+<p>If the <var>condition</var> is satisfied, the <var>yes-pattern</var> is used;
 otherwise the <var>no-pattern</var> (if present) is used. If there are more
 than two alternatives in the subpattern, a compile-time error occurs.
 
-   <p>There are four kinds of condition: references to subpatterns,
+<p>There are four kinds of condition: references to subpatterns,
 references to recursion, a pseudo-condition called `<samp><span class="samp">DEFINE</span></samp>', and
 assertions.
 
@@ -1735,7 +1735,7 @@ can be referenced by `<samp><span class="samp">(?(-1)</span></samp>', the next m
 `<samp><span class="samp">(?(-2)</span></samp>', and so on. In looping constructs it can also make sense
 to refer to subsequent groups with constructs such as `<samp><span class="samp">(?(+2)</span></samp>'.
 
-   <p>Consider the following pattern, which contains non-significant white
+<p>Consider the following pattern, which contains non-significant white
 space to make it more readable and to divide it into three parts for
 ease of discussion (assume a preceding `<samp><span class="samp">(?x)</span></samp>'):
 
@@ -1743,7 +1743,7 @@ ease of discussion (assume a preceding `<samp><span class="samp">(?x)</span></sa
          ( \( )?    [^()]+    (?(1) \) )
 </pre>
 
-   <p>The first part matches an optional opening parenthesis, and if that
+<p>The first part matches an optional opening parenthesis, and if that
 character is present, sets it as the first captured substring. The
 second part matches one or more characters that are not
 parentheses. The third part is a conditional subpattern that tests
@@ -1754,14 +1754,14 @@ required. Otherwise, since no-pattern is not present, the subpattern
 matches nothing. In other words, this pattern matches a sequence of
 non-parentheses, optionally enclosed in parentheses.
 
-   <p>If you were embedding this pattern in a larger one, you could use a
+<p>If you were embedding this pattern in a larger one, you could use a
 relative reference:
 
 <pre class="verbatim">
          ...other stuff... ( \( )?    [^()]+    (?(-1) \) ) ...
 </pre>
 
-   <p>This makes the fragment independent of the parentheses in the larger pattern.
+<p>This makes the fragment independent of the parentheses in the larger pattern.
 
 <h5 class="subsubheading">Checking for a used subpattern by name</h5>
 
@@ -1776,7 +1776,7 @@ for a subpattern of that number, which must be greater than
 zero. Using subpattern names that consist entirely of digits is not
 recommended.
 
-   <p>Rewriting the above example to use a named subpattern gives this:
+<p>Rewriting the above example to use a named subpattern gives this:
 
 <pre class="verbatim">
          (?&lt;OPEN> \( )?    [^()]+    (?(&lt;OPEN>) \) )
@@ -1797,7 +1797,7 @@ preceded by ampersand follow the letter `<samp><span class="samp">R</span></samp
 subpattern whose number or name is given. This condition does not
 check the entire recursion stack.
 
-   <p>At &ldquo;top level,&rdquo; all these recursion test conditions are false. Recursive
+<p>At &ldquo;top level,&rdquo; all these recursion test conditions are false. Recursive
 patterns are described below.
 
 <h5 class="subsubheading">Defining subpatterns for use by reference only</h5>
@@ -1817,13 +1817,13 @@ breaks):
          \b (?&amp;byte) (\.(?&amp;byte)){3} \b
 </pre>
 
-   <p>The first part of the pattern is a DEFINE group inside which a another
+<p>The first part of the pattern is a DEFINE group inside which a another
 group named "byte" is defined. This matches an individual component of
 an IPv4 address (a number less than 256). When matching takes place,
 this part of the pattern is skipped because DEFINE acts like a false
 condition.
 
-   <p>The rest of the pattern uses references to the named group to match
+<p>The rest of the pattern uses references to the named group to match
 the four dot-separated components of an IPv4 address, insisting on a
 word boundary at each end.
 
@@ -1839,7 +1839,7 @@ white space, and with the two alternatives on the second line:
          \d{2}-[a-z]{3}-\d{2}  |  \d{2}-\d{2}-\d{2} )
 </pre>
 
-   <p>The condition is a positive lookahead assertion that matches an
+<p>The condition is a positive lookahead assertion that matches an
 optional sequence of non-letters followed by a letter. In other words,
 it tests for the presence of at least one letter in the subject. If a
 letter is found, the subject is matched against the first alternative;
@@ -1855,7 +1855,7 @@ to the next closing parenthesis. Nested parentheses are not
 permitted. The characters that make up a comment play no part in the
 pattern matching at all.
 
-   <p>If the `<samp><span class="samp">(?x)</span></samp>' option is set, an unescaped `<samp><span class="samp">#</span></samp>' character
+<p>If the `<samp><span class="samp">(?x)</span></samp>' option is set, an unescaped `<samp><span class="samp">#</span></samp>' character
 outside a character class introduces a comment that continues to
 immediately after the next newline in the pattern.
 
@@ -1867,36 +1867,36 @@ that can be done is to use a pattern that matches up to some fixed
 depth of nesting. It is not possible to handle an arbitrary nesting
 depth.
 
-   <p>PCRE supports special syntax for recursion of the entire pattern, and
+<p>PCRE supports special syntax for recursion of the entire pattern, and
 also for individual subpattern recursion. After its introduction in
 PCRE and Python, this kind of recursion was introduced into Perl at
 release 5.10.
 
-   <p>A special item that consists of `<samp><span class="samp">(?</span></samp>' followed by a number greater
+<p>A special item that consists of `<samp><span class="samp">(?</span></samp>' followed by a number greater
 than zero and a closing parenthesis is a recursive call of the
 subpattern of the given number, provided that it occurs inside that
 subpattern. (If not, it is a subroutine call, which is described in
 the next section.) The special item `<samp><span class="samp">(?R)</span></samp>' or `<samp><span class="samp">(?0)</span></samp>' is a
 recursive call of the entire regular expression.
 
-   <p>In PCRE (like Python, but unlike Perl), a recursive subpattern call is
+<p>In PCRE (like Python, but unlike Perl), a recursive subpattern call is
 always treated as an atomic group. That is, once it has matched some
 of the subject string, it is never re-entered, even if it contains
 untried alternatives and there is a subsequent matching failure.
 
-   <p>This PCRE pattern solves the nested parentheses problem (whitespace is
+<p>This PCRE pattern solves the nested parentheses problem (whitespace is
 insignificant):
 
 <pre class="verbatim">
          \( ( (?>[^()]+) | (?R) )* \)
 </pre>
 
-   <p>First it matches an opening parenthesis. Then it matches any number of
+<p>First it matches an opening parenthesis. Then it matches any number of
 substrings which can either be a sequence of non-parentheses, or a
 recursive match of the pattern itself (that is, a correctly
 parenthesized substring).  Finally there is a closing parenthesis.
 
-   <p>If this were part of a larger pattern, you would not want to recurse
+<p>If this were part of a larger pattern, you would not want to recurse
 the entire pattern, so instead you could use this:
 
 <pre class="verbatim">
@@ -1906,7 +1906,7 @@ the entire pattern, so instead you could use this:
 <p class="noindent">We have put the pattern into parentheses, and caused the recursion to
 refer to them instead of the whole pattern.
 
-   <p>In a larger pattern, keeping track of parenthesis numbers can be
+<p>In a larger pattern, keeping track of parenthesis numbers can be
 tricky. This is made easier by the use of relative references. (A Perl
 5.10 feature.)  Instead of `<samp><span class="samp">(?1)</span></samp>' in the pattern above you can
 write `<samp><span class="samp">(?-2)</span></samp>' to refer to the second most recently opened
@@ -1914,13 +1914,13 @@ parentheses preceding the recursion. In other words, a negative number
 counts capturing parentheses leftwards from the point at which it is
 encountered.
 
-   <p>It is also possible to refer to subsequently opened parentheses, by
+<p>It is also possible to refer to subsequently opened parentheses, by
 writing references such as `<samp><span class="samp">(?+2)</span></samp>'. However, these cannot be
 recursive because the reference is not inside the parentheses that are
 referenced. They are always subroutine calls, as described in the next
 section.
 
-   <p>An alternative approach is to use named parentheses instead. The Perl
+<p>An alternative approach is to use named parentheses instead. The Perl
 syntax for this is `<samp><span class="samp">(?&amp;name)</span></samp>'; PCRE's earlier syntax
 `<samp><span class="samp">(?P&gt;name)</span></samp>' is also supported. We could rewrite the above example
 as follows:
@@ -1932,7 +1932,7 @@ as follows:
 <p class="noindent">If there is more than one subpattern with the same name, the earliest
 one is used.
 
-   <p>This particular example pattern that we have been looking at contains
+<p>This particular example pattern that we have been looking at contains
 nested unlimited repeats, and so the use of atomic grouping for
 matching strings of non-parentheses is important when applying the
 pattern to strings that do not match. For example, when this pattern
@@ -1947,7 +1947,7 @@ runs for a very long time indeed because there are so many different
 ways the `<samp><span class="samp">+</span></samp>' and `<samp><span class="samp">*</span></samp>' repeats can carve up the subject, and
 all have to be tested before failure can be reported.
 
-   <p>At the end of a match, the values set for any capturing subpatterns
+<p>At the end of a match, the values set for any capturing subpatterns
 are those from the outermost level of the recursion at which the
 subpattern value is set.  If the pattern above is matched against
 
@@ -1997,7 +1997,7 @@ reference can be absolute or relative, as in these examples:
          (...(?+1)...(relative)...
 </pre>
 
-   <p>An earlier example pointed out that the pattern
+<p>An earlier example pointed out that the pattern
 
 <pre class="verbatim">
          (sens|respons)e and \1ibility
@@ -2015,12 +2015,12 @@ the pattern
 other two strings. Another example is given in the discussion of
 DEFINE above.
 
-   <p>Like recursive subpatterns, a subroutine call is always treated as an
+<p>Like recursive subpatterns, a subroutine call is always treated as an
 atomic group. That is, once it has matched some of the subject string,
 it is never re-entered, even if it contains untried alternatives and
 there is a subsequent matching failure.
 
-   <p>When a subpattern is used as a subroutine, processing options such as
+<p>When a subpattern is used as a subroutine, processing options such as
 case-independence are fixed when the subpattern is defined. They
 cannot be changed for different calls. For example, consider this
 pattern:
@@ -2029,7 +2029,7 @@ pattern:
          (abc)(?i:(?-1))
 </pre>
 
-   <p>It matches `<samp><span class="samp">abcabc</span></samp>'. It does not match `<samp><span class="samp">abcABC</span></samp>' because the
+<p>It matches `<samp><span class="samp">abcabc</span></samp>'. It does not match `<samp><span class="samp">abcABC</span></samp>' because the
 change of processing option does not affect the called subpattern.
 
 <h5 class="subsubheading">Backtracking Control</h5>
@@ -2041,7 +2041,7 @@ Perl.&rdquo; It goes on to say: &ldquo;Their usage in production code should be
 noted to avoid problems during upgrades.&rdquo; The same remarks apply to
 the PCRE features described in this section.
 
-   <p>The new verbs make use of what was previously invalid syntax: an
+<p>The new verbs make use of what was previously invalid syntax: an
 opening parenthesis followed by an asterisk. In Perl, they are
 generally of the form `<samp><span class="samp">(*VERB:ARG)</span></samp>' but PCRE does not support the
 use of arguments, so its general form is just `<samp><span class="samp">(*VERB)</span></samp>'. Any
@@ -2148,5 +2148,5 @@ failure the matcher skips to the second alternative and tries
 outside of any alternation, it acts exactly like <code>(*PRUNE)</code>. 
 </dl>
 
-   </body></html>
+</body></html>
 

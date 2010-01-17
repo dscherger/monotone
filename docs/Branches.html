@@ -41,16 +41,16 @@ that the fork has produced a new <dfn>branch</dfn>. Branches tell monotone
 which revisions you would like to merge, and which you would like to
 keep separate.
 
-   <p>You can see all the available branches using <samp><span class="command">mtn list branches</span></samp>.
+<p>You can see all the available branches using <samp><span class="command">mtn list branches</span></samp>.
 
-   <p>Branches are indicated with certs.  The cert name <code>branch</code> is
+<p>Branches are indicated with certs.  The cert name <code>branch</code> is
 reserved for use by monotone, for the purpose of identifying the
 revisions which are members of a branch. A <code>branch</code> cert has a
 symbolic &ldquo;branch name&rdquo; as its value. When we refer to &ldquo;a branch&rdquo;,
 we mean all revisions with a common branch name in their <code>branch</code>
 certs.
 
-   <p>For example, suppose you are working on a program called &ldquo;wobbler&rdquo;. 
+<p>For example, suppose you are working on a program called &ldquo;wobbler&rdquo;. 
 You might develop many revisions of wobbler and then decide to split
 your revisions into a &ldquo;stable branch&rdquo; and an &ldquo;unstable branch&rdquo;, to
 help organize your work. In this case, you might call the new branches
@@ -65,23 +65,23 @@ be merged. However, the <code>wobbler-stable</code> and
 <code>wobbler-unstable</code> branches will not be merged together, despite
 having a common ancestor.
 
-   <div class="block-image"><img src="figures/two-branches.png" alt="figures/two-branches.png"></div>
+<div class="block-image"><img src="figures/two-branches.png" alt="figures/two-branches.png"></div>
 
-   <p>For each branch, the set of revisions with <em>no children</em> is
+<p>For each branch, the set of revisions with <em>no children</em> is
 called the <dfn>heads</dfn> of the branch. Monotone can automatically
 locate, and attempt to merge, the heads of a branch. If it fails to
 automatically merge the heads, it may ask you for assistance or else
 fail cleanly, leaving the branch alone.
 
-   <p>For example, if a fork's left child has a child of its own (a &ldquo;left
+<p>For example, if a fork's left child has a child of its own (a &ldquo;left
 grandchild&rdquo;), monotone will merge the fork's right child with the
 left grandchild, since those revisions are the heads of the branch. It
 will not merge the left child with the right child, because the left
 child is not a member of the heads.
 
-   <div class="block-image"><img src="figures/branch-heads.png" alt="figures/branch-heads.png"></div>
+<div class="block-image"><img src="figures/branch-heads.png" alt="figures/branch-heads.png"></div>
 
-   <p>When there is only one revision in the heads of a branch, we say that
+<p>When there is only one revision in the heads of a branch, we say that
 <i>the heads are merged</i>, or more generally that <i>the branch is
 merged</i>, since the heads is the logical set of candidates for any
 merging activity. If there are two or more revisions in the heads of a
@@ -96,7 +96,7 @@ branch names must be <em>globally</em> unique, over all branches in the
 world.  Otherwise, bad things can happen.  Fortunately, we have a handy
 source of globally unique names &mdash; the DNS system.
 
-   <p>When naming a branch, always prepend the reversed, fully qualified, domain name of a host that
+<p>When naming a branch, always prepend the reversed, fully qualified, domain name of a host that
 you control or are otherwise authorized to use.  For example, monotone
 development happens on the branch <code>net.venge.monotone</code>, because
 <code>venge.net</code> belongs to monotone's primary author.  The idea is that
@@ -107,13 +107,13 @@ different program named <code>monotone</code>.  If you work for Yoyodyne,
 Inc. (owners of yoyodyne.com), then all your branch names should look
 like <code>com.yoyodyne.</code><em>something</em>.
 
-   <p>What the <em>something</em> part looks like is up to you, but
+<p>What the <em>something</em> part looks like is up to you, but
 usually the first part is the project name (the <code>monotone</code> in
 <code>net.venge.monotone</code>), and then possibly more stuff after that to
 describe a particular branch.  For example, monotone's win32 support
 was initially developed on the branch <code>net.venge.monotone.win32</code>.
 
-   <p>(For more information, see <a href="Naming-Conventions.html#Naming-Conventions">Naming Conventions</a>.)
+<p>(For more information, see <a href="Naming-Conventions.html#Naming-Conventions">Naming Conventions</a>.)
 
-   </body></html>
+</body></html>
 

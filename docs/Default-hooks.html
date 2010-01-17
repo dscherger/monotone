@@ -440,7 +440,7 @@ end
 function intersection(a,b)
    local s={}
    local t={}
-   for k,v in pairs(a) do s[v] = 1 end
+   for k,v in pairs(a) do s[v.name] = 1 end
    for k,v in pairs(b) do if s[v] ~= nil then table.insert(t,v) end end
    return t
 end
@@ -1441,5 +1441,5 @@ do
 end
 </pre>
 
-   </body></html>
+</body></html>
 

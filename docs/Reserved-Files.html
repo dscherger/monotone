@@ -45,17 +45,17 @@ classifications lead to four groups of files:
 <li>non-versioned non-control files
 </ul>
 
-   <p>Control files contain special content formatted for use by
+<p>Control files contain special content formatted for use by
 monotone. Versioned files are recorded in a monotone database and have
 their state tracked as they are modified.
 
-   <p>If a control file is versioned, it is considered <em>part of</em> the
+<p>If a control file is versioned, it is considered <em>part of</em> the
 state of the workspace, and will be recorded as a manifest
 entry. If a control file is not versioned, it is used to <em>manage</em>
 the state of the workspace, but it not considered an intrinsic part
 of it.
 
-   <p>Most files you manage with monotone will be versioned non-control
+<p>Most files you manage with monotone will be versioned non-control
 files. For example, if you keep source code or documents in a monotone
 database, they are versioned non-control files. Non-versioned,
 non-control files in your workspace are generally temporary or junk
@@ -73,7 +73,7 @@ names of control files follow a regular pattern:
 <br><dt>Non-versioned control files<dd>Any file in the directory <samp><span class="file">_MTN/</span></samp>
 </dl>
 
-   <p>The general intention is that versioned control files are things that
+<p>The general intention is that versioned control files are things that
 you may want to edit directly.  In comparison, you should never have
 to edit non-versioned control files directly; monotone should do that
 for you whenever it is appropriate.  However, both are documented
@@ -113,5 +113,5 @@ next edit/commit cycle.
 dumps a log of its recent activity to this file, to aid in debugging. 
 </dl>
 
-   </body></html>
+</body></html>
 

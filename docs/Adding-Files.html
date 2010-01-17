@@ -37,147 +37,147 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
 <p>Next Jim decides to add some files to the project. He writes up
 a file containing the prototypes for the JuiceBot 7:
 
-<pre class="smallexample">     $ mkdir include
-     $ cat &gt;include/jb.h
-     /* Standard JuiceBot hw interface */
-     
-     #define FLOW_JUICE 0x1
-     #define POLL_JUICE 0x2
-     int spoutctl(int port, int cmd, void *x);
-     
-     /* JuiceBot 7 API */
-     
-     #define APPLE_SPOUT 0x7e
-     #define BANANA_SPOUT 0x7f
-     void dispense_apple_juice ();
-     void dispense_banana_juice ();
-     ^D
+<pre class="smallexample">$ mkdir include
+$ cat &gt;include/jb.h
+/* Standard JuiceBot hw interface */
+
+#define FLOW_JUICE 0x1
+#define POLL_JUICE 0x2
+int spoutctl(int port, int cmd, void *x);
+
+/* JuiceBot 7 API */
+
+#define APPLE_SPOUT 0x7e
+#define BANANA_SPOUT 0x7f
+void dispense_apple_juice ();
+void dispense_banana_juice ();
+^D
 </pre>
-   <p>Then adds a couple skeleton source files which he wants Abe and Beth
+<p>Then adds a couple skeleton source files which he wants Abe and Beth
 to fill in:
 
-<pre class="smallexample">     $ mkdir src
-     $ cat &gt;src/apple.c
-     #include "jb.h"
-     
-     void
-     dispense_apple_juice()
-     {
-       /* Fill this in please, Abe. */
-     }
-     ^D
-     $ cat &gt;src/banana.c
-     #include "jb.h"
-     
-     void
-     dispense_banana_juice()
-     {
-       /* Fill this in please, Beth. */
-     }
-     ^D
+<pre class="smallexample">$ mkdir src
+$ cat &gt;src/apple.c
+#include "jb.h"
+
+void
+dispense_apple_juice()
+{
+  /* Fill this in please, Abe. */
+}
+^D
+$ cat &gt;src/banana.c
+#include "jb.h"
+
+void
+dispense_banana_juice()
+{
+  /* Fill this in please, Beth. */
+}
+^D
 </pre>
-   <p>Now Jim tells monotone to add these files to its record of his
+<p>Now Jim tells monotone to add these files to its record of his
 workspace.  He specifies one filename and one directory; monotone
 recursively scans the directory and adds all its files.
 
-<pre class="smallexample">     $ mtn add include/jb.h src
-     mtn: adding include/jb.h to workspace manifest
-     mtn: adding src/apple.c to workspace manifest
-     mtn: adding src/banana.c to workspace manifest
+<pre class="smallexample">$ mtn add include/jb.h src
+mtn: adding include/jb.h to workspace manifest
+mtn: adding src/apple.c to workspace manifest
+mtn: adding src/banana.c to workspace manifest
 </pre>
-   <p>This command produces a record of Jim's intentions in a special file
+<p>This command produces a record of Jim's intentions in a special file
 called <samp><span class="file">_MTN/revision</span></samp>, stored in the workspace. The file is plain
 text:
 
-<pre class="smallexample">     $ cat _MTN/revision
-     
-     format_version "1"
-     
-     new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
-     
-     old_revision []
-     
-     add_file "include/jb.h"
-      content [3b12b2d0b31439bd50976633db1895cff8b19da0]
-     
-     add_file "src/apple.c"
-      content [2650ffc660dd00a08b659b883b65a060cac7e560]
-     
-     add_file "src/banana.c"
-      content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+<pre class="smallexample">$ cat _MTN/revision
+
+format_version "1"
+
+new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
+
+old_revision []
+
+add_file "include/jb.h"
+ content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+
+add_file "src/apple.c"
+ content [2650ffc660dd00a08b659b883b65a060cac7e560]
+
+add_file "src/banana.c"
+ content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
 </pre>
-   <p>You will never have to look at this file, but it is nice to know that
+<p>You will never have to look at this file, but it is nice to know that
 it is there.
 
-   <p>Jim then gets up from his machine to get a coffee. When he returns
+<p>Jim then gets up from his machine to get a coffee. When he returns
 he has forgotten what he was doing. He asks monotone:
 
-<pre class="smallexample">     $ mtn status
-     Current branch: jp.co.juicebot.jb7
-     Changes against parent :
-       added   include/jb.h
-       added   src/apple.c
-       added   src/banana.c
+<pre class="smallexample">$ mtn status
+Current branch: jp.co.juicebot.jb7
+Changes against parent :
+  added   include/jb.h
+  added   src/apple.c
+  added   src/banana.c
 </pre>
-   <p>The output of this command tells Jim that his edits, so far,
+<p>The output of this command tells Jim that his edits, so far,
 constitute only the addition of some files.
 
-   <p>Jim wants to see the actual details of the files he added, however, so
+<p>Jim wants to see the actual details of the files he added, however, so
 he runs a command which prints out the status <em>and</em> a GNU
 &ldquo;unified diff&rdquo; of the patches involved in the changeset:
 
-<pre class="smallexample">     $ mtn diff
-     #
-     # old_revision []
-     #
-     # add_file "include/jb.h"
-     #  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
-     #
-     # add_file "src/apple.c"
-     #  content [2650ffc660dd00a08b659b883b65a060cac7e560]
-     #
-     # add_file "src/banana.c"
-     #  content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
-     #
-     ============================================================================
-     --- include/jb.h
-     +++ include/jb.h 3b12b2d0b31439bd50976633db1895cff8b19da0
-     @ -0,0 +1,13 @
-     +/* Standard JuiceBot hw interface */
-     +
-     +#define FLOW_JUICE 0x1
-     +#define POLL_JUICE 0x2
-     +#define SET_INTR 0x3
-     +int spoutctl(int port, int cmd, void *x);
-     +
-     +/* JuiceBot 7 API */
-     +
-     +#define APPLE_SPOUT 0x7e
-     +#define BANANA_SPOUT 0x7f
-     +void dispense_apple_juice ();
-     +void dispense_banana_juice ();
-     ============================================================================
-     --- src/apple.c
-     +++ src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
-     @ -0,0 +1,7 @
-     +#include "jb.h"
-     +
-     +void
-     +dispense_apple_juice()
-     +{
-     +  /* Fill this in please, Abe. */
-     +}
-     ============================================================================
-     --- src/banana.c
-     +++ src/banana.c e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f
-     @ -0,0 +1,7 @
-     +#include "jb.h"
-     +
-     +void
-     +dispense_banana_juice()
-     +{
-     +  /* Fill this in please, Beth. */
-     +}
+<pre class="smallexample">$ mtn diff
+#
+# old_revision []
+#
+# add_file "include/jb.h"
+#  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+#
+# add_file "src/apple.c"
+#  content [2650ffc660dd00a08b659b883b65a060cac7e560]
+#
+# add_file "src/banana.c"
+#  content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+#
+============================================================================
+--- include/jb.h
++++ include/jb.h 3b12b2d0b31439bd50976633db1895cff8b19da0
+@ -0,0 +1,13 @
++/* Standard JuiceBot hw interface */
++
++#define FLOW_JUICE 0x1
++#define POLL_JUICE 0x2
++#define SET_INTR 0x3
++int spoutctl(int port, int cmd, void *x);
++
++/* JuiceBot 7 API */
++
++#define APPLE_SPOUT 0x7e
++#define BANANA_SPOUT 0x7f
++void dispense_apple_juice ();
++void dispense_banana_juice ();
+============================================================================
+--- src/apple.c
++++ src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
+@ -0,0 +1,7 @
++#include "jb.h"
++
++void
++dispense_apple_juice()
++{
++  /* Fill this in please, Abe. */
++}
+============================================================================
+--- src/banana.c
++++ src/banana.c e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f
+@ -0,0 +1,7 @
++#include "jb.h"
++
++void
++dispense_banana_juice()
++{
++  /* Fill this in please, Beth. */
++}
 </pre>
-   </body></html>
+</body></html>
 

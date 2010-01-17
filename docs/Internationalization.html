@@ -71,9 +71,9 @@ transmission.
      <li>Monotone's transmission and storage forms are otherwise
 unchanged. Packets and database contents are 7-bit clean ASCII.
 
-   </ul>
+</ul>
 
-   <p>The remainder of this section is a precise specification of monotone's
+<p>The remainder of this section is a precise specification of monotone's
 internationalization behavior.
 
 <h3 class="heading">General Terms</h3>
@@ -106,8 +106,8 @@ Unicode, signified by the presence of an "unlikely" ACE prefix string
 "safely" over legacy ASCII-based applications. the general picture of
 an IDNA string is this:
 
-     <pre class="smallexample">                {ACE-prefix}{LDH-sanitized(punycode(nameprep(UTF-8-string)))}
-     </pre>
+     <pre class="smallexample">           {ACE-prefix}{LDH-sanitized(punycode(nameprep(UTF-8-string)))}
+</pre>
      <p>It is important to understand that IDNA encoding does <em>not</em>
 preserve the input string: it both prohibits a wide variety of
 possible strings and normalizes non-equal strings to supposedly
@@ -175,7 +175,7 @@ conversion. Host names are then split at <code>0x2E</code> (ASCII '.'), each
 component is subject to IDNA encoding, and the components are
 rejoined.
 
-   <p>After processing, host names are stored internally as ASCII. The
+<p>After processing, host names are stored internally as ASCII. The
 invariant is that a host name inside monotone contains only sequences
 of LDH separated by <code>0x2E</code>.
 
@@ -228,5 +228,5 @@ the union of these character sets:
 <li>ASCII codes 0x0D (CR), 0x0A (LF), 0x09 (HT), and 0x20 (SP). 
 </ul>
 
-   </body></html>
+</body></html>
 

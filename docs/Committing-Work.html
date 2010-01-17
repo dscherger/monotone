@@ -41,46 +41,46 @@ revision into the database. Since he provided a branch name when he
 ran <samp><span class="command">setup</span></samp>, monotone will use this as the default branch name
 when he commits.
 
-<pre class="smallexample">     $ mtn commit --message="initial checkin of project"
-     mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-     mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+<pre class="smallexample">$ mtn commit --message="initial checkin of project"
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
 </pre>
-   <p>When monotone committed Jim's revision, it updated <samp><span class="file">_MTN/revision</span></samp>
+<p>When monotone committed Jim's revision, it updated <samp><span class="file">_MTN/revision</span></samp>
 to record the workspace's new base revision ID. Jim can use this
 revision ID in the future, as an argument to the <samp><span class="command">checkout</span></samp>
 command, if he wishes to return to this revision:
 
-<pre class="smallexample">     $ mtn automate get_base_revision_id
-     2e24d49a48adf9acf3a1b6391a080008cbef9c21
+<pre class="smallexample">$ mtn automate get_base_revision_id
+2e24d49a48adf9acf3a1b6391a080008cbef9c21
 </pre>
-   <p>Monotone also generated a number of certificates attached to
+<p>Monotone also generated a number of certificates attached to
 the new revision, and made sure that the database contained a copy of Jim's
 public key. These certs store metadata about the commit. Jim can
 ask monotone for a list of certs on this revision.
 
-<pre class="smallexample">     $ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
-     -----------------------------------------------------------------
-     Key   : jim@juicebot.co.jp (398cb10d...)
-     Sig   : ok
-     Name  : branch
-     Value : jp.co.juicebot.jb7
-     -----------------------------------------------------------------
-     Key   : jim@juicebot.co.jp (398cb10d...)
-     Sig   : ok
-     Name  : date
-     Value : 2004-10-26T02:53:08
-     -----------------------------------------------------------------
-     Key   : jim@juicebot.co.jp (398cb10d...)
-     Sig   : ok
-     Name  : author
-     Value : jim@juicebot.co.jp
-     -----------------------------------------------------------------
-     Key   : jim@juicebot.co.jp (398cb10d...)
-     Sig   : ok
-     Name  : changelog
-     Value : initial checkin of project
+<pre class="smallexample">$ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+-----------------------------------------------------------------
+Key   : jim@juicebot.co.jp (398cb10d...)
+Sig   : ok
+Name  : branch
+Value : jp.co.juicebot.jb7
+-----------------------------------------------------------------
+Key   : jim@juicebot.co.jp (398cb10d...)
+Sig   : ok
+Name  : date
+Value : 2004-10-26T02:53:08
+-----------------------------------------------------------------
+Key   : jim@juicebot.co.jp (398cb10d...)
+Sig   : ok
+Name  : author
+Value : jim@juicebot.co.jp
+-----------------------------------------------------------------
+Key   : jim@juicebot.co.jp (398cb10d...)
+Sig   : ok
+Name  : changelog
+Value : initial checkin of project
 </pre>
-   <p>The output of this command has a block for each cert found. Each block
+<p>The output of this command has a block for each cert found. Each block
 has 4 significant pieces of information. The first indicates the
 signer of the cert, in this case <code>jim@juicebot.co.jp</code>. The
 second indicates whether this cert is &ldquo;ok&rdquo;, meaning whether the
@@ -92,25 +92,25 @@ that monotone has confirmed that, according to
 branch <code>jp.co.juicebot.jb7</code>, written by
 <code>jim@juicebot.co.jp</code>, with the given date and changelog.
 
-   <p>It is important to keep in mind that revisions are not &ldquo;in&rdquo; or
+<p>It is important to keep in mind that revisions are not &ldquo;in&rdquo; or
 &ldquo;out&rdquo; of a branch in any global sense, nor are any of these cert
 values <i>true</i> or <i>false</i> in any global sense. Each cert indicates
 that <i>some person</i> &ndash; in this case Jim &ndash; would like to associate a
 revision with some value; it is up to you to decide if you want to
 accept that association.
 
-   <p>Jim can now check the status of his branch using the &ldquo;heads&rdquo;
+<p>Jim can now check the status of his branch using the &ldquo;heads&rdquo;
 command, which lists all the head revisions in the branch:
 
-<pre class="smallexample">     $ mtn heads
-     branch 'jp.co.juicebot.jb7' is currently merged:
-     2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@juicebot.co.jp 2004-10-26T02:53:08
+<pre class="smallexample">$ mtn heads
+branch 'jp.co.juicebot.jb7' is currently merged:
+2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@juicebot.co.jp 2004-10-26T02:53:08
 </pre>
-   <p>The output of this command tells us that there is only one current
+<p>The output of this command tells us that there is only one current
 &ldquo;head&rdquo; revision in the branch <code>jp.co.juicebot.jb7</code>, and it is
 the revision Jim just committed. A head revision is one without any
 descendants. Since Jim has not committed any changes to this revision
 yet, it has no descendants.
 
-   </body></html>
+</body></html>
 

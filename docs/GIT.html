@@ -33,7 +33,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.11 GIT</h3>
 
      <dl>
-<dt><samp><span class="command">mtn git_export [--authors-file=</span><var>authors-file</var><span class="command">] [--branches-file=</span><var>branches-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dauthors_002dfile_003d_0040var_007bauthors_002dfile_007d_005d-_005b_002d_002dbranches_002dfile_003d_0040var_007bbranches_002dfile_007d_005d-210"></a><dt><samp><span class="command">mtn git_export [--import-marks=</span><var>marks-file</var><span class="command">] [--export-marks=</span><var>marks-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dimport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-_005b_002d_002dexport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-211"></a><dt><samp><span class="command">mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dlog_002drevids_005d-_005b_002d_002dlog_002dcerts_005d-_005b_002d_002duse_002done_002dchangelog_005d-212"></a><dt><samp><span class="command">mtn git_export [--refs=</span><var>type</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002drefs_003d_0040var_007btype_007d_005d-213"></a><dd>
+<dt><samp><span class="command">mtn git_export [--authors-file=</span><var>authors-file</var><span class="command">] [--branches-file=</span><var>branches-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dauthors_002dfile_003d_0040var_007bauthors_002dfile_007d_005d-_005b_002d_002dbranches_002dfile_003d_0040var_007bbranches_002dfile_007d_005d-221"></a><dt><samp><span class="command">mtn git_export [--import-marks=</span><var>marks-file</var><span class="command">] [--export-marks=</span><var>marks-file</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dimport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-_005b_002d_002dexport_002dmarks_003d_0040var_007bmarks_002dfile_007d_005d-222"></a><dt><samp><span class="command">mtn git_export [--log-revids] [--log-certs] [--use-one-changelog]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002dlog_002drevids_005d-_005b_002d_002dlog_002dcerts_005d-_005b_002d_002duse_002done_002dchangelog_005d-223"></a><dt><samp><span class="command">mtn git_export [--refs=</span><var>type</var><span class="command">]</span></samp><a name="index-mtn-git_005fexport-_005b_002d_002drefs_003d_0040var_007btype_007d_005d-224"></a><dd>
 This command exports all revisions from the current monotone database
 to <code>stdout</code> in a format that can be piped directly to git
 fast-import.
@@ -48,13 +48,15 @@ documented in git-svn(1). Mappings are specified in the
 
      <p>The list of authors that might need to be mapped can be extracted from
 a monotone database with the following sql query:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      $ mtn db execute 'select distinct value from revision_certs where name = "author"'
 </pre>
 
      <p>The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
 </pre>
 
@@ -62,16 +64,19 @@ from a monotone database with the following sql query:
 names to different values. This may be required as monotone allows
 branch names that are not valid according to git. Branch mappings are
 specified in the <var>branches-file</var> as:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      monotone-branch-name = git-branch-name
 </pre>
-Revisions with no author cert will use &lt;unknown&gt; for both the author
+
+     <p>Revisions with no author cert will use &lt;unknown&gt; for both the author
 and the committer. These can be mapped to other values using the
 <var>authors-file</var> option.
 
      <p>The list of branches that might need to be mapped can be extracted
 from a monotone database with using the <samp><span class="command">ls branches</span></samp> command:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      $ mtn ls branches --ignore-suspend-certs
 </pre>
 
@@ -90,11 +95,13 @@ files may also be used.
      <p>The original monotone revision ids may be included in the exported git
 commit messages using the <samp><span class="option">--log-revids</span></samp> option. These will
 appear as:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      Monotone-Parent: ...
      Monotone-Revision: ...
 </pre>
-in the git commit messages and may be useful for repository
+
+     <p>in the git commit messages and may be useful for repository
 verification. Merge revisions with two parents will include two
 <code>Monotone-Parent</code> lines.
 
@@ -102,13 +109,15 @@ verification. Merge revisions with two parents will include two
 <code>branch</code> and <code>tag</code> certificates may be included in the
 exported git commit messages using the <samp><span class="option">--log-certs</span></samp>
 option. These will appear as:
-<pre class="verbatim">     
+
+     <pre class="verbatim">     
      Monotone-Author: ...
      Monotone-Date: ...
      Monotone-Branch: ...
      Monotone-Tag: ...
 </pre>
-in the git commit messages and may be useful for repository
+
+     <p>in the git commit messages and may be useful for repository
 verification or maintaining information that is otherwise not
 maintained by git. In particular monotone may have several values for
 each of these certs and git only represents a single <code>author</code> and
@@ -138,5 +147,5 @@ cause considerable clutter in tools like gitk.
 
 </dl>
 
-   </body></html>
+</body></html>
 

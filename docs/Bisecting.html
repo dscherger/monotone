@@ -1,0 +1,100 @@
+<html lang="en">
+<head><link type="text/css" rel="stylesheet" href="texinfo.css" />
+<title>Bisecting - monotone documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="monotone documentation">
+<meta name="generator" content="makeinfo 4.8">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
+<link rel="prev" href="Using-packets.html#Using-packets" title="Using packets">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Bisecting"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Using-packets.html#Using-packets">Using packets</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
+<hr>
+</div>
+
+<h3 class="section">3.19 Bisecting</h3>
+
+<p>Bisecting is an efficient means of finding the earliest revision that
+introduced a bug known to exist in some later revision. Given a set of
+&ldquo;good&rdquo; earlier revisions that do not contain the bug and a set of
+&ldquo;bad&rdquo; later revisions that do contain the bug <samp><span class="command">bisect</span></samp>
+performs a binary search over the set of revisions between these two
+sets to identify the specific revision that introduced the bug.
+
+<p>Bisection is started by marking revisions with the <samp><span class="command">bisect
+good</span></samp> and <samp><span class="command">bisect bad</span></samp> commands. Once both good and bad
+revisions have been specified the set of candidate revisions between
+the good and bad revisions is determined. The midpoint of this set is
+selected as the next revision to be tested and the workspace is
+updated to this selected revision. After the selected revision has
+been tested bisection continues when the revision is marked with
+<samp><span class="command">bisect good</span></samp> or <samp><span class="command">bisect bad</span></samp>. If the selected
+revision is marked as good, it and all of its ancestors are considered
+to be good and excluded from the remaining search set. If the selected
+revision is marked as bad, all of its descendants are considered to be
+bad and excluded from the remaining search set. After each selected
+revision is marked as good or bad the size of the remaining search set
+is halved.
+
+<p>Revisions that are untestable for some reason (e.g. they don't
+compile) may be ignored with the <samp><span class="command">bisect skip</span></samp> command. This
+excludes the specified revisions from the candidate set and allows the
+bisection operation to continue. Skipping revisions may cause the
+search to fail or end on the wrong revision if the revision being
+searched for is skipped.
+
+<p>If the workspace is updated to some unrelated revision during a
+bisection operation the <samp><span class="command">bisect update</span></samp> command can be used to
+update back to the next revision selected for bisection. This command
+can also be used if a previous <samp><span class="command">bisect good</span></samp>, <samp><span class="command">bisect
+bad</span></samp> or <samp><span class="command">bisect skip</span></samp> command fails to update the workspace
+due to the existence of conflicting unversioned paths.
+
+<p>The current status of the bisection operation and the next revision to
+be tested is reported by the <samp><span class="command">bisect status</span></samp> command. This
+command can be run at any stage of the bisection operation to see how
+many revisions remain to be tested and how many revisions have been
+ruled out.
+
+<p>Currently <samp><span class="command">bisect</span></samp> updates the workspace but does <em>not</em>
+update the workspace <samp><span class="option">branch</span></samp> option. This may leave the
+workspace at a revision that is <em>not</em> in the branch specified by
+the workspace <samp><span class="option">branch</span></samp> option and cause subsequent commits to
+be made to the wrong branch. To help avoid this error the
+<samp><span class="command">status</span></samp> command will indicate when the workspace branch does
+not match any of the parent revision branches. Take care when
+committing new revisions during a bisection operation and be sure to
+use the <samp><span class="command">bisect reset</span></samp> command once the bisection is complete
+to update the workspace back to the revision from which the bisection
+started.
+
+<p>The bisection operation completes successfully when the last remaining
+revision is marked as &ldquo;bad&rdquo;.  If the last remaining revision is
+marked as &ldquo;good&rdquo; the bisection fails without finding the initial bad
+revision.
+
+<p>Once bisection is complete the workspace can be updated back to the
+starting revision with the <samp><span class="command">bisect reset</span></samp> command. This
+command also removes all stored bisection information in preparation
+for future bisect operations.
+
+</body></html>
+

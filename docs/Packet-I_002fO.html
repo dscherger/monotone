@@ -42,7 +42,7 @@ wish to manually transmit a piece of information &ndash; for example a
 public key &ndash; from one monotone database to another, it is often
 convenient to read and write packets.
 
-   <p><em>Note:</em> earlier versions of monotone queued and replayed packet
+<p><em>Note:</em> earlier versions of monotone queued and replayed packet
 streams for their networking system. This older networking system has
 been removed, as the netsync protocol has several properties which
 make it a superior communication system. However, the packet I/O
@@ -50,36 +50,36 @@ facility will remain in monotone as a utility for moving individual
 data items around manually.
 
      <dl>
-<dt><samp><span class="command">mtn automate packets_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packets_005ffor_005fcerts-_0040var_007bid_007d-135"></a><dd>
+<dt><samp><span class="command">mtn automate packets_for_certs </span><var>id</var></samp><a name="index-mtn-automate-packets_005ffor_005fcerts-_0040var_007bid_007d-141"></a><dd>
 This command prints out an <code>rcert</code> packet for each cert in your
 database associated with <var>id</var>. These can be used to transport
 certificates safely between monotone databases.  See <a href="Automation.html#Automation">Automation</a>
 for details of this command.
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-136"></a><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-137"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdata-_0040var_007bid_007d-142"></a><dt><samp><span class="command">mtn automate packet_for_rdata </span><var>id</var></samp><a name="index-mtn-automate-packet_005ffor_005frdata-_0040var_007bid_007d-143"></a><dd>
 These commands print out an <code>fdata</code> or <code>rdata</code> packet for
 the file, manifest or revision <var>id</var> in your database.  These can
 be used to transport files or revisions, in their entirety, safely
 between monotone databases.  See <a href="Automation.html#Automation">Automation</a> for details of these
 commands.
 
-     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>id1</var> <var>id2</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bid1_007d-_0040var_007bid2_007d-138"></a><dd>
+     <br><dt><samp><span class="command">mtn automate packet_for_fdelta </span><var>id1</var> <var>id2</var></samp><a name="index-mtn-automate-packet_005ffor_005ffdelta-_0040var_007bid1_007d-_0040var_007bid2_007d-144"></a><dd>
 This command prints out an <code>fdelta</code> packet for the differences
 between file versions <var>id1</var> and <var>id2</var>, in your database. 
 These can be used to transport file differences safely between
 monotone databases.  See <a href="Automation.html#Automation">Automation</a> for details of this
 command.
 
-     <br><dt><samp><span class="command">mtn privkey </span><var>keyid</var></samp><a name="index-mtn-privkey-_0040var_007bkeyid_007d-139"></a><dt><samp><span class="command">mtn pubkey </span><var>keyid</var></samp><a name="index-mtn-pubkey-_0040var_007bkeyid_007d-140"></a><dd>
+     <br><dt><samp><span class="command">mtn privkey </span><var>keyid</var></samp><a name="index-mtn-privkey-_0040var_007bkeyid_007d-145"></a><dt><samp><span class="command">mtn pubkey </span><var>keyid</var></samp><a name="index-mtn-pubkey-_0040var_007bkeyid_007d-146"></a><dd>
 These commands print out an <code>keypair</code> or <code>pubkey</code> packet for
 the <span class="sc">rsa</span> key <var>keyid</var>. These can be used to transport public or
 private keys safely between monotone databases.
 
-     <br><dt><samp><span class="command">mtn read</span></samp><a name="index-mtn-read-141"></a><br><dt><samp><span class="command">mtn read </span><var>file1</var> <var>file2...</var></samp><a name="index-mtn-read-_0040var_007bfile1_007d-_0040var_007bfile2_002e_002e_002e_007d-142"></a><dd>
+     <br><dt><samp><span class="command">mtn read</span></samp><a name="index-mtn-read-147"></a><br><dt><samp><span class="command">mtn read </span><var>file1</var> <var>file2...</var></samp><a name="index-mtn-read-_0040var_007bfile1_007d-_0040var_007bfile2_002e_002e_002e_007d-148"></a><dd>
 This command reads packets from files or <code>stdin</code> and stores them
 in your database.
 
-   </dl>
+</dl>
 
-   </body></html>
+</body></html>
 

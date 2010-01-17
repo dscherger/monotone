@@ -45,17 +45,17 @@ not begin with <code>x-</code> for possible internal use. If an <code>x-</code>
 certificate becomes widely used, monotone will likely adopt it as a
 reserved cert name and standardize its semantics.
 
-   <p>Most reserved certificate names have no meaning yet; some do. Usually
+<p>Most reserved certificate names have no meaning yet; some do. Usually
 monotone is also responsible for <em>generating</em> many of these certs
 as part of normal operation, such as during a <samp><span class="command">commit</span></samp>. Others
 will be added explicitly via other commands, like <samp><span class="command">tag</span></samp> or
 <samp><span class="command">approve</span></samp>.
 
-   <p>As well as carrying other information, certs (and combinations of certs)
+<p>As well as carrying other information, certs (and combinations of certs)
 are useful for identifying revisions with <a href="Selectors.html#Selectors">Selectors</a>; in
 particular, this is the primary purpose of the <code>tag</code> cert.
 
-   <p>The pre-defined, reserved certificate names are:
+<p>The pre-defined, reserved certificate names are:
 
      <dl>
 <dt><code>author</code><dd>This cert's value is the name of a person who committed the revision
@@ -101,7 +101,7 @@ revision. Typically you will make a separate signing key for each test
 you intend to run on revisions. This cert influences the
 <samp><span class="command">update</span></samp> algorithm.
 
-   </dl>
+</dl>
 
-   </body></html>
+</body></html>
 

@@ -294,9 +294,9 @@ the versioned tree to have the name <var>put_old</var>.  Conceptually, it
 is equivalent to executing the following commands in the root of the
 workspace:
 
-     <pre class="smallexample">          $ mtn rename . <var>new_root</var>/<var>put_old</var>
-          $ mtn rename <var>new_root</var> .
-     </pre>
+     <pre class="smallexample">     $ mtn rename . <var>new_root</var>/<var>put_old</var>
+     $ mtn rename <var>new_root</var> .
+</pre>
      <p>Except, of course, that these <samp><span class="command">rename</span></samp> commands are illegal,
 because after the first command the tree has no root at all, and there
 is a directory loop.  This illegality is the only reason for
@@ -311,7 +311,57 @@ records, but not in the filesystem itself.
      <p>When running <samp><span class="command">pivot_root</span></samp>, it is sometimes possible for
 <a href="Workspace-Collisions.html#Workspace-Collisions">Workspace Collisions</a> to occur.
 
+     <br><dt><samp><span class="command">mtn bisect good [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-good-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-61"></a><dd>Mark the specified revisions as &ldquo;good&rdquo; for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+     <p>If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+<samp><span class="option">--move-conflicting-paths</span></samp> option. Alternatively, the
+<samp><span class="command">bisect update</span></samp> command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+     <br><dt><samp><span class="command">mtn bisect bad [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-bad-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-62"></a><dd>Mark the specified revisions as &ldquo;bad&rdquo; for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+     <p>If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+<samp><span class="option">--move-conflicting-paths</span></samp> option. Alternatively, the
+<samp><span class="command">bisect update</span></samp> command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+     <br><dt><samp><span class="command">mtn bisect skip [--revision=</span><var>id</var><span class="command"> ...] [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-skip-_005b_002d_002drevision_003d_0040var_007bid_007d-_002e_002e_002e_005d-_005b_002d_002dmove_002dconflicting_002dpaths_005d-63"></a><dd>Mark the specified revisions as &ldquo;skipped&rdquo; for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+     <p>If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+<samp><span class="option">--move-conflicting-paths</span></samp> option. Alternatively, the
+<samp><span class="command">bisect update</span></samp> command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+     <br><dt><samp><span class="command">mtn bisect update [--move-conflicting-paths]</span></samp><a name="index-mtn-bisect-update-_005b_002d_002dmove_002dconflicting_002dpaths_005d-64"></a><dd>Update the workspace to the next revision selected by the previous
+bisect operation. This command can be useful when the previous bisect
+operation fails to update the workspace because of conflicting
+unversioned paths existing in the workspace.
+
+     <br><dt><samp><span class="command">mtn bisect status</span></samp><a name="index-mtn-bisect-status-65"></a><dd>Report the status of the current bisection operation including the
+number of revisions that remain to be tested, the number of revisions
+that have been tested and the next revision that will selected for
+testing.
+
+     <br><dt><samp><span class="command">mtn bisect reset</span></samp><a name="index-mtn-bisect-reset-66"></a><dd>Reset the current bisection operation by updating the workspace back
+to the revision from which the bisection was started and clearing the
+current bisection information.
+
 </dl>
 
-   </body></html>
+</body></html>
 

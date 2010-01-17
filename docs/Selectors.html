@@ -54,7 +54,7 @@ which is very precise.
 <code>graydon</code>, yesterday. 
 </dl>
 
-   <p>A moment's examination reveals that these specifications are &ldquo;fuzzy&rdquo;
+<p>A moment's examination reveals that these specifications are &ldquo;fuzzy&rdquo;
 and indeed may return multiple values, or may be ambiguous. When
 ambiguity arises, monotone will inform you that more detail is
 required, and list various possibilities. The precise specification
@@ -120,13 +120,13 @@ revision ID of the workspace before the last <samp><span class="command">update<
 was executed. This can be useful for reviewing incoming
 revisions. After each update operation, or at least before the next
 update operation, run a command similar to the following:
-     <pre class="smallexample">          $ mtn log --to u: --diffs
-     </pre>
+     <pre class="smallexample">     $ mtn log --to u: --diffs
+</pre>
      <p>to log all revisions back to the last update. It can also be
 used for quickly jumping between two different revisions. For example,
 the following command:
-     <pre class="smallexample">          $ mtn update -r u:
-     </pre>
+     <pre class="smallexample">     $ mtn update -r u:
+</pre>
      <p>will update back to the previous update revision. Repeating this
 command will swap the current and previous update revision. 
 <br><dt>Tag selection<dd>Uses selector type <code>t</code>. For example, <code>t:monotone-0.11</code> matches
@@ -137,7 +137,7 @@ workspace and must not have any associated value. It matches the base
 revision ID(s) this workspace is based on. 
 </dl>
 
-   <p>Further selector types may be added in the future.
+<p>Further selector types may be added in the future.
 
 <h3 class="heading">Composite selectors</h3>
 
@@ -168,22 +168,22 @@ English-like syntax similar to CVS.  This syntax is expanded to the
 numeric format by a Lua hook: <code>expand_date</code>. 
 The allowed date formats are:
      <dl>
-<dt>now<dd>Expands to the current date and time. 
-<br><dt>today<dd>Expands to today's date. <code>e</code> and <code>l</code> selectors assume time 00:00:00
-<br><dt>yesterday<dd>Expands to yesterday's date. <code>e</code> and <code>l</code> selectors assume
+<dt><code>now</code><dd>Expands to the current date and time. 
+<br><dt><code>today</code><dd>Expands to today's date. <code>e</code> and <code>l</code> selectors assume time 00:00:00
+<br><dt><code>yesterday</code><dd>Expands to yesterday's date. <code>e</code> and <code>l</code> selectors assume
 time 00:00:00
-<br><dt>&lt;number&gt; {minute|hour} &lt;ago&gt;<dd>Expands to today date and time, minus the specified <code>number</code> of
+<br><dt><code>&lt;number&gt; {minute|hour} &lt;ago&gt;</code><dd>Expands to today date and time, minus the specified <code>number</code> of
 minutes|hours. 
-<br><dt>&lt;number&gt; {day|week|month|year} &lt;ago&gt;<dd>Expands to today date, minus the specified <code>number</code> of
+<br><dt><code>&lt;number&gt; {day|week|month|year} &lt;ago&gt;</code><dd>Expands to today date, minus the specified <code>number</code> of
 days|weeks|months|years. <code>e</code> and <code>l</code> selectors assume time
 00:00:00
-<br><dt>&lt;year&gt;-&lt;month&gt;[-day[Thour:minute:second]]<dd>Expands to the supplied year/month. The day and time component are
+<br><dt><code>&lt;year&gt;-&lt;month&gt;[-day[Thour:minute:second]]</code><dd>Expands to the supplied year/month. The day and time component are
 optional. If missing, <code>e</code> and <code>l</code> selectors assume the first
 day of month and time 00:00:00. 
 The time component, if supplied, must be complete to the second. 
 </dl>
 
-   <p>For the complete source code of the hook, see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.
+<p>For the complete source code of the hook, see <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.
 
 <h3 class="heading">Typeless selection</h3>
 
@@ -197,5 +197,5 @@ the selector <code>graydon</code> as an unknown selector; so long as there
 are no branches or tags beginning with the string <code>graydon</code> this
 is just as effective as specifying <code>a:graydon</code>.
 
-   </body></html>
+</body></html>
 

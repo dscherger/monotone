@@ -42,7 +42,7 @@ conflicts).  Other kinds of changes cannot be merged so readily,
 especially ones that involve files in your workspace that are not
 tracked by monotone.
 
-   <p>Workspace collisions can happen for many reasons; some examples include:
+<p>Workspace collisions can happen for many reasons; some examples include:
      <ul>
 <li>You have a file in your workspace that is unknown to monotone (you
 have not <samp><span class="command">add</span></samp>ed it).  Someone else has <samp><span class="command">add</span></samp>ed and
@@ -61,12 +61,12 @@ be deleted.
 same name. 
 </ul>
 
-   <p>These examples describe collisions on <samp><span class="command">update</span></samp>; the same kinds
+<p>These examples describe collisions on <samp><span class="command">update</span></samp>; the same kinds
 of things can happen with other commands that can bring changes into
 your workspace, such as <samp><span class="command">checkout</span></samp>, <samp><span class="command">pivot_root</span></samp> or
 <samp><span class="command">pluck</span></samp> too.
 
-   <p>Monotone is careful to avoid hitting such collisions. Before changing
+<p>Monotone is careful to avoid hitting such collisions. Before changing
 the workspace, it will try and detect the possibility of collisions, and
 the command will fail, warning you about the names that collide.  The
 file content in the database is safe and can be recovered at any time,
@@ -77,7 +77,7 @@ conflicting files and directories from the workspace into a new subdirectory
 under _MTN/conflicts. This is useful if you want to ensure that an update
 always succeeds and you just want to move blocking paths out of the way.
 
-   <p>However, monotone cannot detect all kinds of failures and collisions in
+<p>However, monotone cannot detect all kinds of failures and collisions in
 your workspace. For example:
      <ul>
 <li>On some systems with case-insensitive and/or internationalised
@@ -91,7 +91,7 @@ disk full conditions, might cause failures when monotone is rearranging
 the workspace content. 
 </ul>
 
-   <p>These are all hopefully very rare occurrences. If such a filesystem
+<p>These are all hopefully very rare occurrences. If such a filesystem
 error <em>does</em> cause a failure part-way during a workspace
 alteration, monotone will stop immediately rather than risk potentially
 doing further damage, and your workspace may be left in an incomplete
@@ -99,7 +99,7 @@ state.  If this happens, you will need to resolve the issue and clean up
 the workspace manually.  If you need to do so, understanding how
 monotone manipulates the workspace is helpful.
 
-   <p>When monotone applies renaming changes to the workspace, each file is
+<p>When monotone applies renaming changes to the workspace, each file is
 first <dfn>detached</dfn> from the workspace under its old name, then
 <dfn>attached</dfn> under the new name. This is done by moving it to the
 <samp><span class="file">_MTN/detached</span></samp> directory. Newly added files are created here
@@ -110,18 +110,18 @@ node is a directory, the directory is moved with all of its contents
 (including unversioned files); this can help identify which directory
 has been detached.
 
-   <p>If a previous workspace alteration failed part-way, the
+<p>If a previous workspace alteration failed part-way, the
 <samp><span class="file">_MTN/detached</span></samp> directory will still exist, and monotone will
 refuse to attempt another alteration while the workspace is in this
 inconsistent state. This also acts as a lock against multiple monotone
 processes performing workspace alterations (but not other programs).
 
-   <p>The best way to avoid a messy recovery from such a failure is simply to
+<p>The best way to avoid a messy recovery from such a failure is simply to
 ensure that you always <samp><span class="command">commit</span></samp> before trying to
 <samp><span class="command">update</span></samp> (or <samp><span class="command">pluck</span></samp>, etc) other changes from the
 database into your workspace. This ensures that your current workspace
 contents are safely stored, and can be retrieved later (such as with
 <samp><span class="command">revert</span></samp>).
 
-   </body></html>
+</body></html>
 

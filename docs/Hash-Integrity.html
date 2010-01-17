@@ -41,7 +41,7 @@ have suggested, in a
 section addresses the argument presented in that paper and describes
 monotone's additional precautions.
 
-   <p>To summarize our position:
+<p>To summarize our position:
      <ul>
 <li>the analysis in the paper is wrong,
 <li>even if it were right, monotone is sufficiently safe. 
@@ -55,7 +55,7 @@ normal hash function. Furthermore it confuses accidental collision
 with attack scenarios, and mixes up its analysis of the risk involved
 in each. We will try to untangle these issues here.
 
-   <p>A cryptographic hash function such as <span class="sc">sha1</span> is more than just a
+<p>A cryptographic hash function such as <span class="sc">sha1</span> is more than just a
 uniform spread of inputs to an output range. Rather, it must be
 designed to withstand attempts at:
 
@@ -64,7 +64,7 @@ designed to withstand attempts at:
 <li>collision: finding two different inputs which hash to the same output
 </ul>
 
-   <p>Collision is the problem the paper is concerned with. Formally, an
+<p>Collision is the problem the paper is concerned with. Formally, an
 n-bit cryptographic hash should cost 2^n work units to collide
 against a given value, and sqrt(2^n) tries to find a random
 pair of colliding values. This latter probability is sometimes called
@@ -83,7 +83,7 @@ the 160 output bits &mdash; and is completely unsuited for use as a
 <em>cryptographic hash</em>, regardless of the general shape of its
 probability distribution.
 
-   <p>The paper also suggests that birthday paradox probability cannot be
+<p>The paper also suggests that birthday paradox probability cannot be
 used to measure the chance of accidental <span class="sc">sha1</span> collision on &ldquo;real
 inputs&rdquo;, because birthday paradox probability assumes a uniformly
 random sample and &ldquo;real inputs&rdquo; are not uniformly random. The paper
@@ -95,7 +95,7 @@ identical inputs. In other words, it is <em>a primary design
 criterion</em> of such a hash that a birthday paradox probability is a
 valid approximation of its collision probability.
 
-   <p>The paper's characterization of risk when hashing &ldquo;non-random
+<p>The paper's characterization of risk when hashing &ldquo;non-random
 inputs&rdquo; is similarly deceptive. It presents a fanciful case of a
 program which is <em>storing</em> every possible 2kb block in a
 file system addressed by <span class="sc">sha1</span> (the program is trying to find a
@@ -106,7 +106,7 @@ collide after storing about 2^80 of the 2^16384 possible
 such blocks (not to mention the requirements for compute time to
 search, or disk space to store 2^80 2kb blocks).
 
-   <p>Noting that monotone can only store 2^41 bytes in a database,
+<p>Noting that monotone can only store 2^41 bytes in a database,
 and thus probably some lower number (say 2^32 or so) active
 rows, we consider such birthday paradox probability well out of
 practical sight. Perhaps it will be a serious concern when
@@ -124,7 +124,7 @@ that finding a way to trivially collide it only changes the resistance
 to <em>active attack</em>, rather than the behavior of the hash on
 benign inputs.
 
-   <p>Therefore the vulnerability is not that the hash might suddenly cease
+<p>Therefore the vulnerability is not that the hash might suddenly cease
 to address benign blocks well, but merely that additional security
 precautions might become a requirement to ensure that blocks are
 benign, rather than malicious. The paper fails to make this
@@ -150,7 +150,7 @@ does <em>not</em> mean that you cannot use it for your work with
 monotone. It means, rather, that you cannot base your <em>trust</em> on
 <span class="sc">sha1</span> values anymore. You must trust who you communicate with.
 
-   <p>The way around this is reasonably simple: if you do not trust
+<p>The way around this is reasonably simple: if you do not trust
 <span class="sc">sha1</span> to prevent malicious blocks from slipping into your
 communications, you can always augment it by enclosing your
 communications in more security, such as tunnels or additional
@@ -159,17 +159,17 @@ still have the benefit of self-identifying blocks, you will simply
 cease to trust such blocks unless they come with additional
 authentication information.
 
-   <p>If in the future <span class="sc">sha1</span> (or, indeed, <span class="sc">rsa</span>) becomes accepted as
+<p>If in the future <span class="sc">sha1</span> (or, indeed, <span class="sc">rsa</span>) becomes accepted as
 broken we will naturally upgrade monotone to a newer hash or public
 key scheme, and provide migration commands to recalculate existing
 databases based on the new algorithm.
 
-   <p>Similarly, if you do not trust our vigilance in keeping up to date
+<p>Similarly, if you do not trust our vigilance in keeping up to date
 with cryptography literature, you can modify monotone to use any
 stronger hash you like, at the cost of isolating your own
 communications to a group using the modified version. Monotone is free
 software, and runs atop <code>botan</code>, so it is both legal and
 relatively simple to change it to use some other algorithm.
 
-   </body></html>
+</body></html>
 

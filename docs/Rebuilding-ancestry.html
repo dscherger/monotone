@@ -44,14 +44,14 @@ history is the point of a version control system, after all, and it
 turns out to be very important to building a <em>distributed</em> version
 control system like monotone.
 
-   <p>It does have one unfortunate consequence, though.  It means that in the
+<p>It does have one unfortunate consequence, though.  It means that in the
 rare occasion where one <em>needs</em> to change a historical revision, it
 will change the <span class="sc">sha1</span> of that revision, which will change the text
 of its children, which will change their <span class="sc">sha1</span>s, and so on;
 basically the entire history graph will diverge from that point
 (invalidating all certs in the process).
 
-   <p>In practice there are two situations where this might be necessary:
+<p>In practice there are two situations where this might be necessary:
      <ul>
 <li>bugs: monotone has occasionally allowed nonsense, uninterpretable
 changesets to be generated and stored in the database, and this was not
@@ -59,11 +59,12 @@ detected until further work had been based off of them.
 <li>advances in crypto: if or when <span class="sc">sha1</span> is broken, we will need to
 migrate to a different secure hash. 
 </ul>
-   Obviously, we hope neither of these things will happen, and we've taken
+
+<p>Obviously, we hope neither of these things will happen, and we've taken
 lots of precautions against the first recurring; but it is better to be
 prepared.
 
-   <p>If either of these events occur, we will provide migration commands and
+<p>If either of these events occur, we will provide migration commands and
 explain how to use them for the situation in question; this much is
 necessarily somewhat unpredictable.  In the past we've used the (now
 defunct) <samp><span class="command">db rebuild</span></samp> command, and more recently the <samp><span class="command">db
@@ -72,7 +73,7 @@ commands were used to recreate revisions with new formats.  Because the
 revision id's changed, all the existing certs that you trust also must
 be reissued, signed with your key.<a rel="footnote" href="#fn-1" name="fnd-1"><sup>1</sup></a>
 
-   <p>While such commands can reconstruct the ancestry graph in <em>your</em>
+<p>While such commands can reconstruct the ancestry graph in <em>your</em>
 database, there are practical problems which arise when working in a
 distributed work group.  For example, suppose our group consists of the
 fictional developers Jim and Beth, and they need to rebuild their
@@ -85,7 +86,7 @@ complete, parallel (but possibly overlapping) copies of their project's
 ancestry.  The &ldquo;bad&rdquo; old revisions that they were trying to get rid of
 are still there, mixed up with the &ldquo;good&rdquo; new revisions.
 
-   <p>To prevent such messy situations, monotone keeps a table of branch
+<p>To prevent such messy situations, monotone keeps a table of branch
 <dfn>epochs</dfn> in each database. An epoch is just a large bit string
 associated with a branch. Initially each branch's epoch is zero. Most
 monotone commands ignore epochs; they are relevant in only two
@@ -101,16 +102,16 @@ epochs. If any epochs differ, the netsync is aborted with no changes
 made to either database. If either side is seeing a branch for the
 first time, it adopts the epoch of the other side.
 
-   </ul>
+</ul>
 
-   <p>Thus, when a user rebuilds their ancestry graph, they select a new
+<p>Thus, when a user rebuilds their ancestry graph, they select a new
 epoch and thus effectively disassociate with the group of colleagues
 they had previously been communicating with. Other members of that
 group can then decide whether to follow the rebuild user into a new
 group &mdash; by pulling the newly rebuilt ancestry &mdash; or to remain
 behind in the old group.
 
-   <p>In our example, if Jim and Beth have epochs, Jim's rebuild creates a
+<p>In our example, if Jim and Beth have epochs, Jim's rebuild creates a
 new epoch for their branch, in his database.  This causes monotone to
 reject netsync operations between Jim and Beth; it doesn't matter if
 Beth loses Jim's email. When she tries to synchronize with him, she
@@ -125,19 +126,19 @@ database on Beth's end &ndash; before future synchronizations will succeed.
 and epochs.  Here we discuss the practical consequences of that
 discussion.
 
-   <p>If you decide you must rebuild your ancestry graph &mdash; generally by
+<p>If you decide you must rebuild your ancestry graph &mdash; generally by
 announcement of a bug from the monotone developers &mdash; the first thing
 to do is get everyone to sync their changes with the central server;
 if people have unshared changes when the database is rebuilt, they
 will have trouble sharing them afterwards.
 
-   <p>Next, the project should pick a designated person to take down the
+<p>Next, the project should pick a designated person to take down the
 netsync server, rebuild their database, and put the server back up
 with the rebuilt ancestry in it.  Everybody else should then pull this
 history into a fresh database, check out again from this database, and
 continue working as normal.
 
-   <p>In complicated situations, where people have private branches, or
+<p>In complicated situations, where people have private branches, or
 ancestries cross organizational boundaries, matters are more complex. 
 The basic approach is to do a local rebuild, then after carefully
 examining the new revision IDs to convince yourself that the rebuilt
@@ -149,10 +150,10 @@ life we'll figure out how exactly that should work.)  Be very careful
 when doing this; you're explicitly telling monotone to let you shoot
 yourself in the foot, and it will let you.
 
-   <p>Fortunately, this process should be extremely rare; with luck, it will
+<p>Fortunately, this process should be extremely rare; with luck, it will
 never happen at all.  But this way we're prepared.
 
-   <div class="footnote">
+<div class="footnote">
 <hr>
 <h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> Regardless of who originally
 signed the certs, after the rebuild they will be signed by you.  This
@@ -160,7 +161,7 @@ means you should be somewhat careful when rebuilding, but it is
 unavoidable &mdash; if you could sign with other people's keys, that would
 be a rather serious security problem!</p>
 
-   <p><hr></div>
+<p><hr></div>
 
-   </body></html>
+</body></html>
 

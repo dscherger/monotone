@@ -48,12 +48,12 @@ bundle of information with three parts:
 &ldquo;fixed a bug&rdquo;, &ldquo;March 9th&rdquo; or &ldquo;1&rdquo;
 </ul>
 
-   <p>For example, if you want to say that a particular revision was
+<p>For example, if you want to say that a particular revision was
 composed on April 4, 2003, you might make a statement like this:
 
-   <div class="block-image"><img src="figures/statement.png" alt="figures/statement.png"></div>
+<div class="block-image"><img src="figures/statement.png" alt="figures/statement.png"></div>
 
-   <p>In an ideal world, these are all the parts of a statement we would
+<p>In an ideal world, these are all the parts of a statement we would
 need in order to go about our work. In the real world, however, there
 are sometimes malicious people who would make false or misleading
 statements; so we need a way to verify that a particular person made a
@@ -66,20 +66,20 @@ pieces of information to our bundle:
 certifying the fact that the person made the statement
 </ul>
 
-   <p>When these 2 items accompany a statement, we call the total bundle of
+<p>When these 2 items accompany a statement, we call the total bundle of
 5 items a <dfn>certificate</dfn>, or <i>cert</i>. A cert makes a statement in
 a secure fashion. The security of the signature in a cert is derived
 from the <span class="sc">rsa</span> cryptography system, the details of which are beyond
 the scope of this document.
 
-   <div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
+<div class="block-image"><img src="figures/cert.png" alt="figures/cert.png"></div>
 
-   <p><b>Warning:</b> because our certificates give the <i>name</i> of the
+<p><b>Warning:</b> because our certificates give the <i>name</i> of the
 signing key instead of the <i>hash</i> (ID), all key names must be
 globally unique forever. If you lose a key and need to generate a
 replacement, make sure that you give the replacement a different name.
 
-   <p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
+<p>Monotone uses certs extensively. Any &ldquo;extra&rdquo; information which needs
 to be stored, transmitted or retrieved &mdash; above and beyond files,
 manifests, and revisions &mdash; is kept in the form of certs. This
 includes change logs, time and date records, branch membership,
@@ -88,7 +88,7 @@ about storing, transmitting, or extracting files, manifests, or
 revisions, the decision is often based on certs it has seen, and the
 trustworthiness you assign to those certs.
 
-   <p>The <span class="sc">rsa</span> cryptography system &mdash; and therefore monotone itself &mdash;
+<p>The <span class="sc">rsa</span> cryptography system &mdash; and therefore monotone itself &mdash;
 requires that you exchange special &ldquo;public&rdquo; numbers with your
 friends, before they will trust certificates signed by you. These
 numbers are called <dfn>public keys</dfn>. Giving someone your public key
@@ -97,5 +97,5 @@ signatures made by you. Exchanging public keys should be done over a
 trusted medium, in person, or via a trusted third party. Advanced
 secure key exchange techniques are beyond the scope of this document.
 
-   </body></html>
+</body></html>
 

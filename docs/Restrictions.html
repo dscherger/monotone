@@ -41,7 +41,7 @@ comparing the workspace to the revision it is based on. Restricting a
 command to a specified set of files or directories simply ignores
 changes to files or directories not included by the restriction.
 
-   <p>The following commands all support restrictions using optional
+<p>The following commands all support restrictions using optional
 <var>pathname...</var> arguments:
 
      <ul>
@@ -57,18 +57,18 @@ changes to files or directories not included by the restriction.
 <li><samp><span class="command">log</span></samp>
 </ul>
 
-   <p>Including either the old or new name of a renamed file or directory will
+<p>Including either the old or new name of a renamed file or directory will
 cause both names to be included in a restriction. If in doubt, the
 <samp><span class="command">status</span></samp> command can be used to &ldquo;test&rdquo; a set of pathnames to
 ensure that the expected files are included or excluded by a
 restriction.
 
-   <p>Commands which support restrictions also support the
+<p>Commands which support restrictions also support the
 <samp><span class="option">--depth=</span><var>n</var> </samp> option, where <var>n</var> specifies the maximum
 number of directories to descend. For example, <var>n</var>=0 disables
 recursion, <var>n</var>=1 means descend at most one directory, and so on.
 
-   <p>The <samp><span class="command">update</span></samp> command does not allow for updates to a
+<p>The <samp><span class="command">update</span></samp> command does not allow for updates to a
 restricted set of files, which may be slightly different than other
 version control systems. Partial updates don't really make sense in
 monotone, as they would leave the workspace based on a revision that
@@ -84,19 +84,19 @@ pathname to a command will restrict it to the current subdirectory.
 Note that this is quite different from other version control systems and
 may seem somewhat surprising.
 
-   <p>The expectation is that requiring a single "." to restrict to the
+<p>The expectation is that requiring a single "." to restrict to the
 current subdirectory should be simple to use. While the alternative,
 defaulting to restricting to the current subdirectory, would require a
 somewhat complicated ../../.. sequence to remove the restriction and
 operate on the whole tree.
 
-   <p>This default was chosen because monotone versions whole project trees
+<p>This default was chosen because monotone versions whole project trees
 and generally expects to commit all changes in the workspace as a
 single atomic unit. Other version control systems often version
 individual files or directories and may not support atomic commits at
 all.
 
-   <p>When working from within a subdirectory of the workspace all
+<p>When working from within a subdirectory of the workspace all
 paths specified to monotone commands must be relative to the current
 subdirectory.
 
@@ -113,14 +113,14 @@ default options. The <samp><span class="option">--root</span></samp> option may 
 search early, before reaching the root of the physical filesystem. The
 <samp><span class="option">--no-workspace</span></samp> option may be used to prevent the search entirely.
 
-   <p>Many monotone commands don't require a workspace and will simply
+<p>Many monotone commands don't require a workspace and will simply
 proceed with no default options if no <samp><span class="file">_MTN</span></samp> directory is found. 
 However, some monotone commands do require a workspace and will fail
 if no <samp><span class="file">_MTN</span></samp> directory can be found.
 
-   <p>The <samp><span class="command">checkout</span></samp>, <samp><span class="command">clone</span></samp> and <samp><span class="command">setup</span></samp> commands
+<p>The <samp><span class="command">checkout</span></samp>, <samp><span class="command">clone</span></samp> and <samp><span class="command">setup</span></samp> commands
 create a <i>new workspace</i> and initialize a new <samp><span class="file">_MTN/options</span></samp>
 file based on their current option settings.
 
-   </body></html>
+</body></html>
 

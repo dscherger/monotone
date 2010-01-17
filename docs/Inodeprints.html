@@ -46,7 +46,7 @@ out to be fast enough for most projects.  However, on very large
 projects, ones whose source trees are many megabytes in size, it can
 become unacceptably slow.
 
-   <p>The other technique, known as <em>inodeprints</em>, is designed for this
+<p>The other technique, known as <em>inodeprints</em>, is designed for this
 situation.  When running in inodeprints mode, monotone does not read the
 whole workspace; rather, it keeps a cache of interesting information
 about each file (its size, its last modification time, and so on), and
@@ -54,7 +54,7 @@ skips reading any file for which these values have not changed.  This is
 inherently somewhat less safe, and, as mentioned above, unnecessary for
 most projects, so it is disabled by default.
 
-   <p>If you do determine that it is necessary to use inodeprints with your
+<p>If you do determine that it is necessary to use inodeprints with your
 project, it is simple to enable them.  Simply run <samp><span class="command">mtn
 refresh_inodeprints</span></samp>; this will enable inodeprints mode and generate an
 initial cache.  If you ever wish to turn them off again, simply delete
@@ -62,10 +62,10 @@ the file <samp><span class="file">_MTN/inodeprints</span></samp>.  You can at an
 the <samp><span class="file">_MTN/inodeprints</span></samp> file; monotone uses it only as a cache and
 will continue to operate correctly.
 
-   <p>Normally, instead of enabling this up on a per-workspace basis, you
+<p>Normally, instead of enabling this up on a per-workspace basis, you
 will want to simply define the <code>use_inodeprints</code> hook to return
 <code>true</code>; this will automatically enable inodeprints mode in any new
 workspaces you create.  See <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a> for details.
 
-   </body></html>
+</body></html>
 

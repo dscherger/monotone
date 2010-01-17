@@ -43,24 +43,24 @@ keys are permitted to access his database. Finally, with these
 pre-requisites in place, he needs to tell monotone to provide network
 access to his database.
 
-   <p>First, Abe exports his public key:
+<p>First, Abe exports his public key:
 
-<pre class="smallexample">     $ mtn --db=~/abe.mtn pubkey abe@juicebot.co.jp &gt;~/abe.pubkey
+<pre class="smallexample">$ mtn --db=~/abe.mtn pubkey abe@juicebot.co.jp &gt;~/abe.pubkey
 </pre>
-   <p>His public key is just a plain block of ASCII text:
+<p>His public key is just a plain block of ASCII text:
 
-<pre class="smallexample">     $ cat ~/abe.pubkey
-     [pubkey abe@juicebot.co.jp]
-     MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCbaVff9SF78FiB/1nUdmjbU/TtPyQqe/fW
-     CDg7hSg1yY/hWgClXE9FI0bHtjPMIx1kBOig09AkCT7tBXM9z6iGWxTBhSR7D/qsJQGPorOD
-     DO7xovIHthMbZZ9FnvyB/BCyiibdWgGT0Gtq94OKdvCRNuT59e5v9L4pBkvajb+IzQIBEQ==
-     [end]
+<pre class="smallexample">$ cat ~/abe.pubkey
+[pubkey abe@juicebot.co.jp]
+MIGdMA0GCSqGSIb3DQEBAQUAA4GLADCBhwKBgQCbaVff9SF78FiB/1nUdmjbU/TtPyQqe/fW
+CDg7hSg1yY/hWgClXE9FI0bHtjPMIx1kBOig09AkCT7tBXM9z6iGWxTBhSR7D/qsJQGPorOD
+DO7xovIHthMbZZ9FnvyB/BCyiibdWgGT0Gtq94OKdvCRNuT59e5v9L4pBkvajb+IzQIBEQ==
+[end]
 </pre>
-   <p>Beth also exports her public key:
+<p>Beth also exports her public key:
 
-<pre class="smallexample">     $ mtn --db=~/beth.mtn pubkey beth@juicebot.co.jp &gt;~/beth.pubkey
+<pre class="smallexample">$ mtn --db=~/beth.mtn pubkey beth@juicebot.co.jp &gt;~/beth.pubkey
 </pre>
-   <p>Then Abe and Beth both send their keys to Jim.  The keys are not secret,
+<p>Then Abe and Beth both send their keys to Jim.  The keys are not secret,
 but the team members must be relatively certain that they are exchanging
 keys with the person they intend to trust, and not some malicious person
 pretending to be a team member. Key exchange may involve sending keys
@@ -69,40 +69,40 @@ copies, or any number of techniques. All that matters, ultimately, is
 that Jim receives both Abe's and Beth's key in a way that he can be sure
 of.
 
-   <p>So eventually, after key exchange, Jim has the public key files in his
+<p>So eventually, after key exchange, Jim has the public key files in his
 home directory. He tells monotone to read the associated key packets
 into his database:
 
-<pre class="smallexample">     $ cat ~/abe.pubkey ~/beth.pubkey | mtn --db=~/jim.mtn read
-     mtn: read 2 packets
+<pre class="smallexample">$ cat ~/abe.pubkey ~/beth.pubkey | mtn --db=~/jim.mtn read
+mtn: read 2 packets
 </pre>
-   <p>Now Jim's monotone is able to identify Beth and Abe, and he is ready to
+<p>Now Jim's monotone is able to identify Beth and Abe, and he is ready to
 give them permission to access his database.  He does this by editing a
 pair of small files in his <samp><span class="file">~/.monotone</span></samp> directory:
 
-<pre class="smallexample">     $ cat &gt;&gt;~/.monotone/read-permissions
-     pattern "*"
-     allow "abe@juicebot.co.jp"
-     allow "beth@juicebot.co.jp"
-     ^D
-     
-     $ cat &gt;&gt;~/.monotone/write-permissions
-     abe@juicebot.co.jp
-     beth@juicebot.co.jp
-     ^D
+<pre class="smallexample">$ cat &gt;&gt;~/.monotone/read-permissions
+pattern "*"
+allow "abe@juicebot.co.jp"
+allow "beth@juicebot.co.jp"
+^D
+
+$ cat &gt;&gt;~/.monotone/write-permissions
+abe@juicebot.co.jp
+beth@juicebot.co.jp
+^D
 </pre>
-   <p>These files are read by the default monotone hooks that will decide
+<p>These files are read by the default monotone hooks that will decide
 whether remote monotone users will be allowed access to Jim's database,
 identified by the named keys.
 
-   <p>Jim then makes sure that his TCP port 4691 is open to incoming
+<p>Jim then makes sure that his TCP port 4691 is open to incoming
 connections, adjusting his firewall settings as necessary, and runs
 the monotone <samp><span class="command">serve</span></samp> command:
 
-<pre class="smallexample">     $ mtn --db=jim.mtn serve
+<pre class="smallexample">$ mtn --db=jim.mtn serve
 </pre>
-   <p>This command starts monotone listening on all network interfaces of
+<p>This command starts monotone listening on all network interfaces of
 his laptop on the default port 4691, serving everything in his database.
 
-   </body></html>
+</body></html>
 

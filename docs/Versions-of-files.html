@@ -44,9 +44,9 @@ parent and the child. We may draw the relationship between parent and
 child using a graph, where the arrow in the graph indicates the
 direction of the edit, from parent to child.
 
-   <div class="block-image"><img src="figures/parent-child.png" alt="figures/parent-child.png"></div>
+<div class="block-image"><img src="figures/parent-child.png" alt="figures/parent-child.png"></div>
 
-   <p>We may want to identify the parent and the child precisely, for sake
+<p>We may want to identify the parent and the child precisely, for sake
 of reference. To do so, we will compute a <i>cryptographic hash
 function</i>, called <span class="sc">sha1</span>, of each version. The details of this
 function are beyond the scope of this document; in summary, the <span class="sc">sha1</span>
@@ -56,34 +56,34 @@ graph does not refer to some &ldquo;abstract&rdquo; parent and child, but rather
 to the exact edit we performed between a specific parent and a
 specific child.
 
-   <div class="block-image"><img src="figures/parent-child-names-hashes.png" alt="figures/parent-child-names-hashes.png"></div>
+<div class="block-image"><img src="figures/parent-child-names-hashes.png" alt="figures/parent-child-names-hashes.png"></div>
 
-   <p>When dealing with versions of files, we will dispense with writing out
+<p>When dealing with versions of files, we will dispense with writing out
 &ldquo;file names&rdquo;, and identify versions <i>purely</i> by their <span class="sc">sha1</span>
 value, which we will also refer to as their <dfn>file ID</dfn>. Using IDs
 alone will often help us accommodate the fact that people often wish
 to call files by different names. So now our graph of parent and child
 is just a relationship between two versions, only identified by ID.
 
-   <div class="block-image"><img src="figures/parent-child-hashes.png" alt="figures/parent-child-hashes.png"></div>
+<div class="block-image"><img src="figures/parent-child-hashes.png" alt="figures/parent-child-hashes.png"></div>
 
-   <p>Version control systems, such as monotone, are principally concerned
+<p>Version control systems, such as monotone, are principally concerned
 with the storage and management of <i>multiple</i> versions of some files. 
 One way to store multiple versions of a file is, literally, to save a
 separate <i>complete</i> copy of the file, every time you make a
 change. When necessary, monotone will save complete copies of your
 files, compressed with the <code>zlib</code> compression format.
 
-   <div class="block-image"><img src="figures/three-versions.png" alt="figures/three-versions.png"></div>
+<div class="block-image"><img src="figures/three-versions.png" alt="figures/three-versions.png"></div>
 
-   <p>Often we find that successive versions of a file are very similar to
+<p>Often we find that successive versions of a file are very similar to
 one another, so storing multiple complete copies is a waste of
 space. In these cases, rather than store <i>complete</i> copies of each
 version of a file, we store a compact description of only the
 <i>changes</i> which are made between versions. Such a description of
 changes is called a <dfn>delta</dfn>.
 
-   <p>Storing deltas between files is, practically speaking, as good as
+<p>Storing deltas between files is, practically speaking, as good as
 storing complete versions of files. It lets you undo changes from a
 new version, by applying the delta backwards, and lets your friends
 change their old version of the file into the new version, by applying
@@ -92,16 +92,16 @@ when possible monotone stores deltas, using a modified <code>xdelta</code>
 format. The details of this format are beyond the scope of this
 document.
 
-   <div class="block-image"><img src="figures/difference-between-versions.png" alt="figures/difference-between-versions.png"></div>
+<div class="block-image"><img src="figures/difference-between-versions.png" alt="figures/difference-between-versions.png"></div>
 
-   <div class="footnote">
+<div class="footnote">
 <hr>
 <h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> We
 say <span class="sc">sha1</span> values are &ldquo;unique&rdquo; here, when in fact there is a
 small probability of two different versions having the same <span class="sc">sha1</span>
 value. This probability is very small, so we discount it.</p>
 
-   <p><hr></div>
+<p><hr></div>
 
-   </body></html>
+</body></html>
 

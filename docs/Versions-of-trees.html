@@ -41,7 +41,7 @@ we say that you want to capture a <i>version of your tree</i>. Doing
 so will permit you to undo changes to multiple files at once, or send
 your friend a <i>set</i> of changes to many files at once.
 
-   <p>To make a snapshot of a tree, we begin by writing a special file called
+<p>To make a snapshot of a tree, we begin by writing a special file called
 a <dfn>manifest</dfn>. In fact, monotone will write this file for us, but we
 could write it ourselves too. It is just a plain text file, in a
 structured but human-readable format used by several parts of monotone. 
@@ -52,12 +52,12 @@ the file names and contents you have at this point in time; other
 snapshots with other manifests can use different names for the same
 file, or different contents for the same name.
 
-   <p>Other entries in the manifest format name directories or store file
+<p>Other entries in the manifest format name directories or store file
 attrs, which we will cover later.
 
-   <div class="block-image"><img src="figures/manifest.png" alt="figures/manifest.png"></div>
+<div class="block-image"><img src="figures/manifest.png" alt="figures/manifest.png"></div>
 
-   <p>Now we note that a manifest is itself a file. Therefore a manifest can
+<p>Now we note that a manifest is itself a file. Therefore a manifest can
 serve as input to the <span class="sc">sha1</span> function, and thus every manifest has
 an ID of its own. By calculating the <span class="sc">sha1</span> value of a manifest, we
 capture the <i>state of our tree</i> in a single <dfn>manifest ID</dfn>. In
@@ -66,13 +66,13 @@ and file names of every file in our tree, combined. So we may treat
 manifests and their IDs as <i>snapshots</i> of a tree of files, though
 lacking the actual contents of the files themselves.
 
-   <div class="block-image"><img src="figures/file-id-manifest-id.png" alt="figures/file-id-manifest-id.png"></div>
+<div class="block-image"><img src="figures/file-id-manifest-id.png" alt="figures/file-id-manifest-id.png"></div>
 
-   <p>As with versions of files, we may decide to store manifests in their
+<p>As with versions of files, we may decide to store manifests in their
 entirety, or else we may store only a compact description of changes
 which occur between different versions of manifests. As with files,
 when possible monotone stores compact descriptions of changes between
 manifests; when necessary it stores complete versions of manifests.
 
-   </body></html>
+</body></html>
 

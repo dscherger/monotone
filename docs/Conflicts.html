@@ -38,15 +38,15 @@ This lets the user take as much time as needed to prepare all the
 conflict resolutions, and avoids losing work when a merge is aborted
 due to a complicated conflict.
 
-   <p>These commands require a workspace, to provide a place to store the
+<p>These commands require a workspace, to provide a place to store the
 conflicts and user resolution files.
 
-   <p>For all of these commands, if the <samp><span class="command">--conflicts-file</span></samp> option is
+<p>For all of these commands, if the <samp><span class="command">--conflicts-file</span></samp> option is
 not given, the file <samp><span class="file">_MTN/conflicts</span></samp> is used. If the
 <samp><span class="command">--conflicts-file</span></samp> option is given, the file must be in the
 bookkeeping directory.
 
-   <p>Files given in these commands are relative to the current working
+<p>Files given in these commands are relative to the current working
 directory, or absolute. In the conflict file, they are relative to the
 workspace root, or absolute.
 
@@ -114,7 +114,7 @@ conflict.
      <p>This inserts a <var>resolved_rename_left filename</var> conflict resolution
 in the conflicts file.
 
-   </dl>
+</dl>
 
 <h4 class="subheading">Two file conflict resolutions</h4>
 
@@ -144,12 +144,12 @@ The other file in the conflict must be dropped or renamed.
 <var>resolved_user_right file</var> conflict resolution in the conflicts
 file.
 
-   </dl>
+</dl>
 
-   <p>monotone internals note: we don't provide an <code>interactive</code>
+<p>monotone internals note: we don't provide an <code>interactive</code>
 resolution for two-file conflicts, because monotone currently does not
 provide a <code>merge2</code> Lua hook. two-file conflicts don't have a
 shared ancestor, so <code>merge3</code> is not applicable.
 
-   </body></html>
+</body></html>
 

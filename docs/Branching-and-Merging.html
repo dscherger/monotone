@@ -42,12 +42,12 @@ would be to simply never run <samp><span class="command">mtn merge</span></samp>
 quickly become confusing to try and keep track of which changes were in
 which revisions.  This is where <em>branches</em> are useful.
 
-   <p>Continuing our example, suppose that Jim is so impressed by Beth's work
+<p>Continuing our example, suppose that Jim is so impressed by Beth's work
 on banana juice support that he assigns her to work on the JuiceBot 7's
 surprise new feature: muffins.  In the mean time, Abe will continue
 working on the JuiceBot's basic juice-related functions.
 
-   <p>The changes required to support muffins are somewhat complicated, and
+<p>The changes required to support muffins are somewhat complicated, and
 Beth is worried that her work might destabilize the program, and
 interfere with Abe's work.  In fact, she isn't even sure her first
 attempt will turn out to be the right approach; she might work on it for
@@ -56,50 +56,50 @@ all these reasons, she decides that she will work on a branch, and then
 once she is satisfied with the new code, she will merge back onto the
 mainline.
 
-   <p>She decides that since main development is in branch
+<p>She decides that since main development is in branch
 <code>jp.co.juicebot.jb7</code>, she will use branch
 <code>jp.co.juicebot.jb7.muffins</code>.  So, she makes the first few edits to
 the new muffins code, and commits it on a new branch by simply passing
 <samp><span class="option">--branch</span></samp> to commit:
 
-<pre class="smallexample">     $ mtn commit --branch=jp.co.juicebot.jb7.muffins --message='autobake framework'
-     mtn: beginning commit on branch 'jp.co.juicebot.jb7.muffins'
-     mtn: committed revision d33caefd61823ecbb605c39ffb84705dec449857
+<pre class="smallexample">$ mtn commit --branch=jp.co.juicebot.jb7.muffins --message='autobake framework'
+mtn: beginning commit on branch 'jp.co.juicebot.jb7.muffins'
+mtn: committed revision d33caefd61823ecbb605c39ffb84705dec449857
 </pre>
-   <p>That's all there is to it &mdash; there is now a
+<p>That's all there is to it &mdash; there is now a
 <code>jp.co.juicebot.jb7.muffins</code> branch, with her initial checkin on
 it.  She can make further checkins from the same workspace, and they
 will automatically go to the muffins branch; if anyone else wants to
 help her work on muffins, they can check out that branch as usual.
 
-   <p>Of course, while Beth is working on the new muffins code, Abe is still
+<p>Of course, while Beth is working on the new muffins code, Abe is still
 making fixes to the main line.  Occasionally, Beth wants to integrate
 his latest work into the muffins branch, so that her version doesn't
 fall too far behind.  She does this by using the <samp><span class="command">propagate</span></samp>
 command:
 
-<pre class="smallexample">     $ mtn propagate jp.co.juicebot.jb7 jp.co.juicebot.jb7.muffins
-     mtn: propagating jp.co.juicebot.jb7 -&gt; jp.co.juicebot.jb7.muffins
-     mtn: [source] da003f115752ac6e4750b89aaca9dbba178ac80c
-     mtn: [target] d0e5c93bb61e5fd25a0dadf41426f209b73f40af
-     mtn: common ancestor 853b8c7ac5689181d4b958504adfb5d07fd959ab jim@juicebot.co.jp 2004-10-26T:12:44:23 found
-     mtn: trying 3-way merge
-     mtn: [merged] 89585b3c5e51a5a75f5d1a05dda859c5b7dde52f
+<pre class="smallexample">$ mtn propagate jp.co.juicebot.jb7 jp.co.juicebot.jb7.muffins
+mtn: propagating jp.co.juicebot.jb7 -&gt; jp.co.juicebot.jb7.muffins
+mtn: [source] da003f115752ac6e4750b89aaca9dbba178ac80c
+mtn: [target] d0e5c93bb61e5fd25a0dadf41426f209b73f40af
+mtn: common ancestor 853b8c7ac5689181d4b958504adfb5d07fd959ab jim@juicebot.co.jp 2004-10-26T:12:44:23 found
+mtn: trying 3-way merge
+mtn: [merged] 89585b3c5e51a5a75f5d1a05dda859c5b7dde52f
 </pre>
-   <p>The <samp><span class="command">propagate</span></samp> merges all of the new changes on one branch onto
+<p>The <samp><span class="command">propagate</span></samp> merges all of the new changes on one branch onto
 another.
 
-   <p>When the muffins code is eventually stable and ready to be integrated
+<p>When the muffins code is eventually stable and ready to be integrated
 into the main line of development, she simply propagates the other way:
 
-<pre class="smallexample">     $ mtn propagate jp.co.juicebot.jb7.muffins jp.co.juicebot.jb7
-     mtn: propagating jp.co.juicebot.jb7.muffins -&gt; jp.co.juicebot.jb7
-     mtn: [source] 4e48e2c9a3d2ca8a708cb0cc545700544efb5021
-     mtn: [target] bd29b2bfd07644ab370f50e0d68f26dcfd3bb4af
-     mtn: common ancestor 652b1035343281a0d2a5de79919f9a31a30c9028 jim@juicebot.co.jp 2004-10-26T:15:25:05 found
-     mtn: [merged] 03f7495b51cc70b76872ed019d19dee1b73e89b6
+<pre class="smallexample">$ mtn propagate jp.co.juicebot.jb7.muffins jp.co.juicebot.jb7
+mtn: propagating jp.co.juicebot.jb7.muffins -&gt; jp.co.juicebot.jb7
+mtn: [source] 4e48e2c9a3d2ca8a708cb0cc545700544efb5021
+mtn: [target] bd29b2bfd07644ab370f50e0d68f26dcfd3bb4af
+mtn: common ancestor 652b1035343281a0d2a5de79919f9a31a30c9028 jim@juicebot.co.jp 2004-10-26T:15:25:05 found
+mtn: [merged] 03f7495b51cc70b76872ed019d19dee1b73e89b6
 </pre>
-   <p>Monotone always records the full history of all merges, and is designed
+<p>Monotone always records the full history of all merges, and is designed
 to handle an arbitrarily complicated graph of changes.  You can make a
 branch, then branch off from that branch, propagate changes between
 arbitrary branches, and so on; monotone will track all of it, and do
@@ -110,26 +110,26 @@ graphs of arbitrary complexity &mdash; but you will have more trouble.
 Whatever arrangement of branches you come up with, though, monotone
 should be able to handle it.
 
-   <p>If you are unsure of the name of a branch, you can list all branches using
+<p>If you are unsure of the name of a branch, you can list all branches using
 the <samp><span class="command">ls branches</span></samp> command.  This is very useful, but if you create
 a lot of branches then the list can become very long and unwieldy.  To help
 this monotone has the <samp><span class="command">suspend</span></samp> command which partially hides
 revisions/branches you are no longer using.  Further commits on hidden branches
 will automatically unhide the branches.
 
-   <p>For example, if Beth is now finished with the muffins branch, she can stop
+<p>For example, if Beth is now finished with the muffins branch, she can stop
 it from cluttering the list of branches by suspending the last revision in
 that branch:
 
-<pre class="smallexample">     $ mtn ls branches
-     jp.co.juicebot.jb7
-     jp.co.juicebot.jb7.muffins
-     $ mtn heads
-     mtn: branch 'jp.co.juicebot.jb7.muffins' is currently merged:
-     4e48e2c9a3d2ca8a708cb0cc545700544efb5021 beth@juicebot.co.jp 2007-07-08T02:17:37
-     $ mtn suspend 4e48e2c9a3d2ca8a708cb0cc545700544efb5021
-     $ mtn ls branches
-     jp.co.juicebot.jb7
+<pre class="smallexample">$ mtn ls branches
+jp.co.juicebot.jb7
+jp.co.juicebot.jb7.muffins
+$ mtn heads
+mtn: branch 'jp.co.juicebot.jb7.muffins' is currently merged:
+4e48e2c9a3d2ca8a708cb0cc545700544efb5021 beth@juicebot.co.jp 2007-07-08T02:17:37
+$ mtn suspend 4e48e2c9a3d2ca8a708cb0cc545700544efb5021
+$ mtn ls branches
+jp.co.juicebot.jb7
 </pre>
-   </body></html>
+</body></html>
 

@@ -7,6 +7,7 @@
 <link title="Top" rel="start" href="index.html#Top">
 <link rel="up" href="Advanced-Uses.html#Advanced-Uses" title="Advanced Uses">
 <link rel="prev" href="Exporting-to-GIT.html#Exporting-to-GIT" title="Exporting to GIT">
+<link rel="next" href="Bisecting.html#Bisecting" title="Bisecting">
 <link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <style type="text/css"><!--
@@ -25,6 +26,7 @@
 <div class="node">
 <p>
 <a name="Using-packets"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Bisecting.html#Bisecting">Bisecting</a>,
 Previous:&nbsp;<a rel="previous" accesskey="p" href="Exporting-to-GIT.html#Exporting-to-GIT">Exporting to GIT</a>,
 Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advanced Uses</a>
 <hr>
@@ -40,139 +42,139 @@ into packets. Packets are a convenient way to represent revisions and
 other database contents as plain text with wrapped lines &ndash; just what
 you need if you want to send them in the body of an email.
 
-   <p>This is a tutorial on how to transfer single revisions between
+<p>This is a tutorial on how to transfer single revisions between
 databases by dumping them from one database to a text file and then
 reading the dump into a second database.
 
-   <p>We will create two databases, A and B, then create a few revisions in
+<p>We will create two databases, A and B, then create a few revisions in
 A, and transfer part of them to B.
 
-   <p>First we initialize the databases:
+<p>First we initialize the databases:
 
-<pre class="smallexample">     $ mtn -d A db init
-     $ mtn -d B db init
+<pre class="smallexample">$ mtn -d A db init
+$ mtn -d B db init
 </pre>
-   <p>Now set up a branch in A:
+<p>Now set up a branch in A:
 
-<pre class="smallexample">     $ mtn -d A setup -b test test
+<pre class="smallexample">$ mtn -d A setup -b test test
 </pre>
-   <p>And let's put some revisions in that branch:
+<p>And let's put some revisions in that branch:
 
-<pre class="smallexample">     $ cd test/
-     $ cat &gt; file
-     xyz
-     ^D
-     $ mtn add file
-     $ mtn ci -m "One"    <i>You may need to select a key and type a passphrase here</i>
-     $ cat &gt; file2
-     file 2 getting in
-     ^D
-     $ cat &gt; file
-     ERASE
-     ^D
-     $ mtn add file2
-     $ mtn ci -m "Two"
-     $ cat &gt; file
-     THIRD
-     ^D
-     $ mtn ci -m "Three"
+<pre class="smallexample">$ cd test/
+$ cat &gt; file
+xyz
+^D
+$ mtn add file
+$ mtn ci -m "One"    <i>You may need to select a key and type a passphrase here</i>
+$ cat &gt; file2
+file 2 getting in
+^D
+$ cat &gt; file
+ERASE
+^D
+$ mtn add file2
+$ mtn ci -m "Two"
+$ cat &gt; file
+THIRD
+^D
+$ mtn ci -m "Three"
 </pre>
-   <p>OK, that's enough.  Let's see what we have:
+<p>OK, that's enough.  Let's see what we have:
 
-<pre class="smallexample">     $ cd ..
-     $ mtn -d A automate select i: | mtn -d A automate toposort -
-     a423db0ad651c74e41ab2529eca6f17513ccf714
-     d14e89582ad9030e1eb62f563c8721be02ca0b65
-     151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
+<pre class="smallexample">$ cd ..
+$ mtn -d A automate select i: | mtn -d A automate toposort -
+a423db0ad651c74e41ab2529eca6f17513ccf714
+d14e89582ad9030e1eb62f563c8721be02ca0b65
+151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
 </pre>
-   <p>Three revisions! Let's transfer the first one to the database B. First we
+<p>Three revisions! Let's transfer the first one to the database B. First we
 get the meta-information on that revision:
 
-<pre class="smallexample">     $ mtn -d A automate get_revision a423db0ad651c74e41ab2529eca6f17513ccf714
-     format_version "1"
-     
-     new_manifest [b6dbdbbe0e7f41e44d9b72f9fe29b1f1a4f47f18]
-     
-     old_revision []
-     
-     add_dir ""
-     
-     add_file "file"
-      content [8714e0ef31edb00e33683f575274379955b3526c]
+<pre class="smallexample">$ mtn -d A automate get_revision a423db0ad651c74e41ab2529eca6f17513ccf714
+format_version "1"
+
+new_manifest [b6dbdbbe0e7f41e44d9b72f9fe29b1f1a4f47f18]
+
+old_revision []
+
+add_dir ""
+
+add_file "file"
+ content [8714e0ef31edb00e33683f575274379955b3526c]
 </pre>
-   <p>OK, one file was added in this revision. We'll transfer it. Now, <em>ORDER MATTERS</em>! 
+<p>OK, one file was added in this revision. We'll transfer it. Now, <em>ORDER MATTERS</em>! 
 We should transfer:
 
      <ol type=1 start=1>
 <li>The file data (fdata) and file deltas (fdeltas), if any
 <li>The release data (rdata)
 <li>The certs
-        </ol>
+     </ol>
 
-   <p>In that order. This is because certs make reference to release data, and release data
+<p>In that order. This is because certs make reference to release data, and release data
 makes reference to file data and file deltas.
 
-<pre class="smallexample">     mtn -d A automate packet_for_fdata 8714e0ef31edb00e33683f575274379955b3526c &gt; PACKETS
-     mtn -d A automate packet_for_rdata a423db0ad651c74e41ab2529eca6f17513ccf714 &gt;&gt; PACKETS
-     mtn -d A automate packets_for_certs a423db0ad651c74e41ab2529eca6f17513ccf714 &gt;&gt; PACKETS
-     mtn -d B read &lt; PACKETS
+<pre class="smallexample">mtn -d A automate packet_for_fdata 8714e0ef31edb00e33683f575274379955b3526c &gt; PACKETS
+mtn -d A automate packet_for_rdata a423db0ad651c74e41ab2529eca6f17513ccf714 &gt;&gt; PACKETS
+mtn -d A automate packets_for_certs a423db0ad651c74e41ab2529eca6f17513ccf714 &gt;&gt; PACKETS
+mtn -d B read &lt; PACKETS
 </pre>
-   <p>This revision (a423db0ad651c74e41ab2529eca6f17513ccf714) was already sent to database
+<p>This revision (a423db0ad651c74e41ab2529eca6f17513ccf714) was already sent to database
 B. You may want to check the PACKETS file to see what the packets look like.
 
-   <p>Now let's transfer one more revision:
+<p>Now let's transfer one more revision:
 
-<pre class="smallexample">     mtn -d A automate get_revision d14e89582ad9030e1eb62f563c8721be02ca0b65
-     format_version "1"
-     
-     new_manifest [48a03530005d46ed9c31c8f83ad96c4fa22b8b28]
-     
-     old_revision [a423db0ad651c74e41ab2529eca6f17513ccf714]
-     
-     add_file "file2"
-      content [d2178687226560032947c1deacb39d16a16ea5c6]
-     
-     patch "file"
-      from [8714e0ef31edb00e33683f575274379955b3526c]
-        to [8b52d96d4fab6c1e56d6364b0a2673f4111b228e]
+<pre class="smallexample">mtn -d A automate get_revision d14e89582ad9030e1eb62f563c8721be02ca0b65
+format_version "1"
+
+new_manifest [48a03530005d46ed9c31c8f83ad96c4fa22b8b28]
+
+old_revision [a423db0ad651c74e41ab2529eca6f17513ccf714]
+
+add_file "file2"
+ content [d2178687226560032947c1deacb39d16a16ea5c6]
+
+patch "file"
+ from [8714e0ef31edb00e33683f575274379955b3526c]
+   to [8b52d96d4fab6c1e56d6364b0a2673f4111b228e]
 </pre>
-   <p>From what we see, in this revision we have one new file and one patch, so we do the
+<p>From what we see, in this revision we have one new file and one patch, so we do the
 same we did before for them:
 
-<pre class="smallexample">     mtn -d A automate packet_for_fdata d2178687226560032947c1deacb39d16a16ea5c6 &gt; PACKETS2
-     mtn -d A automate packet_for_fdelta 8714e0ef31edb00e33683f575274379955b3526c 8b52d96d4fab6c1e56d6364b0a2673f4111b228e &gt;&gt; PACKETS2
-     mtn -d A automate packet_for_rdata d14e89582ad9030e1eb62f563c8721be02ca0b65 &gt;&gt; PACKETS2
-     mtn -d A automate packets_for_certs d14e89582ad9030e1eb62f563c8721be02ca0b65 &gt;&gt; PACKETS2
-     mtn -d B read &lt; PACKETS2
+<pre class="smallexample">mtn -d A automate packet_for_fdata d2178687226560032947c1deacb39d16a16ea5c6 &gt; PACKETS2
+mtn -d A automate packet_for_fdelta 8714e0ef31edb00e33683f575274379955b3526c 8b52d96d4fab6c1e56d6364b0a2673f4111b228e &gt;&gt; PACKETS2
+mtn -d A automate packet_for_rdata d14e89582ad9030e1eb62f563c8721be02ca0b65 &gt;&gt; PACKETS2
+mtn -d A automate packets_for_certs d14e89582ad9030e1eb62f563c8721be02ca0b65 &gt;&gt; PACKETS2
+mtn -d B read &lt; PACKETS2
 </pre>
-   <p>Fine. The two revisions should be in the second database now. 
+<p>Fine. The two revisions should be in the second database now. 
 Let's take a look at what's in each database:
 
-<pre class="smallexample">     $ mtn -d A automate select i: | mtn -d A automate toposort -
-     a423db0ad651c74e41ab2529eca6f17513ccf714
-     d14e89582ad9030e1eb62f563c8721be02ca0b65
-     151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
-     
-     $ mtn -d B automate select i: | mtn -d B automate toposort -
-     a423db0ad651c74e41ab2529eca6f17513ccf714
-     d14e89582ad9030e1eb62f563c8721be02ca0b65
+<pre class="smallexample">$ mtn -d A automate select i: | mtn -d A automate toposort -
+a423db0ad651c74e41ab2529eca6f17513ccf714
+d14e89582ad9030e1eb62f563c8721be02ca0b65
+151f1fb125f19ebe11eb8bfe3a5798fcbea4e736
+
+$ mtn -d B automate select i: | mtn -d B automate toposort -
+a423db0ad651c74e41ab2529eca6f17513ccf714
+d14e89582ad9030e1eb62f563c8721be02ca0b65
 </pre>
-   <p>Good! B has the two first revisions (as expected), and A has all three. However, a checkout
+<p>Good! B has the two first revisions (as expected), and A has all three. However, a checkout
 of that branch on B will not work, because the certificate signatures cannot be verified. 
 We need to transfer the signatures too (suppose the key used had the ID <code>"johndoe@domain.com"</code>):
 
-<pre class="smallexample">     mtn -d A pubkey johndoe@domain.com &gt; KEY_PACKETS
-     mtn -d B read &lt; KEY_PACKETS
+<pre class="smallexample">mtn -d A pubkey johndoe@domain.com &gt; KEY_PACKETS
+mtn -d B read &lt; KEY_PACKETS
 </pre>
-   <p>Done.
+<p>Done.
 
-<pre class="smallexample">     $ mtn -d B co -b test test-B
-     $ ls test-B
-     file2  _MTN  x
-     $ more test-B/file2
-     file 2 getting in
+<pre class="smallexample">$ mtn -d B co -b test test-B
+$ ls test-B
+file2  _MTN  x
+$ more test-B/file2
+file 2 getting in
 </pre>
-   <p>And that's it! The revisions were successfully transferred.
+<p>And that's it! The revisions were successfully transferred.
 
-   </body></html>
+</body></html>
 

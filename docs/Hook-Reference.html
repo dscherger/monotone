@@ -41,7 +41,7 @@ help it make a decision or perform some action.  If you provide a hook
 function definition which suits your preferences, monotone will
 execute it. This way you can modify how monotone behaves.
 
-   <p>You can put new definitions for any of these hook functions in a file
+<p>You can put new definitions for any of these hook functions in a file
 <samp><span class="file">$HOME/.monotone/monotonerc</span></samp>, or in your workspace in
 <samp><span class="file">_MTN/monotonerc</span></samp>, both of which will be read every time monotone
 runs. Definitions in <samp><span class="file">_MTN/monotonerc</span></samp> shadow (override)
@@ -53,25 +53,25 @@ files.
 By specifying <samp><span class="option">--rcfile=</span><var>directory</var></samp> you can automatically
 load all the files contained into <var>directory</var>.
 
-   <p>Monotone provides some default hooks, see <a href="Default-hooks.html#Default-hooks">Default hooks</a> for their
+<p>Monotone provides some default hooks, see <a href="Default-hooks.html#Default-hooks">Default hooks</a> for their
 complete source. When writing new hooks, it may be helpful to reuse some code
 from the default ones. Since Lua is a lexically scoped language with closures,
 this can be achieved with the following code:
 
-<pre class="smallexample">     do
-         local old_hook = default_hook
-         function default_hook(arg)
-             if not old_hook(arg) then
-                 -- do other stuff
-             end
-         end
-     end
+<pre class="smallexample">do
+    local old_hook = default_hook
+    function default_hook(arg)
+        if not old_hook(arg) then
+            -- do other stuff
+        end
+    end
+end
 </pre>
-   <p>Now the default hook is trapped in a variable local to this block, and can
+<p>Now the default hook is trapped in a variable local to this block, and can
 only be seen by the new hook. Since in Lua variables default to the global
 scope, the new hook is seen from inside monotone.
 
-   <p>Monotone also makes available to hook writers a number of helper
+<p>Monotone also makes available to hook writers a number of helper
 functions exposing functionality not available with standard Lua.
 
 <ul class="menu">
@@ -79,5 +79,5 @@ functions exposing functionality not available with standard Lua.
 <li><a accesskey="2" href="Additional-Lua-Functions.html#Additional-Lua-Functions">Additional Lua Functions</a>:     Extra functionality available to hook writers. 
 </ul>
 
-   </body></html>
+</body></html>
 

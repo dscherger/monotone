@@ -39,13 +39,13 @@ into a database. This feature is still somewhat immature, but
 moderately large &ldquo;real world&rdquo; CVS trees on the order of 1GB have
 successfully been imported.
 
-   <p>Note however that the machine requirements for CVS trees of this size
+<p>Note however that the machine requirements for CVS trees of this size
 are not trivial: it can take several hours on a modern system to
 reconstruct the history of such a tree and calculate the millions of
 cryptographic certificates involved. We recommend experimenting with
 smaller trees first, to get a feel for the import process.
 
-   <p>We will assume certain values for this example which will differ in your case:
+<p>We will assume certain values for this example which will differ in your case:
      <ul>
 <li>Your domain name, <code>example.net</code> in this example. 
 <li>Your key name, <code>import@example.net</code> in this example. 
@@ -55,14 +55,14 @@ smaller trees first, to get a feel for the import process.
 <li>The CVS module name for your project, <code>wobbler</code> in this example. 
 </ul>
 
-   <p>Accounting for these differences at your site, the following is an
+<p>Accounting for these differences at your site, the following is an
 example procedure for importing a CVS repository &ldquo;from scratch&rdquo;, and
 checking the resulting head version of the import out into a workspace:
 
-<pre class="smallexample">     $ mtn --db=test.mtn db init
-     $ mtn --db=test.mtn genkey import@example.net
-     $ mtn --db=test.mtn --branch=net.example.wobbler cvs_import /usr/local/cvsroot/wobbler
-     $ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
+<pre class="smallexample">$ mtn --db=test.mtn db init
+$ mtn --db=test.mtn genkey import@example.net
+$ mtn --db=test.mtn --branch=net.example.wobbler cvs_import /usr/local/cvsroot/wobbler
+$ mtn --db=test.mtn --branch=net.example.wobbler checkout wobber-checkout
 </pre>
-   </body></html>
+</body></html>
 

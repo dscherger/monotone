@@ -40,19 +40,19 @@ plain TCP connection, but this is not the only transport monotone can
 use. It can also transport netsync through SSH, or any program which
 can provide a full-duplex connection over <code>stdio</code>.
 
-   <p>When a monotone client initiates a push, pull, or sync operation, it
+<p>When a monotone client initiates a push, pull, or sync operation, it
 parses the first command-line argument as a URI and calls a Lua hook
 to convert that URI into a <dfn>connection command</dfn>. If the Lua hook
 returns a connection command, monotone spawns the command locally and
 speaks netsync over a pipe connected to the command's standard I/O
 handles.
 
-   <p>If the Lua hook does not return a connection command, monotone
+<p>If the Lua hook does not return a connection command, monotone
 attempts to parse the command-line argument as a TCP address &ndash; a
 hostname with an optional port number &ndash; connects a TCP socket the
 host and port, and speaks netsync over the socket.
 
-   <p>By default, monotone understands two URI schemes:
+<p>By default, monotone understands two URI schemes:
 
      <ol type=1 start=1>
 <li>SSH URIs, of the form
@@ -64,22 +64,22 @@ host and port, and speaks netsync over the socket.
   <code>ssh://</code><var>host-part</var><code>/~</code><var>user</var><code>/</code><var>relative/path.mtn</var>.) 
 <li>File URIs, of the form
   <code>file:</code><var>/path/to/db.mtn</var>, to synchronize between local databases.
-        </ol>
+     </ol>
 
-   <p><code>ssh:</code> and <code>file:</code> are currently not supported on the native
+<p><code>ssh:</code> and <code>file:</code> are currently not supported on the native
 Win32 platform; they are supported on Cygwin and all other platforms.
 
-   <p>In the case of SSH URIs, the <samp><span class="command">ssh</span></samp> program must be in your
+<p>In the case of SSH URIs, the <samp><span class="command">ssh</span></samp> program must be in your
 command execution path, either <var>$PATH</var> on Unix-like systems or
 <var>%PATH%</var> on Windows systems. Monotone will execute <samp><span class="command">ssh</span></samp>
 as a subprocess, running <samp><span class="command">mtn serve</span></samp> on the other end of the
 SSH connection. You will need <samp><span class="command">mtn</span></samp> to be in the command
 execution path of the remote shell environment.
 
-   <p>In the case of File URIs, <samp><span class="command">mtn</span></samp> is run locally, so must be
+<p>In the case of File URIs, <samp><span class="command">mtn</span></samp> is run locally, so must be
 in your command execution path.
 
-   <p>In both cases, the database specified in the URI needs to exist already,
+<p>In both cases, the database specified in the URI needs to exist already,
 and will be locked for the duration of the synchronization
 operation. Therefore, it must also be writable, even when monotone isn't
 going to modify it, as it is the case for <samp><span class="command">pull</span></samp>.  Also note
@@ -87,10 +87,10 @@ that monotone's default transport authentication is <em>disabled</em> over
 these transports, to reduce the complexity of configuration and
 eliminate redundant protocol cost.
 
-   <p>Additional URI schemes can be supported by customization of the Lua
+<p>Additional URI schemes can be supported by customization of the Lua
 hooks <code>get_netsync_connect_command</code> and
 <code>use_transport_auth</code>. For details on these hooks, see
 <a href="Netsync-Transport-Hooks.html#Netsync-Transport-Hooks">Netsync Transport Hooks</a>.
 
-   </body></html>
+</body></html>
 

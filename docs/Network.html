@@ -35,7 +35,7 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Command-Reference.html#Command-Referenc
 <h3 class="section">5.3 Network</h3>
 
      <dl>
-<dt><samp><span class="command">mtn serve [--bind=[</span><var>address</var><span class="command">][:</span><var>port</var><span class="command">]]</span></samp><a name="index-mtn-serve-_005b_002d_002dbind_003d_005b_0040var_007baddress_007d_005d_005b_003a_0040var_007bport_007d_005d_005d-61"></a><br><dt><samp><span class="command">mtn serve --stdio [--no-transport-auth]</span></samp><a name="index-mtn-serve-_002d_002dstdio-_005b_002d_002dno_002dtransport_002dauth_005d-62"></a><dt><samp><span class="command">mtn pull [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-63"></a><dt><samp><span class="command">mtn push [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-push-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-64"></a><dt><samp><span class="command">mtn sync [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-sync-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-65"></a><dd>
+<dt><samp><span class="command">mtn serve [--bind=[</span><var>address</var><span class="command">][:</span><var>port</var><span class="command">]]</span></samp><a name="index-mtn-serve-_005b_002d_002dbind_003d_005b_0040var_007baddress_007d_005d_005b_003a_0040var_007bport_007d_005d_005d-67"></a><br><dt><samp><span class="command">mtn serve --stdio [--no-transport-auth]</span></samp><a name="index-mtn-serve-_002d_002dstdio-_005b_002d_002dno_002dtransport_002dauth_005d-68"></a><dt><samp><span class="command">mtn pull [--set-default] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-pull-_005b_002d_002dset_002ddefault_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-69"></a><dt><samp><span class="command">mtn push [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-push-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-70"></a><dt><samp><span class="command">mtn sync [--set-default] [--keys-to-push=</span><var>key</var><span class="command">] [</span><var>uri-or-address</var><span class="command">] [</span><var>glob</var><span class="command"> [...] [--exclude=</span><var>exclude-glob</var><span class="command">]]]</span></samp><a name="index-mtn-sync-_005b_002d_002dset_002ddefault_005d-_005b_002d_002dkeys_002dto_002dpush_003d_0040var_007bkey_007d_005d-_005b_0040var_007buri_002dor_002daddress_007d_005d-_005b_0040var_007bglob_007d-_005b_002e_002e_002e_005d-_005b_002d_002dexclude_003d_0040var_007bexclude_002dglob_007d_005d_005d_005d-71"></a><dd>
 These commands operate the &ldquo;netsync&rdquo; protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
 monotone databases using a hash tree index. The protocol is &ldquo;peer to
@@ -79,12 +79,12 @@ synchronization.
 branches. Supposing Alice's computer has hostname
 <code>alice.someisp.com</code>, then Alice might run:
 
-     <pre class="smallexample">          $ mtn --bind=alice.someisp.com serve
-     </pre>
+     <pre class="smallexample">     $ mtn --bind=alice.someisp.com serve
+</pre>
      <p>And Bob might run
 
-     <pre class="smallexample">          $ mtn sync alice.someisp.com "net.venge.monotone*"
-     </pre>
+     <pre class="smallexample">     $ mtn sync alice.someisp.com "net.venge.monotone*"
+</pre>
      <p>When the operation completes, all branches matching
 <code>net.venge.monotone*</code> will be synchronized between Alice and Bob's
 databases.
@@ -95,8 +95,8 @@ of them; monotone will memorize this use and in the future default to
 the same server and glob.  For instance, if Bob wants to <samp><span class="command">sync</span></samp>
 with Alice again, he can simply run:
 
-     <pre class="smallexample">          $ mtn sync
-     </pre>
+     <pre class="smallexample">     $ mtn sync
+</pre>
      <p>Of course, he can still <samp><span class="command">sync</span></samp> with other people and other
 branches by passing an address or address plus globs on the command
 line; this will not affect his default affinity for Alice.  If you ever
@@ -123,5 +123,5 @@ branch name.
 
 </dl>
 
-   </body></html>
+</body></html>
 

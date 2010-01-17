@@ -53,23 +53,23 @@ file version listed in the revision's manifest to paths under
 <var>directory</var>. For example, if the revision's manifest contains
 these entries:
 
-     <pre class="smallexample">          dir ""
-          
-             file "Makefile"
-          content [84e2c30a2571bd627918deee1e6613d34e64a29e]
-          
-             file "include/hello.h"
-          content [c61af2e67eb9b81e46357bb3c409a9a53a7cdfc6]
-          
-             file "src/hello.c"
-          content [97dfc6fd4f486df95868d85b4b81197014ae2a84]
-     </pre>
+     <pre class="smallexample">     dir ""
+     
+        file "Makefile"
+     content [84e2c30a2571bd627918deee1e6613d34e64a29e]
+     
+        file "include/hello.h"
+     content [c61af2e67eb9b81e46357bb3c409a9a53a7cdfc6]
+     
+        file "src/hello.c"
+     content [97dfc6fd4f486df95868d85b4b81197014ae2a84]
+</pre>
      <p>Then the following files are created:
-     <pre class="smallexample">          <var>directory</var>/
-          <var>directory</var>/Makefile
-          <var>directory</var>/include/hello.h
-          <var>directory</var>/src/hello.c
-     </pre>
+     <pre class="smallexample">     <var>directory</var>/
+     <var>directory</var>/Makefile
+     <var>directory</var>/include/hello.h
+     <var>directory</var>/src/hello.c
+</pre>
      <p>If you wish to <samp><span class="command">checkout</span></samp> in the current directory, you can
 supply the special name <samp><span class="file">.</span></samp> (a single period) for
 <var>directory</var>. When running <samp><span class="command">checkout</span></samp> into an existing
@@ -80,13 +80,14 @@ occur.
 <em>must</em> provide a <var>branchname</var>; monotone will attempt to infer
 <var>id</var> as the unique head of <var>branchname</var> if it exists.
 
-     <br><dt><samp><span class="command">mtn clone --branch=</span><var>branchname</var> <var>address</var> <var>directory</var></samp><a name="index-mtn-clone-_002d_002dbranch_003d_0040var_007bbranchname_007d-_0040var_007baddress_007d-_0040var_007bdirectory_007d-7"></a><dd>
+     <br><dt><samp><span class="command">mtn clone </span><var>address</var><span class="command">[:</span><var>port</var><span class="command">] </span><var>branchname</var><span class="command"> [</span><var>directory</var><span class="command">]</span></samp><a name="index-mtn-clone-_0040var_007baddress_007d_005b_003a_0040var_007bport_007d_005d-_0040var_007bbranchname_007d-_005b_0040var_007bdirectory_007d_005d-7"></a><dd>
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
 database.  It then populates this database by <samp><span class="command">pull</span></samp>ing any data
 in the branch <var>branchname</var> from the remote database, <var>address</var>. 
 Finally, it copies the files out of the newly created database into a
-local directory, just as <samp><span class="command">checkout</span></samp> would.  The created
+local directory, just as <samp><span class="command">checkout</span></samp> would.  If no <var>directory</var>
+is given, the <var>branchname</var> is used as directory.  The created
 database is placed in the new workspace as <samp><var>directory</var><span class="file">/_MTN/mtn.db</span></samp>.
 
      <br><dt><samp><span class="command">mtn disapprove </span><var>id</var></samp><a name="index-mtn-disapprove-_0040var_007bid_007d-8"></a><dd>
@@ -183,11 +184,11 @@ files are added before committing.
 
      <p>Roughly speaking, <samp><span class="command">mtn import</span></samp> does the following:
 
-     <pre class="example">          $ mtn setup <span class="roman">(with a twist)</span>
-          $ mtn drop --missing
-          $ mtn add --unknown
-          $ mtn commit
-     </pre>
+     <pre class="example">     $ mtn setup <span class="roman">(with a twist)</span>
+     $ mtn drop --missing
+     $ mtn add --unknown
+     $ mtn commit
+</pre>
      <p>The twist with the <samp><span class="command">mtn setup</span></samp> part is that it sets the parent
 to be the given revision or the head of the given branch instead of the
 null revision. 
@@ -197,5 +198,5 @@ null revision.
 <li><a accesskey="1" href="Conflicts.html#Conflicts">Conflicts</a>
 </ul>
 
-   </body></html>
+</body></html>
 

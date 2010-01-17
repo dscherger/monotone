@@ -37,12 +37,12 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Advanced-Uses.html#Advanced-Uses">Advan
 <p>Monotone is capable of exporting the contents of a database to
 <code>stdout</code> in a form suitable to be piped to git-fast-import(1):
 
-<pre class="smallexample">     $ mkdir test.git
-     $ cd test.git
-     $ git init
-     $ mtn --db test.mtn git_export | git fast import
+<pre class="smallexample">$ mkdir test.git
+$ cd test.git
+$ git init
+$ mtn --db test.mtn git_export | git fast import
 </pre>
-   <p>While this feature has been tested and verified to some extent with
+<p>While this feature has been tested and verified to some extent with
 various &ldquo;real-world&rdquo; monotone databases it is important to realize
 that translating from one version control system to another can be a
 lossy process. Git represents things somewhat differently than
@@ -52,7 +52,7 @@ objects as monotone does and does not use certificates to represent
 <code>author</code>, <code>date</code>, <code>branch</code> and <code>tag</code> values so
 some differences are to be expected.
 
-   <p>Git separates the concept of <code>committer</code> from the concept of
+<p>Git separates the concept of <code>committer</code> from the concept of
 <code>author</code> while monotone allows multiple <code>author</code> certs. In
 an attempt to represent these different concepts the git exporter uses
 the <em>value</em> of the author cert as the git author and the
@@ -62,7 +62,7 @@ one of them. The full list of monotone certs may be exported in the
 git commit message using the <samp><span class="option">--log-certs</span></samp> option described in
 <a href="GIT.html#GIT">GIT</a>.
 
-   <p>Monotone author names often look like raw email addresses such as
+<p>Monotone author names often look like raw email addresses such as
 <code>"user@example.com"</code>. These are not considered valid by git
 which requires leading `&lt;' and trailing `&gt;' characters around email
 addresses and by convention often includes the display name with the
@@ -82,18 +82,18 @@ characters will have an initial &ldquo;&lt;' character and a final `&gt;'
 character added so that they may form valid values. 
 </ul>
 
-   <p>Branch names used by monotone are allowed to contain characters that
+<p>Branch names used by monotone are allowed to contain characters that
 are not considered valid by git. These may be mapped to other names
 using the <samp><span class="option">--branches-file</span></samp> option described in <a href="GIT.html#GIT">GIT</a>
 
-   <p>A monotone revision may have multiple <code>changelog</code> certs and
+<p>A monotone revision may have multiple <code>changelog</code> certs and
 multiple <code>comment</code> certs. The git exporter deals with these by
 first concatenating all of the changelog certs followed by all of the
 comment certs into one message to use as the git commit
 message. Duplicate changelog or comment cert messages that may exist
 due to automated merges are removed.
 
-   <p>Exporting a database may be a time consuming and involved process,
+<p>Exporting a database may be a time consuming and involved process,
 depending on the size and nature of the database. A 200MB database
 should export in less than an hour but may take several hours or
 longer depending on factors such as hardware, revision sizes, roster
@@ -103,9 +103,9 @@ should require less than 200MB of RAM but may require
 written to disk it will likely be <em>substantially</em> larger than the
 associated database, perhaps between 400MB to 4GB in size.
 
-   <p>Anyone using the git exporter must take full responsibility for
+<p>Anyone using the git exporter must take full responsibility for
 verifying that the exported repository matches their expectations and
 requirements.
 
-   </body></html>
+</body></html>
 

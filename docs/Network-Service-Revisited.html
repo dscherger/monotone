@@ -69,7 +69,7 @@ connected. He finds he sometimes needs to take down the server process
 to do this local work, further exacerbating the first problem. 
 </ul>
 
-   <p>The juicebot team are resourceful, and by now quite used to working
+<p>The juicebot team are resourceful, and by now quite used to working
 independently.  While Jim has been away travelling, Abe and Beth have
 come up with their own solution to the first problem: they'll run
 servers from their databases, setting them up just like Jim did
@@ -80,7 +80,7 @@ for the <samp><span class="command">serve</span></samp> process, and to <samp><s
 database with that server locally, avoiding locking contention between
 multiple monotone processes on the one database file.
 
-   <p>When Jim reappears, the next person to <samp><span class="command">sync</span></samp> with him will
+<p>When Jim reappears, the next person to <samp><span class="command">sync</span></samp> with him will
 often pass him information about both employees' work that they've
 sync'ed with each other in the meantime, just as he used to do. In fact,
 Jim now finds it more convenient to initiate the sync with one of the
@@ -88,19 +88,19 @@ other servers when he has a spare moment and dynamic connectivity from a
 hotel room or airport.  Changes will flow between servers automatically
 as clients access them and trade with one another.
 
-   <p>This gets them by for a while, but there are still occasional
+<p>This gets them by for a while, but there are still occasional
 inconveniences.  Abe and Beth live in very different time-zones, and
 don't always have reliable network connectivity, so sometimes Jim finds
 that neither of them is online to sync with when he has the chance.  Jim
 now also has several customers interested in beta-testing the new code,
 and following changes as the bugs and issues they report are addressed.
 
-   <p>Jim decides it's time for a permanent server they can all sync with;
+<p>Jim decides it's time for a permanent server they can all sync with;
 this way, everyone always knows where to go to get the latest changes,
 and people can push their changes out without first calling their
 friends and making sure that they have their servers running.
 
-   <p>Jim has rented some web server space on a service provider's shared
+<p>Jim has rented some web server space on a service provider's shared
 system for the JuiceBot Inc. public website, <code>www.juicebot.co.jp</code>;
 he thinks this server will be a good place to host the central monotone
 server too. He sets up a new monotone database on the server,
@@ -108,17 +108,17 @@ generates a new key specially for the server (so he doesn't have to
 expose his own development private key on the shared system), and loads
 in the team-members' keys:
 
-<pre class="smallexample">     $ mtn --db=server.mtn db init
-     $ mtn genkey monotone-server@www.juicebot.co.jp
-     enter passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim enters a new passphrase&gt;</i>
-     confirm passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim confirms the passphrase&gt;</i>
-     mtn: generating key-pair 'monotone-server@www.juicebot.co.jp'
-     mtn: storing key-pair 'monotone-server@www.juicebot.co.jp' in /home/jim/.monotone/keys
-     mtn: key 'abe@juicebot.co.jp' has hash '78be08f7a2a316a9f7c6b0db544ed20673ea2190'
-     $ cat abe.pubkey beth.pubkey jim.pubkey | mtn --db=server.mtn read
-     mtn: read 3 packets
+<pre class="smallexample">$ mtn --db=server.mtn db init
+$ mtn genkey monotone-server@www.juicebot.co.jp
+enter passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim enters a new passphrase&gt;</i>
+confirm passphrase for key ID [monotone-server@www.juicebot.co.jp] (...): <i>&lt;Jim confirms the passphrase&gt;</i>
+mtn: generating key-pair 'monotone-server@www.juicebot.co.jp'
+mtn: storing key-pair 'monotone-server@www.juicebot.co.jp' in /home/jim/.monotone/keys
+mtn: key 'abe@juicebot.co.jp' has hash '78be08f7a2a316a9f7c6b0db544ed20673ea2190'
+$ cat abe.pubkey beth.pubkey jim.pubkey | mtn --db=server.mtn read
+mtn: read 3 packets
 </pre>
-   <p>For the team members, he sets up the permissions files on the server
+<p>For the team members, he sets up the permissions files on the server
 much like before &mdash; except that of course he needs to also grant his
 <code>jim@juicebot.co.jp</code> key permission to access the new server.  For
 the beta-testers, Jim wants to allow them read-only access just to the
@@ -128,19 +128,19 @@ the top of the <samp><span class="file">~/.monotone/read-permissions</span></sam
 the broader permissions given to team-members. See the <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a> for <code>get_netsync_read_permitted</code> for more details; the
 resulting file looks like this:
 
-<pre class="smallexample">     comment "Provide beta-testers with specific read-only access"
-     pattern "jp.co.juicebot.jb7"
-     allow "beta1@juicebot.co.jp"
-     allow "beta2@juicebot.co.jp"
-     continue "true"
-     
-     comment "Fall-through, and allow staff access to all branches"
-     pattern "*"
-     allow "abe@juicebot.co.jp"
-     allow "beth@juicebot.co.jp"
-     allow "jim@juicebot.co.jp"
+<pre class="smallexample">comment "Provide beta-testers with specific read-only access"
+pattern "jp.co.juicebot.jb7"
+allow "beta1@juicebot.co.jp"
+allow "beta2@juicebot.co.jp"
+continue "true"
+
+comment "Fall-through, and allow staff access to all branches"
+pattern "*"
+allow "abe@juicebot.co.jp"
+allow "beth@juicebot.co.jp"
+allow "jim@juicebot.co.jp"
 </pre>
-   <p>Jim could log in and start the monotone process manually from his shell
+<p>Jim could log in and start the monotone process manually from his shell
 account on the server, perhaps under a program like screen to let it
 stay running while he's away. This would be one way of giving it the
 server-key's passphrase each startup, but he wants to make sure that the
@@ -150,23 +150,23 @@ better than before.  For the server to start automatically each time,
 he'll need to use the <code>get_passphrase</code> hook in the server's
 <samp><span class="file">monotonerc</span></samp> file again.
 
-   <p>Because he's running on a shared server, Jim needs to be a little more
+<p>Because he's running on a shared server, Jim needs to be a little more
 restrictive about which interfaces and addresses his new server process
 will listen on. He should only accept connections at the address used
 for his website, because some of the provider's other customers might
 also want to publish their own monotone projects on this host.  Jim uses
 the <samp><span class="option">--bind=</span><var>address</var><span class="option">:</span><var>port</var></samp> argument like so:
 
-<pre class="smallexample">     $ mtn --db=server.mtn --bind=www.juicebot.co.jp serve
+<pre class="smallexample">$ mtn --db=server.mtn --bind=www.juicebot.co.jp serve
 </pre>
-   <p>This will start monotone listening on the default port (4691), but only
+<p>This will start monotone listening on the default port (4691), but only
 on the IP address associated with <code>www.juicebot.co.jp</code>.  Jim can do
 this because his hosting provider has given him a dedicated IP address
 for his website.  If the hosting provider offered only a single shared
 IP address belonging to the server, each customer could bind a different
 port number on that address.
 
-   <p>While he's first testing the setup, Jim uses
+<p>While he's first testing the setup, Jim uses
 <samp><span class="option">--bind=localhost:1234</span></samp>. This causes the monotone process to listen
 only to port 1234 on the loopback interface 127.0.0.1, which is not
 accessible from the network, so Jim doesn't expose an open port to the
@@ -174,32 +174,32 @@ rest of the world until he's satisfied with the permissions
 configuration.  You can cause monotone to listen on all interfaces on
 port 1234 by leaving out the address part like <samp><span class="option">--bind=:1234</span></samp>.
 
-   <p>When he's satisfied the server is set up correctly, Jim does an initial
+<p>When he's satisfied the server is set up correctly, Jim does an initial
 <samp><span class="command">sync</span></samp> with the new database, filling it with all the revision
 history currently on his laptop. While Jim has been busy setting up the
 server, Abe and Beth have kept working; the server will catch up with
 their latest changes when they next sync, too.
 
-   <p>All of the team members now want to sync with the new monotone server by
+<p>All of the team members now want to sync with the new monotone server by
 default.  Previously, they had been syncing with Jim's laptop by
 default, even if they occasionally specified another team-member's
 server on the command line when Jim was away, because monotone had
 remembered the first server and branch patterns used in database
 <a href="Vars.html#Vars">Vars</a>.  These vars can be seen as follows:
 
-<pre class="smallexample">     $ mtn list vars
-     database: default-exclude-pattern
-     database: default-include-pattern jp.co.juicebot.jb7*
-     database: default-server jim-laptop.juicebot.co.jp
-     known-servers: jim-laptop.juicebot.co.jp 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
-     known-servers: abe-laptop.juicebot.co.jp a2bb16a183247af4133621f7f5aefb21a9d13855
-     known-servers: www.juicebot.co.jp 120a99ch93b4f174432c13d3e3e9f2234aa92612
+<pre class="smallexample">$ mtn list vars
+database: default-exclude-pattern
+database: default-include-pattern jp.co.juicebot.jb7*
+database: default-server jim-laptop.juicebot.co.jp
+known-servers: jim-laptop.juicebot.co.jp 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
+known-servers: abe-laptop.juicebot.co.jp a2bb16a183247af4133621f7f5aefb21a9d13855
+known-servers: www.juicebot.co.jp 120a99ch93b4f174432c13d3e3e9f2234aa92612
 </pre>
-   <p>The team members can reset their local database vars accordingly:
+<p>The team members can reset their local database vars accordingly:
 
-<pre class="smallexample">     $ mtn set database default-server www.juicebot.co.jp
+<pre class="smallexample">$ mtn set database default-server www.juicebot.co.jp
 </pre>
-   <p>With their new server, the juicebot team have gained the convenience of
+<p>With their new server, the juicebot team have gained the convenience of
 a readily available common point of reference for syncs.  However, they
 also know that this is there only as a convenience, and doesn't prevent
 them working as they did before:
@@ -257,5 +257,5 @@ content</em>, rather than on the <em>replication path</em> by which that
 content arrived in your database. 
 </ul>
 
-   </body></html>
+</body></html>
 

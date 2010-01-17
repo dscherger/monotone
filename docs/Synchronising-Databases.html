@@ -37,43 +37,43 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Tutorial.html#Tutorial">Tutorial</a>
 <p>With Jim's server preparations done, now Abe is ready to fetch Jim's
 code. To do this he issues the monotone <samp><span class="command">sync</span></samp> command:
 
-<pre class="smallexample">     $ mtn --db=abe.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
-     mtn: setting default server to jim-laptop.juicebot.co.jp
-     mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
-     mtn: setting default branch exclude pattern to ''
-     mtn: connecting to jim-laptop.juicebot.co.jp
-     mtn: first time connecting to server jim-laptop.juicebot.co.jp:4691
-     mtn: I'll assume it's really them, but you might want to double-check
-     mtn: their key's fingerprint: 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
-     mtn: warning: saving public key for jim@juicebot.co.jp to database
-     mtn: finding items to synchronize:
-     mtn: bytes in | bytes out | revs in | revs out | revs written
-     mtn:     2587 |      1025 |       1 |        0 |            1
-     mtn: successful exchange with jim-laptop.juicebot.co.jp
+<pre class="smallexample">$ mtn --db=abe.mtn sync jim-laptop.juicebot.co.jp "jp.co.juicebot.jb7*"
+mtn: setting default server to jim-laptop.juicebot.co.jp
+mtn: setting default branch include pattern to 'jp.co.juicebot.jb7*'
+mtn: setting default branch exclude pattern to ''
+mtn: connecting to jim-laptop.juicebot.co.jp
+mtn: first time connecting to server jim-laptop.juicebot.co.jp:4691
+mtn: I'll assume it's really them, but you might want to double-check
+mtn: their key's fingerprint: 9e9e9ef1d515ad58bfaa5cf282b4a872d8fda00c
+mtn: warning: saving public key for jim@juicebot.co.jp to database
+mtn: finding items to synchronize:
+mtn: bytes in | bytes out | revs in | revs out | revs written
+mtn:     2587 |      1025 |       1 |        0 |            1
+mtn: successful exchange with jim-laptop.juicebot.co.jp
 </pre>
-   <p>Abe now has, in his database, a copy of everything Jim put in the
+<p>Abe now has, in his database, a copy of everything Jim put in the
 branch. Therefore Abe can disconnect from the expensive network
 connection he's on and work locally for a while. Remember that, in
 monotone, work is done between workspaces in the filesystem and
 the local database; network connectivity is necessary only when that
 work is to be shared with others.
 
-   <p>As we follow the juicebot team through the next several steps, we'll see
+<p>As we follow the juicebot team through the next several steps, we'll see
 them run the <samp><span class="command">sync</span></samp> command again with Jim, and work will flow
 both ways. The first time you <samp><span class="command">sync</span></samp> a new database, monotone
 remembers the server and branch patterns you use, and makes them the
 default for future operations.
 
-   <p>At the end of each exchange, information about all changes in the branch
+<p>At the end of each exchange, information about all changes in the branch
 known to each database have been sent to the other party - including the
 work of the third team member that had previously been exchanged. As
 well as allowing each team member to learn about the others' work, this
 also means that each party's laptop contains a <em>backup</em> of the
 others' work too.
 
-   <p>Jim, Abe and Beth will continue working like this while they're getting
+<p>Jim, Abe and Beth will continue working like this while they're getting
 started, and we'll revisit the issue of network service with them a
 little later as the project grows.
 
-   </body></html>
+</body></html>
 

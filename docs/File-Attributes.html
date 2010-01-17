@@ -42,7 +42,7 @@ can be changed in a workspace, and those changes will be saved when
 the workspace is committed.  The merger knows how to intelligently
 merge attrs.
 
-   <p>The attribute mechanism was originally motivated by the fact that some
+<p>The attribute mechanism was originally motivated by the fact that some
 people like to store executable programs in version control systems,
 and would like the programs to remain executable when they check out a
 workspace.  For example, the <samp><span class="command">configure</span></samp> shell script commonly
@@ -51,7 +51,7 @@ people would like to store devices, symbolic links, read-only files,
 and all manner of extra attributes of a file, not directly related to
 a file's data content.
 
-   <p>Monotone comes with support for some attrs built-in; for instance, if
+<p>Monotone comes with support for some attrs built-in; for instance, if
 an executable file is given to <samp><span class="command">mtn add</span></samp>, then it will
 automatically mark the new file with a <code>mtn:execute</code> attr, and
 when the file is checked out later, the executable bit will be set
@@ -60,23 +60,23 @@ does not support the executable bit, then the executable bit will not
 be set.  However, monotone will still know that the attr is set, and
 Windows users can view and modify the attr like anyone else.)
 
-   <p>Attrs in the current workspace can be seen and modified using the
+<p>Attrs in the current workspace can be seen and modified using the
 <samp><span class="command">mtn attr</span></samp> command; see <a href="Workspace.html#Workspace">Workspace</a>.  Attrs can also be found
 by examining any manifest directly.
 
-   <p>You can tell monotone to automatically take actions based on these
+<p>You can tell monotone to automatically take actions based on these
 attributes by defining hooks; see the <code>attr_functions</code> entry in
 <a href="Hook-Reference.html#Hook-Reference">Hook Reference</a>.  Every time your workspace is written to,
 monotone will run the corresponding hooks registered for each attr in
 your workspace.  This way, you can extend the vocabulary of attrs
 understood by monotone simply by writing new hooks.
 
-   <p>You can make up your own attrs for anything you find useful; the
+<p>You can make up your own attrs for anything you find useful; the
 mechanism is fully general.  (If you make up some particularly useful
 ones, we may even be interested in adding support to monotone proper.) 
 We only ask that if you do use custom attrs, you use some prefix for
 them besides <code>mtn:</code>; attrs beginning with <code>mtn:</code> are
 reserved for monotone's own use.
 
-   </body></html>
+</body></html>
 

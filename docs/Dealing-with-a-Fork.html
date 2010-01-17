@@ -45,9 +45,9 @@ company's work was perfectly serialized:
 <li>Beth synced with Jim
 <li>Beth did some work
 <li>Beth synced with Jim
-        </ol>
+     </ol>
 
-   <p>The result of this ordering is that Jim's work entirely preceded
+<p>The result of this ordering is that Jim's work entirely preceded
 Abe's work, which entirely preceded Beth's work. Moreover, each
 worker was fully informed of the &ldquo;up-stream&rdquo; worker's actions, and
 produced purely derivative, &ldquo;down-stream&rdquo; work:
@@ -56,14 +56,14 @@ produced purely derivative, &ldquo;down-stream&rdquo; work:
 <li>Jim made revision 2e24d... 
 <li>Abe changed revision 2e24d... into revision 70dec... 
 <li>Beth derived revision 70dec... into revision 80ef9...
-        </ol>
+     </ol>
 
-   <p>This is a simple, but sadly unrealistic, ordering of events. In real
+<p>This is a simple, but sadly unrealistic, ordering of events. In real
 companies or work groups, people often work in parallel,
 <em>diverging</em> from commonly known revisions and <em>merging</em>
 their work together, sometime after each unit of work is complete.
 
-   <p>Monotone supports this diverge/merge style of operation naturally; any
+<p>Monotone supports this diverge/merge style of operation naturally; any
 time two revisions diverge from a common parent revision, we say that
 the revision graph has a <dfn>fork</dfn> in it. Forks can happen at any
 time, and require no coordination between workers. In fact any
@@ -72,103 +72,103 @@ exception: if forks were produced, someone would eventually have to
 run the <samp><span class="command">merge</span></samp> command, and possibly resolve any conflicts
 in the fork.
 
-   <p>To illustrate this, we return to our workers Beth and Abe. Suppose Jim
+<p>To illustrate this, we return to our workers Beth and Abe. Suppose Jim
 sends out an email saying that the current polling juice dispensers
 use too much CPU time, and must be rewritten to use the JuiceBot's
 interrupt system. Beth wakes up first and begins working immediately,
 basing her work off the revision 80ef9... which is currently in her
 workspace:
 
-<pre class="smallexample">     $ vi src/banana.c
-     <i>&lt;Beth changes her banana-juice dispenser to use interrupts&gt;</i>
+<pre class="smallexample">$ vi src/banana.c
+<i>&lt;Beth changes her banana-juice dispenser to use interrupts&gt;</i>
 </pre>
-   <p>Beth finishes and examines her changes:
+<p>Beth finishes and examines her changes:
 
-<pre class="smallexample">     $ mtn diff
-     #
-     # old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
-     #
-     # patch "src/banana.c"
-     #  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
-     #    to [5e6622cf5c8805bcbd50921ce7db86dad40f2ec6]
-     #
-     ============================================================================
-     --- src/banana.c 7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a
-     +++ src/banana.c 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
-     @ -1,10 +1,15 @
-      #include "jb.h"
-     
-     +static void
-     +shut_off_banana()
-     +{
-     +  spoutctl(BANANA_SPOUT, SET_INTR, 0);
-     +  spoutctl(BANANA_SPOUT, FLOW_JUICE, 0);
-     +}
-     +
-      void
-     -dispense_banana_juice()
-     +dispense_banana_juice()
-      {
-     +  spoutctl(BANANA_SPOUT, SET_INTR, &amp;shut_off_banana);
-        spoutctl(BANANA_SPOUT, FLOW_JUICE, 1);
-     -  while (spoutctl(BANANA_SPOUT, POLL_JUICE, 1) == 0)
-     -    usleep (1000);
-     -  spoutctl(BANANA_SPOUT, FLOW_JUICE, 0);
-      }
-</pre>
-   <p>She commits her work:
+<pre class="smallexample">$ mtn diff
+#
+# old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
+#
+# patch "src/banana.c"
+#  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
+#    to [5e6622cf5c8805bcbd50921ce7db86dad40f2ec6]
+#
+============================================================================
+--- src/banana.c 7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a
++++ src/banana.c 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
+@ -1,10 +1,15 @
+ #include "jb.h"
 
-<pre class="smallexample">     $ mtn commit --message="interrupt implementation of src/banana.c"
-     mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-     mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
++static void
++shut_off_banana()
++{
++  spoutctl(BANANA_SPOUT, SET_INTR, 0);
++  spoutctl(BANANA_SPOUT, FLOW_JUICE, 0);
++}
++
+ void
+-dispense_banana_juice()
++dispense_banana_juice()
+ {
++  spoutctl(BANANA_SPOUT, SET_INTR, &amp;shut_off_banana);
+   spoutctl(BANANA_SPOUT, FLOW_JUICE, 1);
+-  while (spoutctl(BANANA_SPOUT, POLL_JUICE, 1) == 0)
+-    usleep (1000);
+-  spoutctl(BANANA_SPOUT, FLOW_JUICE, 0);
+ }
 </pre>
-   <p>And she syncs with Jim:
+<p>She commits her work:
 
-<pre class="smallexample">     $ mtn sync
+<pre class="smallexample">$ mtn commit --message="interrupt implementation of src/banana.c"
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
 </pre>
-   <p>Unfortunately, before Beth managed to sync with Jim, Abe had woken up
+<p>And she syncs with Jim:
+
+<pre class="smallexample">$ mtn sync
+</pre>
+<p>Unfortunately, before Beth managed to sync with Jim, Abe had woken up
 and implemented a similar interrupt-based apple juice dispenser, but
 his workspace is 70dec..., which is still &ldquo;upstream&rdquo; of
 Beth's.
 
-<pre class="smallexample">     $ vi apple.c
-     <i>&lt;Abe changes his apple-juice dispenser to use interrupts&gt;</i>
+<pre class="smallexample">$ vi apple.c
+<i>&lt;Abe changes his apple-juice dispenser to use interrupts&gt;</i>
 </pre>
-   <p>Thus when Abe commits, he unknowingly creates a fork:
+<p>Thus when Abe commits, he unknowingly creates a fork:
 
-<pre class="smallexample">     $ mtn commit --message="interrupt implementation of src/apple.c"
+<pre class="smallexample">$ mtn commit --message="interrupt implementation of src/apple.c"
 </pre>
-   <p>Abe does not see the fork yet; Abe has not actually seen <em>any</em> of
+<p>Abe does not see the fork yet; Abe has not actually seen <em>any</em> of
 Beth's work yet, because he has not synchronized with Jim. Since
 he has new work to contribute, however, he now syncs:
 
-<pre class="smallexample">     $ mtn sync
+<pre class="smallexample">$ mtn sync
 </pre>
-   <p>Now Jim and Abe will be aware of the fork. Jim sees it when he sits
+<p>Now Jim and Abe will be aware of the fork. Jim sees it when he sits
 down at his desk and asks monotone for the current set of heads of
 the branch:
 
-<pre class="smallexample">     $ mtn heads
-     mtn: branch 'jp.co.juicebot.jb7' is currently unmerged:
-     39969614e5a14316c7ffefc588771f491c709152 abe@juicebot.co.jp 2004-10-26T02:53:16
-     8b41b5399a564494993063287a737d26ede3dee4 beth@juicebot.co.jp 2004-10-26T02:53:15
+<pre class="smallexample">$ mtn heads
+mtn: branch 'jp.co.juicebot.jb7' is currently unmerged:
+39969614e5a14316c7ffefc588771f491c709152 abe@juicebot.co.jp 2004-10-26T02:53:16
+8b41b5399a564494993063287a737d26ede3dee4 beth@juicebot.co.jp 2004-10-26T02:53:15
 </pre>
-   <p>Clearly there are two heads to the branch: it contains an un-merged
+<p>Clearly there are two heads to the branch: it contains an un-merged
 fork. Beth will not yet know about the fork, but in this case it
 doesn't matter: anyone can merge the fork, and since there are no
 conflicts Jim does so himself:
 
-<pre class="smallexample">     $ mtn merge
-     mtn: starting with revision 1 / 2
-     mtn: merging with revision 2 / 2
-     mtn: [source] 39969614e5a14316c7ffefc588771f491c709152
-     mtn: [source] 8b41b5399a564494993063287a737d26ede3dee4
-     mtn: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 abe@juicebot.co.jp  2004-10-26T:02:50:01 found
-     mtn: trying 3-way merge
-     mtn: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-     mtn: your workspaces have not been updated
+<pre class="smallexample">$ mtn merge
+mtn: starting with revision 1 / 2
+mtn: merging with revision 2 / 2
+mtn: [source] 39969614e5a14316c7ffefc588771f491c709152
+mtn: [source] 8b41b5399a564494993063287a737d26ede3dee4
+mtn: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 abe@juicebot.co.jp  2004-10-26T:02:50:01 found
+mtn: trying 3-way merge
+mtn: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+mtn: your workspaces have not been updated
 </pre>
-   <p>The output of this command shows Jim that two heads were found,
+<p>The output of this command shows Jim that two heads were found,
 combined via a 3-way merge with their ancestor, and saved to a new
 revision. This happened automatically, because the changes between the
 common ancestor and heads did not conflict. If there had been a
@@ -176,23 +176,23 @@ conflict, monotone would have invoked an external merging tool to help
 resolve it, or Jim could have used the <samp><span class="command">conflicts</span></samp> set of
 commands to resolve it (see <a href="Conflicts.html#Conflicts">Conflicts</a>).
 
-   <p>After merging, the branch has a single head again, and Jim updates
+<p>After merging, the branch has a single head again, and Jim updates
 his workspace.
 
-<pre class="smallexample">     $ mtn update
-     mtn: selected update target da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-     mtn: updating src/apple.c to f088e24beb43ab1468d7243e36ce214a559bdc96
-     mtn: updating src/banana.c to 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
-     mtn: updated to base revision da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+<pre class="smallexample">$ mtn update
+mtn: selected update target da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+mtn: updating src/apple.c to f088e24beb43ab1468d7243e36ce214a559bdc96
+mtn: updating src/banana.c to 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
+mtn: updated to base revision da499b9d9465a0e003a4c6b2909102ef98bf4e6d
 </pre>
-   <p>The update command selected an update target &mdash; in this case the newly merged
+<p>The update command selected an update target &mdash; in this case the newly merged
 head &mdash; and performed an in-memory merge between Jim's workspace
 and the chosen target. The result was then written to Jim's workspace. If
 Jim's workspace had any uncommitted changes in it, they would have been
 merged with the update in exactly the same manner as the merge of multiple
 committed heads.
 
-   <p>Monotone makes very little distinction between a &ldquo;pre-commit&rdquo; merge
+<p>Monotone makes very little distinction between a &ldquo;pre-commit&rdquo; merge
 (an update) and a &ldquo;post-commit&rdquo; merge. Both sorts of merge use the
 exact same algorithm. The major difference concerns the recoverability
 of the pre-merge state: if you commit your work first, and merge after
@@ -204,7 +204,7 @@ to break anything, this process is inherently more open to error.  It is
 therefore recommended that you commit your work <em>first</em>, before
 merging.
 
-   <p>If you have previously used another version control system, this may at
+<p>If you have previously used another version control system, this may at
 first seem surprising; there are some systems where you are
 <em>required</em> to update, and risk the above problems, before you can
 commit.  Monotone, however, was designed with this problem in mind, and
@@ -217,5 +217,5 @@ that you have accidentally started working against a revision that
 contains unrelated bugs, and need to back out to a working revision for
 testing).
 
-   </body></html>
+</body></html>
 

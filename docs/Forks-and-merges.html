@@ -38,9 +38,9 @@ Up:&nbsp;<a rel="up" accesskey="u" href="Concepts.html#Concepts">Concepts</a>
 follows exactly one revision before it, in a simple sequence of
 revisions.
 
-   <div class="block-image"><img src="figures/linear-history.png" alt="figures/linear-history.png"></div>
+<div class="block-image"><img src="figures/linear-history.png" alt="figures/linear-history.png"></div>
 
-   <p>This is a rosy picture, but sometimes it does not work out this
+<p>This is a rosy picture, but sometimes it does not work out this
 way. Sometimes when you make new revisions, other people are
 <i>simultaneously</i> making new revisions as well, and their revisions
 might be derived from the same parent as yours, or contain different
@@ -48,21 +48,21 @@ changesets. Without loss of generality, we will assume simultaneous
 edits only happen two-at-a-time; in fact many more edits may happen at
 once but our reasoning will be the same.
 
-   <p>We call this situation of simultaneous edits a <dfn>fork</dfn>, and will
+<p>We call this situation of simultaneous edits a <dfn>fork</dfn>, and will
 refer to the two children of a fork as the <i>left child</i> and <i>right
 child</i>. In a large collection of revisions with many people editing
 files, especially on many different computers spread all around the
 world, forks are a common occurrence.
 
-   <div class="block-image"><img src="figures/fork.png" alt="figures/fork.png"></div>
+<div class="block-image"><img src="figures/fork.png" alt="figures/fork.png"></div>
 
-   <p>If we analyze the changes in each child revision, we will often find
+<p>If we analyze the changes in each child revision, we will often find
 that the changeset between the parent and the left child are unrelated
 to the changeset between the parent and the right child. When this
 happens, we can usually <dfn>merge</dfn> the fork, producing a common
 grandchild revision which contains both changesets.
 
-   <div class="block-image"><img src="figures/merge.png" alt="figures/merge.png"></div>
+<div class="block-image"><img src="figures/merge.png" alt="figures/merge.png"></div>
 
-   </body></html>
+</body></html>
 
