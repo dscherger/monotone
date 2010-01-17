@@ -7802,7 +7802,7 @@ none
 
 @itemize
 @item
-FIXME -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
+12.0 -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
     of a command now only happens in the 'm' stream; the 'l' stream now marks
     the end of all streams of a command; introduced the concept of "headers"
     which are output before the first command is issued; specific error codes
@@ -8025,7 +8025,7 @@ process to connect to. If not given, the default server is used.
 
 @item Added in
 
-FIXME
+12.0
 
 @item Purpose
 
@@ -8082,7 +8082,7 @@ be parsed).
 
 @item Added in
 
-FIXME
+12.0
 
 @item Purpose
 
@@ -8135,7 +8135,7 @@ appropriate section for a full explanation.
 
 @item Added in:
 
-FIXME
+12.0
 
 @item Purpose:
 
