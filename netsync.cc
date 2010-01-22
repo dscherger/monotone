@@ -178,7 +178,7 @@ call_server(app_state & app,
 
           // We had an I/O error. We must decide if this represents a
           // user-reported error or a clean disconnect. See protocol
-          // state diagram in netsync_session::process_bye_cmd.
+          // state diagram in session::process_bye_cmd.
 
           if (sess->protocol_state == session_base::confirmed_state)
             {
