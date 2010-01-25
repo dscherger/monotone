@@ -115,9 +115,9 @@ struct basic_automate_ostream : public std::basic_ostream<_CharT, _Traits>
 
   basic_automate_ostream(std::basic_ostream<_CharT, _Traits> &out,
                    size_t blocksize)
-    : std::basic_ostream<_CharT, _Traits>(NULL),
+    : std::basic_ostream<_CharT, _Traits>(&_M_autobuf),
       _M_autobuf(out, blocksize)
-  { this->init(&_M_autobuf); }
+  { /* this->init(&_M_autobuf); */ }
 
 protected:
   basic_automate_ostream() { }
