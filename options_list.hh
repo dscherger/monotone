@@ -237,7 +237,7 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 #endif
 
 GOPT(roster_cache_performance_log, "roster-cache-performance-log",
-     system_path, , gettext_noop("log roster cache statistict to the given file"))
+     system_path, , gettext_noop("log roster cache statistic to the given file"))
 #ifdef option_bodies
 {
   roster_cache_performance_log = system_path(arg, origin::user);
