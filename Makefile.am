@@ -42,6 +42,7 @@ MOST_SOURCES = 								\
 	automate_ostream_demuxed.hh					\
 	automate_reader.hh automate_reader.cc				\
 	botan_pipe_cache.hh						\
+	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
 	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\

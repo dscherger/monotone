@@ -208,7 +208,8 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem);
+  explicit database_impl(system_path const & f, bool mem,
+                         system_path const & roster_cache_performance_log);
   ~database_impl();
 
 private:
@@ -457,15 +458,18 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem) :
+database_impl::database_impl(system_path const & f, bool mem,
+                             system_path const & roster_cache_performance_log) :
   filename(f),
   use_memory_db(mem),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
-               roster_writeback_manager(*this)),
+               constants::db_roster_cache_min_count,
+               roster_writeback_manager(*this),
+               roster_cache_performance_log.as_external()),
   delayed_writes_size(0),
-  vcache(constants::db_version_cache_sz)
+  vcache(constants::db_version_cache_sz, 1)
 {}
 
 database_impl::~database_impl()
@@ -500,7 +504,8 @@ database::database(app_state & app)
 
   boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
-    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory));
+    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
+                              app.opts.roster_cache_performance_log));
 
   imp = i;
 }
