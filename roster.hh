@@ -35,6 +35,8 @@ null_node(node_id n)
 template <> void dump(node_id const & val, std::string & out);
 template <> void dump(attr_map_t const & val, std::string & out);
 
+enum roster_node_type { node_type_none, node_type_file, node_type_dir };
+
 struct node
 {
   node();
@@ -43,6 +45,7 @@ struct node
   node_id parent; // the_null_node iff this is a root dir
   path_component name; // the_null_component iff this is a root dir
   attr_map_t attrs;
+  roster_node_type type;
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -82,15 +85,13 @@ struct file_node
 inline bool
 is_dir_t(node_t n)
 {
-  dir_t d = boost::dynamic_pointer_cast<dir_node, node>(n);
-  return static_cast<bool>(d);
+  return n->type == node_type_dir;
 }
 
 inline bool
 is_file_t(node_t n)
 {
-  file_t f = boost::dynamic_pointer_cast<file_node, node>(n);
-  return static_cast<bool>(f);
+  return n->type == node_type_file;
 }
 
 inline bool

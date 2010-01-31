@@ -159,7 +159,8 @@ dump(marking_map const & markings, string & out)
 node::node(node_id i)
   : self(i),
     parent(the_null_node),
-    name()
+    name(),
+    type(node_type_none)
 {
 }
 
@@ -167,7 +168,8 @@ node::node(node_id i)
 node::node()
   : self(the_null_node),
     parent(the_null_node),
-    name()
+    name(),
+    type(node_type_none)
 {
 }
 
@@ -175,12 +177,14 @@ node::node()
 dir_node::dir_node(node_id i)
   : node(i)
 {
+  type = node_type_dir;
 }
 
 
 dir_node::dir_node()
   : node()
 {
+  type = node_type_dir;
 }
 
 
@@ -235,12 +239,14 @@ file_node::file_node(node_id i, file_id const & f)
   : node(i),
     content(f)
 {
+  type = node_type_file;
 }
 
 
 file_node::file_node()
   : node()
 {
+  type = node_type_file;
 }
 
 
@@ -374,25 +380,26 @@ private:
   {
     int prevsize = 0;
     int nextsize = 0;
+    pair<dir_t, dir_map::const_iterator> & stack_top(stk.top());
     if (track_path)
       {
-        prevsize = stk.top().second->first().size();
+        prevsize = stack_top.second->first().size();
       }
 
-    ++stk.top().second;
+    ++stack_top.second;
 
     if (track_path)
       {
-        if (stk.top().second != stk.top().first->children.end())
-          nextsize = stk.top().second->first().size();
+        if (stack_top.second != stack_top.first->children.end())
+          nextsize = stack_top.second->first().size();
 
         int tmpsize = curr_path.size()-prevsize;
         I(tmpsize >= 0);
         curr_path.resize(tmpsize);
         if (nextsize != 0)
           curr_path.insert(curr_path.end(),
-                           stk.top().second->first().begin(),
-                           stk.top().second->first().end());
+                           stack_top.second->first().begin(),
+                           stack_top.second->first().end());
       }
   }
 public:
