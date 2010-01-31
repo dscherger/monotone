@@ -224,7 +224,7 @@ public:
   // marking map
   void check_sane_against(marking_map const & marks, bool temp_nodes_ok=false) const;
 
-  void print_to(basic_io::printer & pr,
+  void print_to(data & dat,
                 marking_map const & mm,
                 bool print_local_parts) const;
 
@@ -430,7 +430,12 @@ void calculate_ident(roster_t const & ros,
                      manifest_id & ident);
 
 // for roster_delta
-void push_marking(basic_io::stanza & st, bool is_file, marking_t const & mark);
+
+void append_with_escaped_quotes(std::string & collection,
+                                std::string const & item);
+void push_marking(std::string & contents,
+                  bool is_file, marking_t const & mark,
+                  int symbol_length);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 
 // Parent maps are used in a number of places to keep track of all the

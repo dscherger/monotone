@@ -2391,23 +2391,59 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
 ////////////////////////////////////////////////////////////////////
 
 void
-push_marking(basic_io::stanza & st,
+append_with_escaped_quotes(string & collection, string const & item)
+{
+  size_t mark = 0;
+  size_t cursor = item.find('"', mark);
+  while (cursor != string::npos)
+    {
+      collection.append(item, mark, cursor - mark);
+      collection.append(1, '\\');
+      mark = cursor;
+      if (mark == item.size())
+        {
+          cursor = string::npos;
+        }
+      else
+        {
+          cursor = item.find('"', mark + 1);
+        }
+    }
+  collection.append(item, mark, item.size() - mark + 1);
+}
+
+void
+push_marking(string & contents,
              bool is_file,
-             marking_t const & mark)
+             marking_t const & mark,
+             int symbol_length)
 {
 
   I(!null_id(mark.birth_revision));
-  st.push_binary_pair(syms::birth, mark.birth_revision.inner());
+
+  contents.append(symbol_length - 5, ' ');
+  contents.append("birth [");
+  contents.append(encode_hexenc(mark.birth_revision.inner()(), origin::internal));
+  contents.append("]\n");
 
   for (set<revision_id>::const_iterator i = mark.parent_name.begin();
        i != mark.parent_name.end(); ++i)
-    st.push_binary_pair(syms::path_mark, i->inner());
+    {
+      contents.append(symbol_length - 9, ' ');
+      contents.append("path_mark [");
+      contents.append(encode_hexenc(i->inner()(), origin::internal));
+      contents.append("]\n");
+    }
 
   if (is_file)
     {
       for (set<revision_id>::const_iterator i = mark.file_content.begin();
            i != mark.file_content.end(); ++i)
-        st.push_binary_pair(basic_io::syms::content_mark, i->inner());
+        {
+          contents.append("content_mark [");// always the longest symbol
+          contents.append(encode_hexenc(i->inner()(), origin::internal));
+          contents.append("]\n");
+        }
     }
   else
     I(mark.file_content.empty());
@@ -2417,7 +2453,14 @@ push_marking(basic_io::stanza & st,
     {
       for (set<revision_id>::const_iterator j = i->second.begin();
            j != i->second.end(); ++j)
-        st.push_binary_triple(syms::attr_mark, i->first(), j->inner());
+        {
+          contents.append(symbol_length - 9, ' ');
+          contents.append("attr_mark \"");
+          append_with_escaped_quotes(contents, i->first());
+          contents.append("\" [");
+          contents.append(encode_hexenc(j->inner()(), origin::internal));
+          contents.append("]\n");
+        }
     }
 }
 
@@ -2470,38 +2513,126 @@ parse_marking(basic_io::parser & pa,
 // processed more efficiently.
 
 void
-roster_t::print_to(basic_io::printer & pr,
+roster_t::print_to(data & dat,
                    marking_map const & mm,
                    bool print_local_parts) const
 {
+  string contents;
   I(has_root());
-  {
-    basic_io::stanza st;
-    st.push_str_pair(basic_io::syms::format_version, "1");
-    pr.print_stanza(st);
-  }
+
+  // approximate byte counts
+  // a file is name + content (+ birth + path-mark + content-mark + ident)
+  //   2 sym + name + hash (+ 4 sym + 3 hash + 1 num)
+  //   24 + name + 43 (+48 + 129 + 10) = 67 + name (+ 187) = ~100 (+ 187)
+  // a dir is name (+ birth + path-mark + ident)
+  //   1 sym + name (+ 3 sym + 2 hash + 1 num)
+  //   12 + name (+ 36 + 86 + 10) = 12 + name (+ 132) = ~52 (+ 132)
+  // an attr is name/value (+ name/mark)
+  //   1 sym + 2 name (+ 1 sym + 1 name + 1 hash)
+  //   12 + 2 name (+ 12 + 43 + name) = ~40 (+ ~70)
+  // in the monotone tree, there are about 2% as many attrs as nodes
+
+  if (print_local_parts)
+    {
+      contents.reserve(nodes.size() * (290 + 0.02 * 110) * 1.1);
+    }
+  else
+    {
+      contents.reserve(nodes.size() * (100 + 0.02 * 40) * 1.1);
+    }
+
+  // symbols are:
+  //   birth        (all local)
+  //   dormant_attr (any local)
+  //   ident        (all local)
+  //   path_mark    (all local)
+  //   attr_mark    (any local)
+  //   dir          (all dir)
+  //   file         (all file)
+  //   content      (all file)
+  //   attr         (any)
+  //   content_mark (all local file)
+
+  // local  file : symbol length 12
+  // local  dir  : symbol length 9 or 12 (if dormant_attr)
+  // public file : symbol length 7
+  // public dir  : symbol length 3 or 4 (if attr)
+
+  contents += "format_version \"1\"\n";
+
   for (dfs_iter i(root_dir, true); !i.finished(); ++i)
     {
-      node_t curr = *i;
-      basic_io::stanza st;
+      contents += "\n";
 
-      {
-        if (is_dir_t(curr))
-          {
-            st.push_str_pair(basic_io::syms::dir, i.path());
-          }
-        else
-          {
-            file_t ftmp = downcast_to_file_t(curr);
-            st.push_str_pair(basic_io::syms::file, i.path());
-            st.push_binary_pair(basic_io::syms::content, ftmp->content.inner());
-          }
-      }
+      node_t curr = *i;
+
+      int symbol_length = 0;
+
+      if (is_dir_t(curr))
+        {
+          if (print_local_parts)
+            {
+              symbol_length = 9;
+              // unless we have a dormant attr
+              for (attr_map_t::const_iterator j = curr->attrs.begin();
+                   j != curr->attrs.end(); ++j)
+                {
+                  if (!j->second.first)
+                    {
+                      symbol_length = 12;
+                      break;
+                    }
+                }
+            }
+          else
+            {
+              symbol_length = 3;
+              // unless we have a live attr
+              for (attr_map_t::const_iterator j = curr->attrs.begin();
+                   j != curr->attrs.end(); ++j)
+                {
+                  if (j->second.first)
+                    {
+                      symbol_length = 4;
+                      break;
+                    }
+                }
+            }
+          contents.append(symbol_length - 3, ' ');
+          contents.append("dir \"");
+          append_with_escaped_quotes(contents, i.path());
+          contents.append("\"\n");
+        }
+      else
+        {
+          if (print_local_parts)
+            {
+              symbol_length = 12;
+            }
+          else
+            {
+              symbol_length = 7;
+            }
+          file_t ftmp = downcast_to_file_t(curr);
+
+          contents.append(symbol_length - 4, ' ');
+          contents.append("file \"");
+          append_with_escaped_quotes(contents, i.path());
+          contents.append("\"\n");
+
+          contents.append(symbol_length - 7, ' ');
+          contents.append("content [");
+          contents.append(encode_hexenc(ftmp->content.inner()(), origin::internal));
+          contents.append("]\n");
+        }
 
       if (print_local_parts)
         {
           I(curr->self != the_null_node);
-          st.push_str_pair(syms::ident, lexical_cast<string>(curr->self));
+          contents.append(symbol_length - 5, ' ');
+          contents.append("ident \"");
+          contents.append(lexical_cast<string>(curr->self));
+          contents.append("\"\n");
         }
 
       // Push the non-dormant part of the attr map
@@ -2511,7 +2642,13 @@ roster_t::print_to(basic_io::printer & pr,
           if (j->second.first)
             {
               // L(FL("printing attr %s : %s = %s") % fp % j->first % j->second);
-              st.push_str_triple(basic_io::syms::attr, j->first(), j->second.second());
+
+              contents.append(symbol_length - 4, ' ');
+              contents.append("attr \"");
+              append_with_escaped_quotes(contents, j->first());
+              contents.append("\" \"");
+              append_with_escaped_quotes(contents, j->second.second());
+              contents.append("\"\n");
             }
         }
 
@@ -2524,17 +2661,19 @@ roster_t::print_to(basic_io::printer & pr,
               if (!j->second.first)
                 {
                   I(j->second.second().empty());
-                  st.push_str_pair(syms::dormant_attr, j->first());
+
+                  contents.append("dormant_attr \""); // always the longest sym
+                  append_with_escaped_quotes(contents, j->first());
+                  contents.append("\"\n");
                 }
             }
 
           marking_map::const_iterator m = mm.find(curr->self);
           I(m != mm.end());
-          push_marking(st, is_file_t(curr), m->second);
+          push_marking(contents, is_file_t(curr), m->second, symbol_length);
         }
-
-      pr.print_stanza(st);
     }
+  dat = data(contents, origin::internal);
 }
 
 inline size_t
@@ -2675,9 +2814,7 @@ write_roster_and_marking(roster_t const & ros,
     ros.check_sane_against(mm);
   else
     ros.check_sane(true);
-  basic_io::printer pr;
-  ros.print_to(pr, mm, print_local_parts);
-  dat = data(pr.buf, origin::internal);
+  ros.print_to(dat, mm, print_local_parts);
 }
 
 
