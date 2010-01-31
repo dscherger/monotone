@@ -2934,7 +2934,7 @@ database::put_roster_for_revision(revision_id const & new_id,
   manifest_id roster_manifest_id;
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
-  calculate_ident(*ros_writeable, roster_manifest_id);
+  calculate_ident(*ros_writeable, roster_manifest_id, false);
   E(rev.new_manifest == roster_manifest_id, rev.made_from,
     F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.

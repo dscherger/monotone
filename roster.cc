@@ -2808,12 +2808,16 @@ static void
 write_roster_and_marking(roster_t const & ros,
                          marking_map const & mm,
                          data & dat,
-                         bool print_local_parts)
+                         bool print_local_parts,
+                         bool do_sanity_check)
 {
-  if (print_local_parts)
-    ros.check_sane_against(mm);
-  else
-    ros.check_sane(true);
+  if (do_sanity_check)
+    {
+      if (print_local_parts)
+        ros.check_sane_against(mm);
+      else
+        ros.check_sane(true);
+    }
   ros.print_to(dat, mm, print_local_parts);
 }
 
@@ -2824,28 +2828,30 @@ write_roster_and_marking(roster_t const & ros,
                          roster_data & dat)
 {
   data tmp;
-  write_roster_and_marking(ros, mm, tmp, true);
+  write_roster_and_marking(ros, mm, tmp, true, true);
   dat = roster_data(tmp);
 }
 
 
 void
 write_manifest_of_roster(roster_t const & ros,
-                         manifest_data & dat)
+                         manifest_data & dat,
+                         bool do_sanity_check)
 {
   data tmp;
   marking_map mm;
-  write_roster_and_marking(ros, mm, tmp, false);
+  write_roster_and_marking(ros, mm, tmp, false, do_sanity_check);
   dat = manifest_data(tmp);
 }
 
 void calculate_ident(roster_t const & ros,
-                     manifest_id & ident)
+                     manifest_id & ident,
+                     bool do_sanity_check)
 {
   manifest_data tmp;
   if (!ros.all_nodes().empty())
     {
-      write_manifest_of_roster(ros, tmp);
+      write_manifest_of_roster(ros, tmp, do_sanity_check);
     }
   calculate_ident(tmp, ident);
 }
