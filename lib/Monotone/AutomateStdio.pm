@@ -48,7 +48,6 @@ package Monotone::AutomateStdio;
 require 5.008005;
 
 no locale;
-use integer;
 use strict;
 use warnings;
 
@@ -213,6 +212,10 @@ my %tags_keys = ("branches"       => NULL | STRING_LIST,
 		 "signer"         => HEX_ID | STRING,
 		 "tag"            => STRING);
 
+# Version of Monotone being used.
+
+my $mtn_version;
+
 # Flag for determining whether the mtn subprocess should be started in a
 # workspace's root directory.
 
@@ -327,7 +330,8 @@ sub get_quoted_value($$$);
 sub get_ws_details($$$);
 sub mtn_command($$$$$;@);
 sub mtn_command_with_options($$$$$$;@);
-sub mtn_read_output($$);
+sub mtn_read_output_format_1($$);
+sub mtn_read_output_format_2($$);
 sub parse_kv_record($$$$;$);
 sub parse_revision_data($$);
 sub startup($);
@@ -3473,7 +3477,7 @@ sub supports($$)
 
 	return 1 if ($this->{mtn_aif_major} >= 10
 		     || ($this->{mtn_aif_major} == 9
-			 && $this->{mtn_version} eq "0.43"));
+			 && $mtn_version == 0.43));
 
     }
     elsif ($feature == MTN_COMMON_KEY_HASH || $feature == MTN_W_SELECTOR)
@@ -4157,9 +4161,10 @@ sub mtn_command_with_options($$$$$$;@)
 #
 ##############################################################################
 #
-#   Routine      - mtn_read_output
+#   Routine      - mtn_read_output_format_1
 #
-#   Description  - Reads the output from mtn, removing chunk headers.
+#   Description  - Reads the output from mtn as format 1, removing chunk
+#                  headers.
 #
 #   Data         - $this        : The object.
 #                  $buffer      : A reference to the buffer that is to contain
@@ -4170,7 +4175,7 @@ sub mtn_command_with_options($$$$$$;@)
 
 
 
-sub mtn_read_output($$)
+sub mtn_read_output_format_1($$)
 {
 
     my($this, $buffer) = @_;
@@ -4227,7 +4232,7 @@ sub mtn_read_output($$)
 	}
 
 	# If necessary, read in and process the chunk header, then we know how
-	# much to read in etc.
+	# much to read in.
 
 	if ($chunk_start)
 	{
@@ -4322,6 +4327,230 @@ sub mtn_read_output($$)
 #
 ##############################################################################
 #
+#   Routine      - mtn_read_output_format_2
+#
+#   Description  - Reads the output from mtn as format 2, removing chunk
+#                  headers.
+#
+#   Data         - $this        : The object.
+#                  $buffer      : A reference to the buffer that is to contain
+#                                 the data.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub mtn_read_output_format_2($$)
+{
+
+    my($this, $buffer) = @_;
+
+    my($bytes_read,
+       $buffer_ref,
+       $char,
+       $chunk_start,
+       $cmd_nr,
+       $colons,
+       $err,
+       $err_code,
+       $err_occurred,
+       $handler,
+       $handler_data,
+       $handler_timeout,
+       $header,
+       $i,
+       $offset_ref,
+       $size,
+       $stream);
+    my %buffers = (e => {buffer_ref => undef,
+			 offset     => 0},
+		   l => {buffer_ref => undef,
+			 offset     => 0},
+		   m => {buffer_ref => undef,
+			 offset     => 0},
+		   p => {buffer_ref => undef,
+			 offset     => 0},
+		   t => {buffer_ref => undef,
+			 offset     => 0},
+		   w => {buffer_ref => undef,
+			 offset     => 0});
+
+    $err = $this->{mtn_err};
+
+    # Create the buffers.
+
+    foreach my $key (CORE::keys(%buffers))
+    {
+	if ($key eq "m")
+	{
+	    $buffers{$key}->{buffer_ref} = $buffer;
+	}
+	else
+	{
+	    my $ref_buf = "";
+	    $buffers{$key}->{buffer_ref} = \$ref_buf;
+	}
+    }
+
+    # Work out what I/O wait handler is to be used.
+
+    if (defined($this->{io_wait_handler}))
+    {
+	$handler = $this->{io_wait_handler};
+	$handler_data = $this->{io_wait_handler_data};
+	$handler_timeout = $this->{io_wait_handler_timeout};
+    }
+    else
+    {
+	$handler = $io_wait_handler;
+	$handler_data = $io_wait_handler_data;
+	$handler_timeout = $io_wait_handler_timeout;
+    }
+
+    # Read in the data.
+
+    $$buffer = "";
+    $chunk_start = 1;
+    $buffer_ref = $buffers{m}->{buffer_ref};
+    $offset_ref = \$buffers{m}->{offset};
+    do
+    {
+
+	# Wait here for some data, calling the I/O wait handler every second
+	# whilst we wait.
+
+	while ($this->{poll}->poll($handler_timeout) == 0)
+	{
+	    &$handler($this, $handler_data);
+	}
+
+	# If necessary, read in and process the chunk header, then we know how
+	# much to read in.
+
+	if ($chunk_start)
+	{
+
+	    # Read header, one byte at a time until we have what we need or
+	    # there is an error.
+
+	    for ($header = "", $colons = $i = 0;
+		 $colons < 3 && sysread($this->{mtn_out}, $header, 1, $i);
+		 ++ $i)
+	    {
+		$char = substr($header, $i, 1);
+		if ($char eq ":")
+		{
+		    ++ $colons;
+		}
+		elsif ($colons == 1)
+		{
+		    if ($char !~ m/^[elmptw]$/)
+		    {
+			croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+			      . join("", <$err>));
+		    }
+		}
+		elsif ($char =~ m/\D$/)
+		{
+		    croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+			  . join("", <$err>));
+		}
+	    }
+
+	    # Break out the header into its separate fields.
+
+	    if ($header =~ m/^(\d+):([elmptw]):(\d+):$/)
+	    {
+		($cmd_nr, $stream, $size) = ($1, $2, $3);
+		if ($cmd_nr != $this->{cmd_cnt})
+		{
+		    croak("Mtn command count is out of sequence");
+		}
+	    }
+	    else
+	    {
+		croak("Corrupt/missing mtn chunk header, mtn gave:\n"
+		      . join("", <$err>));
+	    }
+
+	    # Set up the current buffer and offset details.
+
+	    $buffer_ref = $buffers{$stream}->{buffer_ref};
+	    $offset_ref = \$buffers{$stream}->{offset};
+
+	    $chunk_start = undef;
+
+	}
+
+	# Read in what we require.
+
+	if ($stream ne "l")
+	{
+	    if ($size > 0)
+	    {
+		if (! defined($bytes_read = sysread($this->{mtn_out},
+						    $$buffer_ref,
+						    $size,
+						    $$offset_ref)))
+		{
+		    croak("sysread failed: " . $!);
+		}
+		$size -= $bytes_read;
+		$$offset_ref += $bytes_read;
+	    }
+	    else
+	    {
+		$chunk_start = 1;
+	    }
+	}
+	elsif ($size == 1)
+	{
+	    if (! sysread($this->{mtn_out}, $err_code, 1))
+	    {
+		croak("sysread failed: " . $!);
+	    }
+	    $size = 0;
+	    if ($err_code != 0)
+	    {
+		$err_occurred = 1;
+	    }
+	}
+	else
+	{
+	    croak("Invalid message state");
+	}
+
+    }
+    while ($size > 0 || $stream ne "l");
+
+    ++ $this->{cmd_cnt};
+
+    # Record any error or warning messages.
+
+    if (${$buffers{e}->{buffer_ref}} ne "")
+    {
+	$this->{error_msg} = ${$buffers{e}->{buffer_ref}};
+    }
+    elsif (${$buffers{w}->{buffer_ref}} ne "")
+    {
+	$this->{error_msg} = ${$buffers{w}->{buffer_ref}};
+    }
+
+    # If something has gone wrong then deal with it.
+
+    if ($err_occurred)
+    {
+	$$buffer = "";
+	return;
+    }
+
+    return 1;
+
+}
+#
+##############################################################################
+#
 #   Routine      - startup
 #
 #   Description  - If necessary start up the mtn subprocess.
@@ -4342,7 +4571,9 @@ sub startup($)
 
 	my(@args,
 	   $cwd,
+	   $file,
 	   $exception,
+	   $line,
 	   $my_pid,
 	   $version);
 
@@ -4424,31 +4655,57 @@ sub startup($)
 	$this->{poll} = IO::Poll->new();
 	$this->{poll}->mask($this->{mtn_out}, POLLIN | POLLPRI | POLLHUP);
 
+	# If necessary get the version of the actual application.
+
+	if (! defined($mtn_version))
+	{
+	    &$croaker("Could not run command `mtn --version'")
+		unless (defined($file = IO::File->new("mtn --version |")));
+	    while (defined($line = $file->getline()))
+	    {
+		if ($line =~ m/^monotone (\d+\.\d+) ./)
+		{
+		    $mtn_version = $1;
+		}
+	    }
+	    $file->close();
+	    &$croaker("Could not determine the version of Monotone")
+		unless (defined($mtn_version));
+	}
+
+	# If the version is higher than 0.45 then we need to skip the header
+	# which is terminated by two blank lines.
+
+	if ($mtn_version > 0.45)
+	{
+	    my($char,
+	       $last_char);
+	    $char = "";
+	    do
+	    {
+		$last_char = $char;
+		&$croaker("Cannot get format header")
+		    unless (sysread($this->{mtn_out}, $char, 1));
+	    }
+	    while ($char ne "\n" || $last_char ne "\n")
+	}
+
+	# Set up the correct input handler depending upon the version of mtn.
+
+	if ($mtn_version > 0.45)
+	{
+	    *mtn_read_output = *mtn_read_output_format_2;
+	}
+	else
+	{
+	    *mtn_read_output = *mtn_read_output_format_1;
+	}
+
 	# Get the interface version.
 
 	$this->interface_version(\$version);
 	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
 	    ($version =~ m/^(\d+)\.(\d+)$/);
-
-	# If necessary get the version of the actual application (sometimes
-	# needed to differentiate when certain features were introduced that do
-	# not affect the automate stdio interface version).
-
-	if ($this->{mtn_aif_major} == 9)
-	{
-	    my($file,
-	       $line);
-	    &$croaker("Could not run command `mtn --version'")
-		unless (defined($file = IO::File->new("mtn --version |")));
-	    while (defined($line = $file->getline()))
-	    {
-		if ($line =~ m/^monotone (\d+\.\d*) ./)
-		{
-		    $this->{mtn_version} = $1;
-		}
-	    }
-	    $file->close();
-	}
 
     }
 
@@ -4631,7 +4888,6 @@ sub create_object_data()
 	    honour_suspend_certs    => 1,
 	    mtn_aif_major           => 0,
 	    mtn_aif_minor           => 0,
-	    mtn_version             => undef,
 	    cmd_cnt                 => 0,
 	    db_is_locked            => undef,
 	    db_locked_handler       => undef,
