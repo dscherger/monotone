@@ -1034,48 +1034,46 @@ dump(roster_t const & val, string & out)
 void
 roster_t::check_sane(bool temp_nodes_ok) const
 {
-  I(has_root());
-  node_map::const_iterator ri;
-
+  node_id parent_id(the_null_node);
+  dir_t parent_dir;
   I(old_locations.empty());
-
-  for (ri = nodes.begin();
-       ri != nodes.end();
-       ++ri)
+  I(has_root());
+  size_t maxdepth = nodes.size();
+  bool is_first = true;
+  for (dfs_iter i(root_dir); !i.finished(); ++i)
     {
-      node_id nid = ri->first;
-      I(!null_node(nid));
-      if (!temp_nodes_ok)
-        I(!temp_node(nid));
-      node_t n = ri->second;
-      I(n->self == nid);
-      if (is_dir_t(n))
+      node_t const &n(*i);
+      if (is_first)
         {
-          if (n->name.empty() || null_node(n->parent))
-            I(n->name.empty() && null_node(n->parent));
-          else
-            I(!n->name.empty() && !null_node(n->parent));
+          I(n->name.empty() && null_node(n->parent));
+          is_first = false;
         }
       else
         {
           I(!n->name.empty() && !null_node(n->parent));
+
+          if (n->parent != parent_id)
+            {
+              parent_id = n->parent;
+              parent_dir = downcast_to_dir_t(get_node(parent_id));
+            }
+          I(parent_dir->get_child(n->name) == n);
+        }
+      for (attr_map_t::const_iterator a = n->attrs.begin(); a != n->attrs.end(); ++a)
+        {
+          I(a->second.first || a->second.second().empty());
+        }
+      if (is_file_t(n))
+        {
           I(!null_id(downcast_to_file_t(n)->content));
         }
-      for (attr_map_t::const_iterator i = n->attrs.begin(); i != n->attrs.end(); ++i)
-        I(i->second.first || i->second.second().empty());
-      if (n != root_dir)
+      node_id nid(n->self);
+      I(!null_node(nid));
+      if (!temp_nodes_ok)
         {
-          I(!null_node(n->parent));
-          I(downcast_to_dir_t(get_node(n->parent))->get_child(n->name) == n);
+          I(!temp_node(nid));
         }
-
-    }
-
-  I(has_root());
-  size_t maxdepth = nodes.size();
-  for (dfs_iter i(root_dir); !i.finished(); ++i)
-    {
-      I(*i == get_node((*i)->self));
+      I(n == get_node(nid));
       I(maxdepth-- > 0);
     }
   I(maxdepth == 0);
