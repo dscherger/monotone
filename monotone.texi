@@ -1449,7 +1449,7 @@ recursively scans the directory and adds all its files.
 
 @smallexample
 @group
-$ mtn add include/jb.h src
+$ mtn add -R include/jb.h src
 mtn: adding include/jb.h to workspace manifest
 mtn: adding src/apple.c to workspace manifest
 mtn: adding src/banana.c to workspace manifest
@@ -4647,7 +4647,7 @@ $ cvs import wobbler vendor start
 @smallexample
 @group
 $ mtn --db=/path/to/database.mtn --branch=com.foo.wobbler setup .
-$ mtn add .
+$ mtn add -R .
 $ mtn commit
 @end group
 @end smallexample
