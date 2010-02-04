@@ -46,6 +46,7 @@ struct node
   path_component name; // the_null_component iff this is a root dir
   attr_map_t attrs;
   roster_node_type type;
+  u32 cow_version; // see roster_t::cow_version below
 
   // need a virtual function to make dynamic_cast work
   virtual node_t clone() = 0;
@@ -152,7 +153,7 @@ template <> void dump(marking_map const & marking_map, std::string & out);
 class roster_t
 {
 public:
-  roster_t() {}
+  roster_t();
   roster_t(roster_t const & other);
   roster_t & operator=(roster_t const & other);
   bool has_root() const;
@@ -163,6 +164,7 @@ public:
   node_t get_node(file_path const & sp) const;
   node_t get_node(node_id nid) const;
   void get_name(node_id nid, file_path & sp) const;
+  void unshare(node_t & n, bool is_in_node_map = true);
   void replace_node_id(node_id from, node_id to);
 
   // editable_tree operations
@@ -238,9 +240,17 @@ public:
   }
 
 private:
-  void do_deep_copy_from(roster_t const & other);
+  //void do_deep_copy_from(roster_t const & other);
   dir_t root_dir;
   node_map nodes;
+  // This is set to a unique value when a roster is created or
+  // copied to/from another roster. If a node has the same version
+  // as the roster it's in, then it is not shared. Nodes with version
+  // zero are also not shared, since that means they haven't been added
+  // to a roster yet.
+  // A simple refcount isn't good enough, because everything that points
+  // to a node in question could also be shared.
+  mutable u32 cow_version;
   // This requires some explanation.  There is a particular kind of
   // nonsensical behavior which we wish to discourage -- when a node is
   // detached from some location, and then re-attached at that same location

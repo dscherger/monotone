@@ -213,7 +213,7 @@ check_rosters_manifest(database & db,
       found_manifests.insert(man_id);
 
       for (node_map::const_iterator n = ros.all_nodes().begin();
-           n != ros.all_nodes().end(); n++)
+           n != ros.all_nodes().end(); ++n)
         {
 
           if (is_file_t(n->second))
@@ -261,7 +261,7 @@ check_rosters_marking(database & db,
       db.get_roster(ros_id, ros, mm);
 
       for (node_map::const_iterator n = ros.all_nodes().begin();
-           n != ros.all_nodes().end(); n++)
+           n != ros.all_nodes().end(); ++n)
         {
           // lots of revisions that must exist
           marking_t mark = mm[n->first];

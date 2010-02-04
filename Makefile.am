@@ -50,6 +50,7 @@ MOST_SOURCES = 								\
 	update.cc update.hh						\
 	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
+	cow_trie.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\

@@ -156,11 +156,14 @@ dump(marking_map const & markings, string & out)
 // existing subdirectory into the root directory.  This is an UI constraint,
 // not a constraint at this level.
 
+u32 last_created_roster = 0;
+
 node::node(node_id i)
   : self(i),
     parent(the_null_node),
     name(),
-    type(node_type_none)
+    type(node_type_none),
+    cow_version(0)
 {
 }
 
@@ -169,7 +172,8 @@ node::node()
   : self(the_null_node),
     parent(the_null_node),
     name(),
-    type(node_type_none)
+    type(node_type_none),
+    cow_version(0)
 {
 }
 
@@ -206,6 +210,7 @@ dir_node::attach_child(path_component const & pc, node_t child)
 {
   I(null_node(child->parent));
   I(child->name.empty());
+  I(cow_version == child->cow_version);
   safe_insert(children, make_pair(pc, child));
   child->parent = this->self;
   child->name = pc;
@@ -216,6 +221,7 @@ node_t
 dir_node::detach_child(path_component const & pc)
 {
   node_t n = get_child(pc);
+  I(cow_version == n->cow_version);
   n->parent = the_null_node;
   n->name = path_component();
   safe_erase(children, pc);
@@ -294,39 +300,27 @@ dump(node_t const & n, string & out)
   out = oss.str();
 }
 
-// helper
-void
-roster_t::do_deep_copy_from(roster_t const & other)
+
+roster_t::roster_t()
+  : cow_version(++last_created_roster)
 {
-  MM(*this);
-  MM(other);
-  I(!root_dir);
-  I(nodes.empty());
-  for (node_map::const_iterator i = other.nodes.begin(); i != other.nodes.end();
-       ++i)
-    hinted_safe_insert(nodes, nodes.end(), make_pair(i->first, i->second->clone()));
-  for (node_map::iterator i = nodes.begin(); i != nodes.end(); ++i)
-    if (is_dir_t(i->second))
-      {
-        dir_map & children = downcast_to_dir_t(i->second)->children;
-        for (dir_map::iterator j = children.begin(); j != children.end(); ++j)
-          j->second = safe_get(nodes, j->second->self);
-      }
-  if (other.root_dir)
-    root_dir = downcast_to_dir_t(safe_get(nodes, other.root_dir->self));
 }
 
 roster_t::roster_t(roster_t const & other)
+  : cow_version(++last_created_roster)
 {
-  do_deep_copy_from(other);
+  root_dir = other.root_dir;
+  nodes = other.nodes;
+  other.cow_version = ++last_created_roster;
 }
 
 roster_t &
 roster_t::operator=(roster_t const & other)
 {
-  root_dir.reset();
-  nodes.clear();
-  do_deep_copy_from(other);
+  root_dir = other.root_dir;
+  nodes = other.nodes;
+  cow_version = ++last_created_roster;
+  other.cow_version = ++last_created_roster;
   return *this;
 }
 
@@ -628,7 +622,7 @@ roster_t::get_node(file_path const & p) const
 bool
 roster_t::has_node(node_id n) const
 {
-  return nodes.find(n) != nodes.end();
+  return nodes.get_if_present(n);
 }
 
 bool
@@ -688,7 +682,9 @@ roster_t::has_node(file_path const & p) const
 node_t
 roster_t::get_node(node_id nid) const
 {
-  return safe_get(nodes, nid);
+  node_t const &n(nodes.get_if_present(nid));
+  I(n);
+  return n;
 }
 
 
@@ -731,6 +727,41 @@ roster_t::get_name(node_id nid, file_path & p) const
   p = file_path(tmp, 0, string::npos);  // short circuit constructor
 }
 
+void
+roster_t::unshare(node_t & n, bool is_in_node_map)
+{
+  if (cow_version == n->cow_version)
+    return;
+  // we can't get at the (possibly shared) pointer in the node_map,
+  // so if we were given the only pointer then we know the node
+  // isn't in any other rosters
+  if (n.unique())
+    {
+      n->cow_version = cow_version;
+      return;
+    }
+  // here we could theoretically walk up the tree to see if
+  // the node or any of its parents have too many references,
+  // but I'm guessing that the avoided copies won't be worth
+  // the extra search time
+
+  node_t old = n;
+  n = n->clone();
+  n->cow_version = cow_version;
+  if (is_in_node_map)
+    nodes.set(n->self, n);
+  if (!null_node(n->parent))
+    {
+      node_t p = nodes.get_if_present(n->parent);
+      I(p);
+      unshare(p);
+      downcast_to_dir_t(p)->children[n->name] = n;
+    }
+  if (root_dir && root_dir->self == n->self)
+    {
+      root_dir = downcast_to_dir_t(n);
+    }
+}
 
 void
 roster_t::replace_node_id(node_id from, node_id to)
@@ -738,10 +769,12 @@ roster_t::replace_node_id(node_id from, node_id to)
   I(!null_node(from));
   I(!null_node(to));
   node_t n = get_node(from);
-  safe_erase(nodes, from);
-  safe_insert(nodes, make_pair(to, n));
-  n->self = to;
+  nodes.unset(from);
 
+  unshare(n, false);
+
+  I(nodes.set_if_missing(to, n));
+  n->self = to;
   if (is_dir_t(n))
     {
       dir_t d = downcast_to_dir_t(n);
@@ -777,7 +810,11 @@ roster_t::detach_node(file_path const & p)
       return root_id;
     }
 
-  dir_t parent = downcast_to_dir_t(get_node(dirname));
+  node_t pp = get_node(dirname);
+  unshare(pp);
+  dir_t parent = downcast_to_dir_t(pp);
+  node_t c = parent->get_child(basename);
+  unshare(c);
   node_id nid = parent->detach_child(basename)->self;
   safe_insert(old_locations,
               make_pair(nid, make_pair(parent->self, basename)));
@@ -800,8 +837,11 @@ roster_t::detach_node(node_id nid)
     }
   else
     {
+      unshare(n);
       path_component name = n->name;
-      dir_t parent = downcast_to_dir_t(get_node(n->parent));
+      node_t p = get_node(n->parent);
+      unshare(p);
+      dir_t parent = downcast_to_dir_t(p);
       I(parent->detach_child(name) == n);
       safe_insert(old_locations,
                   make_pair(nid, make_pair(n->parent, name)));
@@ -819,7 +859,7 @@ roster_t::drop_detached_node(node_id nid)
   if (is_dir_t(n))
     I(downcast_to_dir_t(n)->children.empty());
   // all right, kill it
-  safe_erase(nodes, nid);
+  nodes.unset(nid);
 
   // Resolving a duplicate name conflict via drop one side requires dropping
   // nodes that were never attached. So we erase the key without checking
@@ -843,7 +883,8 @@ roster_t::create_dir_node(node_id nid)
 {
   dir_t d = dir_t(new dir_node());
   d->self = nid;
-  safe_insert(nodes, make_pair(nid, d));
+  d->cow_version = cow_version;
+  nodes.set(nid, d);
 }
 
 
@@ -864,7 +905,8 @@ roster_t::create_file_node(file_id const & content, node_id nid)
   file_t f = file_t(new file_node());
   f->self = nid;
   f->content = content;
-  safe_insert(nodes, make_pair(nid, f));
+  f->cow_version = cow_version;
+  nodes.set(nid, f);
 }
 
 void
@@ -910,7 +952,10 @@ roster_t::attach_node(node_id nid, node_id parent, path_component name)
     }
   else
     {
-      dir_t parent_n = downcast_to_dir_t(get_node(parent));
+      unshare(n);
+      node_t p = get_node(parent);
+      unshare(p);
+      dir_t parent_n = downcast_to_dir_t(p);
       parent_n->attach_child(name, n);
       I(i == old_locations.end() || i->second != make_pair(n->parent, n->name));
     }
@@ -924,7 +969,9 @@ roster_t::apply_delta(file_path const & pth,
                       file_id const & old_id,
                       file_id const & new_id)
 {
-  file_t f = downcast_to_file_t(get_node(pth));
+  node_t n = get_node(pth);
+  unshare(n);
+  file_t f = downcast_to_file_t(n);
   I(f->content == old_id);
   I(!null_node(f->self));
   I(!(f->content == new_id));
@@ -934,7 +981,9 @@ roster_t::apply_delta(file_path const & pth,
 void
 roster_t::set_content(node_id nid, file_id const & new_id)
 {
-  file_t f = downcast_to_file_t(get_node(nid));
+  node_t n = get_node(nid);
+  unshare(n);
+  file_t f = downcast_to_file_t(n);
   I(!(f->content == new_id));
   f->content = new_id;
 }
@@ -952,6 +1001,7 @@ roster_t::erase_attr(node_id nid,
                      attr_key const & name)
 {
   node_t n = get_node(nid);
+  unshare(n);
   safe_erase(n->attrs, name);
 }
 
@@ -970,6 +1020,7 @@ roster_t::set_attr(file_path const & pth,
                    pair<bool, attr_value> const & val)
 {
   node_t n = get_node(pth);
+  unshare(n);
   I(val.first || val.second().empty());
   I(!null_node(n->self));
   attr_map_t::iterator i = n->attrs.find(name);
@@ -987,6 +1038,7 @@ roster_t::set_attr_unknown_to_dead_ok(node_id nid,
                                       pair<bool, attr_value> const & val)
 {
   node_t n = get_node(nid);
+  unshare(n);
   I(val.first || val.second().empty());
   attr_map_t::iterator i = n->attrs.find(name);
   if (i != n->attrs.end())
@@ -1326,14 +1378,22 @@ namespace
                 break;
               }
           }
+        node_t left_n = left_i->second;
         for (set<attr_key>::const_iterator j = left_missing.begin();
              j != left_missing.end(); ++j)
-          safe_insert(left_i->second->attrs,
-                      make_pair(*j, make_pair(false, attr_value())));
+          {
+            left.unshare(left_n);
+            safe_insert(left_n->attrs,
+                        make_pair(*j, make_pair(false, attr_value())));
+          }
+        node_t right_n = right_i->second;
         for (set<attr_key>::const_iterator j = right_missing.begin();
              j != right_missing.end(); ++j)
-          safe_insert(right_i->second->attrs,
-                      make_pair(*j, make_pair(false, attr_value())));
+          {
+            right.unshare(right_n);
+            safe_insert(right_n->attrs,
+                        make_pair(*j, make_pair(false, attr_value())));
+          }
         ++left_i;
         ++right_i;
       }
@@ -1556,6 +1616,7 @@ namespace
     I(same_type(ln, n) && same_type(rn, n));
     I(left_marking.birth_revision == right_marking.birth_revision);
     new_marking.birth_revision = left_marking.birth_revision;
+    MM(n->self);
 
     // name
     mark_merged_scalar(left_marking.parent_name, left_uncommon_ancestors,
@@ -1582,6 +1643,7 @@ namespace
          i != n->attrs.end(); ++i)
       {
         attr_key const & key = i->first;
+        MM(key);
         attr_map_t::const_iterator li = ln->attrs.find(key);
         attr_map_t::const_iterator ri = rn->attrs.find(key);
         I(new_marking.attrs.find(key) == new_marking.attrs.end());
@@ -1651,11 +1713,11 @@ mark_merge_roster(roster_t const & left_roster,
        i != merge.all_nodes().end(); ++i)
     {
       node_t const & n = i->second;
-      node_map::const_iterator lni = left_roster.all_nodes().find(i->first);
-      node_map::const_iterator rni = right_roster.all_nodes().find(i->first);
+      node_t const &left_node = left_roster.all_nodes().get_if_present(i->first);
+      node_t const &right_node = right_roster.all_nodes().get_if_present(i->first);
 
-      bool exists_in_left = (lni != left_roster.all_nodes().end());
-      bool exists_in_right = (rni != right_roster.all_nodes().end());
+      bool exists_in_left = (left_node);
+      bool exists_in_right = (right_node);
 
       marking_t new_marking;
 
@@ -1664,7 +1726,6 @@ mark_merge_roster(roster_t const & left_roster,
 
       else if (!exists_in_left && exists_in_right)
         {
-          node_t const & right_node = rni->second;
           marking_t const & right_marking = safe_get(right_markings, n->self);
           // must be unborn on the left (as opposed to dead)
           I(right_uncommon_ancestors.find(right_marking.birth_revision)
@@ -1674,7 +1735,6 @@ mark_merge_roster(roster_t const & left_roster,
         }
       else if (exists_in_left && !exists_in_right)
         {
-          node_t const & left_node = lni->second;
           marking_t const & left_marking = safe_get(left_markings, n->self);
           // must be unborn on the right (as opposed to dead)
           I(left_uncommon_ancestors.find(left_marking.birth_revision)
@@ -1684,8 +1744,6 @@ mark_merge_roster(roster_t const & left_roster,
         }
       else
         {
-          node_t const & left_node = lni->second;
-          node_t const & right_node = rni->second;
           mark_merged_node(safe_get(left_markings, n->self),
                            left_uncommon_ancestors, left_node,
                            safe_get(right_markings, n->self),
@@ -2753,7 +2811,9 @@ roster_t::parse_from(basic_io::parser & pa,
 
       I(static_cast<bool>(n));
 
-      safe_insert(nodes, make_pair(n->self, n));
+      n->cow_version = cow_version;
+      I(nodes.set_if_missing(n->self, n));
+
       if (is_dir_t(n) && pth.empty())
         {
           I(! has_root());

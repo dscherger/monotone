@@ -127,6 +127,9 @@ namespace
   {
     node_id nid = new_n->self;
     pair<node_id, path_component> new_loc(new_n->parent, new_n->name);
+    MM(new_loc.first);
+    MM(new_loc.second);
+    MM(nid);
 
     if (is_dir_t(new_n))
       safe_insert(d.dirs_added, make_pair(new_loc, nid));

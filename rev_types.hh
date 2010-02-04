@@ -21,6 +21,7 @@
 #include "numeric_vocab.hh"
 #include "hybrid_map.hh"
 #include "vector.hh"
+#include "cow_trie.hh"
 
 // full definitions in basic_io.hh
 namespace basic_io
@@ -77,7 +78,8 @@ typedef boost::shared_ptr<dir_node> dir_t;
 typedef std::map<node_id, marking_t> marking_map;
 
 typedef std::map<path_component, node_t> dir_map;
-typedef hybrid_map<node_id, node_t> node_map;
+//typedef hybrid_map<node_id, node_t> node_map;
+typedef cow_trie<node_id, node_t, 8> node_map;
 
 // (true, "val") or (false, "") are both valid attr values (for proper
 // merging, we have to widen the attr_value type to include a first-class

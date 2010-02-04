@@ -1604,8 +1604,14 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               missing_items++;
             }
 
+          file_id fid;
+          ident_existing_file(fp, fid, status);
           file_t file = downcast_to_file_t(node);
-          ident_existing_file(fp, file->content, status);
+          if (file->content != fid)
+            {
+              ros.unshare(node);
+              downcast_to_file_t(node)->content = fid;
+            }
         }
 
     }

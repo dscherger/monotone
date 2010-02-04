@@ -789,6 +789,7 @@ drop_attr(app_state & app, args_vector const & args)
 
   roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
+  new_roster.unshare(node);
 
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
@@ -907,6 +908,7 @@ set_attr(app_state & app, args_vector const & args)
 
   roster_t new_roster = old_roster;
   node_t node = new_roster.get_node(path);
+  new_roster.unshare(node);
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
   attr_value a_value = typecast_vocab<attr_value>(idx(args, 2));

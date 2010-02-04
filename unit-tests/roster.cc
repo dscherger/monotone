@@ -2316,10 +2316,14 @@ UNIT_TEST(unify_rosters_end_to_end_attr_corpses)
 
   // put in the attrs on foo
   {
+    node_t n = first_roster.get_node(foo_id);
+    first_roster.unshare(n);
     safe_insert(first_roster.get_node(foo_id)->attrs,
                 make_pair(attr_key("testfoo1"), make_pair(false, attr_value())));
     safe_insert(first_markings.find(foo_id)->second.attrs,
                 make_pair(attr_key("testfoo1"), singleton(first_rid)));
+    n = second_roster.get_node(foo_id);
+    second_roster.unshare(n);
     safe_insert(second_roster.get_node(foo_id)->attrs,
                 make_pair(attr_key("testfoo2"), make_pair(false, attr_value())));
     safe_insert(second_markings.find(foo_id)->second.attrs,
