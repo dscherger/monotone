@@ -84,13 +84,13 @@ struct file_node
 };
 
 inline bool
-is_dir_t(node_t n)
+is_dir_t(const_node_t n)
 {
   return n->type == node_type_dir;
 }
 
 inline bool
-is_file_t(node_t n)
+is_file_t(const_node_t n)
 {
   return n->type == node_type_file;
 }
@@ -108,24 +108,40 @@ is_root_dir_t(node_t n)
 }
 
 inline dir_t
-downcast_to_dir_t(node_t const n)
+downcast_to_dir_t(node_t const & n)
 {
   dir_t d = boost::dynamic_pointer_cast<dir_node, node>(n);
   I(static_cast<bool>(d));
   return d;
 }
 
-
 inline file_t
-downcast_to_file_t(node_t const n)
+downcast_to_file_t(node_t const & n)
 {
   file_t f = boost::dynamic_pointer_cast<file_node, node>(n);
   I(static_cast<bool>(f));
   return f;
 }
 
+inline const_dir_t
+downcast_to_dir_t(const_node_t const & n)
+{
+  const_dir_t d = boost::dynamic_pointer_cast<dir_node const, node const>(n);
+  I(static_cast<bool>(d));
+  return d;
+}
+
+inline const_file_t
+downcast_to_file_t(const_node_t const & n)
+{
+  const_file_t f = boost::dynamic_pointer_cast<file_node const, node const>(n);
+  I(static_cast<bool>(f));
+  return f;
+}
+
 bool
-shallow_equal(node_t a, node_t b, bool shallow_compare_dir_children,
+shallow_equal(const_node_t a, const_node_t b,
+              bool shallow_compare_dir_children,
               bool compare_file_contents = true);
 
 template <> void dump(node_t const & n, std::string & out);
@@ -161,8 +177,13 @@ public:
   bool has_node(node_id nid) const;
   bool is_root(node_id nid) const;
   bool is_attached(node_id nid) const;
-  node_t get_node(file_path const & sp) const;
-  node_t get_node(node_id nid) const;
+private:
+  node_t get_node_internal(file_path const & p) const;
+public:
+  const_node_t get_node(file_path const & sp) const;
+  const_node_t get_node(node_id nid) const;
+  node_t get_node_for_update(file_path const & sp);
+  node_t get_node_for_update(node_id nid);
   void get_name(node_id nid, file_path & sp) const;
   void unshare(node_t & n, bool is_in_node_map = true);
   void replace_node_id(node_id from, node_id to);

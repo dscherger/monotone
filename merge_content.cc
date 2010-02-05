@@ -634,7 +634,7 @@ try_to_merge_files(lua_hooks & lua,
         {
           L(FL("resolved content conflict %d / %d on file '%s'")
             % cnt % total_conflicts % right_path);
-          file_t f = downcast_to_file_t(result.roster.get_node(conflict.nid));
+          file_t f = downcast_to_file_t(result.roster.get_node_for_update(conflict.nid));
           f->content = merged_id;
 
           it = result.file_content_conflicts.erase(it);

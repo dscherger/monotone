@@ -328,15 +328,14 @@ roster_t::operator=(roster_t const & other)
 struct
 dfs_iter
 {
-
-  dir_t root;
+  const_dir_t root;
   string curr_path;
   bool return_root;
   bool track_path;
-  stack< pair<dir_t, dir_map::const_iterator> > stk;
+  stack< pair<const_dir_t, dir_map::const_iterator> > stk;
 
 
-  dfs_iter(dir_t r, bool t = false)
+  dfs_iter(const_dir_t r, bool t = false)
     : root(r), return_root(root), track_path(t)
   {
     if (root && !root->children.empty())
@@ -357,7 +356,7 @@ dfs_iter
   }
 
 
-  node_t operator*() const
+  const_node_t operator*() const
   {
     I(!finished());
     if (return_root)
@@ -374,7 +373,7 @@ private:
   {
     int prevsize = 0;
     int nextsize = 0;
-    pair<dir_t, dir_map::const_iterator> & stack_top(stk.top());
+    pair<const_dir_t, dir_map::const_iterator> & stack_top(stk.top());
     if (track_path)
       {
         prevsize = stack_top.second->first().size();
@@ -456,14 +455,14 @@ roster_t::has_root() const
 
 
 inline bool
-same_type(node_t a, node_t b)
+same_type(const_node_t a, const_node_t b)
 {
   return is_file_t(a) == is_file_t(b);
 }
 
 
 inline bool
-shallow_equal(node_t a, node_t b,
+shallow_equal(const_node_t a, const_node_t b,
               bool shallow_compare_dir_children,
               bool compare_file_contents)
 {
@@ -486,16 +485,16 @@ shallow_equal(node_t a, node_t b,
     {
       if (compare_file_contents)
         {
-          file_t fa = downcast_to_file_t(a);
-          file_t fb = downcast_to_file_t(b);
+          const_file_t fa = downcast_to_file_t(a);
+          const_file_t fb = downcast_to_file_t(b);
           if (!(fa->content == fb->content))
             return false;
         }
     }
   else
     {
-      dir_t da = downcast_to_dir_t(a);
-      dir_t db = downcast_to_dir_t(b);
+      const_dir_t da = downcast_to_dir_t(a);
+      const_dir_t db = downcast_to_dir_t(b);
 
       if (shallow_compare_dir_children)
         {
@@ -590,12 +589,10 @@ equal_shapes(roster_t const & a, roster_t const & b)
   return true;
 }
 
-node_t
-roster_t::get_node(file_path const & p) const
+node_t roster_t::get_node_internal(file_path const & p) const
 {
   MM(*this);
   MM(p);
-
   I(has_root());
   if (p.empty())
     return root_dir;
@@ -617,6 +614,20 @@ roster_t::get_node(file_path const & p) const
       start = stop + 1;
       nd = downcast_to_dir_t(child->second);
     }
+}
+
+const_node_t
+roster_t::get_node(file_path const & p) const
+{
+  return get_node_internal(p);
+}
+
+node_t
+roster_t::get_node_for_update(file_path const & p)
+{
+  node_t n = get_node_internal(p);
+  unshare(n);
+  return n;
 }
 
 bool
@@ -641,7 +652,7 @@ roster_t::is_attached(node_id n) const
   if (!has_node(n))
     return false;
 
-  node_t node = get_node(n);
+  const_node_t node = get_node(n);
 
   return !null_node(node->parent);
 }
@@ -679,11 +690,20 @@ roster_t::has_node(file_path const & p) const
     }
 }
 
-node_t
+const_node_t
 roster_t::get_node(node_id nid) const
 {
   node_t const &n(nodes.get_if_present(nid));
   I(n);
+  return n;
+}
+
+node_t
+roster_t::get_node_for_update(node_id nid)
+{
+  node_t n(nodes.get_if_present(nid));
+  I(n);
+  unshare(n);
   return n;
 }
 
@@ -693,12 +713,12 @@ roster_t::get_name(node_id nid, file_path & p) const
 {
   I(!null_node(nid));
 
-  stack<node_t> sp;
+  stack<const_node_t> sp;
   size_t size = 0;
 
   while (nid != root_dir->self)
     {
-      node_t n = get_node(nid);
+      const_node_t n = get_node(nid);
       sp.push(n);
       size += n->name().length() + 1;
       nid = n->parent;
@@ -768,7 +788,8 @@ roster_t::replace_node_id(node_id from, node_id to)
 {
   I(!null_node(from));
   I(!null_node(to));
-  node_t n = get_node(from);
+  node_t n = nodes.get_if_present(from);
+  I(n);
   nodes.unset(from);
 
   unshare(n, false);
@@ -810,8 +831,7 @@ roster_t::detach_node(file_path const & p)
       return root_id;
     }
 
-  node_t pp = get_node(dirname);
-  unshare(pp);
+  node_t pp = get_node_for_update(dirname);
   dir_t parent = downcast_to_dir_t(pp);
   node_t c = parent->get_child(basename);
   unshare(c);
@@ -825,7 +845,7 @@ roster_t::detach_node(file_path const & p)
 void
 roster_t::detach_node(node_id nid)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
   if (null_node(n->parent))
     {
       // detaching the root dir
@@ -837,10 +857,8 @@ roster_t::detach_node(node_id nid)
     }
   else
     {
-      unshare(n);
       path_component name = n->name;
-      node_t p = get_node(n->parent);
-      unshare(p);
+      node_t p = get_node_for_update(n->parent);
       dir_t parent = downcast_to_dir_t(p);
       I(parent->detach_child(name) == n);
       safe_insert(old_locations,
@@ -852,7 +870,7 @@ void
 roster_t::drop_detached_node(node_id nid)
 {
   // ensure the node is already detached
-  node_t n = get_node(nid);
+  const_node_t n = get_node(nid);
   I(null_node(n->parent));
   I(n->name.empty());
   // if it's a dir, make sure it's empty
@@ -928,7 +946,7 @@ roster_t::attach_node(node_id nid, file_path const & p)
 void
 roster_t::attach_node(node_id nid, node_id parent, path_component name)
 {
-  node_t n = get_node(nid);
+  node_t n = get_node_for_update(nid);
 
   I(!null_node(n->self));
   // ensure the node is already detached (as best one can)
@@ -952,9 +970,7 @@ roster_t::attach_node(node_id nid, node_id parent, path_component name)
     }
   else
     {
-      unshare(n);
-      node_t p = get_node(parent);
-      unshare(p);
+      node_t p = get_node_for_update(parent);
       dir_t parent_n = downcast_to_dir_t(p);
       parent_n->attach_child(name, n);
       I(i == old_locations.end() || i->second != make_pair(n->parent, n->name));
@@ -969,8 +985,7 @@ roster_t::apply_delta(file_path const & pth,
                       file_id const & old_id,
                       file_id const & new_id)
 {
-  node_t n = get_node(pth);
-  unshare(n);
+  node_t n = get_node_for_update(pth);
   file_t f = downcast_to_file_t(n);
   I(f->content == old_id);
   I(!null_node(f->self));
@@ -981,8 +996,7 @@ roster_t::apply_delta(file_path const & pth,
 void
 roster_t::set_content(node_id nid, file_id const & new_id)
 {
-  node_t n = get_node(nid);
-  unshare(n);
+  node_t n = get_node_for_update(nid);
   file_t f = downcast_to_file_t(n);
   I(!(f->content == new_id));
   f->content = new_id;
@@ -1000,8 +1014,7 @@ void
 roster_t::erase_attr(node_id nid,
                      attr_key const & name)
 {
-  node_t n = get_node(nid);
-  unshare(n);
+  node_t n = get_node_for_update(nid);
   safe_erase(n->attrs, name);
 }
 
@@ -1019,8 +1032,7 @@ roster_t::set_attr(file_path const & pth,
                    attr_key const & name,
                    pair<bool, attr_value> const & val)
 {
-  node_t n = get_node(pth);
-  unshare(n);
+  node_t n = get_node_for_update(pth);
   I(val.first || val.second().empty());
   I(!null_node(n->self));
   attr_map_t::iterator i = n->attrs.find(name);
@@ -1037,8 +1049,7 @@ roster_t::set_attr_unknown_to_dead_ok(node_id nid,
                                       attr_key const & name,
                                       pair<bool, attr_value> const & val)
 {
-  node_t n = get_node(nid);
-  unshare(n);
+  node_t n = get_node_for_update(nid);
   I(val.first || val.second().empty());
   attr_map_t::iterator i = n->attrs.find(name);
   if (i != n->attrs.end())
@@ -1053,7 +1064,7 @@ roster_t::get_attr(file_path const & pth,
 {
   I(has_node(pth));
 
-  node_t n = get_node(pth);
+  const_node_t n = get_node(pth);
   attr_map_t::const_iterator i = n->attrs.find(name);
   if (i != n->attrs.end() && i->second.first)
     {
@@ -1087,14 +1098,14 @@ void
 roster_t::check_sane(bool temp_nodes_ok) const
 {
   node_id parent_id(the_null_node);
-  dir_t parent_dir;
+  const_dir_t parent_dir;
   I(old_locations.empty());
   I(has_root());
   size_t maxdepth = nodes.size();
   bool is_first = true;
   for (dfs_iter i(root_dir); !i.finished(); ++i)
     {
-      node_t const &n(*i);
+      const_node_t const &n(*i);
       if (is_first)
         {
           I(n->name.empty() && null_node(n->parent));
@@ -1543,7 +1554,7 @@ namespace
   }
 
   void
-  mark_new_node(revision_id const & new_rid, node_t n, marking_t & new_marking)
+  mark_new_node(revision_id const & new_rid, const_node_t n, marking_t & new_marking)
   {
     new_marking.birth_revision = new_rid;
     I(new_marking.parent_name.empty());
@@ -1560,8 +1571,8 @@ namespace
   }
 
   void
-  mark_unmerged_node(marking_t const & parent_marking, node_t parent_n,
-                     revision_id const & new_rid, node_t n,
+  mark_unmerged_node(marking_t const & parent_marking, const_node_t parent_n,
+                     revision_id const & new_rid, const_node_t n,
                      marking_t & new_marking)
   {
     // SPEEDUP?: the common case here is that the parent and child nodes are
@@ -1605,12 +1616,12 @@ namespace
   void
   mark_merged_node(marking_t const & left_marking,
                    set<revision_id> const & left_uncommon_ancestors,
-                   node_t ln,
+                   const_node_t ln,
                    marking_t const & right_marking,
                    set<revision_id> const & right_uncommon_ancestors,
-                   node_t rn,
+                   const_node_t rn,
                    revision_id const & new_rid,
-                   node_t n,
+                   const_node_t n,
                    marking_t & new_marking)
   {
     I(same_type(ln, n) && same_type(rn, n));
@@ -1629,9 +1640,9 @@ namespace
     // content
     if (is_file_t(n))
       {
-        file_t f = downcast_to_file_t(n);
-        file_t lf = downcast_to_file_t(ln);
-        file_t rf = downcast_to_file_t(rn);
+        const_file_t f = downcast_to_file_t(n);
+        const_file_t lf = downcast_to_file_t(ln);
+        const_file_t rf = downcast_to_file_t(rn);
         mark_merged_scalar(left_marking.file_content, left_uncommon_ancestors,
                            lf->content,
                            right_marking.file_content, right_uncommon_ancestors,
@@ -1820,7 +1831,7 @@ namespace {
 
     node_id handle_new(node_id nid)
     {
-      node_t n = r.get_node(nid);
+      const_node_t n = r.get_node(nid);
       marking_t new_marking;
       mark_new_node(rid, n, new_marking);
       safe_insert(markings, make_pair(nid, new_marking));
@@ -2156,7 +2167,7 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
       a.get_name(i->first, p);
       if (!b.has_node(p))
         return false;
-      node_t b_n = b.get_node(p);
+      const_node_t b_n = b.get_node(p);
       // we already know names are the same
       if (!same_type(i->second, b_n))
         return false;
@@ -2283,7 +2294,7 @@ make_restricted_roster(roster_t const & from, roster_t const & to,
           else
             restricted.create_dir_node(n->second->self);
 
-          node_t added = restricted.get_node(n->second->self);
+          node_t added = restricted.get_node_for_update(n->second->self);
           added->attrs = n->second->attrs;
 
           restricted.attach_node(n->second->self, n->second->parent, n->second->name);
@@ -2411,7 +2422,7 @@ roster_t::get_file_details(node_id nid,
                            file_path & pth) const
 {
   I(has_node(nid));
-  file_t f = downcast_to_file_t(get_node(nid));
+  const_file_t f = downcast_to_file_t(get_node(nid));
   fid = f->content;
   get_name(nid, pth);
 }
@@ -2438,12 +2449,12 @@ get_content_paths(roster_t const & roster, map<file_id, file_path> & paths)
   node_map const & nodes = roster.all_nodes();
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
-      node_t node = roster.get_node(i->first);
+      const_node_t node = roster.get_node(i->first);
       if (is_file_t(node))
         {
           file_path p;
           roster.get_name(i->first, p);
-          file_t file = downcast_to_file_t(node);
+          const_file_t file = downcast_to_file_t(node);
           paths.insert(make_pair(file->content, p));
         }
     }
@@ -2627,7 +2638,7 @@ roster_t::print_to(data & dat,
     {
       contents += "\n";
 
-      node_t curr = *i;
+      const_node_t curr = *i;
 
       int symbol_length = 0;
 
@@ -2676,7 +2687,7 @@ roster_t::print_to(data & dat,
             {
               symbol_length = 7;
             }
-          file_t ftmp = downcast_to_file_t(curr);
+          const_file_t ftmp = downcast_to_file_t(curr);
 
           contents.append(symbol_length - 4, ' ');
           contents.append("file \"");

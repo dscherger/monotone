@@ -65,7 +65,7 @@ do_testing_on_one_roster(roster_t const & r)
     {
       file_path from_iter = file_path_internal(i.path());
       file_path from_getname;
-      node_t curr = *i;
+      const_node_t curr = *i;
       r.get_name(curr->self, from_getname);
       I(from_iter == from_getname);
     }
@@ -616,9 +616,9 @@ UNIT_TEST(check_sane_roster_screwy_dir_map)
   r.attach_node(r.create_dir_node(nis), root);
   roster_t other; MM(other);
   node_id other_nid = other.create_dir_node(nis);
-  dir_t root_n = downcast_to_dir_t(r.get_node(root));
+  dir_t root_n = downcast_to_dir_t(r.get_node_for_update(root));
   root_n->children.insert(make_pair(path_component("foo"),
-                                    other.get_node(other_nid)));
+                                    other.get_node_for_update(other_nid)));
   UNIT_TEST_CHECK_THROW(r.check_sane(), logic_error);
   // well, but that one was easy, actually, because a dir traversal will hit
   // more nodes than actually exist... so let's make it harder, by making sure
@@ -626,7 +626,7 @@ UNIT_TEST(check_sane_roster_screwy_dir_map)
   node_id distractor_nid = r.create_dir_node(nis);
   UNIT_TEST_CHECK_THROW(r.check_sane(), logic_error);
   // and even harder, by making that node superficially valid too
-  dir_t distractor_n = downcast_to_dir_t(r.get_node(distractor_nid));
+  dir_t distractor_n = downcast_to_dir_t(r.get_node_for_update(distractor_nid));
   distractor_n->parent = distractor_nid;
   distractor_n->name = path_component("foo");
   distractor_n->children.insert(make_pair(distractor_n->name, distractor_n));
@@ -643,7 +643,7 @@ UNIT_TEST(bad_attr)
                                make_pair(false, attr_value("invalid"))),
                     logic_error);
   UNIT_TEST_CHECK_NOT_THROW(r.check_sane(true), logic_error);
-  safe_insert(r.get_node(root)->attrs,
+  safe_insert(r.get_node_for_update(root)->attrs,
               make_pair(attr_key("test_key2"),
                         make_pair(false, attr_value("invalid"))));
   UNIT_TEST_CHECK_THROW(r.check_sane(true), logic_error);
@@ -997,7 +997,7 @@ namespace
       roster.attach_node(obj_under_test_nid, file_path_internal("foo"));
       if (val != scalar_none)
         {
-          safe_insert(roster.get_node(obj_under_test_nid)->attrs,
+          safe_insert(roster.get_node_for_update(obj_under_test_nid)->attrs,
                       make_pair(attr_key("test_key"), safe_get(values, val)));
           markings[obj_under_test_nid].attrs[attr_key("test_key")] = this_scalar_mark;
         }
@@ -1030,7 +1030,7 @@ namespace
         {
           T::make_obj(scalar_origin_rid, obj_under_test_nid, roster, markings);
           roster.attach_node(obj_under_test_nid, file_path_internal("foo"));
-          safe_insert(roster.get_node(obj_under_test_nid)->attrs,
+          safe_insert(roster.get_node_for_update(obj_under_test_nid)->attrs,
                       make_pair(attr_key("test_key"), safe_get(values, val)));
           markings[obj_under_test_nid].attrs[attr_key("test_key")] = this_scalar_mark;
         }
@@ -1553,7 +1553,7 @@ namespace
         }
       if (val != scalar_none && val != scalar_none_2)
         {
-          safe_insert(roster.get_node(obj_under_test_nid)->attrs,
+          safe_insert(roster.get_node_for_update(obj_under_test_nid)->attrs,
                       make_pair(attr_key("test_key"), safe_get(values, val)));
           markings[obj_under_test_nid].attrs[attr_key("test_key")] = this_scalar_mark;
         }
@@ -2303,7 +2303,7 @@ UNIT_TEST(unify_rosters_end_to_end_attr_corpses)
   {
     second_roster.attach_node(second_roster.create_file_node(my_fid, nis),
                               file_path_internal("bar"));
-    safe_insert(second_roster.get_node(file_path_internal("bar"))->attrs,
+    safe_insert(second_roster.get_node_for_update(file_path_internal("bar"))->attrs,
                 make_pair(attr_key("testbar"), make_pair(false, attr_value())));
     marking_t marking;
     marking.birth_revision = second_rid;
@@ -2316,15 +2316,11 @@ UNIT_TEST(unify_rosters_end_to_end_attr_corpses)
 
   // put in the attrs on foo
   {
-    node_t n = first_roster.get_node(foo_id);
-    first_roster.unshare(n);
-    safe_insert(first_roster.get_node(foo_id)->attrs,
+    safe_insert(first_roster.get_node_for_update(foo_id)->attrs,
                 make_pair(attr_key("testfoo1"), make_pair(false, attr_value())));
     safe_insert(first_markings.find(foo_id)->second.attrs,
                 make_pair(attr_key("testfoo1"), singleton(first_rid)));
-    n = second_roster.get_node(foo_id);
-    second_roster.unshare(n);
-    safe_insert(second_roster.get_node(foo_id)->attrs,
+    safe_insert(second_roster.get_node_for_update(foo_id)->attrs,
                 make_pair(attr_key("testfoo2"), make_pair(false, attr_value())));
     safe_insert(second_markings.find(foo_id)->second.attrs,
                 make_pair(attr_key("testfoo2"), singleton(second_rid)));

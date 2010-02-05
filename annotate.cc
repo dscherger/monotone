@@ -820,7 +820,7 @@ do_annotate_node(database & db,
 }
 
 void
-do_annotate (project_t & project, file_t file_node,
+do_annotate (project_t & project, const_file_t file_node,
              revision_id rid, bool just_revs)
 {
   L(FL("annotating file %s with content %s in revision %s")

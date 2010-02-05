@@ -374,7 +374,7 @@ struct attr_scalar : public virtual base_scalar, public T
     switch (expected_val)
       {
       case scalar_a: case scalar_b:
-        I(result.roster.get_node(thing_nid)->attrs[attr_key("test_key")]
+        I(result.roster.get_node_for_update(thing_nid)->attrs[attr_key("test_key")]
           == make_pair(true, attr_value_for(expected_val)));
         break;
       case scalar_conflict:
@@ -413,7 +413,7 @@ struct file_content_scalar : public virtual file_scalar
                roster_t & r, marking_map & markings)
   {
     make_thing(r, markings);
-    downcast_to_file_t(r.get_node(thing_name))->content = content_for(val);
+    downcast_to_file_t(r.get_node_for_update(thing_name))->content = content_for(val);
     markings.find(thing_nid)->second.file_content = marks;
   }
 
@@ -433,7 +433,7 @@ struct file_content_scalar : public virtual file_scalar
         I(c.nid == thing_nid);
         I(c.left == content_for(left_val));
         I(c.right == content_for(right_val));
-        file_id & content = downcast_to_file_t(result.roster.get_node(thing_nid))->content;
+        file_id & content = downcast_to_file_t(result.roster.get_node_for_update(thing_nid))->content;
         I(null_id(content));
         // resolve the conflict, thus making sure that resolution works and
         // that this was the only conflict signaled
@@ -718,29 +718,29 @@ UNIT_TEST(attr_lifecycle)
 
   // put one live and one dead attr on each thing on each side, with uncommon
   // marks on them
-  safe_insert(left_roster.get_node(dir_nid)->attrs,
+  safe_insert(left_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("left_live"), make_pair(true, attr_value("left_live"))));
   safe_insert(left_markings[dir_nid].attrs, make_pair(attr_key("left_live"), left_revs));
-  safe_insert(left_roster.get_node(dir_nid)->attrs,
+  safe_insert(left_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("left_dead"), make_pair(false, attr_value(""))));
   safe_insert(left_markings[dir_nid].attrs, make_pair(attr_key("left_dead"), left_revs));
-  safe_insert(left_roster.get_node(file_nid)->attrs,
+  safe_insert(left_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("left_live"), make_pair(true, attr_value("left_live"))));
   safe_insert(left_markings[file_nid].attrs, make_pair(attr_key("left_live"), left_revs));
-  safe_insert(left_roster.get_node(file_nid)->attrs,
+  safe_insert(left_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("left_dead"), make_pair(false, attr_value(""))));
   safe_insert(left_markings[file_nid].attrs, make_pair(attr_key("left_dead"), left_revs));
 
-  safe_insert(right_roster.get_node(dir_nid)->attrs,
+  safe_insert(right_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("right_live"), make_pair(true, attr_value("right_live"))));
   safe_insert(right_markings[dir_nid].attrs, make_pair(attr_key("right_live"), right_revs));
-  safe_insert(right_roster.get_node(dir_nid)->attrs,
+  safe_insert(right_roster.get_node_for_update(dir_nid)->attrs,
               make_pair(attr_key("right_dead"), make_pair(false, attr_value(""))));
   safe_insert(right_markings[dir_nid].attrs, make_pair(attr_key("right_dead"), right_revs));
-  safe_insert(right_roster.get_node(file_nid)->attrs,
+  safe_insert(right_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("right_live"), make_pair(true, attr_value("right_live"))));
   safe_insert(right_markings[file_nid].attrs, make_pair(attr_key("right_live"), right_revs));
-  safe_insert(right_roster.get_node(file_nid)->attrs,
+  safe_insert(right_roster.get_node_for_update(file_nid)->attrs,
               make_pair(attr_key("right_dead"), make_pair(false, attr_value(""))));
   safe_insert(right_markings[file_nid].attrs, make_pair(attr_key("right_dead"), right_revs));
 

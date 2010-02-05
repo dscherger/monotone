@@ -411,7 +411,7 @@ namespace
             return;
           }
 
-        dir_t p = downcast_to_dir_t(result.roster.get_node(parent));
+        dir_t p = downcast_to_dir_t(result.roster.get_node_for_update(parent));
 
         // duplicate name conflict:
         // see the comment in roster_merge.hh for the analysis showing that at

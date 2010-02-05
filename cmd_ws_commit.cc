@@ -788,8 +788,7 @@ drop_attr(app_state & app, args_vector const & args)
     F("Unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
-  node_t node = new_roster.get_node(path);
-  new_roster.unshare(node);
+  node_t node = new_roster.get_node_for_update(path);
 
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
@@ -855,7 +854,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   file_path path = file_path_external(idx(args, 0));
 
   E(new_roster.has_node(path), origin::user, F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
+  const_node_t node = new_roster.get_node(path);
 
   if (args.size() == 1)
     {
@@ -907,8 +906,7 @@ set_attr(app_state & app, args_vector const & args)
     F("Unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
-  node_t node = new_roster.get_node(path);
-  new_roster.unshare(node);
+  node_t node = new_roster.get_node_for_update(path);
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
   attr_value a_value = typecast_vocab<attr_value>(idx(args, 2));
@@ -992,7 +990,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   basic_io::printer pr;
 
   // the current node holds all current attributes (unchanged and new ones)
-  node_t n = current.get_node(path);
+  const_node_t n = current.get_node(path);
   for (attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
@@ -1009,7 +1007,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         // in any previous revision
         I(base.has_node(path));
 
-        node_t prev_node = base.get_node(path);
+        const_node_t prev_node = base.get_node(path);
 
         // find the attribute in there
         attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
@@ -1027,7 +1025,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
       {
         if (base.has_node(path))
           {
-            node_t prev_node = base.get_node(path);
+            const_node_t prev_node = base.get_node(path);
             attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
 

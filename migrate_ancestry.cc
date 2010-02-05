@@ -503,10 +503,10 @@ insert_into_roster(roster_t & child_roster,
 {
   if (child_roster.has_node(pth))
     {
-      node_t n = child_roster.get_node(pth);
+      const_node_t n = child_roster.get_node(pth);
       E(is_file_t(n), origin::internal,
         F("Path %s cannot be added, as there is a directory in the way") % pth);
-      file_t f = downcast_to_file_t(n);
+      const_file_t f = downcast_to_file_t(n);
       E(f->content == fid, origin::internal,
         F("Path %s added twice with differing content") % pth);
       return;
@@ -597,8 +597,8 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
               if ((!child_roster.has_node(n))
                   && child_roster.has_node(fp))
                 {
-                  node_t pn = parent_roster->get_node(n);
-                  node_t cn = child_roster.get_node(fp);
+                  const_node_t pn = parent_roster->get_node(n);
+                  const_node_t cn = child_roster.get_node(fp);
                   if (is_file_t(pn) == is_file_t(cn))
                     {
                       child_roster.replace_node_id(cn->self, n);

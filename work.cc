@@ -817,9 +817,9 @@ workspace::maybe_update_inodeprints(database & db)
           roster_t const & parent_ros = parent_roster(parent);
           if (parent_ros.has_node(nid))
             {
-              node_t old_node = parent_ros.get_node(nid);
+              const_node_t old_node = parent_ros.get_node(nid);
               I(is_file_t(old_node));
-              file_t old_file = downcast_to_file_t(old_node);
+              const_file_t old_file = downcast_to_file_t(old_node);
 
               if (new_file->content != old_file->content)
                 {
@@ -1364,10 +1364,10 @@ simulated_working_tree::detach_node(file_path const & src)
 void
 simulated_working_tree::drop_detached_node(node_id nid)
 {
-  node_t node = workspace.get_node(nid);
+  const_node_t node = workspace.get_node(nid);
   if (is_dir_t(node))
     {
-      dir_t dir = downcast_to_dir_t(node);
+      const_dir_t dir = downcast_to_dir_t(node);
       if (!dir->children.empty())
         {
           map<node_id, file_path>::const_iterator i = nid_map.find(nid);
@@ -1781,10 +1781,10 @@ workspace::perform_deletions(database & db,
         P(F("skipping %s, not currently tracked") % name);
       else
         {
-          node_t n = new_roster.get_node(name);
+          const_node_t n = new_roster.get_node(name);
           if (is_dir_t(n))
             {
-              dir_t d = downcast_to_dir_t(n);
+              const_dir_t d = downcast_to_dir_t(n);
               if (!d->children.empty())
                 {
                   E(recursive, origin::user,
@@ -1808,7 +1808,7 @@ workspace::perform_deletions(database & db,
                 }
               else
                 {
-                  file_t file = downcast_to_file_t(n);
+                  const_file_t file = downcast_to_file_t(n);
                   file_id fid;
                   I(ident_existing_file(name, fid));
                   if (file->content == fid)
@@ -2072,7 +2072,7 @@ workspace::perform_content_update(roster_t const & old_roster,
          i = update.deltas_applied.begin(); i != update.deltas_applied.end();
        ++i)
     {
-      node_t node = new_roster.get_node(i->first);
+      const_node_t node = new_roster.get_node(i->first);
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {

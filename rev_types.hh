@@ -75,6 +75,11 @@ class editable_roster_base;
 typedef boost::shared_ptr<node> node_t;
 typedef boost::shared_ptr<file_node> file_t;
 typedef boost::shared_ptr<dir_node> dir_t;
+
+typedef boost::shared_ptr<node const> const_node_t;
+typedef boost::shared_ptr<file_node const> const_file_t;
+typedef boost::shared_ptr<dir_node const> const_dir_t;
+
 typedef std::map<node_id, marking_t> marking_map;
 
 typedef std::map<path_component, node_t> dir_map;

@@ -542,7 +542,7 @@ struct node_info
 };
 
 static void
-get_node_info(node_t const & node, node_info & info)
+get_node_info(const_node_t const & node, node_info & info)
 {
   info.exists = true;
   info.id = node->self;
@@ -692,7 +692,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (old_roster.has_node(fp))
         {
-          node_t node = old_roster.get_node(fp);
+          const_node_t node = old_roster.get_node(fp);
           if (new_roster.has_node(node->self))
             {
               file_path new_path;
@@ -707,7 +707,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (new_roster.has_node(fp))
         {
-          node_t node = new_roster.get_node(fp);
+          const_node_t node = new_roster.get_node(fp);
           if (old_roster.has_node(node->self))
             {
               file_path old_path;
@@ -729,7 +729,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (old_roster.has_node(fp))
         {
-          node_t node = old_roster.get_node(fp);
+          const_node_t node = old_roster.get_node(fp);
           if (new_roster.has_node(node->self))
             {
               file_path new_path;
@@ -744,7 +744,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (new_roster.has_node(fp))
         {
-          node_t node = new_roster.get_node(fp);
+          const_node_t node = new_roster.get_node(fp);
           if (old_roster.has_node(node->self))
             {
               file_path old_path;
@@ -942,7 +942,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
       // for which we can get the content id of both new and old nodes.
       if (item.new_node.type == path::file && item.fs_type != path::nonexistent)
         {
-          file_t old_file = downcast_to_file_t(old_roster.get_node(item.new_node.id));
+          const_file_t old_file = downcast_to_file_t(old_roster.get_node(item.new_node.id));
 
           switch (item.old_node.type)
             {
@@ -963,7 +963,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
         }
 
       // now look for changed attributes
-      node_t old_node = old_roster.get_node(item.new_node.id);
+      const_node_t old_node = old_roster.get_node(item.new_node.id);
       if (old_node->attrs != item.new_node.attrs)
         changes.push_back("attrs");
     }
@@ -989,7 +989,7 @@ inventory_determine_birth(inventory_item const & item,
   revision_id rid;
   if (old_roster.has_node(item.new_node.id))
     {
-      node_t node = old_roster.get_node(item.new_node.id);
+      const_node_t node = old_roster.get_node(item.new_node.id);
       marking_map::const_iterator m = old_marking.find(node->self);
       I(m != old_marking.end());
       marking_t mark = m->second;
@@ -1893,7 +1893,7 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
     F("file %s is unknown for revision %s")
     % path % ident);
 
-  node_t node = new_roster.get_node(path);
+  const_node_t node = new_roster.get_node(path);
   marking_map::const_iterator m = mm.find(node->self);
   I(m != mm.end());
   marking_t mark = m->second;
@@ -1961,7 +1961,7 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
   E(new_roster.has_node(path), origin::user,
     F("file %s is unknown for revision %s") % path % ident);
 
-  node_t node = new_roster.get_node(path);
+  const_node_t node = new_roster.get_node(path);
   basic_io::printer prt;
   if (old_roster.has_node(node->self))
     {
