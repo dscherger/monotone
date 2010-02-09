@@ -146,20 +146,52 @@ shallow_equal(const_node_t a, const_node_t b,
 
 template <> void dump(node_t const & n, std::string & out);
 
-struct marking_t
+struct marking
 {
+  u32 cow_version;
   revision_id birth_revision;
   std::set<revision_id> parent_name;
   std::set<revision_id> file_content;
   std::map<attr_key, std::set<revision_id> > attrs;
-  marking_t() {};
-  bool operator==(marking_t const & other) const
+  marking();
+  marking(marking const & other);
+  marking const & operator=(marking const & other);
+  bool operator==(marking const & other) const
   {
     return birth_revision == other.birth_revision
       && parent_name == other.parent_name
       && file_content == other.file_content
       && attrs == other.attrs;
   }
+};
+
+class marking_map
+{
+  mutable u32 cow_version;
+  typedef cow_trie<node_id, marking_t, 8> map_type;
+  map_type _store;
+public:
+  typedef map_type::key_type key_type;
+  typedef map_type::value_type value_type;
+
+  marking_map();
+  marking_map(marking_map const & other);
+  marking_map const & operator=(marking_map const & other);
+  const_marking_t get_marking(node_id nid) const;
+  marking_t const & get_marking_for_update(node_id nid);
+  void put_marking(node_id nid, marking_t const & m);
+  void put_marking(node_id nid, const_marking_t const & m);
+
+  // for roster_delta
+  void put_or_replace_marking(node_id nid, marking_t const & m);
+
+  typedef map_type::const_iterator const_iterator;
+  const_iterator begin() const;
+  const_iterator end() const;
+  size_t size() const;
+  bool contains(node_id nid) const;
+  void clear();
+  void remove_marking(node_id nid);
 };
 
 template <> void dump(std::set<revision_id> const & revids, std::string & out);
@@ -468,7 +500,7 @@ void calculate_ident(roster_t const & ros,
 void append_with_escaped_quotes(std::string & collection,
                                 std::string const & item);
 void push_marking(std::string & contents,
-                  bool is_file, marking_t const & mark,
+                  bool is_file, const_marking_t const & mark,
                   int symbol_length);
 void parse_marking(basic_io::parser & pa, marking_t & marking);
 

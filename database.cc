@@ -2042,10 +2042,10 @@ struct database_impl::markings_extractor : public database_impl::extractor
 {
 private:
   node_id const & nid;
-  marking_t & markings;
+  const_marking_t & markings;
 
 public:
-  markings_extractor(node_id const & _nid, marking_t & _markings) :
+  markings_extractor(node_id const & _nid, const_marking_t & _markings) :
     nid(_nid), markings(_markings) {} ;
 
   bool look_at_delta(roster_delta const & del)
@@ -2055,10 +2055,7 @@ public:
 
   void look_at_roster(roster_t const & roster, marking_map const & mm)
   {
-    marking_map::const_iterator mmi =
-      mm.find(nid);
-    I(mmi != mm.end());
-    markings = mmi->second;
+    markings = mm.get_marking(nid);
   }
 };
 
@@ -2151,7 +2148,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
 void
 database::get_markings(revision_id const & id,
                        node_id const & nid,
-                       marking_t & markings)
+                       const_marking_t & markings)
 {
   database_impl::markings_extractor x(nid, markings);
   imp->extract_from_deltas(id, x);

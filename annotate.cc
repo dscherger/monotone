@@ -688,14 +688,14 @@ static void get_file_content_marks(database & db,
                                    node_id const & fid,
                                    set<revision_id> & content_marks)
 {
-  marking_t markings;
+  const_marking_t markings;
   db.get_markings(rev, fid, markings);
 
-  I(!markings.file_content.empty());
+  I(!markings->file_content.empty());
 
   content_marks.clear();
-  content_marks.insert(markings.file_content.begin(),
-                       markings.file_content.end());
+  content_marks.insert(markings->file_content.begin(),
+                       markings->file_content.end());
 }
 
 static void

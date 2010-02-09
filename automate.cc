@@ -990,10 +990,8 @@ inventory_determine_birth(inventory_item const & item,
   if (old_roster.has_node(item.new_node.id))
     {
       const_node_t node = old_roster.get_node(item.new_node.id);
-      marking_map::const_iterator m = old_marking.find(node->self);
-      I(m != old_marking.end());
-      marking_t mark = m->second;
-      rid = mark.birth_revision;
+      const_marking_t const & mark = old_marking.get_marking(node->self);
+      rid = mark->birth_revision;
     }
   return rid;
 }
@@ -1894,13 +1892,11 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
     % path % ident);
 
   const_node_t node = new_roster.get_node(path);
-  marking_map::const_iterator m = mm.find(node->self);
-  I(m != mm.end());
-  marking_t mark = m->second;
+  const_marking_t const & mark = mm.get_marking(node->self);
 
   basic_io::printer prt;
-  for (set<revision_id>::const_iterator i = mark.file_content.begin();
-       i != mark.file_content.end(); ++i)
+  for (set<revision_id>::const_iterator i = mark->file_content.begin();
+       i != mark->file_content.end(); ++i)
     {
       basic_io::stanza st;
       st.push_binary_pair(basic_io::syms::content_mark, i->inner());
