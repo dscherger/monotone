@@ -15,10 +15,15 @@
 
 #include "rev_types.hh"
 
+// You should pass a null for 'reverse_cs' if this is a merge edge, because in
+// that case even untouched nodes can have different mark sets.
+// Note that 'reverse_cs' is the cset that starts with 'to' and gives 'from',
+// because that's what's available in the only place this is used.
 void
 delta_rosters(roster_t const & from, marking_map const & from_markings,
               roster_t const & to, marking_map const & to_markings,
-              roster_delta & del);
+              roster_delta & del,
+              cset const * reverse_cs);
 
 // mutates its arguments
 void

@@ -2940,7 +2940,7 @@ database::put_roster_for_revision(revision_id const & new_id,
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
-  put_roster(new_id, ros, mm);
+  put_roster(new_id, rev, ros, mm);
 }
 
 bool
@@ -4314,6 +4314,7 @@ database::get_roster(revision_id const & rev_id, cached_roster & cr)
 
 void
 database::put_roster(revision_id const & rev_id,
+                     revision_t const & rev,
                      roster_t_cp const & roster,
                      marking_map_cp const & marking)
 {
@@ -4328,22 +4329,24 @@ database::put_roster(revision_id const & rev_id,
 
   imp->roster_cache.insert_dirty(rev_id, make_pair(roster, marking));
 
-  set<revision_id> parents;
-  get_revision_parents(rev_id, parents);
-
   // Now do what deltify would do if we bothered
-  for (set<revision_id>::const_iterator i = parents.begin();
-       i != parents.end(); ++i)
+  size_t num_edges = rev.edges.size();
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
     {
-      if (null_id(*i))
+      revision_id old_rev = edge_old_revision(*i);
+      if (null_id(old_rev))
         continue;
-      revision_id old_rev = *i;
       if (imp->roster_base_stored(old_rev))
         {
           cached_roster cr;
           get_roster_version(old_rev, cr);
           roster_delta reverse_delta;
-          delta_rosters(*roster, *marking, *(cr.first), *(cr.second), reverse_delta);
+          cset const & changes = edge_changes(i);
+          delta_rosters(*roster, *marking,
+                        *(cr.first), *(cr.second),
+                        reverse_delta,
+                        num_edges > 1 ? 0 : &changes);
           if (imp->roster_cache.exists(old_rev))
             imp->roster_cache.mark_clean(old_rev);
           imp->drop(old_rev.inner(), "rosters");

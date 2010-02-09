@@ -151,7 +151,7 @@ spin(roster_t const & from, marking_map const & from_marking,
   MM(to_marking);
   roster_delta del;
   MM(del);
-  delta_rosters(from, from_marking, to, to_marking, del);
+  delta_rosters(from, from_marking, to, to_marking, del, 0);
 
   roster_t tmp(from);
   MM(tmp);
@@ -162,7 +162,7 @@ spin(roster_t const & from, marking_map const & from_marking,
   I(tmp_marking == to_marking);
 
   roster_delta del2;
-  delta_rosters(from, from_marking, tmp, tmp_marking, del2);
+  delta_rosters(from, from_marking, tmp, tmp_marking, del2, 0);
   I(del == del2);
 }
 

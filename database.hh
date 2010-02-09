@@ -230,6 +230,7 @@ private:
                           cached_roster & cr);
 
   void put_roster(revision_id const & rev_id,
+                  revision_t const & rev,
                   roster_t_cp const & roster,
                   marking_map_cp const & marking);
 

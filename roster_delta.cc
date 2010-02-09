@@ -18,6 +18,7 @@
 
 #include "safe_map.hh"
 #include "parallel_iter.hh"
+#include "cset.hh"
 #include "roster.hh"
 #include "roster_delta.hh"
 #include "basic_io.hh"
@@ -123,7 +124,7 @@ namespace
   }
 
   void
-  do_delta_for_node_only_in_dest(node_t new_n, roster_delta_t & d)
+  do_delta_for_node_only_in_dest(const_node_t new_n, roster_delta_t & d)
   {
     node_id nid = new_n->self;
     pair<node_id, path_component> new_loc(new_n->parent, new_n->name);
@@ -145,7 +146,7 @@ namespace
   }
 
   void
-  do_delta_for_node_in_both(node_t old_n, node_t new_n, roster_delta_t & d)
+  do_delta_for_node_in_both(const_node_t old_n, const_node_t new_n, roster_delta_t & d)
   {
     I(old_n->self == new_n->self);
     node_id nid = old_n->self;
@@ -193,9 +194,11 @@ namespace
   }
 
   void
-  make_roster_delta_t(roster_t const & from, marking_map const & from_markings,
-                      roster_t const & to, marking_map const & to_markings,
-                      roster_delta_t & d)
+  make_unconstrained_roster_delta_t(roster_t const & from,
+                                    marking_map const & from_markings,
+                                    roster_t const & to,
+                                    marking_map const & to_markings,
+                                    roster_delta_t & d)
   {
     MM(from);
     MM(from_markings);
@@ -256,6 +259,122 @@ namespace
             }
         }
     }
+  }
+
+  void
+  make_roster_delta_t(roster_t const & from, marking_map const & from_markings,
+                      roster_t const & to, marking_map const & to_markings,
+                      roster_delta_t & d, cset const * reverse_csp)
+  {
+    if (!reverse_csp)
+      {
+        make_unconstrained_roster_delta_t(from, from_markings,
+                                          to, to_markings,
+                                          d);
+      }
+    else
+      {
+        cset const & cs(*reverse_csp);
+        MM(cs);
+
+        typedef std::set<file_path>::const_iterator path_iter;
+        typedef std::map<file_path, file_id>::const_iterator path_id_iter;
+        typedef std::map<file_path, file_path>::const_iterator path_path_iter;
+        typedef std::map<file_path, std::pair<file_id, file_id> >::const_iterator del_iter;
+        typedef std::set<std::pair<file_path, attr_key> >::const_iterator attr_rm_iter;
+        typedef std::map<std::pair<file_path, attr_key>, attr_value>::const_iterator attr_del_iter;
+
+        // in to, or cset source
+        for (path_iter i = cs.nodes_deleted.begin();
+             i != cs.nodes_deleted.end(); ++i)
+          {
+            const_node_t n = to.get_node(*i);
+            do_delta_for_node_only_in_dest(n, d);
+            marking_map::const_iterator m = to_markings.find(n->self);
+            I(m != to_markings.end());
+            safe_insert(d.markings_changed, *m);
+          }
+
+
+        class tracking_doer
+        {
+          roster_t const & lr;
+          roster_t const & rr;
+          marking_map const & lmm;
+          marking_map const & rmm;
+          roster_delta_t & d;
+          std::set<file_path> _done;
+        public:
+          tracking_doer(roster_t const & l, roster_t const & r,
+                        marking_map const & lmm,
+                        marking_map const & rmm,
+                        roster_delta_t & d)
+            : lr(l), rr(r), lmm(lmm), rmm(rmm), d(d)
+          { }
+          void note(file_path const & p)
+          {
+            _done.insert(p);
+          }
+          bool try_do(file_path const & lp)
+          {
+            pair<path_iter, bool> x = _done.insert(lp);
+            if (!x.second)
+              return false;
+
+            const_node_t l = lr.get_node(lp);
+            const_node_t r = rr.get_node(l->self);
+            do_delta_for_node_in_both(l, r, d);
+
+            marking_map::const_iterator lm = lmm.find(l->self);
+            I(lm != lmm.end());
+
+            marking_map::const_iterator rm = rmm.find(r->self);
+            I(rm != rmm.end());
+
+            if (!(lm == rm))
+              safe_insert(d.markings_changed, *rm);
+
+            return true;
+          }
+        };
+        tracking_doer doer(from, to, from_markings, to_markings, d);
+
+        // in from, or cset target
+        for (path_iter i = cs.dirs_added.begin();
+             i != cs.dirs_added.end(); ++i)
+          {
+            doer.note(*i);
+            safe_insert(d.nodes_deleted, from.get_node(*i)->self);
+          }
+        for (path_id_iter i = cs.files_added.begin();
+             i != cs.files_added.end(); ++i)
+          {
+            doer.note(i->first);
+            safe_insert(d.nodes_deleted, from.get_node(i->first)->self);
+          }
+
+        // in both
+        for (path_path_iter i = cs.nodes_renamed.begin();
+             i != cs.nodes_renamed.end(); ++i)
+          {
+            doer.try_do(i->second);
+          }
+        for (del_iter i = cs.deltas_applied.begin();
+             i != cs.deltas_applied.end(); ++i)
+          {
+            doer.try_do(i->first);
+          }
+        for (attr_rm_iter i = cs.attrs_cleared.begin();
+             i != cs.attrs_cleared.end(); ++i)
+          {
+            doer.try_do(i->first);
+          }
+        for (attr_del_iter i = cs.attrs_set.begin();
+             i != cs.attrs_set.end(); ++i)
+          {
+            doer.try_do(i->first.first);
+          }
+      }
   }
 
   namespace syms
@@ -486,14 +605,15 @@ namespace
 void
 delta_rosters(roster_t const & from, marking_map const & from_markings,
               roster_t const & to, marking_map const & to_markings,
-              roster_delta & del)
+              roster_delta & del,
+              cset const * reverse_cs)
 {
   MM(from);
   MM(from_markings);
   MM(to);
   MM(to_markings);
   roster_delta_t d;
-  make_roster_delta_t(from, from_markings, to, to_markings, d);
+  make_roster_delta_t(from, from_markings, to, to_markings, d, reverse_cs);
   data dat;
   print_roster_delta_t(dat, d);
   del = roster_delta(dat(), origin::internal);
