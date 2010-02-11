@@ -33,7 +33,7 @@ apply_roster_delta(roster_delta const & del,
 bool
 try_get_markings_from_roster_delta(roster_delta const & del,
                                    node_id const & nid,
-                                   marking_t & markings);
+                                   const_marking_t & markings);
 
 // See the comment on this function's body for a description of its api.
 bool

@@ -98,14 +98,14 @@ dump(marking_t const & marking, string & out)
 {
   ostringstream oss;
   string tmp;
-  oss << "birth_revision: " << marking.birth_revision << '\n';
-  dump(marking.parent_name, tmp);
+  oss << "birth_revision: " << marking->birth_revision << '\n';
+  dump(marking->parent_name, tmp);
   oss << "parent_name: " << tmp << '\n';
-  dump(marking.file_content, tmp);
+  dump(marking->file_content, tmp);
   oss << "file_content: " << tmp << '\n';
-  oss << "attrs (number: " << marking.attrs.size() << "):\n";
+  oss << "attrs (number: " << marking->attrs.size() << "):\n";
   for (map<attr_key, set<revision_id> >::const_iterator
-         i = marking.attrs.begin(); i != marking.attrs.end(); ++i)
+         i = marking->attrs.begin(); i != marking->attrs.end(); ++i)
     {
       dump(i->second, tmp);
       oss << "  " << i->first << ": " << tmp << '\n';
@@ -157,6 +157,119 @@ dump(marking_map const & markings, string & out)
 // not a constraint at this level.
 
 u32 last_created_roster = 0;
+
+
+marking::marking()
+  : cow_version(0)
+{ }
+
+marking::marking(marking const & other)
+  : cow_version(0),
+    birth_revision(other.birth_revision),
+    parent_name(other.parent_name),
+    file_content(other.file_content),
+    attrs(other.attrs)
+{
+}
+
+marking const & marking::operator=(marking const & other)
+{
+  cow_version = 0;
+  birth_revision = other.birth_revision;
+  parent_name = other.parent_name;
+  file_content = other.file_content;
+  attrs = other.attrs;
+  return *this;
+}
+
+marking_map::marking_map()
+  : cow_version(++last_created_roster)
+{ }
+
+marking_map::marking_map(marking_map const & other)
+  : cow_version(++last_created_roster),
+    _store(other._store)
+{
+  other.cow_version = ++last_created_roster;
+}
+
+marking_map const & marking_map::operator=(marking_map const & other)
+{
+  cow_version = ++last_created_roster;
+  other.cow_version = ++last_created_roster;
+  _store = other._store;
+  return *this;
+}
+
+void marking_map::clear()
+{
+  cow_version = ++last_created_roster;
+  _store.clear();
+}
+
+const_marking_t marking_map::get_marking(node_id nid) const
+{
+  marking_t const & m = _store.get_if_present(nid);
+  I(m);
+  return m;
+}
+
+marking_t const & marking_map::get_marking_for_update(node_id nid)
+{
+  marking_t const & m = _store.get_unshared_if_present(nid);
+  I(m);
+  if (cow_version == m->cow_version)
+    return m;
+  if (m.unique())
+    {
+      m->cow_version = cow_version;
+      return m;
+    }
+  return _store.set(nid, marking_t(new marking(*m)));
+}
+
+bool marking_map::contains(node_id nid) const
+{
+  return _store.get_if_present(nid);
+}
+
+void marking_map::remove_marking(node_id nid)
+{
+  unsigned pre_sz = _store.size();
+  _store.unset(nid);
+  I(_store.size() == pre_sz - 1);
+}
+
+void marking_map::put_marking(node_id nid, marking_t const & m)
+{
+  I(_store.set_if_missing(nid, m));
+}
+
+void marking_map::put_marking(node_id nid, const_marking_t const & m)
+{
+  I(_store.set_if_missing(nid, boost::const_pointer_cast<marking>(m)));
+}
+
+void marking_map::put_or_replace_marking(node_id nid, const_marking_t const & m)
+{
+  _store.set(nid, boost::const_pointer_cast<marking>(m));
+}
+
+size_t marking_map::size() const
+{
+  return _store.size();
+}
+
+marking_map::const_iterator marking_map::begin() const
+{
+  return _store.begin();
+}
+
+marking_map::const_iterator marking_map::end() const
+{
+  return _store.end();
+}
+
 
 node::node(node_id i)
   : self(i),
@@ -1145,7 +1258,6 @@ roster_t::check_sane(bool temp_nodes_ok) const
 void
 roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) const
 {
-
   check_sane(temp_nodes_ok);
 
   node_map::const_iterator ri;
@@ -1155,24 +1267,24 @@ roster_t::check_sane_against(marking_map const & markings, bool temp_nodes_ok) c
        ri != nodes.end() && mi != markings.end();
        ++ri, ++mi)
     {
-      I(!null_id(mi->second.birth_revision));
-      I(!mi->second.parent_name.empty());
+      I(!null_id(mi->second->birth_revision));
+      I(!mi->second->parent_name.empty());
 
       if (is_file_t(ri->second))
-        I(!mi->second.file_content.empty());
+        I(!mi->second->file_content.empty());
       else
-        I(mi->second.file_content.empty());
+        I(mi->second->file_content.empty());
 
       attr_map_t::const_iterator rai;
       map<attr_key, set<revision_id> >::const_iterator mai;
-      for (rai = ri->second->attrs.begin(), mai = mi->second.attrs.begin();
-           rai != ri->second->attrs.end() && mai != mi->second.attrs.end();
+      for (rai = ri->second->attrs.begin(), mai = mi->second->attrs.begin();
+           rai != ri->second->attrs.end() && mai != mi->second->attrs.end();
            ++rai, ++mai)
         {
           I(rai->first == mai->first);
           I(!mai->second.empty());
         }
-      I(rai == ri->second->attrs.end() && mai == mi->second.attrs.end());
+      I(rai == ri->second->attrs.end() && mai == mi->second->attrs.end());
       // TODO: attrs
     }
 
@@ -1554,102 +1666,138 @@ namespace
   }
 
   void
-  mark_new_node(revision_id const & new_rid, const_node_t n, marking_t & new_marking)
+  mark_new_node(revision_id const & new_rid, const_node_t n, marking_map & mm)
   {
-    new_marking.birth_revision = new_rid;
-    I(new_marking.parent_name.empty());
-    new_marking.parent_name.insert(new_rid);
-    I(new_marking.file_content.empty());
+    marking_t new_marking(new marking());
+    new_marking->birth_revision = new_rid;
+    I(new_marking->parent_name.empty());
+    new_marking->parent_name.insert(new_rid);
+    I(new_marking->file_content.empty());
     if (is_file_t(n))
-      new_marking.file_content.insert(new_rid);
-    I(new_marking.attrs.empty());
+      new_marking->file_content.insert(new_rid);
+    I(new_marking->attrs.empty());
     set<revision_id> singleton;
     singleton.insert(new_rid);
     for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
-      new_marking.attrs.insert(make_pair(i->first, singleton));
+      new_marking->attrs.insert(make_pair(i->first, singleton));
+    mm.put_marking(n->self, new_marking);
   }
 
   void
-  mark_unmerged_node(marking_t const & parent_marking, const_node_t parent_n,
+  mark_unmerged_node(const_marking_t const & parent_marking,
+                     const_node_t parent_n,
                      revision_id const & new_rid, const_node_t n,
-                     marking_t & new_marking)
+                     marking_map & mm)
   {
-    // SPEEDUP?: the common case here is that the parent and child nodes are
-    // exactly identical, in which case the markings are also exactly
-    // identical.  There might be a win in first doing an overall
-    // comparison/copy, in case it can be better optimized as a block
-    // comparison and a block copy...
+    // Our new marking map is initialized as a copy of the parent map.
+    // So, if nothing's changed, there's nothing to do. Unless this
+    // is a merge, and the parent marking that was copied happens to
+    // be the other parent than the one this node came from.
+    if (n == parent_n || shallow_equal(n, parent_n, true))
+      {
+        if (mm.contains(n->self))
+          {
+            return;
+          }
+        else
+          {
+            mm.put_marking(n->self, parent_marking);
+            return;
+          }
+      }
 
     I(same_type(parent_n, n) && parent_n->self == n->self);
 
-    new_marking.birth_revision = parent_marking.birth_revision;
+    marking_t new_marking(new marking());
 
-    mark_unmerged_scalar(parent_marking.parent_name,
+    new_marking->birth_revision = parent_marking->birth_revision;
+
+    mark_unmerged_scalar(parent_marking->parent_name,
                          make_pair(parent_n->parent, parent_n->name),
                          new_rid,
                          make_pair(n->parent, n->name),
-                         new_marking.parent_name);
+                         new_marking->parent_name);
 
     if (is_file_t(n))
-      mark_unmerged_scalar(parent_marking.file_content,
+      mark_unmerged_scalar(parent_marking->file_content,
                            downcast_to_file_t(parent_n)->content,
                            new_rid,
                            downcast_to_file_t(n)->content,
-                           new_marking.file_content);
+                           new_marking->file_content);
 
     for (attr_map_t::const_iterator i = n->attrs.begin();
            i != n->attrs.end(); ++i)
       {
-        set<revision_id> & new_marks = new_marking.attrs[i->first];
+        set<revision_id> & new_marks = new_marking->attrs[i->first];
         I(new_marks.empty());
         attr_map_t::const_iterator j = parent_n->attrs.find(i->first);
         if (j == parent_n->attrs.end())
           new_marks.insert(new_rid);
         else
-          mark_unmerged_scalar(safe_get(parent_marking.attrs, i->first),
+          mark_unmerged_scalar(safe_get(parent_marking->attrs, i->first),
                                j->second,
                                new_rid, i->second, new_marks);
       }
+
+    mm.put_or_replace_marking(n->self, new_marking);
   }
 
   void
-  mark_merged_node(marking_t const & left_marking,
+  mark_merged_node(const_marking_t const & left_marking,
                    set<revision_id> const & left_uncommon_ancestors,
                    const_node_t ln,
-                   marking_t const & right_marking,
+                   const_marking_t const & right_marking,
                    set<revision_id> const & right_uncommon_ancestors,
                    const_node_t rn,
                    revision_id const & new_rid,
                    const_node_t n,
-                   marking_t & new_marking)
+                   marking_map & mm)
   {
+    bool same_nodes = ((ln == rn || shallow_equal(ln, rn, true)) &&
+                       (ln == n || shallow_equal(ln, n, true)));
+    if (same_nodes)
+      {
+        bool same_markings = left_marking == right_marking
+          || *left_marking == *right_marking;
+        if (same_markings)
+          {
+            // The child marking will be the same as both parent markings,
+            // so just leave it as whichever it was copied from.
+            return;
+          }
+      }
+
     I(same_type(ln, n) && same_type(rn, n));
-    I(left_marking.birth_revision == right_marking.birth_revision);
-    new_marking.birth_revision = left_marking.birth_revision;
+    I(left_marking->birth_revision == right_marking->birth_revision);
+    marking_t new_marking = mm.get_marking_for_update(n->self);
+    new_marking->birth_revision = left_marking->birth_revision;
     MM(n->self);
 
     // name
-    mark_merged_scalar(left_marking.parent_name, left_uncommon_ancestors,
+    new_marking->parent_name.clear();
+    mark_merged_scalar(left_marking->parent_name, left_uncommon_ancestors,
                        make_pair(ln->parent, ln->name),
-                       right_marking.parent_name, right_uncommon_ancestors,
+                       right_marking->parent_name, right_uncommon_ancestors,
                        make_pair(rn->parent, rn->name),
                        new_rid,
                        make_pair(n->parent, n->name),
-                       new_marking.parent_name);
+                       new_marking->parent_name);
     // content
     if (is_file_t(n))
       {
         const_file_t f = downcast_to_file_t(n);
         const_file_t lf = downcast_to_file_t(ln);
         const_file_t rf = downcast_to_file_t(rn);
-        mark_merged_scalar(left_marking.file_content, left_uncommon_ancestors,
+        new_marking->file_content.clear();
+        mark_merged_scalar(left_marking->file_content, left_uncommon_ancestors,
                            lf->content,
-                           right_marking.file_content, right_uncommon_ancestors,
+                           right_marking->file_content, right_uncommon_ancestors,
                            rf->content,
-                           new_rid, f->content, new_marking.file_content);
+                           new_rid, f->content, new_marking->file_content);
       }
     // attrs
+    new_marking->attrs.clear();
     for (attr_map_t::const_iterator i = n->attrs.begin();
          i != n->attrs.end(); ++i)
       {
@@ -1657,11 +1805,11 @@ namespace
         MM(key);
         attr_map_t::const_iterator li = ln->attrs.find(key);
         attr_map_t::const_iterator ri = rn->attrs.find(key);
-        I(new_marking.attrs.find(key) == new_marking.attrs.end());
+        I(new_marking->attrs.find(key) == new_marking->attrs.end());
         // [], when used to refer to a non-existent element, default
         // constructs that element and returns a reference to it.  We make use
         // of this here.
-        set<revision_id> & new_marks = new_marking.attrs[key];
+        set<revision_id> & new_marks = new_marking->attrs[key];
 
         if (li == ln->attrs.end() && ri == rn->attrs.end())
           // this is a brand new attribute, never before seen
@@ -1669,22 +1817,22 @@ namespace
 
         else if (li != ln->attrs.end() && ri == rn->attrs.end())
           // only the left side has seen this attr before
-          mark_unmerged_scalar(safe_get(left_marking.attrs, key),
+          mark_unmerged_scalar(safe_get(left_marking->attrs, key),
                                li->second,
                                new_rid, i->second, new_marks);
 
         else if (li == ln->attrs.end() && ri != rn->attrs.end())
           // only the right side has seen this attr before
-          mark_unmerged_scalar(safe_get(right_marking.attrs, key),
+          mark_unmerged_scalar(safe_get(right_marking->attrs, key),
                                ri->second,
                                new_rid, i->second, new_marks);
 
         else
           // both sides have seen this attr before
-          mark_merged_scalar(safe_get(left_marking.attrs, key),
+          mark_merged_scalar(safe_get(left_marking->attrs, key),
                              left_uncommon_ancestors,
                              li->second,
-                             safe_get(right_marking.attrs, key),
+                             safe_get(right_marking->attrs, key),
                              right_uncommon_ancestors,
                              ri->second,
                              new_rid, i->second, new_marks);
@@ -1701,6 +1849,39 @@ namespace
     for (attr_map_t::const_iterator i = rn->attrs.begin();
          i != rn->attrs.end(); ++i)
       I(n->attrs.find(i->first) != n->attrs.end());
+  }
+
+  void drop_extra_markings(roster_t const & ros, marking_map & mm)
+  {
+    if (mm.size() > ros.all_nodes().size())
+      {
+        std::set<node_id> to_drop;
+        
+        marking_map::const_iterator mi = mm.begin(), me = mm.end();
+        node_map::const_iterator ri = ros.all_nodes().begin(), re = ros.all_nodes().end();
+
+        for (; mi != me; ++mi)
+          {
+            if (ri == re)
+              {
+                to_drop.insert(mi->first);
+              }
+            else
+              {
+                if (ri->first < mi->first)
+                  ++ri;
+                I(ri == re || ri->first >= mi->first);
+                if (ri == re || ri->first > mi->first)
+                  to_drop.insert(mi->first);
+              }
+          }
+        for (std::set<node_id>::const_iterator i = to_drop.begin();
+             i != to_drop.end(); ++i)
+          {
+            mm.remove_marking(*i);
+          }
+      }
+    I(mm.size() == ros.all_nodes().size());
   }
 
 } // anonymous namespace
@@ -1720,6 +1901,15 @@ mark_merge_roster(roster_t const & left_roster,
                   roster_t const & merge,
                   marking_map & new_markings)
 {
+  {
+    int left_err = left_markings.size() - merge.all_nodes().size();
+    int right_err = right_markings.size() - merge.all_nodes().size();
+    if (left_err * left_err > right_err * right_err)
+      new_markings = right_markings;
+    else
+      new_markings = left_markings;
+  }
+
   for (node_map::const_iterator i = merge.all_nodes().begin();
        i != merge.all_nodes().end(); ++i)
     {
@@ -1730,40 +1920,38 @@ mark_merge_roster(roster_t const & left_roster,
       bool exists_in_left = (left_node);
       bool exists_in_right = (right_node);
 
-      marking_t new_marking;
-
       if (!exists_in_left && !exists_in_right)
-        mark_new_node(new_rid, n, new_marking);
+        mark_new_node(new_rid, n, new_markings);
 
       else if (!exists_in_left && exists_in_right)
         {
-          marking_t const & right_marking = safe_get(right_markings, n->self);
+          const_marking_t const & right_marking = right_markings.get_marking(n->self);
           // must be unborn on the left (as opposed to dead)
-          I(right_uncommon_ancestors.find(right_marking.birth_revision)
+          I(right_uncommon_ancestors.find(right_marking->birth_revision)
             != right_uncommon_ancestors.end());
           mark_unmerged_node(right_marking, right_node,
-                             new_rid, n, new_marking);
+                             new_rid, n, new_markings);
         }
       else if (exists_in_left && !exists_in_right)
         {
-          marking_t const & left_marking = safe_get(left_markings, n->self);
+          const_marking_t const & left_marking = left_markings.get_marking(n->self);
           // must be unborn on the right (as opposed to dead)
-          I(left_uncommon_ancestors.find(left_marking.birth_revision)
+          I(left_uncommon_ancestors.find(left_marking->birth_revision)
             != left_uncommon_ancestors.end());
           mark_unmerged_node(left_marking, left_node,
-                             new_rid, n, new_marking);
+                             new_rid, n, new_markings);
         }
       else
         {
-          mark_merged_node(safe_get(left_markings, n->self),
+          mark_merged_node(left_markings.get_marking(n->self),
                            left_uncommon_ancestors, left_node,
-                           safe_get(right_markings, n->self),
+                           right_markings.get_marking(n->self),
                            right_uncommon_ancestors, right_node,
-                           new_rid, n, new_marking);
+                           new_rid, n, new_markings);
         }
-
-      safe_insert(new_markings, make_pair(i->first, new_marking));
     }
+
+  drop_extra_markings(merge, new_markings);
 }
 
 namespace {
@@ -1782,17 +1970,16 @@ namespace {
     virtual node_id detach_node(file_path const & src)
     {
       node_id nid = this->editable_roster_base::detach_node(src);
-      marking_map::iterator marking = markings.find(nid);
-      I(marking != markings.end());
-      marking->second.parent_name.clear();
-      marking->second.parent_name.insert(rid);
+      marking_t marking = markings.get_marking_for_update(nid);
+      marking->parent_name.clear();
+      marking->parent_name.insert(rid);
       return nid;
     }
 
     virtual void drop_detached_node(node_id nid)
     {
       this->editable_roster_base::drop_detached_node(nid);
-      safe_erase(markings, nid);
+      markings.remove_marking(nid);
     }
 
     virtual node_id create_dir_node()
@@ -1810,10 +1997,9 @@ namespace {
     {
       this->editable_roster_base::apply_delta(pth, old_id, new_id);
       node_id nid = r.get_node(pth)->self;
-      marking_map::iterator marking = markings.find(nid);
-      I(marking != markings.end());
-      marking->second.file_content.clear();
-      marking->second.file_content.insert(rid);
+      marking_t marking = markings.get_marking_for_update(nid);
+      marking->file_content.clear();
+      marking->file_content.insert(rid);
     }
 
     virtual void clear_attr(file_path const & path, attr_key const & key)
@@ -1832,24 +2018,22 @@ namespace {
     node_id handle_new(node_id nid)
     {
       const_node_t n = r.get_node(nid);
-      marking_t new_marking;
-      mark_new_node(rid, n, new_marking);
-      safe_insert(markings, make_pair(nid, new_marking));
+      mark_new_node(rid, n, markings);
       return nid;
     }
 
     void handle_attr(file_path const & pth, attr_key const & name)
     {
       node_id nid = r.get_node(pth)->self;
-      marking_map::iterator marking = markings.find(nid);
-      map<attr_key, set<revision_id> >::iterator am = marking->second.attrs.find(name);
-      if (am == marking->second.attrs.end())
+      marking_t marking = markings.get_marking_for_update(nid);
+      map<attr_key, set<revision_id> >::iterator am = marking->attrs.find(name);
+      if (am == marking->attrs.end())
         {
-          marking->second.attrs.insert(make_pair(name, set<revision_id>()));
-          am = marking->second.attrs.find(name);
+          marking->attrs.insert(make_pair(name, set<revision_id>()));
+          am = marking->attrs.find(name);
         }
 
-      I(am != marking->second.attrs.end());
+      I(am != marking->attrs.end());
       am->second.clear();
       am->second.insert(rid);
     }
@@ -1995,20 +2179,20 @@ mark_roster_with_one_parent(roster_t const & parent,
   MM(child_markings);
 
   I(!null_id(child_rid));
-  child_markings.clear();
+  child_markings = parent_markings;
 
   for (node_map::const_iterator i = child.all_nodes().begin();
        i != child.all_nodes().end(); ++i)
     {
       marking_t new_marking;
       if (parent.has_node(i->first))
-        mark_unmerged_node(safe_get(parent_markings, i->first),
+        mark_unmerged_node(parent_markings.get_marking(i->first),
                            parent.get_node(i->first),
-                           child_rid, i->second, new_marking);
+                           child_rid, i->second, child_markings);
       else
-        mark_new_node(child_rid, i->second, new_marking);
-      safe_insert(child_markings, make_pair(i->first, new_marking));
+        mark_new_node(child_rid, i->second, child_markings);
     }
+  drop_extra_markings(child, child_markings);
 
   child.check_sane_against(child_markings, true);
 }
@@ -2180,8 +2364,12 @@ equal_up_to_renumbering(roster_t const & a, marking_map const & a_markings,
             return false;
         }
       // nodes match, check the markings too
-      if (!(safe_get(a_markings, i->first) == safe_get(b_markings, b_n->self)))
-        return false;
+      const_marking_t am = a_markings.get_marking(i->first);
+      const_marking_t bm = b_markings.get_marking(b_n->self);
+      if (!(am == bm) && !(*am == *bm))
+        {
+          return false;
+        }
     }
   return true;
 }
@@ -2489,19 +2677,19 @@ append_with_escaped_quotes(string & collection, string const & item)
 void
 push_marking(string & contents,
              bool is_file,
-             marking_t const & mark,
+             const_marking_t const & mark,
              int symbol_length)
 {
 
-  I(!null_id(mark.birth_revision));
+  I(!null_id(mark->birth_revision));
 
   contents.append(symbol_length - 5, ' ');
   contents.append("birth [");
-  contents.append(encode_hexenc(mark.birth_revision.inner()(), origin::internal));
+  contents.append(encode_hexenc(mark->birth_revision.inner()(), origin::internal));
   contents.append("]\n");
 
-  for (set<revision_id>::const_iterator i = mark.parent_name.begin();
-       i != mark.parent_name.end(); ++i)
+  for (set<revision_id>::const_iterator i = mark->parent_name.begin();
+       i != mark->parent_name.end(); ++i)
     {
       contents.append(symbol_length - 9, ' ');
       contents.append("path_mark [");
@@ -2511,8 +2699,8 @@ push_marking(string & contents,
 
   if (is_file)
     {
-      for (set<revision_id>::const_iterator i = mark.file_content.begin();
-           i != mark.file_content.end(); ++i)
+      for (set<revision_id>::const_iterator i = mark->file_content.begin();
+           i != mark->file_content.end(); ++i)
         {
           contents.append("content_mark [");// always the longest symbol
           contents.append(encode_hexenc(i->inner()(), origin::internal));
@@ -2520,10 +2708,10 @@ push_marking(string & contents,
         }
     }
   else
-    I(mark.file_content.empty());
+    I(mark->file_content.empty());
 
-  for (map<attr_key, set<revision_id> >::const_iterator i = mark.attrs.begin();
-       i != mark.attrs.end(); ++i)
+  for (map<attr_key, set<revision_id> >::const_iterator i = mark->attrs.begin();
+       i != mark->attrs.end(); ++i)
     {
       for (set<revision_id>::const_iterator j = i->second.begin();
            j != i->second.end(); ++j)
@@ -2550,21 +2738,21 @@ parse_marking(basic_io::parser & pa,
         {
           pa.sym();
           pa.hex(rev);
-          marking.birth_revision =
+          marking->birth_revision =
             decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from);
         }
       else if (pa.symp(syms::path_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.parent_name,
+          safe_insert(marking->parent_name,
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(basic_io::syms::content_mark))
         {
           pa.sym();
           pa.hex(rev);
-          safe_insert(marking.file_content,
+          safe_insert(marking->file_content,
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else if (pa.symp(syms::attr_mark))
@@ -2574,7 +2762,7 @@ parse_marking(basic_io::parser & pa,
           pa.str(k);
           pa.hex(rev);
           attr_key key = attr_key(k, pa.tok.in.made_from);
-          safe_insert(marking.attrs[key],
+          safe_insert(marking->attrs[key],
                       decode_hexenc_as<revision_id>(rev, pa.tok.in.made_from));
         }
       else break;
@@ -2742,9 +2930,8 @@ roster_t::print_to(data & dat,
                 }
             }
 
-          marking_map::const_iterator m = mm.find(curr->self);
-          I(m != mm.end());
-          push_marking(contents, is_file_t(curr), m->second, symbol_length);
+          const_marking_t m = mm.get_marking(curr->self);
+          push_marking(contents, is_file_t(curr), m, symbol_length);
         }
     }
   dat = data(contents, origin::internal);
@@ -2859,8 +3046,9 @@ roster_t::parse_from(basic_io::parser & pa,
         }
 
       {
-        marking_t & m(safe_insert(mm, make_pair(n->self, marking_t()))->second);
+        marking_t m(new marking());
         parse_marking(pa, m);
+        mm.put_marking(n->self, m);
       }
     }
 }

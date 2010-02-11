@@ -219,7 +219,7 @@ public:
   // using roster deltas
   void get_markings(revision_id const & id,
                     node_id const & nid,
-                    marking_t & markings);
+                    const_marking_t & markings);
 
   void get_file_content(revision_id const & id,
                         node_id const & nid,

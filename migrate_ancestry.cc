@@ -548,7 +548,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
       for (node_map::const_iterator j = nodes.begin(); j != nodes.end(); ++j)
         {
           node_id n = j->first;
-          revision_id birth_rev = safe_get(*parent_marking, n).birth_revision;
+          revision_id birth_rev = parent_marking->get_marking(n)->birth_revision;
           u64 birth_node = safe_get(new_rev_to_node, birth_rev);
           map<node_id, u64>::const_iterator i = nodes_in_any_parent.find(n);
           if (i != nodes_in_any_parent.end())

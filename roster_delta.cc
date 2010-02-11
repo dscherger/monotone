@@ -47,7 +47,7 @@ namespace
     typedef std::set<pair<node_id,
                           pair<attr_key,
                                pair<bool, attr_value> > > > attrs_changed_t;
-    typedef std::map<node_id, marking_t> markings_changed_t;
+    typedef std::map<node_id, const_marking_t> markings_changed_t;
 
     nodes_deleted_t nodes_deleted;
     dirs_added_t dirs_added;
@@ -117,10 +117,14 @@ namespace
     // And finally, update the marking map.
     for (nodes_deleted_t::const_iterator
            i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
-      safe_erase(markings, *i);
+      {
+        markings.remove_marking(*i);
+      }
     for (markings_changed_t::const_iterator
            i = markings_changed.begin(); i != markings_changed.end(); ++i)
-      markings[i->first] = i->second;
+      {
+        markings.put_or_replace_marking(i->first, i->second);
+      }
   }
 
   void
@@ -253,7 +257,8 @@ namespace
 
             case parallel::in_both:
               // maybe changed
-              if (!(i.left_data() == i.right_data()))
+              if (!(i.left_data() == i.right_data()) ||
+                  !(*i.left_data() == *i.right_data()))
                 safe_insert(d.markings_changed, i.right_value());
               break;
             }
@@ -290,9 +295,8 @@ namespace
           {
             const_node_t n = to.get_node(*i);
             do_delta_for_node_only_in_dest(n, d);
-            marking_map::const_iterator m = to_markings.find(n->self);
-            I(m != to_markings.end());
-            safe_insert(d.markings_changed, *m);
+            const_marking_t m = to_markings.get_marking(n->self);
+            safe_insert(d.markings_changed, make_pair(n->self, m));
           }
 
 
@@ -325,14 +329,11 @@ namespace
             const_node_t r = rr.get_node(l->self);
             do_delta_for_node_in_both(l, r, d);
 
-            marking_map::const_iterator lm = lmm.find(l->self);
-            I(lm != lmm.end());
+            const_marking_t lm = lmm.get_marking(l->self);
+            const_marking_t rm = rmm.get_marking(r->self);
 
-            marking_map::const_iterator rm = rmm.find(r->self);
-            I(rm != rmm.end());
-
-            if (!(lm == rm))
-              safe_insert(d.markings_changed, *rm);
+            if (!(lm == rm) || !(*lm == *rm))
+              safe_insert(d.markings_changed, make_pair(r->self, rm));
 
             return true;
           }
@@ -482,7 +483,7 @@ namespace
     for (roster_delta_t::markings_changed_t::const_iterator
            i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
       {
-        bool is_file = !i->second.file_content.empty();
+        bool is_file = !i->second->file_content.empty();
         int symbol_length = (is_file ? 12 : 9);
         push_nid(syms::marking, i->first, contents, symbol_length);
         push_marking(contents, is_file, i->second, symbol_length);
@@ -594,7 +595,7 @@ namespace
       {
         parser.sym();
         node_id nid = parse_nid(parser);
-        marking_t m;
+        marking_t m(new marking());
         parse_marking(parser, m);
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
@@ -647,12 +648,12 @@ apply_roster_delta(roster_delta const & del,
 bool
 try_get_markings_from_roster_delta(roster_delta const & del,
                                    node_id const & nid,
-                                   marking_t & markings)
+                                   const_marking_t & markings)
 {
   roster_delta_t d;
   read_roster_delta(del, d);
 
-  std::map<node_id, marking_t>::iterator i = d.markings_changed.find(nid);
+  std::map<node_id, const_marking_t>::iterator i = d.markings_changed.find(nid);
   if (i != d.markings_changed.end())
     {
       markings = i->second;

@@ -964,12 +964,12 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
               if (mask.includes(roster, node))
                 {
-                  marked_revs.insert(marks.file_content.begin(),
-                                     marks.file_content.end());
-                  marked_revs.insert(marks.parent_name.begin(),
-                                     marks.parent_name.end());
+                  marked_revs.insert(marks->file_content.begin(),
+                                     marks->file_content.end());
+                  marked_revs.insert(marks->parent_name.begin(),
+                                     marks->parent_name.end());
                   for (map<attr_key, set<revision_id> >::const_iterator
-                         a = marks.attrs.begin(); a != marks.attrs.end(); ++a)
+                         a = marks->attrs.begin(); a != marks->attrs.end(); ++a)
                     marked_revs.insert(a->second.begin(), a->second.end());
                 }
             }

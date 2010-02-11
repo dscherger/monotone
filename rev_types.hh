@@ -68,7 +68,7 @@ struct node_id_source;
 struct node;
 struct dir_node;
 struct file_node;
-struct marking_t;
+struct marking;
 class roster_t;
 class editable_roster_base;
 
@@ -80,7 +80,9 @@ typedef boost::shared_ptr<node const> const_node_t;
 typedef boost::shared_ptr<file_node const> const_file_t;
 typedef boost::shared_ptr<dir_node const> const_dir_t;
 
-typedef std::map<node_id, marking_t> marking_map;
+typedef boost::shared_ptr<marking> marking_t;
+typedef boost::shared_ptr<marking const> const_marking_t;
+class marking_map;
 
 typedef std::map<path_component, node_t> dir_map;
 //typedef hybrid_map<node_id, node_t> node_map;

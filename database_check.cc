@@ -264,21 +264,23 @@ check_rosters_marking(database & db,
            n != ros.all_nodes().end(); ++n)
         {
           // lots of revisions that must exist
-          marking_t mark = mm[n->first];
-          checked_revisions[mark.birth_revision].marking_refs++;
-          if (!checked_revisions[mark.birth_revision].found)
+          if (!mm.contains(n->first))
+            continue;
+          const_marking_t mark = mm.get_marking(n->first);
+          checked_revisions[mark->birth_revision].marking_refs++;
+          if (!checked_revisions[mark->birth_revision].found)
             checked_rosters[ros_id].missing_mark_revs++;
 
-          for (set<revision_id>::const_iterator r = mark.parent_name.begin();
-               r != mark.parent_name.end(); r++)
+          for (set<revision_id>::const_iterator r = mark->parent_name.begin();
+               r != mark->parent_name.end(); r++)
             {
               checked_revisions[*r].marking_refs++;
               if (!checked_revisions[*r].found)
                 checked_rosters[ros_id].missing_mark_revs++;
             }
 
-          for (set<revision_id>::const_iterator r = mark.file_content.begin();
-               r != mark.file_content.end(); r++)
+          for (set<revision_id>::const_iterator r = mark->file_content.begin();
+               r != mark->file_content.end(); r++)
             {
               checked_revisions[*r].marking_refs++;
               if (!checked_revisions[*r].found)
@@ -286,7 +288,7 @@ check_rosters_marking(database & db,
             }
 
           for (map<attr_key,set<revision_id> >::const_iterator attr =
-               mark.attrs.begin(); attr != mark.attrs.end(); attr++)
+                 mark->attrs.begin(); attr != mark->attrs.end(); attr++)
             for (set<revision_id>::const_iterator r = attr->second.begin();
                  r != attr->second.end(); r++)
               {

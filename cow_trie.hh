@@ -88,7 +88,7 @@ public:
     _count = 0;
     _data.reset();
   }
-  void set(_Key key, _Value const & value) {
+  _Value const & set(_Key key, _Value const & value) {
     _Value *p;
     walk(_data, key, levels-1, &p);
     bool b = (*p != _empty_value);
@@ -98,6 +98,7 @@ public:
     else if (a && !b)
       ++_count;
     *p = value;
+    return *p;
   }
   bool set_if_missing(_Key key, _Value const & value)
   {

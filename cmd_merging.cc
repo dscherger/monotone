@@ -676,11 +676,10 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
             const_node_t parent = right_roster.get_node(dir);
             moved_root->parent = parent->self;
             moved_root->name = base;
-            marking_map::iterator
-              i = left_marking_map.find(moved_root->self);
-            I(i != left_marking_map.end());
-            i->second.parent_name.clear();
-            i->second.parent_name.insert(left_rid);
+
+            marking_t i = left_marking_map.get_marking_for_update(moved_root->self);
+            i->parent_name.clear();
+            i->parent_name.insert(left_rid);
           }
 
         roster_merge_result result;
