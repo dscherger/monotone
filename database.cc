@@ -209,7 +209,8 @@ class database_impl
   // for scoped_ptr's sake
 public:
   explicit database_impl(system_path const & f, bool mem,
-                         system_path const & roster_cache_performance_log);
+                         system_path const & roster_cache_performance_log,
+                         unsigned sanity_level);
   ~database_impl();
 
 private:
@@ -422,6 +423,10 @@ private:
   void add_prefix_matching_constraint(string const & colname,
                                       string const & prefix,
                                       query & q);
+
+  unsigned sanity_check_percent;
+  unsigned sanity_check_current_pos;
+  bool should_do_sanity_check();
 };
 
 #ifdef SUPPORT_SQLITE_BEFORE_3003014
@@ -459,7 +464,8 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 #endif
 
 database_impl::database_impl(system_path const & f, bool mem,
-                             system_path const & roster_cache_performance_log) :
+                             system_path const & roster_cache_performance_log,
+                             unsigned sanity_level) :
   filename(f),
   use_memory_db(mem),
   __sql(NULL),
@@ -469,7 +475,9 @@ database_impl::database_impl(system_path const & f, bool mem,
                roster_writeback_manager(*this),
                roster_cache_performance_log.as_external()),
   delayed_writes_size(0),
-  vcache(constants::db_version_cache_sz, 1)
+  vcache(constants::db_version_cache_sz, 1),
+  sanity_check_percent(sanity_level),
+  sanity_check_current_pos((date_t::now().as_millisecs_since_unix_epoch() / 1000) % 100)
 {}
 
 database_impl::~database_impl()
@@ -485,6 +493,12 @@ database_impl::~database_impl()
 
   if (__sql)
     close();
+}
+
+bool database_impl::should_do_sanity_check()
+{
+  sanity_check_current_pos = (sanity_check_current_pos + 1) % 100;
+  return sanity_check_current_pos < sanity_check_percent;
 }
 
 struct database_cache
@@ -505,7 +519,8 @@ database::database(app_state & app)
   boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
     i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
-                              app.opts.roster_cache_performance_log));
+                              app.opts.roster_cache_performance_log,
+                              app.opts.sanity_check_percent));
 
   imp = i;
 }
@@ -2931,12 +2946,17 @@ database::put_roster_for_revision(revision_id const & new_id,
   // to the db
   shared_ptr<roster_t> ros_writeable(new roster_t); MM(*ros_writeable);
   shared_ptr<marking_map> mm_writeable(new marking_map); MM(*mm_writeable);
-  manifest_id roster_manifest_id;
-  MM(roster_manifest_id);
-  make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
-  calculate_ident(*ros_writeable, roster_manifest_id, false);
-  E(rev.new_manifest == roster_manifest_id, rev.made_from,
-    F("revision contains incorrect manifest_id"));
+  bool check_sanity = imp->should_do_sanity_check();
+  make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable,
+                           check_sanity);
+  if (check_sanity)
+    {
+      manifest_id roster_manifest_id;
+      MM(roster_manifest_id);
+      calculate_ident(*ros_writeable, roster_manifest_id, false);
+      E(rev.new_manifest == roster_manifest_id, rev.made_from,
+        F("revision contains incorrect manifest_id"));
+    }
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;

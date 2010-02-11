@@ -244,6 +244,14 @@ GOPT(roster_cache_performance_log, "roster-cache-performance-log",
 }
 #endif
 
+OPT(sanity_check_percent, "reduced-sanity-checking-percent",
+    unsigned, 100, gettext_noop("only check the given percent of incoming revisions"))
+#ifdef option_bodies
+{
+  sanity_check_percent = boost::lexical_cast<unsigned>(arg);
+}
+#endif
+
 OPTION(globals, debug, false, "debug",
         gettext_noop("print debug log to stderr while running"))
 #ifdef option_bodies

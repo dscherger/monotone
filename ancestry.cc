@@ -534,7 +534,8 @@ make_roster_for_nonmerge(revision_t const & rev,
 void
 make_roster_for_revision(database & db, node_id_source & nis,
                          revision_t const & rev, revision_id const & new_rid,
-                         roster_t & new_roster, marking_map & new_markings)
+                         roster_t & new_roster, marking_map & new_markings,
+                         bool check_sanity)
 {
   MM(rev);
   MM(new_rid);
@@ -550,17 +551,22 @@ make_roster_for_revision(database & db, node_id_source & nis,
   // If nis is not a true_node_id_source, we have to assume we can get temp
   // node ids out of it.  ??? Provide a predicate method on node_id_sources
   // instead of doing a typeinfo comparison.
-  new_roster.check_sane_against(new_markings,
-                                typeid(nis) != typeid(true_node_id_source));
+  if (check_sanity)
+    {
+      new_roster.check_sane_against(new_markings,
+                                    typeid(nis) != typeid(true_node_id_source));
+    }
 }
 
 void
 make_roster_for_revision(database & db,
                          revision_t const & rev, revision_id const & new_rid,
-                         roster_t & new_roster, marking_map & new_markings)
+                         roster_t & new_roster, marking_map & new_markings,
+                         bool check_sanity)
 {
   true_node_id_source nis(db);
-  make_roster_for_revision(db, nis, rev, new_rid, new_roster, new_markings);
+  make_roster_for_revision(db, nis, rev, new_rid, new_roster, new_markings,
+                           check_sanity);
 }
 
 // ancestry graph loader
