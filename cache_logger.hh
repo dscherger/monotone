@@ -1,3 +1,13 @@
+// Copyright (C) 2010 and later by various people
+// see monotone commit logs for details and authors
+//
+// This program is made available under the GNU GPL version 2.0 or
+// greater. See the accompanying file COPYING for details.
+//
+// This program is distributed WITHOUT ANY WARRANTY; without even the
+// implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+// PURPOSE.
+
 #ifndef __CACHE_LOGGER_HH__
 #define __CACHE_LOGGER_HH__
 

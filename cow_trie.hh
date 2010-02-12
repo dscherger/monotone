@@ -1,16 +1,20 @@
+// Copyright 2010 Timothy Brownawell <tbrownaw@prjek.net>
+// You may use, copy, modify, distribute, etc, this file with no other
+// restriction than that this notice not be removed.
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-// This is *NOT* a normal STL-compatible container! It pretends well enough to work
-// with parallel_iter and such, but it does not have find(), insert(), erase().
+// This is *NOT* a normal STL-compatible container! It pretends well enough
+// to work with parallel_iter and such, but it does not have find(),
+// insert(), erase().
 //
-// Because this is copy-on-write, and the copying is per-node instead of for the
-// whole object, the nodes can not have parent pointers (also, having parent pointers
-// would I think make the size 2^n+4 instead of 2^n, which AIUI would waste almost
-// equal space with common memory allocators).
-// This lack of parent pointers means that iterators are expensive, so they're not
-// used except for, well, iteration.
+// Because this is copy-on-write, and the copying is per-node instead of for
+// the whole object, the nodes can not have parent pointers (also, having
+// parent pointers would I think make the size 2^n+4 instead of 2^n, which
+// AIUI would waste almost equal space with common memory allocators).
+// This lack of parent pointers means that iterators are expensive, so they're
+// not used except for, well, iteration.
 
 template<typename _Key, typename _Value, int _Bits>
 class cow_trie
@@ -226,3 +230,11 @@ public:
   const_iterator end() const { return const_iterator(); }
 };
 
+
+// Local Variables:
+// mode: C++
+// fill-column: 76
+// c-file-style: "gnu"
+// indent-tabs-mode: nil
+// End:
+// vim: et:sw=2:sts=2:ts=2:cino=>2s,{s,\:s,+s,t0,g0,^-2,e-2,n-2,p2s,(0,=s:
