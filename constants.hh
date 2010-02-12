@@ -64,9 +64,14 @@ namespace constants
   std::size_t const db_roster_cache_sz = 7 * (1 << 20);
 
   // minimum number of items in the roster cache
-  // when receiving even a perfectly linear history, the cache needs
-  // to have at least 2 entries to be effective
-  std::size_t const db_roster_cache_min_count = 2;
+  // When receiving even a perfectly linear history, the cache needs
+  // to have at least 2 entries to be effective.
+  // Monotone, Pidgin, and Auroraux also all show *huge* drops in misses
+  // at 3 entries, monotone is the smallest drop with about a quarter as
+  // many misses at 3 entries as at 2 entries. (Not that this setting
+  // likely *matters* for monotone, since it's tree is rather small and
+  // a large number of entries fit in db_roster_cache_sz anyway.)
+  std::size_t const db_roster_cache_min_count = 3;
 
   // estimated number of bytes taken for a node_t and its corresponding
   // marking_t.  used to estimate the current size of the write-back roster
