@@ -257,7 +257,7 @@ namespace
 
             case parallel::in_both:
               // maybe changed
-              if (!(i.left_data() == i.right_data()) ||
+              if (!(i.left_data() == i.right_data()) &&
                   !(*i.left_data() == *i.right_data()))
                 safe_insert(d.markings_changed, i.right_value());
               break;
