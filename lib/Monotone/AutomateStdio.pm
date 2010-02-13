@@ -64,6 +64,7 @@ use IO::File;
 use IO::Poll qw(POLLHUP POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h);
+use Scalar::Util qw(refaddr weaken);
 use Socket;
 use Symbol qw(gensym);
 
@@ -125,6 +126,12 @@ use constant OPTIONAL_HEX_ID => 0x08;  # As HEX_ID but also [].
 use constant STRING          => 0x10;  # Any quoted string, possibly escaped.
 use constant STRING_ENUM     => 0x20;  # E.g. "rename_source".
 use constant STRING_LIST     => 0x40;  # E.g. "..." "...", possibly escaped.
+
+# Private structures for managing outside-in style objects.
+
+my $class_name = __PACKAGE__;
+my(%class_objects,
+   %class_records);
 
 # Pre-compiled regular expressions for: finding the end of a quoted string
 # possibly containing escaped quotes (i.e. " preceeded by a non-backslash
@@ -253,13 +260,14 @@ my($db_locked_handler_data,
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
-# Constructors and destructor.
+# Constructors, destructor and thread cloner.
 
 sub new_from_db($;$$);
 sub new_from_service($$;$);
 sub new_from_ws($;$$);
 *new = *new_from_db;
 sub DESTROY($);
+sub CLONE();
 
 # Public methods.
 
@@ -338,7 +346,7 @@ sub toposort($$@);
 
 # Private methods and routines.
 
-sub create_object_data();
+sub create_object($);
 sub error_handler_wrapper($);
 sub get_quoted_value($$$);
 sub get_ws_details($$$);
@@ -429,6 +437,7 @@ sub new_from_db($;$$)
 
     my($db,
        $this,
+       $self,
        $ws_path);
 
     # Check all the arguments given to us.
@@ -446,17 +455,17 @@ sub new_from_db($;$$)
 
     # Actually construct the object.
 
-    $this = create_object_data();
+    $self = create_object($class);
+    $this = $class_records{$self->{$class_name}};
     $this->{db_name} = $db_name;
     $this->{ws_path} = $ws_path;
     $this->{mtn_options} = $options;
-    bless($this, $class);
 
     # Startup the mtn subprocess (also determining the interface version).
 
-    $this->startup();
+    $self->startup();
 
-    return $this;
+    return $self;
 
 }
 #
@@ -489,7 +498,8 @@ sub new_from_service($$;$)
     my($service, $options) = @_;
     $options = [] unless (defined($options));
 
-    my($server,
+    my($self,
+       $server,
        $this);
 
     # Check all the arguments given to us.
@@ -511,17 +521,17 @@ sub new_from_service($$;$)
 
     # Actually construct the object.
 
-    $this = create_object_data();
+    $self = create_object($class);
+    $this = $class_records{$self->{$class_name}};
     $this->{db_name} = ":memory:";
     $this->{network_service} = $service;
     $this->{mtn_options} = $options;
-    bless($this, $class);
 
     # Startup the mtn subprocess (also determining the interface version).
 
-    $this->startup();
+    $self->startup();
 
-    return $this;
+    return $self;
 
 }
 #
@@ -556,6 +566,7 @@ sub new_from_ws($;$$)
     $options = [] unless (defined($options));
 
     my($db_name,
+       $self,
        $this);
 
     # Check all the arguments given to us.
@@ -570,17 +581,17 @@ sub new_from_ws($;$$)
 
     # Actually construct the object.
 
-    $this = create_object_data();
+    $self = create_object($class);
+    $this = $class_records{$self->{$class_name}};
     $this->{ws_path} = $ws_path;
     $this->{ws_constructed} = 1;
     $this->{mtn_options} = $options;
-    bless($this, $class);
 
     # Startup the mtn subprocess (also determining the interface version).
 
-    $this->startup();
+    $self->startup();
 
-    return $this;
+    return $self;
 
 }
 #
@@ -590,7 +601,7 @@ sub new_from_ws($;$$)
 #
 #   Description  - Class destructor.
 #
-#   Data         - $this : The object.
+#   Data         - $self : The object.
 #
 ##############################################################################
 
@@ -599,7 +610,9 @@ sub new_from_ws($;$$)
 sub DESTROY($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $id;
 
     # Make sure the destructor doesn't throw any exceptions and that any
     # existing exception status is preserved, otherwise constructor
@@ -613,12 +626,60 @@ sub DESTROY($)
     # if there is an exception, which it won't be unless the destructor is
     # called.
 
+    local $@;
+    eval
     {
-	local $@;
-	eval
-	{
-	    $this->closedown();
-	};
+	$self->closedown();
+    };
+    $id = $self->{$class_name};
+    delete($class_objects{$id});
+    delete($class_records{$id});
+
+}
+#
+##############################################################################
+#
+#   Routine      - CLONE
+#
+#   Description  - Class thread cloner.
+#
+#   Data         - None.
+#
+##############################################################################
+
+
+
+sub CLONE()
+{
+
+    # Scan through the class registry, locating the newly cloned objects and
+    # update the class object store accordingly.
+
+    foreach my $old_id (CORE::keys(%class_objects))
+    {
+
+	my($new_id,
+	   $object);
+
+	# Look under the old id to find the newly cloned object.
+
+	$object = $class_objects{$old_id};
+	$new_id = refaddr($object);
+
+	# Update the entry for the class record by refiling it under the new
+	# unique id for the newly cloned object.
+
+	$class_records{$new_id} = $class_records{$old_id};
+	delete($class_records{$old_id});
+
+	# Update the id cache in the object itself and then refile our weak
+	# reference to the object (not counted) under its new unique id.
+
+	$object->{$class_name} = $new_id;
+	$class_objects{$new_id} = $object;
+	weaken($class_objects{$new_id});
+	delete($class_objects{$old_id});
+
     }
 
 }
@@ -629,7 +690,7 @@ sub DESTROY($)
 #
 #   Description  - Get a list of ancestors for the specified revisions.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
@@ -644,9 +705,9 @@ sub DESTROY($)
 sub ancestors($$@)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("ancestors", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -657,7 +718,7 @@ sub ancestors($$@)
 #   Description  - Get a list of ancestors for the specified revision, that
 #                  are not also ancestors for the specified old revisions.
 #
-#   Data         - $this             : The object.
+#   Data         - $self             : The object.
 #                  $list             : A reference to a list that is to
 #                                      contain the revision ids.
 #                  $new_revision_id  : The revision id that is to have its
@@ -674,9 +735,9 @@ sub ancestors($$@)
 sub ancestry_difference($$$;@)
 {
 
-    my($this, $list, $new_revision_id, @old_revision_ids) = @_;
+    my($self, $list, $new_revision_id, @old_revision_ids) = @_;
 
-    return $this->mtn_command("ancestry_difference",
+    return $self->mtn_command("ancestry_difference",
 			      0,
 			      0,
 			      $list,
@@ -691,7 +752,7 @@ sub ancestry_difference($$$;@)
 #
 #   Description  - Get a list of branches.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 branch names.
 #                  Return Value : True on success, otherwise false on failure.
@@ -703,9 +764,9 @@ sub ancestry_difference($$$;@)
 sub branches($$)
 {
 
-    my($this, $list) = @_;
+    my($self, $list) = @_;
 
-    return $this->mtn_command("branches", 0, 1, $list);
+    return $self->mtn_command("branches", 0, 1, $list);
 
 }
 #
@@ -715,7 +776,7 @@ sub branches($$)
 #
 #   Description  - Add the specified cert to the specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $revision_id : The revision id to which the cert is to be
 #                                 applied.
 #                  $name        : The name of the cert to be applied.
@@ -729,11 +790,11 @@ sub branches($$)
 sub cert($$$$)
 {
 
-    my($this, $revision_id, $name, $value) = @_;
+    my($self, $revision_id, $name, $value) = @_;
 
     my $dummy;
 
-    return $this->mtn_command("cert",
+    return $self->mtn_command("cert",
 			      1,
 			      1,
 			      \$dummy,
@@ -749,7 +810,7 @@ sub cert($$$$)
 #
 #   Description  - Get all the certs for the specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $revision_id : The id of the revision that is to have its
@@ -763,14 +824,14 @@ sub cert($$$$)
 sub certs($$$)
 {
 
-    my($this, $ref, $revision_id) = @_;
+    my($self, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("certs", 0, 1, $ref, $revision_id);
+	return $self->mtn_command("certs", 0, 1, $ref, $revision_id);
     }
     else
     {
@@ -778,7 +839,7 @@ sub certs($$$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command("certs", 0, 1, \@lines, $revision_id))
+	if (! $self->mtn_command("certs", 0, 1, \@lines, $revision_id))
 	{
 	    return;
 	}
@@ -820,7 +881,7 @@ sub certs($$$)
 #
 #   Description  - Get a list of children for the specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The revision id that is to have its children
@@ -834,9 +895,9 @@ sub certs($$$)
 sub children($$$)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("children", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("children", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -847,7 +908,7 @@ sub children($$$)
 #   Description  - Get a list of revisions that are all ancestors of the
 #                  specified revision.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
@@ -862,9 +923,9 @@ sub children($$$)
 sub common_ancestors($$@)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("common_ancestors", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("common_ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -880,7 +941,7 @@ sub common_ancestors($$@)
 #                  current and base revisions are used. If no file names are
 #                  listed then differences in all files are reported.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $options      : A reference to a list containing the
@@ -899,7 +960,7 @@ sub common_ancestors($$@)
 sub content_diff($$;$$$@)
 {
 
-    my($this, $buffer, $options, $revision_id1, $revision_id2, @file_names)
+    my($self, $buffer, $options, $revision_id1, $revision_id2, @file_names)
 	= @_;
 
     my @opts;
@@ -927,7 +988,7 @@ sub content_diff($$;$$$@)
     push(@opts, {key => "r", value => $revision_id2})
 	if (defined($revision_id2));
 
-    return $this->mtn_command_with_options("content_diff",
+    return $self->mtn_command_with_options("content_diff",
 					   1,
 					   1,
 					   $buffer,
@@ -942,7 +1003,7 @@ sub content_diff($$;$$$@)
 #
 #   Description  - Get the value of a database variable.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $domain      : The domain of the database variable.
@@ -956,9 +1017,9 @@ sub content_diff($$;$$$@)
 sub db_get($$$$)
 {
 
-    my($this, $buffer, $domain, $name) = @_;
+    my($self, $buffer, $domain, $name) = @_;
 
-    return $this->mtn_command("db_get", 1, 1, $buffer, $domain, $name);
+    return $self->mtn_command("db_get", 1, 1, $buffer, $domain, $name);
 
 }
 #
@@ -968,7 +1029,7 @@ sub db_get($$$$)
 #
 #   Description  - Get a list of descendents for the specified revisions.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
@@ -983,9 +1044,9 @@ sub db_get($$$$)
 sub descendents($$@)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("descendents", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("descendents", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -996,7 +1057,7 @@ sub descendents($$@)
 #   Description  - Drop attributes from the specified file or directory,
 #                  optionally limiting it to the specified attribute.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $path        : The name of the file or directory that is to
 #                                 have an attribute dropped.
 #                  $key         : The name of the attribute that as to be
@@ -1010,11 +1071,11 @@ sub descendents($$@)
 sub drop_attribute($$$)
 {
 
-    my($this, $path, $key) = @_;
+    my($self, $path, $key) = @_;
 
     my $dummy;
 
-    return $this->mtn_command("drop_attribute", 1, 0, \$dummy, $path, $key);
+    return $self->mtn_command("drop_attribute", 1, 0, \$dummy, $path, $key);
 
 }
 #
@@ -1025,7 +1086,7 @@ sub drop_attribute($$$)
 #   Description  - Drop variables from the specified domain, optionally
 #                  limiting it to the specified variable.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $domain      : The name of the domain that is to have one
 #                                 or all of its variables dropped.
 #                  $name        : The name of the variable that is to be
@@ -1039,11 +1100,11 @@ sub drop_attribute($$$)
 sub drop_db_variables($$;$)
 {
 
-    my($this, $domain, $name) = @_;
+    my($self, $domain, $name) = @_;
 
     my $dummy;
 
-    return $this->mtn_command("drop_db_variables",
+    return $self->mtn_command("drop_db_variables",
 			      1,
 			      0,
 			      \$dummy,
@@ -1059,7 +1120,7 @@ sub drop_db_variables($$;$)
 #   Description  - For a given list of revisions, weed out those that are
 #                  ancestors to other revisions specified within the list.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to have their
@@ -1074,9 +1135,9 @@ sub drop_db_variables($$;$)
 sub erase_ancestors($$;@)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("erase_ancestors", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("erase_ancestors", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -1087,7 +1148,7 @@ sub erase_ancestors($$;@)
 #   Description  - Get the result of merging two files, both of which are on
 #                  separate revisions.
 #
-#   Data         - $this              : The object.
+#   Data         - $self              : The object.
 #                  $buffer            : A reference to a buffer that is to
 #                                       contain the output from this command.
 #                  $left_revision_id  : The left hand revision id.
@@ -1106,14 +1167,14 @@ sub erase_ancestors($$;@)
 sub file_merge($$$$$$)
 {
 
-    my($this,
+    my($self,
        $buffer,
        $left_revision_id,
        $left_file_name,
        $right_revision_id,
        $right_file_name) = @_;
 
-    return $this->mtn_command("file_merge",
+    return $self->mtn_command("file_merge",
 			      1,
 			      1,
 			      $buffer,
@@ -1130,7 +1191,7 @@ sub file_merge($$$$$$)
 #
 #   Description  - Generate a new key for use within the database.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or a hash that is to
 #                                 contain the output from this command.
 #                  $key_id      : The key id for the new key.
@@ -1144,14 +1205,14 @@ sub file_merge($$$$$$)
 sub genkey($$$$)
 {
 
-    my($this, $ref, $key_id, $pass_phrase) = @_;
+    my($self, $ref, $key_id, $pass_phrase) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("genkey", 1, 1, $ref, $key_id, $pass_phrase);
+	return $self->mtn_command("genkey", 1, 1, $ref, $key_id, $pass_phrase);
     }
     else
     {
@@ -1160,7 +1221,7 @@ sub genkey($$$$)
 	   $kv_record,
 	   @lines);
 
-	if (! $this->mtn_command("genkey",
+	if (! $self->mtn_command("genkey",
 				 1,
 				 1,
 				 \@lines,
@@ -1197,7 +1258,7 @@ sub genkey($$$$)
 #
 #   Description  - Get the attributes of the specified file.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $file_name   : The name of the file that is to be reported
@@ -1211,13 +1272,13 @@ sub genkey($$$$)
 sub get_attributes($$$)
 {
 
-    my($this, $ref, $file_name) = @_;
+    my($self, $ref, $file_name) = @_;
 
     my $cmd;
 
     # This command was renamed in version 0.36 (i/f version 5.x).
 
-    if ($this->supports(MTN_GET_ATTRIBUTES))
+    if ($self->supports(MTN_GET_ATTRIBUTES))
     {
 	$cmd = "get_attributes";
     }
@@ -1231,7 +1292,7 @@ sub get_attributes($$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command($cmd, 1, 1, $ref, $file_name);
+	return $self->mtn_command($cmd, 1, 1, $ref, $file_name);
     }
     else
     {
@@ -1239,7 +1300,7 @@ sub get_attributes($$$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command($cmd, 1, 1, \@lines, $file_name))
+	if (! $self->mtn_command($cmd, 1, 1, \@lines, $file_name))
 	{
 	    return;
 	}
@@ -1286,7 +1347,7 @@ sub get_attributes($$$)
 #
 #   Description  - Get the revision upon which the workspace is based.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1298,12 +1359,12 @@ sub get_attributes($$$)
 sub get_base_revision_id($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("get_base_revision_id", 0, 0, \@list))
+    if (! $self->mtn_command("get_base_revision_id", 0, 0, \@list))
     {
 	return;
     }
@@ -1320,7 +1381,7 @@ sub get_base_revision_id($$)
 #   Description  - Get a list of revisions in which the content was most
 #                  recently changed, relative to the specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The id of the revision of the manifest that
@@ -1336,14 +1397,14 @@ sub get_base_revision_id($$)
 sub get_content_changed($$$$)
 {
 
-    my($this, $list, $revision_id, $file_name) = @_;
+    my($self, $list, $revision_id, $file_name) = @_;
 
     my($i,
        @lines);
 
     # Run the command and get the data.
 
-    if (! $this->mtn_command("get_content_changed",
+    if (! $self->mtn_command("get_content_changed",
 			     1,
 			     0,
 			     \@lines,
@@ -1375,7 +1436,7 @@ sub get_content_changed($$$$)
 #                  revision, return the corresponding file name for the
 #                  specified target revision.
 #
-#   Data         - $this               : The object.
+#   Data         - $self               : The object.
 #                  $buffer             : A reference to a buffer that is to
 #                                        contain the output from this command.
 #                  $source_revision_id : The source revision id.
@@ -1392,7 +1453,7 @@ sub get_content_changed($$$$)
 sub get_corresponding_path($$$$$)
 {
 
-    my($this, $buffer, $source_revision_id, $file_name, $target_revision_id)
+    my($self, $buffer, $source_revision_id, $file_name, $target_revision_id)
 	= @_;
 
     my($i,
@@ -1400,7 +1461,7 @@ sub get_corresponding_path($$$$$)
 
     # Run the command and get the data.
 
-    if (! $this->mtn_command("get_corresponding_path",
+    if (! $self->mtn_command("get_corresponding_path",
 			     1,
 			     1,
 			     \@lines,
@@ -1434,7 +1495,7 @@ sub get_corresponding_path($$$$$)
 #                  optionally limiting the output by using the specified
 #                  options and file restrictions.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $options     : A reference to a list containing the options
@@ -1451,7 +1512,7 @@ sub get_corresponding_path($$$$$)
 sub get_current_revision($$;$@)
 {
 
-    my($this, $ref, $options, @paths) = @_;
+    my($self, $ref, $options, @paths) = @_;
 
     my($i,
        @opts);
@@ -1478,7 +1539,7 @@ sub get_current_revision($$;$@)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command_with_options("get_current_revision",
+	return $self->mtn_command_with_options("get_current_revision",
 					       1,
 					       1,
 					       $ref,
@@ -1490,7 +1551,7 @@ sub get_current_revision($$;$@)
 
 	my @lines;
 
-	if (! $this->mtn_command_with_options("get_current_revision",
+	if (! $self->mtn_command_with_options("get_current_revision",
 					      1,
 					      1,
 					      \@lines,
@@ -1514,7 +1575,7 @@ sub get_current_revision($$;$@)
 #   Description  - Get the revision that would be created if an unrestricted
 #                  commit was done in the workspace.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1526,12 +1587,12 @@ sub get_current_revision($$;$@)
 sub get_current_revision_id($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("get_current_revision_id", 0, 0, \@list))
+    if (! $self->mtn_command("get_current_revision_id", 0, 0, \@list))
     {
 	return;
     }
@@ -1548,7 +1609,7 @@ sub get_current_revision_id($$)
 #   Description  - Get the variables stored in the database, optionally
 #                  limiting it to the specified domain.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $domain      : The name of the domain that is to have its
@@ -1562,14 +1623,14 @@ sub get_current_revision_id($$)
 sub get_db_variables($$;$)
 {
 
-    my($this, $ref, $domain) = @_;
+    my($self, $ref, $domain) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_db_variables", 1, 1, $ref, $domain);
+	return $self->mtn_command("get_db_variables", 1, 1, $ref, $domain);
     }
     else
     {
@@ -1580,7 +1641,7 @@ sub get_db_variables($$;$)
 	   $name,
 	   $value);
 
-	if (! $this->mtn_command("get_db_variables", 1, 1, \@lines, $domain))
+	if (! $self->mtn_command("get_db_variables", 1, 1, \@lines, $domain))
 	{
 	    return;
 	}
@@ -1625,7 +1686,7 @@ sub get_db_variables($$;$)
 #   Description  - Get the contents of the file referenced by the specified
 #                  file id.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_id     : The file id of the file that is to be
@@ -1639,9 +1700,9 @@ sub get_db_variables($$;$)
 sub get_file($$$)
 {
 
-    my($this, $buffer, $file_id) = @_;
+    my($self, $buffer, $file_id) = @_;
 
-    return $this->mtn_command("get_file", 0, 0, $buffer, $file_id);
+    return $self->mtn_command("get_file", 0, 0, $buffer, $file_id);
 
 }
 #
@@ -1653,7 +1714,7 @@ sub get_file($$$)
 #                  revision. If the revision id is undefined then the current
 #                  workspace revision is used.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_name   : The name of the file to be fetched.
@@ -1668,14 +1729,14 @@ sub get_file($$$)
 sub get_file_of($$$;$)
 {
 
-    my($this, $buffer, $file_name, $revision_id) = @_;
+    my($self, $buffer, $file_name, $revision_id) = @_;
 
     my @opts;
 
     push(@opts, {key => "r", value => $revision_id})
 	if (defined($revision_id));
 
-    return $this->mtn_command_with_options("get_file_of",
+    return $self->mtn_command_with_options("get_file_of",
 					   1,
 					   0,
 					   $buffer,
@@ -1690,7 +1751,7 @@ sub get_file_of($$$;$)
 #
 #   Description  - Get the manifest for the current or specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $revision_id : The revision id which is to have its
@@ -1704,14 +1765,14 @@ sub get_file_of($$$;$)
 sub get_manifest_of($$;$)
 {
 
-    my($this, $ref, $revision_id) = @_;
+    my($self, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_manifest_of", 0, 1, $ref, $revision_id);
+	return $self->mtn_command("get_manifest_of", 0, 1, $ref, $revision_id);
     }
     else
     {
@@ -1725,7 +1786,7 @@ sub get_manifest_of($$;$)
 	   $type,
 	   $value);
 
-	if (! $this->mtn_command("get_manifest_of",
+	if (! $self->mtn_command("get_manifest_of",
 				 0,
 				 1,
 				 \@lines,
@@ -1800,7 +1861,7 @@ sub get_manifest_of($$;$)
 #   Description  - Get the value of an option stored in a workspace's _MTN
 #                  directory.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $option_name : The name of the option to be fetched.
@@ -1813,9 +1874,9 @@ sub get_manifest_of($$;$)
 sub get_option($$$)
 {
 
-    my($this, $buffer, $option_name) = @_;
+    my($self, $buffer, $option_name) = @_;
 
-    if (! $this->mtn_command("get_option", 1, 1, $buffer, $option_name))
+    if (! $self->mtn_command("get_option", 1, 1, $buffer, $option_name))
     {
 	return;
     }
@@ -1832,7 +1893,7 @@ sub get_option($$$)
 #   Description  - Get the revision information for the current or specified
 #                  revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $revision_id : The revision id which is to have its data
@@ -1846,21 +1907,21 @@ sub get_option($$$)
 sub get_revision($$$)
 {
 
-    my($this, $ref, $revision_id) = @_;
+    my($self, $ref, $revision_id) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("get_revision", 0, 1, $ref, $revision_id);
+	return $self->mtn_command("get_revision", 0, 1, $ref, $revision_id);
     }
     else
     {
 
 	my @lines;
 
-	if (! $this->mtn_command("get_revision", 0, 1, \@lines, $revision_id))
+	if (! $self->mtn_command("get_revision", 0, 1, \@lines, $revision_id))
 	{
 	    return;
 	}
@@ -1879,7 +1940,7 @@ sub get_revision($$$)
 #   Description  - Get the absolute path for the current workspace's root
 #                  directory.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1891,9 +1952,9 @@ sub get_revision($$$)
 sub get_workspace_root($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
-    if (! $this->mtn_command("get_workspace_root", 0, 1, $buffer))
+    if (! $self->mtn_command("get_workspace_root", 0, 1, $buffer))
     {
 	return;
     }
@@ -1909,7 +1970,7 @@ sub get_workspace_root($$)
 #
 #   Description  - Get a complete ancestry graph of the database.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -1921,14 +1982,14 @@ sub get_workspace_root($$)
 sub graph($$)
 {
 
-    my($this, $ref) = @_;
+    my($self, $ref) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("graph", 0, 0, $ref);
+	return $self->mtn_command("graph", 0, 0, $ref);
     }
     else
     {
@@ -1937,7 +1998,7 @@ sub graph($$)
 	   @lines,
 	   @parent_ids);
 
-	if (! $this->mtn_command("graph", 0, 0, \@lines))
+	if (! $self->mtn_command("graph", 0, 0, \@lines))
 	{
 	    return;
 	}
@@ -1962,7 +2023,7 @@ sub graph($$)
 #                  branch. If no branch is given then the workspace's branch
 #                  is used.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $branch_name : The name of the branch that is to have its
@@ -1976,9 +2037,9 @@ sub graph($$)
 sub heads($$;$)
 {
 
-    my($this, $list, $branch_name) = @_;
+    my($self, $list, $branch_name) = @_;
 
-    return $this->mtn_command("heads", 1, 0, $list, $branch_name);
+    return $self->mtn_command("heads", 1, 0, $list, $branch_name);
 
 }
 #
@@ -1988,7 +2049,7 @@ sub heads($$;$)
 #
 #   Description  - Get the file id, i.e. hash, of the specified file.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_name   : The name of the file that is to have its id
@@ -2002,12 +2063,12 @@ sub heads($$;$)
 sub identify($$$)
 {
 
-    my($this, $buffer, $file_name) = @_;
+    my($self, $buffer, $file_name) = @_;
 
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("identify", 1, 0, \@list, $file_name))
+    if (! $self->mtn_command("identify", 1, 0, \@list, $file_name))
     {
 	return;
     }
@@ -2023,7 +2084,7 @@ sub identify($$$)
 #
 #   Description  - Get the version of the mtn automate interface.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2035,12 +2096,12 @@ sub identify($$$)
 sub interface_version($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
     my @list;
 
     $$buffer = "";
-    if (! $this->mtn_command("interface_version", 0, 0, \@list))
+    if (! $self->mtn_command("interface_version", 0, 0, \@list))
     {
 	return;
     }
@@ -2058,7 +2119,7 @@ sub interface_version($$)
 #                  limiting the output by using the specified options and file
 #                  restrictions.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  $options     : A reference to a list containing the options
@@ -2075,7 +2136,7 @@ sub interface_version($$)
 sub inventory($$;$@)
 {
 
-    my($this, $ref, $options, @paths) = @_;
+    my($self, $ref, $options, @paths) = @_;
 
     my @opts;
 
@@ -2101,7 +2162,7 @@ sub inventory($$;$@)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command_with_options("inventory",
+	return $self->mtn_command_with_options("inventory",
 					       1,
 					       1,
 					       $ref,
@@ -2113,7 +2174,7 @@ sub inventory($$;$@)
 
 	my @lines;
 
-	if (! $this->mtn_command_with_options("inventory",
+	if (! $self->mtn_command_with_options("inventory",
 					      1,
 					      1,
 					      \@lines,
@@ -2126,7 +2187,7 @@ sub inventory($$;$@)
 	# The output format of this command was switched over to a basic_io
 	# stanza in 0.37 (i/f version 6.x).
 
-	if ($this->supports(MTN_INVENTORY_IN_IO_STANZA_FORMAT))
+	if ($self->supports(MTN_INVENTORY_IN_IO_STANZA_FORMAT))
 	{
 
 	    my $i;
@@ -2188,7 +2249,7 @@ sub inventory($$;$@)
 #
 #   Description  - Get a list of all the keys known to mtn.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ref         : A reference to a buffer or an array that is
 #                                 to contain the output from this command.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2200,14 +2261,14 @@ sub inventory($$;$@)
 sub keys($$)
 {
 
-    my($this, $ref) = @_;
+    my($self, $ref) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("keys", 0, 1, $ref);
+	return $self->mtn_command("keys", 0, 1, $ref);
     }
     else
     {
@@ -2216,7 +2277,7 @@ sub keys($$)
 	   @lines,
 	   @valid_fields);
 
-	if (! $this->mtn_command("keys", 0, 1, \@lines))
+	if (! $self->mtn_command("keys", 0, 1, \@lines))
 	{
 	    return;
 	}
@@ -2225,8 +2286,8 @@ sub keys($$)
 	# Monotone in use.
 
 	push(@valid_fields, "given_name", "local_name")
-	    if ($this->supports(MTN_HASHED_SIGNATURES));
-	if ($this->supports(MTN_COMMON_KEY_HASH))
+	    if ($self->supports(MTN_HASHED_SIGNATURES));
+	if ($self->supports(MTN_COMMON_KEY_HASH))
 	{
 	    push(@valid_fields, "hash");
 	}
@@ -2273,7 +2334,7 @@ sub keys($$)
 #
 #   Description  - Get a list of leaf revisions.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2285,9 +2346,9 @@ sub keys($$)
 sub leaves($$)
 {
 
-    my($this, $list) = @_;
+    my($self, $list) = @_;
 
-    return $this->mtn_command("leaves", 0, 0, $list);
+    return $self->mtn_command("leaves", 0, 0, $list);
 
 }
 #
@@ -2298,7 +2359,7 @@ sub leaves($$)
 #   Description  - Call the specified LUA function with any required
 #                  arguments.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $lua_function : The name of the LUA function that is to be
@@ -2315,9 +2376,9 @@ sub leaves($$)
 sub lua($$$;@)
 {
 
-    my($this, $buffer, $lua_function, @arguments) = @_;
+    my($self, $buffer, $lua_function, @arguments) = @_;
 
-    return $this->mtn_command("lua", 1, 1, $buffer, $lua_function, @arguments);
+    return $self->mtn_command("lua", 1, 1, $buffer, $lua_function, @arguments);
 
 }
 #
@@ -2328,7 +2389,7 @@ sub lua($$$;@)
 #   Description  - Get the contents of the file referenced by the specified
 #                  file id in packet format.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $file_id     : The file id of the file that is to be
@@ -2342,9 +2403,9 @@ sub lua($$$;@)
 sub packet_for_fdata($$$)
 {
 
-    my($this, $buffer, $file_id) = @_;
+    my($self, $buffer, $file_id) = @_;
 
-    return $this->mtn_command("packet_for_fdata", 0, 0, $buffer, $file_id);
+    return $self->mtn_command("packet_for_fdata", 0, 0, $buffer, $file_id);
 
 }
 #
@@ -2355,7 +2416,7 @@ sub packet_for_fdata($$$)
 #   Description  - Get the file delta between the two files referenced by the
 #                  specified file ids in packet format.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $from_file_id : The file id of the file that is to be used
@@ -2372,9 +2433,9 @@ sub packet_for_fdata($$$)
 sub packet_for_fdelta($$$$)
 {
 
-    my($this, $buffer, $from_file_id, $to_file_id) = @_;
+    my($self, $buffer, $from_file_id, $to_file_id) = @_;
 
-    return $this->mtn_command("packet_for_fdelta",
+    return $self->mtn_command("packet_for_fdelta",
 			      0,
 			      0,
 			      $buffer,
@@ -2390,7 +2451,7 @@ sub packet_for_fdelta($$$$)
 #   Description  - Get the contents of the revision referenced by the
 #                  specified revision id in packet format.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $revision_id : The revision id of the revision that is to
@@ -2404,9 +2465,9 @@ sub packet_for_fdelta($$$$)
 sub packet_for_rdata($$$)
 {
 
-    my($this, $buffer, $revision_id) = @_;
+    my($self, $buffer, $revision_id) = @_;
 
-    return $this->mtn_command("packet_for_rdata", 0, 0, $buffer, $revision_id);
+    return $self->mtn_command("packet_for_rdata", 0, 0, $buffer, $revision_id);
 
 }
 #
@@ -2417,7 +2478,7 @@ sub packet_for_rdata($$$)
 #   Description  - Get all the certs for the revision referenced by the
 #                  specified revision id in packet format.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $revision_id : The revision id of the revision that is to
@@ -2431,9 +2492,9 @@ sub packet_for_rdata($$$)
 sub packets_for_certs($$$)
 {
 
-    my($this, $buffer, $revision_id) = @_;
+    my($self, $buffer, $revision_id) = @_;
 
-    return $this->mtn_command("packets_for_certs",
+    return $self->mtn_command("packets_for_certs",
 			      0,
 			      0,
 			      $buffer,
@@ -2447,7 +2508,7 @@ sub packets_for_certs($$$)
 #
 #   Description  - Get a list of parents for the specified revision.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $revision_id : The revision id that is to have its parents
@@ -2461,9 +2522,9 @@ sub packets_for_certs($$$)
 sub parents($$$)
 {
 
-    my($this, $list, $revision_id) = @_;
+    my($self, $list, $revision_id) = @_;
 
-    return $this->mtn_command("parents", 0, 0, $list, $revision_id);
+    return $self->mtn_command("parents", 0, 0, $list, $revision_id);
 
 }
 #
@@ -2475,7 +2536,7 @@ sub parents($$$)
 #                  optionally basing it on the specified file id (this is used
 #                  for delta encoding).
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $buffer       : A reference to a buffer that is to contain
 #                                  the output from this command.
 #                  $base_file_id : The file id of the previous version of this
@@ -2492,13 +2553,13 @@ sub parents($$$)
 sub put_file($$$$)
 {
 
-    my($this, $buffer, $base_file_id, $contents) = @_;
+    my($self, $buffer, $base_file_id, $contents) = @_;
 
     my @list;
 
     if (defined($base_file_id))
     {
-	if (! $this->mtn_command("put_file",
+	if (! $self->mtn_command("put_file",
 				 0,
 				 0,
 				 \@list,
@@ -2510,7 +2571,7 @@ sub put_file($$$$)
     }
     else
     {
-	if (! $this->mtn_command("put_file", 0, 0, \@list, $contents))
+	if (! $self->mtn_command("put_file", 0, 0, \@list, $contents))
 	{
 	    return;
 	}
@@ -2527,7 +2588,7 @@ sub put_file($$$$)
 #
 #   Description  - Put the specified revision data into the database.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
 #                                 the output from this command.
 #                  $contents    : A reference to a buffer containing the
@@ -2541,11 +2602,11 @@ sub put_file($$$$)
 sub put_revision($$$)
 {
 
-    my($this, $buffer, $contents) = @_;
+    my($self, $buffer, $contents) = @_;
 
     my @list;
 
-    if (! $this->mtn_command("put_revision", 1, 0, \@list, $contents))
+    if (! $self->mtn_command("put_revision", 1, 0, \@list, $contents))
     {
 	return;
     }
@@ -2561,7 +2622,7 @@ sub put_revision($$$)
 #
 #   Description  - Decode and store the specified packet data in the database.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $packet_data : The packet data that is to be stored in the
 #                                 database.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2573,11 +2634,11 @@ sub put_revision($$$)
 sub read_packets($$)
 {
 
-    my($this, $packet_data) = @_;
+    my($self, $packet_data) = @_;
 
     my $dummy;
 
-    return $this->mtn_command("read_packets", 0, 0, \$dummy, $packet_data);
+    return $self->mtn_command("read_packets", 0, 0, \$dummy, $packet_data);
 
 }
 #
@@ -2588,7 +2649,7 @@ sub read_packets($$)
 #   Description  - Get a list of root revisions, i.e. revisions with no
 #                  parents.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  Return Value : True on success, otherwise false on failure.
@@ -2600,9 +2661,9 @@ sub read_packets($$)
 sub roots($$)
 {
 
-    my($this, $list) = @_;
+    my($self, $list) = @_;
 
-    return $this->mtn_command("roots", 0, 0, $list);
+    return $self->mtn_command("roots", 0, 0, $list);
 
 }
 #
@@ -2613,7 +2674,7 @@ sub roots($$)
 #   Description  - Get a list of revision ids that match the specified
 #                  selector.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $list        : A reference to a list that is to contain the
 #                                 revision ids.
 #                  $selector    : The selector that is to be used.
@@ -2626,9 +2687,9 @@ sub roots($$)
 sub select($$$)
 {
 
-    my($this, $list, $selector) = @_;
+    my($self, $list, $selector) = @_;
 
-    return $this->mtn_command("select", 1, 0, $list, $selector);
+    return $self->mtn_command("select", 1, 0, $list, $selector);
 
 }
 #
@@ -2638,7 +2699,7 @@ sub select($$$)
 #
 #   Description  - Set an attribute on the specified file or directory.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $path        : The name of the file or directory that is to
 #                                 have an attribute set.
 #                  $key         : The name of the attribute that as to be set.
@@ -2653,11 +2714,11 @@ sub select($$$)
 sub set_attribute($$$$)
 {
 
-    my($this, $path, $key, $value) = @_;
+    my($self, $path, $key, $value) = @_;
 
     my $dummy;
 
-    return $this->mtn_command("set_attribute",
+    return $self->mtn_command("set_attribute",
 			      1,
 			      0,
 			      \$dummy,
@@ -2673,7 +2734,7 @@ sub set_attribute($$$$)
 #
 #   Description  - Set the value of a database variable.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $domain      : The domain of the database variable.
 #                  $name        : The name of the variable to set.
 #                  $value       : The value to set the variable to.
@@ -2686,14 +2747,14 @@ sub set_attribute($$$$)
 sub set_db_variable($$$$)
 {
 
-    my($this, $domain, $name, $value) = @_;
+    my($self, $domain, $name, $value) = @_;
 
     my($cmd,
        $dummy);
 
     # This command was renamed in version 0.39 (i/f version 7.x).
 
-    if ($this->supports(MTN_SET_DB_VARIABLE))
+    if ($self->supports(MTN_SET_DB_VARIABLE))
     {
 	$cmd = "set_db_variable";
     }
@@ -2701,7 +2762,7 @@ sub set_db_variable($$$$)
     {
 	$cmd = "db_set";
     }
-    return $this->mtn_command($cmd, 1, 0, \$dummy, $domain, $name, $value);
+    return $self->mtn_command($cmd, 1, 0, \$dummy, $domain, $name, $value);
 
 }
 #
@@ -2714,7 +2775,7 @@ sub set_db_variable($$$$)
 #                  both head revision ids and the name of the branch that they
 #                  reside on.
 #
-#   Data         - $this              : The object.
+#   Data         - $self              : The object.
 #                  $ref               : A reference to a buffer or an array
 #                                       that is to contain the output from
 #                                       this command.
@@ -2732,9 +2793,10 @@ sub set_db_variable($$$$)
 sub show_conflicts($$;$$$)
 {
 
-    my($this, $ref, $branch, $left_revision_id, $right_revision_id) = @_;
+    my($self, $ref, $branch, $left_revision_id, $right_revision_id) = @_;
 
     my @opts;
+    my $this = $class_records{$self->{$class_name}};
 
     # Validate the number of arguments and adjust them accordingly.
 
@@ -2769,7 +2831,7 @@ sub show_conflicts($$;$$$)
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command_with_options("show_conflicts",
+	return $self->mtn_command_with_options("show_conflicts",
 					       1,
 					       1,
 					       $ref,
@@ -2783,7 +2845,7 @@ sub show_conflicts($$;$$$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command_with_options("show_conflicts",
+	if (! $self->mtn_command_with_options("show_conflicts",
 					      1,
 					      1,
 					      \@lines,
@@ -2839,7 +2901,7 @@ sub show_conflicts($$;$$$)
 #                  and the specified remote server. This member function also
 #                  provides the implementation to the pull and push methods.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $options     : A reference to a list containing the options
 #                                 to use.
 #                  $service     : The name of the server to synchronise with,
@@ -2856,7 +2918,7 @@ sub show_conflicts($$;$$$)
 sub sync($;$$@)
 {
 
-    my($this, $options, $service, @patterns) = @_;
+    my($self, $options, $service, @patterns) = @_;
 
     my($cmd,
        $dummy,
@@ -2887,7 +2949,7 @@ sub sync($;$$@)
 
     if (defined($service))
     {
-	return $this->mtn_command_with_options($cmd,
+	return $self->mtn_command_with_options($cmd,
 					       1,
 					       1,
 					       \$dummy,
@@ -2897,7 +2959,7 @@ sub sync($;$$@)
     }
     else
     {
-	return $this->mtn_command_with_options($cmd, 1, 1, \$dummy, \@opts);
+	return $self->mtn_command_with_options($cmd, 1, 1, \$dummy, \@opts);
     }
 
 }
@@ -2910,7 +2972,7 @@ sub sync($;$$@)
 #                  match the specified branch pattern. If no pattern is given
 #                  then all branches are searched.
 #
-#   Data         - $this           : The object.
+#   Data         - $self           : The object.
 #                  $ref            : A reference to a buffer or an array that
 #                                    is to contain the output from this
 #                                    command.
@@ -2926,14 +2988,14 @@ sub sync($;$$@)
 sub tags($$;$)
 {
 
-    my($this, $ref, $branch_pattern) = @_;
+    my($self, $ref, $branch_pattern) = @_;
 
     # Run the command and get the data, either as one lump or as a structured
     # list.
 
     if (ref($ref) eq "SCALAR")
     {
-	return $this->mtn_command("tags", 1, 1, $ref, $branch_pattern);
+	return $self->mtn_command("tags", 1, 1, $ref, $branch_pattern);
     }
     else
     {
@@ -2941,7 +3003,7 @@ sub tags($$;$)
 	my($i,
 	   @lines);
 
-	if (! $this->mtn_command("tags", 1, 1, \@lines, $branch_pattern))
+	if (! $self->mtn_command("tags", 1, 1, \@lines, $branch_pattern))
 	{
 	    return;
 	}
@@ -2992,7 +3054,7 @@ sub tags($$;$)
 #   Description  - Sort the specified revisions such that the ancestors come
 #                  out first.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain
 #                                  the revision ids.
 #                  @revision_ids : The revision ids that are to be sorted with
@@ -3007,9 +3069,9 @@ sub tags($$;$)
 sub toposort($$@)
 {
 
-    my($this, $list, @revision_ids) = @_;
+    my($self, $list, @revision_ids) = @_;
 
-    return $this->mtn_command("toposort", 0, 0, $list, @revision_ids);
+    return $self->mtn_command("toposort", 0, 0, $list, @revision_ids);
 
 }
 #
@@ -3019,7 +3081,7 @@ sub toposort($$@)
 #
 #   Description  - If started then stop the mtn subprocess.
 #
-#   Data         - $this : The object.
+#   Data         - $self : The object.
 #
 ##############################################################################
 
@@ -3028,7 +3090,9 @@ sub toposort($$@)
 sub closedown($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     if ($this->{mtn_pid} != 0)
     {
@@ -3126,7 +3190,7 @@ sub closedown($)
 #   Description  - Check to see if the Monotone database was locked the last
 #                  time a command was issued.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  Return Value : True if the database was locked the last
 #                                 time a command was issues, otherwise false.
 #
@@ -3137,7 +3201,9 @@ sub closedown($)
 sub db_locked_condition_detected($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     return $this->{db_is_locked};
 
@@ -3150,7 +3216,7 @@ sub db_locked_condition_detected($)
 #   Description  - Return the the file name of the Monotone database as given
 #                  to the constructor.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  Return Value : The file name of the database as given to
 #                                 the constructor or undef if no database was
 #                                 specified.
@@ -3162,7 +3228,9 @@ sub db_locked_condition_detected($)
 sub get_db_name($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     return $this->{db_name};
 
@@ -3175,7 +3243,7 @@ sub get_db_name($)
 #   Description  - Return the message for the last error reported by this
 #                  class.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  Return Value : The message for the last error detected, or
 #                                 an empty string if nothing has gone wrong
 #                                 yet.
@@ -3187,7 +3255,9 @@ sub get_db_name($)
 sub get_error_message($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     return $this->{error_msg};
 
@@ -3199,7 +3269,7 @@ sub get_error_message($)
 #
 #   Description  - Return the process id of the mtn automate stdio process.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  Return Value : The process id of the mtn automate stdio
 #                                 process, or zero if no process is thought to
 #                                 be running.
@@ -3211,7 +3281,9 @@ sub get_error_message($)
 sub get_pid($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     return $this->{mtn_pid};
 
@@ -3229,7 +3301,7 @@ sub get_pid($)
 #                  workspace path is actually a subdirectory within that
 #                  workspace.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  Return Value : The workspace's base directory or undef if
 #                                 no workspace was specified and there is no
 #                                 current workspace.
@@ -3241,7 +3313,9 @@ sub get_pid($)
 sub get_ws_path($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     return $this->{ws_path};
 
@@ -3255,7 +3329,7 @@ sub get_ws_path($)
 #                  ignored or not. If the head revisions on a branch are all
 #                  suspended then that branch is also ignored.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $ignore      : True if suspend certs are to be ignored
 #                                 (i.e. all revisions are `visible'),
 #                                 otherwise false if suspend certs are to be
@@ -3269,17 +3343,19 @@ sub get_ws_path($)
 sub ignore_suspend_certs($$)
 {
 
-    my($this, $ignore) = @_;
+    my($self, $ignore) = @_;
+
+    my $this = $class_records{$self->{$class_name}};
 
     # This only works from version 0.37 (i/f version 6.x).
 
     if ($this->{honour_suspend_certs} && $ignore)
     {
-	if ($this->supports(MTN_IGNORING_OF_SUSPEND_CERTS))
+	if ($self->supports(MTN_IGNORING_OF_SUSPEND_CERTS))
 	{
 	    $this->{honour_suspend_certs} = undef;
-	    $this->closedown();
-	    $this->startup();
+	    $self->closedown();
+	    $self->startup();
 	}
 	else
 	{
@@ -3292,8 +3368,8 @@ sub ignore_suspend_certs($$)
     elsif (! ($this->{honour_suspend_certs} || $ignore))
     {
 	$this->{honour_suspend_certs} = 1;
-	$this->closedown();
-	$this->startup();
+	$self->closedown();
+	$self->startup();
     }
 
     return 1;
@@ -3310,7 +3386,7 @@ sub ignore_suspend_certs($$)
 #                  locked handler is used as the default handler for all those
 #                  objects that do not specify their own handlers.
 #
-#   Data         - $this        : Either the object, the package name or not
+#   Data         - $self        : Either the object, the package name or not
 #                                 present depending upon how this method is
 #                                 called.
 #                  $handler     : A reference to the database locked handler
@@ -3329,12 +3405,14 @@ sub ignore_suspend_certs($$)
 sub register_db_locked_handler(;$$$)
 {
 
-    my $this;
+    my($self,
+       $this);
     if ($_[0]->isa(__PACKAGE__))
     {
 	if (ref($_[0]) ne "")
 	{
-	    $this = shift();
+	    $self = shift();
+	    $this = $class_records{$self->{$class_name}};
 	}
 	else
 	{
@@ -3343,7 +3421,7 @@ sub register_db_locked_handler(;$$$)
     }
     my($handler, $client_data) = @_;
 
-    if (defined($this))
+    if (defined($self))
     {
 	if (defined($handler))
 	{
@@ -3379,7 +3457,7 @@ sub register_db_locked_handler(;$$$)
 #                  class. This is a class method rather than an object one as
 #                  errors can be raised when calling the constructor.
 #
-#   Data         - $this        : The object. This may not be present
+#   Data         - $self        : The object. This may not be present
 #                                 depending upon how this method is called and
 #                                 is ignored if it is present anyway.
 #                  $severity    : The level of error that the handler is being
@@ -3463,7 +3541,7 @@ sub register_error_handler($;$$$)
 #                  handler is used as the default handler for all those
 #                  objects that do not specify their own handlers.
 #
-#   Data         - $this        : Either the object, the package name or not
+#   Data         - $self        : Either the object, the package name or not
 #                                 present depending upon how this method is
 #                                 called.
 #                  $handler     : A reference to the I/O wait handler routine.
@@ -3483,12 +3561,14 @@ sub register_error_handler($;$$$)
 sub register_io_wait_handler(;$$$$)
 {
 
-    my $this;
+    my($self,
+       $this);
     if ($_[0]->isa(__PACKAGE__))
     {
 	if (ref($_[0]) ne "")
 	{
-	    $this = shift();
+	    $self = shift();
+	    $this = $class_records{$self->{$class_name}};
 	}
 	else
 	{
@@ -3513,7 +3593,7 @@ sub register_io_wait_handler(;$$$$)
 	$timeout = 1;
     }
 
-    if (defined($this))
+    if (defined($self))
     {
 	if (defined($handler))
 	{
@@ -3549,7 +3629,7 @@ sub register_io_wait_handler(;$$$$)
 #   Description  - Register the specified file handle to receive data from the
 #                  specified mtn automate stdio output stream.
 #
-#   Data         - $this   : The object.
+#   Data         - $self   : The object.
 #                  $stream : The mtn output stream from which data is to be
 #                            read and then written to the specified file
 #                            handle.
@@ -3565,7 +3645,9 @@ sub register_io_wait_handler(;$$$$)
 sub register_stream_handle($$$)
 {
 
-    my($this, $stream, $handle) = @_;
+    my($self, $stream, $handle) = @_;
+
+    my $this = $class_records{$self->{$class_name}};
 
     if (defined($handle)
 	&& ref($handle) !~ m/^IO::[^:]+/ && ref($handle) ne "GLOB")
@@ -3594,7 +3676,7 @@ sub register_stream_handle($$$)
 #   Description  - Determine whether a certain feature is available with the
 #                  version of Monotone that is currently being used.
 #
-#   Data         - $this         : The object.
+#   Data         - $self         : The object.
 #                  $feature      : A constant specifying the feature that is
 #                                  to be checked for.
 #                  Return Value  : True if the feature is supported, otherwise
@@ -3607,7 +3689,9 @@ sub register_stream_handle($$$)
 sub supports($$)
 {
 
-    my($this, $feature) = @_;
+    my($self, $feature) = @_;
+
+    my $this = $class_records{$self->{$class_name}};
 
     if ($feature == MTN_DROP_ATTRIBUTE
 	|| $feature == MTN_GET_ATTRIBUTES
@@ -3727,7 +3811,7 @@ sub supports($$)
 #                  setting. The default setting is to perform UTF-8
 #                  conversion.
 #
-#   Data         - $this     : Either the object, the package name or not
+#   Data         - $self     : Either the object, the package name or not
 #                              present depending upon how this method is
 #                              called.
 #                  $suppress : True if UTF-8 conversion is not to be done,
@@ -3740,12 +3824,14 @@ sub supports($$)
 sub suppress_utf8_conversion($$)
 {
 
-    my $this;
+    my($self,
+       $this);
     if ($_[0]->isa(__PACKAGE__))
     {
 	if (ref($_[0]) ne "")
 	{
-	    $this = shift();
+	    $self = shift();
+	    $this = $class_records{$self->{$class_name}};
 	}
 	else
 	{
@@ -3754,7 +3840,7 @@ sub suppress_utf8_conversion($$)
     }
     my $suppress = $_[0];
 
-    if (defined($this))
+    if (defined($self))
     {
 	$this->{convert_to_utf8} = $suppress ? undef : 1;
     }
@@ -3774,7 +3860,7 @@ sub suppress_utf8_conversion($$)
 #                  subprocess. The default action is to do so as this is
 #                  generally safer.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $switch      : True if the mtn subprocess should be started
 #                                 in a workspace's root directory, otherwise
 #                                 false if it should be started in the current
@@ -3788,12 +3874,14 @@ sub suppress_utf8_conversion($$)
 sub switch_to_ws_root($$)
 {
 
-    my $this;
+    my($self,
+       $this);
     if ($_[0]->isa(__PACKAGE__))
     {
 	if (ref($_[0]) ne "")
 	{
-	    $this = shift();
+	    $self = shift();
+	    $this = $class_records{$self->{$class_name}};
 	}
 	else
 	{
@@ -3802,21 +3890,21 @@ sub switch_to_ws_root($$)
     }
     my $switch = $_[0];
 
-    if (defined($this))
+    if (defined($self))
     {
 	if (! $this->{ws_constructed})
 	{
 	    if ($this->{cd_to_ws_root} && ! $switch)
 	    {
 		$this->{cd_to_ws_root} = undef;
-		$this->closedown();
-		$this->startup();
+		$self->closedown();
+		$self->startup();
 	    }
 	    elsif (! $this->{cd_to_ws_root} && $switch)
 	    {
 		$this->{cd_to_ws_root} = 1;
-		$this->closedown();
-		$this->startup();
+		$self->closedown();
+		$self->startup();
 	    }
 	}
 	else
@@ -4063,7 +4151,7 @@ sub parse_kv_record($$$$;$)
 #                  data is either returned in one large lump (scalar
 #                  reference), or an array of lines (array reference).
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $cmd         : The mtn automate command that is to be run.
 #                  $out_as_utf8 : True if any data output to mtn should be
 #                                 converted into raw UTF-8, otherwise false if
@@ -4091,9 +4179,9 @@ sub parse_kv_record($$$$;$)
 sub mtn_command($$$$$;@)
 {
 
-    my($this, $cmd, $out_as_utf8, $in_as_utf8, $ref, @parameters) = @_;
+    my($self, $cmd, $out_as_utf8, $in_as_utf8, $ref, @parameters) = @_;
 
-    return $this->mtn_command_with_options($cmd,
+    return $self->mtn_command_with_options($cmd,
 					   $out_as_utf8,
 					   $in_as_utf8,
 					   $ref,
@@ -4111,7 +4199,7 @@ sub mtn_command($$$$$;@)
 #                  data is either returned in one large lump (scalar
 #                  reference), or an array of lines (array reference).
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $cmd         : The mtn automate command that is to be run.
 #                  $out_as_utf8 : True if any data output to mtn should be
 #                                 converted into raw UTF-8, otherwise false if
@@ -4141,7 +4229,7 @@ sub mtn_command($$$$$;@)
 sub mtn_command_with_options($$$$$$;@)
 {
 
-    my($this, $cmd, $out_as_utf8, $in_as_utf8, $ref, $options, @parameters)
+    my($self, $cmd, $out_as_utf8, $in_as_utf8, $ref, $options, @parameters)
 	= @_;
 
     my($buffer,
@@ -4154,6 +4242,7 @@ sub mtn_command_with_options($$$$$$;@)
        $param,
        $read_ok,
        $retry);
+    my $this = $class_records{$self->{$class_name}};
 
     # Work out whether UTF-8 conversion is to be done at all.
 
@@ -4198,7 +4287,7 @@ sub mtn_command_with_options($$$$$$;@)
 	# Startup the subordinate mtn process if it hasn't already been
 	# started.
 
-	$this->startup() if ($this->{mtn_pid} == 0);
+	$self->startup() if ($this->{mtn_pid} == 0);
 
 	# Send the command.
 
@@ -4281,7 +4370,7 @@ sub mtn_command_with_options($$$$$$;@)
 	$db_locked_exception = $read_ok = $retry = undef;
 	eval
 	{
-	    $read_ok = $this->mtn_read_output($buffer_ref);
+	    $read_ok = $self->mtn_read_output($buffer_ref);
 	    if ($read_ok && $in_as_utf8)
 	    {
 		local $@;
@@ -4312,7 +4401,7 @@ sub mtn_command_with_options($$$$$$;@)
 		# between a handled exit and one that should be dealt with.
 
 		$in = undef;
-		$this->closedown();
+		$self->closedown();
 		$db_locked_exception = 1;
 
 	    }
@@ -4334,7 +4423,7 @@ sub mtn_command_with_options($$$$$$;@)
 		|| $this->{error_msg} =~ m/$database_locked_re/)
 	    {
 		$this->{db_is_locked} = 1;
-		$retry = &$handler($this, $handler_data);
+		$retry = &$handler($self, $handler_data);
 	    }
 
 	    # If we are to retry then close down the subordinate mtn process,
@@ -4343,7 +4432,7 @@ sub mtn_command_with_options($$$$$$;@)
 	    if ($retry)
 	    {
 		$in = undef;
-		$this->closedown();
+		$self->closedown();
 	    }
 	    else
 	    {
@@ -4371,7 +4460,7 @@ sub mtn_command_with_options($$$$$$;@)
 #   Description  - Reads the output from mtn as format 1, removing chunk
 #                  headers.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to the buffer that is to contain
 #                                 the data.
 #                  Return Value : True on success, otherwise false on failure.
@@ -4383,7 +4472,7 @@ sub mtn_command_with_options($$$$$$;@)
 sub mtn_read_output_format_1($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
     my($bytes_read,
        $char,
@@ -4401,6 +4490,7 @@ sub mtn_read_output_format_1($$)
        $last,
        $offset,
        $size);
+    my $this = $class_records{$self->{$class_name}};
 
     $err = $this->{mtn_err};
 
@@ -4433,7 +4523,7 @@ sub mtn_read_output_format_1($$)
 
 	while ($this->{poll}->poll($handler_timeout) == 0)
 	{
-	    &$handler($this, $handler_data);
+	    &$handler($self, $handler_data);
 	}
 
 	# If necessary, read in and process the chunk header, then we know how
@@ -4537,7 +4627,7 @@ sub mtn_read_output_format_1($$)
 #   Description  - Reads the output from mtn as format 2, removing chunk
 #                  headers.
 #
-#   Data         - $this        : The object.
+#   Data         - $self        : The object.
 #                  $buffer      : A reference to the buffer that is to contain
 #                                 the data.
 #                  Return Value : True on success, otherwise false on failure.
@@ -4549,7 +4639,7 @@ sub mtn_read_output_format_1($$)
 sub mtn_read_output_format_2($$)
 {
 
-    my($this, $buffer) = @_;
+    my($self, $buffer) = @_;
 
     my($bytes_read,
        $buffer_ref,
@@ -4580,6 +4670,7 @@ sub mtn_read_output_format_2($$)
 			 offset     => 0},
 		   w => {buffer_ref => undef,
 			 offset     => 0});
+    my $this = $class_records{$self->{$class_name}};
 
     $err = $this->{mtn_err};
 
@@ -4627,7 +4718,7 @@ sub mtn_read_output_format_2($$)
 
 	while ($this->{poll}->poll($handler_timeout) == 0)
 	{
-	    &$handler($this, $handler_data);
+	    &$handler($self, $handler_data);
 	}
 
 	# If necessary, read in and process the chunk header, then we know how
@@ -4815,7 +4906,7 @@ sub mtn_read_output_format_2($$)
 #
 #   Description  - If necessary start up the mtn subprocess.
 #
-#   Data         - $this : The object.
+#   Data         - $self : The object.
 #
 ##############################################################################
 
@@ -4824,7 +4915,9 @@ sub mtn_read_output_format_2($$)
 sub startup($)
 {
 
-    my $this = $_[0];
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
 
     if ($this->{mtn_pid} == 0)
     {
@@ -4958,7 +5051,7 @@ sub startup($)
 		         == 0;
 		     ++ $i)
 		{
-		    &$io_wait_handler($this, $io_wait_handler_data);
+		    &$io_wait_handler($self, $io_wait_handler_data);
 		}
 		&$croaker("Cannot connect to service `"
 			  . $this->{network_service} . "'")
@@ -4987,7 +5080,7 @@ sub startup($)
 
 	# Get the interface version.
 
-	$this->interface_version(\$version);
+	$self->interface_version(\$version);
 	if ($version =~ m/^(\d+)\.(\d+)$/)
 	{
 	    $this->{mtn_aif_version} = $1;
@@ -5149,44 +5242,76 @@ sub validate_mtn_options($)
 #
 ##############################################################################
 #
-#   Routine      - create_object_data
+#   Routine      - create_object
 #
-#   Description  - Creates the record for the Monotone::AutomateStdio object.
+#   Description  - Actually creates a Monotone::AutomateStdio object.
 #
-#   Data         - Return Value : A reference to an anonymous hash containing
-#                                 a complete list of initialisd fields.
+#   Data         - $class       : The name of the class that the new object
+#                                 should be blessed as.
+#                  Return Value : A new Monotone::AutomateStdio object.
 #
 ##############################################################################
 
 
 
-sub create_object_data()
+sub create_object($)
 {
 
-    return {db_name                 => undef,
-	    ws_path                 => undef,
-	    network_service         => undef,
-	    ws_constructed          => undef,
-	    cd_to_ws_root           => $cd_to_ws_root,
-	    convert_to_utf8         => $convert_to_utf8,
-	    mtn_options             => undef,
-	    mtn_pid                 => 0,
-	    mtn_in                  => undef,
-	    mtn_out                 => undef,
-	    mtn_err                 => undef,
-	    poll                    => undef,
-	    error_msg               => "",
-	    honour_suspend_certs    => 1,
-	    mtn_aif_version         => undef,
-	    cmd_cnt                 => 0,
-	    p_stream_handle         => undef,
-	    t_stream_handle         => undef,
-	    db_is_locked            => undef,
-	    db_locked_handler       => undef,
-	    db_locked_handler_data  => undef,
-	    io_wait_handler         => undef,
-	    io_wait_handler_data    => undef,
-	    io_wait_handler_timeout => 1};
+    my $class = $_[0];
+
+    my ($id,
+	$self,
+	$this);
+
+    # Create the object's data record.
+
+    $this = {db_name                 => undef,
+	     ws_path                 => undef,
+	     network_service         => undef,
+	     ws_constructed          => undef,
+	     cd_to_ws_root           => $cd_to_ws_root,
+	     convert_to_utf8         => $convert_to_utf8,
+	     mtn_options             => undef,
+	     mtn_pid                 => 0,
+	     mtn_in                  => undef,
+	     mtn_out                 => undef,
+	     mtn_err                 => undef,
+	     poll                    => undef,
+	     error_msg               => "",
+	     honour_suspend_certs    => 1,
+	     mtn_aif_version         => undef,
+	     cmd_cnt                 => 0,
+	     p_stream_handle         => undef,
+	     t_stream_handle         => undef,
+	     db_is_locked            => undef,
+	     db_locked_handler       => undef,
+	     db_locked_handler_data  => undef,
+	     io_wait_handler         => undef,
+	     io_wait_handler_data    => undef,
+	     io_wait_handler_timeout => 1};
+
+    # Create the actual object, using it's memory address as a unique key and
+    # store that unique key in the object in a field named after this class for
+    # later reference (saves us having to keep calling refaddr()).
+
+    $self = bless({}, $class);
+    $id = refaddr($self);
+    $self->{$class_name} = $id;
+
+    # Now file the object's record in the records store, filed under the
+    # object's unique key. Also stash a reference to the new object in the
+    # objects store filed under the same key. This will be used for keeping
+    # track of objects when they get cloned in multi-threaded applications.
+
+    $class_records{$id} = $this;
+    $class_objects{$id} = $self;
+
+    # Make sure our maintenance reference to the object does not get counted so
+    # as to allow for normal destruction.
+
+    weaken($class_objects{$id});
+
+    return $self;
 
 }
 #
