@@ -560,8 +560,7 @@ key_store_state::decrypt_private_key(key_id const & id,
           get_passphrase(phrase, name, id, false, false);
         }
 
-      int cycles = 1;
-
+      int cycles = 0;
       for (;;)
         try
           {
@@ -575,14 +574,14 @@ key_store_state::decrypt_private_key(key_id const & id,
           }
         catch (Botan::Exception & e)
           {
+            cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
               % cycles % e.what());
-            E(cycles <= 3 && !non_interactive, origin::no_fault,
+            E(cycles < 3 && !non_interactive, origin::no_fault,
               F("failed to decrypt old private RSA key, probably incorrect "
                 "passphrase or missing 'get_passphrase' lua hook"));
 
             get_passphrase(phrase, name, id, false, false);
-            cycles++;
             continue;
           }
     }
