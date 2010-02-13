@@ -745,13 +745,17 @@ key_store::change_key_passphrase(key_id const & id)
   get_passphrase(new_phrase, name, id, true, false);
 
   unfiltered_pipe->start_msg();
-  Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
+  if (new_phrase().length())
+    Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                            s->rng->get(),
+                              s->rng->get(),
 #endif
-                            new_phrase(),
-                            "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
-                            Botan::RAW_BER);
+                              new_phrase(),
+                              "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
+                              Botan::RAW_BER);
+  else
+    Botan::PKCS8::encode(*priv, *unfiltered_pipe);
+
   unfiltered_pipe->end_msg();
   kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
                          origin::internal);
