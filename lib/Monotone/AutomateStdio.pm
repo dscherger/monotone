@@ -64,6 +64,7 @@ use IO::File;
 use IO::Poll qw(POLLHUP POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h);
+use Socket;
 use Symbol qw(gensym);
 
 # ***** GLOBAL DATA DECLARATIONS *****
@@ -90,17 +91,26 @@ use constant MTN_LUA                           => 15;
 use constant MTN_M_SELECTOR                    => 16;
 use constant MTN_P_SELECTOR                    => 17;
 use constant MTN_READ_PACKETS                  => 18;
-use constant MTN_SET_ATTRIBUTE                 => 19;
-use constant MTN_SET_DB_VARIABLE               => 20;
-use constant MTN_SHOW_CONFLICTS                => 21;
-use constant MTN_U_SELECTOR                    => 22;
-use constant MTN_W_SELECTOR                    => 23;
+use constant MTN_REMOTE_CONNECTIONS            => 19;
+use constant MTN_SET_ATTRIBUTE                 => 20;
+use constant MTN_SET_DB_VARIABLE               => 21;
+use constant MTN_SHOW_CONFLICTS                => 22;
+use constant MTN_STREAM_IO                     => 23;
+use constant MTN_SYNCHRONISATION               => 24;
+use constant MTN_U_SELECTOR                    => 25;
+use constant MTN_W_SELECTOR                    => 26;
 
 # Constants used to represent the different error levels.
 
 use constant MTN_SEVERITY_ALL     => 0x03;
 use constant MTN_SEVERITY_ERROR   => 0x01;
 use constant MTN_SEVERITY_WARNING => 0x02;
+
+# Constants used to represent data streams from Monotone that can be tied into
+# file handles by the caller.
+
+use constant MTN_P_STREAM => 0;
+use constant MTN_T_STREAM => 1;
 
 # Constant used to represent the exception thrown when interrupting waitpid().
 
@@ -246,6 +256,7 @@ my($db_locked_handler_data,
 # Constructors and destructor.
 
 sub new_from_db($;$$);
+sub new_from_service($$;$);
 sub new_from_ws($;$$);
 *new = *new_from_db;
 sub DESTROY($);
@@ -306,6 +317,7 @@ sub read_packets($$);
 sub register_db_locked_handler(;$$$);
 sub register_error_handler($;$$$);
 sub register_io_wait_handler(;$$$$);
+sub register_stream_handle($$$);
 sub roots($$);
 sub select($$$);
 sub set_attribute($$$$);
@@ -321,6 +333,8 @@ sub toposort($$@);
 
 *attributes = *get_attributes;
 *db_set = *set_db_variable;
+*pull = *sync;
+*push = *sync;
 
 # Private methods and routines.
 
@@ -365,16 +379,21 @@ our %EXPORT_TAGS = (capabilities => [qw(MTN_COMMON_KEY_HASH
 					MTN_M_SELECTOR
 					MTN_P_SELECTOR
 					MTN_READ_PACKETS
+					MTN_REMOTE_CONNECTIONS
 					MTN_SET_ATTRIBUTE
 					MTN_SET_DB_VARIABLE
 					MTN_SHOW_CONFLICTS
+					MTN_STREAM_IO
+					MTN_SYNCHRONISATION
 					MTN_U_SELECTOR
 					MTN_W_SELECTOR)],
 		    severities	 => [qw(MTN_SEVERITY_ALL
 					MTN_SEVERITY_ERROR
-					MTN_SEVERITY_WARNING)]);
+					MTN_SEVERITY_WARNING)],
+		    streams      => [qw(MTN_P_STREAM
+					MTN_T_STREAM)]);
 our @EXPORT = qw();
-Exporter::export_ok_tags(qw(capabilities severities));
+Exporter::export_ok_tags(qw(capabilities severities streams));
 our $VERSION = 0.06;
 #
 ##############################################################################
@@ -430,6 +449,71 @@ sub new_from_db($;$$)
     $this = create_object_data();
     $this->{db_name} = $db_name;
     $this->{ws_path} = $ws_path;
+    $this->{mtn_options} = $options;
+    bless($this, $class);
+
+    # Startup the mtn subprocess (also determining the interface version).
+
+    $this->startup();
+
+    return $this;
+
+}
+#
+##############################################################################
+#
+#   Routine      - new_from_service
+#
+#   Description  - Class constructor. Construct an object using the specified
+#                  Monotone service.
+#
+#   Data         - $class       : Either the name of the class that is to be
+#                                 created or an object of that class.
+#                  $service     : The name of the Monotone server to connect
+#                                 to, optionally followed by a colon and the
+#                                 port number.
+#                  $options     : A reference to a list containing a list of
+#                                 options to use on the mtn subprocess.
+#                  Return Value : A reference to the newly created object.
+#
+##############################################################################
+
+
+
+sub new_from_service($$;$)
+{
+
+
+    my $class = (ref($_[0]) ne "") ? ref($_[0]) : $_[0];
+    shift();
+    my($service, $options) = @_;
+    $options = [] unless (defined($options));
+
+    my($server,
+       $this);
+
+    # Check all the arguments given to us.
+
+    validate_mtn_options($options);
+
+    # Check that the server is know to us.
+
+    if ($service =~ m/^([^:]+):\d+$/)
+    {
+	$server = $1;
+    }
+    else
+    {
+	$server = $service;
+    }
+    &$croaker("`" . $server . "' is not known")
+	unless (defined(inet_aton($server)));
+
+    # Actually construct the object.
+
+    $this = create_object_data();
+    $this->{db_name} = ":memory:";
+    $this->{network_service} = $service;
     $this->{mtn_options} = $options;
     bless($this, $class);
 
@@ -2749,6 +2833,77 @@ sub show_conflicts($$;$$$)
 #
 ##############################################################################
 #
+#   Routine      - sync
+#
+#   Description  - Synchronises database changes between the local database
+#                  and the specified remote server. This member function also
+#                  provides the implementation to the pull and push methods.
+#
+#   Data         - $this        : The object.
+#                  $options     : A reference to a list containing the options
+#                                 to use.
+#                  $service     : The name of the server to synchronise with,
+#                                 optionally followed by a colon and the port
+#                                 to connect to or a URI.
+#                  @patterns    : A list of branch patterns to include in the
+#                                 pull operation.
+#                  Return Value : True on success, otherwise false on failure.
+#
+##############################################################################
+
+
+
+sub sync($;$$@)
+{
+
+    my($this, $options, $service, @patterns) = @_;
+
+    my($cmd,
+       $dummy,
+       @opts);
+
+    # Find out how we were called (and hence the command that is to be run).
+
+    $cmd = (caller(0))[3];
+
+    # Process any options.
+
+    if (defined($options))
+    {
+	for (my $i = 0; $i < scalar(@$options); ++ $i)
+	{
+	    if ($$options[$i] eq "set-default")
+	    {
+		push(@opts, {key => $$options[$i], value => ""});
+	    }
+	    else
+	    {
+		push(@opts, {key => $$options[$i], value => $$options[++ $i]});
+	    }
+	}
+    }
+
+    # Run the command.
+
+    if (defined($service))
+    {
+	return $this->mtn_command_with_options($cmd,
+					       1,
+					       1,
+					       \$dummy,
+					       \@opts,
+					       $service,
+					       @patterns);
+    }
+    else
+    {
+	return $this->mtn_command_with_options($cmd, 1, 1, \$dummy, \@opts);
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - tags
 #
 #   Description  - Get all the tags attached to revisions on branches that
@@ -3389,6 +3544,51 @@ sub register_io_wait_handler(;$$$$)
 #
 ##############################################################################
 #
+#   Routine      - register_stream_handle
+#
+#   Description  - Register the specified file handle to receive data from the
+#                  specified mtn automate stdio output stream.
+#
+#   Data         - $this   : The object.
+#                  $stream : The mtn output stream from which data is to be
+#                            read and then written to the specified file
+#                            handle.
+#                  $handle : The file handle that is to receive the data from
+#                            the specified output stream. If this is not
+#                            provided then any existing file handle for that
+#                            stream is unregistered.
+#
+##############################################################################
+
+
+
+sub register_stream_handle($$$)
+{
+
+    my($this, $stream, $handle) = @_;
+
+    if (defined($handle)
+	&& ref($handle) !~ m/^IO::[^:]+/ && ref($handle) ne "GLOB")
+    {
+	croak("Handle must be either undef or a valid handle");
+    }
+    if ($stream == MTN_P_STREAM)
+    {
+	$this->{p_stream_handle} = $handle;
+    }
+    elsif ($stream == MTN_T_STREAM)
+    {
+	$this->{t_stream_handle} = $handle;
+    }
+    else
+    {
+	croak("Unknown stream specified");
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - supports
 #
 #   Description  - Determine whether a certain feature is available with the
@@ -3416,7 +3616,7 @@ sub supports($$)
 
 	# These are only available from version 0.36 (i/f version 5.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 5);
+	return 1 if ($this->{mtn_aif_version} >= 5);
 
     }
     elsif ($feature == MTN_IGNORING_OF_SUSPEND_CERTS
@@ -3426,7 +3626,7 @@ sub supports($$)
 
 	# These are only available from version 0.37 (i/f version 6.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 6);
+	return 1 if ($this->{mtn_aif_version} >= 6);
 
     }
     elsif ($feature == MTN_DROP_DB_VARIABLES
@@ -3438,7 +3638,7 @@ sub supports($$)
 
 	# These are only available from version 0.39 (i/f version 7.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 7);
+	return 1 if ($this->{mtn_aif_version} >= 7);
 
     }
     elsif ($feature == MTN_DB_GET)
@@ -3446,7 +3646,7 @@ sub supports($$)
 
 	# This is only available prior version 0.39 (i/f version 7.x).
 
-	return 1 if ($this->{mtn_aif_major} < 7);
+	return 1 if ($this->{mtn_aif_version} < 7);
 
     }
     elsif ($feature == MTN_GET_WORKSPACE_ROOT
@@ -3456,7 +3656,7 @@ sub supports($$)
 
 	# These are only available from version 0.41 (i/f version 8.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 8);
+	return 1 if ($this->{mtn_aif_version} >= 8);
 
     }
     elsif ($feature == MTN_CONTENT_DIFF_EXTRA_OPTIONS
@@ -3467,7 +3667,7 @@ sub supports($$)
 
 	# These are only available from version 0.42 (i/f version 9.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 9);
+	return 1 if ($this->{mtn_aif_version} >= 9);
 
     }
     elsif ($feature == MTN_M_SELECTOR || $feature == MTN_U_SELECTOR)
@@ -3475,8 +3675,8 @@ sub supports($$)
 
 	# These are only available from version 0.43 (i/f version 9.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 10
-		     || ($this->{mtn_aif_major} == 9
+	return 1 if ($this->{mtn_aif_version} >= 10
+		     || (int($this->{mtn_aif_version}) == 9
 			 && $mtn_version == 0.43));
 
     }
@@ -3485,25 +3685,30 @@ sub supports($$)
 
 	# These are only available from version 0.44 (i/f version 10.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 10);
+	return 1 if ($this->{mtn_aif_version} >= 10);
 
     }
     elsif ($feature == MTN_HASHED_SIGNATURES)
     {
 
-	# These are only available from version 0.45 (i/f version 11.x).
+	# This is only available from version 0.45 (i/f version 11.x).
 
-	return 1 if ($this->{mtn_aif_major} >= 11);
+	return 1 if ($this->{mtn_aif_version} >= 11);
+
+    }
+    elsif ($feature == MTN_REMOTE_CONNECTIONS
+	   || $feature == MTN_STREAM_IO
+	   || $feature == MTN_SYNCHRONISATION)
+    {
+
+	# These are only available from version 0.46 (i/f version 12.x).
+
+	return 1 if ($this->{mtn_aif_version} >= 12);
 
     }
     else
     {
-
-	# An unknown feature was requested.
-
-	$this->{error_msg} = "Unknown feature requested";
-	&$carper($this->{error_msg});
-
+	croak("Unknown feature requested");
     }
 
     return;
@@ -4501,7 +4706,62 @@ sub mtn_read_output_format_2($$)
 	    }
 	    else
 	    {
+
+		my($data,
+		   $data_ref,
+		   $fh);
+
+		# We have finished processing the current data chunk so if it
+		# belongs to a stream that is to be redirected to a file handle
+		# then send the data down it.
+
+		if (defined($this->{p_stream_handle}) && $stream eq "p")
+		{
+
+		    # The p or progress stream is simply text so just send the
+		    # data.
+
+		    $fh = $this->{p_stream_handle};
+		    $data_ref = $buffers{p}->{buffer_ref};
+
+		}
+		elsif (defined($this->{t_stream_handle}) && $stream eq "t")
+		{
+
+		    # The t or ticker stream contains messages and not
+		    # unstructured text so send the raw data straight through
+		    # (i.e. include the headers).
+
+		    $fh = $this->{t_stream_handle};
+		    $data = $header . $buffers{p}->{buffer_ref};
+		    $data_ref = \$data;
+
+		}
+		if (defined($fh))
+		{
+		    my($bytes_written,
+		       $offset,
+		       $size);
+		    $offset = 0;
+		    $size = length($$data_ref);
+		    while ($size > 0)
+		    {
+			if (! defined($bytes_written = syswrite($fh,
+								$$data_ref,
+								$size,
+								$offset)))
+			{
+			    croak("syswrite failed: " . $!);
+			}
+			$size -= $bytes_written;
+			$offset += $bytes_written;
+		    }
+		    $$buffer_ref = "";
+		    $$offset_ref = 0;
+		}
+
 		$chunk_start = 1;
+
 	    }
 	}
 	elsif ($size == 1)
@@ -4590,11 +4850,19 @@ sub startup($)
 	# subprocess.
 
 	@args = ("mtn");
-	push(@args, "--db=" . $this->{db_name}) if ($this->{db_name});
+	push(@args, "--db=" . $this->{db_name}) if (defined($this->{db_name}));
+	push(@args, "--quiet") if (defined($this->{network_service}));
 	push(@args, "--ignore-suspend-certs")
 	    if (! $this->{honour_suspend_certs});
 	push(@args, @{$this->{mtn_options}});
-	push(@args, "automate", "stdio");
+	if (defined($this->{network_service}))
+	{
+	    push(@args, "automate", "remote_stdio", $this->{network_service});
+	}
+	else
+	{
+	    push(@args, "automate", "stdio");
+	}
 
 	# Actually start the mtn subprocess. If a database name has been
 	# provided then run the mtn subprocess in the system's root directory
@@ -4607,7 +4875,7 @@ sub startup($)
 	$my_pid = $$;
 	eval
 	{
-	    if (defined($this->{db_name}))
+	    if (defined($this->{db_name}) || defined($this->{network_service}))
 	    {
 		die("chdir failed: " . $!)
 		    unless (chdir(File::Spec->rootdir()));
@@ -4680,6 +4948,22 @@ sub startup($)
 	{
 	    my($char,
 	       $last_char);
+	    if (defined($this->{network_service}))
+	    {
+		my $poll_result;
+		for (my $i = 0;
+		     $i < 10
+		         && ($poll_result
+			     = $this->{poll}->poll($io_wait_handler_timeout))
+		         == 0;
+		     ++ $i)
+		{
+		    &$io_wait_handler($this, $io_wait_handler_data);
+		}
+		&$croaker("Cannot connect to service `"
+			  . $this->{network_service} . "'")
+		    if ($poll_result == 0);
+	    }
 	    $char = "";
 	    do
 	    {
@@ -4704,8 +4988,14 @@ sub startup($)
 	# Get the interface version.
 
 	$this->interface_version(\$version);
-	($this->{mtn_aif_major}, $this->{mtn_aif_minor}) =
-	    ($version =~ m/^(\d+)\.(\d+)$/);
+	if ($version =~ m/^(\d+)\.(\d+)$/)
+	{
+	    $this->{mtn_aif_version} = $1;
+	}
+	else
+	{
+	    &$croaker("Cannot get automate stdio interface version number");
+	}
 
     }
 
@@ -4875,6 +5165,7 @@ sub create_object_data()
 
     return {db_name                 => undef,
 	    ws_path                 => undef,
+	    network_service         => undef,
 	    ws_constructed          => undef,
 	    cd_to_ws_root           => $cd_to_ws_root,
 	    convert_to_utf8         => $convert_to_utf8,
@@ -4886,9 +5177,10 @@ sub create_object_data()
 	    poll                    => undef,
 	    error_msg               => "",
 	    honour_suspend_certs    => 1,
-	    mtn_aif_major           => 0,
-	    mtn_aif_minor           => 0,
+	    mtn_aif_version         => undef,
 	    cmd_cnt                 => 0,
+	    p_stream_handle         => undef,
+	    t_stream_handle         => undef,
 	    db_is_locked            => undef,
 	    db_locked_handler       => undef,
 	    db_locked_handler_data  => undef,
