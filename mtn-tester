@@ -665,6 +665,7 @@ Tony Cooper.
 EOF
 readline(STDIN);
 
+Monotone::AutomateStdio->suppress_utf8_conversion(1);
 $mtn = Monotone::AutomateStdio->new(["--key" => $key_id]);
 
 $data = undef;
