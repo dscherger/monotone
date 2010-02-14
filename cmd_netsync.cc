@@ -244,6 +244,13 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   app.opts.non_interactive = true;
 
+  if (app.opts.dbname.empty())
+    {
+      W(F("No database given; assuming ':memory:' database. This means that we can't\n"
+          "verify the server key, because we have no record of what it should be."));
+      app.opts.dbname_is_memory = true;
+    }
+
   database db(app);
   key_store keys(app);
   project_t project(db);
@@ -367,6 +374,13 @@ CMD_AUTOMATE_NO_STDIO(remote,
 {
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
+
+  if (app.opts.dbname.empty())
+    {
+      W(F("No database given; assuming ':memory:' database. This means that we can't\n"
+          "verify the server key, because we have no record of what it should be."));
+      app.opts.dbname_is_memory = true;
+    }
 
   database db(app);
   key_store keys(app);
