@@ -88,6 +88,8 @@ void reactor::remove(shared_ptr<reactable> item)
     {
       items.erase(i);
       have_pipe = false;
+      if (readying)
+        item->remove_from_probe(probe);
     }
 }
 
