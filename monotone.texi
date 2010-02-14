@@ -11377,6 +11377,13 @@ or @option{pull}, as given by the @var{what} argument.
 When called by a monotone instance which is not running the @option{serve}
 command, this function has no effect.
 
+@item server_set_listening(@var{boolean})
+
+If the argument is @var{false}, make the server not listen for incoming
+connections, and exit when all existing connections have closed.
+
+If the argument is @var{true}, cancel an earlier call with @var{false} given.
+
 @item sleep(@var{seconds})
 
 Makes the calling process sleep for the specified number of seconds.

@@ -102,7 +102,16 @@ function netsync.start(opts, n, min)
 	       end
   local mt_wait = mt.wait
   mt.check = function(obj) return not mt_wait(obj, 0) end
-  mt.wait = nil -- using this would hang; don't allow it
+  mt.wait = function(obj, timeout)
+	       if timeout == nil then
+		  timeout = 5
+		  L(locheader(), "You really should give an argument to server.wait()\n")
+	       end
+	       if type(timeout) ~= "number" then
+		  err("Bad timeout of type "..type(timeout))
+	       end
+	       return mt_wait(obj, timeout)
+	    end
   -- wait for "beginning service..."
   while fsize(out.prefix .. "stderr") == 0 do
     sleep(1)

@@ -256,6 +256,25 @@ session_from_server_sync_item(app_state & app,
     }
 }
 
+enum listener_status { listener_listening, listener_not_listening };
+listener_status desired_listener_status;
+LUAEXT(server_set_listening, )
+{
+  if (lua_isboolean(LS, 1))
+    {
+      bool want_listen = lua_toboolean(LS, 1);
+      if (want_listen)
+        desired_listener_status = listener_listening;
+      else
+        desired_listener_status = listener_not_listening;
+      return 0;
+    }
+  else
+    {
+      return luaL_error(LS, "bad argument (not a boolean)");
+    }
+}
+
 static void
 serve_connections(app_state & app,
                   options & opts,
@@ -278,6 +297,8 @@ serve_connections(app_state & app,
                                            react, role, addresses,
                                            guard, use_ipv6));
   react.add(listen, *guard);
+  desired_listener_status = listener_listening;
+  listener_status actual_listener_status = listener_listening;
 
   while (true)
     {
@@ -304,11 +325,33 @@ serve_connections(app_state & app,
             }
         }
 
+      if (desired_listener_status != actual_listener_status)
+        {
+          switch (desired_listener_status)
+            {
+            case listener_listening:
+              react.add(listen, *guard);
+              actual_listener_status = listener_listening;
+              break;
+            case listener_not_listening:
+              react.remove(listen);
+              actual_listener_status = listener_not_listening;
+              break;
+            }
+        }
+      if (!react.size())
+        break;
+
       react.do_io();
 
       react.prune();
 
-      if (react.size() == 1 /* 1 listener + 0 sessions */)
+      int num_sessions;
+      if (actual_listener_status == listener_listening)
+        num_sessions = react.size() - 1;
+      else
+        num_sessions = react.size();
+      if (num_sessions == 0)
         {
           // Let the guard die completely if everything's gone quiet.
           guard->commit();
