@@ -64,7 +64,7 @@ function prepare_to_enumerate_tests(P)
 end
 
 function L(...)
-  test.log:write(unpack(arg))
+  test.log:write(...)
   test.log:flush()
 end
 
@@ -360,16 +360,16 @@ do
   oldspawn = spawn
   function spawn(...)
    if redir == nil then
-     return oldspawn(unpack(arg))
+     return oldspawn(...)
    else
-     return spawn_redirected(redir.fin, redir.fout, redir.ferr, unpack(arg))
+     return spawn_redirected(redir.fin, redir.fout, redir.ferr, ...)
    end
   end
 end
 function execute(path, ...)
    local pid
    local ret = -1
-   pid = spawn(path, unpack(arg))
+   pid = spawn(path, ...)
    redir = nil
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
@@ -504,7 +504,7 @@ function greplines(f, t)
 end
 
 function grep(...)
-  local flags, what, where = unpack(arg)
+  local flags, what, where = ...
   local dogrep = function ()
                    if where == nil and string.sub(flags, 1, 1) ~= "-" then
                      where = what
@@ -557,7 +557,7 @@ function cat(...)
 end
 
 function tail(...)
-  local file, num = unpack(arg)
+  local file, num = ...
   local function dotail()
     if num == nil then num = 10 end
     local mylines = {}
@@ -803,7 +803,7 @@ end
 
 function check(first, ...)
   if type(first) == "table" then
-    return runcheck(first, unpack(arg))
+    return runcheck(first, ...)
   elseif type(first) == "boolean" then
     if not first then err("Check failed: false", 2) end
   elseif type(first) == "number" then
@@ -823,7 +823,7 @@ function skip_if(chk)
 end
 
 function xfail_if(chk, ...)
-  local ok,res = pcall(check, unpack(arg))
+  local ok,res = pcall(check, ...)
   if ok == false then
     if chk then err(false, 2) else err(err, 2) end
   else
@@ -835,7 +835,7 @@ function xfail_if(chk, ...)
 end
 
 function xfail(...)
-   xfail_if(true, unpack(arg))
+   xfail_if(true, ...)
 end
 
 function log_error(e)
@@ -855,8 +855,8 @@ function run_tests(debugging, list_only, run_dir, logname, args, progress)
   local run_all = true
 
   local function P(...)
-     progress(unpack(arg))
-     logfile:write(unpack(arg))
+     progress(...)
+     logfile:write(...)
   end
 
   -- NLS nuisances.

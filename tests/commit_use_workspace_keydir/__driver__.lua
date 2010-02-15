@@ -16,7 +16,7 @@ function mtn_default_keydir(...)
   return {monotone_path, "--no-default-confdir",
      "--norc", "--root=" .. test.root, "--db", "test.db",
   	  "--rcfile", test.root .. "/test_hooks.lua",
-          "--key=tester@test.net", unpack(arg)}
+          "--key=tester@test.net", ...}
 end
 
 addfile("randomfile", "random stuff")

@@ -72,8 +72,7 @@ do
    local saved_note_netsync_start = note_netsync_start
    function note_netsync_start(nonce, ...)
       if saved_note_netsync_start then
-	 saved_note_netsync_start(nonce,
-				  unpack(arg))
+	 saved_note_netsync_start(nonce, ...)
       end
       if debug then
 	 io.stderr:write("note_netsync_start: initialise branches\n")
@@ -84,8 +83,7 @@ do
    local saved_note_netsync_cert_received = note_netsync_cert_received
    function note_netsync_cert_received(rev_id, key, name, value, nonce, ...)
       if saved_note_netsync_cert_received then
-	 saved_note_netsync_cert_received(rev_id, key, name, value, nonce,
-					  unpack(arg))
+	 saved_note_netsync_cert_received(rev_id, key, name, value, nonce, ...)
       end
       if debug then
 	 io.stderr:write("note_netsync_cert_received: cert ", name,
@@ -103,8 +101,7 @@ do
    local saved_note_netsync_revision_received = note_netsync_revision_received
    function note_netsync_revision_received(new_id, revision, certs, nonce, ...)
       if saved_note_netsync_revision_received then
-	 saved_note_netsync_revision_received(new_id, revision, certs, nonce,
-					      unpack(arg))
+	 saved_note_netsync_revision_received(new_id, revision, certs, nonce, ...)
       end
       for _, item in pairs(certs)
       do
@@ -135,7 +132,7 @@ do
 				certs_in, certs_out,
 				revs_in, revs_out,
 				keys_in, keys_out,
-				unpack(arg))
+				...)
       end
       if debug then
 	 io.stderr:write("note_netsync_end: ",
@@ -216,7 +213,7 @@ do
    local saved_note_mtn_startup = note_mtn_startup
    function note_mtn_startup(...)
       if saved_note_mtn_startup then
-	 saved_note_mtn_startup(unpack(arg))
+	 saved_note_mtn_startup(...)
       end
 
       if debug then

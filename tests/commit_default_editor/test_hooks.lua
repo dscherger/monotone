@@ -1,6 +1,6 @@
 
 function execute(path,...) 
-   tname, rest = unpack(arg)
+   tname, rest = ...
    if tname == nil then
       return 1
    end

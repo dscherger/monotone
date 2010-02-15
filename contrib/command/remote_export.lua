@@ -53,7 +53,7 @@ function command_remote_export(host, selector, directory)
                             "--quiet",
                             "--remote-stdio-host="..host,
                             "--",
-                            unpack(arg))
+                            ...)
     end
 
     local splitlines = function(str)

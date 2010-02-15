@@ -4,11 +4,11 @@
 skip_if(no_network_tests)
 
 function mtn2(...)
-  return mtn("--db=test2.db", "--keydir=keys2", unpack(arg))
+  return mtn("--db=test2.db", "--keydir=keys2", ...)
 end
 
 function mtn3(...)
-  return mtn("--db=test3.db", "--keydir=keys3", unpack(arg))
+  return mtn("--db=test3.db", "--keydir=keys3", ...)
 end
 
 netsync = {}

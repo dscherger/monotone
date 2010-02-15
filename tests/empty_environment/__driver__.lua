@@ -10,10 +10,10 @@ function noenv_mtn(...)
   if save_LD_LIBRARY_PATH then
     return {"env", "-i",
             "LD_LIBRARY_PATH="..save_LD_LIBRARY_PATH,
-            unpack(mtn(unpack(arg)))}
+            unpack(mtn(...))}
   else
     return {"env", "-i",
-            unpack(mtn(unpack(arg)))}
+            unpack(mtn(...))}
   end
 end
 

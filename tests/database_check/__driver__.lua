@@ -14,7 +14,7 @@ files = {}
 rosters = {}
 
 function dbex(...)
-  check(mtn("db", "execute", string.format(unpack(arg))), 0, false, false)
+  check(mtn("db", "execute", string.format(...)), 0, false, false)
 end
 
 check(mtn("add", "file1"), 0, false, false)

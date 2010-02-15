@@ -30,7 +30,7 @@ end
 function execute(path, ...)
    local pid
    local ret = -1
-   pid = spawn(path, unpack(arg))
+   pid = spawn(path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -39,7 +39,7 @@ function execute_redirected(stdin, stdout, stderr, path, ...)
    local pid
    local ret = -1
    io.flush();
-   pid = spawn_redirected(stdin, stdout, stderr, path, unpack(arg))
+   pid = spawn_redirected(stdin, stdout, stderr, path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -49,7 +49,7 @@ end
 -- This is needed to work around some brokenness with some merge tools
 -- (e.g. on OS X)
 function execute_confirm(path, ...)
-   ret = execute(path, unpack(arg))
+   ret = execute(path, ...)
 
    if (ret ~= 0)
    then
