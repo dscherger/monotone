@@ -1253,6 +1253,30 @@ lua_hooks::hook_note_mtn_startup(args_vector const & args)
   return ll.ok();
 }
 
+bool
+lua_hooks::hook_unmapped_git_author(string const & unmapped_author, string & fixed_author)
+{
+  return Lua(st)
+    .func("unmapped_git_author")
+    .push_str(unmapped_author)
+    .call(1,1)
+    .extract_str(fixed_author)
+    .ok();
+}
+
+bool
+lua_hooks::hook_validate_git_author(string const & author)
+{
+  bool valid = false, exec_ok = false;
+  exec_ok = Lua(st)
+    .func("validate_git_author")
+    .push_str(author)
+    .call(1,1)
+    .extract_bool(valid)
+    .ok();
+  return valid && exec_ok;
+}
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

@@ -13,6 +13,10 @@
 void read_mappings(system_path const & path,
                    std::map<std::string, std::string> & mappings);
 
+void validate_author_mappings(lua_hooks & lua,
+                              std::map<std::string,
+                                       std::string> const & authors);
+
 void import_marks(system_path const & marks_file,
                   std::map<revision_id, size_t> & marked_revs);
 
@@ -23,7 +27,7 @@ void load_changes(database & db,
                   std::vector<revision_id> const & revisions,
                   std::map<revision_id, git_change> & change_map);
 
-void export_changes(database & db,
+void export_changes(database & db, lua_hooks & lua,
                     std::vector<revision_id> const & revisions,
                     std::map<revision_id, size_t> & marked_revs,
                     std::map<std::string, std::string> const & author_map,

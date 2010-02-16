@@ -90,6 +90,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
     {
       P(F("reading author mappings from '%s'") % app.opts.authors_file);
       read_mappings(app.opts.authors_file, author_map);
+      validate_author_mappings(app.lua, author_map);
     }
 
   if (!app.opts.branches_file.empty())
@@ -122,7 +123,7 @@ CMD(git_export, "git_export", "", CMD_REF(vcs), (""),
   load_changes(db, revisions, change_map);
 
   // needs author and branch maps
-  export_changes(db,
+  export_changes(db, app.lua,
                  revisions, marked_revs,
                  author_map, branch_map, change_map,
                  app.opts.log_revids, app.opts.log_certs,

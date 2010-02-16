@@ -14,6 +14,7 @@
 #include "file_io.hh"
 #include "git_change.hh"
 #include "git_export.hh"
+#include "lua_hooks.hh"
 #include "outdated_indicator.hh"
 #include "project.hh"
 #include "revision.hh"
@@ -81,6 +82,19 @@ read_mappings(system_path const & path, map<string, string> & mappings)
 }
 
 void
+validate_author_mappings(lua_hooks & lua,
+                         map<string, string> const & authors)
+{
+  for (map<string, string>::const_iterator i = authors.begin(); 
+       i != authors.end(); ++i)
+    {
+      E(lua.hook_validate_git_author(i->second), origin::user,
+        F("invalid git author '%s' mapped from monotone author '%s'")
+        % i->second % i->first);
+    }
+}
+
+void
 import_marks(system_path const & marks_file,
              map<revision_id, size_t> & marked_revs)
 {
@@ -135,16 +149,16 @@ load_changes(database & db,
              vector<revision_id> const & revisions,
              map<revision_id, git_change> & change_map)
 {
-  // process revisions in reverse order and calculate the file changes for
+  // process revisions in reverse order and calculate the git changes for
   // each revision. these are cached in a map for use in the export phase
   // where revisions are processed in forward order. this trades off memory
   // for speed, loading rosters in reverse order is ~5x faster than loading
-  // them in forward order and the memory required for file changes is
+  // them in forward order and the memory required for git changes is
   // generally quite small. the memory required here should be comparable to
   // that for all of the revision texts in the database being exported.
   //
   // testing exports of a current monotone database with ~18MB of revision
-  // text in ~15K revisions and a current piding database with ~20MB of
+  // text in ~15K revisions and a current pidgin database with ~20MB of
   // revision text in ~27K revisions indicate that this is a reasonable
   // approach. the export process reaches around 203MB VSS and 126MB RSS
   // for the monotone database and around 206MB VSS and 129MB RSS for the
@@ -183,7 +197,7 @@ load_changes(database & db,
 }
 
 void
-export_changes(database & db,
+export_changes(database & db, lua_hooks & lua,
                vector<revision_id> const & revisions,
                map<revision_id, size_t> & marked_revs,
                map<string, string> const & author_map,
@@ -208,6 +222,9 @@ export_changes(database & db,
 
   ticker exported(_("exporting"), "r", 1);
   exported.set_total(revisions.size());
+
+  // keep a map of valid authors to avoid redundant lua validation calls
+  map<string, string> valid_authors(author_map);
 
   for (vector<revision_id>::const_iterator
          r = revisions.begin(); r != revisions.end(); ++r)
@@ -246,8 +263,8 @@ export_changes(database & db,
 
       // default to <unknown> committer and author if no author certs exist
       // this may be mapped to a different value with the authors-file option
-      string author_name = "<unknown>"; // used as the git author
-      string author_key  = "<unknown>"; // used as the git committer
+      string author_name = "Unknown <unknown>"; // used as the git author
+      string author_key  = "Unknown <unknown>"; // used as the git committer
       date_t author_date = date_t::now();
 
       cert_iterator author = authors.begin();
@@ -270,24 +287,50 @@ export_changes(database & db,
       // using the 'db execute' command. the following queries will list all
       // author keys and author cert values.
       //
-      // 'select distinct keypair from revision_certs'
+      // all values from author certs:
+      //
       // 'select distinct value from revision_certs where name = "author"'
+      //
+      // all keys that have signed author certs:
+      //
+      // 'select distinct public_keys.name 
+      //  from public_keys
+      //  left join revision_certs on revision_certs.keypair_id = public_keys.id
+      //  where revision_certs.name = "author"'
 
-      lookup_iterator key_lookup = author_map.find(author_key);
+      lookup_iterator key_lookup = valid_authors.find(author_key);
 
-      if (key_lookup != author_map.end())
-        author_key = key_lookup->second;
-      else if (author_key.find('<') == string::npos &&
-               author_key.find('>') == string::npos)
-        author_key = "<" + author_key + ">";
+      if (key_lookup != valid_authors.end())
+        {
+          author_key = key_lookup->second;
+        }
+      else
+        {
+          string unmapped_key;
+          lua.hook_unmapped_git_author(author_key, unmapped_key);
+          E(lua.hook_validate_git_author(unmapped_key), origin::user,
+            F("invalid git author '%s' from monotone author key '%s'")
+            % unmapped_key % author_key);
+          valid_authors.insert(make_pair(author_key, unmapped_key));
+          author_key = unmapped_key;
+        }
 
-      lookup_iterator name_lookup = author_map.find(author_name);
+      lookup_iterator name_lookup = valid_authors.find(author_name);
 
-      if (name_lookup != author_map.end())
-        author_name = name_lookup->second;
-      else if (author_name.find('<') == string::npos &&
-               author_name.find('>') == string::npos)
-        author_name = "<" + author_name + ">";
+      if (name_lookup != valid_authors.end())
+        {
+          author_name = name_lookup->second;
+        }
+      else
+        {
+          string unmapped_name;
+          lua.hook_unmapped_git_author(author_name, unmapped_name);
+          E(lua.hook_validate_git_author(unmapped_name), origin::user,
+            F("invalid git author '%s' from monotone author value '%s'")
+            % unmapped_name % author_name);
+          valid_authors.insert(make_pair(author_name, unmapped_name));
+          author_name = unmapped_name;
+        }
 
       cert_iterator date = dates.begin();
 

@@ -2,7 +2,7 @@ skip_if(not existsonpath("git"))
 
 mtn_setup()
 
-writefile("author.map", "tester@test.net = <other@test.net>\n")
+writefile("author.map", "tester@test.net = other <other@test.net>\n")
 
 writefile("file1", "file1")
 writefile("file2", "file2")
@@ -81,8 +81,8 @@ check(not exists("git.dir/file2"))
 check(indir("mtn.dir", mtn("log")), 0, true, false)
 check(qgrep("Author: tester@test.net", "stdout"))
 check(indir("git.dir", {"git", "log", "--summary", "--pretty=raw"}), 0, true, false)
-check(qgrep("author <other@test.net>", "stdout"))
-check(qgrep("committer <other@test.net>", "stdout"))
+check(qgrep("author other <other@test.net>", "stdout"))
+check(qgrep("committer other <other@test.net>", "stdout"))
 
 -- check branch refs
 

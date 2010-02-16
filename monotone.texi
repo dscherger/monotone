@@ -4025,14 +4025,14 @@ git commit message using the @option{--log-certs} option described in
 
 Monotone author names often look like raw email addresses such as
 @code{"user@@example.com"}. These are not considered valid by git
-which requires leading `<' and trailing `>' characters around email
-addresses and by convention often includes the display name with the
-email address such as @code{"User Name <user@@example.com>"}. The git
-exporter deals with this difference in several ways:
+which requires the display name and leading `<' and trailing `>'
+characters around email addresses such as @code{"User Name
+<user@@example.com>"}. The git exporter deals with this difference in
+several ways:
 @itemize
 @item
 revisions that don't have any author certs will default to using
-@code{<unknown>} for both the author and committer.
+@code{Unknown <unknown>} for both the author and committer.
 @item
 revisions that have one or more author certs will use the value of one
 author cert as the author and the key used to sign this cert as
@@ -4042,10 +4042,14 @@ both author and committer will be looked up in the file specified by
 the @option{--authors-file} option described in @ref{GIT} and
 translated to the specified value if found.
 @item
-any author or committer that does not contain both `<' and `>'
-characters will have an initial ``<' character and a final `>'
-character added so that they may form valid values.
+any author or committer value not found in the authors file will be
+processed by the @code{unmapped_git_author} hook which may adjust the
+value so that it represents a valid value.
 @end itemize
+All git author and committer values will be validated by the
+@code{validate_git_author} hook before being written to the output
+stream. The export will abort if any author or committer value is
+rejected by the validation hook.
 
 Branch names used by monotone are allowed to contain characters that
 are not considered valid by git. These may be mapped to other names
@@ -10056,7 +10060,10 @@ The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
 
 @verbatim
-$ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+$ mtn db execute 'select distinct public_keys.name 
+                  from public_keys
+                  left join revision_certs on revision_certs.keypair_id = public_keys.id
+                  where revision_certs.name = "author"'
 @end verbatim
 
 The @option{--branches-file} option may be used to map monotone branch
@@ -10068,9 +10075,9 @@ specified in the @var{branches-file} as:
 monotone-branch-name = git-branch-name
 @end verbatim
 
-Revisions with no author cert will use <unknown> for both the author
-and the committer. These can be mapped to other values using the
-@var{authors-file} option.
+Revisions with no author cert will use "Unknown <unknown>" for both
+the author and the committer. These can be mapped to other values
+using the @var{authors-file} option.
 
 The list of branches that might need to be mapped can be extracted
 from a monotone database with using the @command{ls branches} command:
@@ -11161,6 +11168,37 @@ attr_init_functions["mtn:manual_merge"] =
 
 The @code{binary_file} function is also defined as a Lua hook. See
 @ref{Default hooks}.
+
+@end ftable
+
+@subsection GIT Export Hooks
+
+Exporting monotone revisions in git-fast-import(1) format often
+requires translation of monotone author cert values and associated
+signing keys into corresponding git author and committer
+values. Translation of author and committer values and validation of
+the results is controlled by these hooks. See @ref{Default hooks}.
+
+@ftable @code
+
+@item unmapped_git_author(@var{author})
+
+This hook is called for any git author or committer value that does
+not come from the current @emph{author map} file. If no @emph{author
+map} file is specified this hook will be called for @emph{every}
+unique git author and committer value.  It may return the value
+unchanged or modify it in some way in an effort to ensure that it is
+valid. The default implementation attempts several common pattern
+replacements to produce valid authors from monotone authors.
+
+@item validate_git_author(@var{author})
+
+This hook is called before the git author or committer value is
+written to the export output stream. The @var{author} value is either
+the mapped value from the current @emph{author map} file or the value
+produced by the @code{unmapped_git_author} hook. This hook may return
+true if the author is valid or false if it is not. The export will be
+aborted if this hook returns false for any value.
 
 @end ftable
 

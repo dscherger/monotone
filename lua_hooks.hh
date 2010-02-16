@@ -196,6 +196,12 @@ public:
                              size_t revs_in, size_t revs_out,
                              size_t keys_in, size_t keys_out);
   bool hook_note_mtn_startup(args_vector const & args);
+
+  // git export hooks
+  bool hook_unmapped_git_author(std::string const & unmapped_author,
+                                std::string & fixed_author);
+  bool hook_validate_git_author(std::string const & author);
+
 };
 
 #endif // __LUA_HOOKS_HH__

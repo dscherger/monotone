@@ -1399,3 +1399,38 @@ do
       return push_hook_functions(notifier)
    end
 end
+
+-- to ensure only mapped authors are allowed through
+-- return "" from unmapped_git_author
+-- and validate_git_author will fail
+
+function unmapped_git_author(author)
+   -- replace "foo@bar" with "foo <foo@bar>"
+   name = author:match("^([^<>]+)@[^<>]+$")
+   if name then
+      return name .. " <" .. author .. ">"
+   end
+
+   -- replace "<foo@bar>" with "foo <foo@bar>"
+   name = author:match("^<([^<>]+)@[^<>]+>$")
+   if name then
+      return name .. " " .. author
+   end
+
+   -- replace "foo" with "foo <foo>"
+   name = author:match("^[^<>@]+$")
+   if name then
+      return name .. " <" .. name .. ">"
+   end
+
+   return author -- unchanged
+end
+
+function validate_git_author(author)
+   -- ensure author matches the "Name <email>" format git expects
+   if author:match("^[^<]+ <[^>]*>$") then
+      return true
+   end
+
+   return false
+end

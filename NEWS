@@ -4,6 +4,21 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Changes
 
+        - The default '<unknown>' author used by the git_export command has
+          changed to 'Unknown <unknown>' and must be changed in existing author
+          map files. The old '<unknown>' author will be rejected by the new
+          validate_git_author lua hook.
+
+        - The 'git_export' command now validates all git author and committer
+          values using a new 'validate_git_author' lua hook before they are
+          written to the output stream. The export will fail if any value is
+          rejected by this hook.
+
+        - The 'git_export' command now calls a new 'unmapped_git_author' lua
+          hook for all git author values not found in the author map file. The
+          default implementation of this hook attempts to produce valid git
+          authors using several default pattern replacements.
+
         New features
 
         - Added portuguese translation (thanks to Américo Monteiro)
