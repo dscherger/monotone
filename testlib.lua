@@ -528,11 +528,11 @@ function grep(...)
                    if where ~= nil then infile:close() end
                    return out
                  end
-  return {dogrep, logline = "grep "..cmd_as_str(arg)}
+  return {dogrep, logline = "grep "..cmd_as_str({...})}
 end
 
 function cat(...)
-  local arguments = arg
+  local arguments = {...}
   local function docat()
     local bsize = 8*1024
     for _,x in ipairs(arguments) do
@@ -553,7 +553,7 @@ function cat(...)
     end
     return 0
   end
-  return {docat, logline = "cat "..cmd_as_str(arg)}
+  return {docat, logline = "cat "..cmd_as_str({...})}
 end
 
 function tail(...)
@@ -572,7 +572,7 @@ function tail(...)
     end
     return 0
   end
-  return {dotail, logline = "tail "..cmd_as_str(arg)}
+  return {dotail, logline = "tail "..cmd_as_str({...})}
 end
 
 function sort(file)

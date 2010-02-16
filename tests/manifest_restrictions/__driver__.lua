@@ -87,7 +87,7 @@ check(mtn("add", "work/file4"), 0, false, false)
 function included(...)
   local missed = {}
   local ok = true
-  for _,x in ipairs(arg) do
+  for _,x in ipairs({...}) do
     if not qgrep("work/file"..x, "stdout") then
       table.insert(missed, x)
       ok = false
@@ -102,7 +102,7 @@ end
 function excluded(...)
   local missed = {}
   local ok = true
-  for _,x in ipairs(arg) do
+  for _,x in ipairs({...}) do
     if qgrep("work/file"..x, "stdout") then
       table.insert(missed, x)
       ok = false
