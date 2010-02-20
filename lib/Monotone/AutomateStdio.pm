@@ -63,8 +63,7 @@ use File::Spec;
 use IO::File;
 use IO::Poll qw(POLLHUP POLLIN POLLPRI);
 use IPC::Open3;
-use POSIX qw(:errno_h);
-use Scalar::Util qw(refaddr weaken);
+use POSIX qw(:errno_h :limits_h);
 use Socket;
 use Symbol qw(gensym);
 
@@ -127,11 +126,10 @@ use constant STRING          => 0x10;  # Any quoted string, possibly escaped.
 use constant STRING_ENUM     => 0x20;  # E.g. "rename_source".
 use constant STRING_LIST     => 0x40;  # E.g. "..." "...", possibly escaped.
 
-# Private structures for managing outside-in style objects.
+# Private structures for managing inside-out key caching style objects.
 
 my $class_name = __PACKAGE__;
-my(%class_objects,
-   %class_records);
+my %class_records;
 
 # Pre-compiled regular expressions for: finding the end of a quoted string
 # possibly containing escaped quotes (i.e. " preceeded by a non-backslash
@@ -260,14 +258,13 @@ my($db_locked_handler_data,
 
 # ***** FUNCTIONAL PROTOTYPES *****
 
-# Constructors, destructor and thread cloner.
+# Constructors and destructor.
 
 sub new_from_db($;$$);
 sub new_from_service($$;$);
 sub new_from_ws($;$$);
 *new = *new_from_db;
 sub DESTROY($);
-sub CLONE();
 
 # Public methods.
 
@@ -612,8 +609,6 @@ sub DESTROY($)
 
     my $self = $_[0];
 
-    my $id;
-
     # Make sure the destructor doesn't throw any exceptions and that any
     # existing exception status is preserved, otherwise constructor
     # exceptions could be lost. E.g. if the constructor throws an exception
@@ -629,58 +624,12 @@ sub DESTROY($)
     local $@;
     eval
     {
-	$self->closedown();
+	eval
+	{
+	    $self->closedown();
+	};
+	delete($class_records{$self->{$class_name}});
     };
-    $id = $self->{$class_name};
-    delete($class_objects{$id});
-    delete($class_records{$id});
-
-}
-#
-##############################################################################
-#
-#   Routine      - CLONE
-#
-#   Description  - Class thread cloner.
-#
-#   Data         - None.
-#
-##############################################################################
-
-
-
-sub CLONE()
-{
-
-    # Scan through the class registry, locating the newly cloned objects and
-    # update the class object store accordingly.
-
-    foreach my $old_id (CORE::keys(%class_objects))
-    {
-
-	my($new_id,
-	   $object);
-
-	# Look under the old id to find the newly cloned object.
-
-	$object = $class_objects{$old_id};
-	$new_id = refaddr($object);
-
-	# Update the entry for the class record by refiling it under the new
-	# unique id for the newly cloned object.
-
-	$class_records{$new_id} = $class_records{$old_id};
-	delete($class_records{$old_id});
-
-	# Update the id cache in the object itself and then refile our weak
-	# reference to the object (not counted) under its new unique id.
-
-	$object->{$class_name} = $new_id;
-	$class_objects{$new_id} = $object;
-	weaken($class_objects{$new_id});
-	delete($class_objects{$old_id});
-
-    }
 
 }
 #
@@ -862,7 +811,7 @@ sub certs($$$)
 		foreach my $key ("key", "name", "signature", "trust", "value")
 		{
 		    &$croaker("Corrupt certs list, expected " . $key
-			      . " field but didn't find it")
+			      . " field but did not find it")
 			unless (exists($kv_record->{$key}));
 		}
 		push(@$ref, $kv_record);
@@ -1326,7 +1275,7 @@ sub get_attributes($$$)
 		if (exists($kv_record->{attr}))
 		{
 		    &$croaker("Corrupt attributes list, expected state field "
-			      . "but didn't find it")
+			      . "but did not find it")
 			unless (exists($kv_record->{state}));
 		    push(@$ref, {attribute => $kv_record->{attr}->[0],
 				 value     => $kv_record->{attr}->[1],
@@ -1668,7 +1617,7 @@ sub get_db_variables($$;$)
 		else
 		{
 		    &$croaker("Corrupt variables list, expected domain field "
-			      . "but didn't find it");
+			      . "but did not find it");
 		}
 	    }
 	}
@@ -1813,7 +1762,7 @@ sub get_manifest_of($$;$)
 		else
 		{
 		    &$croaker("Corrupt manifest, expected content field but "
-			      . "didn't find it");
+			      . "did not find it");
 		}
 	    }
 	    if ($lines[$i] =~ m/^ *dir \"/)
@@ -2315,7 +2264,7 @@ sub keys($$)
 		foreach my $key (@valid_fields)
 		{
 		    &$croaker("Corrupt keys list, expected " . $key
-			      . " field but didn't find it")
+			      . " field but did not find it")
 			unless (exists($kv_record->{$key}));
 		}
 		push(@$ref, $kv_record);
@@ -2816,9 +2765,7 @@ sub show_conflicts($$;$$$)
 
 	# Wrong number of arguments.
 
-	$this->{error_msg} = "Wrong number of arguments given";
-	&$carper($this->{error_msg});
-	return;
+	&$croaker("Wrong number of arguments given");
 
     }
 
@@ -2879,7 +2826,7 @@ sub show_conflicts($$;$$$)
 		    foreach my $key ("ancestor", "right")
 		    {
 			&$croaker("Corrupt show_conflicts list, expected "
-				  . $key . " field but didn't find it")
+				  . $key . " field but did not find it")
 			    unless (exists($kv_record->{$key}));
 		    }
 		}
@@ -3028,7 +2975,7 @@ sub tags($$;$)
 		    foreach my $key ("revision", "signer")
 		    {
 			&$croaker("Corrupt tags list, expected " . $key
-				  . " field but didn't find it")
+				  . " field but did not find it")
 			    unless (exists($kv_record->{$key}));
 		    }
 		    $kv_record->{branches} = []
@@ -3526,7 +3473,7 @@ sub register_error_handler($;$$$)
     }
     else
     {
-	croak("Unknown error handler severity");
+	&$croaker("Unknown error handler severity");
     }
 
 }
@@ -3652,7 +3599,7 @@ sub register_stream_handle($$$)
     if (defined($handle)
 	&& ref($handle) !~ m/^IO::[^:]+/ && ref($handle) ne "GLOB")
     {
-	croak("Handle must be either undef or a valid handle");
+	&$croaker("Handle must be either undef or a valid handle");
     }
     if ($stream == MTN_P_STREAM)
     {
@@ -3664,7 +3611,7 @@ sub register_stream_handle($$$)
     }
     else
     {
-	croak("Unknown stream specified");
+	&$croaker("Unknown stream specified");
     }
 
 }
@@ -3792,7 +3739,7 @@ sub supports($$)
     }
     else
     {
-	croak("Unknown feature requested");
+	&$croaker("Unknown feature requested");
     }
 
     return;
@@ -3971,7 +3918,7 @@ sub parse_revision_data($$)
 	    elsif (exists($kv_record->{add_file}))
 	    {
 		&$croaker("Corrupt revision, expected content field but "
-			  . "didn't find it")
+			  . "did not find it")
 		    unless (exists($kv_record->{content}));
 		push(@$list, {type    => "add_file",
 			      name    => $kv_record->{add_file},
@@ -3979,7 +3926,7 @@ sub parse_revision_data($$)
 	    }
 	    elsif (exists($kv_record->{clear}))
 	    {
-		&$croaker("Corrupt revision, expected attr field but didn't "
+		&$croaker("Corrupt revision, expected attr field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{attr}));
 		push(@$list, {type      => "clear",
@@ -4003,10 +3950,10 @@ sub parse_revision_data($$)
 	    }
 	    elsif (exists($kv_record->{patch}))
 	    {
-		&$croaker("Corrupt revision, expected from field but didn't "
+		&$croaker("Corrupt revision, expected from field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{from}));
-		&$croaker("Corrupt revision, expected to field but didn't "
+		&$croaker("Corrupt revision, expected to field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{to}));
 		push(@$list, {type         => "patch",
@@ -4016,7 +3963,7 @@ sub parse_revision_data($$)
 	    }
 	    elsif (exists($kv_record->{rename}))
 	    {
-		&$croaker("Corrupt revision, expected to field but didn't "
+		&$croaker("Corrupt revision, expected to field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{to}));
 		push(@$list, {type      => "rename",
@@ -4025,10 +3972,10 @@ sub parse_revision_data($$)
 	    }
 	    elsif (exists($kv_record->{set}))
 	    {
-		&$croaker("Corrupt revision, expected attr field but didn't "
+		&$croaker("Corrupt revision, expected attr field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{attr}));
-		&$croaker("Corrupt revision, expected value field but didn't "
+		&$croaker("Corrupt revision, expected value field but did not "
 			  . "find it")
 		    unless (exists($kv_record->{value}));
 		push(@$list, {type      => "set",
@@ -4237,7 +4184,6 @@ sub mtn_command_with_options($$$$$$;@)
        $db_locked_exception,
        $handler,
        $handler_data,
-       $in,
        $opt,
        $param,
        $read_ok,
@@ -4291,10 +4237,9 @@ sub mtn_command_with_options($$$$$$;@)
 
 	# Send the command.
 
-	$in = $this->{mtn_in};
 	if (scalar(@$options) > 0)
 	{
-	    printf($in "o");
+	    $this->{mtn_in}->print("o");
 	    foreach $opt (@$options)
 	    {
 		my($key,
@@ -4313,15 +4258,15 @@ sub mtn_command_with_options($$$$$$;@)
 		    $key_ref = \$opt->{key};
 		    $value_ref = \$opt->{value};
 		}
-		printf($in "%d:%s%d:%s",
-		       length($$key_ref),
-		       $$key_ref,
-		       length($$value_ref),
-		       $$value_ref);
+		$this->{mtn_in}->printf("%d:%s%d:%s",
+					length($$key_ref),
+					$$key_ref,
+					length($$value_ref),
+					$$value_ref);
 	    }
-	    printf($in "e ");
+	    $this->{mtn_in}->print("e ");
 	}
-	printf($in "l%d:%s", length($cmd), $cmd);
+	$this->{mtn_in}->printf("l%d:%s", length($cmd), $cmd);
 	foreach $param (@parameters)
 	{
 
@@ -4358,11 +4303,13 @@ sub mtn_command_with_options($$$$$$;@)
 			$param_ref = \$param;
 		    }
 		}
-		printf($in "%d:%s", length($$param_ref), $$param_ref);
+		$this->{mtn_in}->printf("%d:%s",
+					length($$param_ref),
+					$$param_ref);
 	    }
 
 	}
-	print($in "e\n");
+	$this->{mtn_in}->print("e\n");
 
 	# Attempt to read the output of the command, rethrowing any exception
 	# that does not relate to locked databases.
@@ -4371,21 +4318,6 @@ sub mtn_command_with_options($$$$$$;@)
 	eval
 	{
 	    $read_ok = $self->mtn_read_output($buffer_ref);
-	    if ($read_ok && $in_as_utf8)
-	    {
-		local $@;
-		eval
-		{
-		    $$buffer_ref = decode_utf8($$buffer_ref, Encode::FB_CROAK);
-		};
-		if ($@)
-		{
-		    $this->{error_msg} = "The output from Monotone was not "
-			. "UTF-8 encoded as expected";
-		    &$carper($this->{error_msg});
-		    return;
-		}
-	    }
 	};
 	if ($@)
 	{
@@ -4400,7 +4332,6 @@ sub mtn_command_with_options($$$$$$;@)
 		# get_pid() will return 0 and the caller can then distinguish
 		# between a handled exit and one that should be dealt with.
 
-		$in = undef;
 		$self->closedown();
 		$db_locked_exception = 1;
 
@@ -4411,10 +4342,26 @@ sub mtn_command_with_options($$$$$$;@)
 	    }
 	}
 
-	# Deal with locked database exceptions and any warning messages that
-	# appeared in the output.
+	# If the data was read in ok then carry out any necessary character set
+	# conversions. Otherwise deal with locked database exceptions and any
+	# warning messages that appeared in the output.
 
-	if (! $read_ok)
+	if ($read_ok && $in_as_utf8)
+	{
+	    local $@;
+	    eval
+	    {
+		$$buffer_ref = decode_utf8($$buffer_ref, Encode::FB_CROAK);
+	    };
+	    if ($@)
+	    {
+		$this->{error_msg} = "The output from Monotone was not UTF-8 "
+		    . "encoded as expected";
+		&$carper($this->{error_msg});
+		return;
+	    }
+	}
+	elsif (! $read_ok)
 	{
 
 	    # See if we are to retry on database locked conditions.
@@ -4431,7 +4378,6 @@ sub mtn_command_with_options($$$$$$;@)
 
 	    if ($retry)
 	    {
-		$in = undef;
 		$self->closedown();
 	    }
 	    else
@@ -4593,6 +4539,10 @@ sub mtn_read_output_format_1($$)
 						$offset)))
 	    {
 		croak("sysread failed: " . $!);
+	    }
+	    elsif ($bytes_read == 0)
+	    {
+		croak("Short data read");
 	    }
 	    $size -= $bytes_read;
 	    $offset += $bytes_read;
@@ -4792,6 +4742,10 @@ sub mtn_read_output_format_2($$)
 		{
 		    croak("sysread failed: " . $!);
 		}
+		elsif ($bytes_read == 0)
+		{
+		    croak("Short data read");
+		}
 		$size -= $bytes_read;
 		$$offset_ref += $bytes_read;
 	    }
@@ -4926,6 +4880,7 @@ sub startup($)
 	   $cwd,
 	   $file,
 	   $exception,
+	   $header_err,
 	   $line,
 	   $my_pid,
 	   $version);
@@ -4995,7 +4950,7 @@ sub startup($)
 
 		# In the child process so all we can do is complain and exit.
 
-		print(STDERR "open3 failed: " . $exception);
+		STDERR->print("open3 failed: " . $exception . "\n");
 		exit(1);
 
 	    }
@@ -5030,41 +4985,61 @@ sub startup($)
 		}
 	    }
 	    $file->close();
-	    &$croaker("Could not determine the version of Monotone")
+	    &$croaker("Could not determine the version of Monotone being used")
 		unless (defined($mtn_version));
 	}
 
 	# If the version is higher than 0.45 then we need to skip the header
-	# which is terminated by two blank lines.
+	# which is terminated by two blank lines (put any errors into
+	# $header_err as we need to defer any error reporting until later).
 
 	if ($mtn_version > 0.45)
 	{
-	    my($char,
-	       $last_char);
-	    if (defined($this->{network_service}))
+	    local $@;
+	    eval
 	    {
-		my $poll_result;
-		for (my $i = 0;
-		     $i < 10
-		         && ($poll_result
-			     = $this->{poll}->poll($io_wait_handler_timeout))
-		         == 0;
-		     ++ $i)
+
+		my($char,
+		   $last_char);
+
+		# If we are connecting to a network service then make sure that
+		# it has sent us something before doing a blocking read.
+
+		if (defined($this->{network_service}))
 		{
-		    &$io_wait_handler($self, $io_wait_handler_data);
+		    my $poll_result;
+		    for (my $i = 0;
+			 $i < 10
+			     && ($poll_result =
+				 $this->{poll}->poll($io_wait_handler_timeout))
+			     == 0;
+			 ++ $i)
+		    {
+			&$io_wait_handler($self, $io_wait_handler_data);
+		    }
+		    if ($poll_result == 0)
+		    {
+			$header_err = "Cannot connect to service `"
+			    . $this->{network_service} . "'";
+			die(1);
+		    }
 		}
-		&$croaker("Cannot connect to service `"
-			  . $this->{network_service} . "'")
-		    if ($poll_result == 0);
-	    }
-	    $char = "";
-	    do
-	    {
-		$last_char = $char;
-		&$croaker("Cannot get format header")
-		    unless (sysread($this->{mtn_out}, $char, 1));
-	    }
-	    while ($char ne "\n" || $last_char ne "\n")
+
+		# Skip the header.
+
+		$char = "";
+		do
+		{
+		    $last_char = $char;
+		    if (! sysread($this->{mtn_out}, $char, 1))
+		    {
+			$header_err = "Cannot get format header";
+			die(1);
+		    }
+		}
+		while ($char ne "\n" || $last_char ne "\n");
+
+	    };
 	}
 
 	# Set up the correct input handler depending upon the version of mtn.
@@ -5078,7 +5053,8 @@ sub startup($)
 	    *mtn_read_output = *mtn_read_output_format_1;
 	}
 
-	# Get the interface version.
+	# Get the interface version (remember also that if something failed
+	# above then this method will throw and exception giving the cause).
 
 	$self->interface_version(\$version);
 	if ($version =~ m/^(\d+)\.(\d+)$/)
@@ -5089,6 +5065,12 @@ sub startup($)
 	{
 	    &$croaker("Cannot get automate stdio interface version number");
 	}
+
+	# This should never happen as getting the interface version would have
+	# reported the real issue, but handle any header read issues just in
+	# case.
+
+	&$croaker($header_err) if (defined($header_err));
 
     }
 
@@ -5259,7 +5241,8 @@ sub create_object($)
 
     my $class = $_[0];
 
-    my ($id,
+    my ($counter,
+	$id,
 	$self,
 	$this);
 
@@ -5290,26 +5273,25 @@ sub create_object($)
 	     io_wait_handler_data    => undef,
 	     io_wait_handler_timeout => 1};
 
-    # Create the actual object, using it's memory address as a unique key and
-    # store that unique key in the object in a field named after this class for
-    # later reference (saves us having to keep calling refaddr()).
+    # Create the actual object and a unique key (using rand() and duplication
+    # detection), then store this unique key in the object in a field named
+    # after this class for later reference.
 
     $self = bless({}, $class);
-    $id = refaddr($self);
+    $counter = 0;
+    do
+    {
+	$id = int(rand(INT_MAX));
+	&$croaker("Exhausted unique object keys")
+	    if ((++ $counter) == INT_MAX);
+    }
+    while (exists($class_records{$id}));
     $self->{$class_name} = $id;
 
     # Now file the object's record in the records store, filed under the
-    # object's unique key. Also stash a reference to the new object in the
-    # objects store filed under the same key. This will be used for keeping
-    # track of objects when they get cloned in multi-threaded applications.
+    # object's unique key.
 
     $class_records{$id} = $this;
-    $class_objects{$id} = $self;
-
-    # Make sure our maintenance reference to the object does not get counted so
-    # as to allow for normal destruction.
-
-    weaken($class_objects{$id});
 
     return $self;
 
