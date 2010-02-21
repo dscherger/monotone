@@ -4429,7 +4429,6 @@ sub mtn_read_output_format_1($$)
        $chunk_start,
        $cmd_nr,
        $colons,
-       $err,
        $err_code,
        $err_occurred,
        $handler,
@@ -4441,8 +4440,6 @@ sub mtn_read_output_format_1($$)
        $offset,
        $size);
     my $this = $class_records{$self->{$class_name}};
-
-    $err = $this->{mtn_err};
 
     # Work out what I/O wait handler is to be used.
 
@@ -4499,13 +4496,13 @@ sub mtn_read_output_format_1($$)
 		    if ($char ne "m" && $char ne "l")
 		    {
 			croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			      . join("", <$err>));
+			      . join("", $this->{mtn_err}->getlines()));
 		    }
 		}
 		elsif ($char =~ m/\D$/)
 		{
 		    croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			  . join("", <$err>));
+			  . join("", $this->{mtn_err}->getlines()));
 		}
 	    }
 
@@ -4526,7 +4523,7 @@ sub mtn_read_output_format_1($$)
 	    else
 	    {
 		croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-		      . join("", <$err>));
+		      . join("", $this->{mtn_err}->getlines()));
 	    }
 
 	    $chunk_start = undef;
@@ -4601,7 +4598,6 @@ sub mtn_read_output_format_2($$)
        $chunk_start,
        $cmd_nr,
        $colons,
-       $err,
        $err_code,
        $err_occurred,
        $handler,
@@ -4630,8 +4626,6 @@ sub mtn_read_output_format_2($$)
 		         used       => undef},
 		   w => {buffer_ref => undef,
 			 offset     => 0});
-
-    $err = $this->{mtn_err};
 
     # Create the buffers.
 
@@ -4703,13 +4697,13 @@ sub mtn_read_output_format_2($$)
 		    if ($char !~ m/^[elmptw]$/)
 		    {
 			croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			      . join("", <$err>));
+			      . join("", $this->{mtn_err}->getlines()));
 		    }
 		}
 		elsif ($char =~ m/\D$/)
 		{
 		    croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-			  . join("", <$err>));
+			  . join("", $this->{mtn_err}->getlines()));
 		}
 	    }
 
@@ -4726,7 +4720,7 @@ sub mtn_read_output_format_2($$)
 	    else
 	    {
 		croak("Corrupt/missing mtn chunk header, mtn gave:\n"
-		      . join("", <$err>));
+		      . join("", $this->{mtn_err}->getlines()));
 	    }
 
 	    # Set up the current buffer and offset details.
