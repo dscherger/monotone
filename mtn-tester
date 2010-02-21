@@ -6,7 +6,6 @@
 use lib "<Location Of Monotone::AutomateStdio>";
 
 use strict;
-use integer;
 use warnings;
 
 use Carp qw(cluck);
@@ -17,7 +16,7 @@ use Data::Dumper;
 use GDBM_File;
 use IO::File;
 use IO::Handle;
-use Monotone::AutomateStdio qw(:capabilities :severities);
+use Monotone::AutomateStdio qw(:capabilities :severities :streams);
 use Data::Dumper;
 
 use constant RAW         => 0;
@@ -636,14 +635,67 @@ my @test_list =
       type => LIST,
       args => ["b8e6b77245cf29caa1f69bfb13749d785b13eac7",
 	       "805c482bc9bb80cd393be7d3ba01a65377d91d9c",
-	       "afd43cf2ce01fa4513fb1673eae47be3b48008f6"]});
+	       "afd43cf2ce01fa4513fb1673eae47be3b48008f6"]},
+
+     {fn   => undef,
+      desc => "sync/pull/push",
+      feat => MTN_SYNCHRONISATION,
+      type => CODE,
+      code => sub {
+	          foreach my $op ("sync", "pull", "push")
+		  {
+		      my($p_buffer,
+			 $pfh,
+			 $t_buffer,
+			 $tfh);
+		      $p_buffer = $t_buffer = "";
+		      open($pfh, ">", \$p_buffer);
+		      open($tfh, ">", \$t_buffer);
+		      $mtn->register_stream_handle(MTN_P_STREAM, $pfh);
+		      $mtn->register_stream_handle(MTN_T_STREAM, $tfh);
+		      &{$Monotone::AutomateStdio::{$op}}($mtn,
+							 [],
+							 "localhost",
+							 "*");
+		      $mtn->register_stream_handle(MTN_P_STREAM, undef);
+		      $mtn->register_stream_handle(MTN_T_STREAM, undef);
+		      $pfh->close();
+		      $tfh->close();
+		      print(" ----- Output of $op progress stream -----\n");
+		      print($p_buffer);
+		      print("\n ----------\n");
+		      print(" ----- Output of $op ticker stream -----\n");
+		      print($t_buffer);
+		      print("\n ----------\n");
+		  }
+		  $mtn->drop_db_variables("database");
+		  $mtn->drop_db_variables("known-servers");
+	      }},
+
+     {fn   => undef,
+      desc => "remote connections (getting a branch listing)",
+      feat => MTN_REMOTE_CONNECTIONS,
+      type => CODE,
+      code => sub {
+	          my(@branches,
+		     $rmtn);
+		  $rmtn = Monotone::AutomateStdio->
+		      new_from_service("localhost", ["--key" => $key_id]);
+		  $rmtn->branches(\@branches);
+		  foreach my $branch (@branches)
+		  {
+		      print($branch . "\n");
+		  }
+	      }});
 
 print <<EOF;
 Monotone::AutomateStdio Test Harness Script
 
 NOTE:
 1) This test harness needs a copy of the venge.net database and specifically
-   the net.venge.monotone.contrib.lib.automate-stdio.test branch.
+   the net.venge.monotone.contrib.lib.automate-stdio.test branch. It also needs
+   a Monotone server on the local machine for automate remote_stdio testing if
+   the version of Monotone is above 0.45.
 
 2) WARNING: This test harness does modify the database by adding some
    revisions. Do not sync these changes back into any proper database. Please

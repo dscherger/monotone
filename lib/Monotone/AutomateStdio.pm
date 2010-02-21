@@ -61,6 +61,7 @@ use Encode;
 use File::Basename;
 use File::Spec;
 use IO::File;
+use IO::Handle qw(autoflush);
 use IO::Poll qw(POLLHUP POLLIN POLLPRI);
 use IPC::Open3;
 use POSIX qw(:errno_h :limits_h);
@@ -2872,8 +2873,10 @@ sub sync($;$$@)
        @opts);
 
     # Find out how we were called (and hence the command that is to be run).
+    # Remember that the routine name will be fully qualified.
 
     $cmd = (caller(0))[3];
+    $cmd = $1 if ($cmd =~ m/^.+\:\:([^:]+)$/);
 
     # Process any options.
 
@@ -3596,11 +3599,12 @@ sub register_stream_handle($$$)
 
     my $this = $class_records{$self->{$class_name}};
 
-    if (defined($handle)
-	&& ref($handle) !~ m/^IO::[^:]+/ && ref($handle) ne "GLOB")
+    if (defined($handle) && ref($handle) !~ m/^IO::[^:]+/
+	&& ref($handle) ne "GLOB" && ref(\$handle) ne "GLOB")
     {
 	&$croaker("Handle must be either undef or a valid handle");
     }
+    autoflush($stream, 1);
     if ($stream == MTN_P_STREAM)
     {
 	$this->{p_stream_handle} = $handle;
@@ -4605,37 +4609,42 @@ sub mtn_read_output_format_2($$)
        $handler_timeout,
        $header,
        $i,
+       $last_msg,
        $offset_ref,
        $size,
        $stream);
-    my %buffers = (e => {buffer_ref => undef,
+    my $this = $class_records{$self->{$class_name}};
+    my %details = (e => {buffer_ref => undef,
 			 offset     => 0},
 		   l => {buffer_ref => undef,
 			 offset     => 0},
 		   m => {buffer_ref => undef,
 			 offset     => 0},
 		   p => {buffer_ref => undef,
-			 offset     => 0},
+			 offset     => 0,
+			 handle     => $this->{p_stream_handle},
+		         used       => undef},
 		   t => {buffer_ref => undef,
-			 offset     => 0},
+			 offset     => 0,
+			 handle     => $this->{t_stream_handle},
+		         used       => undef},
 		   w => {buffer_ref => undef,
 			 offset     => 0});
-    my $this = $class_records{$self->{$class_name}};
 
     $err = $this->{mtn_err};
 
     # Create the buffers.
 
-    foreach my $key (CORE::keys(%buffers))
+    foreach my $key (CORE::keys(%details))
     {
 	if ($key eq "m")
 	{
-	    $buffers{$key}->{buffer_ref} = $buffer;
+	    $details{$key}->{buffer_ref} = $buffer;
 	}
 	else
 	{
 	    my $ref_buf = "";
-	    $buffers{$key}->{buffer_ref} = \$ref_buf;
+	    $details{$key}->{buffer_ref} = \$ref_buf;
 	}
     }
 
@@ -4658,8 +4667,8 @@ sub mtn_read_output_format_2($$)
 
     $$buffer = "";
     $chunk_start = 1;
-    $buffer_ref = $buffers{m}->{buffer_ref};
-    $offset_ref = \$buffers{m}->{offset};
+    $buffer_ref = $details{m}->{buffer_ref};
+    $offset_ref = \$details{m}->{offset};
     do
     {
 
@@ -4722,8 +4731,8 @@ sub mtn_read_output_format_2($$)
 
 	    # Set up the current buffer and offset details.
 
-	    $buffer_ref = $buffers{$stream}->{buffer_ref};
-	    $offset_ref = \$buffers{$stream}->{offset};
+	    $buffer_ref = $details{$stream}->{buffer_ref};
+	    $offset_ref = \$details{$stream}->{offset};
 
 	    $chunk_start = undef;
 
@@ -4735,6 +4744,9 @@ sub mtn_read_output_format_2($$)
 	{
 	    if ($size > 0)
 	    {
+
+		# Process the current data chunk.
+
 		if (! defined($bytes_read = sysread($this->{mtn_out},
 						    $$buffer_ref,
 						    $size,
@@ -4748,61 +4760,30 @@ sub mtn_read_output_format_2($$)
 		}
 		$size -= $bytes_read;
 		$$offset_ref += $bytes_read;
+
 	    }
 	    else
 	    {
-
-		my($data,
-		   $data_ref,
-		   $fh);
 
 		# We have finished processing the current data chunk so if it
 		# belongs to a stream that is to be redirected to a file handle
 		# then send the data down it.
 
-		if (defined($this->{p_stream_handle}) && $stream eq "p")
+		if ($stream =~ m/^[pt]$/
+		    && defined($details{$stream}->{handle}))
 		{
 
-		    # The p or progress stream is simply text so just send the
-		    # data.
+		    # Send the headers as well so as to help the reader.
 
-		    $fh = $this->{p_stream_handle};
-		    $data_ref = $buffers{p}->{buffer_ref};
-
-		}
-		elsif (defined($this->{t_stream_handle}) && $stream eq "t")
-		{
-
-		    # The t or ticker stream contains messages and not
-		    # unstructured text so send the raw data straight through
-		    # (i.e. include the headers).
-
-		    $fh = $this->{t_stream_handle};
-		    $data = $header . $buffers{p}->{buffer_ref};
-		    $data_ref = \$data;
-
-		}
-		if (defined($fh))
-		{
-		    my($bytes_written,
-		       $offset,
-		       $size);
-		    $offset = 0;
-		    $size = length($$data_ref);
-		    while ($size > 0)
+		    if (! $details{$stream}->{handle}->print($header
+							     . $$buffer_ref))
 		    {
-			if (! defined($bytes_written = syswrite($fh,
-								$$data_ref,
-								$size,
-								$offset)))
-			{
-			    croak("syswrite failed: " . $!);
-			}
-			$size -= $bytes_written;
-			$offset += $bytes_written;
+			croak("print failed: " . $!);
 		    }
+		    $details{$stream}->{used} = 1;
 		    $$buffer_ref = "";
 		    $$offset_ref = 0;
+
 		}
 
 		$chunk_start = 1;
@@ -4820,6 +4801,7 @@ sub mtn_read_output_format_2($$)
 	    {
 		$err_occurred = 1;
 	    }
+	    $last_msg = $header . $err_code;
 	}
 	else
 	{
@@ -4831,15 +4813,29 @@ sub mtn_read_output_format_2($$)
 
     ++ $this->{cmd_cnt};
 
+    # Send the terminating last message down any stream file handle that had
+    # data sent down it.
+
+    foreach $stream ("p", "t")
+    {
+	if ($details{$stream}->{used})
+	{
+	    if (! $details{$stream}->{handle}->print($last_msg))
+	    {
+		croak("print failed: " . $!);
+	    }
+	}
+    }
+
     # Record any error or warning messages.
 
-    if (${$buffers{e}->{buffer_ref}} ne "")
+    if (${$details{e}->{buffer_ref}} ne "")
     {
-	$this->{error_msg} = ${$buffers{e}->{buffer_ref}};
+	$this->{error_msg} = ${$details{e}->{buffer_ref}};
     }
-    elsif (${$buffers{w}->{buffer_ref}} ne "")
+    elsif (${$details{w}->{buffer_ref}} ne "")
     {
-	$this->{error_msg} = ${$buffers{w}->{buffer_ref}};
+	$this->{error_msg} = ${$details{w}->{buffer_ref}};
     }
 
     # If something has gone wrong then deal with it.
@@ -4890,6 +4886,11 @@ sub startup($)
 
 	local $ENV{LC_ALL} = "C";
 	local $ENV{LANG} = "C";
+
+	# Don't allow SIGPIPE signals to terminate the calling program (any
+	# related errors are dealt with anyway).
+
+	$SIG{PIPE} = "IGNORE";
 
 	$this->{db_is_locked} = undef;
 	$this->{mtn_err} = gensym();
@@ -5387,7 +5388,7 @@ sub error_handler_wrapper($)
     my $message = $_[0];
 
     &$error_handler(MTN_SEVERITY_ERROR, $message, $error_handler_data);
-    croak(__PACKAGE__ . ": Fatal error.");
+    croak(__PACKAGE__ . ": Fatal error");
 
 }
 #
