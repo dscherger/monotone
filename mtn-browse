@@ -3222,7 +3222,7 @@ sub mtn_error_handler($$)
 		 ["modal"],
 		 "warning",
 		 "close",
-		 __x("Problem with monotone request, got:\n"
+		 __x("Problem with Monotone request, got:\n"
 			 . "<b><i>{error_message}</i></b>\n"
 			 . "This should not be happening!",
 		     error_message => Glib::Markup::escape_text($message)));
@@ -3239,7 +3239,7 @@ sub mtn_error_handler($$)
 	     ["modal"],
 	     "error",
 	     "close",
-	     __x("Monotone process unexpectedly exiting with:\n"
+	     __x("The Monotone subprocess unexpectedly exited with:\n"
 		     . "<b><i>{error_message}</i></b>\n"
 		     . "This is fatal, I am going to exit.",
 		 error_message => Glib::Markup::escape_text($message)));
@@ -3304,7 +3304,7 @@ sub sigchld_handler()
 			      ["modal"],
 			      "warning",
 			      "close",
-			      __x("The mtn subprocess just unexpectedly\n"
+			      __x("The Monotone subprocess just unexpectedly\n"
 				      . "exited ({error_message}).\n"
 				      . "This should not be happening!\n"
 				      . "It will be restarted when needed.",

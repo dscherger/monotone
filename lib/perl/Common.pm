@@ -536,7 +536,31 @@ sub open_database($$$)
 		# Ok it is a readable file, try and open it but deal with any
 		# errors in a nicer way than normal.
 
-		CachingAutomateStdio->register_error_handler(MTN_SEVERITY_ALL);
+		CachingAutomateStdio->register_error_handler
+		    (MTN_SEVERITY_ALL,
+		     sub {
+			 my($severity, $message) = @_;
+			 my $dialog;
+			 $message =~ s/mtn: misuse: //g;
+			 $message =~ s/^Corrupt\/missing mtn [^\n]+\n//g;
+			 $message =~ s/ at .+ line \d+$//g;
+			 $message =~ s/\n/ /g;
+			 $message =~ s/\s+$//g;
+			 $message .= "." unless ($message =~ m/.+\.$/);
+			 $dialog = Gtk2::MessageDialog->new_with_markup
+			     ($parent,
+			      ["modal"],
+			      "warning",
+			      "close",
+			      __x("There is a problem opening the database, "
+				  . "the details are:\n"
+				  . "<b><i>{error_message}</i></b>",
+				  error_message =>
+			              Glib::Markup::escape_text($message)));
+			 $dialog->run();
+			 $dialog->destroy();
+			 die("Bad open");
+		     });
 		eval
 		{
 		    $mtn_obj = CachingAutomateStdio->new($fname);
@@ -544,18 +568,7 @@ sub open_database($$$)
 		$exception = $@;
 		CachingAutomateStdio->register_error_handler
 		    (MTN_SEVERITY_ALL, \&mtn_error_handler);
-		if ($exception)
-		{
-		    my $dialog = Gtk2::MessageDialog->new
-			($parent,
-			 ["modal"],
-			 "warning",
-			 "close",
-			 __("Not a valid Monotone database."));
-		    $dialog->run();
-		    $dialog->destroy();
-		}
-		else
+		if (! $exception)
 		{
 
 		    # Seems to be ok so tell the caller.

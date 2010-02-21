@@ -990,7 +990,8 @@ sub update_advanced_find_state($$)
 			          Glib::Markup::escape_text($message)));
 		     $wm->allow_input(sub { $dialog->run(); });
 		     $dialog->destroy();
-		     die("Bad query"); });
+		     die("Bad query");
+		 });
 	    eval
 	    {
 		$advanced_find->{mtn}->select(\@revision_ids, $query);
