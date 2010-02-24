@@ -332,6 +332,7 @@ sub show_conflicts($$;$$$);
 sub supports($$);
 sub suppress_utf8_conversion($$);
 sub switch_to_ws_root($$);
+sub sync($;$$@);
 sub tags($$;$);
 sub toposort($$@);
 
@@ -1295,7 +1296,8 @@ sub get_attributes($$$)
 #
 #   Routine      - get_base_revision_id
 #
-#   Description  - Get the revision upon which the workspace is based.
+#   Description  - Get the id of the revision upon which the workspace is
+#                  based.
 #
 #   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
@@ -1522,8 +1524,8 @@ sub get_current_revision($$;$@)
 #
 #   Routine      - get_current_revision_id
 #
-#   Description  - Get the revision that would be created if an unrestricted
-#                  commit was done in the workspace.
+#   Description  - Get the id of the revision that would be created if an
+#                  unrestricted commit was done in the workspace.
 #
 #   Data         - $self        : The object.
 #                  $buffer      : A reference to a buffer that is to contain
@@ -3001,8 +3003,8 @@ sub tags($$;$)
 #
 #   Routine      - toposort
 #
-#   Description  - Sort the specified revisions such that the ancestors come
-#                  out first.
+#   Description  - Sort the specified revision ids such that the ancestors
+#                  come out first.
 #
 #   Data         - $self         : The object.
 #                  $list         : A reference to a list that is to contain

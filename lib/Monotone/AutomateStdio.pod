@@ -53,6 +53,15 @@ database.
 
 Creates a new Monotone::AutomateStdio object, using the database named in $db.
 
+=item B<$mtn = Monotone::AutomateStdio-E<gt>new_from_service($service,
+[\@options])>
+
+Creates a new Monotone::AutomateStdio object, using the named network service
+(which is expressed as a hostname optionally followed by a colon and a port
+number).
+
+(feature: MTN_REMOTE_CONNECTIONS)
+
 =item B<$mtn = Monotone::AutomateStdio-E<gt>new_from_ws($ws[, \@options])>
 
 Creates a new Monotone::AutomateStdio object, using the workspace named in $ws.
@@ -409,7 +418,7 @@ Also known as $mtn-E<gt>attributes().
 
 =item B<$mtn-E<gt>get_base_revision_id(\$buffer)>
 
-Get the revision upon which the workspace is based.
+Get the id of the revision upon which the workspace is based.
 
 =item B<$mtn-E<gt>get_content_changed(\@list, $revision_id, $file_name)>
 
@@ -429,7 +438,7 @@ Get the revision information for the current revision, optionally limiting the
 output by using the specified options and file restrictions. If \$buffer is
 passed then the output from the command is simply placed into the
 variable. However if \@list is passed then the output is returned in exactly
-the same format as for the $mtn-E<gt>get_current_revision() method.
+the same format as for the $mtn-E<gt>get_revision() method.
 
 The $options argument is a list of valid options, with some having
 arguments. For example, one could call this method specifying all of the
@@ -444,8 +453,8 @@ options like this:
 
 =item B<$mtn-E<gt>get_current_revision_id(\$buffer)>
 
-Get the revision that would be created if an unrestricted commit was done
-in the workspace.
+Get the id of the revision that would be created if an unrestricted commit was
+done in the workspace.
 
 =item B<$mtn-E<gt>get_db_name()>
 
@@ -747,6 +756,22 @@ packet format.
 
 Get a list of parents for the specified revision.
 
+=item B<$mtn-E<gt>pull([@options[, $service[, $pattern]]])>
+
+Synchronises database changes from the specified remote server to the local
+database but not in the other direction. Other details are identical to the
+$mtn-E<gt>sync() method.
+
+(feature: MTN_SYNCHRONISATION)
+
+=item B<$mtn-E<gt>push([@options[, $service[, $pattern]]])>
+
+Synchronises database changes from the local database to the specified remote
+server but not in the other direction. Other details are identical to the
+$mtn-E<gt>sync() method.
+
+(feature: MTN_SYNCHRONISATION)
+
 =item B<$mtn-E<gt>put_file(\$buffer, $base_file_id, \$contents)>
 
 Put the specified file contents into the database, optionally basing it on the
@@ -765,6 +790,12 @@ Decode and store the specified packet data in the database.
 
 (feature: MTN_READ_PACKETS)
 
+=item B<$mtn-E<gt>register_error_handler($severity[, $handler
+[, $client_data]])>
+
+Registers an error handler for the object rather than the class. For further
+details please see the description of the class method.
+
 =item B<$mtn-E<gt>register_db_locked_handler([$handler[, $client_data]])>
 
 Registers a database locked handler for the object rather than the class. For
@@ -775,6 +806,46 @@ further details please see the description of the class method.
 
 Registers an I/O wait handler for the object rather than the class. For further
 details please see the description of the class method.
+
+=item B<$mtn-E<gt>register_stream_handle($stream[, $handle]])>
+
+Registers the file handle specified in $handle so that it will receive data
+from the specified mtn output stream. $stream can be one of MTN_P_STREAM or
+MTN_T_STREAM. If no file handle is given then any existing file handle is
+unregistered for that stream.
+
+Please note:
+
+=over 4
+
+=item 1)
+
+It is vitally important that if you register some sort of pipe or socket to
+receive mtn stream output, that any data sent down it is read immediately and
+independently from the code calling the method generating the output (either by
+using a thread or another process). Not doing so could easily cause a deadlock
+situation to occur where the method stops processing, waiting for the pipe or
+socket to empty before proceeding.
+
+=item 2)
+
+The output streams are largely sent as received from the mtn subprocess (please
+refer to the Monotone documentation for further details on the format). The
+only difference is that since the `l' or last message (which marks the end of a
+command's output) is only sent once by mtn, this class duplicates it onto any
+registered stream so that the reader knows when there is no more data for a
+command.
+
+=item 3)
+
+In order to get the stream constants into your namespace you need to use the
+following to load in this library.
+
+    use Monotone::AutomateStdio qw(:streams);
+
+=back
+
+(feature: MTN_STREAM_IO)
 
 =item B<$mtn-E<gt>roots(\@list)>
 
@@ -883,9 +954,12 @@ that is currently being used by this object. The list of valid features are:
     MTN_M_SELECTOR
     MTN_P_SELECTOR
     MTN_READ_PACKETS
+    MTN_REMOTE_CONNECTIONS
     MTN_SET_ATTRIBUTE
     MTN_SET_DB_VARIABLE
     MTN_SHOW_CONFLICTS
+    MTN_STREAM_IO
+    MTN_SYNCHRONISATION
     MTN_U_SELECTOR
     MTN_W_SELECTOR
 
@@ -897,6 +971,25 @@ following to load in this library.
 Please note that if you see (feature: ...) then this means that whatever is
 being discussed is only available if $mtn-E<gt>supports() returns true for the
 specified feature.
+
+=item B<$mtn-E<gt>sync([@options[, $service[, $pattern]]])>
+
+Synchronises database changes between the local database and the specified
+remote server. $service is in exactly the same format as for the
+Monotone::AutomateStdio->new_from_service() constructor. $pattern is a branch
+pattern to include in the synchronisation operation.
+
+The $options argument is a list of valid options, with some having
+arguments. For example, one could call this method specifying all of the
+options like this:
+
+    $mtn->sync(["exclude"             => "experiments.hacks",
+                "key-to-push"         => "me@mydomain.com",
+                "max-netsync-version" => 2,
+                "min-netsync-version" => 1,
+                "set-default");
+
+(feature: MTN_SYNCHRONISATION)
 
 =item B<$mtn-E<gt>tags(\$buffer | \@list[, $branch_pattern])>
 
@@ -916,7 +1009,7 @@ anonymous hashes, each one containing the following fields:
 
 =item B<$mtn-E<gt>toposort(\@list[, $revision_id ...])>
 
-Sort the specified revisions such that the ancestors come out first.
+Sort the specified revision ids such that the ancestors come out first.
 
 =back
 
@@ -929,6 +1022,7 @@ The following constructors return Monotone::AutomateStdio objects:
 
     Monotone::AutomateStdio->new()
     Monotone::AutomateStdio->new_from_db()
+    Monotone::AutomateStdio->new_from_service()
     Monotone::AutomateStdio->new_from_ws()
 
 The following method returns true or false (but it does not indicate success or
@@ -951,6 +1045,7 @@ The following methods do not return anything:
     Monotone::AutomateStdio->register_db_locked_handler()
     Monotone::AutomateStdio->register_error_handler()
     Monotone::AutomateStdio->register_io_wait_handler()
+    Monotone::AutomateStdio->register_stream_handle()
     Monotone::AutomateStdio->suppress_utf8_conversion()
     $mtn->closedown()
 
@@ -1089,15 +1184,18 @@ There are situations where this class does legitimately terminate the mtn
 subprocess (for example when a database locked condition is detected). When
 this happens the subprocess is reaped and its id is reset, i.e. the
 $mtn-E<gt>get_pid() method returns 0. However if the subprocess should exit
-unexpectedly then an exception is raised but no reaping or process id resetting
-takes place. Therefore the application using this class may wish to have a
-signal handler registered for SIGCHILD signals that can trigger a call to the
-$mtn-E<gt>closedown() method or destroy the object concerned in the event of an
-error. In order to distinguish between legitimate terminations of the mtn
-subprocess and failures, simply compare the reaped process id against that
-returned by the $mtn-E<gt>get_pid() method. If there is a match then there is a
-problem, otherwise, as far as this class is concerned, there is nothing to
-worry about.
+unexpectedly whilst processing a request then an exception is raised but no
+reaping or process id resetting takes place. Therefore an application using
+this class may wish to have a signal handler registered for SIGCHILD signals
+that can indirectly trigger a call to the $mtn-E<gt>closedown() method or
+destroy the object concerned in the event of an error. In order to distinguish
+between legitimate terminations of the mtn subprocess and failures, simply
+compare the reaped process id against that returned by the $mtn-E<gt>get_pid()
+method. If there is a match then there is a problem, otherwise, as far as this
+class is concerned, there is nothing to worry about.
+
+Please note that all SIGPIPE signals are set to be ignored as soon as the first
+mtn subprocess is started by this class.
 
 =head2 Use Of SIGALRM
 
