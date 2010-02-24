@@ -3131,6 +3131,8 @@ sub closedown($)
 
     }
 
+    return;
+
 }
 #
 ##############################################################################
@@ -3397,6 +3399,8 @@ sub register_db_locked_handler(;$$$)
 	}
     }
 
+    return;
+
 }
 #
 ##############################################################################
@@ -3478,6 +3482,8 @@ sub register_error_handler($;$$$)
     {
 	&$croaker("Unknown error handler severity");
     }
+
+    return;
 
 }
 #
@@ -3570,6 +3576,8 @@ sub register_io_wait_handler(;$$$$)
 	}
     }
 
+    return;
+
 }
 #
 ##############################################################################
@@ -3617,6 +3625,8 @@ sub register_stream_handle($$$)
     {
 	&$croaker("Unknown stream specified");
     }
+
+    return;
 
 }
 #
@@ -3799,6 +3809,8 @@ sub suppress_utf8_conversion($$)
     {
 	$convert_to_utf8 = $suppress ? undef : 1;
     }
+
+    return;
 
 }
 #
