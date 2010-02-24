@@ -4605,7 +4605,6 @@ sub mtn_read_output_format_2($$)
        $handler_timeout,
        $header,
        $i,
-       $last_msg,
        $offset_ref,
        $size,
        $stream);
@@ -4736,6 +4735,9 @@ sub mtn_read_output_format_2($$)
 
 	if ($stream ne "l")
 	{
+
+	    # Process non-last messages.
+
 	    if ($size > 0)
 	    {
 
@@ -4786,6 +4788,11 @@ sub mtn_read_output_format_2($$)
 	}
 	elsif ($size == 1)
 	{
+
+	    my $last_msg;
+
+	    # Process the last message.
+
 	    if (! sysread($this->{mtn_out}, $err_code, 1))
 	    {
 		croak("sysread failed: " . $!);
@@ -4795,7 +4802,22 @@ sub mtn_read_output_format_2($$)
 	    {
 		$err_occurred = 1;
 	    }
+
+	    # Send the terminating last message down any stream file handle
+	    # that had data sent down it.
+
 	    $last_msg = $header . $err_code;
+	    foreach my $ostream ("p", "t")
+	    {
+		if ($details{$ostream}->{used})
+		{
+		    if (! $details{$ostream}->{handle}->print($last_msg))
+		    {
+			croak("print failed: " . $!);
+		    }
+		}
+	    }
+
 	}
 	else
 	{
@@ -4806,20 +4828,6 @@ sub mtn_read_output_format_2($$)
     while ($size > 0 || $stream ne "l");
 
     ++ $this->{cmd_cnt};
-
-    # Send the terminating last message down any stream file handle that had
-    # data sent down it.
-
-    foreach $stream ("p", "t")
-    {
-	if ($details{$stream}->{used})
-	{
-	    if (! $details{$stream}->{handle}->print($last_msg))
-	    {
-		croak("print failed: " . $!);
-	    }
-	}
-    }
 
     # Record any error or warning messages.
 
