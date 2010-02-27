@@ -30,6 +30,17 @@ XXX XXX XX XX:XX:XX UTC 2010
  
         Other
 
+	- Roster handling has been sped up significantly, and roster cache
+	  performance has been fixed for the case of overly large rosters.
+	  This should be mostly noticable when digging through history
+	  (especially initial pulls, since those send so many revisions),
+	  and be more noticable for projects with larger trees.
+
+	  The most significant internal change from this is that rosters and
+          marking_maps are now copy-on-write. A longer overview of the internal
+	  changes is at:
+	  http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
+
 
 Sun Jan 17 21:40:35 UTC 2010
 
