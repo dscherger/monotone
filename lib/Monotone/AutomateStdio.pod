@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.06
+0.07
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious :-). Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.45). If you happen to be using a newer version of Monotone
+version (currently 0.46). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
