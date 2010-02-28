@@ -12,6 +12,7 @@
 #define __POLICIES_POLICY_HH__
 
 #include <map>
+#include <set>
 #include <boost/weak_ptr.hpp>
 
 #include "vocab.hh"
@@ -40,17 +41,26 @@ namespace policies {
     virtual ~policy();
 
     // keys
+    // a key could have several names, should
+    // there be an invariant against that?
     key_name get_key_name(key_id const & ident) const;
     key_id get_key_id(key_name const & ident) const;
 
     // delegations
     del_map const & list_delegations() const;
+    delegation const & get_delegation(std::string const & name) const;
 
     // branches
     std::map<std::string, branch> const & list_branches() const;
+    branch const & get_branch(std::string const & name) const;
     
     // tags
     std::map<std::string, revision_id> const & list_tags() const;
+    revision_id const & get_tag(std::string const & name) const;
+
+    virtual bool outdated() const { return false; }
+
+    boost::shared_ptr<policy> get_parent() const;
   };
 }
 

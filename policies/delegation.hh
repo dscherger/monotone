@@ -30,6 +30,7 @@ namespace policies {
   public:
     delegation();
     explicit delegation(revision_id const & r);
+    explicit delegation(branch const & b);
     void serialize(std::string & out) const;
     void deserialize(std::string const & in);
 

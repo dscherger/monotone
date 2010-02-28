@@ -19,6 +19,8 @@
 #include "globish.hh"
 //#include "policy.hh"
 #include "policies/base_policy.hh"
+#include "policies/editable_policy.hh"
+#include "policies/policy_branch.hh"
 //#include "policies/policy.hh"
 #include "project.hh"
 #include "revision.hh"
@@ -154,6 +156,44 @@ public:
   }
 };
 
+
+struct governing_policy_info
+{
+  shared_ptr<policy> governing_policy;
+  std::string governing_policy_name;
+
+  shared_ptr<policy> governing_policy_parent;
+  std::string delegation_to_governing_policy;
+};
+// find the policy governing a particular name
+class policy_finder
+{
+  string target;
+  governing_policy_info & info;
+public:
+  policy_finder(string const & target, governing_policy_info & info)
+    : target(target), info(info)
+  {
+    info.governing_policy_name.clear();
+    info.delegation_to_governing_policy.clear();
+    info.governing_policy.reset();
+    info.governing_policy_parent.reset();
+  }
+
+  void operator()(shared_ptr<policy> pol, string prefix)
+  {
+    if (prefix.empty())
+      {
+        return;
+      }
+    if (target.find(prefix) == 0 && prefix.size() > info.governing_policy_name.size())
+      {
+        info.governing_policy_name = prefix;
+        info.governing_policy = pol;
+      }
+  }
+};
+
 class policy_info
 {
   shared_ptr<policies::policy> policy;
@@ -246,9 +286,9 @@ public:
         for (set<external_key_name>::iterator k = raw_signers.begin();
              k != raw_signers.end(); ++k)
           {
-            key_id id;
+            id id;
             if (try_decode_hexenc((*k)(), id))
-              signers.insert(id);
+              signers.insert(key_id(id));
             else
               {
                 key_name kn = typecast_vocab<key_name>(*k);
@@ -258,6 +298,23 @@ public:
         return ;
       }
     I(false);
+  }
+
+  void find_governing_policy(std::string const & of_what,
+                             governing_policy_info & info)
+  {
+    walk_policies(policy, child_policies,
+                  policy_finder(of_what, info));
+    if (info.governing_policy)
+      {
+        // also return the parent, if it's a 'real' database policy rather
+        // than the synthesized root policy
+        info.governing_policy_parent = info.governing_policy->get_parent();
+        if (info.governing_policy_parent == policy)
+          {
+            info.governing_policy_parent.reset();
+          }
+      }
   }
 };
 
@@ -837,18 +894,18 @@ project_t::put_tag(key_store & keys,
     put_cert(keys, id, tag_cert_name, cert_value(name, origin::user));
   else
     {
-      shared_ptr<policy_branch> policy_br;
-      branch_name tag_name(name, origin::internal);
-      branch_name policy_name;
-      policy_br = project_policy->policy->walk(tag_name, policy_name);
-      E(policy_br && policy_br != project_policy->policy,
-        origin::internal,
-        F("Cannot find a parent policy for tag %s") % tag_name);
-      tag_name.strip_prefix(policy_name);
-      editable_policy ep(*policy_br->get_policy());
-      ep.get_tag(tag_name(), true)->rev = id;
-      ep.commit(*this, keys, utf8((F("Set tag %s to %s") % tag_name % id).str(),
-                           tag_name.made_from));
+      governing_policy_info info;
+      project_policy->find_governing_policy(name, info);
+      policies::branch pol_spec = info.governing_policy->get_branch("__policy__");
+
+      policies::policy_branch br(pol_spec);
+      I(br.begin() != br.end());
+      policies::editable_policy ep(**br.begin());
+
+      ep.set_tag(name.substr(info.governing_policy_name.size() + 1), id);
+
+      br.commit(ep, utf8((F("Set tag %s") % name).str(),
+                         origin::internal));
     }
 }
 

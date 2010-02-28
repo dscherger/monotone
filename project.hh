@@ -74,6 +74,10 @@ typedef bool suspended_indicator;
 
 class policy_info;
 
+namespace policies {
+  class policy;
+}
+
 class project_t
 {
   // In the hypothetical future situation where one monotone process is
@@ -98,6 +102,8 @@ public:
   project_t(database & db, lua_hooks & lua, options & opts);
   // Used by migration code.
   static project_t empty_project(database & db);
+
+  policies::policy & get_base_policy() const;
 
   //bool get_policy_branch_policy_of(branch_name const & name,
   //                                 editable_policy & policy_branch_policy,

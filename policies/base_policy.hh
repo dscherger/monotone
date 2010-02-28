@@ -26,6 +26,10 @@ namespace policies {
   public:
     base_policy(database & db, options const & opts, lua_hooks & lua);
     bool empty() const;
+    inline bool outdated() const { return false; }
+
+    // Use lua hooks to write out the given policy.
+    static void write(policy const & pol);
   };
 }
 

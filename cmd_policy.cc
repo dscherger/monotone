@@ -10,12 +10,16 @@
 #include "basic_io.hh"
 #include "botan/botan.h"
 #include "cmd.hh"
+#include "database.hh"
 #include "dates.hh"
-#include "editable_policy.hh"
+//#include "editable_policy.hh"
 #include "file_io.hh"
 #include "keys.hh"
 #include "key_store.hh"
-#include "policy.hh"
+//#include "policy.hh"
+#include "policies/base_policy.hh"
+#include "policies/editable_policy.hh"
+#include "policies/policy_branch.hh"
 #include "project.hh"
 #include "revision.hh"
 #include "roster.hh"
@@ -28,6 +32,14 @@ CMD_GROUP(policy, "policy", "", CMD_REF(__root__),
 
 using boost::shared_ptr;
 using std::string;
+
+inline static external_key_name
+key_id_to_external_name(key_id const & ident)
+{
+  return external_key_name(encode_hexenc(ident.inner()(),
+                                         origin::internal),
+                           origin::internal);
+}
 
 CMD(create_project, "create_project", "", CMD_REF(policy),
     N_("NAME"),
@@ -54,18 +66,19 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
   mkdir_p(project_dir);
 
   cache_user_key(app.opts, app.lua, db, keys, project);
-  std::set<key_id> admin_keys;
-  admin_keys.insert(keys.signing_key);
 
-  std::string policy_uid;
-  data policy_spec;
-  editable_policy ep(db, admin_keys);
-  ep.get_branch("__policy__")->write(policy_spec);
-  project_t p = project_t::empty_project(db);
-  ep.commit(p, keys, utf8(N_("Create new policy branch")));
 
-  write_data(project_file, policy_spec, project_dir);
-  P(F("Wrote project spec to %s") % project_file);
+  std::set<external_key_name> signers;
+  signers.insert(key_id_to_external_name(keys.signing_key));
+  policies::policy_branch br = policies::policy_branch::new_branch(signers);
+  policies::editable_policy ep(br.create_initial_revision());
+  br.commit(ep, utf8(N_("Create new policy branch")));
+
+  policies::editable_policy bp(project.get_base_policy());
+
+  bp.set_delegation(project_name, policies::delegation(br.get_spec()));
+
+  policies::base_policy::write(bp);
 }
 
 CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
