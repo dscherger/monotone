@@ -115,7 +115,7 @@ is_ancestor(database & db,
     % descendent_id);
 
   multimap<revision_id, revision_id> graph;
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   return is_ancestor(ancestor_id, descendent_id, graph);
 }
 
@@ -911,7 +911,7 @@ build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys
   set<revision_id> all_rev_ids;
   db.get_revision_ids(all_rev_ids);
 
-  db.get_revision_ancestry(existing_graph);
+  db.get_forward_ancestry(existing_graph);
   for (multimap<revision_id, revision_id>::const_iterator i = existing_graph.begin();
        i != existing_graph.end(); ++i)
     {
@@ -975,7 +975,7 @@ allrevs_toposorted(database & db,
 {
   // get the complete ancestry
   rev_ancestry_map graph;
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   toposort_rev_ancestry(graph, revisions);
 }
 

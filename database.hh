@@ -154,7 +154,8 @@ private:
   // --== The ancestry graph ==--
   //
 public:
-  void get_revision_ancestry(rev_ancestry_map & graph);
+  void get_forward_ancestry(rev_ancestry_map & graph);
+  void get_reverse_ancestry(rev_ancestry_map & graph);
 
   void get_revision_parents(revision_id const & ident,
                            std::set<revision_id> & parents);

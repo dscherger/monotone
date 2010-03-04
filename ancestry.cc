@@ -84,14 +84,7 @@ find_common_ancestor_for_merge(database & db,
 
 
   multimap<revision_id, revision_id> inverse_graph;
-  {
-    multimap<revision_id, revision_id> graph;
-    db.get_revision_ancestry(graph);
-    typedef multimap<revision_id, revision_id>::const_iterator gi;
-    for (gi i = graph.begin(); i != graph.end(); ++i)
-      inverse_graph.insert(make_pair(i->second, i->first));
-  }
-
+  db.get_reverse_ancestry(inverse_graph);
 
   while (leaves.size() != 1)
     {
@@ -313,11 +306,7 @@ erase_ancestors_and_failures(database & db,
     inverse_graph_cache_ptr = &inverse_graph;
   if (inverse_graph_cache_ptr->empty())
   {
-    multimap<revision_id, revision_id> graph;
-    db.get_revision_ancestry(graph);
-    for (multimap<revision_id, revision_id>::const_iterator i = graph.begin();
-         i != graph.end(); ++i)
-      inverse_graph_cache_ptr->insert(make_pair(i->second, i->first));
+    db.get_reverse_ancestry(*inverse_graph_cache_ptr);
   }
 
   // Keep a set of all ancestors that we've traversed -- to avoid
@@ -397,12 +386,9 @@ ancestry_difference(database & db, revision_id const & a,
 {
   new_stuff.clear();
   typedef multimap<revision_id, revision_id>::const_iterator gi;
-  multimap<revision_id, revision_id> graph;
   multimap<revision_id, revision_id> inverse_graph;
 
-  db.get_revision_ancestry(graph);
-  for (gi i = graph.begin(); i != graph.end(); ++i)
-    inverse_graph.insert(make_pair(i->second, i->first));
+  db.get_reverse_ancestry(inverse_graph);
 
   interner<ctx> intern;
   map< ctx, shared_bitmap > ancestors;

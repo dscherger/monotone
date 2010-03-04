@@ -1111,7 +1111,7 @@ database::info(ostream & out, bool analyze)
   L(FL("fetching ancestry map"));
   typedef multimap<revision_id, revision_id>::const_iterator gi;
   rev_ancestry_map graph;
-  get_revision_ancestry(graph);
+  get_forward_ancestry(graph);
 
   L(FL("checking timestamps differences of related revisions"));
   int correct = 0,
@@ -2461,7 +2461,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 
 
 void
-database::get_revision_ancestry(rev_ancestry_map & graph)
+database::get_forward_ancestry(rev_ancestry_map & graph)
 {
   // share some storage
   id::symtab id_syms;
@@ -2470,6 +2470,21 @@ database::get_revision_ancestry(rev_ancestry_map & graph)
   graph.clear();
   imp->fetch(res, 2, any_rows,
              query("SELECT parent,child FROM revision_ancestry"));
+  for (size_t i = 0; i < res.size(); ++i)
+    graph.insert(make_pair(revision_id(res[i][0], origin::database),
+                           revision_id(res[i][1], origin::database)));
+}
+
+void
+database::get_reverse_ancestry(rev_ancestry_map & graph)
+{
+  // share some storage
+  id::symtab id_syms;
+
+  results res;
+  graph.clear();
+  imp->fetch(res, 2, any_rows,
+             query("SELECT child,parent FROM revision_ancestry"));
   for (size_t i = 0; i < res.size(); ++i)
     graph.insert(make_pair(revision_id(res[i][0], origin::database),
                            revision_id(res[i][1], origin::database)));

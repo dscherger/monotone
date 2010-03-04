@@ -35,12 +35,8 @@ revision_enumerator::revision_enumerator(project_t & project,
   revision_id root;
   revs.push_back(root);
 
-  project.db.get_revision_ancestry(graph);
-  for (multimap<revision_id, revision_id>::const_iterator i = graph.begin();
-       i != graph.end(); ++i)
-    {
-      inverse_graph.insert(make_pair(i->second, i->first));
-    }
+  project.db.get_forward_ancestry(graph);
+  project.db.get_reverse_ancestry(inverse_graph);
 }
 
 void

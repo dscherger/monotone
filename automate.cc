@@ -474,19 +474,19 @@ CMD_AUTOMATE(graph, "",
   multimap<revision_id, revision_id> edges_mmap;
   map<revision_id, set<revision_id> > child_to_parents;
 
-  db.get_revision_ancestry(edges_mmap);
+  db.get_reverse_ancestry(edges_mmap);
 
   for (multimap<revision_id, revision_id>::const_iterator i = edges_mmap.begin();
        i != edges_mmap.end(); ++i)
     {
-      if (child_to_parents.find(i->second) == child_to_parents.end())
-        child_to_parents.insert(make_pair(i->second, set<revision_id>()));
-      if (null_id(i->first))
+      if (child_to_parents.find(i->first) == child_to_parents.end())
+        child_to_parents.insert(make_pair(i->first, set<revision_id>()));
+      if (null_id(i->second))
         continue;
       map<revision_id, set<revision_id> >::iterator
-        j = child_to_parents.find(i->second);
-      I(j->first == i->second);
-      j->second.insert(i->first);
+        j = child_to_parents.find(i->first);
+      I(j->first == i->first);
+      j->second.insert(i->second);
     }
 
   for (map<revision_id, set<revision_id> >::const_iterator

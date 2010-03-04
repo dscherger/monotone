@@ -406,7 +406,7 @@ check_ancestry(database & db,
 {
   multimap<revision_id, revision_id> graph;
 
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   L(FL("checking %d ancestry edges") % graph.size());
 
   ticker ticks(_("ancestry"), "a", graph.size()/70+1);
@@ -550,7 +550,7 @@ check_heights_relation(database & db,
   set<revision_id> heights;
 
   multimap<revision_id, revision_id> graph; // parent, child
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
 
   L(FL("checking heights for %d edges") % graph.size());
 
