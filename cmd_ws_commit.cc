@@ -47,10 +47,13 @@ using boost::shared_ptr;
 
 static void
 revision_header(revision_id rid, revision_t const & rev, string const & author, 
-                date_t const date, branch_name const & branch, utf8 & header)
+                date_t const date, branch_name const & branch, 
+                bool const branch_changed, utf8 & header)
 {
   ostringstream out;
-  out << string(70, '-') << "\n"
+  int const width = 70;
+
+  out << string(width, '-') << "\n"
       << "Revision: " << rid << "       (uncommitted)\n";
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
@@ -58,26 +61,26 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
       revision_id parent = edge_old_revision(*i);
       out << "Parent: " << parent << "\n";
     }
+
   out << "Author: " << author << "\n"
-      << "Date: " << date << "\n"
-      << "Branch: " << branch << "\n"
-      << "Changelog:\n\n";
+      << "Date: " << date << "\n";
+
+  if (branch_changed)
+    {
+      int space = width - branch().length() - 8 - 10;
+      if (space < 0) space = 0;
+      out << "Branch: " << branch << string(space, ' ') << " (changed)\n";
+    }
+  else
+    out << "Branch: " << branch << "\n";
+
+  out << "Changelog:\n\n";
 
   header = utf8(out.str(), origin::internal);
 }
 
 static void
 revision_summary(revision_t const & rev, utf8 & summary)
-{
-  // We intentionally do not collapse the final \n into the format
-  // strings here, for consistency with newline conventions used by most
-  // other format strings.
-
-  string out;
-  // FIXME: use an ostringstream here too?
-revision_summary(revision_t const & rev, branch_name const & branch, 
-                 set<branch_name> const & old_branch_names,
-                 utf8 & summary)
 {
   string out;
   // We intentionally do not collapse the final \n into the format
@@ -87,19 +90,7 @@ revision_summary(revision_t const & rev, branch_name const & branch,
   revision_id rid;
   calculate_ident(rev, rid);
 
-  out += (F("Current revision: %s") % rid).str() += '\n';
-  if (old_branch_names.find(branch) == old_branch_names.end())
-    {
-      for (set<branch_name>::const_iterator i = old_branch_names.begin();
-           i != old_branch_names.end(); ++i)
-        {
-          out += (F("Old branch: %s") % *i).str() += '\n';
-        }
-      out += (F("New branch: %s") % branch).str() += '\n';
-    }
-  else
-    out += (F("Current branch: %s") % branch).str() += '\n';
-
+  // FIXME: use an ostringstream here too?
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
@@ -183,7 +174,7 @@ static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_id const rid, revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
-                              set<branch_name> const & old_branch_names,
+                              bool const branch_changed,
                               utf8 & log_message)
 {
   external instructions(
@@ -196,7 +187,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 message;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, header);
+  revision_header(rid, rev, author, date, branch, branch_changed, header);
   work.read_user_log(message);
   revision_summary(rev, summary);
 
@@ -290,7 +281,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing branch)."));
 
-  branch = branch_name(trim(line->substr(8)), origin::user);
+  if (branch_changed && line->rfind("(changed)") == line->length() - 9)
+    branch = branch_name(trim(line->substr(8, line->length() - 17)), origin::user);
+  else
+    branch = branch_name(trim(line->substr(8)), origin::user);
 
   ++line;
   E(*line == "Changelog:",
@@ -731,6 +725,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   temp_node_id_source nis;
 
   database db(app);
+  project_t project(db);
   workspace work(app);
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -759,28 +754,32 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         }
     }
 
-  set<branch_name> old_branch_names;
-  get_old_branch_names(db, old_rosters, old_branch_names);
-
   revision_id rid;
   string author;
   key_store keys(app);
-  rsa_keypair_id key;
+  key_identity_info key;
 
-  calculate_ident(rev, rid);
+  get_user_key(app.opts, app.lua, db, keys, project, key.id);
+  project.complete_key_identity(app.lua, key);
 
-  get_user_key(app.opts, app.lua, db, keys, key);
   if (!app.lua.hook_get_author(app.opts.branch, key, author))
-    author = key();
+    author = key.official_name();
 
   utf8 header;
   utf8 message;
   utf8 summary;
-  revision_summary(rev, app.opts.branch, old_branch_names, summary);
 
-  revision_header(rid, rev, author, date_t::now(), app.opts.branch, header);
+  calculate_ident(rev, rid);
+
+  set<branch_name> old_branches;
+  get_old_branch_names(db, old_rosters, old_branches);
+  bool branch_changed =
+    old_branches.find(app.opts.branch) == old_branches.end();
+
+  revision_header(rid, rev, author, date_t::now(), 
+                  app.opts.branch, branch_changed, header);
+
   work.read_user_log(message);
-  revision_summary(rev, summary);
 
   string text = message();
   if (text.empty() || text.substr(text.length()-1) != "\n")
@@ -788,6 +787,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       text += "\n";
       message = utf8(text, origin::user);
     }
+
+  revision_summary(rev, summary);
 
   external header_external;
   external message_external;
@@ -1341,21 +1342,26 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   if (author.empty())
     {
-      rsa_keypair_id key;
-      get_user_key(app.opts, app.lua, db, keys, key);
+      key_identity_info key;
+      get_user_key(app.opts, app.lua, db, keys, project, key.id);
+      project.complete_key_identity(app.lua, key);
+
       if (!app.lua.hook_get_author(app.opts.branch, key, author))
-        author = key();
+        author = key.official_name();
     }
 
   if (!log_message_given)
     {
-      set<branch_name> old_branch_names;
-      get_old_branch_names(db, old_rosters, old_branch_names);
+      set<branch_name> old_branches;
+      get_old_branch_names(db, old_rosters, old_branches);
+      bool branch_changed =
+        old_branches.find(app.opts.branch) == old_branches.end();
 
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, 
                                     restricted_rev_id, restricted_rev,
                                     author, date, app.opts.branch, 
+                                    branch_changed,
                                     log_message);
 
       // We only check for empty log messages when the user entered them
