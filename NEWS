@@ -25,22 +25,27 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         Bugs fixed
 
-	- 'passphrase' now allows an empty new password to be given
+        - 'passphrase' now allows an empty new password to be given
           (fixes monotone bug #28809)
- 
+
+        - monotone no longer throws an exception on Windows if it is
+          interrupted (^C); a couple of other bug have been fixed for this
+          platform as well which generally improve the compatibility.
+
         Other
 
-	- Roster handling has been sped up significantly, and roster cache
-	  performance has been fixed for the case of overly large rosters.
-	  This should be mostly noticable when digging through history
-	  (especially initial pulls, since those send so many revisions),
-	  and be more noticable for projects with larger trees.
+        - Roster handling has been sped up significantly, and roster cache
+          performance has been fixed for the case of overly large rosters.
+          This should be mostly noticable when digging through history
+          (especially initial pulls, since those send so many revisions),
+          and be more noticable for projects with larger trees.
 
-	  The most significant internal change from this is that rosters and
+          The most significant internal change from this is that rosters and
           marking_maps are now copy-on-write. A longer overview of the internal
-	  changes is at:
-	  http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
+          changes is at:
+          http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
 
+        - Improve the compatibility with newer Botan versions.
 
 Sun Jan 17 21:40:35 UTC 2010
 
