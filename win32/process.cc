@@ -18,46 +18,16 @@
 static std::string munge_inner_argument(const char* arg)
 {
   std::string result;
-  bool has_space = false;
-  int quotes = 0;
-  bool space_outside_quote = false;
-  const char* arg_end = arg + std::strlen(arg) - 1;
 
-  for (const char* c = arg; *c; ++c) {
-    switch (*c) {
-    case ' ':
-      has_space = true;
-      if (quotes % 2 == 0)
-        space_outside_quote = true;
-      break;
-    case '"':
-      quotes++;
-      break;
-    }
-  }
-
-  I(quotes % 2 == 0);
-
-  // quote start of argument if needed
-  if (has_space && space_outside_quote)
-    result += "\"";
-
-  // copy argument
-  if (quotes == 0)
-    result += arg;
-  else {
-    // escape inner quotes
-    for (const char* c = arg; *c; ++c) {
-      if (*c == '"' && c != arg && '"' && c != arg_end)
+  // I don't think Windows allows us to escape a backslash properly.
+  result += '"';
+  for (char const * c = arg; *c; ++c)
+    {
+      if (*c == '"' /* || *c == '\\' */)
         result += '\\';
       result += *c;
     }
-  }
-
-  // quote end of argument
-  if (has_space && space_outside_quote)
-    result += "\"";
-
+  result += '"';
   return result;
 }
 
