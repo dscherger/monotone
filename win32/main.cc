@@ -155,6 +155,37 @@ seh_reporting_function(LPEXCEPTION_POINTERS ep)
   return EXCEPTION_EXECUTE_HANDLER;  // causes process termination
 }
 
+BOOL WINAPI ConsoleCtrlHandler(DWORD what)
+{
+  write_str_to_stderr(argv0);
+  write_str_to_stderr(": operation canceled: ");
+  switch (what)
+    {
+    case CTRL_C_EVENT:
+    case CTRL_BREAK_EVENT:
+      write_str_to_stderr("user interrupt\n");
+      break;
+    case CTRL_CLOSE_EVENT:
+      write_str_to_stderr("console closed\n");
+      break;
+    case CTRL_LOGOFF_EVENT:
+      write_str_to_stderr("user logoff\n");
+      break;
+    case CTRL_SHUTDOWN_EVENT:
+      write_str_to_stderr("system shutdown\n");
+      break;
+    }
+
+  // this crashes, even though it shouldn't
+  //ExitProcess(0);
+
+  // this exits without calling cleanup routines (atexit() and the like)
+  TerminateProcess(GetCurrentProcess(), 0);
+
+  // returning FALSE crashes (calls ExitProcess()); TRUE exits or does nothing
+  return FALSE;
+}
+
 #ifdef MS_CRT_DEBUG_HOOK
 static int
 assert_reporting_function(int reportType, char* userMessage, int* retVal)
@@ -190,6 +221,7 @@ main(int argc, char ** argv)
   }
 
   SetUnhandledExceptionFilter(&seh_reporting_function);
+  SetConsoleCtrlHandler(&ConsoleCtrlHandler, TRUE);
 
 #ifdef MS_CRT_DEBUG_HOOK
   _CrtSetReportHook(&assert_reporting_function);
