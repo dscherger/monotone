@@ -1313,8 +1313,6 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       app.opts.branch = branchname;
     }
 
-  P(F("beginning commit on branch '%s'") % app.opts.branch);
-
   if (global_sanity.debug_p())
     {
       L(FL("new manifest '%s'\n"
@@ -1401,6 +1399,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   project.get_branch_heads(app.opts.branch, heads,
                            app.opts.ignore_suspend_certs);
   unsigned int old_head_size = heads.size();
+
+   P(F("beginning commit on branch '%s'") % app.opts.branch);
 
   {
     transaction_guard guard(db);
