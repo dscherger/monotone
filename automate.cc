@@ -474,19 +474,19 @@ CMD_AUTOMATE(graph, "",
   multimap<revision_id, revision_id> edges_mmap;
   map<revision_id, set<revision_id> > child_to_parents;
 
-  db.get_revision_ancestry(edges_mmap);
+  db.get_reverse_ancestry(edges_mmap);
 
   for (multimap<revision_id, revision_id>::const_iterator i = edges_mmap.begin();
        i != edges_mmap.end(); ++i)
     {
-      if (child_to_parents.find(i->second) == child_to_parents.end())
-        child_to_parents.insert(make_pair(i->second, set<revision_id>()));
-      if (null_id(i->first))
+      if (child_to_parents.find(i->first) == child_to_parents.end())
+        child_to_parents.insert(make_pair(i->first, set<revision_id>()));
+      if (null_id(i->second))
         continue;
       map<revision_id, set<revision_id> >::iterator
-        j = child_to_parents.find(i->second);
-      I(j->first == i->second);
-      j->second.insert(i->first);
+        j = child_to_parents.find(i->first);
+      I(j->first == i->first);
+      j->second.insert(i->second);
     }
 
   for (map<revision_id, set<revision_id> >::const_iterator
@@ -542,7 +542,7 @@ struct node_info
 };
 
 static void
-get_node_info(node_t const & node, node_info & info)
+get_node_info(const_node_t const & node, node_info & info)
 {
   info.exists = true;
   info.id = node->self;
@@ -692,7 +692,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (old_roster.has_node(fp))
         {
-          node_t node = old_roster.get_node(fp);
+          const_node_t node = old_roster.get_node(fp);
           if (new_roster.has_node(node->self))
             {
               file_path new_path;
@@ -707,7 +707,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (new_roster.has_node(fp))
         {
-          node_t node = new_roster.get_node(fp);
+          const_node_t node = new_roster.get_node(fp);
           if (old_roster.has_node(node->self))
             {
               file_path old_path;
@@ -729,7 +729,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (old_roster.has_node(fp))
         {
-          node_t node = old_roster.get_node(fp);
+          const_node_t node = old_roster.get_node(fp);
           if (new_roster.has_node(node->self))
             {
               file_path new_path;
@@ -744,7 +744,7 @@ inventory_determine_corresponding_paths(roster_t const & old_roster,
 
       if (new_roster.has_node(fp))
         {
-          node_t node = new_roster.get_node(fp);
+          const_node_t node = new_roster.get_node(fp);
           if (old_roster.has_node(node->self))
             {
               file_path old_path;
@@ -942,7 +942,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
       // for which we can get the content id of both new and old nodes.
       if (item.new_node.type == path::file && item.fs_type != path::nonexistent)
         {
-          file_t old_file = downcast_to_file_t(old_roster.get_node(item.new_node.id));
+          const_file_t old_file = downcast_to_file_t(old_roster.get_node(item.new_node.id));
 
           switch (item.old_node.type)
             {
@@ -963,7 +963,7 @@ inventory_determine_changes(inventory_item const & item, roster_t const & old_ro
         }
 
       // now look for changed attributes
-      node_t old_node = old_roster.get_node(item.new_node.id);
+      const_node_t old_node = old_roster.get_node(item.new_node.id);
       if (old_node->attrs != item.new_node.attrs)
         changes.push_back("attrs");
     }
@@ -989,11 +989,9 @@ inventory_determine_birth(inventory_item const & item,
   revision_id rid;
   if (old_roster.has_node(item.new_node.id))
     {
-      node_t node = old_roster.get_node(item.new_node.id);
-      marking_map::const_iterator m = old_marking.find(node->self);
-      I(m != old_marking.end());
-      marking_t mark = m->second;
-      rid = mark.birth_revision;
+      const_node_t node = old_roster.get_node(item.new_node.id);
+      const_marking_t const & mark = old_marking.get_marking(node->self);
+      rid = mark->birth_revision;
     }
   return rid;
 }
@@ -1893,14 +1891,12 @@ CMD_AUTOMATE(get_content_changed, N_("REV FILE"),
     F("file %s is unknown for revision %s")
     % path % ident);
 
-  node_t node = new_roster.get_node(path);
-  marking_map::const_iterator m = mm.find(node->self);
-  I(m != mm.end());
-  marking_t mark = m->second;
+  const_node_t node = new_roster.get_node(path);
+  const_marking_t const & mark = mm.get_marking(node->self);
 
   basic_io::printer prt;
-  for (set<revision_id>::const_iterator i = mark.file_content.begin();
-       i != mark.file_content.end(); ++i)
+  for (set<revision_id>::const_iterator i = mark->file_content.begin();
+       i != mark->file_content.end(); ++i)
     {
       basic_io::stanza st;
       st.push_binary_pair(basic_io::syms::content_mark, i->inner());
@@ -1961,7 +1957,7 @@ CMD_AUTOMATE(get_corresponding_path, N_("REV1 FILE REV2"),
   E(new_roster.has_node(path), origin::user,
     F("file %s is unknown for revision %s") % path % ident);
 
-  node_t node = new_roster.get_node(path);
+  const_node_t node = new_roster.get_node(path);
   basic_io::printer prt;
   if (old_roster.has_node(node->self))
     {
@@ -2321,27 +2317,27 @@ CMD_AUTOMATE(lua, "LUA_FUNCTION [ARG1 [ARG2 [...]]]",
   E(args.size() >= 1, origin::user,
     F("wrong argument count"));
 
-    std::string func = idx(args, 0)();
+  std::string func = idx(args, 0)();
 
-    E(app.lua.hook_exists(func), origin::user,
-      F("lua function '%s' does not exist") % func);
+  E(app.lua.hook_exists(func), origin::user,
+    F("lua function '%s' does not exist") % func);
 
-    std::vector<std::string> func_args;
-    if (args.size() > 1)
-      {
-        for (unsigned int i=1; i<args.size(); i++)
+  std::vector<std::string> func_args;
+  if (args.size() > 1)
+    {
+      for (unsigned int i=1; i<args.size(); i++)
         {
           func_args.push_back(idx(args, i)());
         }
-      }
+    }
 
-    std::string out;
-    E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
-      F("lua call '%s' failed") % func);
+  std::string out;
+  E(app.lua.hook_hook_wrapper(func, func_args, out), origin::user,
+    F("lua call '%s' failed") % func);
 
-    // the output already contains a trailing newline, so we don't add
-    // another one here
-    output << out;
+  // the output already contains a trailing newline, so we don't add
+  // another one here
+  output << out;
 }
 
 // Local Variables:

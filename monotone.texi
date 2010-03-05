@@ -4,6 +4,10 @@
 @settitle monotone documentation
 @setchapternewpage odd
 @finalout
+@ifhtml
+@paragraphindent 0
+@exampleindent 0
+@end ifhtml
 @c %**end of header
 
 @syncodeindex fn cp
@@ -34,7 +38,7 @@ Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
-Copyright @copyright{} 2006, 2007, 2008 Thomas Keller @*
+Copyright @copyright{} 2006 - 2009 Thomas Keller @*
 Copyright @copyright{} 2007 - 2009 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
@@ -44,7 +48,7 @@ greater.  See the accompanying file COPYING for details.
 
 @ifnottex
 @node Top, Concepts, (dir), (dir)
-@top Top
+@top Overview
 
 Monotone is a distributed version control tool. It can help automate
 many tedious and error-prone tasks in group software development.
@@ -1445,7 +1449,7 @@ recursively scans the directory and adds all its files.
 
 @smallexample
 @group
-$ mtn add include/jb.h src
+$ mtn add -R include/jb.h src
 mtn: adding include/jb.h to workspace manifest
 mtn: adding src/apple.c to workspace manifest
 mtn: adding src/banana.c to workspace manifest
@@ -2635,6 +2639,7 @@ familiarize yourself with its operation.
 * Importing from CVS::          Building a monotone database from a CVS repository.
 * Exporting to GIT::            Building a git repository from a monotone database.
 * Using packets::               Transferring data ``by hand''.
+* Bisecting::                   Finding bad revisions.
 @end menu
 
 @page
@@ -2858,21 +2863,21 @@ numeric format by a Lua hook: @code{expand_date}.
 The allowed date formats are:
 @table @asis
 
-@item now
+@item @code{now}
 Expands to the current date and time.
-@item today
+@item @code{today}
 Expands to today's date. @code{e} and @code{l} selectors assume time 00:00:00
-@item yesterday
+@item @code{yesterday}
 Expands to yesterday's date. @code{e} and @code{l} selectors assume
 time 00:00:00
-@item <number> @{minute|hour@} <ago>
+@item @code{<number> @{minute|hour@} <ago>}
 Expands to today date and time, minus the specified @code{number} of
 minutes|hours.
-@item <number> @{day|week|month|year@} <ago>
+@item @code{<number> @{day|week|month|year@} <ago>}
 Expands to today date, minus the specified @code{number} of
 days|weeks|months|years. @code{e} and @code{l} selectors assume time
 00:00:00
-@item <year>-<month>[-day[Thour:minute:second]]
+@item @code{<year>-<month>[-day[Thour:minute:second]]}
 Expands to the supplied year/month. The day and time component are
 optional. If missing, @code{e} and @code{l} selectors assume the first
 day of month and time 00:00:00.
@@ -4020,14 +4025,14 @@ git commit message using the @option{--log-certs} option described in
 
 Monotone author names often look like raw email addresses such as
 @code{"user@@example.com"}. These are not considered valid by git
-which requires leading `<' and trailing `>' characters around email
-addresses and by convention often includes the display name with the
-email address such as @code{"User Name <user@@example.com>"}. The git
-exporter deals with this difference in several ways:
+which requires the display name and leading `<' and trailing `>'
+characters around email addresses such as @code{"User Name
+<user@@example.com>"}. The git exporter deals with this difference in
+several ways:
 @itemize
 @item
 revisions that don't have any author certs will default to using
-@code{<unknown>} for both the author and committer.
+@code{Unknown <unknown>} for both the author and committer.
 @item
 revisions that have one or more author certs will use the value of one
 author cert as the author and the key used to sign this cert as
@@ -4037,10 +4042,14 @@ both author and committer will be looked up in the file specified by
 the @option{--authors-file} option described in @ref{GIT} and
 translated to the specified value if found.
 @item
-any author or committer that does not contain both `<' and `>'
-characters will have an initial ``<' character and a final `>'
-character added so that they may form valid values.
+any author or committer value not found in the authors file will be
+processed by the @code{unmapped_git_author} hook which may adjust the
+value so that it represents a valid value.
 @end itemize
+All git author and committer values will be validated by the
+@code{validate_git_author} hook before being written to the output
+stream. The export will abort if any author or committer value is
+rejected by the validation hook.
 
 Branch names used by monotone are allowed to contain characters that
 are not considered valid by git. These may be mapped to other names
@@ -4068,7 +4077,7 @@ verifying that the exported repository matches their expectations and
 requirements.
 
 @page
-@node    Using packets,  , Exporting to GIT, Advanced Uses
+@node    Using packets, Bisecting, Exporting to GIT, Advanced Uses
 @section Using packets
 
 Suppose you made changes to your database, and want to send those
@@ -4257,6 +4266,74 @@ file 2 getting in
 
 And that's it! The revisions were successfully transferred.
 
+
+@page
+@node    Bisecting, , Using packets, Advanced Uses
+@section Bisecting
+
+Bisecting is an efficient means of finding the earliest revision that
+introduced a bug known to exist in some later revision. Given a set of
+``good'' earlier revisions that do not contain the bug and a set of
+``bad'' later revisions that do contain the bug @command{bisect}
+performs a binary search over the set of revisions between these two
+sets to identify the specific revision that introduced the bug.
+
+Bisection is started by marking revisions with the @command{bisect
+good} and @command{bisect bad} commands. Once both good and bad
+revisions have been specified the set of candidate revisions between
+the good and bad revisions is determined. The midpoint of this set is
+selected as the next revision to be tested and the workspace is
+updated to this selected revision. After the selected revision has
+been tested bisection continues when the revision is marked with
+@command{bisect good} or @command{bisect bad}. If the selected
+revision is marked as good, it and all of its ancestors are considered
+to be good and excluded from the remaining search set. If the selected
+revision is marked as bad, all of its descendants are considered to be
+bad and excluded from the remaining search set. After each selected
+revision is marked as good or bad the size of the remaining search set
+is halved.
+
+Revisions that are untestable for some reason (e.g. they don't
+compile) may be ignored with the @command{bisect skip} command. This
+excludes the specified revisions from the candidate set and allows the
+bisection operation to continue. Skipping revisions may cause the
+search to fail or end on the wrong revision if the revision being
+searched for is skipped.
+
+If the workspace is updated to some unrelated revision during a
+bisection operation the @command{bisect update} command can be used to
+update back to the next revision selected for bisection. This command
+can also be used if a previous @command{bisect good}, @command{bisect
+bad} or @command{bisect skip} command fails to update the workspace
+due to the existence of conflicting unversioned paths.
+
+The current status of the bisection operation and the next revision to
+be tested is reported by the @command{bisect status} command. This
+command can be run at any stage of the bisection operation to see how
+many revisions remain to be tested and how many revisions have been
+ruled out.
+
+Currently @command{bisect} updates the workspace but does @emph{not}
+update the workspace @option{branch} option. This may leave the
+workspace at a revision that is @emph{not} in the branch specified by
+the workspace @option{branch} option and cause subsequent commits to
+be made to the wrong branch. To help avoid this error the
+@command{status} command will indicate when the workspace branch does
+not match any of the parent revision branches. Take care when
+committing new revisions during a bisection operation and be sure to
+use the @command{bisect reset} command once the bisection is complete
+to update the workspace back to the revision from which the bisection
+started.
+
+The bisection operation completes successfully when the last remaining
+revision is marked as ``bad''.  If the last remaining revision is
+marked as ``good'' the bisection fails without finding the initial bad
+revision.
+
+Once bisection is complete the workspace can be updated back to the
+starting revision with the @command{bisect reset} command. This
+command also removes all stored bisection information in preparation
+for future bisect operations.
 
 @page
 @node    CVS Phrasebook, Command Reference, Advanced Uses, Top
@@ -4574,7 +4651,7 @@ $ cvs import wobbler vendor start
 @smallexample
 @group
 $ mtn --db=/path/to/database.mtn --branch=com.foo.wobbler setup .
-$ mtn add .
+$ mtn add -R .
 $ mtn commit
 @end group
 @end smallexample
@@ -4692,14 +4769,15 @@ If no @var{id} is provided, as in the latter two commands, you
 @emph{must} provide a @var{branchname}; monotone will attempt to infer
 @var{id} as the unique head of @var{branchname} if it exists.
 
-@item mtn clone --branch=@var{branchname} @var{address} @var{directory}
+@item mtn clone @var{address}[:@var{port}] @var{branchname} [@var{directory}]
 
 The clone command is a helper command that performs the roles of a
 number of other commands all at once.  Firstly, it constructs a new
 database.  It then populates this database by @command{pull}ing any data
 in the branch @var{branchname} from the remote database, @var{address}.
 Finally, it copies the files out of the newly created database into a
-local directory, just as @command{checkout} would.  The created
+local directory, just as @command{checkout} would.  If no @var{directory}
+is given, the @var{branchname} is used as directory.  The created
 database is placed in the new workspace as @file{@var{directory}/_MTN/mtn.db}.
 
 @item mtn disapprove @var{id}
@@ -5284,6 +5362,62 @@ records, but not in the filesystem itself.
 When running @command{pivot_root}, it is sometimes possible for
 @ref{Workspace Collisions} to occur.
 
+@item mtn bisect good [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``good'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect bad [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``bad'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect skip [--revision=@var{id} ...] [--move-conflicting-paths]
+Mark the specified revisions as ``skipped'' for the current bisection
+operation. If no bisection operation is in progress a new bisection is
+initialized. If a bisection operation is in progress the next update
+target is selected and the workspace is updated to the selected
+revision.
+
+If the update is blocked by conflicting unversioned paths existing in
+the workspace this command may be re-issued with the
+@option{--move-conflicting-paths} option. Alternatively, the
+@command{bisect update} command can be used with this option to update
+the workspace and move the conflicting paths out of the way.
+
+@item mtn bisect update [--move-conflicting-paths]
+Update the workspace to the next revision selected by the previous
+bisect operation. This command can be useful when the previous bisect
+operation fails to update the workspace because of conflicting
+unversioned paths existing in the workspace.
+
+@item mtn bisect status
+Report the status of the current bisection operation including the
+number of revisions that remain to be tested, the number of revisions
+that have been tested and the next revision that will selected for
+testing.
+
+@item mtn bisect reset
+Reset the current bisection operation by updating the workspace back
+to the revision from which the bisection was started and clearing the
+current bisection information.
+
 @end ftable
 
 @page
@@ -5294,8 +5428,8 @@ When running @command{pivot_root}, it is sometimes possible for
 @item mtn serve [--bind=[@var{address}][:@var{port}]]
 @item mtn serve --stdio [--no-transport-auth]
 @itemx mtn pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn push [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
-@itemx mtn sync [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
 
 These commands operate the ``netsync'' protocol built into
 monotone. This is a custom protocol for rapidly synchronizing two
@@ -7672,6 +7806,12 @@ none
 
 @itemize
 @item
+12.0 -- Introduced out of band streams ('e', 'p', 't', 'w'); the main output
+    of a command now only happens in the 'm' stream; the 'l' stream now marks
+    the end of all streams of a command; introduced the concept of "headers"
+    which are output before the first command is issued; specific error codes
+    to distinguish command from interface errors have also been introduced.
+@item
 3.1 -- Added the 'o' item to the recognized input. This change should not
 break anything.
 @item
@@ -7711,46 +7851,367 @@ will cause an error.
 @item Sample output:
 
 @verbatim
-0:0:l:205:0e3171212f34839c2e3263e7282cdeea22fc5378
-1f4ef73c3e056883c6a5ff66728dd764557db5e6
-2133c52680aa2492b18ed902bdef7e083464c0b8
-23501f8afd1f9ee037019765309b0f8428567f8a
-2c295fcf5fe20301557b9b3a5b4d437b5ab8ec8c
-1:0:l:41:7706a422ccad41621c958affa999b1a1dd644e79
+format-version: 2
+
+0:m:41:7706a422ccad41621c958affa999b1a1dd644e79
+0:l:1:0
+...
+1:e:38:misuse: key 'test@test' already exists
+1:l:1:2
+...
+2:w:39:skipping file '\' with unsupported name
+2:m:144:    path ""
+old_type "directory"
+new_type "directory"
+ fs_type "directory"
+   birth [276264b0b3f1e70fc1835a700e6e61bdbe4c3f2f]
+  status "known"
+...
+3:t:34:c:certificates;k:keys;r:revisions;
+3:t:12:c=0;k=0;r=0;
+3:t:13:c#0;k#0;r#64;
+3:t:14:c#0;k#0;r#128;
+3:t:6:c;k;r;
+...
 @end verbatim
 
 @item Output format:
 
-The output consists of one or more packets for each command.
+Right after a stdio session has been set up, header information is
+issued; to date the only header defined is @code{format-version},
+which denotes the version of the stdio format used throughout the
+session. The original format had no such version output, so our
+numbering starts with "2" here.
+
+Headers are separated from each other by single newline character @code{'\n'}
+and the last is separated from the following output by a pair of newline
+characters.
+
+After a command has been issued, one or more packets are returned for it.
 A packet looks like:
 
-<command number>:<err code>:<last?>:<size>:<output>
+@verbatim
+<command number>:<stream>:<size>:<output>
+@end verbatim
 
-<command number> is a decimal number specifying which command this output
+@code{<command number>} is a decimal number specifying which command this output
 is from. It is 0 for the first command, and increases by one each time.
 
-<err code> is 0 for success, 1 for a syntax error which occurred in stdio scope (before the command is executed), and 2 for a command error.
+@code{<stream>} is an identifier for which output stream this packet represents,
+allowing multiple streams to be multiplexed over the channel.  The following
+streams are presently defined; more streams may be added later.
 
-<last?> is 'l' if this is the last piece of output for this command, and 'm'
-if there is more output to come.
+@itemize
+@item
+ @code{m}: this stream represents the normal ("main") stdout automate output of
+ the command, formatted as described in the description for that command.
+@item
+ @code{e}: this stream represents any (unstructured) error message data.
 
-<size> is the number of bytes in the output.
+ Internally, this maps to calls to the @code{E()} print macros that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{w}: this stream represents any (unstructured) warning message data.
 
-<output> is a piece of the output of the command.
+ Internally, this maps to calls to the @code{W()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{p}: this stream represents any (unstructured) progress message data.
 
-All but the last packet for a given command will have the
-<last?> field set to 'm'.
+ Internally, this maps to calls to the @code{P()} print macro that would
+ normally be written by the command to the program's stderr stream, if the
+ automate sub-command had been called directly rather than via '''stdio'''.
+@item
+ @code{t}: this stream represents ticker updates, which may be used
+ by a user interface to display the progress of a command.
+
+ The output for this channel can be described as follows:
+
+ @itemize
+ @item
+ @code{<output>       ::= <definition><payload><end>}
+ @item
+ @code{<definition>   ::= <shortname> ':' <longname> <eol>}
+ @item
+ @code{<payload>      ::= <total_count><advance>+}
+ @item
+ @code{<end>          ::= <shortname> <eol>}
+ @item
+ @code{<total_count>  ::= <shortname> '=' <count> <eol>}
+ @item
+ @code{<advance>      ::= <shortname> '#' <count> <eol>}
+ @item
+ @code{<shortname>    ::= "\w+"}
+ @item
+ @code{<longname>     ::= "[^;]+"}
+ @item
+ @code{<count>        ::= ['0'-'9']+}
+ @item
+ @code{<eol>          ::= ';'}
+ @end itemize
+
+ The definition tells the implementor the short name and long name of
+any upcoming ticker event. The names and meanings are command-specific
+and are therefore explained in the sections for the particular
+commands which support ticker output.
+
+ The @code{total_count} might be 0 right at the start and can later be changed
+ to a different number if the command later on knows a more exact value. If
+ this is the case, this stanza is output again with this new value. A
+ constant @code{total_count} of 0 means that the command may continue to run
+ for a undefined amount of time until the end stanza appears.
+
+ The advance tells the implementor how much work has been done so far.
+
+ Finally, the end stanza is printed just before the ticker ends
+ (i.e. the work has been done).
+
+ All counts output absolute, raw values; no modulation takes place. It
+is usually the case that definition, @code{total_count}, advance and
+end are output in separate stanzas. It is also possible that two or
+more parallel tickers output their stanzas at the same time, in this
+case it's ensured that the output does not get intermixed; first
+all definitions are output, afterwards all total_counts, and so on.
+
+ @emph{Note:} The ticker format used for stdio is fixed and cannot be selected
+ explicitely via the global @option{--ticker} option. However, if you run an
+ automate command outside of stdio you can set a different ticker type, f.e.
+ @var{count}, @var{dot} or @var{none}.
+@item
+ @code{l}: this stream marks the termination of a command and all of
+ its streams and carries the return code of the command in the payload.
+
+ A return code "0" stands for success, "1" for an error which occurred within
+ the stdio interface (f.e. syntax errors or missing privileges) before the
+ command is run and finally "2" for any other command-specific error.
+@end itemize
+
+@code{<size>} is the number of bytes in the output.
+
+@code{<output>} is a piece of the output of the command.
 
 @item Error conditions:
 
-If a badly formatted or invalid command is received, or a command is
-given with invalid arguments or options, prints an error message to
-standard error and exits with nonzero status. Errors in the commands run
-through this interface do not affect the exit status. Instead, the <err code>
-field in the output is set to 2, and the output of the command becomes
-whatever error message would have been given.
+Errors in the commands run through this interface do not affect the exit
+status of this command. Instead, if a badly formatted or invalid command
+is received, or a command is given with invalid arguments or options,
+an error message to the error stream is printed and and the particular
+sub-command exits with return code "1". Other command-specific errors are
+returned as code "2".
+
+Trying to run the @code{automate stdio} or @code{automate remote_stdio}
+sub-commands will exit the particular command with return code "1".
+
+@item Notes:
+
+Keyboard interaction is disabled, just as if @option{--non-interactive} is
+specified. Actions which require operations on password-encrypted private keys
+will therefor fail unless the @code{get_passphrase} hook is set up locally.
+
+@item Multiple streams
+
+The multiple stream encoding allows the output of errors and warnings to be
+associated with the command that generated them, allows the communication
+path to always stay in sync, and offers the opportunity to add other stream
+types for other useful purposes in the future as needs arise.
 
 @end table
+
+@item mtn automate remote_stdio [@var{hostname}]
+
+@table @strong
+@item Arguments
+
+@var{hostname} is the host (and optionally port) of the monotone server
+process to connect to. If not given, the default server is used.
+
+@item Added in
+
+12.0
+
+@item Purpose
+
+Permit @code{automate} commands to be run against a database that is
+being used to serve netsync connections.
+
+@item Input/Output format
+
+This command takes input and produces output in exactly the
+same format as @code{automate stdio}. Note that the commands run with
+@code{automate remote_stdio} may conform to a different @var{interface_version},
+because they are handled by a remote instance of monotone.
+
+There will be some extra chatter on stderr unless @option{--quiet} is given.
+
+@item Error Conditions
+
+If left idle for too long or there are network problems, the connection to the
+server may be dropped. This will not be detected while monotone is waiting for
+input. Instead, when a complete command has been entered and monotone tries to
+send it to the remote server it will print a message to stderr and exit with
+code 1.
+
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
+For both, the client and the server, keyboard interaction is disabled,
+just as if @option{--non-interactive} is specified. Actions which require
+operations on password-encrypted private keys will therefor fail unless the
+@code{get_passphrase} hook is set up locally and / or remotely.
+
+@end table
+
+@item mtn automate remote @option{--remote-stdio-host=host} @var{command} @var{args-and-opts}
+
+@table @strong
+@item Arguments
+
+A command and its arguments, to execute on the remote server specified
+by the @option{--remote-stdio-host} option. If no host is given, the default
+server is used. If options are to be passed to the command, they must be
+preceded by @option{--} to prevent them from being interpreted as local options.
+
+Remote options @strong{must} be given as a single token, ie
+@option{--branch=foo} or @option{-bfoo}. This is because the local and remote
+monotones may not understand exactly the same options (so the local monotone
+cannot know if an option given as @option{--branch} or @option{-b} should be
+followed by an argument), and because the server sees this as an
+@code{automate remote_stdio} connection (so it expects the options to already
+be parsed).
+
+@item Added in
+
+12.0
+
+@item Purpose
+
+Permit a single @code{automate} command to be run against a database that is
+being used to serve netsync connections, without having its input and output
+encoded as by @code{automate stdio}.
+
+@item Input/Output Format
+
+This command does not accept input.
+
+The output will be whatever output the remote command generates.
+
+Remote diagnostic messages are written to standard error, prefixed either
+with @code{mtn: remote error:}, @code{mtn: remote warning:} or
+@code{mtn: remote message:} to make them distinguishable from local
+diagnostics. Tickers are not supported over this interface. If you need
+remote ticker support, please use @command{automate remote_stdio}.
+
+@item Error Conditions
+
+If the remote command returns a nonzero error code, will exit with code 1 and
+print "received remote error code N" to standard error, with "N" being
+the remote error code.
+
+@item Notes
+
+On the server side the @code{get_remote_automate_permitted} hook has to be
+configured to include every command which should be executable over this
+interface.
+
+Keyboard interaction is disabled on the server, just as if
+@option{--non-interactive} would have been specified on server startup.
+Actions which require operations on password-encrypted private keys will
+therefor fail unless a @code{get_passphrase} hook is set up remotely.
+
+@end table
+
+
+@item mtn automate pull [--set-default] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn automate push [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+@itemx mtn automate sync [--set-default] [--keys-to-push=@var{key}] [@var{uri-or-address}] [@var{glob} [...] [--exclude=@var{exclude-glob}]]]
+
+@table @strong
+@item Arguments:
+
+The automate versions of pull, push and sync have the same set of arguments and
+options compared to the non-automate versions. Please check this manual in the
+appropriate section for a full explanation.
+
+@item Added in:
+
+12.0
+
+@item Purpose:
+
+Pushes, pulls or syncs (push & pull) revisions, certificates and keys of
+the given database to, from or with the given netsync server.
+
+@item Sample output (stdio):
+
+The following output shows an example of a pull which transferred two revisions
+and eight certs.
+
+@emph{Note:} The linebreaks are not part of the actual format, but have been
+added for better readability.
+
+@verbatim
+0:p:62:doing anonymous pull; use -kKEYNAME if you need authentication
+0:p:25:connecting to monotone.ca0:0:p:29:finding items to synchronize:
+0:t:34:c:certificates;k:keys;r:revisions;
+0:t:12:c=0;k=0;r=0;
+0:t:13:c#0;k#0;r#64;
+0:t:14:c#0;k#0;r#128;
+[...]
+0:t:6:c;k;r;
+0:t:44:>:bytes in;<:bytes out;c:certs in;r:revs in;
+0:t:16:>=0;<=0;c=0;r=0;
+0:t:21:>#420;<#1344;c#0;r#0;
+0:t:22:>#1165;<#1741;c#0;r#0;
+[...]
+0:t:24:>#20839;<#14882;c#0;r#1;
+0:t:24:>#20839;<#14882;c#3;r#1;
+0:t:24:>#20839;<#14882;c#4;r#2;
+0:t:24:>#20839;<#14882;c#6;r#2;
+0:t:24:>#20863;<#14930;c#8;r#2;
+0:t:8:<;>;c;r;
+0:p:36:successful exchange with monotone.ca
+0:l:1:0
+@end verbatim
+
+@item Output format:
+
+If ran outside of @command{automate stdio}, the output of these commands is
+equal to the normal netsync command output.
+
+If these commands are run over stdio, the stdio ticker format is used
+(for a description of this format, check @command{automate stdio}).
+
+The following ticker types are printed out during the refinement phase:
+
+@itemize
+@item @code{c}: The number of certs found for an upcoming synchronization
+@item @code{k}: The number of keys found for an upcoming synchronization
+@item @code{r}: The number of revisions found for an upcoming synchronization
+@end itemize
+
+After refinement the actual synchronization between the two nodes start. The
+ticker stanzas in this phase are the following:
+
+@itemize
+@item @code{>}: The number of incoming bytes
+@item @code{<}: The number of outgoing bytes
+@item @code{c}: The number of incoming certs  (only pull and sync)
+@item @code{C}: The number of outgoing certs  (only push and sync)
+@item @code{r}: The number of incoming revisions  (only pull and sync)
+@item @code{R}: The number of outgoing revisions  (only push and sync)
+@end itemize
+
+@item Error conditions:
+
+If a netsync error occurs, the command outputs an error and exits with status 1.
+
+@end table
+
 
 @item mtn automate genkey @var{name} @var{passphrase}
 
@@ -9590,29 +10051,37 @@ loginname = Joe User <user@example.com>
 
 The list of authors that might need to be mapped can be extracted from
 a monotone database with the following sql query:
+
 @verbatim
 $ mtn db execute 'select distinct value from revision_certs where name = "author"'
 @end verbatim
 
 The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
+
 @verbatim
-$ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+$ mtn db execute 'select distinct public_keys.name 
+                  from public_keys
+                  left join revision_certs on revision_certs.keypair_id = public_keys.id
+                  where revision_certs.name = "author"'
 @end verbatim
 
 The @option{--branches-file} option may be used to map monotone branch
 names to different values. This may be required as monotone allows
 branch names that are not valid according to git. Branch mappings are
 specified in the @var{branches-file} as:
+
 @verbatim
 monotone-branch-name = git-branch-name
 @end verbatim
-Revisions with no author cert will use <unknown> for both the author
-and the committer. These can be mapped to other values using the
-@var{authors-file} option.
+
+Revisions with no author cert will use "Unknown <unknown>" for both
+the author and the committer. These can be mapped to other values
+using the @var{authors-file} option.
 
 The list of branches that might need to be mapped can be extracted
 from a monotone database with using the @command{ls branches} command:
+
 @verbatim
 $ mtn ls branches --ignore-suspend-certs
 @end verbatim
@@ -9632,10 +10101,12 @@ files may also be used.
 The original monotone revision ids may be included in the exported git
 commit messages using the @option{--log-revids} option. These will
 appear as:
+
 @verbatim
 Monotone-Parent: ...
 Monotone-Revision: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification. Merge revisions with two parents will include two
 @code{Monotone-Parent} lines.
@@ -9644,12 +10115,14 @@ The original monotone values for @code{author}, @code{date},
 @code{branch} and @code{tag} certificates may be included in the
 exported git commit messages using the @option{--log-certs}
 option. These will appear as:
+
 @verbatim
 Monotone-Author: ...
 Monotone-Date: ...
 Monotone-Branch: ...
 Monotone-Tag: ...
 @end verbatim
+
 in the git commit messages and may be useful for repository
 verification or maintaining information that is otherwise not
 maintained by git. In particular monotone may have several values for
@@ -10221,6 +10694,12 @@ branches via netsync, for a number of reasons. Contributions in the
 database from different authors can be selectively trusted using the
 @ref{Trust Evaluation Hooks} instead.
 
+@item get_remote_automate_permitted(@var{key_identity}, @var{command}, @var{options})
+
+Returns true if a peer authenticated as key @var{key_identity} should be
+allowed to execute the given @var{command} with the given @var{options}, as
+if through @code{automate stdio}.
+
 @end ftable
 
 @anchor{Netsync Transport Hooks}
@@ -10692,6 +11171,37 @@ The @code{binary_file} function is also defined as a Lua hook. See
 
 @end ftable
 
+@subsection GIT Export Hooks
+
+Exporting monotone revisions in git-fast-import(1) format often
+requires translation of monotone author cert values and associated
+signing keys into corresponding git author and committer
+values. Translation of author and committer values and validation of
+the results is controlled by these hooks. See @ref{Default hooks}.
+
+@ftable @code
+
+@item unmapped_git_author(@var{author})
+
+This hook is called for any git author or committer value that does
+not come from the current @emph{author map} file. If no @emph{author
+map} file is specified this hook will be called for @emph{every}
+unique git author and committer value.  It may return the value
+unchanged or modify it in some way in an effort to ensure that it is
+valid. The default implementation attempts several common pattern
+replacements to produce valid authors from monotone authors.
+
+@item validate_git_author(@var{author})
+
+This hook is called before the git author or committer value is
+written to the export output stream. The @var{author} value is either
+the mapped value from the current @emph{author map} file or the value
+produced by the @code{unmapped_git_author} hook. This hook may return
+true if the author is valid or false if it is not. The export will be
+aborted if this hook returns false for any value.
+
+@end ftable
+
 @subsection Validation Hooks
 
 If there is a policy decision to make, Monotone defines certain hooks to
@@ -10849,6 +11359,10 @@ output from the @command{automate} command. This function is not for use
 in ordinary Lua hooks, but rather for Lua based commands as defined by
 the Lua function @code{register_command}.
 
+Note that keyboard interaction is disabled, just as if @option{--non-interactive}
+is specified. Actions which require operations on password-encrypted private
+keys will therefor fail unless the @code{get_passphrase} hook is set up locally.
+
 @item parse_basic_io(@var{data})
 
 Parse the string @var{data}, which should be in basic_io format. It returns nil
@@ -10900,6 +11414,13 @@ or @option{pull}, as given by the @var{what} argument.
 
 When called by a monotone instance which is not running the @option{serve}
 command, this function has no effect.
+
+@item server_set_listening(@var{boolean})
+
+If the argument is @var{false}, make the server not listen for incoming
+connections, and exit when all existing connections have closed.
+
+If the argument is @var{true}, cancel an earlier call with @var{false} given.
 
 @item sleep(@var{seconds})
 
@@ -11365,6 +11886,7 @@ detected until further work had been based off of them.
 advances in crypto: if or when @sc{sha1} is broken, we will need to
 migrate to a different secure hash.
 @end itemize
+
 Obviously, we hope neither of these things will happen, and we've taken
 lots of precautions against the first recurring; but it is better to be
 prepared.

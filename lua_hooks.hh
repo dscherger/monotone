@@ -95,6 +95,10 @@ public:
   bool hook_get_netsync_read_permitted(std::string const & branch);
   bool hook_get_netsync_write_permitted(key_identity_info const & identity);
 
+  bool hook_get_remote_automate_permitted(key_identity_info const & identity,
+                                          std::vector<std::string> const & command_line,
+                                          std::vector<std::pair<std::string, std::string> > const & command_opts);
+
   // local repo hooks
   bool hook_ignore_file(file_path const & p);
   bool hook_ignore_branch(branch_name const & branch);
@@ -192,6 +196,12 @@ public:
                              size_t revs_in, size_t revs_out,
                              size_t keys_in, size_t keys_out);
   bool hook_note_mtn_startup(args_vector const & args);
+
+  // git export hooks
+  bool hook_unmapped_git_author(std::string const & unmapped_author,
+                                std::string & fixed_author);
+  bool hook_validate_git_author(std::string const & author);
+
 };
 
 #endif // __LUA_HOOKS_HH__

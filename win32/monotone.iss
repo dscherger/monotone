@@ -1,5 +1,5 @@
 #define APPNAME="monotone"
-#define APPVERS="0.46dev"
+#define APPVERS="0.47dev"
 #define BUILDDIR=".."
 #define MINGWDIR="\MinGW"
 
@@ -8,7 +8,7 @@ AppName={#APPNAME}
 AppVersion={#APPVERS}
 AppVerName={#APPNAME} {#APPVERS}
 OutputBaseFileName={#APPNAME}-{#APPVERS}-setup
-AppCopyright=Copyright © 2002-2009 Graydon Hoare et al.
+AppCopyright=Copyright © 2002-2010 Graydon Hoare et al.
 AppPublisher=The monotone Development Team
 AppPublisherURL=http://www.monotone.ca/
 DefaultDirName={pf}\{#APPNAME}

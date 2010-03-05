@@ -1,3 +1,5 @@
+include("common/automate_stdio.lua")
+
 mtn_setup()
 revs = {}
 
@@ -20,8 +22,7 @@ check(samefile("expected", "stdout"))
 
 -- check that 'cert' gets keydir from workspace options when run via stdio
 check(mtn_ws_opts("automate", "stdio"), 0, true, true, "l4:cert40:" .. base .. "9:testcert23:fooe")
-check("0:0:l:0:" == readfile("stdout"))
-check(samefile("empty", "stderr"))
+check(parse_stdio(readfile("stdout"), 0) == "")
 
 -- check edge cases:
 -- wrong number of arguments:

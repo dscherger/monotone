@@ -14,30 +14,12 @@
 #include <botan/botan.h>
 #include <botan/sha160.h>
 
-// Botan 1.7.22 and 1.8.x specific sha1 benchmarking code uses botan's
+// Botan 1.7.23+ and 1.8.x specific sha1 benchmarking code uses botan's
 // own timer and measures botan's different SHA1 providers, instead of
 // only measuring one.
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,22)
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,23)
   #include <botan/libstate.h>
   #include <botan/benchmark.h>
-
-  // Choose a timer implementation
-  #if defined(BOTAN_HAS_TIMER_POSIX)
-    #include <botan/tm_posix.h>
-    typedef Botan::POSIX_Timer benchmark_timer_class;
-  #elif defined(BOTAN_HAS_TIMER_UNIX)
-    #include <botan/tm_unix.h>
-    typedef Botan::Unix_Timer benchmark_timer_class;
-  #elif defined(BOTAN_HAS_TIMER_WIN32)
-    #include <botan/tm_win32.h>
-    typedef Botan::Win32_Timer benchmark_timer_class;
-  #else
-    /* This uses ANSI clock and gives somewhat bogus results
-       due to the poor resolution
-    */
-    typedef Botan::Timer benchmark_timer_class;
-  #endif
-
 #endif
 
 #include "sanity.hh"
@@ -55,16 +37,23 @@ CMD_HIDDEN(benchmark_sha1, "benchmark_sha1", "", CMD_REF(debug), "",
 {
   P(F("Benchmarking botan's SHA-1 core"));
 
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,22)
-  benchmark_timer_class timer;
+#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,23)
+
   Botan::AutoSeeded_RNG rng;
   Botan::Algorithm_Factory& af =
     Botan::global_state().algorithm_factory();
 
   const int milliseconds = 5000;
 
+  // timer argument was removed in 1.9.4
+#if BOTAN_VERSION_CODE < BOTAN_VERSION_CODE_FOR(1,9,4)
+  Botan::Default_Benchmark_Timer timer;
   std::map<std::string, double> results =
     Botan::algorithm_benchmark("SHA-1",  milliseconds, timer, rng, af);
+#else
+  std::map<std::string, double> results =
+    Botan::algorithm_benchmark("SHA-1",  milliseconds, rng, af);
+#endif
 
   for(std::map<std::string, double>::const_iterator i = results.begin();
       i != results.end(); ++i)

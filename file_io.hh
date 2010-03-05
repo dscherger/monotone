@@ -27,7 +27,7 @@ void assert_path_is_nonexistent(any_path const & path);
 void assert_path_is_file(any_path const & path);
 void assert_path_is_directory(any_path const & path);
 
-// use N()
+// use E()
 void require_path_is_nonexistent(any_path const & path,
                                  i18n_format const & message);
 void require_path_is_file(any_path const & path,

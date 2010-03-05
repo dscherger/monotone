@@ -8,6 +8,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include <deque>
 #include <iostream>
 #include <map>
 
@@ -16,6 +17,7 @@
 #include "file_io.hh"
 #include "restrictions.hh"
 #include "revision.hh"
+#include "selectors.hh"
 #include "transforms.hh"
 #include "work.hh"
 #include "charset.hh"
@@ -42,13 +44,32 @@ using std::vector;
 using boost::shared_ptr;
 
 static void
-revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summary)
+revision_summary(revision_t const & rev, branch_name const & branch, 
+                 set<branch_name> const & old_branch_names,
+                 utf8 & summary)
 {
   string out;
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
   // other format strings.
-  out += (F("Current branch: %s") % branch).str() += '\n';
+
+  revision_id rid;
+  calculate_ident(rev, rid);
+
+  out += (F("Current revision: %s") % rid).str() += '\n';
+  if (old_branch_names.find(branch) == old_branch_names.end())
+    {
+      for (set<branch_name>::const_iterator i = old_branch_names.begin();
+           i != old_branch_names.end(); ++i)
+        {
+          out += (F("Old branch: %s") % *i).str() += '\n';
+        }
+      out += (F("New branch: %s") % branch).str() += '\n';
+    }
+  else
+    out += (F("Current branch: %s") % branch).str() += '\n';
+
+
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
@@ -101,13 +122,31 @@ revision_summary(revision_t const & rev, branch_name const & branch, utf8 & summ
 }
 
 static void
+get_old_branch_names(database & db, parent_map const & parents,
+                     set<branch_name> & old_branch_names)
+{
+  for (parent_map::const_iterator i = parents.begin();
+       i != parents.end(); ++i)
+    {
+      vector<cert> branches;
+      db.get_revision_certs(parent_id(i), branch_cert_name, branches);
+      for (vector<cert>::const_iterator b = branches.begin();
+           b != branches.end(); ++b)
+        {
+          old_branch_names.insert(typecast_vocab<branch_name>(b->value));
+        }
+    }
+}
+
+static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_t const & cs,
                               branch_name const & branchname,
+                              set<branch_name> const & old_branch_names,
                               utf8 & log_message)
 {
   utf8 summary;
-  revision_summary(cs, branchname, summary);
+  revision_summary(cs, branchname, old_branch_names, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
 
@@ -590,8 +629,27 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   work.update_current_roster_from_filesystem(new_roster, mask);
   make_restricted_revision(old_rosters, new_roster, mask, rev);
 
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
+
+  if (!info.empty())
+    {
+      bisect::entry start = *info.begin();
+      I(start.first == bisect::start);
+
+      if (old_rosters.size() == 1)
+        {
+          revision_id current_id = parent_id(*old_rosters.begin());
+          if (start.second != current_id)
+            P(F("bisection from revision %s in progress") % start.second);
+        }
+    }
+
+  set<branch_name> old_branch_names;
+  get_old_branch_names(db, old_rosters, old_branch_names);
+
   utf8 summary;
-  revision_summary(rev, app.opts.branch, summary);
+  revision_summary(rev, app.opts.branch, old_branch_names, summary);
   external summary_external;
   utf8_to_system_best_effort(summary, summary_external);
   cout << summary_external;
@@ -730,7 +788,7 @@ drop_attr(app_state & app, args_vector const & args)
     F("Unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
-  node_t node = new_roster.get_node(path);
+  node_t node = new_roster.get_node_for_update(path);
 
   // Clear all attrs (or a specific attr).
   if (args.size() == 1)
@@ -796,7 +854,7 @@ CMD(attr_get, "get", "", CMD_REF(attr), N_("PATH [ATTR]"),
   file_path path = file_path_external(idx(args, 0));
 
   E(new_roster.has_node(path), origin::user, F("Unknown path '%s'") % path);
-  node_t node = new_roster.get_node(path);
+  const_node_t node = new_roster.get_node(path);
 
   if (args.size() == 1)
     {
@@ -848,7 +906,7 @@ set_attr(app_state & app, args_vector const & args)
     F("Unknown path '%s'") % path);
 
   roster_t new_roster = old_roster;
-  node_t node = new_roster.get_node(path);
+  node_t node = new_roster.get_node_for_update(path);
 
   attr_key a_key = typecast_vocab<attr_key>(idx(args, 1));
   attr_value a_value = typecast_vocab<attr_value>(idx(args, 2));
@@ -932,7 +990,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
   basic_io::printer pr;
 
   // the current node holds all current attributes (unchanged and new ones)
-  node_t n = current.get_node(path);
+  const_node_t n = current.get_node(path);
   for (attr_map_t::const_iterator i = n->attrs.begin();
        i != n->attrs.end(); ++i)
   {
@@ -949,7 +1007,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
         // in any previous revision
         I(base.has_node(path));
 
-        node_t prev_node = base.get_node(path);
+        const_node_t prev_node = base.get_node(path);
 
         // find the attribute in there
         attr_map_t::const_iterator j = prev_node->attrs.find(i->first);
@@ -967,7 +1025,7 @@ CMD_AUTOMATE(get_attributes, N_("PATH"),
       {
         if (base.has_node(path))
           {
-            node_t prev_node = base.get_node(path);
+            const_node_t prev_node = base.get_node(path);
             attr_map_t::const_iterator j =
               prev_node->attrs.find(i->first);
 
@@ -1127,9 +1185,13 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   if (!log_message_given)
     {
+      set<branch_name> old_branch_names;
+      get_old_branch_names(db, old_rosters, old_branch_names);
+
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, restricted_rev,
-                                    app.opts.branch, log_message);
+                                    app.opts.branch, old_branch_names,
+                                    log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
@@ -1469,6 +1531,435 @@ CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",
   work.maybe_update_inodeprints(db);
 }
 
+CMD_GROUP(bisect, "bisect", "", CMD_REF(informative),
+          N_("Search revisions to find where a change first appeared"),
+          N_("These commands subdivide a set of revisions into good, bad "
+             "and untested subsets and successively narrow the untested set "
+             "to find the first revision that introduced some change."));
+
+CMD(reset, "reset", "", CMD_REF(bisect), "",
+    N_("Reset the current bisection search"),
+    N_("Update the workspace back to the revision from which the bisection "
+       "was started and remove all current search information, allowing a new "
+       "search to be started."),
+    options::opts::none)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
+
+  E(!info.empty(), origin::user, F("no bisection in progress"));
+
+  parent_map parents;
+  work.get_parent_rosters(db, parents);
+  E(parents.size() == 1, origin::user,
+    F("this command can only be used in a single-parent workspace"));
+  
+  revision_id current_id = parent_id(*parents.begin());
+
+  temp_node_id_source nis;
+  roster_t current_roster;
+  work.get_current_roster_shape(db, nis, current_roster);
+  work.update_current_roster_from_filesystem(current_roster);
+
+  E(parent_roster(parents.begin()) == current_roster, origin::user,
+    F("this command can only be used in a workspace with no pending changes"));
+
+  bisect::entry start = *info.begin();
+  I(start.first == bisect::start);
+
+  revision_id starting_id = start.second;
+  P(F("reset back to %s") % describe_revision(project, starting_id));
+
+  roster_t starting_roster;
+  db.get_roster(starting_id, starting_roster);
+
+  cset update;
+  make_cset(current_roster, starting_roster, update);
+
+  content_merge_checkout_adaptor adaptor(db);
+  work.perform_content_update(current_roster, starting_roster, update, adaptor);
+
+  revision_t starting_rev;
+  cset empty;
+  make_revision_for_workspace(starting_id, empty, starting_rev);
+
+  work.put_work_rev(starting_rev);
+  work.maybe_update_inodeprints(db);
+
+  // note that the various bisect commands didn't change the workspace
+  // branch so this should not need to reset it.
+
+  work.remove_bisect_info();
+}
+
+static void
+bisect_select(project_t & project,
+              vector<bisect::entry> const & info,
+              revision_id const & current_id,
+              revision_id & selected_id)
+{
+  graph_loader loader(project.db);
+  set<revision_id> good, bad, skipped;
+
+  E(!info.empty(), origin::user, 
+    F("no bisection in progress"));
+
+  for (vector<bisect::entry>::const_iterator i = info.begin();
+       i != info.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::start:
+          // ignored the for the purposes of bisection
+          // used only by reset after bisection is complete
+          break;
+        case bisect::good:
+          good.insert(i->second);
+          break;
+        case bisect::bad:
+          bad.insert(i->second);
+          break;
+        case bisect::skipped:
+          skipped.insert(i->second);
+          break;
+        case bisect::update:
+          // this value is not persisted, it is only used by the bisect
+          // update command to rerun a selection and update based on current
+          // bisect information
+          I(false);
+          break;
+        }
+    }
+
+  if (good.empty() && !bad.empty())
+    {
+      P(F("bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to start search")
+        % good.size() % bad.size() % skipped.size());
+      return;
+    }
+  else if (!good.empty() && bad.empty())
+    {
+      P(F("bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to start search")
+        % good.size() % bad.size() % skipped.size());
+      return;
+    }
+
+  I(!good.empty());
+  I(!bad.empty());
+
+  // the initial set of revisions to be searched is the intersection between
+  // the good revisions and their descendants and the bad revisions and
+  // their ancestors. this clamps the search set between these two sets of
+  // revisions.
+
+  // NOTE: this also presupposes that the search is looking for a good->bad
+  // transition rather than a bad->good transition.
+
+  set<revision_id> good_descendants(good), bad_ancestors(bad);
+  loader.load_descendants(good_descendants);
+  loader.load_ancestors(bad_ancestors);
+  
+  set<revision_id> search;
+  set_intersection(good_descendants.begin(), good_descendants.end(),
+                   bad_ancestors.begin(), bad_ancestors.end(),
+                   inserter(search, search.end()));
+
+  // the searchable set of revisions excludes those explicitly skipped
+
+  set<revision_id> searchable;
+  set_difference(search.begin(), search.end(),
+                 skipped.begin(), skipped.end(),
+                 inserter(searchable, searchable.begin()));
+
+  // partition the searchable set into three subsets
+  // - known good revisions
+  // - remaining revisions
+  // - known bad revisions
+
+  set<revision_id> good_ancestors(good), bad_descendants(bad);
+  loader.load_ancestors(good_ancestors);
+  loader.load_descendants(bad_descendants);
+
+  set<revision_id> known_good;
+  set_intersection(searchable.begin(), searchable.end(),
+                   good_ancestors.begin(), good_ancestors.end(),
+                   inserter(known_good, known_good.end()));
+
+  set<revision_id> known_bad;
+  set_intersection(searchable.begin(), searchable.end(),
+                   bad_descendants.begin(), bad_descendants.end(),
+                   inserter(known_bad, known_bad.end()));
+
+  // remove known good and known bad revisions from the searchable set
+
+  set<revision_id> removed;
+  set_union(known_good.begin(), known_good.end(),
+            known_bad.begin(), known_bad.end(),
+            inserter(removed, removed.begin()));
+
+  set<revision_id> remaining;
+  set_difference(searchable.begin(), searchable.end(),
+                 removed.begin(), removed.end(),
+                 inserter(remaining, remaining.end()));
+
+  P(F("bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining")
+    % search.size() % known_good.size() % known_bad.size() % skipped.size()
+    % remaining.size());
+
+  // remove the current revision from the remaining set so it cannot be
+  // chosen as the next update target. this may remove the top bad revision
+  // and end the search.
+  remaining.erase(current_id);
+
+  if (remaining.empty())
+    {
+      // when no revisions remain to be tested the bisection ends on the bad
+      // revision that is the ancestor of all other bad revisions.
+
+      vector<revision_id> bad_sorted;
+      toposort(project.db, bad, bad_sorted);
+      revision_id first_bad = *bad_sorted.begin();
+
+      P(F("bisection finished at revision %s")
+        % describe_revision(project, first_bad));
+
+      // if the workspace is not already at the ending revision return it as
+      // the selected revision so that an update back to this revision
+      // happens
+
+      if (current_id != first_bad)
+        selected_id = first_bad;
+      return;
+    }
+
+  // bisection is done by toposorting the remaining revs and using the
+  // midpoint of the result as the next revision to test
+
+  vector<revision_id> candidates;
+  toposort(project.db, remaining, candidates);
+
+  selected_id = candidates[candidates.size()/2]; 
+}
+
+std::ostream &
+operator<<(std::ostream & os,
+           bisect::type const type)
+{
+  switch (type)
+    {
+    case bisect::start:
+      os << "start";
+      break;
+    case bisect::good:
+      os << "good";
+      break;
+    case bisect::bad:
+      os << "bad";
+      break;
+    case bisect::skipped:
+      os << "skip";
+      break;
+    case bisect::update:
+      // this value is not persisted, it is only used by the bisect
+      // update command to rerun a selection and update based on current
+      // bisect information
+      I(false);
+    break;
+  }
+  return os;
+}
+
+static void
+bisect_update(app_state & app, bisect::type type)
+{
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+
+  parent_map parents;
+  work.get_parent_rosters(db, parents);
+  E(parents.size() == 1, origin::user,
+    F("this command can only be used in a single-parent workspace"));
+
+  revision_id current_id = parent_id(*parents.begin());
+
+  temp_node_id_source nis;
+  roster_t current_roster;
+  work.get_current_roster_shape(db, nis, current_roster);
+  work.update_current_roster_from_filesystem(current_roster);
+
+  E(parent_roster(parents.begin()) == current_roster, origin::user,
+    F("this command can only be used in a workspace with no pending changes"));
+
+  set<revision_id> marked_ids;
+
+  // mark the current or specified revisions as good, bad or skipped
+  if (app.opts.revision_selectors.empty())
+    marked_ids.insert(current_id);
+  else
+    for (args_vector::const_iterator i = app.opts.revision_selectors.begin();
+         i != app.opts.revision_selectors.end(); i++)
+      {
+        set<revision_id> rids;
+        MM(rids);
+        MM(*i);
+        complete(app.opts, app.lua, project, (*i)(), rids);
+        marked_ids.insert(rids.begin(), rids.end());
+      }
+
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
+
+  if (info.empty())
+    {
+      info.push_back(make_pair(bisect::start, current_id));
+      P(F("bisection started at revision %s")
+        % describe_revision(project, current_id));
+    }
+
+  if (type != bisect::update)
+    {
+      // don't allow conflicting or redundant settings
+      for (vector<bisect::entry>::const_iterator i = info.begin();
+           i != info.end(); ++i)
+        {
+          if (i->first == bisect::start)
+            continue;
+          if (marked_ids.find(i->second) != marked_ids.end())
+            {
+              if (type == i->first)
+                {
+                  W(F("ignored redundant bisect %s on revision %s")
+                    % type % i->second);
+                  marked_ids.erase(i->second);
+                }
+              else
+                E(false, origin::user, F("conflicting bisect %s/%s on revision %s") 
+                  % type % i->first % i->second);
+            }
+        }
+
+      // push back all marked revs with the appropriate type
+      for (set<revision_id>::const_iterator i = marked_ids.begin();
+           i != marked_ids.end(); ++i)
+        info.push_back(make_pair(type, *i));
+  
+      work.put_bisect_info(info);
+    }
+
+  revision_id selected_id;
+  bisect_select(project, info, current_id, selected_id);
+  if (null_id(selected_id))
+    return;
+
+  P(F("updating to %s") % describe_revision(project, selected_id));
+
+  roster_t selected_roster;
+  db.get_roster(selected_id, selected_roster);
+
+  cset update;
+  make_cset(current_roster, selected_roster, update);
+
+  content_merge_checkout_adaptor adaptor(db);
+  work.perform_content_update(current_roster, selected_roster, update, adaptor,
+                              true, app.opts.move_conflicting_paths);
+
+  revision_t selected_rev;
+  cset empty;
+  make_revision_for_workspace(selected_id, empty, selected_rev);
+
+  work.put_work_rev(selected_rev);
+  work.maybe_update_inodeprints(db);
+
+  // this may have updated to a revision not in the branch specified by
+  // the workspace branch option. however it cannot update the workspace
+  // branch option because the new revision may be in multiple branches.
+}
+
+CMD(bisect_status, "status", "", CMD_REF(bisect), "",
+    N_("Reports on the current status of the bisection search"),
+    N_("Lists the total number of revisions in the search set; "
+       "the number of revisions that have been determined to be good or bad; "
+       "the number of revisions that have been skipped "
+       "and the number of revisions remaining to be tested."),
+    options::opts::none)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+
+  database db(app);
+  workspace work(app);
+  project_t project(db);
+
+  parent_map parents;
+  work.get_parent_rosters(db, parents);
+  E(parents.size() == 1, origin::user,
+    F("this command can only be used in a single-parent workspace"));
+
+  revision_id current_id = parent_id(*parents.begin());
+
+  vector<bisect::entry> info;
+  work.get_bisect_info(info);
+
+  revision_id selected_id;
+  bisect_select(project, info, current_id, selected_id);
+
+  if (current_id != selected_id)
+    {
+      W(F("next revision for bisection testing is %s\n") % selected_id);
+      W(F("however this workspace is currently at %s\n") % current_id);
+      W(F("run 'bisect update' to update to this revision before testing"));
+    }
+}
+
+CMD(bisect_update, "update", "", CMD_REF(bisect), "",
+    N_("Updates the workspace to the next revision to be tested by bisection"),
+    N_("This command can be used if updates by good, bad or skip commands "
+       "fail due to blocked paths or other problems."),
+    options::opts::move_conflicting_paths)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::update);
+}
+
+CMD(bisect_skip, "skip", "", CMD_REF(bisect), "",
+    N_("Excludes the current revision or specified revisions from the search"),
+    N_("Skipped revisions are removed from the set being searched. Revisions "
+       "that cannot be tested for some reason should be skipped."),
+    options::opts::revision | options::opts::move_conflicting_paths)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::skipped);
+}
+
+CMD(bisect_bad, "bad", "", CMD_REF(bisect), "",
+    N_("Marks the current revision or specified revisions as bad"),
+    N_("Known bad revisions are removed from the set being searched."),
+    options::opts::revision | options::opts::move_conflicting_paths)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::bad);
+}
+
+CMD(bisect_good, "good", "", CMD_REF(bisect), "",
+    N_("Marks the current revision or specified revisions as good"),
+    N_("Known good revisions are removed from the set being searched."),
+    options::opts::revision | options::opts::move_conflicting_paths)
+{
+  if (args.size() != 0)
+    throw usage(execid);
+  bisect_update(app, bisect::good);
+}
 
 // Local Variables:
 // mode: C++

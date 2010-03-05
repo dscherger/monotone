@@ -18,6 +18,7 @@
 
 #include "safe_map.hh"
 #include "parallel_iter.hh"
+#include "cset.hh"
 #include "roster.hh"
 #include "roster_delta.hh"
 #include "basic_io.hh"
@@ -27,6 +28,7 @@
 using boost::lexical_cast;
 using std::pair;
 using std::make_pair;
+using std::string;
 
 namespace
 {
@@ -45,7 +47,7 @@ namespace
     typedef std::set<pair<node_id,
                           pair<attr_key,
                                pair<bool, attr_value> > > > attrs_changed_t;
-    typedef std::map<node_id, marking_t> markings_changed_t;
+    typedef std::map<node_id, const_marking_t> markings_changed_t;
 
     nodes_deleted_t nodes_deleted;
     dirs_added_t dirs_added;
@@ -115,17 +117,24 @@ namespace
     // And finally, update the marking map.
     for (nodes_deleted_t::const_iterator
            i = nodes_deleted.begin(); i != nodes_deleted.end(); ++i)
-      safe_erase(markings, *i);
+      {
+        markings.remove_marking(*i);
+      }
     for (markings_changed_t::const_iterator
            i = markings_changed.begin(); i != markings_changed.end(); ++i)
-      markings[i->first] = i->second;
+      {
+        markings.put_or_replace_marking(i->first, i->second);
+      }
   }
 
   void
-  do_delta_for_node_only_in_dest(node_t new_n, roster_delta_t & d)
+  do_delta_for_node_only_in_dest(const_node_t new_n, roster_delta_t & d)
   {
     node_id nid = new_n->self;
     pair<node_id, path_component> new_loc(new_n->parent, new_n->name);
+    MM(new_loc.first);
+    MM(new_loc.second);
+    MM(nid);
 
     if (is_dir_t(new_n))
       safe_insert(d.dirs_added, make_pair(new_loc, nid));
@@ -141,7 +150,7 @@ namespace
   }
 
   void
-  do_delta_for_node_in_both(node_t old_n, node_t new_n, roster_delta_t & d)
+  do_delta_for_node_in_both(const_node_t old_n, const_node_t new_n, roster_delta_t & d)
   {
     I(old_n->self == new_n->self);
     node_id nid = old_n->self;
@@ -189,9 +198,11 @@ namespace
   }
 
   void
-  make_roster_delta_t(roster_t const & from, marking_map const & from_markings,
-                      roster_t const & to, marking_map const & to_markings,
-                      roster_delta_t & d)
+  make_unconstrained_roster_delta_t(roster_t const & from,
+                                    marking_map const & from_markings,
+                                    roster_t const & to,
+                                    marking_map const & to_markings,
+                                    roster_delta_t & d)
   {
     MM(from);
     MM(from_markings);
@@ -246,12 +257,125 @@ namespace
 
             case parallel::in_both:
               // maybe changed
-              if (!(i.left_data() == i.right_data()))
+              if (!(i.left_data() == i.right_data()) &&
+                  !(*i.left_data() == *i.right_data()))
                 safe_insert(d.markings_changed, i.right_value());
               break;
             }
         }
     }
+  }
+
+  void
+  make_roster_delta_t(roster_t const & from, marking_map const & from_markings,
+                      roster_t const & to, marking_map const & to_markings,
+                      roster_delta_t & d, cset const * reverse_csp)
+  {
+    if (!reverse_csp)
+      {
+        make_unconstrained_roster_delta_t(from, from_markings,
+                                          to, to_markings,
+                                          d);
+      }
+    else
+      {
+        cset const & cs(*reverse_csp);
+        MM(cs);
+
+        typedef std::set<file_path>::const_iterator path_iter;
+        typedef std::map<file_path, file_id>::const_iterator path_id_iter;
+        typedef std::map<file_path, file_path>::const_iterator path_path_iter;
+        typedef std::map<file_path, std::pair<file_id, file_id> >::const_iterator del_iter;
+        typedef std::set<std::pair<file_path, attr_key> >::const_iterator attr_rm_iter;
+        typedef std::map<std::pair<file_path, attr_key>, attr_value>::const_iterator attr_del_iter;
+
+        // in to, or cset source
+        for (path_iter i = cs.nodes_deleted.begin();
+             i != cs.nodes_deleted.end(); ++i)
+          {
+            const_node_t n = to.get_node(*i);
+            do_delta_for_node_only_in_dest(n, d);
+            const_marking_t m = to_markings.get_marking(n->self);
+            safe_insert(d.markings_changed, make_pair(n->self, m));
+          }
+
+
+        class tracking_doer
+        {
+          roster_t const & lr;
+          roster_t const & rr;
+          marking_map const & lmm;
+          marking_map const & rmm;
+          roster_delta_t & d;
+          std::set<file_path> _done;
+        public:
+          tracking_doer(roster_t const & l, roster_t const & r,
+                        marking_map const & lmm,
+                        marking_map const & rmm,
+                        roster_delta_t & d)
+            : lr(l), rr(r), lmm(lmm), rmm(rmm), d(d)
+          { }
+          void note(file_path const & p)
+          {
+            _done.insert(p);
+          }
+          bool try_do(file_path const & lp)
+          {
+            pair<path_iter, bool> x = _done.insert(lp);
+            if (!x.second)
+              return false;
+
+            const_node_t l = lr.get_node(lp);
+            const_node_t r = rr.get_node(l->self);
+            do_delta_for_node_in_both(l, r, d);
+
+            const_marking_t lm = lmm.get_marking(l->self);
+            const_marking_t rm = rmm.get_marking(r->self);
+
+            if (!(lm == rm) || !(*lm == *rm))
+              safe_insert(d.markings_changed, make_pair(r->self, rm));
+
+            return true;
+          }
+        };
+        tracking_doer doer(from, to, from_markings, to_markings, d);
+
+        // in from, or cset target
+        for (path_iter i = cs.dirs_added.begin();
+             i != cs.dirs_added.end(); ++i)
+          {
+            doer.note(*i);
+            safe_insert(d.nodes_deleted, from.get_node(*i)->self);
+          }
+        for (path_id_iter i = cs.files_added.begin();
+             i != cs.files_added.end(); ++i)
+          {
+            doer.note(i->first);
+            safe_insert(d.nodes_deleted, from.get_node(i->first)->self);
+          }
+
+        // in both
+        for (path_path_iter i = cs.nodes_renamed.begin();
+             i != cs.nodes_renamed.end(); ++i)
+          {
+            doer.try_do(i->second);
+          }
+        for (del_iter i = cs.deltas_applied.begin();
+             i != cs.deltas_applied.end(); ++i)
+          {
+            doer.try_do(i->first);
+          }
+        for (attr_rm_iter i = cs.attrs_cleared.begin();
+             i != cs.attrs_cleared.end(); ++i)
+          {
+            doer.try_do(i->first);
+          }
+        for (attr_del_iter i = cs.attrs_set.begin();
+             i != cs.attrs_set.end(); ++i)
+          {
+            doer.try_do(i->first.first);
+          }
+      }
   }
 
   namespace syms
@@ -272,92 +396,106 @@ namespace
   }
 
   void
-  push_nid(symbol const & sym, node_id nid, basic_io::stanza & st)
+  push_nid(symbol const & sym, node_id nid, string & contents, int symbol_length)
   {
-    st.push_str_pair(sym, lexical_cast<std::string>(nid));
+    contents.append(symbol_length - sym().size(), ' ');
+    contents.append(sym());
+    contents.append(" \"");
+    contents.append(lexical_cast<string>(nid));
+    contents.append("\"\n");
   }
 
   static void
   push_loc(pair<node_id, path_component> const & loc,
-           basic_io::stanza & st)
+           string & contents, int symbol_length)
   {
-    st.push_str_triple(syms::location,
-                       lexical_cast<std::string>(loc.first),
-                       loc.second());
+    contents.append(symbol_length - 8, ' ');
+    contents.append("location \"");
+    contents.append(lexical_cast<string>(loc.first));
+    contents.append("\" \"");
+    append_with_escaped_quotes(contents, loc.second());
+    contents.append("\"\n");
   }
 
   void
-  print_roster_delta_t(basic_io::printer & printer,
+  print_roster_delta_t(data & dat,
                        roster_delta_t & d)
   {
+    string contents;
+
     for (roster_delta_t::nodes_deleted_t::const_iterator
            i = d.nodes_deleted.begin(); i != d.nodes_deleted.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::deleted, *i, st);
-        printer.print_stanza(st);
+        push_nid(syms::deleted, *i, contents, 7);
+        contents += "\n";
       }
     for (roster_delta_t::nodes_renamed_t::const_iterator
            i = d.nodes_renamed.begin(); i != d.nodes_renamed.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::rename, i->first, st);
-        push_loc(i->second, st);
-        printer.print_stanza(st);
+        push_nid(syms::rename, i->first, contents, 8);
+        push_loc(i->second, contents, 8);
+        contents += "\n";
       }
     for (roster_delta_t::dirs_added_t::const_iterator
            i = d.dirs_added.begin(); i != d.dirs_added.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::add_dir, i->second, st);
-        push_loc(i->first, st);
-        printer.print_stanza(st);
+        push_nid(syms::add_dir, i->second, contents, 8);
+        push_loc(i->first, contents, 8);
+        contents += "\n";
       }
     for (roster_delta_t::files_added_t::const_iterator
            i = d.files_added.begin(); i != d.files_added.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::add_file, i->second.first, st);
-        push_loc(i->first, st);
-        st.push_binary_pair(syms::content, i->second.second.inner());
-        printer.print_stanza(st);
+        push_nid(syms::add_file, i->second.first, contents, 8);
+        push_loc(i->first, contents, 8);
+        contents.append(" content [");
+        contents.append(encode_hexenc(i->second.second.inner()(), origin::internal));
+        contents.append("]\n\n");
       }
     for (roster_delta_t::deltas_applied_t::const_iterator
            i = d.deltas_applied.begin(); i != d.deltas_applied.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::delta, i->first, st);
-        st.push_binary_pair(syms::content, i->second.inner());
-        printer.print_stanza(st);
+        push_nid(syms::delta, i->first, contents, 7);
+        contents.append("content [");
+        contents.append(encode_hexenc(i->second.inner()(), origin::internal));
+        contents.append("]\n\n");
       }
     for (roster_delta_t::attrs_cleared_t::const_iterator
            i = d.attrs_cleared.begin(); i != d.attrs_cleared.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::attr_cleared, i->first, st);
-        st.push_str_pair(syms::attr, i->second());
-        printer.print_stanza(st);
+        push_nid(syms::attr_cleared, i->first, contents, 12);
+        contents.append("        attr \"");
+        append_with_escaped_quotes(contents, i->second());
+        contents.append("\"\n\n");
       }
     for (roster_delta_t::attrs_changed_t::const_iterator
            i = d.attrs_changed.begin(); i != d.attrs_changed.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::attr_changed, i->first, st);
-        st.push_str_pair(syms::attr, i->second.first());
-        st.push_str_triple(syms::value,
-                           lexical_cast<std::string>(i->second.second.first),
-                           i->second.second.second());
-        printer.print_stanza(st);
+        push_nid(syms::attr_changed, i->first, contents, 12);
+        contents.append("        attr \"");
+        append_with_escaped_quotes(contents, i->second.first());
+        contents.append("\"\n       value \"");
+        contents.append(lexical_cast<string>(i->second.second.first));
+        contents.append("\" \"");
+        append_with_escaped_quotes(contents, i->second.second.second());
+        contents.append("\"\n\n");
       }
     for (roster_delta_t::markings_changed_t::const_iterator
            i = d.markings_changed.begin(); i != d.markings_changed.end(); ++i)
       {
-        basic_io::stanza st;
-        push_nid(syms::marking, i->first, st);
-        // ...this second argument is a bit odd...
-        push_marking(st, !i->second.file_content.empty(), i->second);
-        printer.print_stanza(st);
+        bool is_file = !i->second->file_content.empty();
+        int symbol_length = (is_file ? 12 : 9);
+        push_nid(syms::marking, i->first, contents, symbol_length);
+        push_marking(contents, is_file, i->second, symbol_length);
+        contents.append("\n");
       }
+    // I wouldn't think it should be possible to have empty contents here,
+    // but apparently it is.
+    if (!contents.empty())
+      {
+        contents.erase(contents.size() - 1); // drop last extra trailing newline
+      }
+    dat = data(contents, origin::internal);
   }
 
   node_id
@@ -457,7 +595,7 @@ namespace
       {
         parser.sym();
         node_id nid = parse_nid(parser);
-        marking_t m;
+        marking_t m(new marking());
         parse_marking(parser, m);
         safe_insert(d.markings_changed, make_pair(nid, m));
       }
@@ -468,17 +606,18 @@ namespace
 void
 delta_rosters(roster_t const & from, marking_map const & from_markings,
               roster_t const & to, marking_map const & to_markings,
-              roster_delta & del)
+              roster_delta & del,
+              cset const * reverse_cs)
 {
   MM(from);
   MM(from_markings);
   MM(to);
   MM(to_markings);
   roster_delta_t d;
-  make_roster_delta_t(from, from_markings, to, to_markings, d);
-  basic_io::printer printer;
-  print_roster_delta_t(printer, d);
-  del = roster_delta(printer.buf, origin::internal);
+  make_roster_delta_t(from, from_markings, to, to_markings, d, reverse_cs);
+  data dat;
+  print_roster_delta_t(dat, d);
+  del = roster_delta(dat(), origin::internal);
 }
 
 static
@@ -509,12 +648,12 @@ apply_roster_delta(roster_delta const & del,
 bool
 try_get_markings_from_roster_delta(roster_delta const & del,
                                    node_id const & nid,
-                                   marking_t & markings)
+                                   const_marking_t & markings)
 {
   roster_delta_t d;
   read_roster_delta(del, d);
 
-  std::map<node_id, marking_t>::iterator i = d.markings_changed.find(nid);
+  std::map<node_id, const_marking_t>::iterator i = d.markings_changed.find(nid);
   if (i != d.markings_changed.end())
     {
       markings = i->second;

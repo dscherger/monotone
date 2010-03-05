@@ -20,7 +20,9 @@
 #include "hmac.hh"
 #include "globish.hh"
 
+using std::pair;
 using std::string;
+using std::vector;
 
 static netcmd_item_type
 read_netcmd_item_type(string const & in,
@@ -51,11 +53,14 @@ netcmd::netcmd(u8 ver)
     cmd_code(error_cmd)
 {}
 
-size_t netcmd::encoded_size()
+size_t netcmd::encoded_size() const
 {
   string tmp;
   insert_datum_uleb128<size_t>(payload.size(), tmp);
-  return 1 + 1 + tmp.size() + payload.size() + 4;
+  return 1 // netsync version
+       + 1 // command code
+       + tmp.size() + payload.size() // payload as vstring
+       + constants::netsync_hmac_value_length_in_bytes; // hmac
 }
 
 bool
@@ -110,6 +115,11 @@ netcmd::read(u8 min_version, u8 max_version,
     case static_cast<u8>(done_cmd):
     case static_cast<u8>(data_cmd):
     case static_cast<u8>(delta_cmd):
+    case static_cast<u8>(automate_cmd):
+    case static_cast<u8>(automate_headers_request_cmd):
+    case static_cast<u8>(automate_headers_reply_cmd):
+    case static_cast<u8>(automate_command_cmd):
+    case static_cast<u8>(automate_packet_cmd):
     case static_cast<u8>(usher_cmd):
     case static_cast<u8>(usher_reply_cmd):
       cmd_code = static_cast<netcmd_code>(cmd_byte);
@@ -189,8 +199,8 @@ netcmd::read(u8 min_version, u8 max_version,
     {
       throw bad_decode(F("bad HMAC checksum (got %s, wanted %s)\n"
                          "this suggests data was corrupted in transit")
-                       % cmd_digest
-                       % digest);
+                       % encode_hexenc(cmd_digest, origin::network)
+                       % encode_hexenc(digest, origin::network));
     }
 
   L(FL("read packet with code %d and version %d")
@@ -557,6 +567,186 @@ netcmd::write_delta_cmd(netcmd_item_type & type,
 }
 
 void
+netcmd::read_automate_cmd(key_id & client,
+                          id & nonce1,
+                          rsa_oaep_sha_data & hmac_key_encrypted,
+                          rsa_sha1_signature & signature) const
+{
+  size_t pos = 0;
+  client = key_id(extract_substring(payload, pos,
+                                    constants::merkle_hash_length_in_bytes,
+                                    "automate netcmd, key id"),
+                  origin::network);
+  nonce1 = id(extract_substring(payload, pos,
+                                constants::merkle_hash_length_in_bytes,
+                                "automate netcmd, nonce1"),
+              origin::network);
+  {
+    string hmac_key;
+    extract_variable_length_string(payload, hmac_key, pos,
+                                   "automate netcmd, hmac_key_encrypted");
+    hmac_key_encrypted = rsa_oaep_sha_data(hmac_key, origin::network);
+  }
+  {
+    string sig;
+    extract_variable_length_string(payload, sig, pos,
+                                   "automate netcmd, signature");
+    signature = rsa_sha1_signature(sig, origin::network);
+  }
+  assert_end_of_buffer(payload, pos, "automate netcmd payload");
+}
+
+void
+netcmd::write_automate_cmd(key_id const & client,
+                           id const & nonce1,
+                           rsa_oaep_sha_data & hmac_key_encrypted,
+                           rsa_sha1_signature & signature)
+{
+  cmd_code = automate_cmd;
+
+  I(client.inner()().size() == constants::merkle_hash_length_in_bytes);
+  I(nonce1().size() == constants::merkle_hash_length_in_bytes);
+
+  payload += client.inner()();
+  payload += nonce1();
+
+  insert_variable_length_string(hmac_key_encrypted(), payload);
+  insert_variable_length_string(signature(), payload);
+}
+
+void
+netcmd::read_automate_headers_request_cmd() const
+{
+  size_t pos = 0;
+  assert_end_of_buffer(payload, pos, "read automate headers request netcmd payload");
+}
+
+void
+netcmd::write_automate_headers_request_cmd()
+{
+  cmd_code = automate_headers_request_cmd;
+}
+
+void
+netcmd::read_automate_headers_reply_cmd(vector<pair<string, string> > & headers) const
+{
+  size_t pos = 0;
+  size_t nheaders = extract_datum_uleb128<size_t>(payload, pos,
+                                               "automate headers reply netcmd, count");
+  headers.clear();
+  for (size_t i = 0; i < nheaders; ++i)
+    {
+      string name;
+      extract_variable_length_string(payload, name, pos,
+                                     "automate headers reply netcmd, name");
+      string value;
+      extract_variable_length_string(payload, value, pos,
+                                     "automate headers reply netcmd, value");
+      headers.push_back(make_pair(name, value));
+    }
+  assert_end_of_buffer(payload, pos, "automate headers reply netcmd payload");
+}
+
+void
+netcmd::write_automate_headers_reply_cmd(vector<pair<string, string> > const & headers)
+{
+  cmd_code = automate_headers_reply_cmd;
+
+  insert_datum_uleb128<size_t>(headers.size(), payload);
+  for (vector<pair<string, string> >::const_iterator h = headers.begin();
+       h != headers.end(); ++h)
+    {
+      insert_variable_length_string(h->first, payload);
+      insert_variable_length_string(h->second, payload);
+    }
+}
+
+void
+netcmd::read_automate_command_cmd(vector<string> & args,
+                                  vector<pair<string, string> > & opts) const
+{
+  size_t pos = 0;
+  {
+    size_t nargs = extract_datum_uleb128<size_t>(payload, pos,
+                                                 "automate_command netcmd, arg count");
+    args.clear();
+    for (size_t i = 0; i < nargs; ++i)
+      {
+        string arg;
+        extract_variable_length_string(payload, arg, pos,
+                                       "automate_command netcmd, argument");
+        args.push_back(arg);
+      }
+  }
+  {
+    size_t nopts = extract_datum_uleb128<size_t>(payload, pos,
+                                                 "automate_command netcmd, option count");
+    opts.clear();
+    for (size_t i = 0; i < nopts; ++i)
+      {
+        string name;
+        extract_variable_length_string(payload, name, pos,
+                                       "automate_command netcmd, option name");
+        string value;
+        extract_variable_length_string(payload, value, pos,
+                                       "automate_command netcmd, option value");
+        opts.push_back(make_pair(name, value));
+      }
+  }
+  assert_end_of_buffer(payload, pos, "automate_command netcmd payload");
+}
+
+void
+netcmd::write_automate_command_cmd(vector<string> const & args,
+                                   vector<pair<string, string> > const & opts)
+{
+  cmd_code = automate_command_cmd;
+
+  insert_datum_uleb128<size_t>(args.size(), payload);
+  for (vector<string>::const_iterator a = args.begin();
+       a != args.end(); ++a)
+    {
+      insert_variable_length_string(*a, payload);
+    }
+
+  insert_datum_uleb128<size_t>(opts.size(), payload);
+  for (vector<pair<string, string> >::const_iterator o = opts.begin();
+       o != opts.end(); ++o)
+    {
+      insert_variable_length_string(o->first, payload);
+      insert_variable_length_string(o->second, payload);
+    }
+}
+
+void
+netcmd::read_automate_packet_cmd(int & command_num,
+                                 char & stream,
+                                 string & packet_data) const
+{
+  size_t pos = 0;
+
+  command_num = int(extract_datum_uleb128<size_t>(payload, pos,
+                                                  "automate_packet netcmd, command_num"));
+  stream = char(extract_datum_uleb128<size_t>(payload, pos,
+                                        "automate_packet netcmd, stream"));
+  extract_variable_length_string(payload, packet_data, pos,
+                                 "automate_packet netcmd, packet_data");
+  assert_end_of_buffer(payload, pos, "automate_packet netcmd payload");
+}
+
+void
+netcmd::write_automate_packet_cmd(int command_num,
+                                  char stream,
+                                  string const & packet_data)
+{
+  cmd_code = automate_packet_cmd;
+
+  insert_datum_uleb128<size_t>(size_t(command_num), payload);
+  insert_datum_uleb128<size_t>(size_t(stream), payload);
+  insert_variable_length_string(packet_data, payload);
+}
+
+void
 netcmd::read_usher_cmd(utf8 & greeting) const
 {
   size_t pos = 0;
@@ -576,25 +766,24 @@ netcmd::write_usher_cmd(utf8 const & greeting)
 
 void
 netcmd::read_usher_reply_cmd(u8 & version_out,
-                             utf8 & server, globish & pattern) const
+                             utf8 & server, string & pattern) const
 {
   version_out = this->version;
   string str;
   size_t pos = 0;
   extract_variable_length_string(payload, str, pos, "usher_reply netcmd, server");
   server = utf8(str, origin::network);
-  extract_variable_length_string(payload, str, pos, "usher_reply netcmd, pattern");
-  pattern = globish(str, origin::network);
+  extract_variable_length_string(payload, pattern, pos, "usher_reply netcmd, pattern");
   assert_end_of_buffer(payload, pos, "usher_reply netcmd payload");
 }
 
 void
-netcmd::write_usher_reply_cmd(utf8 const & server, globish const & pattern)
+netcmd::write_usher_reply_cmd(utf8 const & server, string const & pattern)
 {
   cmd_code = usher_reply_cmd;
   payload.clear();
   insert_variable_length_string(server(), payload);
-  insert_variable_length_string(pattern(), payload);
+  insert_variable_length_string(pattern, payload);
 }
 
 

@@ -26,7 +26,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 #include "lazy_rng.hh"
@@ -209,7 +208,8 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem);
+  explicit database_impl(system_path const & f, bool mem,
+                         system_path const & roster_cache_performance_log);
   ~database_impl();
 
 private:
@@ -458,15 +458,18 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem) :
+database_impl::database_impl(system_path const & f, bool mem,
+                             system_path const & roster_cache_performance_log) :
   filename(f),
   use_memory_db(mem),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
-               roster_writeback_manager(*this)),
+               constants::db_roster_cache_min_count,
+               roster_writeback_manager(*this),
+               roster_cache_performance_log.as_external()),
   delayed_writes_size(0),
-  vcache(constants::db_version_cache_sz)
+  vcache(constants::db_version_cache_sz, 1)
 {}
 
 database_impl::~database_impl()
@@ -501,7 +504,8 @@ database::database(app_state & app)
 
   boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
-    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory));
+    i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
+                              app.opts.roster_cache_performance_log));
 
   imp = i;
 }
@@ -1000,7 +1004,7 @@ database::info(ostream & out, bool analyze)
     bytes.push_back(imp->space("revision_ancestry",
                           "length(parent) + length(child)", total));
     bytes.push_back(imp->space("revision_certs",
-                          "length(hash) + length(id) + length(name)"
+                          "length(hash) + length(revision_id) + length(name)"
                           "+ length(value) + length(keypair_id)"
                           "+ length(signature)", total));
     bytes.push_back(imp->space("heights", "length(revision) + length(height)",
@@ -1107,7 +1111,7 @@ database::info(ostream & out, bool analyze)
   L(FL("fetching ancestry map"));
   typedef multimap<revision_id, revision_id>::const_iterator gi;
   rev_ancestry_map graph;
-  get_revision_ancestry(graph);
+  get_forward_ancestry(graph);
 
   L(FL("checking timestamps differences of related revisions"));
   int correct = 0,
@@ -1164,6 +1168,10 @@ database::info(ostream & out, bool analyze)
       else
         missing++;
     }
+
+  // no information to provide in this case
+  if (diffs.size() == 0)
+    return;
 
   form =
     F("timestamp correctness between revisions:\n"
@@ -1804,7 +1812,8 @@ database_impl::get_roster_base(revision_id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster does not match hash"));
 
   gzip<data> dat_packed(res[0][1], origin::database);
   data dat;
@@ -1824,7 +1833,8 @@ database_impl::get_roster_delta(id const & ident,
   id checksum(res[0][0], origin::database);
   id calculated;
   calculate_ident(data(res[0][1], origin::database), calculated);
-  I(calculated == checksum);
+  E(calculated == checksum, origin::database,
+    F("roster_delta does not match hash"));
 
   gzip<delta> del_packed(res[0][1], origin::database);
   delta tmp;
@@ -1994,7 +2004,9 @@ database_impl::get_version(id const & ident,
 
   id final;
   calculate_ident(dat, final);
-  I(final == ident);
+  E(final == ident, origin::database,
+    F("delta-reconstructed '%s' item does not match hash")
+    % data_table);
 
   if (!vcache.exists(ident))
     vcache.insert_clean(ident, dat);
@@ -2030,10 +2042,10 @@ struct database_impl::markings_extractor : public database_impl::extractor
 {
 private:
   node_id const & nid;
-  marking_t & markings;
+  const_marking_t & markings;
 
 public:
-  markings_extractor(node_id const & _nid, marking_t & _markings) :
+  markings_extractor(node_id const & _nid, const_marking_t & _markings) :
     nid(_nid), markings(_markings) {} ;
 
   bool look_at_delta(roster_delta const & del)
@@ -2043,10 +2055,7 @@ public:
 
   void look_at_roster(roster_t const & roster, marking_map const & mm)
   {
-    marking_map::const_iterator mmi =
-      mm.find(nid);
-    I(mmi != mm.end());
-    markings = mmi->second;
+    markings = mm.get_marking(nid);
   }
 };
 
@@ -2139,7 +2148,7 @@ database_impl::extract_from_deltas(revision_id const & ident, extractor & x)
 void
 database::get_markings(revision_id const & id,
                        node_id const & nid,
-                       marking_t & markings)
+                       const_marking_t & markings)
 {
   database_impl::markings_extractor x(nid, markings);
   imp->extract_from_deltas(id, x);
@@ -2452,7 +2461,7 @@ database::get_arbitrary_file_delta(file_id const & src_id,
 
 
 void
-database::get_revision_ancestry(rev_ancestry_map & graph)
+database::get_forward_ancestry(rev_ancestry_map & graph)
 {
   // share some storage
   id::symtab id_syms;
@@ -2461,6 +2470,21 @@ database::get_revision_ancestry(rev_ancestry_map & graph)
   graph.clear();
   imp->fetch(res, 2, any_rows,
              query("SELECT parent,child FROM revision_ancestry"));
+  for (size_t i = 0; i < res.size(); ++i)
+    graph.insert(make_pair(revision_id(res[i][0], origin::database),
+                           revision_id(res[i][1], origin::database)));
+}
+
+void
+database::get_reverse_ancestry(rev_ancestry_map & graph)
+{
+  // share some storage
+  id::symtab id_syms;
+
+  results res;
+  graph.clear();
+  imp->fetch(res, 2, any_rows,
+             query("SELECT child,parent FROM revision_ancestry"));
   for (size_t i = 0; i < res.size(); ++i)
     graph.insert(make_pair(revision_id(res[i][0], origin::database),
                            revision_id(res[i][1], origin::database)));
@@ -2574,10 +2598,51 @@ database::get_common_ancestors(std::set<revision_id> const & revs,
   for (set<revision_id>::const_iterator i = all_common_ancestors.begin();
        i != all_common_ancestors.end(); ++i)
     {
-      // FIXME: where do these null'ed IDs come from?
+      // null id's here come from the empty parents of root revisions.
+      // these should not be considered as common ancestors and are skipped.
       if (null_id(*i)) continue;
       common_ancestors.insert(*i);
     }
+}
+
+bool
+database::is_a_ancestor_of_b(revision_id const & ancestor,
+                             revision_id const & child)
+{
+  if (ancestor == child)
+    return false;
+
+  rev_height anc_height;
+  rev_height child_height;
+  get_rev_height(ancestor, anc_height);
+  get_rev_height(child, child_height);
+
+  if (anc_height > child_height)
+    return false;
+
+
+  vector<revision_id> todo;
+  todo.push_back(ancestor);
+  while (!todo.empty())
+    {
+      revision_id anc = todo.back();
+      todo.pop_back();
+      set<revision_id> anc_children;
+      get_revision_children(anc, anc_children);
+      for (set<revision_id>::const_iterator i = anc_children.begin();
+           i != anc_children.end(); ++i)
+        {
+          if (*i == child)
+            return true;
+          else
+            {
+              get_rev_height(*i, anc_height);
+              if (child_height > anc_height)
+                todo.push_back(*i);
+            }
+        }
+    }
+  return false;
 }
 
 void
@@ -2607,7 +2672,8 @@ database::get_revision(revision_id const & id,
   {
     revision_id tmp;
     calculate_ident(revision_data(rdat), tmp);
-    I(id == tmp);
+    E(id == tmp, origin::database,
+      F("revision does not match hash"));
   }
 
   dat = revision_data(rdat);
@@ -2880,13 +2946,13 @@ database::put_roster_for_revision(revision_id const & new_id,
   manifest_id roster_manifest_id;
   MM(roster_manifest_id);
   make_roster_for_revision(*this, rev, new_id, *ros_writeable, *mm_writeable);
-  calculate_ident(*ros_writeable, roster_manifest_id);
+  calculate_ident(*ros_writeable, roster_manifest_id, false);
   E(rev.new_manifest == roster_manifest_id, rev.made_from,
     F("revision contains incorrect manifest_id"));
   // const'ify the objects, suitable for caching etc.
   roster_t_cp ros = ros_writeable;
   marking_map_cp mm = mm_writeable;
-  put_roster(new_id, ros, mm);
+  put_roster(new_id, rev, ros, mm);
 }
 
 bool
@@ -2905,6 +2971,7 @@ database::delete_existing_revs_and_certs()
   imp->execute(query("DELETE FROM revisions"));
   imp->execute(query("DELETE FROM revision_ancestry"));
   imp->execute(query("DELETE FROM revision_certs"));
+  imp->execute(query("DELETE FROM branch_leaves"));
 }
 
 void
@@ -2947,6 +3014,16 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   // Kill the certs, ancestry, and revision.
   imp->execute(query("DELETE from revision_certs WHERE revision_id = ?")
                % blob(rid.inner()()));
+  {
+    results res;
+    imp->fetch(res, one_col, any_rows,
+               query("SELECT branch FROM branch_leaves where revision_id = ?")
+               % blob(rid.inner()()));
+    for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+      {
+        recalc_branch_leaves(cert_value((*i)[0], origin::database));
+      }
+  }
   imp->cert_stamper.note_change();
 
   imp->execute(query("DELETE from revision_ancestry WHERE child = ?")
@@ -2961,12 +3038,28 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
   guard.commit();
 }
 
+void
+database::recalc_branch_leaves(cert_value const & name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
+  set<revision_id> revs;
+  get_revisions_with_cert(cert_name("branch"), name, revs);
+  erase_ancestors(*this, revs);
+  for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
+    {
+      imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
+                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+    }
+}
+
 /// Deletes all certs referring to a particular branch.
 void
 database::delete_branch_named(cert_value const & branch)
 {
   L(FL("Deleting all references to branch %s") % branch);
   imp->execute(query("DELETE FROM revision_certs WHERE name='branch' AND value =?")
+               % blob(branch()));
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?")
                % blob(branch()));
   imp->cert_stamper.note_change();
   imp->execute(query("DELETE FROM branch_epochs WHERE branch=?")
@@ -3075,7 +3168,6 @@ database::put_key(key_name const & pub_id,
   MM(pub);
   key_id thash;
   key_hash_code(pub_id, pub, thash);
-  I(!public_key_exists(thash));
 
   if (public_key_exists(thash))
     {
@@ -3478,8 +3570,61 @@ database::put_revision_cert(cert const & cert)
     }
 
   imp->put_cert(cert, "revision_certs");
+
+  if (cert.name() == "branch")
+    {
+      record_as_branch_leaf(cert.value, cert.ident);
+    }
+
   imp->cert_stamper.note_change();
   return true;
+}
+
+void
+database::record_as_branch_leaf(cert_value const & branch, revision_id const & rev)
+{
+  set<revision_id> parents;
+  get_revision_parents(rev, parents);
+  set<revision_id> current_leaves;
+  get_branch_leaves(branch, current_leaves);
+
+  set<revision_id>::const_iterator self = current_leaves.find(rev);
+  if (self != current_leaves.end())
+    return; // already recorded (must be adding a second branch cert)
+
+  bool all_parents_were_leaves = true;
+  for (set<revision_id>::const_iterator p = parents.begin();
+       p != parents.end(); ++p)
+    {
+      set<revision_id>::iterator l = current_leaves.find(*p);
+      if (l == current_leaves.end())
+        all_parents_were_leaves = false;
+      else
+        {
+          imp->execute(query("DELETE FROM branch_leaves "
+                             "WHERE branch = ? AND revision_id = ?")
+                       % blob(branch()) % blob(l->inner()()));
+          current_leaves.erase(l);
+        }
+    }
+
+  if (!all_parents_were_leaves)
+    {
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(*r, rev))
+            {
+              imp->execute(query("DELETE FROM branch_leaves "
+                                 "WHERE branch = ? AND revision_id = ?")
+                           % blob(branch()) % blob(r->inner()()));
+            }
+        }
+    }
+
+  imp->execute(query("INSERT INTO branch_leaves(branch, revision_id) "
+                     "VALUES (?, ?)")
+               % blob(branch()) % blob(rev.inner()()));
 }
 
 outdated_indicator
@@ -3548,6 +3693,19 @@ database::get_revisions_with_cert(cert_name const & name,
   results res;
   query q("SELECT revision_id FROM revision_certs WHERE name = ? AND value = ?");
   imp->fetch(res, one_col, any_rows, q % text(name()) % blob(val()));
+  for (results::const_iterator i = res.begin(); i != res.end(); ++i)
+    revisions.insert(revision_id((*i)[0], origin::database));
+  return imp->cert_stamper.get_indicator();
+}
+
+outdated_indicator
+database::get_branch_leaves(cert_value const & value,
+                            set<revision_id> & revisions)
+{
+  revisions.clear();
+  results res;
+  query q("SELECT revision_id FROM branch_leaves WHERE branch = ?");
+  imp->fetch(res, one_col, any_rows, q % blob(value()));
   for (results::const_iterator i = res.begin(); i != res.end(); ++i)
     revisions.insert(revision_id((*i)[0], origin::database));
   return imp->cert_stamper.get_indicator();
@@ -4106,9 +4264,9 @@ outdated_indicator
 database::get_branches(vector<string> & names)
 {
     results res;
-    query q("SELECT DISTINCT value FROM revision_certs WHERE name = ?");
+    query q("SELECT DISTINCT branch FROM branch_leaves");
     string cert_name = "branch";
-    imp->fetch(res, one_col, any_rows, q % text(cert_name));
+    imp->fetch(res, one_col, any_rows, q);
     for (size_t i = 0; i < res.size(); ++i)
       {
         names.push_back(res[i][0]);
@@ -4168,6 +4326,7 @@ database::get_roster(revision_id const & rev_id, cached_roster & cr)
 
 void
 database::put_roster(revision_id const & rev_id,
+                     revision_t const & rev,
                      roster_t_cp const & roster,
                      marking_map_cp const & marking)
 {
@@ -4182,22 +4341,24 @@ database::put_roster(revision_id const & rev_id,
 
   imp->roster_cache.insert_dirty(rev_id, make_pair(roster, marking));
 
-  set<revision_id> parents;
-  get_revision_parents(rev_id, parents);
-
   // Now do what deltify would do if we bothered
-  for (set<revision_id>::const_iterator i = parents.begin();
-       i != parents.end(); ++i)
+  size_t num_edges = rev.edges.size();
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); ++i)
     {
-      if (null_id(*i))
+      revision_id old_rev = edge_old_revision(*i);
+      if (null_id(old_rev))
         continue;
-      revision_id old_rev = *i;
       if (imp->roster_base_stored(old_rev))
         {
           cached_roster cr;
           get_roster_version(old_rev, cr);
           roster_delta reverse_delta;
-          delta_rosters(*roster, *marking, *(cr.first), *(cr.second), reverse_delta);
+          cset const & changes = edge_changes(i);
+          delta_rosters(*roster, *marking,
+                        *(cr.first), *(cr.second),
+                        reverse_delta,
+                        num_edges > 1 ? 0 : &changes);
           if (imp->roster_cache.exists(old_rev))
             imp->roster_cache.mark_clean(old_rev);
           imp->drop(old_rev.inner(), "rosters");
@@ -4319,12 +4480,12 @@ database_impl::open()
 {
   I(!__sql);
 
-  char const * to_open;
+  std::string to_open;
   if (use_memory_db)
     to_open = ":memory:";
   else
-    to_open = filename.as_external().c_str();
-  if (sqlite3_open(to_open, &__sql) == SQLITE_NOMEM)
+    to_open = filename.as_external();
+  if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 
   I(__sql);

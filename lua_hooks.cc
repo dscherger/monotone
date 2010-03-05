@@ -874,6 +874,54 @@ lua_hooks::hook_get_netsync_write_permitted(key_identity_info const & identity)
 }
 
 bool
+lua_hooks::hook_get_remote_automate_permitted(key_identity_info const & identity,
+                                              vector<string> const & command_line,
+                                              vector<pair<string, string> > const & command_opts)
+{
+  Lua ll(st);
+  ll.func("get_remote_automate_permitted");
+  push_key_identity_info(ll, identity);
+
+  int k = 1;
+
+  ll.push_table();
+  vector<string>::const_iterator l;
+  for (l = command_line.begin(), k = 1; l != command_line.end(); ++l, ++k)
+    {
+      ll.push_int(k);
+      ll.push_str(*l);
+      ll.set_table();
+    }
+  ll.push_table();
+  k = 1;
+  vector<pair<string, string> >::const_iterator o;
+  for (o = command_opts.begin(), k = 1; o != command_opts.end(); ++o, ++k)
+    {
+      ll.push_int(k);
+
+      {
+        ll.push_table();
+
+        ll.push_str("name");
+        ll.push_str(o->first);
+        ll.set_table();
+
+        ll.push_str("value");
+        ll.push_str(o->second);
+        ll.set_table();
+      }
+
+      ll.set_table();
+    }
+
+  ll.call(3, 1);
+
+  bool permitted(false);
+  ll.extract_bool(permitted);
+  return ll.ok() && permitted;
+}
+
+bool
 lua_hooks::hook_init_attributes(file_path const & filename,
                                 map<string, string> & attrs)
 {
@@ -1203,6 +1251,30 @@ lua_hooks::hook_note_mtn_startup(args_vector const & args)
 
   ll.call(args.size(), 0);
   return ll.ok();
+}
+
+bool
+lua_hooks::hook_unmapped_git_author(string const & unmapped_author, string & fixed_author)
+{
+  return Lua(st)
+    .func("unmapped_git_author")
+    .push_str(unmapped_author)
+    .call(1,1)
+    .extract_str(fixed_author)
+    .ok();
+}
+
+bool
+lua_hooks::hook_validate_git_author(string const & author)
+{
+  bool valid = false, exec_ok = false;
+  exec_ok = Lua(st)
+    .func("validate_git_author")
+    .push_str(author)
+    .call(1,1)
+    .extract_bool(valid)
+    .ok();
+  return valid && exec_ok;
 }
 
 // Local Variables:

@@ -43,7 +43,7 @@ using std::strlen;
 using boost::shared_ptr;
 
 static void
-add_dormant_attrs(node_t const parent, node_t child)
+add_dormant_attrs(const_node_t parent, node_t child)
 {
   for (attr_map_t::const_iterator i = parent->attrs.begin();
        i != parent->attrs.end(); ++i)
@@ -89,9 +89,9 @@ three_way_merge(revision_id const & ancestor_rid, roster_t const & ancestor_rost
   for (node_map::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
     {
       if (left_with_attrs.has_node(i->first))
-        add_dormant_attrs(i->second, left_with_attrs.get_node(i->first));
+        add_dormant_attrs(i->second, left_with_attrs.get_node_for_update(i->first));
       if (right_with_attrs.has_node(i->first))
-        add_dormant_attrs(i->second, right_with_attrs.get_node(i->first));
+        add_dormant_attrs(i->second, right_with_attrs.get_node_for_update(i->first));
     }
 
   // Mark up the ANCESTOR
@@ -673,14 +673,13 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
 
             E(right_roster.has_node(dir), origin::user,
               F("Path %s not found in destination tree.") % pth);
-            node_t parent = right_roster.get_node(dir);
+            const_node_t parent = right_roster.get_node(dir);
             moved_root->parent = parent->self;
             moved_root->name = base;
-            marking_map::iterator
-              i = left_marking_map.find(moved_root->self);
-            I(i != left_marking_map.end());
-            i->second.parent_name.clear();
-            i->second.parent_name.insert(left_rid);
+
+            marking_t i = left_marking_map.get_marking_for_update(moved_root->self);
+            i->parent_name.clear();
+            i->parent_name.insert(left_rid);
           }
 
         roster_merge_result result;
@@ -1161,8 +1160,8 @@ CMD_AUTOMATE(file_merge, N_("LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME
   content_merge_database_adaptor adaptor(db, left_rid, right_rid,
                                          left_marking, right_marking);
 
-  file_t left_n = downcast_to_file_t(left_roster.get_node(left_path));
-  file_t right_n = downcast_to_file_t(right_roster.get_node(right_path));
+  const_file_t left_n = downcast_to_file_t(left_roster.get_node(left_path));
+  const_file_t right_n = downcast_to_file_t(right_roster.get_node(right_path));
 
   revision_id ancestor_rid;
   file_path ancestor_path;

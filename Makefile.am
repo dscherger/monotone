@@ -38,7 +38,11 @@ MOST_SOURCES = 								\
 	$(SANITY_CORE_SOURCES) $(LUAEXT_SOURCES) platform-wrapped.hh	\
 	rev_types.hh mtn-sanity.cc mtn-sanity.hh ui.cc ui.hh		\
 	app_state.cc app_state.hh					\
+	automate_ostream.hh						\
+	automate_ostream_demuxed.hh					\
+	automate_reader.hh automate_reader.cc				\
 	botan_pipe_cache.hh						\
+	cache_logger.hh cache_logger.cc					\
 	commands.cc commands.hh $(CMD_SOURCES)				\
 	diff_output.cc diff_output.hh					\
 	lua_hooks.cc lua_hooks.hh 					\
@@ -46,6 +50,7 @@ MOST_SOURCES = 								\
 	update.cc update.hh						\
 	work.cc migrate_work.cc work.hh					\
 	cert.cc cert.hh							\
+	cow_trie.hh							\
 	project.cc project.hh						\
 	outdated_indicator.cc outdated_indicator.hh			\
 	database.cc database.hh						\
@@ -59,6 +64,17 @@ MOST_SOURCES = 								\
 	refiner.cc refiner.hh						\
 	enumerator.cc enumerator.hh					\
 	netsync.cc            						\
+	network/automate_session.hh network/automate_session.cc		\
+	network/connection_info.hh network/connection_info.cc		\
+	network/listener_base.hh network/listener_base.cc		\
+	network/listener.hh network/listener.cc				\
+	network/make_server.hh network/make_server.cc			\
+	network/netsync_session.hh network/netsync_session.cc		\
+	network/reactable.hh network/reactable.cc			\
+	network/reactor.hh network/reactor.cc				\
+	network/session.hh network/session.cc				\
+	network/session_base.hh network/session_base.cc			\
+	network/wrapped_session.hh network/wrapped_session.cc		\
 	netxx_pipe.cc netxx_pipe.hh					\
 	netcmd.cc netcmd.hh						\
 	merkle_tree.cc merkle_tree.hh 					\
@@ -204,7 +220,13 @@ lib3rdparty_a_SOURCES = $(BOOST_SANDBOX_SOURCES) \
 			$(NETXX_SOURCES)
 
 htmldir = $(datadir)/doc/monotone
-html_DATA = monotone.html
+html_DATA = monotone.html texinfo.css
+
+htmlfiguredir = $(htmldir)/figures
+htmlfigure_DATA = $(wildcard figures/*.png)
+
+htmlimagedir = $(htmldir)/images
+htmlimage_DATA = $(wildcard images/*.png)
 
 # flags
 
@@ -243,10 +265,10 @@ AM_CXXFLAGS = $(PCH_FLAGS)
 SUFFIXES = .gch .merged.po .gmo
 
 AM_CPPFLAGS = $(intl_CFLAGS) $(pcre_CFLAGS) $(botan_CFLAGS)	\
-	      $(lua_CFLAGS) $(sqlite_CFLAGS) $(idn_CFLAGS)
+	      $(lua_CFLAGS) $(sqlite3_CFLAGS) $(idn_CFLAGS)
 
 LDADD = libplatform.a lib3rdparty.a $(intl_LIBS) $(pcre_LIBS)	\
-	$(botan_LIBS) $(lua_LIBS) $(sqlite_LIBS) $(idn_LIBS)
+	$(botan_LIBS) $(lua_LIBS) $(sqlite3_LIBS) $(idn_LIBS)
 
 if WIN32_PLATFORM
   libplatform_a_SOURCES += $(WIN32_PLATFORM_SOURCES)
@@ -304,7 +326,7 @@ info_TEXINFOS = monotone.texi
 EXTRA_DIST =								\
 	HACKING INSTALL README.changesets README.visualc8 UPGRADE	\
 	audit-includes do-editor-vars.sh doxygen.cfg			\
-	$(wildcard $(srcdir)/m4/*.m4) monotone.html			\
+	$(wildcard $(srcdir)/m4/*.m4) monotone.html images		\
 	texinfo.css schema.sql unix/README util/mtnopt.in win32/README	\
 	win32/monotone.iss win32/modpath.iss win32/monotone.bmp		\
 									\
@@ -690,6 +712,7 @@ monotone.html: monotone.texi version.texi $(TEXI_FRAGMENTS) \
 	       std_hooks.lua texinfo.css
 	$(V_makeinfo)set -e; if $(CHECK_SRCDIR_EQ_BUILDDIR); then :; else \
 		cp -r $(srcdir)/figures .; \
+		cp -r $(srcdir)/images .; \
 		cp $(srcdir)/texinfo.css .; \
 	fi; \
 	makeinfo -I $(srcdir) --no-split --no-headers --output $@ --html $<; \
@@ -703,6 +726,7 @@ html: monotone.texi version.texi std_hooks.lua texinfo.css
 	fi; \
 	mkdir -p $@; \
 	cp -r $(srcdir)/figures $@; \
+	cp -r $(srcdir)/images $@; \
 	cp $(srcdir)/texinfo.css $@; \
 	makeinfo -I $(srcdir) --number-sections --html --output $@ $<; \
 	for f in $@/*.html; do \

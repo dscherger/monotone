@@ -18,6 +18,7 @@
 #include "cmd.hh"
 #include "work.hh"
 #include "transforms.hh"
+#include "roster.hh"
 
 #include <algorithm>
 #include <boost/tokenizer.hpp>

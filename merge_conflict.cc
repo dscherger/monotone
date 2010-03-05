@@ -30,7 +30,7 @@ namespace
   node_type
   get_type(roster_t const & roster, node_id const nid)
   {
-    node_t n = roster.get_node(nid);
+    const_node_t n = roster.get_node(nid);
 
     if (is_file_t(n))
       return file_type;
@@ -195,7 +195,7 @@ get_nid_name_pair(roster_t const & roster,
                   node_id & nid,
                   std::pair<node_id, path_component> & name)
 {
-  node_t const node = roster.get_node(file_path_external(utf8(path, origin::internal)));
+  const_node_t node = roster.get_node(file_path_external(utf8(path, origin::internal)));
   nid = node->self;
   name = make_pair (node->parent, node->name);
 }
@@ -2286,7 +2286,7 @@ attach_node (lua_hooks & lua,
 
   new_roster.attach_node (nid, target_path);
 
-  node_t node = new_roster.get_node (nid);
+  const_node_t node = new_roster.get_node (nid);
   for (attr_map_t::const_iterator attr = node->attrs.begin();
        attr != node->attrs.end();
        ++attr)
@@ -2390,7 +2390,7 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
         result_data = file_data(result_raw_data);
         calculate_ident(result_data, result_fid);
 
-        file_t result_node = downcast_to_file_t(result_roster.get_node(nid));
+        file_t result_node = downcast_to_file_t(result_roster.get_node_for_update(nid));
         result_node->content = result_fid;
 
         adaptor.record_file(fid, result_fid, parent_data, result_data);
@@ -2404,7 +2404,7 @@ resolve_duplicate_name_one_side(lua_hooks & lua,
 
       if (is_dir_t(result_roster.get_node(nid)))
         {
-          dir_t n = downcast_to_dir_t(result_roster.get_node(nid));
+          const_dir_t n = downcast_to_dir_t(result_roster.get_node(nid));
           E(n->children.empty(), origin::user, F("can't drop %s; not empty") % name);
         }
       result_roster.drop_detached_node(nid);
@@ -2537,7 +2537,7 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
 
               P(F("merged %s, %s") % left_name % right_name);
 
-              file_t result_node = downcast_to_file_t(roster.get_node(conflict.nid));
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
               result_node->content = merged_id;
             }
             break;
@@ -2558,7 +2558,7 @@ roster_merge_result::resolve_file_content_conflicts(lua_hooks & lua,
               result_data = file_data(result_raw_data);
               calculate_ident(result_data, result_id);
 
-              file_t result_node = downcast_to_file_t(roster.get_node(conflict.nid));
+              file_t result_node = downcast_to_file_t(roster.get_node_for_update(conflict.nid));
               result_node->content = result_id;
 
               adaptor.record_merge(conflict.left, conflict.right, result_id,

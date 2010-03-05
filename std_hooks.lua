@@ -30,7 +30,7 @@ end
 function execute(path, ...)
    local pid
    local ret = -1
-   pid = spawn(path, unpack(arg))
+   pid = spawn(path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -39,7 +39,7 @@ function execute_redirected(stdin, stdout, stderr, path, ...)
    local pid
    local ret = -1
    io.flush();
-   pid = spawn_redirected(stdin, stdout, stderr, path, unpack(arg))
+   pid = spawn_redirected(stdin, stdout, stderr, path, ...)
    if (pid ~= -1) then ret, pid = wait(pid) end
    return ret
 end
@@ -49,7 +49,7 @@ end
 -- This is needed to work around some brokenness with some merge tools
 -- (e.g. on OS X)
 function execute_confirm(path, ...)
-   ret = execute(path, unpack(arg))
+   ret = execute(path, ...)
 
    if (ret ~= 0)
    then
@@ -400,7 +400,7 @@ end
 function intersection(a,b)
    local s={}
    local t={}
-   for k,v in pairs(a) do s[v] = 1 end
+   for k,v in pairs(a) do s[v.name] = 1 end
    for k,v in pairs(b) do if s[v] ~= nil then table.insert(t,v) end end
    return t
 end
@@ -1398,4 +1398,39 @@ do
    function push_netsync_notifier(notifier)
       return push_hook_functions(notifier)
    end
+end
+
+-- to ensure only mapped authors are allowed through
+-- return "" from unmapped_git_author
+-- and validate_git_author will fail
+
+function unmapped_git_author(author)
+   -- replace "foo@bar" with "foo <foo@bar>"
+   name = author:match("^([^<>]+)@[^<>]+$")
+   if name then
+      return name .. " <" .. author .. ">"
+   end
+
+   -- replace "<foo@bar>" with "foo <foo@bar>"
+   name = author:match("^<([^<>]+)@[^<>]+>$")
+   if name then
+      return name .. " " .. author
+   end
+
+   -- replace "foo" with "foo <foo>"
+   name = author:match("^[^<>@]+$")
+   if name then
+      return name .. " <" .. name .. ">"
+   end
+
+   return author -- unchanged
+end
+
+function validate_git_author(author)
+   -- ensure author matches the "Name <email>" format git expects
+   if author:match("^[^<]+ <[^>]*>$") then
+      return true
+   end
+
+   return false
 end

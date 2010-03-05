@@ -140,6 +140,16 @@ OPT(min_netsync_version, "min-netsync-version",
 }
 #endif
 
+OPT(remote_stdio_host, "remote-stdio-host",
+    utf8, ,
+    gettext_noop("sets the host (and optionally the port) for a "
+                 "remote netsync action"))
+#ifdef option_bodies
+{
+  remote_stdio_host = utf8(arg, origin::user);
+}
+#endif
+
 OPT(branch, "branch,b", branch_name, ,
         gettext_noop("select branch cert for operation"))
 #ifdef option_bodies
@@ -223,6 +233,14 @@ GOPT(dbname, "db,d", system_path, , gettext_noop("set name of database"))
 {
   dbname = system_path(arg, origin::user);
   dbname_is_memory = (arg == ":memory:");
+}
+#endif
+
+GOPT(roster_cache_performance_log, "roster-cache-performance-log",
+     system_path, , gettext_noop("log roster cache statistic to the given file"))
+#ifdef option_bodies
+{
+  roster_cache_performance_log = system_path(arg, origin::user);
 }
 #endif
 
@@ -451,6 +469,13 @@ GOPT(ignore_suspend_certs, "ignore-suspend-certs", bool, false,
 }
 #endif
 
+GOPT(non_interactive, "non-interactive", bool, false,
+     gettext_noop("do not prompt the user for input"))
+#ifdef option_bodies
+{
+  non_interactive = true;
+}
+#endif
 
 OPTVAR(key, external_key_name, signing_key, )
 OPTION(globals, key, true, "key,k",
@@ -627,6 +652,15 @@ gettext_noop("suppress warning, verbose, informational and progress messages"))
 }
 #endif
 
+GOPT(timestamps, "timestamps", bool, false,
+gettext_noop("show timestamps in front of errors, warnings and progress messages"))
+#ifdef option_bodies
+{
+  timestamps = true;
+  ui.enable_timestamps();
+}
+#endif
+
 OPT(recursive, "recursive,R", bool, false,
      gettext_noop("also operate on the contents of any listed directories"))
 #ifdef option_bodies
@@ -661,7 +695,8 @@ GOPT(no_workspace, "no-workspace", bool, false,
 #endif
 
 OPT(set_default, "set-default", bool, false,
-     gettext_noop("use the current arguments as the future default"))
+     gettext_noop("use the current netsync arguments and options "
+                  "as the future default"))
 #ifdef option_bodies
 {
   set_default = true;

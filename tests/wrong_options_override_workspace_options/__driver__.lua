@@ -14,10 +14,8 @@ mtn_setup()
 check(mtn_ws_opts("add", "."), 0, false, false)
 
 -- try to check the status and supply a non-existing database argument
--- FIXME: this silently succeeds in a newly created workspace and should
--- fail as soon as there is at least one ancestor, but this is another
--- cup of tea
-check(mtn_ws_opts("status", "-d", "baz"), 0, false, false)
+check(mtn_ws_opts("status", "-d", "baz"), 1, false, true)
+check(qgrep("baz does not exist", "stderr"))
 
 -- this should succeed if the original database is still set
 check(mtn_ws_opts("commit", "-m", "test"), 0, false, false)

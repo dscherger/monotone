@@ -190,6 +190,32 @@ UNIT_TEST(functions)
         L(FL("auth_cmd test done, buffer was %d bytes") % buf.size());
       }
 
+      // automate_cmd
+      {
+        L(FL("checking i/o round trip on auth_cmd"));
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
+        string buf;
+        key_id out_client(raw_sha1("happy client day"), origin::internal);
+        id out_nonce1(raw_sha1("nonce me amadeus"), origin::internal);
+        key_id in_client;
+        id in_nonce1;
+        // total cheat, since we don't actually verify that rsa_oaep_sha_data
+        // is sensible anywhere here...
+        rsa_oaep_sha_data out_key("nonce start my heart"), in_key;
+        rsa_sha1_signature out_signature(raw_sha1("burble") + raw_sha1("gorby"),
+                                         origin::internal), in_signature;
+
+        out_cmd.write_automate_cmd(out_client, out_nonce1, out_key, out_signature);
+        do_netcmd_roundtrip(out_cmd, in_cmd, buf);
+        in_cmd.read_automate_cmd(in_client, in_nonce1, in_key, in_signature);
+        UNIT_TEST_CHECK(in_client == out_client);
+        UNIT_TEST_CHECK(in_nonce1 == out_nonce1);
+        UNIT_TEST_CHECK(in_key == out_key);
+        UNIT_TEST_CHECK(in_signature == out_signature);
+        L(FL("automate_cmd test done, buffer was %d bytes") % buf.size());
+      }
+
       // confirm_cmd
       {
         L(FL("checking i/o round trip on confirm_cmd"));
@@ -281,6 +307,50 @@ UNIT_TEST(functions)
         UNIT_TEST_CHECK(in_base == out_base);
         UNIT_TEST_CHECK(in_delta == out_delta);
         L(FL("delta_cmd test done, buffer was %d bytes") % buf.size());
+      }
+
+      // automate_command_cmd
+      {
+        L(FL("checking i/o round trip on automate_command_cmd"));
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
+
+        std::vector<string> in_args, out_args;
+        std::vector<std::pair<string, string> > in_opts, out_opts;
+
+        in_args.push_back("foo");
+        in_args.push_back("bar");
+        in_opts.push_back(std::make_pair("abc", "def"));
+
+        out_cmd.write_automate_command_cmd(in_args, in_opts);
+        string buf;
+        do_netcmd_roundtrip(out_cmd, in_cmd, buf);
+        in_cmd.read_automate_command_cmd(out_args, out_opts);
+
+        UNIT_TEST_CHECK(in_args == out_args);
+        UNIT_TEST_CHECK(in_opts == out_opts);
+        L(FL("automate_command_cmd test done, buffer was %d bytes") % buf.size());
+      }
+
+      // automate_packet_cmd
+      {
+        L(FL("checking i/o round trip on automate_packet_cmd"));
+        netcmd out_cmd(constants::netcmd_current_protocol_version);
+        netcmd in_cmd(constants::netcmd_current_protocol_version);
+
+        int in_cmd_num(3), out_cmd_num;
+        char in_stream('k'), out_stream;
+        string in_data("this is some packet data"), out_data;
+
+        out_cmd.write_automate_packet_cmd(in_cmd_num, in_stream, in_data);
+        string buf;
+        do_netcmd_roundtrip(out_cmd, in_cmd, buf);
+        in_cmd.read_automate_packet_cmd(out_cmd_num, out_stream, out_data);
+
+        UNIT_TEST_CHECK(in_cmd_num == out_cmd_num);
+        UNIT_TEST_CHECK(in_stream == out_stream);
+        UNIT_TEST_CHECK(in_data == out_data);
+        L(FL("automate_packet_cmd test done, buffer was %d bytes") % buf.size());
       }
 
     }

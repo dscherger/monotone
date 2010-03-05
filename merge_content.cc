@@ -144,26 +144,20 @@ content_merge_database_adaptor::get_ancestral_roster(node_id nid,
   // then use the file's birth roster.
   if (!anc || !anc->has_node(nid))
     {
-      marking_map::const_iterator lmm = left_mm.find(nid);
-      marking_map::const_iterator rmm = right_mm.find(nid);
-
-      MM(left_mm);
-      MM(right_mm);
-
-      if (lmm == left_mm.end())
+      if (!left_mm.contains(nid))
         {
-          I(rmm != right_mm.end());
-          rid = rmm->second.birth_revision;
+          rid = right_mm.get_marking(nid)->birth_revision;
         }
-      else if (rmm == right_mm.end())
+      else if (!right_mm.contains(nid))
         {
-          I(lmm != left_mm.end());
-          rid = lmm->second.birth_revision;
+          rid = left_mm.get_marking(nid)->birth_revision;
         }
       else
         {
-          I(lmm->second.birth_revision == rmm->second.birth_revision);
-          rid = lmm->second.birth_revision;
+          const_marking_t const & lm = left_mm.get_marking(nid);
+          const_marking_t const & rm = right_mm.get_marking(nid);
+          I(lm->birth_revision == rm->birth_revision);
+          rid = lm->birth_revision;
         }
 
       load_and_cache_roster(db, rid, rosters, anc);
@@ -236,26 +230,20 @@ content_merge_workspace_adaptor::get_ancestral_roster(node_id nid,
     }
   else
     {
-      marking_map::const_iterator lmm = left_mm.find(nid);
-      marking_map::const_iterator rmm = right_mm.find(nid);
-
-      MM(left_mm);
-      MM(right_mm);
-
-      if (lmm == left_mm.end())
+      if (!left_mm.contains(nid))
         {
-          I(rmm != right_mm.end());
-          rid = rmm->second.birth_revision;
+          rid = right_mm.get_marking(nid)->birth_revision;
         }
-      else if (rmm == right_mm.end())
+      else if (!right_mm.contains(nid))
         {
-          I(lmm != left_mm.end());
-          rid = lmm->second.birth_revision;
+          rid = left_mm.get_marking(nid)->birth_revision;
         }
       else
         {
-          I(lmm->second.birth_revision == rmm->second.birth_revision);
-          rid = lmm->second.birth_revision;
+          const_marking_t const & lm = left_mm.get_marking(nid);
+          const_marking_t const & rm = right_mm.get_marking(nid);
+          I(lm->birth_revision == rm->birth_revision);
+          rid = lm->birth_revision;
         }
 
       load_and_cache_roster(db, rid, rosters, anc);
@@ -634,7 +622,7 @@ try_to_merge_files(lua_hooks & lua,
         {
           L(FL("resolved content conflict %d / %d on file '%s'")
             % cnt % total_conflicts % right_path);
-          file_t f = downcast_to_file_t(result.roster.get_node(conflict.nid));
+          file_t f = downcast_to_file_t(result.roster.get_node_for_update(conflict.nid));
           f->content = merged_id;
 
           it = result.file_content_conflicts.erase(it);

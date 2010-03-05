@@ -8,7 +8,7 @@ function pure_mtn(...)
   end
   return {monotone_path, "--ssh-sign=no", "--norc",
 	  "--root=" .. test.root, "--db", "test.db",
-	  "--rcfile", test.root .. "/test_hooks.lua", unpack(arg)}
+	  "--rcfile", test.root .. "/test_hooks.lua", ...}
 end
 
 mtn_setup()

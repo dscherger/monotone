@@ -2,7 +2,7 @@ skip_if(not existsonpath("git"))
 
 mtn_setup()
 
-writefile("author.map", "tester@test.net = <tester@test.net>\n")
+writefile("author.map", "tester@test.net = other <other@test.net>\n")
 
 writefile("file1", "file1")
 writefile("file2", "file2")
@@ -76,10 +76,13 @@ check(samefile("mtn.dir/file-one", "git.dir/file-one"))
 check(not exists("mtn.dir/file2"))
 check(not exists("git.dir/file2"))
 
--- log both repos (mainly for visual inspection)
+-- log both repos and check the author mapping
 
-check(indir("mtn.dir", mtn("log")), 0, false, false)
-check(indir("git.dir", {"git", "log", "--summary", "--pretty=raw"}), 0, false, false)
+check(indir("mtn.dir", mtn("log")), 0, true, false)
+check(qgrep("Author: tester@test.net", "stdout"))
+check(indir("git.dir", {"git", "log", "--summary", "--pretty=raw"}), 0, true, false)
+check(qgrep("author other <other@test.net>", "stdout"))
+check(qgrep("committer other <other@test.net>", "stdout"))
 
 -- check branch refs
 
@@ -96,3 +99,4 @@ check(indir("git.dir", {"git", "checkout", "branch1"}), 0, false, false)
 check(samefile("mtn.dir/file-one", "git.dir/file-one"))
 check(not exists("mtn.dir/file2"))
 check(not exists("git.dir/file2"))
+

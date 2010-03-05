@@ -115,7 +115,7 @@ is_ancestor(database & db,
     % descendent_id);
 
   multimap<revision_id, revision_id> graph;
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   return is_ancestor(ancestor_id, descendent_id, graph);
 }
 
@@ -503,10 +503,10 @@ insert_into_roster(roster_t & child_roster,
 {
   if (child_roster.has_node(pth))
     {
-      node_t n = child_roster.get_node(pth);
+      const_node_t n = child_roster.get_node(pth);
       E(is_file_t(n), origin::internal,
         F("Path %s cannot be added, as there is a directory in the way") % pth);
-      file_t f = downcast_to_file_t(n);
+      const_file_t f = downcast_to_file_t(n);
       E(f->content == fid, origin::internal,
         F("Path %s added twice with differing content") % pth);
       return;
@@ -548,7 +548,7 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
       for (node_map::const_iterator j = nodes.begin(); j != nodes.end(); ++j)
         {
           node_id n = j->first;
-          revision_id birth_rev = safe_get(*parent_marking, n).birth_revision;
+          revision_id birth_rev = parent_marking->get_marking(n)->birth_revision;
           u64 birth_node = safe_get(new_rev_to_node, birth_rev);
           map<node_id, u64>::const_iterator i = nodes_in_any_parent.find(n);
           if (i != nodes_in_any_parent.end())
@@ -597,8 +597,8 @@ anc_graph::fixup_node_identities(parent_roster_map const & parent_rosters,
               if ((!child_roster.has_node(n))
                   && child_roster.has_node(fp))
                 {
-                  node_t pn = parent_roster->get_node(n);
-                  node_t cn = child_roster.get_node(fp);
+                  const_node_t pn = parent_roster->get_node(n);
+                  const_node_t cn = child_roster.get_node(fp);
                   if (is_file_t(pn) == is_file_t(cn))
                     {
                       child_roster.replace_node_id(cn->self, n);
@@ -911,7 +911,7 @@ build_roster_style_revs_from_manifest_style_revs(database & db, key_store & keys
   set<revision_id> all_rev_ids;
   db.get_revision_ids(all_rev_ids);
 
-  db.get_revision_ancestry(existing_graph);
+  db.get_forward_ancestry(existing_graph);
   for (multimap<revision_id, revision_id>::const_iterator i = existing_graph.begin();
        i != existing_graph.end(); ++i)
     {
@@ -975,7 +975,7 @@ allrevs_toposorted(database & db,
 {
   // get the complete ancestry
   rev_ancestry_map graph;
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   toposort_rev_ancestry(graph, revisions);
 }
 

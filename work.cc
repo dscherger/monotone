@@ -55,6 +55,7 @@ static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
 static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
+static char const bisect_file_name[] = "bisect";
 
 static void
 get_revision_path(bookkeeping_path & m_path)
@@ -96,6 +97,13 @@ get_update_path(bookkeeping_path & update_path)
 {
   update_path = bookkeeping_root / update_file_name;
   L(FL("update path is %s") % update_path);
+}
+
+static void
+get_bisect_path(bookkeeping_path & bisect_path)
+{
+  bisect_path = bookkeeping_root / bisect_file_name;
+  L(FL("bisect path is %s") % bisect_path);
 }
 
 //
@@ -292,10 +300,25 @@ get_roster_for_rid(database & db,
 }
 
 void
+workspace::require_parents_in_db(database & db,
+                                 revision_t const & rev)
+{
+  for (edge_map::const_iterator i = rev.edges.begin();
+       i != rev.edges.end(); i++)
+    {
+      revision_id const & parent(edge_old_revision(i));
+      E(null_id(parent) || db.revision_exists(parent), origin::user,
+        F("parent revision %s does not exist, did you specify the wrong database?")
+        % parent);
+    }
+}
+
+void
 workspace::get_parent_rosters(database & db, parent_map & parents)
 {
   revision_t rev;
   get_work_rev(rev);
+  require_parents_in_db(db, rev);
 
   parents.clear();
   for (edge_map::const_iterator i = rev.edges.begin();
@@ -314,6 +337,7 @@ workspace::get_current_roster_shape(database & db,
 {
   revision_t rev;
   get_work_rev(rev);
+  require_parents_in_db(db, rev);
   revision_id new_rid(fake_id());
 
   // If there is just one parent, it might be the null ID, which
@@ -598,6 +622,122 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
     E(false, origin::user, F("'%s' is not a recognized workspace option") % opt);
 }
 
+// _MTN/bisect handling.
+
+namespace syms
+{
+    symbol const start("start");
+    symbol const good("good");
+    symbol const bad("bad");
+    symbol const skipped("skipped");
+};
+
+void
+workspace::get_bisect_info(vector<bisect::entry> & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+  
+  if (!file_exists(bisect_path))
+    return;
+
+  data dat;
+  read_data(bisect_path, dat);
+
+  string name("bisect");
+  basic_io::input_source src(dat(), name, origin::workspace);
+  basic_io::tokenizer tok(src);
+  basic_io::parser parser(tok);
+
+  while (parser.symp())
+    {
+      string rev;
+      bisect::type type;
+      if (parser.symp(syms::start))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::start;
+        }
+      else if (parser.symp(syms::good))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::good;
+        }
+      else if (parser.symp(syms::bad))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::bad;
+        }
+      else if (parser.symp(syms::skipped))
+        {
+          parser.sym();
+          parser.hex(rev);
+          type = bisect::skipped;
+        }
+      else
+        I(false);
+
+      revision_id rid = 
+        decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
+      bisect.push_back(make_pair(type, rid));
+    }
+}
+
+void
+workspace::put_bisect_info(vector<bisect::entry> const & bisect)
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+
+  basic_io::stanza st;
+  for (vector<bisect::entry>::const_iterator i = bisect.begin(); 
+       i != bisect.end(); ++i)
+    {
+      switch (i->first)
+        {
+        case bisect::start:
+          st.push_binary_pair(syms::start, i->second.inner());
+          break;
+
+        case bisect::good:
+          st.push_binary_pair(syms::good, i->second.inner());
+          break;
+
+        case bisect::bad:
+          st.push_binary_pair(syms::bad, i->second.inner());
+          break;
+
+        case bisect::skipped:
+          st.push_binary_pair(syms::skipped, i->second.inner());
+          break;
+
+        case bisect::update:
+          // this value is not persisted, it is only used by the bisect
+          // update command to rerun a selection and update based on current
+          // bisect information
+          I(false);
+          break;
+        }
+    }
+
+  basic_io::printer pr;
+  pr.print_stanza(st);
+  data dat(pr.buf, origin::internal);
+
+  write_data(bisect_path, dat);
+}
+
+void
+workspace::remove_bisect_info()
+{
+  bookkeeping_path bisect_path;
+  get_bisect_path(bisect_path);
+  delete_file(bisect_path);
+}
+
 // local dump file
 
 void
@@ -677,9 +817,9 @@ workspace::maybe_update_inodeprints(database & db)
           roster_t const & parent_ros = parent_roster(parent);
           if (parent_ros.has_node(nid))
             {
-              node_t old_node = parent_ros.get_node(nid);
+              const_node_t old_node = parent_ros.get_node(nid);
               I(is_file_t(old_node));
-              file_t old_file = downcast_to_file_t(old_node);
+              const_file_t old_file = downcast_to_file_t(old_node);
 
               if (new_file->content != old_file->content)
                 {
@@ -1224,10 +1364,10 @@ simulated_working_tree::detach_node(file_path const & src)
 void
 simulated_working_tree::drop_detached_node(node_id nid)
 {
-  node_t node = workspace.get_node(nid);
+  const_node_t node = workspace.get_node(nid);
   if (is_dir_t(node))
     {
-      dir_t dir = downcast_to_dir_t(node);
+      const_dir_t dir = downcast_to_dir_t(node);
       if (!dir->children.empty())
         {
           map<node_id, file_path>::const_iterator i = nid_map.find(nid);
@@ -1464,8 +1604,14 @@ workspace::update_current_roster_from_filesystem(roster_t & ros,
               missing_items++;
             }
 
+          file_id fid;
+          ident_existing_file(fp, fid, status);
           file_t file = downcast_to_file_t(node);
-          ident_existing_file(fp, file->content, status);
+          if (file->content != fid)
+            {
+              ros.unshare(node);
+              downcast_to_file_t(node)->content = fid;
+            }
         }
 
     }
@@ -1635,10 +1781,10 @@ workspace::perform_deletions(database & db,
         P(F("skipping %s, not currently tracked") % name);
       else
         {
-          node_t n = new_roster.get_node(name);
+          const_node_t n = new_roster.get_node(name);
           if (is_dir_t(n))
             {
-              dir_t d = downcast_to_dir_t(n);
+              const_dir_t d = downcast_to_dir_t(n);
               if (!d->children.empty())
                 {
                   E(recursive, origin::user,
@@ -1662,7 +1808,7 @@ workspace::perform_deletions(database & db,
                 }
               else
                 {
-                  file_t file = downcast_to_file_t(n);
+                  const_file_t file = downcast_to_file_t(n);
                   file_id fid;
                   I(ident_existing_file(name, fid));
                   if (file->content == fid)
@@ -1926,7 +2072,7 @@ workspace::perform_content_update(roster_t const & old_roster,
          i = update.deltas_applied.begin(); i != update.deltas_applied.end();
        ++i)
     {
-      node_t node = new_roster.get_node(i->first);
+      const_node_t node = new_roster.get_node(i->first);
       for (attr_map_t::const_iterator a = node->attrs.begin();
            a != node->attrs.end(); ++a)
         {

@@ -10,10 +10,10 @@ function noenv_mtn(...)
   if save_LD_LIBRARY_PATH then
     return {"env", "-i",
             "LD_LIBRARY_PATH="..save_LD_LIBRARY_PATH,
-            unpack(mtn(unpack(arg)))}
+            unpack(mtn(...))}
   else
     return {"env", "-i",
-            unpack(mtn(unpack(arg)))}
+            unpack(mtn(...))}
   end
 end
 
@@ -21,9 +21,17 @@ if ostype == "Windows" then
   local iconv = getpathof("libiconv-2", ".dll")
   local intl = getpathof("libintl-8", ".dll")
   local zlib = getpathof("zlib1", ".dll")
+  local idn = getpathof("libidn-11", ".dll")
+  local pcre = getpathof("libpcre-0", ".dll")
+  local sqlite = getpathof("libsqlite3-0", ".dll")
+  local other_zlib = getpathof("libz-1", ".dll")
   copy(iconv, "libiconv-2.dll")
   copy(intl, "libintl-8.dll")
   copy(zlib, "zlib1.dll")
+  copy(idn, "libidn-11.dll")
+  copy(pcre, "libpcre-0.dll")
+  copy(sqlite, "libsqlite3-0.dll")
+  copy(other_zlib, "libz-1.dll")
 elseif string.sub(ostype, 1, 6) == "CYGWIN" then
   for _,name in pairs({
                         "cyggcc_s-1",

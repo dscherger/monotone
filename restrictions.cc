@@ -275,7 +275,7 @@ node_restriction::includes(roster_t const & roster, node_id nid) const
             }
         }
 
-      node_t node = roster.get_node(current);
+      const_node_t node = roster.get_node(current);
       current = node->parent;
       path_depth++;
     }

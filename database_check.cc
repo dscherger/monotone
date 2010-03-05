@@ -213,7 +213,7 @@ check_rosters_manifest(database & db,
       found_manifests.insert(man_id);
 
       for (node_map::const_iterator n = ros.all_nodes().begin();
-           n != ros.all_nodes().end(); n++)
+           n != ros.all_nodes().end(); ++n)
         {
 
           if (is_file_t(n->second))
@@ -261,24 +261,26 @@ check_rosters_marking(database & db,
       db.get_roster(ros_id, ros, mm);
 
       for (node_map::const_iterator n = ros.all_nodes().begin();
-           n != ros.all_nodes().end(); n++)
+           n != ros.all_nodes().end(); ++n)
         {
           // lots of revisions that must exist
-          marking_t mark = mm[n->first];
-          checked_revisions[mark.birth_revision].marking_refs++;
-          if (!checked_revisions[mark.birth_revision].found)
+          if (!mm.contains(n->first))
+            continue;
+          const_marking_t mark = mm.get_marking(n->first);
+          checked_revisions[mark->birth_revision].marking_refs++;
+          if (!checked_revisions[mark->birth_revision].found)
             checked_rosters[ros_id].missing_mark_revs++;
 
-          for (set<revision_id>::const_iterator r = mark.parent_name.begin();
-               r != mark.parent_name.end(); r++)
+          for (set<revision_id>::const_iterator r = mark->parent_name.begin();
+               r != mark->parent_name.end(); r++)
             {
               checked_revisions[*r].marking_refs++;
               if (!checked_revisions[*r].found)
                 checked_rosters[ros_id].missing_mark_revs++;
             }
 
-          for (set<revision_id>::const_iterator r = mark.file_content.begin();
-               r != mark.file_content.end(); r++)
+          for (set<revision_id>::const_iterator r = mark->file_content.begin();
+               r != mark->file_content.end(); r++)
             {
               checked_revisions[*r].marking_refs++;
               if (!checked_revisions[*r].found)
@@ -286,7 +288,7 @@ check_rosters_marking(database & db,
             }
 
           for (map<attr_key,set<revision_id> >::const_iterator attr =
-               mark.attrs.begin(); attr != mark.attrs.end(); attr++)
+                 mark->attrs.begin(); attr != mark->attrs.end(); attr++)
             for (set<revision_id>::const_iterator r = attr->second.begin();
                  r != attr->second.end(); r++)
               {
@@ -404,7 +406,7 @@ check_ancestry(database & db,
 {
   multimap<revision_id, revision_id> graph;
 
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
   L(FL("checking %d ancestry edges") % graph.size());
 
   ticker ticks(_("ancestry"), "a", graph.size()/70+1);
@@ -548,7 +550,7 @@ check_heights_relation(database & db,
   set<revision_id> heights;
 
   multimap<revision_id, revision_id> graph; // parent, child
-  db.get_revision_ancestry(graph);
+  db.get_forward_ancestry(graph);
 
   L(FL("checking heights for %d edges") % graph.size());
 

@@ -167,33 +167,58 @@ project_t::get_branch_heads(branch_name const & name,
     cache_index(name, ignore_suspend_certs);
   pair<outdated_indicator, set<revision_id> > &
     branch = branch_heads[cache_index];
-  if (branch.first.outdated())
+  outdated_indicator & indicator = branch.first;
+  set<revision_id> & my_heads = branch.second;
+  if (indicator.outdated())
     {
       L(FL("getting heads of branch %s") % name);
 
-      branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                typecast_vocab<cert_value>(name),
-                                                branch.second);
+      set<revision_id> leaves;
+      indicator = db.get_branch_leaves(typecast_vocab<cert_value>(name),
+                                       leaves);
 
       not_in_branch p(*this, name);
-      erase_ancestors_and_failures(db, branch.second, p,
-                                   inverse_graph_cache_ptr);
+
+      bool have_failure = false;
+      for (set<revision_id>::iterator l = leaves.begin();
+           l != leaves.end(); ++l)
+        {
+          if (p(*l))
+            {
+              have_failure = true;
+              break;
+            }
+        }
+
+      if (!have_failure)
+        {
+          my_heads = leaves;
+        }
+      else
+        { // bah, do it the slow way
+          indicator = db.get_revisions_with_cert(cert_name(branch_cert_name),
+                                                 typecast_vocab<cert_value>(name),
+                                                 my_heads);
+          erase_ancestors_and_failures(db, my_heads, p,
+                                       inverse_graph_cache_ptr);
+
+        }
 
       if (!ignore_suspend_certs)
         {
           suspended_in_branch s(*this, name);
-          set<revision_id>::iterator it = branch.second.begin();
-          while (it != branch.second.end())
+          set<revision_id>::iterator it = my_heads.begin();
+          while (it != my_heads.end())
             if (s(*it))
-              branch.second.erase(it++);
+              my_heads.erase(it++);
             else
               it++;
         }
 
       L(FL("found heads of branch %s (%s heads)")
-        % name % branch.second.size());
+        % name % my_heads.size());
     }
-  heads = branch.second;
+  heads = my_heads;
 }
 
 bool

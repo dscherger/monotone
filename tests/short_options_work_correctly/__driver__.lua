@@ -12,7 +12,7 @@ writefile("liver", "the file liver")
 function short_mtn(...)
   return raw_mtn("--rcfile", test.root.."/test_hooks.lua",
                  "--nostd", "--norc", "--root", test.root,
-                 "--keydir", test.root.."/keys", unpack(arg))
+                 "--keydir", test.root.."/keys", ...)
 end
 
 check(short_mtn("add", "maude"), 0, false, false)

@@ -154,7 +154,8 @@ private:
   // --== The ancestry graph ==--
   //
 public:
-  void get_revision_ancestry(rev_ancestry_map & graph);
+  void get_forward_ancestry(rev_ancestry_map & graph);
+  void get_reverse_ancestry(rev_ancestry_map & graph);
 
   void get_revision_parents(revision_id const & ident,
                            std::set<revision_id> & parents);
@@ -169,6 +170,9 @@ public:
 
   void get_common_ancestors(std::set<revision_id> const & revs,
                             std::set<revision_id> & common_ancestors);
+
+  bool is_a_ancestor_of_b(revision_id const & ancestor,
+                          revision_id const & child);
 
   void get_revision_ids(std::set<revision_id> & ids);
   // this is exposed for 'db check':
@@ -216,7 +220,7 @@ public:
   // using roster deltas
   void get_markings(revision_id const & id,
                     node_id const & nid,
-                    marking_t & markings);
+                    const_marking_t & markings);
 
   void get_file_content(revision_id const & id,
                         node_id const & nid,
@@ -227,6 +231,7 @@ private:
                           cached_roster & cr);
 
   void put_roster(revision_id const & rev_id,
+                  revision_t const & rev,
                   roster_t_cp const & roster,
                   marking_map_cp const & marking);
 
@@ -270,6 +275,7 @@ public:
   bool revision_cert_exists(revision_id const & hash);
 
   bool put_revision_cert(cert const & cert);
+  void record_as_branch_leaf(cert_value const & branch, revision_id const & rev);
 
   // this variant has to be rather coarse and fast, for netsync's use
   outdated_indicator get_revision_cert_nobranch_index(std::vector< std::pair<revision_id,
@@ -300,6 +306,15 @@ public:
   outdated_indicator get_revisions_with_cert(cert_name const & name,
                                cert_value const & value,
                                std::set<revision_id> & revisions);
+
+  // Used by get_branch_heads (project.cc)
+  // Will also be needed by daggy-refinement, if/when implemented
+  outdated_indicator get_branch_leaves(cert_value const & value,
+                                       std::set<revision_id> & revisions);
+
+private:
+  void recalc_branch_leaves(cert_value const & value);
+public:
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,

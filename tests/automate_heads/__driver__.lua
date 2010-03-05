@@ -1,4 +1,6 @@
 
+include("common/automate_stdio.lua")
+
 mtn_setup()
 revs = {}
 
@@ -28,8 +30,6 @@ check(samefile("empty", "stdout"))
 -- In mtn 0.40 and earlier, this was broken, because automate stdio
 -- did not re-read the workspace options for each command, so the
 -- branch was null.
-check(mtn("automate", "stdio"), 0, true, false, "l5:headse")
-canonicalize("stdout")
-check(("0:0:l:164:" .. readfile("wanted_heads")) == readfile("stdout"))
+check(run_stdio("l5:headse", 0) == readfile("wanted_heads"))
 
 -- end of file

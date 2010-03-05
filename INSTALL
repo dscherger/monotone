@@ -33,10 +33,10 @@ building and installation process for monotone
 
            install the following packages:
              autoconf automake gettext g++ libboost-dev libz-dev
-             libbotan1.8-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
-             libidn11-dev texinfo
+             libbotan-dev libsqlite3-dev libpcre3-dev liblua5.1-0-dev
+             libidn11-dev libgmp3-dev libbz2-dev texinfo
 
-           (On etch, you may need to use libbotan1.8 from lenny.)
+           (On etch, you may need to use libbotan1.7 from lenny.)
 
         on FreeBSD:
 
@@ -49,9 +49,6 @@ building and installation process for monotone
            emerge the following packages:
              autoconf automake boost botan gettext libpcre libidn lua sqlite
              zlib
-
-           (you might need to add the "~x86" flag to dev-libs/botan, so you
-            get at least version 1.6.3, we recommend using at 1.8.0 or newer)
 
         on Fedora:
 
@@ -209,9 +206,9 @@ building and installation process for monotone
 
            15. build monotone
                $ cd /c/.../monotone
-               $ export PATH=/bin:$PATH
+               $ export PATH=/bin:/mingw/bin
                $ autoreconf -i
-               $ ./configure sqlite_LIBS=-lsqlite3
+               $ ./configure sqlite3_LIBS=-lsqlite3
                $ make
 
         on Windows (using Cygwin):

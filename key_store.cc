@@ -12,7 +12,6 @@
 
 #include <botan/botan.h>
 #include <botan/rsa.h>
-#include <botan/keypair.h>
 #include <botan/pem.h>
 #include <botan/look_pk.h>
 
@@ -66,6 +65,7 @@ struct key_store_state
 {
   system_path const key_dir;
   string const ssh_sign_mode;
+  bool non_interactive;
   bool have_read;
   lua_hooks & lua;
   key_map keys;
@@ -83,6 +83,7 @@ struct key_store_state
 
   key_store_state(app_state & app)
     : key_dir(app.opts.key_dir), ssh_sign_mode(app.opts.ssh_sign),
+      non_interactive(app.opts.non_interactive),
       have_read(false), lua(app.lua)
   {
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
@@ -204,7 +205,7 @@ key_store::get_rng()
 #endif
 
 system_path const &
-key_store::get_key_dir()
+key_store::get_key_dir() const
 {
   return s->key_dir;
 }
@@ -296,6 +297,7 @@ void
 key_store::get_key_pair(key_id const & ident,
                         keypair & kp)
 {
+  MM(ident);
   bool found = maybe_get_key_pair(ident, kp);
   I(found);
 }
@@ -318,6 +320,7 @@ key_store::get_key_pair(key_id const & hash,
                         key_name & keyid,
                         keypair & kp)
 {
+  MM(hash);
   bool found = maybe_get_key_pair(hash, keyid, kp);
   I(found);
 }
@@ -542,16 +545,22 @@ key_store_state::decrypt_private_key(key_id const & id,
 
       utf8 phrase;
       string lua_phrase;
-          // See whether a lua hook will tell us the passphrase.
       key_identity_info identity;
       identity.id = id;
       identity.given_name = name;
-      if (!force_from_user && lua.hook_get_passphrase(identity, lua_phrase))
-        phrase = utf8(lua_phrase, origin::user);
-      else
-        get_passphrase(phrase, name, id, false, false);
 
-      int cycles = 1;
+      // See whether a lua hook will tell us the passphrase.
+      if ((!force_from_user || non_interactive) &&
+          lua.hook_get_passphrase(identity, lua_phrase))
+        {
+          phrase = utf8(lua_phrase, origin::user);
+        }
+      else if (!non_interactive)
+        {
+          get_passphrase(phrase, name, id, false, false);
+        }
+
+      int cycles = 0;
       for (;;)
         try
           {
@@ -565,14 +574,14 @@ key_store_state::decrypt_private_key(key_id const & id,
           }
         catch (Botan::Exception & e)
           {
+            cycles++;
             L(FL("decrypt_private_key: failure %d to load encrypted key: %s")
               % cycles % e.what());
-            E(cycles <= 3, origin::no_fault,
-              F("failed to decrypt old private RSA key, "
-                "probably incorrect passphrase"));
+            E(cycles < 3 && !non_interactive, origin::no_fault,
+              F("failed to decrypt old private RSA key, probably incorrect "
+                "passphrase or missing 'get_passphrase' lua hook"));
 
             get_passphrase(phrase, name, id, false, false);
-            cycles++;
             continue;
           }
     }
@@ -735,13 +744,17 @@ key_store::change_key_passphrase(key_id const & id)
   get_passphrase(new_phrase, name, id, true, false);
 
   unfiltered_pipe->start_msg();
-  Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
+  if (new_phrase().length())
+    Botan::PKCS8::encrypt_key(*priv, *unfiltered_pipe,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-                            s->rng->get(),
+                              s->rng->get(),
 #endif
-                            new_phrase(),
-                            "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
-                            Botan::RAW_BER);
+                              new_phrase(),
+                              "PBE-PKCS5v20(SHA-1,TripleDES/CBC)",
+                              Botan::RAW_BER);
+  else
+    Botan::PKCS8::encode(*priv, *unfiltered_pipe);
+
   unfiltered_pipe->end_msg();
   kp.priv = rsa_priv_key(unfiltered_pipe->read_all_as_string(Pipe::LAST_MESSAGE),
                          origin::internal);

@@ -4,11 +4,11 @@
 skip_if(no_network_tests)
 
 function mtn2(...)
-  return mtn("--db=test2.db", "--keydir=keys2", unpack(arg))
+  return mtn("--db=test2.db", "--keydir=keys2", ...)
 end
 
 function mtn3(...)
-  return mtn("--db=test3.db", "--keydir=keys3", unpack(arg))
+  return mtn("--db=test3.db", "--keydir=keys3", ...)
 end
 
 netsync = {}
@@ -102,7 +102,16 @@ function netsync.start(opts, n, min)
 	       end
   local mt_wait = mt.wait
   mt.check = function(obj) return not mt_wait(obj, 0) end
-  mt.wait = nil -- using this would hang; don't allow it
+  mt.wait = function(obj, timeout)
+	       if timeout == nil then
+		  timeout = 5
+		  L(locheader(), "You really should give an argument to server.wait()\n")
+	       end
+	       if type(timeout) ~= "number" then
+		  err("Bad timeout of type "..type(timeout))
+	       end
+	       return mt_wait(obj, timeout)
+	    end
   -- wait for "beginning service..."
   while fsize(out.prefix .. "stderr") == 0 do
     sleep(1)

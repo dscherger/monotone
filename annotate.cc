@@ -431,6 +431,9 @@ annotate_context::dump(bool just_revs) const
   revision_id nullid;
   I(annotations.size() == file_lines.size());
 
+  if (file_lines.empty())
+    return;
+
   map<revision_id, string> revs_to_notations;
   string empty_note;
   if (!just_revs)
@@ -685,14 +688,14 @@ static void get_file_content_marks(database & db,
                                    node_id const & fid,
                                    set<revision_id> & content_marks)
 {
-  marking_t markings;
+  const_marking_t markings;
   db.get_markings(rev, fid, markings);
 
-  I(!markings.file_content.empty());
+  I(!markings->file_content.empty());
 
   content_marks.clear();
-  content_marks.insert(markings.file_content.begin(),
-                       markings.file_content.end());
+  content_marks.insert(markings->file_content.begin(),
+                       markings->file_content.end());
 }
 
 static void
@@ -817,7 +820,7 @@ do_annotate_node(database & db,
 }
 
 void
-do_annotate (project_t & project, file_t file_node,
+do_annotate (project_t & project, const_file_t file_node,
              revision_id rid, bool just_revs)
 {
   L(FL("annotating file %s with content %s in revision %s")

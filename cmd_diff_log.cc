@@ -9,7 +9,6 @@
 // PURPOSE.
 
 #include "base.hh"
-#include <deque>
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -32,7 +31,6 @@
 #include "roster.hh"
 
 using std::cout;
-using std::deque;
 using std::make_pair;
 using std::map;
 using std::ostream;
@@ -726,57 +724,6 @@ struct rev_cmp
   }
 };
 
-struct revision_loader
-{
-  database & db;
-  log_direction direction;
-
-  revision_loader(database & db, log_direction const direction) :
-    db(db), direction(direction) {}
-
-  void
-  load_related_revs(revision_id const & rid, set<revision_id> & relatives)
-  {
-    switch (direction)
-      {
-      case log_forward: // optional with --next N
-        db.get_revision_children(rid, relatives);
-        break;
-      case log_reverse: // default and with --last N
-        db.get_revision_parents(rid, relatives);
-        break;
-      }
-  }
-
-  void
-  load_implied_revs(set<revision_id> & revs)
-  {
-    std::deque<revision_id> next(revs.begin(), revs.end());
-
-    while (!next.empty())
-      {
-        revision_id const & rid(next.front());
-        MM(rid);
-
-        set<revision_id> relatives;
-        MM(relatives);
-        load_related_revs(rid, relatives);
-
-        for (set<revision_id>::const_iterator i = relatives.begin();
-             i != relatives.end(); ++i)
-          {
-            if (null_id(*i))
-              continue;
-            pair<set<revision_id>::iterator, bool> res = revs.insert(*i);
-            if (res.second)
-              next.push_back(*i);
-          }
-
-        next.pop_front();
-      }
-  }
-};
-
 typedef priority_queue<pair<rev_height, revision_id>,
                        vector<pair<rev_height, revision_id> >,
                        rev_cmp> frontier_t;
@@ -816,7 +763,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
   if (next >= 0)
     direction = log_forward;
 
-  revision_loader loader(db, direction);
+  graph_loader loader(db);
 
   rev_cmp cmp(direction);
   frontier_t frontier(cmp);
@@ -872,7 +819,16 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
           ending_revs.insert(rids.begin(), rids.end());
         }
 
-      loader.load_implied_revs(ending_revs);
+      if (direction == log_forward)
+        {
+          loader.load_descendants(ending_revs);
+        }
+      else if (direction == log_reverse)
+        {
+          loader.load_ancestors(ending_revs);
+        }
+      else
+        I(false);
     }
 
   L(FL("%d ending revisions") % ending_revs.size());
@@ -1008,12 +964,12 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
 
               if (mask.includes(roster, node))
                 {
-                  marked_revs.insert(marks.file_content.begin(),
-                                     marks.file_content.end());
-                  marked_revs.insert(marks.parent_name.begin(),
-                                     marks.parent_name.end());
+                  marked_revs.insert(marks->file_content.begin(),
+                                     marks->file_content.end());
+                  marked_revs.insert(marks->parent_name.begin(),
+                                     marks->parent_name.end());
                   for (map<attr_key, set<revision_id> >::const_iterator
-                         a = marks.attrs.begin(); a != marks.attrs.end(); ++a)
+                         a = marks->attrs.begin(); a != marks->attrs.end(); ++a)
                     marked_revs.insert(a->second.begin(), a->second.end());
                 }
             }
@@ -1059,10 +1015,16 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
         {
           interesting.insert(marked_revs.begin(), marked_revs.end());
         }
-      else
+      else if (direction == log_forward)
         {
-          loader.load_related_revs(rid, interesting);
+          loader.load_children(rid, interesting);
         }
+      else if (direction == log_reverse)
+        {
+          loader.load_parents(rid, interesting);
+        }
+      else
+        I(false);
 
       if (print_this)
         {

@@ -410,7 +410,7 @@ UNIT_TEST(basic_csets)
                                   attr_value("klang")));
     cs.attrs_cleared.insert(make_pair(foo_bar, attr_key("attr_file")));
     UNIT_TEST_CHECK_NOT_THROW(cs.apply_to(tree), logic_error);
-    UNIT_TEST_CHECK((r.get_node(foo_bar))->attrs[attr_key("attr_file")]
+    UNIT_TEST_CHECK((r.get_node_for_update(foo_bar))->attrs[attr_key("attr_file")]
                 == make_pair(false, attr_value("")));
     UNIT_TEST_CHECK(r.all_nodes().size() == 3);
   }

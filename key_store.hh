@@ -57,7 +57,7 @@ public:
   Botan::RandomNumberGenerator & get_rng();
 #endif
 
-  system_path const & get_key_dir();
+  system_path const & get_key_dir() const;
 
   // Basic key I/O
 

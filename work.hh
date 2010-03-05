@@ -35,7 +35,7 @@ class app_state;
 // as well as many instance methods.  class methods can be used when you're
 // not sure yet whether or not there is a workspace.  instance methods can
 // only be used if there definitely is a workspace; the workspace object
-// constructor will throw an N() if there isn't one.  (this can also be
+// constructor will throw an E() if there isn't one.  (this can also be
 // triggered by the class method require_workspace, for the sake of a few
 // places that need to do that but not create the workspace object yet.)
 //
@@ -81,6 +81,12 @@ class app_state;
 
 bool directory_is_workspace(system_path const & dir);
 
+namespace bisect
+{
+  enum type { start, good, bad, skipped, update };
+  typedef std::pair<type, revision_id> entry;
+};
+
 struct workspace
 {
   // This is a public flag because it's set from monotone.cc using a
@@ -101,6 +107,9 @@ private:
 
   // This is used by a lot of instance methods.
   lua_hooks & lua;
+
+  // Give a nice error if the parent revisions aren't in the db
+  void require_parents_in_db(database & db, revision_t const & rev);
 
   // Interfaces.
 public:
@@ -225,6 +234,13 @@ public:
                                   system_path & database_option);
   static void set_options(options const & opts, bool branch_is_sticky);
   static void print_option(utf8 const & opt, std::ostream & output);
+
+  // the "bisect" infromation file is a file that records current status
+  // information for the bisect search.
+
+  void get_bisect_info(std::vector<bisect::entry> & bisect);
+  void put_bisect_info(std::vector<bisect::entry> const & bisect);
+  void remove_bisect_info();
 
   // the "workspace format version" is a nonnegative integer value, stored
   // in _MTN/format as an unadorned decimal number.  at any given time

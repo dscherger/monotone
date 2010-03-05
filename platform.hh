@@ -108,7 +108,7 @@ void ignore_sigpipe(); // in unix/process.cc
 // filesystem stuff
 // FIXME: BUG: this returns a string in the filesystem charset/encoding
 std::string get_current_working_dir();
-// calls N() if fails
+// calls E() if fails
 void change_current_working_dir(std::string const & to);
 std::string tilde_expand(std::string const & path);
 std::string get_default_confdir();
@@ -135,7 +135,16 @@ void read_directory(std::string const & path,
 
 void make_accessible(std::string const & name);
 void rename_clobberingly(std::string const & from, std::string const & to);
+
+// path must be an existing file, or an existing empty directory.
 void do_remove(std::string const & path);
+
+// This is platform-specific because it uses raw pathname strings
+// internally; some raw pathnames cannot be represented as any_path objects.
+// It may also be more efficient to let the OS do all of this.
+//
+// It is not an error to call this function on a path that doesn't exist,
+// or is a file rather than a directory.
 void do_remove_recursive(std::string const & path);
 
 void do_mkdir(std::string const & path);

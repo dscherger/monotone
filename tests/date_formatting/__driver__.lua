@@ -23,10 +23,14 @@ end
 test_tz_fmt(nil, nil,                 "1999-12-31T13:00:00")
 test_tz_fmt(nil, "%Y-%m-%d %H:%M:%S", "1999-12-31 13:00:00")
 test_tz_fmt(nil, "%Y-%m-%d %I:%M:%S", "1999-12-31 01:00:00")
+
+-- Windows' strftime() doesn't support %T, and MinGW uses the
+-- version provided by Windows rather than having its own.
+skip_if(ostype=="Windows")
 test_tz_fmt(nil, "%a, %d %b %Y %T",   "Fri, 31 Dec 1999 13:00:00")
 
 -- TZ env var doesn't work
-skip_if(ostype=="Windows")
+--skip_if(ostype=="Windows") -- but we'll have already skipped
 
 test_tz_fmt("ZZT+00:00", "%Y-%m-%d %H:%M %Z%z", "1999-12-31 13:00 ZZT+0000")
 test_tz_fmt("ZZT+01:00", "%Y-%m-%d %H:%M %Z%z", "1999-12-31 12:00 ZZT-0100")

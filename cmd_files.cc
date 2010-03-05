@@ -186,12 +186,12 @@ CMD(annotate, "annotate", "", CMD_REF(informative), N_("PATH"),
   E(roster.has_node(file), origin::user,
     F("no such file '%s' in revision '%s'")
       % file % rid);
-  node_t node = roster.get_node(file);
+  const_node_t node = roster.get_node(file);
   E(is_file_t(node), origin::user,
     F("'%s' in revision '%s' is not a file")
       % file % rid);
 
-  file_t file_node = downcast_to_file_t(node);
+  const_file_t file_node = downcast_to_file_t(node);
   L(FL("annotate for file_id %s") % file_node->self);
   do_annotate(project, file_node, rid, app.opts.revs_only);
 }
@@ -249,7 +249,7 @@ CMD_AUTOMATE(identify, N_("PATH"),
 }
 
 static void
-dump_file(database & db, std::ostream & output, file_id & ident)
+dump_file(database & db, std::ostream & output, file_id const & ident)
 {
   E(db.file_version_exists(ident), origin::user,
     F("no file version %s found in database") % ident);
@@ -276,11 +276,11 @@ dump_file(database & db, std::ostream & output, revision_id rid, utf8 filename)
   E(roster.has_node(fp), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);
 
-  node_t node = roster.get_node(fp);
+  const_node_t node = roster.get_node(fp);
   E((!null_node(node->self) && is_file_t(node)), origin::user,
     F("no file '%s' found in revision '%s'") % fp % rid);
 
-  file_t file_node = downcast_to_file_t(node);
+  const_file_t file_node = downcast_to_file_t(node);
   dump_file(db, output, file_node->content);
 }
 

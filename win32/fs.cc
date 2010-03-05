@@ -251,16 +251,25 @@ do_remove(std::string const & path)
 void
 do_remove_recursive(std::string const & path)
 {
+  // IMPROVME: use Unicode APIs to support more pathnames.
+  //
   // SHFileOperation makes the weird requirement that its pFrom (and pTo)
   // arguments be terminated with *two* ASCII NULs.
   size_t pfLen = path.size();
-  LPCTSTR pFrom = malloc(pfLen + 2);
+  LPSTR pFrom = (LPSTR)malloc(pfLen + 2);
   memcpy(pFrom, path.data(), pfLen);
   pFrom[pfLen] = '\0';
   pFrom[pfLen+1] = '\0';
 
+  // SHFileOperationA can't handle '/'
+  for (size_t i = 0; i < pfLen; i++)
+    {
+      if (pFrom[i] == '/')
+          pFrom[i] = '\\';
+    };
+
   SHFILEOPSTRUCTA op;
-  op.hwnd   = INVALID_HANDLE_VALUE;
+  op.hwnd   = (HWND)INVALID_HANDLE_VALUE;
   op.wFunc  = FO_DELETE;
   op.pFrom  = pFrom;
   op.pTo    = NULL;
@@ -274,7 +283,11 @@ do_remove_recursive(std::string const & path)
   // http://msdn.microsoft.com/en-us/library/bb762164(VS.85).aspx
   // warns that the return codes from SHFileOperation are *not* normal
   // Win32 error codes; so we don't try to do os_strerror on them.
-  E(rc == 0, origin::system,
+  //
+  // 0x402 is "unknown error"; it occurs for a non-existing path, which is
+  // not an error in this function. It also occurs for other problems, like
+  // '/' as a directory separator. Sigh.
+  E(rc == 0 || rc == 0x402, origin::system,
     F("could not remove '%s' and contents: SHFileOperation error code 0x%x")
     % path % rc);
   E(!op.fAnyOperationsAborted, origin::system,
