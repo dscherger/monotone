@@ -6,8 +6,8 @@ msgstr ""
 "Project-Id-Version: it\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2009-09-09 09:35+0200\n"
-"PO-Revision-Date: 2010-03-06 00:04+0100\n"
-"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
+"PO-Revision-Date: 2010-03-06 00:53+0100\n"
+"Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: Lapo Luchini <lapo@lapo.it>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -384,9 +384,9 @@ msgid "parsing a %s at %d:%d:E: %s"
 msgstr "durante il parsing di un ‘%s’ in %d:%d:E: %s"
 
 #: platform-wrapped.hh:68
-#, fuzzy, c-format
+#, c-format
 msgid "'%s' is neither a file nor a directory"
-msgstr "‘%s’ non è una directory"
+msgstr "‘%s’ non è ne una directory be un file"
 
 #: ui.cc:203
 #, c-format
@@ -473,14 +473,14 @@ msgid "Options specific to '%s %s' (run '%s help' to see global options):"
 msgstr ""
 
 #: automate_ostream_demuxed.hh:62
-#, fuzzy, c-format
+#, c-format
 msgid "%s: remote warning: "
-msgstr "attenzione: "
+msgstr "%s: attenzione da remoto: "
 
 #: automate_ostream_demuxed.hh:64
-#, fuzzy, c-format
+#, c-format
 msgid "%s: remote error: "
-msgstr "errore sqlite: "
+msgstr "%s: errore da remoto: "
 
 #: automate_ostream_demuxed.hh:66
 #, c-format
@@ -731,9 +731,8 @@ msgid "no branch pattern given"
 msgstr "nessun pattern di ramo specificato"
 
 #: cmd_netsync.cc:235
-#, fuzzy
 msgid "[ADDRESS[:PORTNUMBER]]"
-msgstr "[INDIRIZZO[:NUMERO_PORTA] [PATTERN …]]"
+msgstr "[INDIRIZZO[:NUMERO_PORTA]]"
 
 #: cmd_netsync.cc:236
 msgid "Opens an 'automate stdio' connection to a remote server"
@@ -799,9 +798,9 @@ msgid "wrong argument count"
 msgstr "numero errato di argomenti"
 
 #: cmd_netsync.cc:462
-#, fuzzy, c-format
+#, c-format
 msgid "received remote error code %d"
-msgstr "ricevuto errore di rete: %s"
+msgstr "ricevuto errore da remoto codice %s"
 
 #: cmd_netsync.cc:466
 #: cmd_netsync.cc:486
@@ -2199,23 +2198,20 @@ msgid "try passing a --from revision to start at"
 msgstr "prova a specificare una revisione da cui partire con ‘--from’"
 
 #: cmd_diff_log.cc:1052
-#, fuzzy
 msgid "Revision: "
-msgstr "Revisione: %s"
+msgstr "Revisione:"
 
 #: cmd_diff_log.cc:1067
-#, fuzzy
 msgid "Ancestor: "
-msgstr "ascendenza"
+msgstr "Antenato:"
 
 #: cmd_diff_log.cc:1069
 msgid "Author: "
 msgstr ""
 
 #: cmd_diff_log.cc:1070
-#, fuzzy
 msgid "Date: "
-msgstr "nota: "
+msgstr "Data: "
 
 #: cmd_diff_log.cc:1071
 msgid "Branch: "
@@ -2239,19 +2235,19 @@ msgid "(Revision: %s)"
 msgstr "(Revisione: %s)"
 
 #: cmd_ws_commit.cc:59
-#, fuzzy, c-format
+#, c-format
 msgid "Current revision: %s"
-msgstr "Ramo attuale: %s"
+msgstr "Revisione attuale: %s"
 
 #: cmd_ws_commit.cc:65
-#, fuzzy, c-format
+#, c-format
 msgid "Old branch: %s"
-msgstr "Ramo attuale: %s"
+msgstr "Ramo vecchio: %s"
 
 #: cmd_ws_commit.cc:67
-#, fuzzy, c-format
+#, c-format
 msgid "New branch: %s"
-msgstr "Ramo attuale: %s"
+msgstr "Ramo nuovo: %s"
 
 #: cmd_ws_commit.cc:70
 #, c-format
@@ -2746,9 +2742,9 @@ msgstr ""
 
 #: cmd_ws_commit.cc:1572
 #: cmd_ws_commit.cc:1799
-#, fuzzy, c-format
+#, c-format
 msgid "this command can only be used in a workspace with no pending changes"
-msgstr "‘%s’ può essere usato solamente in spazio di lavoro senza cambiamenti in sospeso"
+msgstr "questo comando può essere usato solamente in spazio di lavoro senza cambiamenti in sospeso"
 
 #: cmd_ws_commit.cc:1578
 #, c-format
@@ -2792,9 +2788,9 @@ msgid "conflicting bisect %s/%s on revision %s"
 msgstr "conflitto: directory ‘%s’ orfana della revisione %s"
 
 #: cmd_ws_commit.cc:1862
-#, fuzzy, c-format
+#, c-format
 msgid "updating to %s"
-msgstr "aggiorno ‘%s’"
+msgstr "aggiorno a ‘%s’"
 
 #: cmd_ws_commit.cc:1887
 #, fuzzy
@@ -2931,9 +2927,9 @@ msgid "this is a warning"
 msgstr ""
 
 #: cmd_automate.cc:141
-#, fuzzy, c-format
+#, c-format
 msgid "this is an error message"
-msgstr "imposta il messaggio di ChangeLog del commit"
+msgstr "questo è un messaggio di errore"
 
 #: cmd_automate.cc:206
 msgid "Automates several commands in one run"
