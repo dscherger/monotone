@@ -6,8 +6,8 @@ msgstr ""
 "Project-Id-Version: it\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2009-09-09 09:35+0200\n"
-"PO-Revision-Date: 2010-03-07 00:30+0100\n"
-"Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
+"PO-Revision-Date: 2010-03-07 00:56+0100\n"
+"Last-Translator: Lapo Luchini <lapo@lapo.it>\n"
 "Language-Team: Lapo Luchini <lapo@lapo.it>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -47,7 +47,7 @@ msgstr "Insieme di lavoro attuale: %i elementi"
 #: sanity.hh:374
 #, c-format
 msgid "%s"
-msgstr ""
+msgstr "%s"
 
 #: vocab.cc:37
 #, c-format
@@ -455,7 +455,7 @@ msgstr "errore: memoria esaurita"
 
 #: ui.cc:737
 msgid "C++ exception of unknown type"
-msgstr ""
+msgstr "eccezione C++ di tipo sconosciuto"
 
 #: ui.cc:811
 #, c-format
@@ -800,7 +800,7 @@ msgstr "numero errato di argomenti"
 #: cmd_netsync.cc:462
 #, c-format
 msgid "received remote error code %d"
-msgstr "ricevuto errore da remoto codice %s"
+msgstr "ricevuto da remoto un codice di errore %d"
 
 #: cmd_netsync.cc:466
 #: cmd_netsync.cc:486
@@ -1711,7 +1711,7 @@ msgstr ""
 
 #: cmd_merging.cc:1127
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
-msgstr ""
+msgstr "REVID_SX NOME_FILE_SX REVID_DX NOME_FILE_DX"
 
 #: cmd_merging.cc:1128
 msgid "Prints the results of the internal line merger, given two child revisions and file names"
@@ -2209,7 +2209,7 @@ msgstr "Antenato:"
 
 #: cmd_diff_log.cc:1069
 msgid "Author: "
-msgstr ""
+msgstr "Autore: "
 
 #: cmd_diff_log.cc:1070
 msgid "Date: "
@@ -2217,11 +2217,11 @@ msgstr "Data: "
 
 #: cmd_diff_log.cc:1071
 msgid "Branch: "
-msgstr ""
+msgstr "Ramo: "
 
 #: cmd_diff_log.cc:1072
 msgid "Tag: "
-msgstr ""
+msgstr "Tag: "
 
 #: cmd_diff_log.cc:1081
 msgid "ChangeLog: "
@@ -2229,7 +2229,7 @@ msgstr ""
 
 #: cmd_diff_log.cc:1082
 msgid "Comments: "
-msgstr ""
+msgstr "Commenti: "
 
 #: cmd_diff_log.cc:1108
 #, c-format
@@ -2769,25 +2769,25 @@ msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
 msgstr ""
 
 #: cmd_ws_commit.cc:1730
-#, fuzzy, c-format
+#, c-format
 msgid "bisection finished at revision %s"
-msgstr "lo spazio di lavoro è già alla revisione ‘%s’"
+msgstr ""
 
 #: cmd_ws_commit.cc:1823
-#, fuzzy, c-format
+#, c-format
 msgid "bisection started at revision %s"
-msgstr "lo spazio di lavoro è già alla revisione ‘%s’"
+msgstr ""
 
 #: cmd_ws_commit.cc:1839
-#, fuzzy, c-format
+#, c-format
 msgid "ignored redundant bisect %s on revision %s"
-msgstr "nessun file ‘%s’ trovato nella revisione %s"
+msgstr ""
 
 # TODO: orfana della/dalla?
 #: cmd_ws_commit.cc:1844
-#, fuzzy, c-format
+#, c-format
 msgid "conflicting bisect %s/%s on revision %s"
-msgstr "conflitto: directory ‘%s’ orfana della revisione %s"
+msgstr ""
 
 #: cmd_ws_commit.cc:1862
 #, c-format
@@ -2795,9 +2795,8 @@ msgid "updating to %s"
 msgstr "aggiorno a ‘%s’"
 
 #: cmd_ws_commit.cc:1887
-#, fuzzy
 msgid "Reports on the current status of the bisection search"
-msgstr "Importa i contenuti di una directory in un ramo"
+msgstr ""
 
 #: cmd_ws_commit.cc:1888
 msgid "Lists the total number of revisions in the search set; the number of revisions that have been determined to be good or bad; the number of revisions that have been skipped and the number of revisions remaining to be tested."
@@ -2919,9 +2918,9 @@ msgstr ""
 
 # TODO: cambiamenti? modifiche?
 #: cmd_automate.cc:137
-#, fuzzy, c-format
+#, c-format
 msgid "this is an informational message"
-msgstr "Mostra le informazioni sui cambiamenti nello spazio di lavoro"
+msgstr ""
 
 #: cmd_automate.cc:139
 #, c-format
@@ -3364,9 +3363,9 @@ msgid "base revision %s does not exist in database"
 msgstr "la revisione base %s non esiste all'interno database"
 
 #: work.cc:311
-#, fuzzy, c-format
+#, c-format
 msgid "parent revision %s does not exist, did you specify the wrong database?"
-msgstr "la revisione base %s non esiste all'interno database"
+msgstr ""
 
 #: work.cc:438
 #, c-format
@@ -4013,9 +4012,9 @@ msgid "Unknown delta direction '%s'; assuming 'reverse'. Valid values are 'rever
 msgstr ""
 
 #: database.cc:2676
-#, fuzzy, c-format
+#, c-format
 msgid "revision does not match hash"
-msgstr "la revisione base %s non esiste all'interno database"
+msgstr ""
 
 #: database.cc:2808
 #, c-format
@@ -4183,9 +4182,9 @@ msgid "no key pair '%s' found in key store '%s'"
 msgstr "la coppia di chiavi ‘%s’ non è nel portachiavi ‘%s’"
 
 #: key_store.cc:581
-#, fuzzy, c-format
+#, c-format
 msgid "failed to decrypt old private RSA key, probably incorrect passphrase or missing 'get_passphrase' lua hook"
-msgstr "fallita la decifratura di una vecchia chiave RSA, probabilmente la passphrase è errata"
+msgstr "fallita la decifratura di una vecchia chiave RSA, probabilmente la passphrase è errata o manca l'hook lua 'get_passphrase'"
 
 #: key_store.cc:594
 #, c-format
@@ -4215,7 +4214,7 @@ msgstr "immagazzino la chiave pubblica ‘%s’ in ‘%s’"
 #: key_store.cc:723
 #, c-format
 msgid "key '%s' has hash '%s'"
-msgstr ""
+msgstr "la chiave ‘%s’ ha hash ‘%s’"
 
 #: key_store.cc:789
 #, c-format
@@ -6961,9 +6960,8 @@ msgid "suppress warning, verbose, informational and progress messages"
 msgstr "sopprime i messaggi di avvertimento, di notifica estesa, informativi e di avanzamento"
 
 #: options_list.hh:656
-#, fuzzy
 msgid "show timestamps in front of errors, warnings and progress messages"
-msgstr "sopprime i messaggi di avvertimento, di notifica estesa, informativi e di avanzamento"
+msgstr ""
 
 #: options_list.hh:665
 msgid "also operate on the contents of any listed directories"
@@ -6983,9 +6981,8 @@ msgid "don't look for a workspace"
 msgstr "non cercare uno spazio di lavoro"
 
 #: options_list.hh:698
-#, fuzzy
 msgid "use the current netsync arguments and options as the future default"
-msgstr "usa gli argomenti attuali come default futuro"
+msgstr "usa gli argomenti netsync attuali come default per il futuro"
 
 #: options_list.hh:707
 msgid "set ticker style (count|dot|none)"
@@ -7183,14 +7180,14 @@ msgid "error accessing '%s/%s': %s"
 msgstr "errore di accesso a ‘%s/%s’: %s"
 
 #: unix/fs.cc:272
-#, fuzzy, c-format
+#, c-format
 msgid "stat(%s) failed: %s"
-msgstr "CreateFile(%s,...) fallita: %s"
+msgstr "errore in stat(%s): %s"
 
 #: unix/fs.cc:284
 #, c-format
 msgid "chmod(%s) failed: %s"
-msgstr ""
+msgstr "errore in chmod(%s): %s"
 
 #: unix/fs.cc:295
 #, c-format
@@ -7324,14 +7321,14 @@ msgid "could not remove '%s' and contents: SHFileOperation partially aborted"
 msgstr ""
 
 #: win32/fs.cc:359
-#, fuzzy, c-format
+#, c-format
 msgid "GetFileAttributes(%s) failed: %s"
-msgstr "errore di GetFileAttributes su ‘%s’: %s"
+msgstr "errore in GetFileAttributes(%s): %s"
 
 #: win32/fs.cc:364
-#, fuzzy, c-format
+#, c-format
 msgid "SetFileAttributes(%s) failed: %s"
-msgstr "errore di GetFileAttributes su ‘%s’: %s"
+msgstr "errore in GetFileAttributes(%s): %s"
 
 #: win32/fs.cc:390
 #, c-format
@@ -7366,7 +7363,7 @@ msgstr "Richiesta lettura di più di %u a ‘pageant’."
 #: monotone.cc:125
 #, c-format
 msgid "std::terminate() - exception thrown while handling another exception"
-msgstr ""
+msgstr "std::terminate() - avvenuta un'eccezione durante la gestione di un'altra eccezione"
 
 #: monotone.cc:179
 #, c-format
