@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: it\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
 "POT-Creation-Date: 2009-09-09 09:35+0200\n"
-"PO-Revision-Date: 2010-03-06 00:53+0100\n"
+"PO-Revision-Date: 2010-03-07 00:30+0100\n"
 "Last-Translator: Roberta Lazzeri <ripley@lapo.it>\n"
 "Language-Team: Lapo Luchini <lapo@lapo.it>\n"
 "MIME-Version: 1.0\n"
@@ -1607,7 +1607,7 @@ msgstr "lo spazio di lavoro è già alla revisione ‘%s’"
 #: cmd_merging.cc:794
 #, c-format
 msgid "revision %s is already an ancestor of your workspace"
-msgstr ""
+msgstr "la revisione %s è già un antenato del tuo spazio di lavoro"
 
 #: cmd_merging.cc:796
 #, c-format
@@ -1615,6 +1615,8 @@ msgid ""
 "revision %s is a descendant of the workspace parent,\n"
 "did you mean 'mtn update -r %s'?"
 msgstr ""
+"la revisione %s è un discendente dello spazio di lavoro genitore,\n"
+"volevi 'mtn update -r %s'? "
 
 #: cmd_merging.cc:849
 #, c-format
@@ -1823,7 +1825,7 @@ msgstr ""
 
 #: cmd_db.cc:81
 msgid "Older monotone versions could sometimes associate certs with the wrong key. This fixes such certs if you have the correct key, and can optionally drop any certs that you don't have the correct key for. This should only be needed if you had such certs in your db when upgrading from 0.44 or earlier, or if you loaded such certs with 'mtn read'."
-msgstr ""
+msgstr "Versioni più vecchie di monotone a volte potrebbero associare certificati con chiavi sbagliate. Questo fissa tali certificati se hai la chiave corretta, e può a piacere abbandonare certi certificati per i quali non hai la chiave corretta. Questo dovrebbe essere necessario soltanto se hai tali certificati nel tuo db quando aggiorni da 0.44 o precedente, e se carichi tali certificati con 'mtn read'."
 
 # TODO: dump? esporta dati?
 #: cmd_db.cc:97
