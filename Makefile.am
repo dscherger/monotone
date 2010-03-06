@@ -101,6 +101,7 @@ MOST_SOURCES = 								\
 	sha1.cc								\
 	pcrewrap.cc pcrewrap.hh						\
 	rev_height.cc rev_height.hh					\
+	rev_output.cc rev_output.hh					\
 	asciik.cc asciik.hh						\
 	dates.cc dates.hh						\
 									\
