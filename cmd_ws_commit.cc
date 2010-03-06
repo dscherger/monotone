@@ -53,28 +53,30 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
   ostringstream out;
   int const width = 70;
 
-  out << string(width, '-') << "\n"
-      << "Revision: " << rid << "       (uncommitted)\n";
+  // FIXME bad suffix
+  out << string(width, '-') << '\n'
+      << _("Revision: ") << rid << _("       (uncommitted)") << '\n';
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
-      out << "Parent: " << parent << "\n";
+      out << _("Parent: ") << parent << '\n';
     }
 
-  out << "Author: " << author << "\n"
-      << "Date: " << date << "\n";
+  out << _("Author: ") << author << '\n'
+      << _("Date: ") << date << '\n';
 
   if (branch_changed)
     {
+      // FIXME bad suffix
       int space = width - branch().length() - 8 - 10;
       if (space < 0) space = 0;
-      out << "Branch: " << branch << string(space, ' ') << " (changed)\n";
+      out << _("Branch: ") << branch << string(space, ' ') << _(" (changed)") << '\n';
     }
   else
-    out << "Branch: " << branch << "\n";
+    out << _("Branch: ") << branch << '\n';
 
-  out << "Changelog:\n\n";
+  out << _("Changelog:") << "\n\n";
 
   header = utf8(out.str(), origin::internal);
 }
@@ -82,61 +84,57 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
 static void
 revision_summary(revision_t const & rev, utf8 & summary)
 {
-  string out;
   // We intentionally do not collapse the final \n into the format
   // strings here, for consistency with newline conventions used by most
   // other format strings.
 
+  ostringstream out;
   revision_id rid;
   calculate_ident(rev, rid);
-
-  // FIXME: use an ostringstream here too?
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
       cset const & cs = edge_changes(*i);
 
-      out += "\n";
+      out << '\n';
 
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
-      // FIXME: this is not great for root commits, with no parent rev id
-      out += (F("Changes against parent %s") % parent).str() += '\n';
+      if (!null_id(parent))
+        out << _("Changes against parent ") << parent << "\n\n";
 
       // presumably a merge rev could have an empty edge if one side won
       if (cs.empty())
-        out += F("no changes").str() += '\n';
+        out << _("no changes") << '\n';
 
       for (set<file_path>::const_iterator i = cs.nodes_deleted.begin();
             i != cs.nodes_deleted.end(); ++i)
-        out += (F("  dropped  %s") % *i).str() += '\n';
+        out << _("  dropped  ") << *i << '\n';
 
       for (map<file_path, file_path>::const_iterator
             i = cs.nodes_renamed.begin();
             i != cs.nodes_renamed.end(); ++i)
-        out += (F("  renamed  %s\n"
-                  "       to  %s") % i->first % i->second).str() += '\n';
+        out << _("  renamed  ") << i->first
+            << _("       to  ") << i->second << '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
             i != cs.dirs_added.end(); ++i)
-        out += (F("  added    %s") % *i).str() += '\n';
+        out << _("  added    ") << *i << '\n';
 
       for (map<file_path, file_id>::const_iterator i = cs.files_added.begin();
             i != cs.files_added.end(); ++i)
-        out += (F("  added    %s") % i->first).str() += '\n';
+        out << _("  added    ") << i->first << '\n';
 
       for (map<file_path, pair<file_id, file_id> >::const_iterator
               i = cs.deltas_applied.begin(); i != cs.deltas_applied.end(); ++i)
-        out += (F("  patched  %s") % (i->first)).str() += '\n';
+        out << _("  patched  ") << i->first << '\n';
 
       for (map<pair<file_path, attr_key>, attr_value >::const_iterator
              i = cs.attrs_set.begin(); i != cs.attrs_set.end(); ++i)
-        out += (F("  attr on  %s\n"
-                  "      set  %s\n"
-                  "       to  %s")
-                 % (i->first.first) % (i->first.second) % (i->second)
-                 ).str() += "\n";
+        out << _("  attr on  ") << i->first.first << '\n'
+            << _("      set  ") << i->first.second << '\n'
+            << _("       to  ") << i->second << '\n';
 
       // FIXME: naming here could not be more inconsistent
       // the cset calls it attrs_cleared
@@ -146,11 +144,10 @@ revision_summary(revision_t const & rev, utf8 & summary)
 
       for (set<pair<file_path, attr_key> >::const_iterator
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
-        out += (F("  attr on  %s\n"
-                  "    unset  %s")
-                 % (i->first) % (i->second)).str() += "\n";
+        out << _("  attr on  ") << i->first << '\n'
+            << _("    unset  ") << i->second << '\n';
     }
-  summary = utf8(out, origin::internal);
+  summary = utf8(out.str(), origin::internal);
 }
 
 static void
@@ -260,7 +257,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       "Commit failed (missing lines)."));
 
   vector<string>::const_iterator line = lines.begin();
-  E(line->find("Author: ") == 0,
+  E(line->find(_("Author: ")) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing author)."));
@@ -268,7 +265,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   author = trim(line->substr(8));
   
   ++line;
-  E(line->find("Date: ") == 0,
+  E(line->find(_("Date: ")) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing date)."));
@@ -276,18 +273,20 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   date = trim(line->substr(6));
 
   ++line;
-  E(line->find("Branch: ") == 0,
+  E(line->find(_("Branch: ")) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing branch)."));
 
-  if (branch_changed && line->rfind("(changed)") == line->length() - 9)
-    branch = branch_name(trim(line->substr(8, line->length() - 17)), origin::user);
+  // FIXME: this suffix and the associated length calculations are bad
+  if (branch_changed && line->rfind(_("(changed)")) == line->length() - 9)
+    branch = branch_name(trim(line->substr(8, line->length() - 17)), 
+                         origin::user);
   else
     branch = branch_name(trim(line->substr(8)), origin::user);
 
   ++line;
-  E(*line == "Changelog:",
+  E(*line == _("Changelog:"),
     origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing changelog)."));
