@@ -16,9 +16,9 @@
 struct date_t;
 
 void
-revision_header(revision_id rid, revision_t const & rev, std::string const & author, 
-                date_t const date, branch_name const & branch, 
-                bool const branch_changed, utf8 & header);
+revision_header(revision_id const rid, revision_t const & rev, 
+                std::string const & author, date_t const date,
+                branch_name const & branch, utf8 & header);
 
 void
 revision_summary(revision_t const & rev, utf8 & summary);

@@ -67,7 +67,6 @@ static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_id const rid, revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
-                              bool const branch_changed,
                               utf8 & log_message)
 {
   external instructions(
@@ -80,7 +79,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 message;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, branch_changed, header);
+  revision_header(rid, rev, author, date, branch, header);
   work.read_user_log(message);
   revision_summary(rev, summary);
 
@@ -108,9 +107,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Check the message carefully to make sure the user didn't edit somewhere
   // outside of the author, date, branch or changelog values. The section
-  // between the "Changelog: " line from the header and the "Changes against
+  // between the "ChangeLog: " line from the header and the "Changes against
   // parent ..." line from the summary is where they should be adding
-  // lines. Ideally, there is a blank line following "Changelog:"
+  // lines. Ideally, there is a blank line following "ChangeLog:"
   // (preceeding the changelog message) and another blank line preceeding
   // "Changes against parent ..." (following the changelog message) but both
   // of these are optional.
@@ -174,15 +173,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing branch)."));
 
-  // FIXME: this suffix and the associated length calculations are bad
-  if (branch_changed && line->rfind(_("(changed)")) == line->length() - 9)
-    branch = branch_name(trim(line->substr(8, line->length() - 17)), 
-                         origin::user);
-  else
-    branch = branch_name(trim(line->substr(8)), origin::user);
+  branch = branch_name(trim(line->substr(8)), origin::user);
 
   ++line;
-  E(*line == _("Changelog:"),
+  E(*line == _("ChangeLog: "),
     origin::user,
     F("Modifications outside of Author, Date, Branch or Changelog.\n"
       "Commit failed (missing changelog)."));
@@ -668,11 +662,16 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   set<branch_name> old_branches;
   get_old_branch_names(db, old_rosters, old_branches);
-  bool branch_changed =
-    old_branches.find(app.opts.branch) == old_branches.end();
+  if (old_branches.find(app.opts.branch) == old_branches.end())
+    {
+      W(F("This revision will create a new branch"));
+      for (set<branch_name>::const_iterator i = old_branches.begin();
+           i != old_branches.end(); ++i)
+        cout << _("Old Branch: ") << *i << '\n';
+      cout << _("New Branch: ") << app.opts.branch << "\n\n";
+    }
 
-  revision_header(rid, rev, author, date_t::now(), 
-                  app.opts.branch, branch_changed, header);
+  revision_header(rid, rev, author, date_t::now(), app.opts.branch, header);
 
   work.read_user_log(message);
 
@@ -695,7 +694,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   cout << header_external 
        << message_external
-       << summary_external;
+       << summary_external
+       << '\n';
 }
 
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
@@ -1245,16 +1245,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   if (!log_message_given)
     {
-      set<branch_name> old_branches;
-      get_old_branch_names(db, old_rosters, old_branches);
-      bool branch_changed =
-        old_branches.find(app.opts.branch) == old_branches.end();
-
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, 
                                     restricted_rev_id, restricted_rev,
                                     author, date, app.opts.branch, 
-                                    branch_changed,
                                     log_message);
 
       // We only check for empty log messages when the user entered them

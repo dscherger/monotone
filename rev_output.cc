@@ -24,14 +24,13 @@ using std::string;
 using std::ostringstream;
 
 void
-revision_header(revision_id rid, revision_t const & rev, string const & author, 
-                date_t const date, branch_name const & branch, 
-                bool const branch_changed, utf8 & header)
+revision_header(revision_id const rid, revision_t const & rev,
+                string const & author, date_t const date,
+                branch_name const & branch, utf8 & header)
 {
   ostringstream out;
   int const width = 70;
 
-  // FIXME bad suffix
   out << string(width, '-') << '\n'
       << _("Revision: ") << rid << _("       (uncommitted)") << '\n';
 
@@ -42,19 +41,9 @@ revision_header(revision_id rid, revision_t const & rev, string const & author,
     }
 
   out << _("Author: ") << author << '\n'
-      << _("Date: ") << date << '\n';
-
-  if (branch_changed)
-    {
-      // FIXME bad suffix
-      int space = width - branch().length() - 8 - 10;
-      if (space < 0) space = 0;
-      out << _("Branch: ") << branch << string(space, ' ') << _(" (changed)") << '\n';
-    }
-  else
-    out << _("Branch: ") << branch << '\n';
-
-  out << _("Changelog:") << "\n\n";
+      << _("Date: ") << date << '\n'
+      << _("Branch: ") << branch << '\n'
+      << _("ChangeLog: ") << "\n\n";
 
   header = utf8(out.str(), origin::internal);
 }
