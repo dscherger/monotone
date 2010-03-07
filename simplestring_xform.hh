@@ -33,11 +33,12 @@ void split_into_lines(std::string const & in,
 
 void join_lines(std::vector<std::string> const & in,
                 std::string & out,
-                std::string const & linesep);
+                std::string const & linesep = "\n");
 
-void join_lines(std::vector<std::string> const & in,
-                std::string & out);
-
+void join_lines(std::vector<std::string>::const_iterator begin,
+                std::vector<std::string>::const_iterator end,
+                std::string & out,
+                std::string const & linesep = "\n");
 
 template<class Thing> inline
 origin::type get_made_from(Thing const & thing)
