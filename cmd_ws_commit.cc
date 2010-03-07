@@ -69,28 +69,29 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
                               string & author, date_t & date, branch_name & branch,
                               utf8 & log_message)
 {
-  external instructions(
+  utf8 instructions(
     _("Ensure the values for Author, Date and Branch are correct, then enter\n"
       "a description of this change following the Changelog line. Any other\n"
       "modifications to the lines below or to the summary of changes will\n"
       "cause the commit to fail.\n"));
 
-  utf8 header;
-  utf8 message;
-  utf8 summary;
+  utf8 changelog;
+  work.read_user_log(changelog);
 
-  revision_header(rid, rev, author, date, branch, header);
-  work.read_user_log(message);
-  revision_summary(rev, summary);
-
-  string text = message();
-  if (text.empty() || text.substr(text.length()-1) != "\n")
+  string text = changelog();
+  if (!text.empty() && text[text.length()-1] != '\n')
     {
-      text += "\n";
-      message = utf8(text, origin::user);
+      text += '\n';
+      changelog = utf8(text, origin::user);
     }
 
-  utf8 full_message(instructions() + header() + message() + summary(), origin::internal);
+  utf8 header;
+  utf8 summary;
+
+  revision_header(rid, rev, author, date, branch, changelog, header);
+  revision_summary(rev, summary);
+
+  utf8 full_message(instructions() + header() + summary(), origin::internal);
   
   external input_message;
   external output_message;
@@ -654,10 +655,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   if (!app.lua.hook_get_author(app.opts.branch, key, author))
     author = key.official_name();
 
-  utf8 header;
-  utf8 message;
-  utf8 summary;
-
   calculate_ident(rev, rid);
 
   set<branch_name> old_branches;
@@ -671,31 +668,30 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       cout << _("New Branch: ") << app.opts.branch << "\n\n";
     }
 
-  revision_header(rid, rev, author, date_t::now(), app.opts.branch, header);
+  utf8 changelog;
+  work.read_user_log(changelog);
 
-  work.read_user_log(message);
-
-  string text = message();
-  if (text.empty() || text.substr(text.length()-1) != "\n")
+  string text = changelog();
+  if (!text.empty() && text[text.length()-1] != '\n')
     {
-      text += "\n";
-      message = utf8(text, origin::user);
+      text += '\n';
+      changelog = utf8(text, origin::user);
     }
 
+  utf8 header;
+  utf8 summary;
+
+  revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog, header);
   revision_summary(rev, summary);
 
   external header_external;
-  external message_external;
   external summary_external;
 
   utf8_to_system_best_effort(header, header_external);
-  utf8_to_system_best_effort(message, message_external);
   utf8_to_system_best_effort(summary, summary_external);
 
   cout << header_external 
-       << message_external
-       << summary_external
-       << '\n';
+       << summary_external;
 }
 
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),

@@ -14,11 +14,17 @@
 #include "vocab.hh"
 
 struct date_t;
+struct cert;
 
 void
 revision_header(revision_id const rid, revision_t const & rev, 
                 std::string const & author, date_t const date,
-                branch_name const & branch, utf8 & header);
+                branch_name const & branch, utf8 const & changelog,
+                utf8 & header);
+
+void
+revision_header(revision_id const rid, revision_t const & rev, 
+                std::vector<cert> const & certs, utf8 & header);
 
 void
 revision_summary(revision_t const & rev, utf8 & summary);

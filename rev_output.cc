@@ -11,28 +11,52 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <vector>
 
+#include "cert.hh"
 #include "cset.hh"
 #include "dates.hh"
+#include "project.hh"
 #include "rev_output.hh"
 #include "revision.hh"
 
 using std::map;
+using std::ostringstream;
 using std::pair;
 using std::set;
 using std::string;
-using std::ostringstream;
+using std::vector;
 
 void
 revision_header(revision_id const rid, revision_t const & rev,
                 string const & author, date_t const date,
-                branch_name const & branch, utf8 & header)
+                branch_name const & branch, utf8 const & changelog,
+                utf8 & header)
+{
+  vector<cert> certs;
+  key_id empty_key;
+  certs.push_back(cert(rid, author_cert_name, 
+                       cert_value(author, origin::user), empty_key));
+  certs.push_back(cert(rid, date_cert_name, 
+                       cert_value(date.as_iso_8601_extended(), origin::user),
+                       empty_key));
+  certs.push_back(cert(rid, branch_cert_name, 
+                       cert_value(branch(), origin::user), empty_key));
+  if (!changelog().empty())
+    certs.push_back(cert(rid, changelog_cert_name, 
+                         cert_value(changelog(), origin::user), empty_key));
+
+  revision_header(rid, rev, certs, header);
+}
+
+void
+revision_header(revision_id const rid, revision_t const & rev,
+                vector<cert> const & certs, utf8 & header)
 {
   ostringstream out;
-  int const width = 70;
 
-  out << string(width, '-') << '\n'
-      << _("Revision: ") << rid << _("       (uncommitted)") << '\n';
+  out << string(70, '-') << '\n'
+      << _("Revision: ") << rid << '\n';
 
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
@@ -40,10 +64,44 @@ revision_header(revision_id const rid, revision_t const & rev,
       out << _("Parent: ") << parent << '\n';
     }
 
-  out << _("Author: ") << author << '\n'
-      << _("Date: ") << date << '\n'
-      << _("Branch: ") << branch << '\n'
-      << _("ChangeLog: ") << "\n\n";
+  cert_name const author(author_cert_name);
+  cert_name const date(date_cert_name);
+  cert_name const branch(branch_cert_name);
+  cert_name const tag(tag_cert_name);
+  cert_name const changelog(changelog_cert_name);
+  cert_name const comment(comment_cert_name);
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == author)
+      out << _("Author: ") << i->value << '\n';
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == date)
+      out << _("Date: ") << i->value << '\n'; // FIXME: date formats
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == branch)
+      out << _("Branch: ") << i->value << '\n';
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == tag)
+      out << _("Tag: ") << i->value << '\n';
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == changelog)
+      {
+        out << _("ChangeLog: ") << "\n\n" << i->value << '\n';
+        if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
+          out << '\n';
+      }
+
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
+    if (i->name == comment)
+      {
+        out << _("Comments: ") << "\n\n" << i->value << '\n';
+        if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
+          out << '\n';
+      }
 
   header = utf8(out.str(), origin::internal);
 }
@@ -63,8 +121,6 @@ revision_summary(revision_t const & rev, utf8 & summary)
     {
       revision_id parent = edge_old_revision(*i);
       cset const & cs = edge_changes(*i);
-
-      out << '\n';
 
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
@@ -113,6 +169,8 @@ revision_summary(revision_t const & rev, utf8 & summary)
              i = cs.attrs_cleared.begin(); i != cs.attrs_cleared.end(); ++i)
         out << _("  attr on  ") << i->first << '\n'
             << _("    unset  ") << i->second << '\n';
+
+      out << '\n';
     }
   summary = utf8(out.str(), origin::internal);
 }
