@@ -71,7 +71,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 {
   utf8 instructions(
     _("Ensure the values for Author, Date and Branch are correct, then enter\n"
-      "a description of this change following the Changelog line. Any other\n"
+      "a description of this change following the ChangeLog line. Any other\n"
       "modifications to the lines below or to the summary of changes will\n"
       "cause the commit to fail.\n"));
 
@@ -79,7 +79,12 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   work.read_user_log(changelog);
 
   string text = changelog();
-  if (!text.empty() && text[text.length()-1] != '\n')
+
+  // ensure the changelog message ends with a newline. an empty changelog is
+  // replaced with a single newline so that the ChangeLog: cert line is
+  // produced by revision_header and there is somewhere to enter a message
+
+  if (text.empty() || text[text.length()-1] != '\n')
     {
       text += '\n';
       changelog = utf8(text, origin::user);
@@ -117,18 +122,17 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   E(raw.find(instructions()) == 0,
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing instructions)."));
 
   if (!summary().empty())
     {
-      // ignore the initial blank line when looking for the summary
-      size_t pos = raw.find(summary().substr(1));
+      size_t pos = raw.find(summary());
 
       // ignore the trailing blank line from the header as well
       E(pos >= instructions().length() + header().length() - 1,
         origin::user,
-        F("Modifications outside of Author, Date, Branch or Changelog.\n"
+        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
           "Commit failed (missing summary)."));
       raw.resize(pos); // remove the change summary
     }
@@ -139,7 +143,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   size_t pos = header().find("Author: ");
   E(header().substr(0, pos) == raw.substr(0, pos),
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing revision or parent header)."));
 
   raw = raw.substr(pos); // remove the leading unchanged header lines
@@ -149,13 +153,13 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   E(lines.size() >= 4,
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing lines)."));
 
   vector<string>::const_iterator line = lines.begin();
   E(line->find(_("Author: ")) == 0,
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing author)."));
 
   author = trim(line->substr(8));
@@ -163,7 +167,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   ++line;
   E(line->find(_("Date: ")) == 0,
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing date)."));
 
   date = trim(line->substr(6));
@@ -171,7 +175,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   ++line;
   E(line->find(_("Branch: ")) == 0,
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing branch)."));
 
   branch = branch_name(trim(line->substr(8)), origin::user);
@@ -179,10 +183,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   ++line;
   E(*line == _("ChangeLog: "),
     origin::user,
-    F("Modifications outside of Author, Date, Branch or Changelog.\n"
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing changelog)."));
 
-  // now pointing at the optional blank line after Changelog
+  // now pointing at the optional blank line after ChangeLog
   ++line;
   join_lines(line, lines.end(), raw);
 
@@ -659,7 +663,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   set<branch_name> old_branches;
   get_old_branch_names(db, old_rosters, old_branches);
-  if (old_branches.find(app.opts.branch) == old_branches.end())
+  if (!old_branches.empty() &&
+      old_branches.find(app.opts.branch) == old_branches.end())
     {
       W(F("This revision will create a new branch"));
       for (set<branch_name>::const_iterator i = old_branches.begin();
@@ -670,6 +675,9 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   utf8 changelog;
   work.read_user_log(changelog);
+
+  // ensure the changelog message ends with a newline. an empty changelog message
+  // is left as-is so that no ChangeLog: line is produced by revision_header.
 
   string text = changelog();
   if (!text.empty() && text[text.length()-1] != '\n')

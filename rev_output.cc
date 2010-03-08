@@ -61,7 +61,8 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (edge_map::const_iterator i = rev.edges.begin(); i != rev.edges.end(); ++i)
     {
       revision_id parent = edge_old_revision(*i);
-      out << _("Parent: ") << parent << '\n';
+      if (!null_id(parent))
+        out << _("Parent: ") << parent << '\n';
     }
 
   cert_name const author(author_cert_name);
@@ -124,7 +125,9 @@ revision_summary(revision_t const & rev, utf8 & summary)
 
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
-      if (!null_id(parent))
+      if (null_id(parent))
+        out << _("Changes") << "\n\n";
+      else
         out << _("Changes against parent ") << parent << "\n\n";
 
       // presumably a merge rev could have an empty edge if one side won
@@ -138,7 +141,7 @@ revision_summary(revision_t const & rev, utf8 & summary)
       for (map<file_path, file_path>::const_iterator
             i = cs.nodes_renamed.begin();
             i != cs.nodes_renamed.end(); ++i)
-        out << _("  renamed  ") << i->first
+        out << _("  renamed  ") << i->first << '\n'
             << _("       to  ") << i->second << '\n';
 
       for (set<file_path>::const_iterator i = cs.dirs_added.begin();
