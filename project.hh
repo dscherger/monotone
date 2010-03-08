@@ -78,6 +78,15 @@ namespace policies {
   class policy;
 }
 
+struct governing_policy_info
+{
+  boost::shared_ptr<policies::policy> governing_policy;
+  std::string governing_policy_name;
+
+  boost::shared_ptr<policies::policy> governing_policy_parent;
+  std::string delegation_to_governing_policy;
+};
+
 class project_t
 {
   // In the hypothetical future situation where one monotone process is
@@ -104,6 +113,9 @@ public:
   static project_t empty_project(database & db);
 
   policies::policy & get_base_policy() const;
+
+  void find_governing_policy(std::string const & of_what,
+                             governing_policy_info & info);
 
   //bool get_policy_branch_policy_of(branch_name const & name,
   //                                 editable_policy & policy_branch_policy,

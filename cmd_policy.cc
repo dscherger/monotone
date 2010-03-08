@@ -97,40 +97,21 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   branch_name name = prefix;
   name.append(branch_name("__policy__", origin::internal));
 
-  editable_policy parent;
-  branch_name parent_prefix;
-  E(project.get_policy_branch_policy_of(name, parent, parent_prefix),
-    origin::user,
-    F("Cannot find parent policy for %s") % prefix);
-  P(F("Parent policy: %s") % parent_prefix);
+  governing_policy_info gov;
+  project.find_governing_policy(name(), gov);
 
-  std::string subprefix;
-  E(prefix() != parent_prefix(), origin::user,
-    F("A policy for %s already exists.") % prefix);
-  I(prefix().find(parent_prefix() + ".") == 0);
-  subprefix = prefix().substr(parent_prefix().size()+1);
+  policies::policy_branch parent_branch(gov.governing_policy_parent->get_delegation(gov.delegation_to_governing_policy));
 
-  cache_user_key(app.opts, app.lua, db, keys, project);
-  std::set<external_key_name> admin_keys;
-  {
-    key_identity_info ident;
-    ident.id = keys.signing_key;
-    project.complete_key_identity(keys, app.lua, ident);
-    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
-  }
+  policies::editable_policy parent(*parent_branch.begin());
 
+  policies::policy_branch new_policy_branch(policy_branch::new_branch());
+  policies::policy new_policy(new_policy_branch.create_initial_revision());
 
-  editable_policy child(db, admin_keys);
-  shared_ptr<editable_policy::delegation>
-    del = parent.get_delegation(subprefix, true);
-  del->uid = child.uid;
-  del->committers = admin_keys;
+  parent.set_delegation(name, new_policy.get_delegation("__policy__"));
 
   transaction_guard guard(db);
-  project_t p = project_t::empty_project(db);
-  child.commit(p, keys, utf8(N_("Create new policy branch")));
-  parent.commit(p, keys, utf8(N_("Add new delegation")));
-  
+  new_policy_branch.commit(new_policy, utf8(""));
+  parent_branch.commit(parent, utf8("Add delegation to new child policy"));
   guard.commit();
 }
 

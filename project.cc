@@ -157,14 +157,7 @@ public:
 };
 
 
-struct governing_policy_info
-{
-  shared_ptr<policy> governing_policy;
-  std::string governing_policy_name;
 
-  shared_ptr<policy> governing_policy_parent;
-  std::string delegation_to_governing_policy;
-};
 // find the policy governing a particular name
 class policy_finder
 {
@@ -883,6 +876,14 @@ project_t::get_tags(set<tag_t> & tags)
       project_policy->all_tags(tags);
       return outdated_indicator();
     }
+}
+
+void
+project_t::find_governing_policy(string const & of_what,
+                                 governing_policy_info & info)
+{
+  I(!project_policy->passthru);
+  project_policy->find_governing_policy(of_what, info);
 }
 
 void
