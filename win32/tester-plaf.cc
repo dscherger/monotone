@@ -202,7 +202,18 @@ void run_tests_in_children(test_enumerator const & next_test,
 
       DWORD end_millis = GetTickCount();
       if (cleanup(t, status, (end_millis - start_millis) / 1000, -1))
-        do_remove_recursive(testdir);
+        try
+          {
+            do_remove_recursive(testdir);
+          }
+        catch (...)
+          {
+            // process_wait sometimes returns before releasing the lock on
+            // the directory that we tried to remove. So wait a little
+            // longer and try again.
+            Sleep (1000);// milliseconds
+            do_remove_recursive(testdir);
+          }
     }
 }
 

@@ -233,7 +233,7 @@ building and installation process for monotone
                boost-devel-1.33.1
                libsqlite3-devel-3.6.2
                libidn-devel-1.9
-               gettext-0.17
+               gettext-devel-0.17
                zlib-1.2.3
                perl-5.10.0
                botan-1.8.2
