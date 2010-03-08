@@ -93,7 +93,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 header;
   utf8 summary;
 
-  revision_header(rid, rev, author, date, branch, changelog, header);
+  string date_fmt;
+  revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
   revision_summary(rev, summary);
 
   utf8 full_message(instructions() + header() + summary(), origin::internal);
@@ -611,7 +612,8 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows workspace's status information"),
     "",
-    options::opts::depth | options::opts::exclude)
+    options::opts::depth | options::opts::exclude |
+    options::opts::format_dates | options::opts::date_fmt)
 {
   roster_t new_roster;
   parent_map old_rosters;
@@ -621,6 +623,16 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   database db(app);
   project_t project(db);
   workspace work(app);
+
+  string date_fmt;
+  if (app.opts.format_dates)
+    {
+      if (!app.opts.date_fmt.empty())
+        date_fmt = app.opts.date_fmt;
+      else
+        app.lua.hook_get_date_format_spec(date_fmt);
+    }
+
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
@@ -689,7 +701,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   utf8 header;
   utf8 summary;
 
-  revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog, header);
+  revision_header(rid, rev, author, date_t::now(), app.opts.branch, changelog,
+                  date_fmt, header);
   revision_summary(rev, summary);
 
   external header_external;

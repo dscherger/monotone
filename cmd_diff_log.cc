@@ -844,7 +844,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
           else
             {
               utf8 header;
-              revision_header(rid, rev, certs, header);
+              revision_header(rid, rev, certs, date_fmt, header);
 
               external header_external;
               utf8_to_system_best_effort(header, header_external);

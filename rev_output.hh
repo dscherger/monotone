@@ -20,11 +20,12 @@ void
 revision_header(revision_id const rid, revision_t const & rev, 
                 std::string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                utf8 & header);
+                std::string const & date_fmt, utf8 & header);
 
 void
 revision_header(revision_id const rid, revision_t const & rev, 
-                std::vector<cert> const & certs, utf8 & header);
+                std::vector<cert> const & certs, std::string const & date_fmt,
+                utf8 & header);
 
 void
 revision_summary(revision_t const & rev, utf8 & summary);

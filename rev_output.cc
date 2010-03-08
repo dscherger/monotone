@@ -31,7 +31,7 @@ void
 revision_header(revision_id const rid, revision_t const & rev,
                 string const & author, date_t const date,
                 branch_name const & branch, utf8 const & changelog,
-                utf8 & header)
+                string const & date_fmt, utf8 & header)
 {
   vector<cert> certs;
   key_id empty_key;
@@ -46,12 +46,13 @@ revision_header(revision_id const rid, revision_t const & rev,
     certs.push_back(cert(rid, changelog_cert_name, 
                          cert_value(changelog(), origin::user), empty_key));
 
-  revision_header(rid, rev, certs, header);
+  revision_header(rid, rev, certs, date_fmt, header);
 }
 
 void
 revision_header(revision_id const rid, revision_t const & rev,
-                vector<cert> const & certs, utf8 & header)
+                vector<cert> const & certs, string const & date_fmt,
+                utf8 & header)
 {
   ostringstream out;
 
@@ -78,7 +79,15 @@ revision_header(revision_id const rid, revision_t const & rev,
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == date)
-      out << _("Date: ") << i->value << '\n'; // FIXME: date formats
+      {
+        if (date_fmt.empty())
+          out << _("Date: ") << i->value << '\n';
+        else
+          {
+            date_t date(i->value());
+            out << _("Date: ") << date.as_formatted_localtime(date_fmt) << '\n';
+          }
+      }
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == branch)
