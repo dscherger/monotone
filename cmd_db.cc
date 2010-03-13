@@ -426,7 +426,7 @@ CMD(complete, "complete", "", CMD_REF(informative),
            i != completions.end(); ++i)
         {
           if (!verbose) cout << *i << '\n';
-          else cout << describe_revision(project, *i) << '\n';
+          else cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
         }
     }
   else if (idx(args, 0)() == "file")

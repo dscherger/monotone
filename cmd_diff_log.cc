@@ -735,7 +735,6 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::last | options::opts::next |
     options::opts::from | options::opts::to | options::opts::revision |
     options::opts::brief | options::opts::diffs |
-    options::opts::format_dates | options::opts::date_fmt |
     options::opts::depth | options::opts::exclude |
     options::opts::no_merges | options::opts::no_files |
     options::opts::no_graph)

@@ -40,8 +40,8 @@ void expand_selector(options const & opts, lua_hooks & lua,
                      project_t & project, std::string const & str,
                      std::set<revision_id> & completions);
 
-void diagnose_ambiguous_expansion(project_t & project, std::string const & str,
-                                  std::set<revision_id> const & completions);
+void diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua, project_t & project,
+                                  std::string const & str, std::set<revision_id> const & completions);
 
 
 #endif // __SELECTORS_HH__

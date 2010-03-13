@@ -188,7 +188,8 @@ public:
 };
 
 std::string
-describe_revision(project_t & project, revision_id const & id);
+describe_revision(options const & opts, lua_hooks & lua,
+                  project_t & project, revision_id const & id);
 
 void
 notify_if_multiple_heads(project_t & project, branch_name const & branchname,

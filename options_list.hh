@@ -211,7 +211,7 @@ OPT(date, "date", date_t, ,
 }
 #endif
 
-OPT(date_fmt, "date-format", std::string, ,
+GOPT(date_fmt, "date-format", std::string, ,
     gettext_noop("strftime(3) format specification for printing dates"))
 #ifdef option_bodies
 {
@@ -219,7 +219,7 @@ OPT(date_fmt, "date-format", std::string, ,
 }
 #endif
 
-OPT(format_dates, "no-format-dates", bool, true,
+GOPT(format_dates, "no-format-dates", bool, true,
     gettext_noop("print date certs exactly as stored in the database"))
 #ifdef option_bodies
 {

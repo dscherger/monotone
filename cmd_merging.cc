@@ -228,7 +228,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
           for (set<revision_id>::const_iterator i = candidates.begin();
                i != candidates.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s update -r<id>'") % prog_name);
           E(false, origin::user,
             F("multiple update candidates remain after selection"));
@@ -1398,7 +1398,7 @@ CMD(heads, "heads", "", CMD_REF(tree), "",
 
   for (set<revision_id>::const_iterator i = heads.begin();
        i != heads.end(); ++i)
-    cout << describe_revision(project, *i) << '\n';
+    cout << describe_revision(app.opts, app.lua, project, *i) << '\n';
 }
 
 CMD(get_roster, "get_roster", "", CMD_REF(debug), N_("[REVID]"),

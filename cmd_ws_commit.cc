@@ -44,7 +44,7 @@ using std::vector;
 using boost::shared_ptr;
 
 static void
-revision_summary(revision_t const & rev, branch_name const & branch, 
+revision_summary(revision_t const & rev, branch_name const & branch,
                  set<branch_name> const & old_branch_names,
                  utf8 & summary)
 {
@@ -689,7 +689,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
           P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s checkout -r<id>'") % prog_name);
           E(false, origin::user,
             F("branch %s has multiple heads") % app.opts.branch);
@@ -1442,7 +1442,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
           P(F("branch %s has multiple heads:") % app.opts.branch);
           for (set<revision_id>::const_iterator i = heads.begin(); i != heads.end(); ++i)
             P(i18n_format("  %s")
-              % describe_revision(project, *i));
+              % describe_revision(app.opts, app.lua, project, *i));
           P(F("choose one with '%s import -r<id>'") % prog_name);
           E(false, origin::user,
             F("branch %s has multiple heads") % app.opts.branch);
@@ -1560,7 +1560,7 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   work.get_parent_rosters(db, parents);
   E(parents.size() == 1, origin::user,
     F("this command can only be used in a single-parent workspace"));
-  
+
   revision_id current_id = parent_id(*parents.begin());
 
   temp_node_id_source nis;
@@ -1575,7 +1575,7 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
   I(start.first == bisect::start);
 
   revision_id starting_id = start.second;
-  P(F("reset back to %s") % describe_revision(project, starting_id));
+  P(F("reset back to %s") % describe_revision(app.opts, app.lua, project, starting_id));
 
   roster_t starting_roster;
   db.get_roster(starting_id, starting_roster);
@@ -1600,7 +1600,8 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
 }
 
 static void
-bisect_select(project_t & project,
+bisect_select(options const & opts, lua_hooks & lua,
+              project_t & project,
               vector<bisect::entry> const & info,
               revision_id const & current_id,
               revision_id & selected_id)
@@ -1608,7 +1609,7 @@ bisect_select(project_t & project,
   graph_loader loader(project.db);
   set<revision_id> good, bad, skipped;
 
-  E(!info.empty(), origin::user, 
+  E(!info.empty(), origin::user,
     F("no bisection in progress"));
 
   for (vector<bisect::entry>::const_iterator i = info.begin();
@@ -1665,7 +1666,7 @@ bisect_select(project_t & project,
   set<revision_id> good_descendants(good), bad_ancestors(bad);
   loader.load_descendants(good_descendants);
   loader.load_ancestors(bad_ancestors);
-  
+
   set<revision_id> search;
   set_intersection(good_descendants.begin(), good_descendants.end(),
                    bad_ancestors.begin(), bad_ancestors.end(),
@@ -1728,7 +1729,7 @@ bisect_select(project_t & project,
       revision_id first_bad = *bad_sorted.begin();
 
       P(F("bisection finished at revision %s")
-        % describe_revision(project, first_bad));
+        % describe_revision(opts, lua, project, first_bad));
 
       // if the workspace is not already at the ending revision return it as
       // the selected revision so that an update back to this revision
@@ -1745,7 +1746,7 @@ bisect_select(project_t & project,
   vector<revision_id> candidates;
   toposort(project.db, remaining, candidates);
 
-  selected_id = candidates[candidates.size()/2]; 
+  selected_id = candidates[candidates.size()/2];
 }
 
 std::ostream &
@@ -1821,7 +1822,7 @@ bisect_update(app_state & app, bisect::type type)
     {
       info.push_back(make_pair(bisect::start, current_id));
       P(F("bisection started at revision %s")
-        % describe_revision(project, current_id));
+        % describe_revision(app.opts, app.lua, project, current_id));
     }
 
   if (type != bisect::update)
@@ -1841,7 +1842,7 @@ bisect_update(app_state & app, bisect::type type)
                   marked_ids.erase(i->second);
                 }
               else
-                E(false, origin::user, F("conflicting bisect %s/%s on revision %s") 
+                E(false, origin::user, F("conflicting bisect %s/%s on revision %s")
                   % type % i->first % i->second);
             }
         }
@@ -1850,16 +1851,16 @@ bisect_update(app_state & app, bisect::type type)
       for (set<revision_id>::const_iterator i = marked_ids.begin();
            i != marked_ids.end(); ++i)
         info.push_back(make_pair(type, *i));
-  
+
       work.put_bisect_info(info);
     }
 
   revision_id selected_id;
-  bisect_select(project, info, current_id, selected_id);
+  bisect_select(app.opts, app.lua, project, info, current_id, selected_id);
   if (null_id(selected_id))
     return;
 
-  P(F("updating to %s") % describe_revision(project, selected_id));
+  P(F("updating to %s") % describe_revision(app.opts, app.lua, project, selected_id));
 
   roster_t selected_roster;
   db.get_roster(selected_id, selected_roster);
@@ -1909,7 +1910,7 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
   work.get_bisect_info(info);
 
   revision_id selected_id;
-  bisect_select(project, info, current_id, selected_id);
+  bisect_select(app.opts, app.lua, project, info, current_id, selected_id);
 
   if (current_id != selected_id)
     {

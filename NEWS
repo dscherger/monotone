@@ -25,6 +25,9 @@ XXX XXX XX XX:XX:XX UTC 2010
           long dates, '%X' for short and long times (currently unused) and
           '%x %X' for short and long date times.
 
+        - The options '--date-format' and '--no-format-dates' are no longer
+          specific to the 'log' command, but can now be used globally.
+
         New features
 
         - Added portuguese translation (thanks to Américo Monteiro)
@@ -39,6 +42,9 @@ XXX XXX XX XX:XX:XX UTC 2010
           platform as well which generally improve the compatibility.
 
         - The annotation of 'annotate' is now localized.
+
+        - The various occurrences where a revision is described by its
+          certs now come with proper localized date output.
 
         Other
 

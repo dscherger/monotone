@@ -689,7 +689,8 @@ project_t::get_key_identity(lua_hooks & lua,
 // These should maybe be converted to member functions.
 
 string
-describe_revision(project_t & project, revision_id const & id)
+describe_revision(options const & opts, lua_hooks & lua,
+		  project_t & project, revision_id const & id)
 {
   cert_name author_name(author_cert_name);
   cert_name date_name(date_cert_name);
@@ -697,6 +698,15 @@ describe_revision(project_t & project, revision_id const & id)
   string description;
 
   description += encode_hexenc(id.inner()(), id.inner().made_from);
+
+  string date_fmt;
+  if (opts.format_dates)
+    {
+      if (!opts.date_fmt.empty())
+        date_fmt = opts.date_fmt;
+      else
+        lua.hook_get_date_format_spec(date_time_short, date_fmt);
+    }
 
   // append authors and date of this revision
   vector<cert> certs;
@@ -714,7 +724,7 @@ describe_revision(project_t & project, revision_id const & id)
       else if (i->name == date_cert_name)
         {
           dates += " ";
-          dates += i->value();
+          dates += date_t(i->value()).as_formatted_localtime(date_fmt);
         }
     }
 

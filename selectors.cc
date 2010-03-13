@@ -200,7 +200,7 @@ decode_selector(options const & opts, lua_hooks & lua,
                   parent_ids.insert(i->first);
                 }
 
-              diagnose_ambiguous_expansion(project, "p:", parent_ids);
+              diagnose_ambiguous_expansion(opts, lua, project, "p:", parent_ids);
               sel = encode_hexenc((* parent_ids.begin()).inner()(),
                                   origin::internal);
             }
@@ -464,7 +464,7 @@ complete(options const & opts, lua_hooks & lua,
   complete(opts, lua, project, str, completions);
 
   I(!completions.empty());
-  diagnose_ambiguous_expansion(project, str, completions);
+  diagnose_ambiguous_expansion(opts, lua, project, str, completions);
 
   completion = *completions.begin();
 }
@@ -493,7 +493,8 @@ expand_selector(options const & opts, lua_hooks & lua,
 }
 
 void
-diagnose_ambiguous_expansion(project_t & project,
+diagnose_ambiguous_expansion(options const & opts, lua_hooks & lua,
+                             project_t & project,
                              string const & str,
                              set<revision_id> const & completions)
 {
@@ -504,7 +505,7 @@ diagnose_ambiguous_expansion(project_t & project,
                 % str).str();
   for (set<revision_id>::const_iterator i = completions.begin();
        i != completions.end(); ++i)
-    err += ("\n" + describe_revision(project, *i));
+    err += ("\n" + describe_revision(opts, lua, project, *i));
 
   E(false, origin::user, i18n_format(err));
 }
