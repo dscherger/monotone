@@ -99,6 +99,18 @@ enum diff_type
   external_diff
 };
 
+// determines which kind of date format we request for date formatting
+// only a subset of the following options are currently actually used
+enum date_format_spec
+{
+  date_long,
+  date_short,
+  time_long,
+  time_short,
+  date_time_long,
+  date_time_short
+};
+
 // do these belong here?
 inline bool
 null_id(id const & i)

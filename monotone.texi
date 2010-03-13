@@ -10060,7 +10060,7 @@ The list of committers that might need to be mapped can be extracted
 from a monotone database with the following sql query:
 
 @verbatim
-$ mtn db execute 'select distinct public_keys.name 
+$ mtn db execute 'select distinct public_keys.name
                   from public_keys
                   left join revision_certs on revision_certs.keypair_id = public_keys.id
                   where revision_certs.name = "author"'
@@ -10612,13 +10612,19 @@ Returns @code{true} if @var{branchname} should be ignored while listing
 branches. Otherwise returns @code{false}. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
-@item get_date_format_spec ()
+@item get_date_format_spec (@var{wanted})
 
 Returns a @code{strftime} format specification, which @command{mtn
 log} and similar commands will use to format dates, unless instructed
-otherwise.  The default definition returns @samp{@w{"%d %b %Y,
-%I:%M:%S %p"}}, which produces output like this: @samp{@w{22 May 2009,
-09:06:14 AM}}.
+otherwise.  The default definition returns @samp{%x} for long and short
+date formats, @samp{%X} for long and short time formats and @samp{%x %X}
+for long and short date time formats, which is equivalent to @samp{22/05/09},
+@samp{09:06:14} and @samp{22/05/09 09:06:14} in an English locale.
+
+@var{wanted} can be one of @samp{date_long}, @samp{date_short},
+@samp{time_long}, @samp{time_short}, @samp{date_time_long} and
+@samp{date_time_short}, though only @samp{date_short} and
+@samp{date_time_short} are currently used.
 
 @end ftable
 

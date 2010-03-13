@@ -59,7 +59,7 @@ class annotate_lineage_mapping;
 class annotate_context
 {
 public:
-  annotate_context(project_t & project, file_id fid);
+  annotate_context(app_state & app, project_t & project, file_id fid);
 
   shared_ptr<annotate_lineage_mapping> initial_lineage() const;
 
@@ -86,6 +86,7 @@ public:
 private:
   void build_revisions_to_annotations(map<revision_id, string> & r2a) const;
 
+  app_state & app;
   project_t & project;
 
   /// keep a count so we can tell quickly whether we can terminate
@@ -207,8 +208,8 @@ typedef multi_index_container<
   > work_units;
 
 
-annotate_context::annotate_context(project_t & project, file_id fid)
-  : project(project), annotated_lines_completed(0)
+annotate_context::annotate_context(app_state & app, project_t & project, file_id fid)
+  : app(app), project(project), annotated_lines_completed(0)
 {
   // initialize file_lines
   file_data fpacked;
@@ -371,6 +372,18 @@ cert_string_value(vector<cert> const & certs,
   return "";
 }
 
+static string
+cert_date_value(vector<cert> const & certs,
+                cert_name const & name,
+                bool from_start, bool from_end,
+                string const & fmt)
+{
+    string certval = cert_string_value(certs, name, from_start, from_end, "");
+    if (fmt.empty())
+        return certval;
+    return date_t(certval).as_formatted_localtime(fmt);
+}
+
 void
 annotate_context::build_revisions_to_annotations
 (map<revision_id, string> & revs_to_notations) const
@@ -386,6 +399,14 @@ annotate_context::build_revisions_to_annotations
     }
 
   size_t max_note_length = 0;
+  string date_fmt;
+  if (app.opts.format_dates)
+    {
+      if (!app.opts.date_fmt.empty())
+        date_fmt = app.opts.date_fmt;
+      else
+        app.lua.hook_get_date_format_spec(date_short, date_fmt);
+    }
 
   // build revision -> annotation string mapping
   for (set<revision_id>::const_iterator i = seen.begin();
@@ -398,17 +419,12 @@ annotate_context::build_revisions_to_annotations
       string author(cert_string_value(certs, author_cert_name,
                                       true, false, "@< "));
 
-      string date(cert_string_value(certs, date_cert_name,
-                                    true, false, "T"));
+      string date(cert_date_value(certs, date_cert_name, true, false, date_fmt));
 
-      string result;
       string hex_rev_str(encode_hexenc(i->inner()(), i->inner().made_from));
-      result.append(hex_rev_str.substr(0, 8));
-      result.append(".. by ");
-      result.append(author);
-      result.append(" ");
-      result.append(date);
-      result.append(": ");
+      string result = (F("%s.. by %s %s: ")
+            % hex_rev_str.substr(0, 8)
+            % author % date).str();
 
       max_note_length = ((result.size() > max_note_length)
                          ? result.size()
@@ -820,14 +836,14 @@ do_annotate_node(database & db,
 }
 
 void
-do_annotate (project_t & project, const_file_t file_node,
+do_annotate (app_state & app, project_t & project, const_file_t file_node,
              revision_id rid, bool just_revs)
 {
   L(FL("annotating file %s with content %s in revision %s")
     % file_node->self % file_node->content % rid);
 
   shared_ptr<annotate_context>
-    acp(new annotate_context(project, file_node->content));
+    acp(new annotate_context(app, project, file_node->content));
 
   shared_ptr<annotate_lineage_mapping> lineage
     = acp->initial_lineage();

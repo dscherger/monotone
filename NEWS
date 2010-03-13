@@ -19,6 +19,12 @@ XXX XXX XX XX:XX:XX UTC 2010
           default implementation of this hook attempts to produce valid git
           authors using several default pattern replacements.
 
+        - The 'get_date_format_spec' lua hook now has an additional parameter
+          which hints at the wanted format (f.e. a short date or a long date
+          time). The default implementation now returns '%x' for short and
+          long dates, '%X' for short and long times (currently unused) and
+          '%x %X' for short and long date times.
+
         New features
 
         - Added portuguese translation (thanks to Américo Monteiro)
@@ -31,6 +37,8 @@ XXX XXX XX XX:XX:XX UTC 2010
         - monotone no longer throws an exception on Windows if it is
           interrupted (^C); a couple of other bug have been fixed for this
           platform as well which generally improve the compatibility.
+
+        - The annotation of 'annotate' is now localized.
 
         Other
 

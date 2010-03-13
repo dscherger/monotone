@@ -290,10 +290,10 @@ function edit_comment(basetext, user_log_message)
    elseif (program_exists_in_path("editor")) then exe = "editor"
    elseif (program_exists_in_path("vi")) then exe = "vi"
    elseif (string.sub(get_ostype(), 1, 6) ~= "CYGWIN" and
-	   program_exists_in_path("notepad.exe")) then exe = "notepad"
+       program_exists_in_path("notepad.exe")) then exe = "notepad"
    else
       io.write(gettext("Could not find editor to enter commit message\n"
-		       .. "Try setting the environment variable EDITOR\n"))
+               .. "Try setting the environment variable EDITOR\n"))
       return nil
    end
 
@@ -316,22 +316,22 @@ function edit_comment(basetext, user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-	 io.write(string.format(gettext("Error running editor '%s' "..
-					"to enter log message\n"),
+     io.write(string.format(gettext("Error running editor '%s' "..
+                    "to enter log message\n"),
                                 exe))
-	 os.remove(tname)
-	 return nil
+     os.remove(tname)
+     return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-	 io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-					"but '%s' is not to be found"),
-			        exe, shell))
-	 os.remove(tname)
-	 return nil
+     io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                    "but '%s' is not to be found"),
+                    exe, shell))
+     os.remove(tname)
+     return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -339,11 +339,11 @@ function edit_comment(basetext, user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-	 io.write(string.format(gettext("Error running editor '%s' "..
-					"to enter log message\n"),
+     io.write(string.format(gettext("Error running editor '%s' "..
+                    "to enter log message\n"),
                                 exe))
-	 os.remove(tname)
-	 return nil
+     os.remove(tname)
+     return nil
       end
    end
 
@@ -377,14 +377,14 @@ function use_inodeprints()
    return false
 end
 
-function get_date_format_spec()
+function get_date_format_spec(wanted)
    -- Return the strftime(3) specification to be used to print dates
    -- in human-readable format after conversion to the local timezone.
    -- The default uses the preferred date and time representation for
    -- the current locale, e.g. the output looks like this: "09/08/2009
-   -- 06:49:26 PM" for en_US, or "08.09.2009 18:49:26" for de_DE.
-   return "%x %X"
-
+   -- 06:49:26 PM" for en_US and "date_time_long", or "08.09.2009"
+   -- for de_DE and "date_short"
+   --
    -- A sampling of other possible formats you might want:
    --   default for your locale: "%c" (may include a confusing timezone label)
    --   12 hour format: "%d %b %Y, %I:%M:%S %p"
@@ -393,6 +393,14 @@ function get_date_format_spec()
    --   ISO 8601:       "%Y-%m-%d %H:%M:%S" or "%Y-%m-%dT%H:%M:%S"
    --
    --   ISO 8601, no timezone conversion: ""
+   --.
+   if (wanted == "date_long" or wanted == "date_short") then
+       return "%x"
+   end
+   if (wanted == "time_long" or wanted == "time_short") then
+       return "%X"
+   end
+   return "%x %X"
 end
 
 -- trust evaluation hooks
@@ -464,9 +472,9 @@ mergers.fail = {
 mergers.meld = {
    cmd = function (tbl)
       io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
-			      "an external 3-way merge.\n"..
-			      "You must merge all changes to the "..
-			      "*CENTER* file."))
+                  "an external 3-way merge.\n"..
+                  "You must merge all changes to the "..
+                  "*CENTER* file."))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -513,9 +521,9 @@ mergers.vim = {
       end
 
       io.write (string.format("\nWARNING: 'vim' was chosen to perform "..
-			      "an external 3-way merge.\n"..
-			      "You must merge all changes to the "..
-			      "*LEFT* file.\n"))
+                  "an external 3-way merge.\n"..
+                  "You must merge all changes to the "..
+                  "*LEFT* file.\n"))
 
       local vim
       if os.getenv ("DISPLAY") ~= nil and program_exists_in_path ("gvim") then

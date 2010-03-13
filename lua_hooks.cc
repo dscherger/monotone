@@ -625,18 +625,31 @@ lua_hooks::hook_get_default_command_options(commands::command_id const & cmd,
 }
 
 bool
-lua_hooks::hook_get_date_format_spec(std::string & spec)
+lua_hooks::hook_get_date_format_spec(date_format_spec in, std::string & out)
 {
+  string in_spec;
+  switch (in)
+  {
+    case date_long:         in_spec = "date_long"; break;
+    case date_short:        in_spec = "date_short"; break;
+    case time_long:         in_spec = "time_long"; break;
+    case time_short:        in_spec = "time_short"; break;
+    case date_time_long:    in_spec = "date_time_long"; break;
+    case date_time_short:   in_spec = "date_time_short"; break;
+    default: I(false);
+  }
+
   bool exec_ok
     = Lua(st)
     .func("get_date_format_spec")
-    .call(0, 1)
-    .extract_str(spec)
+    .push_str(in_spec)
+    .call(1, 1)
+    .extract_str(out)
     .ok();
 
   // If the hook fails, disable date formatting.
   if (!exec_ok)
-    spec = "";
+    out = "";
   return exec_ok;
 }
 
