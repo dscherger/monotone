@@ -93,26 +93,32 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   database db(app);
   key_store keys(app);
   project_t project(db, app.lua, app.opts);
-  branch_name prefix = typecast_vocab<branch_name>(idx(args, 0));
-  branch_name name = prefix;
-  name.append(branch_name("__policy__", origin::internal));
+  branch_name name = typecast_vocab<branch_name>(idx(args, 0));
 
-  governing_policy_info gov;
+  policy_chain gov;
   project.find_governing_policy(name(), gov);
 
-  policies::policy_branch parent_branch(gov.governing_policy_parent->get_delegation(gov.delegation_to_governing_policy));
+  E(!gov.empty(), origin::user,
+    F("Cannot find a parent policy for '%s'") % name);
+  E(gov.back().full_policy_name != name(), origin::user,
+    F("Policy '%s' already exists") % name);
 
-  policies::editable_policy parent(*parent_branch.begin());
+  policies::policy_branch parent_branch(gov.back().delegation);
 
-  policies::policy_branch new_policy_branch(policy_branch::new_branch());
-  policies::policy new_policy(new_policy_branch.create_initial_revision());
+  policies::editable_policy parent(**parent_branch.begin());
 
-  parent.set_delegation(name, new_policy.get_delegation("__policy__"));
+  std::set<external_key_name> admin_keys;
+  {
+    key_identity_info ident;
+    ident.id = keys.signing_key;
+    project.complete_key_identity(keys, app.lua, ident);
+    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
+  }
+  branch_name del_name(name);
+  del_name.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
+  parent.set_delegation(del_name(), policies::delegation::create(admin_keys));
 
-  transaction_guard guard(db);
-  new_policy_branch.commit(new_policy, utf8(""));
   parent_branch.commit(parent, utf8("Add delegation to new child policy"));
-  guard.commit();
 }
 
 CMD(create_branch, "create_branch", "", CMD_REF(policy),
@@ -129,11 +135,14 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name branch = typecast_vocab<branch_name>(idx(args, 0));
 
-  governing_policy_info gov;
+  policy_chain gov;
   project.find_governing_policy(branch(), gov);
 
-  policies::policy_branch parent(gov.delegation_to_governing_policy());
-  policies::editable_policy ppol(*parent.begin());
+  E(!gov.empty(), origin::user,
+    F("Cannot find policy over '%s'") % branch);
+
+  policies::policy_branch parent(gov.back().delegation);
+  policies::editable_policy ppol(**parent.begin());
   std::set<external_key_name> admin_keys;
   {
     key_identity_info ident;
@@ -141,12 +150,11 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     project.complete_key_identity(keys, app.lua, ident);
     admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
   }
-  std::string relative_name = branch().substr(parent_prefix().size());
-  if (relative_name.size() > 0 && relative_name[0] == '.')
-    relative_name.erase(0, 1);
-  if (relative_name.empty())
-    relative_name = "__main__";
-  ppol.set_branch(relative_name, policies::branch(admin_keys));
+  branch_name suffix(branch);
+  suffix.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
+  if (suffix().empty())
+    suffix = branch_name("__main__", origin::internal);
+  ppol.set_branch(suffix(), policies::branch::create(admin_keys));
   parent.commit(ppol, utf8("Add branch."));
 }
 

@@ -17,6 +17,7 @@
 #include "cert.hh"
 //#include "editable_policy.hh"
 #include "outdated_indicator.hh"
+#include "policies/delegation.hh"
 #include "vocab.hh"
 
 class arg_type;
@@ -78,14 +79,14 @@ namespace policies {
   class policy;
 }
 
-struct governing_policy_info
+struct policy_chain_item
 {
-  boost::shared_ptr<policies::policy> governing_policy;
-  std::string governing_policy_name;
-
-  boost::shared_ptr<policies::policy> governing_policy_parent;
-  std::string delegation_to_governing_policy;
+  boost::shared_ptr<policies::policy> policy;
+  std::string full_policy_name;
+  policies::delegation delegation;
 };
+
+typedef std::vector<policy_chain_item> policy_chain;
 
 class project_t
 {
@@ -115,11 +116,8 @@ public:
   policies::policy & get_base_policy() const;
 
   void find_governing_policy(std::string const & of_what,
-                             governing_policy_info & info);
+                             policy_chain & info) const;
 
-  //bool get_policy_branch_policy_of(branch_name const & name,
-  //                                 editable_policy & policy_branch_policy,
-  //                                 branch_name & policy_prefix);
   bool policy_exists(branch_name const & name) const;
   void get_subpolicies(branch_name const & name,
                        std::set<branch_name> & names) const;

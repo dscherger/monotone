@@ -16,6 +16,8 @@
 
 #include "vocab.hh"
 
+class external_key_name;
+
 namespace policies {
 
   class branch
@@ -24,6 +26,8 @@ namespace policies {
     std::set<external_key_name> signers;
   public:
     branch();
+    static branch create(std::set<external_key_name> const & admins);
+
     branch_uid const & get_uid() const;
     std::set<external_key_name> const & get_signers() const;
     void serialize(std::string & out) const;

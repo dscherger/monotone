@@ -14,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "policies/branch.hh"
+#include "policies/delegation.hh"
 #include "policies/policy.hh"
 
 namespace policies {
@@ -29,6 +30,7 @@ namespace policies {
     typedef policy_set::const_iterator iterator;
 
     policy_branch(branch const & b);
+    policy_branch(delegation const & d);
     static policy_branch new_branch(std::set<external_key_name> const & signers);
 
     branch const & get_spec() const;

@@ -73,10 +73,12 @@ typedef map<policy_key, shared_ptr<policy> > child_policy_map;
 // walk the tree of policies, resolving children if needed
 void walk_policies(shared_ptr<policy> root,
                    child_policy_map & children,
-                   boost::function<void(shared_ptr<policy>, string)> fn,
-                   string current_prefix = "")
+                   boost::function<void(shared_ptr<policy>, string,
+                                        policies::delegation const &)> fn,
+                   string current_prefix = "",
+                   policies::delegation del = policies::delegation())
 {
-  fn(root, current_prefix);
+  fn(root, current_prefix, del);
 
   policy::del_map const & d(root->list_delegations());
   for (policy::del_map::const_iterator i = d.begin(); i != d.end(); ++i)
@@ -98,7 +100,7 @@ void walk_policies(shared_ptr<policy> root,
           c = x.first;
         }
 
-      walk_policies(c->second, children, fn, child_prefix);
+      walk_policies(c->second, children, fn, child_prefix, i->second);
     }
 }
 
@@ -115,7 +117,8 @@ class branch_lister
   map<branch_name, branch_info> & branches;
 public:
   branch_lister(map<branch_name, branch_info> & b) : branches(b) { }
-  void operator()(shared_ptr<policy> pol, string prefix)
+  void operator()(shared_ptr<policy> pol, string prefix,
+                  policies::delegation const & del)
   {
     map<string, branch> const & x = pol->list_branches();
     for (map<string, branch>::const_iterator i = x.begin(); i != x.end(); ++i)
@@ -134,12 +137,29 @@ public:
   }
 };
 
+class policy_lister
+{
+  branch_name const & base;
+  set<branch_name> & policies;
+public:
+  policy_lister(branch_name const & b, set<branch_name> & p)
+    : base(b), policies(p) { }
+  void operator()(shared_ptr<policy> pol, string prefix,
+                  policies::delegation const & del)
+  {
+    branch_name n(prefix, origin::internal);
+    if (n.has_prefix(n))
+      policies.insert(n);
+  }
+};
+
 class tag_lister
 {
   set<tag_t> & tags;
 public:
   tag_lister(set<tag_t> & t) : tags(t) { }
-  void operator()(shared_ptr<policy> pol, string prefix)
+  void operator()(shared_ptr<policy> pol, string prefix,
+                  policies::delegation const & del)
   {
     map<string, revision_id> const & x = pol->list_tags();
     for (map<string, revision_id>::const_iterator i = x.begin();
@@ -162,27 +182,36 @@ public:
 class policy_finder
 {
   string target;
-  governing_policy_info & info;
+  policy_chain & info;
 public:
-  policy_finder(string const & target, governing_policy_info & info)
+  policy_finder(string const & target, policy_chain & info)
     : target(target), info(info)
   {
-    info.governing_policy_name.clear();
-    info.delegation_to_governing_policy.clear();
-    info.governing_policy.reset();
-    info.governing_policy_parent.reset();
+    info.clear();
   }
 
-  void operator()(shared_ptr<policy> pol, string prefix)
+  void operator()(shared_ptr<policy> pol, string prefix,
+                  policies::delegation const & del)
   {
     if (prefix.empty())
       {
+        policy_chain_item i;
+        i.policy = pol;
+        info.push_back(i);
         return;
       }
-    if (target.find(prefix) == 0 && prefix.size() > info.governing_policy_name.size())
+    if (target.find(prefix) == 0)
       {
-        info.governing_policy_name = prefix;
-        info.governing_policy = pol;
+        bool equals = target == prefix;
+        bool is_prefix = target.length() > prefix.length() && target[prefix.length()] == '.';
+        if (equals || is_prefix)
+          {
+            policy_chain_item i;
+            i.policy = pol;
+            i.full_policy_name = prefix;
+            i.delegation = del;
+            info.push_back(i);
+          }
       }
   }
 };
@@ -294,20 +323,17 @@ public:
   }
 
   void find_governing_policy(std::string const & of_what,
-                             governing_policy_info & info)
+                             policy_chain & info)
   {
     walk_policies(policy, child_policies,
                   policy_finder(of_what, info));
-    if (info.governing_policy)
-      {
-        // also return the parent, if it's a 'real' database policy rather
-        // than the synthesized root policy
-        info.governing_policy_parent = info.governing_policy->get_parent();
-        if (info.governing_policy_parent == policy)
-          {
-            info.governing_policy_parent.reset();
-          }
-      }
+  }
+
+  void list_policies(branch_name const & base,
+                     set<branch_name> & children)
+  {
+    walk_policies(policy, child_policies,
+                  policy_lister(base, children));
   }
 };
 
@@ -357,19 +383,6 @@ project_t::empty_project(database & db)
 {
   return project_t(db);
 }
-/*
-bool
-project_t::get_policy_branch_policy_of(branch_name const & name,
-                                       editable_policy & policy_branch_policy,
-                                       branch_name & policy_prefix)
-{
-  shared_ptr<policy_branch> result;
-  result = project_policy->policy->walk(name, policy_prefix);
-  if (!result)
-    return false;
-  policy_branch_policy = *result->get_policy();
-  return true;
-}
 
 bool
 project_t::policy_exists(branch_name const & name) const
@@ -377,9 +390,11 @@ project_t::policy_exists(branch_name const & name) const
   if (project_policy->passthru)
     return name().empty();
 
-  branch_name got;
-  shared_ptr<policy_branch> sub = project_policy->policy->walk(name, got);
-  return sub && name == got;
+  policy_chain info;
+  find_governing_policy(name(), info);
+  if (info.empty())
+    return false;
+  return info.back().full_policy_name == name();
 }
 
 void
@@ -389,22 +404,9 @@ project_t::get_subpolicies(branch_name const & name,
   if (project_policy->passthru)
     return;
 
-  branch_name got;
-  shared_ptr<policy_branch> sub = project_policy->policy->walk(name, got);
-  if (sub && got == name)
-    {
-      shared_ptr<editable_policy const> pol = sub->get_policy();
-      editable_policy::const_delegation_map dels = pol->get_all_delegations();
-      for (editable_policy::const_delegation_map::const_iterator i = dels.begin();
-           i != dels.end(); ++i)
-        {
-          branch_name n(name);
-          n.append(branch_name(i->first, origin::internal));
-          names.insert(n);
-        }
-    }
+  project_policy->list_policies(name, names);
 }
-*/
+
 
 void
 project_t::get_branch_list(set<branch_name> & names,
@@ -880,7 +882,7 @@ project_t::get_tags(set<tag_t> & tags)
 
 void
 project_t::find_governing_policy(string const & of_what,
-                                 governing_policy_info & info)
+                                 policy_chain & info) const
 {
   I(!project_policy->passthru);
   project_policy->find_governing_policy(of_what, info);
@@ -895,15 +897,17 @@ project_t::put_tag(key_store & keys,
     put_cert(keys, id, tag_cert_name, cert_value(name, origin::user));
   else
     {
-      governing_policy_info info;
+      policy_chain info;
       project_policy->find_governing_policy(name, info);
-      policies::branch pol_spec = info.governing_policy->get_branch("__policy__");
+      E(!info.empty(), origin::user,
+        F("Cannot find policy for tag '%s'") % name);
 
-      policies::policy_branch br(pol_spec);
+      policies::policy_branch br(info.back().delegation);
+
       I(br.begin() != br.end());
       policies::editable_policy ep(**br.begin());
 
-      ep.set_tag(name.substr(info.governing_policy_name.size() + 1), id);
+      ep.set_tag(name.substr(info.back().full_policy_name.size() + 1), id);
 
       br.commit(ep, utf8((F("Set tag %s") % name).str(),
                          origin::internal));
