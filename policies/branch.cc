@@ -12,8 +12,18 @@
 #include "policies/branch.hh"
 
 #include "app_state.hh"
+#include "basic_io.hh"
 #include "lazy_rng.hh"
 #include "transforms.hh"
+
+using std::string;
+
+namespace basic_io {
+  namespace syms {
+    static symbol branch_uid("branch_uid");
+    static symbol key("key");
+  }
+}
 
 namespace {
   branch_uid generate_uid(app_state & app)
@@ -44,6 +54,47 @@ namespace policies {
   std::set<external_key_name> const & branch::get_signers() const
   {
     return signers;
+  }
+
+  void branch::serialize(std::string & out) const
+  {
+    basic_io::printer p;
+    basic_io::stanza s;
+
+    s.push_str_pair(basic_io::syms::branch_uid, uid());
+    for (std::set<external_key_name>::const_iterator k = signers.begin();
+         k != signers.end(); ++k)
+      {
+        s.push_str_pair(basic_io::syms::key, (*k)());
+      }
+
+    p.print_stanza(s);
+    out = p.buf;
+  }
+  void branch::deserialize(std::string const & in)
+  {
+    basic_io::input_source s(in, "branch");
+    basic_io::tokenizer t(s);
+    basic_io::parser p(t);
+    while (p.symp())
+      {
+        if (p.symp(basic_io::syms::branch_uid))
+          {
+            p.sym();
+            string u;
+            p.str(u);
+            uid = branch_uid(u, origin::internal);
+          }
+        else if (p.symp(basic_io::syms::key))
+          {
+            p.sym();
+            string k;
+            p.str(k);
+            signers.insert(external_key_name(k, origin::internal));
+          }
+        else
+          break;
+      }
   }
 }
 

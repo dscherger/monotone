@@ -29,7 +29,7 @@ namespace policies {
     inline bool outdated() const { return false; }
 
     // Use lua hooks to write out the given policy.
-    static void write(policy const & pol);
+    static void write(lua_hooks & lua, policy const & pol);
   };
 }
 

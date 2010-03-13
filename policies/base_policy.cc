@@ -35,6 +35,7 @@ namespace policies {
   {
     return _empty;
   }
+
   void base_policy::load(database & db, options const & opts, lua_hooks & lua)
   {
     typedef map<branch_name, hexenc<id> > override_map;
@@ -60,6 +61,22 @@ namespace policies {
             _empty = false;
           }
       }
+  }
+
+  void base_policy::write(lua_hooks & lua, policy const & pol)
+  {
+    map<string, data> hm;
+
+    policy::del_map const & delegations = pol.list_delegations();
+    for (policy::del_map::const_iterator d = delegations.begin();
+         d != delegations.end(); ++d)
+      {
+        string s;
+        d->second.serialize(s);
+        hm.insert(make_pair(d->first, data(s, origin::internal)));
+      }
+
+    lua.hook_write_projects(hm);
   }
 }
 

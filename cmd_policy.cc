@@ -75,7 +75,7 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 
   bp.set_delegation(project_name, policies::delegation::create(app, signers));
 
-  policies::base_policy::write(bp);
+  policies::base_policy::write(app.lua, bp);
 }
 
 CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),

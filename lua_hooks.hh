@@ -78,6 +78,7 @@ public:
 
 
   bool hook_get_projects(std::map<std::string, data> & project_definitions);
+  bool hook_write_projects(std::map<std::string, data> const & project_definitions);
 
 
   // network hooks
