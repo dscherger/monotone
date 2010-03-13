@@ -129,21 +129,11 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name branch = typecast_vocab<branch_name>(idx(args, 0));
 
-  editable_policy parent;
-  branch_name parent_prefix;
-  E(project.get_policy_branch_policy_of(branch, parent, parent_prefix),
-    origin::user,
-    F("Cannot find a parent policy for %s") % branch);
-  P(F("Parent policy: %s") % parent_prefix);
+  governing_policy_info gov;
+  project.find_governing_policy(branch(), gov);
 
-  I(branch().find(parent_prefix()) == 0);
-  std::string relative_name = branch().substr(parent_prefix().size());
-  if (relative_name.size() > 0 && relative_name[0] == '.')
-    relative_name.erase(0, 1);
-  if (relative_name.empty())
-    relative_name = "__main__";
-
-  cache_user_key(app.opts, app.lua, db, keys, project);
+  policies::policy_branch parent(gov.delegation_to_governing_policy());
+  policies::editable_policy ppol(*parent.begin());
   std::set<external_key_name> admin_keys;
   {
     key_identity_info ident;
@@ -151,18 +141,13 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     project.complete_key_identity(keys, app.lua, ident);
     admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
   }
-
-
-  shared_ptr<editable_policy::branch>
-    br = parent.get_branch(relative_name);
-  E(!br, origin::user,
-    F("A branch %s already exists under policy %s")
-    % relative_name % parent_prefix);
-  br = parent.get_branch(relative_name, true);
-  br->committers = admin_keys;
-
-  project_t p = project_t::empty_project(db);
-  parent.commit(p, keys, utf8(N_("Declare new branch")));
+  std::string relative_name = branch().substr(parent_prefix().size());
+  if (relative_name.size() > 0 && relative_name[0] == '.')
+    relative_name.erase(0, 1);
+  if (relative_name.empty())
+    relative_name = "__main__";
+  ppol.set_branch(relative_name, policies::branch(admin_keys));
+  parent.commit(ppol, utf8("Add branch."));
 }
 
 CMD_FWD_DECL(list);

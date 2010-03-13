@@ -120,9 +120,9 @@ public:
   //bool get_policy_branch_policy_of(branch_name const & name,
   //                                 editable_policy & policy_branch_policy,
   //                                 branch_name & policy_prefix);
-  //bool policy_exists(branch_name const & name) const;
-  //void get_subpolicies(branch_name const & name,
-  //                     std::set<branch_name> & names) const;
+  bool policy_exists(branch_name const & name) const;
+  void get_subpolicies(branch_name const & name,
+                       std::set<branch_name> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);
