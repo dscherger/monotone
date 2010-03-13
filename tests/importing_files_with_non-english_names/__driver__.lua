@@ -11,7 +11,7 @@ japanese_utf8 = "\227\129\166\227\129\153\227\129\168"
 japanese_euc_jp = "\164\198\164\185\164\200"
                -- "\xA4\xC6\xA4\xB9\xA4\xC8"
 
-if ostype ~= "Darwin" and string.sub(ostype, 1, 6) ~= "CYGWIN" then
+if ostype ~= "Darwin" then
 	notOnlyUnicode = true
 else
 	notOnlyUnicode = false
