@@ -9,7 +9,43 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "editable_policy.hh"
 
+namespace policies {
+  editable_policy::editable_policy(policy const & p)
+    :  policy(p)
+  { }
+
+  void editable_policy::set_branch(std::string const & name,
+                                   branch const & value)
+  {
+    branches[name] = value;
+  }
+  void editable_policy::remove_branch(std::string const & name)
+  {
+    branches.erase(name);
+  }
+
+  void editable_policy::set_tag(std::string const & name,
+                                revision_id const & value)
+  {
+    tags[name] = value;
+  }
+  void editable_policy::remove_tag(std::string const & name)
+  {
+    tags.erase(name);
+  }
+
+  void editable_policy::set_delegation(std::string const & name,
+                                       delegation const & value)
+  {
+    delegations[name] = value;
+  }
+  void editable_policy::remove_delegation(std::string const & name)
+  {
+    delegations.erase(name);
+  }
+}
 
 
 // Local Variables:

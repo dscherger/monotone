@@ -18,6 +18,7 @@
 
 #include "policies/branch.hh"
 
+class app_state;
 class external_key_name;
 
 namespace policies {
@@ -33,7 +34,11 @@ namespace policies {
     delegation();
     explicit delegation(revision_id const & r);
     explicit delegation(branch const & b);
-    static delegation create(std::set<external_key_name> const & admins);
+    static delegation create(app_state & app,
+                             std::set<external_key_name> const & admins);
+
+    bool is_branch_type() const;
+    branch const & get_branch_spec() const;
 
     void serialize(std::string & out) const;
     void deserialize(std::string const & in);

@@ -232,6 +232,12 @@ public:
   {
   }
 
+  policies::policy const & get_base_policy() const
+  {
+    I(!passthru);
+    return *policy;
+  }
+
   void all_branches(set<branch_name> & branches)
   {
     branches.clear();
@@ -382,6 +388,11 @@ project_t
 project_t::empty_project(database & db)
 {
   return project_t(db);
+}
+
+policies::policy const & project_t::get_base_policy() const
+{
+  return project_policy->get_base_policy();
 }
 
 bool
@@ -901,8 +912,9 @@ project_t::put_tag(key_store & keys,
       project_policy->find_governing_policy(name, info);
       E(!info.empty(), origin::user,
         F("Cannot find policy for tag '%s'") % name);
-
-      policies::policy_branch br(info.back().delegation);
+      E(info.back().delegation.is_branch_type(), origin::user,
+        F("Cannot edit '%s', it is delegated to a specific revision") % name);
+      policies::policy_branch br(info.back().delegation.get_branch_spec());
 
       I(br.begin() != br.end());
       policies::editable_policy ep(**br.begin());

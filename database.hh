@@ -440,9 +440,6 @@ public:
   void delete_existing_rosters();
   void put_roster_for_revision(revision_id const & new_id,
                                revision_t const & rev);
-
-  // This wants to be somewhere with access to a RNG.
-  branch_uid generate_uid() const;
 private:
   boost::shared_ptr<database_impl> imp;
   lua_hooks & lua;

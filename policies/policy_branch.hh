@@ -30,8 +30,7 @@ namespace policies {
     typedef policy_set::const_iterator iterator;
 
     policy_branch(branch const & b);
-    policy_branch(delegation const & d);
-    static policy_branch new_branch(std::set<external_key_name> const & signers);
+    //policy_branch(delegation const & d);
 
     branch const & get_spec() const;
 

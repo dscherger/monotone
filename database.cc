@@ -4346,19 +4346,6 @@ database_impl::close()
   I(!__sql);
 }
 
-
-// Get a meaningless, unique value for use in branch certs.
-branch_uid
-database::generate_uid() const
-{
-  // FIXME: I'm sure there's a better way to do this.
-  std::string when = date_t::now().as_iso_8601_extended();
-  char buf[20];
-  rng->get().randomize(reinterpret_cast<Botan::byte*>(buf), 20);
-  return branch_uid(when + "--" + encode_hexenc(std::string(buf, 20),
-                                                origin::internal),
-                    origin::internal);
-}
 // transaction guards
 
 conditional_transaction_guard::~conditional_transaction_guard()

@@ -113,7 +113,7 @@ public:
   // Used by migration code.
   static project_t empty_project(database & db);
 
-  policies::policy & get_base_policy() const;
+  policies::policy const & get_base_policy() const;
 
   void find_governing_policy(std::string const & of_what,
                              policy_chain & info) const;

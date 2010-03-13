@@ -9,7 +9,28 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "policies/policy_branch.hh"
 
+namespace policies {
+  policy_branch::policy_branch(branch const & b)
+    : spec(b)
+  {
+    reload();
+  }
+  branch const & policy_branch::get_spec() const
+  {
+    return spec;
+  }
+
+  policy_branch::iterator policy_branch::begin() const
+  {
+    return policies.begin();
+  }
+  policy_branch::iterator policy_branch::end() const
+  {
+    return policies.end();
+  }
+}
 
 
 // Local Variables:

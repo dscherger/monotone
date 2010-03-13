@@ -70,13 +70,10 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
 
   std::set<external_key_name> signers;
   signers.insert(key_id_to_external_name(keys.signing_key));
-  policies::policy_branch br = policies::policy_branch::new_branch(signers);
-  policies::editable_policy ep(br.create_initial_revision());
-  br.commit(ep, utf8(N_("Create new policy branch")));
 
   policies::editable_policy bp(project.get_base_policy());
 
-  bp.set_delegation(project_name, policies::delegation(br.get_spec()));
+  bp.set_delegation(project_name, policies::delegation::create(app, signers));
 
   policies::base_policy::write(bp);
 }
@@ -102,8 +99,9 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     F("Cannot find a parent policy for '%s'") % name);
   E(gov.back().full_policy_name != name(), origin::user,
     F("Policy '%s' already exists") % name);
-
-  policies::policy_branch parent_branch(gov.back().delegation);
+  E(gov.back().delegation.is_branch_type(), origin::user,
+    F("cannot edit '%s', it is delegated to a specific revision") % name);
+  policies::policy_branch parent_branch(gov.back().delegation.get_branch_spec());
 
   policies::editable_policy parent(**parent_branch.begin());
 
@@ -116,7 +114,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   }
   branch_name del_name(name);
   del_name.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
-  parent.set_delegation(del_name(), policies::delegation::create(admin_keys));
+  parent.set_delegation(del_name(), policies::delegation::create(app, admin_keys));
 
   parent_branch.commit(parent, utf8("Add delegation to new child policy"));
 }
@@ -140,8 +138,9 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
 
   E(!gov.empty(), origin::user,
     F("Cannot find policy over '%s'") % branch);
-
-  policies::policy_branch parent(gov.back().delegation);
+  E(gov.back().delegation.is_branch_type(), origin::user,
+    F("cannot edit '%s', it is delegated to a specific revision") % branch);
+  policies::policy_branch parent(gov.back().delegation.get_branch_spec());
   policies::editable_policy ppol(**parent.begin());
   std::set<external_key_name> admin_keys;
   {
@@ -154,7 +153,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   suffix.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
   if (suffix().empty())
     suffix = branch_name("__main__", origin::internal);
-  ppol.set_branch(suffix(), policies::branch::create(admin_keys));
+  ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
   parent.commit(ppol, utf8("Add branch."));
 }
 
