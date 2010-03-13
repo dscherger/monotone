@@ -34,7 +34,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-03-05 23:45+0100\n"
+"POT-Creation-Date: 2010-03-13 02:23+0100\n"
 "PO-Revision-Date: 2009-12-27 15:38+0100\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -6252,6 +6252,11 @@ msgstr "erweitert zu '%s'"
 #, c-format
 msgid "selection '%s' has multiple ambiguous expansions:"
 msgstr "Die Auswahl '%s' kann auf mehrere Arten erweitert werden:"
+
+#: annotate.cc:425
+#, c-format
+msgid "%s.. by %s %s: "
+msgstr "%s.. von %s %s: "
 
 #: restrictions.cc:49 restrictions.cc:79
 #, c-format
