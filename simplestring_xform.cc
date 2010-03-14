@@ -218,6 +218,14 @@ trim_left(string const & s, string const & chars)
   string::size_type pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
+
+  // if the first character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_first_of(chars);
+  if (pos == 0)
+    tmp = "";
+
   return tmp;
 }
 
@@ -228,6 +236,14 @@ trim_right(string const & s, string const & chars)
   string::size_type pos = tmp.find_last_not_of(chars);
   if (pos < string::npos)
     tmp.erase(++pos);
+
+  // if the last character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_last_of(chars);
+  if (pos == tmp.size()-1)
+    tmp = "";
+
   return tmp;
 }
 
@@ -241,6 +257,14 @@ trim(string const & s, string const & chars)
   pos = tmp.find_first_not_of(chars);
   if (pos < string::npos)
     tmp = tmp.substr(pos);
+
+  // if the first character in the string is still one of the specified
+  // characters then the entire string is made up of these characters
+
+  pos = tmp.find_first_of(chars);
+  if (pos == 0)
+    tmp = "";
+
   return tmp;
 }
 

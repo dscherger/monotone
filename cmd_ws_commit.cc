@@ -63,6 +63,69 @@ get_old_branch_names(database & db, parent_map const & parents,
     }
 }
 
+class message_reader
+{
+public:
+  message_reader(string const & message) :
+    message(message), offset(0) {}
+
+  bool read(string const & text)
+  {
+    size_t len = text.length();
+    if (message.compare(offset, len, text) == 0)
+      {
+        offset += len;
+        return true;
+      }
+    else
+      return false;
+  }
+
+  string readline()
+  {
+    size_t eol = message.find_first_of("\r\n", offset);
+    if (eol == string::npos)
+      return "";
+
+    size_t len = eol - offset;
+    string line = message.substr(offset, len);
+    offset = eol+1;
+
+    if (message[eol] == '\r' && message.length() > eol+1 &&
+        message[eol+1] == '\n')
+      offset++;
+
+    return trim(line);
+  }
+
+  bool contains(string const & summary)
+  {
+    return message.find(summary, offset) != string::npos;
+  }
+
+  bool remove(string const & summary)
+  {
+    size_t pos = message.find(summary, offset);
+    I(pos != string::npos);
+    if (pos + summary.length() == message.length())
+      {
+        message.erase(pos);
+        return true;
+      }
+    else
+      return false;
+  }
+
+  string content()
+  {
+    return message.substr(offset);
+  }
+
+private:
+  string message;
+  size_t offset;
+};
+
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_id const rid, revision_t const & rev,
@@ -111,7 +174,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // FIXME: save the full message in _MTN/changelog so its not lost
 
-  string raw(full_message());
+  message_reader message(full_message());
 
   // Check the message carefully to make sure the user didn't edit somewhere
   // outside of the author, date, branch or changelog values. The section
@@ -122,95 +185,93 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   // "Changes against parent ..." (following the changelog message) but both
   // of these are optional.
 
-  E(raw.find(instructions()) == 0,
-    origin::user,
+  E(message.read(instructions()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing or modified instructions)."));
+      "Commit failed (missing/modified instructions)."));
 
-  if (!summary().empty())
-    {
-      size_t pos = raw.find(summary());
+  utf8 const AUTHOR(_("Author: "));
+  utf8 const DATE(_("Date: "));
+  utf8 const BRANCH(_("Branch: "));
+  utf8 const CHANGELOG(_("ChangeLog: "));
 
-      // ignore the blank lines around the changelog as well
-      E(pos != string::npos && 
-        pos >= instructions().length() + header().length() - changelog().length() - 2,
-        origin::user,
-        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (missing or modified summary)."));
+  // ----------------------------------------------------------------------
+  // Revision:
+  // Parent:
+  // Parent:
+  
+  size_t pos = header().find(AUTHOR());
+  I(pos != string::npos);
 
-      E(raw.length() == summary().length() + pos,
-        origin::user,
-        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (text following summary)."));
-
-      raw.resize(pos); // remove the change summary
-    }
-
-  raw = raw.substr(instructions().length()); // remove the instructions
-
-  string const AUTHOR(_("Author: "));
-  string const DATE(_("Date: "));
-  string const BRANCH(_("Branch: "));
-  string const CHANGELOG(_("ChangeLog: "));
-
-  // ensure the first 3 or 4 lines from the header still match
-  size_t pos = header().find(AUTHOR);
-  E(header().substr(0, pos) == raw.substr(0, pos),
-    origin::user,
+  string prefix = header().substr(0, pos);
+  E(message.read(prefix), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing Revision or Parent header)."));
+      "Commit failed (missing/modified Revision or Parent header)."));
 
-  raw = raw.substr(pos); // remove the leading unchanged header lines
+  // Author:
 
-  vector<string> lines;
-  split_into_lines(raw, lines);
-
-  E(lines.size() >= 4,
-    origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing lines)."));
-
-  vector<string>::const_iterator line = lines.begin();
-  E(line->find(AUTHOR) == 0,
-    origin::user,
+  E(message.read(AUTHOR()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing Author header)."));
 
-  author = trim(line->substr(AUTHOR.length()));
-  
-  ++line;
-  E(line->find(DATE) == 0,
-    origin::user,
+  author = message.readline();
+
+  E(!author.empty(), origin::user,
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+      "Commit failed (empty Author header)."));
+
+  // Date:
+
+  E(message.read(DATE()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing Date header)."));
 
-  if (date_fmt.empty())
-    date = date_t(trim(line->substr(DATE.length())));
-  else
-    date = date_t::from_formatted_localtime(trim(line->substr(DATE.length())),
-                                            date_fmt);
+  string d = message.readline();
 
-  ++line;
-  E(line->find(BRANCH) == 0,
-    origin::user,
+  E(!d.empty(), origin::user,
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+      "Commit failed (empty Date header)."));
+
+  if (date_fmt.empty())
+    date = date_t(d);
+  else
+    date = date_t::from_formatted_localtime(d, date_fmt);
+
+  // Branch:
+
+  E(message.read(BRANCH()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing Branch header)."));
 
-  branch = branch_name(trim(line->substr(BRANCH.length())), origin::user);
+  string b = message.readline();
 
-  ++line;
-  E(*line == CHANGELOG,
-    origin::user,
+  E(!b.empty(), origin::user,
+    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+      "Commit failed (empty Branch header)."));
+
+  branch = branch_name(b, origin::user);
+
+  // ChangeLog:
+
+  E(message.read(CHANGELOG()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
       "Commit failed (missing ChangeLog header)."));
 
-  // now pointing at the optional blank line after ChangeLog
-  ++line; //FIXME if the optional blank line is missing this will probably
-  join_lines(line, lines.end(), raw);
+  // remove the summary before extracting the changelog content
 
-  raw = trim(raw) + "\n";
+  if (!summary().empty())
+    {
+      E(message.contains(summary()), origin::user,
+        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+          "Commit failed (missing or modified summary)."));
 
-  log_message = utf8(raw, origin::user);
+      E(message.remove(summary()), origin::user,
+        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+          "Commit failed (text following summary)."));
+    }
+
+  string content = trim(message.content()) + '\n';
+
+  log_message = utf8(content, origin::user);
 }
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
@@ -1327,6 +1388,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
       // type --message="", then there wasn't any reason to stop them.
+      // FIXME: perhaps there should be no changelog cert in this case.
+
       E(log_message().find_first_not_of("\n\r\t ") != string::npos,
         origin::user,
         F("empty log message; commit canceled"));

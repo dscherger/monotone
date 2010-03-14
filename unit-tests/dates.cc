@@ -246,6 +246,55 @@ UNIT_TEST(roundtrip_localtimes)
                         recoverable_failure);
 #undef OK
 }
+
+UNIT_TEST(localtime_formats)
+{
+#define OK(d, f) do {                                                    \
+    string formatted = d.as_formatted_localtime(f);                      \
+    L(FL("format '%s' local date '%s'\n") % f % formatted);              \
+    date_t parsed = date_t::from_formatted_localtime(formatted, f);      \
+    UNIT_TEST_CHECK(parsed == d);                                        \
+  } while (0)
+
+  // can we fiddle with LANG or TZ here?
+
+  // note that %c doesn't work for en_CA.UTF-8 because it includes a timezone label
+  // that strptime doesn't parse. this leaves some of the input string unprocessed
+  // which date_t::from_formatted_localtime doesn't allow.
+
+  // this is the valid range of dates supported by 32 bit time_t
+  date_t start("1901-12-13T20:45:52");
+  date_t end("2038-01-19T03:14:07");
+
+  // test roughly 2 days per month in this entire range
+  for (date_t date = start; date <= end; date += MILLISEC(15*(DAY+HOUR+MIN+SEC)))
+    {
+      L(FL("\niso 8601 date '%s'\n") % date);
+
+      // these all seem to work with the test setup of LANG=C and TZ=UTC
+
+      OK(date, "%F %T"); // YYYY-MM-DD hh:mm:ss
+      OK(date, "%T %F"); // hh:mm:ss YYYY-MM-DD
+      OK(date, "%d %b %Y, %I:%M:%S %p");
+      OK(date, "%a %b %d %H:%M:%S %Y");
+      OK(date, "%a %d %b %Y %I:%M:%S %p %z");
+      OK(date, "%a, %d %b %Y %H:%M:%S");
+      OK(date, "%Y-%m-%d %H:%M:%S");
+      OK(date, "%Y-%m-%dT%H:%M:%S");
+
+      // these do not
+
+      //(date, "%x %X"); // YY-MM-DD hh:mm:ss
+      //(date, "%X %x"); // hh:mm:ss YY-MM-DD
+      //(date, "%+");
+
+      // posibly anything with a timezone label (%Z) will fail
+      //(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
+    }
+
+#undef OK
+}
+
 UNIT_TEST(from_unix_epoch)
 {
 #define OK_(x,y) do {                              \
