@@ -130,8 +130,14 @@ UNIT_TEST(trimming)
   UNIT_TEST_CHECK(trim("trailing space  \n") == "trailing space");
   UNIT_TEST_CHECK(trim("\t\n both \r \n\r\n") == "both");
 
+  // strings with nothing but whitespace should trim to nothing
+  UNIT_TEST_CHECK(trim_left("   \r\n\r\n\t\t\n\n\r\n   ") == "");
+  UNIT_TEST_CHECK(trim_right("   \r\n\r\n\t\t\n\n\r\n   ") == "");
+  UNIT_TEST_CHECK(trim("   \r\n\r\n\t\t\n\n\r\n   ") == "");
+
   UNIT_TEST_CHECK(remove_ws("  I like going\tfor walks\n  ")
               == "Ilikegoingforwalks");
+
 }
 
 // Local Variables:

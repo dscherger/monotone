@@ -22,6 +22,7 @@
 #include "restrictions.hh"
 #include "revision.hh"
 #include "rev_height.hh"
+#include "rev_output.hh"
 #include "simplestring_xform.hh"
 #include "transforms.hh"
 #include "app_state.hh"
@@ -40,149 +41,6 @@ using std::set;
 using std::string;
 using std::vector;
 using std::priority_queue;
-
-using boost::lexical_cast;
-
-// The changes_summary structure holds a list all of files and directories
-// affected in a revision, and is useful in the 'log' command to print this
-// information easily.  It has to be constructed from all cset objects
-// that belong to a revision.
-
-struct
-changes_summary
-{
-  cset cs;
-  changes_summary(void);
-  void add_change_set(cset const & cs);
-  void print(ostream & os, size_t max_cols) const;
-};
-
-changes_summary::changes_summary(void)
-{
-}
-
-void
-changes_summary::add_change_set(cset const & c)
-{
-  if (c.empty())
-    return;
-
-  // FIXME: not sure whether it matters for an informal summary
-  // object like this, but the pre-state names in deletes and renames
-  // are not really sensible to union; they refer to different trees
-  // so mixing them up in a single set is potentially ambiguous.
-
-  copy(c.nodes_deleted.begin(), c.nodes_deleted.end(),
-       inserter(cs.nodes_deleted, cs.nodes_deleted.begin()));
-
-  copy(c.files_added.begin(), c.files_added.end(),
-       inserter(cs.files_added, cs.files_added.begin()));
-
-  copy(c.dirs_added.begin(), c.dirs_added.end(),
-       inserter(cs.dirs_added, cs.dirs_added.begin()));
-
-  copy(c.nodes_renamed.begin(), c.nodes_renamed.end(),
-       inserter(cs.nodes_renamed, cs.nodes_renamed.begin()));
-
-  copy(c.deltas_applied.begin(), c.deltas_applied.end(),
-       inserter(cs.deltas_applied, cs.deltas_applied.begin()));
-
-  copy(c.attrs_cleared.begin(), c.attrs_cleared.end(),
-       inserter(cs.attrs_cleared, cs.attrs_cleared.begin()));
-
-  copy(c.attrs_set.begin(), c.attrs_set.end(),
-       inserter(cs.attrs_set, cs.attrs_set.begin()));
-}
-
-static void
-print_indented_set(ostream & os,
-                   set<file_path> const & s,
-                   size_t max_cols)
-{
-  size_t cols = 8;
-  os << "       ";
-  for (set<file_path>::const_iterator i = s.begin();
-       i != s.end(); i++)
-    {
-      string str = lexical_cast<string>(*i);
-      if (str.empty())
-        str = "."; // project root
-      if (cols > 8 && cols + str.size() + 1 >= max_cols)
-        {
-          cols = 8;
-          os << "\n       ";
-        }
-      os << ' ' << str;
-      cols += str.size() + 1;
-    }
-  os << '\n';
-}
-
-void
-changes_summary::print(ostream & os, size_t max_cols) const
-{
-
-  if (! cs.nodes_deleted.empty())
-    {
-      os << _("Deleted entries:") << '\n';
-      print_indented_set(os, cs.nodes_deleted, max_cols);
-    }
-
-  if (! cs.nodes_renamed.empty())
-    {
-      os << _("Renamed entries:") << '\n';
-      for (map<file_path, file_path>::const_iterator
-           i = cs.nodes_renamed.begin();
-           i != cs.nodes_renamed.end(); i++)
-        os << "        " << i->first
-           << " to " << i->second << '\n';
-    }
-
-  if (! cs.files_added.empty())
-    {
-      set<file_path> tmp;
-      for (map<file_path, file_id>::const_iterator
-             i = cs.files_added.begin();
-           i != cs.files_added.end(); ++i)
-        tmp.insert(i->first);
-      os << _("Added files:") << '\n';
-      print_indented_set(os, tmp, max_cols);
-    }
-
-  if (! cs.dirs_added.empty())
-    {
-      os << _("Added directories:") << '\n';
-      print_indented_set(os, cs.dirs_added, max_cols);
-    }
-
-  if (! cs.deltas_applied.empty())
-    {
-      set<file_path> tmp;
-      for (map<file_path, pair<file_id, file_id> >::const_iterator
-             i = cs.deltas_applied.begin();
-           i != cs.deltas_applied.end(); ++i)
-        tmp.insert(i->first);
-      os << _("Modified files:") << '\n';
-      print_indented_set(os, tmp, max_cols);
-    }
-
-  if (! cs.attrs_set.empty() || ! cs.attrs_cleared.empty())
-    {
-      set<file_path> tmp;
-      for (set<pair<file_path, attr_key> >::const_iterator
-             i = cs.attrs_cleared.begin();
-           i != cs.attrs_cleared.end(); ++i)
-        tmp.insert(i->first);
-
-      for (map<pair<file_path, attr_key>, attr_value>::const_iterator
-             i = cs.attrs_set.begin();
-           i != cs.attrs_set.end(); ++i)
-        tmp.insert(i->first.first);
-
-      os << _("Modified attrs:") << '\n';
-      print_indented_set(os, tmp, max_cols);
-    }
-}
 
 static void
 do_external_diff(options & opts, lua_hooks & lua, database & db,
@@ -613,94 +471,30 @@ CMD_AUTOMATE(content_diff, N_("[FILE [...]]"),
 
 static void
 log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
-          char const * label, char const * separator,
-          bool multiline, bool newline)
+          string const date_fmt = "")
 {
   bool first = true;
 
-  if (multiline)
-    newline = true;
-
-  for (vector<cert>::const_iterator i = certs.begin();
-       i != certs.end(); ++i)
+  for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     {
       if (i->name == name)
         {
           if (first)
-            os << label;
+            os << " ";
           else
-            os << separator;
+            os << ",";
 
-          if (multiline)
-            os << "\n\n";
-          os << i->value;
-          if (newline)
-            os << '\n';
-
-          first = false;
-        }
-    }
-}
-
-static void
-log_certs(vector<cert> const & certs, ostream & os, cert_name const & name,
-          char const * label, bool multiline)
-{
-  log_certs(certs, os, name, label, label, multiline, true);
-}
-
-static void
-log_certs(vector<cert> const & certs, ostream & os, cert_name const & name)
-{
-  log_certs(certs, os, name, " ", ",", false, false);
-}
-
-static void
-log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
-               char const * label, char const * separator,
-               bool multiline, bool newline)
-{
-  cert_name const date_name(date_cert_name);
-
-  bool first = true;
-  if (multiline)
-    newline = true;
-
-  for (vector<cert>::const_iterator i = certs.begin();
-       i != certs.end(); ++i)
-    {
-      if (i->name == date_name)
-        {
-          if (first)
-            os << label;
-          else
-            os << separator;
-
-          if (multiline)
-            os << "\n\n";
-          if (fmt.empty())
+          if (date_fmt.empty())
             os << i->value;
           else
-            os << date_t(i->value()).as_formatted_localtime(fmt);
-          if (newline)
-            os << '\n';
-
+            {
+              I(name == date_cert_name);
+              os << date_t(i->value()).as_formatted_localtime(date_fmt);
+            }
+            
           first = false;
         }
     }
-}
-
-static void
-log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt,
-               char const * label, bool multiline)
-{
-  log_date_certs(certs, os, fmt, label, label, multiline, true);
-}
-
-static void
-log_date_certs(vector<cert> const & certs, ostream & os, string const & fmt)
-{
-  log_date_certs(certs, os, fmt, " ", ",", false, false);
 }
 
 enum log_direction { log_forward, log_reverse };
@@ -918,6 +712,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     }
 
   cert_name const author_name(author_cert_name);
+  cert_name const date_name(date_cert_name);
   cert_name const branch_name(branch_cert_name);
   cert_name const tag_name(tag_cert_name);
   cert_name const changelog_name(changelog_cert_name);
@@ -1036,49 +831,32 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
               out << rid;
               log_certs(certs, out, author_name);
               if (app.opts.no_graph)
-                log_date_certs(certs, out, date_fmt);
+                log_certs(certs, out, date_name, date_fmt);
               else
                 {
                   out << '\n';
-                  log_date_certs(certs, out, date_fmt, "", "", false, false);
+                  log_certs(certs, out, date_name, date_fmt);
                 }
               log_certs(certs, out, branch_name);
               out << '\n';
             }
           else
             {
-              out << string(65, '-') << '\n';
-              out << _("Revision: ") << rid << '\n';
+              utf8 header;
+              revision_header(rid, rev, certs, date_fmt, header);
 
-              changes_summary csum;
+              external header_external;
+              utf8_to_system_best_effort(header, header_external);
+              out << header_external;
 
-              set<revision_id> ancestors;
-
-              for (edge_map::const_iterator e = rev.edges.begin();
-                   e != rev.edges.end(); ++e)
+              if (!app.opts.no_files)
                 {
-                  ancestors.insert(edge_old_revision(e));
-                  csum.add_change_set(edge_changes(e));
+                  utf8 summary;
+                  revision_summary(rev, summary);
+                  external summary_external;
+                  utf8_to_system_best_effort(summary, summary_external);
+                  out << summary_external;
                 }
-
-              for (set<revision_id>::const_iterator anc = ancestors.begin();
-                   anc != ancestors.end(); ++anc)
-                out << _("Ancestor: ") << *anc << '\n';
-
-              log_certs(certs, out, author_name,   _("Author: "), false);
-              log_date_certs(certs, out, date_fmt, _("Date: "), false);
-              log_certs(certs, out, branch_name,   _("Branch: "), false);
-              log_certs(certs, out, tag_name,      _("Tag: "),    false);
-
-              if (!app.opts.no_files && !csum.cs.empty())
-                {
-                  out << '\n';
-                  csum.print(out, 70);
-                  out << '\n';
-                }
-
-              log_certs(certs, out, changelog_name, _("ChangeLog: "), true);
-              log_certs(certs, out, comment_name,   _("Comments: "),  true);
             }
 
           if (app.opts.diffs)

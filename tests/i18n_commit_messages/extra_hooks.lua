@@ -6,28 +6,21 @@ function slurp(path)
 end
 
 -- this should get the commit message in current locale
-function edit_comment(basetext, user_log_message)
-   -- we now mangle this to become the same as the content of the text file,
-   -- as it will have the 'magic line' prepended to it, which will cause the
-   -- test to fail.
-   -- this is only done if the message was pre-specified in _MTN/log
-   if user_log_message ~= "" then
-      user_log_message = "ワークスペースが必要ですがみつかりませんでした"
-   end
-
+function edit_comment(user_log_message)
    wanted = slurp("euc-jp.txt")
 
-   if string.find(basetext, wanted) ~= nil then
+   -- this is looking for the euc-jp string as an attribute value
+   if string.find(user_log_message, wanted) ~= nil then
       io.write("EDIT: BASE GOOD\n")
    else
       io.write("EDIT: BASE BAD\n")
    end
 
-   if user_log_message == "" then
+   if string.find(user_log_message, "\nChangeLog: \n\n\n") ~= nil then
       io.write("EDIT: MSG NONESUCH\n")
-      return wanted
+      return string.gsub(user_log_message, "\nChangeLog: \n\n\n", "\nChangeLog: \n\n" .. wanted .. "\n")
    else
-      if wanted == user_log_message then
+      if string.find(user_log_message, "\nChangeLog: \n\n" .. wanted .. "\n") ~= nil then
          io.write("EDIT: MSG GOOD\n")
       else
          io.write("EDIT: MSG BAD\n")

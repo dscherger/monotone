@@ -188,6 +188,113 @@ UNIT_TEST(from_string)
 #undef NO
 }
 
+UNIT_TEST(roundtrip_localtimes)
+{
+#define OK(x) do {                                                       \
+    string iso8601 = x.as_iso_8601_extended();                           \
+    string formatted = x.as_formatted_localtime("%c");                   \
+    L(FL("iso 8601 date '%s' local date '%s'\n") % iso8601 % formatted); \
+    date_t parsed = date_t::from_formatted_localtime(formatted, "%c");   \
+    UNIT_TEST_CHECK(parsed == x);                                        \
+  } while (0)
+
+  // this is the valid range of dates supported by 32 bit time_t
+  date_t start("1901-12-13T20:45:52");
+  date_t end("2038-01-19T03:14:07");
+
+  OK(start);
+  OK(end);
+
+  // stagger the millisecond values to hit different times of day
+  for (date_t date = start; date <= end; date += MILLISEC(DAY+HOUR+MIN+SEC))
+    OK(date);
+
+  start -= 1000;
+  end += 1000;
+
+  // these tests run with LANG=C and TZ=UTC so the %c format seems to work
+  // however strptime does not like the timezone name when %c is used in 
+  // other locales. with LANG=en_CA.UTF-8 this test fails.
+
+  if (sizeof(time_t) <= 4)
+    {
+      UNIT_TEST_CHECK_THROW(start.as_formatted_localtime("%c"),
+                            recoverable_failure);
+      UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Fri Dec 13 20:45:51 1901", "%c"),
+                            recoverable_failure);
+
+      UNIT_TEST_CHECK_THROW(end.as_formatted_localtime("%c"),
+                            recoverable_failure);
+      UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Tue Jan 19 03:14:08 2038", "%c"),
+                            recoverable_failure);
+    }
+  else
+    {
+      OK(start);
+      OK(end);
+    }
+
+  // this date represents 1 second before the unix epoch which has a time_t
+  // value of -1. mktime returns -1 to indicate that it was unable to
+  // convert a struct tm into a valid time_t value even though dates
+  // before/after this date are valid.
+  date_t mktime1("1969-12-31T23:59:59");
+
+  // this can be formatted but not parsed. 64 bit time_t probably doesn't help
+  mktime1.as_formatted_localtime("%c");
+  UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Wed Dec 31 23:59:59 1969", "%c"),
+                        recoverable_failure);
+#undef OK
+}
+
+UNIT_TEST(localtime_formats)
+{
+#define OK(d, f) do {                                                    \
+    string formatted = d.as_formatted_localtime(f);                      \
+    L(FL("format '%s' local date '%s'\n") % f % formatted);              \
+    date_t parsed = date_t::from_formatted_localtime(formatted, f);      \
+    UNIT_TEST_CHECK(parsed == d);                                        \
+  } while (0)
+
+  // can we fiddle with LANG or TZ here?
+
+  // note that %c doesn't work for en_CA.UTF-8 because it includes a timezone label
+  // that strptime doesn't parse. this leaves some of the input string unprocessed
+  // which date_t::from_formatted_localtime doesn't allow.
+
+  // this is the valid range of dates supported by 32 bit time_t
+  date_t start("1901-12-13T20:45:52");
+  date_t end("2038-01-19T03:14:07");
+
+  // test roughly 2 days per month in this entire range
+  for (date_t date = start; date <= end; date += MILLISEC(15*(DAY+HOUR+MIN+SEC)))
+    {
+      L(FL("\niso 8601 date '%s'\n") % date);
+
+      // these all seem to work with the test setup of LANG=C and TZ=UTC
+
+      OK(date, "%F %T"); // YYYY-MM-DD hh:mm:ss
+      OK(date, "%T %F"); // hh:mm:ss YYYY-MM-DD
+      OK(date, "%d %b %Y, %I:%M:%S %p");
+      OK(date, "%a %b %d %H:%M:%S %Y");
+      OK(date, "%a %d %b %Y %I:%M:%S %p %z");
+      OK(date, "%a, %d %b %Y %H:%M:%S");
+      OK(date, "%Y-%m-%d %H:%M:%S");
+      OK(date, "%Y-%m-%dT%H:%M:%S");
+
+      // these do not
+
+      //(date, "%x %X"); // YY-MM-DD hh:mm:ss
+      //(date, "%X %x"); // hh:mm:ss YY-MM-DD
+      //(date, "%+");
+
+      // posibly anything with a timezone label (%Z) will fail
+      //(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
+    }
+
+#undef OK
+}
+
 UNIT_TEST(from_unix_epoch)
 {
 #define OK_(x,y) do {                              \
