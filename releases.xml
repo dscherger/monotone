@@ -11,7 +11,7 @@
             <description>
 <![CDATA[
 <h2>Changes</h2>
-
+<ul>
 <li>The default '<unknown>' author used by the git_export command has
   changed to 'Unknown <unknown>' and must be changed in existing author
   map files. The old '<unknown>' author will be rejected by the new
@@ -41,8 +41,10 @@
 </ul>
 
 <h2>New features</h2>
-
+<ul>
 <li>Added portuguese translation (thanks to Américo Monteiro)
+</li>
+</ul>
 
 <h2>Bugs fixed</h2>
 <ul>
