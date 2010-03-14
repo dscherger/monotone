@@ -1158,6 +1158,7 @@ function run_one_test(tname)
       if type(e.e) ~= "boolean" then
 	 log_error(e)
       end
+      test.log:write("\n")
    end
    test.log:close()
     
