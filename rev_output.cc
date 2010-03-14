@@ -42,9 +42,8 @@ revision_header(revision_id const rid, revision_t const & rev,
                        empty_key));
   certs.push_back(cert(rid, branch_cert_name, 
                        cert_value(branch(), origin::user), empty_key));
-  if (!changelog().empty())
-    certs.push_back(cert(rid, changelog_cert_name, 
-                         cert_value(changelog(), origin::user), empty_key));
+  certs.push_back(cert(rid, changelog_cert_name, 
+                       cert_value(changelog(), origin::user), empty_key));
 
   revision_header(rid, rev, certs, date_fmt, header);
 }

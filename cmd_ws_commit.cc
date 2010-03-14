@@ -67,7 +67,7 @@ static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_id const rid, revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
-                              utf8 & log_message)
+                              string const & date_fmt, utf8 & log_message)
 {
   utf8 instructions(
     _("Ensure the values for Author, Date and Branch are correct, then enter\n"
@@ -78,11 +78,11 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 changelog;
   work.read_user_log(changelog);
 
-  string text = changelog();
-
   // ensure the changelog message ends with a newline. an empty changelog is
   // replaced with a single newline so that the ChangeLog: cert line is
   // produced by revision_header and there is somewhere to enter a message
+
+  string text = changelog();
 
   if (text.empty() || text[text.length()-1] != '\n')
     {
@@ -93,7 +93,6 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 header;
   utf8 summary;
 
-  string date_fmt;
   revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
   revision_summary(rev, summary);
 
@@ -110,6 +109,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   system_to_utf8(output_message, full_message);
 
+  // FIXME: save the full message in _MTN/changelog so its not lost
+
   string raw(full_message());
 
   // Check the message carefully to make sure the user didn't edit somewhere
@@ -124,28 +125,40 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(raw.find(instructions()) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing instructions)."));
+      "Commit failed (missing or modified instructions)."));
 
   if (!summary().empty())
     {
       size_t pos = raw.find(summary());
 
-      // ignore the trailing blank line from the header as well
-      E(pos >= instructions().length() + header().length() - 1,
+      // ignore the blank lines around the changelog as well
+      E(pos != string::npos && 
+        pos >= instructions().length() + header().length() - changelog().length() - 2,
         origin::user,
         F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (missing summary)."));
+          "Commit failed (missing or modified summary)."));
+
+      E(raw.length() == summary().length() + pos,
+        origin::user,
+        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
+          "Commit failed (text following summary)."));
+
       raw.resize(pos); // remove the change summary
     }
 
   raw = raw.substr(instructions().length()); // remove the instructions
 
+  string const AUTHOR(_("Author: "));
+  string const DATE(_("Date: "));
+  string const BRANCH(_("Branch: "));
+  string const CHANGELOG(_("ChangeLog: "));
+
   // ensure the first 3 or 4 lines from the header still match
-  size_t pos = header().find("Author: ");
+  size_t pos = header().find(AUTHOR);
   E(header().substr(0, pos) == raw.substr(0, pos),
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing revision or parent header)."));
+      "Commit failed (missing Revision or Parent header)."));
 
   raw = raw.substr(pos); // remove the leading unchanged header lines
 
@@ -158,37 +171,41 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       "Commit failed (missing lines)."));
 
   vector<string>::const_iterator line = lines.begin();
-  E(line->find(_("Author: ")) == 0,
+  E(line->find(AUTHOR) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing author)."));
+      "Commit failed (missing Author header)."));
 
-  author = trim(line->substr(8));
+  author = trim(line->substr(AUTHOR.length()));
   
   ++line;
-  E(line->find(_("Date: ")) == 0,
+  E(line->find(DATE) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing date)."));
+      "Commit failed (missing Date header)."));
 
-  date = trim(line->substr(6));
+  if (date_fmt.empty())
+    date = date_t(trim(line->substr(DATE.length())));
+  else
+    date = date_t::from_formatted_localtime(trim(line->substr(DATE.length())),
+                                            date_fmt);
 
   ++line;
-  E(line->find(_("Branch: ")) == 0,
+  E(line->find(BRANCH) == 0,
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing branch)."));
+      "Commit failed (missing Branch header)."));
 
-  branch = branch_name(trim(line->substr(8)), origin::user);
+  branch = branch_name(trim(line->substr(BRANCH.length())), origin::user);
 
   ++line;
-  E(*line == _("ChangeLog: "),
+  E(*line == CHANGELOG,
     origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing changelog)."));
+      "Commit failed (missing ChangeLog header)."));
 
   // now pointing at the optional blank line after ChangeLog
-  ++line;
+  ++line; //FIXME if the optional blank line is missing this will probably
   join_lines(line, lines.end(), raw);
 
   raw = trim(raw) + "\n";
@@ -633,6 +650,20 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         app.lua.hook_get_date_format_spec(date_fmt);
     }
 
+  // check that the specified date format can be parsed (for commit)
+  date_t now = date_t::now();
+  date_t parsed;
+  try
+    {
+      string formatted = now.as_formatted_localtime(date_fmt);
+      parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+    }
+  catch (recoverable_failure const & e) 
+    { }
+
+  if (parsed != now)
+    W(F("date format '%s' cannot be used for commit") % date_fmt);
+
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
 
@@ -688,11 +719,13 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   utf8 changelog;
   work.read_user_log(changelog);
 
-  // ensure the changelog message ends with a newline. an empty changelog message
-  // is left as-is so that no ChangeLog: line is produced by revision_header.
+  // ensure the changelog message ends with a newline. an empty changelog is
+  // replaced with a single newline so that the ChangeLog: cert line is
+  // produced by revision_header for consistency with commit.
 
   string text = changelog();
-  if (!text.empty() && text[text.length()-1] != '\n')
+
+  if (text.empty() || text[text.length()-1] != '\n')
     {
       text += '\n';
       changelog = utf8(text, origin::user);
@@ -1168,9 +1201,10 @@ CMD_AUTOMATE(drop_attribute, N_("PATH [KEY]"),
 CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     N_("Commits workspace changes to the database"),
     "",
-    options::opts::branch | options::opts::message | options::opts::msgfile
-    | options::opts::date | options::opts::author | options::opts::depth
-    | options::opts::exclude)
+    options::opts::branch | options::opts::message | options::opts::msgfile |
+    options::opts::date | options::opts::author | options::opts::depth |
+    options::opts::exclude |
+    options::opts::format_dates | options::opts::date_fmt)
 {
   database db(app);
   key_store keys(app);
@@ -1184,6 +1218,15 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   roster_t new_roster;
   temp_node_id_source nis;
   cset excluded;
+
+  string date_fmt;
+  if (app.opts.format_dates)
+    {
+      if (!app.opts.date_fmt.empty())
+        date_fmt = app.opts.date_fmt;
+      else
+        app.lua.hook_get_date_format_spec(date_fmt);
+    }
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -1260,13 +1303,26 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         author = key.official_name();
     }
 
+  // check that the current date format can be parsed
+  date_t parsed;
+  try
+    {
+      string formatted = now.as_formatted_localtime(date_fmt);
+      parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+    }
+  catch (recoverable_failure const & e) 
+    { }
+
+  E(parsed == now, origin::user,
+    F("date format '%s' cannot be used for commit") % date_fmt);
+
   if (!log_message_given)
     {
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, 
                                     restricted_rev_id, restricted_rev,
-                                    author, date, app.opts.branch, 
-                                    log_message);
+                                    author, date, app.opts.branch,
+                                    date_fmt, log_message);
 
       // We only check for empty log messages when the user entered them
       // interactively.  Consensus was that if someone wanted to explicitly
@@ -1306,7 +1362,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
                            app.opts.ignore_suspend_certs);
   unsigned int old_head_size = heads.size();
 
-   P(F("beginning commit on branch '%s'") % app.opts.branch);
+  P(F("beginning commit on branch '%s'") % app.opts.branch);
 
   {
     transaction_guard guard(db);
