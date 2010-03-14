@@ -5,7 +5,89 @@
         <link>http://monotone.ca/releases.xml</link>
         <description>monotone releases with links to the sources.</description>
         <language>en</language>
-        <pubDate>Sun, 17 Jan 2010 21:40:00 +0000</pubDate>
+        <pubDate>Sun, 14 Mar 2010 21:15:00 +0000</pubDate>
+        <item>
+            <title>monotone 0.47 released</title>
+            <description>
+<![CDATA[
+<h2>Changes</h2>
+
+<li>The default '<unknown>' author used by the git_export command has
+  changed to 'Unknown <unknown>' and must be changed in existing author
+  map files. The old '<unknown>' author will be rejected by the new
+  validate_git_author lua hook.
+</li>
+<li>The 'git_export' command now validates all git author and committer
+  values using a new 'validate_git_author' lua hook before they are
+  written to the output stream. The export will fail if any value is
+  rejected by this hook.
+</li>
+<li>The 'git_export' command now calls a new 'unmapped_git_author' lua
+  hook for all git author values not found in the author map file. The
+  default implementation of this hook attempts to produce valid git
+  authors using several default pattern replacements.
+</li>
+<li>The 'get_date_format_spec' lua hook now has an additional parameter
+  which hints at the wanted format (f.e. a short date or a long date
+  time). The default implementation now returns '%x' for short and
+  long dates, '%X' for short and long times (currently unused) and
+  '%x %X' for short and long date times.
+</li>
+<li>The options '--date-format' and '--no-format-dates' are no longer
+  specific to the 'log' command, but can now be used globally.
+</li>
+<li>monotone now prompts only three times for a key password.
+</li>
+</ul>
+
+<h2>New features</h2>
+
+<li>Added portuguese translation (thanks to Américo Monteiro)
+
+<h2>Bugs fixed</h2>
+<ul>
+<li>'passphrase' now allows an empty new password to be given
+  (fixes monotone bug #28809)
+</li>
+<li>'automate remote' and 'automate remote_stdio' no longer
+  require an existing database (fixes monotone bug #28885)
+</li>
+<li>monotone no longer throws an exception on Windows if it is
+  interrupted (^C); a couple of other bug have been fixed for this
+  platform as well which generally improve the compatibility.
+</li>
+<li>The annotation of 'annotate' is now localized.
+</li>
+<li>The various occurrences where a revision is described by its
+  certs now come with proper localized date output.
+</li>
+<li>Fix problems with newer Lua versions especially when
+  LUA_COMPAT_VARARG not set.
+</li>
+</ul>
+
+<h2>Other</h2>
+<ul>
+<li>Roster handling has been sped up significantly, and roster cache
+  performance has been fixed for the case of overly large rosters.
+  This should be mostly noticable when digging through history
+  (especially initial pulls, since those send so many revisions),
+  and be more noticable for projects with larger trees.
+<br /><br />
+  The most significant internal change from this is that rosters and
+  marking_maps are now copy-on-write. A longer overview of the internal
+  changes is at:
+<br />
+  http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
+</li>
+<li>Improve the compatibility with newer Botan versions.
+</li>
+</ul>
+]]>
+            </description>
+            <pubDate>Sun, 14 Mar 2010 21:15:00 +0000</pubDate>
+            <enclosure url="http://monotone.ca/downloads/0.47/monotone-0.47.tar.gz" length="4698647" type="application/octet-stream"/>
+        </item>
         <item>
             <title>monotone 0.46 released</title>
             <description>
