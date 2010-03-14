@@ -690,8 +690,7 @@ CMD(pivot_root, "pivot_root", "", CMD_REF(workspace), N_("NEW_ROOT PUT_OLD"),
 CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
     N_("Shows workspace's status information"),
     "",
-    options::opts::depth | options::opts::exclude |
-    options::opts::format_dates | options::opts::date_fmt)
+    options::opts::depth | options::opts::exclude)
 {
   roster_t new_roster;
   parent_map old_rosters;
@@ -708,7 +707,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       if (!app.opts.date_fmt.empty())
         date_fmt = app.opts.date_fmt;
       else
-        app.lua.hook_get_date_format_spec(date_fmt);
+        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
   // check that the specified date format can be parsed (for commit)
@@ -1264,8 +1263,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     "",
     options::opts::branch | options::opts::message | options::opts::msgfile |
     options::opts::date | options::opts::author | options::opts::depth |
-    options::opts::exclude |
-    options::opts::format_dates | options::opts::date_fmt)
+    options::opts::exclude)
 {
   database db(app);
   key_store keys(app);
@@ -1286,7 +1284,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       if (!app.opts.date_fmt.empty())
         date_fmt = app.opts.date_fmt;
       else
-        app.lua.hook_get_date_format_spec(date_fmt);
+        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
   work.get_parent_rosters(db, old_rosters);
