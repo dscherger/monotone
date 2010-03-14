@@ -542,7 +542,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
       if (!app.opts.date_fmt.empty())
         date_fmt = app.opts.date_fmt;
       else
-        app.lua.hook_get_date_format_spec(date_time_short, date_fmt);
+        app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
   long last = app.opts.last;
