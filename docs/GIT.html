@@ -57,7 +57,10 @@ a monotone database with the following sql query:
 from a monotone database with the following sql query:
 
      <pre class="verbatim">     
-     $ mtn db execute 'select distinct keypair from revision_certs' where name = "author"'
+     $ mtn db execute 'select distinct public_keys.name
+                       from public_keys
+                       left join revision_certs on revision_certs.keypair_id = public_keys.id
+                       where revision_certs.name = "author"'
 </pre>
 
      <p>The <samp><span class="option">--branches-file</span></samp> option may be used to map monotone branch
@@ -69,9 +72,9 @@ specified in the <var>branches-file</var> as:
      monotone-branch-name = git-branch-name
 </pre>
 
-     <p>Revisions with no author cert will use &lt;unknown&gt; for both the author
-and the committer. These can be mapped to other values using the
-<var>authors-file</var> option.
+     <p>Revisions with no author cert will use "Unknown &lt;unknown&gt;" for both
+the author and the committer. These can be mapped to other values
+using the <var>authors-file</var> option.
 
      <p>The list of branches that might need to be mapped can be extracted
 from a monotone database with using the <samp><span class="command">ls branches</span></samp> command:

@@ -1,3 +1,74 @@
+Sun Mar 14 21:15:06 UTC 2010
+
+        0.47 release.
+
+        Changes
+
+        - The default '<unknown>' author used by the git_export command has
+          changed to 'Unknown <unknown>' and must be changed in existing author
+          map files. The old '<unknown>' author will be rejected by the new
+          validate_git_author lua hook.
+
+        - The 'git_export' command now validates all git author and committer
+          values using a new 'validate_git_author' lua hook before they are
+          written to the output stream. The export will fail if any value is
+          rejected by this hook.
+
+        - The 'git_export' command now calls a new 'unmapped_git_author' lua
+          hook for all git author values not found in the author map file. The
+          default implementation of this hook attempts to produce valid git
+          authors using several default pattern replacements.
+
+        - The 'get_date_format_spec' lua hook now has an additional parameter
+          which hints at the wanted format (f.e. a short date or a long date
+          time). The default implementation now returns '%x' for short and
+          long dates, '%X' for short and long times (currently unused) and
+          '%x %X' for short and long date times.
+
+        - The options '--date-format' and '--no-format-dates' are no longer
+          specific to the 'log' command, but can now be used globally.
+
+        - monotone now prompts only three times for a key password.
+
+        New features
+
+        - Added portuguese translation (thanks to Américo Monteiro)
+
+        Bugs fixed
+
+        - 'passphrase' now allows an empty new password to be given
+          (fixes monotone bug #28809)
+
+        - 'automate remote' and 'automate remote_stdio' no longer
+          require an existing database (fixes monotone bug #28885)
+
+        - monotone no longer throws an exception on Windows if it is
+          interrupted (^C); a couple of other bug have been fixed for this
+          platform as well which generally improve the compatibility.
+
+        - The annotation of 'annotate' is now localized.
+
+        - The various occurrences where a revision is described by its
+          certs now come with proper localized date output.
+
+        - Fix problems with newer Lua versions especially when 
+          LUA_COMPAT_VARARG not set.
+
+        Other
+
+        - Roster handling has been sped up significantly, and roster cache
+          performance has been fixed for the case of overly large rosters.
+          This should be mostly noticable when digging through history
+          (especially initial pulls, since those send so many revisions),
+          and be more noticable for projects with larger trees.
+
+          The most significant internal change from this is that rosters and
+          marking_maps are now copy-on-write. A longer overview of the internal
+          changes is at:
+          http://lists.gnu.org/archive/html/monotone-devel/2010-02/msg00043.html
+
+        - Improve the compatibility with newer Botan versions.
+
 Sun Jan 17 21:40:35 UTC 2010
 
         0.46 release.

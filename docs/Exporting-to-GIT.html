@@ -64,23 +64,27 @@ git commit message using the <samp><span class="option">--log-certs</span></samp
 
 <p>Monotone author names often look like raw email addresses such as
 <code>"user@example.com"</code>. These are not considered valid by git
-which requires leading `&lt;' and trailing `&gt;' characters around email
-addresses and by convention often includes the display name with the
-email address such as <code>"User Name &lt;user@example.com&gt;"</code>. The git
-exporter deals with this difference in several ways:
+which requires the display name and leading `&lt;' and trailing `&gt;'
+characters around email addresses such as <code>"User Name
+&lt;user@example.com&gt;"</code>. The git exporter deals with this difference in
+several ways:
      <ul>
 <li>revisions that don't have any author certs will default to using
-<code>&lt;unknown&gt;</code> for both the author and committer. 
+<code>Unknown &lt;unknown&gt;</code> for both the author and committer. 
 <li>revisions that have one or more author certs will use the value of one
 author cert as the author and the key used to sign this cert as
 the committer. 
 <li>both author and committer will be looked up in the file specified by
 the <samp><span class="option">--authors-file</span></samp> option described in <a href="GIT.html#GIT">GIT</a> and
 translated to the specified value if found. 
-<li>any author or committer that does not contain both `&lt;' and `&gt;'
-characters will have an initial &ldquo;&lt;' character and a final `&gt;'
-character added so that they may form valid values. 
+<li>any author or committer value not found in the authors file will be
+processed by the <code>unmapped_git_author</code> hook which may adjust the
+value so that it represents a valid value. 
 </ul>
+All git author and committer values will be validated by the
+<code>validate_git_author</code> hook before being written to the output
+stream. The export will abort if any author or committer value is
+rejected by the validation hook.
 
 <p>Branch names used by monotone are allowed to contain characters that
 are not considered valid by git. These may be mapped to other names

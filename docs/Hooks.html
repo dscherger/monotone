@@ -370,10 +370,18 @@ Returns <code>true</code> if <var>branchname</var> should be ignored while listi
 branches. Otherwise returns <code>false</code>. This hook has no default
 definition, therefore the default behavior is to list all branches.
 
-     <br><dt><code>get_date_format_spec ()</code><a name="index-get_005fdate_005fformat_005fspec-_0028_0029-247"></a><dd>
+     <br><dt><code>get_date_format_spec (</code><var>wanted</var><code>)</code><a name="index-get_005fdate_005fformat_005fspec-_0028_0040var_007bwanted_007d_0029-247"></a><dd>
 Returns a <code>strftime</code> format specification, which <samp><span class="command">mtn
 log</span></samp> and similar commands will use to format dates, unless instructed
-otherwise.  The default definition returns `<samp><span class="samp">"%d&nbsp;%b&nbsp;%Y,&nbsp;%I:%M:%S&nbsp;%p"<!-- /@w --></span></samp>', which produces output like this: `<samp><span class="samp">22&nbsp;May&nbsp;2009,&nbsp;09:06:14&nbsp;AM<!-- /@w --></span></samp>'.
+otherwise.  The default definition returns `<samp><span class="samp">%x</span></samp>' for long and short
+date formats, `<samp><span class="samp">%X</span></samp>' for long and short time formats and `<samp><span class="samp">%x %X</span></samp>'
+for long and short date time formats, which is equivalent to `<samp><span class="samp">22/05/09</span></samp>',
+`<samp><span class="samp">09:06:14</span></samp>' and `<samp><span class="samp">22/05/09 09:06:14</span></samp>' in an English locale.
+
+     <p><var>wanted</var> can be one of `<samp><span class="samp">date_long</span></samp>', `<samp><span class="samp">date_short</span></samp>',
+`<samp><span class="samp">time_long</span></samp>', `<samp><span class="samp">time_short</span></samp>', `<samp><span class="samp">date_time_long</span></samp>' and
+`<samp><span class="samp">date_time_short</span></samp>', though only `<samp><span class="samp">date_short</span></samp>' and
+`<samp><span class="samp">date_time_short</span></samp>' are currently used.
 
 </dl>
 
@@ -874,13 +882,41 @@ definition is:
 
 </dl>
 
-<h4 class="subsection">6.1.11 Validation Hooks</h4>
+<h4 class="subsection">6.1.11 GIT Export Hooks</h4>
+
+<p>Exporting monotone revisions in git-fast-import(1) format often
+requires translation of monotone author cert values and associated
+signing keys into corresponding git author and committer
+values. Translation of author and committer values and validation of
+the results is controlled by these hooks. See <a href="Default-hooks.html#Default-hooks">Default hooks</a>.
+
+     <dl>
+<dt><code>unmapped_git_author(</code><var>author</var><code>)</code><a name="index-unmapped_005fgit_005fauthor_0028_0040var_007bauthor_007d_0029-264"></a><dd>
+This hook is called for any git author or committer value that does
+not come from the current <em>author map</em> file. If no <em>author
+map</em> file is specified this hook will be called for <em>every</em>
+unique git author and committer value.  It may return the value
+unchanged or modify it in some way in an effort to ensure that it is
+valid. The default implementation attempts several common pattern
+replacements to produce valid authors from monotone authors.
+
+     <br><dt><code>validate_git_author(</code><var>author</var><code>)</code><a name="index-validate_005fgit_005fauthor_0028_0040var_007bauthor_007d_0029-265"></a><dd>
+This hook is called before the git author or committer value is
+written to the export output stream. The <var>author</var> value is either
+the mapped value from the current <em>author map</em> file or the value
+produced by the <code>unmapped_git_author</code> hook. This hook may return
+true if the author is valid or false if it is not. The export will be
+aborted if this hook returns false for any value.
+
+</dl>
+
+<h4 class="subsection">6.1.12 Validation Hooks</h4>
 
 <p>If there is a policy decision to make, Monotone defines certain hooks to
 allow a client to validate or reject certain behaviors.
 
      <dl>
-<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-264"></a><dd>
+<dt><code>validate_commit_message (</code><var>message</var><code>, </code><var>revision_text</var><code>, </code><var>branchname</var><code>)</code><a name="index-validate_005fcommit_005fmessage-_0028_0040var_007bmessage_007d_002c-_0040var_007brevision_005ftext_007d_002c-_0040var_007bbranchname_007d_0029-266"></a><dd>
 This hook is called after the user has entered his/her commit message. 
 <var>message</var> is the commit message that the user has entered and
 <var>revision_text</var> is the full text of the changes for this revision,
@@ -894,13 +930,13 @@ rejects empty log messages.
 
 </dl>
 
-<h4 class="subsection">6.1.12 Meta Hooks</h4>
+<h4 class="subsection">6.1.13 Meta Hooks</h4>
 
 <p>Monotone allows the execution of arbitrary Lua hooks and functions through a
 special generalized "meta hook". See <samp><span class="command">automate lua</span></samp> for more information.
 
      <dl>
-<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-265"></a><dd>
+<dt><code>hook_wrapper (</code><var>func_name</var><code>, </code><var>...</var><code>)</code><a name="index-hook_005fwrapper-_0028_0040var_007bfunc_005fname_007d_002c-_0040var_007b_002e_002e_002e_007d_0029-267"></a><dd>
 This hook is explicitely called on every execution of <samp><span class="command">automate lua</span></samp>. 
 It takes a function name and zero or more string function arguments which are
 internally evaluated into Lua code. It returns a dump of the return value of
