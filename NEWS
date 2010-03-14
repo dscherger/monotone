@@ -28,6 +28,8 @@ XXX XXX XX XX:XX:XX UTC 2010
         - The options '--date-format' and '--no-format-dates' are no longer
           specific to the 'log' command, but can now be used globally.
 
+        - monotone now prompts only three times for a key password.
+
         New features
 
         - Added portuguese translation (thanks to Américo Monteiro)
@@ -37,6 +39,9 @@ XXX XXX XX XX:XX:XX UTC 2010
         - 'passphrase' now allows an empty new password to be given
           (fixes monotone bug #28809)
 
+        - 'automate remote' and 'automate remote_stdio' no longer
+          require an existing database (fixes monotone bug #28885)
+
         - monotone no longer throws an exception on Windows if it is
           interrupted (^C); a couple of other bug have been fixed for this
           platform as well which generally improve the compatibility.
@@ -45,6 +50,9 @@ XXX XXX XX XX:XX:XX UTC 2010
 
         - The various occurrences where a revision is described by its
           certs now come with proper localized date output.
+
+        - Fix problems with newer Lua versions especially when 
+          LUA_COMPAT_VARARG not set.
 
         Other
 
