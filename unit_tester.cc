@@ -297,13 +297,13 @@ int main(int argc, char * argv[])
 struct unit_tester_sanity : public sanity
 {
   void inform_log(std::string const &msg)
-  { cout << msg; }
+  { cout << msg << "\n"; }
   void inform_message(std::string const &msg)
-  { cout << msg; }
+  { cout << msg << "\n"; }
   void inform_warning(std::string const &msg)
-  { cerr << "warning: " << msg; }
+  { cerr << "warning: " << msg << "\n"; }
   void inform_error(std::string const &msg)
-  { cerr << "error: " << msg; }
+  { cerr << "error: " << msg << "\n"; }
 };
 unit_tester_sanity real_sanity;
 sanity & global_sanity = real_sanity;
