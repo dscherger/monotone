@@ -2,10 +2,10 @@
 #define CONFIG_H 1
 
 #define PACKAGE "monotone"
-#define PACKAGE_STRING "monotone 0.47"
+#define PACKAGE_STRING "monotone 0.48dev"
 #define PACKAGE_BUGREPORT "monotone-devel@nongnu.org"
 #define LC_MESSAGES LC_CTYPE
-#define VERSION "0.47"
+#define VERSION "0.48dev"
 
 #ifdef _MSC_VER
 typedef unsigned long pid_t;
