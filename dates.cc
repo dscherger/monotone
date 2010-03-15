@@ -367,6 +367,8 @@ dump(date_t const & d, string & s)
 string
 date_t::as_formatted_localtime(string const & fmt) const
 {
+  L(FL("formatting date '%s' with format '%s'") % *this % fmt);
+
   // note that the time_t value here may underflow or overflow if our date
   // is outside of the representable range. for 32 bit time_t's the earliest
   // representable time is 1901-12-13 20:45:52 UTC and the latest
@@ -375,6 +377,8 @@ date_t::as_formatted_localtime(string const & fmt) const
   // produce a bad result.
 
   s64 seconds = d/1000 - get_epoch_offset();
+
+  L(FL("%s seconds UTC since unix epoch") % seconds);
 
   E(seconds >= numeric_limits<time_t>::min(), origin::user,
     F("date '%s' is out of range and cannot be formatted")
@@ -387,6 +391,17 @@ date_t::as_formatted_localtime(string const & fmt) const
   time_t t(seconds); // seconds since unix epoch in UTC
   tm tb(*localtime(&t)); // converted to local timezone values
 
+  L(FL("localtime %4s/%02s/%02s %02s:%02s:%02s WD %s YD %s DST %d")
+    % (tb.tm_year + 1900)
+    % (tb.tm_mon + 1)
+    % tb.tm_mday
+    % tb.tm_hour
+    % tb.tm_min
+    % tb.tm_sec
+    % tb.tm_wday
+    % tb.tm_yday
+    % tb.tm_isdst);
+
   char buf[128];
 
   // Poison the buffer so we can tell whether strftime() produced
@@ -396,7 +411,11 @@ date_t::as_formatted_localtime(string const & fmt) const
   size_t wrote = strftime(buf, sizeof buf, fmt.c_str(), &tb);
 
   if (wrote > 0)
-    return string(buf); // yay, it worked
+    {
+      string formatted(buf);
+      L(FL("formatted date '%s'") % formatted);
+      return formatted; // yay, it worked
+    }
 
   if (wrote == 0 && buf[0] == '\0') // no output
     {
@@ -420,6 +439,9 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
 {
   tm tb;
   memset(&tb, 0, sizeof(tb));
+
+  L(FL("parsing date '%s' with format '%s'") % s % fmt);
+
   char *p = strptime(s.c_str(), fmt.c_str(), &tb); // local timezone values
 
   E(p, origin::user, // strptime failed to match all of the format string
@@ -428,19 +450,38 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
   E(*p == 0, origin::user, // extraneous characters in input string
     F("invalid date '%s' not matched by format '%s'") % s % fmt);
 
+  // strptime does *not* set the tm_isdst field in the broken down time
+  // struct. setting it to -1 is apparently the way to tell mktime to
+  // determine out whether DST is in effect or not.
+
+  tb.tm_isdst = -1;
+
+  L(FL("localtime %4s/%02s/%02s %02s:%02s:%02s WD %s YD %s DST %d")
+    % (tb.tm_year + 1900)
+    % (tb.tm_mon + 1)
+    % tb.tm_mday
+    % tb.tm_hour
+    % tb.tm_min
+    % tb.tm_sec
+    % tb.tm_wday
+    % tb.tm_yday
+    % tb.tm_isdst);
+
   // note that the time_t value here may underflow or overflow if our date
   // is outside of the representable range. for 32 bit time_t's the earliest
   // representable time is 1901-12-13 20:45:52 UTC and the latest
-  // representable time is 2038-01-19 03:14:07 UTC. mktime seems to detect this
-  // and return -1 for values it cannot handle.
+  // representable time is 2038-01-19 03:14:07 UTC. mktime seems to detect
+  // this and return -1 for values it cannot handle, which strptime will
+  // happily produce.
 
-  time_t t = mktime(&tb); // converted to seconds since unix epoch in UTC
+  time_t t = mktime(&tb); // convert to seconds since unix epoch in UTC
 
-  // -1 is also 1960-12-31 23:59:59 but mktime uses it to indicate errors
+  L(FL("%s seconds UTC since unix epoch") % t);
 
-  E(t != -1, origin::user,
-    F("date '%s' is out of range and cannot be parsed")
-    % s);
+  // mktime may return a time_t that has the value -1 to indicate an error.
+  // however this is also the valid date 1969-12-31 23:59:59. so we ignore this
+  // error indication and convert the resulting time_t back to a struct tm
+  // for comparison with the input to mktime to detect out of range errors.
 
   tm check(*localtime(&t)); // back to local timezone values
 
@@ -457,7 +498,11 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
     F("date '%s' is out of range and cannot be parsed")
     % s);
 
-  return date_t(MILLISEC(t) + get_epoch_offset());
+  date_t date(MILLISEC(t) + get_epoch_offset());
+
+  L(FL("parsed date '%s'") % date);
+
+  return date;
 }
 
 s64

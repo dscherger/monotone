@@ -719,10 +719,15 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       parsed = date_t::from_formatted_localtime(formatted, date_fmt);
     }
   catch (recoverable_failure const & e) 
-    { }
+    { 
+      L(FL("date check failed: %s") % e.what());
+    }
 
   if (parsed != now)
-    W(F("date format '%s' cannot be used for commit") % date_fmt);
+    {
+      L(FL("date check failed: %s != %s") % now % parsed);
+      W(F("date format '%s' cannot be used for commit") % date_fmt);
+    }
 
   work.get_parent_rosters(db, old_rosters);
   work.get_current_roster_shape(db, nis, new_roster);
@@ -1370,7 +1375,14 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       parsed = date_t::from_formatted_localtime(formatted, date_fmt);
     }
   catch (recoverable_failure const & e) 
-    { }
+    { 
+      L(FL("date check failed: %s") % e.what());
+    }
+
+  if (parsed != now)
+    {
+      L(FL("date check failed: %s != %s") % now % parsed);
+    }
 
   E(parsed == now, origin::user,
     F("date format '%s' cannot be used for commit") % date_fmt);

@@ -235,15 +235,16 @@ UNIT_TEST(roundtrip_localtimes)
     }
 
   // this date represents 1 second before the unix epoch which has a time_t
-  // value of -1. mktime returns -1 to indicate that it was unable to
-  // convert a struct tm into a valid time_t value even though dates
-  // before/after this date are valid.
-  date_t mktime1("1969-12-31T23:59:59");
+  // value of -1. conveniently, mktime returns -1 to indicate that it was
+  // unable to convert a struct tm into a valid time_t value even though
+  // dates before/after this are valid. our date parsing code ignores this
+  // "error" from mktime, does a conversion back to localtime and compares
+  // this with the localtime value it called mktime with in the first place.
+  // allowing conversion of this date to succeed while still detecting dates
+  // that are out of range.
 
-  // this can be formatted but not parsed. 64 bit time_t probably doesn't help
-  mktime1.as_formatted_localtime("%c");
-  UNIT_TEST_CHECK_THROW(date_t::from_formatted_localtime("Wed Dec 31 23:59:59 1969", "%c"),
-                        recoverable_failure);
+  OK(date_t("1969-12-31T23:59:59"));
+
 #undef OK
 }
 
