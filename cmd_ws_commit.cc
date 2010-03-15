@@ -710,23 +710,26 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         app.lua.hook_get_date_format_spec(date_time_long, date_fmt);
     }
 
-  // check that the specified date format can be parsed (for commit)
-  date_t now = date_t::now();
-  date_t parsed;
-  try
+  if (!date_fmt.empty())
     {
-      string formatted = now.as_formatted_localtime(date_fmt);
-      parsed = date_t::from_formatted_localtime(formatted, date_fmt);
-    }
-  catch (recoverable_failure const & e) 
-    { 
-      L(FL("date check failed: %s") % e.what());
-    }
+      // check that the specified date format can be parsed (for commit)
+      date_t now = date_t::now();
+      date_t parsed;
+      try
+        {
+          string formatted = now.as_formatted_localtime(date_fmt);
+          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+        }
+      catch (recoverable_failure const & e) 
+        { 
+          L(FL("date check failed: %s") % e.what());
+        }
 
-  if (parsed != now)
-    {
-      L(FL("date check failed: %s != %s") % now % parsed);
-      W(F("date format '%s' cannot be used for commit") % date_fmt);
+      if (parsed != now)
+        {
+          L(FL("date check failed: %s != %s") % now % parsed);
+          W(F("date format '%s' cannot be used for commit") % date_fmt);
+        }
     }
 
   work.get_parent_rosters(db, old_rosters);
@@ -1367,25 +1370,28 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         author = key.official_name();
     }
 
-  // check that the current date format can be parsed
-  date_t parsed;
-  try
+  if (!date_fmt.empty())
     {
-      string formatted = now.as_formatted_localtime(date_fmt);
-      parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+      // check that the current date format can be parsed
+      date_t parsed;
+      try
+        {
+          string formatted = date.as_formatted_localtime(date_fmt);
+          parsed = date_t::from_formatted_localtime(formatted, date_fmt);
+        }
+      catch (recoverable_failure const & e) 
+        { 
+          L(FL("date check failed: %s") % e.what());
+        }
+      
+      if (parsed != date)
+        {
+          L(FL("date check failed: %s != %s") % date % parsed);
+        }
+      
+      E(parsed == date, origin::user,
+        F("date format '%s' cannot be used for commit") % date_fmt);
     }
-  catch (recoverable_failure const & e) 
-    { 
-      L(FL("date check failed: %s") % e.what());
-    }
-
-  if (parsed != now)
-    {
-      L(FL("date check failed: %s != %s") % now % parsed);
-    }
-
-  E(parsed == now, origin::user,
-    F("date format '%s' cannot be used for commit") % date_fmt);
 
   if (!log_message_given)
     {
