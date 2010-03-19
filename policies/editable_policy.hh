@@ -17,10 +17,11 @@ namespace policies {
   class editable_policy : public policy
   {
   public:
+    editable_policy();
     explicit editable_policy(policy const & p);
 
-    //void set_key_name(key_id const & ident, key_name const & name);
-    //void remove_key(key_id const & ident);
+    void set_key(key_name const & name, key_id const & ident);
+    void remove_key(key_name const & name);
 
     void set_branch(std::string const & name, branch const & value);
     void remove_branch(std::string const & name);

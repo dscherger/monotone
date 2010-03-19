@@ -11,11 +11,141 @@
 #include "base.hh"
 #include "policies/policy_branch.hh"
 
-namespace policies {
-  policy_branch::policy_branch(branch const & b)
-    : spec(b)
+#include "database.hh"
+#include "lexical_cast.hh"
+#include "policies/editable_policy.hh"
+#include "project.hh"
+#include "roster.hh"
+#include "transforms.hh"
+#include "vocab_cast.hh"
+
+using std::pair;
+using std::string;
+
+namespace {
+  class item_lister
   {
-    reload();
+    database & db;
+    dir_map::const_iterator i, end;
+    bool badbit;
+  public:
+    typedef pair<string, data> value_type;
+  private:
+    value_type value;
+  public:
+    item_lister(roster_t const & ros,
+                file_path const & dir_name,
+                database & db)
+      : db(db), badbit(false)
+    {
+      node_t n = ros.get_node(dir_name);
+      if (!is_dir_t(n))
+        {
+          badbit = true;
+          return;
+        }
+      dir_t dir = downcast_to_dir_t(n);
+      i = dir->children.begin();
+      while (i != end && !is_file_t(i->second))
+        {
+          ++i;
+        }
+      end = dir->children.end();
+      if ((bool)*this)
+        {
+          get(value.first, value.second);
+        }
+    }
+    bool bad() const { return badbit; }
+    operator bool() const
+    {
+      return !badbit && i != end;
+    }
+    item_lister const & operator++()
+    {
+      I(i != end);
+      do {
+        ++i;
+      } while (i != end && !is_file_t(i->second));
+      get(value.first, value.second);
+      return *this;
+    }
+    void get(string & name, data & contents) const
+    {
+      name = i->first();
+      file_t f = downcast_to_file_t(i->second);
+      file_data fdat;
+      db.get_file_version(f->content, fdat);
+      contents = fdat.inner();
+    }
+    value_type const & operator*() const
+    {
+      return value;
+    }
+    value_type const * operator->() const
+    {
+      return &value;
+    }
+  };
+  typedef policies::policy_branch::policy_ptr policy_ptr;
+  policy_ptr policy_from_revision(project_t & project,
+                                  revision_id const & rev)
+  {
+    roster_t the_roster;
+    project.db.get_roster(rev, the_roster);
+    policies::editable_policy pol;
+
+    for (item_lister i(the_roster,
+                       file_path_internal("branches"),
+                       project.db);
+         i; ++i)
+      {
+        policies::branch b;
+        b.deserialize(i->second());
+        pol.set_branch(i->first, b);
+      }
+
+    for (item_lister i(the_roster,
+                       file_path_internal("delegations"),
+                       project.db);
+         i; ++i)
+      {
+        policies::delegation d;
+        d.deserialize(i->second());
+        pol.set_delegation(i->first, d);
+      }
+
+    for (item_lister i(the_roster,
+                       file_path_internal("tags"),
+                       project.db);
+         i; ++i)
+      {
+        string s = boost::lexical_cast<string>(i->second);
+        revision_id rid = decode_hexenc_as<revision_id>(s, origin::internal);
+        pol.set_tag(i->first, rid);
+      }
+
+    for (item_lister i(the_roster,
+                       file_path_internal("keys"),
+                       project.db);
+         i; ++i)
+      {
+        string s = boost::lexical_cast<string>(i->second);
+        key_id id = decode_hexenc_as<key_id>(s, origin::internal);
+        pol.set_key(key_name(i->first, origin::internal), id);
+      }
+
+    return policy_ptr(new policies::policy(pol));
+  }
+}
+
+namespace policies {
+  policy_branch::policy_branch(project_t & project,
+                               policy_branch::policy_ptr parent_policy,
+                               branch const & b)
+    : spec_owner(parent_policy), spec(b)
+  {
+    reload(project);
   }
   branch const & policy_branch::get_spec() const
   {
@@ -29,6 +159,38 @@ namespace policies {
   policy_branch::iterator policy_branch::end() const
   {
     return policies.end();
+  }
+
+  void policy_branch::reload(project_t & project)
+  {
+    policies.clear();
+    std::set<revision_id> heads;
+    std::set<key_id> keys;
+    std::set<external_key_name> const & key_names = spec.get_signers();
+    for (std::set<external_key_name>::const_iterator i = key_names.begin();
+         i != key_names.end(); ++i)
+      {
+        id ident;
+        if (try_decode_hexenc((*i)(), ident))
+          {
+            keys.insert(key_id(ident));
+          }
+        else
+          {
+            key_name name = typecast_vocab<key_name>(*i);
+            keys.insert(spec_owner->get_key_id(name));
+          }
+      }
+    project.get_branch_heads(spec.get_uid(),
+                             keys,
+                             heads,
+                             false);
+
+    for (std::set<revision_id>::const_iterator i = heads.begin();
+         i != heads.end(); ++i)
+      {
+        policies.insert(policy_from_revision(project, *i));
+      }
   }
 }
 

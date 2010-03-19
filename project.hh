@@ -18,6 +18,7 @@
 //#include "editable_policy.hh"
 #include "outdated_indicator.hh"
 #include "policies/delegation.hh"
+#include "vector.hh"
 #include "vocab.hh"
 
 class arg_type;
@@ -88,6 +89,21 @@ struct policy_chain_item
 
 typedef std::vector<policy_chain_item> policy_chain;
 
+class branch_heads_key
+{
+public:
+  branch_uid uid;
+  bool ignore_suspends;
+  std::set<key_id> keys;
+  bool have_signers;
+  branch_heads_key(branch_uid const & uid,
+                   bool ignore_suspends,
+                   std::set<key_id> const & keys,
+                   bool have_signers);
+};
+bool operator<(branch_heads_key const & a,
+               branch_heads_key const & b);
+
 class project_t
 {
   // In the hypothetical future situation where one monotone process is
@@ -101,7 +117,7 @@ public:
 
 private:
   boost::shared_ptr<policy_info> project_policy;
-  std::map<std::pair<branch_name, suspended_indicator>,
+  std::map<branch_heads_key,
            std::pair<outdated_indicator, std::set<revision_id> >
            > branch_heads;
   std::set<branch_name> branches;
@@ -131,6 +147,14 @@ public:
   void get_branch_list(std::set<branch_uid> & ids);
   branch_uid translate_branch(branch_name const & branch);
   branch_name translate_branch(branch_uid const & branch);
+
+  // internal for policy stuff
+  void get_branch_heads(branch_uid const & uid,
+                        std::set<key_id> const & signers,
+                        std::set<revision_id> & heads,
+                        bool ignore_suspend_certs,
+                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+
 
   void get_branch_heads(branch_name const & name,
                         std::set<revision_id> & heads,

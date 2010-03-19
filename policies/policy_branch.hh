@@ -17,19 +17,25 @@
 #include "policies/delegation.hh"
 #include "policies/policy.hh"
 
+class project_t;
+
 namespace policies {
   class policy_branch
   {
   public:
-    typedef std::set<boost::shared_ptr<policy> > policy_set;
+    typedef boost::shared_ptr<policy> policy_ptr;
+    typedef std::set<policy_ptr> policy_set;
   private:
+    policy_ptr spec_owner;
     branch spec;
     policy_set policies;
-    void reload();
+    void reload(project_t & project);
   public:
     typedef policy_set::const_iterator iterator;
 
-    policy_branch(branch const & b);
+    policy_branch(project_t & project,
+                  policy_ptr parent_policy,
+                  branch const & b);
     //policy_branch(delegation const & d);
 
     branch const & get_spec() const;

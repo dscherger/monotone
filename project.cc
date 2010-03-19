@@ -46,6 +46,34 @@ using boost::weak_ptr;
 using policies::branch;
 using policies::policy;
 
+branch_heads_key::branch_heads_key(branch_uid const & uid,
+                                   bool ignore_suspends,
+                                   std::set<key_id> const & keys,
+                                   bool have_signers)
+  : uid(uid),
+    ignore_suspends(ignore_suspends),
+    keys(keys),
+    have_signers(have_signers)
+{ }
+bool operator<(branch_heads_key const & a,
+               branch_heads_key const & b)
+{
+  if (a.uid < b.uid)
+    return true;
+  else if (b.uid < a.uid)
+    return false;
+  else if (a.ignore_suspends < b.ignore_suspends)
+    return true;
+  else if (b.ignore_suspends < a.ignore_suspends)
+    return false;
+  else if (a.have_signers < b.have_signers)
+    return true;
+  else if (b.have_signers < a.have_signers)
+    return false;
+  else
+    return a.keys < b.keys;
+}
+
 struct policy_key
 {
   weak_ptr<policy> parent;
@@ -629,7 +657,73 @@ namespace
       return !certs.empty();
     }
   };
+
+  void do_get_branch_heads(pair<outdated_indicator, set<revision_id> > & branch,
+                           project_t & project,
+                           branch_uid const & uid,
+                           set<key_id> const * const signers,
+                           bool ignore_suspend_certs,
+                           multimap<revision_id, revision_id> * inverse_graph_cache_ptr)
+  {
+    if (!branch.first.outdated())
+      return;
+
+    L(FL("getting heads of branch %s") % uid);
+
+    branch.first = project.db.get_revisions_with_cert(cert_name(branch_cert_name),
+                                                      typecast_vocab<cert_value>(uid),
+                                                      branch.second);
+
+    shared_ptr<not_in_branch> p;
+    if (!signers)
+      p.reset(new not_in_branch(project, uid));
+    else
+      p.reset(new not_in_branch(project, uid, *signers));
+
+    erase_ancestors_and_failures(project.db, branch.second, *p,
+                                 inverse_graph_cache_ptr);
+
+    if (!ignore_suspend_certs)
+      {
+        shared_ptr<suspended_in_branch> s;
+        if (!signers)
+          s.reset(new suspended_in_branch(project, uid));
+        else
+          s.reset(new suspended_in_branch(project, uid, *signers));
+        set<revision_id>::iterator it = branch.second.begin();
+        while (it != branch.second.end())
+          {
+            if ((*s)(*it))
+              branch.second.erase(it++);
+            else
+              it++;
+          }
+      }
+
+    L(FL("found heads of branch %s (%s heads)")
+      % uid % branch.second.size());
+  }
 }
+
+void
+project_t::get_branch_heads(branch_uid const & uid,
+                            std::set<key_id> const & signers,
+                            std::set<revision_id> & heads,
+                            bool ignore_suspend_certs,
+                            std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr)
+{
+  branch_heads_key cache_index(uid, ignore_suspend_certs, signers, true);
+
+  pair<outdated_indicator, set<revision_id> > &
+    branch = branch_heads[cache_index];
+
+  do_get_branch_heads(branch, *this, uid, &signers,
+                      ignore_suspend_certs,
+                      inverse_graph_cache_ptr);
+
+  heads = branch.second;
+}
+
 
 void
 project_t::get_branch_heads(branch_name const & name,
@@ -637,59 +731,26 @@ project_t::get_branch_heads(branch_name const & name,
                             bool ignore_suspend_certs,
                             multimap<revision_id, revision_id> * inverse_graph_cache_ptr)
 {
-  pair<branch_name, suspended_indicator>
-    cache_index(name, ignore_suspend_certs);
+  branch_uid uid;
+  set<key_id> signers;
+  set<key_id> *sign_ptr = 0;
+  if (project_policy->passthru)
+    uid = typecast_vocab<branch_uid>(name);
+  else
+    {
+      project_policy->lookup_branch(name, uid, signers);
+      sign_ptr = &signers;
+    }
+
+  branch_heads_key cache_index(uid, ignore_suspend_certs, signers, sign_ptr);
+
   pair<outdated_indicator, set<revision_id> > &
     branch = branch_heads[cache_index];
 
-  if (branch.first.outdated())
-    {
-      L(FL("getting heads of branch %s") % name);
+  do_get_branch_heads(branch, *this, uid, sign_ptr,
+                      ignore_suspend_certs,
+                      inverse_graph_cache_ptr);
 
-      branch_uid uid;
-      set<key_id> signers;
-      if (project_policy->passthru)
-        uid = typecast_vocab<branch_uid>(name);
-      else
-        {
-          project_policy->lookup_branch(name, uid, signers);
-        }
-
-      branch.first = db.get_revisions_with_cert(cert_name(branch_cert_name),
-                                                typecast_vocab<cert_value>(uid),
-                                                branch.second);
-
-      shared_ptr<not_in_branch> p;
-      if (project_policy->passthru)
-        p.reset(new not_in_branch(*this, uid));
-      else
-        p.reset(new not_in_branch(*this, uid, signers));
-
-      erase_ancestors_and_failures(db, branch.second, *p,
-                                   inverse_graph_cache_ptr);
-
-      if (!ignore_suspend_certs)
-        {
-          shared_ptr<suspended_in_branch> s;
-          if (project_policy->passthru)
-            s.reset(new suspended_in_branch(*this, uid));
-          else
-            s.reset(new suspended_in_branch(*this, uid, signers));
-          set<revision_id>::iterator it = branch.second.begin();
-          while (it != branch.second.end())
-            {
-              if ((*s)(*it))
-                branch.second.erase(it++);
-              else
-                it++;
-            }
-        }
-
-
-
-      L(FL("found heads of branch %s (%s heads)")
-        % name % branch.second.size());
-    }
   heads = branch.second;
 }
 
@@ -914,7 +975,9 @@ project_t::put_tag(key_store & keys,
         F("Cannot find policy for tag '%s'") % name);
       E(info.back().delegation.is_branch_type(), origin::user,
         F("Cannot edit '%s', it is delegated to a specific revision") % name);
-      policies::policy_branch br(info.back().delegation.get_branch_spec());
+      policies::policy_branch br(*this,
+                                 info.back().policy,
+                                 info.back().delegation.get_branch_spec());
 
       I(br.begin() != br.end());
       policies::editable_policy ep(**br.begin());

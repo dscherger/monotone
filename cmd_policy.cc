@@ -101,7 +101,9 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     F("Policy '%s' already exists") % name);
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % name);
-  policies::policy_branch parent_branch(gov.back().delegation.get_branch_spec());
+  policies::policy_branch parent_branch(project,
+                                        gov.back().policy,
+                                        gov.back().delegation.get_branch_spec());
 
   policies::editable_policy parent(**parent_branch.begin());
 
@@ -140,7 +142,9 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     F("Cannot find policy over '%s'") % branch);
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % branch);
-  policies::policy_branch parent(gov.back().delegation.get_branch_spec());
+  policies::policy_branch parent(project,
+                                 gov.back().policy,
+                                 gov.back().delegation.get_branch_spec());
   policies::editable_policy ppol(**parent.begin());
   std::set<external_key_name> admin_keys;
   {

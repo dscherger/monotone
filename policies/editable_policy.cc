@@ -12,9 +12,20 @@
 #include "editable_policy.hh"
 
 namespace policies {
+  editable_policy::editable_policy() { }
   editable_policy::editable_policy(policy const & p)
     :  policy(p)
   { }
+
+  void editable_policy::set_key(key_name const & name,
+                                key_id const & value)
+  {
+    keys[name] = value;
+  }
+  void editable_policy::remove_key(key_name const & name)
+  {
+    keys.erase(name);
+  }
 
   void editable_policy::set_branch(std::string const & name,
                                    branch const & value)

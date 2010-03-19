@@ -25,7 +25,7 @@ namespace policies {
   {
   public:
     typedef std::map<std::string, delegation> del_map;
-    typedef std::map<std::string, std::pair<key_name, rsa_pub_key> > key_map;
+    typedef std::map<key_name, key_id> key_map;
   protected:
     std::map<std::string, branch> branches;
     del_map delegations;
@@ -43,6 +43,7 @@ namespace policies {
     // keys
     // a key could have several names, should
     // there be an invariant against that?
+    // should this really be the full key_name, or just the final suffix?
     key_name get_key_name(key_id const & ident) const;
     key_id get_key_id(key_name const & ident) const;
 
