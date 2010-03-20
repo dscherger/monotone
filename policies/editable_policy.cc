@@ -17,6 +17,11 @@ namespace policies {
     :  policy(p)
   { }
 
+  void editable_policy::set_parent(boost::weak_ptr<policy> const & parent)
+  {
+    this->parent = parent;
+  }
+
   void editable_policy::set_key(key_name const & name,
                                 key_id const & value)
   {

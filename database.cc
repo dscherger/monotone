@@ -3717,7 +3717,7 @@ namespace {
   // the lua hook wants key_identity_info, but all that's been
   // pulled from the certs is key_id. So this is needed to translate.
   // use pointers for project and lua so bind() doesn't make copies
-  bool check_revision_cert_trust(project_t * const project,
+  bool check_revision_cert_trust(project_t const * const project,
                                  lua_hooks * const lua,
                                  set<key_id> const & signers,
                                  id const & hash,
@@ -3761,7 +3761,7 @@ namespace {
 } // anonymous namespace
 
 void
-database::erase_bogus_certs(project_t & project, vector<cert> & certs)
+database::erase_bogus_certs(project_t const & project, vector<cert> & certs)
 {
   erase_bogus_certs_internal(certs, *this,
                              boost::bind(&check_revision_cert_trust,

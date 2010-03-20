@@ -20,6 +20,8 @@ namespace policies {
     editable_policy();
     explicit editable_policy(policy const & p);
 
+    void set_parent(boost::weak_ptr<policy> const & parent);
+
     void set_key(key_name const & name, key_id const & ident);
     void remove_key(key_name const & name);
 

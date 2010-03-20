@@ -117,9 +117,9 @@ public:
 
 private:
   boost::shared_ptr<policy_info> project_policy;
-  std::map<branch_heads_key,
-           std::pair<outdated_indicator, std::set<revision_id> >
-           > branch_heads;
+  mutable std::map<branch_heads_key,
+                  std::pair<outdated_indicator, std::set<revision_id> >
+  > branch_heads;
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
@@ -153,13 +153,15 @@ public:
                         std::set<key_id> const & signers,
                         std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
-                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+                        std::multimap<revision_id, revision_id>
+                            *inverse_graph_cache_ptr = NULL) const;
 
 
   void get_branch_heads(branch_name const & name,
                         std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
-                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+                        std::multimap<revision_id, revision_id>
+                            *inverse_graph_cache_ptr = NULL) const;
 
   outdated_indicator get_tags(std::set<tag_t> & tags);
   void put_tag(key_store & keys,
@@ -231,38 +233,38 @@ private:
   void lookup_key_by_name(key_store * const keys,
                           lua_hooks & lua,
                           key_name const & name,
-                          key_id & id);
+                          key_id & id) const;
   // get the name given when creating the key
   void get_canonical_name_of_key(key_store * const keys,
                                  key_id const & id,
-                                 key_name & name);
+                                 key_name & name) const;
   void complete_key_identity(key_store * const keys,
                              lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 public:
   void complete_key_identity(key_store & keys,
                              lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void complete_key_identity(lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         arg_type const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
                         arg_type const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 };
 
 std::string

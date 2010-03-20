@@ -99,7 +99,8 @@ bool operator<(policy_key const & l, policy_key const & r)
 typedef map<policy_key, shared_ptr<policy> > child_policy_map;
 
 // walk the tree of policies, resolving children if needed
-void walk_policies(shared_ptr<policy> root,
+void walk_policies(project_t const & project,
+                   shared_ptr<policy> root,
                    child_policy_map & children,
                    boost::function<void(shared_ptr<policy>, string,
                                         policies::delegation const &)> fn,
@@ -124,11 +125,12 @@ void walk_policies(shared_ptr<policy> root,
       if (c == children.end())
         {
           pair<child_policy_map::iterator, bool> x =
-            children.insert(make_pair(child_key, i->second.resolve(root)));
+            children.insert(make_pair(child_key,
+                                      i->second.resolve(project, root)));
           c = x.first;
         }
 
-      walk_policies(c->second, children, fn, child_prefix, i->second);
+      walk_policies(project, c->second, children, fn, child_prefix, i->second);
     }
 }
 
@@ -266,28 +268,28 @@ public:
     return *policy;
   }
 
-  void all_branches(set<branch_name> & branches)
+  void all_branches(project_t const & project, set<branch_name> & branches)
   {
     branches.clear();
     if (!policy)
       return;
 
     map<branch_name, branch_info> branch_map;
-    walk_policies(policy, child_policies, branch_lister(branch_map));
+    walk_policies(project, policy, child_policies, branch_lister(branch_map));
     for (map<branch_name, branch_info>::iterator i = branch_map.begin();
          i != branch_map.end(); ++i)
       {
         branches.insert(i->first);
       }
   }
-  void all_branches(set<branch_uid> & branches)
+  void all_branches(project_t const & project, set<branch_uid> & branches)
   {
     branches.clear();
     if (!policy)
       return;
 
     map<branch_name, branch_info> branch_map;
-    walk_policies(policy, child_policies, branch_lister(branch_map));
+    walk_policies(project, policy, child_policies, branch_lister(branch_map));
     for (map<branch_name, branch_info>::iterator i = branch_map.begin();
          i != branch_map.end(); ++i)
       {
@@ -295,19 +297,19 @@ public:
       }
   }
 
-  void all_tags(set<tag_t> & tags)
+  void all_tags(project_t const & project, set<tag_t> & tags)
   {
     tags.clear();
     if (!policy)
       return;
 
-    walk_policies(policy, child_policies, tag_lister(tags));
+    walk_policies(project, policy, child_policies, tag_lister(tags));
   }
 
-  branch_uid translate_branch(branch_name const & name)
+  branch_uid translate_branch(project_t const & project, branch_name const & name)
   {
     map<branch_name, branch_info> branch_map;
-    walk_policies(policy, child_policies, branch_lister(branch_map));
+    walk_policies(project, policy, child_policies, branch_lister(branch_map));
     map<branch_name, branch_info>::const_iterator i = branch_map.find(name);
     if (i != branch_map.end())
       {
@@ -316,10 +318,10 @@ public:
     I(false);
   }
 
-  branch_name translate_branch(branch_uid const & uid)
+  branch_name translate_branch(project_t const & project, branch_uid const & uid)
   {
     map<branch_name, branch_info> branch_map;
-    walk_policies(policy, child_policies, branch_lister(branch_map));
+    walk_policies(project, policy, child_policies, branch_lister(branch_map));
     for (map<branch_name, branch_info>::iterator i = branch_map.begin();
          i != branch_map.end(); ++i)
       {
@@ -329,11 +331,12 @@ public:
     I(false);
   }
 
-  void lookup_branch(branch_name const & name,
+  void lookup_branch(project_t const & project,
+                     branch_name const & name,
                      branch_uid & uid, set<key_id> & signers)
   {
     map<branch_name, branch_info> branch_map;
-    walk_policies(policy, child_policies, branch_lister(branch_map));
+    walk_policies(project, policy, child_policies, branch_lister(branch_map));
     map<branch_name, branch_info>::const_iterator i = branch_map.find(name);
     if (i != branch_map.end())
       {
@@ -356,17 +359,19 @@ public:
     I(false);
   }
 
-  void find_governing_policy(std::string const & of_what,
+  void find_governing_policy(project_t const & project,
+                             std::string const & of_what,
                              policy_chain & info)
   {
-    walk_policies(policy, child_policies,
+    walk_policies(project, policy, child_policies,
                   policy_finder(of_what, info));
   }
 
-  void list_policies(branch_name const & base,
+  void list_policies(project_t const & project,
+                     branch_name const & base,
                      set<branch_name> & children)
   {
-    walk_policies(policy, child_policies,
+    walk_policies(project, policy, child_policies,
                   policy_lister(base, children));
   }
 };
@@ -443,7 +448,7 @@ project_t::get_subpolicies(branch_name const & name,
   if (project_policy->passthru)
     return;
 
-  project_policy->list_policies(name, names);
+  project_policy->list_policies(*this, name, names);
 }
 
 
@@ -453,7 +458,7 @@ project_t::get_branch_list(set<branch_name> & names,
 {
   if (!project_policy->passthru)
     {
-      project_policy->all_branches(names);
+      project_policy->all_branches(*this, names);
       return;
     }
   if (indicator.outdated())
@@ -489,7 +494,7 @@ project_t::get_branch_list(globish const & glob,
   if (!project_policy->passthru)
     {
       set<branch_name> all_names;
-      project_policy->all_branches(all_names);
+      project_policy->all_branches(*this, all_names);
 
       for (set<branch_name>::const_iterator i = all_names.begin();
            i != all_names.end(); ++i)
@@ -535,7 +540,7 @@ project_t::get_branch_list(std::set<branch_uid> & branch_ids)
         }
       return;
     }
-  project_policy->all_branches(branch_ids);
+  project_policy->all_branches(*this, branch_ids);
 }
 
 branch_uid
@@ -544,7 +549,7 @@ project_t::translate_branch(branch_name const & name)
   if (project_policy->passthru)
     return typecast_vocab<branch_uid>(name);
   else
-    return project_policy->translate_branch(name);
+    return project_policy->translate_branch(*this, name);
 }
 
 branch_name
@@ -553,24 +558,24 @@ project_t::translate_branch(branch_uid const & uid)
   if (project_policy->passthru)
     return typecast_vocab<branch_name>(uid);
   else
-    return project_policy->translate_branch(uid);
+    return project_policy->translate_branch(*this, uid);
 }
 
 namespace
 {
   struct not_in_branch : public is_failure
   {
-    project_t & project;
+    project_t const & project;
     branch_uid const & branch;
     bool is_managed;
     set<key_id> trusted_signers;
-    not_in_branch(project_t & project,
+    not_in_branch(project_t const & project,
                   branch_uid const & branch)
       : project(project),
         branch(branch),
         is_managed(false)
     {}
-    not_in_branch(project_t & project,
+    not_in_branch(project_t const & project,
                   branch_uid const & branch,
                   set<key_id> const & signers)
       : project(project),
@@ -611,15 +616,15 @@ namespace
 
   struct suspended_in_branch : public is_failure
   {
-    project_t & project;
+    project_t const & project;
     branch_uid const & branch;
     bool is_managed;
     set<key_id> trusted_signers;
-    suspended_in_branch(project_t & project,
+    suspended_in_branch(project_t const & project,
                         branch_uid const & branch)
       : project(project), branch(branch), is_managed(false)
     {}
-    suspended_in_branch(project_t & project,
+    suspended_in_branch(project_t const & project,
                         branch_uid const & branch,
                         set<key_id> const & signers)
       : project(project),
@@ -659,7 +664,7 @@ namespace
   };
 
   void do_get_branch_heads(pair<outdated_indicator, set<revision_id> > & branch,
-                           project_t & project,
+                           project_t const & project,
                            branch_uid const & uid,
                            set<key_id> const * const signers,
                            bool ignore_suspend_certs,
@@ -710,7 +715,8 @@ project_t::get_branch_heads(branch_uid const & uid,
                             std::set<key_id> const & signers,
                             std::set<revision_id> & heads,
                             bool ignore_suspend_certs,
-                            std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr)
+                            std::multimap<revision_id, revision_id>
+                                *inverse_graph_cache_ptr) const
 {
   branch_heads_key cache_index(uid, ignore_suspend_certs, signers, true);
 
@@ -729,7 +735,8 @@ void
 project_t::get_branch_heads(branch_name const & name,
                             set<revision_id> & heads,
                             bool ignore_suspend_certs,
-                            multimap<revision_id, revision_id> * inverse_graph_cache_ptr)
+                            multimap<revision_id, revision_id>
+                                *inverse_graph_cache_ptr) const
 {
   branch_uid uid;
   set<key_id> signers;
@@ -738,7 +745,7 @@ project_t::get_branch_heads(branch_name const & name,
     uid = typecast_vocab<branch_uid>(name);
   else
     {
-      project_policy->lookup_branch(name, uid, signers);
+      project_policy->lookup_branch(*this, name, uid, signers);
       sign_ptr = &signers;
     }
 
@@ -781,7 +788,7 @@ project_t::revision_is_in_branch(revision_id const & id,
     {
       branch_uid uid;
       set<key_id> signers;
-      project_policy->lookup_branch(branch, uid, signers);
+      project_policy->lookup_branch(*this, branch, uid, signers);
 
       not_in_branch p(*this, uid, signers);
       return !p(id);
@@ -947,7 +954,7 @@ project_t::get_tags(set<tag_t> & tags)
     }
   else
     {
-      project_policy->all_tags(tags);
+      project_policy->all_tags(*this, tags);
       return outdated_indicator();
     }
 }
@@ -957,7 +964,7 @@ project_t::find_governing_policy(string const & of_what,
                                  policy_chain & info) const
 {
   I(!project_policy->passthru);
-  project_policy->find_governing_policy(of_what, info);
+  project_policy->find_governing_policy(*this, of_what, info);
 }
 
 void
@@ -970,7 +977,7 @@ project_t::put_tag(key_store & keys,
   else
     {
       policy_chain info;
-      project_policy->find_governing_policy(name, info);
+      project_policy->find_governing_policy(*this, name, info);
       E(!info.empty(), origin::user,
         F("Cannot find policy for tag '%s'") % name);
       E(info.back().delegation.is_branch_type(), origin::user,
@@ -1116,7 +1123,7 @@ void
 project_t::lookup_key_by_name(key_store * const keys,
                               lua_hooks & lua,
                               key_name const & name,
-                              key_id & id)
+                              key_id & id) const
 {
   set<key_id> ks_match_by_local_name;
   set<key_id> db_match_by_local_name;
@@ -1199,7 +1206,7 @@ project_t::lookup_key_by_name(key_store * const keys,
 void
 project_t::get_canonical_name_of_key(key_store * const keys,
                                      key_id const & id,
-                                     key_name & name)
+                                     key_name & name) const
 {
   if (keys && keys->key_pair_exists(id))
     {
@@ -1221,7 +1228,7 @@ project_t::get_canonical_name_of_key(key_store * const keys,
 void
 project_t::complete_key_identity(key_store * const keys,
                                  lua_hooks & lua,
-                                 key_identity_info & info)
+                                 key_identity_info & info) const
 {
   MM(info.id);
   MM(info.official_name);
@@ -1248,14 +1255,14 @@ project_t::complete_key_identity(key_store * const keys,
 void
 project_t::complete_key_identity(key_store & keys,
                                  lua_hooks & lua,
-                                 key_identity_info & info)
+                                 key_identity_info & info) const
 {
   complete_key_identity(&keys, lua, info);
 }
 
 void
 project_t::complete_key_identity(lua_hooks & lua,
-                                 key_identity_info & info)
+                                 key_identity_info & info) const
 {
   complete_key_identity(0, lua, info);
 }
@@ -1264,7 +1271,7 @@ void
 project_t::get_key_identity(key_store * const keys,
                             lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   try
     {
@@ -1286,7 +1293,7 @@ void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(&keys, lua, input, output);
 }
@@ -1294,7 +1301,7 @@ project_t::get_key_identity(key_store & keys,
 void
 project_t::get_key_identity(lua_hooks & lua,
                             external_key_name const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(0, lua, input, output);
 }
@@ -1303,7 +1310,7 @@ void
 project_t::get_key_identity(key_store & keys,
                             lua_hooks & lua,
                             arg_type const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(&keys, lua, typecast_vocab<external_key_name>(input), output);
 }
@@ -1311,7 +1318,7 @@ project_t::get_key_identity(key_store & keys,
 void
 project_t::get_key_identity(lua_hooks & lua,
                             arg_type const & input,
-                            key_identity_info & output)
+                            key_identity_info & output) const
 {
   get_key_identity(0, lua, typecast_vocab<external_key_name>(input), output);
 }

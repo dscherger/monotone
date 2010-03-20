@@ -20,20 +20,22 @@
 class project_t;
 
 namespace policies {
+  policy_ptr policy_from_revision(project_t const & project,
+                                  policy_ptr owner,
+                                  revision_id const & rev);
   class policy_branch
   {
   public:
-    typedef boost::shared_ptr<policy> policy_ptr;
     typedef std::set<policy_ptr> policy_set;
   private:
     policy_ptr spec_owner;
     branch spec;
     policy_set policies;
-    void reload(project_t & project);
+    void reload(project_t const & project);
   public:
     typedef policy_set::const_iterator iterator;
 
-    policy_branch(project_t & project,
+    policy_branch(project_t const & project,
                   policy_ptr parent_policy,
                   branch const & b);
     //policy_branch(delegation const & d);
@@ -44,6 +46,7 @@ namespace policies {
 
     iterator begin() const;
     iterator end() const;
+    size_t size() const;
 
     void commit(policy const & p, utf8 const & changelog,
 		iterator parent_1, iterator parent_2);

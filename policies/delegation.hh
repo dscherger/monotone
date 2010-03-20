@@ -20,6 +20,7 @@
 
 class app_state;
 class external_key_name;
+class project_t;
 
 namespace policies {
   class policy;
@@ -43,7 +44,8 @@ namespace policies {
     void serialize(std::string & out) const;
     void deserialize(std::string const & in);
 
-    boost::shared_ptr<policy> resolve(boost::shared_ptr<policy> parent) const;
+    boost::shared_ptr<policy> resolve(project_t const & project,
+                                      boost::shared_ptr<policy> parent) const;
   };
 }
 

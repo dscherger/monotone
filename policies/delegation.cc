@@ -12,6 +12,7 @@
 #include "policies/delegation.hh"
 
 #include "basic_io.hh"
+#include "policies/policy_branch.hh"
 #include "transforms.hh"
 
 using std::string;
@@ -84,6 +85,27 @@ namespace policies {
     }
   type = branch_type;
   branch_desc.deserialize(in);
+  }
+
+  boost::shared_ptr<policy>
+  delegation::resolve(project_t const & project,
+                      boost::shared_ptr<policy> parent) const
+  {
+    switch (type)
+      {
+      case revision_type:
+        return policy_from_revision(project, parent, revid);
+      case branch_type:
+        {
+          policy_branch br(project, parent, branch_desc);
+          E(br.size() == 1, origin::no_fault,
+            F("Policy branch '%s' has %d heads; need 1 head")
+            % branch_desc.get_uid() % br.size());
+          return *br.begin();
+        }
+        break;
+      }
+    I(false);
   }
 }
 

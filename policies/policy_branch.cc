@@ -87,13 +87,17 @@ namespace {
       return &value;
     }
   };
-  typedef policies::policy_branch::policy_ptr policy_ptr;
-  policy_ptr policy_from_revision(project_t & project,
+}
+
+namespace policies {
+  policy_ptr policy_from_revision(project_t const & project,
+                                  policy_ptr owner,
                                   revision_id const & rev)
   {
     roster_t the_roster;
     project.db.get_roster(rev, the_roster);
     policies::editable_policy pol;
+    pol.set_parent(owner);
 
     for (item_lister i(the_roster,
                        file_path_internal("branches"),
@@ -137,11 +141,8 @@ namespace {
 
     return policy_ptr(new policies::policy(pol));
   }
-}
-
-namespace policies {
-  policy_branch::policy_branch(project_t & project,
-                               policy_branch::policy_ptr parent_policy,
+  policy_branch::policy_branch(project_t const & project,
+                               policy_ptr parent_policy,
                                branch const & b)
     : spec_owner(parent_policy), spec(b)
   {
@@ -160,8 +161,12 @@ namespace policies {
   {
     return policies.end();
   }
+  size_t policy_branch::size() const
+  {
+    return policies.size();
+  }
 
-  void policy_branch::reload(project_t & project)
+  void policy_branch::reload(project_t const & project)
   {
     policies.clear();
     std::set<revision_id> heads;
@@ -189,7 +194,7 @@ namespace policies {
     for (std::set<revision_id>::const_iterator i = heads.begin();
          i != heads.end(); ++i)
       {
-        policies.insert(policy_from_revision(project, *i));
+        policies.insert(policy_from_revision(project, spec_owner, *i));
       }
   }
 }

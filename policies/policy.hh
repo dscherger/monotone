@@ -21,6 +21,8 @@
 #include "policies/delegation.hh"
 
 namespace policies {
+  class policy;
+  typedef boost::shared_ptr<policy> policy_ptr;
   class policy
   {
   public:
@@ -61,7 +63,7 @@ namespace policies {
 
     virtual bool outdated() const { return false; }
 
-    boost::shared_ptr<policy> get_parent() const;
+    policy_ptr get_parent() const;
   };
 }
 
