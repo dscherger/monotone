@@ -987,12 +987,13 @@ project_t::put_tag(key_store & keys,
                                  info.back().delegation.get_branch_spec());
 
       I(br.begin() != br.end());
-      policies::editable_policy ep(**br.begin());
+      policies::editable_policy ep(*br.begin()->second);
 
       ep.set_tag(name.substr(info.back().full_policy_name.size() + 1), id);
 
-      br.commit(ep, utf8((F("Set tag %s") % name).str(),
-                         origin::internal));
+      br.commit(*this, keys, ep,
+                utf8((F("Set tag %s") % name).str(),
+                     origin::internal));
     }
 }
 

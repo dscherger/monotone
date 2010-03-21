@@ -12,13 +12,19 @@
 #include "policies/policy_branch.hh"
 
 #include "database.hh"
+#include "dates.hh"
+#include "key_store.hh"
 #include "lexical_cast.hh"
+#include "merge_roster.hh"
 #include "policies/editable_policy.hh"
 #include "project.hh"
+#include "revision.hh"
 #include "roster.hh"
 #include "transforms.hh"
 #include "vocab_cast.hh"
 
+using std::make_pair;
+using std::map;
 using std::pair;
 using std::string;
 
@@ -194,8 +200,118 @@ namespace policies {
     for (std::set<revision_id>::const_iterator i = heads.begin();
          i != heads.end(); ++i)
       {
-        policies.insert(policy_from_revision(project, spec_owner, *i));
+        policies.insert(make_pair(*i, policy_from_revision(project,
+                                                           spec_owner,
+                                                           *i)));
       }
+  }
+
+  void policy_branch::commit(project_t & project,
+                             key_store & keys,
+                             policy const & p,
+                             utf8 const & changelog,
+                             policy_branch::iterator parent_1,
+                             policy_branch::iterator parent_2)
+  {
+    parent_map parents;
+    if (parent_1 != end())
+      {
+        cached_roster cr;
+        project.db.get_roster(parent_1->first, cr);
+        parents.insert(make_pair(parent_1->first, cr));
+      }
+    if (parent_2 != end())
+      {
+        cached_roster cr;
+        project.db.get_roster(parent_2->first, cr);
+        parents.insert(make_pair(parent_2->first, cr));
+      }
+    roster_t new_roster;
+    if (parents.empty())
+      {
+      }
+    else if (parents.size() == 1)
+      {
+        new_roster = *parents.begin()->second.first;
+      }
+    else
+      {
+        parent_map::const_iterator left = parents.begin();
+        parent_map::const_iterator right = left; ++right;
+
+
+        revision_id const & left_rid = left->first;
+        revision_id const & right_rid = right->first;
+        roster_t const & left_roster = *left->second.first;
+        roster_t const & right_roster = *right->second.first;
+        marking_map const & left_mm = *left->second.second;
+        marking_map const & right_mm = *right->second.second;
+
+        std::set<revision_id> left_ancestors, right_ancestors;
+        project.db.get_uncommon_ancestors(left_rid, right_rid,
+                                          left_ancestors,
+                                          right_ancestors);
+        roster_merge_result merge_result;
+        roster_merge(left_roster, left_mm, left_ancestors,
+                     right_roster, right_mm, right_ancestors,
+                     merge_result);
+        // should really check this after applying our changes
+        // (or check that the only conflicts are contents conflicts
+        // on items that we'll be overwriting)
+        E(merge_result.is_clean(), origin::user,
+          F("Cannot automatically merge policy branch"));
+        new_roster = merge_result.roster;
+      }
+
+    temp_node_id_source source;
+
+    policy::del_map const & p_delegations = p.list_delegations();
+    file_path delegation_path = file_path_internal("delegations");
+    if (!new_roster.has_node(delegation_path))
+      {
+        node_id n = new_roster.create_dir_node(source);
+        new_roster.attach_node(n, delegation_path);
+      }
+    for (policy::del_map::const_iterator i = p_delegations.begin();
+         i != p_delegations.end(); ++i)
+      {
+        string x;
+        i->second.serialize(x);
+        file_data dat(x, origin::internal);
+        file_id contents;
+        calculate_ident(dat, contents);
+        path_component name(i->first, origin::internal);
+        if (new_roster.has_node(delegation_path / name))
+          {
+            node_id n = new_roster.get_node(delegation_path / name)->self;
+            new_roster.set_content(n, contents);
+          }
+        else
+          {
+            node_id n = new_roster.create_file_node(contents, source);
+            new_roster.attach_node(n, delegation_path / name);
+          }
+      }
+
+    policy::key_map const & p_keys = p.list_keys();
+    map<string, branch> const & p_branches = p.list_branches();
+    map<string, revision_id> const & p_tags = p.list_tags();
+
+
+    revision_t rev;
+    make_revision(parents, new_roster, rev);
+    revision_id revid;
+    calculate_ident(rev, revid);
+
+    string author = decode_hexenc(keys.signing_key.inner()(), origin::internal);
+    transaction_guard guard(project.db);
+    project.db.put_revision(revid, rev);
+    project.put_standard_certs(keys, revid,
+                               spec.get_uid(),
+                               changelog,
+                               date_t::now(),
+                               author);
+    guard.commit();
   }
 }
 

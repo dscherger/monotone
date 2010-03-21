@@ -17,6 +17,7 @@
 #include "policies/delegation.hh"
 #include "policies/policy.hh"
 
+class key_store;
 class project_t;
 
 namespace policies {
@@ -26,7 +27,7 @@ namespace policies {
   class policy_branch
   {
   public:
-    typedef std::set<policy_ptr> policy_set;
+    typedef std::set<std::pair<revision_id, policy_ptr> > policy_set;
   private:
     policy_ptr spec_owner;
     branch spec;
@@ -48,16 +49,26 @@ namespace policies {
     iterator end() const;
     size_t size() const;
 
-    void commit(policy const & p, utf8 const & changelog,
-		iterator parent_1, iterator parent_2);
-    inline void commit(policy const & p, utf8 const & changelog,
+    void commit(project_t & project,
+                key_store & keys,
+                policy const & p,
+                utf8 const & changelog,
+		iterator parent_1,
+                iterator parent_2);
+    inline void commit(project_t & project,
+                       key_store & keys,
+                       policy const & p,
+                       utf8 const & changelog,
 		       iterator parent)
     {
-      commit(p, changelog, parent, end());
+      commit(project, keys, p, changelog, parent, end());
     }
-    inline void commit(policy const & p, utf8 const & changelog)
+    inline void commit(project_t & project,
+                       key_store & keys,
+                       policy const & p,
+                       utf8 const & changelog)
     {
-      commit(p, changelog, end());
+      commit(project, keys, p, changelog, end());
     }
   };
 }

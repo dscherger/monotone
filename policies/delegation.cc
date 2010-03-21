@@ -101,7 +101,7 @@ namespace policies {
           E(br.size() == 1, origin::no_fault,
             F("Policy branch '%s' has %d heads; need 1 head")
             % branch_desc.get_uid() % br.size());
-          return *br.begin();
+          return br.begin()->second;
         }
         break;
       }

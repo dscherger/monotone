@@ -26,6 +26,11 @@ namespace policies {
   {
   }
 
+  policy::key_map const & policy::list_keys() const
+  {
+    return keys;
+  }
+
   key_name policy::get_key_name(key_id const & ident) const
   {
     for (key_map::const_iterator k = keys.begin();

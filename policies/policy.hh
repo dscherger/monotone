@@ -46,6 +46,7 @@ namespace policies {
     // a key could have several names, should
     // there be an invariant against that?
     // should this really be the full key_name, or just the final suffix?
+    key_map const & list_keys() const;
     key_name get_key_name(key_id const & ident) const;
     key_id get_key_id(key_name const & ident) const;
 
@@ -63,7 +64,7 @@ namespace policies {
 
     virtual bool outdated() const { return false; }
 
-    policy_ptr get_parent() const;
+    //policy_ptr get_parent() const;
   };
 }
 
