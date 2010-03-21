@@ -491,6 +491,21 @@ function get_projects()
    return ret
 end
 
+function write_projects(projects)
+   if get_confdir() == nil then return false end
+   local project_dir = get_confdir() .. "/projects"
+   if not isdir(project_dir) then mkdir(project_dir) end
+
+   for name, contents in pairs(projects) do
+      local file = io.open(project_dir .. "/" .. name, "w")
+      if file == nil then return false end
+      file:write(contents)
+      file:close()
+   end
+
+   return true
+end
+
 -- merger support
 
 -- Fields in the mergers structure:

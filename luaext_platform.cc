@@ -205,6 +205,22 @@ LUAEXT(isdir, )
   return 1;
 }
 
+LUAEXT(mkdir, )
+{
+  try
+    {
+      char const * dirname = luaL_checkstring(LS, -1);
+      do_mkdir(dirname);
+      lua_pushboolean(LS, true);
+      return 1;
+    }
+  catch(recoverable_failure & e)
+    {
+      lua_pushnil(LS);
+      return 1;
+    }
+}
+
 namespace
 {
   struct build_table : public dirent_consumer

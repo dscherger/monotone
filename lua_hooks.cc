@@ -528,6 +528,26 @@ lua_hooks::hook_get_projects(std::map<std::string, data> & project_definitions)
   return ll.ok();
 }
 
+bool
+lua_hooks::hook_write_projects(std::map<std::string, data> const & project_definitions)
+{
+  Lua ll(st);
+  ll.func("write_projects");
+
+  ll.push_table();
+  for (std::map<std::string, data>::const_iterator i = project_definitions.begin();
+       i != project_definitions.end(); ++i)
+    {
+      ll.push_str(i->first);
+      ll.push_str(i->second());
+      ll.set_table();
+    }
+
+  bool ret;
+  ll.call(1, 0).extract_bool(ret);
+  return ret && ll.ok();
+}
+
 
 
 bool
