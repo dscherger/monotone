@@ -28,15 +28,15 @@ using std::pair;
 using std::set;
 using std::vector;
 
-revision_enumerator::revision_enumerator(project_t & project,
+revision_enumerator::revision_enumerator(database & db,
                                          enumerator_callbacks & cb)
-  : project(project), cb(cb)
+  : db(db), cb(cb)
 {
   revision_id root;
   revs.push_back(root);
 
-  project.db.get_forward_ancestry(graph);
-  project.db.get_reverse_ancestry(inverse_graph);
+  db.get_forward_ancestry(graph);
+  db.get_reverse_ancestry(inverse_graph);
 }
 
 void
@@ -98,7 +98,7 @@ revision_enumerator::files_for_revision(revision_id const & r,
 
   revision_t rs;
   MM(rs);
-  project.db.get_revision(r, rs);
+  db.get_revision(r, rs);
 
   for (edge_map::const_iterator i = rs.edges.begin();
        i != rs.edges.end(); ++i)
@@ -183,7 +183,7 @@ revision_enumerator::get_revision_certs(revision_id const & rid,
         hashes.push_back(i->second);
     }
   if (!found_one)
-    project.get_revision_cert_hashes(rid, hashes);
+    db.get_revision_certs(rid, hashes);
 }
 
 void

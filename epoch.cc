@@ -18,7 +18,7 @@ using std::string;
 
 void
 read_epoch(string const & in,
-           branch_name & branch, epoch_data & epoch)
+           branch_uid & branch, epoch_data & epoch)
 {
   size_t pos = 0;
   string raw_branch;
@@ -27,12 +27,12 @@ read_epoch(string const & in,
   raw_epoch = data(extract_substring(in, pos, constants::epochlen_bytes,
                                      "epoch, epoch data"),
                    origin::network);
-  branch = branch_name(raw_branch, origin::network);
+  branch = branch_uid(raw_branch, origin::network);
   epoch = epoch_data(raw_epoch);
 }
 
 void
-write_epoch(branch_name const & branch, epoch_data const & epoch,
+write_epoch(branch_uid const & branch, epoch_data const & epoch,
             string & out)
 {
   insert_variable_length_string(branch(), out);
@@ -40,7 +40,7 @@ write_epoch(branch_name const & branch, epoch_data const & epoch,
 }
 
 void
-epoch_hash_code(branch_name const & branch, epoch_data const & epoch,
+epoch_hash_code(branch_uid const & branch, epoch_data const & epoch,
                 epoch_id & eid)
 {
   string tmp(branch() + ":" + encode_hexenc(epoch.inner()(),
