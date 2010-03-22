@@ -120,7 +120,8 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   parent.set_delegation(del_name(), policies::delegation::create(app, admin_keys));
 
   parent_branch.commit(project, keys, parent,
-                       utf8("Add delegation to new child policy"));
+                       utf8("Add delegation to new child policy"),
+                       parent_branch.begin());
 }
 
 CMD(create_branch, "create_branch", "", CMD_REF(policy),
@@ -163,7 +164,8 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     suffix = branch_name("__main__", origin::internal);
   ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
   parent.commit(project, keys, ppol,
-                utf8("Add branch."));
+                utf8("Add branch."),
+                parent.begin());
 }
 
 CMD_FWD_DECL(list);

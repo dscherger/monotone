@@ -275,7 +275,9 @@ namespace policies {
     roster_t new_roster;
     if (parents.empty())
       {
-        
+        // prevent creation of extra heads
+        I(begin() == end());
+
         parents.insert(make_pair(revision_id(),
                                  make_pair(roster_t_cp(new roster_t()),
                                            marking_map_cp(new marking_map()))));

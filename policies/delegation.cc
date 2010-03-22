@@ -102,6 +102,11 @@ namespace policies {
             {
               W(F("Policy branch '%s' has %d heads; need 1 head")
                 % branch_desc.get_uid() % br.size());
+              for (policy_branch::iterator i = br.begin();
+                   i != br.end(); ++i)
+                {
+                  W(F("Heads are: '%s'") % i->first);
+                }
               return boost::shared_ptr<policy>();
             }
           return br.begin()->second;
