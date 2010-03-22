@@ -57,11 +57,11 @@ namespace {
         }
       const_dir_t dir = downcast_to_dir_t(n);
       i = dir->children.begin();
+      end = dir->children.end();
       while (i != end && !is_file_t(i->second))
         {
           ++i;
         }
-      end = dir->children.end();
       if ((bool)*this)
         {
           get(value.first, value.second);
@@ -83,6 +83,8 @@ namespace {
     }
     void get(string & name, data & contents) const
     {
+      if (!(bool)*this)
+        return;
       name = i->first();
       file_t f = downcast_to_file_t(i->second);
       file_data fdat;
