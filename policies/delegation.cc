@@ -98,9 +98,12 @@ namespace policies {
       case branch_type:
         {
           policy_branch br(project, parent, branch_desc);
-          E(br.size() == 1, origin::no_fault,
-            F("Policy branch '%s' has %d heads; need 1 head")
-            % branch_desc.get_uid() % br.size());
+          if (br.size() != 1)
+            {
+              W(F("Policy branch '%s' has %d heads; need 1 head")
+                % branch_desc.get_uid() % br.size());
+              return boost::shared_ptr<policy>();
+            }
           return br.begin()->second;
         }
         break;

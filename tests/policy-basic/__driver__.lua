@@ -6,8 +6,8 @@ check(mtn("genkey", "other@test.net"), 0, false, false,
 
 check(mtn("create_project", "test_project"), 0, false, false)
 
-check(mtn("ls", "branches"), 0, true)
-check(qgrep("test_project.__policy__", "stdout"), 0)
+check(mtn("ls", "branches"), 0, true, false)
+check(not qgrep("test_project.__policy__", "stdout"))
 
 check(mtn("checkout", "checkout", "--branch=test_project.__policy__"), 0)
 

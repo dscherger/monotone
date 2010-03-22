@@ -63,7 +63,6 @@ CMD(create_project, "create_project", "", CMD_REF(policy),
                             F("Configuration directory is a file."));
   require_path_is_nonexistent(project_file,
                               F("You already have a project with that name."));
-  mkdir_p(project_dir);
 
   cache_user_key(app.opts, app.lua, db, keys, project);
 

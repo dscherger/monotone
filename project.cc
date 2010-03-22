@@ -107,6 +107,9 @@ void walk_policies(project_t const & project,
                    string current_prefix = "",
                    policies::delegation del = policies::delegation())
 {
+  if (!root)
+    return;
+
   fn(root, current_prefix, del);
 
   policy::del_map const & d(root->list_delegations());
@@ -252,19 +255,18 @@ class policy_info
   child_policy_map child_policies;
 public:
   bool passthru;
-  explicit policy_info(database & db)
-    : policy(),
-      passthru(true)
+  policy_info()
+    : policy(), passthru(true)
   {
   }
-  policy_info(shared_ptr<policies::policy> const & ep, database & db)
-    : policy(ep), passthru(false)
+  policy_info(bool passthru, shared_ptr<policies::policy> const & ep)
+    : policy(ep), passthru(passthru)
   {
   }
 
   policies::policy const & get_base_policy() const
   {
-    I(!passthru);
+    I(policy);
     return *policy;
   }
 
@@ -404,17 +406,14 @@ operator<<(std::ostream & os,
 project_t::project_t(database & db)
   : db(db)
 {
-  project_policy.reset(new policy_info(db));
+  project_policy.reset(new policy_info());
 }
 
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
   : db(db)
 {
   shared_ptr<policies::base_policy> bp(new policies::base_policy(db, opts, lua));
-  if (bp->empty())
-    project_policy.reset(new policy_info(db));
-  else
-    project_policy.reset(new policy_info(bp, db));
+  project_policy.reset(new policy_info(bp->empty(), bp));
 }
 
 project_t
