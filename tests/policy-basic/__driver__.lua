@@ -9,8 +9,8 @@ check(mtn("create_project", "test_project"), 0, false, false)
 check(mtn("ls", "branches"), 0, true, false)
 check(not qgrep("test_project.__policy__", "stdout"))
 
---check(mtn("checkout", "checkout", "--branch=test_project.__policy__"), 0)
-check(mtn("setup", "checkout", "--branch=test_project.__policy__"), 0)
+check(mtn("create_branch", "test_project.test_branch"), 0, nil, false)
+check(mtn("checkout", "checkout", "--branch=test_project.__policy__"), 0)
 
 chdir("checkout")
 
@@ -33,7 +33,6 @@ check(qgrep("already merged", "stderr"))
 
 chdir("..")
 addfile("branch_file", "datadatadata")
-check(mtn("create_branch", "test_project.test_branch"), 0, nil, false)
 commit("test_project.test_branch", "hackhackhack")
 chdir("checkout")
 
