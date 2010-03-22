@@ -9,9 +9,13 @@ check(mtn("create_project", "test_project"), 0, false, false)
 check(mtn("ls", "branches"), 0, true, false)
 check(not qgrep("test_project.__policy__", "stdout"))
 
-check(mtn("checkout", "checkout", "--branch=test_project.__policy__"), 0)
+--check(mtn("checkout", "checkout", "--branch=test_project.__policy__"), 0)
+check(mtn("setup", "checkout", "--branch=test_project.__policy__"), 0)
 
 chdir("checkout")
+
+addfile("file0", "data0")
+check(mtn("ci", "-mbase", "--branch=test_project.__policy__"), 0, false, false)
 
 base=base_revision()
 
@@ -27,31 +31,47 @@ check(mtn("commit", "-mbad", "--key=other@test.net",
 check(mtn("merge", "--branch=test_project.__policy__"), 0, false, true)
 check(qgrep("already merged", "stderr"))
 
+chdir("..")
+addfile("branch_file", "datadatadata")
+check(mtn("create_branch", "test_project.test_branch"), 0)
+commit("test_project.test_branch", "hackhackhack")
+chdir("checkout")
+
 check(mtn("update", "-r", base), 0, false, false)
 addfile("file3", "data3")
--- This will actually fail after the commit proper if --policy-revision
--- isn't given, because you can't get the new head count because the
--- policy is suddenly invalid...
-check(mtn("ci", "-mtwogood", "--branch=test_project.__policy__",
-          "--policy-revision=test_project@" .. base), 0, false, false)
+commit("test_project.__policy__", "twogood")
 
 -- Can't do stuff now, because the policy branch has two heads.
-check(mtn("heads", "--branch=test_project.__policy__"), 1, false, false)
-check(mtn("merge", "--branch=test_project.__policy__"), 1, false, false)
+chdir("..")
+addfile("otherfile", "otherdata")
+check(mtn("ci", "--branch=test_project.test_branch", "-mx"), 1)
+check(mtn("heads", "--branch=test_project.test_branch"), 1)
+
+-- but can do stuff with the --policy-revision option
+check(mtn("ci", "-mcommit", "--branch=test_project.test_branch",
+          "--policy-revision=test_project@" .. base), 0, false, false)
+
+chdir("checkout")
 
 -- check that we can recover from this
-check(mtn("merge", "--branch=test_project.__policy__",
-	  "--policy-revision=test_project@" .. base), 0, false, false)
+check(mtn("merge", "--branch=test_project.__policy__"), 0, false, false)
 
 check(mtn("update", "-r", base), 0, false, false)
 check(mtn("up"), 0, false, false)
 
 check(base ~= base_revision())
 
+chdir("..")
+addfile("foo", "bar")
+commit("test_project.test_branch")
+tip = base_revision()
+
+chdir("checkout")
+
 -- check that we can delegate using a revision id
 mkdir("delegations")
 addfile("delegations/tp", "revision_id [" .. base .. "]");
 check(mtn("ci", "-mx", "--branch=test_project.__policy__"), 0, false, false)
 
-check(mtn("heads", "--branch=test_project.tp.__policy__"), 0, true, false)
-check(qgrep(base_revision(), "stdout"), 0, false, false)
+check(mtn("heads", "--branch=test_project.tp.test_branch"), 0, true, false)
+check(qgrep(tip, "stdout"), 0, false, false)

@@ -37,13 +37,20 @@ public:
   std::string operator()() const;
 
   std::string::size_type size() const;
+  inline bool empty() const { return size() == 0; }
 
   // note that a branch name is a prefix of itself
   bool has_prefix(branch_name const & pre) const;
   bool strip_prefix(branch_name const & pre);
 
+  bool has_postfix(branch_name const & post) const;
+  // yes, this is inconsistent. probably the others should be changed to
+  // match, rather than this being changed.
+  branch_name without_postfix(branch_name const & post) const;
+
   void prepend(branch_name const & pre);
   void append(branch_name const & post);
+  branch_name operator/(branch_name const & post) const;
 };
 
 std::ostream & operator << (std::ostream & s, branch_name const & b);

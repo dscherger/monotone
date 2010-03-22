@@ -83,7 +83,7 @@ namespace policies {
 struct policy_chain_item
 {
   boost::shared_ptr<policies::policy> policy;
-  std::string full_policy_name;
+  branch_name full_policy_name;
   policies::delegation delegation;
 };
 
@@ -131,7 +131,7 @@ public:
 
   policies::policy const & get_base_policy() const;
 
-  void find_governing_policy(std::string const & of_what,
+  void find_governing_policy(branch_name const & of_what,
                              policy_chain & info) const;
 
   bool policy_exists(branch_name const & name) const;

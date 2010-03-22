@@ -1,6 +1,8 @@
 #include "base.hh"
 #include "branch_name.hh"
 
+#include "sanity.hh"
+
 using std::string;
 
 branch_name::branch_name()
@@ -48,6 +50,33 @@ branch_name::strip_prefix(branch_name const & pre)
   return true;
 }
 
+bool
+branch_name::has_postfix(branch_name const & post) const
+{
+  if (post.data.empty())
+    return true;
+  if (data.size() == post.data.size())
+    return data == post.data;
+  else if (data.size() > post.data.size())
+    {
+      size_t len_diff = data.size() - post.data.size();
+      bool ends_with = data.substr(len_diff) == post.data;
+      return ends_with && data[len_diff-1] == '.';
+    }
+  else
+    return false;
+}
+
+branch_name
+branch_name::without_postfix(branch_name const & post) const
+{
+  I(has_postfix(post));
+  size_t len_diff = data.size() - post.data.size();
+  branch_name ret(*this);
+  ret.data.erase(len_diff-1);
+  return ret;
+}
+
 void
 branch_name::prepend(branch_name const & pre)
 {
@@ -67,6 +96,14 @@ branch_name::append(branch_name const & post)
   if (!data.empty())
     data += ".";
   data += post.data;
+}
+
+branch_name
+branch_name::operator/(branch_name const & post) const
+{
+  branch_name ret(*this);
+  ret.append(post);
+  return ret;
 }
 
 bool

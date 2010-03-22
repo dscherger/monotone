@@ -44,6 +44,11 @@ namespace {
                 database & db)
       : db(db), badbit(false)
     {
+      if (!ros.has_node(dir_name))
+        {
+          badbit = true;
+          return;
+        }
       const_node_t n = ros.get_node(dir_name);
       if (!is_dir_t(n))
         {
@@ -229,6 +234,10 @@ namespace policies {
     roster_t new_roster;
     if (parents.empty())
       {
+        
+        parents.insert(make_pair(revision_id(),
+                                 make_pair(roster_t_cp(new roster_t()),
+                                           marking_map_cp(new marking_map()))));
       }
     else if (parents.size() == 1)
       {
@@ -264,6 +273,12 @@ namespace policies {
       }
 
     temp_node_id_source source;
+
+    if (!new_roster.has_root())
+      {
+        node_id n = new_roster.create_dir_node(source);
+        new_roster.attach_node(n, file_path_internal(""));
+      }
 
     policy::del_map const & p_delegations = p.list_delegations();
     file_path delegation_path = file_path_internal("delegations");
@@ -303,7 +318,7 @@ namespace policies {
     revision_id revid;
     calculate_ident(rev, revid);
 
-    string author = decode_hexenc(keys.signing_key.inner()(), origin::internal);
+    string author = encode_hexenc(keys.signing_key.inner()(), origin::internal);
     transaction_guard guard(project.db);
     project.db.put_revision(revid, rev);
     project.put_standard_certs(keys, revid,

@@ -91,12 +91,14 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name name = typecast_vocab<branch_name>(idx(args, 0));
 
+  cache_user_key(app.opts, app.lua, db, keys, project);
+
   policy_chain gov;
-  project.find_governing_policy(name(), gov);
+  project.find_governing_policy(name, gov);
 
   E(!gov.empty(), origin::user,
     F("Cannot find a parent policy for '%s'") % name);
-  E(gov.back().full_policy_name != name(), origin::user,
+  E(gov.back().full_policy_name != name, origin::user,
     F("Policy '%s' already exists") % name);
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % name);
@@ -114,7 +116,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
   }
   branch_name del_name(name);
-  del_name.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
+  del_name.strip_prefix(gov.back().full_policy_name);
   parent.set_delegation(del_name(), policies::delegation::create(app, admin_keys));
 
   parent_branch.commit(project, keys, parent,
@@ -135,8 +137,10 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   project_t project(db, app.lua, app.opts);
   branch_name branch = typecast_vocab<branch_name>(idx(args, 0));
 
+  cache_user_key(app.opts, app.lua, db, keys, project);
+
   policy_chain gov;
-  project.find_governing_policy(branch(), gov);
+  project.find_governing_policy(branch, gov);
 
   E(!gov.empty(), origin::user,
     F("Cannot find policy over '%s'") % branch);
@@ -154,7 +158,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
   }
   branch_name suffix(branch);
-  suffix.strip_prefix(branch_name(gov.back().full_policy_name, origin::internal));
+  suffix.strip_prefix(gov.back().full_policy_name);
   if (suffix().empty())
     suffix = branch_name("__main__", origin::internal);
   ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
