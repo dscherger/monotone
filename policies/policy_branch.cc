@@ -211,6 +211,45 @@ namespace policies {
       }
   }
 
+  namespace {
+    class content_putter
+    {
+      roster_t & roster;
+      dir_t dir;
+      map<file_id, file_data> & files;
+      node_id_source & source;
+    public:
+      content_putter(roster_t & ros, file_path const & dir_name,
+                     map<file_id, file_data> & files,
+                     node_id_source & source)
+        : roster(ros), files(files), source(source)
+      {
+        if (!roster.has_node(dir_name))
+          {
+            node_id n = roster.create_dir_node(source);
+            roster.attach_node(n, dir_name);
+          }
+        node_t n = roster.get_node_for_update(dir_name);
+        dir = downcast_to_dir_t(n);
+      }
+      void set(path_component const & cx, file_data const & dat)
+      {
+        file_id ident;
+        calculate_ident(dat, ident);
+        files.insert(make_pair(ident, dat));
+        if (dir->has_child(cx))
+          {
+            roster.set_content(dir->get_child(cx)->self, ident);
+          }
+        else
+          {
+            node_id n = roster.create_file_node(ident, source);
+            roster.attach_node(n, dir->self, cx);
+          }
+      }
+    };
+  }
+
   void policy_branch::commit(project_t & project,
                              key_store & keys,
                              policy const & p,
@@ -279,47 +318,74 @@ namespace policies {
         node_id n = new_roster.create_dir_node(source);
         new_roster.attach_node(n, file_path_internal(""));
       }
+    map<file_id, file_data> files;
 
     policy::del_map const & p_delegations = p.list_delegations();
-    file_path delegation_path = file_path_internal("delegations");
-    if (!new_roster.has_node(delegation_path))
-      {
-        node_id n = new_roster.create_dir_node(source);
-        new_roster.attach_node(n, delegation_path);
-      }
+    content_putter del_putter(new_roster,
+                              file_path_internal("delegations"),
+                              files, source);
     for (policy::del_map::const_iterator i = p_delegations.begin();
          i != p_delegations.end(); ++i)
       {
         string x;
         i->second.serialize(x);
-        file_data dat(x, origin::internal);
-        file_id contents;
-        calculate_ident(dat, contents);
-        path_component name(i->first, origin::internal);
-        if (new_roster.has_node(delegation_path / name))
-          {
-            node_id n = new_roster.get_node(delegation_path / name)->self;
-            new_roster.set_content(n, contents);
-          }
-        else
-          {
-            node_id n = new_roster.create_file_node(contents, source);
-            new_roster.attach_node(n, delegation_path / name);
-          }
+        del_putter.set(path_component(i->first, origin::internal),
+                       file_data(x, origin::internal));
       }
 
     policy::key_map const & p_keys = p.list_keys();
+    content_putter key_putter(new_roster,
+                              file_path_internal("keys"),
+                              files, source);
+    for (policy::key_map::const_iterator i = p_keys.begin();
+         i != p_keys.end(); ++i)
+      {
+        string x = encode_hexenc(i->second.inner()(), origin::internal);
+        key_putter.set(path_component(i->first(), origin::internal),
+                       file_data(x, origin::internal));
+      }
+
+
     map<string, branch> const & p_branches = p.list_branches();
+    content_putter branch_putter(new_roster,
+                                 file_path_internal("branches"),
+                                 files, source);
+    for (map<string, branch>::const_iterator i = p_branches.begin();
+         i != p_branches.end(); ++i)
+      {
+        string x;
+        i->second.serialize(x);
+        branch_putter.set(path_component(i->first, origin::internal),
+                          file_data(x, origin::internal));
+      }
+
+
     map<string, revision_id> const & p_tags = p.list_tags();
+    content_putter tag_putter(new_roster,
+                              file_path_internal("tags"),
+                              files, source);
+    for (map<string, revision_id>::const_iterator i = p_tags.begin();
+         i != p_tags.end(); ++i)
+      {
+        string x = encode_hexenc(i->second.inner()(), origin::internal);
+        tag_putter.set(path_component(i->first, origin::internal),
+                       file_data(x, origin::internal));
+      }
 
 
     revision_t rev;
     make_revision(parents, new_roster, rev);
+    rev.made_for = made_for_database;
     revision_id revid;
     calculate_ident(rev, revid);
 
     string author = encode_hexenc(keys.signing_key.inner()(), origin::internal);
     transaction_guard guard(project.db);
+    for (map<file_id, file_data>::const_iterator f = files.begin();
+         f != files.end(); ++f)
+      {
+        project.db.put_file(f->first, f->second);
+      }
     project.db.put_revision(revid, rev);
     project.put_standard_certs(keys, revid,
                                spec.get_uid(),

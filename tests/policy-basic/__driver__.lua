@@ -33,7 +33,7 @@ check(qgrep("already merged", "stderr"))
 
 chdir("..")
 addfile("branch_file", "datadatadata")
-check(mtn("create_branch", "test_project.test_branch"), 0)
+check(mtn("create_branch", "test_project.test_branch"), 0, nil, false)
 commit("test_project.test_branch", "hackhackhack")
 chdir("checkout")
 
