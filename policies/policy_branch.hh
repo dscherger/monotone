@@ -13,9 +13,11 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "origin_type.hh"
 #include "policies/branch.hh"
 #include "policies/delegation.hh"
-#include "policies/policy.hh"
+#include "policies/editable_policy.hh"
+
 
 class key_store;
 class project_t;
@@ -26,50 +28,35 @@ namespace policies {
                                   revision_id const & rev);
   class policy_branch
   {
-  public:
-    typedef std::set<std::pair<revision_id, policy_ptr> > policy_set;
-  private:
     policy_ptr spec_owner;
     branch spec;
-    policy_set policies;
-    void reload(project_t const & project);
+    size_t _num_heads;
+    editable_policy my_policy;
+    bool loaded;
+    bool reload(project_t const & project);
   public:
-    typedef policy_set::const_iterator iterator;
-
     policy_branch(project_t const & project,
                   policy_ptr parent_policy,
                   branch const & b);
-    //policy_branch(delegation const & d);
 
     branch const & get_spec() const;
 
-    policy create_initial_revision() const;
-
-    iterator begin() const;
-    iterator end() const;
-    size_t size() const;
-
-    void commit(project_t & project,
-                key_store & keys,
-                policy const & p,
-                utf8 const & changelog,
-		iterator parent_1,
-                iterator parent_2);
-    inline void commit(project_t & project,
-                       key_store & keys,
-                       policy const & p,
-                       utf8 const & changelog,
-		       iterator parent)
-    {
-      commit(project, keys, p, changelog, parent, end());
-    }
-    inline void commit(project_t & project,
-                       key_store & keys,
-                       policy const & p,
-                       utf8 const & changelog)
-    {
-      commit(project, keys, p, changelog, end());
-    }
+    size_t num_heads() const;
+    // return false if we can't get a coherent policy, due to
+    // having multiple heads and they can't be auto-merged
+    bool try_get_policy(policy & pol) const;
+    // wraper that will E() for you
+    void get_policy(policy & pol, origin::type ty) const;
+    // return false if the commit fails, due to
+    // having multiple heads that can't be auto-merged
+    bool try_commit(project_t & project, key_store & keys,
+                    policy const & pol,
+                    utf8 const & message);
+    // wrapper that will E() for you
+    void commit(project_t & project, key_store & keys,
+                policy const & pol,
+                utf8 const & message,
+                origin::type ty);
   };
 }
 

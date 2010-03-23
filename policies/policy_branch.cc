@@ -103,15 +103,11 @@ namespace {
 }
 
 namespace policies {
-  policy_ptr policy_from_revision(project_t const & project,
-                                  policy_ptr owner,
-                                  revision_id const & rev)
+  void policy_from_roster(project_t const & project,
+                          roster_t const & the_roster,
+                          editable_policy & pol)
   {
-    roster_t the_roster;
-    project.db.get_roster(rev, the_roster);
-    policies::editable_policy pol;
-    pol.set_parent(owner);
-
+    pol.clear();
     for (item_lister i(the_roster,
                        file_path_internal("branches"),
                        project.db);
@@ -151,66 +147,151 @@ namespace policies {
         key_id id = decode_hexenc_as<key_id>(s, origin::internal);
         pol.set_key(key_name(i->first, origin::internal), id);
       }
-
-    return policy_ptr(new policies::policy(pol));
   }
+  policy_ptr policy_from_revision(project_t const & project,
+                                  policy_ptr owner,
+                                  revision_id const & rev)
+  {
+    roster_t the_roster;
+    project.db.get_roster(rev, the_roster);
+    policies::editable_policy pol;
+    pol.set_parent(owner);
+    policy_from_roster(project, the_roster, pol);
+    return policy_ptr(new policy(pol));
+  }
+
   policy_branch::policy_branch(project_t const & project,
                                policy_ptr parent_policy,
                                branch const & b)
     : spec_owner(parent_policy), spec(b)
   {
-    reload(project);
+    loaded = reload(project);
   }
   branch const & policy_branch::get_spec() const
   {
     return spec;
   }
-
-  policy_branch::iterator policy_branch::begin() const
+  size_t policy_branch::num_heads() const
   {
-    return policies.begin();
-  }
-  policy_branch::iterator policy_branch::end() const
-  {
-    return policies.end();
-  }
-  size_t policy_branch::size() const
-  {
-    return policies.size();
+    return _num_heads;
   }
 
-  void policy_branch::reload(project_t const & project)
+  namespace {
+    void get_heads(project_t const & project,
+                   branch const & spec,
+                   policy_ptr const & spec_owner,
+                   std::set<revision_id> & heads)
+    {
+      heads.clear();
+      std::set<key_id> keys;
+      std::set<external_key_name> const & key_names = spec.get_signers();
+      for (std::set<external_key_name>::const_iterator i = key_names.begin();
+           i != key_names.end(); ++i)
+        {
+          id ident;
+          if (try_decode_hexenc((*i)(), ident))
+            {
+              keys.insert(key_id(ident));
+            }
+          else
+            {
+              key_name name = typecast_vocab<key_name>(*i);
+              keys.insert(spec_owner->get_key_id(name));
+            }
+        }
+      project.get_branch_heads(spec.get_uid(),
+                               keys,
+                               heads,
+                               false);
+    }
+    void get_rosters(project_t const & project,
+                     std::set<revision_id> const & heads,
+                     parent_map & rosters)
+    {
+      rosters.clear();
+      for (std::set<revision_id>::const_iterator h = heads.begin();
+           h != heads.end(); ++h)
+        {
+          cached_roster cr;
+          project.db.get_roster(*h, cr);
+          rosters.insert(make_pair(*h, cr));
+        }
+      if (heads.empty())
+        {
+          rosters.insert(make_pair(revision_id(),
+                                   make_pair(roster_t_cp(new roster_t()),
+                                             marking_map_cp(new marking_map()))));
+        }
+    }
+    enum parent_result { parent_clean, parent_semiclean, parent_fail };
+    parent_result try_merge_parents(project_t const & project,
+                                    parent_map const & parents,
+                                    roster_t & roster)
+    {
+      if (parents.size() > 2)
+        return parent_fail;
+      if (parents.size() == 1)
+        {
+          roster = *parents.begin()->second.first;
+          return parent_clean;
+        }
+
+      
+      parent_map::const_iterator left = parents.begin();
+      parent_map::const_iterator right = left; ++right;
+
+      revision_id const & left_rid = left->first;
+      revision_id const & right_rid = right->first;
+      roster_t const & left_roster = *left->second.first;
+      roster_t const & right_roster = *right->second.first;
+      marking_map const & left_mm = *left->second.second;
+      marking_map const & right_mm = *right->second.second;
+
+      std::set<revision_id> left_ancestors, right_ancestors;
+      project.db.get_uncommon_ancestors(left_rid, right_rid,
+                                        left_ancestors,
+                                        right_ancestors);
+      roster_merge_result merge_result;
+      roster_merge(left_roster, left_mm, left_ancestors,
+                   right_roster, right_mm, right_ancestors,
+                   merge_result);
+      roster = merge_result.roster;
+
+      if (merge_result.is_clean())
+        return parent_clean;
+      else
+        return parent_fail; // eh, don't bother with 'semiclean'
+    }
+  }
+
+  bool policy_branch::reload(project_t const & project)
   {
-    policies.clear();
     std::set<revision_id> heads;
-    std::set<key_id> keys;
-    std::set<external_key_name> const & key_names = spec.get_signers();
-    for (std::set<external_key_name>::const_iterator i = key_names.begin();
-         i != key_names.end(); ++i)
-      {
-        id ident;
-        if (try_decode_hexenc((*i)(), ident))
-          {
-            keys.insert(key_id(ident));
-          }
-        else
-          {
-            key_name name = typecast_vocab<key_name>(*i);
-            keys.insert(spec_owner->get_key_id(name));
-          }
-      }
-    project.get_branch_heads(spec.get_uid(),
-                             keys,
-                             heads,
-                             false);
+    get_heads(project, spec, spec_owner, heads);
+    _num_heads = heads.size();
+    parent_map rosters;
+    get_rosters(project, heads, rosters);
+    roster_t roster;
+    parent_result res = try_merge_parents(project, rosters, roster);
+    if (res == parent_fail)
+      return false;
 
-    for (std::set<revision_id>::const_iterator i = heads.begin();
-         i != heads.end(); ++i)
-      {
-        policies.insert(make_pair(*i, policy_from_revision(project,
-                                                           spec_owner,
-                                                           *i)));
-      }
+    policy_from_roster(project, roster, my_policy);
+    my_policy.set_parent(spec_owner);
+    return true;
+  }
+  bool policy_branch::try_get_policy(policy & pol) const
+  {
+    if (!loaded)
+      return false;
+    pol = my_policy;
+    return true;
+  }
+  void policy_branch::get_policy(policy & pol, origin::type ty) const
+  {
+    E(try_get_policy(pol), ty,
+      F("cannot sanely combine %d heads of policy")
+      % _num_heads);
   }
 
   namespace {
@@ -256,64 +337,26 @@ namespace policies {
                              key_store & keys,
                              policy const & p,
                              utf8 const & changelog,
-                             policy_branch::iterator parent_1,
-                             policy_branch::iterator parent_2)
+                             origin::type ty)
   {
+    E(try_commit(project, keys, p, changelog), ty,
+      F("cannot automatically merge %d heads of policy branch")
+      % _num_heads);
+  }
+  bool policy_branch::try_commit(project_t & project,
+                                 key_store & keys,
+                                 policy const & p,
+                                 utf8 const & changelog)
+  {
+    std::set<revision_id> heads;
+    get_heads(project, spec, spec_owner, heads);
     parent_map parents;
-    if (parent_1 != end())
-      {
-        cached_roster cr;
-        project.db.get_roster(parent_1->first, cr);
-        parents.insert(make_pair(parent_1->first, cr));
-      }
-    if (parent_2 != end())
-      {
-        cached_roster cr;
-        project.db.get_roster(parent_2->first, cr);
-        parents.insert(make_pair(parent_2->first, cr));
-      }
+    get_rosters(project, heads, parents);
+
     roster_t new_roster;
-    if (parents.empty())
-      {
-        // prevent creation of extra heads
-        I(begin() == end());
-
-        parents.insert(make_pair(revision_id(),
-                                 make_pair(roster_t_cp(new roster_t()),
-                                           marking_map_cp(new marking_map()))));
-      }
-    else if (parents.size() == 1)
-      {
-        new_roster = *parents.begin()->second.first;
-      }
-    else
-      {
-        parent_map::const_iterator left = parents.begin();
-        parent_map::const_iterator right = left; ++right;
-
-
-        revision_id const & left_rid = left->first;
-        revision_id const & right_rid = right->first;
-        roster_t const & left_roster = *left->second.first;
-        roster_t const & right_roster = *right->second.first;
-        marking_map const & left_mm = *left->second.second;
-        marking_map const & right_mm = *right->second.second;
-
-        std::set<revision_id> left_ancestors, right_ancestors;
-        project.db.get_uncommon_ancestors(left_rid, right_rid,
-                                          left_ancestors,
-                                          right_ancestors);
-        roster_merge_result merge_result;
-        roster_merge(left_roster, left_mm, left_ancestors,
-                     right_roster, right_mm, right_ancestors,
-                     merge_result);
-        // should really check this after applying our changes
-        // (or check that the only conflicts are contents conflicts
-        // on items that we'll be overwriting)
-        E(merge_result.is_clean(), origin::user,
-          F("Cannot automatically merge policy branch"));
-        new_roster = merge_result.roster;
-      }
+    parent_result res = try_merge_parents(project, parents, new_roster);
+    if (res != parent_clean)
+      return false;
 
     temp_node_id_source source;
 
@@ -397,6 +440,7 @@ namespace policies {
                                date_t::now(),
                                author);
     guard.commit();
+    return true;
   }
 }
 

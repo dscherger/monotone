@@ -17,6 +17,15 @@ namespace policies {
     :  policy(p)
   { }
 
+  void editable_policy::clear()
+  {
+    keys.clear();
+    branches.clear();
+    tags.clear();
+    delegations.clear();
+    parent.reset();
+  }
+
   void editable_policy::set_parent(boost::weak_ptr<policy> const & parent)
   {
     this->parent = parent;

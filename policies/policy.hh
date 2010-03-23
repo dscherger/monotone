@@ -37,9 +37,8 @@ namespace policies {
 
     boost::weak_ptr<policy> parent;
 
-    policy();
-
   public:
+    policy();
     virtual ~policy();
 
     // keys

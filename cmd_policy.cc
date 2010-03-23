@@ -106,7 +106,8 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
                                         gov.back().policy,
                                         gov.back().delegation.get_branch_spec());
 
-  policies::editable_policy parent(*parent_branch.begin()->second);
+  policies::editable_policy parent;
+  parent_branch.get_policy(parent, origin::user);
 
   std::set<external_key_name> admin_keys;
   {
@@ -121,7 +122,7 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
 
   parent_branch.commit(project, keys, parent,
                        utf8("Add delegation to new child policy"),
-                       parent_branch.begin());
+                       origin::user);
 }
 
 CMD(create_branch, "create_branch", "", CMD_REF(policy),
@@ -147,10 +148,12 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
     F("Cannot find policy over '%s'") % branch);
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % branch);
+
   policies::policy_branch parent(project,
                                  gov.back().policy,
                                  gov.back().delegation.get_branch_spec());
-  policies::editable_policy ppol(*parent.begin()->second);
+  policies::editable_policy ppol;
+  parent.get_policy(ppol, origin::user);
   std::set<external_key_name> admin_keys;
   {
     key_identity_info ident;
@@ -165,7 +168,7 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
   parent.commit(project, keys, ppol,
                 utf8("Add branch."),
-                parent.begin());
+                origin::user);
 }
 
 CMD_FWD_DECL(list);

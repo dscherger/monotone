@@ -98,18 +98,15 @@ namespace policies {
       case branch_type:
         {
           policy_branch br(project, parent, branch_desc);
-          if (br.size() != 1)
+          policy_ptr ret(new policy());
+          if (br.try_get_policy(*ret))
+            return ret;
+          else
             {
-              W(F("Policy branch '%s' has %d heads; need 1 head")
-                % branch_desc.get_uid() % br.size());
-              for (policy_branch::iterator i = br.begin();
-                   i != br.end(); ++i)
-                {
-                  W(F("Heads are: '%s'") % i->first);
-                }
-              return boost::shared_ptr<policy>();
+              W(F("Policy branch '%s' has %d heads and cannot be automatically merged")
+                % branch_desc.get_uid() % br.num_heads());
+              return policy_ptr();
             }
-          return br.begin()->second;
         }
         break;
       }
