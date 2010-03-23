@@ -1119,6 +1119,11 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   workspace work(app);
   project_t project(db, app.lua, app.opts);
 
+  E(project.branch_exists(app.opts.branch), origin::user,
+    F("branch '%s' does not exist, perhaps you want 'create_branch'")
+    % app.opts.branch);
+
+
   utf8 log_message("");
   bool log_message_given;
   revision_t restricted_rev;

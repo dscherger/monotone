@@ -156,10 +156,8 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   parent.get_policy(ppol, origin::user);
   std::set<external_key_name> admin_keys;
   {
-    key_identity_info ident;
-    ident.id = keys.signing_key;
-    project.complete_key_identity(keys, app.lua, ident);
-    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
+    string k = encode_hexenc(keys.signing_key.inner()(), origin::internal);
+    admin_keys.insert(external_key_name(k, origin::internal));
   }
   branch_name suffix(branch);
   suffix.strip_prefix(gov.back().full_policy_name);

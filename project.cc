@@ -310,7 +310,9 @@ public:
     walk_policies(project, policy, child_policies, tag_lister(tags));
   }
 
-  branch_uid translate_branch(project_t const & project, branch_name const & name)
+  bool try_translate_branch(project_t const & project,
+                            branch_name const & name,
+                            branch_uid & uid)
   {
     L(FL("Translating branch '%s'") % name);
     map<branch_name, branch_info> branch_map;
@@ -318,7 +320,8 @@ public:
     map<branch_name, branch_info>::const_iterator i = branch_map.find(name);
     if (i != branch_map.end())
       {
-        return i->second.self.get_uid();
+        uid = i->second.self.get_uid();
+        return true;
       }
 
     L(FL("branch '%s' does not exist") % name);
@@ -338,12 +341,24 @@ public:
                 policies::delegation del = info.back().delegation;
                 if (del.is_branch_type())
                   {
-                    return del.get_branch_spec().get_uid();
+                    uid = del.get_branch_spec().get_uid();
+                    return true;
                   }
               }
           }
       }
-    I(false);
+    return false;
+  }
+
+  branch_uid translate_branch(project_t const & project, branch_name const & name)
+  {
+    branch_uid uid;
+    E(try_translate_branch(project, name, uid), origin::no_fault,
+      F("branch '%s' does not exist; please inform %s of what "
+        "command you ran to get this message so we can replace it with "
+        "a better one")
+      % name % PACKAGE_BUGREPORT);
+    return uid;
   }
 
   branch_name translate_branch(project_t const & project, branch_uid const & uid)
@@ -370,17 +385,23 @@ public:
     if (i != branch_map.end())
       {
         uid = i->second.self.get_uid();
+        L(FL("found uid '%s' for branch '%s'") % uid % name);
         set<external_key_name> const & raw_signers = i->second.self.get_signers();
         for (set<external_key_name>::const_iterator k = raw_signers.begin();
              k != raw_signers.end(); ++k)
           {
             id id;
             if (try_decode_hexenc((*k)(), id))
-              signers.insert(key_id(id));
+              {
+                L(FL("branch has signer '%s'") % *k);
+                signers.insert(key_id(id));
+              }
             else
               {
                 key_name kn = typecast_vocab<key_name>(*k);
-                signers.insert(i->second.owner->get_key_id(kn));
+                key_id id = i->second.owner->get_key_id(kn);
+                L(FL("branch has signer '%s' (%s)") % kn % id);
+                signers.insert(id);
               }
           }
         return;
@@ -421,7 +442,11 @@ public:
               }
           }
       }
-    I(false);
+    E(false, origin::no_fault,
+      F("branch '%s' does not exist; please inform %s of what "
+        "command you ran to get this message so we can replace it with "
+        "a better one")
+      % name % PACKAGE_BUGREPORT);
   }
 
   void find_governing_policy(project_t const & project,
@@ -817,6 +842,13 @@ project_t::get_branch_heads(branch_uid const & uid,
   heads = branch.second;
 }
 
+bool project_t::branch_exists(branch_name const & name) const
+{
+  if (project_policy->passthru)
+    return true;
+  branch_uid uid;
+  return project_policy->try_translate_branch(*this, name, uid);
+}
 
 void
 project_t::get_branch_heads(branch_name const & name,

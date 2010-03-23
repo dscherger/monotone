@@ -322,7 +322,9 @@ namespace policies {
         files.insert(make_pair(ident, dat));
         if (dir->has_child(cx))
           {
-            roster.set_content(dir->get_child(cx)->self, ident);
+            file_id current = downcast_to_file_t(dir->get_child(cx))->content;
+            if (current != ident)
+              roster.set_content(dir->get_child(cx)->self, ident);
           }
         else
           {

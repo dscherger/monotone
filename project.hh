@@ -156,7 +156,7 @@ public:
                         std::multimap<revision_id, revision_id>
                             *inverse_graph_cache_ptr = NULL) const;
 
-
+  bool branch_exists(branch_name const & name) const;
   void get_branch_heads(branch_name const & name,
                         std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
