@@ -2319,7 +2319,7 @@ msgstr "(Revision: %s)"
 #: cmd_ws_commit.cc:59
 #, c-format
 msgid "Current revision: %s"
-msgstr "Derzeitiger Revision: %s"
+msgstr "Derzeitige Revision: %s"
 
 #: cmd_ws_commit.cc:65
 #, c-format
