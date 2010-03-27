@@ -3426,7 +3426,7 @@ so monotone is conservative and will refuse to destroy the information
 in your workspace contents. Furthermore, all workspace-changing commands have
 an option @option{--move-conflicting-paths}, which moves unversioned, but
 conflicting files and directories from the workspace into a new subdirectory
-under _MTN/conflicts. This is useful if you want to ensure that an update
+under _MTN/resolutions. This is useful if you want to ensure that an update
 always succeeds and you just want to move blocking paths out of the way.
 
 However, monotone cannot detect all kinds of failures and collisions in
