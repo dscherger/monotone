@@ -354,12 +354,15 @@ LUAEXT(change_workspace, )
   if (path_exists(ws / bookkeeping_root_component / ".") )
     {
       workspace::found = true;
+      lua_pushboolean(LS, true);
       return 1;
     }
   else
     {
-      P(F("directory %s is not a workspace") % ws);
-      return 0;
+      i18n_format msg(F("directory %s is not a workspace") % ws);
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.str().data(), msg.str().size());
+      return 2;
     }
 }
 
