@@ -335,20 +335,23 @@ namespace policies {
     };
   }
 
-  void policy_branch::commit(project_t & project,
-                             key_store & keys,
-                             policy const & p,
-                             utf8 const & changelog,
-                             origin::type ty)
+  revision_id policy_branch::commit(project_t & project,
+                                    key_store & keys,
+                                    policy const & p,
+                                    utf8 const & changelog,
+                                    origin::type ty)
   {
-    E(try_commit(project, keys, p, changelog), ty,
+    revision_id result;
+    E(try_commit(project, keys, p, changelog, result), ty,
       F("cannot automatically merge %d heads of policy branch")
       % _num_heads);
+    return result;
   }
   bool policy_branch::try_commit(project_t & project,
                                  key_store & keys,
                                  policy const & p,
-                                 utf8 const & changelog)
+                                 utf8 const & changelog,
+                                 revision_id & result)
   {
     std::set<revision_id> heads;
     get_heads(project, spec, spec_owner, heads);
@@ -442,6 +445,7 @@ namespace policies {
                                date_t::now(),
                                author);
     guard.commit();
+    result = revid;
     return true;
   }
 }

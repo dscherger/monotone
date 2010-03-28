@@ -12,19 +12,23 @@ check(mtn("checkout", "checkout", "--branch=test_project.subproject.__policy__")
 
 check(exists("checkout/delegations/subsub"))
 
+function require_parent_is(parent_policy)
+   check(qgrep("Parent policy is '"..parent_policy.."'", "stderr"))
+end
+
 policies = "test_project\n"
 policies = policies .. "test_project.subproject\n"
 policies = policies .. "test_project.subproject.subsub\n"
 check(mtn("ls", "policies", "-R"), 0, policies)
 
 check(mtn("create_branch", "test_project.firstbranch"), 0, false, true)
-check(qgrep("Parent policy: test_project$", "stderr"))
+require_parent_is("test_project")
 
 check(mtn("create_branch", "test_project.subproject.secondbranch"), 0, false, true)
-check(qgrep("Parent policy: test_project.subproject$", "stderr"))
+require_parent_is("test_project.subproject")
 
 check(mtn("create_branch", "test_project.subproject.subsub.thirdbranch"), 0, false, true)
-check(qgrep("Parent policy: test_project.subproject.subsub$", "stderr"))
+require_parent_is("test_project.subproject.subsub")
 
 check(mtn("ls", "branches"), 0, true)
 

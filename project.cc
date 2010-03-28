@@ -552,6 +552,7 @@ project_t::get_subpolicies(branch_name const & name,
     return;
 
   project_policy->list_policies(*this, name, names);
+  names.erase(name);
 }
 
 

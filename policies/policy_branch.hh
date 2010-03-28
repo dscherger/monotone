@@ -51,12 +51,13 @@ namespace policies {
     // having multiple heads that can't be auto-merged
     bool try_commit(project_t & project, key_store & keys,
                     policy const & pol,
-                    utf8 const & message);
+                    utf8 const & message,
+                    revision_id & result);
     // wrapper that will E() for you
-    void commit(project_t & project, key_store & keys,
-                policy const & pol,
-                utf8 const & message,
-                origin::type ty);
+    revision_id commit(project_t & project, key_store & keys,
+                       policy const & pol,
+                       utf8 const & message,
+                       origin::type ty);
   };
 }
 

@@ -102,6 +102,9 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
     F("Policy '%s' already exists") % name);
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % name);
+
+  P(F("Parent policy is '%s'") % gov.back().full_policy_name);
+
   policies::policy_branch parent_branch(project,
                                         gov.back().policy,
                                         gov.back().delegation.get_branch_spec());
@@ -110,19 +113,15 @@ CMD(create_subpolicy, "create_subpolicy", "", CMD_REF(policy),
   parent_branch.get_policy(parent, origin::user);
 
   std::set<external_key_name> admin_keys;
-  {
-    key_identity_info ident;
-    ident.id = keys.signing_key;
-    project.complete_key_identity(keys, app.lua, ident);
-    admin_keys.insert(typecast_vocab<external_key_name>(ident.official_name));
-  }
+  admin_keys.insert(key_id_to_external_name(keys.signing_key));
   branch_name del_name(name);
   del_name.strip_prefix(gov.back().full_policy_name);
   parent.set_delegation(del_name(), policies::delegation::create(app, admin_keys));
 
-  parent_branch.commit(project, keys, parent,
-                       utf8("Add delegation to new child policy"),
-                       origin::user);
+  revision_id revid = parent_branch.commit(project, keys, parent,
+                                           utf8("Add delegation to new child policy"),
+                                           origin::user);
+  P(F("Committed revision '%s' to parent policy.") % revid);
 }
 
 CMD(create_branch, "create_branch", "", CMD_REF(policy),
@@ -149,24 +148,24 @@ CMD(create_branch, "create_branch", "", CMD_REF(policy),
   E(gov.back().delegation.is_branch_type(), origin::user,
     F("cannot edit '%s', it is delegated to a specific revision") % branch);
 
+  P(F("Parent policy is '%s'") % gov.back().full_policy_name);
+
   policies::policy_branch parent(project,
                                  gov.back().policy,
                                  gov.back().delegation.get_branch_spec());
   policies::editable_policy ppol;
   parent.get_policy(ppol, origin::user);
   std::set<external_key_name> admin_keys;
-  {
-    string k = encode_hexenc(keys.signing_key.inner()(), origin::internal);
-    admin_keys.insert(external_key_name(k, origin::internal));
-  }
+  admin_keys.insert(key_id_to_external_name(keys.signing_key));
   branch_name suffix(branch);
   suffix.strip_prefix(gov.back().full_policy_name);
   if (suffix().empty())
     suffix = branch_name("__main__", origin::internal);
   ppol.set_branch(suffix(), policies::branch::create(app, admin_keys));
-  parent.commit(project, keys, ppol,
-                utf8("Add branch."),
-                origin::user);
+  revision_id revid = parent.commit(project, keys, ppol,
+                                    utf8("Add branch."),
+                                    origin::user);
+  P(F("Committed revision '%s' to parent policy.") % revid);
 }
 
 CMD_FWD_DECL(list);
@@ -181,7 +180,7 @@ void list_policy(project_t const & proj, branch_name const & prefix, bool recurs
       for (std::set<branch_name>::const_iterator i = subpolicies.begin();
            i != subpolicies.end(); ++i)
         {
-          list_policy(proj, *i, recursive);
+          std::cout<<*i<<'\n';
         }
     }
 }
@@ -204,7 +203,7 @@ CMD(policies, "policies", "", CMD_REF(list),
       for (std::set<branch_name>::const_iterator i = subpolicies.begin();
            i != subpolicies.end(); ++i)
         {
-          list_policy(project, *i, app.opts.recursive);
+          std::cout<<*i<<'\n';
         }
     }
   else
