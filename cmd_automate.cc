@@ -1,4 +1,5 @@
 // Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -332,6 +333,34 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
         }
     }
     global_sanity.set_out_of_band_handler();
+}
+
+LUAEXT(change_workspace, )
+{
+  const system_path ws(luaL_checkstring(LS, -1), origin::user);
+  app_state* app_p = get_app_state(LS);
+
+  try
+    {
+      go_to_workspace(ws);
+    }
+  catch (recoverable_failure & f)
+    {
+      // need a variant of P that doesn't require F?
+      P(F(f.what()));
+    }
+
+  // go_to_workspace doesn't check that it is a workspace, nor set workspace::found!
+  if (path_exists(ws / bookkeeping_root_component / ".") )
+    {
+      workspace::found = true;
+      return 1;
+    }
+  else
+    {
+      P(F("directory %s is not a workspace") % ws);
+      return 0;
+    }
 }
 
 LUAEXT(mtn_automate, )
