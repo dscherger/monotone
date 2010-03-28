@@ -560,12 +560,19 @@ CMD(tags, "tags", "", CMD_REF(list), "",
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
     {
-      key_identity_info identity;
-      identity.id = i->key;
-      project.complete_key_identity(app.lua, identity);
       cout << i->name << ' '
-           << i->ident << ' '
-           << format_key(identity)  << '\n';
+           << i->ident;
+      if (!i->key.inner()().empty())
+        {
+          key_identity_info identity;
+          identity.id = i->key;
+          project.complete_key_identity(app.lua, identity);
+          cout << ' ' << format_key(identity)  << '\n';
+        }
+      else
+        {
+          cout << '\n';
+        }
     }
 }
 
