@@ -374,7 +374,7 @@ prepare_diff(app_state & app,
   // The resulting diff is output in 'included'.
 
   // initialize before transaction so we have a database to work with.
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(app.opts.revision_selectors.size() <= 2, origin::user,
     F("more than two revisions given"));
@@ -740,7 +740,7 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
     options::opts::no_graph)
 {
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   string date_fmt;
   if (app.opts.format_dates)

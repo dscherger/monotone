@@ -47,7 +47,7 @@ CMD(cvs_import, "cvs_import", "", CMD_REF(vcs), N_("CVSROOT"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);

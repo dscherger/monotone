@@ -383,7 +383,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
 {
   database db(app);
   key_store keys(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   if (args.size() != 1)
     throw usage(execid);
@@ -432,8 +432,10 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     calculate_ident(rdat, inv_id);
     db.put_revision(inv_id, rdat);
 
-    project.put_standard_certs_from_options(app.opts, app.lua, keys,
-                                            inv_id, app.opts.branch,
+    project.put_standard_certs_from_options(app.opts, app.lua,
+                                            keys,
+                                            inv_id,
+                                            app.opts.branch,
                                             log_message);
     guard.commit();
   }
@@ -667,7 +669,7 @@ CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
   system_path dir;
 
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
   transaction_guard guard(db, false);
 
   if (args.size() > 1 || app.opts.revision_selectors.size() > 1)
@@ -1115,7 +1117,12 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   database db(app);
   key_store keys(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
+
+  E(project.branch_exists(app.opts.branch), origin::user,
+    F("branch '%s' does not exist, perhaps you want 'create_branch'")
+    % app.opts.branch);
+
 
   utf8 log_message("");
   bool log_message_given;
@@ -1320,7 +1327,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
         db.put_revision(restricted_rev_id, rdat);
       }
 
-    project.put_standard_certs_from_options(app.opts, app.lua, keys,
+    project.put_standard_certs_from_options(app.opts, app.lua,
+                                            keys,
                                             restricted_rev_id,
                                             app.opts.branch,
                                             log_message);
@@ -1409,7 +1417,7 @@ CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
   revision_id ident;
   system_path dir;
   database db(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   E(args.size() == 1, origin::user,
     F("you must specify a directory to import"));
@@ -1549,7 +1557,7 @@ CMD(reset, "reset", "", CMD_REF(bisect), "",
 
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   vector<bisect::entry> info;
   work.get_bisect_info(info);
@@ -1782,7 +1790,7 @@ bisect_update(app_state & app, bisect::type type)
 {
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
@@ -1897,7 +1905,7 @@ CMD(bisect_status, "status", "", CMD_REF(bisect), "",
 
   database db(app);
   workspace work(app);
-  project_t project(db);
+  project_t project(db, app.lua, app.opts);
 
   parent_map parents;
   work.get_parent_rosters(db, parents);
