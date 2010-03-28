@@ -14,9 +14,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include "origin_type.hh"
+#include "outdated_indicator.hh"
 #include "policies/branch.hh"
 #include "policies/delegation.hh"
 #include "policies/editable_policy.hh"
+#include "policies/outdatable_policy.hh"
 
 
 class key_store;
@@ -33,6 +35,7 @@ namespace policies {
     size_t _num_heads;
     editable_policy my_policy;
     bool loaded;
+    outdated_indicator _indicator;
     bool reload(project_t const & project);
   public:
     policy_branch(project_t const & project,
@@ -44,8 +47,9 @@ namespace policies {
     size_t num_heads() const;
     // return false if we can't get a coherent policy, due to
     // having multiple heads and they can't be auto-merged
-    bool try_get_policy(policy & pol) const;
+    bool try_get_policy(outdatable_policy & pol) const;
     // wraper that will E() for you
+    void get_policy(outdatable_policy & pol, origin::type ty) const;
     void get_policy(policy & pol, origin::type ty) const;
     // return false if the commit fails, due to
     // having multiple heads that can't be auto-merged

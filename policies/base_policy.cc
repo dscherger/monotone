@@ -26,21 +26,22 @@ using std::string;
 class database;
 
 namespace policies {
-  base_policy::base_policy(database & db, options const & opts, lua_hooks & lua):
-    _empty(true)
+  base_policy::base_policy(options const & opts, lua_hooks & lua):
+    _opts(opts), _lua(lua), _empty(true)
   {
-    load(db, opts, lua);
+    reload();
   }
   bool base_policy::empty() const
   {
     return _empty;
   }
 
-  void base_policy::load(database & db, options const & opts, lua_hooks & lua)
+  void base_policy::reload()
   {
+    delegations.clear();
     typedef map<branch_name, hexenc<id> > override_map;
-    for (override_map::const_iterator i = opts.policy_revisions.begin();
-         i != opts.policy_revisions.end(); ++i)
+    for (override_map::const_iterator i = _opts.policy_revisions.begin();
+         i != _opts.policy_revisions.end(); ++i)
       {
         id r;
         decode_hexenc(i->second, r);
@@ -50,7 +51,7 @@ namespace policies {
 
     typedef map<string, data> hook_map;
     hook_map hm;
-    lua.hook_get_projects(hm);
+    _lua.hook_get_projects(hm);
     for (hook_map::const_iterator i = hm.begin(); i != hm.end(); ++i)
       {
         if (delegations.find(i->first) == delegations.end())

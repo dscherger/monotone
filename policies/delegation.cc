@@ -17,6 +17,8 @@
 
 using std::string;
 
+using boost::shared_ptr;
+
 namespace basic_io {
   namespace syms {
     static symbol revision_id("revision_id");
@@ -98,9 +100,11 @@ namespace policies {
       case branch_type:
         {
           policy_branch br(project, parent, branch_desc);
-          policy_ptr ret(new policy());
+          shared_ptr<outdatable_policy> ret(new outdatable_policy());
           if (br.try_get_policy(*ret))
-            return ret;
+            {
+              return ret;
+            }
           else
             {
               W(F("Policy branch '%s' has %d heads and cannot be automatically merged")

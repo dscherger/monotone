@@ -82,6 +82,7 @@ MOST_SOURCES = 								\
 	policies/branch.hh policies/branch.cc				\
 	policies/delegation.hh policies/delegation.cc			\
 	policies/editable_policy.hh policies/editable_policy.cc		\
+	policies/outdatable_policy.hh policies/outdatable_policy.cc	\
 	policies/policy.hh policies/policy.cc				\
 	policies/policy_branch.hh policies/policy_branch.cc		\
 	merkle_tree.cc merkle_tree.hh 					\

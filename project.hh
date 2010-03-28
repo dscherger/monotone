@@ -149,12 +149,12 @@ public:
   branch_name translate_branch(branch_uid const & branch);
 
   // internal for policy stuff
-  void get_branch_heads(branch_uid const & uid,
-                        std::set<key_id> const & signers,
-                        std::set<revision_id> & heads,
-                        bool ignore_suspend_certs,
-                        std::multimap<revision_id, revision_id>
-                            *inverse_graph_cache_ptr = NULL) const;
+  outdated_indicator get_branch_heads(branch_uid const & uid,
+                                      std::set<key_id> const & signers,
+                                      std::set<revision_id> & heads,
+                                      bool ignore_suspend_certs,
+                                      std::multimap<revision_id, revision_id>
+                                      *inverse_graph_cache_ptr = NULL) const;
 
   bool branch_exists(branch_name const & name) const;
   void get_branch_heads(branch_name const & name,

@@ -177,10 +177,10 @@ namespace policies {
   }
 
   namespace {
-    void get_heads(project_t const & project,
-                   branch const & spec,
-                   policy_ptr const & spec_owner,
-                   std::set<revision_id> & heads)
+    outdated_indicator get_heads(project_t const & project,
+                                 branch const & spec,
+                                 policy_ptr const & spec_owner,
+                                 std::set<revision_id> & heads)
     {
       heads.clear();
       std::set<key_id> keys;
@@ -199,10 +199,10 @@ namespace policies {
               keys.insert(spec_owner->get_key_id(name));
             }
         }
-      project.get_branch_heads(spec.get_uid(),
-                               keys,
-                               heads,
-                               false);
+      return project.get_branch_heads(spec.get_uid(),
+                                      keys,
+                                      heads,
+                                      false);
     }
     void get_rosters(project_t const & project,
                      std::set<revision_id> const & heads,
@@ -267,7 +267,7 @@ namespace policies {
   bool policy_branch::reload(project_t const & project)
   {
     std::set<revision_id> heads;
-    get_heads(project, spec, spec_owner, heads);
+    _indicator = get_heads(project, spec, spec_owner, heads);
     _num_heads = heads.size();
     parent_map rosters;
     get_rosters(project, heads, rosters);
@@ -280,18 +280,31 @@ namespace policies {
     my_policy.set_parent(spec_owner);
     return true;
   }
-  bool policy_branch::try_get_policy(policy & pol) const
+  bool policy_branch::try_get_policy(outdatable_policy & pol) const
   {
     if (!loaded)
-      return false;
-    pol = my_policy;
-    return true;
+      {
+        pol.set_indicator(_indicator);
+        return false;
+      }
+    else
+      {
+        pol = my_policy;
+        pol.set_indicator(_indicator);
+        return true;
+      }
   }
-  void policy_branch::get_policy(policy & pol, origin::type ty) const
+  void policy_branch::get_policy(outdatable_policy & pol, origin::type ty) const
   {
     E(try_get_policy(pol), ty,
       F("cannot sanely combine %d heads of policy")
       % _num_heads);
+  }
+  void policy_branch::get_policy(policy & pol, origin::type ty) const
+  {
+    outdatable_policy p;
+    get_policy(p, ty);
+    pol = p;
   }
 
   namespace {

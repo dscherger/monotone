@@ -8,34 +8,30 @@
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 // PURPOSE.
 
-#ifndef __POLICIES_BASE_POLICY_HH__
-#define __POLICIES_BASE_POLICY_HH__
+#ifndef __POLICIES_OUTDATABLE_POLICY__
+#define __POLICIES_OUTDATABLE_POLICY__
 
+#include "outdated_indicator.hh"
 #include "policies/policy.hh"
 
-class database;
-class lua_hooks;
-class options;
+class outdated_indicator;
 
 namespace policies {
-  // The top-level policy, defined by command-line options and lua hooks.
-  class base_policy : public policy
+  class outdatable_policy : public policy
   {
-    options const & _opts;
-    lua_hooks & _lua;
-    bool _empty;
+    outdated_indicator ind;
   public:
-    base_policy(options const & opts, lua_hooks & lua);
-    bool empty() const;
-    void reload();
-    inline bool outdated() const { return false; }
+    outdatable_policy();
+    explicit outdatable_policy(policy const & p);
+    outdatable_policy const & operator=(policy const & p);
 
-    // Use lua hooks to write out the given policy.
-    static void write(lua_hooks & lua, policy const & pol);
+    bool outdated() const;
+    void set_indicator(outdated_indicator const & new_ind);
   };
 }
 
 #endif
+
 // Local Variables:
 // mode: C++
 // fill-column: 76

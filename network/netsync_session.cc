@@ -622,6 +622,16 @@ netsync_session::request_service()
   // user requested
   set<branch_name> all_branches, ok_branches;
   project.get_branch_list(all_branches);
+  {
+    set<branch_name> policies;
+    project.get_subpolicies(branch_name(), policies);
+    branch_name suffix("__policy__", origin::internal);
+    for (set<branch_name>::const_iterator i = policies.begin();
+         i != policies.end(); ++i)
+      {
+        all_branches.insert(*i / suffix);
+      }
+  }
   for (set<branch_name>::const_iterator i = all_branches.begin();
       i != all_branches.end(); i++)
     {

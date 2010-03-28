@@ -98,14 +98,16 @@ bool operator<(policy_key const & l, policy_key const & r)
 
 typedef map<policy_key, shared_ptr<policy> > child_policy_map;
 
+typedef boost::function<void(shared_ptr<policy>, branch_name const &,
+                             policies::delegation const &)> policy_walker;
+
 // walk the tree of policies, resolving children if needed
-void walk_policies(project_t const & project,
-                   shared_ptr<policy> root,
-                   child_policy_map & children,
-                   boost::function<void(shared_ptr<policy>, branch_name const &,
-                                        policies::delegation const &)> fn,
-                   branch_name current_prefix = branch_name(),
-                   policies::delegation del = policies::delegation())
+void walk_policies_internal(project_t const & project,
+                            shared_ptr<policy> root,
+                            child_policy_map & children,
+                            policy_walker fn,
+                            branch_name current_prefix,
+                            policies::delegation del)
 {
   L(FL("Walking policies; root = %d, current prefix = '%s'")
     % (bool)root % current_prefix);
@@ -130,16 +132,56 @@ void walk_policies(project_t const & project,
       child_policy_map::iterator c = children.find(child_key);
       if (c == children.end())
         {
+          L(FL("loaded new policy '%s'") % child_prefix);
           pair<child_policy_map::iterator, bool> x =
             children.insert(make_pair(child_key,
                                       i->second.resolve(project, root)));
           c = x.first;
         }
+      else if (!c->second || c->second->outdated())
+        {
+          if (c->second)
+            L(FL("policy '%s' did not resolve; reloading") % child_prefix);
+          else
+            L(FL("policy '%s' marked outdated; reloading (will reload all children)")
+              % child_prefix);
+          c->second = i->second.resolve(project, root);
+        }
 
-      walk_policies(project, c->second, children, fn, child_prefix, i->second);
+      walk_policies_internal(project, c->second, children, fn, child_prefix, i->second);
     }
   L(FL("Done walking under prefix '%s'")
     % current_prefix);
+}
+void walk_policies(project_t const & project,
+                   shared_ptr<policy> root_policy,
+                   child_policy_map & children,
+                   policy_walker fn)
+{
+  if (root_policy->outdated())
+    {
+      L(FL("root policy is marked outdated; reloading (will reload all children)..."));
+      shared_ptr<policies::base_policy> bp
+        = boost::dynamic_pointer_cast<policies::base_policy>(root_policy);
+      bp->reload();
+    }
+
+  walk_policies_internal(project, root_policy, children, fn,
+                         branch_name(), policies::delegation());
+
+  set<policy_key> dead_policies;
+  for (child_policy_map::const_iterator i = children.begin();
+       i != children.end(); ++i)
+    {
+      policies::policy_ptr p = i->first.parent.lock();
+      if (!p || p->outdated())
+        dead_policies.insert(i->first);
+    }
+  for (set<policy_key>::const_iterator i = dead_policies.begin();
+       i != dead_policies.end(); ++i)
+    {
+      children.erase(*i);
+    }
 }
 
 struct branch_info
@@ -516,7 +558,7 @@ project_t::project_t(database & db)
 project_t::project_t(database & db, lua_hooks & lua, options & opts)
   : db(db)
 {
-  shared_ptr<policies::base_policy> bp(new policies::base_policy(db, opts, lua));
+  shared_ptr<policies::base_policy> bp(new policies::base_policy(opts, lua));
   project_policy.reset(new policy_info(bp->empty(), bp));
 }
 
@@ -839,7 +881,7 @@ namespace
   }
 }
 
-void
+outdated_indicator
 project_t::get_branch_heads(branch_uid const & uid,
                             std::set<key_id> const & signers,
                             std::set<revision_id> & heads,
@@ -857,6 +899,7 @@ project_t::get_branch_heads(branch_uid const & uid,
                       inverse_graph_cache_ptr);
 
   heads = branch.second;
+  return branch.first;
 }
 
 bool project_t::branch_exists(branch_name const & name) const
