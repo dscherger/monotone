@@ -1211,6 +1211,16 @@ netsync_session::prepare_to_confirm(key_identity_info const & client_identity,
   set<branch_name> ok_branches, all_branches;
 
   project.get_branch_list(all_branches);
+  {
+    set<branch_name> policies;
+    project.get_subpolicies(branch_name(), policies);
+    branch_name suffix("__policy__", origin::internal);
+    for (set<branch_name>::const_iterator i = policies.begin();
+         i != policies.end(); ++i)
+      {
+        all_branches.insert(*i / suffix);
+      }
+  }
   globish_matcher matcher(our_include_pattern, our_exclude_pattern);
 
   for (set<branch_name>::const_iterator i = all_branches.begin();
