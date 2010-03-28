@@ -505,6 +505,49 @@ lua_hooks::hook_accept_testresult_change(map<key_id, bool> const & old_results,
   return exec_ok && ok;
 }
 
+bool
+lua_hooks::hook_get_projects(std::map<std::string, data> & project_definitions)
+{
+  project_definitions.clear();
+
+  bool x;
+  Lua ll(st);
+  ll.func("get_projects")
+    .call(0,1);
+
+  ll.begin();
+  while(ll.next())
+    {
+      string key;
+      string value;
+      ll.extract_str(value).pop().extract_str(key);
+      if (ll.ok())
+        project_definitions.insert(make_pair(key, data(value, origin::user)));
+    }
+
+  return ll.ok();
+}
+
+bool
+lua_hooks::hook_write_projects(std::map<std::string, data> const & project_definitions)
+{
+  Lua ll(st);
+  ll.func("write_projects");
+
+  ll.push_table();
+  for (std::map<std::string, data>::const_iterator i = project_definitions.begin();
+       i != project_definitions.end(); ++i)
+    {
+      ll.push_str(i->first);
+      ll.push_str(i->second());
+      ll.set_table();
+    }
+
+  bool ret;
+  ll.call(1, 0).extract_bool(ret);
+  return ret && ll.ok();
+}
+
 
 
 bool

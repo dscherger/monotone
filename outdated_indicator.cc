@@ -58,7 +58,7 @@ outdated_indicator::outdated_indicator(boost::shared_ptr<outdated_indicator_fact
 {}
 
 bool
-outdated_indicator::outdated()
+outdated_indicator::outdated() const
 {
   if (parent)
     {

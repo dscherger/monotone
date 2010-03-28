@@ -19,7 +19,8 @@ namespace origin {
     workspace,
     system,
     user,
-    no_fault
+    no_fault,
+    try_xform // failed checks will throw try_xform_failed and not log
   };
 }
 

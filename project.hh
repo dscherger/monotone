@@ -13,8 +13,12 @@
 #include <map>
 #include <set>
 
+#include "branch_name.hh"
 #include "cert.hh"
+//#include "editable_policy.hh"
 #include "outdated_indicator.hh"
+#include "policies/delegation.hh"
+#include "vector.hh"
 #include "vocab.hh"
 
 class arg_type;
@@ -59,14 +63,46 @@ operator<<(std::ostream & os,
 class tag_t
 {
 public:
-  revision_id ident;
-  utf8 name;
+  revision_id const ident;
+  utf8 const name;
   key_id key;
-  tag_t(revision_id const & ident, utf8 const & name, key_id const & key);
+  tag_t(revision_id const & ident,
+        utf8 const & name,
+        key_id const & key);
 };
 bool operator < (tag_t const & a, tag_t const & b);
 
 typedef bool suspended_indicator;
+
+class policy_info;
+
+namespace policies {
+  class policy;
+}
+
+struct policy_chain_item
+{
+  boost::shared_ptr<policies::policy> policy;
+  branch_name full_policy_name;
+  policies::delegation delegation;
+};
+
+typedef std::vector<policy_chain_item> policy_chain;
+
+class branch_heads_key
+{
+public:
+  branch_uid uid;
+  bool ignore_suspends;
+  std::set<key_id> keys;
+  bool have_signers;
+  branch_heads_key(branch_uid const & uid,
+                   bool ignore_suspends,
+                   std::set<key_id> const & keys,
+                   bool have_signers);
+};
+bool operator<(branch_heads_key const & a,
+               branch_heads_key const & b);
 
 class project_t
 {
@@ -80,32 +116,66 @@ public:
   database & db;
 
 private:
-  std::map<std::pair<branch_name, suspended_indicator>,
-           std::pair<outdated_indicator, std::set<revision_id> >
-           > branch_heads;
+  boost::shared_ptr<policy_info> project_policy;
+  mutable std::map<branch_heads_key,
+                  std::pair<outdated_indicator, std::set<revision_id> >
+  > branch_heads;
   std::set<branch_name> branches;
   outdated_indicator indicator;
 
+  explicit project_t(database & db);
 public:
-  project_t(database & db);
+  project_t(database & db, lua_hooks & lua, options & opts);
+  // Used by migration code.
+  static project_t empty_project(database & db);
+
+  policies::policy const & get_base_policy() const;
+
+  void find_governing_policy(branch_name const & of_what,
+                             policy_chain & info) const;
+
+  bool policy_exists(branch_name const & name) const;
+  void get_subpolicies(branch_name const & name,
+                       std::set<branch_name> & names) const;
 
   void get_branch_list(std::set<branch_name> & names,
                        bool check_heads = false);
   void get_branch_list(globish const & glob, std::set<branch_name> & names,
                        bool check_heads = false);
-  void get_branch_heads(branch_name const & name, std::set<revision_id> & heads,
+
+  // used by 'ls epochs'
+  void get_branch_list(std::set<branch_uid> & ids);
+  branch_uid translate_branch(branch_name const & branch);
+  branch_name translate_branch(branch_uid const & branch);
+
+  // internal for policy stuff
+  outdated_indicator get_branch_heads(branch_uid const & uid,
+                                      std::set<key_id> const & signers,
+                                      std::set<revision_id> & heads,
+                                      bool ignore_suspend_certs,
+                                      std::multimap<revision_id, revision_id>
+                                      *inverse_graph_cache_ptr = NULL) const;
+
+  bool branch_exists(branch_name const & name) const;
+  void get_branch_heads(branch_name const & name,
+                        std::set<revision_id> & heads,
                         bool ignore_suspend_certs,
-                        std::multimap<revision_id, revision_id> *inverse_graph_cache_ptr = NULL);
+                        std::multimap<revision_id, revision_id>
+                            *inverse_graph_cache_ptr = NULL) const;
 
   outdated_indicator get_tags(std::set<tag_t> & tags);
-  void put_tag(key_store & keys, revision_id const & id, std::string const & name);
+  void put_tag(key_store & keys,
+               revision_id const & id,
+               std::string const & name);
 
-  bool revision_is_in_branch(revision_id const & id, branch_name const & branch);
+  bool revision_is_in_branch(revision_id const & id,
+                             branch_name const & branch);
   void put_revision_in_branch(key_store & keys,
                               revision_id const & id,
                               branch_name const & branch);
 
-  bool revision_is_suspended_in_branch(revision_id const & id, branch_name const & branch);
+  bool revision_is_suspended_in_branch(revision_id const & id,
+                                       branch_name const & branch);
   void suspend_revision_in_branch(key_store & keys,
                                   revision_id const & id,
                                   branch_name const & branch);
@@ -114,9 +184,13 @@ public:
                                               std::vector<id> & hashes);
   outdated_indicator get_revision_certs(revision_id const & id,
                                         std::vector<cert> & certs);
+  // This kind of assumes that we'll eventually have certs be for a specific
+  // project. There's a fairly good chance that that won't happen, which would
+  // mean that this can go away.
   outdated_indicator get_revision_certs_by_name(revision_id const & id,
                                                 cert_name const & name,
                                                 std::vector<cert> & certs);
+  // What branches in *this* project does the given revision belong to?
   outdated_indicator get_revision_branches(revision_id const & id,
                                            std::set<branch_name> & branches);
   outdated_indicator get_branch_certs(branch_name const & branch,
@@ -125,6 +199,12 @@ public:
   void put_standard_certs(key_store & keys,
                           revision_id const & id,
                           branch_name const & branch,
+                          utf8 const & changelog,
+                          date_t const & time,
+                          std::string const & author);
+  void put_standard_certs(key_store & keys,
+                          revision_id const & id,
+                          branch_uid const & branch,
                           utf8 const & changelog,
                           date_t const & time,
                           std::string const & author);
@@ -153,38 +233,38 @@ private:
   void lookup_key_by_name(key_store * const keys,
                           lua_hooks & lua,
                           key_name const & name,
-                          key_id & id);
+                          key_id & id) const;
   // get the name given when creating the key
   void get_canonical_name_of_key(key_store * const keys,
                                  key_id const & id,
-                                 key_name & name);
+                                 key_name & name) const;
   void complete_key_identity(key_store * const keys,
                              lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void get_key_identity(key_store * const keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 public:
   void complete_key_identity(key_store & keys,
                              lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void complete_key_identity(lua_hooks & lua,
-                             key_identity_info & info);
+                             key_identity_info & info) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
                         external_key_name const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(key_store & keys,
                         lua_hooks & lua,
                         arg_type const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
   void get_key_identity(lua_hooks & lua,
                         arg_type const & input,
-                        key_identity_info & output);
+                        key_identity_info & output) const;
 };
 
 std::string
