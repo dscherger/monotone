@@ -138,6 +138,8 @@ void walk_policies(project_t const & project,
 
       walk_policies(project, c->second, children, fn, child_prefix, i->second);
     }
+  L(FL("Done walking under prefix '%s'")
+    % current_prefix);
 }
 
 struct branch_info
@@ -379,34 +381,37 @@ public:
                      branch_uid & uid, set<key_id> & signers)
   {
     L(FL("Looking up branch '%s'") % name);
-    map<branch_name, branch_info> branch_map;
-    walk_policies(project, policy, child_policies, branch_lister(branch_map));
-    map<branch_name, branch_info>::const_iterator i = branch_map.find(name);
-    if (i != branch_map.end())
-      {
-        uid = i->second.self.get_uid();
-        L(FL("found uid '%s' for branch '%s'") % uid % name);
-        set<external_key_name> const & raw_signers = i->second.self.get_signers();
-        for (set<external_key_name>::const_iterator k = raw_signers.begin();
-             k != raw_signers.end(); ++k)
-          {
-            id id;
-            if (try_decode_hexenc((*k)(), id))
-              {
-                L(FL("branch has signer '%s'") % *k);
-                signers.insert(key_id(id));
-              }
-            else
-              {
-                key_name kn = typecast_vocab<key_name>(*k);
-                key_id id = i->second.owner->get_key_id(kn);
-                L(FL("branch has signer '%s' (%s)") % kn % id);
-                signers.insert(id);
-              }
-          }
-        return;
-      }
+    {
+      map<branch_name, branch_info> branch_map;
+      walk_policies(project, policy, child_policies, branch_lister(branch_map));
+      map<branch_name, branch_info>::const_iterator i = branch_map.find(name);
+      if (i != branch_map.end())
+        {
+          uid = i->second.self.get_uid();
+          L(FL("found uid '%s' for branch '%s'") % uid % name);
+          set<external_key_name> const & raw_signers = i->second.self.get_signers();
+          for (set<external_key_name>::const_iterator k = raw_signers.begin();
+               k != raw_signers.end(); ++k)
+            {
+              id id;
+              if (try_decode_hexenc((*k)(), id))
+                {
+                  L(FL("branch has signer '%s'") % *k);
+                  signers.insert(key_id(id));
+                }
+              else
+                {
+                  key_name kn = typecast_vocab<key_name>(*k);
+                  key_id id = i->second.owner->get_key_id(kn);
+                  L(FL("branch has signer '%s' (%s)") % kn % id);
+                  signers.insert(id);
+                }
+            }
+          return;
+        }
+    }
     L(FL("branch '%s' does not exist") % name);
+
     branch_name postfix("__policy__", origin::internal);
     if (name.has_postfix(postfix))
       {
@@ -416,32 +421,43 @@ public:
 
         policy_chain info;
         find_governing_policy(project, pol_name, info);
-        if (!info.empty())
+        do // cleaner than lots of nested if statements
           {
-            if (info.back().full_policy_name == pol_name)
+            if (info.empty())
+              break;
+            if (info.back().full_policy_name != pol_name)
+              break;
+
+            policies::delegation del = info.back().delegation;
+            if (!del.is_branch_type())
+              break;
+
+            policies::policy_ptr parent;
+            if (info.size() >= 2)
+              parent = idx(info, info.size()-2).policy;
+
+            uid = del.get_branch_spec().get_uid();
+            set<external_key_name> const & raw_signers = del.get_branch_spec().get_signers();
+            for (set<external_key_name>::const_iterator k = raw_signers.begin();
+                 k != raw_signers.end(); ++k)
               {
-                policies::delegation del = info.back().delegation;
-                if (del.is_branch_type())
+                id id;
+                if (try_decode_hexenc((*k)(), id))
+                  signers.insert(key_id(id));
+                else
                   {
-                    uid = del.get_branch_spec().get_uid();
-                    set<external_key_name> const & raw_signers = del.get_branch_spec().get_signers();
-                    for (set<external_key_name>::const_iterator k = raw_signers.begin();
-                         k != raw_signers.end(); ++k)
-                      {
-                        id id;
-                        if (try_decode_hexenc((*k)(), id))
-                          signers.insert(key_id(id));
-                        else
-                          {
-                            key_name kn = typecast_vocab<key_name>(*k);
-                            signers.insert(i->second.owner->get_key_id(kn));
-                          }
-                      }
-                    return;
+                    E(parent, origin::user,
+                      F("toplevel delegation to '%s' uses key name")
+                      % name);
+                    key_name kn = typecast_vocab<key_name>(*k);
+                    signers.insert(parent->get_key_id(kn));
                   }
               }
+            return;
           }
+        while (false);
       }
+
     E(false, origin::no_fault,
       F("branch '%s' does not exist; please inform %s of what "
         "command you ran to get this message so we can replace it with "
