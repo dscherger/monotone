@@ -83,7 +83,7 @@ namespace commands {
 
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
-// point (2) in notes/release-checklist.txt
+// point (4) in notes/release-checklist.txt
 static string const interface_version = "12.0";
 
 // This number determines the format version of the stdio packet format.
@@ -351,7 +351,7 @@ LUAEXT(change_workspace, )
     }
 
   // go_to_workspace doesn't check that it is a workspace, nor set workspace::found!
-  if (path_exists(ws / bookkeeping_root_component / ".") )
+  if (directory_is_workspace(ws))
     {
       workspace::found = true;
       lua_pushboolean(LS, true);

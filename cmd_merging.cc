@@ -175,8 +175,9 @@ pick_branch_for_update(options & opts, database & db,
   return switched_branch;
 }
 
-static void update (app_state & app,
-                    args_vector const & args)
+static void
+update (app_state & app,
+        args_vector const & args)
 {
   database db(app);
   workspace work(app);
