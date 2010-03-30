@@ -21,6 +21,7 @@ $matchers = array(
     "Windows Installer"     => "/monotone-%version%-setup\.exe/",
 );
 
+$webdir           = "/downloads";
 $basedir          = dirname(__FILE__) . "/downloads";
 $releaseDirs 	  = scandir($basedir, 1);
 $latestFiles 	  = array_flip(array_keys($matchers));
@@ -112,8 +113,8 @@ END;
         $release = dirname($file);
         echo <<<END
     <dd>
-        <a href="$file">$name</a><br/>
-        <span style="font-size:75%"<a href="$release/">&#187; more packages for $release</a></span>
+        <a href="$webdir$file">$name</a><br/>
+        <span style="font-size:75%"<a href="$webdir$release/">&#187; more packages for $release</a></span>
     </dd>
 END;
     }
