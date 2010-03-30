@@ -176,8 +176,8 @@ pick_branch_for_update(options & opts, database & db,
 }
 
 static void
-update (app_state & app,
-        args_vector const & args)
+update(app_state & app,
+       args_vector const & args)
 {
   database db(app);
   workspace work(app);
@@ -353,7 +353,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   if (app.opts.revision_selectors.size() > 1)
     throw usage(execid);
 
-  update (app, args);
+  update(app, args);
 }
 
 CMD_AUTOMATE(update, "",
@@ -363,12 +363,12 @@ CMD_AUTOMATE(update, "",
              options::opts::move_conflicting_paths)
 {
   E(args.empty(), origin::user,
-    F("update takes no command arguments"));
+    F("wrong argument count"));
 
   E(app.opts.revision_selectors.size() <= 1, origin::user,
     F("at most one revision selector may be specified"));
 
-  update (app, args);
+  update(app, args);
 }
 
 // Subroutine of CMD(merge) and CMD(explicit_merge).  Merge LEFT with RIGHT,

@@ -346,8 +346,10 @@ LUAEXT(change_workspace, )
     }
   catch (recoverable_failure & f)
     {
-      // need a variant of P that doesn't require F?
-      P(F(f.what()));
+      string msg(f.what());
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.data(), msg.size());
+      return 2;
     }
 
   // go_to_workspace doesn't check that it is a workspace, nor set workspace::found!

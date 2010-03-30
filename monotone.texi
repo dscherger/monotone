@@ -11305,6 +11305,10 @@ relative to the directory that was current when mtn was started.
 Throws an error if @var{directory} does not exist or is not a
 workspace (does not contain @file{_MTN}).
 
+After calling change_workspace, the next operation should read the
+workspace options. That means it should be a top level command like
+'update', called via @command{mtn_automate}.
+
 @item existonpath(@var{possible_command})
 
 This function receives a string containing the name of an external

@@ -25,17 +25,27 @@ rev2 = base_revision()
 
 revert_to(rev1)
 
+-- normal automate
 check(mtn("automate", "update"), 0, false, true)
 check(qgrep("mtn: updated to base revision", "stderr"))
 
 revert_to(rev1)
 
+-- automate stdio
 progress = run_stdio("l6:updatee", 0, 0, 'p')
-check(string.find(progress[9], "updated to base revision") ~= nil)
+check(string.find(progress[#progress], "updated to base revision") ~= nil)
 
 -- Command error cases
 
 -- no arguments allowed
-run_stdio("l6:update3:fooe", 2)
+check(mtn("automate", "update", "foo"), 1, false, true)
+check(qgrep("wrong argument count", "stderr"))
+
+-- only one revision selector
+check(mtn("automate", "update", "-r 123", "-r 456"), 1, false, true)
+check(qgrep("at most one revision selector may be specified", "stderr"))
+
+-- other errors are handled by the same code as 'mtn update', so don't
+-- need to be tested here.
 
 -- end of file
