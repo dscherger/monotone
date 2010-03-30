@@ -113,8 +113,8 @@ END;
         $release = dirname($file);
         echo <<<END
     <dd>
-        <a href="$webdir$file">$name</a><br/>
-        <span style="font-size:75%"<a href="$webdir$release/">&#187; more packages for $release</a></span>
+        <a href="$webdir/$file">$name</a><br/>
+        <span style="font-size:75%"<a href="$webdir/$release/">&#187; more packages for $release</a></span>
     </dd>
 END;
     }
