@@ -11306,8 +11306,9 @@ Throws an error if @var{directory} does not exist or is not a
 workspace (does not contain @file{_MTN}).
 
 After calling change_workspace, the next operation should read the
-workspace options. That means it should be a top level command like
-'update', called via @command{mtn_automate}.
+workspace options. @command{mtn_automate} does this; other Lua
+extensions do not. In addition, @command{automate stio} reads the
+workspace options before executing each command.
 
 @item existonpath(@var{possible_command})
 
@@ -11350,8 +11351,9 @@ error.
 @item includedir(@var{scriptpath})
 
 This function loads and executes in alphabetical order all the scripts
-contained into the directory scriptpath.
-If one of the scripts has an error, the functions doesn't process the
+contained in the directory scriptpath.
+
+If one of the scripts has an error, the function doesn't process the
 remaining scripts and immediately returns false.
 
 @item includedirpattern(@var{scriptpath}, @var{pattern})

@@ -35,6 +35,13 @@ revert_to(rev1)
 progress = run_stdio("l6:updatee", 0, 0, 'p')
 check(string.find(progress[#progress], "updated to base revision") ~= nil)
 
+revert_to(rev1)
+-- don't run external merger via automate stdio, since if it's opendiff it needs to prompt
+-- automate stdio sets --non-interactive
+writefile("patched", "a conflicting change")
+progress = run_stdio("l6:updatee", 2, 0, 'e')
+check(progress[#progress] == "misuse: can't spawn external merger when non-interactive")
+
 -- Command error cases
 
 -- no arguments allowed
