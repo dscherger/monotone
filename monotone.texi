@@ -39,7 +39,7 @@ Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
 Copyright @copyright{} 2006 - 2009 Thomas Keller @*
-Copyright @copyright{} 2007 - 2009 Stephen Leake @*
+Copyright @copyright{} 2007 - 2010 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
 greater.  See the accompanying file COPYING for details.
@@ -9895,6 +9895,45 @@ stderr and exits with status 1.
 
 @end table
 
+@item mtn automate update
+
+@table @strong
+@item Arguments:
+
+Same as @cmd{mtn update}; no arguments, options
+@var{--move-conflicting-paths}, @var{--revision=revision}
+
+@item Added in:
+
+12.1
+
+@item Purpose:
+
+Update the current workspace to the latest or given revision; see
+@cmd{update} in @ref{Workspace}.
+
+@item Sample output:
+
+Nothing on stdout. stderr gives progress messages of the form:
+@verbatim
+mtn: updating along branch 'mms.work_stephe'
+mtn: selected update target 233afb8c4832bf33d5f5734225164de5f5a6278c
+mtn: [left]  4a368a6b217c40b2ff3b12bb7cfa00987e0f191c
+mtn: [right] 233afb8c4832bf33d5f5734225164de5f5a6278c
+mtn: renaming build/windows_common.make to build/utf_common.make
+mtn: adding build/x86_gnu_linux_release
+@end verbatim
+
+@item Output format:
+
+Free form, prefixed by ``mtn:''.
+
+@item Error conditions:
+
+see @cmd{update} in @ref{Workspace}.
+
+@end table
+
 @item mtn automate read_packets @var{packet-data}
 
 @table @strong
@@ -11258,6 +11297,19 @@ hook writers.
 This function adds a new alias for a monotone command.  A call to this function would
 normally be placed directly in the @file{monotonerc} file, rather than in a hook function.
 
+@item change_workspace(@var{directory})
+
+Change to workspace @var{directory}, which may be absolute or
+relative to the directory that was current when mtn was started.
+
+Throws an error if @var{directory} does not exist or is not a
+workspace (does not contain @file{_MTN}).
+
+After calling change_workspace, the next operation should read the
+workspace options. @command{mtn_automate} does this; other Lua
+extensions do not. In addition, @command{automate stio} reads the
+workspace options before executing each command.
+
 @item existonpath(@var{possible_command})
 
 This function receives a string containing the name of an external
@@ -11299,8 +11351,9 @@ error.
 @item includedir(@var{scriptpath})
 
 This function loads and executes in alphabetical order all the scripts
-contained into the directory scriptpath.
-If one of the scripts has an error, the functions doesn't process the
+contained in the directory scriptpath.
+
+If one of the scripts has an error, the function doesn't process the
 remaining scripts and immediately returns false.
 
 @item includedirpattern(@var{scriptpath}, @var{pattern})
