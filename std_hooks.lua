@@ -386,12 +386,12 @@ function get_date_format_spec(wanted)
    --   ISO 8601, no timezone conversion: ""
    --.
    if (wanted == "date_long" or wanted == "date_short") then
-       return "%F"
+       return "%x"
    end
    if (wanted == "time_long" or wanted == "time_short") then
-       return "%T"
+       return "%X"
    end
-   return "%F %T"
+   return "%x %X"
 end
 
 -- trust evaluation hooks

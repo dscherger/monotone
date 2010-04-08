@@ -4,7 +4,7 @@ mtn_setup()
 check(get("commit_log.lua"))
 check(get("commit_log_modified_return.lua"))
 
-writefile("_MTN/log", "Log entry")
+writefile("_MTN/log", "Log Entry")
 writefile("input.txt", "version 0 of the file")
 
 check(mtn("add", "input.txt"), 0, false, false)

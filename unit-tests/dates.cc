@@ -252,9 +252,9 @@ UNIT_TEST(localtime_formats)
 {
 #define OK(d, f) do {                                                    \
     string formatted = d.as_formatted_localtime(f);                      \
-    L(FL("format '%s' local date '%s'\n") % f % formatted);              \
     date_t parsed = date_t::from_formatted_localtime(formatted, f);      \
     UNIT_TEST_CHECK(parsed == d);                                        \
+    L(FL("date %s formatted %s parsed %s\n") % d % formatted % parsed);  \
   } while (0)
 
   // can we fiddle with LANG or TZ here?
@@ -267,15 +267,29 @@ UNIT_TEST(localtime_formats)
   date_t start("1901-12-13T20:45:52");
   date_t end("2038-01-19T03:14:07");
 
+  // The 'y' (year in century) specification is taken to specify a year in
+  // the 20th century by libc4 and libc5.  It is taken to be a year in the
+  // range 1950-2049 by glibc 2.0.  It is taken to be a year in 1969-2068
+  // since glibc 2.1.
+
+  // When a century is not otherwise specified, values in the range 69-99
+  // refer to years in the twentieth century (1969-1999); values in the
+  // range 00-68 refer to years in the twenty-first century (2000-2068).
+
+  // With glibc 2.1 or newer the 2 digit years in the %x format will fail
+  // for years before 1969 because strptime will assume they are in the 21st
+  // century.
+  date_t yy_ok("1969-01-01T00:00:00");
+
   // test roughly 2 days per month in this entire range
   for (date_t date = start; date <= end; date += MILLISEC(15*(DAY+HOUR+MIN+SEC)))
     {
-      L(FL("\niso 8601 date '%s'\n") % date);
+      L(FL("iso 8601 date '%s' end '%s'\n") % date % end);
 
       // these all seem to work with the test setup of LANG=C and TZ=UTC
 
-      OK(date, "%F %T"); // YYYY-MM-DD hh:mm:ss
-      OK(date, "%T %F"); // hh:mm:ss YYYY-MM-DD
+      OK(date, "%F %X"); // YYYY-MM-DD hh:mm:ss
+      OK(date, "%X %F"); // hh:mm:ss YYYY-MM-DD
       OK(date, "%d %b %Y, %I:%M:%S %p");
       OK(date, "%a %b %d %H:%M:%S %Y");
       OK(date, "%a %d %b %Y %I:%M:%S %p %z");
@@ -283,13 +297,13 @@ UNIT_TEST(localtime_formats)
       OK(date, "%Y-%m-%d %H:%M:%S");
       OK(date, "%Y-%m-%dT%H:%M:%S");
 
-      // these do not
+      if (date >= yy_ok)
+        {
+          OK(date, "%x %X"); // YY-MM-DD hh:mm:ss
+          OK(date, "%X %x"); // hh:mm:ss YY-MM-DD
+        }
 
-      //(date, "%x %X"); // YY-MM-DD hh:mm:ss
-      //(date, "%X %x"); // hh:mm:ss YY-MM-DD
-      //(date, "%+");
-
-      // posibly anything with a timezone label (%Z) will fail
+      // possibly anything with a timezone label (%Z) will fail
       //(date, "%a %d %b %Y %I:%M:%S %p %Z"); // the timezone label breaks this
     }
 
