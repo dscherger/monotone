@@ -452,7 +452,7 @@ date_t::from_formatted_localtime(string const & s, string const & fmt)
 
   // strptime does *not* set the tm_isdst field in the broken down time
   // struct. setting it to -1 is apparently the way to tell mktime to
-  // determine out whether DST is in effect or not.
+  // determine whether DST is in effect or not.
 
   tb.tm_isdst = -1;
 

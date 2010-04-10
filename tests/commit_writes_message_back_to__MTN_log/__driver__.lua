@@ -4,8 +4,11 @@ mtn_setup()
 
 addfile("testfile", "blah blah")
 
--- ensure that the public key this test uses exists in the database
--- before making it unwriteable
+-- when a public key is first accessed it is automatically added to the database
+-- but since this test removes write permission from the database this fails and
+-- aborts the commit before the edit_comment hooks gets to run. running status
+-- while the database is still writeable adds the key so that its available for
+-- commit allowing the edit_comment hook to succeed.
 check(mtn("status"), 0, false, false)
 
 -- Make it unwriteable, so our  edit_comment hook will have a chance to
