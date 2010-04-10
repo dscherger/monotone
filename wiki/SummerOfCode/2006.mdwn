@@ -86,7 +86,7 @@ Here are some example ideas for projects.  Feel free to suggest others.
   * Add the ability to spawn a process and speak netsync to it (a kind of generalized proxy support).
   Use this to teach monotone to run netsync over jabber/jingle, etc.
    * clarification wanted: what about this? there's a branch that wants to provide an stdin/stdout interface to monotone. is reviving that and finishing it part of this, or something else?
-   * Answer: Yes, this is a generalization of the .ssh branch.  Basically, the idea would be to make it possible to say `mtn sync --connect-via 'ssh foo.com mtn serve-stdio'`, where the argument to --connect-via is an arbitrary command.  This would allow people to add interesting new transports.  (The UI given here probably isn't optimal, that's just to give the idea.)  
+   * Answer: Yes, this is a generalization of the .ssh branch.  Basically, the idea would be to make it possible to say `mtn sync --connect-via 'ssh foo.com mtn serve-stdio'`, where the argument to --connect-via is an arbitrary command.  This would allow people to add interesting new transports.  (The UI given here probably isn't optimal, that's just to give the idea.)
   * Our test coverage has been hovering at about 90% for a long time: [current status](http://frances.vorpus.org/~monotone-cov/net.venge.monotone/).
   Get it higher than that!
   * Support for "nested trees" -- Some way to combine several projects that are versioned separately into a single workspace, similar to CVS modules, or Arch "configs".  There are a fair number of people interested in this, but no design yet; part of the project would be figuring out what exactly everyone wants from this capability.
@@ -102,7 +102,7 @@ people use.  Examples:
   wiki/bug tracker/source code browser, and it supports plugins for
   different VCSes.  We need a monotone plug-in!  Probably the thing to
   start from is the [mercurial plugin](http://projects.edgewall.com/trac/wiki/TracMercurial). (python)
-    * Development of a trac plugin has already been started, see the  [trac-plugin branch](http://viewmtn.angrygoats.net/branch.psp?branch=net.venge.monotone.trac-plugin).
+    * Development of a trac plugin has already been started, see the  [trac-plugin branch](http://mtn-view.1erlei.de/branch/changes/net.venge.monotone.trac-plugin).
   * We could use a good general, cross-platform (so probably Qt) GUI for history browsing and
   general modification.  "guitone" is a possible start at this, in the monotone repository.
   * [Eclipse](http://eclipse.org) and [NetBeans](http://www.netbeans.org) are two great Java IDEs.

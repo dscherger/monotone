@@ -33,7 +33,7 @@ There should be an option for pull and sync to print out the log entries of revi
 
 Monotone could use a subcommand such as "newbranch", with the only purpose to change _MTN/options with the name of the new branch.
 
-The ability to mark branches as "unused".  i.e. abandonded or merged.  If you go to the main monotone [viewmtn](http://viewmtn.angrygoats.net/) web page you see 165 branches with 'monotone' in the name.  I suspect that a number of those have been merged and/or abandoned.  It would be nice to know which.
+The ability to mark branches as "unused".  i.e. abandonded or merged.  If you go to the main monotone [viewmtn](http://mtn-view.1erlei.de/) web page you see 165 branches with 'monotone' in the name.  I suspect that a number of those have been merged and/or abandoned.  It would be nice to know which.
 
 It would be good if there were a convention that branches of the monotone repository had a readme.branchname file describing the branch.
 
