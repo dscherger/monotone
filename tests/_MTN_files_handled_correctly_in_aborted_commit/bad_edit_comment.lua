@@ -1,3 +1,3 @@
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
     return ""
 end

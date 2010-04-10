@@ -187,7 +187,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   E(message.read(instructions()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing/modified instructions)."));
+      "Commit failed (instructions not found)."));
 
   utf8 const AUTHOR(_("Author: "));
   utf8 const DATE(_("Date: "));
@@ -198,38 +198,39 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   // Revision:
   // Parent:
   // Parent:
+  // Author:
   
-  size_t pos = header().find(AUTHOR());
+  size_t pos = header().find(AUTHOR()); // look in unedited header
   I(pos != string::npos);
 
   string prefix = header().substr(0, pos);
   E(message.read(prefix), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing/modified Revision or Parent header)."));
+      "Commit failed (Revision or Parent header not found)."));
 
   // Author:
 
   E(message.read(AUTHOR()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing Author header)."));
+      "Commit failed (Author header not found)."));
 
   author = message.readline();
 
   E(!author.empty(), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (empty Author header)."));
+      "Commit failed (Author header empty)."));
 
   // Date:
 
   E(message.read(DATE()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing Date header)."));
+      "Commit failed (Date header not found)."));
 
   string d = message.readline();
 
   E(!d.empty(), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (empty Date header)."));
+      "Commit failed (Date header empty)."));
 
   if (date_fmt.empty())
     date = date_t(d);
@@ -240,13 +241,13 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   E(message.read(BRANCH()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing Branch header)."));
+      "Commit failed (Branch header not found)."));
 
   string b = message.readline();
 
   E(!b.empty(), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (empty Branch header)."));
+      "Commit failed (Branch header empty)."));
 
   branch = branch_name(b, origin::user);
 
@@ -254,7 +255,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   E(message.read(CHANGELOG()), origin::user,
     F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (missing ChangeLog header)."));
+      "Commit failed (ChangeLog header not found)."));
 
   // remove the summary before extracting the changelog content
 
@@ -262,7 +263,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
     {
       E(message.contains(summary()), origin::user,
         F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (missing or modified summary)."));
+          "Commit failed (change summary not found)."));
 
       E(message.remove(summary()), origin::user,
         F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
@@ -1356,9 +1357,15 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   string author = app.opts.author();
 
   if (app.opts.date_given)
-    date = app.opts.date;
+    {
+      date = app.opts.date;
+      L(FL("using specified commit date %s") % date);
+    }
   else
-    date = now;
+    {
+      date = now;
+      L(FL("using current commit date %s") % date);
+    }
 
   if (author.empty())
     {
@@ -1536,7 +1543,10 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
     // update it to reflect the current time.
 
     if (date == now && !app.opts.date_given)
-      date = date_t::now();
+      {
+        date = date_t::now();
+        L(FL("updating commit date %s") % date);
+      }
 
     project.put_standard_certs(keys,
                                restricted_rev_id,
