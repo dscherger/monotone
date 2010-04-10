@@ -89,7 +89,7 @@ building and installation process for monotone
 
            Package  | Version | location
            --------------------------
-           MingGW   | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
+           MinGW    | 5.1.4   | Automated MinGW Installer | MinGW-5.1.4.exe
            MSYS     | 1.0.11  | MSYS Base System | Current Release: msys-1.0.10 | MSYS-1.0.10.exe
            msysDTK  | 1.0.1   | MSYS Supplementary Tools | Current Release: msysDTK-1.0.1 | msysDTK-1.0.1.exe
            libiconv | 1.13    | MinGW libiconv | Release 1.13 |
@@ -208,6 +208,7 @@ building and installation process for monotone
                $ cd /c/.../monotone
                $ export PATH=/bin:/mingw/bin
                $ autoreconf -i
+               $ touch config.h.in
                $ ./configure sqlite3_LIBS=-lsqlite3
                $ make
 
