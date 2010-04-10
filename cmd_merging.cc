@@ -1,5 +1,5 @@
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
-//               2008 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -175,21 +175,10 @@ pick_branch_for_update(options & opts, database & db,
   return switched_branch;
 }
 
-CMD(update, "update", "", CMD_REF(workspace), "",
-    N_("Updates the workspace"),
-    N_("This command modifies your workspace to be based off of a "
-       "different revision, preserving uncommitted changes as it does so.  "
-       "If a revision is given, update the workspace to that revision.  "
-       "If not, update the workspace to the head of the branch."),
-    options::opts::branch | options::opts::revision |
-    options::opts::move_conflicting_paths)
+static void
+update(app_state & app,
+       args_vector const & args)
 {
-  if (!args.empty())
-    throw usage(execid);
-
-  if (app.opts.revision_selectors.size() > 1)
-    throw usage(execid);
-
   database db(app);
   workspace work(app);
   project_t project(db);
@@ -321,7 +310,7 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   content_merge_workspace_adaptor wca(db, old_rid, old_roster,
                                       left_markings, right_markings, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *working_roster, chosen_roster,
+  resolve_merge_conflicts(app.lua, app.opts, *working_roster, chosen_roster,
                           result, wca, false);
 
   // Make sure it worked...
@@ -347,6 +336,39 @@ CMD(update, "update", "", CMD_REF(workspace), "",
   if (switched_branch)
     P(F("switched branch; next commit will use branch %s") % app.opts.branch());
   P(F("updated to base revision %s") % chosen_rid);
+}
+
+CMD(update, "update", "", CMD_REF(workspace), "",
+    N_("Updates the workspace"),
+    N_("This command modifies your workspace to be based off of a "
+       "different revision, preserving uncommitted changes as it does so.  "
+       "If a revision is given, update the workspace to that revision.  "
+       "If not, update the workspace to the head of the branch."),
+    options::opts::branch | options::opts::revision |
+    options::opts::move_conflicting_paths)
+{
+  if (!args.empty())
+    throw usage(execid);
+
+  if (app.opts.revision_selectors.size() > 1)
+    throw usage(execid);
+
+  update(app, args);
+}
+
+CMD_AUTOMATE(update, "",
+             N_("Updates the workspace"),
+             "",
+             options::opts::branch | options::opts::revision |
+             options::opts::move_conflicting_paths)
+{
+  E(args.empty(), origin::user,
+    F("wrong argument count"));
+
+  E(app.opts.revision_selectors.size() <= 1, origin::user,
+    F("at most one revision selector may be specified"));
+
+  update(app, args);
 }
 
 // Subroutine of CMD(merge) and CMD(explicit_merge).  Merge LEFT with RIGHT,
@@ -699,7 +721,7 @@ CMD(merge_into_dir, "merge_into_dir", "", CMD_REF(tree),
         parse_resolve_conflicts_opts
           (app.opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
-        resolve_merge_conflicts(app.lua, left_roster, right_roster,
+        resolve_merge_conflicts(app.lua, app.opts, left_roster, right_roster,
                                 result, dba, resolutions_given);
 
         {
@@ -821,7 +843,7 @@ CMD(merge_into_workspace, "merge_into_workspace", "", CMD_REF(tree),
   content_merge_workspace_adaptor wca(db, lca_id, lca.first,
                                       *left.second, *right.second, paths);
   wca.cache_roster(working_rid, working_roster);
-  resolve_merge_conflicts(app.lua, *left.first, *right.first, merge_result, wca, false);
+  resolve_merge_conflicts(app.lua, app.opts, *left.first, *right.first, merge_result, wca, false);
 
   // Make sure it worked...
   I(merge_result.is_clean());
@@ -1325,7 +1347,7 @@ CMD(pluck, "pluck", "", CMD_REF(workspace), N_("[-r FROM] -r TO [PATH...]"),
   // to_roster is not fetched from the db which does not have temporary nids
   wca.cache_roster(to_rid, to_roster);
 
-  resolve_merge_conflicts(app.lua, *working_roster, *to_roster,
+  resolve_merge_conflicts(app.lua, app.opts, *working_roster, *to_roster,
                           result, wca, false);
 
   I(result.is_clean());

@@ -1,4 +1,4 @@
-// Copyright (C) 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+// Copyright (C) 2009, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -637,7 +637,7 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
 {
   bookkeeping_path bisect_path;
   get_bisect_path(bisect_path);
-  
+
   if (!file_exists(bisect_path))
     return;
 
@@ -680,7 +680,7 @@ workspace::get_bisect_info(vector<bisect::entry> & bisect)
       else
         I(false);
 
-      revision_id rid = 
+      revision_id rid =
         decode_hexenc_as<revision_id>(rev, parser.tok.in.made_from);
       bisect.push_back(make_pair(type, rid));
     }
@@ -693,7 +693,7 @@ workspace::put_bisect_info(vector<bisect::entry> const & bisect)
   get_bisect_path(bisect_path);
 
   basic_io::stanza st;
-  for (vector<bisect::entry>::const_iterator i = bisect.begin(); 
+  for (vector<bisect::entry>::const_iterator i = bisect.begin();
        i != bisect.end(); ++i)
     {
       switch (i->first)
@@ -2033,6 +2033,7 @@ workspace::perform_content_update(roster_t const & old_roster,
   temp_node_id_source nis;
   set<file_path> known;
   bookkeeping_path detached = path_for_detached_nids();
+  bool moved_conflicting = false;
 
   E(!directory_exists(detached), origin::user,
     F("workspace is locked\n"
@@ -2057,6 +2058,7 @@ workspace::perform_content_update(roster_t const & old_roster,
         F("re-run this command with --move-conflicting-paths to move "
           "conflicting paths out of the way."));
       move_conflicting_paths_into_bookkeeping(swt.get_conflicting_paths());
+      moved_conflicting = true;
     }
 
   mkdir_p(detached);
@@ -2083,6 +2085,9 @@ workspace::perform_content_update(roster_t const & old_roster,
     }
 
   delete_dir_shallow(detached);
+
+  if (moved_conflicting)
+    P(F("moved some conflicting files into %s/%s") % bookkeeping_root % "resolutions");
 }
 
 // Local Variables:
