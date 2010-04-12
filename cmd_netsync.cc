@@ -163,28 +163,29 @@ build_client_connection_info(options & opts,
     }
 
   // Maybe set the default values.
-  if (!db.var_exists(default_server_key) || opts.set_default)
+  if (!db.var_exists(default_server_key)
+      || opts.set_default)
     {
       P(F("setting default server to %s") % info.client.unparsed());
       db.set_var(default_server_key,
                  typecast_vocab<var_value>(info.client.unparsed));
     }
-    if (!db.var_exists(default_include_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch include pattern to '%s'")
-          % info.client.include_pattern);
-        db.set_var(default_include_pattern_key,
-                   typecast_vocab<var_value>(info.client.include_pattern));
-      }
-    if (!db.var_exists(default_exclude_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch exclude pattern to '%s'")
-          % info.client.exclude_pattern);
-        db.set_var(default_exclude_pattern_key,
-                   typecast_vocab<var_value>(info.client.exclude_pattern));
-      }
+  if (!db.var_exists(default_include_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch include pattern to '%s'")
+        % info.client.include_pattern);
+      db.set_var(default_include_pattern_key,
+                 typecast_vocab<var_value>(info.client.include_pattern));
+    }
+  if (!db.var_exists(default_exclude_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch exclude pattern to '%s'")
+        % info.client.exclude_pattern);
+      db.set_var(default_exclude_pattern_key,
+                 typecast_vocab<var_value>(info.client.exclude_pattern));
+    }
 
   info.client.use_argv =
     lua.hook_get_netsync_connect_command(info.client.uri,
