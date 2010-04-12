@@ -6,6 +6,8 @@ function edit_comment(user_log_file)
        return string.gsub(user_log_file, "\nempty message\n", "")
     elseif (string.find(user_log_file, "\nmissing instructions\n")) then
        return "foobar" .. user_log_file
+    elseif (string.find(user_log_file, "\ncancel\n")) then
+       return string.gsub(user_log_file, "... REMOVE THIS LINE TO CANCEL THE COMMIT ...\n", "")
     elseif (string.find(user_log_file, "\nmissing separator\n")) then
        return string.gsub(user_log_file, "---------------\n", "\n")
     elseif (string.find(user_log_file, "\nmissing revision\n")) then
@@ -24,12 +26,14 @@ function edit_comment(user_log_file)
        return string.gsub(user_log_file, "\nBranch:", "\nranch:")
     elseif (string.find(user_log_file, "\nempty branch\n")) then
        return string.gsub(user_log_file, "\nBranch: [^\n]*\n", "\nBranch: \n")
+    elseif (string.find(user_log_file, "\nmissing blank line\n")) then
+       return string.gsub(user_log_file, "\n\nChangeLog:", "\nChangeLog:")
     elseif (string.find(user_log_file, "\nmissing changelog\n")) then
        return string.gsub(user_log_file, "\nChangeLog:", "\n")
     elseif (string.find(user_log_file, "\nmissing summary\n")) then
-       return string.gsub(user_log_file, "\nChanges against parent", "\nChanges against foobar")
+       return string.gsub(user_log_file, "\nChangeSet: ", "\nChange foobar")
     elseif (string.find(user_log_file, "\nduplicated summary\n")) then
-       return string.gsub(user_log_file, "(Changes against parent.*)", "%1%1")
+       return string.gsub(user_log_file, "(ChangeSet: .*)", "%1%1")
     elseif (string.find(user_log_file, "\ntrailing text\n")) then
        return user_log_file .. "foobar"
     end
@@ -38,20 +42,20 @@ function edit_comment(user_log_file)
 
     if (string.find(user_log_file, "\nchange author/date/branch\n")) then
        result = user_log_file
-       result = string.gsub(result, "\nDate: [^\n]*\n", "\nDate: 2010-02-02T02:02:02\n")
-       result = string.gsub(result, "\nAuthor: bobo\n", "\nAuthor: baba\n")
-       result = string.gsub(result, "\nBranch: left\n", "\nBranch: right\n")
+       result = string.gsub(result, "\nDate:     [^\n]*\n", "\nDate:     2010-02-02T02:02:02\n")
+       result = string.gsub(result, "\nAuthor:   bobo\n",   "\nAuthor:   baba\n")
+       result = string.gsub(result, "\nBranch:   left\n",   "\nBranch:   right\n")
        return result
     elseif (string.find(user_log_file, "\nsleep\n")) then
-       date = string.match(user_log_file, "\nDate: ([^\n]*)")
+       date = string.match(user_log_file, "\nDate:     ([^\n]*)")
        sleep(2)
        return string.gsub(user_log_file, "\nChangeLog: \n\nsleep", "\nChangeLog: \n\nOld: " .. date)
     elseif (string.find(user_log_file, "\nchange date\n")) then
-       return string.gsub(user_log_file, "\nDate: [^\n]*\n", "\nDate: 2010-01-01T01:01:01\n")
+       return string.gsub(user_log_file, "\nDate:     [^\n]*\n", "\nDate:     2010-01-01T01:01:01\n")
     elseif (string.find(user_log_file, "\nchangelog line\n")) then
-       return string.gsub(user_log_file, "\nChangeLog: \n\nchangelog line", "\nChangeLog: message on changelog line")
+       return string.gsub(user_log_file, "\nChangeLog: \n\nchangelog line", "\nChangeLog:message on changelog line")
     elseif (string.find(user_log_file, "\nfull changelog\n")) then
-       return string.gsub(user_log_file, "\nChangeLog: .*\nChanges against parent", "\nChangeLog: no\nspace\naround\nthis\nchangelog\nChanges against parent")
+       return string.gsub(user_log_file, "\nChangeLog: .*\nChangeSet:", "\nChangeLog:no\nspace\naround\nthis\nchangelog\nChangeSet:")
     end
 
     return user_log_file

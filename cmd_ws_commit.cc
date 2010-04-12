@@ -133,17 +133,18 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
                               string const & date_fmt, utf8 & log_message)
 {
   utf8 instructions(
-    _("Ensure the values for Author, Date and Branch are correct, then enter\n"
-      "a description of this change following the ChangeLog line. Any other\n"
-      "modifications to the lines below or to the summary of changes will\n"
-      "cause the commit to fail.\n"));
+    _("Enter a description of this change following the ChangeLog line.\n"
+      "The values of Author, Date and Branch may be modified as required.\n"
+      "Any other modifications will will cause the commit to fail.\n"));
+
+  utf8 cancel(_("*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"));
 
   utf8 changelog;
   work.read_user_log(changelog);
 
-  // ensure the changelog message ends with a newline. an empty changelog is
-  // replaced with a single newline so that the ChangeLog: cert line is
-  // produced by revision_header and there is somewhere to enter a message
+  // ensure the changelog message is non-empty so that the ChangeLog: cert
+  // line is produced by revision_header and there is somewhere to enter a
+  // message
 
   string text = changelog();
 
@@ -159,7 +160,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + header() + summary(), origin::internal);
+  utf8 full_message(instructions() + cancel() + header() + summary(), origin::internal);
   
   external input_message;
   external output_message;
@@ -178,21 +179,23 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Check the message carefully to make sure the user didn't edit somewhere
   // outside of the author, date, branch or changelog values. The section
-  // between the "ChangeLog: " line from the header and the "Changes against
-  // parent ..." line from the summary is where they should be adding
+  // between the "ChangeLog: " line from the header and the first
+  // "ChangeSet: " line from the summary is where they should be adding
   // lines. Ideally, there is a blank line following "ChangeLog:"
   // (preceeding the changelog message) and another blank line preceeding
-  // "Changes against parent ..." (following the changelog message) but both
-  // of these are optional.
+  // "ChangeSet: " (following the changelog message) but both of these are
+  // optional.
 
   E(message.read(instructions()), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (instructions not found)."));
+    F("Commit failed. Instructions not found."));
 
-  utf8 const AUTHOR(_("Author: "));
-  utf8 const DATE(_("Date: "));
-  utf8 const BRANCH(_("Branch: "));
-  utf8 const CHANGELOG(_("ChangeLog: "));
+  E(message.read(cancel()), origin::user,
+    F("Commit cancelled."));
+
+  utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
+  utf8 const DATE(trim_right(_("Date: ")).c_str());
+  utf8 const BRANCH(trim_right(_("Branch: ")).c_str());
+  utf8 const CHANGELOG(trim_right(_("ChangeLog: ")).c_str());
 
   // ----------------------------------------------------------------------
   // Revision:
@@ -205,32 +208,27 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   string prefix = header().substr(0, pos);
   E(message.read(prefix), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Revision or Parent header not found)."));
+    F("Commit failed. Revision/Parent header not found."));
 
   // Author:
 
   E(message.read(AUTHOR()), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Author header not found)."));
+    F("Commit failed. Author header not found."));
 
   author = message.readline();
 
   E(!author.empty(), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Author header empty)."));
+    F("Commit failed. Author value empty."));
 
   // Date:
 
   E(message.read(DATE()), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Date header not found)."));
+    F("Commit failed. Date header not found."));
 
   string d = message.readline();
 
   E(!d.empty(), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Date header empty)."));
+    F("Commit failed. Date value empty."));
 
   if (date_fmt.empty())
     date = date_t(d);
@@ -240,34 +238,33 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   // Branch:
 
   E(message.read(BRANCH()), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Branch header not found)."));
+    F("Commit failed. Branch header not found."));
 
   string b = message.readline();
 
   E(!b.empty(), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (Branch header empty)."));
+    F("Commit failed. Branch value empty."));
 
   branch = branch_name(b, origin::user);
+
+  string blank = message.readline();
+  E(blank == "", origin::user,
+    F("Commit failed. Blank line before ChangeLog header not found."));
 
   // ChangeLog:
 
   E(message.read(CHANGELOG()), origin::user,
-    F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-      "Commit failed (ChangeLog header not found)."));
+    F("Commit failed. ChangeLog header not found."));
 
   // remove the summary before extracting the changelog content
 
   if (!summary().empty())
     {
       E(message.contains(summary()), origin::user,
-        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (change summary not found)."));
+        F("Commit failed. ChangeSet summary not found."));
 
       E(message.remove(summary()), origin::user,
-        F("Modifications outside of Author, Date, Branch or ChangeLog.\n"
-          "Commit failed (text following summary)."));
+        F("Commit failed. Text following ChangeSet summary."));
     }
 
   string content = trim(message.content()) + '\n';
@@ -787,18 +784,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   utf8 changelog;
   work.read_user_log(changelog);
-
-  // ensure the changelog message ends with a newline. an empty changelog is
-  // replaced with a single newline so that the ChangeLog: cert line is
-  // produced by revision_header for consistency with commit.
-
-  string text = changelog();
-
-  if (text.empty() || text[text.length()-1] != '\n')
-    {
-      text += '\n';
-      changelog = utf8(text, origin::user);
-    }
 
   utf8 header;
   utf8 summary;

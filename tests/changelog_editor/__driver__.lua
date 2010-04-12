@@ -30,21 +30,27 @@ check(qgrep("empty log message", "stderr"))
 
 writefile("_MTN/log", "missing instructions")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("instructions not found", "stderr"))
+check(qgrep("Instructions not found", "stderr"))
+
+-- commit can be cancelled
+
+writefile("_MTN/log", "cancel")
+check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
+check(qgrep("Commit cancelled.", "stderr"))
 
 -- commit fails with modified/missing separator, Revision: or Parent: lines
 
 writefile("_MTN/log", "missing separator")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision or Parent header not found", "stderr"))
+check(qgrep("Revision/Parent header not found", "stderr"))
 
 writefile("_MTN/log", "missing revision")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision or Parent header not found", "stderr"))
+check(qgrep("Revision/Parent header not found", "stderr"))
 
 writefile("_MTN/log", "missing parent")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Revision or Parent header not found", "stderr"))
+check(qgrep("Revision/Parent header not found", "stderr"))
 
 -- commit fails with modified/missing Author: line
 
@@ -56,7 +62,7 @@ check(qgrep("Author header not found", "stderr"))
 
 writefile("_MTN/log", "empty author")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Author header empty", "stderr"))
+check(qgrep("Author value empty", "stderr"))
 
 -- commit fails with modified/missing Date: line
 
@@ -68,7 +74,7 @@ check(qgrep("Date header not found", "stderr"))
 
 writefile("_MTN/log", "empty date")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Date header empty", "stderr"))
+check(qgrep("Date value empty", "stderr"))
 
 -- commit fails with modified/missing Branch: line
 
@@ -80,7 +86,13 @@ check(qgrep("Branch header not found", "stderr"))
 
 writefile("_MTN/log", "empty branch")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Branch header empty", "stderr"))
+check(qgrep("Branch value empty", "stderr"))
+
+-- commit fails with modified/missing blank line before ChangeLog section
+
+writefile("_MTN/log", "missing blank line")
+check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
+check(qgrep("ChangeLog header not found", "stderr"))
 
 -- commit fails with modified/missing ChangeLog section
 
@@ -88,23 +100,23 @@ writefile("_MTN/log", "missing changelog")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("ChangeLog header not found", "stderr"))
 
--- commit fails with missing Change summary section
+-- commit fails with missing ChangeSet summary section
 
 writefile("_MTN/log", "missing summary")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("change summary not found", "stderr"))
+check(qgrep("ChangeSet summary not found", "stderr"))
 
--- commit fails with duplicated Changes: section
+-- commit fails with duplicated ChangeSet: section
 
 writefile("_MTN/log", "duplicated summary")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("text following summary", "stderr"))
+check(qgrep("Text following ChangeSet summary", "stderr"))
 
 -- commit fails with new text after Changes: section
 
 writefile("_MTN/log", "trailing text")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("text following summary", "stderr"))
+check(qgrep("Text following ChangeSet summary", "stderr"))
 
 
 -- commits that succeed
@@ -116,9 +128,9 @@ writefile("a", "a2.1")
 writefile("_MTN/log", "fine")
 check(mtn("commit", "--rcfile=changelog.lua", "--date", "2010-01-01T01:01:01", "--author", "bobo", "--branch", "left"), 0, false, false)
 check(mtn("log", "--last", "1", "--no-graph"), 0, true, false)
-check(qgrep("Date: 2010-01-01T01:01:01", "stdout"))
-check(qgrep("Author: bobo", "stdout"))
-check(qgrep("Branch: left", "stdout"))
+check(qgrep("Date:     2010-01-01T01:01:01", "stdout"))
+check(qgrep("Author:   bobo", "stdout"))
+check(qgrep("Branch:   left", "stdout"))
 
 -- test changed --date, --author and --branch options 
 
@@ -126,9 +138,9 @@ writefile("a", "a2.2")
 writefile("_MTN/log", "change author/date/branch")
 check(mtn("commit", "--rcfile=changelog.lua", "--date", "2010-01-01T01:01:01", "--author", "bobo", "--branch", "left"), 0, false, false)
 check(mtn("log", "--last", "1", "--no-graph"), 0, true, false)
-check(not qgrep("Date: 2010-01-01T01:01:01", "stdout"))
-check(not qgrep("Author: bobo", "stdout"))
-check(not qgrep("Branch: left", "stdout"))
+check(not qgrep("Date:     2010-01-01T01:01:01", "stdout"))
+check(not qgrep("Author:   bobo", "stdout"))
+check(not qgrep("Branch:   left", "stdout"))
 
 -- test unchanged date gets updated to reflect current time
 
@@ -147,7 +159,7 @@ writefile("a", "a3.2")
 writefile("_MTN/log", "change date")
 check(mtn("commit", "--rcfile=changelog.lua"), 0, false, false)
 check(mtn("log", "--last", "1", "--no-graph"), 0, true, false)
-check(qgrep("Date: 2010-01-01T01:01:01", "stdout"))
+check(qgrep("Date:     2010-01-01T01:01:01", "stdout"))
 
 -- message on same line as ChangeLog: header
 

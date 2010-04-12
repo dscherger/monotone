@@ -42,8 +42,10 @@ revision_header(revision_id const rid, revision_t const & rev,
                        empty_key));
   certs.push_back(cert(rid, branch_cert_name, 
                        cert_value(branch(), origin::user), empty_key));
-  certs.push_back(cert(rid, changelog_cert_name, 
-                       cert_value(changelog(), origin::user), empty_key));
+
+  if (!changelog().empty())
+    certs.push_back(cert(rid, changelog_cert_name, 
+                         cert_value(changelog(), origin::user), empty_key));
 
   revision_header(rid, rev, certs, date_fmt, header);
 }
@@ -62,7 +64,7 @@ revision_header(revision_id const rid, revision_t const & rev,
     {
       revision_id parent = edge_old_revision(*i);
       if (!null_id(parent))
-        out << _("Parent: ") << parent << '\n';
+        out << _("Parent:   ") << parent << '\n';
     }
 
   cert_name const author(author_cert_name);
@@ -74,27 +76,29 @@ revision_header(revision_id const rid, revision_t const & rev,
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == author)
-      out << _("Author: ") << i->value << '\n';
+      out << _("Author:   ") << i->value << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == date)
       {
         if (date_fmt.empty())
-          out << _("Date: ") << i->value << '\n';
+          out << _("Date:     ") << i->value << '\n';
         else
           {
             date_t date(i->value());
-            out << _("Date: ") << date.as_formatted_localtime(date_fmt) << '\n';
+            out << _("Date:     ") << date.as_formatted_localtime(date_fmt) << '\n';
           }
       }
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == branch)
-      out << _("Branch: ") << i->value << '\n';
+      out << _("Branch:   ") << i->value << '\n';
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == tag)
-      out << _("Tag: ") << i->value << '\n';
+      out << _("Tag:      ") << i->value << '\n';
+
+  out << "\n";
 
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == changelog)
@@ -134,9 +138,9 @@ revision_summary(revision_t const & rev, utf8 & summary)
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
       if (null_id(parent))
-        out << _("Changes") << "\n\n";
+        out << _("ChangeSet: ") << "\n\n";
       else
-        out << _("Changes against parent ") << parent << "\n\n";
+        out << _("ChangeSet: ") << parent << "\n\n";
 
       // presumably a merge rev could have an empty edge if one side won
       if (cs.empty())
