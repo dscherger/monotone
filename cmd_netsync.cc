@@ -191,9 +191,9 @@ build_client_connection_info(options & opts,
   if (!db.var_exists(default_server_key)
       || opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.host);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.host, origin::user));
     }
   if (!db.var_exists(default_include_pattern_key)
       || opts.set_default)
@@ -317,9 +317,9 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
 
   if (!db.var_exists(default_server_key) || app.opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.host);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.host, origin::user));
     }
 
   info.client.use_argv =
@@ -448,9 +448,9 @@ CMD_AUTOMATE_NO_STDIO(remote,
 
   if (!db.var_exists(default_server_key) || app.opts.set_default)
     {
-      P(F("setting default server to %s") % info.client.unparsed());
+      P(F("setting default server to %s") % info.client.uri.host);
       db.set_var(default_server_key,
-                 typecast_vocab<var_value>(info.client.unparsed));
+                 var_value(info.client.uri.host, origin::user));
     }
 
   info.client.use_argv =

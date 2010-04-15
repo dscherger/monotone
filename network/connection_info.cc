@@ -9,6 +9,7 @@
 // PURPOSE.
 
 #include "base.hh"
+#include "constants.hh"
 #include "network/connection_info.hh"
 
 netsync_connection_info::Client::Client() :
@@ -38,6 +39,13 @@ void netsync_connection_info::Client::set_input_stream(std::istream & is)
 void netsync_connection_info::Client::set_output_stream(automate_ostream & os)
 {
   output_stream = &os;
+}
+
+std::size_t netsync_connection_info::Client::get_port() const
+{
+  if (uri.port.empty())
+    return constants::netsync_default_port;
+  return atoi(uri.port.c_str());
 }
 
 // Local Variables:
