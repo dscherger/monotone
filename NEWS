@@ -6,19 +6,22 @@ xxx xxx xx xx:xx:xx UTC 2010
 
         New features
 
-        - 'automate update' is now supported.
+        - New automation command 'update' which behaves identical to
+          the normal 'update' command.
 
-        - There is a new Lua extension function change_workspace.
+        - A new Lua extension function change_workspace(directory) has been
+          added. This should be most useful for custom commands which need
+          to work on multiple workspaces from the same monotone instance.
 
-        - There is a server_set_listening(bool) Lua extention function
-          available since 0.47, which can be used to let a monotone server
-          exit gracefully instead of having to be killed.
+        - There is also the new server_set_listening(bool) Lua extention
+          function available since 0.47, which can be used to let a monotone
+          server exit gracefully instead of having to be killed.
 
-	- Default include and exclude patterns are now remembered per server.
-	  This means that you can have for example one server that you sync
-	  everything to, and one that you only sync some branches to, and you
-	  don't have to worry about forgetting to give the include pattern and
-	  accidentally trying to sync everything to the second server.
+        - Default include and exclude patterns are now remembered per server.
+          This means that you can have for example one server that you sync
+          everything to, and one that you only sync some branches to, and you
+          don't have to worry about forgetting to give the include pattern and
+          accidentally trying to sync everything to the second server.
 
         Bugs fixed
 
