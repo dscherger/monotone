@@ -192,7 +192,7 @@ UNIT_TESTERS_PRIV =							\
 UNIT_TEST_SUPPORT =							\
 	constants.cc file_io.cc gzip.cc hmac.cc lcs.cc merkle_tree.cc   \
 	randomizer.cc randomizer.hh roster_delta.cc roster_tests.hh	\
-	sanity.cc specialized_lexical_cast.cc
+	sanity.cc specialized_lexical_cast.cc pcrewrap.cc
 
 # primaries
 
