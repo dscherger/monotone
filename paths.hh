@@ -378,8 +378,9 @@ public:
   explicit system_path(utf8 const & path);
 
   bool operator==(const system_path & other) const
-  { return data== other.data; }
-
+  { return data == other.data; }
+  bool operator!=(const system_path & other) const
+  { return data != other.data; }
   bool operator <(const system_path & other) const
   { return data < other.data; }
 
