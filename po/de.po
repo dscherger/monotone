@@ -34,7 +34,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "Report-Msgid-Bugs-To: monotone-devel@nongnu.org\n"
-"POT-Creation-Date: 2010-03-13 02:23+0100\n"
+"POT-Creation-Date: 2010-04-13 11:18+0200\n"
 "PO-Revision-Date: 2009-12-27 15:38+0100\n"
 "Last-Translator: Thomas Keller <me@thomaskeller.biz>\n"
 "Language-Team: Deutsch <me@thomaskeller.biz>\n"
@@ -710,17 +710,17 @@ msgstr "Löst den spezifizierten Programm-Crash aus"
 msgid "--message and --message-file are mutually exclusive"
 msgstr "--message und --message-file können nicht zusammen verwendet werden"
 
-#: cmd_netsync.cc:88 cmd_netsync.cc:267 cmd_netsync.cc:398
+#: cmd_netsync.cc:88 cmd_netsync.cc:309 cmd_netsync.cc:440
 #, c-format
 msgid "no server given and no default server set"
 msgstr "kein Server angegeben und kein Standardserver gesetzt"
 
-#: cmd_netsync.cc:99
+#: cmd_netsync.cc:123
 #, c-format
 msgid "no branch pattern given and no default pattern set"
 msgstr "kein Zweigmuster gegeben und kein Standardmuster gesetzt"
 
-#: cmd_netsync.cc:117
+#: cmd_netsync.cc:142
 #, c-format
 msgid ""
 "Include/exclude pattern was given both as part of the URL and as a separate "
@@ -729,35 +729,45 @@ msgstr ""
 "Ein Einschluss-/Ausschluss-Muster wurde sowohl als Teil der URL als auch als "
 "separates Argument übergeben."
 
-#: cmd_netsync.cc:168 cmd_netsync.cc:278 cmd_netsync.cc:409
+#: cmd_netsync.cc:194 cmd_netsync.cc:320 cmd_netsync.cc:451
 #, c-format
 msgid "setting default server to %s"
 msgstr "setze Standardserver auf %s"
 
-#: cmd_netsync.cc:175
+#: cmd_netsync.cc:201
 #, c-format
 msgid "setting default branch include pattern to '%s'"
 msgstr "setze 'include'-Muster des Standardzweiges auf '%s'"
 
-#: cmd_netsync.cc:183
+#: cmd_netsync.cc:209
 #, c-format
 msgid "setting default branch exclude pattern to '%s'"
 msgstr "setze 'exclude'-Muster des Standardzweiges auf '%s'"
 
-#: cmd_netsync.cc:223
+#: cmd_netsync.cc:217
+#, fuzzy, c-format
+msgid "setting default include pattern for server '%s' to '%s'"
+msgstr "setze 'include'-Muster des Standardzweiges auf '%s'"
+
+#: cmd_netsync.cc:225
+#, fuzzy, c-format
+msgid "setting default exclude pattern for server '%s' to '%s'"
+msgstr "setze 'exclude'-Muster des Standardzweiges auf '%s'"
+
+#: cmd_netsync.cc:265
 #, c-format
 msgid "no branch pattern given"
 msgstr "kein Zweigmuster gegeben"
 
-#: cmd_netsync.cc:235
+#: cmd_netsync.cc:277
 msgid "[ADDRESS[:PORTNUMBER]]"
 msgstr "[ADRESSE[:PORTNUMMER]]"
 
-#: cmd_netsync.cc:236
+#: cmd_netsync.cc:278
 msgid "Opens an 'automate stdio' connection to a remote server"
 msgstr "Öffnet eine 'automate stdio'-Verbindung zu einem entfernten Server"
 
-#: cmd_netsync.cc:249 cmd_netsync.cc:380
+#: cmd_netsync.cc:291 cmd_netsync.cc:422
 #, c-format
 msgid ""
 "No database given; assuming ':memory:' database. This means that we can't\n"
@@ -767,43 +777,44 @@ msgstr ""
 "der Serverschlüssel nicht verifiziert werden kann, da es keinen\n"
 "existierenden Schlüssel zum Vergleich in der Datenbank gibt."
 
-#: cmd_netsync.cc:367
+#: cmd_netsync.cc:409
 msgid "COMMAND [ARGS]"
 msgstr "KOMMANDO [ARGUMENTE]"
 
-#: cmd_netsync.cc:368
+#: cmd_netsync.cc:410
 msgid "Executes COMMAND on a remote server"
 msgstr "Führt KOMMANDO auf einem entfernten Rechner aus"
 
-#: cmd_netsync.cc:376 cmd_list.cc:852 cmd_packet.cc:178 cmd_merging.cc:1072
-#: cmd_merging.cc:1141 cmd_ws_commit.cc:967 cmd_ws_commit.cc:1081
-#: cmd_ws_commit.cc:1103 cmd_automate.cc:133 cmd_files.cc:236 cmd_files.cc:333
-#: cmd_files.cc:361 automate.cc:83 automate.cc:120 automate.cc:173
-#: automate.cc:296 automate.cc:398 automate.cc:429 automate.cc:518
-#: automate.cc:1242 automate.cc:1415 automate.cc:1462 automate.cc:1494
-#: automate.cc:1528 automate.cc:1560 automate.cc:1600 automate.cc:1690
-#: automate.cc:1785 automate.cc:1843 automate.cc:1876 automate.cc:1939
-#: automate.cc:1991 automate.cc:2046 automate.cc:2106 automate.cc:2142
-#: automate.cc:2212 automate.cc:2242 automate.cc:2318 asciik.cc:379
+#: cmd_netsync.cc:418 cmd_list.cc:852 cmd_packet.cc:178 cmd_merging.cc:366
+#: cmd_merging.cc:1094 cmd_merging.cc:1163 cmd_ws_commit.cc:967
+#: cmd_ws_commit.cc:1081 cmd_ws_commit.cc:1103 cmd_automate.cc:134
+#: cmd_files.cc:236 cmd_files.cc:333 cmd_files.cc:361 automate.cc:83
+#: automate.cc:120 automate.cc:173 automate.cc:296 automate.cc:398
+#: automate.cc:429 automate.cc:518 automate.cc:1242 automate.cc:1415
+#: automate.cc:1462 automate.cc:1494 automate.cc:1528 automate.cc:1560
+#: automate.cc:1600 automate.cc:1690 automate.cc:1785 automate.cc:1843
+#: automate.cc:1876 automate.cc:1939 automate.cc:1991 automate.cc:2046
+#: automate.cc:2106 automate.cc:2142 automate.cc:2212 automate.cc:2242
+#: automate.cc:2318 asciik.cc:379
 #, c-format
 msgid "wrong argument count"
 msgstr "falsche Anzahl an Parametern"
 
-#: cmd_netsync.cc:462
+#: cmd_netsync.cc:504
 #, c-format
 msgid "received remote error code %d"
 msgstr "erhielt entfernten Fehlercode %d"
 
-#: cmd_netsync.cc:466 cmd_netsync.cc:486 cmd_netsync.cc:506 cmd_netsync.cc:528
-#: cmd_netsync.cc:548 cmd_netsync.cc:575
+#: cmd_netsync.cc:508 cmd_netsync.cc:528 cmd_netsync.cc:548 cmd_netsync.cc:570
+#: cmd_netsync.cc:590 cmd_netsync.cc:617
 msgid "[ADDRESS[:PORTNUMBER] [PATTERN ...]]"
 msgstr "[ADRESSE[:PORTNUMMER] [MUSTER ...]]"
 
-#: cmd_netsync.cc:467 cmd_netsync.cc:487
+#: cmd_netsync.cc:509 cmd_netsync.cc:529
 msgid "Pushes branches to a netsync server"
 msgstr "Schiebt Zweige zu einem netsync-Server"
 
-#: cmd_netsync.cc:468
+#: cmd_netsync.cc:510
 msgid ""
 "This will push all branches that match the pattern given in PATTERN to the "
 "netsync server at the address ADDRESS."
@@ -811,11 +822,11 @@ msgstr ""
 "Dieses Kommando schiebt alle Zweige, die auf MUSTER passen, zum netsync-"
 "Server unter ADRESSE."
 
-#: cmd_netsync.cc:507 cmd_netsync.cc:529
+#: cmd_netsync.cc:549 cmd_netsync.cc:571
 msgid "Pulls branches from a netsync server"
 msgstr "Holt Zweige von einem netsync-Server"
 
-#: cmd_netsync.cc:508
+#: cmd_netsync.cc:550
 msgid ""
 "This pulls all branches that match the pattern given in PATTERN from the "
 "netsync server at the address ADDRESS."
@@ -823,18 +834,18 @@ msgstr ""
 "Dieses Kommando holt alle Zweige, die auf MUSTER passen, vom netsync-Server "
 "unter ADRESSE."
 
-#: cmd_netsync.cc:522 cmd_netsync.cc:728
+#: cmd_netsync.cc:564 cmd_netsync.cc:770
 #, c-format
 msgid "doing anonymous pull; use -kKEYNAME if you need authentication"
 msgstr ""
 "hole Daten anonym; benutzen Sie -kSCHLÜSSELNAME, falls eine "
 "Authentifizierung benötigt wird"
 
-#: cmd_netsync.cc:549 cmd_netsync.cc:576
+#: cmd_netsync.cc:591 cmd_netsync.cc:618
 msgid "Synchronizes branches with a netsync server"
 msgstr "Synchronisiert Zweige mit einem netsync-Server"
 
-#: cmd_netsync.cc:550
+#: cmd_netsync.cc:592
 msgid ""
 "This synchronizes branches that match the pattern given in PATTERN with the "
 "netsync server at the address ADDRESS."
@@ -842,16 +853,16 @@ msgstr ""
 "Dieses Kommando synchronisiert Zweige, die auf MUSTER passen, mit dem "
 "netsync-Server unter ADRESSE."
 
-#: cmd_netsync.cc:646
+#: cmd_netsync.cc:688
 msgid "ADDRESS[:PORTNUMBER] BRANCH [DIRECTORY]"
 msgstr "ADRESSE[:PORTNUMMER] ZWEIG [VERZEICHNIS]"
 
-#: cmd_netsync.cc:647
+#: cmd_netsync.cc:689
 msgid "Checks out a revision from a remote database into a directory"
 msgstr ""
 "Checkt eine Revision von einer entfernten Datenbank in ein Verzeichnis aus"
 
-#: cmd_netsync.cc:648
+#: cmd_netsync.cc:690
 msgid ""
 "If a revision is given, that's the one that will be checked out.  Otherwise, "
 "it will be the head of the branch supplied.  If no directory is given, the "
@@ -862,57 +873,57 @@ msgstr ""
 "kein Verzeichnis angegeben wird, wird der Zweigname als Verzeichnisname "
 "verwendet."
 
-#: cmd_netsync.cc:665
+#: cmd_netsync.cc:707
 #, c-format
 msgid "you must specify a branch to clone"
 msgstr "Es muss ein Zweig zum Kopieren angegeben werden."
 
-#: cmd_netsync.cc:685
+#: cmd_netsync.cc:727
 #, c-format
 msgid "clone destination directory '%s' already exists"
 msgstr "Das Zielverzeichnis für das Kopieren '%s' existiert bereits."
 
-#: cmd_netsync.cc:746 cmd_merging.cc:492 cmd_merging.cc:608 cmd_merging.cc:613
-#: cmd_merging.cc:1393 cmd_ws_commit.cc:686
+#: cmd_netsync.cc:788 cmd_merging.cc:514 cmd_merging.cc:630 cmd_merging.cc:635
+#: cmd_merging.cc:1415 cmd_ws_commit.cc:686
 #, c-format
 msgid "branch '%s' is empty"
 msgstr "Zweig '%s' ist leer"
 
-#: cmd_netsync.cc:749 cmd_ws_commit.cc:689 cmd_ws_commit.cc:1442
+#: cmd_netsync.cc:791 cmd_ws_commit.cc:689 cmd_ws_commit.cc:1442
 #, c-format
 msgid "branch %s has multiple heads:"
 msgstr "Zweig %s hat mehrere Köpfe:"
 
-#: cmd_netsync.cc:753
+#: cmd_netsync.cc:795
 #, c-format
 msgid "choose one with '%s clone -r<id> SERVER BRANCH'"
 msgstr "wählen Sie eine durch '%s clone -r<id> SERVER ZWEIG'"
 
-#: cmd_netsync.cc:754 cmd_ws_commit.cc:695 cmd_ws_commit.cc:1448
+#: cmd_netsync.cc:796 cmd_ws_commit.cc:695 cmd_ws_commit.cc:1448
 #, c-format
 msgid "branch %s has multiple heads"
 msgstr "Zweig %s hat mehrere Köpfe"
 
-#: cmd_netsync.cc:765 cmd_ws_commit.cc:710 cmd_ws_commit.cc:1428
+#: cmd_netsync.cc:807 cmd_ws_commit.cc:710 cmd_ws_commit.cc:1428
 #, c-format
 msgid "revision %s is not a member of branch %s"
 msgstr "Revision %s ist nicht Mitglied des Zweiges %s"
 
-#: cmd_netsync.cc:798
+#: cmd_netsync.cc:840
 #, c-format
 msgid "pid file '%s' already exists"
 msgstr "PID-Datei '%s' existiert bereits"
 
-#: cmd_netsync.cc:800
+#: cmd_netsync.cc:842
 #, c-format
 msgid "failed to create pid file '%s'"
 msgstr "Konnte PID-Datei '%s' nicht erstellen"
 
-#: cmd_netsync.cc:823
+#: cmd_netsync.cc:865
 msgid "Serves the database to connecting clients"
 msgstr "Bedient Client-Anfragen für die Datenbank"
 
-#: cmd_netsync.cc:846
+#: cmd_netsync.cc:888
 #, c-format
 msgid ""
 "need permission to store persistent passphrase (see hook persist_phrase_ok())"
@@ -920,7 +931,7 @@ msgstr ""
 "benötige Berechtigung, um Passwort persistent zu speichern (siehe Hook "
 "persist_phrase_ok())"
 
-#: cmd_netsync.cc:856
+#: cmd_netsync.cc:898
 #, c-format
 msgid ""
 "The --no-transport-auth option is usually only used in combination with --"
@@ -1076,7 +1087,7 @@ msgstr "Listet alle Schlüssel aus dem Schlüsselbund auf"
 
 #: cmd_list.cc:793 cmd_db.cc:49 cmd_db.cc:61 cmd_db.cc:73 cmd_db.cc:90
 #: cmd_db.cc:104 cmd_db.cc:118 cmd_db.cc:134 cmd_db.cc:274 cmd_db.cc:290
-#: cmd_db.cc:311 cmd_db.cc:329 cmd_automate.cc:108 cmd_automate.cc:211
+#: cmd_db.cc:311 cmd_db.cc:329 cmd_automate.cc:109 cmd_automate.cc:212
 #: automate.cc:342 automate.cc:368 automate.cc:470 automate.cc:1316
 #: automate.cc:1344 automate.cc:1638
 #, c-format
@@ -1331,14 +1342,14 @@ msgstr "Bearbeiten des Kommentars fehlgeschlagen"
 msgid "empty comment"
 msgstr "leerer Kommentar"
 
-#: cmd_merging.cc:118 cmd_merging.cc:398 cmd_merging.cc:631 cmd_merging.cc:799
-#: cmd_merging.cc:927
+#: cmd_merging.cc:118 cmd_merging.cc:420 cmd_merging.cc:653 cmd_merging.cc:821
+#: cmd_merging.cc:949
 #, c-format
 msgid "[left]  %s"
 msgstr "[links] %s"
 
-#: cmd_merging.cc:119 cmd_merging.cc:399 cmd_merging.cc:632 cmd_merging.cc:800
-#: cmd_merging.cc:928
+#: cmd_merging.cc:119 cmd_merging.cc:421 cmd_merging.cc:654 cmd_merging.cc:822
+#: cmd_merging.cc:950
 #, c-format
 msgid "[right] %s"
 msgstr "[rechts] %s"
@@ -1368,11 +1379,87 @@ msgstr ""
 "Ziel-Revision befindet sich in keinem Zweig\n"
 "beim nächsten Einpflegen wird der Zweig %s genutzt"
 
-#: cmd_merging.cc:179
+#: cmd_merging.cc:191 cmd_merging.cc:792 cmd_ws_commit.cc:215
+#: cmd_ws_commit.cc:983 cmd_ws_commit.cc:1562 cmd_ws_commit.cc:1790
+#: cmd_ws_commit.cc:1905 cmd_files.cc:305 cmd_files.cc:373 automate.cc:1031
+#: automate.cc:1324
+#, c-format
+msgid "this command can only be used in a single-parent workspace"
+msgstr ""
+"Dieses Kommando kann nur in einem Arbeitsbereich mit einem Vorfahren genutzt "
+"werden."
+
+#: cmd_merging.cc:195
+#, c-format
+msgid "this workspace is a new project; cannot update"
+msgstr "dieser Arbeitsbereich ist ein neues Projekt; kann nicht aktualisieren"
+
+#: cmd_merging.cc:199
+#, c-format
+msgid "cannot determine branch for update"
+msgstr "kann Zweig zur Aktualisierung nicht bestimmen"
+
+#: cmd_merging.cc:204
+#, c-format
+msgid "updating along branch '%s'"
+msgstr "aktualisiere vorwärts auf dem Zweig '%s'"
+
+#: cmd_merging.cc:210
+#, c-format
+msgid ""
+"your request matches no descendents of the current revision\n"
+"in fact, it doesn't even match the current revision\n"
+"maybe you want something like --revision=h:%s"
+msgstr ""
+"Ihre Anfrage passt auf keine Nachfahren der derzeitigen Revision.\n"
+"Sie passt nicht einmal auf die derzeitige Revision.\n"
+"Eventuell möchten Sie '--revision=h:%s' ausführen."
+
+#: cmd_merging.cc:216
+#, c-format
+msgid "multiple update candidates:"
+msgstr "mehrere Kandidaten für die Aktualisierung:"
+
+#: cmd_merging.cc:221
+#, c-format
+msgid "choose one with '%s update -r<id>'"
+msgstr "wählen Sie eine durch '%s update -r<id>'"
+
+#: cmd_merging.cc:223
+#, c-format
+msgid "multiple update candidates remain after selection"
+msgstr "mehrere Kandidaten für die Aktualisierung verbleiben nach der Auswahl"
+
+#: cmd_merging.cc:241
+#, c-format
+msgid "already up to date at %s"
+msgstr "bereits aktualisiert auf %s"
+
+#: cmd_merging.cc:248
+#, c-format
+msgid "selected update target %s"
+msgstr "Ziel %s für Aktualisierung ausgewählt"
+
+#: cmd_merging.cc:254
+#, c-format
+msgid "switching to branch %s"
+msgstr "wechsle zum Zweig %s"
+
+#: cmd_merging.cc:337
+#, c-format
+msgid "switched branch; next commit will use branch %s"
+msgstr "Zweig gewechselt; beim nächsten Einpflegen wird der Zweig %s genutzt"
+
+#: cmd_merging.cc:338
+#, c-format
+msgid "updated to base revision %s"
+msgstr "aktualisiert auf gemeinsame Revision %s"
+
+#: cmd_merging.cc:342 cmd_merging.cc:360
 msgid "Updates the workspace"
 msgstr "Aktualisiert den Arbeitsbereich"
 
-#: cmd_merging.cc:180
+#: cmd_merging.cc:343
 msgid ""
 "This command modifies your workspace to be based off of a different "
 "revision, preserving uncommitted changes as it does so.  If a revision is "
@@ -1385,189 +1472,118 @@ msgstr ""
 "dieser Revision.  Wenn nicht, dient der Kopf des aktuellen Zweiges als "
 "Grundlage für die Aktualisierung."
 
-#: cmd_merging.cc:202 cmd_merging.cc:770 cmd_ws_commit.cc:215
-#: cmd_ws_commit.cc:983 cmd_ws_commit.cc:1562 cmd_ws_commit.cc:1789
-#: cmd_ws_commit.cc:1904 cmd_files.cc:305 cmd_files.cc:373 automate.cc:1031
-#: automate.cc:1324
+#: cmd_merging.cc:369
 #, c-format
-msgid "this command can only be used in a single-parent workspace"
+msgid "at most one revision selector may be specified"
 msgstr ""
-"Dieses Kommando kann nur in einem Arbeitsbereich mit einem Vorfahren genutzt "
-"werden."
 
-#: cmd_merging.cc:206
-#, c-format
-msgid "this workspace is a new project; cannot update"
-msgstr "dieser Arbeitsbereich ist ein neues Projekt; kann nicht aktualisieren"
-
-#: cmd_merging.cc:210
-#, c-format
-msgid "cannot determine branch for update"
-msgstr "kann Zweig zur Aktualisierung nicht bestimmen"
-
-#: cmd_merging.cc:215
-#, c-format
-msgid "updating along branch '%s'"
-msgstr "aktualisiere vorwärts auf dem Zweig '%s'"
-
-#: cmd_merging.cc:221
-#, c-format
-msgid ""
-"your request matches no descendents of the current revision\n"
-"in fact, it doesn't even match the current revision\n"
-"maybe you want something like --revision=h:%s"
-msgstr ""
-"Ihre Anfrage passt auf keine Nachfahren der derzeitigen Revision.\n"
-"Sie passt nicht einmal auf die derzeitige Revision.\n"
-"Eventuell möchten Sie '--revision=h:%s' ausführen."
-
-#: cmd_merging.cc:227
-#, c-format
-msgid "multiple update candidates:"
-msgstr "mehrere Kandidaten für die Aktualisierung:"
-
-#: cmd_merging.cc:232
-#, c-format
-msgid "choose one with '%s update -r<id>'"
-msgstr "wählen Sie eine durch '%s update -r<id>'"
-
-#: cmd_merging.cc:234
-#, c-format
-msgid "multiple update candidates remain after selection"
-msgstr "mehrere Kandidaten für die Aktualisierung verbleiben nach der Auswahl"
-
-#: cmd_merging.cc:252
-#, c-format
-msgid "already up to date at %s"
-msgstr "bereits aktualisiert auf %s"
-
-#: cmd_merging.cc:259
-#, c-format
-msgid "selected update target %s"
-msgstr "Ziel %s für Aktualisierung ausgewählt"
-
-#: cmd_merging.cc:265
-#, c-format
-msgid "switching to branch %s"
-msgstr "wechsle zum Zweig %s"
-
-#: cmd_merging.cc:348
-#, c-format
-msgid "switched branch; next commit will use branch %s"
-msgstr "Zweig gewechselt; beim nächsten Einpflegen wird der Zweig %s genutzt"
-
-#: cmd_merging.cc:349
-#, c-format
-msgid "updated to base revision %s"
-msgstr "aktualisiert auf gemeinsame Revision %s"
-
-#: cmd_merging.cc:412 cmd_merging.cc:735
+#: cmd_merging.cc:434 cmd_merging.cc:757
 #, c-format
 msgid "[merged] %s"
 msgstr "[vereinigt] %s"
 
-#: cmd_merging.cc:472
+#: cmd_merging.cc:494
 msgid "Merges unmerged heads of a branch"
 msgstr "Führt nicht-vereinigte Köpfe eines Zweiges zusammen"
 
-#: cmd_merging.cc:485 cmd_merging.cc:1052 cmd_merging.cc:1384
+#: cmd_merging.cc:507 cmd_merging.cc:1074 cmd_merging.cc:1406
 #, c-format
 msgid "please specify a branch, with --branch=BRANCH"
 msgstr "bitte geben Sie einen Zweig mit '--branch=ZWEIG' an"
 
-#: cmd_merging.cc:495
+#: cmd_merging.cc:517
 #, c-format
 msgid "branch '%s' is already merged"
 msgstr "Zweig '%s' wurde bereits vereinigt"
 
-#: cmd_merging.cc:499
+#: cmd_merging.cc:521
 #, c-format
 msgid "%d head on branch '%s'"
 msgid_plural "%d heads on branch '%s'"
 msgstr[0] "%d Kopf auf Zweig '%s'"
 msgstr[1] "%d Köpfe auf Zweig '%s'"
 
-#: cmd_merging.cc:527
+#: cmd_merging.cc:549
 #, c-format
 msgid "merge %d / %d:"
 msgstr "vereinige %d / %d"
 
-#: cmd_merging.cc:528
+#: cmd_merging.cc:550
 #, c-format
 msgid "calculating best pair of heads to merge next"
 msgstr ""
 "bestimme bestmögliches Paar von Köpfen, welche als nächste vereinigt werden"
 
-#: cmd_merging.cc:542
+#: cmd_merging.cc:564
 #, c-format
 msgid "note: branch '%s' still has %d heads; run merge again"
 msgstr ""
 "Hinweis: Zweig '%s' hat weitere %d Köpfe; führen Sie das merge-Kommando "
 "erneut aus"
 
-#: cmd_merging.cc:544
+#: cmd_merging.cc:566
 #, c-format
 msgid "note: your workspaces have not been updated"
 msgstr "Hinweis: Ihr Arbeitsbereich wurde nicht aktualisiert."
 
-#: cmd_merging.cc:548
+#: cmd_merging.cc:570
 msgid "SOURCE-BRANCH DEST-BRANCH"
 msgstr "QUELL-ZWEIG ZIEL-ZWEIG"
 
-#: cmd_merging.cc:549
+#: cmd_merging.cc:571
 msgid "Merges from one branch to another asymmetrically"
 msgstr "Überführt die Änderungen eines Zweigs auf einen anderen asymmetrisch"
 
-#: cmd_merging.cc:588
+#: cmd_merging.cc:610
 msgid "SOURCE-BRANCH DEST-BRANCH DIR"
 msgstr "QUELL-ZWEIG ZIEL-ZWEIG VERZEICHNIS"
 
-#: cmd_merging.cc:589
+#: cmd_merging.cc:611
 msgid "Merges one branch into a subdirectory in another branch"
 msgstr ""
 "Überführt die Änderungen eines Zweigs in ein Unterverzeichnis eines anderen "
 "Zweigs"
 
-#: cmd_merging.cc:610 cmd_merging.cc:615
+#: cmd_merging.cc:632 cmd_merging.cc:637
 #, c-format
 msgid "branch '%s' is not merged"
 msgstr "Zweig '%s' ist nicht vereinigt"
 
-#: cmd_merging.cc:622
+#: cmd_merging.cc:644
 #, c-format
 msgid "branch '%s' is up-to-date with respect to branch '%s'"
 msgstr "Zweig '%s' ist bezogen auf Zweig '%s' aktuell"
 
-#: cmd_merging.cc:624
+#: cmd_merging.cc:646
 #, c-format
 msgid "no action taken"
 msgstr "keine Aktion ausgeführt"
 
-#: cmd_merging.cc:630
+#: cmd_merging.cc:652
 #, c-format
 msgid "propagating %s -> %s"
 msgstr "übertrage %s -> %s"
 
-#: cmd_merging.cc:637
+#: cmd_merging.cc:659
 #, c-format
 msgid "no merge necessary; putting %s in branch '%s'"
 msgstr "kein Vereinigen notwendig; schiebe %s in Zweig '%s'"
 
-#: cmd_merging.cc:675
+#: cmd_merging.cc:697
 #, c-format
 msgid "Path %s not found in destination tree."
 msgstr "Pfad %s im Ziel-Baum nicht gefunden"
 
-#: cmd_merging.cc:740
+#: cmd_merging.cc:762
 msgid "OTHER-REVISION"
 msgstr "ANDERE-REVISION"
 
-#: cmd_merging.cc:741
+#: cmd_merging.cc:763
 msgid "Merges a revision into the current workspace's base revision"
 msgstr ""
 "Überführt die Änderungen einer Revision in den derzeitigen Arbeitsbereich"
 
-#: cmd_merging.cc:742
+#: cmd_merging.cc:764
 msgid ""
 "Merges OTHER-REVISION into the current workspace's base revision, and update "
 "the current workspace with the result.  There can be no pending changes in "
@@ -1582,24 +1598,24 @@ msgstr ""
 "Elternrevision beim Einpflegen aufgenommen.  Der gewählte Zweig des "
 "Arbeitsbereiches bleibt unverändert."
 
-#: cmd_merging.cc:777
+#: cmd_merging.cc:799
 #, c-format
 msgid "'%s' can only be used in a workspace with no pending changes"
 msgstr ""
 "'%s' kann nur in Arbeitsbereichen genutzt werden, die keine Änderungen "
 "aufweisen."
 
-#: cmd_merging.cc:791
+#: cmd_merging.cc:813
 #, c-format
 msgid "workspace is already at revision %s"
 msgstr "Arbeitsbereich ist bereits auf die Revision %s aktualisiert"
 
-#: cmd_merging.cc:794
+#: cmd_merging.cc:816
 #, c-format
 msgid "revision %s is already an ancestor of your workspace"
 msgstr "Revision %s ist bereits ein Vorfahre Ihres Arbeitsbereichs"
 
-#: cmd_merging.cc:796
+#: cmd_merging.cc:818
 #, c-format
 msgid ""
 "revision %s is a descendant of the workspace parent,\n"
@@ -1608,7 +1624,7 @@ msgstr ""
 "Revision %s ist ein Nachkomme der Basisrevision Ihres Arbeitsbereichs,\n"
 "meinten Sie 'mtn update -r %s'?"
 
-#: cmd_merging.cc:849
+#: cmd_merging.cc:871
 #, c-format
 msgid ""
 "updated to result of merge\n"
@@ -1619,56 +1635,56 @@ msgstr ""
 " [links] %s\n"
 "[rechts] %s\n"
 
-#: cmd_merging.cc:857
+#: cmd_merging.cc:879
 msgid "LEFT-REVISION RIGHT-REVISION DEST-BRANCH"
 msgstr "LINKE_REVISION RECHTE_REVISION ZIEL_ZWEIG"
 
-#: cmd_merging.cc:858
+#: cmd_merging.cc:880
 msgid "Merges two explicitly given revisions"
 msgstr "Vereinigt zwei explizit übergebene Revisionen"
 
-#: cmd_merging.cc:859
+#: cmd_merging.cc:881
 msgid ""
 "The results of the merge are placed on the branch specified by DEST-BRANCH."
 msgstr "Das Ergebnis der Vereinigung wird in den Zweig ZIEL_ZWEIG platziert."
 
-#: cmd_merging.cc:878
+#: cmd_merging.cc:900
 #, c-format
 msgid "%s and %s are the same revision, aborting"
 msgstr "%s und %s sind dieselben Revisionen, breche ab"
 
-#: cmd_merging.cc:881 cmd_merging.cc:884
+#: cmd_merging.cc:903 cmd_merging.cc:906
 #, c-format
 msgid "%s is already an ancestor of %s"
 msgstr "%s ist bereits ein Vorfahre von %s"
 
-#: cmd_merging.cc:940 cmd_merging.cc:955
+#: cmd_merging.cc:962 cmd_merging.cc:977
 #, c-format
 msgid "%s is an ancestor of %s; no merge is needed."
 msgstr "%s ist ein Vorgänger von %s; kein Vereinigen notwendig."
 
-#: cmd_merging.cc:982
+#: cmd_merging.cc:1004
 #, c-format
 msgid "no conflicts detected"
 msgstr "keine Konflikte erkannt"
 
-#: cmd_merging.cc:1016 cmd_conflicts.cc:160 cmd_conflicts.cc:173
+#: cmd_merging.cc:1038 cmd_conflicts.cc:160 cmd_conflicts.cc:173
 #, c-format
 msgid "warning: %d conflict with no supported resolutions."
 msgid_plural "warning: %d conflicts with no supported resolutions."
 msgstr[0] "Warnung: %d Konflikt ohne unterstützte Konfliktlösungen"
 msgstr[1] "Warnung: %d Konflikte ohne unterstützte Konfliktlösungen"
 
-#: cmd_merging.cc:1023
+#: cmd_merging.cc:1045
 msgid "REV REV"
 msgstr "REVISION REVISION"
 
-#: cmd_merging.cc:1024
+#: cmd_merging.cc:1046
 msgid "Shows what conflicts need resolution between two revisions"
 msgstr ""
 "Zeigt, welche Konflikte zwischen zwei Revisionen behoben werden müssten."
 
-#: cmd_merging.cc:1025
+#: cmd_merging.cc:1047
 msgid ""
 "The conflicts are calculated based on the two revisions given in the REV "
 "parameters."
@@ -1676,21 +1692,21 @@ msgstr ""
 "Die Konflikte werden basierend auf den zwei übergebenen REVISION-Argumenten "
 "berechnet."
 
-#: cmd_merging.cc:1059
+#: cmd_merging.cc:1081
 #, c-format
 msgid "branch '%s' has only 1 head; must be at least 2 for conflicts"
 msgstr ""
 "Zweig '%s' hat nur einen Kopf; es müssen mindestens zwei für conflicts sein"
 
-#: cmd_merging.cc:1092
+#: cmd_merging.cc:1114
 msgid "[LEFT_REVID RIGHT_REVID]"
 msgstr "[LINKE_REVID RECHTE_REVID]"
 
-#: cmd_merging.cc:1093
+#: cmd_merging.cc:1115
 msgid "Shows the conflicts between two revisions."
 msgstr "Zeigt die Konflikte zwischen zwei Revisionen."
 
-#: cmd_merging.cc:1094
+#: cmd_merging.cc:1116
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command."
@@ -1699,11 +1715,11 @@ msgstr ""
 "standardmäßig mit den ersten zwei Köpfen vorbelegt, die auch das 'merge'-"
 "Kommando auswählen würde."
 
-#: cmd_merging.cc:1108
+#: cmd_merging.cc:1130
 msgid "Store the conflicts from merging two revisions."
 msgstr "Speichert die Konflikte vom Zusammenführen zweier Revisionen."
 
-#: cmd_merging.cc:1109
+#: cmd_merging.cc:1131
 msgid ""
 "If no arguments are given, LEFT_REVID and RIGHT_REVID default to the first "
 "two heads that would be chosen by the 'merge' command. If --conflicts-file "
@@ -1714,11 +1730,11 @@ msgstr ""
 "Kommando auswählen würde. Wenn die Option --conflicts-file nicht übergeben "
 "wird, wird '_MTN/conflicts' benutzt."
 
-#: cmd_merging.cc:1127
+#: cmd_merging.cc:1149
 msgid "LEFT_REVID LEFT_FILENAME RIGHT_REVID RIGHT_FILENAME"
 msgstr "LINKE_REVID LINKER_DATEINAME RECHTE_REVID RECHTER_DATEINAME"
 
-#: cmd_merging.cc:1128
+#: cmd_merging.cc:1150
 msgid ""
 "Prints the results of the internal line merger, given two child revisions "
 "and file names"
@@ -1726,22 +1742,22 @@ msgstr ""
 "Gibt die Ergebnisse des internen Zeilenzusammenführers anhand der "
 "übergebenen beiden Kindrevisionen und Dateinamen aus"
 
-#: cmd_merging.cc:1180
+#: cmd_merging.cc:1202
 #, c-format
 msgid "internal line merger failed"
 msgstr "Ausführung des internen Zeilenzusammenführers fehlgeschlagen"
 
-#: cmd_merging.cc:1185
+#: cmd_merging.cc:1207
 msgid "[-r FROM] -r TO [PATH...]"
 msgstr "[-r VON] -r BIS [PFAD...]"
 
-#: cmd_merging.cc:1186
+#: cmd_merging.cc:1208
 msgid "Applies changes made at arbitrary places in history"
 msgstr ""
 "Wendet Änderungen an, die an beliebigen Stellen in der Historie vollzogen "
 "wurden"
 
-#: cmd_merging.cc:1187
+#: cmd_merging.cc:1209
 msgid ""
 "This command takes changes made at any point in history, and edits your "
 "current workspace to include those changes.  The end result is identical to "
@@ -1764,7 +1780,7 @@ msgstr ""
 "Wenn zwei Revisionen übergeben wurden, werden die Änderungen, die zwischen "
 "der ersten und der zweiten Revision gemacht wurden, angewendet."
 
-#: cmd_merging.cc:1211
+#: cmd_merging.cc:1233
 #, c-format
 msgid ""
 "revision %s is a merge\n"
@@ -1776,50 +1792,50 @@ msgstr ""
 "Sie:\n"
 " %s pluck -r ELTERNREVISION -r %s"
 
-#: cmd_merging.cc:1227
+#: cmd_merging.cc:1249
 #, c-format
 msgid "no changes to apply"
 msgstr "keine Änderungen anwendbar"
 
-#: cmd_merging.cc:1289
+#: cmd_merging.cc:1311
 #, c-format
 msgid "no changes to be applied"
 msgstr "Es gab keine Änderungen vorzunehmen."
 
-#: cmd_merging.cc:1339
+#: cmd_merging.cc:1361
 #, c-format
 msgid "no changes were applied"
 msgstr "Es wurden keine Änderungen vorgenommen."
 
-#: cmd_merging.cc:1343
+#: cmd_merging.cc:1365
 #, c-format
 msgid "applied changes to workspace"
 msgstr "Änderungen auf Arbeitsbereich angewendet"
 
-#: cmd_merging.cc:1375
+#: cmd_merging.cc:1397
 msgid "Shows unmerged head revisions of a branch"
 msgstr "Zeigt nicht-vereinigte Köpfe (Revisionen) eines Zweiges"
 
-#: cmd_merging.cc:1395
+#: cmd_merging.cc:1417
 #, c-format
 msgid "branch '%s' is currently merged:"
 msgstr "Zweig '%s' ist derzeit vereinigt:"
 
-#: cmd_merging.cc:1397
+#: cmd_merging.cc:1419
 #, c-format
 msgid "branch '%s' is currently unmerged:"
 msgstr "Zweig '%s' ist derzeit nicht vereinigt:"
 
-#: cmd_merging.cc:1404 automate.cc:1407
+#: cmd_merging.cc:1426 automate.cc:1407
 msgid "[REVID]"
 msgstr "[REVISIONS_ID]"
 
-#: cmd_merging.cc:1405
+#: cmd_merging.cc:1427
 msgid "Dumps the roster associated with a given identifier"
 msgstr ""
 "Exportiert den Katalog, welcher einer gegebenen Revisions-ID zugeordnet ist"
 
-#: cmd_merging.cc:1406
+#: cmd_merging.cc:1428
 msgid "If no REVID is given, the workspace is used."
 msgstr "Wenn keine REVID übergeben wurde, wird der Arbeitsbereich genutzt."
 
@@ -2269,49 +2285,49 @@ msgstr ""
 "Dieses Kommando gibt die ausgewählte Historie vorwärts oder rückwärts aus, "
 "gefiltert durch PFAD, sofern angegeben."
 
-#: cmd_diff_log.cc:761
+#: cmd_diff_log.cc:760
 #, c-format
 msgid "only one of --last/--next allowed"
 msgstr "'--last' und '--next' sind nur einmal erlaubt"
 
-#: cmd_diff_log.cc:778
+#: cmd_diff_log.cc:777
 #, c-format
 msgid "try passing a --from revision to start at"
 msgstr "Versuchen Sie, über die Option --from eine Startrevision anzugeben."
 
-#: cmd_diff_log.cc:1052
+#: cmd_diff_log.cc:1051
 msgid "Revision: "
 msgstr "Revision: "
 
-#: cmd_diff_log.cc:1067
+#: cmd_diff_log.cc:1066
 msgid "Ancestor: "
 msgstr "Vorfahr: "
 
-#: cmd_diff_log.cc:1069
+#: cmd_diff_log.cc:1068
 msgid "Author: "
 msgstr "Autor: "
 
-#: cmd_diff_log.cc:1070
+#: cmd_diff_log.cc:1069
 msgid "Date: "
 msgstr "Datum: "
 
-#: cmd_diff_log.cc:1071
+#: cmd_diff_log.cc:1070
 msgid "Branch: "
 msgstr "Zweig: "
 
-#: cmd_diff_log.cc:1072
+#: cmd_diff_log.cc:1071
 msgid "Tag: "
 msgstr "Marke: "
 
-#: cmd_diff_log.cc:1081
+#: cmd_diff_log.cc:1080
 msgid "ChangeLog: "
 msgstr "Änderungen: "
 
-#: cmd_diff_log.cc:1082
+#: cmd_diff_log.cc:1081
 msgid "Comments: "
 msgstr "Kommentare: "
 
-#: cmd_diff_log.cc:1108
+#: cmd_diff_log.cc:1107
 #, c-format
 msgid "(Revision: %s)"
 msgstr "(Revision: %s)"
@@ -2862,12 +2878,12 @@ msgstr ""
 "Bisektion gestartet wurde und entferne alle derzeitigen Suchinformationen, "
 "um eine neue Suche zu ermöglichen."
 
-#: cmd_ws_commit.cc:1557 cmd_ws_commit.cc:1612
+#: cmd_ws_commit.cc:1557 cmd_ws_commit.cc:1613
 #, c-format
 msgid "no bisection in progress"
 msgstr "es wird keine Bisektion durchgeführt"
 
-#: cmd_ws_commit.cc:1572 cmd_ws_commit.cc:1799
+#: cmd_ws_commit.cc:1572 cmd_ws_commit.cc:1800
 #, c-format
 msgid "this command can only be used in a workspace with no pending changes"
 msgstr ""
@@ -2879,7 +2895,7 @@ msgstr ""
 msgid "reset back to %s"
 msgstr "setzte auf %s zurück"
 
-#: cmd_ws_commit.cc:1643
+#: cmd_ws_commit.cc:1644
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify good revisions to "
@@ -2888,7 +2904,7 @@ msgstr ""
 "unterteile Revisionen; %d gute; %d schlechte; %d übergangene; geben Sie gute "
 "Revisionen an, um die Suche zu starten"
 
-#: cmd_ws_commit.cc:1649
+#: cmd_ws_commit.cc:1650
 #, c-format
 msgid ""
 "bisecting revisions; %d good; %d bad; %d skipped; specify bad revisions to "
@@ -2897,43 +2913,43 @@ msgstr ""
 "unterteile Revisionen; %d gute; %d schlechte; %d übergangene; geben Sie "
 "schlechte Revisionen an, um die Suche zu starten"
 
-#: cmd_ws_commit.cc:1712
+#: cmd_ws_commit.cc:1713
 #, c-format
 msgid "bisecting %d revisions; %d good; %d bad; %d skipped; %d remaining"
 msgstr ""
 "unterteile %d Revisionen; %d gute; %d schlechte; %d übergangene; %d "
 "verbleiben"
 
-#: cmd_ws_commit.cc:1730
+#: cmd_ws_commit.cc:1731
 #, c-format
 msgid "bisection finished at revision %s"
 msgstr "Bisektion bei Revision %s beendet"
 
-#: cmd_ws_commit.cc:1823
+#: cmd_ws_commit.cc:1824
 #, c-format
 msgid "bisection started at revision %s"
 msgstr "Bisektion bei Revision %s gestartet"
 
-#: cmd_ws_commit.cc:1839
+#: cmd_ws_commit.cc:1840
 #, c-format
 msgid "ignored redundant bisect %s on revision %s"
 msgstr "ignoriere überflüssiges 'bisect %s' auf Revision %s"
 
-#: cmd_ws_commit.cc:1844
+#: cmd_ws_commit.cc:1845
 #, c-format
 msgid "conflicting bisect %s/%s on revision %s"
 msgstr "Konflikt bei 'bisect %s/%s' auf Revision %s"
 
-#: cmd_ws_commit.cc:1862
+#: cmd_ws_commit.cc:1863
 #, c-format
 msgid "updating to %s"
 msgstr "aktualisiere auf %s"
 
-#: cmd_ws_commit.cc:1887
+#: cmd_ws_commit.cc:1888
 msgid "Reports on the current status of the bisection search"
 msgstr "Berichtet den derzeitigen Status der Bisektionssuche"
 
-#: cmd_ws_commit.cc:1888
+#: cmd_ws_commit.cc:1889
 msgid ""
 "Lists the total number of revisions in the search set; the number of "
 "revisions that have been determined to be good or bad; the number of "
@@ -2945,30 +2961,30 @@ msgstr ""
 "Revisionen, die übergangen wurden, sowie die Anzahl der zum Test "
 "verbleibenden Revisionen auf."
 
-#: cmd_ws_commit.cc:1916
+#: cmd_ws_commit.cc:1917
 #, c-format
 msgid "next revision for bisection testing is %s\n"
 msgstr "nächste Revision für Bisektionstest ist %s\n"
 
-#: cmd_ws_commit.cc:1917
+#: cmd_ws_commit.cc:1918
 #, c-format
 msgid "however this workspace is currently at %s\n"
 msgstr "der Arbeitsbereich hat jedoch derzeit die Revision %s\n"
 
-#: cmd_ws_commit.cc:1918
+#: cmd_ws_commit.cc:1919
 #, c-format
 msgid "run 'bisect update' to update to this revision before testing"
 msgstr ""
 "führen Sie 'bisect update' aus, um vor dem Test zur korrekten Revision zu "
 "aktualisieren"
 
-#: cmd_ws_commit.cc:1923
+#: cmd_ws_commit.cc:1924
 msgid "Updates the workspace to the next revision to be tested by bisection"
 msgstr ""
 "Aktualisiert den Arbeitsbereich zur nächsten Revision, die durch die "
 "Bisektionssuche getestet werden soll."
 
-#: cmd_ws_commit.cc:1924
+#: cmd_ws_commit.cc:1925
 msgid ""
 "This command can be used if updates by good, bad or skip commands fail due "
 "to blocked paths or other problems."
@@ -2977,13 +2993,13 @@ msgstr ""
 "Kommandos 'good', 'bad' oder 'skip' durch bestimmte Probleme, wie "
 "beispielsweise blockierte Pfade, fehlschlagen."
 
-#: cmd_ws_commit.cc:1934
+#: cmd_ws_commit.cc:1935
 msgid "Excludes the current revision or specified revisions from the search"
 msgstr ""
 "Schließt die derzeitige Revision oder die spezifizierten Revisionen von der "
 "Suche aus"
 
-#: cmd_ws_commit.cc:1935
+#: cmd_ws_commit.cc:1936
 msgid ""
 "Skipped revisions are removed from the set being searched. Revisions that "
 "cannot be tested for some reason should be skipped."
@@ -2992,23 +3008,23 @@ msgstr ""
 "die aus irgend einem Grund nicht getestet werden können, sollten übergangen "
 "werden."
 
-#: cmd_ws_commit.cc:1945
+#: cmd_ws_commit.cc:1946
 msgid "Marks the current revision or specified revisions as bad"
 msgstr ""
 "Markiert die derzeitige Revision oder die spezifizierten Revisionen als "
 "schlecht"
 
-#: cmd_ws_commit.cc:1946
+#: cmd_ws_commit.cc:1947
 msgid "Known bad revisions are removed from the set being searched."
 msgstr ""
 "Bekannte schlechte Revisionen werden von der durchsuchten Menge entfernt."
 
-#: cmd_ws_commit.cc:1955
+#: cmd_ws_commit.cc:1956
 msgid "Marks the current revision or specified revisions as good"
 msgstr ""
 "Markiert die derzeitige Revision oder die spezifizierten Revisionen als gut"
 
-#: cmd_ws_commit.cc:1956
+#: cmd_ws_commit.cc:1957
 msgid "Known good revisions are removed from the set being searched."
 msgstr "Bekannte gute Revisionen werden von der durchsuchten Menge entfernt."
 
@@ -3070,15 +3086,15 @@ msgstr "importierte Revisionsmarkierungen von '%s'"
 msgid "exporting revision marks to '%s'"
 msgstr "exportiere Revisionsmarkierungen nach '%s'"
 
-#: cmd_automate.cc:37
+#: cmd_automate.cc:38
 msgid "Interface for scripted execution"
 msgstr "Schnittstelle für automatische Ausführung"
 
-#: cmd_automate.cc:103
+#: cmd_automate.cc:104
 msgid "Prints the automation interface's version"
 msgstr "Gibt die Version der 'automate' Schnittstelle aus"
 
-#: cmd_automate.cc:127
+#: cmd_automate.cc:128
 msgid ""
 "Emulates certain kinds of diagnostic / UI messages for debugging and testing "
 "purposes, such as stdio"
@@ -3086,43 +3102,48 @@ msgstr ""
 "Emuliert bestimmte diagnostische / UI Meldungen für Debug- und Testzwecke, z."
 "B. für stdio"
 
-#: cmd_automate.cc:137
+#: cmd_automate.cc:138
 #, c-format
 msgid "this is an informational message"
 msgstr "das ist eine informationelle Nachricht"
 
-#: cmd_automate.cc:139
+#: cmd_automate.cc:140
 #, c-format
 msgid "this is a warning"
 msgstr "dies ist eine Warnung"
 
-#: cmd_automate.cc:141
+#: cmd_automate.cc:142
 #, c-format
 msgid "this is an error message"
 msgstr "das ist eine Fehlernachricht"
 
-#: cmd_automate.cc:206
+#: cmd_automate.cc:207
 msgid "Automates several commands in one run"
 msgstr "Ermöglicht die Ausführung mehrerer Kommandos in einem Durchgang"
 
-#: cmd_automate.cc:263 cmd_automate.cc:396 network/automate_session.cc:193
+#: cmd_automate.cc:264 cmd_automate.cc:430 network/automate_session.cc:193
 #, c-format
 msgid "no completions for this command"
 msgstr "keine Vervollständigungen für dieses Kommando"
 
-#: cmd_automate.cc:268 cmd_automate.cc:401 network/automate_session.cc:198
+#: cmd_automate.cc:269 cmd_automate.cc:435 network/automate_session.cc:198
 #, c-format
 msgid "multiple completions possible for this command"
 msgstr "mehrere Vervollständigungen für dieses Kommando möglich"
 
-#: cmd_automate.cc:284 network/automate_session.cc:222
+#: cmd_automate.cc:285 network/automate_session.cc:222
 #, c-format
 msgid "sorry, that can't be run remotely or over stdio"
 msgstr ""
 "Entschuldigung, dieses Kommando kann nicht entfernt oder über stdio "
 "ausgeführt werden"
 
-#: cmd_automate.cc:350
+#: cmd_automate.cc:364
+#, fuzzy, c-format
+msgid "directory %s is not a workspace"
+msgstr "Datei '%s' existiert nicht im Arbeitsbereich"
+
+#: cmd_automate.cc:384
 #, c-format
 msgid ""
 "It is illegal to call the mtn_automate() lua extension,\n"
@@ -3132,13 +3153,13 @@ msgstr ""
 "in einer Funktion aufzurufen, die nicht in 'register_command()'\n"
 "definiert ist."
 
-#: cmd_automate.cc:359
+#: cmd_automate.cc:393
 #, c-format
 msgid "Bad input to mtn_automate() lua extension: command name is missing"
 msgstr ""
 "Falsche Eingabe für 'mtn_automate()'-Lua-Erweiterung: Kommandoname fehlt."
 
-#: cmd_automate.cc:389
+#: cmd_automate.cc:423
 #, c-format
 msgid "no command found"
 msgstr "kein Kommando gefunden"
@@ -3819,7 +3840,7 @@ msgstr ""
 msgid "'%s' is in the way"
 msgstr "'%s' ist im Weg"
 
-#: work.cc:2038
+#: work.cc:2039
 #, c-format
 msgid ""
 "workspace is locked\n"
@@ -3828,7 +3849,7 @@ msgstr ""
 "Der Arbeitsbereich ist gesperrt.\n"
 "Sie müssen das Verzeichnis %s aufräumen und entfernen."
 
-#: work.cc:2057
+#: work.cc:2058
 #, c-format
 msgid ""
 "re-run this command with --move-conflicting-paths to move conflicting paths "
@@ -3836,6 +3857,11 @@ msgid ""
 msgstr ""
 "Führen Sie dieses Kommando mit --move-conflicting-paths erneut aus, um in "
 "Konflikt stehende Pfade aus den Weg zu räumen."
+
+#: work.cc:2090
+#, fuzzy, c-format
+msgid "moved some conflicting files into %s/%s"
+msgstr "verschob in Konflikt stehenden Pfad %s nach %s"
 
 #: migrate_work.cc:79
 #, c-format
@@ -3952,11 +3978,11 @@ msgstr "es gibt keinen Schlüssel mit dem Namen '%s'"
 msgid "key %s does not exist"
 msgstr "Schlüssel %s existiert nicht"
 
-#: project.cc:735
+#: project.cc:745
 msgid "note: "
 msgstr "Hinweis: "
 
-#: project.cc:736
+#: project.cc:746
 #, c-format
 msgid ""
 "branch '%s' has multiple heads\n"
@@ -3965,20 +3991,20 @@ msgstr ""
 "Der Zweig '%s' hat mehrere Köpfe.\n"
 "Eventuell möchten Sie '%s merge' ausführen."
 
-#: project.cc:755
+#: project.cc:765
 #, c-format
 msgid "no branch found for empty revision, please provide a branch name"
 msgstr ""
 "kein Zweig für leere Revision gefunden, bitte geben Sie einen Zweignamen an"
 
-#: project.cc:762
+#: project.cc:772
 #, c-format
 msgid "no branch certs found for revision %s, please provide a branch name"
 msgstr ""
 "keine Zweigzertifikate für Revision %s gefunden, bitte geben Sie einen "
 "Zweignamen an"
 
-#: project.cc:766
+#: project.cc:776
 #, c-format
 msgid ""
 "multiple branch certs found for revision %s, please provide a branch name"
@@ -6248,7 +6274,7 @@ msgstr "kein Treffer für Auswahl '%s'"
 msgid "expanded to '%s'"
 msgstr "erweitert zu '%s'"
 
-#: selectors.cc:503
+#: selectors.cc:504
 #, c-format
 msgid "selection '%s' has multiple ambiguous expansions:"
 msgstr "Die Auswahl '%s' kann auf mehrere Arten erweitert werden:"
@@ -6744,14 +6770,19 @@ msgstr ""
 "[   rechts] %s\n"
 "[vereinigt] %s"
 
-#: merge_content.cc:699
+#: merge_content.cc:700
 #, c-format
 msgid "%d content conflict requires user intervention"
 msgid_plural "%d content conflicts require user intervention"
 msgstr[0] "%d Inhaltskonflikt erfordert einen Benutzereingriff"
 msgstr[1] "%d Inhaltskonflikte erfordern einen Benutzereingriff"
 
-#: merge_content.cc:710
+#: merge_content.cc:716
+#, c-format
+msgid "can't spawn external merger when non-interactive"
+msgstr ""
+
+#: merge_content.cc:726
 #, c-format
 msgid "merge failed due to unresolved conflicts"
 msgstr "Vereinigung schlug wegen nicht aufgelösten Konflikten fehl"

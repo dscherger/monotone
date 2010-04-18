@@ -92,24 +92,49 @@ build_client_connection_info(options & opts,
       L(FL("using default server address: %s") % info.client.unparsed);
     }
   parse_uri(info.client.unparsed(), info.client.uri, origin::user);
+
+  var_key server_include(var_domain("server-include"),
+                         typecast_vocab<var_name>(info.client.unparsed));
+  var_key server_exclude(var_domain("server-exclude"),
+                         typecast_vocab<var_name>(info.client.unparsed));
+
   if (info.client.uri.query.empty() && !include_or_exclude_given)
     {
-      // No include/exclude given anywhere, use the defaults.
-      E(db.var_exists(default_include_pattern_key), origin::user,
-        F("no branch pattern given and no default pattern set"));
-      var_value pattern_value;
-      db.get_var(default_include_pattern_key, pattern_value);
-      info.client.include_pattern = globish(pattern_value(), origin::user);
-      L(FL("using default branch include pattern: '%s'")
-        % info.client.include_pattern);
-      if (db.var_exists(default_exclude_pattern_key))
+      if (db.var_exists(server_include))
         {
-          db.get_var(default_exclude_pattern_key, pattern_value);
-          info.client.exclude_pattern = globish(pattern_value(), origin::user);
+          var_value pattern_value;
+          db.get_var(server_include, pattern_value);
+          info.client.include_pattern = globish(pattern_value(), origin::user);
+          L(FL("using default branch include pattern: '%s'")
+            % info.client.include_pattern);
+          if (db.var_exists(server_exclude))
+            {
+              db.get_var(server_exclude, pattern_value);
+              info.client.exclude_pattern = globish(pattern_value(), origin::user);
+            }
+          else
+            info.client.exclude_pattern = globish();
+          L(FL("excluding: %s") % info.client.exclude_pattern);
         }
       else
-        info.client.exclude_pattern = globish();
-      L(FL("excluding: %s") % info.client.exclude_pattern);
+        {
+          // No include/exclude given anywhere, use the defaults.
+          E(db.var_exists(default_include_pattern_key), origin::user,
+            F("no branch pattern given and no default pattern set"));
+          var_value pattern_value;
+          db.get_var(default_include_pattern_key, pattern_value);
+          info.client.include_pattern = globish(pattern_value(), origin::user);
+          L(FL("using default branch include pattern: '%s'")
+            % info.client.include_pattern);
+          if (db.var_exists(default_exclude_pattern_key))
+            {
+              db.get_var(default_exclude_pattern_key, pattern_value);
+              info.client.exclude_pattern = globish(pattern_value(), origin::user);
+            }
+          else
+            info.client.exclude_pattern = globish();
+          L(FL("excluding: %s") % info.client.exclude_pattern);
+        }
     }
   else if(!info.client.uri.query.empty())
     {
@@ -163,28 +188,45 @@ build_client_connection_info(options & opts,
     }
 
   // Maybe set the default values.
-  if (!db.var_exists(default_server_key) || opts.set_default)
+  if (!db.var_exists(default_server_key)
+      || opts.set_default)
     {
       P(F("setting default server to %s") % info.client.unparsed());
       db.set_var(default_server_key,
                  typecast_vocab<var_value>(info.client.unparsed));
     }
-    if (!db.var_exists(default_include_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch include pattern to '%s'")
-          % info.client.include_pattern);
-        db.set_var(default_include_pattern_key,
-                   typecast_vocab<var_value>(info.client.include_pattern));
-      }
-    if (!db.var_exists(default_exclude_pattern_key)
-        || opts.set_default)
-      {
-        P(F("setting default branch exclude pattern to '%s'")
-          % info.client.exclude_pattern);
-        db.set_var(default_exclude_pattern_key,
-                   typecast_vocab<var_value>(info.client.exclude_pattern));
-      }
+  if (!db.var_exists(default_include_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch include pattern to '%s'")
+        % info.client.include_pattern);
+      db.set_var(default_include_pattern_key,
+                 typecast_vocab<var_value>(info.client.include_pattern));
+    }
+  if (!db.var_exists(default_exclude_pattern_key)
+      || opts.set_default)
+    {
+      P(F("setting default branch exclude pattern to '%s'")
+        % info.client.exclude_pattern);
+      db.set_var(default_exclude_pattern_key,
+                 typecast_vocab<var_value>(info.client.exclude_pattern));
+    }
+  if (!db.var_exists(server_include)
+      || opts.set_default)
+    {
+      P(F("setting default include pattern for server '%s' to '%s'")
+        % info.client.unparsed % info.client.include_pattern);
+      db.set_var(server_include,
+                 typecast_vocab<var_value>(info.client.include_pattern));
+    }
+  if (!db.var_exists(server_exclude)
+      || opts.set_default)
+    {
+      P(F("setting default exclude pattern for server '%s' to '%s'")
+        % info.client.unparsed % info.client.exclude_pattern);
+      db.set_var(server_exclude,
+                 typecast_vocab<var_value>(info.client.exclude_pattern));
+    }
 
   info.client.use_argv =
     lua.hook_get_netsync_connect_command(info.client.uri,

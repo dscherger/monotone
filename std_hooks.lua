@@ -462,10 +462,10 @@ mergers.fail = {
 
 mergers.meld = {
    cmd = function (tbl)
-      io.write (string.format("\nWARNING: 'meld' was chosen to perform "..
-                  "an external 3-way merge.\n"..
-                  "You must merge all changes to the "..
-                  "*CENTER* file."))
+      io.write(string.format(
+        "\nWARNING: 'meld' was chosen to perform an external 3-way merge.\n"..
+        "You must merge all changes to the *CENTER* file.\n\n"
+      ))
       local path = "meld"
       local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
       if (ret ~= 0) then
@@ -475,6 +475,24 @@ mergers.meld = {
       return tbl.afile
    end ,
    available = function () return program_exists_in_path("meld") end,
+   wanted = function () return true end
+}
+
+mergers.diffuse = {
+   cmd = function (tbl)
+      io.write(string.format(
+        "\nWARNING: 'diffuse' was chosen to perform an external 3-way merge.\n"..
+        "You must merge all changes to the *CENTER* file.\n\n"
+      ))
+      local path = "diffuse"
+      local ret = execute(path, tbl.lfile, tbl.afile, tbl.rfile)
+      if (ret ~= 0) then
+         io.write(string.format(gettext("Error running merger '%s'\n"), path))
+         return false
+      end
+      return tbl.afile
+   end ,
+   available = function () return program_exists_in_path("diffuse") end,
    wanted = function () return true end
 }
 
@@ -849,7 +867,8 @@ function program_exists_in_path(program)
 end
 
 function get_preferred_merge3_command (tbl)
-   local default_order = {"kdiff3", "xxdiff", "opendiff", "tortoise", "emacs", "vim", "meld", "diffutils"}
+   local default_order = {"diffuse", "kdiff3", "xxdiff", "opendiff",
+                          "tortoise", "emacs", "vim", "meld", "diffutils"}
    local function existmerger(name)
       local m = mergers[name]
       if type(m) == "table" and m.available(tbl) then
