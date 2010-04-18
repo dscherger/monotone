@@ -215,7 +215,7 @@ build_client_connection_info(options & opts,
       || opts.set_default)
     {
       P(F("setting default include pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.include_pattern);
+        % info.client.uri.resource % info.client.include_pattern);
       db.set_var(server_include,
                  typecast_vocab<var_value>(info.client.include_pattern));
     }
@@ -223,7 +223,7 @@ build_client_connection_info(options & opts,
       || opts.set_default)
     {
       P(F("setting default exclude pattern for server '%s' to '%s'")
-        % info.client.unparsed % info.client.exclude_pattern);
+        % info.client.uri.resource % info.client.exclude_pattern);
       db.set_var(server_exclude,
                  typecast_vocab<var_value>(info.client.exclude_pattern));
     }
