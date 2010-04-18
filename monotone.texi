@@ -1479,6 +1479,7 @@ he has forgotten what he was doing. He asks monotone:
 @smallexample
 @group
 $ mtn status
+FIXME
 Current branch: jp.co.juicebot.jb7
 Changes against parent :
   added   include/jb.h
@@ -1876,6 +1877,7 @@ committed and the opportunity to enter a log message.
 
 @smallexample
 @group
+FIXME
 polling implementation of src/apple.c
 MTN: ----------------------------------------------------------------------
 MTN: Enter a description of this change.
@@ -10648,6 +10650,8 @@ otherwise.  The default definition returns @samp{%x} for long and short
 date formats, @samp{%X} for long and short time formats and @samp{%x %X}
 for long and short date time formats, which is equivalent to @samp{22/05/09},
 @samp{09:06:14} and @samp{22/05/09 09:06:14} in an English locale.
+
+FIXME
 
 @var{wanted} can be one of @samp{date_long}, @samp{date_short},
 @samp{time_long}, @samp{time_short}, @samp{date_time_long} and

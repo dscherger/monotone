@@ -130,19 +130,20 @@ static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
                               revision_id const rid, revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
+                              set<branch_name> const & old_branches,
                               string const & date_fmt, utf8 & log_message)
 {
   utf8 instructions(
-    _("Enter a description of this change following the ChangeLog line.\n"
+    _("Enter a description of this change following the Changelog line.\n"
       "The values of Author, Date and Branch may be modified as required.\n"
-      "Any other modifications will will cause the commit to fail.\n"));
+      "Any other modifications will cause the commit to fail.\n\n"));
 
   utf8 cancel(_("*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"));
 
   utf8 changelog;
   work.read_user_log(changelog);
 
-  // ensure the changelog message is non-empty so that the ChangeLog: cert
+  // ensure the changelog message is non-empty so that the Changelog: cert
   // line is produced by revision_header and there is somewhere to enter a
   // message
 
@@ -154,13 +155,28 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
       changelog = utf8(text, origin::user);
     }
 
+  ostringstream oss;
+
+  oss << string(70, '-') << '\n';
+  if (!old_branches.empty() && old_branches.find(branch) == old_branches.end())
+    {
+      oss << _("This revision will create a new branch.") << '\n';
+      for (set<branch_name>::const_iterator i = old_branches.begin();
+           i != old_branches.end(); ++i)
+        oss << _("Old Branch: ") << *i << '\n';
+      oss << _("New Branch: ") << branch << "\n\n";
+    }
+
+  utf8 notes(oss.str().c_str());
+
   utf8 header;
   utf8 summary;
 
   revision_header(rid, rev, author, date, branch, changelog, date_fmt, header);
   revision_summary(rev, summary);
 
-  utf8 full_message(instructions() + cancel() + header() + summary(), origin::internal);
+  utf8 full_message(instructions() + cancel() + header() + notes() + summary(), 
+                    origin::internal);
   
   external input_message;
   external output_message;
@@ -179,12 +195,12 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   // Check the message carefully to make sure the user didn't edit somewhere
   // outside of the author, date, branch or changelog values. The section
-  // between the "ChangeLog: " line from the header and the first
-  // "ChangeSet: " line from the summary is where they should be adding
-  // lines. Ideally, there is a blank line following "ChangeLog:"
+  // between the "Changelog: " line from the header and the following line
+  // of dashes preceeding the summary is where they should be adding
+  // lines. Ideally, there is a blank line following "Changelog:"
   // (preceeding the changelog message) and another blank line preceeding
-  // "ChangeSet: " (following the changelog message) but both of these are
-  // optional.
+  // the next line of dashes (following the changelog message) but both of
+  // these are optional.
 
   E(message.read(instructions()), origin::user,
     F("Commit failed. Instructions not found."));
@@ -195,14 +211,14 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
   utf8 const DATE(trim_right(_("Date: ")).c_str());
   utf8 const BRANCH(trim_right(_("Branch: ")).c_str());
-  utf8 const CHANGELOG(trim_right(_("ChangeLog: ")).c_str());
+  utf8 const CHANGELOG(trim_right(_("Changelog: ")).c_str());
 
   // ----------------------------------------------------------------------
   // Revision:
   // Parent:
   // Parent:
   // Author:
-  
+
   size_t pos = header().find(AUTHOR()); // look in unedited header
   I(pos != string::npos);
 
@@ -249,22 +265,24 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   string blank = message.readline();
   E(blank == "", origin::user,
-    F("Commit failed. Blank line before ChangeLog header not found."));
+    F("Commit failed. Blank line before Changelog header not found."));
 
-  // ChangeLog:
+  // Changelog:
 
   E(message.read(CHANGELOG()), origin::user,
-    F("Commit failed. ChangeLog header not found."));
+    F("Commit failed. Changelog header not found."));
 
   // remove the summary before extracting the changelog content
 
-  if (!summary().empty())
-    {
-      E(message.contains(summary()), origin::user,
-        F("Commit failed. ChangeSet summary not found."));
+  string footer = notes() + summary();
 
-      E(message.remove(summary()), origin::user,
-        F("Commit failed. Text following ChangeSet summary."));
+  if (!footer.empty())
+    {
+      E(message.contains(footer), origin::user,
+        F("Commit failed. Change summary not found."));
+
+      E(message.remove(footer), origin::user,
+        F("Commit failed. Text following Change summary."));
     }
 
   string content = trim(message.content()) + '\n';
@@ -772,15 +790,6 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
 
   set<branch_name> old_branches;
   get_old_branch_names(db, old_rosters, old_branches);
-  if (!old_branches.empty() &&
-      old_branches.find(app.opts.branch) == old_branches.end())
-    {
-      W(F("This revision will create a new branch"));
-      for (set<branch_name>::const_iterator i = old_branches.begin();
-           i != old_branches.end(); ++i)
-        cout << _("Old Branch: ") << *i << '\n';
-      cout << _("New Branch: ") << app.opts.branch << "\n\n";
-    }
 
   utf8 changelog;
   work.read_user_log(changelog);
@@ -798,8 +807,20 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   utf8_to_system_best_effort(header, header_external);
   utf8_to_system_best_effort(summary, summary_external);
 
-  cout << header_external 
-       << summary_external;
+  cout << header_external;
+
+  if (!old_branches.empty() &&
+      old_branches.find(app.opts.branch) == old_branches.end())
+    {
+      cout << string(70, '-') << '\n'
+           << _("This revision will create a new branch.") << '\n';
+      for (set<branch_name>::const_iterator i = old_branches.begin();
+           i != old_branches.end(); ++i)
+        cout << _("Old Branch: ") << *i << '\n';
+      cout << _("New Branch: ") << app.opts.branch << "\n\n";
+    }
+
+  cout << summary_external;
 }
 
 CMD(checkout, "checkout", "co", CMD_REF(tree), N_("[DIRECTORY]"),
@@ -1295,6 +1316,9 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   restricted_rev.check_sane();
   E(restricted_rev.is_nontrivial(), origin::user, F("no changes to commit"));
 
+  set<branch_name> old_branches;
+  get_old_branch_names(db, old_rosters, old_branches);
+
   revision_id restricted_rev_id;
   calculate_ident(restricted_rev, restricted_rev_id);
 
@@ -1331,7 +1355,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
 
   process_commit_message_args(app.opts, log_message_given, log_message);
 
-  E(!(log_message_given && work.has_contents_user_log() && app.opts.msgfile() != "_MTN/log"), origin::user,
+  E(!(log_message_given && work.has_contents_user_log() &&
+      app.opts.msgfile() != "_MTN/log"), origin::user,
     F("_MTN/log is non-empty and log message "
       "was specified on command line\n"
       "perhaps move or delete _MTN/log,\n"
@@ -1390,7 +1415,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
       // This call handles _MTN/log.
       get_log_message_interactively(app.lua, work, 
                                     restricted_rev_id, restricted_rev,
-                                    author, date, app.opts.branch,
+                                    author, date, app.opts.branch, old_branches,
                                     date_fmt, log_message);
 
       // We only check for empty log messages when the user entered them

@@ -5,11 +5,11 @@ Author:   tester@test.net
 Date:     2007-02-28T02:09:14
 Branch:   testbranch
 
-ChangeLog: 
+Changelog: 
 
 blah-blah
 
-ChangeSet: 87c726bb950efb3d809662b86700a8566346970d
+Changes against parent 87c726bb950efb3d809662b86700a8566346970d
 
   patched  testfile
 
@@ -20,11 +20,11 @@ Author:   tester@test.net
 Date:     2007-02-28T02:09:13
 Branch:   testbranch
 
-ChangeLog: 
+Changelog: 
 
 blah-blah
 
-ChangeSet: 87c726bb950efb3d809662b86700a8566346970d
+Changes against parent 87c726bb950efb3d809662b86700a8566346970d
 
   patched  testfile
 
@@ -34,11 +34,11 @@ Author:   tester@test.net
 Date:     2007-02-28T02:09:12
 Branch:   testbranch
 
-ChangeLog: 
+Changelog: 
 
 blah-blah
 
-ChangeSet: 
+Changes
 
   added    
   added    otherfile

@@ -103,7 +103,7 @@ revision_header(revision_id const rid, revision_t const & rev,
   for (vector<cert>::const_iterator i = certs.begin(); i != certs.end(); ++i)
     if (i->name == changelog)
       {
-        out << _("ChangeLog: ") << "\n\n" << i->value << '\n';
+        out << _("Changelog: ") << "\n\n" << i->value << '\n';
         if (!i->value().empty() && i->value()[i->value().length()-1] != '\n')
           out << '\n';
       }
@@ -138,9 +138,9 @@ revision_summary(revision_t const & rev, utf8 & summary)
       // A colon at the end of this string looked nicer, but it made
       // double-click copying from terminals annoying.
       if (null_id(parent))
-        out << _("ChangeSet: ") << "\n\n";
+        out << _("Changes") << "\n\n";
       else
-        out << _("ChangeSet: ") << parent << "\n\n";
+        out << _("Changes against parent ") << parent << "\n\n";
 
       // presumably a merge rev could have an empty edge if one side won
       if (cs.empty())

@@ -88,35 +88,35 @@ writefile("_MTN/log", "empty branch")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
 check(qgrep("Branch value empty", "stderr"))
 
--- commit fails with modified/missing blank line before ChangeLog section
+-- commit fails with modified/missing blank line before Changelog section
 
 writefile("_MTN/log", "missing blank line")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("ChangeLog header not found", "stderr"))
+check(qgrep("Changelog header not found", "stderr"))
 
--- commit fails with modified/missing ChangeLog section
+-- commit fails with modified/missing Changelog section
 
 writefile("_MTN/log", "missing changelog")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("ChangeLog header not found", "stderr"))
+check(qgrep("Changelog header not found", "stderr"))
 
--- commit fails with missing ChangeSet summary section
+-- commit fails with missing Change summary section
 
 writefile("_MTN/log", "missing summary")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("ChangeSet summary not found", "stderr"))
+check(qgrep("Change summary not found", "stderr"))
 
--- commit fails with duplicated ChangeSet: section
+-- commit fails with duplicated Change summary section
 
 writefile("_MTN/log", "duplicated summary")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Text following ChangeSet summary", "stderr"))
+check(qgrep("Text following Change summary", "stderr"))
 
--- commit fails with new text after Changes: section
+-- commit fails with new text after Change summary section
 
 writefile("_MTN/log", "trailing text")
 check(mtn("commit", "--rcfile=changelog.lua"), 1, false, true)
-check(qgrep("Text following ChangeSet summary", "stderr"))
+check(qgrep("Text following Change summary", "stderr"))
 
 
 -- commits that succeed
@@ -161,13 +161,13 @@ check(mtn("commit", "--rcfile=changelog.lua"), 0, false, false)
 check(mtn("log", "--last", "1", "--no-graph"), 0, true, false)
 check(qgrep("Date:     2010-01-01T01:01:01", "stdout"))
 
--- message on same line as ChangeLog: header
+-- message on same line as Changelog: header
 
 writefile("a", "a4")
 writefile("_MTN/log", "changelog line")
 check(mtn("commit", "--rcfile=changelog.lua"), 0, false, false)
 
--- message filling entire ChangeLog section (no leading/trailing blank lines)
+-- message filling entire Changelog section (no leading/trailing blank lines)
 
 writefile("a", "a5")
 writefile("_MTN/log", "full changelog")

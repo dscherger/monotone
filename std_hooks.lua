@@ -314,22 +314,22 @@ function edit_comment(user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-     io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-                    "but '%s' is not to be found"),
-                    exe, shell))
-     os.remove(tname)
-     return nil
+         io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                                        "but '%s' is not to be found"),
+                                exe, shell))
+         os.remove(tname)
+         return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -337,11 +337,11 @@ function edit_comment(user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    end
 

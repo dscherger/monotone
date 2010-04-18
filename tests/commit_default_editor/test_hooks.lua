@@ -10,7 +10,7 @@ function execute(path,...)
       text = tmp:read("*a")
       io.close(tmp)
 
-      text = string.gsub(text, "\nChangeLog: \n\n\n", "\nChangeLog: \n\nHello\n")
+      text = string.gsub(text, "\nChangelog: \n\n\n", "\nChangelog: \n\nHello\n")
 
       tmp = io.open(tname, "w")
       tmp:write(text)

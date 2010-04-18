@@ -27,13 +27,13 @@ function edit_comment(user_log_file)
     elseif (string.find(user_log_file, "\nempty branch\n")) then
        return string.gsub(user_log_file, "\nBranch: [^\n]*\n", "\nBranch: \n")
     elseif (string.find(user_log_file, "\nmissing blank line\n")) then
-       return string.gsub(user_log_file, "\n\nChangeLog:", "\nChangeLog:")
+       return string.gsub(user_log_file, "\n\nChangelog:", "\nChangelog:")
     elseif (string.find(user_log_file, "\nmissing changelog\n")) then
-       return string.gsub(user_log_file, "\nChangeLog:", "\n")
+       return string.gsub(user_log_file, "\nChangelog:", "\n")
     elseif (string.find(user_log_file, "\nmissing summary\n")) then
-       return string.gsub(user_log_file, "\nChangeSet: ", "\nChange foobar")
+       return string.gsub(user_log_file, "\nChanges against parent ", "\nChange foobar")
     elseif (string.find(user_log_file, "\nduplicated summary\n")) then
-       return string.gsub(user_log_file, "(ChangeSet: .*)", "%1%1")
+       return string.gsub(user_log_file, "(Changes against parent .*)", "%1%1")
     elseif (string.find(user_log_file, "\ntrailing text\n")) then
        return user_log_file .. "foobar"
     end
@@ -49,13 +49,13 @@ function edit_comment(user_log_file)
     elseif (string.find(user_log_file, "\nsleep\n")) then
        date = string.match(user_log_file, "\nDate:     ([^\n]*)")
        sleep(2)
-       return string.gsub(user_log_file, "\nChangeLog: \n\nsleep", "\nChangeLog: \n\nOld: " .. date)
+       return string.gsub(user_log_file, "\nChangelog: \n\nsleep", "\nChangelog: \n\nOld: " .. date)
     elseif (string.find(user_log_file, "\nchange date\n")) then
        return string.gsub(user_log_file, "\nDate:     [^\n]*\n", "\nDate:     2010-01-01T01:01:01\n")
     elseif (string.find(user_log_file, "\nchangelog line\n")) then
-       return string.gsub(user_log_file, "\nChangeLog: \n\nchangelog line", "\nChangeLog:message on changelog line")
+       return string.gsub(user_log_file, "\nChangelog: \n\nchangelog line", "\nChangelog:message on changelog line")
     elseif (string.find(user_log_file, "\nfull changelog\n")) then
-       return string.gsub(user_log_file, "\nChangeLog: .*\nChangeSet:", "\nChangeLog:no\nspace\naround\nthis\nchangelog\nChangeSet:")
+       return string.gsub(user_log_file, "\nChangelog: \n\nfull changelog\n\n", "\nChangelog:no\nspace\naround\nthis\nchangelog\n-----")
     end
 
     return user_log_file
