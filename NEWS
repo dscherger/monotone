@@ -6,11 +6,27 @@ xxx xxx xx xx:xx:xx UTC 2010
 
         New features
 
-        - There is a server_set_listening(bool) Lua extention function
-          available since 0.47, which can be used to let a monotone server
-          exit gracefully instead of having to be killed.
+        - New automation command 'update' which behaves identical to
+          the normal 'update' command.
+
+        - A new Lua extension function change_workspace(directory) has been
+          added. This should be most useful for custom commands which need
+          to work on multiple workspaces from the same monotone instance.
+
+        - There is also the new server_set_listening(bool) Lua extention
+          function available since 0.47, which can be used to let a monotone
+          server exit gracefully instead of having to be killed.
+
+        - Default include and exclude patterns are now remembered per server.
+          This means that you can have for example one server that you sync
+          everything to, and one that you only sync some branches to, and you
+          don't have to worry about forgetting to give the include pattern and
+          accidentally trying to sync everything to the second server.
 
         Bugs fixed
+
+        - A regression in 0.47 prevent successful execution of push / pull /
+          sync over pipes (Debian bug 574512); this has been fixed.
 
         - In 0.46, spurious network disconnects could occur when transferring
           sufficiently large items (files, diffs, revisions). This was fixed
@@ -18,6 +34,9 @@ xxx xxx xx xx:xx:xx UTC 2010
           (fixes monotone bug #28991).
 
         Other
+
+        - Support for the diffuse merger (http://diffuse.sourceforge.net)
+          has been added.
 
 Sun Mar 14 21:15:06 UTC 2010
 
@@ -72,7 +91,7 @@ Sun Mar 14 21:15:06 UTC 2010
         - The various occurrences where a revision is described by its
           certs now come with proper localized date output.
 
-        - Fix problems with newer Lua versions especially when 
+        - Fix problems with newer Lua versions especially when
           LUA_COMPAT_VARARG not set.
 
         Other

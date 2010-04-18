@@ -22,3 +22,11 @@ do
       return old(identity)
    end
 end
+
+do
+   local old = get_remote_automate_permitted
+   function get_remote_automate_permitted(ident, args, opts)
+      if ident.given_name == "tester@test.net" then return true end
+      return old(ident, args, opts)
+   end
+end

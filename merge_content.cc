@@ -1,5 +1,5 @@
 // Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-//               2008, 2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008, 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -636,6 +636,7 @@ try_to_merge_files(lua_hooks & lua,
 
 void
 resolve_merge_conflicts(lua_hooks & lua,
+                        options const & opts,
                         roster_t const & left_roster,
                         roster_t const & right_roster,
                         roster_merge_result & result,
@@ -699,6 +700,21 @@ resolve_merge_conflicts(lua_hooks & lua,
           P(FP("%d content conflict requires user intervention",
                "%d content conflicts require user intervention",
                remaining) % remaining);
+
+          // We don't spawn the merger here, because some mergers
+          // (such as opendiff) require prompting the user via
+          // stdin/stdout, and that's what 'non_interactive' prevents.
+          // Note that 'automate stdio' sets non_interactive true,
+          // because it doesn't support prompting.
+          //
+          // Another option would be to pass the option to the merger,
+          // and let it decide. We are not doing that, because it is
+          // felt this whole design is already too complicated; we are
+          // working to find a better solution. See thread at
+          // http://lists.gnu.org/archive/html/monotone-devel/2010-04/msg00000.html
+          E(!opts.non_interactive, origin::user,
+            F("can't spawn external merger when non-interactive"));
+
           result.report_file_content_conflicts(lua, left_roster, right_roster, adaptor, false, std::cout);
 
           try_to_merge_files(lua, left_roster, right_roster,
@@ -739,7 +755,7 @@ interactive_merge_and_store(lua_hooks & lua,
 
   parse_resolve_conflicts_opts (opts, left_rid, left_roster, right_rid, right_roster, result, resolutions_given);
 
-  resolve_merge_conflicts(lua, left_roster, right_roster, result, dba, resolutions_given);
+  resolve_merge_conflicts(lua, opts, left_roster, right_roster, result, dba, resolutions_given);
 
   // write new files into the db
   store_roster_merge_result(db,
