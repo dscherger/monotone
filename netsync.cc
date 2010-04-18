@@ -120,7 +120,7 @@ call_server(app_state & app,
 
   shared_ptr<session> sess(new session(app, project, keys,
                                        client_voice,
-                                       info.client.uri.host, server));
+                                       info.client.uri.resource, server));
   shared_ptr<wrapped_session> wrapped;
   switch (info.client.connection_type)
     {
@@ -237,7 +237,7 @@ session_from_server_sync_item(app_state & app,
       shared_ptr<session>
         sess(new session(app, project, keys,
                          client_voice,
-                         info.client.uri.host, server));
+                         info.client.uri.resource, server));
       shared_ptr<wrapped_session>
         wrapped(new netsync_session(sess.get(),
                                     app.opts, app.lua, project,
