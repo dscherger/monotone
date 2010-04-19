@@ -780,8 +780,8 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   key_store keys(app);
   key_identity_info key;
 
-  get_user_key(app.opts, app.lua, db, keys, project, key.id);
-  project.complete_key_identity(app.lua, key);
+  get_user_key(app.opts, app.lua, db, keys, project, key.id, false);
+  project.complete_key_identity(keys, app.lua, key);
 
   if (!app.lua.hook_get_author(app.opts.branch, key, author))
     author = key.official_name();
@@ -1380,8 +1380,8 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   if (author.empty())
     {
       key_identity_info key;
-      get_user_key(app.opts, app.lua, db, keys, project, key.id);
-      project.complete_key_identity(app.lua, key);
+      get_user_key(app.opts, app.lua, db, keys, project, key.id, false);
+      project.complete_key_identity(keys, app.lua, key);
 
       if (!app.lua.hook_get_author(app.opts.branch, key, author))
         author = key.official_name();

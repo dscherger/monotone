@@ -27,9 +27,7 @@ check(mtn_ws_opts("commit", "-m", "test"), 0, false, false)
 check(mtn_ws_opts("attr", "set", ".", "foo", "bar"), 0, false, false)
 
 writefile("not_a_dir", "bla")
--- status needs to be able to get the key to display an Author: header but is
--- unable to do so with a bad key dir
-check(mtn_ws_opts("status", "--keydir", "not_a_dir"), 1, false, false)
+check(mtn_ws_opts("status", "--keydir", "not_a_dir"), 0, false, false)
 
 check(mtn_ws_opts("commit", "-m", "another test"), 0, false, false)
 

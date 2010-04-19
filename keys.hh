@@ -26,11 +26,12 @@ class globish;
 // big and this stuff "feels" different, imho.
 
 // Find the key to be used for signing certs.  If possible, ensure the
-// database and the key_store agree on that key, and cache it in decrypted
-// form, so as not to bother the user for their passphrase later.
+// database and the key_store agree on that key, and optionally cache it in
+// decrypted form, so as not to bother the user for their passphrase later.
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys,
-                  project_t & project, key_id & key);
+                  project_t & project, key_id & key,
+                  bool const cache = true);
 
 // As above, but does not report which key has been selected; for use when
 // the important thing is to have selected one and cached the decrypted key.

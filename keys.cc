@@ -118,7 +118,8 @@ namespace {
 void
 get_user_key(options const & opts, lua_hooks & lua,
              database & db, key_store & keys,
-             project_t & project, key_id & key)
+             project_t & project, key_id & key,
+             bool const cache)
 {
   if (keys.have_signing_key())
     {
@@ -149,7 +150,8 @@ get_user_key(options const & opts, lua_hooks & lua,
       get_only_key(keys, true, key);
     }
 
-  check_and_save_chosen_key(db, keys, key);
+  if (cache)
+    check_and_save_chosen_key(db, keys, key);
 }
 
 void
