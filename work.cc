@@ -577,21 +577,43 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
   // file and if it contains the correct identifier, but these checks would
   // duplicate those in database.cc. At the time it is checked there, however,
   // the options file for the workspace is already written out...
-  if (!opts.dbname.as_internal().empty() &&
-      get_path_status(opts.dbname.as_internal()) == path::file)
-    workspace_database = opts.dbname;
-  if (!opts.key_dir.as_internal().empty() &&
-      get_path_status(opts.key_dir.as_internal()) == path::directory)
-    workspace_keydir = opts.key_dir;
-  if ((branch_is_sticky || workspace::branch_is_sticky)
-      && !opts.branch().empty())
-    workspace_branch = opts.branch;
-  if (opts.key_given)
-    workspace_key = opts.signing_key;
+  bool options_changed = false;
 
-  write_options_file(o_path,
-                     workspace_database, workspace_branch,
-                     workspace_key, workspace_keydir);
+  if (!opts.dbname.as_internal().empty() &&
+      get_path_status(opts.dbname.as_internal()) == path::file &&
+      workspace_database != opts.dbname)
+    {
+      workspace_database = opts.dbname;
+      options_changed = true;
+    }
+
+  if (!opts.key_dir.as_internal().empty() &&
+      get_path_status(opts.key_dir.as_internal()) == path::directory &&
+      workspace_keydir != opts.key_dir)
+    {
+      workspace_keydir = opts.key_dir;
+      options_changed = true;
+    }
+
+  if ((branch_is_sticky || workspace::branch_is_sticky) &&
+      !opts.branch().empty() && 
+      workspace_branch != opts.branch)
+    {
+      workspace_branch = opts.branch;
+      options_changed = true;
+    }
+
+  if (opts.key_given && workspace_key != opts.signing_key)
+    {
+      workspace_key = opts.signing_key;
+      options_changed = true;
+    }
+
+  // only rewrite the options file if there are actual changes
+  if (options_changed)
+    write_options_file(o_path,
+                       workspace_database, workspace_branch,
+                       workspace_key, workspace_keydir);
 }
 
 void
