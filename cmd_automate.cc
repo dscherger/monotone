@@ -320,16 +320,16 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
       try
         {
+          // as soon as a command requires a workspace, this is set to true
+          workspace::used = false;
+
           acmd->exec_from_automate(app, id, args, os);
           os.end_cmd(0);
 
           // usually, if a command succeeds, any of its workspace-relevant
           // options are saved back to _MTN/options, this shouldn't be
           // any different here
-          if (workspace::found)
-            {
-               workspace::set_options(app.opts);
-            }
+          workspace::maybe_set_options(app.opts);
 
           // restore app.opts
           app.opts = original_opts;
@@ -468,15 +468,16 @@ LUAEXT(mtn_automate, )
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
+
+      // as soon as a command requires a workspace, this is set to true
+      workspace::used = false;
+
       acmd->exec(*app_p, id, app_p->opts.args, os);
 
       // usually, if a command succeeds, any of its workspace-relevant
       // options are saved back to _MTN/options, this shouldn't be
       // any different here
-      if (workspace::found)
-        {
-           workspace::set_options(app_p->opts);
-        }
+      workspace::maybe_set_options(app_p->opts);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;

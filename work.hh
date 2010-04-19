@@ -93,6 +93,9 @@ struct workspace
   // function (find_and_go_to_workspace) which cannot presently be moved
   // from paths.cc.
   static bool found;
+  // This is set to true when a workspace object was created and used
+  // for a particular command
+  static bool used;
 
 private:
   // This is used by get_options and set_options. The branch option is set
@@ -231,6 +234,7 @@ public:
   static void get_database_option(system_path const & workspace_root,
                                   system_path & database_option);
   static void set_options(options const & opts, bool branch_is_sticky = false);
+  static void maybe_set_options(options const & opts);
   static void print_option(utf8 const & opt, std::ostream & output);
 
   // the "bisect" infromation file is a file that records current status

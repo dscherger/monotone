@@ -117,6 +117,7 @@ directory_is_workspace(system_path const & dir)
 }
 
 bool workspace::found;
+bool workspace::used;
 bool workspace::branch_is_sticky;
 
 void
@@ -124,6 +125,7 @@ workspace::require_workspace()
 {
   E(workspace::found, origin::user,
     F("workspace required but not found"));
+  workspace::used = true;
 }
 
 void
@@ -131,6 +133,7 @@ workspace::require_workspace(i18n_format const & explanation)
 {
   E(workspace::found, origin::user,
     F("workspace required but not found\n%s") % explanation.str());
+  workspace::used = true;
 }
 
 void
@@ -543,6 +546,13 @@ workspace::get_database_option(system_path const & workspace,
   read_options_file(o_path,
                     workspace_database, workspace_branch,
                     workspace_key, workspace_keydir);
+}
+
+void
+workspace::maybe_set_options(options const & opts)
+{
+  if (workspace::found && workspace::used)
+      set_options(opts, false);
 }
 
 // This function should usually be called at the (successful)
