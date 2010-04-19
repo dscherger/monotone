@@ -1518,6 +1518,13 @@ CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
 
   workspace work(app);
   work.migrate_format();
+
+  // FIXME: it seems to be a bit backwards to use the workspace object
+  // but reset its usage flag afterwards, but migrate_workspace is a
+  // different case: we don't want that this command touches
+  // _MTN/options for any other use case than possibly migrating its
+  // format and the workspace_migration test enforces that
+  workspace::used = false;
 }
 
 CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",
