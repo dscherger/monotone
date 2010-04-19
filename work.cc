@@ -180,30 +180,22 @@ workspace::create_workspace(options const & opts,
 }
 
 // Normal-use constructor.
-workspace::workspace(app_state & app, bool writeback_options)
+workspace::workspace(app_state & app)
   : lua(app.lua)
 {
   require_workspace();
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(app_state & app, i18n_format const & explanation,
-                     bool writeback_options)
+workspace::workspace(app_state & app, i18n_format const & explanation)
   : lua(app.lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(app.opts, false);
 }
 
-workspace::workspace(options const & opts, lua_hooks & lua,
-                     i18n_format const & explanation, bool writeback_options)
+workspace::workspace(lua_hooks & lua, i18n_format const & explanation)
   : lua(lua)
 {
   require_workspace(explanation);
-  if (writeback_options)
-    set_options(opts, false);
 }
 
 // routines for manipulating the bookkeeping directory
@@ -553,6 +545,10 @@ workspace::get_database_option(system_path const & workspace,
                     workspace_key, workspace_keydir);
 }
 
+// This function should usually be called at the (successful)
+// execution of a function, because we don't do many checks here, f.e.
+// if this is a valid sqlite file and if it contains the correct identifier,
+// so be warned that you do not call this too early
 void
 workspace::set_options(options const & opts, bool branch_is_sticky)
 {
@@ -573,10 +569,6 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
                       workspace_database, workspace_branch,
                       workspace_key, workspace_keydir);
 
-  // FIXME: we should do more checks here, f.e. if this is a valid sqlite
-  // file and if it contains the correct identifier, but these checks would
-  // duplicate those in database.cc. At the time it is checked there, however,
-  // the options file for the workspace is already written out...
   bool options_changed = false;
 
   if (!opts.dbname.as_internal().empty() &&
@@ -596,7 +588,7 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
     }
 
   if ((branch_is_sticky || workspace::branch_is_sticky) &&
-      !opts.branch().empty() && 
+      !opts.branch().empty() &&
       workspace_branch != opts.branch)
     {
       workspace_branch = opts.branch;
@@ -611,9 +603,12 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
 
   // only rewrite the options file if there are actual changes
   if (options_changed)
-    write_options_file(o_path,
-                       workspace_database, workspace_branch,
-                       workspace_key, workspace_keydir);
+    {
+      L(FL("workspace options changed - writing back to _MTN/options"));
+      write_options_file(o_path,
+                         workspace_database, workspace_branch,
+                         workspace_key, workspace_keydir);
+    }
 }
 
 void

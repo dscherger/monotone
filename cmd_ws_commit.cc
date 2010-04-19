@@ -1516,7 +1516,7 @@ CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
       workspace::found = true;
     }
 
-  workspace work(app, false);
+  workspace work(app);
   work.migrate_format();
 }
 

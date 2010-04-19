@@ -607,7 +607,7 @@ CMD(sync, "sync", "", CMD_REF(network),
     {
       // Write workspace options, including key; this is the simplest way to
       // fix a "found multiple keys" error reported by sync.
-      workspace work(app, true);
+      workspace::set_options(app.opts);
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -632,7 +632,7 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   {
     // Write workspace options, including key; this is the simplest way to
     // fix a "found multiple keys" error reported by sync.
-    workspace work(app, true);
+    workspace::set_options(app.opts);
   }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,

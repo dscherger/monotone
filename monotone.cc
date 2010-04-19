@@ -283,6 +283,12 @@ cpp_main(int argc, char ** argv)
 
 
           commands::process(app, cmd, app.opts.args);
+
+          if (workspace::found)
+            {
+              workspace::set_options(app.opts);
+            }
+
           // The command will raise any problems itself through
           // exceptions.  If we reach this point, it is because it
           // worked correctly.
