@@ -375,8 +375,32 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   work.maybe_update_inodeprints(db);
 }
 
-CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
-    N_("Disapproves a particular revision"),
+static void
+walk_revisions(database & db, const revision_id & from_rev,
+               const revision_id & to_rev)
+{
+  revision_id r = from_rev;
+  revision_t rev;
+
+  do
+    {
+      E(!null_id(r), origin::user,
+        F("revision %s it not a child of %s, cannot invert")
+        % from_rev % to_rev);
+      db.get_revision(r, rev);
+      E(rev.edges.size() < 2, origin::user,
+        F("revision %s has %d changesets, cannot invert")
+        % r % rev.edges.size());
+      E(rev.edges.size() > 0, origin::user,
+        F("revision %s it not a child of %s, cannot invert")
+        % from_rev % to_rev);
+      r = edge_old_revision (rev.edges.begin());
+    }
+  while (r != to_rev);
+}
+
+CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION [REVISION]"),
+    N_("Disapproves a particular revision or revision range"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
     options::opts::author)
@@ -385,29 +409,55 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
   key_store keys(app);
   project_t project(db);
 
-  if (args.size() != 1)
+  if (args.size() < 1 || args.size() > 2)
     throw usage(execid);
 
   utf8 log_message("");
   bool log_message_given;
-  revision_id r;
+  // r2 should logically come before r
+  revision_id r, r2;
   revision_t rev, rev_inverse;
   shared_ptr<cset> cs_inverse(new cset());
-  complete(app.opts, app.lua, project, idx(args, 0)(), r);
-  db.get_revision(r, rev);
 
-  E(rev.edges.size() == 1, origin::user,
-    F("revision %s has %d changesets, cannot invert")
-      % r % rev.edges.size());
+  if (args.size() == 1)
+    {
+      complete(app.opts, app.lua, project, idx(args, 0)(), r);
+      db.get_revision(r, rev);
 
-  guess_branch(app.opts, project, r);
-  E(!app.opts.branch().empty(), origin::user,
-    F("need --branch argument for disapproval"));
+      E(rev.edges.size() == 1, origin::user,
+        F("revision %s has %d changesets, cannot invert")
+        % r % rev.edges.size());
 
-  process_commit_message_args(app.opts, log_message_given, log_message,
-                              utf8((FL("disapproval of revision '%s'")
-                                    % r).str(),
-                                   origin::internal));
+      guess_branch(app.opts, project, r);
+      E(!app.opts.branch().empty(), origin::user,
+        F("need --branch argument for disapproval"));
+
+      process_commit_message_args(app.opts, log_message_given, log_message,
+                                  utf8((FL("disapproval of revision '%s'")
+                                        % r).str(),
+                                       origin::internal));
+    }
+  else if (args.size() == 2)
+    {
+      complete(app.opts, app.lua, project, idx(args, 0)(), r2);
+      complete(app.opts, app.lua, project, idx(args, 1)(), r);
+      walk_revisions(db, r, r2);
+      db.get_revision(r2, rev);
+
+      E(rev.edges.size() == 1, origin::user,
+        F("revision %s has %d changesets, cannot invert")
+        % r2 % rev.edges.size());
+
+      guess_branch(app.opts, project, r);
+      E(!app.opts.branch().empty(), origin::user,
+        F("need --branch argument for disapproval"));
+
+      process_commit_message_args(app.opts, log_message_given, log_message,
+                                  utf8((FL("disapproval of revisions "
+                                           "'%s'..'%s'")
+                                        % r2 % r).str(),
+                                       origin::internal));
+    }
 
   cache_user_key(app.opts, app.lua, db, keys, project);
 
