@@ -515,6 +515,38 @@ CMD(add, "add", "", CMD_REF(workspace), N_("[PATH]..."),
   work.perform_additions(db, paths, add_recursive, !app.opts.no_ignore);
 }
 
+CMD(purge, "purge", "clean", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Removes unknown files from the workspace"),
+    "",
+    options::opts::depth | options::opts::exclude)
+{
+  database db(app);
+  workspace work(app);
+
+  vector<file_path> roots = args_to_paths(args);
+  path_restriction mask(roots, args_to_paths(app.opts.exclude_patterns),
+                        app.opts.depth, ignored_file(work));
+  set<file_path> unknown, ignored;
+
+  // if no starting paths have been specified use the workspace root
+  if (roots.empty())
+    roots.push_back(file_path());
+
+  work.find_unknown_and_ignored(db, mask, roots, unknown, ignored);
+
+  set<file_path> paths(unknown.begin(), unknown.end());
+
+  set<file_path>::const_reverse_iterator i;
+  for (i = paths.rbegin(); i != paths.rend(); ++i)
+    {
+      cout << "deleting " << *i << std::endl;
+      if (get_path_status(*i) == path::file)
+        delete_file(*i);
+      else if (get_path_status(*i) == path::directory)
+        delete_dir_recursive(*i);
+    }
+}
+
 CMD(drop, "drop", "rm", CMD_REF(workspace), N_("[PATH]..."),
     N_("Drops files from the workspace"),
     "",
