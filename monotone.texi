@@ -9227,7 +9227,9 @@ and @var{file} specifies the file for which to calculate revisions in which it w
 
 @item Purpose:
 
-Returns a list of revision IDs in which the content  was most recently changed, relative to the revision ID specified as @var{id}. This equates to a content mark following the *-merge algorithm.
+Returns a list of revision IDs in which the content  was most recently changed,
+relative to the revision ID specified as @var{id}. This equates to a content mark
+following the *-merge algorithm.
 
 @item Sample output:
 
@@ -9237,7 +9239,22 @@ Returns a list of revision IDs in which the content  was most recently changed, 
 
 @item Output format:
 
-Zero or more basic_io stanzas, each specifying a revision ID in which a content mark is set.
+Zero or more basic_io stanzas, each specifying a revision ID in which a content
+mark is set:
+
+@itemize
+@item
+No content mark is returned if @var{file} is a directory.
+@item
+One content mark is returned if @var{file} is a file and has recently been
+changed exclusively in one revision (be it by a commit or merge).
+@item
+Multiple content marks are returned if @var{file} is a file and has recently
+been part of a clean merge case.
+A clean merge happens when the same change to @var{file} is made on both sides
+of the particular merge, together with other unrelated changes, which make the
+resulting revisions not collapse into one revision.
+@end itemize
 
 The complete format:
 @verbatim
