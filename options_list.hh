@@ -1,5 +1,5 @@
 // Copyright (C) 2006 Timothy Brownawell <tbrownaw@gmail.com>
-//               2008-2009 Stephen Leake <stephen_leake@stephe-leake.org>
+//               2008-2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -390,7 +390,7 @@ OPT(bookkeep_only, "bookkeep-only", bool, false,
 #endif
 
 OPT(move_conflicting_paths, "move-conflicting-paths", bool, false,
-        gettext_noop("move conflicting, unversioned paths into _MTN/conflicts "
+        gettext_noop("move conflicting, unversioned paths into _MTN/resolutions "
                      "before proceeding with any workspace change"))
 #ifdef option_bodies
 {
