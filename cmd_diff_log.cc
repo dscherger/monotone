@@ -781,9 +781,13 @@ CMD(log, "log", "", CMD_REF(informative), N_("[PATH] ..."),
       for (edge_map::const_iterator i = rev.edges.begin();
            i != rev.edges.end(); i++)
         {
-          starting_revs.insert(edge_old_revision(i));
+          revision_id rid = edge_old_revision(i);
+          E(db.revision_exists(rid), origin::user,
+            F("workspace parent revision '%s' not found - "
+              "did you specify a wrong database?") % rid);
+          starting_revs.insert(rid);
           if (i == rev.edges.begin())
-            first_rid = edge_old_revision(i);
+            first_rid = rid;
         }
     }
   else if (!app.opts.from.empty())
