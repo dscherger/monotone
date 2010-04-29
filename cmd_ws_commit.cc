@@ -1377,11 +1377,9 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 {
   if (args.size() > 1)
     throw usage(execid);
+
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for setup"));
-
-  database db(app);
-  db.ensure_open();
 
   string dir;
   if (args.size() == 1)
@@ -1389,9 +1387,27 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
   else
     dir = ".";
 
-  workspace::create_workspace(app.opts, app.lua, system_path(dir, origin::user));
-  workspace work(app);
+  system_path workspace_dir(dir, origin::user);
 
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
+
+  if (app.opts.dbname_given || app.opts.dbname.empty())
+    {
+      app.opts.dbname = system_path(workspace_dir
+                                    / bookkeeping_root_component
+                                    / bookkeeping_internal_db_file_name);
+    }
+
+  database db(app);
+  if (get_path_status(db.get_filename()) == path::nonexistent)
+    {
+      P(F("initializing new database '%s'") % db.get_filename());
+      db.initialize();
+    }
+
+  db.ensure_open();
+
+  workspace work(app);
   revision_t rev;
   make_revision_for_workspace(revision_id(), cset(), rev);
   work.put_work_rev(rev);

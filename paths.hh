@@ -348,6 +348,7 @@ private:
 
 #define bookkeeping_root (bookkeeping_path("_MTN"))
 #define bookkeeping_root_component (path_component("_MTN"))
+#define bookkeeping_internal_db_file_name (path_component("mtn.db"))
 // for migration
 #define old_bookkeeping_root_component (path_component("MT"))
 

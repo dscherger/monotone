@@ -49,8 +49,6 @@ static const var_key default_include_pattern_key(var_domain("database"),
 static const var_key default_exclude_pattern_key(var_domain("database"),
                                                  var_name("default-exclude-pattern"));
 
-static char const ws_internal_db_file_name[] = "mtn.db";
-
 static void
 find_key(options & opts,
          database & db,
@@ -742,7 +740,7 @@ CMD(clone, "clone", "", CMD_REF(network),
   if (internal_db)
     app.opts.dbname = system_path(workspace_dir
                                   / bookkeeping_root_component
-                                  / ws_internal_db_file_name);
+                                  / bookkeeping_internal_db_file_name);
 
   // this is actually stupid, but app.opts.branch must be set here
   // otherwise it will not be written into _MTN/options, in case
