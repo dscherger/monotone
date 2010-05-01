@@ -4964,13 +4964,13 @@ merge the left and right files, leaving the result in the specified file.
 
 @var{file} must be a bookkeeping path; under @file{_MTN}.
 
-This inserts a @var{resolved_user file} conflict resolution in the
+This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.
 
 @item user @var{file}
 The file contents are replaced by the contents of the specified file.
 
-This inserts a @var{resolved_user file} conflict resolution in the
+This inserts a @var{resolved_user_left file} conflict resolution in the
 conflicts file.
 
 @item drop
