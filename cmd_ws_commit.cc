@@ -1391,7 +1391,7 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
-  if (app.opts.dbname_given || app.opts.dbname.empty())
+  if (!app.opts.dbname_given || app.opts.dbname.empty())
     {
       app.opts.dbname = system_path(workspace_dir
                                     / bookkeeping_root_component
