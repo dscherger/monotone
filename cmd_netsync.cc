@@ -15,6 +15,7 @@
 #include "merge_content.hh"
 #include "netcmd.hh"
 #include "network/connection_info.hh"
+#include "file_io.hh"
 #include "globish.hh"
 #include "keys.hh"
 #include "key_store.hh"
@@ -637,51 +638,6 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
                        client_voice, source_and_sink_role, info);
 }
 
-class dir_cleanup_helper
-{
-public:
-  dir_cleanup_helper(system_path const & new_dir, bool i_db)
-    : committed(false), internal_db(i_db), dir(new_dir)
-  {}
-  ~dir_cleanup_helper()
-  {
-    if (!committed && directory_exists(dir))
-      {
-        // Don't need to worry about where the db is on Unix.
-#ifndef WIN32
-        internal_db = false;
-#endif
-
-        // This is probably happening in the middle of another exception.
-        // Do not let anything that delete_dir_recursive throws escape, or
-        // the runtime will call std::terminate...
-        if (!internal_db)
-          {
-            try
-              {
-                delete_dir_recursive(dir);
-              }
-            catch (std::exception const & ex)
-              {
-                ui.fatal_exception(ex);
-              }
-            catch (...)
-              {
-                ui.fatal_exception();
-              }
-          }
-      }
-  }
-  void commit(void)
-  {
-    committed = true;
-  }
-private:
-  bool committed;
-  bool internal_db;
-  system_path dir;
-};
-
 CMD(clone, "clone", "", CMD_REF(network),
     N_("ADDRESS[:PORTNUMBER] BRANCH [DIRECTORY]"),
     N_("Checks out a revision from a remote database into a directory"),
@@ -730,14 +686,13 @@ CMD(clone, "clone", "", CMD_REF(network),
   // db URIs will work
   system_path start_dir(get_current_working_dir(), origin::system);
 
-  bool internal_db = !app.opts.dbname_given || app.opts.dbname.empty();
-
   system_path _MTN_dir = workspace_dir / path_component("_MTN");
-  dir_cleanup_helper remove_on_fail(target_is_current_dir ? _MTN_dir : workspace_dir,
-                                    internal_db);
+  directory_cleanup_helper remove_on_fail(
+    target_is_current_dir ? _MTN_dir : workspace_dir
+  );
 
   // paths.cc's idea of the current workspace root is wrong at this point
-  if (internal_db)
+  if (!app.opts.dbname_given || app.opts.dbname.empty())
     app.opts.dbname = system_path(workspace_dir
                                   / bookkeeping_root_component
                                   / bookkeeping_internal_db_file_name);

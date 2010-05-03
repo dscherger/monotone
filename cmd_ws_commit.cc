@@ -1383,11 +1383,19 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 
   string dir;
   if (args.size() == 1)
-    dir = idx(args,0)();
+      dir = idx(args,0)();
   else
-    dir = ".";
+      dir = ".";
 
   system_path workspace_dir(dir, origin::user);
+
+  // only try to remove the complete workspace directory
+  // if we're about to create it anyways
+  directory_cleanup_helper remove_on_fail(
+    directory_exists(workspace_dir)
+        ? workspace_dir / bookkeeping_root_component
+        : workspace_dir
+  );
 
   workspace::create_workspace(app.opts, app.lua, workspace_dir);
 
@@ -1411,6 +1419,8 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
   revision_t rev;
   make_revision_for_workspace(revision_id(), cset(), rev);
   work.put_work_rev(rev);
+
+  remove_on_fail.commit();
 }
 
 CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
