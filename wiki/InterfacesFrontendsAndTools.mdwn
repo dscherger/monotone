@@ -53,6 +53,7 @@ When you do a merge in monotone, and run into conflicts, it will automatically s
 graphical merger for you to resolve them in.  These mergers (and possibly others) are supported
 out of the box.
 
+ * **[diffuse](http://diffuse.sourceforge.net)**: Supported on all platforms on which Python runs. diffuse also integrates monotone so you can quickly and directly diff and inspect monotone revisions. (**recommended**)
  * **[KDiff3](http://kdiff3.sourceforge.net/)**: Supported on Unix, Windows, OS X. (**recommended**)
  * **[xxdiff](http://furius.ca/xxdiff/)**: Supported on Unix, maybe OS X. (**recommended**)
  * **[TortoiseMerge](http://tortoisesvn.tigris.org/)**: Supported on Windows.  This is a stand-alone merge program that happens to be packaged with TortoiseSVN -- so you have to install the whole TortoiseSVN package, but you will only use TortoiseMerge. (**recommended**)
