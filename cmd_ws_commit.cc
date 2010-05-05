@@ -134,9 +134,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
                               string const & date_fmt, utf8 & log_message)
 {
   utf8 instructions(
-    _("Enter a description of this change following the Changelog line.\n"
+    _("Enter a description of this change following the Changelog line below.\n"
       "The values of Author, Date and Branch may be modified as required.\n"
-      "Any other modifications will cause the commit to fail.\n\n"));
+      "\n"));
 
   utf8 cancel(_("*** REMOVE THIS LINE TO CANCEL THE COMMIT ***\n"));
 
@@ -160,7 +160,7 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   oss << string(70, '-') << '\n';
   if (!old_branches.empty() && old_branches.find(branch) == old_branches.end())
     {
-      oss << _("This revision will create a new branch.") << '\n';
+      oss << _("*** THIS REVISION WILL CREATE A NEW BRANCH ***") << "\n\n";
       for (set<branch_name>::const_iterator i = old_branches.begin();
            i != old_branches.end(); ++i)
         oss << _("Old Branch: ") << *i << '\n';
@@ -780,7 +780,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
   key_store keys(app);
   key_identity_info key;
 
-  get_user_key(app.opts, app.lua, db, keys, project, key.id, false);
+  get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
   project.complete_key_identity(keys, app.lua, key);
 
   if (!app.lua.hook_get_author(app.opts.branch, key, author))
@@ -813,7 +813,7 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
       old_branches.find(app.opts.branch) == old_branches.end())
     {
       cout << string(70, '-') << '\n'
-           << _("This revision will create a new branch.") << '\n';
+           << _("*** THIS REVISION WILL CREATE A NEW BRANCH ***") << "\n\n";
       for (set<branch_name>::const_iterator i = old_branches.begin();
            i != old_branches.end(); ++i)
         cout << _("Old Branch: ") << *i << '\n';
@@ -1380,7 +1380,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   if (author.empty())
     {
       key_identity_info key;
-      get_user_key(app.opts, app.lua, db, keys, project, key.id, false);
+      get_user_key(app.opts, app.lua, db, keys, project, key.id, cache_disable);
       project.complete_key_identity(keys, app.lua, key);
 
       if (!app.lua.hook_get_author(app.opts.branch, key, author))

@@ -119,7 +119,7 @@ void
 get_user_key(options const & opts, lua_hooks & lua,
              database & db, key_store & keys,
              project_t & project, key_id & key,
-             bool const cache)
+             key_cache_flag const cache)
 {
   if (keys.have_signing_key())
     {
@@ -150,7 +150,7 @@ get_user_key(options const & opts, lua_hooks & lua,
       get_only_key(keys, true, key);
     }
 
-  if (cache)
+  if (cache == cache_enable)
     check_and_save_chosen_key(db, keys, key);
 }
 
