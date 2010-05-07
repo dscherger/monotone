@@ -81,6 +81,7 @@ use IPC::Open3;
 use Locale::TextDomain (APPLICATION_NAME,
 			File::Spec->catfile(PREFIX_DIR, "share", "locale"));
 use POSIX qw(:errno_h :locale_h :sys_wait_h strftime);
+use Socket;
 use Symbol qw(gensym);
 use Text::Tabs;
 use Time::Local;
@@ -106,6 +107,7 @@ use Completion;
 use FindFiles;
 use FindText;
 use History;
+use ManageServerBookmarks;
 use MultipleRevisions;
 use Preferences;
 use WindowManager;
@@ -132,6 +134,11 @@ use constant UI_DIR       => File::Spec->catfile(PREFIX_DIR,
 
 my $window_type = "main_window";
 
+# Whether Monotone can handle remote connections to servers (undefined for
+# don't know).
+
+my $mtn_supports_remote_connections;
+
 # The large logo used for the about dialog window.
 
 my $large_logo;
@@ -144,6 +151,7 @@ sub about_activate_cb($$);
 sub advanced_find_button_clicked_cb($$);
 sub annotate_button_clicked_cb($$);
 sub close_toolbutton_clicked_cb($$);
+sub connect_to_server_activate_cb($$);
 sub context_help_activate_cb($$);
 sub create_browser_widgets();
 sub determine_mime_type($$$$);
@@ -157,6 +165,7 @@ sub help_on_window_activate_cb($$);
 sub help_toolbutton_clicked_cb($$);
 sub home_page_activate_cb($$);
 sub main_window_delete_event_cb($$$);
+sub manage_server_bookmarks_activate_cb($$);
 sub manifest_browser_treeview_cursor_changed_cb($$);
 sub manifest_browser_treeview_row_activated_cb($$$$);
 sub monotone_viz_button_clicked_cb($$);
@@ -177,6 +186,7 @@ sub setup_sigchld_handler($);
 sub show_line_numbers_togglebutton_toggled_cb($$);
 sub sigchld_handler();
 sub update_browser_state($$);
+sub update_server_bookmarks_menu($);
 sub view_button_clicked_cb($$);
 #
 ##############################################################################
@@ -342,6 +352,8 @@ sub view_button_clicked_cb($$);
     {
 	setup_mtn_object($mtn, $browser->{window});
 	$browser->{mtn} = $mtn;
+	$browser->{connect_to_server_menutiem}->set_sensitive(FALSE)
+	    if (! $mtn_supports_remote_connections);
 	Glib::Idle->add
 	    (sub {
 		 my $browser = $_[0];
@@ -383,6 +395,172 @@ sub view_button_clicked_cb($$);
     $SIG{CHLD} = "IGNORE";
 
     exit(0);
+
+}
+#
+##############################################################################
+#
+#   Routine      - manage_server_bookmarks_activate_cb
+#
+#   Description  - Callback routine called when the user selects the manage
+#                  server bookmarks menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $browser : The browser instance that is associated with
+#                             this widget.
+#
+##############################################################################
+
+
+
+sub manage_server_bookmarks_activate_cb($$)
+{
+
+    my($widget, $browser) = @_;
+
+    return if ($browser->{in_cb});
+    local $browser->{in_cb} = 1;
+
+    if (manage_server_bookmarks($browser->{window},
+				$user_preferences->{server_bookmarks}))
+    {
+
+	eval
+	{
+	    save_preferences($user_preferences);
+	};
+	if ($@)
+	{
+	    chomp($@);
+	    my $dialog = Gtk2::MessageDialog->new
+		(undef,
+		 ["modal"],
+		 "warning",
+		 "close",
+		 __("Your preferences could not be saved:\n") . $@);
+	    $dialog->run();
+	    $dialog->destroy();
+	}
+
+	# We now need to update all server bookmark menus.
+
+	WindowManager->instance()->cond_find
+	    ($window_type,
+	     sub {
+		 my $browser = $_[0];
+		 update_server_bookmarks_menu($browser);
+		 return;
+	     });
+
+    }
+
+}
+#
+##############################################################################
+#
+#   Routine      - connect_to_server_activate_cb
+#
+#   Description  - Callback routine called when the user selects a server
+#                  bookmark menu option.
+#
+#   Data         - $widget  : The widget object that received the signal.
+#                  $details : A record containing the browser instance that is
+#                             associated with this widget and the name of the
+#                             server that is to be connected to.
+#
+##############################################################################
+
+
+
+sub connect_to_server_activate_cb($$)
+{
+
+    my($widget, $details) = @_;
+
+    return if ($details->{browser}->{in_cb});
+    local $details->{browser}->{in_cb} = 1;
+
+    my($exception,
+       $host,
+       $mtn);
+    my $browser = $details->{browser};
+    my $wm = WindowManager->instance();
+
+    $wm->make_busy($browser, 1);
+    $wm->update_gui();
+
+    # See if we know about the server first.
+
+    $host = $details->{server};
+    $host =~ s/:\d+$//g;
+    if (! defined(inet_aton($host)))
+    {
+	my $dialog;
+	$dialog = Gtk2::MessageDialog->new
+	    ($browser->{window},
+	     ["modal"],
+	     "warning",
+	     "close",
+	     __x("Server `{server}' is not\nknown to the system.",
+		 server => $host));
+	$wm->allow_input(sub { $dialog->run(); });
+	$dialog->destroy();
+    }
+    else
+    {
+
+	# Try connecting to the specified server.
+
+	CachingAutomateStdio->register_error_handler
+	    (MTN_SEVERITY_ALL,
+	     sub {
+		 my($severity, $message) = @_;
+		 my $dialog;
+		 $message =~ s/mtn: warning: //g;
+		 $message =~ s/mtn: error: //g;
+		 $message =~ s/mtn: //g;
+		 $message =~ s/^Corrupt\/missing mtn [^\n]+\n//g;
+		 $message =~ s/ at .+ line \d+$//g;
+		 $message =~ s/\s+$//g;
+		 $message =~ s/\n/ /g;
+		 $message .= "." unless ($message =~ m/.+\.$/);
+		 $dialog = Gtk2::MessageDialog->new_with_markup
+		     ($browser->{window},
+		      ["modal"],
+		      "warning",
+		      "close",
+		      __x("There is a problem connecting to the server, the "
+			      . "details are:\n<b><i>{error_message}</i></b>",
+			  error_message =>
+			  Glib::Markup::escape_text($message)));
+		 $wm->allow_input(sub { $dialog->run(); });
+		 $dialog->destroy();
+		 die("Bad open");
+	     });
+	$browser->{appbar}->set_status(__x("Connecting to server `{server}'",
+					   server => $host));
+	eval
+	{
+	    $mtn = CachingAutomateStdio->new_from_service($details->{server});
+	};
+	$exception = $@;
+	CachingAutomateStdio->register_error_handler
+	    (MTN_SEVERITY_ALL, \&mtn_error_handler);
+	$browser->{appbar}->clear_stack();
+	if (! $exception)
+	{
+
+	    # Seems to be ok so set up the browser.
+
+	    setup_mtn_object($mtn, $browser->{window});
+	    $browser->{mtn} = $mtn;
+	    &{$browser->{update_handler}}($browser, DATABASE_CHANGED);
+
+	}
+
+    }
+
+    $wm->make_busy($browser, 0);
 
 }
 #
@@ -1607,6 +1785,7 @@ sub get_browser_window(;$$$$$)
 
 	$browser->{window} = $browser->{glade}->get_widget($window_type);
 	foreach my $widget ("appbar",
+			    "connect_to_server_menutiem",
 			    "file_encoding_menuitem",
 			    "main_vbox",
 			    "browser_hpaned",
@@ -1633,6 +1812,25 @@ sub get_browser_window(;$$$$$)
 	{
 	    $browser->{$widget} = $browser->{glade}->get_widget($widget);
 	}
+
+	# Setup button sensitivity groups.
+
+	$browser->{text_file_sensitive_group} = [];
+	foreach my $item ("search_text", "annotate")
+	{
+	    push(@{$browser->{text_file_sensitive_group}},
+		 $browser->{glade}->get_widget($item . "_button"));
+	}
+	$browser->{revision_sensitive_group} = [];
+	foreach my $item ("revision_change_history", "revision_change_log")
+	{
+	    push(@{$browser->{revision_sensitive_group}},
+		 $browser->{glade}->get_widget($item . "_button"));
+	}
+
+	# Setup the connect to server submenu.
+
+	update_server_bookmarks_menu($browser);
 
 	# Setup the file encodings submenu.
 
@@ -1676,6 +1874,7 @@ sub get_browser_window(;$$$$$)
 	$menu_item->set_submenu($subsubmenu);
 	$menu_item->show();
 	$submenu->append($menu_item);
+	$submenu->show();
 	$browser->{file_encoding_menuitem}->set_submenu($submenu);
 
 	# Setup button sensitivity groups.
@@ -2049,6 +2248,64 @@ sub create_browser_widgets()
 #
 ##############################################################################
 #
+#   Routine      - update_server_bookmarks_menu
+#
+#   Description  - Creates or updates a server bookmarks menu for the
+#                  specified browser window.
+#
+#   Data         - $browser : The browser instance that is to have its server
+#                             bookmarks menu created or updated.
+#
+##############################################################################
+
+
+
+sub update_server_bookmarks_menu($)
+{
+
+    my $browser = $_[0];
+
+    my($menu_item,
+       $old_menu,
+       $submenu);
+
+    # Create a new connect to server submenu.
+
+    $submenu = Gtk2::Menu->new();
+    $menu_item = Gtk2::MenuItem->new(__("Manage Server Bookmarks"));
+    $menu_item->signal_connect("activate",
+			       \&manage_server_bookmarks_activate_cb,
+			       $browser);
+    $menu_item->show();
+    $submenu->append($menu_item);
+    $menu_item = Gtk2::SeparatorMenuItem->new();
+    $menu_item->show();
+    $submenu->append($menu_item);
+    for my $server (@{$user_preferences->{server_bookmarks}})
+    {
+	$menu_item = Gtk2::MenuItem->new(__($server));
+	$menu_item->signal_connect("activate",
+				   \&connect_to_server_activate_cb,
+				   {browser => $browser,
+				    server  => $server});
+	$menu_item->show();
+	$submenu->append($menu_item);
+    }
+    $submenu->show();
+
+    # Replace the existing menu with the new one.
+
+    $old_menu = $browser->{connect_to_server_menutiem}->get_submenu();
+    $browser->{connect_to_server_menutiem}->set_submenu($submenu);
+    if (defined($old_menu))
+    {
+	$old_menu->destroy()
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - update_browser_state
 #
 #   Description  - Update the display of the specified browser instance
@@ -2100,17 +2357,27 @@ sub update_browser_state($$)
 	    $browser->{close_toolbutton}->set_sensitive(TRUE);
 	    $browser->{reload_toolbutton}->set_sensitive(TRUE);
 	    $browser->{main_vbox}->set_sensitive(TRUE);
-	    if (! defined($browser->{mtn}->get_db_name()))
+	    if (defined($browser->{mtn}->get_service_name()))
 	    {
-		$browser->{mtn}->get_option(\$db_name, "database");
-		set_label_value($browser->{database_name_value_label},
-				__x("<WorkSpace> ({database_name})",
-				    database_name => $db_name));
+		set_label_value
+		    ($browser->{database_name_value_label},
+		     __x("<Service> ({service_name})",
+			 service_name => $browser->{mtn}->get_service_name()));
 	    }
 	    else
 	    {
-		set_label_value($browser->{database_name_value_label},
-				$browser->{mtn}->get_db_name());
+		if (defined($browser->{mtn}->get_db_name()))
+		{
+		    set_label_value($browser->{database_name_value_label},
+				    $browser->{mtn}->get_db_name());
+		}
+		else
+		{
+		    $browser->{mtn}->get_option(\$db_name, "database");
+		    set_label_value($browser->{database_name_value_label},
+				    __x("<WorkSpace> ({database_name})",
+					database_name => $db_name));
+		}
 	    }
 
 	    # Make sure that the branch comboboxentry has the focus and not the
@@ -3110,6 +3377,8 @@ sub setup_mtn_object($$)
 
     my $wm = WindowManager->instance();
 
+    # Deal with branch suspend certificate settings.
+
     if ($user_preferences->{show_suspended})
     {
 	if ($mtn->supports(MTN_IGNORING_OF_SUSPEND_CERTS))
@@ -3145,6 +3414,23 @@ sub setup_mtn_object($$)
 		$wm->allow_input(sub { $dialog->run(); });
 		$dialog->destroy();
 	    }
+	}
+    }
+
+    # Determine whether remote connections to servers are supported if we don't
+    # already know.
+
+    if (! defined($mtn_supports_remote_connections))
+    {
+	if ($mtn->supports(MTN_REMOTE_CONNECTIONS))
+	{
+	    $mtn_supports_remote_connections = 1;
+	}
+	else
+	{
+	    $mtn_supports_remote_connections = 0;
+# TBD
+$mtn_supports_remote_connections = 1;
 	}
     }
 

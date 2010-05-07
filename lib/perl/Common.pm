@@ -544,8 +544,8 @@ sub open_database($$$)
 			 $message =~ s/mtn: misuse: //g;
 			 $message =~ s/^Corrupt\/missing mtn [^\n]+\n//g;
 			 $message =~ s/ at .+ line \d+$//g;
-			 $message =~ s/\n/ /g;
 			 $message =~ s/\s+$//g;
+			 $message =~ s/\n/ /g;
 			 $message .= "." unless ($message =~ m/.+\.$/);
 			 $dialog = Gtk2::MessageDialog->new_with_markup
 			     ($parent,

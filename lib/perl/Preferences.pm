@@ -80,7 +80,7 @@ use constant PREFERENCES_FILE_NAME => ".mtn-browserc";
 
 # Constant for the preferences file's format version.
 
-use constant PREFERENCES_FORMAT_VERSION => 10;
+use constant PREFERENCES_FORMAT_VERSION => 11;
 
 # Text viewable application mime types.
 
@@ -1696,6 +1696,10 @@ sub upgrade_preferences($)
 	$preferences->{binary_threshold} = 20;
 	$preferences->{version} = 10;
     }
+    if ($preferences->{version} == 10)
+    {
+	$preferences->{server_bookmarks} = [];
+    }
 
     $preferences->{version} = PREFERENCES_FORMAT_VERSION;
 
@@ -1766,7 +1770,8 @@ sub initialise_preferences()
 				 find_files_named       => [],
 				 find_files_containing  => [],
 				 find_files_modified_by => [],
-				 find_text              => []});
+				 find_text              => []},
+	 server_bookmarks    => []);
 
     return \%preferences;
 
