@@ -6,7 +6,7 @@ Monotone::AutomateStdio - Perl interface to Monotone via automate stdio
 
 =head1 VERSION
 
-0.07
+0.08
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ $mtn-E<gt>closedown() is called.
 All automate commands have been implemented in this class except for the
 `stdio' command, hopefully the reason is obvious :-). Versions of Monotone that
 are supported by this class range from 0.35 up to and including the latest
-version (currently 0.46). If you happen to be using a newer version of Monotone
+version (currently 0.47). If you happen to be using a newer version of Monotone
 then this class will hopefully largely work but without the support for new or
 changed features.
 
@@ -458,8 +458,8 @@ done in the workspace.
 
 =item B<$mtn-E<gt>get_db_name()>
 
-Return the the file name of the Monotone database as given to the
-constructor. If no such name was given then undef is returned.
+Return the file name of the Monotone database as given to the constructor. If
+no such name was given then undef is returned.
 
 =item B<$mtn-E<gt>get_db_variables(\$buffer | \@list[, $domain])>
 
@@ -569,6 +569,12 @@ type of entry:
         name      - The name of the file that had an attribute set.
         attribute - The name of the attribute that was set.
         value     - The value that the attribute was set to.
+
+=item B<$mtn-E<gt>get_db_name()>
+
+Return the service name of the Monotone server as given to the constructor.
+
+(feature: MTN_REMOTE_CONNECTIONS)
 
 =item B<$mtn-E<gt>get_workspace_root(\$buffer)>
 

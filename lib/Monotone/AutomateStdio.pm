@@ -301,6 +301,7 @@ sub get_manifest_of($$;$);
 sub get_option($$$);
 sub get_pid($);
 sub get_revision($$$);
+sub get_service_name($);
 sub get_workspace_root($$);
 sub get_ws_path($);
 sub graph($$);
@@ -3167,8 +3168,8 @@ sub db_locked_condition_detected($)
 #
 #   Routine      - get_db_name
 #
-#   Description  - Return the the file name of the Monotone database as given
-#                  to the constructor.
+#   Description  - Return the file name of the Monotone database as given to
+#                  the constructor.
 #
 #   Data         - $self        : The object.
 #                  Return Value : The file name of the database as given to
@@ -3240,6 +3241,33 @@ sub get_pid($)
     my $this = $class_records{$self->{$class_name}};
 
     return $this->{mtn_pid};
+
+}
+#
+##############################################################################
+#
+#   Routine      - get_service_name
+#
+#   Description  - Return the service name of the Monotone server as given to
+#                  the constructor.
+#
+#   Data         - $self        : The object.
+#                  Return Value : The service name of the Monotone server as
+#                                 given to the constructor or undef if no
+#                                 service was specified.
+#
+##############################################################################
+
+
+
+sub get_service_name($)
+{
+
+    my $self = $_[0];
+
+    my $this = $class_records{$self->{$class_name}};
+
+    return $this->{network_service};
 
 }
 #
@@ -4895,7 +4923,14 @@ sub startup($)
 	   $header_err,
 	   $line,
 	   $my_pid,
+	   $startup,
 	   $version);
+
+	# Deep recursion guard.
+
+	$startup = $this->{startup};
+	local $this->{startup};
+	$this->{startup} = 1;
 
 	# Switch to the default locale. We only want to parse the output from
 	# Monotone in one language!
@@ -5012,51 +5047,46 @@ sub startup($)
 
 	if ($mtn_version > 0.45)
 	{
-	    local $@;
-	    eval
+
+	    my($char,
+	       $last_char);
+
+	    # If we are connecting to a network service then make sure that it
+	    # has sent us something before doing a blocking read.
+
+	    if (defined($this->{network_service}))
 	    {
-
-		my($char,
-		   $last_char);
-
-		# If we are connecting to a network service then make sure that
-		# it has sent us something before doing a blocking read.
-
-		if (defined($this->{network_service}))
-		{
-		    my $poll_result;
-		    for (my $i = 0;
-			 $i < 10
-			     && ($poll_result =
-				 $this->{poll}->poll($io_wait_handler_timeout))
+		my $poll_result;
+		for (my $i = 0;
+		     $i < 10
+			 && ($poll_result =
+			     $this->{poll}->poll($io_wait_handler_timeout))
 			     == 0;
-			 ++ $i)
-		    {
-			&$io_wait_handler($self, $io_wait_handler_data);
-		    }
-		    if ($poll_result == 0)
-		    {
-			$header_err = "Cannot connect to service `"
-			    . $this->{network_service} . "'";
-			die(1);
-		    }
-		}
-
-		# Skip the header.
-
-		$char = "";
-		do
+		     ++ $i)
 		{
-		    $last_char = $char;
-		    if (! sysread($this->{mtn_out}, $char, 1))
-		    {
-			$header_err = "Cannot get format header";
-			die(1);
-		    }
+		    &$io_wait_handler($self, $io_wait_handler_data);
 		}
-		while ($char ne "\n" || $last_char ne "\n");
+		if ($poll_result == 0)
+		{
+		    $self->closedown();
+		    &$croaker("Cannot connect to service `" .
+			      $this->{network_service} . "'");
+		}
+	    }
 
-	    };
+	    # Skip the header.
+
+	    $char = $last_char = "";
+	    while ($char ne "\n" || $last_char ne "\n")
+	    {
+		$last_char = $char;
+		if (! sysread($this->{mtn_out}, $char, 1))
+		{
+		    $header_err = "Cannot get format header";
+		    last;
+		}
+	    }
+
 	}
 
 	# Set up the correct input handler depending upon the version of mtn.
@@ -5071,23 +5101,44 @@ sub startup($)
 	}
 
 	# Get the interface version (remember also that if something failed
-	# above then this method will throw and exception giving the cause).
+	# above then this method will throw an exception giving the cause). If
+	# the database is locked then then this startup method will be called
+	# again by the method call below so use the $startup boolean to stop
+	# unnecessary recursion.
 
-	$self->interface_version(\$version);
-	if ($version =~ m/^(\d+)\.(\d+)$/)
+	if (! $startup)
 	{
-	    $this->{mtn_aif_version} = $1;
-	}
-	else
-	{
-	    &$croaker("Cannot get automate stdio interface version number");
+	    if ($self->interface_version(\$version)
+		&& $version =~ m/^(\d+)\.(\d+)$/)
+	    {
+		$this->{mtn_aif_version} = $1;
+
+		# We seem to be ok now despite any earlier failures so reset
+		# $header_err.
+
+		$header_err = undef;
+	    }
+	    else
+	    {
+		if ($this->{db_is_locked})
+		{
+		    &$croaker("Database is locked and there is either no "
+			      . "registered retry handler or the handler "
+			      . "returned false");
+		}
+		else
+		{
+		    &$croaker("Cannot get automate stdio interface version "
+			      . "number");
+		}
+	    }
 	}
 
 	# This should never happen as getting the interface version would have
 	# reported the real issue, but handle any header read issues just in
 	# case.
 
-	&$croaker($header_err) if (defined($header_err));
+	&$croaker($header_err) if (! $startup && defined($header_err));
 
     }
 
@@ -5271,6 +5322,7 @@ sub create_object($)
 	     ws_constructed          => undef,
 	     cd_to_ws_root           => $cd_to_ws_root,
 	     convert_to_utf8         => $convert_to_utf8,
+	     startup                 => undef,
 	     mtn_options             => undef,
 	     mtn_pid                 => 0,
 	     mtn_in                  => undef,
