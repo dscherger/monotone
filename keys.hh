@@ -20,17 +20,20 @@ class database;
 struct keypair;
 class globish;
 
+enum key_cache_flag { cache_disable, cache_enable };
+
 // keys.{hh,cc} does all the "delicate" crypto (meaning: that which needs
 // to read passphrases and manipulate raw, decrypted private keys). it
 // could in theory be in transforms.cc too, but that file's already kinda
 // big and this stuff "feels" different, imho.
 
 // Find the key to be used for signing certs.  If possible, ensure the
-// database and the key_store agree on that key, and cache it in decrypted
-// form, so as not to bother the user for their passphrase later.
+// database and the key_store agree on that key, and optionally cache it in
+// decrypted form, so as not to bother the user for their passphrase later.
 void get_user_key(options const & opts, lua_hooks & lua,
                   database & db, key_store & keys,
-                  project_t & project, key_id & key);
+                  project_t & project, key_id & key,
+                  key_cache_flag const cache = cache_enable);
 
 // As above, but does not report which key has been selected; for use when
 // the important thing is to have selected one and cached the decrypted key.
