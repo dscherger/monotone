@@ -151,16 +151,17 @@ sub add_mime_type_button_clicked_cb($$);
 sub database_browse_button_clicked_cb($$);
 sub defaults_button_clicked_cb($$);
 sub file_name_pattern_entry_changed_cb($$);
-sub file_name_patterns_treeview_cursor_changed_cb($$);
+sub file_name_patterns_treeselection_changed_cb($$);
 sub get_preferences_window($$);
 sub home_dir();
 sub initialise_mime_info_table();
 sub initialise_preferences();
+sub load_current_mime_types_settings($);
 sub load_file_name_patterns_treeview($);
 sub load_mime_types_page($);
 sub load_preferences_into_gui($);
 sub mime_type_entry_changed_cb($$);
-sub mime_types_treeview_cursor_changed_cb($$);
+sub mime_types_treeselection_changed_cb($$);
 sub remove_file_name_pattern_button_clicked_cb($$);
 sub remove_mime_type_button_clicked_cb($$);
 sub save_current_mime_types_settings($);
@@ -519,7 +520,7 @@ sub database_browse_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - mime_types_treeview_cursor_changed_cb
+#   Routine      - mime_types_treeselection_changed_cb
 #
 #   Description  - Callback routine called when the user selects an entry in
 #                  the MIME types treeview in the preferences window.
@@ -532,7 +533,7 @@ sub database_browse_button_clicked_cb($$)
 
 
 
-sub mime_types_treeview_cursor_changed_cb($$)
+sub mime_types_treeselection_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -541,65 +542,45 @@ sub mime_types_treeview_cursor_changed_cb($$)
     local $instance->{in_cb} = 1;
 
     my($entry,
-       $entry_path);
+       $entry_path,
+       @paths);
 
     # Get the MIME table entry details for the item that was selected.
 
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $entry = $model->get($iter, MTLS_ENTRY_COLUMN);
-	     $entry_path = $path->to_string();
-	 });
+    @paths = $widget->get_selected_rows();
+    if (scalar(@paths) > 0)
+    {
+	my($iter,
+	   $model);
+	($model, $iter) = $widget->get_selected();
+	$entry = $model->get($iter, MTLS_ENTRY_COLUMN);
+	$entry_path = $paths[0]->to_string();
+    }
 
-    # If something has been selected and it is different from before then deal
-    # with it.
+    # If the selection has changed then, if necessary, save any changes made
+    # and update the liststore before loading in the new entry.
 
-    if (defined($entry)
-	&& (! defined($instance->{selected_mime_types_entry})
+    if (defined($instance->{selected_mime_types_entry})
+	&& (! defined($entry)
 	    || $entry != $instance->{selected_mime_types_entry}))
     {
-
-	# If an entry was selected before then save any changes and update the
-	# liststore.
-
-	if (defined($instance->{selected_mime_types_entry}))
-	{
-	    save_current_mime_types_settings($instance);
-	    $instance->{mime_types_liststore}->
-		set($instance->{mime_types_liststore}->
-		        get_iter_from_string($instance->
-					     {selected_mime_types_path}),
-		    MTLS_PATTERNS_COLUMN,
-		        join(" ",
-			     @{$instance->{selected_mime_types_entry}->
-			       {file_name_patterns}}),
-		    MTLS_HELPER_COLUMN,
-		        $instance->{selected_mime_types_entry}->
-		            {helper_application});
-	}
-
-	# Load in the newly selected entry.
-
-	$instance->{selected_mime_types_entry} = $entry;
-	$instance->{selected_mime_types_path} = $entry_path;
-	$instance->{remove_mime_type_button}->set_sensitive(TRUE);
-	foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
-	{
-	    $widget->set_sensitive(TRUE);
-	}
-	load_file_name_patterns_treeview($instance);
-	$instance->{file_name_pattern_entry}->set_text("");
-	$instance->{add_file_name_pattern_button}->set_sensitive(FALSE);
-	$instance->{remove_file_name_pattern_button}->set_sensitive(FALSE);
-	$instance->{display_internally_checkbutton}->
-	    set_active($entry->{display_internally} ? TRUE : FALSE);
-	$instance->{syntax_highlight_checkbutton}->
-	    set_active($entry->{syntax_highlight} ? TRUE : FALSE);
-	$instance->{helper_application_entry}->
-	    set_text($entry->{helper_application});
-
+	save_current_mime_types_settings($instance);
+	$instance->{mime_types_liststore}->
+	    set($instance->{mime_types_liststore}->
+		get_iter_from_string($instance->{selected_mime_types_path}),
+		MTLS_PATTERNS_COLUMN,
+		join(" ",
+		     @{$instance->{selected_mime_types_entry}->
+		       {file_name_patterns}}),
+		MTLS_HELPER_COLUMN,
+		$instance->{selected_mime_types_entry}->{helper_application});
     }
+
+    # Load in the newly selected entry.
+
+    $instance->{selected_mime_types_entry} = $entry;
+    $instance->{selected_mime_types_path} = $entry_path;
+    load_current_mime_types_settings($instance);
 
 }
 #
@@ -764,7 +745,7 @@ sub remove_mime_type_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - file_name_patterns_treeview_cursor_changed_cb
+#   Routine      - file_name_patterns_treeselection_changed_cb
 #
 #   Description  - Callback routine called when the user selects an entry in
 #                  the file name patterns treeview in the preferences window.
@@ -777,7 +758,7 @@ sub remove_mime_type_button_clicked_cb($$)
 
 
 
-sub file_name_patterns_treeview_cursor_changed_cb($$)
+sub file_name_patterns_treeselection_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -787,16 +768,19 @@ sub file_name_patterns_treeview_cursor_changed_cb($$)
 
     # Store the details of the newly selected file name pattern.
 
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $instance->{selected_file_name_pattern} = $model->get($iter, 0);
-	 });
-
-    # Enable the remove file name patterns button if something was selected.
-
-    $instance->{remove_file_name_pattern_button}->set_sensitive(TRUE)
-	 if (defined($instance->{selected_file_name_pattern}));
+    if ($widget->count_selected_rows() > 0)
+    {
+	my($iter,
+	   $model);
+	($model, $iter) = $widget->get_selected();
+	$instance->{selected_file_name_pattern} = $model->get($iter, 0);
+	$instance->{remove_file_name_pattern_button}->set_sensitive(TRUE);
+    }
+    else
+    {
+	$instance->{selected_file_name_pattern} = undef;
+	$instance->{remove_file_name_pattern_button}->set_sensitive(FALSE);
+    }
 
 }
 #
@@ -1155,6 +1139,11 @@ sub get_preferences_window($$)
 	$instance->{mime_types_treeview}->
 	    set_search_equal_func(\&treeview_column_searcher);
 
+	$instance->{mime_types_treeview}->get_selection()->
+	    signal_connect("changed",
+			   \&mime_types_treeselection_changed_cb,
+			   $instance);
+
 	# Setup the file name patterns list.
 
 	$instance->{file_name_patterns_liststore} =
@@ -1172,6 +1161,11 @@ sub get_preferences_window($$)
 	$instance->{file_name_patterns_treeview}->set_search_column(0);
 	$instance->{file_name_patterns_treeview}->
 	    set_search_equal_func(\&treeview_column_searcher);
+
+	$instance->{file_name_patterns_treeview}->get_selection()->
+	    signal_connect("changed",
+			   \&file_name_patterns_treeselection_changed_cb,
+			   $instance);
 
 	# Reparent the preferences window to the specified parent.
 
@@ -1380,20 +1374,9 @@ sub load_mime_types_page($)
 	if ($instance->{mime_types_treeview}->realized());
     $instance->{mime_type_entry}->set_text("");
     $instance->{add_mime_type_button}->set_sensitive(FALSE);
-    $instance->{remove_mime_type_button}->set_sensitive(FALSE);
-    $instance->{file_name_patterns_liststore}->clear();
-    $instance->{file_name_pattern_entry}->set_text("");
-    foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
-    {
-	$widget->set_sensitive(FALSE);
-    }
-    $instance->{add_file_name_pattern_button}->set_sensitive(FALSE);
-    $instance->{remove_file_name_pattern_button}->set_sensitive(FALSE);
-    $instance->{display_internally_checkbutton}->set_active(FALSE);
-    $instance->{syntax_highlight_checkbutton}->set_active(FALSE);
-    $instance->{helper_application_entry}->set_text("");
     $instance->{selected_mime_types_entry} = undef;
     $instance->{selected_mime_types_path} = undef;
+    load_current_mime_types_settings($instance);
 
 }
 #
@@ -1542,10 +1525,67 @@ sub save_preferences_from_gui($)
 #
 ##############################################################################
 #
+#   Routine      - load_current_mime_types_settings
+#
+#   Description  - load the settings for the currently selected MIME type
+#                  entry from the preferences record.
+#
+#   Data         - $instance : The associated window instance.
+#
+##############################################################################
+
+
+
+sub load_current_mime_types_settings($)
+{
+
+    my $instance = $_[0];
+
+    if (defined($instance->{selected_mime_types_entry}))
+    {
+	$instance->{remove_mime_type_button}->set_sensitive(TRUE);
+	load_file_name_patterns_treeview($instance);
+	$instance->{file_name_pattern_entry}->set_text("");
+	foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
+	{
+	    $widget->set_sensitive(TRUE);
+	}
+	$instance->{add_file_name_pattern_button}->set_sensitive(FALSE);
+	$instance->{remove_file_name_pattern_button}->set_sensitive(FALSE);
+	$instance->{display_internally_checkbutton}->
+	    set_active($instance->{selected_mime_types_entry}->
+		       {display_internally} ? TRUE : FALSE);
+	$instance->{syntax_highlight_checkbutton}->
+	    set_active($instance->{selected_mime_types_entry}->
+		       {syntax_highlight} ? TRUE : FALSE);
+	$instance->{helper_application_entry}->
+	    set_text($instance->{selected_mime_types_entry}->
+		     {helper_application});
+    }
+    else
+    {
+	$instance->{remove_mime_type_button}->set_sensitive(FALSE);
+	$instance->{file_name_patterns_liststore}->clear();
+	$instance->{file_name_pattern_entry}->set_text("");
+	foreach my $widget (@{$instance->{mime_type_sensitivity_list}})
+	{
+	    $widget->set_sensitive(FALSE);
+	}
+	$instance->{add_file_name_pattern_button}->set_sensitive(FALSE);
+	$instance->{remove_file_name_pattern_button}->set_sensitive(FALSE);
+	$instance->{display_internally_checkbutton}->set_active(FALSE);
+	$instance->{syntax_highlight_checkbutton}->set_active(FALSE);
+	$instance->{helper_application_entry}->set_text("");
+    }
+
+}
+#
+##############################################################################
+#
 #   Routine      - save_current_mime_types_settings
 #
-#   Description  - Save the settings for the currently selected MIME typ entry
-#                  back to the preferences record.
+#   Description  - Save the settings for the currently selected MIME type
+#                  entry back to the preferences record.
 #
 #   Data         - $instance : The associated window instance.
 #

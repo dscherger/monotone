@@ -81,7 +81,7 @@ sub display_find_files($$$$$);
 sub between_range_radiobutton_toggled_cb($$);
 sub date_range_checkbutton_toggled_cb($$);
 sub get_find_files_window();
-sub results_treeview_cursor_changed_cb($$);
+sub results_treeselection_changed_cb($$);
 sub results_treeview_row_activated_cb($$$$);
 sub save_query_from_gui($);
 sub search_files_button_clicked_cb($$);
@@ -665,7 +665,7 @@ sub search_files_button_clicked_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - results_treeview_cursor_changed_cb
+#   Routine      - results_treeselection_changed_cb
 #
 #   Description  - Callback routine called when the user selects an entry in
 #                  the results treeview in a find files window.
@@ -678,7 +678,7 @@ sub search_files_button_clicked_cb($$)
 
 
 
-sub results_treeview_cursor_changed_cb($$)
+sub results_treeselection_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -686,22 +686,21 @@ sub results_treeview_cursor_changed_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    my $manifest_entry;
+    my($author,
+       $file_id,
+       $last_changed_revision,
+       $last_update);
 
-    # Get the manifest entry details for the item that was selected.
+    # Get the manifest entry details for the item that was selected and then
+    # display them if appropriate.
 
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $manifest_entry = $model->get($iter, RLS_MANIFEST_ENTRY_COLUMN);
-	 });
-
-    if (defined($manifest_entry))
+    if ($widget->count_selected_rows() > 0)
     {
-	my($author,
-	   $file_id,
-	   $last_changed_revision,
-	   $last_update);
+	my($iter,
+	   $manifest_entry,
+	   $model);
+	($model, $iter) = $widget->get_selected();
+	$manifest_entry = $model->get($iter, RLS_MANIFEST_ENTRY_COLUMN);
 	if ($manifest_entry->{type} eq "file")
 	{
 	    if (! exists($manifest_entry->{author}))
@@ -716,16 +715,16 @@ sub results_treeview_cursor_changed_cb($$)
 	    $last_update = $manifest_entry->{last_update};
 	    $last_update =~ s/T/ /;
 	}
-	else
-	{
-	    $author = $file_id = $last_changed_revision = $last_update = "";
-	}
-	set_label_value($instance->{author_value_label}, $author);
-	set_label_value($instance->{file_id_value_label}, $file_id);
-	set_label_value($instance->{last_update_value_label}, $last_update);
-	set_label_value($instance->{file_revision_id_value_label},
-			$last_changed_revision);
     }
+    else
+    {
+	$author = $file_id = $last_changed_revision = $last_update = "";
+    }
+    set_label_value($instance->{author_value_label}, $author);
+    set_label_value($instance->{file_id_value_label}, $file_id);
+    set_label_value($instance->{last_update_value_label}, $last_update);
+    set_label_value($instance->{file_revision_id_value_label},
+		    $last_changed_revision);
 
 }
 #
@@ -975,9 +974,15 @@ sub get_find_files_window()
 	$tv_column->pack_start($renderer, TRUE);
 	$tv_column->set_attributes($renderer, "text" => 0);
 	$instance->{results_treeview}->append_column($tv_column);
+
 	$instance->{results_treeview}->set_search_column(0);
 	$instance->{results_treeview}->
 	    set_search_equal_func(\&treeview_column_searcher);
+
+	$instance->{results_treeview}->get_selection()->
+	    signal_connect("changed",
+			   \&results_treeselection_changed_cb,
+			   $instance);
 
 	# Disable the appropriate widgets by default.
 

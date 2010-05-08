@@ -65,7 +65,7 @@ sub get_manage_server_bookmarks_window($$);
 sub load_servers_treeview($);
 sub remove_server_button_clicked_cb($$);
 sub server_entry_changed_cb($$);
-sub servers_treeview_cursor_changed_cb($$);
+sub servers_treeselection_changed_cb($$);
 #
 ##############################################################################
 #
@@ -115,7 +115,7 @@ sub manage_server_bookmarks($$)
 #
 ##############################################################################
 #
-#   Routine      - servers_treeview_cursor_changed_cb
+#   Routine      - servers_treeselection_changed_cb
 #
 #   Description  - Callback routine called when the user selects an entry in
 #                  the servers treeview in the manage server bookmarks window.
@@ -128,7 +128,7 @@ sub manage_server_bookmarks($$)
 
 
 
-sub servers_treeview_cursor_changed_cb($$)
+sub servers_treeselection_changed_cb($$)
 {
 
     my($widget, $instance) = @_;
@@ -136,18 +136,22 @@ sub servers_treeview_cursor_changed_cb($$)
     return if ($instance->{in_cb});
     local $instance->{in_cb} = 1;
 
-    # Store the details of the newly selected file name pattern.
+    # Store the details of the newly selected server if one was selected, also
+    # enabling the remove button if appropriate.
 
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $instance->{selected_server} = $model->get($iter, 0);
-	 });
-
-    # Enable the remove server button if something was selected.
-
-    $instance->{remove_server_button}->set_sensitive(TRUE)
-	 if (defined($instance->{selected_server}));
+    if ($widget->count_selected_rows() > 0)
+    {
+	my($iter,
+	   $model);
+	($model, $iter) = $widget->get_selected();
+	$instance->{selected_server} = $model->get($iter, 0);
+	$instance->{remove_server_button}->set_sensitive(TRUE);
+    }
+    else
+    {
+	$instance->{selected_server} = undef;
+	$instance->{remove_server_button}->set_sensitive(FALSE);
+    }
 
 }
 #
@@ -376,20 +380,10 @@ sub get_manage_server_bookmarks_window($$)
 	$instance->{servers_treeview}->
 	    set_search_equal_func(\&treeview_column_searcher);
 
-    }
-    else
-    {
-
-	my($height,
-	   $width);
-
-	$instance->{in_cb} = 0;
-	local $instance->{in_cb} = 1;
-
-	# Reset the manage server bookmarks window's state.
-
-	($width, $height) = $instance->{window}->get_default_size();
-	$instance->{window}->resize($width, $height);
+	$instance->{servers_treeview}->get_selection()->
+	    signal_connect("changed",
+			   \&servers_treeselection_changed_cb,
+			   $instance);
 
     }
 
@@ -397,11 +391,6 @@ sub get_manage_server_bookmarks_window($$)
 
     $instance->{selected_server} = undef;
     $instance->{server_bookmarks} = [];
-
-    # Load in the server bookmarks.
-
-    @{$instance->{server_bookmarks}} = @$bookmarks;
-    load_servers_treeview($instance);
 
     # Disable the add and remove buttons and make sure the server entry field
     # is empty.
@@ -415,6 +404,11 @@ sub get_manage_server_bookmarks_window($$)
     $instance->{window}->set_transient_for($parent);
     $instance->{window}->show_all();
     $instance->{window}->present();
+
+    # Load in the server bookmarks.
+
+    @{$instance->{server_bookmarks}} = @$bookmarks;
+    load_servers_treeview($instance);
 
     # Make sure that the server entry field has the focus.
 

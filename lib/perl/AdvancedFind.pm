@@ -66,7 +66,7 @@ sub advanced_find($$$);
 sub execute_button_clicked_cb($$);
 sub get_advanced_find_window($);
 sub populate_button_clicked_cb($$);
-sub revisions_treeview_cursor_changed_cb($$);
+sub revisions_treeselection_changed_cb($$);
 sub revisions_treeview_row_activated_cb($$$$);
 sub simple_query_radiobutton_toggled_cb($$);
 sub term_combobox_changed_cb($$);
@@ -419,7 +419,7 @@ sub term_combobox_changed_cb($$)
 #
 ##############################################################################
 #
-#   Routine      - revisions_treeview_cursor_changed_cb
+#   Routine      - revisions_treeselection_changed_cb
 #
 #   Description  - Callback routine called when the user selects an entry in
 #                  the revisions treeview in the advanced find window.
@@ -433,7 +433,7 @@ sub term_combobox_changed_cb($$)
 
 
 
-sub revisions_treeview_cursor_changed_cb($$)
+sub revisions_treeselection_changed_cb($$)
 {
 
     my($widget, $advanced_find) = @_;
@@ -441,22 +441,32 @@ sub revisions_treeview_cursor_changed_cb($$)
     return if ($advanced_find->{in_cb});
     local $advanced_find->{in_cb} = 1;
 
-    my $revision_id;
+    # Get the selected revision id and update the window accordingly.
 
-    # Get the selected revision id.
-
-    $widget->get_selection()->selected_foreach
-	(sub {
-	     my($model, $path, $iter) = @_;
-	     $revision_id = $model->get($iter, AFLS_REVISION_ID_COLUMN); });
-
-    if (defined($revision_id)
-	&& $revision_id
-	    ne $advanced_find->{revisions_treeview_details}->{value})
+    if ($widget->count_selected_rows() > 0)
     {
-	$advanced_find->{revisions_treeview_details}->{value} = $revision_id;
-	&{$advanced_find->{update_handler}}($advanced_find,
-					    SELECTED_REVISION_CHANGED);
+	my($iter,
+	   $model,
+	   $revision_id);
+	($model, $iter) = $widget->get_selected();
+	$revision_id = $model->get($iter, AFLS_REVISION_ID_COLUMN);
+	if ($revision_id
+	    ne $advanced_find->{revisions_treeview_details}->{value})
+	{
+	    $advanced_find->{revisions_treeview_details}->{value} =
+		$revision_id;
+	    &{$advanced_find->{update_handler}}($advanced_find,
+						SELECTED_REVISION_CHANGED);
+	}
+    }
+    else
+    {
+	if ($advanced_find->{revisions_treeview_details}->{value} ne "")
+	{
+	    $advanced_find->{revisions_treeview_details}->{value} = "";
+	    &{$advanced_find->{update_handler}}($advanced_find,
+						SELECTED_REVISION_CHANGED);
+	}
     }
 
 }
@@ -701,6 +711,9 @@ sub get_advanced_find_window($)
 	    set_search_column(AFLS_REVISION_ID_COLUMN);
 	$instance->{revisions_treeview}->
 	    set_search_equal_func(\&treeview_column_searcher);
+
+	$instance->{revisions_treeview}->get_selection()->signal_connect
+	    ("changed", \&revisions_treeselection_changed_cb, $instance);
 
 	# Setup the revision details viewer.
 
