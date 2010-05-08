@@ -117,6 +117,10 @@ use constant MTN_T_STREAM => 1;
 
 use constant WAITPID_INTERRUPT => __PACKAGE__ . "::waitpid-interrupt";
 
+# Constant used to represent the in memory database name.
+
+use constant IN_MEMORY_DB_NAME => ":memory:";
+
 # Constants used to represent different value formats.
 
 use constant BARE_PHRASE     => 0x01;  # E.g. orphaned_directory.
@@ -516,14 +520,14 @@ sub new_from_service($$;$)
     {
 	$server = $service;
     }
-    &$croaker("`" . $server . "' is not known")
+    &$croaker("`" . $server . "' is not known to the system")
 	unless (defined(inet_aton($server)));
 
     # Actually construct the object.
 
     $self = create_object($class);
     $this = $class_records{$self->{$class_name}};
-    $this->{db_name} = ":memory:";
+    $this->{db_name} = IN_MEMORY_DB_NAME;
     $this->{network_service} = $service;
     $this->{mtn_options} = $options;
 
@@ -3187,7 +3191,14 @@ sub get_db_name($)
 
     my $this = $class_records{$self->{$class_name}};
 
-    return $this->{db_name};
+    if (defined($this->{dn_name}) && $this->{db_name} eq IN_MEMORY_DB_NAME)
+    {
+	return undef;
+    }
+    else
+    {
+	return $this->{db_name};
+    }
 
 }
 #
@@ -5102,8 +5113,8 @@ sub startup($)
 
 	# Get the interface version (remember also that if something failed
 	# above then this method will throw an exception giving the cause). If
-	# the database is locked then then this startup method will be called
-	# again by the method call below so use the $startup boolean to stop
+	# the database is locked then this startup method will be called again
+	# by the method call below, so use the $startup boolean to stop
 	# unnecessary recursion.
 
 	if (! $startup)
