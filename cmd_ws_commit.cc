@@ -411,6 +411,12 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
 
   cache_user_key(app.opts, app.lua, db, keys, project);
 
+  // for the divergence check, below
+  set<revision_id> heads;
+  project.get_branch_heads(app.opts.branch, heads,
+                           app.opts.ignore_suspend_certs);
+  unsigned int old_head_size = heads.size();
+
   edge_entry const & old_edge (*rev.edges.begin());
   db.get_revision_manifest(edge_old_revision(old_edge),
                                rev_inverse.new_manifest);
@@ -436,6 +442,14 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
                                             inv_id, app.opts.branch,
                                             log_message);
     guard.commit();
+  }
+
+  project.get_branch_heads(app.opts.branch, heads,
+                           app.opts.ignore_suspend_certs);
+  if (heads.size() > old_head_size && old_head_size > 0) {
+    P(F("note: this revision creates divergence\n"
+        "note: you may (or may not) wish to run '%s merge'")
+      % prog_name);
   }
 }
 
