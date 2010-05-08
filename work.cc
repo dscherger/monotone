@@ -1891,24 +1891,34 @@ workspace::perform_rename(database & db,
       E(new_roster.has_node(src), origin::user,
         F("source file %s is not versioned") % src);
 
-      //this allows the 'magic add' of a non-versioned directory to happen in
-      //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
-      //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
-      //and then reparent fileA.
-      if (get_path_status(dst) == path::directory)
-        dpath = dst / src.basename();
+      if (src == dst)
+        {
+          if (get_path_status(dst) == path::directory)
+            W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'") % src % dst % src);
+          else
+            W(F("`%s' and `%s' are the same file") % src % dst);
+        }
       else
         {
-          //this handles the case where:
-          // touch foo
-          // mtn mv foo bar/foo where bar doesn't exist
-          file_path parent = dst.dirname();
-          E(get_path_status(parent) == path::directory, origin::user,
-            F("destination path's parent directory %s/ doesn't exist") % parent);
-        }
+          //this allows the 'magic add' of a non-versioned directory to happen in
+          //all cases.  previously, mtn mv fileA dir/ woudl fail if dir/ wasn't
+          //versioned whereas mtn mv fileA dir/fileA would add dir/ if necessary
+          //and then reparent fileA.
+          if (get_path_status(dst) == path::directory)
+            dpath = dst / src.basename();
+          else
+            {
+              //this handles the case where:
+              // touch foo
+              // mtn mv foo bar/foo where bar doesn't exist
+              file_path parent = dst.dirname();
+              E(get_path_status(parent) == path::directory, origin::user,
+                F("destination path's parent directory %s/ doesn't exist") % parent);
+            }
 
-      renames.insert(make_pair(src, dpath));
-      add_parent_dirs(db, nis, *this, dpath, new_roster);
+          renames.insert(make_pair(src, dpath));
+          add_parent_dirs(db, nis, *this, dpath, new_roster);
+        }
     }
   else
     {
@@ -1929,9 +1939,17 @@ workspace::perform_rename(database & db,
           E(!new_roster.has_node(d), origin::user,
             F("destination %s already exists in the workspace manifest") % d);
 
-          renames.insert(make_pair(*i, d));
+          if (*i == dst)
+            {
+              W(F("cannot move `%s' to a subdirectory of itself, `%s/%s'")
+                % *i % dst % *i);
+            }
+          else
+            {
+              renames.insert(make_pair(*i, d));
 
-          add_parent_dirs(db, nis, *this, d, new_roster);
+              add_parent_dirs(db, nis, *this, d, new_roster);
+            }
         }
     }
 
