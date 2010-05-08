@@ -5068,8 +5068,8 @@ database to be used, both of which will be placed in the
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
-directory is used.
-
+directory is used.  If no database is given, a new database is
+initialized and saved to @file{_MTN/mtn.db}.
 
 @item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
 @item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
