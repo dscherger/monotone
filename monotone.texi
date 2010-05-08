@@ -5841,15 +5841,22 @@ names of public and private keys you have on hand.
 If @var{pattern} is provided, it is used as a glob to limit the keys
 listed. Otherwise all keys in your database are listed.
 
-@item mtn list branches
-@item mtn ls branches
+@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls branches [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known branches in your database.
+This command lists all known branches in your database. If
+@var{pattern} is provided, it is used as a glob to select the branches
+listed, otherwise all branches are listed.  If @option{-exclude}
+options are provided they are used as globs to exclude specified
+branches.
 
-@item mtn list tags
-@item mtn ls tags
+@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls tags [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known tags in your database.
+This command lists all known tags in your database. If @var{pattern}
+is provided, it is used as a glob to select the tags listed, otherwise
+all tags are listed.  If @option{-exclude} options are provided they
+are used as globs to exclude specified tags.
 
 @item mtn list vars
 @item mtn ls vars
