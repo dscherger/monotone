@@ -28,6 +28,7 @@
 #include "xdelta.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "maybe_workspace_updater.hh"
 #include "simplestring_xform.hh"
 #include "database.hh"
 #include "roster.hh"
@@ -491,7 +492,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
     N_("Disapproves a particular revision"),
     "",
     options::opts::branch | options::opts::messages | options::opts::date |
-    options::opts::author)
+    options::opts::author | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -499,6 +500,8 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
 
   if (args.size() != 1)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   utf8 log_message("");
   bool log_message_given;
@@ -563,7 +566,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
         "note: you may (or may not) wish to run '%s merge'")
       % prog_name);
   }
-  P(F("note: your workspaces have not been updated"));
+  updater.maybe_do_update();
 }
 
 CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),

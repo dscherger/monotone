@@ -95,6 +95,7 @@ MOST_SOURCES = 								\
 	restrictions.cc	restrictions.hh					\
 	hmac.cc hmac.hh							\
 	string_queue.hh							\
+	maybe_workspace_updater.cc maybe_workspace_updater.hh		\
 	merge_roster.cc merge_conflict.cc merge_roster.hh		\
 	merge_content.cc merge_3way.cc merge_content.hh			\
 	legacy.cc legacy.hh uri.cc uri.hh				\

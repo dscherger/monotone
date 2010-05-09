@@ -20,6 +20,7 @@
 #include "project.hh"
 #include "keys.hh"
 #include "key_store.hh"
+#include "maybe_workspace_updater.hh"
 #include "transforms.hh"
 #include "vocab_cast.hh"
 
@@ -303,7 +304,7 @@ CMD(testresult, "testresult", "", CMD_REF(review),
 CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
     N_("Approves a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -311,6 +312,8 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   if (args.size() != 1)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
@@ -320,12 +323,14 @@ CMD(approve, "approve", "", CMD_REF(review), N_("REVISION"),
 
   cache_user_key(app.opts, app.lua, db, keys, project);
   project.put_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
     N_("Suspends a particular revision"),
     "",
-    options::opts::branch)
+    options::opts::branch | options::opts::maybe_auto_update)
 {
   database db(app);
   key_store keys(app);
@@ -333,6 +338,8 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 
   if (args.size() != 1)
     throw usage(execid);
+
+  maybe_workspace_updater updater(app, project);
 
   revision_id r;
   complete(app.opts, app.lua, project, idx(args, 0)(), r);
@@ -342,6 +349,8 @@ CMD(suspend, "suspend", "", CMD_REF(review), N_("REVISION"),
 
   cache_user_key(app.opts, app.lua, db, keys, project);
   project.suspend_revision_in_branch(keys, r, app.opts.branch);
+
+  updater.maybe_do_update();
 }
 
 CMD(comment, "comment", "", CMD_REF(review), N_("REVISION [COMMENT]"),
