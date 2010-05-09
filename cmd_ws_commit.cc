@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -193,11 +194,10 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   system_to_utf8(log_message_external, log_message);
 }
 
-CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
-    N_("Reverts files and/or directories"),
-    N_("In order to revert the entire workspace, specify \".\" as the "
-       "file name."),
-    options::opts::depth | options::opts::exclude | options::opts::missing)
+void
+revert(app_state & app,
+       args_vector const & args,
+       bool undrop)
 {
   roster_t old_roster, new_roster;
   cset preserved;
@@ -301,7 +301,7 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
         {
           file_t f = downcast_to_file_t(node);
 
-          bool changed = true;
+          bool revert = true;
 
           if (file_exists(path))
             {
@@ -311,11 +311,15 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
               if (ident == f->content)
                 {
                   L(FL("skipping unchanged %s") % path);
-                  changed = false;;
+                  revert = false;
+                }
+              else
+                {
+                  revert = not undrop;
                 }
             }
 
-          if (changed)
+          if (revert)
             {
               P(F("reverting %s") % path);
               L(FL("reverting %s to [%s]") % path
@@ -373,6 +377,24 @@ CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
   // Race.
   work.put_work_rev(remaining);
   work.maybe_update_inodeprints(db);
+}
+
+CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverts files and/or directories"),
+    N_("In order to revert the entire workspace, specify \".\" as the "
+       "file name."),
+    options::opts::depth | options::opts::exclude | options::opts::missing)
+{
+  revert(app, args, false);
+}
+
+CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
+    N_("Reverses a mistaken 'drop'"),
+    N_("If the file was deleted from the workspace, this is the same as 'revert'. "
+       "Otherwise, it just removes the 'drop' from the manifest."),
+    options::opts::recursive)
+{
+  revert(app, args, true);
 }
 
 CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
