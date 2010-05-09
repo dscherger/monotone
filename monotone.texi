@@ -5103,8 +5103,13 @@ to remove the file from the revision at commit time, but where it will
 is if the @option{--bookkeep-only} option is supplied.  Another is
 if a file has un-committed changes or if a directory is not empty.
 
+@item mtn undrop @var{pathname...}
+Undoes a previous ``drop''; useful when you make a mistake. If the
+file was deleted from the workspace, this reverts it. If it was not
+deleted (because it was changed), it just removes the pending drop.
+
 @item mtn [--bookkeep-only] rename @var{src} @var{dst}
-@item mtn [--bookkeep-only] mv @var{src} @var{dst}
+@itemx mtn [--bookkeep-only] mv @var{src} @var{dst}
 @itemx mtn [--bookkeep-only] rename @var{src1} @var{...} @var{dst/}
 @itemx mtn [--bookkeep-only] mv @var{src1} @var{...} @var{dst/}
 This command places ``rename'' entries for the paths specified in

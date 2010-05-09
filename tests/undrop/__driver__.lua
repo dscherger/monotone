@@ -73,4 +73,8 @@ check(readfile("dir1/file2")=="file2")
 check(mtn("status"), 0, true, false)
 check(qgrep("no changes", "stdout"))
 
+-- file that was not dropped. 'revert' doesn't report an error for
+-- this, so 'undrop' doesn't either.
+check(mtn("undrop", "unchanged"), 0, false, false)
+
 -- end of file
