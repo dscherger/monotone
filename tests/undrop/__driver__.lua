@@ -1,4 +1,5 @@
 -- Test 'undrop' command
+-- fixes bug#13603
 
 mtn_setup()
 
