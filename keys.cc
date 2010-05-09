@@ -120,6 +120,9 @@ get_user_key(options const & opts, lua_hooks & lua,
              database & db, key_store & keys,
              project_t & project, key_id & key)
 {
+  if (opts.anonymous)
+    return;
+
   if (keys.have_signing_key())
     {
       key = keys.signing_key;
@@ -167,6 +170,9 @@ cache_netsync_key(options const & opts,
     {
       return;
     }
+
+  if (opts.anonymous)
+    return;
 
   bool found_key = false;
   key_id key;

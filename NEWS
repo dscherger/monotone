@@ -26,6 +26,10 @@ xxx xxx xx xx:xx:xx UTC 2010
           don't have to worry about forgetting to give the include pattern and
           accidentally trying to sync everything to the second server.
 
+        - The commands 'clone', 'pull', 'automate clone' and 'automate pull'
+          now take the option '--anonymous' for temporary anonymous pulls.
+          Note that this doesn't change any options stored in _MTN/options.
+
         Bugs fixed
 
         - A regression in 0.47 prevent successful execution of push / pull /

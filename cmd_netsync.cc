@@ -549,7 +549,8 @@ CMD(pull, "pull", "", CMD_REF(network),
     N_("This pulls all branches that match the pattern given in PATTERN "
        "from the netsync server at the address ADDRESS."),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::set_default | options::opts::exclude)
+    options::opts::set_default | options::opts::exclude |
+    options::opts::anonymous)
 {
   database db(app);
   key_store keys(app);
@@ -571,7 +572,8 @@ CMD_AUTOMATE(pull, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
              "",
              options::opts::max_netsync_version |
              options::opts::min_netsync_version |
-             options::opts::set_default | options::opts::exclude)
+             options::opts::set_default | options::opts::exclude |
+             options::opts::anonymous)
 {
   database db(app);
   key_store keys(app);
@@ -645,7 +647,7 @@ CMD(clone, "clone", "", CMD_REF(network),
        "Otherwise, it will be the head of the branch supplied.  "
        "If no directory is given, the branch name will be used as directory"),
     options::opts::max_netsync_version | options::opts::min_netsync_version |
-    options::opts::revision)
+    options::opts::revision | options::opts::anonymous)
 {
   if (args.size() < 2 || args.size() > 3 || app.opts.revision_selectors.size() > 1)
     throw usage(execid);

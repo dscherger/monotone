@@ -528,7 +528,7 @@ workspace::get_options(options & opts)
 
   L(FL("branch name is '%s'") % opts.branch);
 
-  if (!opts.key_given)
+  if (!opts.key_given && !opts.anonymous)
     opts.signing_key = workspace_key;
 }
 

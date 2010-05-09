@@ -484,6 +484,16 @@ OPTION(globals, key, true, "key,k",
 #ifdef option_bodies
 {
   signing_key = external_key_name(arg, origin::user);
+  anonymous = false;
+}
+#endif
+
+OPT(anonymous, "anonymous", bool, false, "allows for anonymous communication")
+#ifdef option_bodies
+{
+  anonymous = true;
+  signing_key = external_key_name();
+  key_given = false;
 }
 #endif
 
