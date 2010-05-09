@@ -563,6 +563,7 @@ CMD(disapprove, "disapprove", "", CMD_REF(review), N_("REVISION"),
         "note: you may (or may not) wish to run '%s merge'")
       % prog_name);
   }
+  P(F("note: your workspaces have not been updated"));
 }
 
 CMD(mkdir, "mkdir", "", CMD_REF(workspace), N_("[DIRECTORY...]"),
