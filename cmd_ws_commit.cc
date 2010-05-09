@@ -128,6 +128,7 @@ private:
 
 static void
 get_log_message_interactively(lua_hooks & lua, workspace & work,
+                              project_t & project,
                               revision_id const rid, revision_t const & rev,
                               string & author, date_t & date, branch_name & branch,
                               set<branch_name> const & old_branches,
@@ -165,6 +166,20 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
            i != old_branches.end(); ++i)
         oss << _("Old Branch: ") << *i << '\n';
       oss << _("New Branch: ") << branch << "\n\n";
+    }
+  set<revision_id> heads;
+  project.get_branch_heads(branch, heads, false);
+  if (!heads.empty())
+    {
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+          if (heads.find(edge_old_revision(e)) == heads.end())
+            {
+              oss << _("*** THIS REVISION WILL CREATE DIVERGENCE ***") << "\n\n";
+              break;
+            }
+        }
     }
 
   utf8 notes(oss.str().c_str());
@@ -833,6 +848,20 @@ CMD(status, "status", "", CMD_REF(informative), N_("[PATH]..."),
         cout << _("Old Branch: ") << *i << '\n';
       cout << _("New Branch: ") << app.opts.branch << "\n\n";
     }
+  set<revision_id> heads;
+  project.get_branch_heads(app.opts.branch, heads, false);
+  if (!heads.empty())
+    {
+      for (edge_map::const_iterator e = rev.edges.begin();
+           e != rev.edges.end(); ++e)
+        {
+          if (heads.find(edge_old_revision(e)) == heads.end())
+            {
+              cout << _("*** THIS REVISION WILL CREATE DIVERGENCE ***") << "\n\n";
+              break;
+            }
+        }
+    }
 
   cout << summary_external;
 }
@@ -1427,7 +1456,7 @@ CMD(commit, "commit", "ci", CMD_REF(workspace), N_("[PATH]..."),
   if (!log_message_given)
     {
       // This call handles _MTN/log.
-      get_log_message_interactively(app.lua, work, 
+      get_log_message_interactively(app.lua, work, project,
                                     restricted_rev_id, restricted_rev,
                                     author, date, app.opts.branch, old_branches,
                                     date_fmt, log_message);
