@@ -394,6 +394,13 @@ CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
        "Otherwise, it just removes the 'drop' from the manifest."),
     options::opts::recursive)
 {
+  // revert does not use the value of opts::recursive (it doesn't need to);
+  // we allow it as an option so the user can do:
+  //
+  // drop --recursive dir
+  // (realize mistake)
+  // undrop --recursive dir
+
   revert(app, args, true);
 }
 
