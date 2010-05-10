@@ -7,4 +7,4 @@ mtn: merged files/bar, files/bar
 mtn: replacing content of files/baz, files/baz with _MTN/result/baz
 mtn: replacing content of files/foo, files/foo with files/foo
 mtn: [merged] d18cecd65445fa5b10732c6ca8a8bbdac2a6610a
-mtn: note: your workspaces have not been updated
+mtn: note: your workspace has not been updated

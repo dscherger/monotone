@@ -61,7 +61,7 @@ void maybe_workspace_updater::maybe_do_update()
     }
   else
     {
-      P(F("note: your workspaces have not been updated"));
+      P(F("note: your workspace has not been updated"));
     }
 }
 
