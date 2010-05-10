@@ -38,7 +38,7 @@ Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
 Copyright @copyright{} 2006, 2007 William Uther @*
-Copyright @copyright{} 2006 - 2009 Thomas Keller @*
+Copyright @copyright{} 2006 - 2010 Thomas Keller @*
 Copyright @copyright{} 2007 - 2010 Stephen Leake @*
 
 This manual is made available under the GNU GPL version 2.0 or
@@ -79,7 +79,7 @@ version control tools.
 * Advanced Uses::               Going beyond the basics
 * CVS Phrasebook::              Transitional guide for CVS users
 * Command Reference::           Details of each monotone command
-* Hook Reference::              Functions which extend monotone
+* Lua Reference::               How Lua is integrated in monotone
 * Special Topics::              Extra explanations and details
 * Default hooks::               The standard hook definitions
 * General Index::               Index of concepts and functions
@@ -2444,7 +2444,7 @@ the beta-testers, Jim wants to allow them read-only access just to the
 main JuiceBot 7 development line, but not to any of the sub-branches
 where other experimental development is going on. He adds some lines at
 the top of the @file{~/.monotone/read-permissions} on the server, above
-the broader permissions given to team-members. See the @ref{Hook
+the broader permissions given to team-members. See the @ref{Lua
 Reference} for @code{get_netsync_read_permitted} for more details; the
 resulting file looks like this:
 
@@ -2842,7 +2842,7 @@ selector, due to its syntactic form, so modifies it to read
 @code{a:jrh@@example.org}. This hook will generally assign a selector
 type to values which ``look like'' partial hex strings, email
 addresses, branch names, or date specifications. For the complete
-source code of the hook, see @ref{Hook Reference}.
+source code of the hook, see @ref{Lua Reference}.
 
 @heading Expanding dates
 
@@ -2873,7 +2873,7 @@ day of month and time 00:00:00.
 The time component, if supplied, must be complete to the second.
 @end table
 
-For the complete source code of the hook, see @ref{Hook Reference}.
+For the complete source code of the hook, see @ref{Lua Reference}.
 
 @heading Typeless selection
 
@@ -3039,7 +3039,7 @@ will continue to operate correctly.
 Normally, instead of enabling this up on a per-workspace basis, you
 will want to simply define the @code{use_inodeprints} hook to return
 @code{true}; this will automatically enable inodeprints mode in any new
-workspaces you create.  See @ref{Hook Reference} for details.
+workspaces you create.  See @ref{Lua Reference} for details.
 
 @page
 @node    Merge Conflicts, Workspace Collisions, Inodeprints, Advanced Uses
@@ -3525,7 +3525,7 @@ destination of an update. Only if the change in test results are
 deemed ``acceptable'' does monotone actually select an update target
 to merge into your workspace.
 
-For details on these hooks, see the @ref{Hook Reference}.
+For details on these hooks, see the @ref{Lua Reference}.
 
 @page
 @node    Vars, Reserved Files, Quality Assurance, Advanced Uses
@@ -3841,7 +3841,7 @@ by examining any manifest directly.
 
 You can tell monotone to automatically take actions based on these
 attributes by defining hooks; see the @code{attr_functions} entry in
-@ref{Hook Reference}.  Every time your workspace is written to,
+@ref{Lua Reference}.  Every time your workspace is written to,
 monotone will run the corresponding hooks registered for each attr in
 your workspace.  This way, you can extend the vocabulary of attrs
 understood by monotone simply by writing new hooks.
@@ -4673,7 +4673,7 @@ and does not need to be in any special location, or readable by other
 users.
 
 
-@node    Command Reference, Hook Reference, CVS Phrasebook, Top
+@node    Command Reference, Lua Reference, CVS Phrasebook, Top
 @chapter Command Reference
 
 Monotone has a large number of commands. To help navigate through them
@@ -5502,7 +5502,7 @@ make the new default.
 
 In the server, different permissions can be applied to each branch; see
 the hooks @code{get_netsync_read_permitted} and
-@code{get_netsync_write_permitted} (see @ref{Hook Reference}).
+@code{get_netsync_write_permitted} (see @ref{Lua Reference}).
 
 If a @option{--pid-file} option is specified, the command
 @command{serve} will create the specified file and record the process
@@ -5993,7 +5993,7 @@ key @var{id}.
 @item mtn trusted @var{id} @var{certname} @var{certval} @var{signers}
 
 This command lets you test your revision trust hook
-@code{get_revision_cert_trust} (see @ref{Hook Reference}).  You pass it
+@code{get_revision_cert_trust} (see @ref{Lua Reference}).  You pass it
 a revision ID, a certificate name, a certificate value, and one or more
 key IDs or key names, and it will tell you whether, under your current settings,
 Monotone would trust a cert on that revision with that value signed by
@@ -10199,26 +10199,24 @@ cause considerable clutter in tools like gitk.
 @end ftable
 
 
-@node    Hook Reference, Special Topics, Command Reference, Top
-@chapter Hook Reference
+@node    Lua Reference, Special Topics, Command Reference, Top
+@chapter Lua Reference
 
-Monotone's behavior can be customized and extended by writing
-@dfn{hook functions}, which are written in the
-@uref{http://www.lua.org, Lua} programming language. At certain points
-in time, when monotone is running, it will call a hook function to
-help it make a decision or perform some action.  If you provide a hook
-function definition which suits your preferences, monotone will
-execute it. This way you can modify how monotone behaves.
+Monotone makes use of the @uref{http://www.lua.org, Lua} programming language
+to customize and extend its behaviour.  By writing @dfn{functions} which are
+loaded and evaluated at runtime, you can therefor help monotone to make a
+particular decision, get a suitable default or preference or perform a certain
+action.
 
-You can put new definitions for any of these hook functions in a file
+You can put new definitions for either use case in a file
 @file{$HOME/.monotone/monotonerc}, or in your workspace in
 @file{_MTN/monotonerc}, both of which will be read every time monotone
 runs. Definitions in @file{_MTN/monotonerc} shadow (override)
 definitions made in your @file{$HOME/.monotone/monotonerc}. You can also tell
 monotone to interpret extra hook functions from any other @var{file}
-using the @option{--rcfile=@var{file}} option; hooks defined in files
-specified on the command-line will shadow hooks from the the automatic
-files.
+using the @option{--rcfile=@var{file}} option; again, hooks defined in files
+specified on the command-line will shadow hooks from the other predefined
+locations.
 By specifying @option{--rcfile=@var{directory}} you can automatically
 load all the files contained into @var{directory}.
 
@@ -10244,16 +10242,24 @@ Now the default hook is trapped in a variable local to this block, and can
 only be seen by the new hook. Since in Lua variables default to the global
 scope, the new hook is seen from inside monotone.
 
-Monotone also makes available to hook writers a number of helper
-functions exposing functionality not available with standard Lua.
+Monotone also provides a number of helper functions to hook writers
+exposing functionality not available with standard Lua.  One particular
+interesting feature is the ability to extend monotone with custom, Lua based
+commands which are listed under the @dfn{user} command group.  All you need
+to do for this is to write a custom function and use @code{register_command}
+to make it visible in monotone's command line interface.  The source
+distribution contains some example implementations in the
+@file{contrib/command} directory.
+See @ref{Additional Lua Functions} for more information on these topics.
 
 @menu
 * Hooks::                       All hooks called by monotone.
 * Additional Lua Functions::    Extra functionality available to hook writers.
+* Implementation Differences::  Functional differences from standard Lua
 @end menu
 
 @page
-@node   Hooks, Additional Lua Functions, Hook Reference, Hook Reference
+@node   Hooks, Additional Lua Functions, Lua Reference, Lua Reference
 @section Hooks
 
 This section documents the existing hook functions and their default
@@ -11290,7 +11296,7 @@ the called function in Lua code on success.
 @end ftable
 
 @page
-@node   Additional Lua Functions,  , Hooks, Hook Reference
+@node   Additional Lua Functions, Implementation Differences, Hooks, Lua Reference
 @section Additional Lua Functions
 
 This section documents the additional Lua functions made available to
@@ -11526,7 +11532,34 @@ The exit code is meaningful only if the result value is 0.
 @end ftable
 
 
-@node    Special Topics, Default hooks, Hook Reference, Top
+@page
+@node   Implementation Differences, ,Additional Lua Functions, Lua Reference
+@section Implementation Differences
+
+This section documents disabled and overwritten functions from the standard
+Lua libraries.
+
+@ftable @code
+
+@item print, io.write
+
+Both functions do no longer print to standard output, but to standard
+error, formatted as normal progress message with the prefix "lua:"
+in front of every line.
+
+The rationale behind this is to catch most of the informational
+messages from hooks which use these functions and make them processable
+by monotone's user interface, i.e. allowing them to be logged just as other
+progress messages and prevent unexpected out-of-band output in the
+@ref{Automation} interface.
+
+If you explicitely need to write to either stdout or stderr, please use
+@code{io.stdout:write} and @code{io.stderr.write}.
+
+@end ftable
+
+
+@node    Special Topics, Default hooks, Lua Reference, Top
 @chapter Special Topics
 
 This chapter describes some ``special'' issues which are not directly
