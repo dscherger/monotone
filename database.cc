@@ -208,7 +208,7 @@ class database_impl
 
   // for scoped_ptr's sake
 public:
-  explicit database_impl(system_path const & f, bool mem,
+  explicit database_impl(system_path const & f, bool mem, lua_hooks & lua,
                          system_path const & roster_cache_performance_log);
   ~database_impl();
 
@@ -217,8 +217,9 @@ private:
   //
   // --== Opening the database and schema checking ==--
   //
-  system_path const filename;
+  system_path filename;
   bool use_memory_db;
+  lua_hooks & lua;
   struct sqlite3 * __sql;
 
   void install_functions();
@@ -227,6 +228,7 @@ private:
   void check_filename();
   void check_db_exists();
   void check_db_nonexistent();
+  bool find_database_file();
   void open();
   void close();
   void check_format();
@@ -458,10 +460,11 @@ sqlite3_hex_fn(sqlite3_context *f, int nargs, sqlite3_value **args)
 }
 #endif
 
-database_impl::database_impl(system_path const & f, bool mem,
+database_impl::database_impl(system_path const & f, bool mem, lua_hooks & lua,
                              system_path const & roster_cache_performance_log) :
   filename(f),
   use_memory_db(mem),
+  lua(lua),
   __sql(NULL),
   transaction_level(0),
   roster_cache(constants::db_roster_cache_sz,
@@ -505,7 +508,7 @@ database::database(app_state & app)
   boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
   if (!i)
     i.reset(new database_impl(app.opts.dbname, app.opts.dbname_is_memory,
-                              app.opts.roster_cache_performance_log));
+                              lua, app.opts.roster_cache_performance_log));
 
   imp = i;
 }
@@ -4443,7 +4446,8 @@ database_impl::check_db_exists()
       return;
 
     case path::nonexistent:
-      E(false, origin::user, F("database %s does not exist") % filename);
+      E(find_database_file(), origin::user, F("database %s does not exist") % filename);
+      return;
 
     case path::directory:
       if (directory_is_workspace(filename))
@@ -4475,6 +4479,69 @@ database_impl::check_db_nonexistent()
 
 }
 
+
+bool
+database_impl::find_database_file()
+{
+  // exit early if the file is found
+  if (file_exists(filename))
+    return true;
+
+  // only pick the base name of the non-existing path
+  path_component basename = filename.basename();
+  std::vector<system_path> candidates;
+  std::vector<system_path> search_paths;
+
+  E(lua.hook_get_default_database_locations(search_paths), origin::system,
+    F("could not query default database locations"));
+
+  for (std::vector<system_path>::const_iterator i = search_paths.begin();
+     i != search_paths.end(); ++i)
+    {
+      if (file_exists((*i) / basename))
+        {
+          candidates.push_back((*i) / basename);
+          continue;
+        }
+
+      size_t pos = basename().rfind('.');
+      if (pos != std::string::npos && basename().substr(pos + 1) != "mtn")
+        {
+          path_component basename_with_ext(
+            basename() + ".mtn", origin::internal
+          );
+
+          if (file_exists((*i) / basename_with_ext))
+            {
+              candidates.push_back((*i) / basename_with_ext);
+              continue;
+            }
+        }
+    }
+
+  MM(candidates);
+
+  if (candidates.size() == 0)
+    return false;
+
+  if (candidates.size() == 1)
+    return true;
+
+  if (candidates.size() > 1)
+    {
+      string err =
+        (F("the database '%s' has multiple ambiguous expansions:") % filename).str();
+
+      for (std::vector<system_path>::const_iterator i = candidates.begin();
+           i != candidates.end(); ++i)
+        err += ("\n" + (*i).as_internal());
+
+      E(false, origin::user, i18n_format(err));
+    }
+
+  I(false);
+}
+
 void
 database_impl::open()
 {
@@ -4485,6 +4552,7 @@ database_impl::open()
     to_open = ":memory:";
   else
     to_open = filename.as_external();
+
   if (sqlite3_open(to_open.c_str(), &__sql) == SQLITE_NOMEM)
     throw std::bad_alloc();
 

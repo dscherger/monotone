@@ -653,6 +653,21 @@ lua_hooks::hook_get_date_format_spec(date_format_spec in, std::string & out)
   return exec_ok;
 }
 
+bool lua_hooks::hook_get_default_database_locations(std::vector<system_path> & out)
+{
+  Lua ll(st);
+  ll.func("get_default_database_locations");
+  ll.call(0, 1);
+
+  ll.begin();
+  while (ll.next())
+    {
+      std::string path;
+      ll.extract_str(path).pop();
+      out.push_back(system_path(path, origin::user));
+    }
+  return ll.ok() && !out.empty();
+}
 
 bool lua_hooks::hook_hook_wrapper(std::string const & func_name,
                                   std::vector<std::string> const & args,
