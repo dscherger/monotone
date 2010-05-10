@@ -315,7 +315,7 @@ revert(app_state & app,
                 }
               else
                 {
-                  revert = not undrop;
+                  revert = !undrop;
                 }
             }
 
