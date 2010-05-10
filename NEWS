@@ -33,6 +33,14 @@ xxx xxx xx xx:xx:xx UTC 2010
         - New automation command 'update' which behaves identical to
           the normal 'update' command.
 
+        - Many commands that change the heads of a branch (approve, disapprove,
+          pull, merge, etc) can now take an option "--update". If run from
+          a workspace which is based on a head of the branch and has no local
+          changes, this option makes these commands update that workspace to
+          the new head. If you always want this behavior, you can define the
+             get_default_command_options(cmd)
+          hook in your monotonerc.
+
         - A new Lua extension function change_workspace(directory) has been
           added. This should be most useful for custom commands which need
           to work on multiple workspaces from the same monotone instance.
