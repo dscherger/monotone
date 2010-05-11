@@ -1,69 +1,14 @@
-<?xml version="1.0" ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html lang="en" xml:lang="en"  xmlns="http://www.w3.org/1999/xhtml">
-<head>
-  <title>monotone: reliable, distributed version control</title>
-  <link type="text/css" rel="stylesheet" href="res/styles.css" />
-  <!--[if IE 7]>
-  <link rel="stylesheet" type="text/css" href="res/ie7.css" />
-  <![endif]-->
-  <link rel="alternate" type="application/rss+xml" title="monotone releases"
-                         href="http://monotone.ca/releases.xml" />
-
-</head>
-<body>
-
-<div id="header">
-    <p>
-        <img src="res/logo.png" alt="monotone logo"/>
-        <strong>monotone</strong> is a free distributed version control system.
-        It provides a simple, single-file transactional version store, with
-        fully disconnected operation and an efficient peer-to-peer
-        synchronization protocol. It understands history-sensitive merging,
-        lightweight branches, integrated code review and 3rd party testing.
-        It uses cryptographic version naming and client-side RSA certificates.
-        It has good internationalization support, runs on Linux, Solaris,
-        Mac OS X, Windows, and other unixes, and is licensed under the GNU GPL.
-    </p>
-    <div class="clearfloat"></div>
-</div>
-
-<div id="body">
-    <div class="other">
-        <img src="res/merging-fest-transparent.png" alt="merging fest" title="merging fest" />
-    </div>
-
-    <div class="main">
-        <div class="entry newversion">
-            <a href="NEWS"><b>NEWS: Sun Mar 14 2010, 0.47 release</b></a>
-            <ul>
-                <li>see <b><a href="NEWS">NEWS</a></b> for release notes, <b><a href="UPGRADE">UPGRADE</a></b> for upgrading<br/>
-                    <small>(<a href="README.changesets">still on 0.14? README.changesets</a>)</small></li>
-                <li>older versions are still <a href="downloads/">available</a></li>
-            </ul>
-        </div>
-
-        <div class="entry">
-            Want to help?  <a href="irc://irc.oftc.net/monotone">join irc</a>, <a href="wiki/QuickieTasks/">pick a quickie</a> or <a href="https://savannah.nongnu.org/bugs/?group=monotone">claim a bug,<br/>write a missing test case</a>... we're friendly
-        </div>
-    </div>
-
-    <div class="clearfloat"></div>
-
+<?php
+require_once("header.inc.php");
+?>
     <div class="boxes">
-        <div class="box">
+        <div class="box box-small">
             <h1 class="getit">Get it here</h1>
+            <p>Latest version: <strong>0.47</strong></p>
             <ul>
-                <li><a href="downloads/0.47/monotone-0.47.tar.gz"><b>Source</b></a></li>
-                <li><a href="downloads/0.47/mtn-0.47-linux-x86.bz2">Linux x86/glibc 2.3</a></li>
-                <!-- <li><a href="downloads/0.47/mtn-0.47-linux_2.6-static.bz2">static, linux 2.6/glibc</a>(read the <a href="downloads/0.41/mtn-0.41-linux_2.6-static.README1ST">README</a>!) (<a href="downloads/0.46/mtn-0.46-linux_2.6-static.bz2.sig">PGP sig</a>)</li> -->
-                <li>Windows
-                    <a href="downloads/0.47/monotone-0.47-setup.exe">native</a>
-                </li>
-                <!-- <li>Mac OS X <a href="downloads/0.47/mtn-0.47-osx.bz2">standalone</a>,
-                    <a href="downloads/0.47/monotone-0.47.dmg">packaged</a></li> -->
-                <!-- <li>OpenSolaris <a href="downloads/0.47/PMmonotone-0.47.i386.pkg">x86</a>, <a href="downloads/0.47/PMmonotone-0.47.sparc.pkg">sparc</a></li> -->
-                <li><i><a href="downloads.php">latest downloads by platform</a></i></li>
+                <li>Check the <b><a href="NEWS">NEWS</a></b></li>
+                <li>Need to <a href="UPGRADE">UPGRADE</a>?</li>
+                <li><b><a href="downloads.php">Download it</a></b></li>
             </ul>
             <h1 class="getitdistro">...or from your distro</h1>
             <ul>
@@ -78,7 +23,7 @@
             </ul>
         </div>
 
-        <div class="box">
+        <div class="box box-small">
             <h1 class="useit">Use it</h1>
             <ul>
                 <li><a href="docs/index.html"><b>manual</b> (with tutorial)</a><br/>(<a class="lesser" href="monotone.html">one page</a>, <a class="lesser" href="monotone.pdf">PDF</a>)</li>
@@ -92,9 +37,16 @@
                 <li><a href="http://www.cafepress.com/monotone_vcs">swag</a></li>
                 <li><a href="http://www.frappr.com/monotone">frappr</a></li>
             </ul>
+
+            <hr />
+
+            <p style="text-align: center">
+                <strong>Need help?</strong><br />
+                Just <a href="irc://irc.oftc.net/monotone">join irc</a>... we're friendly!
+            </p>
         </div>
 
-        <div class="box">
+        <div class="box box-small">
             <h1 class="improveit">Improve it</h1>
             <ul>
                 <li><a href="https://savannah.nongnu.org/bugs/?group=monotone"><strong>bugs</strong></a></li>
@@ -109,16 +61,59 @@
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-diffs">with</a> /
                   <a href="http://lists.nongnu.org/mailman/listinfo/monotone-commits-nodiffs">without</a> diffs</li>
                 <li><a href="buildbot/">build status</a></li>
-                <li><a href="http://frances.vorpus.org/~monotone-cov/net.venge.monotone">test coverage</a></li>
+                <li><a href="wiki/QuickieTasks/">quickie tasks</a></li>
             </ul>
         </div>
         <div class="clearfloat"></div>
     </div>
 
-    <div id="footer">
-        <a href="_analog.html">website statistics</a> | <a href="http://tango.freedesktop.org/Tango_Icon_Library">icons stolen from the Tango Project</a>
-    </div>
-</div>
+    <div class="boxes">
+        <div class="box box-wide">
+            <h1 class="intheblogs">Monotone in the blogs</h1>
 
-</body>
-</html>
+<?php
+    require_once("simplepie-1.2.0/simplepie.inc.php");
+
+    $feed = new SimplePie();
+    $feed->set_feed_url(array(
+        'http://www.thomaskeller.biz/blog/category/coding/monotone/feed/',
+        'http://identi.ca/lapo/tag/monotone/rss',
+    ));
+    $feed->set_item_limit(3);
+    $feed->init();
+    $feed->handle_content_type();
+
+    $items = $feed->get_items();
+    if (count($items) == 0):
+?>
+            <p>No blog posts found.</p>
+<?php
+    else:
+        foreach ($feed->get_items() as $item):
+            $author = ($author = $item->get_author())
+                ? $author->get_name() : "unknown";
+?>
+            <div class="feed-msg">
+                <h2><?php echo $item->get_title() ?></h2>
+                <h3>by <?php echo $author ?>, <?php echo $item->get_date("j F Y | g:i a") ?></h3>
+                <p>
+                    <?php echo $item->get_description() ?>
+                    <a href="<?php echo $item->get_link(0) ?>" target="_blank">&#187; read more</a>
+                </p>
+            </div>
+<?php
+        endforeach;
+?>
+        <p style="text-align: center">
+            <a href="intheblogs.php">&#187; view all entries</a>
+        </p>
+<?php
+    endif;
+?>
+        </div>
+    </div>
+
+<?php
+    require_once("footer.inc.php");
+?>
+

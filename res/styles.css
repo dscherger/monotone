@@ -22,6 +22,12 @@ ul {
     padding-left: 1em;
 }
 
+hr {
+    border: 0;
+    background: transparent;
+    border-top: 0.0625em dotted #CCCCCC;
+}
+
 .clearfloat {
     clear: both;
 }
@@ -60,60 +66,33 @@ ul {
     padding: 2em;
 }
 
-.other {
-    float: right;
-    width: 250px;
-    margin-top: 1em;
-    text-align: center;
-}
-
-.other + .main {
-    margin-right: 250px;
-}
-
-.main:after {
-    clear: both;
-}
-
-.entry {
-    border-top: 0.0625em dotted #CCCCCC;
-    margin-top: 2em;
-    padding-top: 2em;
-}
-
-.entry:first-child {
-    border-top: 0;
-    margin-top: -1em;
-}
-
-.important {
-    padding-left: 2.5em;
-    background: url(important.png) no-repeat 0 1.5em;
-}
-
-.newversion {
-    padding-left: 2.5em;
-    background: url(newversion.png) no-repeat 0 1.5em;
-}
-
 .boxes {
-    margin-top: 2em;
     padding-top: 1em;
     border-top: 0.0625em dotted #CCCCCC;
-    border-bottom: 0.0625em dotted #CCCCCC;
-    margin-bottom: 1em;
+    overflow: hidden;
+}
+
+.boxes:first-child {
+    border: 0;
+    padding-top: 0;
 }
 
 .box {
-    float: left;
-    margin-top: -1em;
+    margin-top: -0.5em;
     padding-right: 0.5em;
     margin-right: 0.5em;
-    border-right: 0.0625em dotted #CCCCCC;
-    width: 13.5em;
+    padding-bottom: 0.5em;
 }
 
-.box + .box + .box {
+.box-small {
+    float: left;
+    border-right: 0.0625em dotted #CCCCCC;
+    width: 13.5em;
+    padding-bottom: 300em;
+    margin-bottom: -300em;
+}
+
+.box-small + .box-small + .box-small {
     margin-right: 0;
     border-right: 0;
     padding-right: 0;
@@ -129,6 +108,10 @@ ul {
 .box ul {
     padding-left: 3em;
     margin-bottom: 1em;
+}
+
+.box p {
+    font-size: 0.9em;
 }
 
 h1.getit {
@@ -147,8 +130,38 @@ h1.improveit {
     background: url(improveit.png) no-repeat;
 }
 
+h1.intheblogs {
+    background: url(intheblogs.png) no-repeat;
+}
+
+.feed-msg {
+    margin-left: 1.8em;
+    margin-bottom: 0.5em;
+}
+
+.feed-msg h2 {
+    font-size: 0.9em;
+    padding-right: 12em;
+}
+
+.feed-msg h3 {
+    font-size: 0.7em;
+    font-weight: normal;
+    float: right;
+    margin-top: -2.5em;
+}
+
+.feed-msg p {
+    font-size: 0.8em;
+}
+
+.feed-msg a {
+    white-space: nowrap;
+}
+
 #footer {
-    margin-top: 1em;
+    border-top: 0.0625em dotted #CCCCCC;
+    padding-top: 1em;
     font-size: 0.7em;
     text-align: center;
 }
