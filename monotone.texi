@@ -11556,6 +11556,15 @@ progress messages and prevent unexpected out-of-band output in the
 If you explicitely need to write to either stdout or stderr, please use
 @code{io.stdout:write} and @code{io.stderr.write}.
 
+@item os.execute, io.popen
+
+Both functions have been disabled for security reasons. You should use
+their replacements @code{spawn} and @code{spawn_pipe}.
+
+The original versions do not apply any kind of shell character escaping,
+which might lead to serious problems f.e. when a merger is automatically
+invoked by such a function.
+
 @end ftable
 
 
