@@ -1,4 +1,5 @@
 // Copyright (C) 2002, 2008 Graydon Hoare <graydon@pobox.com>
+//               2010 Stephen Leake <stephen_leake@stephe-leake.org>
 //
 // This program is made available under the GNU GPL version 2.0 or
 // greater. See the accompanying file COPYING for details.
@@ -82,7 +83,7 @@ namespace commands {
 
 // This number is only raised once, during the process of releasing a new
 // version of monotone, by the release manager. For more details, see
-// point (2) in notes/release-checklist.txt
+// point (4) in notes/release-checklist.txt
 static string const interface_version = "12.0";
 
 // This number determines the format version of the stdio packet format.
@@ -319,8 +320,16 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
 
       try
         {
+          // as soon as a command requires a workspace, this is set to true
+          workspace::used = false;
+
           acmd->exec_from_automate(app, id, args, os);
           os.end_cmd(0);
+
+          // usually, if a command succeeds, any of its workspace-relevant
+          // options are saved back to _MTN/options, this shouldn't be
+          // any different here
+          workspace::maybe_set_options(app.opts);
 
           // restore app.opts
           app.opts = original_opts;
@@ -332,6 +341,39 @@ CMD_AUTOMATE_NO_STDIO(stdio, "",
         }
     }
     global_sanity.set_out_of_band_handler();
+}
+
+LUAEXT(change_workspace, )
+{
+  const system_path ws(luaL_checkstring(LS, -1), origin::user);
+  app_state* app_p = get_app_state(LS);
+
+  try
+    {
+      go_to_workspace(ws);
+    }
+  catch (recoverable_failure & f)
+    {
+      string msg(f.what());
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.data(), msg.size());
+      return 2;
+    }
+
+  // go_to_workspace doesn't check that it is a workspace, nor set workspace::found!
+  if (directory_is_workspace(ws))
+    {
+      workspace::found = true;
+      lua_pushboolean(LS, true);
+      return 1;
+    }
+  else
+    {
+      i18n_format msg(F("directory %s is not a workspace") % ws);
+      lua_pushboolean(LS, false);
+      lua_pushlstring(LS, msg.str().data(), msg.str().size());
+      return 2;
+    }
 }
 
 LUAEXT(mtn_automate, )
@@ -426,7 +468,16 @@ LUAEXT(mtn_automate, )
       commands::automate const * acmd
         = dynamic_cast< commands::automate const * >(cmd);
       I(acmd);
+
+      // as soon as a command requires a workspace, this is set to true
+      workspace::used = false;
+
       acmd->exec(*app_p, id, app_p->opts.args, os);
+
+      // usually, if a command succeeds, any of its workspace-relevant
+      // options are saved back to _MTN/options, this shouldn't be
+      // any different here
+      workspace::maybe_set_options(app_p->opts);
 
       // allow further calls
       app_p->mtn_automate_allowed = true;

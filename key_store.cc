@@ -238,7 +238,8 @@ key_store_state::maybe_read_key_dir()
       data dat;
       read_data(*i, dat);
       istringstream is(dat());
-      read_packets(is, kr);
+      if (read_packets(is, kr) == 0) 
+        W(F("ignored invalid key file ('%s') in key store") % (*i) );
     }
 }
 

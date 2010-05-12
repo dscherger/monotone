@@ -253,7 +253,16 @@ bool automate_session::do_work(transaction_guard & guard,
           {
             try
               {
+                // as soon as a command requires a workspace, this is set to true
+                workspace::used = false;
+
                 acmd->exec_from_automate(app, id, args, oss);
+
+                // usually, if a command succeeds, any of its workspace-relevant
+                // options are saved back to _MTN/options, this shouldn't be
+                // any different here
+                workspace::maybe_set_options(app.opts);
+
                 // restore app.opts
                 app.opts = original_opts;
               }

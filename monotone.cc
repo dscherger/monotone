@@ -282,7 +282,13 @@ cpp_main(int argc, char ** argv)
             throw usage(commands::command_id());
 
 
+          // as soon as a command requires a workspace, this is set to true
+          workspace::used = false;
+
           commands::process(app, cmd, app.opts.args);
+
+          workspace::maybe_set_options(app.opts);
+
           // The command will raise any problems itself through
           // exceptions.  If we reach this point, it is because it
           // worked correctly.

@@ -1377,24 +1377,50 @@ CMD_NO_WORKSPACE(setup, "setup", "", CMD_REF(tree), N_("[DIRECTORY]"),
 {
   if (args.size() > 1)
     throw usage(execid);
+
   E(!app.opts.branch().empty(), origin::user,
     F("need --branch argument for setup"));
 
-  database db(app);
-  db.ensure_open();
-
   string dir;
   if (args.size() == 1)
-    dir = idx(args,0)();
+      dir = idx(args,0)();
   else
-    dir = ".";
+      dir = ".";
 
-  workspace::create_workspace(app.opts, app.lua, system_path(dir, origin::user));
+  system_path workspace_dir(dir, origin::user);
+
+  // only try to remove the complete workspace directory
+  // if we're about to create it anyways
+  directory_cleanup_helper remove_on_fail(
+    directory_exists(workspace_dir)
+        ? workspace_dir / bookkeeping_root_component
+        : workspace_dir
+  );
+
+  workspace::create_workspace(app.opts, app.lua, workspace_dir);
+
+  if (!app.opts.dbname_given || app.opts.dbname.empty())
+    {
+      app.opts.dbname = system_path(workspace_dir
+                                    / bookkeeping_root_component
+                                    / bookkeeping_internal_db_file_name);
+    }
+
+  database db(app);
+  if (get_path_status(db.get_filename()) == path::nonexistent)
+    {
+      P(F("initializing new database '%s'") % db.get_filename());
+      db.initialize();
+    }
+
+  db.ensure_open();
+
   workspace work(app);
-
   revision_t rev;
   make_revision_for_workspace(revision_id(), cset(), rev);
   work.put_work_rev(rev);
+
+  remove_on_fail.commit();
 }
 
 CMD_NO_WORKSPACE(import, "import", "", CMD_REF(tree), N_("DIRECTORY"),
@@ -1516,8 +1542,15 @@ CMD_NO_WORKSPACE(migrate_workspace, "migrate_workspace", "", CMD_REF(tree),
       workspace::found = true;
     }
 
-  workspace work(app, false);
+  workspace work(app);
   work.migrate_format();
+
+  // FIXME: it seems to be a bit backwards to use the workspace object
+  // but reset its usage flag afterwards, but migrate_workspace is a
+  // different case: we don't want that this command touches
+  // _MTN/options for any other use case than possibly migrating its
+  // format and the workspace_migration test enforces that
+  workspace::used = false;
 }
 
 CMD(refresh_inodeprints, "refresh_inodeprints", "", CMD_REF(tree), "",

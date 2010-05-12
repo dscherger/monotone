@@ -27,7 +27,7 @@ using std::transform;
 struct
 lowerize
 {
-  char operator()(char const & c) const
+  char operator()(unsigned char const & c) const
   {
     return ::tolower(static_cast<int>(c));
   }
@@ -44,7 +44,7 @@ lowercase(string const & in)
 struct
 upperize
 {
-  char operator()(char const & c) const
+  char operator()(unsigned char const & c) const
   {
     return ::toupper(static_cast<int>(c));
   }
