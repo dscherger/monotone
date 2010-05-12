@@ -464,6 +464,10 @@ private:
 #endif
 };
 
+// not a member function, because it has to be called in non-db
+// context as well
+void resolve_managed_path(lua_hooks & lua, system_path & path);
+
 // not a member function, defined in database_check.cc
 void check_db(database & db);
 

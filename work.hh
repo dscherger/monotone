@@ -233,8 +233,10 @@ public:
   static void get_options(options & opts);
   static void get_database_option(system_path const & workspace_root,
                                   system_path & database_option);
-  static void set_options(options const & opts, bool branch_is_sticky = false);
-  static void maybe_set_options(options const & opts);
+  static void set_options(options const & opts,
+                          lua_hooks & lua,
+                          bool branch_is_sticky = false);
+  static void maybe_set_options(options const & opts, lua_hooks & lua);
   static void print_option(utf8 const & opt, std::ostream & output);
 
   // the "bisect" infromation file is a file that records current status

@@ -159,7 +159,7 @@ workspace::create_workspace(options const & opts,
   mkdir_p(bookkeeping_root);
 
   workspace::found = true;
-  workspace::set_options(opts, true);
+  workspace::set_options(opts, lua, true);
   workspace::write_format();
 
   data empty;
@@ -549,10 +549,10 @@ workspace::get_database_option(system_path const & workspace,
 }
 
 void
-workspace::maybe_set_options(options const & opts)
+workspace::maybe_set_options(options const & opts, lua_hooks & lua)
 {
   if (workspace::found && workspace::used)
-      set_options(opts, false);
+      set_options(opts, lua, false);
 }
 
 // This function should usually be called at the (successful)
@@ -560,7 +560,7 @@ workspace::maybe_set_options(options const & opts)
 // if this is a valid sqlite file and if it contains the correct identifier,
 // so be warned that you do not call this too early
 void
-workspace::set_options(options const & opts, bool branch_is_sticky)
+workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sticky)
 {
   E(workspace::found, origin::user, F("workspace required but not found"));
 
@@ -582,11 +582,17 @@ workspace::set_options(options const & opts, bool branch_is_sticky)
   bool options_changed = false;
 
   if (!opts.dbname.as_internal().empty() &&
-      get_path_status(opts.dbname.as_internal()) == path::file &&
       workspace_database != opts.dbname)
     {
-      workspace_database = opts.dbname;
-      options_changed = true;
+      system_path dbpath = opts.dbname;
+      resolve_managed_path(lua, dbpath);
+
+      if (get_path_status(dbpath.as_internal()) == path::file)
+        {
+          // FIXME: save the alias / managed name here, not the absolute path
+          workspace_database = dbpath;
+          options_changed = true;
+        }
     }
 
   if (!opts.key_dir.as_internal().empty() &&

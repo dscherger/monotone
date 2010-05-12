@@ -289,7 +289,7 @@ CMD_AUTOMATE_NO_STDIO(remote_stdio,
     {
       W(F("No database given; assuming ':memory:' database. This means that we can't\n"
           "verify the server key, because we have no record of what it should be."));
-      app.opts.dbname_is_memory = true;
+      app.opts.dbname_type = memory_db;
     }
 
   database db(app);
@@ -420,7 +420,7 @@ CMD_AUTOMATE_NO_STDIO(remote,
     {
       W(F("No database given; assuming ':memory:' database. This means that we can't\n"
           "verify the server key, because we have no record of what it should be."));
-      app.opts.dbname_is_memory = true;
+      app.opts.dbname_type = memory_db;
     }
 
   database db(app);
@@ -606,7 +606,7 @@ CMD(sync, "sync", "", CMD_REF(network),
     {
       // Write workspace options, including key; this is the simplest way to
       // fix a "found multiple keys" error reported by sync.
-      workspace::set_options(app.opts);
+      workspace::set_options(app.opts, app.lua);
     }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
@@ -631,7 +631,7 @@ CMD_AUTOMATE(sync, N_("[ADDRESS[:PORTNUMBER] [PATTERN ...]]"),
   {
     // Write workspace options, including key; this is the simplest way to
     // fix a "found multiple keys" error reported by sync.
-    workspace::set_options(app.opts);
+    workspace::set_options(app.opts, app.lua);
   }
 
   run_netsync_protocol(app, app.opts, app.lua, project, keys,
