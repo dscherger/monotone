@@ -20,5 +20,6 @@ revert_to(root_rev)
 check(mtn("mv", "foo", "newfoo"), 0, false, false)
 writefile("newfoo/bar", "version 2!\n")
 check(mtn("diff"), 0, true, false)
+-- fixme
 xfail(qgrep("^--- foo/bar\t", "stdout"))
 check(qgrep("^\\+\\+\\+ newfoo/bar\t", "stdout"))

@@ -13,4 +13,5 @@ commit()
 writefile("parent2/file1", "something else")
 commit()
 
+-- fixme
 xfail(mtn("diff", "-r", orig, "parent2/file1"), 0, true, true)

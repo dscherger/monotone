@@ -48,5 +48,5 @@ commit()
 check(mtn("mv", "dir1", "dir2"), 0, false, false)
 writefile("dir2/test.txt", "boohoo")
 check(mtn("diff"), 0, false, false)
+-- fixme
 xfail(mtn("diff", "dir2/test.txt"), 0, false, false)
-

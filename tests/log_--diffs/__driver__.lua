@@ -34,7 +34,7 @@ canonicalize("full")
 check(samefile("expect_full", "full"))
 
 -- restrict to foo2 and quux
-check(mtn("log", "--no-graph", "quux", "--diffs", "foo2"), 0, true, false)
+check(mtn("log", "--no-graph", "", "quux", "foo2", "--depth", "0", "--diffs"), 0, true, false)
 check(grep("^(---|\\+\\+\\+) ", "stdout"), 0, true, false)
 rename("stdout", "restrict")
 check(get("expect_restrict"))

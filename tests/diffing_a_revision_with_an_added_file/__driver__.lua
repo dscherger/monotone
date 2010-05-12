@@ -9,3 +9,4 @@ addfile("foo2", "foo file 2")
 commit()
 
 check(mtn("diff", "--revision", parent, "--revision", base_revision()), 0, false, false)
+-- fixme assert something!?!
