@@ -5068,8 +5068,8 @@ database to be used, both of which will be placed in the
 This can be used with an empty directory to start a new blank project,
 or within an existing directory full of files, prior to using
 @command{mtn commit}. If no directory is specified, the current
-directory is used.
-
+directory is used.  If no database is given, a new database is
+initialized and saved to @file{_MTN/mtn.db}.
 
 @item mtn add [--recursive | -R] [--no-respect-ignore] @var{pathname...}
 @item mtn add [--recursive | -R] [--no-respect-ignore] --unknown [@var{pathname...}]
@@ -5897,15 +5897,22 @@ names of public and private keys you have on hand.
 If @var{pattern} is provided, it is used as a glob to limit the keys
 listed. Otherwise all keys in your database are listed.
 
-@item mtn list branches
-@item mtn ls branches
+@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls branches [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known branches in your database.
+This command lists all known branches in your database. If
+@var{pattern} is provided, it is used as a glob to select the branches
+listed, otherwise all branches are listed.  If @option{-exclude}
+options are provided they are used as globs to exclude specified
+branches.
 
-@item mtn list tags
-@item mtn ls tags
+@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls tags [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known tags in your database.
+This command lists all known tags in your database. If @var{pattern}
+is provided, it is used as a glob to select the tags listed, otherwise
+all tags are listed.  If @option{-exclude} options are provided they
+are used as globs to exclude specified tags.
 
 @item mtn list vars
 @item mtn ls vars

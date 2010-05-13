@@ -531,14 +531,22 @@ CMD(epochs, "epochs", "", CMD_REF(list), "[BRANCH [...]]",
     }
 }
 
-CMD(tags, "tags", "", CMD_REF(list), "",
+CMD(tags, "tags", "", CMD_REF(list), "[PATTERN]",
     N_("Lists all tags in the database"),
     "",
-    options::opts::none)
+    options::opts::exclude)
 {
+  globish inc("*", origin::internal);
+  if (args.size() == 1)
+    inc = globish(idx(args,0)(), origin::user);
+  else if (args.size() > 1)
+    throw usage(execid);
+
   database db(app);
   set<tag_t> tags;
   project_t project(db);
+  cert_name branch = branch_cert_name;
+
   project.get_tags(tags);
 
   for (set<tag_t>::const_iterator i = tags.begin(); i != tags.end(); ++i)
@@ -546,9 +554,30 @@ CMD(tags, "tags", "", CMD_REF(list), "",
       key_identity_info identity;
       identity.id = i->key;
       project.complete_key_identity(app.lua, identity);
-      cout << i->name << ' '
-           << i->ident << ' '
-           << format_key(identity)  << '\n';
+
+      vector<cert> certs;
+      project.get_revision_certs(i->ident, certs);
+
+      globish exc(app.opts.exclude_patterns);
+
+      if (inc.matches(i->name()) && !exc.matches(i->name()))
+        {
+          hexenc<id> hexid;
+          encode_hexenc(i->ident.inner(), hexid);
+         
+          cout << i->name << ' ' << hexid().substr(0,10) << "... ";
+    
+          for (vector<cert>::const_iterator c = certs.begin(); 
+               c != certs.end(); ++c)
+            {
+              if (c->name == branch)
+                {
+                  cout << c->value << ' ';
+                }
+            }
+
+          cout << format_key(identity)  << '\n';
+        }
     }
 }
 
