@@ -6451,6 +6451,12 @@ You can fix it by finding a database containing the key in question, and
 using @command{pubkey} on that database to create a public key packet,
 which can be loaded into your database with @command{read}.
 
+@item branches not used or with incorrect head count or missing
+in the cache of branch heads. This is a serious problem; it suggests
+the presence of a bug in monotone's caching system, but does not
+involve data loss; please report this on the monotone mailing
+list. You can fix it by running @command{db regenerate_caches}.
+
 @end itemize
 
 This command also verifies that the @sc{sha1} hash of every file, manifest,
