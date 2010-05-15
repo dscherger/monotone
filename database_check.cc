@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2005 Derek Scherger <derek@echologic.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -131,6 +132,14 @@ struct checked_height {
   bool unique;                 // not identical to any height retrieved earlier
   bool sensible;               // greater than all parent heights
   checked_height(): found(false), unique(false), sensible(true) {}
+};
+
+struct checked_branch {
+  bool used;
+  bool heads_ok;
+  bool cached;
+
+  checked_branch(): used(false), heads_ok(false), cached(false) {}
 };
 
 /*
@@ -597,6 +606,62 @@ check_heights_relation(database & db,
 }
 
 static void
+check_branch_leaves(database & db, map<string, checked_branch> & checked_branches)
+{
+  // We don't assume db.get_branches is right, because that uses
+  // branch_leaves, and we are checking to see if branch_leaves is ok.
+
+  vector<cert> all_branch_certs;
+  set<string> seen_branches;
+  vector<string> cached_branches;
+
+  db.get_branches (cached_branches);
+
+  L(FL("checking %d branches") % cached_branches.size());
+
+  db.get_revision_certs(branch_cert_name, all_branch_certs);
+
+  // we assume cached_branches is close enough for the ticker.
+  ticker ticks(_("branches"), "b", cached_branches.size());
+
+  for (vector<cert>::const_iterator i = all_branch_certs.begin(); i != all_branch_certs.end(); ++i)
+    {
+      string const name = i->value();
+
+      std::pair<set<string>::iterator, bool> inserted = seen_branches.insert(name);
+
+      if (inserted.second)
+        {
+          checked_branches[name].used = true;
+
+          checked_branches[name].cached =
+            find(cached_branches.begin(), cached_branches.end(), name) != cached_branches.end();
+
+          set<revision_id> cached_leaves;
+          set<revision_id> computed_leaves;
+
+          db.get_branch_leaves(i->value, cached_leaves);
+          db.compute_branch_leaves(i->value, computed_leaves);
+
+          checked_branches[name].heads_ok = cached_leaves == computed_leaves;
+          ++ticks;
+        }
+    }
+
+  for (vector<string>::const_iterator i = cached_branches.begin(); i != cached_branches.end(); ++i)
+    {
+      string const name = *i;
+
+      if (seen_branches.find(name) == seen_branches.end())
+        {
+          checked_branches[name].used = false;
+          checked_branches[name].cached = true;
+          checked_branches[name].heads_ok = false;
+        }
+    }
+}
+
+static void
 report_files(map<file_id, checked_file> const & checked_files,
              size_t & missing_files,
              size_t & unreferenced_files)
@@ -893,6 +958,32 @@ report_heights(map<revision_id, checked_height> const & checked_heights,
     }
 }
 
+static void
+report_branches(map<string, checked_branch> const & checked_branches,
+                size_t & extra_branches,
+                size_t & bad_branches,
+                size_t & missing_branches)
+{
+  for (map<string, checked_branch>::const_iterator i = checked_branches.begin(); i != checked_branches.end(); ++i)
+    {
+      if (!i->second.used)
+        {
+          extra_branches++;
+          P(F("cached branch '%s' not used") % i->first);
+        }
+      else if (!i->second.cached)
+        {
+          missing_branches++;
+          P(F("branch '%s' not cached") % i->first);
+        }
+      else if (!i->second.heads_ok)
+        {
+          bad_branches ++;
+          P(F("branch '%s' wrong head count") % i->first);
+        }
+    }
+}
+
 void
 check_db(database & db)
 {
@@ -902,6 +993,7 @@ check_db(database & db)
   map<revision_id, checked_revision> checked_revisions;
   map<key_id, checked_key> checked_keys;
   map<revision_id, checked_height> checked_heights;
+  map<string, checked_branch> checked_branches;
 
   size_t missing_files = 0;
   size_t unreferenced_files = 0;
@@ -931,6 +1023,10 @@ check_db(database & db)
   size_t duplicate_heights = 0;
   size_t incorrect_heights = 0;
 
+  size_t extra_branches = 0;
+  size_t bad_branches = 0;
+  size_t missing_branches = 0;
+
   transaction_guard guard(db, false);
 
   check_db_integrity_check(db);
@@ -945,6 +1041,7 @@ check_db(database & db)
   check_certs(db, checked_revisions, checked_keys, total_certs);
   check_heights(db, checked_heights);
   check_heights_relation(db, checked_heights);
+  check_branch_leaves(db, checked_branches);
 
   report_files(checked_files, missing_files, unreferenced_files);
 
@@ -968,8 +1065,10 @@ check_db(database & db)
   report_heights(checked_heights,
                  missing_heights, duplicate_heights, incorrect_heights);
 
+  report_branches(checked_branches, extra_branches, bad_branches, missing_branches);
+
   // NOTE: any new sorts of problems need to have added:
-  //   -- a message here, that tells the use about them
+  //   -- a message here, that tells the user about them
   //   -- entries in one _or both_ of the sums calculated at the end
   //   -- an entry added to the manual, which describes in detail why the
   //      error occurs and what it means to the user
@@ -1024,6 +1123,13 @@ check_db(database & db)
   if (incorrect_heights > 0)
     W(F("%d incorrect heights") % incorrect_heights);
 
+  if (extra_branches > 0)
+    W(F("%d branches cached but not used") % extra_branches);
+  if (bad_branches > 0)
+    W(F("%d branches with incorrect head count") % bad_branches);
+  if (missing_branches > 0)
+    W(F("%d branches missing from branch cache") % missing_branches);
+
   size_t total = missing_files + unreferenced_files +
     unreferenced_rosters + incomplete_rosters +
     missing_revisions + incomplete_revisions +
@@ -1034,7 +1140,9 @@ check_db(database & db)
     missing_certs + mismatched_certs +
     unchecked_sigs + bad_sigs +
     missing_keys +
-    missing_heights + duplicate_heights + incorrect_heights;
+    missing_heights + duplicate_heights + incorrect_heights +
+    extra_branches + bad_branches + missing_branches;
+
   // unreferenced files and rosters and mismatched certs are not actually
   // serious errors; odd, but nothing will break.
   size_t serious = missing_files +
@@ -1046,15 +1154,17 @@ check_db(database & db)
     missing_certs +
     unchecked_sigs + bad_sigs +
     missing_keys +
-    missing_heights + duplicate_heights + incorrect_heights;
+    missing_heights + duplicate_heights + incorrect_heights+
+    extra_branches + bad_branches + missing_branches;
 
-  P(F("check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d heights")
+  P(F("check complete: %d files; %d rosters; %d revisions; %d keys; %d certs; %d heights; %d branches")
     % checked_files.size()
     % checked_rosters.size()
     % checked_revisions.size()
     % checked_keys.size()
     % total_certs
-    % checked_heights.size());
+    % checked_heights.size()
+    % checked_branches.size());
   P(F("total problems detected: %d (%d serious)") % total % serious);
   if (serious)
     {

@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -2995,6 +2996,12 @@ database::delete_existing_heights()
   imp->execute(query("DELETE FROM heights"));
 }
 
+void
+database::delete_existing_branch_leaves()
+{
+  imp->execute(query("DELETE FROM branch_leaves"));
+}
+
 /// Deletes one revision from the local database.
 /// @see kill_rev_locally
 void
@@ -3039,16 +3046,23 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
 }
 
 void
-database::recalc_branch_leaves(cert_value const & name)
+database::compute_branch_leaves(cert_value const & branch_name, set<revision_id> & revs)
 {
-  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
-  set<revision_id> revs;
-  get_revisions_with_cert(cert_name("branch"), name, revs);
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  get_revisions_with_cert(cert_name("branch"), branch_name, revs);
   erase_ancestors(*this, revs);
+}
+
+void
+database::recalc_branch_leaves(cert_value const & branch_name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  set<revision_id> revs;
+  compute_branch_leaves(branch_name, revs);
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
     {
       imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
-                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+                         "VALUES (?, ?)") % blob(branch_name()) % blob((*i).inner()()));
     }
 }
 
@@ -3607,6 +3621,14 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
           current_leaves.erase(l);
         }
     }
+
+  // This check is needed for this case:
+  //
+  //  r1 (branch1)
+  //  |
+  //  r2 (branch2)
+  //  |
+  //  r3 (branch1)
 
   if (!all_parents_were_leaves)
     {
