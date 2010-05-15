@@ -56,7 +56,14 @@
 
 namespace restricted_path
 {
-  enum status { included, excluded };
+  enum status
+    {
+      included,
+      excluded,
+      required, 
+      included_required,
+      excluded_required
+    };
 }
 
 class restriction
