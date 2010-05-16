@@ -264,13 +264,19 @@ node_restriction::node_restriction(vector<file_path> const & includes,
                                    long depth,
                                    roster_t const & roster1,
                                    roster_t const & roster2,
-                                   path_predicate<file_path> const & ignore)
+                                   path_predicate<file_path> const & ignore,
+                                   include_rules const & rules)
   : restriction(includes, excludes, depth)
 {
   map_nodes(node_map, roster1, included_paths, excluded_paths, known_paths);
   map_nodes(node_map, roster2, included_paths, excluded_paths, known_paths);
-  add_parents(node_map, roster1);
-  add_parents(node_map, roster2);
+
+  if (rules == implicit_includes)
+    {
+      add_parents(node_map, roster1);
+      add_parents(node_map, roster2);
+    }
+
   validate_paths(included_paths, excluded_paths,
                  unknown_unignored_node(known_paths, ignore));
 }
