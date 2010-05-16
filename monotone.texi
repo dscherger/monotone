@@ -33,7 +33,7 @@ This edition documents version @value{VERSION}.
 
 Copyright @copyright{} 2003, 2004 Graydon Hoare @*
 Copyright @copyright{} 2004, 2005, 2006 Nathaniel Smith @*
-Copyright @copyright{} 2005, 2008, 2009 Derek Scherger @*
+Copyright @copyright{} 2005 - 2010 Derek Scherger @*
 Copyright @copyright{} 2005, 2006 Daniel Carosone @*
 Copyright @copyright{} 2006 Jeronimo Pellegrini @*
 Copyright @copyright{} 2006 Alex Queiroz @*
@@ -310,7 +310,7 @@ snapshots with other manifests can use different names for the same
 file, or different contents for the same name.
 
 Other entries in the manifest format name directories or store file
-attrs, which we will cover later.
+attributes, which we will cover later.
 
 @ifinfo
 @smallexample
@@ -609,11 +609,6 @@ the scope of this document.
 @ifnotinfo
 @image{figures/cert}
 @end ifnotinfo
-
-@b{Warning:} because our certificates give the @i{name} of the
-signing key instead of the @i{hash} (ID), all key names must be
-globally unique forever. If you lose a key and need to generate a
-replacement, make sure that you give the replacement a different name.
 
 Monotone uses certs extensively. Any ``extra'' information which needs
 to be stored, transmitted or retrieved --- above and beyond files,
@@ -1452,21 +1447,26 @@ text:
 @smallexample
 @group
 $ cat _MTN/revision
-
 format_version "1"
 
-new_manifest [2098eddbe833046174de28172a813150a6cbda7b]
+new_manifest [0000000000000000000000000000000000000002]
 
 old_revision []
 
+add_dir ""
+
+add_dir "include"
+
+add_dir "src"
+
 add_file "include/jb.h"
- content [3b12b2d0b31439bd50976633db1895cff8b19da0]
+ content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
 
 add_file "src/apple.c"
- content [2650ffc660dd00a08b659b883b65a060cac7e560]
+ content [1ce885d2cc59842ff16785834391e864068fbc3c]
 
 add_file "src/banana.c"
- content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+ content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 @end group
 @end smallexample
 
@@ -1479,19 +1479,29 @@ he has forgotten what he was doing. He asks monotone:
 @smallexample
 @group
 $ mtn status
-Current branch: jp.co.juicebot.jb7
-Changes against parent :
-  added   include/jb.h
-  added   src/apple.c
-  added   src/banana.c
+----------------------------------------------------------------------
+Revision: 493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   jim@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changes
+
+  added    
+  added    include
+  added    src
+  added    include/jb.h
+  added    src/apple.c
+  added    src/banana.c
+
 @end group
 @end smallexample
 
 The output of this command tells Jim that his edits, so far,
-constitute only the addition of some files.
+constitute only the addition of some files and directories.
 
 Jim wants to see the actual details of the files he added, however, so
-he runs a command which prints out the status @emph{and} a GNU
+he runs a command which prints out the revision @emph{and} a GNU
 ``unified diff'' of the patches involved in the changeset:
 
 @smallexample
@@ -1500,18 +1510,24 @@ $ mtn diff
 #
 # old_revision []
 #
+# add_dir ""
+# 
+# add_dir "include"
+# 
+# add_dir "src"
+# 
 # add_file "include/jb.h"
-#  content [3b12b2d0b31439bd50976633db1895cff8b19da0]
-#
+#  content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
+# 
 # add_file "src/apple.c"
-#  content [2650ffc660dd00a08b659b883b65a060cac7e560]
-#
+#  content [1ce885d2cc59842ff16785834391e864068fbc3c]
+# 
 # add_file "src/banana.c"
-#  content [e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f]
+#  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
-============================================================================
---- include/jb.h
-+++ include/jb.h 3b12b2d0b31439bd50976633db1895cff8b19da0
+============================================================
+--- include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
++++ include/jb.h	f6996ce2dfc5d32bda8b574c3e9ce75db8d55492
 @@ -0,0 +1,13 @@
 +/* Standard JuiceBot hw interface */
 +
@@ -1526,9 +1542,9 @@ $ mtn diff
 +#define BANANA_SPOUT 0x7f
 +void dispense_apple_juice ();
 +void dispense_banana_juice ();
-============================================================================
---- src/apple.c
-+++ src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1537,9 +1553,9 @@ $ mtn diff
 +@{
 +  /* Fill this in please, Abe. */
 +@}
-============================================================================
---- src/banana.c
-+++ src/banana.c e8f147e5b4d5667f3228b7bba1c5c1e639f5db9f
+============================================================
+--- src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
++++ src/banana.c	ad88bbbb1b7507ddff26be67efd91d95e069afb6
 @@ -0,0 +1,7 @@
 +#include "jb.h"
 +
@@ -1567,7 +1583,7 @@ when he commits.
 @group
 $ mtn commit --message="initial checkin of project"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+mtn: committed revision 493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
@@ -1579,7 +1595,7 @@ command, if he wishes to return to this revision:
 @smallexample
 @group
 $ mtn automate get_base_revision_id
-2e24d49a48adf9acf3a1b6391a080008cbef9c21
+493bda86628fd72c992eb56f73899db9ead3cf6f
 @end group
 @end smallexample
 
@@ -1590,7 +1606,7 @@ ask monotone for a list of certs on this revision.
 
 @smallexample
 @group
-$ mtn ls certs 2e24d49a48adf9acf3a1b6391a080008cbef9c21
+$ mtn ls certs 493bda86628fd72c992eb56f73899db9ead3cf6f
 -----------------------------------------------------------------
 Key   : jim@@juicebot.co.jp (398cb10d...)
 Sig   : ok
@@ -1622,7 +1638,7 @@ second indicates whether this cert is ``ok'', meaning whether the
 the cert name, and the fourth is the cert value. This list shows us
 that monotone has confirmed that, according to
 @code{jim@@juicebot.co.jp}, the revision
-@code{2e24d49a48adf9acf3a1b6391a080008cbef9c21} is a member of the
+@code{493bda86628fd72c992eb56f73899db9ead3cf6f} is a member of the
 branch @code{jp.co.juicebot.jb7}, written by
 @code{jim@@juicebot.co.jp}, with the given date and changelog.
 
@@ -1640,7 +1656,7 @@ command, which lists all the head revisions in the branch:
 @group
 $ mtn heads
 branch 'jp.co.juicebot.jb7' is currently merged:
-2e24d49a48adf9acf3a1b6391a080008cbef9c21 jim@@juicebot.co.jp 2004-10-26T02:53:08
+493bda86628fd72c992eb56f73899db9ead3cf6f jim@@juicebot.co.jp 2004-10-26T02:53:08
 @end group
 @end smallexample
 
@@ -1834,18 +1850,16 @@ forgotten what he changed. He can ask monotone for details:
 @group
 $ mtn diff
 #
-# old_revision [2e24d49a48adf9acf3a1b6391a080008cbef9c21]
+# old_revision [493bda86628fd72c992eb56f73899db9ead3cf6f]
 #
 # patch "src/apple.c"
-#  from [2650ffc660dd00a08b659b883b65a060cac7e560]
-#    to [e2c418703c863eabe70f9bde988765406f885fd0]
+#  from [1ce885d2cc59842ff16785834391e864068fbc3c]
+#    to [e2c64f6bde75a192d48d2256385df3dd7a963349]
 #
-============================================================================
---- src/apple.c 2650ffc660dd00a08b659b883b65a060cac7e560
-+++ src/apple.c e2c418703c863eabe70f9bde988765406f885fd0
-@@ -1,7 +1,10 @@
- #include "jb.h"
-
+============================================================
+--- src/apple.c	1ce885d2cc59842ff16785834391e864068fbc3c
++++ src/apple.c	e2c64f6bde75a192d48d2256385df3dd7a963349
+@@ -3,5 +3,8 @@ dispense_apple_juice()
  void
  dispense_apple_juice()
  @{
@@ -1863,7 +1877,6 @@ Satisfied with his day's work, Abe decides to commit.
 @smallexample
 @group
 $ mtn commit
-mtn: beginning commit on branch 'jp.co.juicebot.jb7'
 @end group
 @end smallexample
 
@@ -1876,28 +1889,40 @@ committed and the opportunity to enter a log message.
 
 @smallexample
 @group
+Enter a description of this change following the Changelog line below.
+The values of Author, Date and Branch may be modified as required.
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+----------------------------------------------------------------------
+Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   abe@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changelog: 
+
 polling implementation of src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN: Enter a description of this change.
-MTN: Lines beginning with `MTN:' are removed automatically.
-MTN:
-MTN: Current branch: jp.co.juicebot.jb7
-MTN: Changes against parent 2e24d49a48adf9acf3a1b6391a080008cbef9c21
-MTN:   patched  src/apple.c
-MTN: ----------------------------------------------------------------------
-MTN:
+
+----------------------------------------------------------------------
+Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+
+  patched  src/apple.c
+
 @end group
 @end smallexample
 
-Abe enters a single line above the explanatory message, saying
-``polling implementation of src/apple.c''. He then saves the file and
-quits the editor. Monotone deletes all the lines beginning with
-``MTN:'' and leaves only Abe's short message. Returning to the shell,
-Abe's commit completes:
+Abe enters a single line below the Changelog: header, saying ``polling
+implementation of src/apple.c''. He then saves the file and quits the
+editor. Monotone confirms that no other lines have been changed and
+extracts the message to be stored in the associated ``changelog''
+cert, leaving only Abe's short message. Returning to the shell, Abe's
+commit completes:
 
 @smallexample
 @group
-mtn: committed revision 70decb4b31a8227a629c0e364495286c5c75f979
+mtn: beginning commit on branch 'jp.co.juicebot.jb7'
+mtn: committed revision 42eae36587508faa664b111cefc291f0b85ef83a
 @end group
 @end smallexample
 
@@ -1976,7 +2001,7 @@ before finishing her commit:
 @group
 $ mtn commit
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 80ef9c9d251d39074d37e72abf4897e0bbae1cfb
+mtn: committed revision 85573a54105cd3220db10aa6a0713643cdf5ce6f
 @end group
 @end smallexample
 
@@ -2018,9 +2043,9 @@ worker was fully informed of the ``up-stream'' worker's actions, and
 produced purely derivative, ``down-stream'' work:
 
 @enumerate
-@item Jim made revision 2e24d...
-@item Abe changed revision 2e24d... into revision 70dec...
-@item Beth derived revision 70dec... into revision 80ef9...
+@item Jim made revision 493bd...
+@item Abe changed revision 493bd... into revision 42eae...
+@item Beth derived revision 42eae... into revision 85573...
 @end enumerate
 
 This is a simple, but sadly unrealistic, ordering of events. In real
@@ -2041,7 +2066,7 @@ To illustrate this, we return to our workers Beth and Abe. Suppose Jim
 sends out an email saying that the current polling juice dispensers
 use too much CPU time, and must be rewritten to use the JuiceBot's
 interrupt system. Beth wakes up first and begins working immediately,
-basing her work off the revision 80ef9... which is currently in her
+basing her work off the revision 85573... which is currently in her
 workspace:
 
 @smallexample
@@ -2057,15 +2082,15 @@ Beth finishes and examines her changes:
 @group
 $ mtn diff
 #
-# old_revision [80ef9c9d251d39074d37e72abf4897e0bbae1cfb]
+# old_revision [85573a54105cd3220db10aa6a0713643cdf5ce6f]
 #
 # patch "src/banana.c"
-#  from [7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a]
-#    to [5e6622cf5c8805bcbd50921ce7db86dad40f2ec6]
+#  from [d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8]
+#    to [dd979c3c880e6a7221fcecd7148bd4afcfb3e964]
 #
-============================================================================
---- src/banana.c 7381d6b3adfddaf16dc0fdb05e0f2d1873e3132a
-+++ src/banana.c 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
+============================================================
+--- src/banana.c	d7e28a01cf6fc0f9ac04c6901dcafd77c2d32fb8
++++ src/banana.c	dd979c3c880e6a7221fcecd7148bd4afcfb3e964
 @@ -1,10 +1,15 @@
  #include "jb.h"
 
@@ -2077,8 +2102,7 @@ $ mtn diff
 +@}
 +
  void
--dispense_banana_juice()
-+dispense_banana_juice()
+ dispense_banana_juice()
  @{
 +  spoutctl(BANANA_SPOUT, SET_INTR, &shut_off_banana);
    spoutctl(BANANA_SPOUT, FLOW_JUICE, 1);
@@ -2095,7 +2119,7 @@ She commits her work:
 @group
 $ mtn commit --message="interrupt implementation of src/banana.c"
 mtn: beginning commit on branch 'jp.co.juicebot.jb7'
-mtn: committed revision 8b41b5399a564494993063287a737d26ede3dee4
+mtn: committed revision 90abe0f1bc354a73d42d3bff1b02946559682bd9
 @end group
 @end smallexample
 
@@ -2110,8 +2134,7 @@ $ mtn sync
 
 Unfortunately, before Beth managed to sync with Jim, Abe had woken up
 and implemented a similar interrupt-based apple juice dispenser, but
-his workspace is 70dec..., which is still ``upstream'' of
-Beth's.
+his workspace is 42eae..., which is still ``upstream'' of Beth's.
 
 @smallexample
 @group
@@ -2146,8 +2169,8 @@ the branch:
 @group
 $ mtn heads
 mtn: branch 'jp.co.juicebot.jb7' is currently unmerged:
-39969614e5a14316c7ffefc588771f491c709152 abe@@juicebot.co.jp 2004-10-26T02:53:16
-8b41b5399a564494993063287a737d26ede3dee4 beth@@juicebot.co.jp 2004-10-26T02:53:15
+90abe0f1bc354a73d42d3bff1b02946559682bd9 abe@@juicebot.co.jp 2004-10-26T02:53:16
+951da88860a4cf7419d66ed9094d8bf24df5fb8b beth@@juicebot.co.jp 2004-10-26T02:53:15
 @end group
 @end smallexample
 
@@ -2160,14 +2183,13 @@ conflicts Jim does so himself:
 @smallexample
 @group
 $ mtn merge
-mtn: starting with revision 1 / 2
-mtn: merging with revision 2 / 2
-mtn: [source] 39969614e5a14316c7ffefc588771f491c709152
-mtn: [source] 8b41b5399a564494993063287a737d26ede3dee4
-mtn: common ancestor 70decb4b31a8227a629c0e364495286c5c75f979 abe@@juicebot.co.jp  2004-10-26T:02:50:01 found
-mtn: trying 3-way merge
-mtn: [merged] da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: your workspaces have not been updated
+mtn: 2 heads on branch 'jp.co.juicebot.jb7'
+mtn: merge 1 / 1:
+mtn: calculating best pair of heads to merge next
+mtn: [left]  90abe0f1bc354a73d42d3bff1b02946559682bd9
+mtn: [right] 951da88860a4cf7419d66ed9094d8bf24df5fb8b
+mtn: [merged] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: note: your workspaces have not been updated
 @end group
 @end smallexample
 
@@ -2185,10 +2207,13 @@ his workspace.
 @smallexample
 @group
 $ mtn update
-mtn: selected update target da499b9d9465a0e003a4c6b2909102ef98bf4e6d
-mtn: updating src/apple.c to f088e24beb43ab1468d7243e36ce214a559bdc96
-mtn: updating src/banana.c to 5e6622cf5c8805bcbd50921ce7db86dad40f2ec6
-mtn: updated to base revision da499b9d9465a0e003a4c6b2909102ef98bf4e6d
+mtn: updating along branch 'jp.co.juicebot.jb7'
+mtn: selected update target 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: [left]  d60c18ec5e0cf1163b276f0bfdd908c1dfd53b4a
+mtn: [right] 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
+mtn: updating src/apple.c
+mtn: updating src/banana.c
+mtn: updated to base revision 3aca69c7749bde9bd07fe4c92bb868bd69b2e421
 @end group
 @end smallexample
 
@@ -5173,14 +5198,14 @@ options provided, with each one starting at the beginning of a new line.
 
 The @file{_MTN/log} file can be edited by the user during their daily
 work to record the changes made to the workspace. When running the
-@command{commit} command without a @var{logmsg} supplied, the contents of
-the @file{_MTN/log} file will be read and passed to the Lua hook
-@code{edit_comment} as a second parameter named @var{user_log_content}.
-The log message will be prepended with a 'magic' string that must be
-removed to confirm the commit.  This allows the user to easily cancel a
-commit, without emptying the entire log message.  If the commit is
-successful, the @file{_MTN/log} file is cleared of all content making it
-ready for another edit/commit cycle.
+@command{commit} command without a @var{logmsg} supplied, the contents
+of the @file{_MTN/log} file will be read and passed to the Lua hook
+@code{edit_comment} as a parameter named @var{user_log_message}.  The
+log message passed to the user's editor will contain a line that the
+user may remove allowing them user to easily cancel a commit, without
+emptying the entire log message.  If the commit is successful, the
+@file{_MTN/log} file is cleared of all content making it ready for
+another edit/commit cycle.
 
 If @option{--message-file=_MTN/log} is specified, the contents of
 @file{_MTN/log} will be used without confirmation.
@@ -5212,10 +5237,52 @@ importing ``by hand'' from another version control system.
 A @code{changelog} cert, containing the ``log message'' for these
 changes.  If you provided @var{logmsg} on the command line, this text
 will be used, otherwise @command{commit} will run the Lua hook
-@code{edit_comment (@var{commentary}, @var{user_log_content})}, which
-typically invokes an external editor program, in which you can compose
-and/or review your log message for the change.
+@code{edit_comment(@var{user_log_message})}, which typically invokes
+an external editor program, in which you can compose and/or review the
+revision and log message for the change.
 @end itemize
+
+The @var{user_log_message} passed to the @code{edit_comment} hook will
+contain a full summary of the revision as it would have been displayed
+by the @command{status} command prior to committing and as the
+@command{log} command will display it after it has been committed:
+
+@smallexample
+@group
+Enter a description of this change following the Changelog line below.
+The values of Author, Date and Branch may be modified as required.
+
+*** REMOVE THIS LINE TO CANCEL THE COMMIT ***
+----------------------------------------------------------------------
+Revision: 42eae36587508faa664b111cefc291f0b85ef83a
+Parent:   493bda86628fd72c992eb56f73899db9ead3cf6f
+Author:   abe@@juicebot.co.jp
+Date:     2004-10-26T02:53:08
+Branch:   jp.co.juicebot.jb7
+
+Changelog: 
+
+polling implementation of src/apple.c
+
+----------------------------------------------------------------------
+Changes against parent 493bda86628fd72c992eb56f73899db9ead3cf6f
+
+  patched  src/apple.c
+
+@end group
+@end smallexample
+
+Values specified in @option{--author}, @option{--date} or
+@option{--branch} options on the command line will be displayed in the
+editor and may be further changed while editing the changelog
+message. The changelog message will be extracted from between the
+@code{Changelog:} header and the trailing line of @code{----}
+characters. Care must be taken to ensure no other lines are changed or
+the commit will abort to avoid extracting an incorrect message. If the
+commit needs to be cancelled the line following the leading
+instructions should be removed. Any pending text in @file{MTN/log}
+will be left untouched if the commit is cancelled.
+
 
 @item mtn revert @var{pathname...}
 @itemx mtn revert --missing @var{pathname...}
@@ -10599,21 +10666,22 @@ end
 @end group
 @end smallexample
 
-@item edit_comment (@var{commentary}, @var{user_log_message})
+@item edit_comment (@var{user_log_message})
 
 Returns a log entry for a given set of changes, described in
-@var{commentary}.  The commentary is identical to the output of
-@command{mtn status}. This hook is intended to interface with
-some sort of editor, so that you can interactively document each
-change you make. The result is used as the value for a
-@code{changelog} certificate, automatically generated when you commit
-changes.
+@var{user_log_message}.  The user_log_message is identical to the
+output of @command{mtn status}. This hook is intended to interface
+with some sort of editor, so that you can interactively document each
+change you make. Values for @code{author}, @code{date}, @code{branch}
+and the @code{changelog} are extracted from the result and used to
+generate these certificates when you commit changes.
 
-The contents of @file{_MTN/log} are read and passed as
-@var{user_log_message}. This allows you to document your changes as
-you proceed instead of waiting until you are ready to commit. Upon
-a successful commit, the contents of @file{_MTN/log} are erased setting
-the system up for another edit/commit cycle.
+The contents of @file{_MTN/log} are read and passed as as the
+@code{changelog} value in @var{user_log_message}. This allows you to
+document your changes as you proceed instead of waiting until you are
+ready to commit. Upon a successful commit, the contents of
+@file{_MTN/log} are erased setting the system up for another
+edit/commit cycle.
 
 For the default definition of this hook, see @ref{Default hooks}.
 
@@ -10683,6 +10751,13 @@ for long and short date time formats, which is equivalent to @samp{22/05/09},
 @samp{time_long}, @samp{time_short}, @samp{date_time_long} and
 @samp{date_time_short}, though only @samp{date_short} and
 @samp{date_time_short} are currently used.
+
+The @samp{date_time_long} format is used by the @command{status},
+@command{commit} and @command{log} commands to format revision dates
+for printing. This format must preserve a date passed through a
+formatting and parsing cycle. Otherwise the @command{status} command
+will issue warnings that the format is unsuitable and the
+@command{commit} command will abort.
 
 @end ftable
 
