@@ -39,7 +39,7 @@ check(mtn("status"), 0, true, false)
 check(qgrep("patched  changed", "stdout"))
 check(not qgrep("patched  unchanged", "stdout"))
 
--- recursive option on drop, undrop, with a changed file
+-- drop undrop directory with a changed file
 mkdir("dir1")
 addfile("dir1/file1", "file1")
 addfile("dir1/file2", "file2")
@@ -53,13 +53,13 @@ check(qgrep("directory dir1 not empty - it will be dropped but not deleted", "st
 check(qgrep("dropping dir1/file2 from workspace", "stderr"))
 check(qgrep("dropping dir1 from workspace", "stderr"))
 
-check(mtn("undrop", "--recursive", "dir1"), 0, false, true)
+check(mtn("undrop", "dir1"), 0, false, true)
 check(readfile("dir1/file1")=="file1-changed")
 check(readfile("dir1/file2")=="file2")
 check(mtn("status"), 0, true, false)
 check(qgrep("patched  dir1/file1", "stdout"))
 
--- recursive option on drop, undrop, with no changed file
+-- drop undrop directory with no changed file
 writefile("dir1/file1", "file1")
 
 check(mtn("drop", "--recursive", "dir1"), 0, false, true)
@@ -67,7 +67,7 @@ check(qgrep("dropping dir1/file1 from workspace", "stderr"))
 check(qgrep("dropping dir1/file2 from workspace", "stderr"))
 check(qgrep("dropping dir1 from workspace", "stderr"))
 
-check(mtn("undrop", "--recursive", "dir1"), 0, false, true)
+check(mtn("undrop", "dir1"), 0, false, true)
 check(readfile("dir1/file1")=="file1")
 check(readfile("dir1/file2")=="file2")
 check(mtn("status"), 0, true, false)

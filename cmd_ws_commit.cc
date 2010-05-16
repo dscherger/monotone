@@ -392,15 +392,8 @@ CMD(undrop, "undrop", "", CMD_REF(workspace), N_("[PATH]..."),
     N_("Reverses a mistaken 'drop'"),
     N_("If the file was deleted from the workspace, this is the same as 'revert'. "
        "Otherwise, it just removes the 'drop' from the manifest."),
-    options::opts::recursive)
+    options::opts::none)
 {
-  // revert does not use the value of opts::recursive (it doesn't need to);
-  // we allow it as an option so the user can do:
-  //
-  // drop --recursive dir
-  // (realize mistake)
-  // undrop --recursive dir
-
   revert(app, args, true);
 }
 
