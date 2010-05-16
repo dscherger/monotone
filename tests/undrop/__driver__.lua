@@ -77,4 +77,20 @@ check(qgrep("no changes", "stdout"))
 -- this, so 'undrop' doesn't either.
 check(mtn("undrop", "unchanged"), 0, false, false)
 
+-- drop a directory without --recursive gives an error, so 'undrop --recursive' is redundant
+check(mtn("drop", "dir1"), 1, false, true)
+check(qgrep("cannot remove dir1/, it is not empty", "stderr"))
+
+-- File that was dropped and committed cannot be undropped
+check(mtn("drop", "changed"), 0, false, false)
+commit()
+
+check(mtn("undrop", "changed"), 1, false, true)
+check(qgrep("1 unknown path", "stderr"))
+
+-- Undrop a child of a directory that was dropped
+check(mtn("drop", "--recursive", "dir1"), 0, false, true)
+check(mtn("undrop", "dir1/file1"), 1, false, true)
+check(qgrep("restriction excludes addition of 'dir1' but includes addition of 'dir1/file1'", "stderr"))
+
 -- end of file
