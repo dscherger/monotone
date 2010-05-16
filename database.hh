@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -312,9 +313,10 @@ public:
   outdated_indicator get_branch_leaves(cert_value const & value,
                                        std::set<revision_id> & revisions);
 
-private:
-  void recalc_branch_leaves(cert_value const & value);
-public:
+  // used by check_db, regenerate_caches
+  void compute_branch_leaves(cert_value const & branch_name, std::set<revision_id> & revs);
+  void recalc_branch_leaves(cert_value const & branch_name);
+  void delete_existing_branch_leaves();
 
   // Used through project.cc
   outdated_indicator get_revision_certs(revision_id const & ident,

@@ -91,6 +91,24 @@ OPT(automate_stdio_size, "automate-stdio-size", size_t, 32768,
 }
 #endif
 
+OPTSET(maybe_auto_update)
+OPTVAR(maybe_auto_update, bool, do_auto_update, false)
+OPTION(maybe_auto_update, yes_update, false, "update",
+       gettext_noop("automatically update the workspace, if it is clean and the base "
+                    "revision is a head of an affected branch"))
+#ifdef option_bodies
+{
+  do_auto_update = true;
+}
+#endif
+OPTION(maybe_auto_update, no_update, false, "no-update",
+       gettext_noop("do not touch the workspace (default)"))
+#ifdef option_bodies
+{
+  do_auto_update = false;
+}
+#endif
+
 OPTSET(bind_opts)
 OPTVAR(bind_opts, std::list<utf8>, bind_uris, )
 OPTVAR(bind_opts, bool, bind_stdio, false)

@@ -53,6 +53,7 @@ static char const inodeprints_file_name[] = "inodeprints";
 static char const local_dump_file_name[] = "debug";
 static char const options_file_name[] = "options";
 static char const user_log_file_name[] = "log";
+static char const commit_file_name[] = "commit";
 static char const revision_file_name[] = "revision";
 static char const update_file_name[] = "update";
 static char const bisect_file_name[] = "bisect";
@@ -90,6 +91,13 @@ get_user_log_path(bookkeeping_path & ul_path)
 {
   ul_path = bookkeeping_root / user_log_file_name;
   L(FL("user log path is %s") % ul_path);
+}
+
+static void
+get_commit_path(bookkeeping_path & commit_path)
+{
+  commit_path = bookkeeping_root / commit_file_name;
+  L(FL("commit path is %s") % commit_path);
 }
 
 static void
@@ -412,6 +420,41 @@ workspace::has_contents_user_log()
   utf8 user_log_message;
   read_user_log(user_log_message);
   return user_log_message().length() > 0;
+}
+
+// commit buffer backup file
+
+void
+workspace::load_commit_text(utf8 & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  if (file_exists(commit_path))
+    {
+      data tmp;
+      read_data(commit_path, tmp);
+      system_to_utf8(typecast_vocab<external>(tmp), dat);
+    }
+}
+
+void
+workspace::save_commit_text(utf8 const & dat)
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+
+  external tmp;
+  utf8_to_system_best_effort(dat, tmp);
+  write_data(commit_path, typecast_vocab<data>(tmp));
+}
+
+void
+workspace::clear_commit_text()
+{
+  bookkeeping_path commit_path;
+  get_commit_path(commit_path);
+  delete_file(commit_path);
 }
 
 // _MTN/options handling.

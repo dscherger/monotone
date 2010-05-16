@@ -1,3 +1,4 @@
+// Copyright (C) 2010 Stephen Leake <stephen_leake@stephe-leake.org>
 // Copyright (C) 2002 Graydon Hoare <graydon@pobox.com>
 //
 // This program is made available under the GNU GPL version 2.0 or
@@ -3067,6 +3068,12 @@ database::delete_existing_heights()
   imp->execute(query("DELETE FROM heights"));
 }
 
+void
+database::delete_existing_branch_leaves()
+{
+  imp->execute(query("DELETE FROM branch_leaves"));
+}
+
 /// Deletes one revision from the local database.
 /// @see kill_rev_locally
 void
@@ -3111,16 +3118,23 @@ database::delete_existing_rev_and_certs(revision_id const & rid)
 }
 
 void
-database::recalc_branch_leaves(cert_value const & name)
+database::compute_branch_leaves(cert_value const & branch_name, set<revision_id> & revs)
 {
-  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(name()));
-  set<revision_id> revs;
-  get_revisions_with_cert(cert_name("branch"), name, revs);
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  get_revisions_with_cert(cert_name("branch"), branch_name, revs);
   erase_ancestors(*this, revs);
+}
+
+void
+database::recalc_branch_leaves(cert_value const & branch_name)
+{
+  imp->execute(query("DELETE FROM branch_leaves WHERE branch = ?") % blob(branch_name()));
+  set<revision_id> revs;
+  compute_branch_leaves(branch_name, revs);
   for (set<revision_id>::const_iterator i = revs.begin(); i != revs.end(); ++i)
     {
       imp->execute(query("INSERT INTO branch_leaves (branch, revision_id) "
-                         "VALUES (?, ?)") % blob(name()) % blob((*i).inner()()));
+                         "VALUES (?, ?)") % blob(branch_name()) % blob((*i).inner()()));
     }
 }
 
@@ -3665,6 +3679,7 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
     return; // already recorded (must be adding a second branch cert)
 
   bool all_parents_were_leaves = true;
+  bool some_ancestor_was_leaf = false;
   for (set<revision_id>::const_iterator p = parents.begin();
        p != parents.end(); ++p)
     {
@@ -3673,12 +3688,21 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
         all_parents_were_leaves = false;
       else
         {
+          some_ancestor_was_leaf = true;
           imp->execute(query("DELETE FROM branch_leaves "
                              "WHERE branch = ? AND revision_id = ?")
                        % blob(branch()) % blob(l->inner()()));
           current_leaves.erase(l);
         }
     }
+
+  // This check is needed for this case:
+  //
+  //  r1 (branch1)
+  //  |
+  //  r2 (branch2)
+  //  |
+  //  r3 (branch1)
 
   if (!all_parents_were_leaves)
     {
@@ -3687,11 +3711,29 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
         {
           if (is_a_ancestor_of_b(*r, rev))
             {
+              some_ancestor_was_leaf = true;
               imp->execute(query("DELETE FROM branch_leaves "
                                  "WHERE branch = ? AND revision_id = ?")
                            % blob(branch()) % blob(r->inner()()));
             }
         }
+    }
+
+  // are we really a leaf (ie, not an ancestor of an existing leaf)?
+  if (!some_ancestor_was_leaf)
+    {
+      bool really_a_leaf = true;
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(rev, *r))
+            {
+              really_a_leaf = false;
+              break;
+            }
+        }
+      if (!really_a_leaf)
+        return;
     }
 
   imp->execute(query("INSERT INTO branch_leaves(branch, revision_id) "

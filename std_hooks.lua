@@ -277,7 +277,7 @@ function get_encloser_pattern(name)
    return "^[[:alnum:]$_]"
 end
 
-function edit_comment(basetext, user_log_message)
+function edit_comment(user_log_message)
    local exe = nil
 
    -- top priority is VISUAL, then EDITOR, then a series of hardcoded
@@ -299,12 +299,10 @@ function edit_comment(basetext, user_log_message)
 
    local tmp, tname = temp_file()
    if (tmp == nil) then return nil end
-   basetext = "MTN: " .. string.gsub(basetext, "\n", "\nMTN: ") .. "\n"
    tmp:write(user_log_message)
    if user_log_message == "" or string.sub(user_log_message, -1) ~= "\n" then
       tmp:write("\n")
    end
-   tmp:write(basetext)
    io.close(tmp)
 
    -- By historical convention, VISUAL and EDITOR can contain arguments
@@ -316,22 +314,22 @@ function edit_comment(basetext, user_log_message)
    if (not string.find(exe, "[^%w_.+-]")) then
       -- safe to call spawn directly
       if (execute(exe, tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    else
       -- must use shell
       local shell = os.getenv("SHELL")
       if (shell == nil) then shell = "sh" end
       if (not program_exists_in_path(shell)) then
-     io.write(string.format(gettext("Editor command '%s' needs a shell, "..
-                    "but '%s' is not to be found"),
-                    exe, shell))
-     os.remove(tname)
-     return nil
+         io.write(string.format(gettext("Editor command '%s' needs a shell, "..
+                                        "but '%s' is not to be found"),
+                                exe, shell))
+         os.remove(tname)
+         return nil
       end
 
       -- Single-quoted strings in both Bourne shell and csh can contain
@@ -339,24 +337,17 @@ function edit_comment(basetext, user_log_message)
       local safe_tname = " '" .. string.gsub(tname, "'", "'\\''") .. "'"
 
       if (execute(shell, "-c", editor .. safe_tname) ~= 0) then
-     io.write(string.format(gettext("Error running editor '%s' "..
-                    "to enter log message\n"),
+         io.write(string.format(gettext("Error running editor '%s' "..
+                                        "to enter log message\n"),
                                 exe))
-     os.remove(tname)
-     return nil
+         os.remove(tname)
+         return nil
       end
    end
 
    tmp = io.open(tname, "r")
    if (tmp == nil) then os.remove(tname); return nil end
-   local res = ""
-   local line = tmp:read()
-   while(line ~= nil) do
-      if (not string.find(line, "^MTN:")) then
-         res = res .. line .. "\n"
-      end
-      line = tmp:read()
-   end
+   local res = tmp:read("*a")
    io.close(tmp)
    os.remove(tname)
    return res
