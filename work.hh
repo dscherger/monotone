@@ -226,6 +226,16 @@ public:
   void blank_user_log();
   bool has_contents_user_log();
 
+  // The full commit text from the edit_comment lua hook is saved before
+  // attempting to extract the various Author: Date: Branch: and Changelog:
+  // values from it in case these values don't appear where they are
+  // expected. Once all the values have been extracted the backup file is
+  // removed.
+
+  void load_commit_text(utf8 & dat);
+  void save_commit_text(utf8 const & dat);
+  void clear_commit_text();
+
   // the "options map" is another administrative file, stored in
   // _MTN/options. it keeps a list of name/value pairs which are considered
   // "persistent options", associated with a particular workspace and

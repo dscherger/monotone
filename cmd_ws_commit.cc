@@ -135,6 +135,14 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
                               set<branch_name> const & old_branches,
                               string const & date_fmt, utf8 & log_message)
 {
+  utf8 backup;
+  work.load_commit_text(backup);
+
+  E(backup().empty(), origin::user,
+    F("A backup from a previously failed commit exists in _MTN/commit.\n"
+      "This file must be removed before commit will proceed.\n"
+      "You may recover the previous message from this file if necessary."));
+
   utf8 instructions(
     _("Enter a description of this change following the Changelog line below.\n"
       "The values of Author, Date and Branch may be modified as required.\n"
@@ -205,7 +213,8 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
 
   system_to_utf8(output_message, full_message);
 
-  // FIXME: save the full message in _MTN/changelog so its not lost
+  // save the message in _MTN/commit so its not lost if something fails below
+  work.save_commit_text(full_message);
 
   message_reader message(full_message());
 
@@ -221,8 +230,13 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   E(message.read(instructions()), origin::user,
     F("Commit failed. Instructions not found."));
 
-  E(message.read(cancel()), origin::user,
-    F("Commit cancelled."));
+  if (!message.read(cancel()))
+    {
+      // clear the backup file if the commit was explicitly cancelled
+      work.clear_commit_text();
+      E(message.read(cancel()), origin::user,
+        F("Commit cancelled."));
+    }
 
   utf8 const AUTHOR(trim_right(_("Author: ")).c_str());
   utf8 const DATE(trim_right(_("Date: ")).c_str());
@@ -304,6 +318,9 @@ get_log_message_interactively(lua_hooks & lua, workspace & work,
   string content = trim(message.content()) + '\n';
 
   log_message = utf8(content, origin::user);
+
+  // remove the backup file now that all values have been extracted
+  work.clear_commit_text();
 }
 
 CMD(revert, "revert", "", CMD_REF(workspace), N_("[PATH]..."),

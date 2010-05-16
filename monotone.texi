@@ -5897,15 +5897,22 @@ names of public and private keys you have on hand.
 If @var{pattern} is provided, it is used as a glob to limit the keys
 listed. Otherwise all keys in your database are listed.
 
-@item mtn list branches
-@item mtn ls branches
+@item mtn list branches [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls branches [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known branches in your database.
+This command lists all known branches in your database. If
+@var{pattern} is provided, it is used as a glob to select the branches
+listed, otherwise all branches are listed.  If @option{-exclude}
+options are provided they are used as globs to exclude specified
+branches.
 
-@item mtn list tags
-@item mtn ls tags
+@item mtn list tags [@var{pattern}] [--exclude=@var{pattern}]
+@item mtn ls tags [@var{pattern}] [--exclude=@var{pattern}]
 
-This command lists all known tags in your database.
+This command lists all known tags in your database. If @var{pattern}
+is provided, it is used as a glob to select the tags listed, otherwise
+all tags are listed.  If @option{-exclude} options are provided they
+are used as globs to exclude specified tags.
 
 @item mtn list vars
 @item mtn ls vars
@@ -6443,6 +6450,12 @@ except that monotone will ignore any certs signed by the missing key.
 You can fix it by finding a database containing the key in question, and
 using @command{pubkey} on that database to create a public key packet,
 which can be loaded into your database with @command{read}.
+
+@item branches not used or with incorrect head count or missing
+in the cache of branch heads. This is a serious problem; it suggests
+the presence of a bug in monotone's caching system, but does not
+involve data loss; please report this on the monotone mailing
+list. You can fix it by running @command{db regenerate_caches}.
 
 @end itemize
 
