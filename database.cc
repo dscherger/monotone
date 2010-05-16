@@ -3607,6 +3607,7 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
     return; // already recorded (must be adding a second branch cert)
 
   bool all_parents_were_leaves = true;
+  bool some_ancestor_was_leaf = false;
   for (set<revision_id>::const_iterator p = parents.begin();
        p != parents.end(); ++p)
     {
@@ -3615,6 +3616,7 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
         all_parents_were_leaves = false;
       else
         {
+          some_ancestor_was_leaf = true;
           imp->execute(query("DELETE FROM branch_leaves "
                              "WHERE branch = ? AND revision_id = ?")
                        % blob(branch()) % blob(l->inner()()));
@@ -3637,11 +3639,29 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
         {
           if (is_a_ancestor_of_b(*r, rev))
             {
+              some_ancestor_was_leaf = true;
               imp->execute(query("DELETE FROM branch_leaves "
                                  "WHERE branch = ? AND revision_id = ?")
                            % blob(branch()) % blob(r->inner()()));
             }
         }
+    }
+
+  // are we really a leaf (ie, not an ancestor of an existing leaf)?
+  if (!some_ancestor_was_leaf)
+    {
+      bool really_a_leaf = true;
+      for (set<revision_id>::const_iterator r = current_leaves.begin();
+           r != current_leaves.end(); ++r)
+        {
+          if (is_a_ancestor_of_b(rev, *r))
+            {
+              really_a_leaf = false;
+              break;
+            }
+        }
+      if (!really_a_leaf)
+        return;
     }
 
   imp->execute(query("INSERT INTO branch_leaves(branch, revision_id) "

@@ -641,7 +641,19 @@ check_branch_leaves(database & db, map<string, checked_branch> & checked_branche
           set<revision_id> computed_leaves;
 
           db.get_branch_leaves(i->value, cached_leaves);
-          db.compute_branch_leaves(i->value, computed_leaves);
+          try
+            {
+              db.compute_branch_leaves(i->value, computed_leaves);
+            }
+          catch (std::exception & e)
+            {
+              if (string(e.what()).find("height") != string::npos)
+                {
+                  L(FL("error loading height when checking heads of '%s'") % i->value);
+                }
+              else
+                throw;
+            }
 
           checked_branches[name].heads_ok = cached_leaves == computed_leaves;
           ++ticks;
