@@ -34,7 +34,7 @@ require_once("header.inc.php");
                 <li><a href="irc://irc.oftc.net/#monotone">IRC</a> (<a class="lesser" href="http://colabti.org/irclogger/irclogger_logs/monotone">logs</a>)</li>
                 <li><a href="wiki/FrontPage/"><strong>wiki</strong></a></li>
                 <li><a href="others.html">other systems</a></li>
-                <li><a href="http://www.cafepress.com/monotone_vcs">swag</a></li>
+                <li><a href="http://www.cafepress.com/monotone_rcs">swag <strong>new</strong></a></li>
                 <li><a href="http://www.frappr.com/monotone">frappr</a></li>
             </ul>
 
