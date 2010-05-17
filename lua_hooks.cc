@@ -30,6 +30,7 @@
 #include "cmd.hh"
 #include "commands.hh"
 #include "globish.hh"
+#include "simplestring_xform.hh"
 
 // defined in std_hooks.c, generated from std_hooks.lua
 extern char const std_hooks_constant[];
@@ -77,6 +78,38 @@ extern "C"
       lua_pushnil(LS);
     return 1;
   }
+  // taken from http://medek.wordpress.com/2009/02/03/wrapping-lua-errors-and-print-function/
+  static int
+  monotone_message(lua_State *LS)
+  {
+    int nArgs = lua_gettop(LS);
+    lua_getglobal(LS, "tostring");
+
+    std::string ret;
+    for (int i = 1; i <= nArgs; ++i)
+      {
+        const char *s;
+        lua_pushvalue(LS, -1);
+        lua_pushvalue(LS, i);
+        lua_call(LS, 1, 1);
+        s = lua_tostring(LS, -1);
+        if (s == NULL)
+          return luaL_error(
+            LS, LUA_QL("tostring") " must return a string to ", LUA_QL("print")
+          );
+
+        if (i > 1)
+          ret.append("\t");
+
+        ret.append(s);
+        lua_pop(LS, 1);
+      }
+
+    string prefixed;
+    prefix_lines_with(_("lua: "), ret, prefixed);
+    P(F("%s") % prefixed);
+    return 0;
+  }
 }
 
 app_state*
@@ -116,6 +149,7 @@ lua_hooks::lua_hooks(app_state * app)
   luaL_openlibs(st);
 
   lua_register(st, "get_confdir", monotone_get_confdir_for_lua);
+  lua_register(st, "message", monotone_message);
   add_functions(st);
 
   // Disable any functions we don't want. This is easiest
@@ -131,6 +165,21 @@ lua_hooks::lua_hooks(app_state * app)
     if (!run_string(st, disable_dangerous,
                     "<disabled dangerous functions>"))
     throw oops("lua error while disabling existing functions");
+
+  // redirect output to internal message handler which calls into
+  // our user interface code. Note that we send _everything_ to stderr
+  // or as out-of-band progress stream to keep our stdout clean
+  static char const redirect_output[] =
+    "io.write = function(...) "
+    "  message(...) "
+    "end "
+    "print = function(...) "
+    "  message(...) "
+    "end ";
+
+    if (!run_string(st, redirect_output,
+                    "<redirect output>"))
+    throw oops("lua error while redirecting output");
 
   map_of_lua_to_app.insert(make_pair(st, app));
 }
