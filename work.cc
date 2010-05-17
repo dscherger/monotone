@@ -642,9 +642,8 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
           var_name name("known-workspaces", origin::internal);
           var_key key(make_pair(domain, name));
 
-          // there is no easy way to aquire the system path of the current
-          // workspace, but this should do it as well
-          std::string cur_workspace = system_path(".").as_internal();
+          system_path current_workspace;
+          get_current_workspace(current_workspace);
 
           database old_db(cur_opts, lua);
           if (old_db.var_exists(key))
@@ -658,7 +657,7 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
               std::vector<std::string>::iterator pos =
                 std::find(workspaces.begin(),
                           workspaces.end(),
-                          cur_workspace);
+                          current_workspace.as_internal());
               if (pos != workspaces.end())
                 workspaces.erase(pos);
 
@@ -679,9 +678,9 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
           std::vector<std::string>::iterator pos =
             std::find(workspaces.begin(),
                       workspaces.end(),
-                      cur_workspace);
+                      current_workspace.as_internal());
           if (pos == workspaces.end())
-            workspaces.push_back(cur_workspace);
+            workspaces.push_back(current_workspace.as_internal());
 
           std::string ws;
           join_lines(workspaces, ws);
