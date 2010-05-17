@@ -1487,7 +1487,7 @@ Branch:   jp.co.juicebot.jb7
 
 Changes
 
-  added    
+  added
   added    include
   added    src
   added    include/jb.h
@@ -1511,17 +1511,17 @@ $ mtn diff
 # old_revision []
 #
 # add_dir ""
-# 
+#
 # add_dir "include"
-# 
+#
 # add_dir "src"
-# 
+#
 # add_file "include/jb.h"
 #  content [f6996ce2dfc5d32bda8b574c3e9ce75db8d55492]
-# 
+#
 # add_file "src/apple.c"
 #  content [1ce885d2cc59842ff16785834391e864068fbc3c]
-# 
+#
 # add_file "src/banana.c"
 #  content [ad88bbbb1b7507ddff26be67efd91d95e069afb6]
 #
@@ -1900,7 +1900,7 @@ Author:   abe@@juicebot.co.jp
 Date:     2004-10-26T02:53:08
 Branch:   jp.co.juicebot.jb7
 
-Changelog: 
+Changelog:
 
 polling implementation of src/apple.c
 
@@ -5260,7 +5260,7 @@ Author:   abe@@juicebot.co.jp
 Date:     2004-10-26T02:53:08
 Branch:   jp.co.juicebot.jb7
 
-Changelog: 
+Changelog:
 
 polling implementation of src/apple.c
 
@@ -10282,28 +10282,36 @@ cause considerable clutter in tools like gitk.
 @node    Lua Reference, Special Topics, Command Reference, Top
 @chapter Lua Reference
 
-Monotone makes use of the @uref{http://www.lua.org, Lua} programming language
-to customize and extend its behaviour.  By writing @dfn{functions} which are
-loaded and evaluated at runtime, you can therefor help monotone to make a
-particular decision, get a suitable default or preference or perform a certain
-action.
+Monotone makes use of the @uref{http://www.lua.org, Lua} programming
+language to customize and extend its behaviour.  By writing
+@dfn{functions} which are loaded and evaluated at runtime, you can
+help monotone to make a particular decision, set a suitable default or
+preference or perform a certain action.
 
-You can put new definitions for either use case in a file
-@file{$HOME/.monotone/monotonerc}, or in your workspace in
-@file{_MTN/monotonerc}, both of which will be read every time monotone
-runs. Definitions in @file{_MTN/monotonerc} shadow (override)
-definitions made in your @file{$HOME/.monotone/monotonerc}. You can also tell
-monotone to interpret extra hook functions from any other @var{file}
-using the @option{--rcfile=@var{file}} option; again, hooks defined in files
-specified on the command-line will shadow hooks from the other predefined
-locations.
-By specifying @option{--rcfile=@var{directory}} you can automatically
-load all the files contained into @var{directory}.
+You can put Lua functions in a file @file{$HOME/.monotone/monotonerc},
+or in your workspace in @file{_MTN/monotonerc}, both of which will be
+read every time monotone runs. Definitions in @file{_MTN/monotonerc}
+shadow (override) definitions made in your
+@file{$HOME/.monotone/monotonerc}. You can also tell monotone to
+interpret extra hook functions from any other @var{file} using the
+@option{--rcfile=@var{file}} option; hooks defined in files specified
+on the command-line will shadow hooks from the other predefined
+locations.  By specifying @option{--rcfile=@var{directory}} you can
+automatically load all the files contained in @var{directory}.
 
-Monotone provides some default hooks, see @ref{Default hooks} for their
-complete source. When writing new hooks, it may be helpful to reuse some code
-from the default ones. Since Lua is a lexically scoped language with closures,
-this can be achieved with the following code:
+There are two uses for Lua functions; hooks and user-defined
+commands. This section documents hooks; see @command{register_command}
+in @ref{Additional Lua Functions} for user-defined commands. The source
+distribution contains some example user commands in the
+@file{contrib/command} directory.
+
+Hooks are Lua functions that are called from monotone code in many
+places. Monotone provides default definitions for some hooks; see
+@ref{Default hooks} for their complete source. For other hooks, if no
+definition is provided a default return value is used. When writing new
+hooks, it may be helpful to reuse some code from the default
+ones. Since Lua is a lexically scoped language with closures, this can
+be achieved with the following code:
 
 @smallexample
 @group
@@ -10323,14 +10331,7 @@ only be seen by the new hook. Since in Lua variables default to the global
 scope, the new hook is seen from inside monotone.
 
 Monotone also provides a number of helper functions to hook writers
-exposing functionality not available with standard Lua.  One particular
-interesting feature is the ability to extend monotone with custom, Lua based
-commands which are listed under the @dfn{user} command group.  All you need
-to do for this is to write a custom function and use @code{register_command}
-to make it visible in monotone's command line interface.  The source
-distribution contains some example implementations in the
-@file{contrib/command} directory.
-See @ref{Additional Lua Functions} for more information on these topics.
+exposing functionality not available with standard Lua.
 
 @menu
 * Hooks::                       All hooks called by monotone.
@@ -11631,14 +11632,14 @@ Lua libraries.
 
 @item print, io.write
 
-Both functions do no longer print to standard output, but to standard
-error, formatted as normal progress message with the prefix "lua:"
-in front of every line.
+Both functions are overwritten to print to standard error (instead of
+standard output), formatted as monotone progress message with the prefix
+"lua:" in front of every line.
 
 The rationale behind this is to catch most of the informational
-messages from hooks which use these functions and make them processable
-by monotone's user interface, i.e. allowing them to be logged just as other
-progress messages and prevent unexpected out-of-band output in the
+messages from hooks which use these functions and present them via
+monotone's user interface. This allows them to be logged just as other
+progress messages, and prevents unexpected out-of-band output in the
 @ref{Automation} interface.
 
 If you explicitely need to write to either stdout or stderr, please use
