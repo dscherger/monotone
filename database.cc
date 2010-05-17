@@ -3648,6 +3648,8 @@ database::record_as_branch_leaf(cert_value const & branch, revision_id const & r
     }
 
   // are we really a leaf (ie, not an ancestor of an existing leaf)?
+  //
+  // see tests/branch_leaves_sync_bug for a scenario that requires this.
   if (!some_ancestor_was_leaf)
     {
       bool really_a_leaf = true;
