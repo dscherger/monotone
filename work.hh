@@ -241,8 +241,10 @@ public:
   // "persistent options", associated with a particular workspace and
   // implied unless overridden on the command line.
   static void get_options(options & opts);
-  static void get_database_option(system_path const & workspace_root,
-                                  system_path & database_option);
+  // like above, just that it reads the options from the given workspace,
+  // not the one we found earlier
+  static void get_options(system_path const & workspace_root,
+                          options & opts);
   static void set_options(options const & opts,
                           lua_hooks & lua,
                           bool branch_is_sticky = false);

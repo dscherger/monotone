@@ -461,10 +461,7 @@ workspace::clear_commit_text()
 
 static void
 read_options_file(any_path const & optspath,
-                  system_path & workspace_database,
-                  branch_name & workspace_branch,
-                  external_key_name & workspace_key,
-                  system_path & workspace_keydir)
+                  options & opts)
 {
   data dat;
   try
@@ -488,13 +485,36 @@ read_options_file(any_path const & optspath,
       parser.str(val);
 
       if (opt == "database")
-        workspace_database = system_path(val, origin::workspace);
+        {
+          if (val.find(':') == 0 && val != ":memory:")
+            {
+              opts.dbname_alias = val;
+              opts.dbname_given = true;
+              opts.dbname_type = managed_db;
+            }
+          else
+          if (val != ":memory:")
+            {
+              opts.dbname = system_path(val, origin::workspace);
+              opts.dbname_given = true;
+              opts.dbname_type = unmanaged_db;
+            }
+        }
       else if (opt == "branch")
-        workspace_branch = branch_name(val, origin::workspace);
+        {
+          opts.branch = branch_name(val, origin::workspace);
+          opts.branch_given = true;
+        }
       else if (opt == "key")
-        workspace_key = external_key_name(val, origin::workspace);
+        {
+          opts.signing_key = external_key_name(val, origin::workspace);
+          opts.key_given = true;
+        }
       else if (opt == "keydir")
-        workspace_keydir = system_path(val, origin::workspace);
+        {
+          opts.key_dir = system_path(val, origin::workspace);
+          opts.key_dir_given = true;
+        }
       else
         W(F("unrecognized key '%s' in options file %s - ignored")
           % opt % optspath);
@@ -505,22 +525,23 @@ read_options_file(any_path const & optspath,
 
 static void
 write_options_file(bookkeeping_path const & optspath,
-                   system_path const & workspace_database,
-                   branch_name const & workspace_branch,
-                   external_key_name const & workspace_key,
-                   system_path const & workspace_keydir)
+                   options const & opts)
 {
   basic_io::stanza st;
-  if (!workspace_database.as_internal().empty())
-    st.push_str_pair(symbol("database"), workspace_database.as_internal());
-  if (!workspace_branch().empty())
-    st.push_str_pair(symbol("branch"), workspace_branch());
-  if (!workspace_key().empty())
-    {
-      st.push_str_pair(symbol("key"), workspace_key());
-    }
-  if (!workspace_keydir.as_internal().empty())
-    st.push_str_pair(symbol("keydir"), workspace_keydir.as_internal());
+
+  // if we have both, alias and full path, prefer the alias
+  if (opts.dbname_type == managed_db && !opts.dbname_alias.empty())
+    st.push_str_pair(symbol("database"), opts.dbname_alias);
+  else
+  if (opts.dbname_type == unmanaged_db && !opts.dbname.as_internal().empty())
+    st.push_str_pair(symbol("database"), opts.dbname.as_internal());
+
+  if (!opts.branch().empty())
+    st.push_str_pair(symbol("branch"), opts.branch());
+  if (!opts.signing_key().empty())
+    st.push_str_pair(symbol("key"), opts.signing_key());
+  if (!opts.key_dir.as_internal().empty())
+    st.push_str_pair(symbol("keydir"), opts.key_dir.as_internal());
 
   basic_io::printer pr;
   pr.print_stanza(st);
@@ -540,55 +561,43 @@ workspace::get_options(options & opts)
   if (!workspace::found)
     return;
 
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
+  options cur_opts;
   bookkeeping_path o_path;
   get_options_path(o_path);
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  read_options_file(o_path, cur_opts);
 
   // Workspace options are not to override the command line.
   if (!opts.dbname_given)
     {
-      opts.dbname = workspace_database;
+      opts.dbname = cur_opts.dbname;
     }
 
-  if (!opts.key_dir_given && !opts.conf_dir_given && !workspace_keydir.empty())
+  if (!opts.key_dir_given && !opts.conf_dir_given && cur_opts.key_dir_given)
     { // if empty/missing, we want to keep the default
-      opts.key_dir = workspace_keydir;
+      opts.key_dir = cur_opts.key_dir;
       opts.key_dir_given = true;
     }
 
-  if (opts.branch().empty() && !workspace_branch().empty())
+  if (opts.branch().empty() && cur_opts.branch_given)
     {
-      opts.branch = workspace_branch;
+      opts.branch = cur_opts.branch;
       branch_is_sticky = true;
     }
 
   L(FL("branch name is '%s'") % opts.branch);
 
   if (!opts.key_given)
-    opts.signing_key = workspace_key;
+    opts.signing_key = cur_opts.signing_key;
 }
 
 void
-workspace::get_database_option(system_path const & workspace,
-                               system_path & workspace_database)
+workspace::get_options(system_path const & workspace_root,
+                       options & opts)
 {
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
-  system_path o_path = (workspace
+  system_path o_path = (workspace_root
                         / bookkeeping_root_component
                         / options_file_name);
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  read_options_file(o_path, opts);
 }
 
 void
@@ -612,51 +621,99 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
 
   // If any of the incoming options was empty, we want to leave that option
   // as is in _MTN/options, not write out an empty option.
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-
+  options cur_opts;
   if (file_exists(o_path))
-    read_options_file(o_path,
-                      workspace_database, workspace_branch,
-                      workspace_key, workspace_keydir);
+    read_options_file(o_path, cur_opts);
 
   bool options_changed = false;
 
-  if (!opts.dbname.as_internal().empty() &&
-      workspace_database != opts.dbname)
+  if ((!opts.dbname.as_internal().empty() || !opts.dbname_alias.empty()) &&
+      (cur_opts.dbname != opts.dbname || cur_opts.dbname_alias != opts.dbname_alias))
     {
       system_path dbpath = opts.dbname;
-      resolve_managed_path(lua, dbpath);
+      if (opts.dbname_type == managed_db)
+        resolve_db_alias(lua, opts.dbname_alias, dbpath);
 
       if (get_path_status(dbpath.as_internal()) == path::file)
         {
-          // FIXME: save the alias / managed name here, not the absolute path
-          workspace_database = dbpath;
+          // remove the currently registered workspace from the old
+          // database and add it to the new one
+          var_domain domain("database", origin::internal);
+          var_name name("known-workspaces", origin::internal);
+          var_key key(make_pair(domain, name));
+
+          // there is no easy way to aquire the system path of the current
+          // workspace, but this should do it as well
+          std::string cur_workspace = system_path(".").as_internal();
+
+          database old_db(cur_opts, lua);
+          if (old_db.var_exists(key))
+            {
+              var_value val;
+              old_db.get_var(key, val);
+
+              std::vector<std::string> workspaces;
+              split_into_lines(val(), workspaces);
+
+              std::vector<std::string>::iterator pos =
+                std::find(workspaces.begin(),
+                          workspaces.end(),
+                          cur_workspace);
+              if (pos != workspaces.end())
+                workspaces.erase(pos);
+
+              std::string ws;
+              join_lines(workspaces, ws);
+
+              old_db.set_var(key, var_value(ws, origin::internal));
+            }
+
+          database new_db(opts, lua);
+          var_value val;
+          if (new_db.var_exists(key))
+            new_db.get_var(key, val);
+
+          std::vector<std::string> workspaces;
+          split_into_lines(val(), workspaces);
+
+          std::vector<std::string>::iterator pos =
+            std::find(workspaces.begin(),
+                      workspaces.end(),
+                      cur_workspace);
+          if (pos == workspaces.end())
+            workspaces.push_back(cur_workspace);
+
+          std::string ws;
+          join_lines(workspaces, ws);
+
+          new_db.set_var(key, var_value(ws, origin::internal));
+
+          cur_opts.dbname_type = opts.dbname_type;
+          cur_opts.dbname_alias = opts.dbname_alias;
+          cur_opts.dbname = dbpath;
           options_changed = true;
         }
     }
 
   if (!opts.key_dir.as_internal().empty() &&
       get_path_status(opts.key_dir.as_internal()) == path::directory &&
-      workspace_keydir != opts.key_dir)
+      cur_opts.key_dir != opts.key_dir)
     {
-      workspace_keydir = opts.key_dir;
+      cur_opts.key_dir = opts.key_dir;
       options_changed = true;
     }
 
   if ((branch_is_sticky || workspace::branch_is_sticky) &&
       !opts.branch().empty() &&
-      workspace_branch != opts.branch)
+      cur_opts.branch != opts.branch)
     {
-      workspace_branch = opts.branch;
+      cur_opts.branch = opts.branch;
       options_changed = true;
     }
 
-  if (opts.key_given && workspace_key != opts.signing_key)
+  if (opts.key_given && cur_opts.signing_key != opts.signing_key)
     {
-      workspace_key = opts.signing_key;
+      cur_opts.signing_key = opts.signing_key;
       options_changed = true;
     }
 
@@ -664,9 +721,7 @@ workspace::set_options(options const & opts, lua_hooks & lua, bool branch_is_sti
   if (options_changed)
     {
       L(FL("workspace options changed - writing back to _MTN/options"));
-      write_options_file(o_path,
-                         workspace_database, workspace_branch,
-                         workspace_key, workspace_keydir);
+      write_options_file(o_path, cur_opts);
     }
 }
 
@@ -678,22 +733,17 @@ workspace::print_option(utf8 const & opt, std::ostream & output)
   bookkeeping_path o_path;
   get_options_path(o_path);
 
-  system_path workspace_database;
-  branch_name workspace_branch;
-  external_key_name workspace_key;
-  system_path workspace_keydir;
-  read_options_file(o_path,
-                    workspace_database, workspace_branch,
-                    workspace_key, workspace_keydir);
+  options opts;
+  read_options_file(o_path, opts);
 
   if (opt() == "database")
-    output << workspace_database << '\n';
+    output << opts.dbname << '\n';
   else if (opt() == "branch")
-    output << workspace_branch << '\n';
+    output << opts.branch << '\n';
   else if (opt() == "key")
-    output << workspace_key << '\n';
+    output << opts.signing_key << '\n';
   else if (opt() == "keydir")
-    output << workspace_keydir << '\n';
+    output << opts.key_dir << '\n';
   else
     E(false, origin::user, F("'%s' is not a recognized workspace option") % opt);
 }

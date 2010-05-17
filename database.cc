@@ -488,23 +488,16 @@ database_impl::~database_impl()
     close();
 }
 
-struct database_cache
-{
-  map<system_path, boost::shared_ptr<database_impl> > dbs;
-};
-
 void
-resolve_managed_path(lua_hooks & lua, system_path & path)
+resolve_db_alias(lua_hooks & lua, std::string const & alias, system_path & path)
 {
-  size_t pos = path.as_internal().rfind(':');
-  // windows paths are not managed paths either
-  if (pos == std::string::npos || pos == 1)
-    return;
+  // we take care of this in the options code
+  I(alias.find(':') == 0);
 
-  std::string pc = path.as_internal().substr(pos + 1);
-  pos = pc.find('/');
+  std::string pc = alias.substr(1);
+  size_t pos = pc.find('/');
   E(pos == std::string::npos, origin::user,
-    F("invalid managed database name '%s'") % pc);
+    F("invalid database alias '%s'") % pc);
 
   pos = pc.rfind('.');
   if (pos == std::string::npos || pc.substr(pos + 1) != "mtn")
@@ -559,25 +552,32 @@ resolve_managed_path(lua_hooks & lua, system_path & path)
     }
 }
 
+database_cache database::dbcache;
+
 database::database(app_state & app)
-  : lua(app.lua)
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  , rng(app.rng)
-#endif
+  : opts(app.opts), lua(app.lua)
 {
+  init();
+}
 
-  if (!app.dbcache)
-    app.dbcache.reset(new database_cache);
+database::database(options const & o, lua_hooks & l)
+  : opts(o), lua(l)
+{
+  init();
+}
 
-  boost::shared_ptr<database_impl> & i = app.dbcache->dbs[app.opts.dbname];
+void
+database::init()
+{
+  boost::shared_ptr<database_impl> & i = dbcache[opts.dbname];
   if (!i)
     {
-      system_path dbpath = app.opts.dbname;
-      if (app.opts.dbname_type == managed_db)
-        resolve_managed_path(app.lua, dbpath);
+      system_path dbpath = opts.dbname;
+      if (opts.dbname_type == managed_db)
+        resolve_db_alias(lua, opts.dbname_alias, dbpath);
 
-      i.reset(new database_impl(dbpath, app.opts.dbname_type,
-                                app.opts.roster_cache_performance_log));
+      i.reset(new database_impl(dbpath, opts.dbname_type,
+                                opts.roster_cache_performance_log));
     }
 
   imp = i;
@@ -585,6 +585,12 @@ database::database(app_state & app)
 
 database::~database()
 {}
+
+void
+database::reset_cache()
+{
+  dbcache.clear();
+}
 
 system_path
 database::get_filename()
@@ -3307,7 +3313,7 @@ database::encrypt_rsa(key_id const & pub_id,
 #if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
-          plaintext.size(), rng->get());
+          plaintext.size(), lazy_rng::get());
 #else
   ct = encryptor->encrypt(
           reinterpret_cast<Botan::byte const *>(plaintext.data()),
@@ -4564,11 +4570,11 @@ database_impl::check_db_exists()
     case path::directory:
       if (directory_is_workspace(filename))
         {
-          system_path workspace_database;
-          workspace::get_database_option(filename, workspace_database);
-          E(workspace_database.empty(), origin::user,
+          options opts;
+          workspace::get_options(filename, opts);
+          E(opts.dbname.as_internal().empty(), origin::user,
             F("%s is a workspace, not a database\n"
-              "(did you mean %s?)") % filename % workspace_database);
+              "(did you mean %s?)") % filename % opts.dbname);
         }
       E(false, origin::user,
         F("%s is a directory, not a database") % filename);

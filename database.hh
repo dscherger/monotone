@@ -15,10 +15,10 @@
 #include <set>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
-#include <botan/version.h>
 
 #include "rev_types.hh"
 #include "cert.hh"
+#include "options.hh"
 
 class app_state;
 class lua_hooks;
@@ -77,13 +77,16 @@ typedef enum {cert_ok, cert_bad, cert_unknown} cert_status;
 class database_impl;
 struct key_identity_info;
 
+typedef std::map<system_path, boost::shared_ptr<database_impl> > database_cache;
+
 class database
 {
   //
   // --== Opening the database and schema checking ==--
   //
 public:
-  explicit database(app_state &);
+  explicit database(app_state & app);
+  database(options const & o, lua_hooks & l);
   ~database();
 
   system_path get_filename();
@@ -94,8 +97,13 @@ public:
   void ensure_open();
   void ensure_open_for_format_changes();
   void ensure_open_for_cache_reset();
+
+  // this is about resetting the database_impl cache
+  static void reset_cache();
+
 private:
   void ensure_open_for_maintenance();
+  void init();
 
   //
   // --== Transactions ==--
@@ -459,16 +467,18 @@ public:
                                revision_t const & rev);
 
 private:
+  static database_cache dbcache;
+
   boost::shared_ptr<database_impl> imp;
+  options opts;
   lua_hooks & lua;
-#if BOTAN_VERSION_CODE >= BOTAN_VERSION_CODE_FOR(1,7,7)
-  boost::shared_ptr<lazy_rng> rng;
-#endif
 };
 
 // not a member function, because it has to be called in non-db
 // context as well
-void resolve_managed_path(lua_hooks & lua, system_path & path);
+void resolve_db_alias(lua_hooks & lua,
+                      std::string const & alias,
+                      system_path & path);
 
 // not a member function, defined in database_check.cc
 void check_db(database & db);
