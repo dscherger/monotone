@@ -3899,96 +3899,86 @@ database::revision_cert_exists(revision_id const & hash)
 // FIXME: the bogus-cert family of functions is ridiculous
 // and needs to be replaced, or at least factored.
 namespace {
-  struct
-  bogus_cert_p
+  struct trust_value
   {
-    database & db;
-    bogus_cert_p(database & db) : db(db) {};
-
-    bool operator()(cert const & c) const
-    {
-      cert_status status = db.check_cert(c);
-      if (status == cert_ok)
-        {
-          L(FL("cert ok"));
-          return false;
-        }
-      else if (status == cert_bad)
-        {
-          string txt;
-          c.signable_text(txt);
-          W(F("ignoring bad signature by '%s' on '%s'") % c.key % txt);
-          return true;
-        }
-      else
-        {
-          I(status == cert_unknown);
-          string txt;
-          c.signable_text(txt);
-          W(F("ignoring unknown signature by '%s' on '%s'") % c.key % txt);
-          return true;
-        }
-    }
+    set<key_id> good_sigs;
+    set<key_id> bad_sigs;
+    set<key_id> unknown_sigs;
   };
-
+  
+  // returns *one* of each trusted cert key/value
+  // if two keys signed the same thing, we get two certs as input and
+  // just pick one (assuming neither is invalid) to use in the output
   void
   erase_bogus_certs_internal(vector<cert> & certs,
                              database & db,
                              database::cert_trust_checker const & checker)
   {
-    typedef vector<cert>::iterator it;
-    it e = remove_if(certs.begin(), certs.end(), bogus_cert_p(db));
-    certs.erase(e, certs.end());
-
-    vector<cert> tmp_certs;
-
     // sorry, this is a crazy data structure
     typedef tuple<id, cert_name, cert_value> trust_key;
-    typedef map< trust_key,
-      pair< shared_ptr< set<key_id> >, it > > trust_map;
+    typedef map< trust_key, trust_value > trust_map;
     trust_map trust;
 
-    for (it i = certs.begin(); i != certs.end(); ++i)
+    for (vector<cert>::iterator i = certs.begin(); i != certs.end(); ++i)
       {
         trust_key key = trust_key(i->ident.inner(),
                                   i->name,
                                   i->value);
-        trust_map::iterator j = trust.find(key);
-        shared_ptr< set<key_id> > s;
-        if (j == trust.end())
+        trust_value & value = trust[key];
+        switch (db.check_cert(*i))
           {
-            s.reset(new set<key_id>());
-            trust.insert(make_pair(key, make_pair(s, i)));
+          case cert_ok:
+            value.good_sigs.insert(i->key);
+            break;
+          case cert_bad:
+            value.bad_sigs.insert(i->key);
+            break;
+          case cert_unknown:
+            value.unknown_sigs.insert(i->key);
+            break;
           }
-        else
-          s = j->second.first;
-        s->insert(i->key);
       }
+
+    certs.clear();
 
     for (trust_map::const_iterator i = trust.begin();
          i != trust.end(); ++i)
       {
-        if (checker(*(i->second.first),
+        cert out(typecast_vocab<revision_id>(get<0>(i->first)),
+                 get<1>(i->first), get<2>(i->first), key_id());
+        if (!i->second.good_sigs.empty() &&
+            checker(i->second.good_sigs,
                     get<0>(i->first),
                     get<1>(i->first),
                     get<2>(i->first)))
           {
-            if (global_sanity.debug_p())
-              L(FL("trust function liked %d signers of %s cert on revision %s")
-                % i->second.first->size()
-                % get<1>(i->first)
-                % get<0>(i->first));
-            tmp_certs.push_back(*(i->second.second));
+            L(FL("trust function liked %d signers of %s cert on revision %s")
+              % i->second.good_sigs.size()
+              % get<1>(i->first)
+              % get<0>(i->first));
+            out.key = *i->second.good_sigs.begin();
+            certs.push_back(out);
           }
         else
           {
+            string txt;
+            out.signable_text(txt);
+            for (set<key_id>::const_iterator b = i->second.bad_sigs.begin();
+                 b != i->second.bad_sigs.end(); ++b)
+              {
+                W(F("ignoring bad signature by '%s' on '%s'") % *b % txt);
+              }
+            for (set<key_id>::const_iterator u = i->second.unknown_sigs.begin();
+                 u != i->second.unknown_sigs.end(); ++u)
+              {
+                W(F("ignoring unknown signature by '%s' on '%s'") % *u % txt);
+              }
             W(F("trust function disliked %d signers of %s cert on revision %s")
-              % i->second.first->size()
+              % i->second.good_sigs.size()
               % get<1>(i->first)
               % get<0>(i->first));
           }
       }
-    certs = tmp_certs;
   }
   // the lua hook wants key_identity_info, but all that's been
   // pulled from the certs is key_id. So this is needed to translate.
