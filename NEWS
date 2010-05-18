@@ -24,7 +24,8 @@ xxx xxx xx xx:xx:xx UTC 2010
           This means that you can have for example one server that you sync
           everything to, and one that you only sync some branches to, and you
           don't have to worry about forgetting to give the include pattern and
-          accidentally trying to sync everything to the second server.
+          accidentally trying to sync everything to the second server
+          (fixes monotone bugs #15994, #17499, #20447, #22044).
 
         Bugs fixed
 
