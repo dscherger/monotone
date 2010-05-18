@@ -2,15 +2,15 @@ function check_head(...)
     ok, branch = mtn_automate("get_option", "branch")	-- make sure we have a valid workspace
     ok, heads = mtn_automate("heads")
     if not ok then
-      print("automate call failed")
+      io.stderr:write("automate call failed\n")
       return
     end
     arghead = unpack(arg)
     heads = heads:gsub("^%s*(.-)%s*$", "%1")	-- trim leading and trailing whitespace
     if (heads == arghead) then
-        print("heads are equal")
+        io.stdout:write("heads are equal\n")
     end
-    print("end of command")
+    io.stdout:write("end of command\n")
 end
 
 
@@ -21,7 +21,7 @@ register_command("check_head", "", "Check that the heads of the branch are what 
 function diff_two_revs(rev_a, rev_b)
     ok, out = mtn_automate("content_diff", "-r", rev_a, "-r", rev_b)
     if not ok then
-        print("automate call failed: " .. out)
+        io.stderr:write("automate call failed: " .. out .. "\n")
         return 1
     end
     return 0
